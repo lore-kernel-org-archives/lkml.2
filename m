@@ -1,81 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756233Ab0EMAUp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 20:20:45 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:46680 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752780Ab0EMAUo (ORCPT
+	id S1756391Ab0EMAX5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 20:23:57 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38980 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751435Ab0EMAX4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 20:20:44 -0400
-Date: Thu, 13 May 2010 10:20:38 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Andreas Dilger <andreas.dilger@oracle.com>
-Cc: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>, hch@infradead.org,
-       viro@zeniv.linux.org.uk, adilger@Sun.COM, corbet@lwn.net,
-       serue@us.ibm.com, neilb@suse.de, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
-Message-ID: <20100513002038.GE13617@dastard>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
- <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 12 May 2010 20:23:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Date: Thu, 13 May 2010 09:19:30 +0900
+From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Mel Gorman <mel@csn.ul.ie>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH] mm,migration: Avoid race between shift_arg_pages() and
+ rmap_walk() during migration by not migrating temporary stacks
+Message-Id: <20100513091930.9b42e3b8.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <alpine.DEB.2.00.1005121627020.1273@router.home>
+References: <20100511085752.GM26611@csn.ul.ie>
+	<20100512092239.2120.A69D9226@jp.fujitsu.com>
+	<20100512125427.d1b170ba.akpm@linux-foundation.org>
+	<alpine.DEB.2.00.1005121627020.1273@router.home>
+Organization: FUJITSU Co. LTD.
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 03:49:49PM -0600, Andreas Dilger wrote:
-> On 2010-05-12, at 09:50, Aneesh Kumar K.V wrote:
-> > +static long do_sys_name_to_handle(struct path *path,
-> > +			struct file_handle __user *ufh)
-> > +{
-> > +	if (handle_size <= f_handle.handle_size) {
-> > +		/* get the uuid */
-> > +		retval = sb->s_op->get_fsid(sb, &this_fs_id);
-> > +		if (!retval) {
-> > +			/*
-> > +			 * Now verify whether we get the same vfsmount
-> > +			 * if we lookup with uuid. In case we end up having
-> > +			 * same uuid for the multiple file systems. When doing
-> > +			 * uuid based lookup we would return the first one.So
-> > +			 * with name_to_handle if we don't find the same
-> > +			 * vfsmount with lookup return EOPNOTSUPP
-> > +			 */
-> > +			mnt = fs_get_vfsmount(current, &this_fs_id);
-> > +			if (mnt != path->mnt) {
-> > +				retval = -EOPNOTSUPP;
-> > +				mntput(mnt);
-> > +				goto err_free_out;
-> > +			}
+On Wed, 12 May 2010 16:33:12 -0500 (CDT)
+Christoph Lameter <cl@linux.com> wrote:
+
 > 
-> I don't see that this does anything for us except add overhead.
-> This is no protection against mounting a second filesystem with
-> the same UUID after the handle is returned, since there is no
-> expiration for file handles.
+> Still think this special casing is not that good.
 > 
-> At best I think we could start by changing the list-based UUID
-> lookup with a hash-based one, and when adding a duplicate UUID at
-> mount time start by printing out an error message to the console
-> in case of duplicated UUIDs, and maybe at some point in the future
-> this might cause the mount to fail (though I don't think we can
-> make that decision lightly or quickly).
->
-> That moves the overhead to mount time instead of for each
-> name_to_handle() call (which would be brutal for a system with
-> many filesystems mounted).
+> One can also disable migration by providing a migration function that
+> always fails. One such function exists in mm/migrate.c:
+> 
+> /* Always fail migration. Used for mappings that are not movable */
+> int fail_migrate_page(struct address_space *mapping,
+>                         struct page *newpage, struct page *page)
+> {
+>         return -EIO;
+> }
+> EXPORT_SYMBOL(fail_migrate_page);
+> 
+> 
+> The migration function is specified in
+> 
+> vma->vm_ops->migrate
+> 
+> If that is set to fail_migrate_page() then the pages in the vma will never
+> be migrated. XFS uses it f.e. to avoid page migration:
+> 
+> STATIC int
+> xfs_mapping_buftarg(
+>         xfs_buftarg_t           *btp,
+>         struct block_device     *bdev)
+> {
+>         struct backing_dev_info *bdi;
+>         struct inode            *inode;
+>         struct address_space    *mapping;
+>         static const struct address_space_operations mapping_aops = {
+>                 .sync_page = block_sync_page,
+>                 .migratepage = fail_migrate_page,
+>         };
+> 
+> 
+> 
+> Would it not be possible to do something similar for the temporary stack?
+> 
 
-That will pretty much match exactly what XFS already does.  Can we
-start by moving the XFS functionality (xfs_uuid_mount(), "nouuid"
-mount option, etc) to the VFS level and then optimise from there?
+Problem here is unmap->remap. ->migratepage() function is used as
 
-Cheers,
+	unmap 
+	   -> migratepage() 
+	      -> failed 
+		-> remap
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+Then, migratepage() itself is no help. We need some check-callback before unmap
+or lock to wait for an event we can make remapping progress.
+
+Thanks,
+-Kame
+
+
