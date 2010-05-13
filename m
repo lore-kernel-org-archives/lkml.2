@@ -1,88 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754386Ab0EMInr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 04:43:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59126 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753167Ab0EMIno (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 04:43:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:x-enigmail-version:content-type
-         :content-transfer-encoding;
-        b=U+PT3uadWDfG6GZSCrJ3OWdCCIeGIzQ6HLdb7RETCT0yWocG0eLL20xNvDrW9EnGeZ
-         +HMcHYcs4UndeEqpZUCmkDTp2CQPWtSWFi1WeuRcgy+sn2K+LmICjMszK3T3JOt3Liko
-         2rTvTYrbFmjbdOOfPoC46Vf6P+Uk6qEMECc24=
-Message-ID: <4BEBBBBB.3050201@suse.cz>
-Date: Thu, 13 May 2010 10:43:39 +0200
-From: Jiri Slaby <jslaby@suse.cz>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
-MIME-Version: 1.0
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-CC: Changli Gao <xiaosuo@gmail.com>, akpm@linux-foundation.org,
-       Eric Dumazet <eric.dumazet@gmail.com>,
+	id S1755776Ab0EMIsM (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 04:48:12 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:40123 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754031Ab0EMIsH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 04:48:07 -0400
+Date: Thu, 13 May 2010 18:47:53 +1000
+From: Neil Brown <neilb@suse.de>
+To: Andreas Dilger <andreas.dilger@oracle.com>
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Christoph Hellwig <hch@infradead.org>,
        Alexander Viro <viro@zeniv.linux.org.uk>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
-References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com> <20100513134124.2164.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100513134124.2164.A69D9226@jp.fujitsu.com>
-X-Enigmail-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1
+       Jonathan Corbet <corbet@lwn.net>, Serge Hallyn <serue@us.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Steven French <sfrench@us.ibm.com>,
+       Philippe Deniel <philippe.deniel@CEA.FR>,
+       "linux-kernel@vger.kernel.org Mailinglist" 
+	<linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
+Message-ID: <20100513184753.7b14bb09@notabene.brown>
+In-Reply-To: <51B2B398-99A7-43BF-A074-ACFBBA318DF7@oracle.com>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
+	<20100513084310.5212728b@notabene.brown>
+	<871vdg2ulx.fsf@linux.vnet.ibm.com>
+	<20100513171114.1629086b@notabene.brown>
+	<51B2B398-99A7-43BF-A074-ACFBBA318DF7@oracle.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 06:45 AM, KOSAKI Motohiro wrote:
-> Hi
+On Thu, 13 May 2010 02:30:46 -0600
+Andreas Dilger <andreas.dilger@oracle.com> wrote:
+
+> On 2010-05-13, at 01:11, Neil Brown wrote:
+> > Here is my reason (well, one of my reasons) why UUID is clearly not an
+> > acceptable handle to use - you *must* use an fd or are worst a path name.
+> > 
+> > A filesystem can be mounted at multiple places in the namespace and each
+> > instance can have other filesystems mounted on different directories.
+> > Each of these is a 'vfsmnt'.
+> > You need a vfsmnt for most (all?) filesystem operations.
+> > A UUID does not uniquely identify a vfsmnt.  It might uniquely identify a
+> > filesystem, though that is debatable.  It definitely does not uniquely
+> > identify a vfsmnt.
+> > Therefore, given only a UUID the kernel would have to arbitrarily choose a
+> > vfsmnt that references to the right filesystem.  If a particular directory in
+> > the filesystem that you want to access was mounted-on in that vfsmnt, that
+> > directory would be completely inaccessible to you, even though it might be
+> > completely accessible in some other vfsmnt.
+> > So it is quite possible for a scheme based on kernel interpretation of uuids
+> > to fail.
 > 
->> void *kvmalloc(size_t size)
->> {
->> 	void *ptr;
->>
->> 	if (size < PAGE_SIZE)
->> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
->> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
+> I think this is exactly the wrong solution for this case.  The lookup from pathname to handle happened ALREADY (in the presence of the right namespace and vfsmnt information) and all that should be required for the handle lookup is to get the exact same inode back from disk.  It is irrelevant what vfsmnt is used to do this lookup, so long as it is in the same filesystem as before.
 > 
-> low order GFP_KERNEL allocation never fail. then, this doesn't works
-> as you expected.
-
-Hi, I suppose you mean the kmalloc allocation -- so kmalloc should fail
-iff alloc_pages_exact (unless somebody frees a heap of memory indeed)?
-
->> 	if (ptr != NULL)
->> 		return ptr;
->>
->> 	return vmalloc(size);
+> > This may be a corner case, but I think people are slowly getting more
+> > adventurous in terms of using the mount table to do interesting things.  It
+> > may be less of a corner case in 5 years.
 > 
-> On x86, vmalloc area is only 128MB address space. it is very rare 
-> resource than physical ram. vmalloc fallback is not good idea.
+> I think the important feature for the handle is that _regardless_ of what shenanigans are done with the path, over-mounting of directories, etc, that the same inode is returned.  One would expect that if a real fd was opened by a process, that any later changes to the namespace would not suddenly result in another file with the same pathname to be accessible by that fd.
 
-These functions are a replacement for explicit
-if (!(x = kmalloc()))
-   x = vmalloc();
-...
-if (is_vmalloc(x))
-  vfree(x);
-else
-  kfree(x);
-in the code (like fdtable does this).
+Very true.
+And if you only ever read from or write to the fd then there are no other
+issues.
 
-The 128M limit on x86_32 for vmalloc is configurable so if drivers in
-sum need more on some specific hardware, it can be increased on the
-command line (I had to do this on one machine in the past).
+However if you use e.g. openat(the_fd, ....), then the vfsmnt attached to
+the_fd is very important.
+And if you were to use these filehandles to implement a user-space NFS server
+(as has been suggested) and you wanted to implement the LOOKUP request, you
+would need to use openat, and the vfsmnt would be significant.
 
-Anyway as this is a replacement for explicit tests, it shouldn't change
-the behaviour in any way. Obviously when a user doesn't need virtually
-contiguous space, he shouldn't use this interface at all.
+NeilBrown
 
-thanks,
--- 
-js
-suse labs
+
+>  
+> > So to tell the kernel which filesystem is of interest for filehandle
+> > lookup, you *must* give it a name, whether a textual path, or a filehandle
+> > obtained by opening a textual path.
+> 
+> No, that is done at the time of open() (or in this case name_to_handle()) and afterward the name/path/vfsmnt is completely irrelevant to the fd/handle.
+> 
+> Cheers, Andreas
+> --
+> Andreas Dilger
+> Lustre Technical Lead
+> Oracle Corporation Canada Inc.
+
