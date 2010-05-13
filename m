@@ -1,106 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0EMH5t (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:57:49 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48591 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758154Ab0EMH5g (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1758156Ab0EMH5g (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 13 May 2010 03:57:36 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48568 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751608Ab0EMH5b (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 03:57:31 -0400
 From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
 To: n-horiguchi@ah.jp.nec.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>
-Subject: [PATCH 4/7] HWPOISON, hugetlb: maintain mce_bad_pages in handling hugepage error
-Date: Thu, 13 May 2010 16:55:23 +0900
-Message-Id: <1273737326-21211-5-git-send-email-n-horiguchi@ah.jp.nec.com>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [PATCH 0/7] HWPOISON for hugepage (v5)
+Date: Thu, 13 May 2010 16:55:19 +0900
+Message-Id: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 X-Mailer: git-send-email 1.7.0
-In-Reply-To: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-For now all pages in the error hugepage are considered as hwpoisoned,
-so count all of them in mce_bad_pages.
+This patchset enables error handling for hugepage by containing error
+in the affected hugepage.
+
+Until now, memory error (classified as SRAO in MCA language) on hugepage
+was simply ignored, which means if someone accesses the error page later,
+the second MCE (severer than the first one) occurs and the system panics.
+
+It's useful for some aggressive hugepage users if only affected processes
+are killed.  Then other unrelated processes aren't disturbed by the error
+and can continue operation.
+
+Moreover, for other extensive hugetlb users which have own "pagecache"
+on hugepage, the most valued feature would be being able to receive
+the early kill signal BUS_MCEERR_AO, because the cache pages have
+good opportunity to be dropped without side effects on BUS_MCEERR_AO.
+
+
+The design of hugepage error handling is based on that of non-hugepage
+error handling, where we:
+ 1. mark the error page as hwpoison,
+ 2. unmap the hwpoisoned page from processes using it,
+ 3. invalidate error page, and
+ 4. block later accesses to the hwpoisoned pages.
+
+Similarities and differences between huge and non-huge case are
+summarized below:
+
+ 1. (Difference) when error occurs on a hugepage, PG_hwpoison bits on all pages
+    in the hugepage are set, because we have no simple way to break up
+    hugepage into individual pages for now. This means there is a some
+    risk to be killed by touching non-guilty pages within the error hugepage.
+
+ 2. (Similarity) hugetlb entry for the error hugepage is replaced by hwpoison
+    swap entry, with which we can detect hwpoisoned memory in VM code.
+    This is accomplished by adding rmapping code for hugepage, which enables
+    to use try_to_unmap() for hugepage.
+
+ 3. (Difference) since hugepage is not linked to LRU list and is unswappable,
+    there are not many things to do for page invalidation (only dequeuing
+    free/reserved hugepage from freelist. See patch 5/7.)
+    If we want to contain the error into one page, there may be more to do.
+
+ 4. (Similarity) we block later accesses by forcing page requests for
+    hwpoisoned hugepage to fail as done in non-hugepage case in do_wp_page().
+
+ToDo:
+- Narrow down the containment region into one raw page.
+- Soft-offlining for hugepage is not supported due to the lack of migration
+  for hugepage.
+- Counting file-mapped/anonymous hugepage in NR_FILE_MAPPED/NR_ANON_PAGES.
+
+ [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
+ [PATCH 2/7] HWPOISON, hugetlb: enable error handling path for hugepage
+ [PATCH 3/7] HWPOISON, hugetlb: set/clear PG_hwpoison bits on hugepage
+ [PATCH 4/7] HWPOISON, hugetlb: maintain mce_bad_pages in handling hugepage error
+ [PATCH 5/7] HWPOISON, hugetlb: isolate corrupted hugepage
+ [PATCH 6/7] HWPOISON, hugetlb: detect hwpoison in hugetlb code
+ [PATCH 7/7] HWPOISON, hugetlb: support hwpoison injection for hugepage
 
 Dependency:
-  "HWPOISON, hugetlb: enable error handling path for hugepage"
+- patch 2 depends on patch 1.
+- patch 3 to patch 6 depend on patch 2.
 
-Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: Andi Kleen <andi@firstfloor.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
----
- mm/memory-failure.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ include/linux/hugetlb.h |    3 +
+ mm/hugetlb.c            |   98 ++++++++++++++++++++++++++++++++++++++-
+ mm/hwpoison-inject.c    |   15 ++++--
+ mm/memory-failure.c     |  120 +++++++++++++++++++++++++++++++++++------------
+ mm/rmap.c               |   16 ++++++
+ 5 files changed, 215 insertions(+), 37 deletions(-)
 
-diff --git v2.6.34-rc7/mm/memory-failure.c v2.6.34-rc7/mm/memory-failure.c
-index fee648b..473f15a 100644
---- v2.6.34-rc7/mm/memory-failure.c
-+++ v2.6.34-rc7/mm/memory-failure.c
-@@ -942,6 +942,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
- 	struct page *p;
- 	struct page *hpage;
- 	int res;
-+	unsigned int nr_pages;
- 
- 	if (!sysctl_memory_failure_recovery)
- 		panic("Memory failure from trap %d on page %lx", trapno, pfn);
-@@ -960,7 +961,8 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
- 		return 0;
- 	}
- 
--	atomic_long_add(1, &mce_bad_pages);
-+	nr_pages = 1 << compound_order(hpage);
-+	atomic_long_add(nr_pages, &mce_bad_pages);
- 
- 	/*
- 	 * We need/can do nothing about count=0 pages.
-@@ -1024,7 +1026,7 @@ int __memory_failure(unsigned long pfn, int trapno, int flags)
- 	}
- 	if (hwpoison_filter(p)) {
- 		if (TestClearPageHWPoison(p))
--			atomic_long_dec(&mce_bad_pages);
-+			atomic_long_sub(nr_pages, &mce_bad_pages);
- 		unlock_page(hpage);
- 		put_page(hpage);
- 		return 0;
-@@ -1123,6 +1125,7 @@ int unpoison_memory(unsigned long pfn)
- 	struct page *page;
- 	struct page *p;
- 	int freeit = 0;
-+	unsigned int nr_pages;
- 
- 	if (!pfn_valid(pfn))
- 		return -ENXIO;
-@@ -1135,9 +1138,11 @@ int unpoison_memory(unsigned long pfn)
- 		return 0;
- 	}
- 
-+	nr_pages = 1 << compound_order(page);
-+
- 	if (!get_page_unless_zero(page)) {
- 		if (TestClearPageHWPoison(p))
--			atomic_long_dec(&mce_bad_pages);
-+			atomic_long_sub(nr_pages, &mce_bad_pages);
- 		pr_debug("MCE: Software-unpoisoned free page %#lx\n", pfn);
- 		return 0;
- 	}
-@@ -1149,9 +1154,9 @@ int unpoison_memory(unsigned long pfn)
- 	 * the PG_hwpoison page will be caught and isolated on the entrance to
- 	 * the free buddy page pool.
- 	 */
--	if (TestClearPageHWPoison(p)) {
-+	if (TestClearPageHWPoison(page)) {
- 		pr_debug("MCE: Software-unpoisoned page %#lx\n", pfn);
--		atomic_long_dec(&mce_bad_pages);
-+		atomic_long_sub(nr_pages, &mce_bad_pages);
- 		freeit = 1;
- 	}
- 	if (PageHuge(p))
--- 
-1.7.0
+ChangeLog from v4:
+- rebased to 2.6.34-rc7
+- add isolation code for free/reserved hugepage in me_huge_page()
+- set/clear PG_hwpoison bits of all pages in hugepage.
+- mce_bad_pages counts all pages in hugepage.
+- rename __hugepage_set_anon_rmap() to hugepage_add_anon_rmap()
+- add huge_pte_offset() dummy function in header file on !CONFIG_HUGETLBFS
 
+ChangeLog from v3:
+- rebased to 2.6.34-rc5
+- support for privately mapped hugepage
+
+ChangeLog from v2:
+- rebase to 2.6.34-rc3
+- consider mapcount of hugepage
+- rename pointer "head" into "hpage"
+
+ChangeLog from v1:
+- rebase to 2.6.34-rc1
+- add comment from Wu Fengguang
+
+Thanks,
+Naoya Horiguchi
