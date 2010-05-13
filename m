@@ -1,98 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756679Ab0EMD2M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 23:28:12 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47680 "EHLO sh.osrg.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754250Ab0EMD2K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 23:28:10 -0400
-Date: Thu, 13 May 2010 12:27:55 +0900
-To: akpm@linux-foundation.org
-Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
-       pete@sensoray.com, rcohen@snurgle.org, greg@kroah.com,
-       linux-ia64@vger.kernel.org
-Subject: Re: [PATCH -mm] remove deprecated dma_sync_single and dma_sync_sg
- API
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100512162803.ccb05cb8.akpm@linux-foundation.org>
-References: <20100511101308R.fujita.tomonori@lab.ntt.co.jp>
-	<20100512162803.ccb05cb8.akpm@linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100513122812S.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 13 May 2010 12:27:56 +0900 (JST)
+	id S1757222Ab0EMDfe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 23:35:34 -0400
+Received: from utopia.booyaka.com ([72.9.107.138]:38631 "EHLO
+	utopia.booyaka.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753454Ab0EMDfb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 23:35:31 -0400
+Date: Wed, 12 May 2010 21:35:30 -0600 (MDT)
+From: Paul Walmsley <paul@pwsan.com>
+To: =?ISO-8859-15?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       =?ISO-8859-15?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <1272667021-21312-1-git-send-email-arve@android.com>
+Message-ID: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 16:28:03 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
+Hello,
 
-> On Tue, 11 May 2010 10:13:23 +0900
-> FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp> wrote:
-> 
-> > Since 2.6.5, it had been commented, 'for backwards compatibility,
-> > removed in 2.7.x'. Since 2.6.31, it have been marked as __deprecated.
-> > 
-> > I think that we can remove the API safely now.
-> > 
-> > Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-> > ---
-> >  include/linux/dma-mapping.h |   15 ---------------
-> >  1 files changed, 0 insertions(+), 15 deletions(-)
-> > 
-> > diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> > index 2ea1494..89b7e1a 100644
-> > --- a/include/linux/dma-mapping.h
-> > +++ b/include/linux/dma-mapping.h
-> > @@ -95,21 +95,6 @@ static inline int is_device_dma_capable(struct device *dev)
-> >  #include <asm-generic/dma-mapping-broken.h>
-> >  #endif
-> >  
-> > -/* for backwards compatibility, removed soon */
-> > -static inline void __deprecated dma_sync_single(struct device *dev,
-> > -						dma_addr_t addr, size_t size,
-> > -						enum dma_data_direction dir)
-> > -{
-> > -	dma_sync_single_for_cpu(dev, addr, size, dir);
-> > -}
-> > -
-> > -static inline void __deprecated dma_sync_sg(struct device *dev,
-> > -					    struct scatterlist *sg, int nelems,
-> > -					    enum dma_data_direction dir)
-> > -{
-> > -	dma_sync_sg_for_cpu(dev, sg, nelems, dir);
-> > -}
-> > -
-> >  static inline u64 dma_get_mask(struct device *dev)
-> >  {
-> >  	if (dev && dev->dma_mask && *dev->dma_mask)
-> 
-> drivers/staging/go7007/saa7134-go7007.c uses dma_sync_single().
+Some general comments on the suspend blockers/wakelock/opportunistic
+suspend v6 patch series, posted here:
 
-I know but drivers/staging/go7007/Makefile says:
+    https://lists.linux-foundation.org/pipermail/linux-pm/2010-April/025146.html
 
-# Uncomment when the saa7134 patches get into upstream
-#ifneq ($(CONFIG_VIDEO_SAA7134),)
-#obj-$(CONFIG_VIDEO_SAA7134) += saa7134-go7007.o
-#EXTRA_CFLAGS += -Idrivers/media/video/saa7134 -DSAA7134_MPEG_GO7007=3
-#endif
+The comments below are somewhat telegraphic in the interests of 
+readability - more specific comments to follow in later E-mails. I am 
+indebted to those of us who discussed these issues at LPC last year and 
+ELC this year for several stimulating discussions.
 
-So this patch doesn't break it. But it might be better to replace the
-api in it now. I'll send a patch soon.
+There are several general problems with the design of opportunistic
+suspend and suspend-blocks.
 
+1. The opportunistic suspend code bypasses existing Linux kernel code,
+   such as timers and the scheduler, that indicates when code
+   needs to run, and when the system is idle.  This causes two problems:
 
-> arch/ia64/kernel/machvec.c has functions machvec_dma_sync_single() and
-> machvec_dma_sync_sg() which might be dead code.
+   a. When opportunistic suspend is enabled, the default mode is to
+      break all timers and scheduling on the system.  This isn't
+      right: the default mode should be to preserve standard Linux
+      behavior.  Exceptions can then be added for process groups that
+      should run with the non-standard timer and scheduler behavior.
 
-No, they are used. The function name is deceptive though.
+   b. The series introduces a de novo kernel API and userspace API
+      that are unrelated to timers and the scheduler, but if the point
+      is to modify the behavior of timers or the scheduler, the
+      existing timer or scheduler APIs should be extended.  Any new
+      APIs will need to be widely spread throughout the kernel and
+      userspace.
 
-IA64 uses machvec_dma_sync_single() to implement
-machvec_dma_sync_single_for_device() and
-machvec_dma_sync_single_for_cpu()
+2. The suspend-block kernel API tells the kernel _how_ to accomplish a
+   goal, rather than telling the kernel _what_ the goal is.  This
+   results in layering violations, unstated assumptions, and is too
+   coarse-grained.  These problems in turn will cause fragile kernel
+   code, kernel code with userspace dependencies, and power management
+   problems on modern hardware.  Code should ask for what it wants.
+   For example, if a driver needs to place an upper bound on its
+   device wakeup latency, or if it needs to place an upper bound on
+   interrupt response latency, that is what it should request.  Driver
+   and subsystem code should not care how the kernel implements those
+   requests, since the implementation can differ on different hardware
+   and even on different use-cases with the same hardware.
+   
+3. Similarly, the suspend-block userspace API tells the kernel how to
+   accomplish a goal, rather than telling the kernel what the goal is.
+   Userspace processes should ask the kernel for what they really
+   want.  If a process' timers should be disabled upon entering
+   suspend, or the timer durations should have a lower bound, that's
+   what the API should request.
 
-IA64 also uses machvec_dma_sync_sg() to implement
-machvec_dma_sync_sg_for_device() and machvec_dma_sync_sg_for_cpu().
+Merging this series as currently designed and implemented will cause 
+problems.  Suspend-blocks introduce a second, separate idle management 
+approach in the Linux kernel.  The existing approach is the familiar timer 
+and scheduler based approach.  The new approach is one where timers and 
+runqueues no longer matter: the system is always at risk of entering 
+suspend at any moment, with only suspend-blocks to stop it. Driver authors 
+will effectively have to implement both approaches in their code.
 
-IA64's dma_sync_ API works in the same way in both DMA directions.
+Once merged, it will be nearly impossible to remove this code in favor 
+of a cleaner approach.  Suspend-block calls are likely to spread 
+throughout the kernel and drivers.  Patches 6, 7, and 8 are the leading 
+edge of this - a quick grep through the Android common kernel at
+
+    git://android.git.kernel.org/kernel/common.git 
+
+shows wakelocks in the following drivers:
+
+    drivers/input/evdev.c
+    drivers/input/misc/gpio_input.c
+    drivers/input/misc/gpio_matrix.c
+    drivers/mmc/core/core.c
+    drivers/rtc/alarm.c
+    drivers/usb/gadget/f_mass_storage.c
+
+Suspend-blocks will be difficult to convert to a finer-grained approach 
+later.  The API design problems, mentioned above in points 2 and 3, will 
+make it very difficult to determine what a driver author's or modifier's 
+intention was when adding the suspend-block.  Also, patches 2 and 7 
+introduce userspace APIs.  We will undoubtedly wish to avoid removing a 
+userspace API once it is merged.  It will be quite difficult to implement 
+such a general directive ("block system suspend") on a future kernel that 
+may have a much finer-grained notion of low-power system modes, indeed 
+that may have no useful notion of "system suspend."
+
+...
+
+The opportunistic suspend patches try to solve at least two real problems, 
+that should be resolved in some way.  First, some types of userspace 
+processes can unintentionally block system power management.  Second, the 
+kernel is missing a system-wide form of CPUIdle.  This patch series, 
+though, isn't the right way to solve either of these problems.  Let's 
+figure out a different approach.
+
+Figuring out a different way to do this should not limit Android at all, 
+since Google can do what other Linux distributions do and continue to 
+patch opportunistic suspend/suspend-block calls into their kernels as 
+needed to ship devices, while contributing towards a different solution to 
+the problem.
+
+ 
+regards,
+
+- Paul
+
+(Linux-OMAP co-maintainer, focusing mostly on power management and 
+software architecture issues)
+
