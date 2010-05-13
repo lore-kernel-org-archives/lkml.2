@@ -1,105 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758558Ab0EMOcF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:32:05 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49157 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab0EMOcB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:32:01 -0400
-Subject: Re: [patch] libsas: dereferencing variable before check
-From: James Bottomley <James.Bottomley@suse.de>
-To: Tejun Heo <tj@kernel.org>
-Cc: Dan Carpenter <error27@gmail.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <23e0bf65-8758-45b3-b0a8-1df97db07d9a@email.android.com>
-References: <20100512225629.GB5695@bicker>
-	 <23e0bf65-8758-45b3-b0a8-1df97db07d9a@email.android.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 09:31:54 -0500
-Message-ID: <1273761114.4353.122.camel@mulgrave.site>
+	id S1758691Ab0EMOft (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:35:49 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:43894 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751575Ab0EMOfr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 10:35:47 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: "Rafael J. Wysocki" <rjw@sisk.pl>, Mark Gross <mgross@linux.intel.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org
+Subject: Re: mmotm 2010-05-11 - dies in pm_qos_update_request()
+In-Reply-To: Your message of "Wed, 12 May 2010 23:07:20 +0200."
+             <201005122307.20860.rjw@sisk.pl>
+From: Valdis.Kletnieks@vt.edu
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <5525.1273693962@localhost>
+            <201005122307.20860.rjw@sisk.pl>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+Content-Type: multipart/signed; boundary="==_Exmh_1273761278_3844P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 13 May 2010 10:34:38 -0400
+Message-ID: <4793.1273761278@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020208.4BEC0E00.010D,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 01:08 +0200, Tejun Heo wrote:
+--==_Exmh_1273761278_3844P
+Content-Type: text/plain; charset=us-ascii
+
+On Wed, 12 May 2010 23:07:20 +0200, "Rafael J. Wysocki" said:
+> On Wednesday 12 May 2010, Valdis.Kletnieks@vt.edu wrote:
+> > On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
+> > > The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
+> > > 
+> > >    http://userweb.kernel.org/~akpm/mmotm/
+> > 
+> > Dell Latitude E6500, x86_64 kernel.
+> > 
+> > Died a horrid death at boot in the e1000e driver.  Seems to be
+> > something in linux-next.patch. Didn't get a netconsole trace for obvious
+> > reasons...
+> > 
+> > Copied-by-hand traceback:
+> > pm_qos_update_request()+0x22
+> > e1000_configure+0x478
+> > e1000_open_device+0xee
+> > ? _raw_notifier_call_chain+0xf
+> > __dev_open+0xec
+> > dev_open+0x1b
+> > netpoll_setup+0x28b
+> > init_netconsole+0xbc
+> > 
+> > I suspect this commit:
+> > 
+> > commit 23606cf5d1192c2b17912cb2ef6e62f9b11de133
+> > Author: Rafael J. Wysocki <rjw@sisk.pl>
+> > Date:   Sun Mar 14 14:35:17 2010 +0000
+> > 
+> >     e1000e / PCI / PM: Add basic runtime PM support (rev. 4)
 > 
-> "Dan Carpenter" <error27@gmail.com> wrote:
+> No, I don't think so.  I'm running -rc6 with this patch applied on a box with
+> e1000e and it works just fine.
 > 
-> >The "qc->scsicmd" could be null so I moved the dereference inside the
-> >check.  This was introduced by 70b25f890: "[SCSI] fix locking around
-> >blk_abort_request()" 
-> >
-> >Signed-off-by: Dan Carpenter <error27@gmail.com>
+> Please try to revert this one instead:
 > 
-> Ooh.. right.
-> 
-> Asked-by: Tejun Heo <tj@kernel.org>
+> http://git.kernel.org/?p=linux/kernel/git/rafael/suspend-2.6.git;a=patch;h=ed77134bfccf5e75b6cbadab268e559dbe6a4ebb
 
-Well, oops, yes.  Two patches to fix one bug is a bit overboard, I
-think, plus some code rearrangement to fix the locality of the problem
-and ensure it doesn't happen again might be useful.  What about this.
+Confirming - reverting that patch and doing the build fixup results in a
+kernel that doesn't blow up in the e1000e driver...
 
-James
+--==_Exmh_1273761278_3844P
+Content-Type: application/pgp-signature
 
----
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-diff --git a/drivers/scsi/libsas/sas_ata.c b/drivers/scsi/libsas/sas_ata.c
-index 88f7446..8c496b5 100644
---- a/drivers/scsi/libsas/sas_ata.c
-+++ b/drivers/scsi/libsas/sas_ata.c
-@@ -395,12 +395,13 @@ int sas_ata_init_host_and_port(struct domain_device *found_dev,
- void sas_ata_task_abort(struct sas_task *task)
- {
- 	struct ata_queued_cmd *qc = task->uldd_task;
--	struct request_queue *q = qc->scsicmd->device->request_queue;
- 	struct completion *waiting;
--	unsigned long flags;
- 
- 	/* Bounce SCSI-initiated commands to the SCSI EH */
- 	if (qc->scsicmd) {
-+		struct request_queue *q = qc->scsicmd->device->request_queue;
-+		unsigned long flags;
-+
- 		spin_lock_irqsave(q->queue_lock, flags);
- 		blk_abort_request(qc->scsicmd->request);
- 		spin_unlock_irqrestore(q->queue_lock, flags);
-diff --git a/drivers/scsi/libsas/sas_scsi_host.c b/drivers/scsi/libsas/sas_scsi_host.c
-index 8228350..53849f2 100644
---- a/drivers/scsi/libsas/sas_scsi_host.c
-+++ b/drivers/scsi/libsas/sas_scsi_host.c
-@@ -1030,8 +1030,6 @@ int __sas_task_abort(struct sas_task *task)
- void sas_task_abort(struct sas_task *task)
- {
- 	struct scsi_cmnd *sc = task->uldd_task;
--	struct request_queue *q = sc->device->request_queue;
--	unsigned long flags;
- 
- 	/* Escape for libsas internal commands */
- 	if (!sc) {
-@@ -1043,13 +1041,15 @@ void sas_task_abort(struct sas_task *task)
- 
- 	if (dev_is_sata(task->dev)) {
- 		sas_ata_task_abort(task);
--		return;
--	}
-+	} else {
-+		struct request_queue *q = sc->device->request_queue;
-+		unsigned long flags;
- 
--	spin_lock_irqsave(q->queue_lock, flags);
--	blk_abort_request(sc->request);
--	spin_unlock_irqrestore(q->queue_lock, flags);
--	scsi_schedule_eh(sc->device->host);
-+		spin_lock_irqsave(q->queue_lock, flags);
-+		blk_abort_request(sc->request);
-+		spin_unlock_irqrestore(q->queue_lock, flags);
-+		scsi_schedule_eh(sc->device->host);
-+	}
- }
- 
- int sas_slave_alloc(struct scsi_device *scsi_dev)
+iD8DBQFL7A3+cC3lWbTT17ARAm3PAKDAE87ziAO2wE6RkIcdkh3geTyBNgCeNxGQ
+pN4PRpx1eTZUoKSO5fvSmfo=
+=Zq3X
+-----END PGP SIGNATURE-----
 
+--==_Exmh_1273761278_3844P--
 
