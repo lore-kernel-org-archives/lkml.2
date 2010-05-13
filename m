@@ -1,163 +1,152 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757288Ab0EMQqX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:46:23 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47442 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751776Ab0EMQqV (ORCPT
+	id S1759407Ab0EMQqh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:46:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:10021 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759394Ab0EMQqf convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:46:21 -0400
-X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=yiYnlo-UJTIA:10 a=ood2b7iyd8MA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=4WvIBjGYWSimh3h08mgA:9 a=Zz0vrd_XjFs-6x2O540A:7 a=w8MTXnrSzJo9_xqCqfiFR4zBtZEA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-In-Reply-To: <20100513163150.GA13005@Krystal>
-References: <20100512175305.GB32496@Krystal>
-	 <1273687212.1626.147.camel@laptop> <20100512180438.GE15953@Krystal>
-	 <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal>
-	 <1273690012.27703.38.camel@gandalf.stny.rr.com>
-	 <20100512202745.GK21432@Krystal>
-	 <1273702886.27703.58.camel@gandalf.stny.rr.com>
-	 <20100513132029.GA22799@Krystal>
-	 <1273765337.27703.1043.camel@gandalf.stny.rr.com>
-	 <20100513163150.GA13005@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 13 May 2010 12:46:18 -0400
-Message-ID: <1273769178.27703.1119.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 May 2010 12:46:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=i3aRFW4sJyMWoM4wGs4CzK5e6F1cP5pUByMP19WjjOkq2J6WvcALcoEUa2UBfpT8j
+	bSYedJKn885eMgaL7XY3w==
+MIME-Version: 1.0
+In-Reply-To: <1273661695.1626.15.camel@laptop>
+References: <1273283329-25258-1-git-send-email-venki@google.com>
+	 <1273661695.1626.15.camel@laptop>
+Date: Thu, 13 May 2010 09:46:13 -0700
+Message-ID: <i2l3055132f1005130946w46fea3c5s1f6400c6325a77b4@mail.gmail.com>
+Subject: Re: [PATCH] sched: Avoid side-effect of tickless idle on 
+	update_cpu_load
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       Ken Chen <kenchen@google.com>, Paul Turner <pjt@google.com>,
+       Nikhil Rao <ncrao@google.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 12:31 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > On Thu, 2010-05-13 at 09:20 -0400, Mathieu Desnoyers wrote:
-> [...]
-> > > > > 
-> > > > > ...
-> > > > > 
-> > > > > 97 /**
-> > > > > 98  * ring_buffer_clear_noref_flag - Clear the noref subbuffer flag, for writer.
-> > > > > 99  */
-> > > > > 100 static __inline__
-> > > > > 101 void ring_buffer_clear_noref_flag(struct ring_buffer_backend *bufb,
-> > > > > 102                                   unsigned long idx)
-> > > > > 103 {
-> > > > > 104         struct ring_buffer_backend_page *sb_pages, *new_sb_pages;
-> > > > > 105
-> > > > > 106         sb_pages = bufb->buf_wsb[idx].pages;
-> > > > > 107         for (;;) {
-> > > > > 108                 if (!RCHAN_SB_IS_NOREF(sb_pages))
-> > > > > 109                         return; /* Already writing to this buffer */
-> > > > > 110                 new_sb_pages = sb_pages;
-> > > > > 111                 RCHAN_SB_CLEAR_NOREF(new_sb_pages);
-> > > > > 112                 new_sb_pages = cmpxchg(&bufb->buf_wsb[idx].pages,
-> > > > > 113                         sb_pages, new_sb_pages);
-> > > > > 114                 if (likely(new_sb_pages == sb_pages))
-> > > > > 115                         break;
-> > > > > 116                 sb_pages = new_sb_pages;
-> > > > 
-> > > > The writer calls this??
-> > > 
-> > > Yes. But the common case (for each event) is simply a
-> > > "if (!RCHAN_SB_IS_NOREF(sb_pages))" test that returns. The cmpxchg() is only
-> > > performed at subbuffer boundary.
-> > 
-> > Is the cmpxchg only contending with other writers?
-> 
-> No. Would have this been the case, I would have used a cmpxchg_local(). This
-> cmpxchg used to deal with subbuffer swap is touching the subbuffer "pages"
-> pointer, which can be updated concurrently by other writers as well as readers.
-> 
-> The writer clears the noref flags when starting to write in a subbuffers, and
-> sets it when delivering the subbuffer (when it is fully committed).
-> 
-> The reader can only ever swap the subbuffer with the one it owns if the noref
-> flag is set. The reader uses a cmpxchg() too to perform the swap.
-> 
+On Wed, May 12, 2010 at 3:54 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-05-07 at 18:48 -0700, Venkatesh Pallipadi wrote:
+>>
+>>  /*
+>> + * Load degrade calculations below are approximated on a 128 point scale.
+>> + * degrade_zero_ticks is the number of ticks after which old_load at any
+>> + * particular idx is approximated to be zero.
+>> + * degrade_factor is a precomputed table, a row for each load idx.
+>> + * Each column corresponds to degradation factor for a power of two ticks,
+>> + * based on 128 point scale.
+>> + * Example:
+>> + * row 2, col 3 (=12) says that the degradation at load idx 2 after
+>> + * 8 ticks is 12/128 (which is an approximation of 3^8/4^8).
+>> + */
+>
+> This comment utterly forgets to explain why. Does the degradation factor
+> correspond with the decay otherwise used? Maybe explicitly mention that
+> function and clarify the whole cpu_load math.
 
-So the writer can loop because of a reader? And theoretically, a
-aggressive reader that is constantly swapping pages can halt a writer?
+OK. Will try to explain this better with a patch refresh.
 
-I thought you said you did not have loops in the writers?
+>> +#define DEGRADE_SHIFT                7
+>> +static const unsigned char
+>> +             degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
+>> +static const unsigned char
+>> +             degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
+>> +                                     {0, 0, 0, 0, 0, 0, 0, 0},
+>> +                                     {64, 32, 8, 0, 0, 0, 0, 0},
+>> +                                     {96, 72, 40, 12, 1, 0, 0},
+>> +                                     {112, 98, 75, 43, 15, 1, 0},
+>> +                                     {120, 112, 98, 76, 45, 16, 2} };
+>> +
+>> +/*
+>> + * Update cpu_load for any backlog'd ticks. The backlog would be when
+>> + * CPU is idle and so we just decay the old load without adding any new load.
+>> + */
+>> +static unsigned long update_backlog(unsigned long load,
+>> +                        unsigned long missed_updates, int idx)
+>> +{
+>> +     int j = 0;
+>> +
+>> +     if (missed_updates >= degrade_zero_ticks[idx])
+>> +             return 0;
+>> +
+>> +     if (idx == 1)
+>> +             return load >> missed_updates;
+>> +
+>> +     while (missed_updates) {
+>> +             if (missed_updates % 2)
+>> +                     load =(load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
+>> +
+>> +             missed_updates >>= 1;
+>> +             j++;
+>> +     }
+>> +     return load;
+>> +}
+>> +
+>> +/*
+>>   * Update rq->cpu_load[] statistics. This function is usually called every
+>> - * scheduler tick (TICK_NSEC).
+>> + * scheduler tick (TICK_NSEC). With tickless idle this will not be called
+>> + * every tick. We fix it up based on jiffies.
+>>   */
+>>  static void update_cpu_load(struct rq *this_rq)
+>>  {
+>>       unsigned long this_load = this_rq->load.weight;
+>> +     unsigned long curr_jiffies = jiffies;
+>> +     unsigned long pending_updates, missed_updates;
+>>       int i, scale;
+>>
+>>       this_rq->nr_load_updates++;
+>>
+>> +     if (curr_jiffies == this_rq->last_load_update_tick)
+>> +             return;
+>
+> Under which conditions can this happen? Going idle right after having
+> had the tick?
 
-> [...]
-> 
-> > > > 
-> > > > This looks just like the swap with reader_page that I do, except you use
-> > > > a table and I use the list.  How do you replenish the buf_rsb.pages if
-> > > > the splice keeps the page you just received active?
-> > > 
-> > > I don't allow other reads to proceed as long as splice is holding pages that
-> > > belong to the reader-owned subbuffer. The read semantic is basically:
-> > > 
-> > > ring_buffer_open_read() /* only one reader at a time can open a ring buffer */
-> > > get_subbuf_size()
-> > > while (buffer is not finalized and empty) {
-> > >   poll()
-> > >   ret = ring_buffer_get_subbuf()
-> > >   if (!ret)
-> > >     continue;
-> > >   /* The splice ops below can be performed in multiple calls, e.g. first splice
-> > >    * only a portion of a subbuffer to a pipe, then splice to the disk/network,
-> > >    * and move to the next subbuffer portion until all the subbuffer is sent.
-> > >    */
-> > >   splice one subbuffer worth of data to a pipe
-> > >   splice the data from pipe to disk/network
-> > >   ring_buffer_put_subbuf()
-> > > }
-> > > ring_buffer_close_read()
-> > > 
-> > > The reader code above works both with flight recorder and non-overwrite mode.
-> > > 
-> > > The code above assumes that upon return from the splice() to disk/network,
-> > > splice() is not using the pages anymore (I assume that splice() performs the
-> > > transfer synchronously with the call).
-> > > 
-> > > The VFS interface I use for get_subbuf_size(), ring_buffer_get_subbuf() and
-> > > ring_buffer_put_subbuf() are new ioctls. Note that these can be used for both
-> > > splice() and mmap() types of backend access, as they only call into the
-> > > frontend.
-> > 
-> > Hmm, so basically you lose pages until they are returned. I guess I can
-> > trivially add the same thing now to the current ring buffer.
-> 
-> Yep. Having the ability to keep an array of pages (rather that just a single
-> page at a time) allows splice() to move many pages at once efficiently, while
-> permitting this "pages owned by the readers, lend to splice() until it returns"
-> simplification. I also never have to allocate pages while tracing: all the pages
-> I need are allocated when the buffer is created (and at the special case of cpu
-> hotplug, but this is expected for per-cpu buffers).
+Yes. If we go idle after a tick and idle load balancer CPU gets its tick.
 
-Yep, I just wrote the changes for my buffer. It was rather trivial ;-)
-Although, I just set a hard coded 16 pages max of cached pages.
+>
+>> +     pending_updates = curr_jiffies - this_rq->last_load_update_tick;
+>> +     this_rq->last_load_update_tick = curr_jiffies;
+>> +     missed_updates = pending_updates - 1;
+>> +
+>>       /* Update our load: */
+>> -     for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+>> +     this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
+>
+> Why is this special case worth it?
 
--- Steve
+I don't think it is really visible from performance point of view.
+But, I did not like seeing
+(old_load*(scale-1) + new_load) >> i
+for scale = 1 and i = 0.
+We have a subtraction, multiplication, shift, jump (loop) which can be
+prevented with an
+additional line of code, without making code any harder.
 
-> 
-> In addition, this would play well with mmap() too: we can simply add a
-> ring_buffer_get_mmap_offset() method to the backend (exported through another
-> ioctl) that would let user-space know the start of the mmap'd buffer range
-> currently owned by the reader. So we can inform user-space of the currently
-> owned page range without even changing the underlying memory map.
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> 
+>
+>> +     for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+>>               unsigned long old_load, new_load;
+>>
+>>               /* scale is effectively 1 << i now, and >> i divides by scale */
+>>
+>>               old_load = this_rq->cpu_load[i];
+>> +             if (missed_updates)
+>> +                     old_load = update_backlog(old_load, missed_updates, i);
+>
+> Would it make sense to stuff that conditional in update_backlog() and
+> have a clearer flow? Maybe rename update_backlog() to decay_load() or
+> such?
 
+Yes. Makes sense. Will do and resend the patch.
 
+Thanks,
+Venki
