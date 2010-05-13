@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757650Ab0EMHoK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:44:10 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:38629 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750938Ab0EMHoF (ORCPT
+	id S1757974Ab0EMHoh (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 03:44:37 -0400
+Received: from e23smtp05.au.ibm.com ([202.81.31.147]:44467 "EHLO
+	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757421Ab0EMHoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:44:05 -0400
+	Thu, 13 May 2010 03:44:07 -0400
 From: "Ian Munsie" <imunsie@au1.ibm.com>
 To: linux-kernel@vger.kernel.org
 Cc: Steven Rostedt <rostedt@goodmis.org>,
@@ -15,9 +15,9 @@ Cc: Steven Rostedt <rostedt@goodmis.org>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
        Jason Baron <jbaron@redhat.com>, Ian Munsie <imunsie@au1.ibm.com>
-Subject: [PATCH 1/4] ftrace syscalls: don't add events for unmapped syscalls
-Date: Thu, 13 May 2010 17:43:11 +1000
-Message-Id: <1273736594-19320-2-git-send-email-imunsie@au1.ibm.com>
+Subject: [PATCH 3/4] ftrace syscalls: Allow arch specific syscall symbol matching
+Date: Thu, 13 May 2010 17:43:13 +1000
+Message-Id: <1273736594-19320-4-git-send-email-imunsie@au1.ibm.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
 References: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
@@ -27,65 +27,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Ian Munsie <imunsie@au1.ibm.com>
 
-FTRACE_SYSCALLS would create events for each and every system call, even
-if it had failed to map the system call's name with it's number. This
-resulted in a number of events being created that would not behave as
-expected.
+Some architectures have unusual symbol names and the generic code to
+match the symbol name with the function name for the syscall metadata
+will fail. For example, symbols on PPC64 start with a period and the
+generic code will fail to match them.
 
-This could happen, for example, on architectures who's symbol names are
-unusual and will not match the system call name. It could also happen
-with system calls which were mapped to sys_ni_syscall.
-
-This patch changes the default system call number in the metadata to -1.
-If the system call name from the metadata is not successfully mapped to
-a system call number during boot, than the event initialisation routine
-will now return an error, preventing the event from being created.
+This patch splits out the match logic into a standalone weak function
+that can be overridden on archs with unusual symbol names.
 
 Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
 ---
- include/linux/syscalls.h      |    2 ++
- kernel/trace/trace_syscalls.c |    8 ++++++++
- 2 files changed, 10 insertions(+), 0 deletions(-)
+ Documentation/trace/ftrace-design.txt |    3 +++
+ include/linux/ftrace.h                |    1 +
+ kernel/trace/trace_syscalls.c         |   19 ++++++++++++-------
+ 3 files changed, 16 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 057929b..a970c24 100644
---- a/include/linux/syscalls.h
-+++ b/include/linux/syscalls.h
-@@ -186,6 +186,7 @@ struct perf_event_attr;
- 	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta_##sname = {				\
- 		.name 		= "sys"#sname,			\
-+		.syscall_nr	= -1,	/* Filled in at boot */	\
- 		.nb_args 	= nb,				\
- 		.types		= types_##sname,		\
- 		.args		= args_##sname,			\
-@@ -201,6 +202,7 @@ struct perf_event_attr;
- 	  __attribute__((section("__syscalls_metadata")))	\
- 	  __syscall_meta__##sname = {				\
- 		.name 		= "sys_"#sname,			\
-+		.syscall_nr	= -1,	/* Filled in at boot */	\
- 		.nb_args 	= 0,				\
- 		.enter_event	= &event_enter__##sname,	\
- 		.exit_event	= &event_exit__##sname,		\
+diff --git a/Documentation/trace/ftrace-design.txt b/Documentation/trace/ftrace-design.txt
+index 8369a1c..3936d5f 100644
+--- a/Documentation/trace/ftrace-design.txt
++++ b/Documentation/trace/ftrace-design.txt
+@@ -247,6 +247,9 @@ You need very few things to get the syscalls tracing in an arch.
+ - If the system call table on this arch is more complicated than a simple array
+   of addresses of the system calls, implement an arch_syscall_addr to return
+   the address of a given system call.
++- If the symbol names of the system calls do not match the function names on
++  this arch, implement an arch_syscall_match_sym_name with the appropriate
++  logic to return true if the function name corresponds with the symbol name.
+ - Tag this arch as HAVE_SYSCALL_TRACEPOINTS.
+ 
+ 
+diff --git a/include/linux/ftrace.h b/include/linux/ftrace.h
+index e0ae83b..26ad1f5 100644
+--- a/include/linux/ftrace.h
++++ b/include/linux/ftrace.h
+@@ -534,6 +534,7 @@ static inline void trace_hw_branch_oops(void) {}
+ #ifdef CONFIG_FTRACE_SYSCALLS
+ 
+ unsigned long arch_syscall_addr(int nr);
++bool arch_syscall_match_sym_name(const char *sym, const char *name);
+ 
+ #endif /* CONFIG_FTRACE_SYSCALLS */
+ 
 diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index 4d6d711..732f021 100644
+index 1c231d0..ebbc74d 100644
 --- a/kernel/trace/trace_syscalls.c
 +++ b/kernel/trace/trace_syscalls.c
-@@ -381,6 +381,14 @@ void unreg_event_syscall_exit(struct ftrace_event_call *call)
- int init_syscall_trace(struct ftrace_event_call *call)
- {
- 	int id;
-+	int num;
-+
-+	num = ((struct syscall_metadata *)call->data)->syscall_nr;
-+	if (num < 0 || num >= NR_syscalls) {
-+		pr_debug("syscall %s metadata not mapped, disabling ftrace event\n",
-+				((struct syscall_metadata *)call->data)->name);
-+		return -ENOSYS;
-+	}
+@@ -32,13 +32,7 @@ static struct syscall_metadata *find_syscall_meta(unsigned long syscall)
+ 	kallsyms_lookup(syscall, NULL, NULL, NULL, str);
  
- 	if (set_syscall_print_fmt(call) < 0)
- 		return -ENOMEM;
+ 	for ( ; start < stop; start++) {
+-		/*
+-		 * Only compare after the "sys" prefix. Archs that use
+-		 * syscall wrappers may have syscalls symbols aliases prefixed
+-		 * with "SyS" instead of "sys", leading to an unwanted
+-		 * mismatch.
+-		 */
+-		if (start->name && !strcmp(start->name + 3, str + 3))
++		if (start->name && arch_syscall_match_sym_name(str, start->name))
+ 			return start;
+ 	}
+ 	return NULL;
+@@ -408,6 +402,17 @@ unsigned long __init __weak arch_syscall_addr(int nr)
+ 	return (unsigned long)sys_call_table[nr];
+ }
+ 
++bool __weak arch_syscall_match_sym_name(const char *sym, const char *name)
++{
++	/*
++	 * Only compare after the "sys" prefix. Archs that use
++	 * syscall wrappers may have syscalls symbols aliases prefixed
++	 * with "SyS" instead of "sys", leading to an unwanted
++	 * mismatch.
++	 */
++	return (!strcmp(sym + 3, name + 3));
++}
++
+ int __init init_ftrace_syscalls(void)
+ {
+ 	struct syscall_metadata *meta;
 -- 
 1.7.1
 
