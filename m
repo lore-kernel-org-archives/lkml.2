@@ -1,78 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932797Ab0EMVzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:55:08 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54652 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932357Ab0EMVzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:55:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Date: Thu, 13 May 2010 23:56:21 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Matthew Garrett <mjg@redhat.com>, Alan Stern <stern@rowland.harvard.edu>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com> <201005132321.59245.rjw@sisk.pl> <20100513212556.GI3428@atomide.com>
-In-Reply-To: <20100513212556.GI3428@atomide.com>
+	id S932829Ab0EMVz1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:55:27 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:35381 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S932357Ab0EMVzX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:55:23 -0400
+Message-ID: <4BEC7544.1080506@sgi.com>
+Date: Thu, 13 May 2010 14:55:16 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Yinghai <yinghai.lu@oracle.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com> <4BEC73B2.2020909@oracle.com>
+In-Reply-To: <4BEC73B2.2020909@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005132356.21355.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 May 2010, Tony Lindgren wrote:
-> * Rafael J. Wysocki <rjw@sisk.pl> [100513 14:16]:
-> > On Thursday 13 May 2010, Matthew Garrett wrote:
-> > > On Thu, May 13, 2010 at 01:23:20PM -0700, Tony Lindgren wrote:
-> > > > * Matthew Garrett <mjg@redhat.com> [100513 13:03]:
-> > > > > On Thu, May 13, 2010 at 01:00:04PM -0700, Tony Lindgren wrote:
-> > > > > 
-> > > > > > The system stays running because there's something to do. The system
-> > > > > > won't suspend until all the processors hit the kernel idle loop and
-> > > > > > the next_timer_interrupt_critical() returns nothing.
-> > > > > 
-> > > > > At which point an application in a busy loop cripples you.
-> > > > 
-> > > > Maybe you could deal with the misbehaving untrusted apps in the userspace
-> > > > by sending kill -STOP to them when the screen blanks? Then continue
-> > > > when some event wakes up the system again.
-> > > 
-> > > And if that's the application that's listening to the network socket 
-> > > that you want to get a wakeup event from? This problem is hard. I'd love 
-> > > there to be an elegant solution based on using the scheduler, but I 
-> > > really don't know what it is.
-> > 
-> > I agree and I don't understand the problem that people have with the
-> > opportunistic suspend feature.
-> 
-> It seems to be picking quite a few comments for one.
->  
-> > It solves a practical issue that _at_ _the_ _moment_ cannot be solved
-> > differently, while there's a growing number of out-of-tree drivers depending
-> > on this framework.  We need those drivers in and because we don't have any
-> > viable alternative at hand, we have no good reason to reject it.
-> 
-> Nothing is preventing merging the drivers can be merged without
-> these calls.
 
-And yet, there _is_ a growing nuber of drivers that don't get merge because
-of that.  That's _reality_.  Are you going to discuss with facts, or what?
 
-Rafael
+...
+> in setup.c::setup_arch()
+> 
+>         setup_memory_map();
+>         parse_setup_data();
+>         /* update the e820_saved too */
+>         e820_reserve_setup_data();
+> 	...
+> 	parse_early_param();
+> 	...
+> 	finish_e820_parsing();
+> 
+> 
+> 
+> efi memmap is appended to e820 by parse_setup_data
+> e820_reserve_setup_data() will copy e820 to e820_saved.
+> 
+> 
+> or do you have old boot loader 
+> 
+>         if (boot_params.hdr.version < 0x0209)
+>                 return;
+> 
+> YH
+
+I saw that too, and wondered why e820_saved did not
+have the extra entries.   The comment indicates it
+should.
+
+I'm on the system tonight and will investigate this
+further.
+
+Thanks!
+Mike
