@@ -1,48 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759033Ab0EMPXy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:23:54 -0400
-Received: from e8.ny.us.ibm.com ([32.97.182.138]:35681 "EHLO e8.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751950Ab0EMPXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:23:51 -0400
-Date: Thu, 13 May 2010 08:23:40 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100513152340.GA2879@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100512213317.GA15085@linux.vnet.ibm.com>
- <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100512214847.GD22930@redhat.com>
- <20100512230057.GH2303@linux.vnet.ibm.com>
- <1273756043.5605.3542.camel@twins>
+	id S1759061Ab0EMP0m (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:26:42 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:57807 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759012Ab0EMP0k (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:26:40 -0400
+Date: Thu, 13 May 2010 11:26:39 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Josef Bacik <josef@redhat.com>
+Cc: Christoph Hellwig <hch@infradead.org>, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       akpm@linux-foundation.org
+Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
+Message-ID: <20100513152639.GA30954@infradead.org>
+References: <20100512204052.GD3597@localhost.localdomain> <20100513151429.GA16916@infradead.org> <20100513153145.GE27011@dhcp231-156.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273756043.5605.3542.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100513153145.GE27011@dhcp231-156.rdu.redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
-> > Any thoughts?  One approach would be to create a separate lockdep class
-> > for vhost workqueue state, similar to the approach used in instrument
-> > rcu_read_lock() and friends. 
-> 
-> workqueue_struct::lockdep_map, its held while executing worklets.
-> 
-> lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
+On Thu, May 13, 2010 at 11:31:45AM -0400, Josef Bacik wrote:
+> AIO's aio_complete does kmap with KM_IRQ0/1 and it gets called in the same
+> context as the btrfs completion handler, so if it's ok for aio_complete it
+> should be ok for btrfs right?  Thanks,
 
-Thank you, Peter!!!
+aio_complete does a spin_lock_irqsave before that, which disables
+interrupts on the local CPU.
 
-							Thanx, Paul
