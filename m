@@ -1,52 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932512Ab0EMTQq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:16:46 -0400
-Received: from kroah.org ([198.145.64.141]:43897 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932270Ab0EMTQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:16:41 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Anatolij Gustschin <agust@denx.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 1/3] serial: mpc52xx_uart: fix null pointer dereference
-Date: Thu, 13 May 2010 12:16:37 -0700
-Message-Id: <1273778199-17578-1-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100513191601.GA17538@kroah.com>
-References: <20100513191601.GA17538@kroah.com>
+	id S932501Ab0EMTQo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:16:44 -0400
+Received: from sous-sol.org ([216.99.217.87]:60319 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1757368Ab0EMTQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:16:40 -0400
+Date: Thu, 13 May 2010 12:16:19 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Greg KH <greg@kroah.com>
+Cc: Chris Wright <chrisw@sous-sol.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
+       alex.williamson@redhat.com
+Subject: Re: [PATCH 2/2 v2] pci: check caps from sysfs file open to read
+ device dependent config space
+Message-ID: <20100513191619.GI28034@sequoia.sous-sol.org>
+References: <20100513012857.GA28034@sequoia.sous-sol.org>
+ <20100513012957.GB28034@sequoia.sous-sol.org>
+ <20100513105911.6469c434@lxorguk.ukuu.org.uk>
+ <20100513174307.GH28034@sequoia.sous-sol.org>
+ <20100513190636.GC5979@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513190636.GC5979@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Anatolij Gustschin <agust@denx.de>
+* Greg KH (greg@kroah.com) wrote:
+> On Thu, May 13, 2010 at 10:43:07AM -0700, Chris Wright wrote:
+> > * Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
+> > > I agree with the problem - but IMHO the fix is to require opening the file
+> > > checks CAP_SYS_something instead: not to hack the read method and make it
+> > > even weirder and more un-Linux than it is now.
+> > 
+> > This patch does that.  Not as convenient from the KVM/libvirt point of view
+> > because it is not prepared to do this setup before dropping privileges
+> > and launching the VM.
+> 
+> So does that mean that this patch doesn't solve your original problem
+> here?
 
-Commit 6acc6833510db8f72b5ef343296d97480555fda9
-introduced NULL pointer dereference and kernel crash
-on ppc32 machines while booting. Fix this bug now.
+Right, it means we have to change how we create a guest with a directly
+assigned PCI device.
 
-Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
-Tested-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
-Signed-off-by: Anatolij Gustschin <agust@denx.de>
-Acked-by: Grant Likely <grant.likely@secretlab.ca>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/serial/mpc52xx_uart.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Currently KVM/libvirt is assuming that sysfs file ownership is sufficient
+to read a sysfs file.  It chowns all relevant sysfs files and updates
+security labels such that only that guest can access the files, then
+drops privileges and launches the guest.
 
-diff --git a/drivers/serial/mpc52xx_uart.c b/drivers/serial/mpc52xx_uart.c
-index a176ab4..02469c3 100644
---- a/drivers/serial/mpc52xx_uart.c
-+++ b/drivers/serial/mpc52xx_uart.c
-@@ -1467,7 +1467,7 @@ mpc52xx_uart_init(void)
- 	/*
- 	 * Map the PSC FIFO Controller and init if on MPC512x.
- 	 */
--	if (psc_ops->fifoc_init) {
-+	if (psc_ops && psc_ops->fifoc_init) {
- 		ret = psc_ops->fifoc_init();
- 		if (ret)
- 			return ret;
--- 
-1.7.1
+With the v2 patch we'll have to open the config space sysfs file in the
+privileged context and pass it into the unprivileged one.  It is awkward,
+but it should be doable.
 
+thanks,
+-chris
