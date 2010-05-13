@@ -1,56 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759209Ab0EMUOx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:14:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26928 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756313Ab0EMUOv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:14:51 -0400
-Date: Thu, 13 May 2010 15:53:26 -0300
-From: Marcelo Tosatti <mtosatti@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: kvm <kvm@vger.kernel.org>, linux-kernel <linux-kernel@vger.kernel.org>,
-       Avi Kivity <avi@redhat.com>
-Subject: [GIT PULL] KVM updates for 2.6.34-rc7
-Message-ID: <20100513185326.GA22734@amt.cnet>
+	id S1759394Ab0EMUPz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:15:55 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:33727 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753148Ab0EMUPw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:15:52 -0400
+Date: Thu, 13 May 2010 21:15:32 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Bastien Nocera <hadess@hadess.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100513201532.GA20473@srcf.ucam.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <1273762051.2308.4671.camel@localhost.localdomain> <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org> <20100513155031.GA22238@core.coreip.homeip.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100513155031.GA22238@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 13, 2010 at 08:50:31AM -0700, Dmitry Torokhov wrote:
 
-Linus,
+> Indeed most of them do just work. My Dell T110 for example boots just
+> fine and it only has USB, no PS/2 ports. However there is a rather
+> important difference I think - these other boxes are supposed to work
+> with multiple versions of Windows which, as far as I know, do probe for
+> the i8042. Apple only supports bootcamp on certain BIOSes and does not
+> really expect anything to touch these ports.
 
-please pull from
+If you're not using bootcamp then you're booting via EFI, and in that 
+case I think it's probably reasonable to require that the keyboard be 
+provided via PNP or flagged in the XDST.
 
-git://git.kernel.org/pub/scm/virt/kvm/kvm.git kvm-updates/2.6.34
-
-To receive the following updates:
-
-Dongxiao Xu (1):
-      KVM: x86: Call vcpu_load and vcpu_put in cpuid_update
-
-Jan Kiszka (1):
-      KVM: VMX: blocked-by-sti must not defer NMI injections
-
-Joerg Roedel (1):
-      KVM: SVM: Fix wrong intercept masks on 32 bit
-
-Marcelo Tosatti (1):
-      KVM: convert ioapic lock to spinlock
-
-Roel Kluin (1):
-      KVM: PPC: Keep index within boundaries in kvmppc_44x_emul_tlbwe()
-
-
- arch/powerpc/kvm/44x_tlb.c |    2 +-
- arch/x86/kvm/svm.c         |    8 ++++----
- arch/x86/kvm/vmx.c         |    3 +--
- arch/x86/kvm/x86.c         |    4 ++++
- virt/kvm/ioapic.c          |   30 +++++++++++++++---------------
- virt/kvm/ioapic.h          |    2 +-
- 6 files changed, 26 insertions(+), 23 deletions(-)
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
