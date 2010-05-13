@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751485Ab0EMEo5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 00:44:57 -0400
-Received: from gate.crashing.org ([63.228.1.57]:33988 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750763Ab0EMEoz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 00:44:55 -0400
-Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
- 88f5182)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: saeed@marvell.com, nico@marvell.com, jamie@shareable.org,
-       linux-kernel@vger.kernel.org, jejb@parisc-linux.org,
-       santosh.shilimkar@ti.com, akpm@linux-foundation.org,
-       linux-ext4@vger.kernel.org, linux-arm-kernel@lists.infradead.org
-In-Reply-To: <20100513121302Z.fujita.tomonori@lab.ntt.co.jp>
-References: <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com>
-	 <20100512222154.GA6841@shareable.org> <1273704431.21352.136.camel@pasglop>
-	 <20100513121302Z.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 14:42:31 +1000
-Message-ID: <1273725751.21352.176.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1751804Ab0EMEps (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 00:45:48 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:49325 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751013Ab0EMEpr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 00:45:47 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Changli Gao <xiaosuo@gmail.com>
+Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
+Cc: kosaki.motohiro@jp.fujitsu.com, akpm@linux-foundation.org,
+       Eric Dumazet <eric.dumazet@gmail.com>, Jiri Slaby <jslaby@suse.cz>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
+       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
+In-Reply-To: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+References: <1273105838-4441-1-git-send-email-xiaosuo@gmail.com>
+Message-Id: <20100513134124.2164.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 13:45:35 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 12:12 +0900, FUJITA Tomonori wrote:
-> X86 OOSTORE uses a memory barrier dma_sync_single_for_device (seems
-> that some mips archs also use it and do cache operations).
-> 
-> I think that the DMA-API says that
-> 
-> - dma_sync_single_for_device() makes sure the data ready for DMA.
-> 
-> - dma_sync_single_for_cpu() makes sure that drivers doesn't get the
->   stale data after DMA.
-> 
-> I guess, it means if an architecture need a memory barrier (not only
-> cache operations) to guarantee the above, the architecture needs to
-> take care of it. 
+Hi
 
-Right, but doing an indirect function pointer call for a memory barrier
-in what can be a pretty hot code path doesn't sound like a great idea
-if it can be avoided. I'd rather we define some inline that the arch
-can stick in there if it wishes so.
+> void *kvmalloc(size_t size)
+> {
+> 	void *ptr;
+> 
+> 	if (size < PAGE_SIZE)
+> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
+> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
 
-Cheers,
-Ben.
+low order GFP_KERNEL allocation never fail. then, this doesn't works
+as you expected.
+
+> 	if (ptr != NULL)
+> 		return ptr;
+> 
+> 	return vmalloc(size);
+
+On x86, vmalloc area is only 128MB address space. it is very rare 
+resource than physical ram. vmalloc fallback is not good idea.
 
 
