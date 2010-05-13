@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759418Ab0EMTLL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:11:11 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:52942 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754193Ab0EMTLG (ORCPT
+	id S932292Ab0EMTMJ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:12:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40020 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759389Ab0EMTMH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:11:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=lwlRZ7OOYa2AIc25e3y9kAKO9g/oWvR+Zvi652lUWWCJOp+8PiDMEkRuATpxe9gYZJ
-         6PFDDmdr1FbX0IUXunrYyMnZkhEEWtcbEF6PUx/GAhCD6KXd+EPsogSZt68lacFrC3e4
-         Nwo4UBGSyMnQopF+crdqEMh7Rrvu0PBCIQSYo=
-Date: Thu, 13 May 2010 23:11:01 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org,
-       Nicolas Ferre <nicolas.ferre@atmel.com>,
-       Manuel Lauss <manuel.lauss@gmail.com>, Cliff Cai <cliff.cai@analog.com>,
-       =?utf-8?B?TWljaGHFgiBNaXJvc8WCYXc=?= <mirq-linux@rere.qmqm.pl>,
-       Pavel Pisa <ppisa@pikron.com>, David Brown <davidb@codeaurora.org>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Bryan Huntsman <bryanh@codeaurora.org>,
-       Jarkko Lavinen <jarkko.lavinen@nokia.com>,
-       Madhusudhan Chikkature <madhu.cr@ti.com>,
-       Ben Dooks <ben-linux@fluff.org>,
-       Sascha Sommer <saschasommer@freenet.de>, Alex Dubov <oakad@yahoo.com>,
-       Ian Molton <ian@mnementh.co.uk>, Joseph Chan <JosephChan@via.com.tw>,
-       Harald Welte <HaraldWelte@viatech.com>,
-       Pierre Ossman <pierre@ossman.eu>
-Subject: Re: [PATCH] mmc: drop the "state" argument to mmc_suspend_host()
-Message-ID: <20100513191101.GA16241@oksana.dev.rtsoft.ru>
-References: <d071c94414fc069d9360ae62a37fd2ad0b68110f.1273777159.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <d071c94414fc069d9360ae62a37fd2ad0b68110f.1273777159.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 13 May 2010 15:12:07 -0400
+Date: Thu, 13 May 2010 12:11:23 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: miaox@cn.fujitsu.com
+Cc: David Rientjes <rientjes@google.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm] cpuset,mm: fix no node to alloc memory when
+ changing cpuset's mems - fix2
+Message-Id: <20100513121123.e105ac97.akpm@linux-foundation.org>
+In-Reply-To: <4BEB9941.7040609@cn.fujitsu.com>
+References: <4BEA56D3.6040705@cn.fujitsu.com>
+	<20100512003246.9f0ee03c.akpm@linux-foundation.org>
+	<4BEA6E3D.10503@cn.fujitsu.com>
+	<20100512104817.beeee3b5.akpm@linux-foundation.org>
+	<4BEB9941.7040609@cn.fujitsu.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 08:01:45PM +0100, Matt Fleming wrote:
-> Even though many mmc host drivers pass a pm_message_t argument to
-> mmc_suspend_host() that argument isn't used the by MMC core. As host
-> drivers are converted to dev_pm_ops they'll have to construct
-> pm_message_t's (as they won't be passed by the PM subsystem any more)
-> just to appease the mmc suspend interface.
+On Thu, 13 May 2010 14:16:33 +0800
+Miao Xie <miaox@cn.fujitsu.com> wrote:
+
+> > 
+> > The code you have at present is fairly similar to sequence locks.  I
+> > wonder if there's some way of (ab)using sequence locks for this. 
+> > seqlocks don't have lockdep support either...
+> > 
 > 
-> We might as well just delete the unused paramter.
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+> We can't use sequence locks here, because the read-side may read the data
+> in changing, but it can't put off cleaning the old bits.
 
-For sdhci-of*
-
-Acked-by: Anton Vorontsov <cbouatmailru@gmail.com>
-
-Thanks!
+I don't understand that sentence.  Can you expand on it please?
