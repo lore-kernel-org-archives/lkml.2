@@ -1,66 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759315Ab0EMV7s (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:59:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:40112 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab0EMV7p convert rfc822-to-8bit (ORCPT
+	id S1759465Ab0EMWBi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:01:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:38492 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753692Ab0EMWBe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:59:45 -0400
-Subject: Re: [PATCH 0/9] mm: generic adaptive large memory allocation APIs
-Mime-Version: 1.0 (Apple Message framework v1078)
-Content-Type: text/plain; charset=us-ascii
-From: Andreas Dilger <andreas.dilger@oracle.com>
-In-Reply-To: <1273763055.4353.136.camel@mulgrave.site>
-Date: Thu, 13 May 2010 15:56:43 -0600
-Cc: Changli Gao <xiaosuo@gmail.com>, Andrew Morton <akpm@linux-foundation.org>,
-       Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
-       Sean Hefty <sean.hefty@intel.com>,
-       Hal Rosenstock <hal.rosenstock@gmail.com>,
-       Divy Le Ray <divy@chelsio.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-rdma@vger.kernel.org,
-       "linux-kernel@vger.kernel.org Mailinglist" 
-	<linux-kernel@vger.kernel.org>,
-       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
-       "linux-ext4@vger.kernel.org development" <linux-ext4@vger.kernel.org>,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       containers@lists.linux-foundation.org
-Content-Transfer-Encoding: 8BIT
-Message-Id: <7280ADBE-F4BF-43B4-8BAC-5BF129C9DDB3@oracle.com>
-References: <1273744147-7594-1-git-send-email-xiaosuo@gmail.com> <1273763055.4353.136.camel@mulgrave.site>
-To: James Bottomley <James.Bottomley@suse.de>
-X-Mailer: Apple Mail (2.1078)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090206.4BEC7616.0066:SCFMA4539811,ss=1,fgs=0
+	Thu, 13 May 2010 18:01:34 -0400
+Date: Thu, 13 May 2010 18:01:33 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tony Lindgren <tony@atomide.com>
+cc: Paul Walmsley <paul@pwsan.com>,
+       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>, <magnus.damm@gmail.com>,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
+       <linux-omap@vger.kernel.org>, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <20100513214739.GM3428@atomide.com>
+Message-ID: <Pine.LNX.4.44L0.1005131756420.1731-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 2010-05-13, at 09:04, James Bottomley wrote:
-> This isn't necessarily true ... most drivers and filesystems have to
-> know what type they're getting.  Often they have to do extra tricks to
-> process vmalloc areas.  Conversely, large kmalloc areas are a very
-> precious commodity: if a driver or filesystem can handle vmalloc for
-> large allocations, it should: it's easier for us to expand the vmalloc
-> area than to try to make page reclaim keep large contiguous areas ... I
-> notice your proposed API does the exact opposite of this ... tries
-> kmalloc first and then does vmalloc.
+On Thu, 13 May 2010, Tony Lindgren wrote:
+
+> > > And that's why 
+> > > it should be handled by runtime power management instead.
+> > 
+> > Runtime PM is not capable of freezing userspace and shutting down CPUs.  
+> > More or less by definition -- if it could then it wouldn't be "runtime" 
+> > any more, since the processor wouldn't be running.
 > 
-> Given this policy problem, isn't it easier simply to hand craft the
-> vmalloc fall back to kmalloc (or vice versa) in the driver than add this
-> whole massive raft of APIs for it?
+> Not true. We are already powering off CPUs and rebooting them for
+> at least omaps in every idle loop using cpuidle. The memory stays on.
 
-I know we wouldn't mind using large vmalloc allocations for e.g. per-group arrays in ext4 (allocated once per mount), but I'd always understood that using vmalloc for general purpose uses can have a significant impact because the vmalloc() engine has (had?) serious performance problems.  That means it is better performance-wise to have a wrapper function like this to switch between kmalloc() and vmalloc() based on the allocation size, but it makes the code ugly.  Having the wrapper in the kernel would at least identify the different places that are using this kind of workaround.
+Okay, that's a valid point.  But is that approach usable in general 
+(i.e., on non-OMAP systems)?
 
-If the performance of vmalloc() has been improved in the last few years, then I'd be happy to just use vmalloc() all the time.  That said, vmalloc still isn't suitable for sub-page allocations, so if you have a variable-sized allocation that may be very small or very large the small allocations will waste a whole page and a wrapper is still needed, or vmalloc should be changed to call kmalloc/kfree for the sub-page allocations.
+How do you handle situations where the CPU is currently idle but an 
+event (such as I/O completion) is expected to occur in the near future?  
+You don't want to power-off and reboot then, do you?
 
-Cheers, Andreas
---
-Andreas Dilger
-Lustre Technical Lead
-Oracle Corporation Canada Inc.
+Alan Stern
 
