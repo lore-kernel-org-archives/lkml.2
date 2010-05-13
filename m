@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758646Ab0EMNCa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 09:02:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53420 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758527Ab0EMNC2 convert rfc822-to-8bit (ORCPT
+	id S1758699Ab0EMNEz (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 09:04:55 -0400
+Received: from mail.elliptictech.com ([209.217.122.41]:48542 "EHLO
+	emergent.ellipticsemi.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753949Ab0EMNEx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 09:02:28 -0400
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-From: Peter Zijlstra <peterz@infradead.org>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Dhaval Giani <dhaval.giani@gmail.com>, James Kosin <jkosin@intcomgrp.com>,
-       linux-kernel@vger.kernel.org, menage@google.com,
-       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
-In-Reply-To: <20100512190757.GA421@tango.0pointer.de>
-References: <eJjRf-6YM-1@gated-at.bofh.it> <eJktY-7JG-7@gated-at.bofh.it>
-	 <eJktY-7JG-5@gated-at.bofh.it> <4BEAB6FC.8090105@intcomgrp.com>
-	 <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
-	 <1273674048.1626.117.camel@laptop> <20100512190757.GA421@tango.0pointer.de>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 13 May 2010 15:01:59 +0200
-Message-ID: <1273755719.5605.3537.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 13 May 2010 09:04:53 -0400
+Date: Thu, 13 May 2010 09:04:49 -0400
+From: Nick Bowler <nbowler@elliptictech.com>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+Subject: Re: T500 cdrom drive never stops spinning until mount.
+Message-ID: <20100513130448.GA1967@elliptictech.com>
+Mail-Followup-To: Robert Hancock <hancockrwd@gmail.com>,
+	linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
+References: <20100512023549.GA22623@cpu18.student.cs>
+ <4BEB4FA3.70308@gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BEB4FA3.70308@gmail.com>
+Organization: Elliptic Technologies Inc.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 21:07 +0200, Lennart Poettering wrote:
-> See Dhaval's patch on the background of systemd
-> (http://0pointer.de/blog/projects/systemd.html). When a service is
-> started in systemd, we create a cgroup for it, when it ends, we remove
-> it. 
+On 19:02 Wed 12 May     , Robert Hancock wrote:
+> Is something like hal, devicekit, etc. accessing the drive in this case? 
+> Can you try a minimal boot with no unnecessary processes and see if the 
+> same thing happens?
 
-I seriously hope that's optional, because I for one would really hate a
-system that does that. I still mostly build kernels with only cpuset in
-and really don't want anybody but me creating groups in there.
+Good call, booting with init=/bin/zsh and sure enough, the cd drive
+spins down.  Looks like udev is causing the constant spin-ups, so I'll
+post to linux-hotplug instead.
 
-
+Sorry for the noise,
+-- 
+Nick Bowler, Elliptic Technologies (http://www.elliptictech.com/)
