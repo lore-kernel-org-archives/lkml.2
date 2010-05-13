@@ -1,58 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758645Ab0EMVVl (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:21:41 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:37638 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753389Ab0EMVVi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:21:38 -0400
-Date: Thu, 13 May 2010 22:21:08 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100513212108.GA22103@srcf.ucam.org>
-References: <Pine.LNX.4.44L0.1005131002380.1695-100000@iolanthe.rowland.org> <20100513191717.GA3428@atomide.com> <20100513192522.GA19256@srcf.ucam.org> <20100513194205.GC3428@atomide.com> <20100513195349.GB19722@srcf.ucam.org> <20100513200003.GE3428@atomide.com> <20100513200814.GA20254@srcf.ucam.org> <20100513202320.GF3428@atomide.com> <20100513203412.GA21244@srcf.ucam.org> <20100513211006.GG3428@atomide.com>
+	id S1758381Ab0EMVXj (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:23:39 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39966 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752192Ab0EMVXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:23:37 -0400
+Message-ID: <4BEC6DC2.4040207@redhat.com>
+Date: Thu, 13 May 2010 17:23:14 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513211006.GG3428@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+CC: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: perf: relative path to source for perf probe?
+References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com> <20100513145826.GJ30926@ghostprotocols.net> <AANLkTin1w6OoS_6qzMqIizBxOGiV7DXJ936-hdHSFCD8@mail.gmail.com> <20100513173426.GK19192@ghostprotocols.net>
+In-Reply-To: <20100513173426.GK19192@ghostprotocols.net>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 02:10:06PM -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100513 13:29]:
-> > And if that's the application that's listening to the network socket 
-> > that you want to get a wakeup event from? This problem is hard. I'd love 
-> > there to be an elegant solution based on using the scheduler, but I 
-> > really don't know what it is.
+Arnaldo Carvalho de Melo wrote:
+> Em Thu, May 13, 2010 at 06:01:10PM +0200, Chase Douglas escreveu:
+>> On Thu, May 13, 2010 at 4:58 PM, Arnaldo Carvalho de Melo
+>> <acme@ghostprotocols.net> wrote:
+>>> Look in tools/perf/util/symbol.c, these variables are the ones tools use
+>>> to govern how the symbol system work wrt finding vmlinux:
+>>>
+>>> symbol_conf.use_vmlinux_path
+>>> symbol_conf.vmlinux_name
+>>>
+>>> In addition to this it will use what is in ~/.debug/ if it has a
+>>> build-id in the perf.data header.
+>>>
+>>> The changes for support kvm also touched this and allow for some
+>>> prefixing to look for guest symbols, generalizing that to make guest
+>>> kernel vmlinux + modules relative location be reused to look for
+>>> relative location for host kernel vmlinux + modules seems the way to go.
+>>
+>> After reading this some more, I think we are talking about two
+>> different things. I think your notes above are referring to locating
+>> the vmlinux image and other debug symbols. This seems to work fine for
+>> me using the -k flag.
 > 
-> Your system should wake up to an interrupt in that case. Then you have
-> the trusted apps running that can decide if the untrusted apps should
-> be continued or not.
+> What about finding the associated modules?
+> 
+>> However, I'm encountering an issue where the source code location
+>> isn't found. I think this is fairly specific to the probe command of
+>> perf, which is fairly new, so maybe it's missing the same level of
+>> support that the symbol finding code has?
+> 
+> Annotation needs it, in top, report, too.
+> 
+> But probably (haven't looked at the sources) the way to specify it will
+> be different, since we rely on objdump to do the disassembly, we need to
+> inform it where the sources are, but look at the source of all this, the
+> relevant DWARF tags:
+> 
+>  <0><b>: Abbrev Number: 1 (DW_TAG_compile_unit)
+>     < c>   DW_AT_stmt_list   : 0x0      
+>     <10>   DW_AT_ranges      : 0x0      
+>     <14>   DW_AT_name        : /home/acme_unencrypted/git/linux-2.6-tip/arch/x86/kernel/head_64.S       
+>     <57>   DW_AT_comp_dir    : /home/acme_unencrypted/git/build/v2.6.34-rc6-
 
-What race-free mechanism do you use to ensure that? It's very easy to 
-handwave these problems away. It's very difficult to actually write an 
-implementation that works.
+Actually, these doesn't help us so much. DW_AT_name shows the absolute path
+of source file (and perf probe already have it), and DW_AT_comp_dir just 
+shows where the object code has been stored (or where the make command ran).
+
+In this case (after compiling kernel, user moved its source into another
+directory), we have to find the top directory of this source code.
+
+Imagine that, if user compiled code under /home/user/git-ksrc/, and 
+it was moved under  /usr/src/2.6.x/, perf probe will be given an option
+'-s /usr/src/2.6.x/'.
+
+If we know the top directory is /home/user/git-ksrc/, we can replace
+it with /usr/src/2.6.x/. However, dwarf doesn't provide this information.
+So we need to assume that where is the top directory in absolute path.
+
+I think, we can do it by brute force (I'm not sure how gdb does it).
+
+Replace the root directory with given directory and try to open it.
+
+ fopen("/usr/src/2.6.x/" "home/user/git-ksrc/kernel/kprobes.c"); -> NG
+
+If there is no file exist, remove next directory and add given directory
+and try to open it again.
+
+ fopen("/usr/src/2.6.x/" "user/git-ksrc/kernel/kprobes.c"); -> NG
+
+And repeat it until the file exist.
+
+ fopen("/usr/src/2.6.x/" "git-ksrc/kernel/kprobes.c"); -> NG
+
+ fopen("/usr/src/2.6.x/" "kernel/kprobes.c"); -> OK!
+
+
+Thank you,
 
 -- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
