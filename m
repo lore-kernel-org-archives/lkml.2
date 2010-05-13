@@ -1,39 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758529Ab0EMKHB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 06:07:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:39915 "EHLO mx1.redhat.com"
+	id S1758560Ab0EMKNx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 06:13:53 -0400
+Received: from bee.hiwaay.net ([216.180.54.11]:11057 "EHLO bee.hiwaay.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758486Ab0EMKG6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 06:06:58 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1273700022-16523-10-git-send-email-paulmck@linux.vnet.ibm.com>
-References: <1273700022-16523-10-git-send-email-paulmck@linux.vnet.ibm.com> <20100512213317.GA15085@linux.vnet.ibm.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: dhowells@redhat.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 10/23] keys: __rcu annotations
-Date: Thu, 13 May 2010 11:05:40 +0100
-Message-ID: <2120.1273745140@redhat.com>
+	id S1758509Ab0EMKNv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 06:13:51 -0400
+Message-ID: <20100513041411.169582o3zi2wsusj@webmail.hiwaay.net>
+Date: Thu, 13 May 2010 04:14:11 -0500
+From: "Beuker Hendrik" <chandler@hiwaay.net>
+Reply-to: beukerhendriks@live.com
+To: undisclosed-recipients:;
+Subject: HOPE I CAN TRUST YOU ON THIS!!!
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII;
+	DelSp=Yes	format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 7BIT
+User-Agent: Internet Messaging Program (IMP) H3 (4.3.4)
+X-Originating-IP: 222.124.178.98
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney <paulmck@linux.vnet.ibm.com> wrote:
+UBS International Holdings BV
+Herengracht 600
+NL-1017 CJ Amsterdam, Netherlands.
+www.ubs.com/investmentbank
 
-> Subject: [PATCH RFC tip/core/rcu 10/23] keys: __rcu annotations
-> 
-> From: Arnd Bergmann <arnd@arndb.de>
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+Greetings,
 
-Acked-by: David Howells <dhowells@redhat.com>
+I am an investment consultant working with UBS International Holdings BV
+in the Netherlands. I will be happy to work this transaction out with you
+if you have a corporate or personal Bank Account and if you are reliable
+and honest.
+
+I need strong Assurance that you will never let me down, as I can arrange
+and provide you details/documentatal proof so that funds($8.5million) will
+be transferred into your account as the next of kin to the late
+depositor(Abbas Farhan al-Jabouri, who was an Election candidate and also
+a business man). Abbas Farhan al-Jabouri and his two relatives were
+executed in Mohammed al Malih, near Mandali onthe 29th of January 2009.
+During one of our periodic auditing I discovered a dormant accounts with
+the said balance (Eight million, five Hundred thousand Dollars only), this
+account have not been operated for some years now.
+
+At this moment I will not be able to issue more details about this
+business, until your response is received.
+
+If you are not familiar with my Bank profile, please take a moment of your
+very busy schedules to read about my Bank
+website(www.ubs.com/investmentbank).
+
+I look forward to hearing from you as soon as possible via my private
+email; beukerhendriker@windowslive.com
+
+Thank you for your time and attention.
+Warmest Regards,
+Mr.Beuker Hendrik
+Investment Consultant.
+UBS
