@@ -1,51 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756325Ab0EMBCd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 21:02:33 -0400
-Received: from mail-yx0-f191.google.com ([209.85.210.191]:37644 "EHLO
-	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab0EMBCb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 21:02:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=OzG1rbyGLfOsEoOQLfhqIHZFo3jVYybdDzr+JYDrumPveKXoKTSR+iIvxp+0YmPz0I
-         1/yuClR2mRSCTUCyRzT6uzLp7rqVCt6XcAM12EgEzm7ta+N7jmyAUlGcnSp+91mxa/xT
-         QDRu2ALpJIkrIAYv7WKq9HCsxJynjhoCqr0ug=
-Message-ID: <4BEB4FA3.70308@gmail.com>
-Date: Wed, 12 May 2010 19:02:27 -0600
-From: Robert Hancock <hancockrwd@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Nick Bowler <nbowler@elliptictech.com>
-CC: linux-kernel@vger.kernel.org, linux-ide@vger.kernel.org
-Subject: Re: T500 cdrom drive never stops spinning until mount.
-References: <20100512023549.GA22623@cpu18.student.cs>
-In-Reply-To: <20100512023549.GA22623@cpu18.student.cs>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1757131Ab0EMBC7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 21:02:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45253 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab0EMBC4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 21:02:56 -0400
+Date: Thu, 13 May 2010 11:02:48 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: reinette chatre <reinette.chatre@intel.com>
+Cc: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>,
+       <linux-next@vger.kernel.org>, <linux-kernel@vger.kernel.org>,
+       "Berg, Johannes" <johannes.berg@intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: Re: linux-next: manual merge of the net tree with the
+ wireless-current tree
+Message-Id: <20100513110248.06cc6ee7.sfr@canb.auug.org.au>
+In-Reply-To: <1273680943.2370.9533.camel@rchatre-DESK>
+References: <20100512121539.8956720a.sfr@canb.auug.org.au>
+	<1273680943.2370.9533.camel@rchatre-DESK>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__13_May_2010_11_02_48_+1000_RdT26GH2h/3z9OPG"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/11/2010 08:35 PM, Nick Bowler wrote:
-> The ThinkPad T500 has a SATA cdrom drive attached to an Intel ICH9M/M-E
-> SATA ACHI controller.  Upon inserting a disk into this drive, if sr-mod
-> is loaded, the disk will never stop spinning by itself:  it will spin up
-> to full speed, then start slowing down, but just before it stops, it
-> will spin up to full speed, then start slowing down, ad infinitum.
->
-> If sr-mod is not loaded, the disk stops spinning right after insertion.
-> It is only possible to remove sr-mod when the disk is spinning at full
-> speed (all other times the module is in use), and then the disk stops.
->
-> Mounting the disk also causes it to stop spinning (and it remains
-> stopped after unmounting it).
->
-> I see this behaviour with both 2.6.32 and 2.6.34-rc7.
+--Signature=_Thu__13_May_2010_11_02_48_+1000_RdT26GH2h/3z9OPG
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is something like hal, devicekit, etc. accessing the drive in this case? 
-Can you try a minimal boot with no unnecessary processes and see if the 
-same thing happens?
+Hi Reinette,
+
+On Wed, 12 May 2010 09:15:43 -0700 reinette chatre <reinette.chatre@intel.c=
+om> wrote:
+>
+> Please note that this member of iwl_priv is now located in two
+> places ... here and also in the device specific union a few lines up
+> inside the _agn struct. In the code it is indeed the one in the _agn
+> struct that is being used (see usage in iwl-agn.c), so adding this line
+> is not necessary.
+>=20
+> This should not cause any problems with driver operation and can
+> probably remain as such if indeed it is cleaned up somewhere else before
+> it hits you again or linux-2.6.
+
+Thanks for pointing this out.  I will update my merge resolution in
+linux-next and I assume it will be done correctly when Dave or John also
+do that merge.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__13_May_2010_11_02_48_+1000_RdT26GH2h/3z9OPG
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvrT7gACgkQjjKRsyhoI8yKIQCdEdoBjymrK72iUFURllMjQUuW
+bMkAn0DfK3r029BFvcXcsqJbZEhf1OLD
+=eWUG
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__13_May_2010_11_02_48_+1000_RdT26GH2h/3z9OPG--
