@@ -1,52 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752890Ab0EMFyu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 01:54:50 -0400
-Received: from kroah.org ([198.145.64.141]:39777 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752384Ab0EMFys (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 01:54:48 -0400
-Date: Wed, 12 May 2010 22:51:13 -0700
-From: Greg KH <greg@kroah.com>
-To: Huang Ying <ying.huang@intel.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "andi@firstfloor.org" <andi@firstfloor.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-       Andi Kleen <ak@linux.intel.com>
-Subject: Re: [PATCH 1/2] Add x64 support to debugfs
-Message-ID: <20100513055113.GA27033@kroah.com>
-References: <1273653641-4519-1-git-send-email-ying.huang@intel.com> <1273653641-4519-2-git-send-email-ying.huang@intel.com> <20100512214737.GA27785@kroah.com> <1273710327.3564.61.camel@yhuang-dev.sh.intel.com>
+	id S1752960Ab0EMF5G (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 01:57:06 -0400
+Received: from e23smtp02.au.ibm.com ([202.81.31.144]:44396 "EHLO
+	e23smtp02.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752503Ab0EMF5C (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 01:57:02 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Andreas Dilger <andreas.dilger@oracle.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@Sun.COM,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
+In-Reply-To: <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Thu, 13 May 2010 11:26:53 +0530
+Message-ID: <874oic2vkq.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273710327.3564.61.camel@yhuang-dev.sh.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 08:25:27AM +0800, Huang Ying wrote:
-> On Thu, 2010-05-13 at 05:47 +0800, Greg KH wrote:
-> > On Wed, May 12, 2010 at 04:40:40PM +0800, Huang Ying wrote:
-> > > Add debugfs_create_x64. This is needed by ACPI APEI EINJ parameters support.
-> > > 
-> > > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > > CC: Greg KH <greg@kroah.com>
-> > 
-> > Do you want me to take this through my tree?  Or should it go through
-> > the acpi one as you depend on it?
-> > 
-> > If so, that's fine with me, feel free to add:
-> > 	Acked-by: Greg Kroah-Hartman <gregkh@suse.de>
-> > to the patch then.
+On Wed, 12 May 2010 15:49:49 -0600, Andreas Dilger <andreas.dilger@oracle.com> wrote:
+> On 2010-05-12, at 09:50, Aneesh Kumar K.V wrote:
+> > +static long do_sys_name_to_handle(struct path *path,
+> > +			struct file_handle __user *ufh)
+> > +{
+> > +	if (handle_size <= f_handle.handle_size) {
+> > +		/* get the uuid */
+> > +		retval = sb->s_op->get_fsid(sb, &this_fs_id);
+> > +		if (!retval) {
+> > +			/*
+> > +			 * Now verify whether we get the same vfsmount
+> > +			 * if we lookup with uuid. In case we end up having
+> > +			 * same uuid for the multiple file systems. When doing
+> > +			 * uuid based lookup we would return the first one.So
+> > +			 * with name_to_handle if we don't find the same
+> > +			 * vfsmount with lookup return EOPNOTSUPP
+> > +			 */
+> > +			mnt = fs_get_vfsmount(current, &this_fs_id);
+> > +			if (mnt != path->mnt) {
+> > +				retval = -EOPNOTSUPP;
+> > +				mntput(mnt);
+> > +				goto err_free_out;
+> > +			}
 > 
-> Thank you very much for you kindness. Cross tree merging is pain, so I
-> want to go through the ACPI tree to make it easier.
+> I don't see that this does anything for us except add overhead.  This is no protection against mounting a second filesystem with the same UUID after the handle is returned, since there is no expiration for file handles.
+> 
+> At best I think we could start by changing the list-based UUID lookup
+> with a hash-based one, and when adding a duplicate UUID at mount time
+> start by printing out an error message to the console in case of
+> duplicated UUIDs, and maybe at some point in the future this might
+> cause the mount to fail (though I don't think we can make that
+> decision lightly or quickly).
 
-Great, Len, feel free to take this through your tree.
+I actually was looking at doing this. That is something in line of
 
-thanks,
+register_for_handle_lookup(struct vfsmount *mnt);
 
-greg k-h
+Each file system will call this in their gets_sb callback after calling
+get_sb_bdev. ie 
+
+static int ext4_get_sb(struct file_system_type *fs_type, int flags,
+		       const char *dev_name, void *data, struct vfsmount *mnt)
+{
+        int retval;
+	retval = get_sb_bdev(fs_type, flags, dev_name, data,
+		       ext4_fill_super,mnt);
+
+         if (register_for_handle_lookup(mnt)) {
+            printk(KERN_INFO, "File system won't be available or handle lookup");
+         }
+         return retval;              
+}
+
+
+-aneesh
