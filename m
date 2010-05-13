@@ -1,218 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757323Ab0EMHfY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:35:24 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:60810 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755514Ab0EMHfX convert rfc822-to-8bit (ORCPT
+	id S1757379Ab0EMHhV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 03:37:21 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53644 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755514Ab0EMHhS convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:35:23 -0400
-Message-ID: <4BEBAC0C.2060508@cn.fujitsu.com>
-Date: Thu, 13 May 2010 15:36:44 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	Thu, 13 May 2010 03:37:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=gPhZ6ioqyziU/4iCmLZep64LOQy+E8j/D7EO7r+Tdq//mrAyVd2ahVcQouk4MeP8Su
+         do+UCo2527A9OByWS/ASt3e48+WGrWDg61G2r1tguF4eeRE7XEwOOobtFpvD0rV8eRmA
+         yWjOJrqEMvoRciGoLQ5Kl6ZOXOIcaym3Cvk78=
 MIME-Version: 1.0
-To: Linux-Kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH -mm] cpuset,mm: make the write-side sleep if the read-side
- is not running
-References: <4BEBA9A9.9080504@cn.fujitsu.com>
-In-Reply-To: <4BEBA9A9.9080504@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1273679336.10823.15.camel@mj>
+References: <4bea1f81.09b6660a.746e.1c12@mx.google.com> <1273679336.10823.15.camel@mj>
+From: Dmytro Milinevskyy <milinevskyy@gmail.com>
+Date: Thu, 13 May 2010 10:36:56 +0300
+X-Google-Sender-Auth: q-06SNdKsF1pnWmXqVeE4tvX8mw
+Message-ID: <AANLkTinYfKlQ-MzkGV9o2qXUTeArYscfqoc8WS7SRjgz@mail.gmail.com>
+Subject: Re: [ath5k-devel] [PATCH] [ath5k][leds] Ability to disable leds 
+	support. If leds support enabled do not force mac802.11 leds layer selection.
+To: Pavel Roskin <proski@gnu.org>
+Cc: ath5k-devel@venema.h4ckr.net, Kalle Valo <kalle.valo@iki.fi>,
+       linux-wireless@vger.kernel.org, GeunSik Lim <geunsik.lim@samsung.com>,
+       Jiri Slaby <jirislaby@gmail.com>, Greg Kroah-Hartman <gregkh@suse.de>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Keng-Yu Lin <keng-yu.lin@canonical.com>, netdev@vger.kernel.org,
+       Jiri Kosina <jkosina@suse.cz>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       Shahar Or <shahar@shahar-or.co.il>, linux-kernel@vger.kernel.org,
+       Luca Verdesca <magooz@salug.it>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please ignore this mail. I'm sorry for my mistake.
+Hello, Pavel.
 
-Thanks
-Miao
+I will rework the patch considering your suggestions.
 
-on 2010-5-13 15:26, Miao Xie wrote:
-> on 2010-5-12 12:32, Andrew Morton wrote:
->> On Wed, 12 May 2010 15:20:51 +0800 Miao Xie <miaox@cn.fujitsu.com> wrote:
+> I'm not sure this complexity is needed.  Are you going to support LEDs
+> if CONFIG_LEDS_CLASS is disabled?
+If there's any other place in driver that might want use LEDs w/o
+exporting the interface to the userspace.
+
+-- Dima Milinevskyy
+
+
+On Wed, May 12, 2010 at 6:48 PM, Pavel Roskin <proski@gnu.org> wrote:
+> On Wed, 2010-04-07 at 21:58 +0300, Dmytro Milinevskyy wrote:
+>
+>> Here is the patch to disable ath5k leds support on build stage.
+>> However if the leds support was enabled do not force selection of 802.11 leds layer.
+>
+> The idea is good, but the implementation could be improved.
+>
+> There are too many preprocessor conditionals in your patch.
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>  /*
+>>   * These match net80211 definitions (not used in
+>>   * mac80211).
+>> @@ -939,11 +940,7 @@ enum ath5k_power_mode {
+>>  #define AR5K_LED_AUTH        2 /*IEEE80211_S_AUTH*/
+>>  #define AR5K_LED_ASSOC       3 /*IEEE80211_S_ASSOC*/
+>>  #define AR5K_LED_RUN 4 /*IEEE80211_S_RUN*/
+>
+> It should be OK to leave the constants defined even if they are not
+> used.
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>  /* LED functions */
+>>  extern int ath5k_init_leds(struct ath5k_softc *sc);
+>>  extern void ath5k_led_enable(struct ath5k_softc *sc);
+>>  extern void ath5k_led_off(struct ath5k_softc *sc);
+>>  extern void ath5k_unregister_leds(struct ath5k_softc *sc);
+>> +#endif
+>
+> You could add inline functions for the case when CONFIG_ATH5K_LEDS is
+> not defined.  That would avoid may conditionals in the code.
+>
+>>  /* GPIO Functions */
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>  extern void ath5k_hw_set_ledstate(struct ath5k_hw *ah, unsigned int state);
+>> +#endif
+>
+> The same comment applies.
+>
+> Also, there is nothing wrong with having an external declaration that is
+> not used in some particular configuration.
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>       /* turn on HW LEDs */
+>>       ath5k_hw_set_ledstate(ah, AR5K_LED_INIT);
+>> +#endif
+>
+> This is avoidable by having an inline ath5k_hw_set_ledstate() that does
+> nothing.
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>       struct ieee80211_hw *hw = pci_get_drvdata(to_pci_dev(dev));
+>>       struct ath5k_softc *sc = hw->priv;
 >>
->>> @@ -985,6 +984,7 @@ repeat:
->>>  	 * for the read-side.
->>>  	 */
->>>  	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
->>> +		task_unlock(tsk);
->>>  		if (!task_curr(tsk))
->>>  			yield();
->>>  		goto repeat;
+>>       ath5k_led_off(sc);
+>> +#endif
+>
+> Even this is avoidable if ath5k_led_off() does nothing.  gcc should be
+> smart enough to optimize out unneeded function calls.
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>  /*
+>>   * State for LED triggers
+>>   */
+>>  struct ath5k_led
+>>  {
+>> +#ifdef CONFIG_LEDS_CLASS
+>
+> I'm not sure this complexity is needed.  Are you going to support LEDs
+> if CONFIG_LEDS_CLASS is disabled?
+>
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>       unsigned int            led_pin,        /* GPIO pin for driving LED */
+>>                               led_on;         /* pin setting for LED on */
+>> +#endif
 >>
->> Oh, I meant to mention that.  No yield()s, please.  Their duration is
->> highly unpredictable.  Can we do something more deterministic here?
-> 
-> æ ¹æ®Andrewçš„æŒ‡æ‘˜ï¼Œæˆ‘åšäº†ä¸‹é¢çš„patchï¼Œå¦‚æžœè¯»ç«¯çš„è¿›ç¨‹å¤„äºŽå†…å­˜åˆ†é…è¿‡ç¨‹ä¸­ä½†ä¸åœ¨è¿è¡Œï¼Œ
-> åˆ™è®©è´Ÿè´£ä¿®æ”¹tsk->mems_allowedçš„è¿›ç¨‹ç¡çœ ï¼Œç­‰å¾…è¯»ç«¯ç»“æŸå†…å­˜åˆ†é…æ“ä½œã€‚
-> 
-> diff --git a/include/linux/cpuset.h b/include/linux/cpuset.h
-> index 457ed76..d348c47 100644
-> --- a/include/linux/cpuset.h
-> +++ b/include/linux/cpuset.h
-> @@ -117,7 +117,11 @@ static inline void put_mems_allowed(void)
->  	 * nodemask.
->  	 */
->  	smp_mb();
-> -	--ACCESS_ONCE(current->mems_allowed_change_disable);
-> +	if (!--ACCESS_ONCE(current->mems_allowed_change_disable)
-> +	    && unlikely(current->mems_read_done)) {
-> +		complete(current->mems_read_done);
-> +		current->mems_read_done = NULL;
-> +	}
->  }
->  
->  static inline void set_mems_allowed(nodemask_t nodemask)
-> diff --git a/include/linux/sched.h b/include/linux/sched.h
-> index 66620fa..8699900 100644
-> --- a/include/linux/sched.h
-> +++ b/include/linux/sched.h
-> @@ -1423,6 +1423,8 @@ struct task_struct {
->  #ifdef CONFIG_CPUSETS
->  	nodemask_t mems_allowed;	/* Protected by alloc_lock */
->  	int mems_allowed_change_disable;
-> +	/* for changing mems_allowed and mempolicy */
-> +	struct completion *mems_read_done;
->  	int cpuset_mem_spread_rotor;
->  	int cpuset_slab_spread_rotor;
->  #endif
-> @@ -2525,6 +2527,12 @@ static inline void inc_syscw(struct task_struct *tsk)
->  extern void task_oncpu_function_call(struct task_struct *p,
->  				     void (*func) (void *info), void *info);
->  
-> +/*
-> + * Call the function if the target task is not executing right now
-> + */
-> +extern void task_notcurr_function_call(struct task_struct *p,
-> +				     void (*func) (void *info), void *info);
-> +
->  
->  #ifdef CONFIG_MM_OWNER
->  extern void mm_update_next_owner(struct mm_struct *mm);
-> diff --git a/kernel/cpuset.c b/kernel/cpuset.c
-> index d243a22..a471ab2 100644
-> --- a/kernel/cpuset.c
-> +++ b/kernel/cpuset.c
-> @@ -938,6 +938,20 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
->  	guarantee_online_mems(task_cs(tsk),&tsk->mems_allowed);
->  }
->  
-> +struct cpuset_task_info {
-> +	struct task_struct *tsk;
-> +	struct completion done;
-> +	int ret;
-> +};
-> +
-> +void set_mems_read_done_for_task(void *_info)
-> +{
-> +	struct cpuset_task_info *info = _info;
-> +
-> +	info->tsk->mems_read_done = &info->done;
-> +	info->ret = 1;
-> +}
-> +
->  /*
->   * cpuset_change_task_nodemask - change task's mems_allowed and mempolicy
->   * @tsk: the task to change
-> @@ -950,6 +964,8 @@ static void cpuset_migrate_mm(struct mm_struct *mm, const nodemask_t *from,
->  static void cpuset_change_task_nodemask(struct task_struct *tsk,
->  					nodemask_t *newmems)
->  {
-> +	struct cpuset_task_info info;
-> +
->  repeat:
->  	/*
->  	 * Allow tasks that have access to memory reserves because they have
-> @@ -980,13 +996,23 @@ repeat:
->  	smp_mb();
->  
->  	/*
-> -	 * Allocating of memory is very fast, we needn't sleep when waitting
-> -	 * for the read-side.
-> +	 * If the read-side is running, we needn't sleep when waiting for the
-> +	 * read-side because allocating page is very fast.
->  	 */
->  	while (ACCESS_ONCE(tsk->mems_allowed_change_disable)) {
->  		task_unlock(tsk);
-> -		if (!task_curr(tsk))
-> -			yield();
-> +		if (!task_curr(tsk)) {
-> +			info.tsk = tsk;
-> +			init_completion(&info.done);
-> +			info.ret = 0;
-> +
-> +			task_notcurr_function_call(tsk,
-> +						   set_mems_read_done_for_task,
-> +						   &info);
-> +			if (info.ret)
-> +				wait_for_completion(&info.done);
-> +		} else
-> +			cpu_relax();
->  		goto repeat;
->  	}
->  
-> diff --git a/kernel/fork.c b/kernel/fork.c
-> index f4f0951..76a6ec8 100644
-> --- a/kernel/fork.c
-> +++ b/kernel/fork.c
-> @@ -1090,6 +1090,7 @@ static struct task_struct *copy_process(unsigned long clone_flags,
->  #ifdef CONFIG_CPUSETS
->  	p->cpuset_mem_spread_rotor = node_random(p->mems_allowed);
->  	p->cpuset_slab_spread_rotor = node_random(p->mems_allowed);
-> +	p->mems_read_done = NULL;
->  #endif
->  #ifdef CONFIG_TRACE_IRQFLAGS
->  	p->irq_events = 0;
-> diff --git a/kernel/sched.c b/kernel/sched.c
-> index e298c71..f839f8f 100644
-> --- a/kernel/sched.c
-> +++ b/kernel/sched.c
-> @@ -2217,6 +2217,35 @@ void task_oncpu_function_call(struct task_struct *p,
->  	preempt_enable();
->  }
->  
-> +/**
-> + * task_notcurr_function_call - call a function when a task isn't running
-> + * @p:		the task to evaluate
-> + * @func:	the function to be called
-> + * @info:	the function call argument
-> + *
-> + * Calls the function @func when the task is not currently running.
-> + */
-> +void task_notcurr_function_call(struct task_struct *p,
-> +			      void (*func) (void *info), void *info)
-> +{
-> +	struct rq *rq;
-> +	unsigned long flags;
-> +
-> +	if (p == current)
-> +		return;
-> +
-> +#ifdef CONFIG_SMP
-> +	rq = task_rq_lock(p, &flags);
-> +	if (!task_curr(p))
-> +		func(info);
-> +	task_rq_unlock(rq, &flags);
-> +#else
-> +	preempt_disable();
-> +	func(info);
-> +	preempt_enable();
-> +#endif
-> +}
-> +
->  #ifdef CONFIG_SMP
->  /*
->   * ->cpus_allowed is protected by either TASK_WAKING or rq->lock held.
-> 
+>>       struct tasklet_struct   restq;          /* reset tasklet */
+>>
+>> @@ -164,7 +172,9 @@ struct ath5k_softc {
+>>       spinlock_t              rxbuflock;
+>>       u32                     *rxlink;        /* link ptr in last RX desc */
+>>       struct tasklet_struct   rxtq;           /* rx intr tasklet */
+>> +#ifdef CONFIG_ATH5K_LEDS
+>>       struct ath5k_led        rx_led;         /* rx led */
+>> +#endif
+>
+> You may want to group those fields together to make the code more
+> readable.
+>
+>> --- a/drivers/net/wireless/ath/ath5k/led.c
+>> +++ b/drivers/net/wireless/ath/ath5k/led.c
+>
+> I wonder if you could omit led.c completely in the Makefile.  If there
+> are some parts of led.c that are needed without CONFIG_ATH5K_LEDS, maybe
+> they belong elsewhere?
+>
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
-> 
-> 
-
-
+> Regards,
+> Pavel Roskin
+>
