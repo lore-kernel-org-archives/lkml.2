@@ -1,45 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab0EMRxM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:53:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:42269 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758718Ab0EMRxI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:53:08 -0400
-Date: Thu, 13 May 2010 14:01:37 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
-Message-ID: <20100513180137.GH27011@dhcp231-156.rdu.redhat.com>
-References: <20100512204052.GD3597@localhost.localdomain> <20100513151429.GA16916@infradead.org> <20100513153145.GE27011@dhcp231-156.rdu.redhat.com> <20100513152639.GA30954@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513152639.GA30954@infradead.org>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1758888Ab0EMRzI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:55:08 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:50255 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754179Ab0EMRzF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:55:05 -0400
+Subject: Re: [RFC, 3/7] NUMA hotplug emulator
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
+       linux-kernel@vger.kernel.org, ak@linux.intel.com,
+       fengguang.wu@intel.com, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+In-Reply-To: <20100513165511.GB25212@suse.de>
+References: <20100513114835.GD2169@shaohui> <20100513165511.GB25212@suse.de>
+Content-Type: text/plain
+Date: Thu, 13 May 2010 10:54:52 -0700
+Message-Id: <1273773292.13285.7755.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 11:26:39AM -0400, Christoph Hellwig wrote:
-> On Thu, May 13, 2010 at 11:31:45AM -0400, Josef Bacik wrote:
-> > AIO's aio_complete does kmap with KM_IRQ0/1 and it gets called in the same
-> > context as the btrfs completion handler, so if it's ok for aio_complete it
-> > should be ok for btrfs right?  Thanks,
+On Thu, 2010-05-13 at 09:55 -0700, Greg KH wrote:
+> > Add a sysfs entry "probe" under /sys/devices/system/node/:
+> > 
+> >  - to show all fake offlined nodes:
+> >     $ cat /sys/devices/system/node/probe
+> > 
+> >  - to hotadd a fake offlined node, e.g. nodeid is N:
+> >     $ echo N > /sys/devices/system/node/probe
 > 
-> aio_complete does a spin_lock_irqsave before that, which disables
-> interrupts on the local CPU.
+> As you are trying to add a new sysfs file, please create the matching
+> Documentation/ABI/ file as well.
 > 
+> Also note that sysfs files are "one value per file", which I don't think
+> this file follows, right?
 
-Ok how about I just do
+I think in this case, it was meant to be a list of acceptable parameters
+rather than a set of values, kinda like /sys/power/state.  Instead, I
+guess we could have:
 
-local_irq_disable()
-kmap(KM_IRQ0)
-local_irq_enable()
+	/sys/devices/system/node/probeable/3
+	/sys/devices/system/node/probeable/43
+	/sys/devices/system/node/probeable/65
+	/sys/devices/system/node/probeable/5145
 
-would that be acceptable?  Thanks,
+and the knowledge that you need to pick one of those to echo
+into /sys/devices/system/node/probe.  But, it's a lot more self
+explanatory if you 'cat /sys/devices/system/node/probe', and then pick
+one of those to echo back into the file.
 
-Josef
+Seems like a decent place to violate the "rule". :)
+
+-- Dave
+
