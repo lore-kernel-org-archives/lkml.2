@@ -1,52 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756897Ab0EMNVY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 09:21:24 -0400
-Received: from stinky.trash.net ([213.144.137.162]:55350 "EHLO
-	stinky.trash.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756810Ab0EMNVV (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 09:21:21 -0400
-Message-ID: <4BEBFCD0.80200@trash.net>
-Date: Thu, 13 May 2010 15:21:20 +0200
-From: Patrick McHardy <kaber@trash.net>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090701)
+	id S1756687Ab0EMNY6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 09:24:58 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:52909 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753088Ab0EMNY4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 09:24:56 -0400
+Date: Thu, 13 May 2010 14:24:36 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH 5/5] extend KSM refcounts to the anon_vma root
+Message-ID: <20100513132436.GC27949@csn.ul.ie>
+References: <20100512134111.467fb6c2@annuminas.surriel.com> <20100512210706.GQ24989@csn.ul.ie> <4BEB18FE.1090808@redhat.com> <20100513112603.GB27949@csn.ul.ie> <4BEBFA82.2000301@redhat.com>
 MIME-Version: 1.0
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, mingo@elte.hu, laijs@cn.fujitsu.com,
-       dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com, Arnd Bergmann <arnd@relay.de.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH RFC tip/core/rcu 18/23] net/netfilter: __rcu annotations
-References: <20100512213317.GA15085@linux.vnet.ibm.com> <1273700022-16523-18-git-send-email-paulmck@linux.vnet.ibm.com>
-In-Reply-To: <1273700022-16523-18-git-send-email-paulmck@linux.vnet.ibm.com>
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BEBFA82.2000301@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Paul E. McKenney wrote:
-> From: Arnd Bergmann <arnd@relay.de.ibm.com>
-> 
-> Signed-off-by: Arnd Bergmann <arnd@arndb.de>
-> Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> Cc: Patrick McHardy <kaber@trash.net>
-> Cc: "David S. Miller" <davem@davemloft.net>
-> Cc: Eric Dumazet <eric.dumazet@gmail.com>
-> ---
->  include/net/netfilter/nf_conntrack.h |    2 +-
->  net/ipv4/netfilter/nf_nat_core.c     |    2 +-
->  net/netfilter/core.c                 |    2 +-
->  net/netfilter/nf_conntrack_ecache.c  |    4 ++--
->  net/netfilter/nf_conntrack_extend.c  |    2 +-
->  net/netfilter/nf_conntrack_proto.c   |    4 ++--
->  net/netfilter/nf_log.c               |    2 +-
->  net/netfilter/nf_queue.c             |    2 +-
->  8 files changed, 10 insertions(+), 10 deletions(-)
+On Thu, May 13, 2010 at 09:11:30AM -0400, Rik van Riel wrote:
+> On 05/13/2010 07:26 AM, Mel Gorman wrote:
+>> On Wed, May 12, 2010 at 05:09:18PM -0400, Rik van Riel wrote:
+>>> On 05/12/2010 05:07 PM, Mel Gorman wrote:
+>>>> On Wed, May 12, 2010 at 01:41:11PM -0400, Rik van Riel wrote:
+>>>>> Subject: extend KSM refcounts to the anon_vma root
+>>>>>
+>>>>> KSM reference counts can cause an anon_vma to exist after the processe
+>>>>> it belongs to have already exited.  Because the anon_vma lock now lives
+>>>>> in the root anon_vma, we need to ensure that the root anon_vma stays
+>>>>> around until after all the "child" anon_vmas have been freed.
+>>>>>
+>>>>> The obvious way to do this is to have a "child" anon_vma take a
+>>>>> reference to the root in anon_vma_fork.  When the anon_vma is freed
+>>>>> at munmap or process exit, we drop the refcount in anon_vma_unlink
+>>>>> and possibly free the root anon_vma.
+>>>>>
+>>>>> The KSM anon_vma reference count function also needs to be modified
+>>>>> to deal with the possibility of freeing 2 levels of anon_vma.  The
+>>>>> easiest way to do this is to break out the KSM magic and make it
+>>>>> generic.
+>>>>>
+>>>>> When compiling without CONFIG_KSM, this code is compiled out.
+>>>>>
+>>>>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>>>>> ---
+>>>>>    include/linux/rmap.h |   12 ++++++++++++
+>>>>>    mm/ksm.c             |   17 ++++++-----------
+>>>>>    mm/rmap.c            |   45 ++++++++++++++++++++++++++++++++++++++++++++-
+>>>>>    3 files changed, 62 insertions(+), 12 deletions(-)
+>>>>>
+>>>>> diff --git a/include/linux/rmap.h b/include/linux/rmap.h
+>>>>> index 33ffe14..387d40c 100644
+>>>>> --- a/include/linux/rmap.h
+>>>>> +++ b/include/linux/rmap.h
+>>>>> @@ -126,6 +126,18 @@ int anon_vma_fork(struct vm_area_struct *, struct vm_area_struct *);
+>>>>>    void __anon_vma_link(struct vm_area_struct *);
+>>>>>    void anon_vma_free(struct anon_vma *);
+>>>>>
+>>>>> +#ifdef CONFIG_KSM
+>>>>> +static inline void get_anon_vma(struct anon_vma *anon_vma)
+>>>>> +{
+>>>>> +	atomic_inc(&anon_vma->ksm_refcount);
+>>>>> +}
+>>>>> +
+>>>>> +void drop_anon_vma(struct anon_vma *);
+>>>>> +#else
+>>>>> +#define get_anon_vma(x)		do {} while(0)
+>>>>> +#define drop_anon_vma(x)	do {} while(0)
+>>>>> +#endif
+>>>>> +
+>>>>>    static inline void anon_vma_merge(struct vm_area_struct *vma,
+>>>>>    				  struct vm_area_struct *next)
+>>>>>    {
+>>>>> diff --git a/mm/ksm.c b/mm/ksm.c
+>>>>> index 7ca0dd7..9f2acc9 100644
+>>>>> --- a/mm/ksm.c
+>>>>> +++ b/mm/ksm.c
+>>>>> @@ -318,19 +318,14 @@ static void hold_anon_vma(struct rmap_item *rmap_item,
+>>>>>    			  struct anon_vma *anon_vma)
+>>>>>    {
+>>>>>    	rmap_item->anon_vma = anon_vma;
+>>>>> -	atomic_inc(&anon_vma->ksm_refcount);
+>>>>> +	get_anon_vma(anon_vma);
+>>>>>    }
+>>>>
+>>>> I'm not quite getting this. Here, we get the local anon_vma so we
+>>>> increment its reference count and later we drop it but without a
+>>>> refcount taken on the root anon_vma, why is it guaranteed to stay
+>>>> around?
+>>>
+>>> Because anon_vma_fork takes a reference count on the root anon_vma,
+>>> the VMA we take a refcount on will either have a refcount on the
+>>> root, or it is the root.
+>>>
+>>
+>> Sorry, I'm still not getting it. anon_vma_fork keeps the refcount around
+>> during fork but what about during exit?
+>
+> It is kept around all the way from fork until exit.
+>
 
-Acked-by: Patrick McHardy <kaber@trash.net>
+Ok, now I get it. I was thinking in terms of a reference count being for
+the duration of a specific operation. In this case, the root anon_vma
+has an elevated reference count for the lifetime of the anon_vma forest.
+Thanks.
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
