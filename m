@@ -1,113 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758156Ab0EMH5g (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:57:36 -0400
-Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48568 "EHLO
-	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751608Ab0EMH5b (ORCPT
+	id S1758204Ab0EMH5l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 03:57:41 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:35759 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758146Ab0EMH5e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:57:31 -0400
-From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-To: n-horiguchi@ah.jp.nec.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [PATCH 0/7] HWPOISON for hugepage (v5)
-Date: Thu, 13 May 2010 16:55:19 +0900
-Message-Id: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
-X-Mailer: git-send-email 1.7.0
+	Thu, 13 May 2010 03:57:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mime-version:content-type
+         :content-disposition:user-agent;
+        b=PYUM0BMFNSSrsNTNpcsz3HGEh0zU6bm1JYioFUt4VRebyBKaHN5D/0DMUPwJyyAZHc
+         rwiNLYohzr1uHEZwGfK8ObigsO1ledPEbltUWr4EKbnVpYmTLEWcLuu4SCPKzLY7HyZo
+         POSJAXIXZ/3Iy61XZ3O1WLC5cX7OmzPK5OUdw=
+Date: Thu, 13 May 2010 00:57:28 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100513075728.GF30110@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patchset enables error handling for hugepage by containing error
-in the affected hugepage.
+Hi Linus,
 
-Until now, memory error (classified as SRAO in MCA language) on hugepage
-was simply ignored, which means if someone accesses the error page later,
-the second MCE (severer than the first one) occurs and the system panics.
+Please pull from:
 
-It's useful for some aggressive hugepage users if only affected processes
-are killed.  Then other unrelated processes aren't disturbed by the error
-and can continue operation.
+	git://git.kernel.org/pub/scm/linux/kernel/git/dtor/input.git for-linus
+or
+	master.kernel.org:/pub/scm/linux/kernel/git/dtor/input.git for-linus
 
-Moreover, for other extensive hugetlb users which have own "pagecache"
-on hugepage, the most valued feature would be being able to receive
-the early kill signal BUS_MCEERR_AO, because the cache pages have
-good opportunity to be dropped without side effects on BUS_MCEERR_AO.
+to receive a few last minute changes to the input subsystem.
+
+Changelog:
+---------
+
+Bastien Nocera (1):
+      Input: i8042 - do not try to probe ports on Intel Apple Macs
+
+Dmitry Torokhov (2):
+      Input: elantech - use all 3 bytes when checking version
+      Input: psmouse - reset all types of mice before reconnecting
+
+Marek Vasut (2):
+      Input: iforce - add Guillemot Jet Leader Force Feedback
+      Input: iforce - fix Guillemot Jet Leader 3D entry
+
+Oskar Schirmer (1):
+      Input: ad7877 - keep dma rx buffers in seperate cache lines
 
 
-The design of hugepage error handling is based on that of non-hugepage
-error handling, where we:
- 1. mark the error page as hwpoison,
- 2. unmap the hwpoisoned page from processes using it,
- 3. invalidate error page, and
- 4. block later accesses to the hwpoisoned pages.
+Diffstat:
+--------
 
-Similarities and differences between huge and non-huge case are
-summarized below:
+ drivers/input/joystick/iforce/iforce-main.c |    6 ++++-
+ drivers/input/joystick/iforce/iforce-usb.c  |    1 +
+ drivers/input/mouse/elantech.c              |   24 ++++++++++----------
+ drivers/input/mouse/elantech.h              |    5 +--
+ drivers/input/mouse/psmouse-base.c          |   14 +++++++++---
+ drivers/input/serio/i8042-x86ia64io.h       |   30 ++++++++++++++++++++++++++-
+ drivers/input/touchscreen/ad7877.c          |   15 ++++++++++--
+ 7 files changed, 71 insertions(+), 24 deletions(-)
 
- 1. (Difference) when error occurs on a hugepage, PG_hwpoison bits on all pages
-    in the hugepage are set, because we have no simple way to break up
-    hugepage into individual pages for now. This means there is a some
-    risk to be killed by touching non-guilty pages within the error hugepage.
+-- 
+Dmitry
 
- 2. (Similarity) hugetlb entry for the error hugepage is replaced by hwpoison
-    swap entry, with which we can detect hwpoisoned memory in VM code.
-    This is accomplished by adding rmapping code for hugepage, which enables
-    to use try_to_unmap() for hugepage.
-
- 3. (Difference) since hugepage is not linked to LRU list and is unswappable,
-    there are not many things to do for page invalidation (only dequeuing
-    free/reserved hugepage from freelist. See patch 5/7.)
-    If we want to contain the error into one page, there may be more to do.
-
- 4. (Similarity) we block later accesses by forcing page requests for
-    hwpoisoned hugepage to fail as done in non-hugepage case in do_wp_page().
-
-ToDo:
-- Narrow down the containment region into one raw page.
-- Soft-offlining for hugepage is not supported due to the lack of migration
-  for hugepage.
-- Counting file-mapped/anonymous hugepage in NR_FILE_MAPPED/NR_ANON_PAGES.
-
- [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
- [PATCH 2/7] HWPOISON, hugetlb: enable error handling path for hugepage
- [PATCH 3/7] HWPOISON, hugetlb: set/clear PG_hwpoison bits on hugepage
- [PATCH 4/7] HWPOISON, hugetlb: maintain mce_bad_pages in handling hugepage error
- [PATCH 5/7] HWPOISON, hugetlb: isolate corrupted hugepage
- [PATCH 6/7] HWPOISON, hugetlb: detect hwpoison in hugetlb code
- [PATCH 7/7] HWPOISON, hugetlb: support hwpoison injection for hugepage
-
-Dependency:
-- patch 2 depends on patch 1.
-- patch 3 to patch 6 depend on patch 2.
-
- include/linux/hugetlb.h |    3 +
- mm/hugetlb.c            |   98 ++++++++++++++++++++++++++++++++++++++-
- mm/hwpoison-inject.c    |   15 ++++--
- mm/memory-failure.c     |  120 +++++++++++++++++++++++++++++++++++------------
- mm/rmap.c               |   16 ++++++
- 5 files changed, 215 insertions(+), 37 deletions(-)
-
-ChangeLog from v4:
-- rebased to 2.6.34-rc7
-- add isolation code for free/reserved hugepage in me_huge_page()
-- set/clear PG_hwpoison bits of all pages in hugepage.
-- mce_bad_pages counts all pages in hugepage.
-- rename __hugepage_set_anon_rmap() to hugepage_add_anon_rmap()
-- add huge_pte_offset() dummy function in header file on !CONFIG_HUGETLBFS
-
-ChangeLog from v3:
-- rebased to 2.6.34-rc5
-- support for privately mapped hugepage
-
-ChangeLog from v2:
-- rebase to 2.6.34-rc3
-- consider mapcount of hugepage
-- rename pointer "head" into "hpage"
-
-ChangeLog from v1:
-- rebase to 2.6.34-rc1
-- add comment from Wu Fengguang
-
-Thanks,
-Naoya Horiguchi
