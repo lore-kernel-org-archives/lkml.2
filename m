@@ -1,72 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752302Ab0EMXzw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 19:55:52 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:59080 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750837Ab0EMXzu (ORCPT
+	id S1752499Ab0EMX4O (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 19:56:14 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:46831 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab0EMX4M (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 19:55:50 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 14 May 2010 08:51:35 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Christoph Lameter <cl@linux.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Andrea Arcangeli <aarcange@redhat.com>, Rik van Riel <riel@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH] mm,migration: Avoid race between shift_arg_pages() and
- rmap_walk() during migration by not migrating temporary stacks
-Message-Id: <20100514085135.cfb5ba17.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <alpine.DEB.2.00.1005131219190.20037@router.home>
-References: <20100511085752.GM26611@csn.ul.ie>
-	<20100512092239.2120.A69D9226@jp.fujitsu.com>
-	<20100512125427.d1b170ba.akpm@linux-foundation.org>
-	<alpine.DEB.2.00.1005121627020.1273@router.home>
-	<20100513091930.9b42e3b8.kamezawa.hiroyu@jp.fujitsu.com>
-	<alpine.DEB.2.00.1005131219190.20037@router.home>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Thu, 13 May 2010 19:56:12 -0400
+Date: Fri, 14 May 2010 01:55:42 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: Paul Menage <menage@google.com>, Peter Zijlstra <peterz@infradead.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
+       jsafrane@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100513235542.GA30093@tango.0pointer.de>
+References: <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <20100512190757.GA421@tango.0pointer.de>
+ <1273755719.5605.3537.camel@twins>
+ <20100513140354.GA12639@tango.0pointer.de>
+ <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
+ <20100513203654.GA14528@tango.0pointer.de>
+ <20100513204159.GA15291@tango.0pointer.de>
+ <20100513210738.GV3296@balbir.in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513210738.GV3296@balbir.in.ibm.com>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 12:22:01 -0500 (CDT)
-Christoph Lameter <cl@linux.com> wrote:
+On Fri, 14.05.10 02:37, Balbir Singh (balbir@linux.vnet.ibm.com) wrote:
 
-> On Thu, 13 May 2010, KAMEZAWA Hiroyuki wrote:
-> 
-> > > Would it not be possible to do something similar for the temporary stack?
-> > >
+> > > Oh, that is possible? How would I do that? 
+> > > 
+> > > This certainly doesn't work:
+> > > 
+> > > # mount waldo -t cgroup /tmp/xxxx -o defaults
+> > 
+> > An neither does this:
+> > 
+> > # mount waldo -t cgroup /tmp/xxxx -o name=systemd
+> > 
+> > (the mount() syscall fails with EINVAL here, the other one fails with EBUSY)
 > >
-> > Problem here is unmap->remap. ->migratepage() function is used as
-> >
-> > 	unmap
-> > 	   -> migratepage()
-> > 	      -> failed
-> > 		-> remap
-> >
-> > Then, migratepage() itself is no help. We need some check-callback before unmap
-> > or lock to wait for an event we can make remapping progress.
 > 
-> We could check earlier if the migrate function points to
-> fail_migrate_page()?
-
-If you mean checking before unmap, yes. we can avoid the race.
-Unmapping itself is dangerous in this case.
-
-> Where we check for PageKsm() in unmap_and_move f.e.?
+> Can you try the command below
 > 
+> mount -t cgroup cgroup -o none,name=hello /cgroup/ 
+> 
+> Works for me.
 
-I'm not sure about KSM.
+That line certainly works, but unfortunately your own libcgroup
+completely ignores mount points like this. Meh.
 
-Thanks,
--Kame
+Lennart
 
+-- 
+Lennart Poettering                        Red Hat, Inc.
+lennart [at] poettering [dot] net
+http://0pointer.net/lennart/           GnuPG 0x1A015CC4
