@@ -1,79 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932370Ab0EMP5a (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:57:30 -0400
-Received: from hera.kernel.org ([140.211.167.34]:33055 "EHLO hera.kernel.org"
+	id S1756451Ab0EMP50 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:57:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:33059 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932220Ab0EMP5U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:57:20 -0400
+	id S932240Ab0EMP5W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:57:22 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
        linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
        linux-kernel@vger.kernel.org
-Cc: ben@decadent.org.uk
-Subject: [PATCHSET] libata: implement ->set_capacity()
-Date: Thu, 13 May 2010 17:56:42 +0200
-Message-Id: <1273766206-17402-1-git-send-email-tj@kernel.org>
+Cc: ben@decadent.org.uk, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 2/4] SCSI: implement sd_set_capacity()
+Date: Thu, 13 May 2010 17:56:44 +0200
+Message-Id: <1273766206-17402-3-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 15:56:51 +0000 (UTC)
+In-Reply-To: <1273766206-17402-1-git-send-email-tj@kernel.org>
+References: <1273766206-17402-1-git-send-email-tj@kernel.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 15:56:50 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Jens, James, Jeff,
+Implement sd_set_capacity() method which calls into
+hostt->set_capacity() if implemented.  This will be invoked by block
+layer if partitions extend beyond the end of the device and can be
+used to implement, for example, on-demand ATA host protected area
+unlocking.
 
-This patchset implements ->set_capacity() in libata so that HPA can be
-unlocked on demand.
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>
+---
+ drivers/scsi/sd.c        |   26 ++++++++++++++++++++++++++
+ include/scsi/scsi_host.h |   11 +++++++++++
+ 2 files changed, 37 insertions(+), 0 deletions(-)
 
- 0001-block-restart-partition-scan-after-resizing-a-device.patch
- 0002-SCSI-implement-sd_set_capacity.patch
- 0003-libata-use-the-enlarged-capacity-after-late-HPA-unlo.patch
- 0004-libata-implement-on-demand-HPA-unlocking.patch
+diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
+index 8b827f3..59d5e8f 100644
+--- a/drivers/scsi/sd.c
++++ b/drivers/scsi/sd.c
+@@ -97,6 +97,8 @@ MODULE_ALIAS_SCSI_DEVICE(TYPE_RBC);
+ #endif
+ 
+ static int  sd_revalidate_disk(struct gendisk *);
++static unsigned long long sd_set_capacity(struct gendisk *disk,
++					  unsigned long long new_capacity);
+ static int  sd_probe(struct device *);
+ static int  sd_remove(struct device *);
+ static void sd_shutdown(struct device *);
+@@ -1100,6 +1102,7 @@ static const struct block_device_operations sd_fops = {
+ #endif
+ 	.media_changed		= sd_media_changed,
+ 	.revalidate_disk	= sd_revalidate_disk,
++	.set_capacity		= sd_set_capacity,
+ };
+ 
+ static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
+@@ -2101,6 +2104,29 @@ static int sd_revalidate_disk(struct gendisk *disk)
+ }
+ 
+ /**
++ *	sd_set_capacity - set disk capacity
++ *	@disk: struct gendisk to set capacity for
++ *	@new_capacity: new target capacity
++ *
++ *	Block layer calls this function if it detects that partitions
++ *	on @disk reach beyond the end of the device.  If the SCSI host
++ *	implements set_capacity method, it's invoked to give it a
++ *	chance to adjust the device capacity.
++ *
++ *	CONTEXT:
++ *	Defined by block layer.  Might sleep.
++ */
++static unsigned long long sd_set_capacity(struct gendisk *disk,
++					  unsigned long long new_capacity)
++{
++	struct scsi_device *sdev = scsi_disk(disk)->device;
++
++	if (sdev->host->hostt->set_capacity)
++		return sdev->host->hostt->set_capacity(sdev, new_capacity);
++	return 0;
++}
++
++/**
+  *	sd_format_disk_name - format disk name
+  *	@prefix: name prefix - ie. "sd" for SCSI disks
+  *	@index: index of the disk to format name for
+diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
+index c50a97f..31dba89 100644
+--- a/include/scsi/scsi_host.h
++++ b/include/scsi/scsi_host.h
+@@ -327,6 +327,17 @@ struct scsi_host_template {
+ 			sector_t, int []);
+ 
+ 	/*
++	 * This function is called when one or more partitions on the
++	 * device reach beyond the end of the device.  This function
++	 * should return the new capacity if disk was successfully
++	 * enlarged.  Return values smaller than the current capacity
++	 * are ignored.
++	 *
++	 * Status: OPTIONAL
++	 */
++	sector_t (*set_capacity)(struct scsi_device *, sector_t);
++
++	/*
+ 	 * Can be used to export driver statistics and other infos to the
+ 	 * world outside the kernel ie. userspace and it also provides an
+ 	 * interface to feed the driver with information.
+-- 
+1.6.4.2
 
-0001 makes partition scan code to restart after ->set_capacity().
-This makes sure that partitions which start beyond the HPA limit are
-discovered.
-
-0002 implements ->set_capacity() in sd.
-
-0003 makes libata accept device capacity larger than the initial one.
-
-0004 implements ->set_capacity() in libata which asks libata EH to
-unlock HPA, waits and returns the new capacity.
-
-Ben Hutchings suggeseted implementing ->set_capacity() in libata and
-also reported the bug in the current partition scan code where it
-fails to discover partitions which start beyond the HPA limit.
-
-Unlocking HPA on-demand seems to be the safest default way to deal
-with HPA.  Leaving HPA alone by default could fail to detect or
-truncate existing partitions while unlocking by default make it more
-prone to obscure data corruptions when combined with BIOSes beliving
-that they exclusively own the area beyond HPA limit.
-
-0001 should be routed through the block tree.  0002 should go through
-SCSI but given the dependency and that libata is the only user, it
-would probably much easier to route it through libata-dev#upstream
-together with 0003 and 0004.
-
-The patches are based on top of libata-dev#upstream but apply fine on
-top of mainline too.
-
-This patchset is available in the following git branch.
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/libata-dev.git set-capa
-
-and contains the following changes.
-
- drivers/ata/libata-core.c |    6 +++---
- drivers/ata/libata-scsi.c |   42 ++++++++++++++++++++++++++++++++++++++++++
- drivers/scsi/sd.c         |   26 ++++++++++++++++++++++++++
- fs/partitions/check.c     |    7 ++++---
- include/linux/libata.h    |    3 +++
- include/scsi/scsi_host.h  |   11 +++++++++++
- 6 files changed, 89 insertions(+), 6 deletions(-)
-
-Thanks.
-
---
-tejun
