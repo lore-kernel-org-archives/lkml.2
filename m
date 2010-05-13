@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758947Ab0EMPGT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:06:19 -0400
-Received: from sous-sol.org ([216.99.217.87]:36217 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1754179Ab0EMPGQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:06:16 -0400
-Date: Thu, 13 May 2010 08:05:54 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Chris Wright <chrisw@sous-sol.org>, greg@kroah.com,
-       jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [PATCH 2/2] pci: allow sysfs file owner to read device dependent
- config space
-Message-ID: <20100513150554.GC28034@sequoia.sous-sol.org>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
- <20100513012957.GB28034@sequoia.sous-sol.org>
- <20100513105911.6469c434@lxorguk.ukuu.org.uk>
+	id S1758957Ab0EMPG6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:06:58 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:55983 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754179Ab0EMPG4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:06:56 -0400
+Date: Thu, 13 May 2010 08:04:15 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Bastien Nocera <hadess@hadess.net>
+cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-Reply-To: <1273762051.2308.4671.camel@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net>  <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <1273762051.2308.4671.camel@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513105911.6469c434@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> On Wed, 12 May 2010 18:29:57 -0700
-> Chris Wright <chrisw@sous-sol.org> wrote:
+
+
+On Thu, 13 May 2010, Bastien Nocera wrote:
 > 
-> > The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-> > check to verify privileges before allowing a user to read device
-> > dependent config space.  This is meant to protect from an unprivileged
-> > user potentially locking up the box.
-> 
-> Or hacking it.
+> Maybe you didn't update to the latest firmwares on you Mac Mini, and
+> didn't see the problem with the updated BIOSes, I don't know.
 
-With read access?  You mean from read side-effect on a device register?
+I can't update the firmware, since it's some random OS X program that does 
+it (and I don't have OS X on the machine).
 
->  You could argue the correct requirement is to change it to
-> require CAP_SYS_RAWIO in fact !
+But where does it lock up? During the boot probing? Or does it probe as 
+having a keyboard because Apple added some crazy SMM code to try to 
+emulate one with USB? 
 
-It's also pervasive through sysfs.  I found 22 CAP_SYS_ADMIN checks via
-sysfs bin_attrs, most are firmware, config space, and similar; most of
-which have could be abused to hack box in one way or another.
+Afaik, the Apple hardware actually does _physically_ have a keyboard 
+controller (it's on the regular intel southbridge silicon, afaik), it just 
+isn't connected to anything. And I think it is turned off in some of the 
+southbridge control registers. The control registers also allow trapping 
+into SMI when accessing the keyboard control registers, and maybe Apple 
+screwed up there somewhere.
 
-> > With this patch the sysfs file owner is also considered privileged enough
-> > to read all of the config space.
-> 
-> Which breaks the main reason the check was there in the first place. To
-> stop accidents of the form
-> 
-> 	find / -exec grep {} "wibble"
-> 
-> blowing up in people's faces.
+On one of my Mac Mini's (didn't check the other), I get this:
 
-Right, this won't change w/out sysadmin intervention.
+	[    2.955087] PNP: No PS/2 controller found. Probing ports directly.
+	[    2.958475] i8042.c: No controller found.
+	[    2.960998] mice: PS/2 mouse device common for all mice
 
-Currently, any random user doing that won't trigger an ill-behaving
-device dependent config space read.  It requires an admin to chown the
-file to the user, at which point you've given the device to the user.
-This is typically only done in the privileged context of libvirt launching
-a KVM guest that has a host PCI device directly assigned to it, and the
-chown is typically to a non-shell user.
+what do you get?
 
-> I agree with the problem - but IMHO the fix is to require opening the file
-> checks CAP_SYS_something instead:
+The thing is, there's a _lot_ of machines out there with no legacy 
+keyboard support. They tend to work. We have timeouts for the i8042 
+commands we do during init, but maybe we missed some case. And maybe we 
+could easily add some extra tests too.
 
-We can't require CAP_SYS_something on open as that will break basic tools
-like lspci.  We could note the privileges when opened and check them
-later.
+A few printk's in the i8042 init routines to show where it locks up would 
+be good.. I assume you did that already if you and Dmitry already tried to 
+debug this. Where's the original thread?
 
->  not to hack the read method and make it
-> even weirder and more un-Linux than it is now.
-
-
+			Linus
