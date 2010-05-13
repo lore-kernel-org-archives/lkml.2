@@ -1,84 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759213Ab0EMSdg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 14:33:36 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42714 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759110Ab0EMSdf (ORCPT
+	id S1759184Ab0EMShZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 14:37:25 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:36395 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753677Ab0EMShY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 14:33:35 -0400
-X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=yiYnlo-UJTIA:10 a=ood2b7iyd8MA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=tB9f0SiZxiQnIGsfSNEA:9 a=5bEc2HO6S_WlC0lQnEYA:7 a=vUAzSpqlxY6sAvjQmN6XRSX_pJMA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-In-Reply-To: <20100513171015.GA13698@Krystal>
-References: <20100512180438.GE15953@Krystal>
-	 <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal>
-	 <1273690012.27703.38.camel@gandalf.stny.rr.com>
-	 <20100512202745.GK21432@Krystal>
-	 <1273702886.27703.58.camel@gandalf.stny.rr.com>
-	 <20100513132029.GA22799@Krystal>
-	 <1273765337.27703.1043.camel@gandalf.stny.rr.com>
-	 <20100513163150.GA13005@Krystal>
-	 <1273769178.27703.1119.camel@gandalf.stny.rr.com>
-	 <20100513171015.GA13698@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Thu, 13 May 2010 14:33:32 -0400
-Message-ID: <1273775612.27703.1228.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 May 2010 14:37:24 -0400
+Date: Thu, 13 May 2010 19:36:46 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Daniel Walker <dwalker@fifo99.com>
+Cc: Brian Swetland <swetland@google.com>, Paul Walmsley <paul@pwsan.com>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100513183646.GA18155@srcf.ucam.org>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com> <20100513121745.GA10749@srcf.ucam.org> <1273771990.19100.13.camel@c-dwalke-linux.qualcomm.com> <s2ga55d774e1005131117yd138c59bk54cc109401eb4a8d@mail.gmail.com> <1273775157.19100.20.camel@c-dwalke-linux.qualcomm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273775157.19100.20.camel@c-dwalke-linux.qualcomm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 13:10 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
+On Thu, May 13, 2010 at 11:25:57AM -0700, Daniel Walker wrote:
 
-> IOW, if the reader is trying to get subbuffers like crazy, it will maybe cause
-> one loop restart when taking the subbuffer the writer was about to write to, but
-> after that, the reader will be forced to exchange the next subbuffer, and so on
-> until it wraps-around and comes back to the subbuffer preceding the writer
-> position, as stop there. Note that during all this execution, the reader could
-> only cause a single retry of the writer. In summary, the frontend range
-> restrictions guarantee that the writer will retry at most once.
-> 
+> The problem is that once this userspace interface is exposed, it's
+> nearly permanent and has to be support for a long long time .. It might
+> seen trivial to just remove something your not using, but we never know
+> who is using what once the kernel is released.
 
-And I take it that this is all verified in your proof.
+Deprecating sysfs interfaces can be done within 6 months or so, 
+especially if there's only one real consumer.
 
-> Note that we could also use an atomic "set bit/clear bit" for the writer, along
-> with write memory barriers, when available on the architecture, and that would
-> remove all need for loops. However, architectures that need to emulate set
-> bit/clear bit with a cmpxchg() would behave pretty much in the same way as my
-> current code does.
-> 
-> > 
-> > I thought you said you did not have loops in the writers?
-
-Just a note, that the current ring buffer has no such loops.
-
-> 
-> Well, while technically a loop, it is a bounded single-retry, so it's OK as far
-> as wait-free guarantees are concerned. We could even put a WARN_ON() there to
-> ensure that we catch double retry that should never happen, but that would be at
-> the cost of a runtime veritication. A DEBUG_TRACER_RT config option could select
-> this though.
-
-No, no one would ever track that. As with todays ring buffer, we keep
-all checks enabled. Sorry if it slows it down, but the kernel is at such
-a flex that we must have these checks on all the time.
-
--- Steve
-
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
