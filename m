@@ -1,53 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759294Ab0EMQMd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:12:33 -0400
-Received: from inpsmtp.inp-toulouse.fr ([193.48.203.41]:42128 "EHLO
-	inpsmtp.inp-toulouse.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759028Ab0EMQMb (ORCPT
+	id S1759303Ab0EMQMs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:12:48 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:64496 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759201Ab0EMQMq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:12:31 -0400
-X-Greylist: delayed 1753 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 May 2010 12:12:31 EDT
-Message-ID: <20100513171801.a0leqwxwggowo0c4@wmail.inp-toulouse.fr>
-Date: Thu, 13 May 2010 17:18:01 +0200
-From: Mrs Rebecca Young <bankoflondon@london.com>
-Reply-to: yrebecca1958@hotmail.com
-To: undisclosed-recipients:;
-Subject: 
+	Thu, 13 May 2010 12:12:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eeL/MTaXPwZt8E0oT0wVmI4dZY3zXj3LofYIDSkmwIAKX19Y0sc0mpTyFkgAmSO/cF
+         YO+wmAf8IRsLAslVpuaITfC39EM9gT5K6utCAF+rPaX/CmrT8bnI40VnXJCdQsRfNYcz
+         qsjbVMk8yo5Q0Vn7T9kZMoE9fBgP3pqOW7uvs=
+Date: Thu, 13 May 2010 18:12:44 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
+       Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+       Jason Baron <jbaron@redhat.com>
+Subject: Re: ftrace syscalls, PowerPC: Fixes and PowerPC raw syscall
+	tracepoint implementation
+Message-ID: <20100513161240.GA5377@nowhere>
+References: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com> <1273766771.27703.1069.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (inpsmtp.inp-toulouse.fr [193.48.203.41]); Thu, 13 May 2010 17:20:27 +0200 (CEST)
+In-Reply-To: <1273766771.27703.1069.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 13, 2010 at 12:06:11PM -0400, Steven Rostedt wrote:
+> Frederic,
+> 
+> I'm fine with these patches, but since you mainly did the syscall work,
+> I'll let you take them.
 
-Attn: Sir/Madam,
 
-Although you might be apprehensive about my email as we have not met
-before,I am Mrs Rebecca Young,I am a Banker i work with Bank Of
-London,There is the sum of $20,600,000.00 in my Bank "Bank Of London"
-There were no beneficiaries stated concerning these funds which
-means no one would ever come forward to claim it.
+Sure.
 
-That is why I ask that we work together so as to have the sum
-transfered out of my Bank into your Bank Account or any other
-account  of your choice. I will be pleased to see if you can
-help me and also be a good and trusted person. Once the funds
-have been transferred to your Nominated Bank Account we shall
-then share in the ratio of 60% for me, 40% for you,do send me
-a mail as soon as possible for more details here is my email
-address: yrebecca1958@hotmail.com
 
-Regards
-Mrs Rebecca Young
+ 
+> The patches that touch the PowerPC code needs an acked-by from Ben or
+> Paul.
+> 
+> -- Steve
 
 
 
+Ok,
+
+Thanks.
 
