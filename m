@@ -1,70 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757050Ab0EMRcq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38422 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756313Ab0EMRck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:32:40 -0400
-Message-ID: <4BEC37AB.2020505@redhat.com>
-Date: Thu, 13 May 2010 14:32:27 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S1757646Ab0EMRc4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:32:56 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:56927 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757281Ab0EMRcw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:32:52 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=NQFCwesDzlC0uLNOK6lar6ORj5topoJbuBn0fxcHXsp4UCXC5ZCrKc+uvZnOSPQMla
+         1wZHRDv07th3re4CpDFc8XC+nJ025BylMtcf3kHE5JfFUUXxksDneMani1FukX5BBT82
+         R3aZTrOVjClonlY6N8/dq9+leB6gjZTKwvKU0=
 MIME-Version: 1.0
-To: Valdis.Kletnieks@vt.edu
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: Re: mmotm 2010-05-11-18-20 uploaded
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <6195.1273763194@localhost> <20100513160249.GC22238@core.coreip.homeip.net>            <4BEC26E2.1020404@redhat.com> <10741.1273768199@localhost>
-In-Reply-To: <10741.1273768199@localhost>
+Date: Thu, 13 May 2010 12:32:50 -0500
+Message-ID: <AANLkTinjz1gTR6-zZVePSNLOd5bnnft-SCdGyPr-bFE7@mail.gmail.com>
+Subject: [GIT] CIFS fix
+From: Steve French <smfrench@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Jeff Layton <jlayton@redhat.com>, LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Valdis.Kletnieks@vt.edu wrote:
-> On Thu, 13 May 2010 13:20:50 -0300, Mauro Carvalho Chehab said:
->> Dmitry Torokhov wrote:
->>> On Thu, May 13, 2010 at 11:06:34AM -0400, Valdis.Kletnieks@vt.edu wrote:
->>>> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
->>>>> The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
->>>>>
->>>>>    http://userweb.kernel.org/~akpm/mmotm/
->>>> Dell Latitude E6500, x86_64 kernel.
->>>>
->>>> Boots to single user prompt, but has issues on the way there.  Possibly
->>>> very important - I was definitely *not* typing at the time (as I had hit
->>>> return on the LUKS passphrase for the disk at 36 seconds after boot, and
->>>> I didn't get the # prompt for single-user for another minute or two (probably
->>>> due to udev having issues due to the oops). So I have no idea what it was
->>>> trying to get a keycode for...
->>>>
->>> Udev probably tries to remap special keys on your keyboard...
->>>
->>>> [   40.717136] udev: starting version 154
->>>> [   41.710153] BUG: unable to handle kernel NULL pointer dereference at (null)
->>>> [   41.711007] IP: [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
->>>> [   41.711007] PGD 11d318067 PUD 118af1067 PMD 0
->>>> [   41.711007] Oops: 0002 [#1] PREEMPT SMP
->>>> [   41.711007] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4/idVendor
->>>> [   41.711007] CPU 0
->>>> [   41.711007] Modules linked in:
->>>> [   41.711007]
->>>> [   41.711007] Pid: 2501, comm: keymap Not tainted 2.6.34-rc7-mmotm0511 #2 0X564R/Latitude E6500
->>>>
->>>> [   41.711007] RIP: 0010:[<ffffffff813bb996>]  [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
->>> I think this is Mauro's big keycode additions.
->> Yes, it is likely. It may be caused by some bad conflict resolution between both git trees.
->> I'll handle this bug.
-> 
-> Feel free to let me know if there's any testing/instrumentation you want done...
-> 
-Ok. I probably won't have time for handing it until next week, as I'll be traveling
-tomorrow for a short trip.
+The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
 
--- 
+ Merge branch 'for_linus' of
+git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6
+(2010-04-20 09:39:40 -0700)
 
-Cheers,
-Mauro
+are available in the git repository at:
+
+ git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6.git for-linus
+
+Jeff Layton (1):
+     cifs: guard against hardlinking directories
+
+fs/cifs/cifsglob.h |    1 +
+fs/cifs/inode.c    |   21 +++++++++++++++++++--
+2 files changed, 20 insertions(+), 2 deletions(-)
+
+
+--
+Thanks,
+
+Steve
