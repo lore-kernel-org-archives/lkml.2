@@ -1,145 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759501Ab0EMUiK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:38:10 -0400
-Received: from e24smtp01.br.ibm.com ([32.104.18.85]:35533 "EHLO
-	e24smtp01.br.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756577Ab0EMUiE (ORCPT
+	id S1753815Ab0EMUm3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:42:29 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:59518 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750818Ab0EMUm2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:38:04 -0400
-Subject: Re: [PATCH] TPM: ACPI/PNP dependency removal
-From: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: linux-kernel@vger.kernel.org, jmorris@namei.org, zohar@linux.vnet.ibm.com
-In-Reply-To: <4BEC6141.2010201@oracle.com>
-References: <1273782204.8536.4.camel@blackbox.ibm.com>
-	 <4BEC6141.2010201@oracle.com>
-Content-Type: text/plain
-Organization: IBM
-Date: Thu, 13 May 2010 17:37:54 -0300
-Message-Id: <1273783074.8536.6.camel@blackbox.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	Thu, 13 May 2010 16:42:28 -0400
+Date: Thu, 13 May 2010 22:41:59 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Paul Menage <menage@google.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
+       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100513204159.GA15291@tango.0pointer.de>
+References: <eJktY-7JG-7@gated-at.bofh.it>
+ <eJktY-7JG-5@gated-at.bofh.it>
+ <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <20100512190757.GA421@tango.0pointer.de>
+ <1273755719.5605.3537.camel@twins>
+ <20100513140354.GA12639@tango.0pointer.de>
+ <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
+ <20100513203654.GA14528@tango.0pointer.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513203654.GA14528@tango.0pointer.de>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch pushes the ACPI dependency into the device driver code
-itself. Now, even without ACPI/PNP enabled, the device can be registered
-using the TIS specified memory space. This will however result in the
-lack of access to the BIOS event log, being the only implication of such
-ACPI removal.
+On Thu, 13.05.10 22:36, Lennart Poettering (mzxreary@0pointer.de) wrote:
 
-Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
----
- drivers/char/tpm/Kconfig   |    6 ++++--
- drivers/char/tpm/tpm_tis.c |   42 ++++++++++++++++++++++--------------------
- 2 files changed, 26 insertions(+), 22 deletions(-)
+> On Thu, 13.05.10 13:06, Paul Menage (menage@google.com) wrote:
+> 
+> > 
+> > On Thu, May 13, 2010 at 7:03 AM, Lennart Poettering
+> > <mzxreary@0pointer.de> wrote:
+> > > By default systemd will create its groups in the "debug" hierarchy, (at
+> > > least for now, in the long run i'd like to see "noop" hierarchy or so,
+> > > that doesn't sound so temporary), since that controller is not useful
+> > 
+> > If you just want to track processes, mount a (named) hierarchy with no
+> > attached subsystems.
+> 
+> Oh, that is possible? How would I do that? 
+> 
+> This certainly doesn't work:
+> 
+> # mount waldo -t cgroup /tmp/xxxx -o defaults
 
-diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-index f5fc64f..fffc994 100644
---- a/drivers/char/tpm/Kconfig
-+++ b/drivers/char/tpm/Kconfig
-@@ -17,14 +17,16 @@ menuconfig TCG_TPM
- 	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
- 	  compile this driver as a module, choose M here; the module 
- 	  will be called tpm. If unsure, say N.
--	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
-+	  Notes: 
-+	  1) For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
- 	  and CONFIG_PNPACPI.
-+	  2) Without ACPI enabled, the BIOS event log won't be accessible,
-+	  which is required to validate the PCR 0-7 values.
- 
- if TCG_TPM
- 
- config TCG_TIS
- 	tristate "TPM Interface Specification 1.2 Interface"
--	depends on PNP
- 	---help---
- 	  If you have a TPM security chip that is compliant with the
- 	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
-diff --git a/drivers/char/tpm/tpm_tis.c b/drivers/char/tpm/tpm_tis.c
-index 27e8de4..2423d66 100644
---- a/drivers/char/tpm/tpm_tis.c
-+++ b/drivers/char/tpm/tpm_tis.c
-@@ -597,7 +597,7 @@ out_err:
- 	tpm_remove_hardware(chip->dev);
- 	return rc;
- }
--
-+#ifdef CONFIG_PNP
- static int __devinit tpm_tis_pnp_init(struct pnp_dev *pnp_dev,
- 				      const struct pnp_device_id *pnp_id)
- {
-@@ -661,7 +661,7 @@ static struct pnp_driver tis_pnp_driver = {
- module_param_string(hid, tpm_pnp_tbl[TIS_HID_USR_IDX].id,
- 		    sizeof(tpm_pnp_tbl[TIS_HID_USR_IDX].id), 0444);
- MODULE_PARM_DESC(hid, "Set additional specific HID for this driver to probe");
--
-+#endif
- static int tpm_tis_suspend(struct platform_device *dev, pm_message_t msg)
- {
- 	return tpm_pm_suspend(&dev->dev, msg);
-@@ -688,21 +688,21 @@ MODULE_PARM_DESC(force, "Force device probe rather than using ACPI entry");
- static int __init init_tis(void)
- {
- 	int rc;
--
--	if (force) {
--		rc = platform_driver_register(&tis_drv);
--		if (rc < 0)
--			return rc;
--		if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
--			return PTR_ERR(pdev);
--		if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
--			platform_device_unregister(pdev);
--			platform_driver_unregister(&tis_drv);
--		}
-+#ifdef CONFIG_PNP
-+	if (!force)
-+		return pnp_register_driver(&tis_pnp_driver);
-+#endif
-+		
-+	rc = platform_driver_register(&tis_drv);
-+	if (rc < 0)
- 		return rc;
-+	if (IS_ERR(pdev=platform_device_register_simple("tpm_tis", -1, NULL, 0)))
-+		return PTR_ERR(pdev);
-+	if((rc=tpm_tis_init(&pdev->dev, TIS_MEM_BASE, TIS_MEM_LEN, 0)) != 0) {
-+		platform_device_unregister(pdev);
-+		platform_driver_unregister(&tis_drv);
- 	}
--
--	return pnp_register_driver(&tis_pnp_driver);
-+	return rc;
- }
- 
- static void __exit cleanup_tis(void)
-@@ -726,12 +726,14 @@ static void __exit cleanup_tis(void)
- 		list_del(&i->list);
- 	}
- 	spin_unlock(&tis_lock);
--
--	if (force) {
--		platform_device_unregister(pdev);
--		platform_driver_unregister(&tis_drv);
--	} else
-+#ifdef CONFIG_PNP
-+	if (!force) {
- 		pnp_unregister_driver(&tis_pnp_driver);
-+		return;
-+	}
-+#endif
-+	platform_device_unregister(pdev);
-+	platform_driver_unregister(&tis_drv);
- }
- 
- module_init(init_tis);
+An neither does this:
+
+# mount waldo -t cgroup /tmp/xxxx -o name=systemd
+
+(the mount() syscall fails with EINVAL here, the other one fails with EBUSY)
+
+Lennart
+
 -- 
-1.6.6.1
-
-
-
+Lennart Poettering                        Red Hat, Inc.
+lennart [at] poettering [dot] net
+http://0pointer.net/lennart/           GnuPG 0x1A015CC4
