@@ -1,132 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756131Ab0EMWLo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:11:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29653 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752573Ab0EMWLn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:11:43 -0400
-Message-ID: <4BEC790B.5000708@redhat.com>
-Date: Thu, 13 May 2010 18:11:23 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
-CC: Chase Douglas <chase.douglas@canonical.com>, linux-kernel@vger.kernel.org,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: perf: relative path to source for perf probe?
-References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com> <20100513145826.GJ30926@ghostprotocols.net> <AANLkTin1w6OoS_6qzMqIizBxOGiV7DXJ936-hdHSFCD8@mail.gmail.com> <20100513173426.GK19192@ghostprotocols.net> <4BEC6DC2.4040207@redhat.com> <20100513214621.GA2124@ghostprotocols.net>
-In-Reply-To: <20100513214621.GA2124@ghostprotocols.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S1759481Ab0EMWMy (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:12:54 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:50544 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754061Ab0EMWMt (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 18:12:49 -0400
+X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=QabcpGej5EAA:10 a=1CvaPgNKC-EA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=QUNvyC2rmemlsQ2Qs2gA:9 a=yoLJCItoOeU_qv0ZaXUA:7 a=sJ4SX9f5sXpMO5qnejQcG1oiMQEA:4 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100513221004.765293881@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Thu, 13 May 2010 18:10:04 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 00/12 v2] [GIT PULL] tracing: shrinking trace events and updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arnaldo Carvalho de Melo wrote:
-> Em Thu, May 13, 2010 at 05:23:14PM -0400, Masami Hiramatsu escreveu:
->> Arnaldo Carvalho de Melo wrote:
->>> Em Thu, May 13, 2010 at 06:01:10PM +0200, Chase Douglas escreveu:
->>>> On Thu, May 13, 2010 at 4:58 PM, Arnaldo Carvalho de Melo
->>>> <acme@ghostprotocols.net> wrote:
->>>>> Look in tools/perf/util/symbol.c, these variables are the ones tools use
->>>>> to govern how the symbol system work wrt finding vmlinux:
->>>>>
->>>>> symbol_conf.use_vmlinux_path
->>>>> symbol_conf.vmlinux_name
->>>>>
->>>>> In addition to this it will use what is in ~/.debug/ if it has a
->>>>> build-id in the perf.data header.
->>>>>
->>>>> The changes for support kvm also touched this and allow for some
->>>>> prefixing to look for guest symbols, generalizing that to make guest
->>>>> kernel vmlinux + modules relative location be reused to look for
->>>>> relative location for host kernel vmlinux + modules seems the way to go.
->>>>
->>>> After reading this some more, I think we are talking about two
->>>> different things. I think your notes above are referring to locating
->>>> the vmlinux image and other debug symbols. This seems to work fine for
->>>> me using the -k flag.
->>>
->>> What about finding the associated modules?
->>>
->>>> However, I'm encountering an issue where the source code location
->>>> isn't found. I think this is fairly specific to the probe command of
->>>> perf, which is fairly new, so maybe it's missing the same level of
->>>> support that the symbol finding code has?
->>>
->>> Annotation needs it, in top, report, too.
->>>
->>> But probably (haven't looked at the sources) the way to specify it will
->>> be different, since we rely on objdump to do the disassembly, we need to
->>> inform it where the sources are, but look at the source of all this, the
->>> relevant DWARF tags:
->>>
->>>  <0><b>: Abbrev Number: 1 (DW_TAG_compile_unit)
->>>     < c>   DW_AT_stmt_list   : 0x0      
->>>     <10>   DW_AT_ranges      : 0x0      
->>>     <14>   DW_AT_name        : /home/acme_unencrypted/git/linux-2.6-tip/arch/x86/kernel/head_64.S       
->>>     <57>   DW_AT_comp_dir    : /home/acme_unencrypted/git/build/v2.6.34-rc6-
->>
->> Actually, these doesn't help us so much. DW_AT_name shows the absolute path
->> of source file (and perf probe already have it), and DW_AT_comp_dir just 
->> shows where the object code has been stored (or where the make command ran).
-> 
-> IOW:
-> 
-> real_path = user_provided_path + (DW_AT_name - DW_AT_comp_dir)
-> 
-> + == concat
-> 
-> - remove initial string
-> 
-> if the project is build in place, i.e. in the kernel case, when one
-> doesn't use 'make O='
-> 
-> But then, given user_provided_path what we can do is to find a match
-> from the end of DW_AT_name, thus infering the missing (non-existent in
-> DWARF) DW_AT_source_dir tag :-)
 
-I recommend you to find a match from the top of DW_AT_name, because
-we have many same-name files under kernel/ and arch/XXX/kernel/ :P
+Ingo,
+
+I combined the last two pushes and rebased it to core-2.
+
+I removed the sched patch until Carsten updates it with something
+you approve, as well as the mmiotrace patch until Pekka gives
+me an ack.
+
+I also added a patch that caches pages in the ring buffer to speed
+up the splice implementation.
+
+Thanks,
+
+-- Steve
+
+Please pull the latest tip/tracing/core-2 tree, which can be found at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/core-2
 
 
->> In this case (after compiling kernel, user moved its source into another
->> directory), we have to find the top directory of this source code.
->>
->> Imagine that, if user compiled code under /home/user/git-ksrc/, and 
->> it was moved under  /usr/src/2.6.x/, perf probe will be given an option
->> '-s /usr/src/2.6.x/'.
-> 
-> So, for the DW_AT_name example above, we would have these files:
-> 
-> At build time (DW_AT_name):
-> 
-> /home/acme_unencrypted/git/linux-2.6-tip/arch/x86/kernel/head_64.S
-> 
-> And at analysis time (using the path where the user moved all the source
-> tree):
-> 
-> /usr/src/2.6.x/arch/x86/kernel/head_64.S
-> 
-> Putting then side by side:
-> 
-> /home/acme_unencrypted/git/linux-2.6-tip/arch/x86/kernel/head_64.S
->                           /usr/src/2.6.x/arch/x86/kernel/head_64.S
-> 
-> So know we know what DW_AT_source_dir is.
+Li Zefan (1):
+      tracing: Fix function declarations if !CONFIG_STACKTRACE
 
-Sure :)
+Mathieu Desnoyers (1):
+      tracepoints: Add check trace callback type
 
-> 
-> Implementation is left to the reader 8-)
-> 
-> - Arnaldo
+Steven Rostedt (10):
+      tracing: Create class struct for events
+      tracing: Let tracepoints have data passed to tracepoint callbacks
+      tracing: Remove per event trace registering
+      tracing: Move fields from event to class structure
+      tracing: Move raw_init from events to class
+      tracing: Allow events to share their print functions
+      tracing: Move print functions into event class
+      tracing: Remove duplicate id information in event structure
+      tracing: Combine event filter_active and enable into single flags field
+      ring-buffer: Add cached pages when freeing reader page
 
-Thank you,
-
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+----
+ include/linux/ftrace_event.h                   |   73 ++++++--
+ include/linux/syscalls.h                       |   57 ++----
+ include/linux/tracepoint.h                     |   98 ++++++++---
+ include/trace/ftrace.h                         |  237 +++++++++---------------
+ include/trace/syscall.h                        |   10 +-
+ kernel/trace/blktrace.c                        |  138 ++++++++------
+ kernel/trace/ftrace.c                          |    7 +-
+ kernel/trace/kmemtrace.c                       |   70 +++++---
+ kernel/trace/ring_buffer.c                     |   41 ++++-
+ kernel/trace/trace.c                           |    9 +-
+ kernel/trace/trace.h                           |    9 +-
+ kernel/trace/trace_branch.c                    |    8 +-
+ kernel/trace/trace_event_perf.c                |   17 ++-
+ kernel/trace/trace_events.c                    |  137 +++++++++-----
+ kernel/trace/trace_events_filter.c             |   28 ++--
+ kernel/trace/trace_export.c                    |   16 +-
+ kernel/trace/trace_functions_graph.c           |   13 +-
+ kernel/trace/trace_kprobe.c                    |  104 +++++++----
+ kernel/trace/trace_output.c                    |  137 +++++++++-----
+ kernel/trace/trace_output.h                    |    2 +-
+ kernel/trace/trace_sched_switch.c              |   23 ++-
+ kernel/trace/trace_sched_wakeup.c              |   27 ++--
+ kernel/trace/trace_syscalls.c                  |  137 ++++++++++++---
+ kernel/trace/trace_workqueue.c                 |   26 ++-
+ kernel/tracepoint.c                            |   91 +++++----
+ net/core/drop_monitor.c                        |   12 +-
+ samples/tracepoints/tp-samples-trace.h         |    4 +-
+ samples/tracepoints/tracepoint-probe-sample.c  |   13 +-
+ samples/tracepoints/tracepoint-probe-sample2.c |    7 +-
+ 29 files changed, 933 insertions(+), 618 deletions(-)
