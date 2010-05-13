@@ -1,91 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758479Ab0EMRna (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:43:30 -0400
-Received: from sous-sol.org ([216.99.217.87]:54956 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755915Ab0EMRn2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:43:28 -0400
-Date: Thu, 13 May 2010 10:43:07 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Chris Wright <chrisw@sous-sol.org>, greg@kroah.com,
-       jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
-       alex.williamson@redhat.com
-Subject: [PATCH 2/2 v2] pci: check caps from sysfs file open to read device
- dependent config space
-Message-ID: <20100513174307.GH28034@sequoia.sous-sol.org>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
- <20100513012957.GB28034@sequoia.sous-sol.org>
- <20100513105911.6469c434@lxorguk.ukuu.org.uk>
+	id S1758518Ab0EMRrV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:47:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:49243 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753683Ab0EMRrT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:47:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :mime-version:content-type:content-transfer-encoding;
+        b=MoFUBlqfNv4bSkKDqaAYC/JIQRWDSv5PWGzXC8Q4IS/uMeVZFHYBdS20zKERoGV1Gk
+         kRvgiP4TyG25XOVMxsi+utjNO6uYhB2PmK4xgRZ1md7KMBq9qN8lF2m7m1UOmw5wUmGg
+         6f6+VMjvfJNGMLcOoNIySBUvmbSKr9x1hv5SU=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+Subject: [PATCH] perf: Fix missing getline declaration
+Date: Thu, 13 May 2010 19:47:16 +0200
+Message-Id: <1273772836-11533-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513105911.6469c434@lxorguk.ukuu.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> I agree with the problem - but IMHO the fix is to require opening the file
-> checks CAP_SYS_something instead: not to hack the read method and make it
-> even weirder and more un-Linux than it is now.
+hist.c needs to include util.h so that it gets stdio.h
+inclusion with __GNU_SOURCE defined.
 
-This patch does that.  Not as convenient from the KVM/libvirt point of view
-because it is not prepared to do this setup before dropping privileges
-and launching the VM.
+Fixes:
+	util/hist.c: In function ‘hist_entry__parse_objdump_line’:
+	util/hist.c:931: erreur: implicit declaration of function ‘getline’
+	util/hist.c:931: erreur: nested extern declaration of ‘getline’
 
-thanks,
--chris
---
-
-From: Chris Wright <chrisw@sous-sol.org>
-Subject: [PATCH 2/2 v2] pci: check caps from sysfs file open to read device dependent config space
-
-The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-check to verify privileges before allowing a user to read device
-dependent config space.  This is meant to protect from an unprivileged
-user potentially locking up the box.
-
-When assigning a PCI device directly to a guest with libvirt and KVM,
-the sysfs config space file is chown'd to the unprivileged user that
-the KVM guest will run as.  The guest needs to have full access to the
-device's config space since it's responsible for driving the device.
-However, despite being the owner of the sysfs file, the CAP_SYS_ADMIN
-check will not allow read access beyond the config header.
-
-With this patch we check privileges against the capabilities used when
-openining the sysfs file.  The allows a privileged process to open the
-file and hand it to an unprivileged process, and the unprivileged process
-can still read all of the config space.
-
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Paul Mackerras <paulus@samba.org>
 ---
- drivers/pci/pci-sysfs.c |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+ tools/perf/util/hist.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index ad44557..6309c5a 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -21,6 +21,7 @@
- #include <linux/stat.h>
- #include <linux/topology.h>
- #include <linux/mm.h>
-+#include <linux/fs.h>
- #include <linux/capability.h>
- #include <linux/pci-aspm.h>
- #include <linux/slab.h>
-@@ -367,7 +368,7 @@ pci_read_config(struct file *filp, struct kobject *kobj,
- 	u8 *data = (u8*) buf;
- 
- 	/* Several chips lock up trying to read undefined config space */
--	if (capable(CAP_SYS_ADMIN)) {
-+	if (cap_raised(filp->f_cred->cap_effective, CAP_SYS_ADMIN)) {
- 		size = dev->cfg_size;
- 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 		size = 128;
+diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
+index 451d2e4..5dc4f84 100644
+--- a/tools/perf/util/hist.c
++++ b/tools/perf/util/hist.c
+@@ -1,3 +1,4 @@
++#include "util.h"
+ #include "hist.h"
+ #include "session.h"
+ #include "sort.h"
 -- 
-1.6.5.2
+1.6.2.3
+
