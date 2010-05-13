@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759427Ab0EMTHM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:07:12 -0400
-Received: from kroah.org ([198.145.64.141]:42396 "EHLO coco.kroah.org"
+	id S1759415Ab0EMTHK (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:07:10 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55679 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758887Ab0EMTHG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:07:06 -0400
-Date: Thu, 13 May 2010 12:06:36 -0700
-From: Greg KH <greg@kroah.com>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, jbarnes@virtuousgeek.org,
-       matthew@wil.cx, linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, ddutile@redhat.com, alex.williamson@redhat.com
-Subject: Re: [PATCH 2/2 v2] pci: check caps from sysfs file open to read
- device dependent config space
-Message-ID: <20100513190636.GC5979@kroah.com>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
- <20100513012957.GB28034@sequoia.sous-sol.org>
- <20100513105911.6469c434@lxorguk.ukuu.org.uk>
- <20100513174307.GH28034@sequoia.sous-sol.org>
+	id S1757360Ab0EMTHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:07:05 -0400
+Date: Thu, 13 May 2010 11:58:44 -0700
+From: Greg KH <gregkh@suse.de>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+Message-ID: <20100513185844.GA5959@suse.de>
+References: <20100513120016.GG2169@shaohui>
+ <20100513165603.GC25212@suse.de>
+ <1273773737.13285.7771.camel@nimitz>
+ <20100513181539.GA26597@suse.de>
+ <1273776578.13285.7820.camel@nimitz>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100513174307.GH28034@sequoia.sous-sol.org>
+In-Reply-To: <1273776578.13285.7820.camel@nimitz>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 10:43:07AM -0700, Chris Wright wrote:
-> * Alan Cox (alan@lxorguk.ukuu.org.uk) wrote:
-> > I agree with the problem - but IMHO the fix is to require opening the file
-> > checks CAP_SYS_something instead: not to hack the read method and make it
-> > even weirder and more un-Linux than it is now.
+On Thu, May 13, 2010 at 11:49:38AM -0700, Dave Hansen wrote:
+> On Thu, 2010-05-13 at 11:15 -0700, Greg KH wrote:
+> > >       echo "physical_address=0x40000000 numa_node=3" > memory/probe
+> > > 
+> > > I'd *GREATLY* prefer that over this new syntax.  The existing mechanism
+> > > is obtuse enough, and the ',3' makes it more so.
+> > > 
+> > > We should have the code around to parse arguments like that, too, since
+> > > we use it for the boot command-line.
+> > 
+> > If you are going to be doing something like this, please use configfs,
+> > that is what it is designed for, not sysfs.
 > 
-> This patch does that.  Not as convenient from the KVM/libvirt point of view
-> because it is not prepared to do this setup before dropping privileges
-> and launching the VM.
+> That's probably a really good point, especially since configfs didn't
+> even exist when we made this 'probe' file thingy.  It never was a great
+> fit for sysfs anyway.
 
-So does that mean that this patch doesn't solve your original problem
-here?
+Really?  configfs was added in 2.6.16, when was this probe file added?
 
 thanks,
 
