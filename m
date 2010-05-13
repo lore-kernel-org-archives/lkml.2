@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759159Ab0EMPoj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:44:39 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:60937 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759121Ab0EMPoi (ORCPT
+	id S1759176Ab0EMPpN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:45:13 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40795 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759131Ab0EMPpK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:44:38 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=jQJ+74LbIY0x0pFKud6AZ0WkJvPSmnVxqNvGgK89O7BLqipUaSHAovZxdl3Ljpe7jx
-         oaEAhMsRyaKn49OJ5JTkPo8nTcaUguXIgd5YiMl3ATLt/SZRE89BMlRetrvls0lWOOhU
-         MiBHdq35K83gg032SFt5b6xfE3FTjF2AP7nh0=
-Date: Thu, 13 May 2010 23:48:21 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: =?utf-8?B?QW5kcsOp?= Goddard Rosa <andre.goddard@gmail.com>
-Cc: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>,
-       Al Viro <viro@zeniv.linux.org.uk>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       Sanchin Sant <sanchinp@in.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] mqueue: fix kernel BUG caused by double free() on
- mq_open()
-Message-ID: <20100513154821.GB5132@cr0.redhat.com>
-References: <17ea945f6d53443000524eb7cc5c4fc66ee3ecf8.1273396690.git.andre.goddard@gmail.com>
- <20100512083706.GE5718@cr0.nay.redhat.com>
- <AANLkTinDz8zNrFcziMvpHOLLujYK9AEeQ10uWrrrMC5e@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinDz8zNrFcziMvpHOLLujYK9AEeQ10uWrrrMC5e@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Thu, 13 May 2010 11:45:10 -0400
+Date: Thu, 13 May 2010 08:43:35 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jan Kara <jack@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org,
+       stable@kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: [PATCH] vfs: Fix O_NOFOLLOW behavior for paths with trailing
+ slashes
+Message-Id: <20100513084335.7267bcf5.akpm@linux-foundation.org>
+In-Reply-To: <20100513154135.GB21251@quack.suse.cz>
+References: <1273747977-4579-1-git-send-email-jack@suse.cz>
+	<alpine.LFD.2.00.1005130823370.3711@i5.linux-foundation.org>
+	<20100513154135.GB21251@quack.suse.cz>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 08:17:30AM -0300, André Goddard Rosa wrote:
->Hi, Américo!
->
->> In the latest git, you already removed the above kfree() since it is
->> not necessary. mqueue_delete_inode() will kfree it.
->> so why this fix though?
->
->The applied patch is a newer/better version. This is an old version,
->please just ignore it. Thank you!
+On Thu, 13 May 2010 17:41:35 +0200 Jan Kara <jack@suse.cz> wrote:
 
-Oh, sorry. Yeah, the fix in git is better.
+> On Thu 13-05-10 08:24:59, Linus Torvalds wrote:
+> > 
+> > 
+> > On Thu, 13 May 2010, Jan Kara wrote:
+> > >
+> > > According to specification
+> > > mkdir d; ln -s d a; open("a/", O_NOFOLLOW | O_RDONLY)
+> > > should return success but currently it did return ELOOP. Fix the code to ignore
+> > > O_NOFOLLOW in case the provided path has trailing slashes. This is a regression
+> > > caused by path lookup cleanup patch series.
+> > > 
+> > > CC: stable@kernel.org
+> > 
+> > Hmm? Is this correct? Isn't the bug introduced in this merge window, and 
+> > thus not relevant for stable?
+>   Ah, you're right! I've seen dates in the patches around December so I
+> automatically thought the series went to 2.6.33 but checking git logs and
+> the actual source code of 2.6.33 it went in later. I'm sorry for the
+> confusion.
 
-Thanks.
+Yes, it's a bit tricky (for me, at least) to work out "which kernel version did
+that patch go into" via git.
+
+I just keep lots of kernel trees around and poke about with `patch
+--dry-run'.  PITA.
+
+
