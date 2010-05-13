@@ -1,39 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758965Ab0EMPOc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:14:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:33870 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754691Ab0EMPOb (ORCPT
+	id S1758987Ab0EMPPr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:15:47 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:35738 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756189Ab0EMPPq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:14:31 -0400
-Date: Thu, 13 May 2010 11:14:30 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
-Message-ID: <20100513151429.GA16916@infradead.org>
-References: <20100512204052.GD3597@localhost.localdomain>
+	Thu, 13 May 2010 11:15:46 -0400
+Message-ID: <4BEC1793.1010109@cs.helsinki.fi>
+Date: Thu, 13 May 2010 18:15:31 +0300
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512204052.GD3597@localhost.localdomain>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: Nitin Gupta <ngupta@vflare.org>
+CC: Greg KH <greg@kroah.com>, Andrew Morton <akpm@linux-foundation.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] ramzswap: Remove backing swap support
+References: <1273740861-1900-1-git-send-email-ngupta@vflare.org>
+In-Reply-To: <1273740861-1900-1-git-send-email-ngupta@vflare.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 04:40:53PM -0400, Josef Bacik wrote:
-> V1->V2
-> -Use __blockdev_direct_IO instead of helper
-> -Use KM_IRQ0 for kmap instead of KM_USER0
+Nitin Gupta wrote:
+> Currently, each ramzswap device can be assigned
+> a separate 'backing swap' file/partition. The ramzswap
+> driver forwards swap I/O requests to this backing swap
+> whenever an incompressible page is found.
+> 
+> This feature adds nearly 700 lines of code and it
+> also duplicates much of the swapon() functionality
+> (for example, finding swap extents and so on). Removing
+> this code makes the driver much simpler and should
+> help its transition from staging to stable drivers
+> area (drivers/block/).
+> 
+> Similar functionality may be implemented if we can
+> implement migrating pages across swap devices but the
+> details have not yet been worked out.
+> 
+> Support for _partitions_ as backing swap could be
+> retained as it requires a few lines of code only.
+> This part can be re-introduced later if above swap
+> migration method turns out to be infeasible.
+> 
+> More cleanups and code comments will be added soon.
+> 
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
 
-I still don't think this is correct.  The completion can come from
-softirq and hardirq context, and possibly even normal process context.
-You either need to check for all these, or you need to use the generic
-complete in user context helper btrfs has available for other types
-of I/O.
-
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
