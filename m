@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755933Ab0EMRci (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:32:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36827 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754643Ab0EMRcg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:32:36 -0400
-Date: Thu, 13 May 2010 10:30:23 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-In-Reply-To: <20100513171639.GA23708@core.coreip.homeip.net>
-Message-ID: <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
- <20100513171639.GA23708@core.coreip.homeip.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1757050Ab0EMRcq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:32:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:38422 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756313Ab0EMRck (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:32:40 -0400
+Message-ID: <4BEC37AB.2020505@redhat.com>
+Date: Thu, 13 May 2010 14:32:27 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Valdis.Kletnieks@vt.edu
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: Re: mmotm 2010-05-11-18-20 uploaded
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <6195.1273763194@localhost> <20100513160249.GC22238@core.coreip.homeip.net>            <4BEC26E2.1020404@redhat.com> <10741.1273768199@localhost>
+In-Reply-To: <10741.1273768199@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 13 May 2010, Dmitry Torokhov wrote:
+Valdis.Kletnieks@vt.edu wrote:
+> On Thu, 13 May 2010 13:20:50 -0300, Mauro Carvalho Chehab said:
+>> Dmitry Torokhov wrote:
+>>> On Thu, May 13, 2010 at 11:06:34AM -0400, Valdis.Kletnieks@vt.edu wrote:
+>>>> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
+>>>>> The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
+>>>>>
+>>>>>    http://userweb.kernel.org/~akpm/mmotm/
+>>>> Dell Latitude E6500, x86_64 kernel.
+>>>>
+>>>> Boots to single user prompt, but has issues on the way there.  Possibly
+>>>> very important - I was definitely *not* typing at the time (as I had hit
+>>>> return on the LUKS passphrase for the disk at 36 seconds after boot, and
+>>>> I didn't get the # prompt for single-user for another minute or two (probably
+>>>> due to udev having issues due to the oops). So I have no idea what it was
+>>>> trying to get a keycode for...
+>>>>
+>>> Udev probably tries to remap special keys on your keyboard...
+>>>
+>>>> [   40.717136] udev: starting version 154
+>>>> [   41.710153] BUG: unable to handle kernel NULL pointer dereference at (null)
+>>>> [   41.711007] IP: [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
+>>>> [   41.711007] PGD 11d318067 PUD 118af1067 PMD 0
+>>>> [   41.711007] Oops: 0002 [#1] PREEMPT SMP
+>>>> [   41.711007] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4/idVendor
+>>>> [   41.711007] CPU 0
+>>>> [   41.711007] Modules linked in:
+>>>> [   41.711007]
+>>>> [   41.711007] Pid: 2501, comm: keymap Not tainted 2.6.34-rc7-mmotm0511 #2 0X564R/Latitude E6500
+>>>>
+>>>> [   41.711007] RIP: 0010:[<ffffffff813bb996>]  [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
+>>> I think this is Mauro's big keycode additions.
+>> Yes, it is likely. It may be caused by some bad conflict resolution between both git trees.
+>> I'll handle this bug.
 > 
-> I think on the newer hardware PNP (or rather ACPI mapped onto PNP) usually 
-> matches the reality.
+> Feel free to let me know if there's any testing/instrumentation you want done...
+> 
+Ok. I probably won't have time for handing it until next week, as I'll be traveling
+tomorrow for a short trip.
 
-Dmitry, you're just making things up.
+-- 
 
-I have in front of me a Core i5-670. You can't get much newer than that. 
-And yes, it has a PS/2 connector at the back. And lookie here:
-
-	[    1.756777] PNP: No PS/2 controller found. Probing ports directly.
-	[    1.760645] serio: i8042 KBD port at 0x60,0x64 irq 1
-	[    1.762087] serio: i8042 AUX port at 0x60,0x64 irq 12
-	[    1.763591] mice: PS/2 mouse device common for all mice
-
-so let it go. You're wrong. PS/2 is a legacy device, and exactly like the 
-legacy IO memory region in 0xa000-0xffff (or the motherboard IO port 
-region 0x00-0xff) it may not be mentioned by the BIOS tables. But it's 
-still there.
-
-This is also why I think it _would_ be acceptable to say that if you boot 
-from EFI, you have to find the PnP devices. The whole (and only, as far as 
-I know) point of EFI was that "legacy-free" thing.
-
-		Linus
+Cheers,
+Mauro
