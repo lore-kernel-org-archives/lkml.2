@@ -1,70 +1,200 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932508Ab0EMVrH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:47:07 -0400
-Received: from cantor.suse.de ([195.135.220.2]:59646 "EHLO mx1.suse.de"
+	id S932579Ab0EMVrS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:47:18 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21316 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754771Ab0EMVrF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:47:05 -0400
-Date: Thu, 13 May 2010 14:46:53 -0700
-From: Greg KH <gregkh@suse.de>
-To: Daniel Walker <dwalker@fifo99.com>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>,
-       Brian Swetland <swetland@google.com>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100513214653.GA21120@suse.de>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <201005132311.26293.rjw@sisk.pl>
- <1273785399.19100.98.camel@c-dwalke-linux.qualcomm.com>
- <201005132327.16163.rjw@sisk.pl>
- <1273786409.19100.104.camel@c-dwalke-linux.qualcomm.com>
+	id S932519Ab0EMVrM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:47:12 -0400
+Date: Thu, 13 May 2010 18:43:07 -0300
+From: Marcelo Tosatti <mtosatti@redhat.com>
+To: Huang Ying <ying.huang@intel.com>
+Cc: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>, masbock@linux.vnet.ibm.com,
+       "Wu, Fengguang" <fengguang.wu@intel.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Subject: Re: [PATCH -v2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
+Message-ID: <20100513214307.GA25003@amt.cnet>
+References: <1273646643.3564.51.camel@yhuang-dev.sh.intel.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273786409.19100.104.camel@c-dwalke-linux.qualcomm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273646643.3564.51.camel@yhuang-dev.sh.intel.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 02:33:29PM -0700, Daniel Walker wrote:
-> On Thu, 2010-05-13 at 23:27 +0200, Rafael J. Wysocki wrote:
+On Wed, May 12, 2010 at 02:44:03PM +0800, Huang Ying wrote:
+> In common cases, guest SRAO MCE will cause corresponding poisoned page
+> be un-mapped and SIGBUS be sent to QEMU-KVM, then QEMU-KVM will relay
+> the MCE to guest OS.
 > 
-> > Because someone would have to remove suspend blockers (or rather wakelocks)
-> > from the drivers, test that they work correctly without suspend blockers and
-> > submit the modified versions.  Going forward, every party responsible for such
-> > a driver would have to maintain an out-of-tree version with suspend blockers
-> > (or wakelocks) anyway, so the incentive to do that is zero.
+> But it is reported that if the poisoned page is accessed in guest
+> after un-mapped and before MCE is relayed to guest OS, QEMU-KVM will
+> be killed.
 > 
-> They should work without wakelock since wakelock are optional .. I mean
-> there's nothing in suspend blockers I've seen that indicates it's
-> required for some drivers to work. So it's just a matter of patching out
-> the wakelocks, with no need to re-test anything.
+> The reason is as follow. Because poisoned page has been un-mapped,
+> guest access will cause guest exit and kvm_mmu_page_fault will be
+> called. kvm_mmu_page_fault can not get the poisoned page for fault
+> address, so kernel and user space MMIO processing is tried in turn. In
+> user MMIO processing, poisoned page is accessed again, then QEMU-KVM
+> is killed by force_sig_info.
 > 
-> You get the driver mainlined, then maintain a small patch to add
-> wakelocks. Not hard at all , with lots of incentive to do so since you
-> don't have to maintain such a large block of code out of tree.
+> To fix the bug, kvm_mmu_page_fault send HWPOISON signal to QEMU-KVM
+> and do not try kernel and user space MMIO processing for poisoned
+> page.
+> 
+> 
+> Changelog:
+> 
+> v2:
+> 
+> - Use page table walker to determine whether the virtual address is
+>   poisoned to avoid change user space interface (via changing
+>   get_user_pages).
+> 
+> - Wrap bad page processing into kvm_handle_bad_page to avoid code
+>   duplicating.
+> 
+> Reported-by: Max Asbock <masbock@linux.vnet.ibm.com>
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
+>  arch/x86/kvm/mmu.c         |   34 ++++++++++++++++++++++++++--------
+>  arch/x86/kvm/paging_tmpl.h |    7 ++-----
+>  include/linux/kvm_host.h   |    1 +
+>  include/linux/mm.h         |    8 ++++++++
+>  mm/memory-failure.c        |   28 ++++++++++++++++++++++++++++
+>  virt/kvm/kvm_main.c        |   30 ++++++++++++++++++++++++++++--
+>  6 files changed, 93 insertions(+), 15 deletions(-)
+> 
+> --- a/arch/x86/kvm/mmu.c
+> +++ b/arch/x86/kvm/mmu.c
+> @@ -32,6 +32,7 @@
+>  #include <linux/compiler.h>
+>  #include <linux/srcu.h>
+>  #include <linux/slab.h>
+> +#include <linux/uaccess.h>
+>  
+>  #include <asm/page.h>
+>  #include <asm/cmpxchg.h>
+> @@ -1975,6 +1976,27 @@ static int __direct_map(struct kvm_vcpu
+>  	return pt_write;
+>  }
+>  
+> +static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
+> +{
+> +	char buf[1];
+> +	void __user *hva;
+> +	int r;
+> +
+> +	/* Touch the page, so send SIGBUS */
+> +	hva = (void __user *)gfn_to_hva(kvm, gfn);
+> +	r = copy_from_user(buf, hva, 1);
+> +}
 
-Sorry, but it doesn't seem to work that way.  Look at the large number
-of out-of-tree android device drivers that remain sitting there because
-of the lack of this interface being in the kernel.
+A SIGBUS signal has been raised by memory poisoning already, so i don't
+see why this is needed?
 
-Also note that such a driver, without wakelocks, would never get tested,
-and so, things start quickly diverging.
+To avoid the MMIO processing in userspace before the MCE is sent to the
+guest you can just return -EAGAIN from the page fault handlers back to
+kvm_mmu_page_fault.
 
-thanks,
+> +int is_hwpoison_pfn(pfn_t pfn)
+> +{
+> +	return pfn == hwpoison_pfn;
+> +}
+> +EXPORT_SYMBOL_GPL(is_hwpoison_pfn);
+> +
+>  static inline unsigned long bad_hva(void)
+>  {
+>  	return PAGE_OFFSET;
+> @@ -939,6 +948,11 @@ static pfn_t hva_to_pfn(struct kvm *kvm,
+>  	if (unlikely(npages != 1)) {
+>  		struct vm_area_struct *vma;
+>  
+> +		if (is_hwpoison_address(addr)) {
+> +			get_page(hwpoison_page);
+> +			return page_to_pfn(hwpoison_page);
+> +		}
+> +
+>  		down_read(&current->mm->mmap_sem);
+>  		vma = find_vma(current->mm, addr);
+>  
+> @@ -2198,6 +2212,15 @@ int kvm_init(void *opaque, unsigned int
+>  
+>  	bad_pfn = page_to_pfn(bad_page);
+>  
+> +	hwpoison_page = alloc_page(GFP_KERNEL | __GFP_ZERO);
+> +
+> +	if (hwpoison_page == NULL) {
+> +		r = -ENOMEM;
+> +		goto out_free_0;
+> +	}
+> +
+> +	hwpoison_pfn = page_to_pfn(hwpoison_page);
+> +
+>  	if (!zalloc_cpumask_var(&cpus_hardware_enabled, GFP_KERNEL)) {
+>  		r = -ENOMEM;
+>  		goto out_free_0;
+> @@ -2269,6 +2292,8 @@ out_free_1:
+>  out_free_0a:
+>  	free_cpumask_var(cpus_hardware_enabled);
+>  out_free_0:
+> +	if (hwpoison_page)
+> +		__free_page(hwpoison_page);
+>  	__free_page(bad_page);
+>  out:
+>  	kvm_arch_exit();
+> @@ -2291,6 +2316,7 @@ void kvm_exit(void)
+>  	kvm_arch_hardware_unsetup();
+>  	kvm_arch_exit();
+>  	free_cpumask_var(cpus_hardware_enabled);
+> +	__free_page(hwpoison_page);
+>  	__free_page(bad_page);
+>  }
+>  EXPORT_SYMBOL_GPL(kvm_exit);
+> --- a/mm/memory-failure.c
+> +++ b/mm/memory-failure.c
+> @@ -45,6 +45,7 @@
+>  #include <linux/page-isolation.h>
+>  #include <linux/suspend.h>
+>  #include <linux/slab.h>
+> +#include <linux/swapops.h>
+>  #include "internal.h"
+>  
+>  int sysctl_memory_failure_early_kill __read_mostly = 0;
+> @@ -1296,3 +1297,30 @@ done:
+>  	/* keep elevated page count for bad page */
+>  	return ret;
+>  }
+> +
+> +int is_hwpoison_address(unsigned long addr)
+> +{
+> +	pgd_t *pgdp;
+> +	pud_t *pudp;
+> +	pmd_t *pmdp;
+> +	pte_t pte, *ptep;
+> +	swp_entry_t entry;
+> +
+> +	pgdp = pgd_offset(current->mm, addr);
+> +	if (!pgd_present(*pgdp))
+> +		return 0;
+> +	pudp = pud_offset(pgdp, addr);
+> +	if (!pud_present(*pudp))
+> +		return 0;
+> +	pmdp = pmd_offset(pudp, addr);
+> +	if (!pmd_present(*pmdp))
+> +		return 0;
 
-greg k-h
+Need to bail out if pmd is huge.
+
+> +	ptep = pte_offset_map(pmdp, addr);
+> +	pte = *ptep;
+> +	pte_unmap(ptep);
+> +	if (!is_swap_pte(pte))
+> +		return 0;
+> +	entry = pte_to_swp_entry(pte);
+> +	return is_hwpoison_entry(entry);
+> +}
+> +EXPORT_SYMBOL_GPL(is_hwpoison_address);
