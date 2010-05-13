@@ -1,61 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753272Ab0EMGPO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:15:14 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49810 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab0EMGPM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:15:12 -0400
-Message-ID: <4BEB9941.7040609@cn.fujitsu.com>
-Date: Thu, 13 May 2010 14:16:33 +0800
-From: Miao Xie <miaox@cn.fujitsu.com>
-Reply-To: miaox@cn.fujitsu.com
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753429Ab0EMGP0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:15:26 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:60411 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753301Ab0EMGPW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:15:22 -0400
+Date: Thu, 13 May 2010 08:15:11 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Carsten Emde <C.Emde@osadl.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH 2/4] tracing/sched: Fix task states in sched switch event
+Message-ID: <20100513061511.GE697@elte.hu>
+References: <20100513012110.558313399@goodmis.org>
+ <20100513012301.719314329@goodmis.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Rientjes <rientjes@google.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Nick Piggin <npiggin@suse.de>, Paul Menage <menage@google.com>,
-       Linux-Kernel <linux-kernel@vger.kernel.org>,
-       Linux-MM <linux-mm@kvack.org>
-Subject: Re: [PATCH -mm] cpuset,mm: fix no node to alloc memory when changing
- cpuset's mems - fix2
-References: <4BEA56D3.6040705@cn.fujitsu.com>	<20100512003246.9f0ee03c.akpm@linux-foundation.org>	<4BEA6E3D.10503@cn.fujitsu.com> <20100512104817.beeee3b5.akpm@linux-foundation.org>
-In-Reply-To: <20100512104817.beeee3b5.akpm@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513012301.719314329@goodmis.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-on 2010-5-13 1:48, Andrew Morton wrote:
->> It may cause the performance regression, so I do my best to abstain from using a real
->> lock.
-> 
-> Well, the code as-is is pretty exotic with lots of open-coded tricky
-> barriers - it's best to avoid inventing new primitives if possible. 
-> For example, there's no lockdep support for this new "lock".
 
-I didn't find an existing lock that could fix the problem well till now, so
-I had to design this new "lock" to protect the task's mempolicy and mems_allowed.
+* Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> 
-> mutex_lock() is pretty quick - basically a simgle atomic op.  How
-> frequently do these operations occur?
+> +#define TASK_STATE_X(num) TASK_STATE_##num " (" DESCR_TASK_STATE_##num ")"
+>  static const char *task_state_array[] = {
+> -	"R (running)",		/*   0 */
+> -	"S (sleeping)",		/*   1 */
+> -	"D (disk sleep)",	/*   2 */
+> -	"T (stopped)",		/*   4 */
+> -	"t (tracing stop)",	/*   8 */
+> -	"Z (zombie)",		/*  16 */
+> -	"X (dead)",		/*  32 */
+> -	"x (dead)",		/*  64 */
+> -	"K (wakekill)",		/* 128 */
+> -	"W (waking)",		/* 256 */
+> +	TASK_STATE_X(0),
+> +	TASK_STATE_X(1),
+> +	TASK_STATE_X(2),
+> +	TASK_STATE_X(4),
+> +	TASK_STATE_X(8),
+> +	TASK_STATE_X(16),
+> +	TASK_STATE_X(32),
+> +	TASK_STATE_X(64),
+> +	TASK_STATE_X(128),
+> +	TASK_STATE_X(256)
 
-There is another problem that I forgot to mention.
-besides the performance problem, the read-side may call it in the context
-in which the task can't sleep. so we can't use mutex.
+Hm, this is totally unreadable. What does 'TASK_STATE_X' mean??
 
-> 
-> The code you have at present is fairly similar to sequence locks.  I
-> wonder if there's some way of (ab)using sequence locks for this. 
-> seqlocks don't have lockdep support either...
-> 
-
-We can't use sequence locks here, because the read-side may read the data
-in changing, but it can't put off cleaning the old bits.
-
-Thanks
-Miao
-
+	Ingo
