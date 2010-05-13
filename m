@@ -1,230 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758831Ab0EMMEg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 08:04:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:27991 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754911Ab0EMMEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 08:04:34 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
-   d="scan'208";a="798091300"
-Date: Thu, 13 May 2010 20:00:16 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: akpm@linux-foundation.org, linux-mm@kvack.org
-Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Andi Kleen <ak@linux.intel.com>,
+	id S1758840Ab0EMMHt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:07:49 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:44025 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758771Ab0EMMHr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 08:07:47 -0400
+Date: Thu, 13 May 2010 17:37:39 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>, Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Frank Ch. Eigler" <fche@redhat.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-Subject: [RFC, 6/7] NUMA hotplug emulator 
-Message-ID: <20100513120016.GG2169@shaohui>
-Mail-Followup-To: akpm@linux-foundation.org, linux-mm@kvack.org,
-	Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	Greg Kroah-Hartman <gregkh@suse.de>,
-	Wu Fengguang <fengguang.wu@intel.com>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>,
-	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-	shaohui.zheng@linux.intel.com
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
+       Rik van Riel <riel@redhat.com>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v3 0/10] Uprobes v3
+Message-ID: <20100513120739.GA2348@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100506180139.28877.81699.sendpatchset@localhost6.localdomain6>
+ <1273611585.1810.132.camel@laptop>
+ <20100512102518.GA30767@linux.vnet.ibm.com>
+ <1273666385.1626.96.camel@laptop>
 MIME-Version: 1.0
-Content-Type: multipart/mixed; boundary="z+pzSjdB7cqptWpS"
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
+In-Reply-To: <1273666385.1626.96.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> 
+> Hrmm, you could do something like the above and use write_protect_page()
+> along with that lock_page() you do to sync against concurrent faults. It
+> won't be the fastest code around but it should work I guess.
 
---z+pzSjdB7cqptWpS
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Okay, thanks for the code.
 
-hotplug emulator:extend memory probe interface to support NUMA
+> 
+> Something like try_to_merge_one_page() in the KSM code:
+> 
+> write_opcode(struct mm_struct *mm, unsigned long address, void *insn,
+> int len)
+> {
+> 	down_read(mm->mmap_sem);
 
-Extend memory probe interface to support an extra paramter nid,
-the reserved memory can be added into this node if node exists.
+[ snipped]
+> 
+> 	kunmap_atomic(vaddr_new);
+> 	kunmap_atomic(vaddr_old);
+> 
+> 	/* XXX: frob mlock state */
 
-Add a memory section(128M) to node 3(boots with mem=1024m)
+I think you are referring to mlock_vma_page() and munlock_vma_page that
+we have in try_to_merge_one_page(). However mlock_vma_page and
+munlock_vma_page are not exposed outside mm as they are declared inside
+mm/internal.h. So do you suggest moving the declarations out of
+mm/internal.h or have a wrapper function defined in mm/ that could be
+used by both KSM and uprobes.
 
-	echo 0x40000000,3 > memory/probe
-
-And more we make it friendly, it is possible to add memory to do
-
-	echo 3g > memory/probe
-	echo 1024m,3 > memory/probe
-
-It maintains backwards compatibility.
-
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 54ccb0d..787024f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1239,6 +1239,17 @@ config ARCH_CPU_PROBE_RELEASE
- 	  is for cpu hot-add/hot-remove to specified node in software method.
- 	  This is for debuging and testing purpose
- 
-+config ARCH_MEMORY_PROBE
-+	def_bool y
-+	bool "Memory hotplug emulation"
-+	depends on NUMA_HOTPLUG_EMU
-+	---help---
-+	  Enable memory hotplug emulation. Reserve memory with grub parameter
-+	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
-+	  rest physical memory will be removed from e820 table; the memory probe
-+	  interface is for memory hot-add to specified node in software method.
-+	  This is for debuging and testing purpose
-+
- config NODES_SHIFT
- 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
- 	range 1 10
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 933442f..1c2d83d 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -329,6 +329,8 @@ static int block_size_init(void)
-  * will not need to do it from userspace.  The fake hot-add code
-  * as well as ppc64 will do all of their discovery in userspace
-  * and will require this interface.
-+ *
-+ * Parameter format: start_addr, nid
-  */
- #ifdef CONFIG_ARCH_MEMORY_PROBE
- static ssize_t
-@@ -339,10 +341,26 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
- 	int nid;
- 	int ret;
- 
--	phys_addr = simple_strtoull(buf, NULL, 0);
-+	char *p = strchr(buf, ',');
-+
-+	if (p != NULL && strlen(p+1) > 0) {
-+		/* nid specified */
-+		*p++ = '\0';
-+		nid = simple_strtoul(p, NULL, 0);
-+		phys_addr = memparse(buf, NULL);
-+	} else {
-+		phys_addr = memparse(buf, NULL);
-+		nid = memory_add_physaddr_to_nid(phys_addr);
-+	}
- 
--	nid = memory_add_physaddr_to_nid(phys_addr);
--	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+	if (nid < 0 || nid > nr_node_ids - 1) {
-+		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
-+	} else {
-+		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+		if (ret)
-+			count = ret;
-+	}
- 
- 	if (ret)
- 		count = ret;
--- 
-Thanks & Regards,
-Shaohui
-
-
---z+pzSjdB7cqptWpS
-Content-Type: text/x-diff; charset=us-ascii
-Content-Disposition: attachment; filename="006-hotplug-emulator-extend-memory-probe-interface-to-support-numa.patch"
-
-hotplug emulator:extend memory probe interface to support NUMA
-
-Extend memory probe interface to support an extra paramter nid,
-the reserved memory can be added into this node if node exists.
-
-Add a memory section(128M) to node 3(boots with mem=1024m)
-
-	echo 0x40000000,3 > memory/probe
-
-And more we make it friendly, it is possible to add memory to do
-
-	echo 3g > memory/probe
-	echo 1024m,3 > memory/probe
-
-It maintains backwards compatibility.
-
-Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
-Signed-off-by: Haicheng Li <haicheng.li@intel.com>
-Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
----
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 54ccb0d..787024f 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -1239,6 +1239,17 @@ config ARCH_CPU_PROBE_RELEASE
- 	  is for cpu hot-add/hot-remove to specified node in software method.
- 	  This is for debuging and testing purpose
- 
-+config ARCH_MEMORY_PROBE
-+	def_bool y
-+	bool "Memory hotplug emulation"
-+	depends on NUMA_HOTPLUG_EMU
-+	---help---
-+	  Enable memory hotplug emulation. Reserve memory with grub parameter
-+	  "mem=N"(such as mem=1024M), where N is the initial memory size, the
-+	  rest physical memory will be removed from e820 table; the memory probe
-+	  interface is for memory hot-add to specified node in software method.
-+	  This is for debuging and testing purpose
-+
- config NODES_SHIFT
- 	int "Maximum NUMA Nodes (as a power of 2)" if !MAXSMP
- 	range 1 10
-diff --git a/drivers/base/memory.c b/drivers/base/memory.c
-index 933442f..1c2d83d 100644
---- a/drivers/base/memory.c
-+++ b/drivers/base/memory.c
-@@ -329,6 +329,8 @@ static int block_size_init(void)
-  * will not need to do it from userspace.  The fake hot-add code
-  * as well as ppc64 will do all of their discovery in userspace
-  * and will require this interface.
-+ *
-+ * Parameter format: start_addr, nid
-  */
- #ifdef CONFIG_ARCH_MEMORY_PROBE
- static ssize_t
-@@ -339,10 +341,26 @@ memory_probe_store(struct class *class, struct class_attribute *attr,
- 	int nid;
- 	int ret;
- 
--	phys_addr = simple_strtoull(buf, NULL, 0);
-+	char *p = strchr(buf, ',');
-+
-+	if (p != NULL && strlen(p+1) > 0) {
-+		/* nid specified */
-+		*p++ = '\0';
-+		nid = simple_strtoul(p, NULL, 0);
-+		phys_addr = memparse(buf, NULL);
-+	} else {
-+		phys_addr = memparse(buf, NULL);
-+		nid = memory_add_physaddr_to_nid(phys_addr);
-+	}
- 
--	nid = memory_add_physaddr_to_nid(phys_addr);
--	ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+	if (nid < 0 || nid > nr_node_ids - 1) {
-+		printk(KERN_ERR "Invalid node id %d(0<=nid<%d).\n", nid, nr_node_ids);
-+	} else {
-+		printk(KERN_INFO "Add a memory section to node: %d.\n", nid);
-+		ret = add_memory(nid, phys_addr, PAGES_PER_SECTION << PAGE_SHIFT);
-+		if (ret)
-+			count = ret;
-+	}
- 
- 	if (ret)
- 		count = ret;
-
---z+pzSjdB7cqptWpS--
+> 
+> 	/* flip pages, do_wp_page() will fail pte_same() and bail */
+> 	err = replace_page(vma, new_page, old_page, orig_pte)
+> 	if (err) goto fail_more;
+> 
+> 	/* we're done, let 'em rip */
+> 	unlock_page(old_page);
+> 	put_page(old_page);
+> 
+> 	return;
+> 
+> fail:
+> 	/* XXX: fixup stuff */
+> }
+> 
+> Note that this can fail for fun reasons like O_DIRECT IO, but that
+> should be very rare indeed on text pages.
+> 
