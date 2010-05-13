@@ -1,117 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754738Ab0EMVKM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:10:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:52781 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751722Ab0EMVKI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:10:08 -0400
-Date: Thu, 13 May 2010 14:09:19 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
-Message-Id: <20100513140919.0a037845.akpm@linux-foundation.org>
-In-Reply-To: <20100513103356.25665186@annuminas.surriel.com>
-References: <20100512133815.0d048a86@annuminas.surriel.com>
-	<20100512134029.36c286c4@annuminas.surriel.com>
-	<20100512210216.GP24989@csn.ul.ie>
-	<4BEB18BB.5010803@redhat.com>
-	<20100513095439.GA27949@csn.ul.ie>
-	<20100513103356.25665186@annuminas.surriel.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755233Ab0EMVKa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:10:30 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:54370 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753666Ab0EMVKY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:10:24 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg@redhat.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+Date: Thu, 13 May 2010 23:11:26 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Daniel Walker <dwalker@fifo99.com>, Brian Swetland <swetland@google.com>,
+       Paul Walmsley <paul@pwsan.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+References: <1272667021-21312-1-git-send-email-arve@android.com> <1273779394.19100.47.camel@c-dwalke-linux.qualcomm.com> <20100513194820.GA19722@srcf.ucam.org>
+In-Reply-To: <20100513194820.GA19722@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005132311.26293.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 10:33:56 -0400
-Rik van Riel <riel@redhat.com> wrote:
-
-> > Looking at the if condition, brk() would appear to be the most important
-> > case, right? This would appear to correlate with the reasoning behind
-> > that condition in the first place in commit
-> > 252c5f94d944487e9f50ece7942b0fbf659c5c31 where sbrk contended on the
-> > lock heavily.
+On Thursday 13 May 2010, Matthew Garrett wrote:
+> On Thu, May 13, 2010 at 12:36:34PM -0700, Daniel Walker wrote:
+> > On Thu, 2010-05-13 at 20:11 +0100, Matthew Garrett wrote:
+> > > See feature-removal-schedule.txt. So far we have no indication that it's 
+> > > going to be replaced, because nobody has actually suggested a working 
+> > > way to do this better. If we had a concrete implementation proposal for 
+> > > that then we'd be in a pretty different position right now.
+> > 
+> > Ok, feature-removal-schedule.txt applies to everything tho. What your
+> > saying is that if this interface only last a short time it might take 6
+> > months, if it last for a long time it would take longer. There's no easy
+> > way to know that Google is the only user after some amount of time
+> > passes.
 > 
-> You are right.  Here is a new patch 4/5:
-> ---------------------
-> 
-> Subject: always lock the root (oldest) anon_vma
-> 
-> Always (and only) lock the root (oldest) anon_vma whenever we do something in an
-> anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
-> scanning only the VMAs that need to be scanned.  Many common operations still
-> took the anon_vma lock on the root anon_vma, so always taking that lock is not
-> expected to introduce any scalability issues.
-> 
-> However, always taking the same lock does mean we only need to take one lock,
-> which means rmap_walk on pages from any anon_vma in the vma is excluded from
-> occurring during an munmap, expand_stack or other operation that needs to
-> exclude rmap_walk and similar functions.
-> 
-> Also add the proper locking to vma_adjust.
-> 
-> ...
->
-> --- a/mm/ksm.c
-> +++ b/mm/ksm.c
-> @@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_item *rmap_item)
->  {
->  	struct anon_vma *anon_vma = rmap_item->anon_vma;
->  
-> -	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->lock)) {
-> +	if (atomic_dec_and_lock(&anon_vma->ksm_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
+> If the interface is there for a long time, it's because we haven't come 
+> up with anything better. And if we haven't come up with anything better, 
+> the interface deserves to be there.
 
-Well that had me confused for a while.  The anon_vma_unlock(anon_vma)
-looks like it's unlocking a different lock from the one which
-atomic_dec_and_lock() took.  But I worked it out!  I guess one could
-add an anon_vma_atomic_dec_and_lock() to make things nice and
-symmetrical, but there seems little point.  A comment would suffice.
+Moreover, the interface is already in use out-of-tree and that usage is
+actually _growing_, so we have a growing number of out-of-tree drivers that
+aren't megrgeable for this very reason.
 
-It wouldn't hurt to add some nice descriptions to these functions, IMO.
+I don't see any _realistic_ way of solving this problem other than merging
+the opportunistic suspend.  If anyone sees one, and I mean _realistic_ and
+_practically_ _feasible_, please tell me.
 
-
-General comment on these patches: I had to fix quite a lot of rejects
-and some instances of spin_lock(vma->lock) were missed.  It would have
-been a good idea to rename anon_vma.lock to something else early in the
-patch series so that unconverted code fails to compile, rather than
-causing mysterious bugs.  And if the requirement is that all code
-should use the helper functions, the lock should be renamed to
-double-underscore-something, with a suitable comment telling people not
-to use it directly.
-
-
-I'm still not very confident that I got them all.
-
-<greps or a while>
-
-What's this, in 
-
-mm/migrate.c:unmap_and_move()?
-
-	/* Drop an anon_vma reference if we took one */
-	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-		int empty = list_empty(&anon_vma->head);
-		spin_unlock(&anon_vma->lock);
-		if (empty)
-			anon_vma_free(anon_vma);
-	}
-
-it looks awfully similar to drop_anon_vma().
-
-
-I'm not very confident in merging all these onto the current MM pile.
-
-
+Rafael
