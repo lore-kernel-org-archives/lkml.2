@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759375Ab0EMVBn (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:01:43 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:62524 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751667Ab0EMVBm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:01:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=QBlODbNS7EMQl9nPqO4hQUl4rLFzM+1Q6s+EJPcjTNjh15gBietcUeJ5XVKaMaZKMl
-         7Nds6umCFOqmwYsA/motFD26tmuO525L6vDWAOXI0xk8XE25DS5kLB5/LHPJ2yUoDx4p
-         GrFv+pWxOiBpTaU41z82w5rR5J6+loAKyCfPw=
+	id S1759495Ab0EMVBt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:01:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46283 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759412Ab0EMVBq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:01:46 -0400
+Message-ID: <4BEC6883.4090205@redhat.com>
+Date: Thu, 13 May 2010 17:00:51 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimKHWM46Qci5cF-4VonUkASL_sGFrSwqbzHY2Qe@mail.gmail.com>
-References: <0100511104818.8382a7de.akpm@linux-foundation.org>
-	 <1273602134-6359-1-git-send-email-chris@chris-wilson.co.uk>
-	 <AANLkTimglAyS94q0Y3DEx9RROPxus-7l3OfF2_b-zAR3@mail.gmail.com>
-	 <AANLkTinmXAAq1HQTb_k3A-bl4uCz1ERhOIHNoCjqzEB4@mail.gmail.com>
-	 <89khjo$fd2th6@orsmga002.jf.intel.com>
-	 <AANLkTilbqi5crUD8KXmZ5SIv92KioEAN7Ra6nk2ALU6F@mail.gmail.com>
-	 <89k83a$87e1b2@azsmga001.ch.intel.com>
-	 <AANLkTimKHWM46Qci5cF-4VonUkASL_sGFrSwqbzHY2Qe@mail.gmail.com>
-Date: Fri, 14 May 2010 02:31:40 +0530
-Message-ID: <AANLkTinaN5RrunHoi6NkO3fcQDkmTB0OqyeI-CnU_DtS@mail.gmail.com>
-Subject: Re: [PATCH] drm/i915: Record error batch buffers using iomem
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Chris Wilson <chris@chris-wilson.co.uk>
-Cc: Andrew Morton <akpm@linux-foundation.org>, dri-devel@lists.freedesktop.org,
-       Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org
+To: Chase Douglas <chase.douglas@canonical.com>
+CC: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: perf: relative path to source for perf probe?
+References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
+In-Reply-To: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
+X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Chris,
+Chase Douglas wrote:
+> I'm trying to play with perf probe to insert trace events into a
+> running kernel, but I haven't found a way to specify relative
+> pathnames. For example, our build machines for Ubuntu build the kernel
+> inside /build/buildd/linux-2.6.34. If I want to use perf probe, it
+> seems I need to ensure the source exists in exactly the same location
+> on my machine.
 
-On Wed, May 12, 2010 at 8:01 PM, Jaswinder Singh Rajput
-<jaswinderlinux@gmail.com> wrote:
-> Hello Chris,
->
-> On Wed, May 12, 2010 at 7:20 PM, Chris Wilson <chris@chris-wilson.co.uk> wrote:
->> On Wed, 12 May 2010 18:45:55 +0530, Jaswinder Singh Rajput <jaswinderlinux@gmail.com> wrote:
->>> Hello Chris,
->>>
->>> With this patch after XWindows freezes, I get :
->> [snip]
->>> freeze dmesg : http://userweb.kernel.org/~jaswinder/acer_netbook/dmesg_2634_chris_hang.txt
->>>
->>> freeze Xorg.log : http://userweb.kernel.org/~jaswinder/acer_netbook/Xorg_log.txt
->>
->> Jaswinder can you also upload the /sys/kernel/debug/dri/0/i915_error_state
->> following a freeze as well, please. If your /sys/kernel/debug is empty,
->> you will need to "mount -tdebugfs debug /sys/kernel/debug".
->>
->
-> i915_error_state :
-> http://userweb.kernel.org/~jaswinder/acer_netbook/i915_error_state.txt
->
+Right, perf-probe currently doesn't support relative *source* path option.
+It just uses a source code path information in dwarf. I need to dig it more
+into dwarf, especially kernel debuginfo has those information.
 
-If you need more information, please let me know.
+That could be a good improvement idea for perf probe (adding -s option?).
 
-I am waiting for your feedback.
+> Compare this to gdb, where I can put the source at
+> /home/cndougla/perf/build/buildd/linux-2.6.34 and specify a relative
+> path for sources of /home/cndougla/perf using the dir command. I have
+> read the perf code and I have not found any way to do this. I would be
+> interested in adding support for this as a cmd line option, but I'm
+> not very familiar with the rest of perf. Is this functionality
+> specific to perf-probe? Should this be in some logic in util/ or in
+> builtin-probe.c?
 
-Thanks,
---
-Jaswinder Singh.
+Both of it. Adding -s option handling code to builtin-probe.c and
+actual path modifying code in show_line_range()@util/probe-event.c.
+(I assume you'd like to use -L option)
+
+Thank you,
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
