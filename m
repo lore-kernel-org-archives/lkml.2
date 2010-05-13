@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759256Ab0EMQEk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:04:40 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:59087 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752003Ab0EMQEj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:04:39 -0400
-Date: Thu, 13 May 2010 12:04:22 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, mingo@elte.hu,
-       peterz@infradead.org, aris@redhat.com, linux-kernel@vger.kernel.org,
-       randy.dunlap@oracle.com
-Subject: Re: [PATCH 2/8] [nmi watchdog] touch_softlockup cleanups and
- softlockup_tick removal
-Message-ID: <20100513160422.GO15159@redhat.com>
-References: <1273266711-18706-1-git-send-email-dzickus@redhat.com>
- <1273266711-18706-3-git-send-email-dzickus@redhat.com>
- <20100512200652.GF10028@nowhere>
- <20100512202628.GK15159@redhat.com>
- <20100512202832.GG10028@nowhere>
- <20100512205616.GL15159@redhat.com>
- <20100512210034.GH10028@nowhere>
- <20100512213814.GB5190@lenovo>
- <20100512215015.GM15159@redhat.com>
- <20100513155313.GA5274@lenovo>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513155313.GA5274@lenovo>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1759263Ab0EMQGQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:06:16 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:49946 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752003Ab0EMQGN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 12:06:13 -0400
+X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=NJ9r1kXiz5oA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=huCS_TsPItG8q3Y6WTUA:9 a=DqI_CeLOckSKhudgOXa0KVc6HgUA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: ftrace syscalls, PowerPC: Fixes and PowerPC raw syscall
+ tracepoint implementation
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
+       Ingo Molnar <mingo@redhat.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
+       Jason Baron <jbaron@redhat.com>
+In-Reply-To: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
+References: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 12:06:11 -0400
+Message-ID: <1273766771.27703.1069.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 07:53:13PM +0400, Cyrill Gorcunov wrote:
-> On Wed, May 12, 2010 at 05:50:15PM -0400, Don Zickus wrote:
-> ...
-> > > Guys, could you please spend a few minutes and enlighten me a bit?
-> > > Does all this series mean that we eventually will drop nmi-watchdog
-> > > via io-apic (read via pic) as only the transition to perf complete?
-> > > 
-> > > I recall someone said about to stop using io-apic, but just to be sure.
-> > 
-> > Right, this code sits on top of the perf subsystem which uses lapic.
-> > Eventually, the old nmi watchdog code will disappear along with the
-> > support for io-apic.
-> > 
-> > Cheers,
-> > Don
-> > 
+Frederic,
+
+I'm fine with these patches, but since you mainly did the syscall work,
+I'll let you take them.
+
+The patches that touch the PowerPC code needs an acked-by from Ben or
+Paul.
+
+-- Steve
+
+
+On Thu, 2010-05-13 at 17:43 +1000, Ian Munsie wrote:
+> This patch series implements raw system call tracepoints on PowerPC that can be
+> used with ftrace and perf. Some problems with the generic ftrace syscall
+> tracepoint code have also been addressed.
 > 
-> Thanks for explanation, Don! So I assume (?) that io-apic
-> nmi-watchdog is going to be dropped due to obsolescense of
-> this mode, right?
+> The patches are based upon Ben's powerpc/next tree merged with tip/tracing/core
+> 
+> Patch #1 removes all ftrace syscall events that fail to map the system call
+> name from the system call metadata with the system call's number, preventing
+> the events which will not work from showing up in perf list and removing them
+> from /sys/kernel/debug/tracing/events/syscalls.
+> 
+> Patches #2 and #3 allow for archs with unusual system call tables (#2) or
+> unusual symbol names (#3) to override the appropriate functions so that they
+> can still work with ftrace syscalls.
+> 
+> Patch #4 implements the actual raw system call tracepoints that ftrace syscalls
+> builds upon, allowing all of the system calls to be used with the raw_syscalls
+> events category and most to be used with the syscalls category.
+> 
+> 
+> Not all the raw_syscalls are currently mapped to ftrace syscalls - the syscalls
+> defined in /arch/powerpc/include/asm/syscalls.h do not use the SYSCALL_DEFINE
+> class of macros and as such have no meta data, likewise some of the ppc_*
+> syscalls have assembly wrappers. These are on their way, but I wanted to put
+> the work I have done so far out first.
+> 
+> Some of those syscalls have different return types than the __SYSCALL_DEFINE
+> macro uses (unsigned long, int, time_t) and some have different prefixes (ppc,
+> ppc64) - I didn't particularly want to change them straight over without asking
+> the list first, and I certainly don't want to change the return types. I see
+> that Jason Baron ran into similar issues, but his "add compat syscall support"
+> patches have yet to be merged, and do not tackle the differing return types.
+> 
 
-Well partly.  The other part is you can't really confirm an NMI came from
-the io-apic or not unlike the lapic (where you can see if it crossed
-zero).  Therefore under io-apic, all unknown nmis were wrongly being
-filtered as nmi watchdog interrupts.
 
-Cheers,
-Don
