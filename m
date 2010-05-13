@@ -1,70 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759269Ab0EMQKu (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:10:50 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:49969 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758927Ab0EMQKs (ORCPT
+	id S1759294Ab0EMQMd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:12:33 -0400
+Received: from inpsmtp.inp-toulouse.fr ([193.48.203.41]:42128 "EHLO
+	inpsmtp.inp-toulouse.fr" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759028Ab0EMQMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:10:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=i/D/QwZ/CygBmp1DTFU9CWiqiDWJWrkrFA1eW1ljG+VhD6dXvfc205+c0QWHKpmw15
-         fCoU/EZBgoj0VhwyY7158DLx7IG+qVeQ39OUFZLdF0Q3LGbiBgpdu6beHdMwkS5L/mfP
-         X8CpnzYxiooP2VSCIep/l0qRUrIwgLA55I2og=
-Date: Thu, 13 May 2010 09:02:49 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: mmotm 2010-05-11-18-20 uploaded
-Message-ID: <20100513160249.GC22238@core.coreip.homeip.net>
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org>
- <6195.1273763194@localhost>
+	Thu, 13 May 2010 12:12:31 -0400
+X-Greylist: delayed 1753 seconds by postgrey-1.27 at vger.kernel.org; Thu, 13 May 2010 12:12:31 EDT
+Message-ID: <20100513171801.a0leqwxwggowo0c4@wmail.inp-toulouse.fr>
+Date: Thu, 13 May 2010 17:18:01 +0200
+From: Mrs Rebecca Young <bankoflondon@london.com>
+Reply-to: yrebecca1958@hotmail.com
+To: undisclosed-recipients:;
+Subject: 
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+	charset=ISO-8859-1;
+	DelSp="Yes";
+	format="flowed"
 Content-Disposition: inline
-In-Reply-To: <6195.1273763194@localhost>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Transfer-Encoding: 7bit
+User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (inpsmtp.inp-toulouse.fr [193.48.203.41]); Thu, 13 May 2010 17:20:27 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 11:06:34AM -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
-> > The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
-> > 
-> >    http://userweb.kernel.org/~akpm/mmotm/
-> 
-> Dell Latitude E6500, x86_64 kernel.
-> 
-> Boots to single user prompt, but has issues on the way there.  Possibly
-> very important - I was definitely *not* typing at the time (as I had hit
-> return on the LUKS passphrase for the disk at 36 seconds after boot, and
-> I didn't get the # prompt for single-user for another minute or two (probably
-> due to udev having issues due to the oops). So I have no idea what it was
-> trying to get a keycode for...
-> 
 
-Udev probably tries to remap special keys on your keyboard...
+Attn: Sir/Madam,
 
-> [   40.717136] udev: starting version 154
-> [   41.710153] BUG: unable to handle kernel NULL pointer dereference at (null)
-> [   41.711007] IP: [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
-> [   41.711007] PGD 11d318067 PUD 118af1067 PMD 0
-> [   41.711007] Oops: 0002 [#1] PREEMPT SMP
-> [   41.711007] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4/idVendor
-> [   41.711007] CPU 0
-> [   41.711007] Modules linked in:
-> [   41.711007]
-> [   41.711007] Pid: 2501, comm: keymap Not tainted 2.6.34-rc7-mmotm0511 #2 0X564R/Latitude E6500
-> 
-> [   41.711007] RIP: 0010:[<ffffffff813bb996>]  [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
+Although you might be apprehensive about my email as we have not met
+before,I am Mrs Rebecca Young,I am a Banker i work with Bank Of
+London,There is the sum of $20,600,000.00 in my Bank "Bank Of London"
+There were no beneficiaries stated concerning these funds which
+means no one would ever come forward to claim it.
 
-I think this is Mauro's big keycode additions.
+That is why I ask that we work together so as to have the sum
+transfered out of my Bank into your Bank Account or any other
+account  of your choice. I will be pleased to see if you can
+help me and also be a good and trusted person. Once the funds
+have been transferred to your Nominated Bank Account we shall
+then share in the ratio of 60% for me, 40% for you,do send me
+a mail as soon as possible for more details here is my email
+address: yrebecca1958@hotmail.com
 
--- 
-Dmitry
+Regards
+Mrs Rebecca Young
+
+
+
+
