@@ -1,58 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759433Ab0EMTQH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:16:07 -0400
-Received: from kroah.org ([198.145.64.141]:43895 "EHLO coco.kroah.org"
+	id S932512Ab0EMTQq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:16:46 -0400
+Received: from kroah.org ([198.145.64.141]:43897 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754232Ab0EMTQD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:16:03 -0400
-Date: Thu, 13 May 2010 12:16:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] TTY fixes for 2.6.34-git
-Message-ID: <20100513191601.GA17538@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932270Ab0EMTQl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:16:41 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Anatolij Gustschin <agust@denx.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 1/3] serial: mpc52xx_uart: fix null pointer dereference
+Date: Thu, 13 May 2010 12:16:37 -0700
+Message-Id: <1273778199-17578-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <20100513191601.GA17538@kroah.com>
+References: <20100513191601.GA17538@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here are 3 bugfixes for your 2.6.34-git tree.
+From: Anatolij Gustschin <agust@denx.de>
 
-One is a regression from .33, and the other 2 fix reported problems and
-are being sent to the -stable trees as well.
+Commit 6acc6833510db8f72b5ef343296d97480555fda9
+introduced NULL pointer dereference and kernel crash
+on ppc32 machines while booting. Fix this bug now.
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/tty-2.6.git/
-
-These patches have been in the linux-next tree for a while now.
-
-Patches will be sent to the linux-kernel mailing list, if anyone wants
-to see them.
-
-thanks,
-
-greg k-h
-
-------------
-
- drivers/char/tty_io.c         |    1 +
- drivers/serial/imx.c          |   10 +++++++++-
+Reported-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
+Tested-by: Leonardo Chiquitto <leonardo.lists@gmail.com>
+Signed-off-by: Anatolij Gustschin <agust@denx.de>
+Acked-by: Grant Likely <grant.likely@secretlab.ca>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
  drivers/serial/mpc52xx_uart.c |    2 +-
- 3 files changed, 11 insertions(+), 2 deletions(-)
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
----------------
-
-Alan Cox (1):
-      tty: Fix unbalanced BKL handling in error path
-
-Anatolij Gustschin (1):
-      serial: mpc52xx_uart: fix null pointer dereference
-
-Valentin Longchamp (1):
-      serial: imx.c: fix CTS trigger level lower to avoid lost chars
+diff --git a/drivers/serial/mpc52xx_uart.c b/drivers/serial/mpc52xx_uart.c
+index a176ab4..02469c3 100644
+--- a/drivers/serial/mpc52xx_uart.c
++++ b/drivers/serial/mpc52xx_uart.c
+@@ -1467,7 +1467,7 @@ mpc52xx_uart_init(void)
+ 	/*
+ 	 * Map the PSC FIFO Controller and init if on MPC512x.
+ 	 */
+-	if (psc_ops->fifoc_init) {
++	if (psc_ops && psc_ops->fifoc_init) {
+ 		ret = psc_ops->fifoc_init();
+ 		if (ret)
+ 			return ret;
+-- 
+1.7.1
 
