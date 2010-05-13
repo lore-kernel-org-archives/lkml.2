@@ -1,60 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758677Ab0EMLDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 07:03:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21697 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755588Ab0EMLDM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 07:03:12 -0400
-Date: Thu, 13 May 2010 12:02:52 +0100
-From: "Daniel P. Berrange" <berrange@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Chris Wright <chrisw@sous-sol.org>, greg@kroah.com,
-       jbarnes@virtuousgeek.org, matthew@wil.cx, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kvm@vger.kernel.org, ddutile@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [PATCH 2/2] pci: allow sysfs file owner to read device dependent config space
-Message-ID: <20100513110252.GE12207@redhat.com>
-Reply-To: "Daniel P. Berrange" <berrange@redhat.com>
-References: <20100513012857.GA28034@sequoia.sous-sol.org> <20100513012957.GB28034@sequoia.sous-sol.org> <4BEBDAF5.3020004@redhat.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BEBDAF5.3020004@redhat.com>
-User-Agent: Mutt/1.4.1i
+	id S1758685Ab0EMLI3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 07:08:29 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63721 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758592Ab0EMLI1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 07:08:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=XYgWX9jmGKWmDAHA3mVC6UEoAU58JcNvh4ZynaRucu2AD5EbwGe3+y4i7zeQWaS4IS
+         Cu+JjbqOOCaMt0Me/SZHb5UOTETSmuBhlO3GNLOBaT6SEVX5UK5uLmg5+yLOfJFy6R8P
+         AbIfqi+QRWXGxrLu+LRCNt+Hnq7HMqgIRKkiE=
+From: Changli Gao <xiaosuo@gmail.com>
+To: akpm@linux-foundation.org
+Cc: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH 6/9] cxgb3i: use kvzalloc and kvfree
+Date: Thu, 13 May 2010 19:08:07 +0800
+Message-Id: <1273748887-10364-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 01:56:53PM +0300, Avi Kivity wrote:
-> On 05/13/2010 04:29 AM, Chris Wright wrote:
-> >The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-> >check to verify privileges before allowing a user to read device
-> >dependent config space.  This is meant to protect from an unprivileged
-> >user potentially locking up the box.
-> >
-> >When assigning a PCI device directly to a guest with libvirt and KVM,
-> >the sysfs config space file is chown'd to the unprivileged user that
-> >the KVM guest will run as.  The guest needs to have full access to the
-> >device's config space since it's responsible for driving the device.
-> >However, despite being the owner of the sysfs file, the CAP_SYS_ADMIN
-> >check will not allow read access beyond the config header.
-> >
-> >With this patch the sysfs file owner is also considered privileged enough
-> >to read all of the config space.
-> >
-> >   
-> 
-> Related questions:
-> 
-> - does sysfs support selinux labels?
+use kvzalloc and kvfree
 
-With a recent enough kernel + selinux policy it does.
+use kvzalloc and kvfree
 
-Regards,
-Daniel
--- 
-|: Red Hat, Engineering, London    -o-   http://people.redhat.com/berrange/ :|
-|: http://libvirt.org -o- http://virt-manager.org -o- http://deltacloud.org :|
-|: http://autobuild.org        -o-         http://search.cpan.org/~danberr/ :|
-|: GnuPG: 7D3B9505  -o-   F3C9 553F A1DA 4AC2 5648 23C1 B3DF F742 7D3B 9505 :|
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ drivers/scsi/cxgb3i/cxgb3i_ddp.c     |   12 +++++-------
+ drivers/scsi/cxgb3i/cxgb3i_ddp.h     |   26 --------------------------
+ drivers/scsi/cxgb3i/cxgb3i_offload.c |    6 +++---
+ 3 files changed, 8 insertions(+), 36 deletions(-)
+diff --git a/drivers/scsi/cxgb3i/cxgb3i_ddp.c b/drivers/scsi/cxgb3i/cxgb3i_ddp.c
+index b58d913..2795440 100644
+--- a/drivers/scsi/cxgb3i/cxgb3i_ddp.c
++++ b/drivers/scsi/cxgb3i/cxgb3i_ddp.c
+@@ -648,7 +648,7 @@ static void ddp_cleanup(struct kref *kref)
+ 		} else
+ 			i++;
+ 	}
+-	cxgb3i_free_big_mem(ddp);
++	kvfree(ddp);
+ }
+ 
+ void cxgb3i_ddp_cleanup(struct t3cdev *tdev)
+@@ -692,11 +692,9 @@ static void ddp_init(struct t3cdev *tdev)
+ 		bits = PPOD_IDX_MAX_SIZE;
+ 	ppmax = (1 << (bits - 1)) - 1;
+ 
+-	ddp = cxgb3i_alloc_big_mem(sizeof(struct cxgb3i_ddp_info) +
+-				   ppmax *
+-					(sizeof(struct cxgb3i_gather_list *) +
+-					sizeof(struct sk_buff *)),
+-				   GFP_KERNEL);
++	ddp = kvzalloc(sizeof(struct cxgb3i_ddp_info) + ppmax *
++		       (sizeof(struct cxgb3i_gather_list *) +
++			sizeof(struct sk_buff *)));
+ 	if (!ddp) {
+ 		ddp_log_warn("%s unable to alloc ddp 0x%d, ddp disabled.\n",
+ 			     tdev->name, ppmax);
+@@ -743,7 +741,7 @@ static void ddp_init(struct t3cdev *tdev)
+ 	return;
+ 
+ free_ddp_map:
+-	cxgb3i_free_big_mem(ddp);
++	kvfree(ddp);
+ }
+ 
+ /**
+diff --git a/drivers/scsi/cxgb3i/cxgb3i_ddp.h b/drivers/scsi/cxgb3i/cxgb3i_ddp.h
+index 6761b32..1be8c20 100644
+--- a/drivers/scsi/cxgb3i/cxgb3i_ddp.h
++++ b/drivers/scsi/cxgb3i/cxgb3i_ddp.h
+@@ -13,9 +13,6 @@
+ #ifndef __CXGB3I_ULP2_DDP_H__
+ #define __CXGB3I_ULP2_DDP_H__
+ 
+-#include <linux/slab.h>
+-#include <linux/vmalloc.h>
+-
+ /**
+  * struct cxgb3i_tag_format - cxgb3i ulp tag format for an iscsi entity
+  *
+@@ -143,29 +140,6 @@ struct pagepod {
+ #define V_PPOD_PGSZ(x) ((x) << S_PPOD_PGSZ)
+ 
+ /*
+- * large memory chunk allocation/release
+- * use vmalloc() if kmalloc() fails
+- */
+-static inline void *cxgb3i_alloc_big_mem(unsigned int size,
+-					 gfp_t gfp)
+-{
+-	void *p = kmalloc(size, gfp);
+-	if (!p)
+-		p = vmalloc(size);
+-	if (p)
+-		memset(p, 0, size);
+-	return p;
+-}
+-
+-static inline void cxgb3i_free_big_mem(void *addr)
+-{
+-	if (is_vmalloc_addr(addr))
+-		vfree(addr);
+-	else
+-		kfree(addr);
+-}
+-
+-/*
+  * cxgb3i ddp tag are 32 bits, it consists of reserved bits used by h/w and
+  * non-reserved bits that can be used by the iscsi s/w.
+  * The reserved bits are identified by the rsvd_bits and rsvd_shift fields
+diff --git a/drivers/scsi/cxgb3i/cxgb3i_offload.c b/drivers/scsi/cxgb3i/cxgb3i_offload.c
+index a175be9..720d199 100644
+--- a/drivers/scsi/cxgb3i/cxgb3i_offload.c
++++ b/drivers/scsi/cxgb3i/cxgb3i_offload.c
+@@ -1841,7 +1841,7 @@ static void sdev_data_cleanup(struct cxgb3i_sdev_data *cdata)
+ 	for (i = 0; i < ports->nports; i++)
+ 		NDEV2CDATA(ports->lldevs[i]) = NULL;
+ 
+-	cxgb3i_free_big_mem(cdata);
++	kvfree(cdata);
+ }
+ 
+ void cxgb3i_sdev_cleanup(void)
+@@ -1885,7 +1885,7 @@ void cxgb3i_sdev_add(struct t3cdev *cdev, struct cxgb3_client *client)
+ 	int mapsize = cxgb3_max_connect * sizeof(struct s3_conn *);
+ 	int i;
+ 
+-	cdata =  cxgb3i_alloc_big_mem(sizeof(*cdata) + mapsize, GFP_KERNEL);
++	cdata = kvzalloc(sizeof(*cdata) + mapsize);
+ 	if (!cdata) {
+ 		cxgb3i_log_warn("t3dev 0x%p, offload up, OOM %d.\n",
+ 				cdev, mapsize);
+@@ -1918,7 +1918,7 @@ void cxgb3i_sdev_add(struct t3cdev *cdev, struct cxgb3_client *client)
+ 	return;
+ 
+ free_cdata:
+-	cxgb3i_free_big_mem(cdata);
++	kvfree(cdata);
+ }
+ 
+ /**
