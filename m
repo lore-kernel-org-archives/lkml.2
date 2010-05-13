@@ -1,137 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758866Ab0EMM0v (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 08:26:51 -0400
-Received: from mga09.intel.com ([134.134.136.24]:22979 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755907Ab0EMM0u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 08:26:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
-   d="scan'208";a="517594488"
-Date: Thu, 13 May 2010 20:22:32 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org, ak@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 0/7] NUMA Hotplug emulator
-Message-ID: <20100513122232.GA2560@shaohui>
-Mail-Followup-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-	ak@linux.intel.com, shaohui.zheng@linux.intel.com
-References: <20100513113629.GA2169@shaohui>
- <20100513121149.GI2169@shaohui>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513121149.GI2169@shaohui>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758881Ab0EMM3Y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:29:24 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:56317 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751866Ab0EMM3W (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 08:29:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=eXv42z+hsny3nGTvpGkKWIx5/QI9GDQdJYRHbhNy3yyh0K6cd7bH9N2GZ9B07j3I+a
+         x7dJyJn7mKSzsGpKTqf0Jd9XoUvwlkrews8uPyPpcCOphi+EtwpefFp4fZ/rchv9YONe
+         1Ir9cGs6TwqOBPIp0DUqqUubtmxQZmZAQy4Nk=
+Date: Thu, 13 May 2010 15:29:15 +0300
+From: Pekka Paalanen <pq@iki.fi>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH 3/4] tracing: Allow mmio tracer to display
+ trace_printk() and other events
+Message-ID: <20100513152915.3d3f852b@daedalus.pq.iki.fi>
+In-Reply-To: <1273752909.27703.809.camel@gandalf.stny.rr.com>
+References: <20100513012110.558313399@goodmis.org>
+	<20100513012302.352845720@goodmis.org>
+	<20100513115414.7688b51d@daedalus.pq.iki.fi>
+	<1273752909.27703.809.camel@gandalf.stny.rr.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This email was lost after I check the LKML, resend it, sorry if duplicated.
+On Thu, 13 May 2010 08:15:09 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-Hi, All
-	This patchset introduces NUMA hotplug emulator for x86. it refers too
-many files and might introduce new bugs, so we send a RFC to comminity first
-and expect comments and suggestions, thanks.
+> On Thu, 2010-05-13 at 11:54 +0300, Pekka Paalanen wrote:
+> > On Wed, 12 May 2010 21:21:13 -0400
+> > Steven Rostedt <rostedt@goodmis.org> wrote:
+> > 
+> > > From: Steven Rostedt <srostedt@redhat.com>
+> > > 
+> > > The mmio tracer has its own function to handle reading of
+> > > events. But if it encounters an event that it does not
+> > > understand it ignores it instead of telling the calling
+> > > function that it is not processing it.
+> > > 
+> > > If someone adds trace_printk() or enables events along with
+> > > the mmio tracer, then these events will not be displayed in
+> > > the trace output.
+> > > 
+> > > Simple solution is to just have the mmio print return
+> > > UNHANDLED to let the caller know that it did not processes
+> > > the event and the caller can process the event further.
+> > 
+> > Does this not mean that the mmiotrace output may contain
+> > foreign lines? If it does, it will break the user space.
+> > The dump format is specified in
+> > Documentation/trace/mmiotrace.txt.
+> > 
+> > If you want to handle arbitrary messages, format them as
+> > MARK events, please.
+> > 
+> > If I understood correctly, then NAK for this patch. Otherwise,
+> > could you explain how this does not break the mmiotrace dump
+> > format?
+> > 
+> > Is the tracing infrastructure now supporting several
+> > active tracers at the same time? If yes, and if mmiotrace
+> > should be able to co-operate, we need a new revision of the
+> > dump format, or a tool that extracts the mmiotrace
+> > events in the current format.
+> > 
+> 
+> It only displays other events if the user enabled those events.
+> 
+> But that said, I don't want to break existing userspace tools. I
+> can add a mmiotrace option "mmiotrace_all_events", if the user
+> wants to see all events within the mmiotracer then they can just
+> enable that option, otherwise, the mmiotracer will act like it
+> currently does.
+> 
+> How does that sound?
 
-* WHAT IS HOTPLUG EMULATOR 
+That would be fine. Is it not redundant with what you said in
+your first sentence?
 
-NUMA hotplug emulator is collectively named for the hotplug emulation
-it is able to emulate NUMA Node Hotplug thru a pure software way. It
-intends to help people easily debug and test node/cpu/memory hotplug
-related stuff on a none-numa-hotplug-support machine, even an UMA machine.
-
-The emulator provides mechanism to emulate the process of physcial cpu/mem
-hotadd, it provides possibility to debug CPU and memory hotplug on the machines
-without NUMA support for kenrel developers. It offers an interface for cpu
-and memory hotplug test purpose.
-
-* WHY DO WE USE HOTPLUG EMULATOR
-
-We are focusing on the hotplug emualation for a few months. The emualor helps
- team to reproduce all the major hotplug bugs. It plays an important role to
-the hotplug code quality assuirance. Because of the hotplug emulator, we already
-move most of the debug working to virtual evironment.
-
-We send it to 
-
-* EXPECT BUGS
-
-This is the first version to send to the comminity, but it is already 3rd
-version in internal. It expected to have bugs. 
-
-OPEN: Kernel might use part of hidden memory region as RAM buffer,
-      now emulator directly hide 128M extra space to workaround
-      this issue.  Any better way to avoid this conflict? We expect a better
-	  solution from the community(for patch 002).
-
-* Principles & Usages 
-
-NUMA hotplug emulator include 3 different parts, We add a menu item to the
-menuconfig to enable/disable them
-
-1) Node hotplug emulation:
-
-The emulator firstly hides RAM via E820 table, and then it can
-fake offlined nodes with the hidden RAM.
-
-After system bootup, user is able to hotplug-add these offlined
-nodes, which is just similar to a real hotplug hardware behavior.
-
-Using boot option "numa=hide=N*size" to fake offlined nodes:
-	- N is the number of hidden nodes
-	- size is the memory size (in MB) per hidden node.
-
-There is a sysfs entry "probe" under /sys/devices/system/node/ for user
-to hotplug the fake offlined nodes:
-
- - to show all fake offlined nodes:
-    $ cat /sys/devices/system/node/probe
-
- - to hotadd a fake offlined node, e.g. nodeid is N:
-    $ echo N > /sys/devices/system/node/probe
-
-2) CPU hotplug emulation:
-
-The emulator reserve CPUs throu grub parameter, the reserved CPUs can be
-hot-add/hot-remove in software method, it emulates the procuess of physical
-cpu hotplug.
-
- - to hide CPUs
-	- Using boot option "maxcpus=N" hide CPUs
-	  N is the number of initialize CPUs
-	- Using boot option "cpu_hpe=on" to enable cpu hotplug emulation
-      when cpu_hpe is enabled, the rest CPUs will not be initialized 
-
- - to hot-add CPU to node
-	$ echo nid > cpu/probe
-
- - to hot-remove CPU
-	$ echo nid > cpu/release
-
-3) Memory hotplug emulation:
-
-The emulator reserve memory before OS booting, the reserved memory region
-is remove from e820 table, and they can be hot-added via the probe interface,
-this interface was extend to support add memory to the specified node, It
-maintains backwards compatibility.
-
-The difficulty of Memory Release is well-known, we have no plan for it until now.
-
- - reserve memory throu grub parameter
- 	mem=1024m
-
- - add a memory section to node 3
-    $ echo 0x40000000,3 > memory/probe
-	OR
-    $ echo 1024m,3 > memory/probe
-
-* ACKNOWLEDGMENT 
-
-hotplug emulator includes a team's efforts, thanks all of them.
-They are:
-Andi Kleen, Haicheng Li, Shaohui Zheng, Fengguang Wu and Yongkang You
 -- 
-Thanks & Regards,
-Shaohui
+Pekka Paalanen
+http://www.iki.fi/pq/
