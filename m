@@ -1,55 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758130Ab0EMJxB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:53:01 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:57086 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752915Ab0EMJw4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:52:56 -0400
-Date: Thu, 13 May 2010 10:59:11 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Chris Wright <chrisw@sous-sol.org>
-Cc: greg@kroah.com, jbarnes@virtuousgeek.org, matthew@wil.cx,
-       linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, ddutile@redhat.com, alex.williamson@redhat.com
-Subject: Re: [PATCH 2/2] pci: allow sysfs file owner to read device
- dependent config space
-Message-ID: <20100513105911.6469c434@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100513012957.GB28034@sequoia.sous-sol.org>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
-	<20100513012957.GB28034@sequoia.sous-sol.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758140Ab0EMJzG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:55:06 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:42064 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752209Ab0EMJzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 05:55:02 -0400
+Date: Thu, 13 May 2010 10:54:39 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
+Message-ID: <20100513095439.GA27949@csn.ul.ie>
+References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BEB18BB.5010803@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 18:29:57 -0700
-Chris Wright <chrisw@sous-sol.org> wrote:
+On Wed, May 12, 2010 at 05:08:11PM -0400, Rik van Riel wrote:
+> On 05/12/2010 05:02 PM, Mel Gorman wrote:
+>
+>> This last comment is a bit light. It's actually restoring the lock that
+>> was taken in 2.6.33 to some extent except we are always taking it now.
+>> In 2.6.33, it was resricted to
+>>
+>>         if (vma->anon_vma&&  (insert || importer || start != vma->vm_start))
+>>                  anon_vma = vma->anon_vma;
+>>
+>> but now it's always. Has it been determined that the locking in 2.6.33
+>> was insufficient or are we playing it safe now?
+>
+> Playing it safe, mostly.
+>
 
-> The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-> check to verify privileges before allowing a user to read device
-> dependent config space.  This is meant to protect from an unprivileged
-> user potentially locking up the box.
+Sure. I did the same, got the same question from Andrea and more or less
+gave the same answer :) . I asked again in case you spotted something I
+didn't.
 
-Or hacking it. You could argue the correct requirement is to change it to
-require CAP_SYS_RAWIO in fact !
+> Another aspect is that, if you look at the if condition above,
+> the number of cases where we have an anon_vma and do not take
+> the lock is pretty small.
+>
+> Basically only the case where we expand a VMA upward or merge
+> VMAs in an mprotect.  I believe in pretty much all other cases
+> we end up needing to take the lock.
+>
 
-> With this patch the sysfs file owner is also considered privileged enough
-> to read all of the config space.
+Looking at the if condition, brk() would appear to be the most important
+case, right? This would appear to correlate with the reasoning behind
+that condition in the first place in commit
+252c5f94d944487e9f50ece7942b0fbf659c5c31 where sbrk contended on the
+lock heavily.
 
-Which breaks the main reason the check was there in the first place. To
-stop accidents of the form
+I can't convince myself 100% but it is possible we will regress on that
+test case again if the same logic is not applied to the locking. I ran a
+brk() microbenchmark from aim9 and the results were really bad - 48%
+regression. I didn't rerun with the old logic to see the results
+unfortunately and right now I'm on the road. It'll be tomorrow morning
+before I get the chance.
 
-	find / -exec grep {} "wibble"
+> I am not entirely convinced the old code took the lock in all
+> of the required cases.
+>
 
-blowing up in people's faces.
+I have vague worries about expand_upwards but otherwise the reasoning
+seemed solid and even with the new anon_vma code, we are not doing
+anything fundamentally different in this area. Maybe it's best to play
+it safe now and always take the lock, but it's worth reconsidering later
+particularly if this patch gets fingered in some performance-related
+bisection later.
 
-
-I agree with the problem - but IMHO the fix is to require opening the file
-checks CAP_SYS_something instead: not to hack the read method and make it
-even weirder and more un-Linux than it is now.
-
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
