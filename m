@@ -1,50 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759403Ab0EMRAk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:00:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:46963 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754075Ab0EMRAi (ORCPT
+	id S1754221Ab0EMRJZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:09:25 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60878 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750914Ab0EMRJX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:00:38 -0400
-Date: Thu, 13 May 2010 09:58:27 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-In-Reply-To: <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005130955240.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Thu, 13 May 2010 13:09:23 -0400
+Date: Thu, 13 May 2010 18:13:00 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Tejun Heo <tj@kernel.org>, jeff@garzik.org, linux-ide@vger.kernel.org,
+       jens.axboe@oracle.com, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, ben@decadent.org.uk
+Subject: Re: [PATCHSET] libata: implement ->set_capacity()
+Message-ID: <20100513181300.64be595a@lxorguk.ukuu.org.uk>
+In-Reply-To: <1273768687.4353.235.camel@mulgrave.site>
+References: <1273766206-17402-1-git-send-email-tj@kernel.org>
+	<1273766778.4353.200.camel@mulgrave.site>
+	<4BEC272E.10508@kernel.org>
+	<1273768687.4353.235.camel@mulgrave.site>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 13 May 2010 11:38:07 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-
-On Thu, 13 May 2010, Linus Torvalds wrote:
+> On Thu, 2010-05-13 at 18:22 +0200, Tejun Heo wrote:
+> > > Instead of just saying unlock the HPA and show me the new capacity
+> > > (with a rescan), you have to echo the right number of sectors to the
+> > > set_capacity variable.  Isn't a hpa_unlock libata specific attribute
+> > > better (you could even call BLKRRPART from the user context of the
+> > > write)?
+> > 
+> > Hmmm... I lost you.  What are you talking about?
 > 
-> PnP information _commonly_ doesn't inclure PS/2 ports, even when they 
-> exist. Lack of PnP information about the keyboard port means absolutely 
-> nothing, and anybody who tells you otherwise is totally and utterly wrong. 
-> 
-> So don't confuse this with PnP issues. That's a total red herring, and 
-> Apple is _not_at_all_ "doing the proper thing in the BIOS". 
+> Instead of making this a block sysfs attribute, since HPA is SATA only,
+> why not make it a libata attribute for the disk?
 
-Btw, was this an EFI boot?
+HPA is both PATA and SATA (and USB SCSI pass through ATA over SCSI etc
+with some of the more functional USB/ATA bridges.
 
-I could easily see bootcamp working (it's been tested with Windows, after 
-all), but not EFI (I've heard rumors of Windows booting from EFI, but I 
-don't know if those are actually correct). 
-
-And I'd be a _lot_ more open to saying "if you booted from EFI, then we're 
-going to ignore any legacy devices that aren't in PnP tables".
-
-In fact, we effectively do that today by having different code-paths for 
-ia64 (which was EFI) and x86 (which is obviously traditionally not EFI).
-
-			Linus
