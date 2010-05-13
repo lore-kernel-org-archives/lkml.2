@@ -1,65 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab0EMRdd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:33:33 -0400
-Received: from fifo99.com ([67.223.236.141]:39435 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755032Ab0EMRdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:33:32 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Daniel Walker <dwalker@fifo99.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Paul Walmsley <paul@pwsan.com>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Linus Walleij <linus.walleij@ericsson.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <20100513121745.GA10749@srcf.ucam.org>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
-	 <20100513121745.GA10749@srcf.ucam.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 10:33:10 -0700
-Message-ID: <1273771990.19100.13.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1756952Ab0EMRee (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:34:34 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:55713 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755032Ab0EMRec (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:34:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:x-url:user-agent;
+        b=Y6hB35m7HvhWSfxV4oVk0VZejl6dKLUM9O1WOCcKTqP6dwoLkBPehB4ssrBKYkb5HO
+         IexQ8NQl0RBlxp5MyLRXe+0eXw3dMmBDwbaH5FI6GSjMJ1Si3oO6IWzGGpFitu+OarED
+         OdUwSyAQCrKqTAiaQrpRHYgb/wv15N5jb/Nx4=
+Date: Thu, 13 May 2010 14:34:26 -0300
+From: Arnaldo Carvalho de Melo <acme@ghostprotocols.net>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: perf: relative path to source for perf probe?
+Message-ID: <20100513173426.GK19192@ghostprotocols.net>
+References: <AANLkTins2yCK-rvmdaaSQoBum4haHLhPx34EeJDg21Gg@mail.gmail.com>
+ <20100513145826.GJ30926@ghostprotocols.net>
+ <AANLkTin1w6OoS_6qzMqIizBxOGiV7DXJ936-hdHSFCD8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTin1w6OoS_6qzMqIizBxOGiV7DXJ936-hdHSFCD8@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 13:17 +0100, Matthew Garrett wrote:
-> On Wed, May 12, 2010 at 09:35:30PM -0600, Paul Walmsley wrote:
-> > 
-> > Figuring out a different way to do this should not limit Android at all, 
-> > since Google can do what other Linux distributions do and continue to 
-> > patch opportunistic suspend/suspend-block calls into their kernels as 
-> > needed to ship devices, while contributing towards a different solution to 
-> > the problem.
+Em Thu, May 13, 2010 at 06:01:10PM +0200, Chase Douglas escreveu:
+> On Thu, May 13, 2010 at 4:58 PM, Arnaldo Carvalho de Melo
+> <acme@ghostprotocols.net> wrote:
+> > Look in tools/perf/util/symbol.c, these variables are the ones tools use
+> > to govern how the symbol system work wrt finding vmlinux:
+> >
+> > symbol_conf.use_vmlinux_path
+> > symbol_conf.vmlinux_name
+> >
+> > In addition to this it will use what is in ~/.debug/ if it has a
+> > build-id in the perf.data header.
+> >
+> > The changes for support kvm also touched this and allow for some
+> > prefixing to look for guest symbols, generalizing that to make guest
+> > kernel vmlinux + modules relative location be reused to look for
+> > relative location for host kernel vmlinux + modules seems the way to go.
 > 
-> I basically agree, except that despite having a year to do so none of us 
-> have come up with a different way that would actually work. Google have 
-> done this work. Who's going to prove that there is actually a different 
-> way to do this?
+> After reading this some more, I think we are talking about two
+> different things. I think your notes above are referring to locating
+> the vmlinux image and other debug symbols. This seems to work fine for
+> me using the -k flag.
 
-We all feel the pain of inelegance right? I think it's clear that this
-system will not last (but there's no other immediate option) .. That
-doesn't mean we should reject it, but we need to be clear that this
-system will get replaced. So we should format the patches appropriately.
-To me the userspace aspect is a permanent change .. If we could drop
-that (or put it into debugfs) then it would make this a lot easy to
-accept as a stepping stone.
+What about finding the associated modules?
 
-Daniel
+> However, I'm encountering an issue where the source code location
+> isn't found. I think this is fairly specific to the probe command of
+> perf, which is fairly new, so maybe it's missing the same level of
+> support that the symbol finding code has?
 
+Annotation needs it, in top, report, too.
+
+But probably (haven't looked at the sources) the way to specify it will
+be different, since we rely on objdump to do the disassembly, we need to
+inform it where the sources are, but look at the source of all this, the
+relevant DWARF tags:
+
+ <0><b>: Abbrev Number: 1 (DW_TAG_compile_unit)
+    < c>   DW_AT_stmt_list   : 0x0      
+    <10>   DW_AT_ranges      : 0x0      
+    <14>   DW_AT_name        : /home/acme_unencrypted/git/linux-2.6-tip/arch/x86/kernel/head_64.S       
+    <57>   DW_AT_comp_dir    : /home/acme_unencrypted/git/build/v2.6.34-rc6-
+
+- Arnaldo
