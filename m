@@ -1,134 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758700Ab0EMLOt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 07:14:49 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:49260 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758588Ab0EMLOr (ORCPT
+	id S1758745Ab0EMLSn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 07:18:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36070 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758697Ab0EMLSl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 07:14:47 -0400
+	Thu, 13 May 2010 07:18:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=JJ4SmwjOYiMiUc+QJKY/de4zECPx3gXsIyUEgja05tlU3EjvI1hA2f8ejIkveKWnt1
-         opAw+sdwW52+h4Q3Yhhx1r9d+bMW8h2SLRFX7rsARNKmzN4l8IxPCwynKViXd+akbLy4
-         JbjjPEJ2jUbx1k/0kMwFA/CDAm+kTUhOWGAgY=
+        b=fN9L1bJJqK0BG11ChKYcW8PwIFgs/EZGn0//n7n1dpZwf/5RkZ8vK7YjUlPIdxDf68
+         HKekAyYRG+yfMBgFTPVzkWp5lL3YFl74za9x7+ToZnxT9NOAcOGUtacAxzBauU/LRq5/
+         8j796XqcmFmyszCPzoKu0rWrxTi8m0GPyUr8g=
 From: Changli Gao <xiaosuo@gmail.com>
 To: akpm@linux-foundation.org
-Cc: Divy Le Ray <divy@chelsio.com>, netdev@vger.kernel.org,
+Cc: Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
+       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
+       Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH 8/9] cxgb3: use kvzalloc and kvfree
-Date: Thu, 13 May 2010 19:14:31 +0800
-Message-Id: <1273749271-10469-1-git-send-email-xiaosuo@gmail.com>
+Subject: [PATCH 9/9] ehca: use kvcalloc and kvfree
+Date: Thu, 13 May 2010 19:18:15 +0800
+Message-Id: <1273749495-10526-1-git-send-email-xiaosuo@gmail.com>
 X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-use kvzalloc and kvfree
+use kvcalloc and kvfree
 
-use kvzalloc and kvfree
+use kvcalloc and kvfree, but I haven't test it, as I don't have that machine.
 
 Signed-off-by: Changli Gao <xiaosuo@gmail.com>
 ----
- drivers/net/cxgb3/cxgb3_defs.h    |    2 --
- drivers/net/cxgb3/cxgb3_offload.c |   31 ++-----------------------------
- drivers/net/cxgb3/l2t.c           |    4 ++--
- 3 files changed, 4 insertions(+), 33 deletions(-)
-diff --git a/drivers/net/cxgb3/cxgb3_defs.h b/drivers/net/cxgb3/cxgb3_defs.h
-index 47e5376..d3c662f 100644
---- a/drivers/net/cxgb3/cxgb3_defs.h
-+++ b/drivers/net/cxgb3/cxgb3_defs.h
-@@ -41,8 +41,6 @@
- 
- #define VALIDATE_TID 1
- 
--void *cxgb_alloc_mem(unsigned long size);
--void cxgb_free_mem(void *addr);
- void cxgb_neigh_update(struct neighbour *neigh);
- void cxgb_redirect(struct dst_entry *old, struct dst_entry *new);
- 
-diff --git a/drivers/net/cxgb3/cxgb3_offload.c b/drivers/net/cxgb3/cxgb3_offload.c
-index c6485b3..799c9b7 100644
---- a/drivers/net/cxgb3/cxgb3_offload.c
-+++ b/drivers/net/cxgb3/cxgb3_offload.c
-@@ -39,7 +39,6 @@
- #include <linux/if_vlan.h>
- #include <net/netevent.h>
- #include <linux/highmem.h>
--#include <linux/vmalloc.h>
- 
- #include "common.h"
- #include "regs.h"
-@@ -1156,32 +1155,6 @@ void cxgb_redirect(struct dst_entry *old, struct dst_entry *new)
- }
- 
- /*
-- * Allocate a chunk of memory using kmalloc or, if that fails, vmalloc.
-- * The allocated memory is cleared.
-- */
--void *cxgb_alloc_mem(unsigned long size)
--{
--	void *p = kmalloc(size, GFP_KERNEL);
--
--	if (!p)
--		p = vmalloc(size);
--	if (p)
--		memset(p, 0, size);
--	return p;
--}
--
--/*
-- * Free memory allocated through t3_alloc_mem().
-- */
--void cxgb_free_mem(void *addr)
--{
--	if (is_vmalloc_addr(addr))
--		vfree(addr);
--	else
--		kfree(addr);
--}
--
--/*
-  * Allocate and initialize the TID tables.  Returns 0 on success.
+ drivers/infiniband/hw/ehca/ipz_pt_fn.c |   22 +++++-----------------
+ 1 file changed, 5 insertions(+), 17 deletions(-)
+diff --git a/drivers/infiniband/hw/ehca/ipz_pt_fn.c b/drivers/infiniband/hw/ehca/ipz_pt_fn.c
+index 1596e30..f0e7bd4 100644
+--- a/drivers/infiniband/hw/ehca/ipz_pt_fn.c
++++ b/drivers/infiniband/hw/ehca/ipz_pt_fn.c
+@@ -38,8 +38,6 @@
+  * POSSIBILITY OF SUCH DAMAGE.
   */
- static int init_tid_tabs(struct tid_info *t, unsigned int ntids,
-@@ -1191,7 +1164,7 @@ static int init_tid_tabs(struct tid_info *t, unsigned int ntids,
- 	unsigned long size = ntids * sizeof(*t->tid_tab) +
- 	    natids * sizeof(*t->atid_tab) + nstids * sizeof(*t->stid_tab);
  
--	t->tid_tab = cxgb_alloc_mem(size);
-+	t->tid_tab = kvzalloc(size);
- 	if (!t->tid_tab)
- 		return -ENOMEM;
+-#include <linux/slab.h>
+-
+ #include "ehca_tools.h"
+ #include "ipz_pt_fn.h"
+ #include "ehca_classes.h"
+@@ -222,15 +220,11 @@ int ipz_queue_ctor(struct ehca_pd *pd, struct ipz_queue *queue,
+ 	queue->small_page = NULL;
  
-@@ -1227,7 +1200,7 @@ static int init_tid_tabs(struct tid_info *t, unsigned int ntids,
+ 	/* allocate queue page pointers */
+-	queue->queue_pages = kmalloc(nr_of_pages * sizeof(void *), GFP_KERNEL);
++	queue->queue_pages = kvcalloc(nr_of_pages, sizeof(void *));
+ 	if (!queue->queue_pages) {
+-		queue->queue_pages = vmalloc(nr_of_pages * sizeof(void *));
+-		if (!queue->queue_pages) {
+-			ehca_gen_err("Couldn't allocate queue page list");
+-			return 0;
+-		}
++		ehca_gen_err("Couldn't allocate queue page list");
++		return 0;
+ 	}
+-	memset(queue->queue_pages, 0, nr_of_pages * sizeof(void *));
  
- static void free_tid_maps(struct tid_info *t)
- {
--	cxgb_free_mem(t->tid_tab);
-+	kvfree(t->tid_tab);
+ 	/* allocate actual queue pages */
+ 	if (is_small) {
+@@ -245,10 +239,7 @@ int ipz_queue_ctor(struct ehca_pd *pd, struct ipz_queue *queue,
+ ipz_queue_ctor_exit0:
+ 	ehca_gen_err("Couldn't alloc pages queue=%p "
+ 		 "nr_of_pages=%x",  queue, nr_of_pages);
+-	if (is_vmalloc_addr(queue->queue_pages))
+-		vfree(queue->queue_pages);
+-	else
+-		kfree(queue->queue_pages);
++	kvfree(queue->queue_pages);
+ 
+ 	return 0;
  }
+@@ -270,10 +261,7 @@ int ipz_queue_dtor(struct ehca_pd *pd, struct ipz_queue *queue)
+ 			free_page((unsigned long)queue->queue_pages[i]);
+ 	}
  
- static inline void add_adapter(struct adapter *adap)
-diff --git a/drivers/net/cxgb3/l2t.c b/drivers/net/cxgb3/l2t.c
-index 2f3ee72..71e8c32 100644
---- a/drivers/net/cxgb3/l2t.c
-+++ b/drivers/net/cxgb3/l2t.c
-@@ -420,7 +420,7 @@ struct l2t_data *t3_init_l2t(unsigned int l2t_capacity)
- 	struct l2t_data *d;
- 	int i, size = sizeof(*d) + l2t_capacity * sizeof(struct l2t_entry);
+-	if (is_vmalloc_addr(queue->queue_pages))
+-		vfree(queue->queue_pages);
+-	else
+-		kfree(queue->queue_pages);
++	kvfree(queue->queue_pages);
  
--	d = cxgb_alloc_mem(size);
-+	d = kvzalloc(size);
- 	if (!d)
- 		return NULL;
- 
-@@ -441,6 +441,6 @@ struct l2t_data *t3_init_l2t(unsigned int l2t_capacity)
- 
- void t3_free_l2t(struct l2t_data *d)
- {
--	cxgb_free_mem(d);
-+	kvfree(d);
+ 	return 1;
  }
- 
