@@ -1,51 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756678Ab0EMOAZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 10:00:25 -0400
-Received: from mga07.intel.com ([143.182.124.22]:12566 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755671Ab0EMOAX (ORCPT
+	id S1756810Ab0EMOEZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 10:04:25 -0400
+Received: from tango.0pointer.de ([85.214.72.216]:50716 "EHLO
+	tango.0pointer.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754833Ab0EMOEY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 10:00:23 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,222,1272870000"; 
-   d="scan'208";a="276706722"
-Date: Thu, 13 May 2010 16:00:48 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: [GIT] [2.6.34] MFD fixes
-Message-ID: <20100513140045.GA23349@sortiz.org>
+	Thu, 13 May 2010 10:04:24 -0400
+Date: Thu, 13 May 2010 16:03:54 +0200
+From: Lennart Poettering <mzxreary@0pointer.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Dhaval Giani <dhaval.giani@gmail.com>, James Kosin <jkosin@intcomgrp.com>,
+       linux-kernel@vger.kernel.org, menage@google.com,
+       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100513140354.GA12639@tango.0pointer.de>
+References: <eJjRf-6YM-1@gated-at.bofh.it>
+ <eJktY-7JG-7@gated-at.bofh.it>
+ <eJktY-7JG-5@gated-at.bofh.it>
+ <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <20100512190757.GA421@tango.0pointer.de>
+ <1273755719.5605.3537.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1273755719.5605.3537.camel@twins>
+Organization: Red Hat, Inc.
+X-Campaign-1: ()  ASCII Ribbon Campaign
+X-Campaign-2: /  Against HTML Email & vCards - Against Microsoft Attachments
+User-Agent: Leviathan/19.8.0 [zh] (Cray 3; I; Solaris 4.711; Console)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Thu, 13.05.10 15:01, Peter Zijlstra (peterz@infradead.org) wrote:
 
-Sorry for being late, I just got back from a (way earlier than expected)
-paternity leave. I have one MFD fix pending for 2.6.34, I'd appreciate if you
-could still pull:
+> 
+> On Wed, 2010-05-12 at 21:07 +0200, Lennart Poettering wrote:
+> > See Dhaval's patch on the background of systemd
+> > (http://0pointer.de/blog/projects/systemd.html). When a service is
+> > started in systemd, we create a cgroup for it, when it ends, we remove
+> > it. 
+> 
+> I seriously hope that's optional, because I for one would really hate a
+> system that does that. I still mostly build kernels with only cpuset in
+> and really don't want anybody but me creating groups in there.
 
-The following changes since commit be835674b55324c1abe973b15343c3663910c620:
-  Linus Torvalds (1):
-        Merge branch 'merge' of git://git.kernel.org/.../benh/powerpc
+By default systemd will create its groups in the "debug" hierarchy, (at
+least for now, in the long run i'd like to see "noop" hierarchy or so,
+that doesn't sound so temporary), since that controller is not useful
+for anything but keeping track of processes. So it shouldn't bother you
+at all.
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/sameo/mfd-2.6.git for-linus
-
-Mark Brown (1):
-      mfd: Clean up after WM83xx AUXADC interrupt if it arrives late
-
- drivers/mfd/wm831x-core.c |    3 +++
- drivers/mfd/wm8350-core.c |    4 ++++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+Lennart
 
 -- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Lennart Poettering                        Red Hat, Inc.
+lennart [at] poettering [dot] net
+http://0pointer.net/lennart/           GnuPG 0x1A015CC4
