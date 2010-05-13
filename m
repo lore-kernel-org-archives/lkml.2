@@ -1,87 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758140Ab0EMJzG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:55:06 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:42064 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752209Ab0EMJzC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:55:02 -0400
-Date: Thu, 13 May 2010 10:54:39 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
-Message-ID: <20100513095439.GA27949@csn.ul.ie>
-References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4BEB18BB.5010803@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1758285Ab0EMJzk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:55:40 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:38123 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756708Ab0EMJzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 05:55:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=wRsEwvBVLfCrrjxH8IZNwcyC7flGAfi8cuuM4tVy7craTe/eZUuAeUEPxuJGvdszzT
+         8uZh7G0m667XlC69KMCSR3J4p7zLnBOwq9sjgcq4NzsE5xq042lXgPctVpB3F5HM6FDc
+         wwrZkrEpVJT7sbrlPFab/gQe33q5wgjFtnEVw=
+From: Changli Gao <xiaosuo@gmail.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH 2/9] relay: use kvcalloc and kvfree
+Date: Thu, 13 May 2010 17:55:24 +0800
+Message-Id: <1273744524-10030-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 12, 2010 at 05:08:11PM -0400, Rik van Riel wrote:
-> On 05/12/2010 05:02 PM, Mel Gorman wrote:
->
->> This last comment is a bit light. It's actually restoring the lock that
->> was taken in 2.6.33 to some extent except we are always taking it now.
->> In 2.6.33, it was resricted to
->>
->>         if (vma->anon_vma&&  (insert || importer || start != vma->vm_start))
->>                  anon_vma = vma->anon_vma;
->>
->> but now it's always. Has it been determined that the locking in 2.6.33
->> was insufficient or are we playing it safe now?
->
-> Playing it safe, mostly.
->
+use kvcalloc and kvfree
 
-Sure. I did the same, got the same question from Andrea and more or less
-gave the same answer :) . I asked again in case you spotted something I
-didn't.
+use kvcalloc and kvfree
 
-> Another aspect is that, if you look at the if condition above,
-> the number of cases where we have an anon_vma and do not take
-> the lock is pretty small.
->
-> Basically only the case where we expand a VMA upward or merge
-> VMAs in an mprotect.  I believe in pretty much all other cases
-> we end up needing to take the lock.
->
-
-Looking at the if condition, brk() would appear to be the most important
-case, right? This would appear to correlate with the reasoning behind
-that condition in the first place in commit
-252c5f94d944487e9f50ece7942b0fbf659c5c31 where sbrk contended on the
-lock heavily.
-
-I can't convince myself 100% but it is possible we will regress on that
-test case again if the same logic is not applied to the locking. I ran a
-brk() microbenchmark from aim9 and the results were really bad - 48%
-regression. I didn't rerun with the old logic to see the results
-unfortunately and right now I'm on the road. It'll be tomorrow morning
-before I get the chance.
-
-> I am not entirely convinced the old code took the lock in all
-> of the required cases.
->
-
-I have vague worries about expand_upwards but otherwise the reasoning
-seemed solid and even with the new anon_vma code, we are not doing
-anything fundamentally different in this area. Maybe it's best to play
-it safe now and always take the lock, but it's worth reconsidering later
-particularly if this patch gets fingered in some performance-related
-bisection later.
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ kernel/relay.c |   35 +++--------------------------------
+ 1 file changed, 3 insertions(+), 32 deletions(-)
+diff --git a/kernel/relay.c b/kernel/relay.c
+index 3d97f28..002d2f7 100644
+--- a/kernel/relay.c
++++ b/kernel/relay.c
+@@ -65,35 +65,6 @@ static const struct vm_operations_struct relay_file_mmap_ops = {
+ 	.close = relay_file_mmap_close,
+ };
+ 
+-/*
+- * allocate an array of pointers of struct page
+- */
+-static struct page **relay_alloc_page_array(unsigned int n_pages)
+-{
+-	struct page **array;
+-	size_t pa_size = n_pages * sizeof(struct page *);
+-
+-	if (pa_size > PAGE_SIZE) {
+-		array = vmalloc(pa_size);
+-		if (array)
+-			memset(array, 0, pa_size);
+-	} else {
+-		array = kzalloc(pa_size, GFP_KERNEL);
+-	}
+-	return array;
+-}
+-
+-/*
+- * free an array of pointers of struct page
+- */
+-static void relay_free_page_array(struct page **array)
+-{
+-	if (is_vmalloc_addr(array))
+-		vfree(array);
+-	else
+-		kfree(array);
+-}
+-
+ /**
+  *	relay_mmap_buf: - mmap channel buffer to process address space
+  *	@buf: relay channel buffer
+@@ -138,7 +109,7 @@ static void *relay_alloc_buf(struct rchan_buf *buf, size_t *size)
+ 	*size = PAGE_ALIGN(*size);
+ 	n_pages = *size >> PAGE_SHIFT;
+ 
+-	buf->page_array = relay_alloc_page_array(n_pages);
++	buf->page_array = kvcalloc(n_pages, sizeof(struct page *));
+ 	if (!buf->page_array)
+ 		return NULL;
+ 
+@@ -159,7 +130,7 @@ static void *relay_alloc_buf(struct rchan_buf *buf, size_t *size)
+ depopulate:
+ 	for (j = 0; j < i; j++)
+ 		__free_page(buf->page_array[j]);
+-	relay_free_page_array(buf->page_array);
++	kvfree(buf->page_array);
+ 	return NULL;
+ }
+ 
+@@ -218,7 +189,7 @@ static void relay_destroy_buf(struct rchan_buf *buf)
+ 		vunmap(buf->start);
+ 		for (i = 0; i < buf->page_count; i++)
+ 			__free_page(buf->page_array[i]);
+-		relay_free_page_array(buf->page_array);
++		kvfree(buf->page_array);
+ 	}
+ 	chan->buf[buf->cpu] = NULL;
+ 	kfree(buf->padding);
