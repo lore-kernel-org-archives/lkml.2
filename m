@@ -1,108 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756631Ab0EMJlF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:41:05 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:43635 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751668Ab0EMJlB (ORCPT
+	id S1753204Ab0EMJoD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:44:03 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:33034 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751212Ab0EMJn7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:41:01 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Jiri Slaby <jslaby@suse.cz>
-Subject: Re: [RFC] mm: generic adaptive large memory allocation APIs
-Cc: kosaki.motohiro@jp.fujitsu.com, Changli Gao <xiaosuo@gmail.com>,
-       akpm@linux-foundation.org, Eric Dumazet <eric.dumazet@gmail.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-In-Reply-To: <4BEBC43F.6070407@suse.cz>
-References: <20100513174512.2179.A69D9226@jp.fujitsu.com> <4BEBC43F.6070407@suse.cz>
-Message-Id: <20100513182403.217C.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Thu, 13 May 2010 18:40:57 +0900 (JST)
+	Thu, 13 May 2010 05:43:59 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=k6m//HT2aj8GfgZNUMKCPvUAsB/NO+0HcHwVtMdbF4Q4OdLT4s4cvbTyVcRON892kq
+         WlUrnb9cVzP1N096tRsP+kmQGvmjhnOc4AtXelUf85V5psOH860bqFGjgd7QHjFBl3Lj
+         XFBUejst1azFsvErjF6dY3S3bbtvpb3bQTB+8=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de, shawn.bohrer@gmail.com, fmhess@users.sourceforge.net,
+       andrea.gelmini@gelma.net, caratorn@gmail.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Mark <reodge@gmail.com>
+Subject: [PATCH] Staging: comedi: Fix long line lengths in comedi_fops.c
+Date: Thu, 13 May 2010 17:44:39 +0800
+Message-Id: <1273743879-2842-2-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On 05/13/2010 11:05 AM, KOSAKI Motohiro wrote:
-> >>>> void *kvmalloc(size_t size)
-> >>>> {
-> >>>> 	void *ptr;
-> >>>>
-> >>>> 	if (size < PAGE_SIZE)
-> >>>> 		return kmalloc(PAGE_SIZE, GFP_KERNEL);
-> >>>> 	ptr = alloc_pages_exact(size, GFP_KERNEL | __GFP_NOWARN);
-> >>>
-> >>> low order GFP_KERNEL allocation never fail. then, this doesn't works
-> >>> as you expected.
-> >>
-> >> Hi, I suppose you mean the kmalloc allocation -- so kmalloc should fail
-> >> iff alloc_pages_exact (unless somebody frees a heap of memory indeed)?
-> > 
-> > I mean, if size of alloc_pages_exact() argument is less than 8 pages,
-> > alloc_pages_exact() never fail. see __alloc_pages_slowpath().
-> 
-> Sorry, I don't see what's the problem with that. I can see only that
-> alloc_pages_exact is superfluous there as kmalloc "won't fail" earlier.
+This patch fixes lots of long line lengths in comedi_fops.c found by
+checkpatch.pl
 
-I don't talk about kmalloc. it's ok to never fail.  but low order alloc_pages_exact() never fail too.
-Is this ok? Why?
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/comedi_fops.c |   44 ++++++++++++++++++++++-----------
+ 1 files changed, 29 insertions(+), 15 deletions(-)
 
-
-> >>>> 	if (ptr != NULL)
-> >>>> 		return ptr;
-> >>>>
-> >>>> 	return vmalloc(size);
-> >>>
-> >>> On x86, vmalloc area is only 128MB address space. it is very rare 
-> >>> resource than physical ram. vmalloc fallback is not good idea.
-> >>
-> >> These functions are a replacement for explicit
-> >> if (!(x = kmalloc()))
-> >>    x = vmalloc();
-> >> ...
-> >> if (is_vmalloc(x))
-> >>   vfree(x);
-> >> else
-> >>   kfree(x);
-> >> in the code (like fdtable does this).
-> >>
-> >> The 128M limit on x86_32 for vmalloc is configurable so if drivers in
-> >> sum need more on some specific hardware, it can be increased on the
-> >> command line (I had to do this on one machine in the past).
-> > 
-> > Right, but 99% end user don't do this. I don't think this is effective advise.
-> 
-> Indeed. I didn't mean that as the users should change that. They should
-> only if there is some weird hardware with weird drivers.
-> 
-> >> Anyway as this is a replacement for explicit tests, it shouldn't change
-> >> the behaviour in any way. Obviously when a user doesn't need virtually
-> >> contiguous space, he shouldn't use this interface at all.
-> > 
-> > Why can't we make fdtable virtually contiguous free?
-> 
-> This is possible, but the question is why to make the code more complex?
-
-because  it's broken. Or Am I missing something?
-
-
-> > Anyway, alloc_fdmem() also don't works as author expected.
-> 
-> Pardon my ignorance, why? (There are more similar users:
-> init_section_page_cgroup, sys_add_key, ext4_fill_flex_info and many others.)
-
-I think init_section_page_cgroup is ok. it's called at boot time. we don't enter forever page reclaim.
-
-but other case, I don't know the reason. I guess they also have specific assumption.
-I only said, generically it isn't right.
-
-
+diff --git a/drivers/staging/comedi/comedi_fops.c b/drivers/staging/comedi/comedi_fops.c
+index e7095d7..aced00e 100644
+--- a/drivers/staging/comedi/comedi_fops.c
++++ b/drivers/staging/comedi/comedi_fops.c
+@@ -952,8 +952,9 @@ static int do_insn_ioctl(struct comedi_device *dev,
+ 	if (insn.n > MAX_SAMPLES)
+ 		insn.n = MAX_SAMPLES;
+ 	if (insn.insn & INSN_MASK_WRITE) {
+-		if (copy_from_user
+-		    (data, insn.data, insn.n * sizeof(unsigned int))) {
++		if (copy_from_user(data,
++				   insn.data,
++				   insn.n * sizeof(unsigned int))) {
+ 			ret = -EFAULT;
+ 			goto error;
+ 		}
+@@ -962,7 +963,9 @@ static int do_insn_ioctl(struct comedi_device *dev,
+ 	if (ret < 0)
+ 		goto error;
+ 	if (insn.insn & INSN_MASK_READ) {
+-		if (copy_to_user(insn.data, data, insn.n * sizeof(unsigned int))) {
++		if (copy_to_user(insn.data,
++				 data,
++				 insn.n * sizeof(unsigned int))) {
+ 			ret = -EFAULT;
+ 			goto error;
+ 		}
+@@ -1070,7 +1073,9 @@ static int do_cmd_ioctl(struct comedi_device *dev,
+ 	}
+ 
+ 	/* make sure each element in channel/gain list is valid */
+-	ret = comedi_check_chanlist(s, async->cmd.chanlist_len, async->cmd.chanlist);
++	ret = comedi_check_chanlist(s,
++				    async->cmd.chanlist_len,
++				    async->cmd.chanlist);
+ 	if (ret < 0) {
+ 		DPRINTK("bad chanlist\n");
+ 		goto cleanup;
+@@ -2119,8 +2124,8 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 		kfree(info->device);
+ 		kfree(info);
+ 		printk(KERN_ERR
+-
+-		       "comedi: error: ran out of minor numbers for board device files.\n");
++		       "comedi: error: "
++		       "ran out of minor numbers for board device files.\n");
+ 		return -EBUSY;
+ 	}
+ 	info->device->minor = i;
+@@ -2133,7 +2138,8 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_max_read_buffer_kb.attr.name);
+ 		comedi_free_board_minor(i);
+ 		return retval;
+@@ -2141,7 +2147,8 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_read_buffer_kb.attr.name);
+ 		comedi_free_board_minor(i);
+ 		return retval;
+@@ -2149,7 +2156,8 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_max_write_buffer_kb.attr.name);
+ 		comedi_free_board_minor(i);
+ 		return retval;
+@@ -2157,7 +2165,8 @@ int comedi_alloc_board_minor(struct device *hardware_device)
+ 	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_write_buffer_kb.attr.name);
+ 		comedi_free_board_minor(i);
+ 		return retval;
+@@ -2216,7 +2225,8 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	if (i == COMEDI_NUM_MINORS) {
+ 		kfree(info);
+ 		printk(KERN_ERR
+-		       "comedi: error: ran out of minor numbers for board device files.\n");
++		       "comedi: error: "
++		       "ran out of minor numbers for board device files.\n");
+ 		return -EBUSY;
+ 	}
+ 	s->minor = i;
+@@ -2230,7 +2240,8 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	retval = device_create_file(csdev, &dev_attr_max_read_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_max_read_buffer_kb.attr.name);
+ 		comedi_free_subdevice_minor(s);
+ 		return retval;
+@@ -2238,7 +2249,8 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	retval = device_create_file(csdev, &dev_attr_read_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_read_buffer_kb.attr.name);
+ 		comedi_free_subdevice_minor(s);
+ 		return retval;
+@@ -2246,7 +2258,8 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	retval = device_create_file(csdev, &dev_attr_max_write_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_max_write_buffer_kb.attr.name);
+ 		comedi_free_subdevice_minor(s);
+ 		return retval;
+@@ -2254,7 +2267,8 @@ int comedi_alloc_subdevice_minor(struct comedi_device *dev,
+ 	retval = device_create_file(csdev, &dev_attr_write_buffer_kb);
+ 	if (retval) {
+ 		printk(KERN_ERR
+-		       "comedi: failed to create sysfs attribute file \"%s\".\n",
++		       "comedi: "
++		       "failed to create sysfs attribute file \"%s\".\n",
+ 		       dev_attr_write_buffer_kb.attr.name);
+ 		comedi_free_subdevice_minor(s);
+ 		return retval;
+-- 
+1.7.0.5
 
