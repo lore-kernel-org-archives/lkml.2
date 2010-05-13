@@ -1,66 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757996Ab0EMH5B (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:57:01 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:38254 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757047Ab0EMH5A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:57:00 -0400
-Date: Thu, 13 May 2010 09:56:52 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Joe Perches <joe@perches.com>
-Cc: akpm@linux-foundation.org, Stephen Hemminger <shemminger@vyatta.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: improve config-file support
-Message-ID: <20100513095652.34aea727@schatten.dmk.lab>
-In-Reply-To: <1273703333.20514.392.camel@Joe-Laptop.home>
-References: <1273698720-4010-1-git-send-email-florian@mickler.org>
-	<1273703333.20514.392.camel@Joe-Laptop.home>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758069Ab0EMH5X (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 03:57:23 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:48531 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757047Ab0EMH5V (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 03:57:21 -0400
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: n-horiguchi@ah.jp.nec.com
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Wu Fengguang <fengguang.wu@intel.com>
+Subject: [PATCH 5/7] HWPOISON, hugetlb: isolate corrupted hugepage
+Date: Thu, 13 May 2010 16:55:24 +0900
+Message-Id: <1273737326-21211-6-git-send-email-n-horiguchi@ah.jp.nec.com>
+X-Mailer: git-send-email 1.7.0
+In-Reply-To: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 15:28:53 -0700
-Joe Perches <joe@perches.com> wrote:
+If error hugepage is not in-use, we can fully recovery from error
+by dequeuing it from freelist, so return RECOVERY.
+Otherwise whether or not we can recovery depends on user processes,
+so return DELAYED.
 
-> On Wed, 2010-05-12 at 23:12 +0200, florian@mickler.org wrote:
-> > This changes the syntax of the config-file introduced in the commit
-> > "scripts/get_maintainer.pl: add .get_maintainer.conf default options
-> > file".
-> > Entries are now of the more commonly found form:
-> > 	key = value
-> > where keys are cmd-line arguments without the "--" prefixed.
-> 
-> I don't have a strong opinion one way or another about the
-> .conf file format.
-> 
-> Another option which could be useful:  --noconf, don't read the file.
-> 
-> > as well as warn if unrecognized options are
-> > specified.
-> 
-> The old approach does that as well.
+Dependency:
+  "HWPOISON, hugetlb: enable error handling path for hugepage"
 
-True.
+Signed-off-by: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+Cc: Andi Kleen <andi@firstfloor.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+---
+ include/linux/hugetlb.h |    2 ++
+ mm/hugetlb.c            |   16 ++++++++++++++++
+ mm/memory-failure.c     |   28 ++++++++++++++++++++--------
+ 3 files changed, 38 insertions(+), 8 deletions(-)
 
-> 
-> > +if (!GetOptions( \%prefs,
-> 
-> I think you don't need to repeat the options.
-> Doesn't this work?
-> 	if (!GetOptions(\%prefs)) {
-> 	    die "$P: invalid argument - use --help if necessary\n";
-> 
-No, GetOpts::Long needs a special markup for parsing the cmdline
-string, like =s for specifying that that option is accompanied by a
-string value or the ! for specifying that it is a flag. 
-Also there are aliases defined for config-options.
+diff --git v2.6.34-rc7/include/linux/hugetlb.h v2.6.34-rc7/include/linux/hugetlb.h
+index 1d0c2a4..7779ae6 100644
+--- v2.6.34-rc7/include/linux/hugetlb.h
++++ v2.6.34-rc7/include/linux/hugetlb.h
+@@ -47,6 +47,7 @@ int hugetlb_reserve_pages(struct inode *inode, long from, long to,
+ 						struct vm_area_struct *vma,
+ 						int acctflags);
+ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed);
++void __isolate_hwpoisoned_huge_page(struct page *page);
+ 
+ extern unsigned long hugepages_treat_as_movable;
+ extern const unsigned long hugetlb_zero, hugetlb_infinity;
+@@ -109,6 +110,7 @@ static inline void hugetlb_report_meminfo(struct seq_file *m)
+ #define hugetlb_free_pgd_range(tlb, addr, end, floor, ceiling) ({BUG(); 0; })
+ #define hugetlb_fault(mm, vma, addr, flags)	({ BUG(); 0; })
+ #define huge_pte_offset(mm, address)	0
++#define __isolate_hwpoisoned_huge_page(page)	0
+ 
+ #define hugetlb_change_protection(vma, address, end, newprot)
+ 
+diff --git v2.6.34-rc7/mm/hugetlb.c v2.6.34-rc7/mm/hugetlb.c
+index 149eb12..3c1232f 100644
+--- v2.6.34-rc7/mm/hugetlb.c
++++ v2.6.34-rc7/mm/hugetlb.c
+@@ -2821,3 +2821,19 @@ void hugetlb_unreserve_pages(struct inode *inode, long offset, long freed)
+ 	hugetlb_put_quota(inode->i_mapping, (chg - freed));
+ 	hugetlb_acct_memory(h, -(chg - freed));
+ }
++
++/*
++ * This function is called from memory failure code.
++ * Assume the caller holds page lock of the head page.
++ */
++void __isolate_hwpoisoned_huge_page(struct page *hpage)
++{
++	struct hstate *h = page_hstate(hpage);
++	int nid = page_to_nid(hpage);
++
++	spin_lock(&hugetlb_lock);
++	list_del(&hpage->lru);
++	h->free_huge_pages--;
++	h->free_huge_pages_node[nid]--;
++	spin_unlock(&hugetlb_lock);
++}
+diff --git v2.6.34-rc7/mm/memory-failure.c v2.6.34-rc7/mm/memory-failure.c
+index 473f15a..d0b420a 100644
+--- v2.6.34-rc7/mm/memory-failure.c
++++ v2.6.34-rc7/mm/memory-failure.c
+@@ -690,17 +690,29 @@ static int me_swapcache_clean(struct page *p, unsigned long pfn)
+ /*
+  * Huge pages. Needs work.
+  * Issues:
+- * No rmap support so we cannot find the original mapper. In theory could walk
+- * all MMs and look for the mappings, but that would be non atomic and racy.
+- * Need rmap for hugepages for this. Alternatively we could employ a heuristic,
+- * like just walking the current process and hoping it has it mapped (that
+- * should be usually true for the common "shared database cache" case)
+- * Should handle free huge pages and dequeue them too, but this needs to
+- * handle huge page accounting correctly.
++ * - Error on hugepage is contained in hugepage unit (not in raw page unit.)
++ *   To narrow down kill region to one page, we need to break up pmd.
++ * - To support soft-offlining for hugepage, we need to support hugepage
++ *   migration.
+  */
+ static int me_huge_page(struct page *p, unsigned long pfn)
+ {
+-	return FAILED;
++	struct page *hpage = compound_head(p);
++	/*
++	 * We can safely recover from error on free or reserved (i.e.
++	 * not in-use) hugepage by dequeuing it from freelist.
++	 * To check whether a hugepage is in-use or not, we can't use
++	 * page->lru because it can be used in other hugepage operations,
++	 * such as __unmap_hugepage_range() and gather_surplus_pages().
++	 * So instead we use page_mapping() and PageAnon().
++	 * We assume that this function is called with page lock held,
++	 * so there is no race between isolation and mapping/unmapping.
++	 */
++	if (!(page_mapping(hpage) || PageAnon(hpage))) {
++		__isolate_hwpoisoned_huge_page(hpage);
++		return RECOVERED;
++	}
++	return DELAYED;
+ }
+ 
+ /*
+-- 
+1.7.0
 
-Cheers,
-Flo
-
-p.s.: maybe there is a GetOpts feature to use config-files?
