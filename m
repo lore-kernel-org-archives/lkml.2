@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759486Ab0EMUCM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:02:12 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41995 "EHLO mgw2.diku.dk"
+	id S932711Ab0EMUCa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:02:30 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:42001 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759472Ab0EMUCI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:02:08 -0400
-Date: Thu, 13 May 2010 22:02:03 +0200 (CEST)
+	id S1759063Ab0EMUC0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:02:26 -0400
+Date: Thu, 13 May 2010 22:02:21 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
+To: Lars Ellenberg <drbd-dev@lists.linbit.com>, drbd-user@lists.linbit.com,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 9/20] drivers/bluetooth: Use kzalloc
-Message-ID: <Pine.LNX.4.64.1005132201470.6282@ask.diku.dk>
+Subject: [PATCH 10/20] drivers/block/drbd: Use kzalloc
+Message-ID: <Pine.LNX.4.64.1005132202040.6282@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,45 +40,24 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/bluetooth/btmrvl_sdio.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/block/drbd/drbd_nl.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
---- a/drivers/bluetooth/btmrvl_sdio.c
-+++ b/drivers/bluetooth/btmrvl_sdio.c
-@@ -216,7 +216,7 @@ static int btmrvl_sdio_download_helper(s
- 
- 	tmphlprbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
- 
--	tmphlprbuf = kmalloc(tmphlprbufsz, GFP_KERNEL);
-+	tmphlprbuf = kzalloc(tmphlprbufsz, GFP_KERNEL);
- 	if (!tmphlprbuf) {
- 		BT_ERR("Unable to allocate buffer for helper."
- 			" Terminating download");
-@@ -224,8 +224,6 @@ static int btmrvl_sdio_download_helper(s
- 		goto done;
+diff -u -p a/drivers/block/drbd/drbd_nl.c b/drivers/block/drbd/drbd_nl.c
+--- a/drivers/block/drbd/drbd_nl.c
++++ b/drivers/block/drbd/drbd_nl.c
+@@ -1199,13 +1199,12 @@ static int drbd_nl_net_conf(struct drbd_
  	}
  
--	memset(tmphlprbuf, 0, tmphlprbufsz);
--
- 	helperbuf = (u8 *) ALIGN_ADDR(tmphlprbuf, BTSDIO_DMA_ALIGN);
- 
- 	/* Perform helper data transfer */
-@@ -318,7 +316,7 @@ static int btmrvl_sdio_download_fw_w_hel
- 	BT_DBG("Downloading FW image (%d bytes)", firmwarelen);
- 
- 	tmpfwbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
--	tmpfwbuf = kmalloc(tmpfwbufsz, GFP_KERNEL);
-+	tmpfwbuf = kzalloc(tmpfwbufsz, GFP_KERNEL);
- 	if (!tmpfwbuf) {
- 		BT_ERR("Unable to allocate buffer for firmware."
- 		       " Terminating download");
-@@ -326,8 +324,6 @@ static int btmrvl_sdio_download_fw_w_hel
- 		goto done;
+ 	/* allocation not in the IO path, cqueue thread context */
+-	new_conf = kmalloc(sizeof(struct net_conf), GFP_KERNEL);
++	new_conf = kzalloc(sizeof(struct net_conf), GFP_KERNEL);
+ 	if (!new_conf) {
+ 		retcode = ERR_NOMEM;
+ 		goto fail;
  	}
  
--	memset(tmpfwbuf, 0, tmpfwbufsz);
--
- 	/* Ensure aligned firmware buffer */
- 	fwbuf = (u8 *) ALIGN_ADDR(tmpfwbuf, BTSDIO_DMA_ALIGN);
- 
+-	memset(new_conf, 0, sizeof(struct net_conf));
+ 	new_conf->timeout	   = DRBD_TIMEOUT_DEF;
+ 	new_conf->try_connect_int  = DRBD_CONNECT_INT_DEF;
+ 	new_conf->ping_int	   = DRBD_PING_INT_DEF;
