@@ -1,51 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757646Ab0EMRc4 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:32:56 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:56927 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757281Ab0EMRcw convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:32:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=NQFCwesDzlC0uLNOK6lar6ORj5topoJbuBn0fxcHXsp4UCXC5ZCrKc+uvZnOSPQMla
-         1wZHRDv07th3re4CpDFc8XC+nJ025BylMtcf3kHE5JfFUUXxksDneMani1FukX5BBT82
-         R3aZTrOVjClonlY6N8/dq9+leB6gjZTKwvKU0=
-MIME-Version: 1.0
-Date: Thu, 13 May 2010 12:32:50 -0500
-Message-ID: <AANLkTinjz1gTR6-zZVePSNLOd5bnnft-SCdGyPr-bFE7@mail.gmail.com>
-Subject: [GIT] CIFS fix
-From: Steve French <smfrench@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Jeff Layton <jlayton@redhat.com>, LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758050Ab0EMRdd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:33:33 -0400
+Received: from fifo99.com ([67.223.236.141]:39435 "EHLO fifo99.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755032Ab0EMRdc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:33:32 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: Daniel Walker <dwalker@fifo99.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Paul Walmsley <paul@pwsan.com>,
+       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Tony Lindgren <tony@atomide.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+In-Reply-To: <20100513121745.GA10749@srcf.ucam.org>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+	 <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
+	 <20100513121745.GA10749@srcf.ucam.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 10:33:10 -0700
+Message-ID: <1273771990.19100.13.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 05ce7bfe547c9fa967d9cab6c37867a9cb6fb3fa:
+On Thu, 2010-05-13 at 13:17 +0100, Matthew Garrett wrote:
+> On Wed, May 12, 2010 at 09:35:30PM -0600, Paul Walmsley wrote:
+> > 
+> > Figuring out a different way to do this should not limit Android at all, 
+> > since Google can do what other Linux distributions do and continue to 
+> > patch opportunistic suspend/suspend-block calls into their kernels as 
+> > needed to ship devices, while contributing towards a different solution to 
+> > the problem.
+> 
+> I basically agree, except that despite having a year to do so none of us 
+> have come up with a different way that would actually work. Google have 
+> done this work. Who's going to prove that there is actually a different 
+> way to do this?
 
- Merge branch 'for_linus' of
-git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6
-(2010-04-20 09:39:40 -0700)
+We all feel the pain of inelegance right? I think it's clear that this
+system will not last (but there's no other immediate option) .. That
+doesn't mean we should reject it, but we need to be clear that this
+system will get replaced. So we should format the patches appropriately.
+To me the userspace aspect is a permanent change .. If we could drop
+that (or put it into debugfs) then it would make this a lot easy to
+accept as a stepping stone.
 
-are available in the git repository at:
+Daniel
 
- git://git.kernel.org/pub/scm/linux/kernel/git/sfrench/cifs-2.6.git for-linus
-
-Jeff Layton (1):
-     cifs: guard against hardlinking directories
-
-fs/cifs/cifsglob.h |    1 +
-fs/cifs/inode.c    |   21 +++++++++++++++++++--
-2 files changed, 20 insertions(+), 2 deletions(-)
-
-
---
-Thanks,
-
-Steve
