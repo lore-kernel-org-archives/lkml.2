@@ -1,145 +1,126 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759395Ab0EMQby (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:31:54 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:34597 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754691Ab0EMQbx (ORCPT
+	id S1759399Ab0EMQc6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:32:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:61468 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754691Ab0EMQc4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:31:53 -0400
-Date: Thu, 13 May 2010 12:31:50 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+	Thu, 13 May 2010 12:32:56 -0400
+X-Authority-Analysis: v=1.1 cv=QBaIlYAip0cLYvdi/Wu3On4+kilSXYulM+a9j4asJ0c= c=1 sm=0 a=r5AvUYk336kA:10 a=GQCbJdZ--msA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VnNF1IyMAAAA:8 a=NWMgqpFGjsOVjBAvD5cA:9 a=Tl8wxLIa536yNiw0khL553MzeuwA:4 a=PUjeQqilurYA:10 a=BUIu5HHrI6x_7vLK:21 a=XbruPtFK5d5rAqkf:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/7] perf trace: Correctly handle arrays
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-Message-ID: <20100513163150.GA13005@Krystal>
-References: <20100512175305.GB32496@Krystal> <1273687212.1626.147.camel@laptop> <20100512180438.GE15953@Krystal> <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal> <1273690012.27703.38.camel@gandalf.stny.rr.com> <20100512202745.GK21432@Krystal> <1273702886.27703.58.camel@gandalf.stny.rr.com> <20100513132029.GA22799@Krystal> <1273765337.27703.1043.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273765337.27703.1043.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:17:34 up 110 days, 18:54,  9 users,  load average: 0.27, 0.26,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <1273730632-21008-3-git-send-email-imunsie@au1.ibm.com>
+References: <1273730632-21008-1-git-send-email-imunsie@au1.ibm.com>
+	 <1273730632-21008-3-git-send-email-imunsie@au1.ibm.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 12:32:54 -0400
+Message-ID: <1273768374.27703.1101.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-05-13 at 09:20 -0400, Mathieu Desnoyers wrote:
-[...]
-> > > > 
-> > > > ...
-> > > > 
-> > > > 97 /**
-> > > > 98  * ring_buffer_clear_noref_flag - Clear the noref subbuffer flag, for writer.
-> > > > 99  */
-> > > > 100 static __inline__
-> > > > 101 void ring_buffer_clear_noref_flag(struct ring_buffer_backend *bufb,
-> > > > 102                                   unsigned long idx)
-> > > > 103 {
-> > > > 104         struct ring_buffer_backend_page *sb_pages, *new_sb_pages;
-> > > > 105
-> > > > 106         sb_pages = bufb->buf_wsb[idx].pages;
-> > > > 107         for (;;) {
-> > > > 108                 if (!RCHAN_SB_IS_NOREF(sb_pages))
-> > > > 109                         return; /* Already writing to this buffer */
-> > > > 110                 new_sb_pages = sb_pages;
-> > > > 111                 RCHAN_SB_CLEAR_NOREF(new_sb_pages);
-> > > > 112                 new_sb_pages = cmpxchg(&bufb->buf_wsb[idx].pages,
-> > > > 113                         sb_pages, new_sb_pages);
-> > > > 114                 if (likely(new_sb_pages == sb_pages))
-> > > > 115                         break;
-> > > > 116                 sb_pages = new_sb_pages;
-> > > 
-> > > The writer calls this??
-> > 
-> > Yes. But the common case (for each event) is simply a
-> > "if (!RCHAN_SB_IS_NOREF(sb_pages))" test that returns. The cmpxchg() is only
-> > performed at subbuffer boundary.
+On Thu, 2010-05-13 at 16:03 +1000, Ian Munsie wrote:
+> From: Ian Munsie <imunsie@au1.ibm.com>
 > 
-> Is the cmpxchg only contending with other writers?
-
-No. Would have this been the case, I would have used a cmpxchg_local(). This
-cmpxchg used to deal with subbuffer swap is touching the subbuffer "pages"
-pointer, which can be updated concurrently by other writers as well as readers.
-
-The writer clears the noref flags when starting to write in a subbuffers, and
-sets it when delivering the subbuffer (when it is fully committed).
-
-The reader can only ever swap the subbuffer with the one it owns if the noref
-flag is set. The reader uses a cmpxchg() too to perform the swap.
-
-[...]
-
-> > > 
-> > > This looks just like the swap with reader_page that I do, except you use
-> > > a table and I use the list.  How do you replenish the buf_rsb.pages if
-> > > the splice keeps the page you just received active?
-> > 
-> > I don't allow other reads to proceed as long as splice is holding pages that
-> > belong to the reader-owned subbuffer. The read semantic is basically:
-> > 
-> > ring_buffer_open_read() /* only one reader at a time can open a ring buffer */
-> > get_subbuf_size()
-> > while (buffer is not finalized and empty) {
-> >   poll()
-> >   ret = ring_buffer_get_subbuf()
-> >   if (!ret)
-> >     continue;
-> >   /* The splice ops below can be performed in multiple calls, e.g. first splice
-> >    * only a portion of a subbuffer to a pipe, then splice to the disk/network,
-> >    * and move to the next subbuffer portion until all the subbuffer is sent.
-> >    */
-> >   splice one subbuffer worth of data to a pipe
-> >   splice the data from pipe to disk/network
-> >   ring_buffer_put_subbuf()
-> > }
-> > ring_buffer_close_read()
-> > 
-> > The reader code above works both with flight recorder and non-overwrite mode.
-> > 
-> > The code above assumes that upon return from the splice() to disk/network,
-> > splice() is not using the pages anymore (I assume that splice() performs the
-> > transfer synchronously with the call).
-> > 
-> > The VFS interface I use for get_subbuf_size(), ring_buffer_get_subbuf() and
-> > ring_buffer_put_subbuf() are new ioctls. Note that these can be used for both
-> > splice() and mmap() types of backend access, as they only call into the
-> > frontend.
+> Previously, perf was assuming that an array from an ftrace event was an
+> array of longs, which will not always be the case. Additionally,
+> long_size is not even being initialised, so it would fail to read the
+> data and would erroneously report that the array was filled with zeroes.
 > 
-> Hmm, so basically you lose pages until they are returned. I guess I can
-> trivially add the same thing now to the current ring buffer.
+> This patch adds two extra entries into the field structure - arraylen
+> and elementsize, so that the code can easily look them up instead of
+> assuming that the elements are long_size. The element size is currently
+> derived by the size of the entire array and the number of elements
+> within the array.
+> 
+> This problem can be demonstrated with:
+> perf record -e raw_syscalls:sys_enter -a sleep 0.1
+> perf trace
+> 
+> Without this patch, output similar to the following is produced:
+>  perf-4355  [004]  1871.504685: sys_enter: NR 319 (0, 0, 0, 0, 0, 0)
+>  perf-4355  [004]  1871.504723: sys_enter: NR 3 (0, 0, 0, 0, 0, 0)
+>  perf-4355  [004]  1871.504733: sys_enter: NR 204 (0, 0, 0, 0, 0, 0)
+> 
+> After applying this patch, the output looks like:
+>  perf-4355  [004]  1871.504685: sys_enter: NR 319 (10247ac0, ffffffff, 5, ffffffff, 0, 107a80d8)
+>  perf-4355  [004]  1871.504723: sys_enter: NR 3 (a, ffb6fcf0, 20, ffffffff, 0, 10112c20)
+>  perf-4355  [004]  1871.504733: sys_enter: NR 204 (a, 4, 800, 6, 0, 10112c20)
+> 
+> Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
+> ---
+>  tools/perf/util/trace-event-parse.c |   11 ++++++++++-
+>  tools/perf/util/trace-event.h       |    2 ++
+>  2 files changed, 12 insertions(+), 1 deletions(-)
+> 
+> diff --git a/tools/perf/util/trace-event-parse.c b/tools/perf/util/trace-event-parse.c
+> index 8f470f6..f360f75 100644
+> --- a/tools/perf/util/trace-event-parse.c
+> +++ b/tools/perf/util/trace-event-parse.c
+> @@ -852,6 +852,9 @@ static int event_read_fields(struct event *event, struct format_field **fields)
+>  			field->flags |= FIELD_IS_ARRAY;
+>  
+>  			type = read_token(&token);
+> +			if (test_type(type, EVENT_ITEM))
+> +				goto fail;
+> +			field->arraylen = strtoul(token, NULL, 0);
+>  		        while (strcmp(token, "]") != 0) {
+>  				if (last_type == EVENT_ITEM &&
+>  				    type == EVENT_ITEM)
+> @@ -971,6 +974,11 @@ static int event_read_fields(struct event *event, struct format_field **fields)
+>  
+>  		free_token(token);
+>  
+> +		if (field->flags & FIELD_IS_ARRAY)
+> +			field->elementsize = field->size / field->arraylen;
 
-Yep. Having the ability to keep an array of pages (rather that just a single
-page at a time) allows splice() to move many pages at once efficiently, while
-permitting this "pages owned by the readers, lend to splice() until it returns"
-simplification. I also never have to allocate pages while tracing: all the pages
-I need are allocated when the buffer is created (and at the special case of cpu
-hotplug, but this is expected for per-cpu buffers).
+Note, if an array also has something like [TASK_COMM_LEN] then arraylen
+will be zero, causing a divide by zero exception above.
 
-In addition, this would play well with mmap() too: we can simply add a
-ring_buffer_get_mmap_offset() method to the backend (exported through another
-ioctl) that would let user-space know the start of the mmap'd buffer range
-currently owned by the reader. So we can inform user-space of the currently
-owned page range without even changing the underlying memory map.
+-- Steve
 
-Thanks,
+> +		else
+> +			field->elementsize = field->size;
+> +
+>  		*fields = field;
+>  		fields = &field->next;
+>  
+> @@ -2101,7 +2109,8 @@ static unsigned long long eval_num_arg(void *data, int size,
+>  			}
+>  			right = eval_num_arg(data, size, event, arg->op.right);
+>  			val = read_size(data + larg->field.field->offset +
+> -					right * long_size, long_size);
+> +					right * larg->field.field->elementsize,
+> +					larg->field.field->elementsize);
+>  			break;
+>  		}
+>   default_op:
+> diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+> index 406d452..cc58a19 100644
+> --- a/tools/perf/util/trace-event.h
+> +++ b/tools/perf/util/trace-event.h
+> @@ -40,6 +40,8 @@ struct format_field {
+>  	char			*name;
+>  	int			offset;
+>  	int			size;
+> +	unsigned int		arraylen;
+> +	unsigned int		elementsize;
+>  	unsigned long		flags;
+>  };
+>  
 
-Mathieu
 
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
