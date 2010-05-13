@@ -1,137 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758207Ab0EMBoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 21:44:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59280 "EHLO mx2.suse.de"
+	id S1758303Ab0EMBqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 21:46:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:54703 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754375Ab0EMBoI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 21:44:08 -0400
-Date: Thu, 13 May 2010 11:43:51 +1000
-From: Neil Brown <neilb@suse.de>
-To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, linux-fsdevel@vger.kernel.org,
-       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V7 5/9] vfs: Add freadlink syscall
-Message-ID: <20100513114351.793caf70@notabene.brown>
-In-Reply-To: <1273679444-14903-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-	<1273679444-14903-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1753506Ab0EMBqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 21:46:32 -0400
+Subject: [git pull] Please pull powerpc.git merge branch
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel list <linux-kernel@vger.kernel.org>,
+       Kumar Gala <galak@kernel.crashing.org>
+In-Reply-To: <1273660604.21352.123.camel@pasglop>
+References: <1273650396.21352.121.camel@pasglop>
+	 <B0104965-09F9-4372-AA9F-F6D0FDEA67F2@kernel.crashing.org>
+	 <1273660604.21352.123.camel@pasglop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 11:46:21 +1000
+Message-ID: <1273715181.21352.157.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 21:20:40 +0530
-"Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
+Hi Linus !
 
-> This enables to use open-by-handle and then get the link target
-> details of a symlink using the fd returned by handle
-> 
+I've added to my merge branch Kumar's swiotlb fix. Here's the updated
+pull request.
 
+Thanks !
 
-I find it very frustrating that a new syscall seems to be needed here.
-We have 'readlinkat', and it should be enough.
-How:  the 'dfd' has to be a 'directory', and the path name as to be non-empty.
+Cheers,
+Ben.
 
-The following patch allows 'path' to be NULL and in that case 'dfd' to be a
-non-directory.  This allows readlinkat and faccessat (and probably others)
-to be used on an fd with not following path name.
+The following changes since commit cea0d767c29669bf89f86e4aee46ef462d2ebae8:
+  Linus Torvalds (1):
+        Merge branch 'hwmon-for-linus' of git://git.kernel.org/.../jdelvare/staging
 
-What do people think of this alternative?
+are available in the git repository at:
 
-NeilBrown
+  git://git.kernel.org/pub/scm/linux/kernel/git/benh/powerpc.git merge
 
+Benjamin Herrenschmidt (1):
+      Merge commit 'kumar/merge' into merge
 
-From: NeilBrown <neilb@suse.de>
+Kumar Gala (1):
+      powerpc/swiotlb: Fix off by one in determining boundary of which ops to use
 
-Allow '*at' syscalls to have a NULL path name, thus using the 'fd' directly.
+Paul Mackerras (1):
+      powerpc/perf_event: Fix oops due to perf_event_do_pending call
 
-Move the 'is a directory' test from path_init to the start of link_path_walk
-(which is always called after a successful path_init).
-Remove the file_permission(MAY_EXEC) test from path_init as such a test
-already exists in link_path_walk as exec_permission()
-Allow user_path_at to use a NULL resulting in the dfd being the target object.
-
-This effectively provides an 'f*' version for all syscalls with a '*at'
-version. In particular: link, access, chmod, chown, stat, readlink, utimes
-
-Some of those already have f* versions, but link, access, readlink all
-benefit directly, and futimes code can be tidied up.
-
-NULL is only allowed if 'dfd' is not ATFD_CWD to reduce possible
-backward-compatibility issues.
-
-openat is not effected by this change, even in non-O_CREAT instances.  Maybe
-it should.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+ arch/powerpc/include/asm/hw_irq.h |   38 -----------------------
+ arch/powerpc/kernel/asm-offsets.c |    1 -
+ arch/powerpc/kernel/dma-swiotlb.c |    5 ++-
+ arch/powerpc/kernel/entry_64.S    |    9 -----
+ arch/powerpc/kernel/irq.c         |    6 ----
+ arch/powerpc/kernel/time.c        |   60 +++++++++++++++++++++++++++++-------
+ 6 files changed, 51 insertions(+), 68 deletions(-)
 
 
-diff --git a/fs/namei.c b/fs/namei.c
-index 48e60a1..b9b091e 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -824,6 +824,11 @@ static int link_path_walk(const char *name, struct nameidata *nd)
- 		goto return_reval;
- 
- 	inode = nd->path.dentry->d_inode;
-+
-+	err = -ENOTDIR;
-+	if (!S_ISDIR(inode->i_mode))
-+		goto return_err;
-+
- 	if (nd->depth)
- 		lookup_flags = LOOKUP_FOLLOW | (nd->flags & LOOKUP_CONTINUE);
- 
-@@ -1030,14 +1035,6 @@ static int path_init(int dfd, const char *name, unsigned int flags, struct namei
- 
- 		dentry = file->f_path.dentry;
- 
--		retval = -ENOTDIR;
--		if (!S_ISDIR(dentry->d_inode->i_mode))
--			goto fput_fail;
--
--		retval = file_permission(file, MAY_EXEC);
--		if (retval)
--			goto fput_fail;
--
- 		nd->path = file->f_path;
- 		path_get(&file->f_path);
- 
-@@ -1241,17 +1238,22 @@ int user_path_at(int dfd, const char __user *name, unsigned flags,
- 		 struct path *path)
- {
- 	struct nameidata nd;
--	char *tmp = getname(name);
--	int err = PTR_ERR(tmp);
--	if (!IS_ERR(tmp)) {
--
--		BUG_ON(flags & LOOKUP_PARENT);
-+	char *tmp;
-+	int err;
- 
--		err = do_path_lookup(dfd, tmp, flags, &nd);
--		putname(tmp);
--		if (!err)
--			*path = nd.path;
-+	BUG_ON(flags & LOOKUP_PARENT);
-+	if (name == NULL && dfd >= 0)
-+		err = do_path_lookup(dfd, "", flags, &nd);
-+	else {
-+		tmp = getname(name);
-+		err = PTR_ERR(tmp);
-+		if (!IS_ERR(tmp)) {
-+			err = do_path_lookup(dfd, tmp, flags, &nd);
-+			putname(tmp);
-+		}
- 	}
-+	if (!err)
-+		*path = nd.path;
- 	return err;
- }
- 
