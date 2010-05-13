@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759535Ab0EMW5X (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:57:23 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:43049 "EHLO
+	id S1759609Ab0EMW5a (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:57:30 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:46261 "EHLO
 	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751950Ab0EMW5V (ORCPT
+	by vger.kernel.org with ESMTP id S1758922Ab0EMW5X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:57:21 -0400
-Date: Thu, 13 May 2010 15:56:21 -0700
+	Thu, 13 May 2010 18:57:23 -0400
+Date: Thu, 13 May 2010 15:56:30 -0700
 From: Andrew Morton <akpm@linux-foundation.org>
 To: Jiri Slaby <jslaby@suse.cz>
 Cc: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
        linux-kernel@vger.kernel.org, jirislaby@gmail.com
-Subject: Re: [PATCH v3 05/11] rlimits: allow setrlimit to non-current tasks
-Message-Id: <20100513155621.51ca77a4.akpm@linux-foundation.org>
-In-Reply-To: <1273514451-28894-5-git-send-email-jslaby@suse.cz>
+Subject: Re: [PATCH v3 10/11] rlimits: implement prlimit64 syscall
+Message-Id: <20100513155630.9ca5ab16.akpm@linux-foundation.org>
+In-Reply-To: <1273514451-28894-10-git-send-email-jslaby@suse.cz>
 References: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
-	<1273514451-28894-5-git-send-email-jslaby@suse.cz>
+	<1273514451-28894-10-git-send-email-jslaby@suse.cz>
 X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,58 +25,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 10 May 2010 20:00:45 +0200
+On Mon, 10 May 2010 20:00:50 +0200
 Jiri Slaby <jslaby@suse.cz> wrote:
 
-> From: Jiri Slaby <jirislaby@gmail.com>
+> This patch adds the code to support the sys_prlimit64 syscall which
+> modifies-and-returns the rlim values of a selected process
+> atomically. The first parameter, pid, being 0 means current process.
 > 
-> Add locking to allow setrlimit accept task parameter other than
-> current.
+> Unlike the current implementation, it is a generic interface,
+> architecture indepentent so that we needn't handle compat stuff
+> anymore. In the future, after glibc start to use this we can deprecate
+> sys_setrlimit and sys_getrlimit in favor to clean up the code finally.
 > 
-> Namely, lock tasklist_lock for read and check whether the task
-> structure has sighand non-null. Do all the signal processing under
-> that lock still held.
+> It also adds a possibility of changing limits of other processes. We
+> check the user's permissions to do that and if it succeeds, the new
+> limits are propagated online. This is good for large scale
+> applications such as SAP or databases where administrators need to
+> change limits time by time (e.g. on crashes increase core size). And
+> it is unacceptable to restart the service.
 > 
-> Signed-off-by: Jiri Slaby <jirislaby@gmail.com>
-> Cc: Oleg Nesterov <oleg@redhat.com>
-> ---
->  kernel/sys.c |   11 ++++++++++-
->  1 files changed, 10 insertions(+), 1 deletions(-)
+> For safety, all rlim users now either use accessors or doesn't need
+> them due to
+> - locking
+> - the fact a process was just forked and nobody else knows about it
+>   yet (and nobody can't thus read/write limits)
+> hence it is safe to modify limits now.
 > 
-> diff --git a/kernel/sys.c b/kernel/sys.c
-> index 7c76f84..eb21661 100644
-> --- a/kernel/sys.c
-> +++ b/kernel/sys.c
-> @@ -1272,6 +1272,7 @@ SYSCALL_DEFINE2(old_getrlimit, unsigned int, resource,
->  
->  #endif
->  
-> +/* make sure you are allowed to change @tsk limits before calling this */
->  int do_setrlimit(struct task_struct *tsk, unsigned int resource,
->  		struct rlimit *new_rlim)
->  {
-> @@ -1285,9 +1286,16 @@ int do_setrlimit(struct task_struct *tsk, unsigned int resource,
->  	if (resource == RLIMIT_NOFILE && new_rlim->rlim_max > sysctl_nr_open)
->  		return -EPERM;
->  
-> +	/* protect tsk->signal and tsk->sighand from disappearing */
-> +	read_lock(&tasklist_lock);
-> +	if (!tsk->sighand) {
-> +		retval = -ESRCH;
-> +		goto out;
+> The limitation is that we currently stay at ulong internal
+> representation. So we use the rlim64_is_infinity check where we
+> compare to ULONG_MAX on 32-bit which is the maximum value there.
+> 
+> And since internally we hold limits in struct rlimit, we introduce
+> converters used before and after do_prlimit call in sys_prlimit64.
+> 
+
+Is this worth all the new code and the increase in locking dependencies
+which I think is there?
+
+This could all be done in userspace, couldn't it?  Write a little library
+which clones a thread then waits for someone to send it a
+change-your-rlimits message.  Write a little tool to send those
+messages and voila.
+
+>
+> ...
+>
+> +SYSCALL_DEFINE4(prlimit64, pid_t, pid, unsigned int, resource,
+> +		const struct rlimit64 __user *, new_rlim,
+> +		struct rlimit64 __user *, old_rlim)
+> +{
+> +	struct rlimit64 old64, new64;
+> +	struct rlimit old, new;
+> +	struct task_struct *tsk;
+> +	int ret;
+> +
+> +	if (new_rlim) {
+> +		if (copy_from_user(&new64, new_rlim, sizeof(new64)))
+> +			return -EFAULT;
+> +		rlim64_to_rlim(&new64, &new);
 > +	}
 > +
->  	retval = security_task_setrlimit(tsk, resource, new_rlim);
+> +	/* we don't want to fail after do_rlimit */
 
-I looked at the amount of code which exists under
-security_task_setrlimit() and nearly died.  Please convince me that it
-is correct to do all that work under tasklist_lock, and that it is also
-maintainable.
+You meant "do_prlimit".
 
-> 	update_rlimit_cpu(tsk, new_rlim->rlim_cur);
->  out:
-> +	read_unlock(&tasklist_lock);
+If doesn't explain _why_ we don't want to fail.  And it shold do so,
+because the __copy_to_user() can still fail.
 
-And this causes task-struct.sighand->siglock to be taken under
-tasklist_lock.  Was that a pre-existing ranking, or is it a new one?
+
+> +	if (old_rlim && !access_ok(VERIFY_WRITE, old_rlim, sizeof(old64)))
+> +		return -EFAULT;
+> +
+> +	rcu_read_lock();
+> +	tsk = pid ? find_task_by_vpid(pid) : current;
+> +	if (!tsk) {
+> +		rcu_read_unlock();
+> +		return -ESRCH;
+> +	}
+> +	ret = check_prlimit_permission(tsk);
+> +	if (ret) {
+> +		rcu_read_unlock();
+> +		return ret;
+> +	}
+> +	get_task_struct(tsk);
+> +	rcu_read_unlock();
+> +
+> +	ret = do_prlimit(tsk, resource, new_rlim ? &new : NULL,
+> +			old_rlim ? &old : NULL);
+> +
+> +	if (!ret && old_rlim) {
+> +		rlim_to_rlim64(&old, &old64);
+> +		if (WARN_ON_ONCE(__copy_to_user(old_rlim, &old64,
+> +						sizeof(old64))))
+> +			ret = -EFAULT;
+> +	}
+> +
+> +	put_task_struct(tsk);
+> +	return ret;
+> +}
 
