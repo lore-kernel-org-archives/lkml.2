@@ -1,67 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756181Ab0EMRXH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:23:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:54309 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755349Ab0EMRXA (ORCPT
+	id S1755933Ab0EMRci (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:32:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36827 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754643Ab0EMRcg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:23:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :mime-version:content-type:content-transfer-encoding;
-        b=VJnZCRZzX37Q492abPJEXYvGn0OPmuXD6aWhDEVXu4upaDsT+w1ceInSUNuOqL9Ewd
-         WJulUdnETfKZRG04hQzGzk6kxZBSIjr0eUxMYiLfhKi8iC1n8zys8sIOlDdqqqSYUEEx
-         erksTHsmnhwCXgVVMGD6O6VM6aPX9Cy5x5r80=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] perf: Fix hists__browse no-newt case
-Date: Thu, 13 May 2010 19:22:58 +0200
-Message-Id: <1273771378-8577-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	Thu, 13 May 2010 13:32:36 -0400
+Date: Thu, 13 May 2010 10:30:23 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-Reply-To: <20100513171639.GA23708@core.coreip.homeip.net>
+Message-ID: <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+ <20100513171639.GA23708@core.coreip.homeip.net>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix mistake in a parameter type of the no-newt hists__browse()
-version.
 
-Fixes:
-	builtin-report.c: In function ‘__cmd_report’:
-	builtin-report.c:314: erreur: incompatible type for argument 1 of ‘hists__browse’
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
----
- tools/perf/util/hist.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+On Thu, 13 May 2010, Dmitry Torokhov wrote:
+> 
+> I think on the newer hardware PNP (or rather ACPI mapped onto PNP) usually 
+> matches the reality.
 
-diff --git a/tools/perf/util/hist.h b/tools/perf/util/hist.h
-index ed9c067..0b4c8df 100644
---- a/tools/perf/util/hist.h
-+++ b/tools/perf/util/hist.h
-@@ -78,7 +78,7 @@ void hists__filter_by_dso(struct hists *self, const struct dso *dso);
- void hists__filter_by_thread(struct hists *self, const struct thread *thread);
- 
- #ifdef NO_NEWT_SUPPORT
--static inline int hists__browse(struct hists self __used,
-+static inline int hists__browse(struct hists *self __used,
- 				const char *helpline __used,
- 				const char *input_name __used)
- {
--- 
-1.6.2.3
+Dmitry, you're just making things up.
 
+I have in front of me a Core i5-670. You can't get much newer than that. 
+And yes, it has a PS/2 connector at the back. And lookie here:
+
+	[    1.756777] PNP: No PS/2 controller found. Probing ports directly.
+	[    1.760645] serio: i8042 KBD port at 0x60,0x64 irq 1
+	[    1.762087] serio: i8042 AUX port at 0x60,0x64 irq 12
+	[    1.763591] mice: PS/2 mouse device common for all mice
+
+so let it go. You're wrong. PS/2 is a legacy device, and exactly like the 
+legacy IO memory region in 0xa000-0xffff (or the motherboard IO port 
+region 0x00-0xff) it may not be mentioned by the BIOS tables. But it's 
+still there.
+
+This is also why I think it _would_ be acceptable to say that if you boot 
+from EFI, you have to find the PnP devices. The whole (and only, as far as 
+I know) point of EFI was that "legacy-free" thing.
+
+		Linus
