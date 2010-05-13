@@ -1,84 +1,163 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759093Ab0EMQmX (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 12:42:23 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31925 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752564Ab0EMQmV (ORCPT
+	id S1757288Ab0EMQqX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 12:46:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:47442 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751776Ab0EMQqV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 12:42:21 -0400
-Date: Thu, 13 May 2010 09:41:12 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de,
-       Michal Nazarewicz <m.nazarewicz@samsung.com>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -next] usb: fix functionfs for CONFIG_NET disabled
-Message-Id: <20100513094112.86acf7c2.randy.dunlap@oracle.com>
-In-Reply-To: <20100513171540.54b308d0.sfr@canb.auug.org.au>
-References: <20100513171540.54b308d0.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 13 May 2010 12:46:21 -0400
+X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=yiYnlo-UJTIA:10 a=ood2b7iyd8MA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=4WvIBjGYWSimh3h08mgA:9 a=Zz0vrd_XjFs-6x2O540A:7 a=w8MTXnrSzJo9_xqCqfiFR4zBtZEA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Perf and ftrace [was Re: PyTimechart]
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
+In-Reply-To: <20100513163150.GA13005@Krystal>
+References: <20100512175305.GB32496@Krystal>
+	 <1273687212.1626.147.camel@laptop> <20100512180438.GE15953@Krystal>
+	 <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal>
+	 <1273690012.27703.38.camel@gandalf.stny.rr.com>
+	 <20100512202745.GK21432@Krystal>
+	 <1273702886.27703.58.camel@gandalf.stny.rr.com>
+	 <20100513132029.GA22799@Krystal>
+	 <1273765337.27703.1043.camel@gandalf.stny.rr.com>
+	 <20100513163150.GA13005@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 12:46:18 -0400
+Message-ID: <1273769178.27703.1119.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090208.4BEC2BE2.0002:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 2010-05-13 at 12:31 -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
+> > On Thu, 2010-05-13 at 09:20 -0400, Mathieu Desnoyers wrote:
+> [...]
+> > > > > 
+> > > > > ...
+> > > > > 
+> > > > > 97 /**
+> > > > > 98  * ring_buffer_clear_noref_flag - Clear the noref subbuffer flag, for writer.
+> > > > > 99  */
+> > > > > 100 static __inline__
+> > > > > 101 void ring_buffer_clear_noref_flag(struct ring_buffer_backend *bufb,
+> > > > > 102                                   unsigned long idx)
+> > > > > 103 {
+> > > > > 104         struct ring_buffer_backend_page *sb_pages, *new_sb_pages;
+> > > > > 105
+> > > > > 106         sb_pages = bufb->buf_wsb[idx].pages;
+> > > > > 107         for (;;) {
+> > > > > 108                 if (!RCHAN_SB_IS_NOREF(sb_pages))
+> > > > > 109                         return; /* Already writing to this buffer */
+> > > > > 110                 new_sb_pages = sb_pages;
+> > > > > 111                 RCHAN_SB_CLEAR_NOREF(new_sb_pages);
+> > > > > 112                 new_sb_pages = cmpxchg(&bufb->buf_wsb[idx].pages,
+> > > > > 113                         sb_pages, new_sb_pages);
+> > > > > 114                 if (likely(new_sb_pages == sb_pages))
+> > > > > 115                         break;
+> > > > > 116                 sb_pages = new_sb_pages;
+> > > > 
+> > > > The writer calls this??
+> > > 
+> > > Yes. But the common case (for each event) is simply a
+> > > "if (!RCHAN_SB_IS_NOREF(sb_pages))" test that returns. The cmpxchg() is only
+> > > performed at subbuffer boundary.
+> > 
+> > Is the cmpxchg only contending with other writers?
+> 
+> No. Would have this been the case, I would have used a cmpxchg_local(). This
+> cmpxchg used to deal with subbuffer swap is touching the subbuffer "pages"
+> pointer, which can be updated concurrently by other writers as well as readers.
+> 
+> The writer clears the noref flags when starting to write in a subbuffers, and
+> sets it when delivering the subbuffer (when it is fully committed).
+> 
+> The reader can only ever swap the subbuffer with the one it owns if the noref
+> flag is set. The reader uses a cmpxchg() too to perform the swap.
+> 
 
-Fix functionfs build to handle CONFIG_NET not enabled, to prevent
-these build errors:
+So the writer can loop because of a reader? And theoretically, a
+aggressive reader that is constantly swapping pages can halt a writer?
 
-ERROR: "netif_carrier_on" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "netif_carrier_off" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_realloc_headroom" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_trim" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "netif_rx" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "alloc_etherdev_mq" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "ethtool_op_get_link" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "free_netdev" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "register_netdev" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_push" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_pull" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "dev_kfree_skb_any" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_queue_tail" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "__alloc_skb" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "eth_type_trans" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "eth_validate_addr" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_dequeue" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "unregister_netdev" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "__netif_schedule" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "skb_put" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "eth_mac_addr" [drivers/usb/gadget/g_ffs.ko] undefined!
-ERROR: "dev_get_stats" [drivers/usb/gadget/g_ffs.ko] undefined!
+I thought you said you did not have loops in the writers?
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Michal Nazarewicz <m.nazarewicz@samsung.com>
----
- drivers/usb/gadget/Kconfig |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+> [...]
+> 
+> > > > 
+> > > > This looks just like the swap with reader_page that I do, except you use
+> > > > a table and I use the list.  How do you replenish the buf_rsb.pages if
+> > > > the splice keeps the page you just received active?
+> > > 
+> > > I don't allow other reads to proceed as long as splice is holding pages that
+> > > belong to the reader-owned subbuffer. The read semantic is basically:
+> > > 
+> > > ring_buffer_open_read() /* only one reader at a time can open a ring buffer */
+> > > get_subbuf_size()
+> > > while (buffer is not finalized and empty) {
+> > >   poll()
+> > >   ret = ring_buffer_get_subbuf()
+> > >   if (!ret)
+> > >     continue;
+> > >   /* The splice ops below can be performed in multiple calls, e.g. first splice
+> > >    * only a portion of a subbuffer to a pipe, then splice to the disk/network,
+> > >    * and move to the next subbuffer portion until all the subbuffer is sent.
+> > >    */
+> > >   splice one subbuffer worth of data to a pipe
+> > >   splice the data from pipe to disk/network
+> > >   ring_buffer_put_subbuf()
+> > > }
+> > > ring_buffer_close_read()
+> > > 
+> > > The reader code above works both with flight recorder and non-overwrite mode.
+> > > 
+> > > The code above assumes that upon return from the splice() to disk/network,
+> > > splice() is not using the pages anymore (I assume that splice() performs the
+> > > transfer synchronously with the call).
+> > > 
+> > > The VFS interface I use for get_subbuf_size(), ring_buffer_get_subbuf() and
+> > > ring_buffer_put_subbuf() are new ioctls. Note that these can be used for both
+> > > splice() and mmap() types of backend access, as they only call into the
+> > > frontend.
+> > 
+> > Hmm, so basically you lose pages until they are returned. I guess I can
+> > trivially add the same thing now to the current ring buffer.
+> 
+> Yep. Having the ability to keep an array of pages (rather that just a single
+> page at a time) allows splice() to move many pages at once efficiently, while
+> permitting this "pages owned by the readers, lend to splice() until it returns"
+> simplification. I also never have to allocate pages while tracing: all the pages
+> I need are allocated when the buffer is created (and at the special case of cpu
+> hotplug, but this is expected for per-cpu buffers).
 
---- linux-next-20100513.orig/drivers/usb/gadget/Kconfig
-+++ linux-next-20100513/drivers/usb/gadget/Kconfig
-@@ -726,7 +726,7 @@ config USB_FUNCTIONFS
- 
- config USB_FUNCTIONFS_ETH
- 	bool "Include CDC ECM (Ethernet) function"
--	depends on USB_FUNCTIONFS
-+	depends on USB_FUNCTIONFS && NET
- 	help
- 	  Include an CDC ECM (Ethernet) funcion in the CDC ECM (Funcion)
- 	  Filesystem.  If you also say "y" to the RNDIS query below the
-@@ -734,7 +734,7 @@ config USB_FUNCTIONFS_ETH
- 
- config USB_FUNCTIONFS_RNDIS
- 	bool "Include RNDIS (Ethernet) function"
--	depends on USB_FUNCTIONFS
-+	depends on USB_FUNCTIONFS && NET
- 	help
- 	  Include an RNDIS (Ethernet) funcion in the Funcion Filesystem.
- 	  If you also say "y" to the CDC ECM query above the gadget will
+Yep, I just wrote the changes for my buffer. It was rather trivial ;-)
+Although, I just set a hard coded 16 pages max of cached pages.
+
+-- Steve
+
+> 
+> In addition, this would play well with mmap() too: we can simply add a
+> ring_buffer_get_mmap_offset() method to the backend (exported through another
+> ioctl) that would let user-space know the start of the mmap'd buffer range
+> currently owned by the reader. So we can inform user-space of the currently
+> owned page range without even changing the underlying memory map.
+> 
+> Thanks,
+> 
+> Mathieu
+> 
+> 
+
+
