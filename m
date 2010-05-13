@@ -1,96 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758881Ab0EMM3Y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 08:29:24 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:56317 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751866Ab0EMM3W (ORCPT
+	id S1758904Ab0EMMeE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:34:04 -0400
+Received: from cam-admin0.cambridge.arm.com ([217.140.96.50]:40653 "EHLO
+	cam-admin0.cambridge.arm.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751866Ab0EMMeB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 08:29:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
-         :x-mailer:mime-version:content-type:content-transfer-encoding;
-        b=eXv42z+hsny3nGTvpGkKWIx5/QI9GDQdJYRHbhNy3yyh0K6cd7bH9N2GZ9B07j3I+a
-         x7dJyJn7mKSzsGpKTqf0Jd9XoUvwlkrews8uPyPpcCOphi+EtwpefFp4fZ/rchv9YONe
-         1Ir9cGs6TwqOBPIp0DUqqUubtmxQZmZAQy4Nk=
-Date: Thu, 13 May 2010 15:29:15 +0300
-From: Pekka Paalanen <pq@iki.fi>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+	Thu, 13 May 2010 08:34:01 -0400
+From: Catalin Marinas <catalin.marinas@arm.com>
+To: Tvrtko Ursulin <tvrtko.ursulin@sophos.com>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH 3/4] tracing: Allow mmio tracer to display
- trace_printk() and other events
-Message-ID: <20100513152915.3d3f852b@daedalus.pq.iki.fi>
-In-Reply-To: <1273752909.27703.809.camel@gandalf.stny.rr.com>
-References: <20100513012110.558313399@goodmis.org>
-	<20100513012302.352845720@goodmis.org>
-	<20100513115414.7688b51d@daedalus.pq.iki.fi>
-	<1273752909.27703.809.camel@gandalf.stny.rr.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+       David Airlie <airlied@linux.ie>
+Subject: Re: 2.6.33.2 kmalloc-8 slab leaks ~512 objects per second
+References: <201005121121.49135.tvrtko.ursulin@sophos.com>
+	<g2i84144f021005120600wa8eb0409k13f67f49c519509@mail.gmail.com>
+	<201005121404.49720.tvrtko.ursulin@sophos.com>
+Date: Thu, 13 May 2010 13:29:49 +0100
+In-Reply-To: <201005121404.49720.tvrtko.ursulin@sophos.com> (Tvrtko Ursulin's
+	message of "Wed, 12 May 2010 14:04:48 +0100")
+Message-ID: <tnxiq6sm1c2.fsf@e102109-lin.cambridge.arm.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-OriginalArrivalTime: 13 May 2010 12:29:58.0506 (UTC) FILETIME=[00281CA0:01CAF298]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 08:15:09 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Tvrtko Ursulin <tvrtko.ursulin@sophos.com> wrote:
+> On Wednesday 12 May 2010 14:00:51 Pekka Enberg wrote:
+>> [snip]
+>>
+>> You might want to try out the built-in kernel memory leak detector.
+>> See Documentation/kmemleak.txt for details how to enable it and use
+>> it.
+>
+> Thanks for the suggestion, I will have to try it out once but not this time :)
+> because 2.6.34-rc7 seems to be fine, or in other words not leaking.
 
-> On Thu, 2010-05-13 at 11:54 +0300, Pekka Paalanen wrote:
-> > On Wed, 12 May 2010 21:21:13 -0400
-> > Steven Rostedt <rostedt@goodmis.org> wrote:
-> > 
-> > > From: Steven Rostedt <srostedt@redhat.com>
-> > > 
-> > > The mmio tracer has its own function to handle reading of
-> > > events. But if it encounters an event that it does not
-> > > understand it ignores it instead of telling the calling
-> > > function that it is not processing it.
-> > > 
-> > > If someone adds trace_printk() or enables events along with
-> > > the mmio tracer, then these events will not be displayed in
-> > > the trace output.
-> > > 
-> > > Simple solution is to just have the mmio print return
-> > > UNHANDLED to let the caller know that it did not processes
-> > > the event and the caller can process the event further.
-> > 
-> > Does this not mean that the mmiotrace output may contain
-> > foreign lines? If it does, it will break the user space.
-> > The dump format is specified in
-> > Documentation/trace/mmiotrace.txt.
-> > 
-> > If you want to handle arbitrary messages, format them as
-> > MARK events, please.
-> > 
-> > If I understood correctly, then NAK for this patch. Otherwise,
-> > could you explain how this does not break the mmiotrace dump
-> > format?
-> > 
-> > Is the tracing infrastructure now supporting several
-> > active tracers at the same time? If yes, and if mmiotrace
-> > should be able to co-operate, we need a new revision of the
-> > dump format, or a tool that extracts the mmiotrace
-> > events in the current format.
-> > 
-> 
-> It only displays other events if the user enabled those events.
-> 
-> But that said, I don't want to break existing userspace tools. I
-> can add a mmiotrace option "mmiotrace_all_events", if the user
-> wants to see all events within the mmiotracer then they can just
-> enable that option, otherwise, the mmiotracer will act like it
-> currently does.
-> 
-> How does that sound?
-
-That would be fine. Is it not redundant with what you said in
-your first sentence?
+You could just enable CONFIG_DEBUG_KMEMLEAK on 2.6.33, mount the debugfs
+and do a 'cat /sys/kernel/debug/kmemleak' after a half-hour or so.
 
 -- 
-Pekka Paalanen
-http://www.iki.fi/pq/
+Catalin
