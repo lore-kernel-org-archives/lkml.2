@@ -1,139 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0EMF1x (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 01:27:53 -0400
-Received: from compulab.co.il ([67.18.134.219]:57578 "EHLO compulab.co.il"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752840Ab0EMF1u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 01:27:50 -0400
-Message-ID: <4BEB8DC0.4060808@compulab.co.il>
-Date: Thu, 13 May 2010 08:27:28 +0300
-From: Mike Rapoport <mike@compulab.co.il>
-User-Agent: Thunderbird 2.0.0.23 (X11/20100106)
+	id S1752527Ab0EMFl0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 01:41:26 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:35443 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751853Ab0EMFlY convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 01:41:24 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=nwOrwudkFmuYEMbUj6EktJdFWO4OhicYXo6zXjnzfyBAVqG1up6c9+v7MpWIG5Vx9
+	pDAZPSQ0Xwm0oarbwTuKQ==
 MIME-Version: 1.0
-To: Peter Huewe <PeterHuewe@gmx.de>
-CC: Anton Vorontsov <cbouatmailru@gmail.com>,
-       Wolfram Sang <w.sang@pengutronix.de>, Tejun Heo <tj@kernel.org>,
-       Ryan Mallon <ryan@bluewatersys.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] power: Rename get_current to fix build failure / name
- conflict
-References: <201005130154.58459.PeterHuewe@gmx.de>
-In-Reply-To: <201005130154.58459.PeterHuewe@gmx.de>
-X-Enigmail-Version: 0.95.7
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-ACL-Warn: {
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - compulab.site5.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - compulab.co.il
-X-Source: 
-X-Source-Args: 
-X-Source-Dir: 
+In-Reply-To: <h2h8d20b11a1005121939tb35d9708p92eebd1f7b66b93a@mail.gmail.com>
+References: <1273634462-2672-1-git-send-email-walken@google.com>
+	 <1273634462-2672-7-git-send-email-walken@google.com>
+	 <22741.1273666943@redhat.com>
+	 <h2h8d20b11a1005121939tb35d9708p92eebd1f7b66b93a@mail.gmail.com>
+Date: Wed, 12 May 2010 22:41:20 -0700
+Message-ID: <u2p8d20b11a1005122241o12d5df8dl43c669a058665f40@mail.gmail.com>
+Subject: Re: [PATCH 06/12] rwsem: wake queued readers when other readers are 
+	active
+From: Michel Lespinasse <walken@google.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Peter Huewe wrote:
-> From: Peter Huewe <peterhuewe@gmx.de>
-> 
-> This patch changes the name of get_current function pointer to
-> get_battery_current to resolve a name conflict with the get_current
-> macro defined in current.h.
-> 
-> This conflict resulted in a build-failure[1] for the sh4 arch
-> allyesconfig which is resolved by this patch.
-> 
-> To be consistent the other function pointers (_voltage,_capacity) were
-> renamed too.
-> 
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+On Wed, May 12, 2010 at 7:39 PM, Michel Lespinasse <walken@google.com> wrote:
+> On Wed, May 12, 2010 at 5:22 AM, David Howells <dhowells@redhat.com> wrote:
+>> Michel Lespinasse <walken@google.com> wrote:
+>>
+>>> In this situation, it would be perfectly fine to let threads B and C work
+>>> in parallel as they each only want a read acquire on the rwsem. We can
+>>> recognize this situation and let A wake B as long as there are no active
+>>> writers on the rwsem.
+>>
+>> There can't be any active writers on the rwsem.  An active writer must have
+>> just been upped and is in the process of waking the first sleeper up.
+>
+> Yes. My point is that by the point thread A (the writer that just got
+> upped) gets around to waking B (a blocked reader), another reader C
+> might have gotten active already. We don't want the nonzero active
+> count (due to C) to prevent B from getting woken.
 
-Acked-by: Mike Rapoport <mike@compulab.co.il>
+My bad - this is actually fine. C will notice there are still waiting
+threads, so it will run rwsem_down_read_failed and queue itself. At
+this point the active count will go back down to 0 and B and C will
+both get woken.
 
-> ---
-> KernelVersion: linux-next 20100512
-> References:
-> [1] http://kisskb.ellerman.id.au/kisskb/buildresult/2572665/
-> 
->  drivers/power/ds2782_battery.c |   29 ++++++++++++++---------------
->  1 files changed, 14 insertions(+), 15 deletions(-)
-> 
-> diff --git a/drivers/power/ds2782_battery.c b/drivers/power/ds2782_battery.c
-> index d762a0c..9b3b4b7 100644
-> --- a/drivers/power/ds2782_battery.c
-> +++ b/drivers/power/ds2782_battery.c
-> @@ -43,10 +43,9 @@
->  struct ds278x_info;
->  
->  struct ds278x_battery_ops {
-> -	int	(*get_current)(struct ds278x_info *info, int *current_uA);
-> -	int	(*get_voltage)(struct ds278x_info *info, int *voltage_uA);
-> -	int	(*get_capacity)(struct ds278x_info *info, int *capacity_uA);
-> -
-> +	int (*get_battery_current)(struct ds278x_info *info, int *current_uA);
-> +	int (*get_battery_voltage)(struct ds278x_info *info, int *voltage_uA);
-> +	int (*get_battery_capacity)(struct ds278x_info *info, int *capacity_uA);
->  };
->  
->  #define to_ds278x_info(x) container_of(x, struct ds278x_info, battery)
-> @@ -213,11 +212,11 @@ static int ds278x_get_status(struct ds278x_info *info, int *status)
->  	int current_uA;
->  	int capacity;
->  
-> -	err = info->ops->get_current(info, &current_uA);
-> +	err = info->ops->get_battery_current(info, &current_uA);
->  	if (err)
->  		return err;
->  
-> -	err = info->ops->get_capacity(info, &capacity);
-> +	err = info->ops->get_battery_capacity(info, &capacity);
->  	if (err)
->  		return err;
->  
-> @@ -246,15 +245,15 @@ static int ds278x_battery_get_property(struct power_supply *psy,
->  		break;
->  
->  	case POWER_SUPPLY_PROP_CAPACITY:
-> -		ret = info->ops->get_capacity(info, &val->intval);
-> +		ret = info->ops->get_battery_capacity(info, &val->intval);
->  		break;
->  
->  	case POWER_SUPPLY_PROP_VOLTAGE_NOW:
-> -		ret = info->ops->get_voltage(info, &val->intval);
-> +		ret = info->ops->get_battery_voltage(info, &val->intval);
->  		break;
->  
->  	case POWER_SUPPLY_PROP_CURRENT_NOW:
-> -		ret = info->ops->get_current(info, &val->intval);
-> +		ret = info->ops->get_battery_current(info, &val->intval);
->  		break;
->  
->  	case POWER_SUPPLY_PROP_TEMP:
-> @@ -307,14 +306,14 @@ enum ds278x_num_id {
->  
->  static struct ds278x_battery_ops ds278x_ops[] = {
->  	[DS2782] = {
-> -		.get_current  = ds2782_get_current,
-> -		.get_voltage  = ds2782_get_voltage,
-> -		.get_capacity = ds2782_get_capacity,
-> +		.get_battery_current  = ds2782_get_current,
-> +		.get_battery_voltage  = ds2782_get_voltage,
-> +		.get_battery_capacity = ds2782_get_capacity,
->  	},
->  	[DS2786] = {
-> -		.get_current  = ds2786_get_current,
-> -		.get_voltage  = ds2786_get_voltage,
-> -		.get_capacity = ds2786_get_capacity,
-> +		.get_battery_current  = ds2786_get_current,
-> +		.get_battery_voltage  = ds2786_get_voltage,
-> +		.get_battery_capacity = ds2786_get_capacity,
->  	}
->  };
->  
-
+I'll merge this back into change 7 since change 7 does require this in
+order to work.
 
 -- 
-Sincerely yours,
-Mike.
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
