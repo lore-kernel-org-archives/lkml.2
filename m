@@ -1,176 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758849Ab0EMMJk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 08:09:40 -0400
-Received: from ozlabs.org ([203.10.76.45]:45771 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755942Ab0EMMJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 08:09:38 -0400
-Subject: Re: [PATCH 4/4] trace, powerpc: Implement raw syscall tracepoints
- on PowerPC
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Frederic Weisbecker <fweisbec@gmail.com>,
-       Jason Baron <jbaron@redhat.com>, Steven Rostedt <rostedt@goodmis.org>,
-       Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-       linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <1273736594-19320-5-git-send-email-imunsie@au1.ibm.com>
-References: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
-	 <1273736594-19320-5-git-send-email-imunsie@au1.ibm.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-HpTfXCVmlRcZ5i46g9PE"
-Date: Thu, 13 May 2010 22:09:31 +1000
-Message-ID: <1273752571.8067.12.camel@concordia>
+	id S1758845Ab0EMMPO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 08:15:14 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:46169 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758796Ab0EMMPM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 08:15:12 -0400
+X-Authority-Analysis: v=1.1 cv=RZg5C6NCKrCZril9sGGnsuGk01/OiP2z3O3lo0hXATg= c=1 sm=0 a=EYIAjt0hOJkA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=20KFwNOVAAAA:8 a=yQdBAQUQAAAA:8 a=ot2zeifykWNVRvTMB34A:9 a=hCWoDmUnmVBiXDH87IkwVAIbv5IA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=jEp0ucaQiEUA:10 a=IcxpeKGZWnEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 3/4] tracing: Allow mmio tracer to display
+ trace_printk() and other events
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Pekka Paalanen <pq@iki.fi>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Larry Finger <Larry.Finger@lwfinger.net>
+In-Reply-To: <20100513115414.7688b51d@daedalus.pq.iki.fi>
+References: <20100513012110.558313399@goodmis.org>
+	 <20100513012302.352845720@goodmis.org>
+	 <20100513115414.7688b51d@daedalus.pq.iki.fi>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 08:15:09 -0400
+Message-ID: <1273752909.27703.809.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, 2010-05-13 at 11:54 +0300, Pekka Paalanen wrote:
+> On Wed, 12 May 2010 21:21:13 -0400
+> Steven Rostedt <rostedt@goodmis.org> wrote:
+> 
+> > From: Steven Rostedt <srostedt@redhat.com>
+> > 
+> > The mmio tracer has its own function to handle reading of events.
+> > But if it encounters an event that it does not understand it
+> > ignores it instead of telling the calling function that it is not
+> > processing it.
+> > 
+> > If someone adds trace_printk() or enables events along with the
+> > mmio tracer, then these events will not be displayed in the trace
+> > output.
+> > 
+> > Simple solution is to just have the mmio print return UNHANDLED to
+> > let the caller know that it did not processes the event and the
+> > caller can process the event further.
+> 
+> Does this not mean that the mmiotrace output may contain
+> foreign lines? If it does, it will break the user space.
+> The dump format is specified in
+> Documentation/trace/mmiotrace.txt.
+> 
+> If you want to handle arbitrary messages, format them as
+> MARK events, please.
+> 
+> If I understood correctly, then NAK for this patch. Otherwise,
+> could you explain how this does not break the mmiotrace dump
+> format?
+> 
+> Is the tracing infrastructure now supporting several
+> active tracers at the same time? If yes, and if mmiotrace
+> should be able to co-operate, we need a new revision of the
+> dump format, or a tool that extracts the mmiotrace
+> events in the current format.
+> 
 
---=-HpTfXCVmlRcZ5i46g9PE
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+It only displays other events if the user enabled those events.
 
-On Thu, 2010-05-13 at 17:43 +1000, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au.ibm.com>
+But that said, I don't want to break existing userspace tools. I can add
+a mmiotrace option "mmiotrace_all_events", if the user wants to see all
+events within the mmiotracer then they can just enable that option,
+otherwise, the mmiotracer will act like it currently does.
 
-Hi Ian,
+How does that sound?
 
-Just a few comments ..
+-- Steve
 
-> This patch implements the raw syscall tracepoints on PowerPC required
-> for ftrace syscalls.
+> Thanks.
+> 
+> > Reported-by: Larry Finger <Larry.Finger@lwfinger.net>
+> > Cc: Pekka Paalanen <pq@iki.fi>
+> > Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> > ---
+> >  kernel/trace/trace_mmiotrace.c |    3 ++-
+> >  1 files changed, 2 insertions(+), 1 deletions(-)
+> > 
+> > diff --git a/kernel/trace/trace_mmiotrace.c
+> > b/kernel/trace/trace_mmiotrace.c index 017fa37..592c00f 100644
+> > --- a/kernel/trace/trace_mmiotrace.c
+> > +++ b/kernel/trace/trace_mmiotrace.c
+> > @@ -282,7 +282,8 @@ static enum print_line_t
+> > mmio_print_line(struct trace_iterator *iter) case TRACE_PRINT:
+> >  		return mmio_print_mark(iter);
+> >  	default:
+> > -		return TRACE_TYPE_HANDLED; /* ignore unknown
+> > entries */
+> > +		/* Not our event */
+> > +		return TRACE_TYPE_UNHANDLED;
+> >  	}
+> >  }
+> >  
+> > -- 
+> > 1.7.0
+> 
 
-OK. It also adds a bunch of code under CONFIG_FTRACE_*, so does it
-implement raw syscall tracepoints _and_ hook them up to ftrace?
-
-> To minimise reworking existing code, I slightly re-ordered the thread
-> info flags such that the new TIF_SYSCALL_TRACEPOINT bit would still fit
-> within the 16 bits of the andi instruction's UI field.
-
-Which andi instruction? That could use a bit more explaining.
-
-> In the case of 64bit PowerPC, arch_syscall_addr and
-> arch_syscall_match_sym_name are overridden to allow ftrace syscalls to
-> work given the unusual system call table structure and symbol names that
-> start with a period.
-
-Not unusual, just different (ie. better) than x86 ;)
-
-> diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/as=
-m/syscall.h
-> index 23913e9..4098105 100644
-> --- a/arch/powerpc/include/asm/syscall.h
-> +++ b/arch/powerpc/include/asm/syscall.h
-> @@ -15,6 +15,15 @@
-> =20
->  #include <linux/sched.h>
-> =20
-> +/* ftrace syscalls requires exporting the sys_call_table */
-> +#ifdef CONFIG_FTRACE_SYSCALLS
-> +#ifdef CONFIG_PPC64
-> +extern const unsigned long long *sys_call_table;
-
-I'm not sure why this is ULL ? UL and ULL are both 64 bits (on 64bit),
-and it would save you this ifdef block and a cast in
-arch_syscall_addr().
-
-> +#else /* !CONFIG_PPC64 */
-> +extern const unsigned long *sys_call_table;
-> +#endif /* CONFIG_PPC64 */
-> +#endif /* CONFIG_FTRACE_SYSCALLS */
-> +
->  static inline long syscall_get_nr(struct task_struct *task,
->  				  struct pt_regs *regs)
->  {
-> diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/includ=
-e/asm/thread_info.h
-> index aa9d383..e7a8af2 100644
-> --- a/arch/powerpc/include/asm/thread_info.h
-> +++ b/arch/powerpc/include/asm/thread_info.h
-> @@ -110,7 +110,8 @@ static inline struct thread_info *current_thread_info=
-(void)
->  #define TIF_NOERROR		12	/* Force successful syscall return */
->  #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
->  #define TIF_FREEZE		14	/* Freezing for suspend */
-> -#define TIF_RUNLATCH		15	/* Is the runlatch enabled? */
-> +#define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation =
-*/
-> +#define TIF_RUNLATCH		16	/* Is the runlatch enabled? */
-
-I don't grok why this is good or safe, not that it isn't but please tell
-me why it is :)
-
-> diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-> index 8773263..9c404bb 100644
-> --- a/arch/powerpc/kernel/Makefile
-> +++ b/arch/powerpc/kernel/Makefile
-> @@ -98,6 +98,7 @@ obj64-$(CONFIG_AUDIT)		+=3D compat_audit.o
-> =20
->  obj-$(CONFIG_DYNAMIC_FTRACE)	+=3D ftrace.o
->  obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+=3D ftrace.o
-> +obj-$(CONFIG_FTRACE_SYSCALLS)	+=3D ftrace.o
-
-You're following the existing pattern there, but it's a little odd.
-Seems like those three config options should really all depend on
-something common and that should trigger the build of ftrace.c
-
-> diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-> index ce1f3e4..b34171e 100644
-> --- a/arch/powerpc/kernel/ftrace.c
-> +++ b/arch/powerpc/kernel/ftrace.c
-> @@ -22,6 +22,7 @@
->  #include <asm/cacheflush.h>
->  #include <asm/code-patching.h>
->  #include <asm/ftrace.h>
-> +#include <asm/syscall.h>
-> =20
->=20
->  #ifdef CONFIG_DYNAMIC_FTRACE
-> @@ -600,3 +601,15 @@ void prepare_ftrace_return(unsigned long *parent, un=
-signed long self_addr)
->  	}
->  }
->  #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-> +
-> +#if defined(CONFIG_FTRACE_SYSCALLS) && defined(CONFIG_PPC64)
-
-Does 32-bit just work using the existing routines? Or do we not support
-it on 32-bit (though that's not what your Kconfig change said).
-
-> +unsigned long __init arch_syscall_addr(int nr)
-> +{
-> +	return (unsigned long)sys_call_table[nr*2];
-
-That's the cast I was referring to.
-
-> +}
-> +
-> +inline bool arch_syscall_match_sym_name(const char *sym, const char *nam=
-e)
-> +{
-> +	return (!strcmp(sym + 4, name + 3));
-
-So the +4 is to skip ".sys" and the +3 is to skip "sys" ? That could use
-a comment IMHO :)
-
-
-cheers
-
-
-
---=-HpTfXCVmlRcZ5i46g9PE
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkvr6/sACgkQdSjSd0sB4dI+HwCgwKGOD6K19HGvhpV5cnyWDwtU
-UPUAoIpXr+Wjp9g18DHSMtPkoYTAfwpg
-=OxIB
------END PGP SIGNATURE-----
-
---=-HpTfXCVmlRcZ5i46g9PE--
 
