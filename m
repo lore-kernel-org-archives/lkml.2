@@ -1,139 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab0EMRKV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:10:21 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:38096 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754150Ab0EMRKS (ORCPT
+	id S1753871Ab0EMRQs (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:16:48 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:45391 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750809Ab0EMRQq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:10:18 -0400
-Date: Thu, 13 May 2010 13:10:15 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>
-Subject: Re: Perf and ftrace [was Re: PyTimechart]
-Message-ID: <20100513171015.GA13698@Krystal>
-References: <20100512180438.GE15953@Krystal> <1273687712.1626.151.camel@laptop> <20100512183704.GD21432@Krystal> <1273690012.27703.38.camel@gandalf.stny.rr.com> <20100512202745.GK21432@Krystal> <1273702886.27703.58.camel@gandalf.stny.rr.com> <20100513132029.GA22799@Krystal> <1273765337.27703.1043.camel@gandalf.stny.rr.com> <20100513163150.GA13005@Krystal> <1273769178.27703.1119.camel@gandalf.stny.rr.com>
+	Thu, 13 May 2010 13:16:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=QGsKh1+IbD7DshI3pOLgEYKyUJs2woZtVvYIke1Po9TZgazDmk8aDo4Jn7fz+2wmkn
+         DZLrxLqRakDcv62sT+hM5G26rVTw9v6jHTThcmx8E1v6O1MQbCQC6dRK/Z42vUgng1zM
+         ujXqqqKbK3Nn0BGmVMaqYlb882PCGb5WYyklI=
+Date: Thu, 13 May 2010 10:16:40 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100513171639.GA23708@core.coreip.homeip.net>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+ <20100513160117.GB22238@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273769178.27703.1119.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 12:51:10 up 110 days, 19:28,  9 users,  load average: 0.29, 0.26,
-	0.16
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Thu, 2010-05-13 at 12:31 -0400, Mathieu Desnoyers wrote:
-> > * Steven Rostedt (rostedt@goodmis.org) wrote:
-> > > On Thu, 2010-05-13 at 09:20 -0400, Mathieu Desnoyers wrote:
-> > [...]
-> > > > > > 
-> > > > > > ...
-> > > > > > 
-> > > > > > 97 /**
-> > > > > > 98  * ring_buffer_clear_noref_flag - Clear the noref subbuffer flag, for writer.
-> > > > > > 99  */
-> > > > > > 100 static __inline__
-> > > > > > 101 void ring_buffer_clear_noref_flag(struct ring_buffer_backend *bufb,
-> > > > > > 102                                   unsigned long idx)
-> > > > > > 103 {
-> > > > > > 104         struct ring_buffer_backend_page *sb_pages, *new_sb_pages;
-> > > > > > 105
-> > > > > > 106         sb_pages = bufb->buf_wsb[idx].pages;
-> > > > > > 107         for (;;) {
-> > > > > > 108                 if (!RCHAN_SB_IS_NOREF(sb_pages))
-> > > > > > 109                         return; /* Already writing to this buffer */
-> > > > > > 110                 new_sb_pages = sb_pages;
-> > > > > > 111                 RCHAN_SB_CLEAR_NOREF(new_sb_pages);
-> > > > > > 112                 new_sb_pages = cmpxchg(&bufb->buf_wsb[idx].pages,
-> > > > > > 113                         sb_pages, new_sb_pages);
-> > > > > > 114                 if (likely(new_sb_pages == sb_pages))
-> > > > > > 115                         break;
-> > > > > > 116                 sb_pages = new_sb_pages;
-> > > > > 
-> > > > > The writer calls this??
-> > > > 
-> > > > Yes. But the common case (for each event) is simply a
-> > > > "if (!RCHAN_SB_IS_NOREF(sb_pages))" test that returns. The cmpxchg() is only
-> > > > performed at subbuffer boundary.
-> > > 
-> > > Is the cmpxchg only contending with other writers?
-> > 
-> > No. Would have this been the case, I would have used a cmpxchg_local(). This
-> > cmpxchg used to deal with subbuffer swap is touching the subbuffer "pages"
-> > pointer, which can be updated concurrently by other writers as well as readers.
-> > 
-> > The writer clears the noref flags when starting to write in a subbuffers, and
-> > sets it when delivering the subbuffer (when it is fully committed).
-> > 
-> > The reader can only ever swap the subbuffer with the one it owns if the noref
-> > flag is set. The reader uses a cmpxchg() too to perform the swap.
-> > 
+On Thu, May 13, 2010 at 09:54:00AM -0700, Linus Torvalds wrote:
 > 
-> So the writer can loop because of a reader? And theoretically, a
-> aggressive reader that is constantly swapping pages can halt a writer?
-
-Hehe, I'm glad you ask :) This has been one of my major concerns with this
-algorithm.
-
-Taken from my thesis:
-
-8.6 Formal Verification of LTTng
-8.6.3 Real-Time Impact
-
-"The second synchronization added by the overwrite mode involves letting the
-reader thread exchange individual sub-buffers with its own extra sub-buffer
-before reading them. This exchange is performed with a CAS instruction which
-verified if the use flag is set by the writer. If the sub-buffer is in use, the
-reader will retry later.  On the writer side, a CAS instruction is used in a
-busy-loop to set and clear the use flag (for portability, because an atomic
-instruction to set a mask is not available for all architecture in the Linux
-kernel). Given that the reader can only ever exchange a sub-buffer and cause the
-writer to restart once (further accesses to that sub-buffers are impossible,
-because the reader will block on the writer position), the reader thread cannot
-starve the writer."
-
-IOW, if the reader is trying to get subbuffers like crazy, it will maybe cause
-one loop restart when taking the subbuffer the writer was about to write to, but
-after that, the reader will be forced to exchange the next subbuffer, and so on
-until it wraps-around and comes back to the subbuffer preceding the writer
-position, as stop there. Note that during all this execution, the reader could
-only cause a single retry of the writer. In summary, the frontend range
-restrictions guarantee that the writer will retry at most once.
-
-Note that we could also use an atomic "set bit/clear bit" for the writer, along
-with write memory barriers, when available on the architecture, and that would
-remove all need for loops. However, architectures that need to emulate set
-bit/clear bit with a cmpxchg() would behave pretty much in the same way as my
-current code does.
-
 > 
-> I thought you said you did not have loops in the writers?
+> On Thu, 13 May 2010, Dmitry Torokhov wrote:
+> > 
+> > Apple does proper thing in BIOS and omits keyboard and mouse PNP
+> > devices, but because of other players we do not really trust PNP BIOS
+> > and resort to banding on ports directly - there are cases when box has
+> > mouse and/or keyboard but they are not present in BIOS. Damed if you do,
+> > damned if you don't...
+> 
+> Umm. No.
+> 
+> PnP information _commonly_ doesn't inclure PS/2 ports, even when they 
+> exist. Lack of PnP information about the keyboard port means absolutely 
+> nothing, and anybody who tells you otherwise is totally and utterly wrong. 
+>
 
-Well, while technically a loop, it is a bounded single-retry, so it's OK as far
-as wait-free guarantees are concerned. We could even put a WARN_ON() there to
-ensure that we catch double retry that should never happen, but that would be at
-the cost of a runtime veritication. A DEBUG_TRACER_RT config option could select
-this though.
+I think on the newer hardware PNP (or rather ACPI mapped onto PNP) usually 
+matches the reality.
 
-Thanks,
+> So don't confuse this with PnP issues. That's a total red herring, and 
+> Apple is _not_at_all_ "doing the proper thing in the BIOS". 
+> 
+> Quite the reverse. Apple is very clearly doing something horribly _wrong_ 
+> in their BIOS. Don't give them kudos for being incompetent morons.
+> 
+> Just google for
+> 
+> 	"Probing ports directly" "i8042 KBD port"
+> 
+> and you'll get a lot of hits. That's not because those machines have wrong 
+> PnP tables - it's because fundamentally PNP is a joke, and on PC's what is 
+> much more important is "standard IO ports". 
+> 
+> For example, in that thread, Bastien is quoted:
+> 
+> 	> In other words, on x86, if PNP and/or ACPI don't indicate any PS/2 
+> 	> controller exists, we randomly bang on the ports in the expectation 
+> 	> they'll be there anyway. This seems rather misguided.
+> 
+> and all that tells me is that Bastien doesn't know what he is doing. It is 
+> _not_ "randomly bang" - it's called standard PC hardware.
 
-Mathieu
+Do Macs qualify to be called "standard PC hardware" though? Again, there
+are BootCamp BIOSes that allow you booting XP on them, and most likely
+newer models already have that ironed out, but we can't expect older
+ones to survive port probing.
+
+>  And it's not 
+> "misguided" - it's very much correct and required, exactly because PnP 
+> itself is the misguided aborted fetus of a braindamaged mind.
+> 
+> We do not trust BIOS tables, because BIOS writers are invariably totally 
+> incompetent crack-addicted monkeys. If they weren't, they wouldn't be BIOS 
+> writers. QED. And in fact the Apple problem is an _example_ of this BIOS 
+> writer incompetence, not some shining example of them doing something 
+> right.
+
+Well, they got PNP tables right ;)
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Dmitry
