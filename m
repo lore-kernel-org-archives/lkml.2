@@ -1,87 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752719Ab0EMI3w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 04:29:52 -0400
-Received: from mga11.intel.com ([192.55.52.93]:61963 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750873Ab0EMI3u (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 04:29:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,221,1272870000"; 
-   d="scan'208";a="798050052"
-Subject: Re: [RFC][PATCH 3/9] perf: export registerred pmus via sysfs
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: greg@kroah.com, Peter Zijlstra <peterz@infradead.org>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Paul Mundt <lethal@linux-sh.org>, lkml <linux-kernel@vger.kernel.org>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>
-In-Reply-To: <20100511091833.GB18869@elte.hu>
-References: <20100510114311.GA6449@elte.hu>
-	 <1273492164.5605.3397.camel@twins> <20100510115344.GA11238@elte.hu>
-	 <4BE8931C.9070106@linux.vnet.ibm.com> <1273560419.5605.3426.camel@twins>
-	 <20100511072127.GB10421@elte.hu>
-	 <1273566031.30322.31.camel@minggr.sh.intel.com>
-	 <1273567815.5605.3491.camel@twins>
-	 <1273568620.30322.42.camel@minggr.sh.intel.com>
-	 <1273569154.5605.3499.camel@twins>  <20100511091833.GB18869@elte.hu>
-Content-Type: text/plain
-Date: Thu, 13 May 2010 16:28:53 +0800
-Message-Id: <1273739333.30322.119.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 7bit
+	id S1753418Ab0EMIbY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 04:31:24 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:50568 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751534Ab0EMIbV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 04:31:21 -0400
+Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Andreas Dilger <andreas.dilger@oracle.com>
+In-Reply-To: <20100513171114.1629086b@notabene.brown>
+Date: Thu, 13 May 2010 02:30:46 -0600
+Cc: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       Jonathan Corbet <corbet@lwn.net>, Serge Hallyn <serue@us.ibm.com>,
+       linux-fsdevel@vger.kernel.org, Steven French <sfrench@us.ibm.com>,
+       Philippe Deniel <philippe.deniel@CEA.FR>,
+       "linux-kernel@vger.kernel.org Mailinglist" 
+	<linux-kernel@vger.kernel.org>
+Content-Transfer-Encoding: 8BIT
+Message-Id: <51B2B398-99A7-43BF-A074-ACFBBA318DF7@oracle.com>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com> <20100513084310.5212728b@notabene.brown> <871vdg2ulx.fsf@linux.vnet.ibm.com> <20100513171114.1629086b@notabene.brown>
+To: Neil Brown <neilb@suse.de>
+X-Mailer: Apple Mail (2.1078)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090206.4BEBB8C2.00F9:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-11 at 17:18 +0800, Ingo Molnar wrote:
-> * Peter Zijlstra <peterz@infradead.org> wrote:
+On 2010-05-13, at 01:11, Neil Brown wrote:
+> Here is my reason (well, one of my reasons) why UUID is clearly not an
+> acceptable handle to use - you *must* use an fd or are worst a path name.
 > 
-> > The new PMUs will use a dynamic range that starts at PERF_TYPE_MAX.
-> 
-> I dont think we should use a dynamic range of event sources - it's a 
-> completely useless indirection that has no meaning to humans.
-> 
-> As far as machine interfaces go a much cleaner approach would be to allow an 
-> open fd to a sysfs file to be passed to sys_perf_event_open() - this would 
-> identify the event source. This needs a small extension of the ABI but we 
-> could thus get rid of the 'type' enumeration altogether and express _all_ 
-> event sources via fds to sysfs files.
+> A filesystem can be mounted at multiple places in the namespace and each
+> instance can have other filesystems mounted on different directories.
+> Each of these is a 'vfsmnt'.
+> You need a vfsmnt for most (all?) filesystem operations.
+> A UUID does not uniquely identify a vfsmnt.  It might uniquely identify a
+> filesystem, though that is debatable.  It definitely does not uniquely
+> identify a vfsmnt.
+> Therefore, given only a UUID the kernel would have to arbitrarily choose a
+> vfsmnt that references to the right filesystem.  If a particular directory in
+> the filesystem that you want to access was mounted-on in that vfsmnt, that
+> directory would be completely inaccessible to you, even though it might be
+> completely accessible in some other vfsmnt.
+> So it is quite possible for a scheme based on kernel interpretation of uuids
+> to fail.
 
-I still don't understand this sys_fd -> pmu lookup, would you please
-explain it more detail?
+I think this is exactly the wrong solution for this case.  The lookup from pathname to handle happened ALREADY (in the presence of the right namespace and vfsmnt information) and all that should be required for the handle lookup is to get the exact same inode back from disk.  It is irrelevant what vfsmnt is used to do this lookup, so long as it is in the same filesystem as before.
 
-struct pmu {
-	kobject kobj;
-	...
-};
+> This may be a corner case, but I think people are slowly getting more
+> adventurous in terms of using the mount table to do interesting things.  It
+> may be less of a corner case in 5 years.
 
-What I can imagine is,
+I think the important feature for the handle is that _regardless_ of what shenanigans are done with the path, over-mounting of directories, etc, that the same inode is returned.  One would expect that if a real fd was opened by a process, that any later changes to the namespace would not suddenly result in another file with the same pathname to be accessible by that fd.
+ 
+> So to tell the kernel which filesystem is of interest for filehandle
+> lookup, you *must* give it a name, whether a textual path, or a filehandle
+> obtained by opening a textual path.
 
-1. In userspace, sys_fd =
-open("/sys/devices/system/cpu/event_source", ..), then sys_fd is passed
-to sys_perf_event_open()
+No, that is done at the time of open() (or in this case name_to_handle()) and afterward the name/path/vfsmnt is completely irrelevant to the fd/handle.
 
-2. In kernel, sys_file = <find the sys file structure with sys_fd>
-
-3. kobject = <retrieve the kobject from sys_file>
-
-4. pmu = container_of(kobject, struct pmu, kobj)
-
-If my understanding is correct, then step 3 above seems strange. It's
-not the typical usage of sys file.
-
-Thanks,
-Lin Ming
+Cheers, Andreas
+--
+Andreas Dilger
+Lustre Technical Lead
+Oracle Corporation Canada Inc.
 
