@@ -1,52 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758998Ab0EMPVi (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 11:21:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:56032 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758959Ab0EMPVf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 11:21:35 -0400
-Date: Thu, 13 May 2010 08:19:22 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Bastien Nocera <hadess@hadess.net>
-cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-In-Reply-To: <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org>
-Message-ID: <alpine.LFD.2.00.1005130805150.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net>  <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <1273762051.2308.4671.camel@localhost.localdomain> <alpine.LFD.2.00.1005130751300.3711@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759024Ab0EMPXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 11:23:17 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15026 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753784Ab0EMPXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 11:23:15 -0400
+Date: Thu, 13 May 2010 11:31:45 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       akpm@linux-foundation.org
+Subject: Re: [PATCH 4/4] Btrfs: add basic DIO read/write support V3
+Message-ID: <20100513153145.GE27011@dhcp231-156.rdu.redhat.com>
+References: <20100512204052.GD3597@localhost.localdomain> <20100513151429.GA16916@infradead.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513151429.GA16916@infradead.org>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 13 May 2010, Linus Torvalds wrote:
+On Thu, May 13, 2010 at 11:14:30AM -0400, Christoph Hellwig wrote:
+> On Wed, May 12, 2010 at 04:40:53PM -0400, Josef Bacik wrote:
+> > V1->V2
+> > -Use __blockdev_direct_IO instead of helper
+> > -Use KM_IRQ0 for kmap instead of KM_USER0
 > 
-> On one of my Mac Mini's (didn't check the other), I get this:
+> I still don't think this is correct.  The completion can come from
+> softirq and hardirq context, and possibly even normal process context.
+> You either need to check for all these, or you need to use the generic
+> complete in user context helper btrfs has available for other types
+> of I/O.
 > 
-> 	[    2.955087] PNP: No PS/2 controller found. Probing ports directly.
-> 	[    2.958475] i8042.c: No controller found.
-> 	[    2.960998] mice: PS/2 mouse device common for all mice
-> 
-> what do you get?
 
-Hah. On the other one, I get
+AIO's aio_complete does kmap with KM_IRQ0/1 and it gets called in the same
+context as the btrfs completion handler, so if it's ok for aio_complete it
+should be ok for btrfs right?  Thanks,
 
-	PNP: No PS/2 controller found. Probing ports directly.
-	mice: PS/2 mouse device common for all mice
-
-but that works fine too. As mentioned, the controller hardware should all 
-be there - whether it's then enabled or not is a firmware issue.
-
-At the same time, I do think our detection is likely pretty dang weak too. 
-Do you get any interesting messages if you just enable DEBUG in 
-drivers/input/serio/i8042.h?
-
-			Linus
+Josef
