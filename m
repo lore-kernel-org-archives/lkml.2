@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753806Ab0EMVQx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:16:53 -0400
-Received: from fifo99.com ([67.223.236.141]:51231 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752760Ab0EMVQv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:16:51 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Daniel Walker <dwalker@fifo99.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Matthew Garrett <mjg@redhat.com>, Brian Swetland <swetland@google.com>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <201005132311.26293.rjw@sisk.pl>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <1273779394.19100.47.camel@c-dwalke-linux.qualcomm.com>
-	 <20100513194820.GA19722@srcf.ucam.org>  <201005132311.26293.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 13 May 2010 14:16:39 -0700
-Message-ID: <1273785399.19100.98.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753982Ab0EMVSV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:18:21 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:39321 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753004Ab0EMVST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:18:19 -0400
+Message-ID: <4BEC6C94.2020100@sgi.com>
+Date: Thu, 13 May 2010 14:18:12 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Yinghai <yinghai.lu@oracle.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com>
+In-Reply-To: <4BEB1781.1080907@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 23:11 +0200, Rafael J. Wysocki wrote:
-> On Thursday 13 May 2010, Matthew Garrett wrote:
-> > On Thu, May 13, 2010 at 12:36:34PM -0700, Daniel Walker wrote:
-> > > On Thu, 2010-05-13 at 20:11 +0100, Matthew Garrett wrote:
-> > > > See feature-removal-schedule.txt. So far we have no indication that it's 
-> > > > going to be replaced, because nobody has actually suggested a working 
-> > > > way to do this better. If we had a concrete implementation proposal for 
-> > > > that then we'd be in a pretty different position right now.
-> > > 
-> > > Ok, feature-removal-schedule.txt applies to everything tho. What your
-> > > saying is that if this interface only last a short time it might take 6
-> > > months, if it last for a long time it would take longer. There's no easy
-> > > way to know that Google is the only user after some amount of time
-> > > passes.
-> > 
-> > If the interface is there for a long time, it's because we haven't come 
-> > up with anything better. And if we haven't come up with anything better, 
-> > the interface deserves to be there.
+
+
+Mike Travis wrote:
 > 
-> Moreover, the interface is already in use out-of-tree and that usage is
-> actually _growing_, so we have a growing number of out-of-tree drivers that
-> aren't megrgeable for this very reason.
+> 
+> Yinghai wrote:
+>> On 05/12/2010 11:55 AM, H. Peter Anvin wrote:
+>>> On 05/12/2010 11:10 AM, Mike Travis wrote:
+>>>> Currently, the e820_reserve_resources() function does not add entries
+>>>> obtained via the "add_efi_memmap" kernel cmdline option.  This causes
+>>>> /sys/firmware/memmap/... to be incomplete (stops after 128 entries).
+>>>> Utilities that examine these entries then do not get the complete
+>>>> picture of system memory.
+>>>>
+>>>> This patch causes the above function to use the e820 memmap instead
+>>>> of the e820_saved memmap if "add_efi_memmap" cmdline option is
+>>>> specified.
+>>>>
+>>>> Signed-off-by: Mike Travis <travis@sgi.com>
+>>>> Signed-off-by: Jack Steiner <steiner@sgi.com>
+>>> If I'm not mistaken, the very reason for the e820 vs e820_saved map is
+>>> that the latter is supposed to reflect the firmware report, whereas the
+>>> former is subject to be modified by the kernel.  As this is actually a
+>>> reflection of the firmware (although it would be better if you could fix
+>>> the bootloader instead of adding hacks in the kernel...) it really
+>>> should go into e820_saved as well as e820.  Displaying the adjusted e820
+>>> map doesn't seem appropriate under any circumstances.
+>>
+>> Yes, you are right.
+>>
+>> We should not touch e820_saved and keep /sys/firmware/memmap to be 
+>> consistent with it.
+>>
+>> YH
+> 
 
-Why can't we merge the drivers? Drivers are just drivers, they don't
-need this to get merged. (They need it to work with Android)
+Here's where it gets confusing:
 
-Daniel
+/*
+ * The e820 map is the map that gets modified e.g. with command line parameters
+ * and that is also registered with modifications in the kernel resource tree
+ * with the iomem_resource as parent.
+ *
+ * The e820_saved is directly saved after the BIOS-provided memory map is
+ * copied. It doesn't get modified afterwards. It's registered for the
+ * /sys/firmware/memmap interface.
+ *
+ * That memory map is not modified and is used as base for kexec. The kexec'd
+ * kernel should get the same memory map as the firmware provides. Then the
+ * user can e.g. boot the original kernel with mem=1G while still booting the
+ * next kernel with full memory.
+ */
+struct e820map e820;
+struct e820map e820_saved;
 
+
+It specifically mentions that kexec needs the unmodified address map.  But
+we know it does not work if it does not have the "extra memmap entries"
+from BIOS (added with option "add_efi_memmap".)
+
+So in essence I see it as a lie that e820_saved contains the memmap
+provided by the firmware.  It clearly does not.  It is missing all
+the entries greater than 128.
+
+So the question remains, should /sys/firmware/memmap be provisioned
+from e820_saved with changes to add to that map the extra memmap
+entries?  Or should it be provisioned from the updated e820 map
+that is also printed by e820_print_map()?  
+
+The output to the console and the contents of /sys/firmware/memmap
+should match, and this is what this patch was intending to do.
+/sys/firmware/memmap should not be truncated due to legacy BIOS
+limitations.
+
+If the e820 memmap changes further due to other circumstances,
+that should not change the mappings under /sys/firmware/memmap?
+Unless I'm missing something here, I don't see the downside.
+
+So which should it be?
+
+Thanks,
+Mike
