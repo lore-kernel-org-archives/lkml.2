@@ -1,62 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752203Ab0EMGWd (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 02:22:33 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:59769 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751028Ab0EMGWb (ORCPT
+	id S1753293Ab0EMGXp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:23:45 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:57256 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751570Ab0EMGXo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 02:22:31 -0400
-Date: Thu, 13 May 2010 15:21:43 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Mike Frysinger <vapier.adi@gmail.com>, Christoph Lameter <cl@linux.com>,
-       Matt Mackall <mpm@selenic.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Daniel Gl??ckner <dg@emlix.com>, Oliver Schneidewind <osw@emlix.com>,
-       Johannes Weiner <jw@emlix.com>, Nick Piggin <npiggin@suse.de>,
-       David Rientjes <rientjes@google.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>
-Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
-Message-ID: <20100513062143.GB9920@linux-sh.org>
-References: <20100511063309.GC9644@core.coreip.homeip.net> <y2k84144f021005102342m18bce930g53599c9112565f78@mail.gmail.com> <AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> <1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com> <alpine.DEB.2.00.1005111520260.1500@router.home> <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com> <4BE9C033.2020106@cs.helsinki.fi> <AANLkTinZe1N2NFOzU32PL2AIZi9TovHj5pQ2Y65eOc1T@mail.gmail.com> <4BE9C258.10706@cs.helsinki.fi>
+	Thu, 13 May 2010 02:23:44 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Dave Chinner <david@fromorbit.com>,
+       Andreas Dilger <andreas.dilger@oracle.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@Sun.COM,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V7 3/9] vfs: Add name to file handle conversion support
+In-Reply-To: <20100513002038.GE13617@dastard>
+References: <1273679444-14903-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1273679444-14903-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <E1DE62DE-D9E1-493B-8AEB-91E10D7D35B2@oracle.com> <20100513002038.GE13617@dastard>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Thu, 13 May 2010 11:53:33 +0530
+Message-ID: <87y6fo1fru.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BE9C258.10706@cs.helsinki.fi>
-User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 11, 2010 at 11:47:20PM +0300, Pekka Enberg wrote:
-> Mike Frysinger wrote:
-> >On Tue, May 11, 2010 at 16:38, Pekka Enberg wrote:
-> >>Mike Frysinger wrote:
-> >>>that is a question for David/Grant.  i'm not the SPI core maintainer,
-> >>>i'm merely watching over some SPI drivers.  however, this answer also
-> >>>doesnt sound like it's thinking big enough because what you're
-> >>>proposing isnt specific to the SPI bus -- any time a DMA safe buffer
-> >>>is needed dynamically, this function could be used.
-> >>Well, we have dma_alloc_coherent(), shouldn't you be using that instead?
+On Thu, 13 May 2010 10:20:38 +1000, Dave Chinner <david@fromorbit.com> wrote:
+> On Wed, May 12, 2010 at 03:49:49PM -0600, Andreas Dilger wrote:
+> > On 2010-05-12, at 09:50, Aneesh Kumar K.V wrote:
+> > > +static long do_sys_name_to_handle(struct path *path,
+> > > +			struct file_handle __user *ufh)
+> > > +{
+> > > +	if (handle_size <= f_handle.handle_size) {
+> > > +		/* get the uuid */
+> > > +		retval = sb->s_op->get_fsid(sb, &this_fs_id);
+> > > +		if (!retval) {
+> > > +			/*
+> > > +			 * Now verify whether we get the same vfsmount
+> > > +			 * if we lookup with uuid. In case we end up having
+> > > +			 * same uuid for the multiple file systems. When doing
+> > > +			 * uuid based lookup we would return the first one.So
+> > > +			 * with name_to_handle if we don't find the same
+> > > +			 * vfsmount with lookup return EOPNOTSUPP
+> > > +			 */
+> > > +			mnt = fs_get_vfsmount(current, &this_fs_id);
+> > > +			if (mnt != path->mnt) {
+> > > +				retval = -EOPNOTSUPP;
+> > > +				mntput(mnt);
+> > > +				goto err_free_out;
+> > > +			}
+> > 
+> > I don't see that this does anything for us except add overhead.
+> > This is no protection against mounting a second filesystem with
+> > the same UUID after the handle is returned, since there is no
+> > expiration for file handles.
+> > 
+> > At best I think we could start by changing the list-based UUID
+> > lookup with a hash-based one, and when adding a duplicate UUID at
+> > mount time start by printing out an error message to the console
+> > in case of duplicated UUIDs, and maybe at some point in the future
+> > this might cause the mount to fail (though I don't think we can
+> > make that decision lightly or quickly).
 > >
-> >my understanding is that dma_alloc_coherent() gives you a buffer that
-> >is always coherent.  the SPI layers take care of flushing and such on
-> >the fly which means allocating coherent memory is overkill and bad for
-> >performance.
+> > That moves the overhead to mount time instead of for each
+> > name_to_handle() call (which would be brutal for a system with
+> > many filesystems mounted).
 > 
-> OK, I'm out of my expert area here but if dma_alloc_coherent() doesn't 
-> work for you, you should probably extend the DMA API, not kmalloc().
+> That will pretty much match exactly what XFS already does.  Can we
+> start by moving the XFS functionality (xfs_uuid_mount(), "nouuid"
+> mount option, etc) to the VFS level and then optimise from there?
 > 
-Note that the DMA API already has dma_alloc_noncoherent() for these
-sorts of cases. If the driver is taking care of cache maintenance then
-dma_alloc_noncoherent() is certainly a reasonable way to go.
 
-Most architectures today simply wrap dma_alloc_noncoherent() to
-dma_alloc_coherent(), but if there were more users of the API then
-that would quickly change.
+I will do this. But should the uuid be unique in a system wide manner or
+should it be unique for a mount namespace ? With containers isn't it
+valid for the second container to mount a file system with same uuid of
+a file system in the first container, but uuid itself is unique in the
+second container ?
+
+-aneesh
