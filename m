@@ -1,76 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755152Ab0EMCaH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 22:30:07 -0400
-Received: from sous-sol.org ([216.99.217.87]:42042 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751542Ab0EMCaE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 22:30:04 -0400
-Date: Wed, 12 May 2010 18:29:57 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: greg@kroah.com, jbarnes@virtuousgeek.org, matthew@wil.cx
-Cc: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, ddutile@redhat.com, alex.williamson@redhat.com
-Subject: [PATCH 2/2] pci: allow sysfs file owner to read device dependent
- config space
-Message-ID: <20100513012957.GB28034@sequoia.sous-sol.org>
-References: <20100513012857.GA28034@sequoia.sous-sol.org>
+	id S1755806Ab0EMCjo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 22:39:44 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:53531 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752065Ab0EMCjm convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 22:39:42 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=ubUs+4OHR0mQ63ax64UwzhlG4MPj6sbXeYRDI/v4HbA/qdOzoYwxJuuDIkgs5ZHkA
+	YcCTBk+OFt+WboiJKXIUw==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513012857.GA28034@sequoia.sous-sol.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <22741.1273666943@redhat.com>
+References: <1273634462-2672-1-git-send-email-walken@google.com>
+	 <1273634462-2672-7-git-send-email-walken@google.com>
+	 <22741.1273666943@redhat.com>
+Date: Wed, 12 May 2010 19:39:37 -0700
+Message-ID: <h2h8d20b11a1005121939tb35d9708p92eebd1f7b66b93a@mail.gmail.com>
+Subject: Re: [PATCH 06/12] rwsem: wake queued readers when other readers are 
+	active
+From: Michel Lespinasse <walken@google.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The PCI config space bin_attr read handler has a hardcoded CAP_SYS_ADMIN
-check to verify privileges before allowing a user to read device
-dependent config space.  This is meant to protect from an unprivileged
-user potentially locking up the box.
+On Wed, May 12, 2010 at 5:22 AM, David Howells <dhowells@redhat.com> wrote:
+> Michel Lespinasse <walken@google.com> wrote:
+>
+>> In this situation, it would be perfectly fine to let threads B and C work
+>> in parallel as they each only want a read acquire on the rwsem. We can
+>> recognize this situation and let A wake B as long as there are no active
+>> writers on the rwsem.
+>
+> There can't be any active writers on the rwsem.  An active writer must have
+> just been upped and is in the process of waking the first sleeper up.
 
-When assigning a PCI device directly to a guest with libvirt and KVM,
-the sysfs config space file is chown'd to the unprivileged user that
-the KVM guest will run as.  The guest needs to have full access to the
-device's config space since it's responsible for driving the device.
-However, despite being the owner of the sysfs file, the CAP_SYS_ADMIN
-check will not allow read access beyond the config header.
+Yes. My point is that by the point thread A (the writer that just got
+upped) gets around to waking B (a blocked reader), another reader C
+might have gotten active already. We don't want the nonzero active
+count (due to C) to prevent B from getting woken.
 
-With this patch the sysfs file owner is also considered privileged enough
-to read all of the config space.
-
-Signed-off-by: Chris Wright <chrisw@sous-sol.org>
----
- drivers/pci/pci-sysfs.c |    4 +++-
- 1 files changed, 3 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/pci/pci-sysfs.c b/drivers/pci/pci-sysfs.c
-index ad44557..8a6fcc0 100644
---- a/drivers/pci/pci-sysfs.c
-+++ b/drivers/pci/pci-sysfs.c
-@@ -21,6 +21,7 @@
- #include <linux/stat.h>
- #include <linux/topology.h>
- #include <linux/mm.h>
-+#include <linux/fs.h>
- #include <linux/capability.h>
- #include <linux/pci-aspm.h>
- #include <linux/slab.h>
-@@ -362,12 +363,13 @@ pci_read_config(struct file *filp, struct kobject *kobj,
- 		char *buf, loff_t off, size_t count)
- {
- 	struct pci_dev *dev = to_pci_dev(container_of(kobj,struct device,kobj));
-+	struct inode *inode = filp->f_path.dentry->d_inode;
- 	unsigned int size = 64;
- 	loff_t init_off = off;
- 	u8 *data = (u8*) buf;
- 
- 	/* Several chips lock up trying to read undefined config space */
--	if (capable(CAP_SYS_ADMIN)) {
-+	if (capable(CAP_SYS_ADMIN) || is_owner_or_cap(inode)) {
- 		size = dev->cfg_size;
- 	} else if (dev->hdr_type == PCI_HEADER_TYPE_CARDBUS) {
- 		size = 128;
 -- 
-1.6.5.2
-
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
