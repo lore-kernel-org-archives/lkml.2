@@ -1,64 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab0EMRrV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:47:21 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:49243 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753683Ab0EMRrT (ORCPT
+	id S1758737Ab0EMRuI (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:50:08 -0400
+Received: from mailout4.w1.samsung.com ([210.118.77.14]:32278 "EHLO
+	mailout4.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756559Ab0EMRuF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:47:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :mime-version:content-type:content-transfer-encoding;
-        b=MoFUBlqfNv4bSkKDqaAYC/JIQRWDSv5PWGzXC8Q4IS/uMeVZFHYBdS20zKERoGV1Gk
-         kRvgiP4TyG25XOVMxsi+utjNO6uYhB2PmK4xgRZ1md7KMBq9qN8lF2m7m1UOmw5wUmGg
-         6f6+VMjvfJNGMLcOoNIySBUvmbSKr9x1hv5SU=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] perf: Fix missing getline declaration
-Date: Thu, 13 May 2010 19:47:16 +0200
-Message-Id: <1273772836-11533-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+	Thu, 13 May 2010 13:50:05 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Thu, 13 May 2010 19:50:32 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] usb: gadget: g_mass_storage: static data instead of dynamic
+ allocation
+To: linux-usb@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org
+Message-id: <e3abf3898ffa038852e8b3307d37927f886fb72c.1273772850.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hist.c needs to include util.h so that it gets stdio.h
-inclusion with __GNU_SOURCE defined.
+This patch changes msg_do_config() function so that it uses
+a static object for a fsg_common structure instead of dynamically
+allocated.  This is a micro-optimisation.
 
-Fixes:
-	util/hist.c: In function ‘hist_entry__parse_objdump_line’:
-	util/hist.c:931: erreur: implicit declaration of function ‘getline’
-	util/hist.c:931: erreur: nested extern declaration of ‘getline’
-
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
+Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 ---
- tools/perf/util/hist.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/usb/gadget/mass_storage.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 451d2e4..5dc4f84 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1,3 +1,4 @@
-+#include "util.h"
- #include "hist.h"
- #include "session.h"
- #include "sort.h"
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index d574bad..d85ca27 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -143,7 +143,7 @@ static int msg_thread_exits(struct fsg_common *common)
+ 
+ static int __init msg_do_config(struct usb_configuration *c)
+ {
+-	struct fsg_common *common;
++	static struct fsg_common common, *retp;
+ 	struct fsg_config config;
+ 	int ret;
+ 
+@@ -156,12 +156,13 @@ static int __init msg_do_config(struct usb_configuration *c)
+ 	config.ops = &(const struct fsg_operations){
+ 		.thread_exits = msg_thread_exits,
+ 	};
+-	common = fsg_common_init(0, c->cdev, &config);
+-	if (IS_ERR(common))
+-		return PTR_ERR(common);
+ 
+-	ret = fsg_add(c->cdev, c, common);
+-	fsg_common_put(common);
++	retp = fsg_common_init(&common, c->cdev, &config);
++	if (IS_ERR(retp))
++		return PTR_ERR(retp);
++
++	ret = fsg_add(c->cdev, c, &common);
++	fsg_common_put(&common);
+ 	return ret;
+ }
+ 
 -- 
-1.6.2.3
+1.7.1
 
