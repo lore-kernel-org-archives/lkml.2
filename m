@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932527Ab0EMTRB (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 15:17:01 -0400
-Received: from kroah.org ([198.145.64.141]:43905 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932489Ab0EMTQm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 15:16:42 -0400
-From: Greg Kroah-Hartman <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org
-Cc: Valentin Longchamp <valentin.longchamp@epfl.ch>,
-       stable <stable@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 3/3] serial: imx.c: fix CTS trigger level lower to avoid lost chars
-Date: Thu, 13 May 2010 12:16:39 -0700
-Message-Id: <1273778199-17578-3-git-send-email-gregkh@suse.de>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <20100513191601.GA17538@kroah.com>
-References: <20100513191601.GA17538@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932551Ab0EMTRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 15:17:18 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46131 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932516Ab0EMTQ7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 15:16:59 -0400
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Greg KH <gregkh@suse.de>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+In-Reply-To: <20100513185844.GA5959@suse.de>
+References: <20100513120016.GG2169@shaohui> <20100513165603.GC25212@suse.de>
+	 <1273773737.13285.7771.camel@nimitz> <20100513181539.GA26597@suse.de>
+	 <1273776578.13285.7820.camel@nimitz>  <20100513185844.GA5959@suse.de>
+Content-Type: text/plain
+Date: Thu, 13 May 2010 12:16:43 -0700
+Message-Id: <1273778203.13285.7851.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Valentin Longchamp <valentin.longchamp@epfl.ch>
+On Thu, 2010-05-13 at 11:58 -0700, Greg KH wrote:
+> > That's probably a really good point, especially since configfs didn't
+> > even exist when we made this 'probe' file thingy.  It never was a great
+> > fit for sysfs anyway.
+> 
+> Really?  configfs was added in 2.6.16, when was this probe file added?
 
-The imx CTS trigger level is left at its reset value that is 32
-chars. Since the RX FIFO has 32 entries, when CTS is raised, the
-FIFO already is full. However, some serial port devices first empty
-their TX FIFO before stopping when CTS is raised, resulting in lost
-chars.
+$ git name-rev 3947be19
+3947be19 tags/v2.6.15-rc1~728^2~12
 
-This patch sets the trigger level lower so that other chars arrive
-after CTS is raised, there is still room for 16 of them.
-
-Signed-off-by: Valentin Longchamp<valentin.longchamp@epfl.ch>
-Tested-by: Philippe Rétornaz<philippe.retornaz@epfl.ch>
-Acked-by: Wolfram Sang<w.sang@pengutronix.de>
-Cc: stable <stable@kernel.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/serial/imx.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/serial/imx.c b/drivers/serial/imx.c
-index 4315b23..eacb588 100644
---- a/drivers/serial/imx.c
-+++ b/drivers/serial/imx.c
-@@ -120,7 +120,8 @@
- #define  MX2_UCR3_RXDMUXSEL	 (1<<2)  /* RXD Muxed Input Select, on mx2/mx3 */
- #define  UCR3_INVT  	 (1<<1)  /* Inverted Infrared transmission */
- #define  UCR3_BPEN  	 (1<<0)  /* Preset registers enable */
--#define  UCR4_CTSTL_32   (32<<10) /* CTS trigger level (32 chars) */
-+#define  UCR4_CTSTL_SHF  10      /* CTS trigger level shift */
-+#define  UCR4_CTSTL_MASK 0x3F    /* CTS trigger is 6 bits wide */
- #define  UCR4_INVR  	 (1<<9)  /* Inverted infrared reception */
- #define  UCR4_ENIRI 	 (1<<8)  /* Serial infrared interrupt enable */
- #define  UCR4_WKEN  	 (1<<7)  /* Wake interrupt enable */
-@@ -591,6 +592,9 @@ static int imx_setup_ufcr(struct imx_port *sport, unsigned int mode)
- 	return 0;
- }
- 
-+/* half the RX buffer size */
-+#define CTSTL 16
-+
- static int imx_startup(struct uart_port *port)
- {
- 	struct imx_port *sport = (struct imx_port *)port;
-@@ -607,6 +611,10 @@ static int imx_startup(struct uart_port *port)
- 	if (USE_IRDA(sport))
- 		temp |= UCR4_IRSC;
- 
-+	/* set the trigger level for CTS */
-+	temp &= ~(UCR4_CTSTL_MASK<<  UCR4_CTSTL_SHF);
-+	temp |= CTSTL<<  UCR4_CTSTL_SHF;
-+
- 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
- 
- 	if (USE_IRDA(sport)) {
--- 
-1.7.1
+-- Dave
 
