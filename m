@@ -1,52 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758743Ab0EMVfj (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:35:39 -0400
-Received: from gate.crashing.org ([63.228.1.57]:59381 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757445Ab0EMVfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:35:36 -0400
-Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell
- 88f5182)
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Jan Kara <jack@suse.cz>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
-       linux-ext4@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>
-In-Reply-To: <20100513151245.GA21251@quack.suse.cz>
-References: <1273569821.21352.19.camel@pasglop>
-	 <1273575478.21352.29.camel@pasglop>
-	 <20100512150057.GA29867@atrey.karlin.mff.cuni.cz>
-	 <1273709714.21352.138.camel@pasglop> <20100513151245.GA21251@quack.suse.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 07:33:45 +1000
-Message-ID: <1273786425.21352.191.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1753266Ab0EMVhH (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:37:07 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:35291 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751590Ab0EMVhF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:37:05 -0400
+Date: Thu, 13 May 2010 17:37:03 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Tony Lindgren <tony@atomide.com>
+cc: Paul Walmsley <paul@pwsan.com>,
+       Arve =?utf-8?B?SGrDuG5uZXbDpWc=?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>, <magnus.damm@gmail.com>,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       =?utf-8?Q?Beno=C3=AEt?= Cousson <b-cousson@ti.com>,
+       <linux-omap@vger.kernel.org>, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <20100513191717.GA3428@atomide.com>
+Message-ID: <Pine.LNX.4.44L0.1005131729510.1731-100000@iolanthe.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 17:12 +0200, Jan Kara wrote:
+On Thu, 13 May 2010, Tony Lindgren wrote:
 
-> If you look at the array more in detail, you'll notice that 'offs' part of
-> structure is sometimes identical. That should never happen because 'offs'
-> contains offset of the corresponding directory entry in a block. So when
-> offsets are identical in this array, subsequent move will copy some entries
-> several times and leave entries that should be moved in the old block,
-> resulting in a corruption we see.
->   The question is, how could offsets be the same? dx_make_map seems to get
-> it right and dx_sort_map as well. Maybe I'd peek into disassembly of
-> dx_sort_map to see whether swap() macro does what it should... If that
-> looks OK, you could try adding some debug checks into dx_sort_map and try
-> to catch the moment when duplicate offsets are created...
+> * Alan Stern <stern@rowland.harvard.edu> [100513 07:11]:
+> > On Wed, 12 May 2010, Paul Walmsley wrote:
+> > 
+> > > Hello,
+> > > 
+> > > Some general comments on the suspend blockers/wakelock/opportunistic
+> > > suspend v6 patch series, posted here:
+> > > 
+> > >     https://lists.linux-foundation.org/pipermail/linux-pm/2010-April/025146.html
+> > > 
+> > > The comments below are somewhat telegraphic in the interests of 
+> > > readability - more specific comments to follow in later E-mails. I am 
+> > > indebted to those of us who discussed these issues at LPC last year and 
+> > > ELC this year for several stimulating discussions.
+> > > 
+> > > There are several general problems with the design of opportunistic
+> > > suspend and suspend-blocks.
+> > > 
+> > > 1. The opportunistic suspend code bypasses existing Linux kernel code,
+> > >    such as timers and the scheduler, that indicates when code
+> > >    needs to run, and when the system is idle.
+> > 
+> > Whoa!  That's not my understanding at all.
+> > 
+> > As I see it, opportunistic suspend doesn't bypass any code that isn't 
+> > already bypassed by the existing suspend code.  Users can do
+> > 
+> > 	echo mem >/sys/power/state
+> > 
+> > whenever they want, without regard to kernel timers and the scheduler 
+> > (other than the fact that the user's thread must be running in order to 
+> > carry out the write, of course).
+> 
+> The difference between echo mem > /sys/power/state and suspend blocks
+> is that with suspend blocks the system keeps running.
 
-Thanks. I'll have a look. It could be a miscompile indeed. My cross-gcc
-is a 4.4.0, maybe that's the root of the problem.
+Irrelevant.  Paul wasn't talking about the suspend blockers; he was 
+talking about opportunistic suspend.  So what's the difference between 
+opportunistic suspend and "echo mem >/sys/power/state"?  Especially 
+when suspend blockers aren't being used?
 
-Cheers,
-Ben.
+> And that's why 
+> it should be handled by runtime power management instead.
 
+Runtime PM is not capable of freezing userspace and shutting down CPUs.  
+More or less by definition -- if it could then it wouldn't be "runtime" 
+any more, since the processor wouldn't be running.
+
+> The suspend blocks seems like a hack to spam filter good and bad
+> apps from timer usage point of view. Applications are categorized
+> as good or bad depending if they grab a susped blocker or not.
+
+You're referring just to the userspace part of the suspend blocker 
+API.  What about the kernel part?
+
+> I believe categorizing the apps should be instead done with some
+> timer flags or cgroups instead.
+
+That would be compatible with using suspend blockers.
+
+Alan Stern
 
