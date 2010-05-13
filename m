@@ -1,140 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab0EMJc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 05:32:26 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:56124 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751590Ab0EMJcZ (ORCPT
+	id S1757318Ab0EMJdZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 05:33:25 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:36324 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751897Ab0EMJdX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 05:32:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=pq6Q/OIDDyN345xInfqBGpXAbHcaH6Ra86XwtTZ9+2VqEwPXn0Eoi5MCDvEegEqQQW
-         t/krCw0wCCJQ0qJs5TFTWprZwWtzEBypvgBXRbxn9tE1VQpa+aCiEFgALa5/C5kdTgWR
-         dreJSiyR8CNN8kFSwsQzLtArUtf0smHBrEIVQ=
-Subject: [PATCH] Regulators: ab3100/bq24022: add a missing .owner field in
-	regulator_desc
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Mattias Wallin <mattias.wallin@stericsson.com>,
-       Philipp Zabel <philipp.zabel@gmail.com>,
+	Thu, 13 May 2010 05:33:23 -0400
+Date: Thu, 13 May 2010 11:33:04 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain
-Date: Thu, 13 May 2010 17:33:01 +0800
-Message-Id: <1273743181.10563.4.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] Introduce {sysfs,device}_create_file_mode
+Message-ID: <20100513093304.GE30801@buzzloop.caiaq.de>
+References: <1273595926-26249-1-git-send-email-daniel@caiaq.de>
+ <20100511174708.GA26777@oksana.dev.rtsoft.ru>
+ <20100511175812.GH30801@buzzloop.caiaq.de>
+ <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+ <20100511222825.GJ30801@buzzloop.caiaq.de>
+ <20100512181546.GA4804@oksana.dev.rtsoft.ru>
+ <20100512183806.GA28658@suse.de>
+ <20100512190814.GA9674@oksana.dev.rtsoft.ru>
+ <AANLkTimQq30DklQUDBokPXsLiXKsuiaCUFg_5ddkJbXa@mail.gmail.com>
+ <20100512193050.GA14221@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100512193050.GA14221@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a missing .owner field in regulator_desc, which is used for refcounting.
+On Wed, May 12, 2010 at 11:30:50PM +0400, Anton Vorontsov wrote:
+> On Wed, May 12, 2010 at 09:12:46PM +0200, Kay Sievers wrote:
+> > On Wed, May 12, 2010 at 21:08, Anton Vorontsov <cbouatmailru@gmail.com> wrote:
+> > > On Wed, May 12, 2010 at 11:38:06AM -0700, Greg KH wrote:
+> > >> On Wed, May 12, 2010 at 10:15:46PM +0400, Anton Vorontsov wrote:
+> > >> > We need to create attributes with different modes across devices.
+> > >> > We can do this by modifying attr.mode between device_create_file
+> > >> > invocations, but that is racy in case of globally defined attrs.
+> > >> >
+> > >> > Luckily, there's sysfs_add_file_mode() function that seems to do
+> > >> > exactly what we want, and if we use it, we don't need any locks
+> > >> > to avoid races. Though, it isn't exposed via device-drivers core
+> > >> > API.
+> > >>
+> > >> But you race the creation of the device notifying userspace, and then
+> > >> the file being created, right?
+> > >
+> > > Yep, you've raised that question once, like 3 years ago. :-)
+> > >
+> > > http://lkml.org/lkml/2007/4/11/452
+> > > http://lkml.org/lkml/2007/4/12/144
+> > >
+> > > In short: we can't use attr groups since the attributes creation
+> > > is conditional. And we especially don't want to use the attr groups
+> > > for attrs with different modes. But it's not a problem, because...
+> > 
+> > Groups have a filter callback for every member, to decide if the
+> > attribute should be created or not.
+> 
+> Thanks Kay. It seems the callback was added just a few months
+> after the discussion above. ;-)
+> 
+> And this commit looks especially cool:
+> 
+> commit 0f4238958d28044b335644b69df6071cdb04b5ce
+> Author: James Bottomley <James.Bottomley@HansenPartnership.com>
+> Date:   Thu Mar 20 20:47:52 2008 -0500
+> 
+>     [SCSI] sysfs: make group is_valid return a mode_t
+> 
+> Daniel, I think that today we can just use the attribute group
+> mechanism, it has all needed. Do you want me to prepare a patch
+> to convert existing attributes, or do you to try it yourself?
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
----
- drivers/regulator/ab3100.c  |   10 ++++++++++
- drivers/regulator/bq24022.c |    1 +
- 2 files changed, 11 insertions(+), 0 deletions(-)
+Would be good if you did that, just to see how this is interface meant
+to be used exactly. I'll adopt my patches accordingly then.
 
-diff --git a/drivers/regulator/ab3100.c b/drivers/regulator/ab3100.c
-index 7de9509..1afd008 100644
---- a/drivers/regulator/ab3100.c
-+++ b/drivers/regulator/ab3100.c
-@@ -492,18 +492,21 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.id   = AB3100_LDO_A,
- 		.ops  = &regulator_ops_fixed,
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_C",
- 		.id   = AB3100_LDO_C,
- 		.ops  = &regulator_ops_fixed,
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_D",
- 		.id   = AB3100_LDO_D,
- 		.ops  = &regulator_ops_fixed,
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_E",
-@@ -511,6 +514,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable_sleepable,
- 		.n_voltages = ARRAY_SIZE(ldo_e_buck_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_F",
-@@ -518,6 +522,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable,
- 		.n_voltages = ARRAY_SIZE(ldo_f_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_G",
-@@ -525,6 +530,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable,
- 		.n_voltages = ARRAY_SIZE(ldo_g_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_H",
-@@ -532,6 +538,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable,
- 		.n_voltages = ARRAY_SIZE(ldo_h_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_K",
-@@ -539,12 +546,14 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable,
- 		.n_voltages = ARRAY_SIZE(ldo_k_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "LDO_EXT",
- 		.id   = AB3100_LDO_EXT,
- 		.ops  = &regulator_ops_external,
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- 	{
- 		.name = "BUCK",
-@@ -552,6 +561,7 @@ ab3100_regulator_desc[AB3100_NUM_REGULATORS] = {
- 		.ops  = &regulator_ops_variable_sleepable,
- 		.n_voltages = ARRAY_SIZE(ldo_e_buck_typ_voltages),
- 		.type = REGULATOR_VOLTAGE,
-+		.owner = THIS_MODULE,
- 	},
- };
- 
-diff --git a/drivers/regulator/bq24022.c b/drivers/regulator/bq24022.c
-index d08cd9b..068d488 100644
---- a/drivers/regulator/bq24022.c
-+++ b/drivers/regulator/bq24022.c
-@@ -78,6 +78,7 @@ static struct regulator_desc bq24022_desc = {
- 	.name  = "bq24022",
- 	.ops   = &bq24022_ops,
- 	.type  = REGULATOR_CURRENT,
-+	.owner = THIS_MODULE,
- };
- 
- static int __init bq24022_probe(struct platform_device *pdev)
--- 
-1.5.4.3
-
+Thanks,
+Daniel
 
 
