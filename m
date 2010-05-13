@@ -1,65 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758888Ab0EMRzI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 13:55:08 -0400
-Received: from e37.co.us.ibm.com ([32.97.110.158]:50255 "EHLO
-	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754179Ab0EMRzF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 13:55:05 -0400
-Subject: Re: [RFC, 3/7] NUMA hotplug emulator
-From: Dave Hansen <dave@linux.vnet.ibm.com>
-To: Greg KH <gregkh@suse.de>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
-       linux-kernel@vger.kernel.org, ak@linux.intel.com,
-       fengguang.wu@intel.com, haicheng.li@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-In-Reply-To: <20100513165511.GB25212@suse.de>
-References: <20100513114835.GD2169@shaohui> <20100513165511.GB25212@suse.de>
-Content-Type: text/plain
-Date: Thu, 13 May 2010 10:54:52 -0700
-Message-Id: <1273773292.13285.7755.camel@nimitz>
+	id S1758932Ab0EMR7y (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 13:59:54 -0400
+Received: from mail.perches.com ([173.55.12.10]:2232 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753372Ab0EMR7w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 13:59:52 -0400
+Subject: Re: [PATCH] [staging-next] [1] Staging: rtl8187se: fixed space
+ style issues in r8180_core.c
+From: Joe Perches <joe@perches.com>
+To: "Prashant P. Shah" <pshah.mumbai@gmail.com>
+Cc: gregkh@suse.de, bzolnier@gmail.com, Larry.Finger@lwfinger.net,
+       bernhard@schiffner-limbach.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1273772323-6876-1-git-send-email-pshah.mumbai@gmail.com>
+References: <1273772323-6876-1-git-send-email-pshah.mumbai@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 13 May 2010 10:59:51 -0700
+Message-ID: <1273773591.21514.93.camel@Joe-Laptop.home>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.26.1 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 09:55 -0700, Greg KH wrote:
-> > Add a sysfs entry "probe" under /sys/devices/system/node/:
-> > 
-> >  - to show all fake offlined nodes:
-> >     $ cat /sys/devices/system/node/probe
-> > 
-> >  - to hotadd a fake offlined node, e.g. nodeid is N:
-> >     $ echo N > /sys/devices/system/node/probe
+On Thu, 2010-05-13 at 23:08 +0530, Prashant P. Shah wrote:
+>  drivers/staging/rtl8187se/r8180_core.c | 1622 ++++++++++++++++----------------
+>  1 files changed, 806 insertions(+), 816 deletions(-)
 > 
-> As you are trying to add a new sysfs file, please create the matching
-> Documentation/ABI/ file as well.
-> 
-> Also note that sysfs files are "one value per file", which I don't think
-> this file follows, right?
+> diff --git a/drivers/staging/rtl8187se/r8180_core.c b/drivers/staging/rtl8187se/r8180_core.c
+> index 84a745b..37be5ae 100644
+> --- a/drivers/staging/rtl8187se/r8180_core.c
+> +++ b/drivers/staging/rtl8187se/r8180_core.c
+> @@ -66,23 +66,23 @@ static int hwseqnum = 0;
+>  static int hwwep = 0;
+>  static int channels = 0x3fff;
+>  
+> -#define eqMacAddr(a,b)		( ((a)[0]==(b)[0] && (a)[1]==(b)[1] && (a)[2]==(b)[2] && (a)[3]==(b)[3] && (a)[4]==(b)[4] && (a)[5]==(b)[5]) ? 1:0 )
+> -#define cpMacAddr(des,src)	      ((des)[0]=(src)[0],(des)[1]=(src)[1],(des)[2]=(src)[2],(des)[3]=(src)[3],(des)[4]=(src)[4],(des)[5]=(src)[5])
+> +#define eqMacAddr(a, b)		(((a)[0] == (b)[0] && (a)[1] == (b)[1] && (a)[2] == (b)[2] && (a)[3] == (b)[3] && (a)[4] == (b)[4] && (a)[5] == (b)[5]) ? 1 : 0)
+> +#define cpMacAddr(des, src)		((des)[0] = (src)[0], (des)[1] = (src)[1], (des)[2] = (src)[2], (des)[3] = (src)[3], (des)[4] = (src)[4], (des)[5] = (src)[5])
 
-I think in this case, it was meant to be a list of acceptable parameters
-rather than a set of values, kinda like /sys/power/state.  Instead, I
-guess we could have:
+Just use compare_ether_addr and memcpy directly
 
-	/sys/devices/system/node/probeable/3
-	/sys/devices/system/node/probeable/43
-	/sys/devices/system/node/probeable/65
-	/sys/devices/system/node/probeable/5145
-
-and the knowledge that you need to pick one of those to echo
-into /sys/devices/system/node/probe.  But, it's a lot more self
-explanatory if you 'cat /sys/devices/system/node/probe', and then pick
-one of those to echo back into the file.
-
-Seems like a decent place to violate the "rule". :)
-
--- Dave
 
