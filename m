@@ -1,79 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754889Ab0EMVNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 17:13:06 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:54415 "EHLO ogre.sisk.pl"
+	id S1755664Ab0EMVN7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 17:13:59 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:60738 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752441Ab0EMVNC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 17:13:02 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tony Lindgren <tony@atomide.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Date: Thu, 13 May 2010 23:14:22 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, Matthew Garrett <mjg@redhat.com>,
-       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Linus Walleij <linus.walleij@ericsson.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com> <Pine.LNX.4.44L0.1005131002380.1695-100000@iolanthe.rowland.org> <20100513191717.GA3428@atomide.com>
-In-Reply-To: <20100513191717.GA3428@atomide.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005132314.22497.rjw@sisk.pl>
+	id S1752929Ab0EMVN5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 17:13:57 -0400
+X-IronPort-AV: E=Sophos;i="4.53,224,1272870000"; 
+   d="scan'208";a="359584281"
+Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Robert Wimmer <kernel@tauceti.net>
+Cc: mst@redhat.com, Avi Kivity <avi@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       bugzilla-daemon@bugzilla.kernel.org,
+       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+In-Reply-To: <4BEC6A5D.5070304@tauceti.net>
+References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net>
+	 <20100419131718.GB16918@redhat.com>
+	 <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net>
+	 <20100421094249.GC30855@redhat.com>
+	 <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net>
+	 <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net>
+	 <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net>
+	 <20100425204916.GA12686@redhat.com>
+	 <1272284154.4252.34.camel@localhost.localdomain>
+	 <4BD5F6C5.8080605@tauceti.net>
+	 <1272315854.8984.125.camel@localhost.localdomain>
+	 <4BD61147.40709@tauceti.net>
+	 <1272324536.16814.45.camel@localhost.localdomain>
+	 <4BD76B81.2070606@tauceti.net>
+	 <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net>
+	 <4BE33259.3000609@tauceti.net>
+	 <1273181438.22155.26.camel@localhost.localdomain>
+	 <4BEC6A5D.5070304@tauceti.net>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Thu, 13 May 2010 17:13:54 -0400
+Message-ID: <1273785234.22932.14.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-OriginalArrivalTime: 13 May 2010 21:13:55.0531 (UTC) FILETIME=[321571B0:01CAF2E1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 13 May 2010, Tony Lindgren wrote:
-> * Alan Stern <stern@rowland.harvard.edu> [100513 07:11]:
-> > On Wed, 12 May 2010, Paul Walmsley wrote:
-> > 
-> > > Hello,
-> > > 
-> > > Some general comments on the suspend blockers/wakelock/opportunistic
-> > > suspend v6 patch series, posted here:
-> > > 
-> > >     https://lists.linux-foundation.org/pipermail/linux-pm/2010-April/025146.html
-> > > 
-> > > The comments below are somewhat telegraphic in the interests of 
-> > > readability - more specific comments to follow in later E-mails. I am 
-> > > indebted to those of us who discussed these issues at LPC last year and 
-> > > ELC this year for several stimulating discussions.
-> > > 
-> > > There are several general problems with the design of opportunistic
-> > > suspend and suspend-blocks.
-> > > 
-> > > 1. The opportunistic suspend code bypasses existing Linux kernel code,
-> > >    such as timers and the scheduler, that indicates when code
-> > >    needs to run, and when the system is idle.
-> > 
-> > Whoa!  That's not my understanding at all.
-> > 
-> > As I see it, opportunistic suspend doesn't bypass any code that isn't 
-> > already bypassed by the existing suspend code.  Users can do
-> > 
-> > 	echo mem >/sys/power/state
-> > 
-> > whenever they want, without regard to kernel timers and the scheduler 
-> > (other than the fact that the user's thread must be running in order to 
-> > carry out the write, of course).
+On Thu, 2010-05-13 at 23:08 +0200, Robert Wimmer wrote: 
+> Finally I've had some time to do the next test.
+> Here is a wireshark dump (~750 MByte):
+> http://213.252.12.93/2.6.34-rc5.cap.gz
 > 
-> The difference between echo mem > /sys/power/state and suspend blocks
-> is that with suspend blocks the system keeps running.
+> dmesg output after page allocation failure:
+> https://bugzilla.kernel.org/attachment.cgi?id=26371
+> 
+> stack trace before page allocation failure:
+> https://bugzilla.kernel.org/attachment.cgi?id=26369
+> 
+> stack trace after page allocation failure:
+> https://bugzilla.kernel.org/attachment.cgi?id=26370
+> 
+> I hope the wireshark dump is not to big to download.
+> It was created with
+> tshark -f "tcp port 2049" -i eth0 -w 2.6.34-rc5.cap
+> 
+> Thanks!
+> Robert
 
-Care to elaborate?
+Hi Robert,
 
-Rafael
+I tried the above wireshark dump URL, but it appears to point to an
+empty file.
+
+Cheers
+  Trond
