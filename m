@@ -1,121 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab0EMCuA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 22:50:00 -0400
-Received: from home.kolivas.org ([59.167.196.135]:36836 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754179Ab0EMCt6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 22:49:58 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: Xianghua Xiao <xiaoxianghua@gmail.com>
-Subject: Re: Issue with SCHED_FIFO app
-Date: Thu, 13 May 2010 12:49:56 +1000
-User-Agent: KMail/1.12.4 (Linux/2.6.33-ck1; KDE/4.3.4; x86_64; ; )
-Cc: Suresh Rajashekara <suresh.raj+linuxomap@gmail.com>,
-       linux-omap@vger.kernel.org, linux-kernel@vger.kernel.org
-References: <k2j54a292881005092139u7e120250hf530f8b688abdd22@mail.gmail.com> <t2s54a292881005092142h58ccae9ch2ecec665d06a7601@mail.gmail.com> <AANLkTillkVE9Mmz3CiQyIF5yiZfpp13g18UCyMQSuZ_K@mail.gmail.com>
-In-Reply-To: <AANLkTillkVE9Mmz3CiQyIF5yiZfpp13g18UCyMQSuZ_K@mail.gmail.com>
+	id S1756595Ab0EMCyR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 22:54:17 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:59356 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755823Ab0EMCyQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 12 May 2010 22:54:16 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] vmscan: page_check_references() check low order lumpy reclaim properly
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+       Andreas Mohr <andi@lisas.de>, Jens Axboe <axboe@kernel.dk>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       Linux Memory Management List <linux-mm@kvack.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Rik van Riel <riel@redhat.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+In-Reply-To: <20100416141841.300d2361.akpm@linux-foundation.org>
+References: <20100416115437.27AD.A69D9226@jp.fujitsu.com> <20100416141841.300d2361.akpm@linux-foundation.org>
+Message-Id: <20100513115316.2155.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005131249.56432.kernel@kolivas.org>
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Thu, 13 May 2010 11:54:12 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 12:46:20 Xianghua Xiao wrote:
-> On Sun, May 9, 2010 at 11:42 PM, Suresh Rajashekara
+> > @@ -77,6 +77,8 @@ struct scan_control {
+> >  
+> >  	int order;
+> >  
+> > +	int lumpy_reclaim;
+> > +
 > 
-> <suresh.raj+linuxomap@gmail.com> wrote:
-> > Hi All,
-> >
-> > I had a couple of application (with real time priority SCHED_FIFO)
-> > which were working fine on 2.6.16. They have started behaving
-> > differently on 2.6.29.
-> >
-> > I will explain my problem briefly.
-> >
-> > Application A (my main application) is scheduled with SCHED_FIFO and
-> > priority 5. Application B (watchdog application) is also scheduled with
-> > SCHED_FIFO but with priority 54.
-> >
-> > A keeps putting the OMAP to sleep and wake up every 4 seconds and
-> > again puts it to sleep.
-> > B is supposed to be running every 1.25 seconds to kick watchdog, but
-> > since A keeps OMAP in sleep for 4 seconds, it should run as soon as
-> > OMAP wakes up.
-> >
-> > Since B is of a higher priority, its supposed to run whenever the OMAP
-> > wakes up and then A should again put it back to sleep. This happens
-> > perfectly on 2.6.16
-> >
-> > On 2.6.29, B fails to run when OMAP wakes up and before A puts it back
-> > to sleep. B only runs if there is atleast 1.5 seconds of delay between
-> > the awake-sleep cycle.
-> >
-> > On searching the internet, I figured out that CFS (completely fair
-> > scheduler) was introduced in 2.6.23, which makes some changes to the
-> > RT bandwidth (and many users started facing issues with they
-> > applications with SCHED_FIFO). Somewhere on the web I found that
-> > issuing
-> >
-> > echo -1 > /proc/sys/kernel/sched_rt_runtime_us
-> >
-> > should disable the changes which affects the RT bandwidth. It actually
-> > did help to an extent in solving some other problem (not described
-> > above. A's IOCTL call return was getting delayed), but this problem
-> > still persists.
-> >
-> > Any pointers to where I should look for the solution.
-> >
-> > Is there a way I can revert back to the scheduler behavior as it was on
-> > 2.6.16?
-> >
-> > I have disabled CONFIG_GROUP_SCHED and also CONFIG_CGROUPS. I am using
-> > 2.6.29 on an OMAP1 platform.
-> >
-> > Thanks in advance,
-> > Suresh
-> > --
-> > To unsubscribe from this list: send the line "unsubscribe linux-omap" in
-> > the body of a message to majordomo@vger.kernel.org
-> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Needs a comment explaining its role, please.  Something like "direct
+> this reclaim run to perform lumpy reclaim"?
 > 
-> I have seen similar things while upgrading a 2.6.18 RT kernel to
-> 2.6.33 RT, actually exactly when CFS was introduced we found
-> performance issues, in that, our main application(a multi-thread
-> SCHED_FIFO / SCHED_RR mixed) runs with much higher overhead under CFS.
-> In 2.6.18RT, the cpu usage is close to 0% and on newer kernel with
-> CFS, the cpu usage is 12% when the application runs idle(i.e. sleeping
-> and waiting for input, WCHAN shows sched_timeout or futex_wait). When
-> the main application runs with real load, cpu usage gets much worse
-> with CFS.
+> A clearer name might be "lumpy_relcaim_mode"?
 > 
-> I tried various methods, including the one you described above, and
-> made sure no sched_yield is used, etc, still the main application
-> spends 6% cpu in user space and 6% in kernel space while at idle. I
-> tried BFS schedule and it's actually better, about 8% in user space
-> and 0.6% in kernel space while the application runs idle. Again with
-> 2.6.18 RT it's nearly 0% cpu usage.
+> Making it a `bool' would clarify things too.
 
-It's distinctly possible that there is no change in the CPU usage at all and 
-this is purely representing the change in how CPU accounting is done in CFS, 
-and now BFS since the older mainline scheduler. The old mainline scheduler was 
-potentially very inaccurate at representing CPU usage, particularly when tasks 
-were very short lived. In fact it was possible to write a carefully crafted 
-application that would use 99.9% CPU and register as zero CPU usage, by 
-ensuring it slept just before the accounting tick would be hit. CFS changed 
-dramatically how CPU accounting was done, and on BFS I changed it yet again, 
-trying to make it more accurate.
+Sorry, I've missed your this review comment.
+How about this?
 
-The only way to see if there is a real issue with a change in CPU usage is to 
-measure CPU usage through other means, which can be incredibly difficult to 
-do, such as the power consumed by the CPU, the maximum throughput of the 
-applications, and so on.
 
-I do not think this is related to the original issue reported with SCHED_FIFO 
-apps on this email thread though.
+---
+ mm/vmscan.c |   39 ++++++++++++++++++++++++---------------
+ 1 files changed, 24 insertions(+), 15 deletions(-)
 
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 13d9546..c3bcdd4 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -77,7 +77,11 @@ struct scan_control {
+ 
+ 	int order;
+ 
+-	int lumpy_reclaim;
++	/*
++	 * Intend to reclaim enough contenious memory rather than to reclaim
++	 * enough amount memory. I.e, it's the mode for high order allocation.
++	 */
++	bool lumpy_reclaim_mode;
+ 
+ 	/* Which cgroup do we reclaim from */
+ 	struct mem_cgroup *mem_cgroup;
+@@ -577,7 +581,7 @@ static enum page_references page_check_references(struct page *page,
+ 	referenced_page = TestClearPageReferenced(page);
+ 
+ 	/* Lumpy reclaim - ignore references */
+-	if (sc->lumpy_reclaim)
++	if (sc->lumpy_reclaim_mode)
+ 		return PAGEREF_RECLAIM;
+ 
+ 	/*
+@@ -1153,7 +1157,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+ 		unsigned long nr_freed;
+ 		unsigned long nr_active;
+ 		unsigned int count[NR_LRU_LISTS] = { 0, };
+-		int mode = sc->lumpy_reclaim ? ISOLATE_BOTH : ISOLATE_INACTIVE;
++		int mode = sc->lumpy_reclaim_mode ? ISOLATE_BOTH : ISOLATE_INACTIVE;
+ 		unsigned long nr_anon;
+ 		unsigned long nr_file;
+ 
+@@ -1206,7 +1210,7 @@ static unsigned long shrink_inactive_list(unsigned long max_scan,
+ 		 * but that should be acceptable to the caller
+ 		 */
+ 		if (nr_freed < nr_taken && !current_is_kswapd() &&
+-		    sc->lumpy_reclaim) {
++		    sc->lumpy_reclaim_mode) {
+ 			congestion_wait(BLK_RW_ASYNC, HZ/10);
+ 
+ 			/*
+@@ -1609,6 +1613,21 @@ static unsigned long nr_scan_try_batch(unsigned long nr_to_scan,
+ 	return nr;
+ }
+ 
++static void set_lumpy_reclaim_mode(int priority, struct scan_control *sc)
++{
++	/*
++	 * If we need a large contiguous chunk of memory, or have
++	 * trouble getting a small set of contiguous pages, we
++	 * will reclaim both active and inactive pages.
++	 */
++	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
++		sc->lumpy_reclaim_mode = 1;
++	else if (sc->order && priority < DEF_PRIORITY - 2)
++		sc->lumpy_reclaim_mode = 1;
++	else
++		sc->lumpy_reclaim_mode = 0;
++}
++
+ /*
+  * This is a basic per-zone page freer.  Used by both kswapd and direct reclaim.
+  */
+@@ -1645,17 +1664,7 @@ static void shrink_zone(int priority, struct zone *zone,
+ 					  &reclaim_stat->nr_saved_scan[l]);
+ 	}
+ 
+-	/*
+-	 * If we need a large contiguous chunk of memory, or have
+-	 * trouble getting a small set of contiguous pages, we
+-	 * will reclaim both active and inactive pages.
+-	 */
+-	if (sc->order > PAGE_ALLOC_COSTLY_ORDER)
+-		sc->lumpy_reclaim = 1;
+-	else if (sc->order && priority < DEF_PRIORITY - 2)
+-		sc->lumpy_reclaim = 1;
+-	else
+-		sc->lumpy_reclaim = 0;
++	set_lumpy_reclaim_mode(priority, sc);
+ 
+ 	while (nr[LRU_INACTIVE_ANON] || nr[LRU_ACTIVE_FILE] ||
+ 					nr[LRU_INACTIVE_FILE]) {
 -- 
--ck
+1.6.5.2
+
+
+
+
+
