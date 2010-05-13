@@ -1,51 +1,226 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753178Ab0EMHFk (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 03:05:40 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:58745 "EHLO mail.skyhub.de"
+	id S1755663Ab0EMG6o (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 02:58:44 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45682 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751434Ab0EMHFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 03:05:38 -0400
-Date: Thu, 13 May 2010 09:05:31 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: david@lang.hm
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: system locks up when CD burn fails
-Message-ID: <20100513070531.GA8491@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, david@lang.hm,
-	linux-kernel <linux-kernel@vger.kernel.org>
-References: <alpine.DEB.2.01.1005121530090.8603@asgard.lang.hm>
+	id S1753220Ab0EMG6k (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 02:58:40 -0400
+Date: Thu, 13 May 2010 06:57:39 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       gorcunov@openvz.org, peterz@infradead.org, fweisbec@gmail.com,
+       rostedt@goodmis.org, ming.m.lin@intel.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       fweisbec@gmail.com, gorcunov@openvz.org, rostedt@goodmis.org,
+       peterz@infradead.org, ming.m.lin@intel.com, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <20100512174242.GA5190@lenovo>
+References: <20100512174242.GA5190@lenovo>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] x86, perf: P4 PMU -- use hash for p4_get_escr_idx()
+Message-ID: <tip-720019908fd5a1bb442bb0a35a6027ba21864d25@git.kernel.org>
+Git-Commit-ID: 720019908fd5a1bb442bb0a35a6027ba21864d25
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.01.1005121530090.8603@asgard.lang.hm>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 13 May 2010 06:57:40 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: david@lang.hm
-Date: Wed, May 12, 2010 at 03:35:06PM -0700
+Commit-ID:  720019908fd5a1bb442bb0a35a6027ba21864d25
+Gitweb:     http://git.kernel.org/tip/720019908fd5a1bb442bb0a35a6027ba21864d25
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Wed, 12 May 2010 21:42:42 +0400
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Thu, 13 May 2010 08:51:13 +0200
 
-> I have a couple hundred boxes running kernels from 2.6.12 through
-> 2.6.33.3 that each burn a backup to a IDE CD-ROM once a week. Every
-> couple of months one of the boxes (_not_ the same one each time)
-> runs into some sort of error when burning the CD and the entire box
-> locks up (unable to toggle numlock even). I have not been able to
-> find any correlation between failures and anything on the system.
-> 
-> when the system locks up it doesn't log anything, and the screen
-> just freezes in the middle of the cdrecord status (X of Y MB
-> written) with no error message.
-> 
-> I'm actually not worried that much about the burn failing, The
-> problem is that the burn failing will take out the entire system. Is
-> there anything that I should be doing to make the systems more
-> robust in the face of such failures?
+x86, perf: P4 PMU -- use hash for p4_get_escr_idx()
 
-Are you using the ide drivers or libata? If it is the first, try
-switching to libata to see whether this fixes your freezes.
+Linear search over all p4 MSRs should be fine if only
+we would not use it in events scheduling routine which
+is pretty time critical. Lets use hashes. It should speed
+scheduling up significantly.
 
--- 
-Regards/Gruss,
-    Boris.
+v2: Steven proposed to use more gentle approach than issue
+    BUG on error, so we use WARN_ONCE now
+
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>
+LKML-Reference: <20100512174242.GA5190@lenovo>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |  126 ++++++++++++++++++++---------------
+ 1 files changed, 71 insertions(+), 55 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index a603930..cb875b1 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -668,66 +668,80 @@ static void p4_pmu_swap_config_ts(struct hw_perf_event *hwc, int cpu)
+ 	}
+ }
+ 
+-/* ESCRs are not sequential in memory so we need a map */
+-static const unsigned int p4_escr_map[ARCH_P4_TOTAL_ESCR] = {
+-	MSR_P4_ALF_ESCR0,	/*  0 */
+-	MSR_P4_ALF_ESCR1,	/*  1 */
+-	MSR_P4_BPU_ESCR0,	/*  2 */
+-	MSR_P4_BPU_ESCR1,	/*  3 */
+-	MSR_P4_BSU_ESCR0,	/*  4 */
+-	MSR_P4_BSU_ESCR1,	/*  5 */
+-	MSR_P4_CRU_ESCR0,	/*  6 */
+-	MSR_P4_CRU_ESCR1,	/*  7 */
+-	MSR_P4_CRU_ESCR2,	/*  8 */
+-	MSR_P4_CRU_ESCR3,	/*  9 */
+-	MSR_P4_CRU_ESCR4,	/* 10 */
+-	MSR_P4_CRU_ESCR5,	/* 11 */
+-	MSR_P4_DAC_ESCR0,	/* 12 */
+-	MSR_P4_DAC_ESCR1,	/* 13 */
+-	MSR_P4_FIRM_ESCR0,	/* 14 */
+-	MSR_P4_FIRM_ESCR1,	/* 15 */
+-	MSR_P4_FLAME_ESCR0,	/* 16 */
+-	MSR_P4_FLAME_ESCR1,	/* 17 */
+-	MSR_P4_FSB_ESCR0,	/* 18 */
+-	MSR_P4_FSB_ESCR1,	/* 19 */
+-	MSR_P4_IQ_ESCR0,	/* 20 */
+-	MSR_P4_IQ_ESCR1,	/* 21 */
+-	MSR_P4_IS_ESCR0,	/* 22 */
+-	MSR_P4_IS_ESCR1,	/* 23 */
+-	MSR_P4_ITLB_ESCR0,	/* 24 */
+-	MSR_P4_ITLB_ESCR1,	/* 25 */
+-	MSR_P4_IX_ESCR0,	/* 26 */
+-	MSR_P4_IX_ESCR1,	/* 27 */
+-	MSR_P4_MOB_ESCR0,	/* 28 */
+-	MSR_P4_MOB_ESCR1,	/* 29 */
+-	MSR_P4_MS_ESCR0,	/* 30 */
+-	MSR_P4_MS_ESCR1,	/* 31 */
+-	MSR_P4_PMH_ESCR0,	/* 32 */
+-	MSR_P4_PMH_ESCR1,	/* 33 */
+-	MSR_P4_RAT_ESCR0,	/* 34 */
+-	MSR_P4_RAT_ESCR1,	/* 35 */
+-	MSR_P4_SAAT_ESCR0,	/* 36 */
+-	MSR_P4_SAAT_ESCR1,	/* 37 */
+-	MSR_P4_SSU_ESCR0,	/* 38 */
+-	MSR_P4_SSU_ESCR1,	/* 39 */
+-	MSR_P4_TBPU_ESCR0,	/* 40 */
+-	MSR_P4_TBPU_ESCR1,	/* 41 */
+-	MSR_P4_TC_ESCR0,	/* 42 */
+-	MSR_P4_TC_ESCR1,	/* 43 */
+-	MSR_P4_U2L_ESCR0,	/* 44 */
+-	MSR_P4_U2L_ESCR1,	/* 45 */
++/*
++ * ESCR address hashing is tricky, ESCRs are not sequential
++ * in memory but all starts from MSR_P4_BSU_ESCR0 (0x03e0) and
++ * the metric between any ESCRs is laid in range [0xa0,0xe1]
++ *
++ * so we make ~70% filled hashtable
++ */
++
++#define P4_ESCR_MSR_BASE		0x000003a0
++#define P4_ESCR_MSR_MAX			0x000003e1
++#define P4_ESCR_MSR_TABLE_SIZE		(P4_ESCR_MSR_MAX - P4_ESCR_MSR_BASE + 1)
++#define P4_ESCR_MSR_IDX(msr)		(msr - P4_ESCR_MSR_BASE)
++#define P4_ESCR_MSR_TABLE_ENTRY(msr)	[P4_ESCR_MSR_IDX(msr)] = msr
++
++static const unsigned int p4_escr_table[P4_ESCR_MSR_TABLE_SIZE] = {
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_ALF_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_ALF_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_BPU_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_BPU_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_BSU_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_BSU_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR2),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR3),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR4),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_CRU_ESCR5),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_DAC_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_DAC_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FIRM_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FIRM_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FLAME_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FLAME_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FSB_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_FSB_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IQ_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IQ_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IS_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IS_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_ITLB_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_ITLB_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IX_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_IX_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_MOB_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_MOB_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_MS_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_MS_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_PMH_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_PMH_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_RAT_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_RAT_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_SAAT_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_SAAT_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_SSU_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_SSU_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_TBPU_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_TBPU_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_TC_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_TC_ESCR1),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_U2L_ESCR0),
++	P4_ESCR_MSR_TABLE_ENTRY(MSR_P4_U2L_ESCR1),
+ };
+ 
+ static int p4_get_escr_idx(unsigned int addr)
+ {
+-	unsigned int i;
++	unsigned int idx = P4_ESCR_MSR_IDX(addr);
+ 
+-	for (i = 0; i < ARRAY_SIZE(p4_escr_map); i++) {
+-		if (addr == p4_escr_map[i])
+-			return i;
++	if (unlikely(idx >= P4_ESCR_MSR_TABLE_SIZE ||
++			!p4_escr_table[idx])) {
++		WARN_ONCE(1, "P4 PMU: Wrong address passed: %x\n", addr);
++		return -1;
+ 	}
+ 
+-	return -1;
++	return idx;
+ }
+ 
+ static int p4_next_cntr(int thread, unsigned long *used_mask,
+@@ -747,7 +761,7 @@ static int p4_next_cntr(int thread, unsigned long *used_mask,
+ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign)
+ {
+ 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
+-	unsigned long escr_mask[BITS_TO_LONGS(ARCH_P4_TOTAL_ESCR)];
++	unsigned long escr_mask[BITS_TO_LONGS(P4_ESCR_MSR_TABLE_SIZE)];
+ 	int cpu = raw_smp_processor_id();
+ 	struct hw_perf_event *hwc;
+ 	struct p4_event_bind *bind;
+@@ -755,7 +769,7 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
+ 	int cntr_idx, escr_idx;
+ 
+ 	bitmap_zero(used_mask, X86_PMC_IDX_MAX);
+-	bitmap_zero(escr_mask, ARCH_P4_TOTAL_ESCR);
++	bitmap_zero(escr_mask, P4_ESCR_MSR_TABLE_SIZE);
+ 
+ 	for (i = 0, num = n; i < n; i++, num--) {
+ 
+@@ -763,6 +777,8 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
+ 		thread = p4_ht_thread(cpu);
+ 		bind = p4_config_get_bind(hwc->config);
+ 		escr_idx = p4_get_escr_idx(bind->escr_msr[thread]);
++		if (unlikely(escr_idx == -1))
++			goto done;
+ 
+ 		if (hwc->idx != -1 && !p4_should_swap_ts(hwc->config, cpu)) {
+ 			cntr_idx = hwc->idx;
