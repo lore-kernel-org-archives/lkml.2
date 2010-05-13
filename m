@@ -1,705 +1,563 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932778Ab0EMWOF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 18:14:05 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:42632 "EHLO
+	id S932908Ab0EMWOo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 18:14:44 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:54346 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754061Ab0EMWMz (ORCPT
+	with ESMTP id S1758922Ab0EMWMx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 18:12:55 -0400
-X-Authority-Analysis: v=1.1 cv=QBaIlYAip0cLYvdi/Wu3On4+kilSXYulM+a9j4asJ0c= c=1 sm=0 a=0a2ByY2eSzUA:10 a=UBIxAjGgU1YA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=1BJqe3Qrg15LNDULqhEA:9 a=tnf2hNKwxAxi-HBF87wA:7 a=AAPZYRmH1dGfhiVpzm5V0ZfilmEA:4 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Thu, 13 May 2010 18:12:53 -0400
+X-Authority-Analysis: v=1.1 cv=RZg5C6NCKrCZril9sGGnsuGk01/OiP2z3O3lo0hXATg= c=1 sm=0 a=_WSYLmTjcaEA:10 a=uEzv4HemXiYA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=pGLkceISAAAA:8 a=7d_E57ReAAAA:8 a=JfrnYn6hAAAA:8 a=meVymXHHAAAA:8 a=meBN8sMzOjX0nyEOL4sA:9 a=y_INiaS9UT7qv9ICb98A:7 a=NBUl2LTtcNwdmGvpMTXALFLmSqoA:4 a=jEp0ucaQiEUA:10 a=MSl-tDqOz04A:10 a=D6-X0JM3zdQA:10 a=3Rfx1nUSh_UA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100513221247.973619640@goodmis.org>
+Message-Id: <20100513221248.202513855@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Thu, 13 May 2010 18:10:08 -0400
+Date: Thu, 13 May 2010 18:10:09 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: [PATCH 04/12 v2] tracing: Remove per event trace registering
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Peter Zijlstra <peterz@infradead.org>
+Subject: [PATCH 05/12 v2] tracing: Move fields from event to class structure
 References: <20100513221004.765293881@goodmis.org>
-Content-Disposition: inline; filename=0004-tracing-Remove-per-event-trace-registering.patch
+Content-Disposition: inline; filename=0005-tracing-Move-fields-from-event-to-class-structure.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Steven Rostedt <srostedt@redhat.com>
 
-This patch removes the register functions of TRACE_EVENT() to enable
-and disable tracepoints. The registering of a event is now down
-directly in the trace_events.c file. The tracepoint_probe_register()
-is now called directly.
+Move the defined fields from the event to the class structure.
+Since the fields of the event are defined by the class they belong
+to, it makes sense to have the class hold the information instead
+of the individual events. The events of the same class would just
+hold duplicate information.
 
-The prototypes are no longer type checked, but this should not be
-an issue since the tracepoints are created automatically by the
-macros. If a prototype is incorrect in the TRACE_EVENT() macro, then
-other macros will catch it.
-
-The trace_event_class structure now holds the probes to be called
-by the callbacks. This removes needing to have each event have
-a separate pointer for the probe.
-
-To handle kprobes and syscalls, since they register probes in a
-different manner, a "reg" field is added to the ftrace_event_class
-structure. If the "reg" field is assigned, then it will be called for
-enabling and disabling of the probe for either ftrace or perf. To let
-the reg function know what is happening, a new enum (trace_reg) is
-created that has the type of control that is needed.
-
-With this new rework, the 82 kernel events and 618 syscall events
-has their footprint dramatically lowered:
+After this change the size of the kernel dropped another 3K:
 
    text	   data	    bss	    dec	    hex	filename
 4913961	1088356	 861512	6863829	 68bbd5	vmlinux.orig
-4914025	1088868	 861512	6864405	 68be15	vmlinux.class
-4918492	1084612	 861512	6864616	 68bee8	vmlinux.tracepoint
 4900252	1057412	 861512	6819176	 680d68	vmlinux.regs
+4900375	1053380	 861512	6815267	 67fe23	vmlinux.fields
 
-The size went from 6863829 to 6819176, that's a total of 44K
-in savings. With tracepoints being continuously added, this is
-critical that the footprint becomes minimal.
+Although the text increased, this was mainly due to the C files
+having to adapt to the change. This is a constant increase, where
+new tracepoints will not increase the Text. But the big drop is
+in the data size (as well as needed allocations to hold the fields).
+This will give even more savings as more tracepoints are created.
 
-v4: Fixed trace self tests to check probe because regfunc no longer
-    exists.
+Note, if just TRACE_EVENT()s are used and not DECLARE_EVENT_CLASS()
+with several DEFINE_EVENT()s, then the savings will be lost. But
+we are pushing developers to consolidate events with DEFINE_EVENT()
+so this should not be an issue.
 
-v3: Updated to handle void *data in beginning of probe parameters.
-    Also added the tracepoint: check_trace_callback_type_##call().
+The kprobes define a unique class to every new event, but are dynamic
+so it should not be a issue.
 
-v2: Changed the callback probes to pass void * and typecast the
-    value within the function.
+The syscalls however have a single class but the fields for the individual
+events are different. The syscalls use a metadata to define the
+fields. I moved the fields list from the event to the metadata and
+added a "get_fields()" function to the class. This function is used
+to find the fields. For normal events and kprobes, get_fields() just
+returns a pointer to the fields list_head in the class. For syscall
+events, it returns the fields list_head in the metadata for the event.
 
+v2:  Fixed the syscall fields. The syscall metadata needs a list
+     of fields for both enter and exit.
+
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- include/linux/ftrace_event.h    |   19 +++++-
- include/linux/syscalls.h        |   29 +-------
- include/trace/ftrace.h          |  133 +++++++++++----------------------------
- kernel/trace/trace_event_perf.c |   15 ++++-
- kernel/trace/trace_events.c     |   30 ++++++---
- kernel/trace/trace_kprobe.c     |   34 +++++++---
- kernel/trace/trace_syscalls.c   |   56 ++++++++++++++++-
- 7 files changed, 169 insertions(+), 147 deletions(-)
+ include/linux/ftrace_event.h       |    5 ++-
+ include/linux/syscalls.h           |   14 ++++++----
+ include/trace/ftrace.h             |   11 ++++---
+ include/trace/syscall.h            |    4 +-
+ kernel/trace/trace.h               |    3 ++
+ kernel/trace/trace_events.c        |   48 +++++++++++++++++++++++++++---------
+ kernel/trace/trace_events_filter.c |   10 ++++---
+ kernel/trace/trace_export.c        |   14 +++++-----
+ kernel/trace/trace_kprobe.c        |    8 +++---
+ kernel/trace/trace_syscalls.c      |   31 ++++++++++++++++++++---
+ 10 files changed, 102 insertions(+), 46 deletions(-)
 
 diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-index 496eea8..e665ed3 100644
+index e665ed3..479c3c1 100644
 --- a/include/linux/ftrace_event.h
 +++ b/include/linux/ftrace_event.h
-@@ -113,8 +113,23 @@ void tracing_record_cmdline(struct task_struct *tsk);
- 
- struct event_filter;
- 
-+enum trace_reg {
-+	TRACE_REG_REGISTER,
-+	TRACE_REG_UNREGISTER,
-+	TRACE_REG_PERF_REGISTER,
-+	TRACE_REG_PERF_UNREGISTER,
-+};
-+
-+struct ftrace_event_call;
-+
- struct ftrace_event_class {
- 	char			*system;
-+	void			*probe;
-+#ifdef CONFIG_PERF_EVENTS
-+	void			*perf_probe;
-+#endif
-+	int			(*reg)(struct ftrace_event_call *event,
-+				       enum trace_reg type);
+@@ -130,6 +130,9 @@ struct ftrace_event_class {
+ #endif
+ 	int			(*reg)(struct ftrace_event_call *event,
+ 				       enum trace_reg type);
++	int			(*define_fields)(struct ftrace_event_call *);
++	struct list_head	*(*get_fields)(struct ftrace_event_call *);
++	struct list_head	fields;
  };
  
  struct ftrace_event_call {
-@@ -124,8 +139,6 @@ struct ftrace_event_call {
- 	struct dentry		*dir;
- 	struct trace_event	*event;
- 	int			enabled;
--	int			(*regfunc)(struct ftrace_event_call *);
--	void			(*unregfunc)(struct ftrace_event_call *);
+@@ -142,8 +145,6 @@ struct ftrace_event_call {
  	int			id;
  	const char		*print_fmt;
  	int			(*raw_init)(struct ftrace_event_call *);
-@@ -137,8 +150,6 @@ struct ftrace_event_call {
- 	void			*data;
- 
- 	int			perf_refcount;
--	int			(*perf_event_enable)(struct ftrace_event_call *);
--	void			(*perf_event_disable)(struct ftrace_event_call *);
- };
- 
- #define PERF_MAX_TRACE_SIZE	2048
+-	int			(*define_fields)(struct ftrace_event_call *);
+-	struct list_head	fields;
+ 	int			filter_active;
+ 	struct event_filter	*filter;
+ 	void			*mod;
 diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index ac5791d..e3348c4 100644
+index e3348c4..fd0f1f2 100644
 --- a/include/linux/syscalls.h
 +++ b/include/linux/syscalls.h
-@@ -103,22 +103,6 @@ struct perf_event_attr;
- #define __SC_TEST5(t5, a5, ...)	__SC_TEST(t5); __SC_TEST4(__VA_ARGS__)
- #define __SC_TEST6(t6, a6, ...)	__SC_TEST(t6); __SC_TEST5(__VA_ARGS__)
- 
--#ifdef CONFIG_PERF_EVENTS
--
--#define TRACE_SYS_ENTER_PERF_INIT(sname)				       \
--	.perf_event_enable = perf_sysenter_enable,			       \
--	.perf_event_disable = perf_sysenter_disable,
--
--#define TRACE_SYS_EXIT_PERF_INIT(sname)					       \
--	.perf_event_enable = perf_sysexit_enable,			       \
--	.perf_event_disable = perf_sysexit_disable,
--#else
--#define TRACE_SYS_ENTER_PERF(sname)
--#define TRACE_SYS_ENTER_PERF_INIT(sname)
--#define TRACE_SYS_EXIT_PERF(sname)
--#define TRACE_SYS_EXIT_PERF_INIT(sname)
--#endif /* CONFIG_PERF_EVENTS */
--
- #ifdef CONFIG_FTRACE_SYSCALLS
- #define __SC_STR_ADECL1(t, a)		#a
- #define __SC_STR_ADECL2(t, a, ...)	#a, __SC_STR_ADECL1(__VA_ARGS__)
-@@ -134,7 +118,8 @@ struct perf_event_attr;
- #define __SC_STR_TDECL5(t, a, ...)	#t, __SC_STR_TDECL4(__VA_ARGS__)
- #define __SC_STR_TDECL6(t, a, ...)	#t, __SC_STR_TDECL5(__VA_ARGS__)
- 
--extern struct ftrace_event_class event_class_syscalls;
-+extern struct ftrace_event_class event_class_syscall_enter;
-+extern struct ftrace_event_class event_class_syscall_exit;
+@@ -122,7 +122,7 @@ extern struct ftrace_event_class event_class_syscall_enter;
+ extern struct ftrace_event_class event_class_syscall_exit;
  
  #define SYSCALL_TRACE_ENTER_EVENT(sname)				\
- 	static const struct syscall_metadata __syscall_meta_##sname;	\
-@@ -148,14 +133,11 @@ extern struct ftrace_event_class event_class_syscalls;
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_enter_##sname = {					\
- 		.name                   = "sys_enter"#sname,		\
--		.class			= &event_class_syscalls,	\
-+		.class			= &event_class_syscall_enter,	\
+-	static const struct syscall_metadata __syscall_meta_##sname;	\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call					\
+ 	__attribute__((__aligned__(4))) event_enter_##sname;		\
+ 	static struct trace_event enter_syscall_print_##sname = {	\
+@@ -136,12 +136,11 @@ extern struct ftrace_event_class event_class_syscall_exit;
+ 		.class			= &event_class_syscall_enter,	\
  		.event                  = &enter_syscall_print_##sname,	\
  		.raw_init		= init_syscall_trace,		\
- 		.define_fields		= syscall_enter_define_fields,	\
--		.regfunc		= reg_event_syscall_enter,	\
--		.unregfunc		= unreg_event_syscall_enter,	\
+-		.define_fields		= syscall_enter_define_fields,	\
  		.data			= (void *)&__syscall_meta_##sname,\
--		TRACE_SYS_ENTER_PERF_INIT(sname)			\
  	}
  
  #define SYSCALL_TRACE_EXIT_EVENT(sname)					\
-@@ -170,14 +152,11 @@ extern struct ftrace_event_class event_class_syscalls;
- 	  __attribute__((section("_ftrace_events")))			\
- 	  event_exit_##sname = {					\
- 		.name                   = "sys_exit"#sname,		\
--		.class			= &event_class_syscalls,	\
-+		.class			= &event_class_syscall_exit,	\
+-	static const struct syscall_metadata __syscall_meta_##sname;	\
++	static struct syscall_metadata __syscall_meta_##sname;		\
+ 	static struct ftrace_event_call					\
+ 	__attribute__((__aligned__(4))) event_exit_##sname;		\
+ 	static struct trace_event exit_syscall_print_##sname = {	\
+@@ -155,14 +154,13 @@ extern struct ftrace_event_class event_class_syscall_exit;
+ 		.class			= &event_class_syscall_exit,	\
  		.event                  = &exit_syscall_print_##sname,	\
  		.raw_init		= init_syscall_trace,		\
- 		.define_fields		= syscall_exit_define_fields,	\
--		.regfunc		= reg_event_syscall_exit,	\
--		.unregfunc		= unreg_event_syscall_exit,	\
+-		.define_fields		= syscall_exit_define_fields,	\
  		.data			= (void *)&__syscall_meta_##sname,\
--		TRACE_SYS_EXIT_PERF_INIT(sname)			\
  	}
  
  #define SYSCALL_METADATA(sname, nb)				\
+ 	SYSCALL_TRACE_ENTER_EVENT(sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(sname);			\
+-	static const struct syscall_metadata __used		\
++	static struct syscall_metadata __used			\
+ 	  __attribute__((__aligned__(4)))			\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta_##sname = {				\
+@@ -172,12 +170,14 @@ extern struct ftrace_event_class event_class_syscall_exit;
+ 		.args		= args_##sname,			\
+ 		.enter_event	= &event_enter_##sname,		\
+ 		.exit_event	= &event_exit_##sname,		\
++		.enter_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.enter_fields), \
++		.exit_fields	= LIST_HEAD_INIT(__syscall_meta_##sname.exit_fields), \
+ 	};
+ 
+ #define SYSCALL_DEFINE0(sname)					\
+ 	SYSCALL_TRACE_ENTER_EVENT(_##sname);			\
+ 	SYSCALL_TRACE_EXIT_EVENT(_##sname);			\
+-	static const struct syscall_metadata __used		\
++	static struct syscall_metadata __used			\
+ 	  __attribute__((__aligned__(4)))			\
+ 	  __attribute__((section("__syscalls_metadata")))	\
+ 	  __syscall_meta__##sname = {				\
+@@ -185,6 +185,8 @@ extern struct ftrace_event_class event_class_syscall_exit;
+ 		.nb_args 	= 0,				\
+ 		.enter_event	= &event_enter__##sname,	\
+ 		.exit_event	= &event_exit__##sname,		\
++		.enter_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.enter_fields), \
++		.exit_fields	= LIST_HEAD_INIT(__syscall_meta__##sname.exit_fields), \
+ 	};							\
+ 	asmlinkage long sys_##sname(void)
+ #else
 diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index ba28b64..26d1324 100644
+index 26d1324..c7e3bcd 100644
 --- a/include/trace/ftrace.h
 +++ b/include/trace/ftrace.h
-@@ -381,53 +381,6 @@ static inline notrace int ftrace_get_offsets_##call(			\
- 
- #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
- 
--#ifdef CONFIG_PERF_EVENTS
--
--/*
-- * Generate the functions needed for tracepoint perf_event support.
-- *
-- * NOTE: The insertion profile callback (ftrace_profile_<call>) is defined later
-- *
-- * static int ftrace_profile_enable_<call>(void)
-- * {
-- * 	return register_trace_<call>(ftrace_profile_<call>);
-- * }
-- *
-- * static void ftrace_profile_disable_<call>(void)
-- * {
-- * 	unregister_trace_<call>(ftrace_profile_<call>);
-- * }
-- *
-- */
--
--#undef DECLARE_EVENT_CLASS
--#define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)
--
--#undef DEFINE_EVENT
--#define DEFINE_EVENT(template, name, proto, args)			\
--									\
--static void perf_trace_##name(void *, proto);				\
--									\
--static notrace int							\
--perf_trace_enable_##name(struct ftrace_event_call *unused)		\
--{									\
--	return register_trace_##name(perf_trace_##name, NULL);		\
--}									\
--									\
--static notrace void							\
--perf_trace_disable_##name(struct ftrace_event_call *unused)		\
--{									\
--	unregister_trace_##name(perf_trace_##name, NULL);		\
--}
--
--#undef DEFINE_EVENT_PRINT
--#define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
--	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
--
--#include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
--
--#endif /* CONFIG_PERF_EVENTS */
--
- /*
-  * Stage 4 of the trace events.
+@@ -430,6 +430,9 @@ static inline notrace int ftrace_get_offsets_##call(			\
   *
-@@ -437,8 +390,9 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-  *
-  * static struct ftrace_event_call event_<call>;
-  *
-- * static void ftrace_raw_event_<call>(proto)
-+ * static void ftrace_raw_event_<call>(void *__data, proto)
-  * {
-+ *	struct ftrace_event_call *event_call = __data;
-  *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
-  *	struct ring_buffer_event *event;
-  *	struct ftrace_raw_<call> *entry; <-- defined in stage 1
-@@ -468,16 +422,6 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
-  *						   event, irq_flags, pc);
-  * }
-  *
-- * static int ftrace_raw_reg_event_<call>(struct ftrace_event_call *unused)
-- * {
-- *	return register_trace_<call>(ftrace_raw_event_<call>);
-- * }
-- *
-- * static void ftrace_unreg_event_<call>(struct ftrace_event_call *unused)
-- * {
-- *	unregister_trace_<call>(ftrace_raw_event_<call>);
-- * }
-- *
-  * static struct trace_event ftrace_event_type_<call> = {
-  *	.trace			= ftrace_raw_output_<call>, <-- stage 2
+  * static struct ftrace_event_class __used event_class_<template> = {
+  *	.system			= "<system>",
++ *	.define_fields		= ftrace_define_fields_<call>,
++ *	.fields			= LIST_HEAD_INIT(event_class_##call.fields), \
++ *	.probe			= ftrace_raw_event_##call,		\
   * };
-@@ -504,11 +448,15 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
- 
- #ifdef CONFIG_PERF_EVENTS
- 
-+#define _TRACE_PERF_PROTO(call, proto)					\
-+	static notrace void						\
-+	perf_trace_##call(void *__data, proto);
-+
- #define _TRACE_PERF_INIT(call)						\
--	.perf_event_enable = perf_trace_enable_##call,			\
--	.perf_event_disable = perf_trace_disable_##call,
-+	.perf_probe		= perf_trace_##call,
- 
- #else
-+#define _TRACE_PERF_PROTO(call, proto)
- #define _TRACE_PERF_INIT(call)
- #endif /* CONFIG_PERF_EVENTS */
- 
-@@ -542,9 +490,9 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- 									\
- static notrace void							\
--ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
--				       proto)				\
-+ftrace_raw_event_##call(void *__data, proto)				\
- {									\
-+	struct ftrace_event_call *event_call = __data;			\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
- 	struct ring_buffer_event *event;				\
- 	struct ftrace_raw_##call *entry;				\
-@@ -574,30 +522,23 @@ ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
- 		trace_nowake_buffer_unlock_commit(buffer,		\
- 						  event, irq_flags, pc); \
- }
-+/*
-+ * The ftrace_test_probe is compiled out, it is only here as a build time check
-+ * to make sure that if the tracepoint handling changes, the ftrace probe will
-+ * fail to compile unless it too is updated.
-+ */
- 
- #undef DEFINE_EVENT
- #define DEFINE_EVENT(template, call, proto, args)			\
- 									\
--static notrace void ftrace_raw_event_##call(void *__ignore, proto)	\
--{									\
--	ftrace_raw_event_id_##template(&event_##call, args);		\
--}									\
--									\
--static notrace int							\
--ftrace_raw_reg_event_##call(struct ftrace_event_call *unused)		\
--{									\
--	return register_trace_##call(ftrace_raw_event_##call, NULL);	\
--}									\
--									\
--static notrace void							\
--ftrace_raw_unreg_event_##call(struct ftrace_event_call *unused)		\
--{									\
--	unregister_trace_##call(ftrace_raw_event_##call, NULL);		\
--}									\
--									\
- static struct trace_event ftrace_event_type_##call = {			\
- 	.trace			= ftrace_raw_output_##call,		\
--};
-+};									\
-+									\
-+static inline void ftrace_test_probe_##call(void)			\
-+{									\
-+	check_trace_callback_type_##call(ftrace_raw_event_##template);	\
-+}
- 
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
-@@ -618,9 +559,12 @@ static struct trace_event ftrace_event_type_##call = {			\
- 
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
-+_TRACE_PERF_PROTO(call, PARAMS(proto));					\
+  *
+  * static struct ftrace_event_call __used
+@@ -438,10 +441,8 @@ static inline notrace int ftrace_get_offsets_##call(			\
+  *	.name			= "<call>",
+  *	.class			= event_class_<template>,
+  *	.raw_init		= trace_event_raw_init,
+- *	.regfunc		= ftrace_raw_reg_event_<call>,
+- *	.unregfunc		= ftrace_raw_unreg_event_<call>,
++ *	.event			= &ftrace_event_type_<call>,
+  *	.print_fmt		= print_fmt_<call>,
+- *	.define_fields		= ftrace_define_fields_<call>,
+  * };
+  *
+  */
+@@ -563,6 +564,8 @@ _TRACE_PERF_PROTO(call, PARAMS(proto));					\
  static const char print_fmt_##call[] = print;				\
  static struct ftrace_event_class __used event_class_##call = {		\
--	.system			= __stringify(TRACE_SYSTEM)		\
-+	.system			= __stringify(TRACE_SYSTEM),		\
-+	.probe			= ftrace_raw_event_##call,		\
-+	_TRACE_PERF_INIT(call)						\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
++	.define_fields		= ftrace_define_fields_##call,		\
++	.fields			= LIST_HEAD_INIT(event_class_##call.fields),\
+ 	.probe			= ftrace_raw_event_##call,		\
+ 	_TRACE_PERF_INIT(call)						\
  };
- 
- #undef DEFINE_EVENT
-@@ -633,11 +577,8 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
- 	.class			= &event_class_##template,		\
+@@ -578,7 +581,6 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
  	.event			= &ftrace_event_type_##call,		\
  	.raw_init		= trace_event_raw_init,			\
--	.regfunc		= ftrace_raw_reg_event_##call,		\
--	.unregfunc		= ftrace_raw_unreg_event_##call,	\
  	.print_fmt		= print_fmt_##template,			\
- 	.define_fields		= ftrace_define_fields_##template,	\
--	_TRACE_PERF_INIT(call)					\
+-	.define_fields		= ftrace_define_fields_##template,	\
  };
  
  #undef DEFINE_EVENT_PRINT
-@@ -652,11 +593,8 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
- 	.class			= &event_class_##template,		\
+@@ -594,7 +596,6 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
  	.event			= &ftrace_event_type_##call,		\
  	.raw_init		= trace_event_raw_init,			\
--	.regfunc		= ftrace_raw_reg_event_##call,		\
--	.unregfunc		= ftrace_raw_unreg_event_##call,	\
  	.print_fmt		= print_fmt_##call,			\
- 	.define_fields		= ftrace_define_fields_##template,	\
--	_TRACE_PERF_INIT(call)					\
+-	.define_fields		= ftrace_define_fields_##template,	\
  }
  
  #include TRACE_INCLUDE(TRACE_INCLUDE_FILE)
-@@ -756,9 +694,9 @@ __attribute__((section("_ftrace_events"))) event_##call = {		\
- #undef DECLARE_EVENT_CLASS
- #define DECLARE_EVENT_CLASS(call, proto, args, tstruct, assign, print)	\
- static notrace void							\
--perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
--			    proto)					\
-+perf_trace_##call(void *__data, proto)					\
- {									\
-+	struct ftrace_event_call *event_call = __data;			\
- 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
- 	struct ftrace_raw_##call *entry;				\
- 	u64 __addr = 0, __count = 1;					\
-@@ -791,15 +729,20 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
- 			       __count, irq_flags, __regs);		\
- }
+diff --git a/include/trace/syscall.h b/include/trace/syscall.h
+index e5e5f48..3964774 100644
+--- a/include/trace/syscall.h
++++ b/include/trace/syscall.h
+@@ -25,6 +25,8 @@ struct syscall_metadata {
+ 	int		nb_args;
+ 	const char	**types;
+ 	const char	**args;
++	struct list_head enter_fields;
++	struct list_head exit_fields;
  
-+/*
-+ * This part is compiled out, it is only here as a build time check
-+ * to make sure that if the tracepoint handling changes, the
-+ * perf probe will fail to compile unless it too is updated.
-+ */
- #undef DEFINE_EVENT
--#define DEFINE_EVENT(template, call, proto, args)		\
--static notrace void perf_trace_##call(void *__ignore, proto)	\
--{								\
--	struct ftrace_event_call *event_call = &event_##call;	\
--								\
--	perf_trace_templ_##template(event_call, args);		\
-+#define DEFINE_EVENT(template, call, proto, args)			\
-+static inline void perf_test_probe_##call(void)				\
-+{									\
-+	check_trace_callback_type_##call(perf_trace_##template);	\
-+									\
- }
+ 	struct ftrace_event_call *enter_event;
+ 	struct ftrace_event_call *exit_event;
+@@ -34,8 +36,6 @@ struct syscall_metadata {
+ extern unsigned long arch_syscall_addr(int nr);
+ extern int init_syscall_trace(struct ftrace_event_call *call);
  
+-extern int syscall_enter_define_fields(struct ftrace_event_call *call);
+-extern int syscall_exit_define_fields(struct ftrace_event_call *call);
+ extern int reg_event_syscall_enter(struct ftrace_event_call *call);
+ extern void unreg_event_syscall_enter(struct ftrace_event_call *call);
+ extern int reg_event_syscall_exit(struct ftrace_event_call *call);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 911e986..c88c563 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -794,6 +794,9 @@ extern void print_subsystem_event_filter(struct event_subsystem *system,
+ 					 struct trace_seq *s);
+ extern int filter_assign_type(const char *type);
+ 
++struct list_head *
++trace_get_fields(struct ftrace_event_call *event_call);
 +
- #undef DEFINE_EVENT_PRINT
- #define DEFINE_EVENT_PRINT(template, name, proto, args, print)	\
- 	DEFINE_EVENT(template, name, PARAMS(proto), PARAMS(args))
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 0565bb4..196fe9d 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -49,7 +49,12 @@ static int perf_trace_event_enable(struct ftrace_event_call *event)
- 		rcu_assign_pointer(perf_trace_buf_nmi, buf);
- 	}
- 
--	ret = event->perf_event_enable(event);
-+	if (event->class->reg)
-+		ret = event->class->reg(event, TRACE_REG_PERF_REGISTER);
-+	else
-+		ret = tracepoint_probe_register(event->name,
-+						event->class->perf_probe,
-+						event);
- 	if (!ret) {
- 		total_ref_count++;
- 		return 0;
-@@ -75,7 +80,8 @@ int perf_trace_enable(int event_id)
- 
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(event, &ftrace_events, list) {
--		if (event->id == event_id && event->perf_event_enable &&
-+		if (event->id == event_id &&
-+		    event->class && event->class->perf_probe &&
- 		    try_module_get(event->mod)) {
- 			ret = perf_trace_event_enable(event);
- 			break;
-@@ -93,7 +99,10 @@ static void perf_trace_event_disable(struct ftrace_event_call *event)
- 	if (--event->perf_refcount > 0)
- 		return;
- 
--	event->perf_event_disable(event);
-+	if (event->class->reg)
-+		event->class->reg(event, TRACE_REG_PERF_UNREGISTER);
-+	else
-+		tracepoint_probe_unregister(event->name, event->class->perf_probe, event);
- 
- 	if (!--total_ref_count) {
- 		buf = perf_trace_buf;
+ static inline int
+ filter_check_discard(struct ftrace_event_call *call, void *rec,
+ 		     struct ring_buffer *buffer,
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index 2f54b48..efc129e 100644
+index efc129e..a09c4a0 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -127,13 +127,23 @@ static int ftrace_event_enable_disable(struct ftrace_event_call *call,
- 		if (call->enabled) {
- 			call->enabled = 0;
- 			tracing_stop_cmdline_record();
--			call->unregfunc(call);
-+			if (call->class->reg)
-+				call->class->reg(call, TRACE_REG_UNREGISTER);
-+			else
-+				tracepoint_probe_unregister(call->name,
-+							    call->class->probe,
-+							    call);
- 		}
- 		break;
- 	case 1:
- 		if (!call->enabled) {
- 			tracing_start_cmdline_record();
--			ret = call->regfunc(call);
-+			if (call->class->reg)
-+				ret = call->class->reg(call, TRACE_REG_REGISTER);
-+			else
-+				ret = tracepoint_probe_register(call->name,
-+								call->class->probe,
-+								call);
- 			if (ret) {
- 				tracing_stop_cmdline_record();
- 				pr_info("event trace: Could not enable event "
-@@ -171,7 +181,8 @@ static int __ftrace_set_clr_event(const char *match, const char *sub,
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(call, &ftrace_events, list) {
+@@ -29,11 +29,23 @@ DEFINE_MUTEX(event_mutex);
  
--		if (!call->name || !call->regfunc)
-+		if (!call->name || !call->class ||
-+		    (!call->class->probe && !call->class->reg))
- 			continue;
+ LIST_HEAD(ftrace_events);
  
- 		if (match &&
-@@ -297,7 +308,7 @@ t_next(struct seq_file *m, void *v, loff_t *pos)
- 		 * The ftrace subsystem is for showing formats only.
- 		 * They can not be enabled or disabled via the event files.
- 		 */
--		if (call->regfunc)
-+		if (call->class && (call->class->probe || call->class->reg))
- 			return call;
- 	}
++struct list_head *
++trace_get_fields(struct ftrace_event_call *event_call)
++{
++	if (!event_call->class->get_fields)
++		return &event_call->class->fields;
++	return event_call->class->get_fields(event_call);
++}
++
+ int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 		       const char *name, int offset, int size, int is_signed,
+ 		       int filter_type)
+ {
+ 	struct ftrace_event_field *field;
++	struct list_head *head;
++
++	if (WARN_ON(!call->class))
++		return 0;
  
-@@ -450,7 +461,8 @@ system_enable_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 	field = kzalloc(sizeof(*field), GFP_KERNEL);
+ 	if (!field)
+@@ -56,7 +68,8 @@ int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 	field->size = size;
+ 	field->is_signed = is_signed;
  
- 	mutex_lock(&event_mutex);
- 	list_for_each_entry(call, &ftrace_events, list) {
--		if (!call->name || !call->regfunc)
-+		if (!call->name || !call->class ||
-+		    (!call->class->probe && !call->class->reg))
- 			continue;
+-	list_add(&field->link, &call->fields);
++	head = trace_get_fields(call);
++	list_add(&field->link, head);
  
- 		if (system && strcmp(call->class->system, system) != 0)
-@@ -935,11 +947,11 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 		return -1;
- 	}
+ 	return 0;
  
--	if (call->regfunc)
-+	if (call->class->probe || call->class->reg)
- 		trace_create_file("enable", 0644, call->dir, call,
- 				  enable);
+@@ -94,8 +107,10 @@ static int trace_define_common_fields(struct ftrace_event_call *call)
+ void trace_destroy_fields(struct ftrace_event_call *call)
+ {
+ 	struct ftrace_event_field *field, *next;
++	struct list_head *head;
  
--	if (call->id && call->perf_event_enable)
-+	if (call->id && (call->class->perf_probe || call->class->reg))
+-	list_for_each_entry_safe(field, next, &call->fields, link) {
++	head = trace_get_fields(call);
++	list_for_each_entry_safe(field, next, head, link) {
+ 		list_del(&field->link);
+ 		kfree(field->type);
+ 		kfree(field->name);
+@@ -111,7 +126,6 @@ int trace_event_raw_init(struct ftrace_event_call *call)
+ 	if (!id)
+ 		return -ENODEV;
+ 	call->id = id;
+-	INIT_LIST_HEAD(&call->fields);
+ 
+ 	return 0;
+ }
+@@ -537,6 +551,7 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+ {
+ 	struct ftrace_event_call *call = filp->private_data;
+ 	struct ftrace_event_field *field;
++	struct list_head *head;
+ 	struct trace_seq *s;
+ 	int common_field_count = 5;
+ 	char *buf;
+@@ -555,7 +570,8 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 	trace_seq_printf(s, "ID: %d\n", call->id);
+ 	trace_seq_printf(s, "format:\n");
+ 
+-	list_for_each_entry_reverse(field, &call->fields, link) {
++	head = trace_get_fields(call);
++	list_for_each_entry_reverse(field, head, link) {
+ 		/*
+ 		 * Smartly shows the array type(except dynamic array).
+ 		 * Normal:
+@@ -931,6 +947,7 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		 const struct file_operations *filter,
+ 		 const struct file_operations *format)
+ {
++	struct list_head *head;
+ 	int ret;
+ 
+ 	/*
+@@ -955,14 +972,21 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
  		trace_create_file("id", 0444, call->dir, call,
  		 		  id);
  
-@@ -1388,8 +1400,8 @@ static __init void event_trace_self_tests(void)
+-	if (call->define_fields) {
+-		ret = trace_define_common_fields(call);
+-		if (!ret)
+-			ret = call->define_fields(call);
+-		if (ret < 0) {
+-			pr_warning("Could not initialize trace point"
+-				   " events/%s\n", call->name);
+-			return ret;
++	if (call->class->define_fields) {
++		/*
++		 * Other events may have the same class. Only update
++		 * the fields if they are not already defined.
++		 */
++		head = trace_get_fields(call);
++		if (list_empty(head)) {
++			ret = trace_define_common_fields(call);
++			if (!ret)
++				ret = call->class->define_fields(call);
++			if (ret < 0) {
++				pr_warning("Could not initialize trace point"
++					   " events/%s\n", call->name);
++				return ret;
++			}
+ 		}
+ 		trace_create_file("filter", 0644, call->dir, call,
+ 				  filter);
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index ca32960..961f99b 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -500,8 +500,10 @@ static struct ftrace_event_field *
+ find_event_field(struct ftrace_event_call *call, char *name)
+ {
+ 	struct ftrace_event_field *field;
++	struct list_head *head;
+ 
+-	list_for_each_entry(field, &call->fields, link) {
++	head = trace_get_fields(call);
++	list_for_each_entry(field, head, link) {
+ 		if (!strcmp(field->name, name))
+ 			return field;
+ 	}
+@@ -625,7 +627,7 @@ static int init_subsystem_preds(struct event_subsystem *system)
+ 	int err;
  
  	list_for_each_entry(call, &ftrace_events, list) {
- 
--		/* Only test those that have a regfunc */
--		if (!call->regfunc)
-+		/* Only test those that have a probe */
-+		if (!call->class || !call->class->probe)
+-		if (!call->define_fields)
++		if (!call->class || !call->class->define_fields)
  			continue;
  
- /*
+ 		if (strcmp(call->class->system, system->name) != 0)
+@@ -644,7 +646,7 @@ static void filter_free_subsystem_preds(struct event_subsystem *system)
+ 	struct ftrace_event_call *call;
+ 
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->define_fields)
++		if (!call->class || !call->class->define_fields)
+ 			continue;
+ 
+ 		if (strcmp(call->class->system, system->name) != 0)
+@@ -1249,7 +1251,7 @@ static int replace_system_preds(struct event_subsystem *system,
+ 	list_for_each_entry(call, &ftrace_events, list) {
+ 		struct event_filter *filter = call->filter;
+ 
+-		if (!call->define_fields)
++		if (!call->class || !call->class->define_fields)
+ 			continue;
+ 
+ 		if (strcmp(call->class->system, system->name) != 0)
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 7f16e21..e700a0c 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -18,10 +18,6 @@
+ #undef TRACE_SYSTEM
+ #define TRACE_SYSTEM	ftrace
+ 
+-struct ftrace_event_class event_class_ftrace = {
+-	.system			= __stringify(TRACE_SYSTEM),
+-};
+-
+ /* not needed for this file */
+ #undef __field_struct
+ #define __field_struct(type, item)
+@@ -131,7 +127,7 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
+ 
+ static int ftrace_raw_init_event(struct ftrace_event_call *call)
+ {
+-	INIT_LIST_HEAD(&call->fields);
++	INIT_LIST_HEAD(&call->class->fields);
+ 	return 0;
+ }
+ 
+@@ -159,15 +155,19 @@ static int ftrace_raw_init_event(struct ftrace_event_call *call)
+ #undef FTRACE_ENTRY
+ #define FTRACE_ENTRY(call, struct_name, type, tstruct, print)		\
+ 									\
++struct ftrace_event_class event_class_ftrace_##call = {			\
++	.system			= __stringify(TRACE_SYSTEM),		\
++	.define_fields		= ftrace_define_fields_##call,		\
++};									\
++									\
+ struct ftrace_event_call __used						\
+ __attribute__((__aligned__(4)))						\
+ __attribute__((section("_ftrace_events"))) event_##call = {		\
+ 	.name			= #call,				\
+ 	.id			= type,					\
+-	.class			= &event_class_ftrace,			\
++	.class			= &event_class_ftrace_##call,		\
+ 	.raw_init		= ftrace_raw_init_event,		\
+ 	.print_fmt		= print,				\
+-	.define_fields		= ftrace_define_fields_##call,		\
+ };									\
+ 
+ #include "trace_entries.h"
 diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
-index eda220b..f8af21a 100644
+index f8af21a..b14bf74 100644
 --- a/kernel/trace/trace_kprobe.c
 +++ b/kernel/trace/trace_kprobe.c
-@@ -202,6 +202,7 @@ struct trace_probe {
- 	unsigned long 		nhit;
- 	unsigned int		flags;	/* For TP_FLAG_* */
- 	const char		*symbol;	/* symbol name */
-+	struct ftrace_event_class	class;
- 	struct ftrace_event_call	call;
- 	struct trace_event		event;
- 	unsigned int		nr_args;
-@@ -323,6 +324,7 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
- 	}
+@@ -1112,8 +1112,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
  
-+	tp->call.class = &tp->class;
- 	tp->call.name = kstrdup(event, GFP_KERNEL);
- 	if (!tp->call.name)
- 		goto error;
-@@ -332,8 +334,8 @@ static struct trace_probe *alloc_trace_probe(const char *group,
- 		goto error;
- 	}
- 
--	tp->call.class->system = kstrdup(group, GFP_KERNEL);
--	if (!tp->call.class->system)
-+	tp->class.system = kstrdup(group, GFP_KERNEL);
-+	if (!tp->class.system)
- 		goto error;
- 
- 	INIT_LIST_HEAD(&tp->list);
-@@ -1302,6 +1304,26 @@ static void probe_perf_disable(struct ftrace_event_call *call)
- }
- #endif	/* CONFIG_PERF_EVENTS */
- 
-+static __kprobes
-+int kprobe_register(struct ftrace_event_call *event, enum trace_reg type)
-+{
-+	switch (type) {
-+	case TRACE_REG_REGISTER:
-+		return probe_event_enable(event);
-+	case TRACE_REG_UNREGISTER:
-+		probe_event_disable(event);
-+		return 0;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	case TRACE_REG_PERF_REGISTER:
-+		return probe_perf_enable(event);
-+	case TRACE_REG_PERF_UNREGISTER:
-+		probe_perf_disable(event);
-+		return 0;
-+#endif
-+	}
-+	return 0;
-+}
- 
- static __kprobes
- int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs)
-@@ -1355,13 +1377,7 @@ static int register_probe_event(struct trace_probe *tp)
- 		return -ENODEV;
- 	}
- 	call->enabled = 0;
--	call->regfunc = probe_event_enable;
--	call->unregfunc = probe_event_disable;
+ static int probe_event_raw_init(struct ftrace_event_call *event_call)
+ {
+-	INIT_LIST_HEAD(&event_call->fields);
 -
--#ifdef CONFIG_PERF_EVENTS
--	call->perf_event_enable = probe_perf_enable;
--	call->perf_event_disable = probe_perf_disable;
--#endif
-+	call->class->reg = kprobe_register;
- 	call->data = tp;
- 	ret = trace_add_event_call(call);
- 	if (ret) {
+ 	return 0;
+ }
+ 
+@@ -1362,11 +1360,13 @@ static int register_probe_event(struct trace_probe *tp)
+ 	if (probe_is_return(tp)) {
+ 		tp->event.trace = print_kretprobe_event;
+ 		call->raw_init = probe_event_raw_init;
+-		call->define_fields = kretprobe_event_define_fields;
++		INIT_LIST_HEAD(&call->class->fields);
++		call->class->define_fields = kretprobe_event_define_fields;
+ 	} else {
+ 		tp->event.trace = print_kprobe_event;
+ 		call->raw_init = probe_event_raw_init;
+-		call->define_fields = kprobe_event_define_fields;
++		INIT_LIST_HEAD(&call->class->fields);
++		call->class->define_fields = kprobe_event_define_fields;
+ 	}
+ 	if (set_print_fmt(tp) < 0)
+ 		return -ENOMEM;
 diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
-index b8d30e7..a21d366 100644
+index a21d366..cceccf0 100644
 --- a/kernel/trace/trace_syscalls.c
 +++ b/kernel/trace/trace_syscalls.c
-@@ -15,8 +15,19 @@ static int sys_refcount_exit;
- static DECLARE_BITMAP(enabled_enter_syscalls, NR_syscalls);
- static DECLARE_BITMAP(enabled_exit_syscalls, NR_syscalls);
+@@ -20,14 +20,37 @@ static int syscall_enter_register(struct ftrace_event_call *event,
+ static int syscall_exit_register(struct ftrace_event_call *event,
+ 				 enum trace_reg type);
  
--struct ftrace_event_class event_class_syscalls = {
--	.system			= "syscalls"
-+static int syscall_enter_register(struct ftrace_event_call *event,
-+				 enum trace_reg type);
-+static int syscall_exit_register(struct ftrace_event_call *event,
-+				 enum trace_reg type);
++static int syscall_enter_define_fields(struct ftrace_event_call *call);
++static int syscall_exit_define_fields(struct ftrace_event_call *call);
 +
-+struct ftrace_event_class event_class_syscall_enter = {
-+	.system			= "syscalls",
-+	.reg			= syscall_enter_register
-+};
++static struct list_head *
++syscall_get_enter_fields(struct ftrace_event_call *call)
++{
++	struct syscall_metadata *entry = call->data;
 +
-+struct ftrace_event_class event_class_syscall_exit = {
-+	.system			= "syscalls",
-+	.reg			= syscall_exit_register
++	return &entry->enter_fields;
++}
++
++static struct list_head *
++syscall_get_exit_fields(struct ftrace_event_call *call)
++{
++	struct syscall_metadata *entry = call->data;
++
++	return &entry->exit_fields;
++}
++
+ struct ftrace_event_class event_class_syscall_enter = {
+ 	.system			= "syscalls",
+-	.reg			= syscall_enter_register
++	.reg			= syscall_enter_register,
++	.define_fields		= syscall_enter_define_fields,
++	.get_fields		= syscall_get_enter_fields,
+ };
+ 
+ struct ftrace_event_class event_class_syscall_exit = {
+ 	.system			= "syscalls",
+-	.reg			= syscall_exit_register
++	.reg			= syscall_exit_register,
++	.define_fields		= syscall_exit_define_fields,
++	.get_fields		= syscall_get_exit_fields,
  };
  
  extern unsigned long __start_syscalls_metadata[];
-@@ -587,3 +598,44 @@ void perf_sysexit_disable(struct ftrace_event_call *call)
+@@ -220,7 +243,7 @@ static void free_syscall_print_fmt(struct ftrace_event_call *call)
+ 		kfree(call->print_fmt);
+ }
  
- #endif /* CONFIG_PERF_EVENTS */
+-int syscall_enter_define_fields(struct ftrace_event_call *call)
++static int syscall_enter_define_fields(struct ftrace_event_call *call)
+ {
+ 	struct syscall_trace_enter trace;
+ 	struct syscall_metadata *meta = call->data;
+@@ -243,7 +266,7 @@ int syscall_enter_define_fields(struct ftrace_event_call *call)
+ 	return ret;
+ }
  
-+static int syscall_enter_register(struct ftrace_event_call *event,
-+				 enum trace_reg type)
-+{
-+	switch (type) {
-+	case TRACE_REG_REGISTER:
-+		return reg_event_syscall_enter(event);
-+	case TRACE_REG_UNREGISTER:
-+		unreg_event_syscall_enter(event);
-+		return 0;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	case TRACE_REG_PERF_REGISTER:
-+		return perf_sysenter_enable(event);
-+	case TRACE_REG_PERF_UNREGISTER:
-+		perf_sysenter_disable(event);
-+		return 0;
-+#endif
-+	}
-+	return 0;
-+}
-+
-+static int syscall_exit_register(struct ftrace_event_call *event,
-+				 enum trace_reg type)
-+{
-+	switch (type) {
-+	case TRACE_REG_REGISTER:
-+		return reg_event_syscall_exit(event);
-+	case TRACE_REG_UNREGISTER:
-+		unreg_event_syscall_exit(event);
-+		return 0;
-+
-+#ifdef CONFIG_PERF_EVENTS
-+	case TRACE_REG_PERF_REGISTER:
-+		return perf_sysexit_enable(event);
-+	case TRACE_REG_PERF_UNREGISTER:
-+		perf_sysexit_disable(event);
-+		return 0;
-+#endif
-+	}
-+	return 0;
-+}
+-int syscall_exit_define_fields(struct ftrace_event_call *call)
++static int syscall_exit_define_fields(struct ftrace_event_call *call)
+ {
+ 	struct syscall_trace_exit trace;
+ 	int ret;
 -- 
 1.7.0
 
