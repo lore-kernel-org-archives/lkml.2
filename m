@@ -1,70 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932771Ab0EMUad (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:30:33 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63283 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932298Ab0EMUab (ORCPT
+	id S932782Ab0EMUbW (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:31:22 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53335 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932298Ab0EMUbU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:30:31 -0400
-Message-ID: <4BEC6141.2010201@oracle.com>
-Date: Thu, 13 May 2010 13:29:53 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-User-Agent: Thunderbird 2.0.0.19 (X11/20081227)
+	Thu, 13 May 2010 16:31:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZicKFjFblC9GijK3+3W4Sd0zXSF9dkcLFXeGjyNr1R/PJGqzNSvReLSHgv45lWc1kb
+         npfE4OwfVKyCLyTjZL1UQaMA0r5CAbzpRjvEJ7BcKVwOXY6kQcqk1mRAXmAX2Jd97ARi
+         OsxH5vgdtpUo7oM+50NeMCHYyXQSxyp110O6Q=
+Date: Thu, 13 May 2010 17:23:10 -0300
+From: "Gustavo F. Padovan" <gustavo@padovan.org>
+To: Julia Lawall <julia@diku.dk>
+Cc: Marcel Holtmann <marcel@holtmann.org>, linux-bluetooth@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 9/20] drivers/bluetooth: Use kzalloc
+Message-ID: <20100513202310.GA11617@vigoh>
+References: <Pine.LNX.4.64.1005132201470.6282@ask.diku.dk>
 MIME-Version: 1.0
-To: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-CC: linux-kernel@vger.kernel.org, jmorris@namei.org, zohar@linux.vnet.ibm.com
-Subject: Re: [PATCH] TPM: ACPI/PNP dependency removal
-References: <1273782204.8536.4.camel@blackbox.ibm.com>
-In-Reply-To: <1273782204.8536.4.camel@blackbox.ibm.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BEC6163.0130:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1005132201470.6282@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rajiv Andrade wrote:
-> This patch pushes the ACPI dependency into the device driver code
-> itself. Now, even without ACPI/PNP enabled, the device can be registered
-> using the TIS specified memory space. This will however result in the
-> lack of access to the bios event log, being the only implication of such
-> ACPI removal.
+* Julia Lawall <julia@diku.dk> [2010-05-13 22:02:03 +0200]:
+
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Signed-off-by: Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-> Acked-by: Mimi Zohar <zohar@linux.vnet.ibm.com>
+> Use kzalloc rather than the combination of kmalloc and memset.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression x,size,flags;
+> statement S;
+> @@
+> 
+> -x = kmalloc(size,flags);
+> +x = kzalloc(size,flags);
+>  if (x == NULL) S
+> -memset(x, 0, size);
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
 > ---
->  drivers/char/tpm/Kconfig   |    6 ++++--
->  drivers/char/tpm/tpm_tis.c |   42 ++++++++++++++++++++++--------------------
->  2 files changed, 26 insertions(+), 22 deletions(-)
+>  drivers/bluetooth/btmrvl_sdio.c |    8 ++------
+>  1 file changed, 2 insertions(+), 6 deletions(-)
 > 
-> diff --git a/drivers/char/tpm/Kconfig b/drivers/char/tpm/Kconfig
-> index f5fc64f..fffc994 100644
-> --- a/drivers/char/tpm/Kconfig
-> +++ b/drivers/char/tpm/Kconfig
-> @@ -17,14 +17,16 @@ menuconfig TCG_TPM
->  	  obtained at: <http://sourceforge.net/projects/trousers>.  To 
->  	  compile this driver as a module, choose M here; the module 
->  	  will be called tpm. If unsure, say N.
-> -	  Note: For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
-> +	  Notes: 
-> +	  1) For more TPM drivers enable CONFIG_PNP, CONFIG_ACPI
->  	  and CONFIG_PNPACPI.
-> +	  2) Without ACPI enabled, the bios event log won't be accessible,
-
-s/bios/BIOS/ please
-
-> +	  which is required to validate the PCR 0-7 values.
+> diff -u -p a/drivers/bluetooth/btmrvl_sdio.c b/drivers/bluetooth/btmrvl_sdio.c
+> --- a/drivers/bluetooth/btmrvl_sdio.c
+> +++ b/drivers/bluetooth/btmrvl_sdio.c
+> @@ -216,7 +216,7 @@ static int btmrvl_sdio_download_helper(s
 >  
->  if TCG_TPM
+>  	tmphlprbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
 >  
->  config TCG_TIS
->  	tristate "TPM Interface Specification 1.2 Interface"
-> -	depends on PNP
->  	---help---
->  	  If you have a TPM security chip that is compliant with the
->  	  TCG TIS 1.2 TPM specification say Yes and it will be accessible
+> -	tmphlprbuf = kmalloc(tmphlprbufsz, GFP_KERNEL);
+> +	tmphlprbuf = kzalloc(tmphlprbufsz, GFP_KERNEL);
+>  	if (!tmphlprbuf) {
+>  		BT_ERR("Unable to allocate buffer for helper."
+>  			" Terminating download");
+> @@ -224,8 +224,6 @@ static int btmrvl_sdio_download_helper(s
+>  		goto done;
+>  	}
+>  
+> -	memset(tmphlprbuf, 0, tmphlprbufsz);
+> -
+>  	helperbuf = (u8 *) ALIGN_ADDR(tmphlprbuf, BTSDIO_DMA_ALIGN);
+>  
+>  	/* Perform helper data transfer */
+> @@ -318,7 +316,7 @@ static int btmrvl_sdio_download_fw_w_hel
+>  	BT_DBG("Downloading FW image (%d bytes)", firmwarelen);
+>  
+>  	tmpfwbufsz = ALIGN_SZ(BTM_UPLD_SIZE, BTSDIO_DMA_ALIGN);
+> -	tmpfwbuf = kmalloc(tmpfwbufsz, GFP_KERNEL);
+> +	tmpfwbuf = kzalloc(tmpfwbufsz, GFP_KERNEL);
+>  	if (!tmpfwbuf) {
+>  		BT_ERR("Unable to allocate buffer for firmware."
+>  		       " Terminating download");
+> @@ -326,8 +324,6 @@ static int btmrvl_sdio_download_fw_w_hel
+>  		goto done;
+>  	}
+>  
+> -	memset(tmpfwbuf, 0, tmpfwbufsz);
+> -
+>  	/* Ensure aligned firmware buffer */
+>  	fwbuf = (u8 *) ALIGN_ADDR(tmpfwbuf, BTSDIO_DMA_ALIGN);
+>  
 
-Thanks for the update.
+Acked-by: Gustavo F. Padovan <padovan@profusion.mobi>
+
+-- 
+Gustavo F. Padovan
+http://padovan.org
