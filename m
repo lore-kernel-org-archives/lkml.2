@@ -1,48 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932885Ab0EMUHJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 16:07:09 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:9213 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932514Ab0EMUHA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 16:07:00 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=A7ATDGAF3beArf/PCMtHWoRs4YPpgvIQe/EDz+Wr4ts7PYSUvOY/mE/tGgox1VnlA
-	hPzmGxOHm8Rm5RuRNksmg==
+	id S932896Ab0EMUHY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 16:07:24 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:44468 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932381Ab0EMUHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 16:07:17 -0400
+Date: Thu, 13 May 2010 22:07:11 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Petr Vandrovec <vandrove@vc.cvut.cz>, linux-fbdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 18/20] drivers/video/matrox: Use kzalloc
+Message-ID: <Pine.LNX.4.64.1005132206530.6282@ask.diku.dk>
 MIME-Version: 1.0
-In-Reply-To: <20100513140354.GA12639@tango.0pointer.de>
-References: <eJjRf-6YM-1@gated-at.bofh.it> <eJktY-7JG-7@gated-at.bofh.it>
-	 <eJktY-7JG-5@gated-at.bofh.it> <4BEAB6FC.8090105@intcomgrp.com>
-	 <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
-	 <1273674048.1626.117.camel@laptop>
-	 <20100512190757.GA421@tango.0pointer.de>
-	 <1273755719.5605.3537.camel@twins>
-	 <20100513140354.GA12639@tango.0pointer.de>
-Date: Thu, 13 May 2010 13:06:53 -0700
-Message-ID: <s2s6599ad831005131306pa7db4c4dyd7712de7fda73cfd@mail.gmail.com>
-Subject: Re: [PATCH/RFC] Have sane default values for cpusets
-From: Paul Menage <menage@google.com>
-To: Lennart Poettering <mzxreary@0pointer.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Dhaval Giani <dhaval.giani@gmail.com>,
-       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
-       balbir@linux.vnet.ibm.com, jsafrane@redhat.com, tglx@linutronix.de
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 7:03 AM, Lennart Poettering
-<mzxreary@0pointer.de> wrote:
-> By default systemd will create its groups in the "debug" hierarchy, (at
-> least for now, in the long run i'd like to see "noop" hierarchy or so,
-> that doesn't sound so temporary), since that controller is not useful
+From: Julia Lawall <julia@diku.dk>
 
-If you just want to track processes, mount a (named) hierarchy with no
-attached subsystems.
+Use kzalloc rather than the combination of kmalloc and memset.
 
-Paul
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression x,size,flags;
+statement S;
+@@
+
+-x = kmalloc(size,flags);
++x = kzalloc(size,flags);
+ if (x == NULL) S
+-memset(x, 0, size);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/video/matrox/matroxfb_base.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff -u -p a/drivers/video/matrox/matroxfb_base.c b/drivers/video/matrox/matroxfb_base.c
+--- a/drivers/video/matrox/matroxfb_base.c
++++ b/drivers/video/matrox/matroxfb_base.c
+@@ -2040,10 +2040,9 @@ static int matroxfb_probe(struct pci_dev
+ 		return -1;
+ 	}
+ 
+-	minfo = kmalloc(sizeof(*minfo), GFP_KERNEL);
++	minfo = kzalloc(sizeof(*minfo), GFP_KERNEL);
+ 	if (!minfo)
+ 		return -1;
+-	memset(minfo, 0, sizeof(*minfo));
+ 
+ 	minfo->pcidev = pdev;
+ 	minfo->dead = 0;
