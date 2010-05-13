@@ -1,52 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757054Ab0EMCNN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 12 May 2010 22:13:13 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49180 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751299Ab0EMCNK convert rfc822-to-8bit (ORCPT
+	id S1756341Ab0EMCPE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 12 May 2010 22:15:04 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:57366 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751351Ab0EMCPA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 12 May 2010 22:13:10 -0400
-Message-ID: <4BEB5F75.4040409@cn.fujitsu.com>
-Date: Thu, 13 May 2010 10:09:57 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 12 May 2010 22:15:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=ETfgYpbdn88/2BgL6fysLMswrx6zcGxhLjrNAlR65TeMD0n8HvWG8zDyPfbd/GMlGk
+         7JvfbE8XS3XSEsM807tKjEYrYHobMGo+JY1neeWpk4Uh/Ov+7Hp32herCz4jwiM1MJLj
+         4dkKFbSHBvu0EtXMZ6WAMHtGAHFzr9mZJ9duk=
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, KVM list <kvm@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH 5/5] KVM x86: cleanup unused local variable
-References: <4BEB5E8A.7030606@cn.fujitsu.com> <4BEB5EC4.6070802@cn.fujitsu.com> <4BEB5F08.3010604@cn.fujitsu.com> <4BEB5F38.1070508@cn.fujitsu.com>
-In-Reply-To: <4BEB5F38.1070508@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+In-Reply-To: <201005121919.24115.tfjellstrom@strangesoft.net>
+References: <201004261855.29335.tfjellstrom@strangesoft.net>
+	 <201005101852.43114.tfjellstrom@strangesoft.net>
+	 <4BEB5132.6060201@gmail.com>
+	 <201005121919.24115.tfjellstrom@strangesoft.net>
+Date: Wed, 12 May 2010 20:14:59 -0600
+Message-ID: <AANLkTinMOHdOGbghsZ9thgkXdFW0mQJRwJBu8EJbOB8k@mail.gmail.com>
+Subject: Re: burning small isos repeatedly failing with hangcheck error
+From: Robert Hancock <hancockrwd@gmail.com>
+To: Thomas Fjellstrom <tfjellstrom@strangesoft.net>
+Cc: linux-kernel@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
+       linux-ide@vger.kernel.org, linux-scsi@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix:
- arch/x86/kvm/x86.c: In function ‘handle_emulation_failure’:
- arch/x86/kvm/x86.c:3844: warning: unused variable ‘ctxt’
+On Wed, May 12, 2010 at 7:19 PM, Thomas Fjellstrom
+<tfjellstrom@strangesoft.net> wrote:
+>> > I do not recall having these issues with older kernels.
+>>
+>> Same wodim version? The commands (and ordering thereof) it is issuing
+>> could have an effect on this..
+>
+> I can't be certain that its the same version of wodim. I have often noticed
+> that it takes far longer to burn a small iso onto a DVDR than you'd
+> intuitively think it would, but I've never had this timeout error happen
+> prior to 2.6.33, not that that means the problem started with 2.6.33, I
+> can't recall how long its been since I last had to burn a really small iso
+> to a DVDR.
+>
+> I can try and test various versions of the kernel and wodim, if you think it
+> would help.
 
-Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
----
- arch/x86/kvm/x86.c |    2 --
- 1 files changed, 0 insertions(+), 2 deletions(-)
+I think different wodim versions (or try different software like
+growisofs, etc) would be the most promising option. There's really not
+a lot of influence the kernel has on this process, the burning
+software accesses the device with SG_IO which pretty much just passes
+ATAPI commands through to the drive.
 
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 4b1433f..23a7716 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -3841,8 +3841,6 @@ static void inject_emulated_exception(struct kvm_vcpu *vcpu)
- 
- static int handle_emulation_failure(struct kvm_vcpu *vcpu)
- {
--	struct x86_emulate_ctxt *ctxt = &vcpu->arch.emulate_ctxt;
--
- 	++vcpu->stat.insn_emulation_fail;
- 	trace_kvm_emulate_insn_failed(vcpu);
- 	vcpu->run->exit_reason = KVM_EXIT_INTERNAL_ERROR;
--- 
-1.6.1.2
-
-
+I thought I saw a report recently that some version of wodim was
+sending uninitialized values as the timeout for SG_IO commands, but I
+can't seem to find that mail at the moment..
