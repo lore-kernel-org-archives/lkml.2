@@ -1,61 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753789Ab0ENGAT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:00:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:57900 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752442Ab0ENGAQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:00:16 -0400
-Date: Fri, 14 May 2010 16:00:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Sage Weil <sage@newdream.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Cheng Renquan <crquan@gmail.com>
-Subject: Re: linux-next: manual merge of the ceph tree with Linus' tree
-Message-Id: <20100514160010.c5ae1d30.sfr@canb.auug.org.au>
-In-Reply-To: <Pine.LNX.4.64.1005132124170.25892@cobra.newdream.net>
-References: <20100514100747.42445cdf.sfr@canb.auug.org.au>
-	<Pine.LNX.4.64.1005132124170.25892@cobra.newdream.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__14_May_2010_16_00_10_+1000_+UiRu81m2lPtIuHl"
+	id S1754580Ab0ENGDc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:03:32 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:36033 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753038Ab0ENGDa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 02:03:30 -0400
+Date: Fri, 14 May 2010 15:02:40 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Peter H?we <PeterHuewe@gmx.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>, linuxppc-dev@ozlabs.org,
+       David H?rdeman <david@hardeman.nu>, linux-media@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
+       linux-mips@linux-mips.org, linux-m68k@vger.kernel.org
+Subject: Re: [PATCH] media/IR: Add missing include file to rc-map.c
+Message-ID: <20100514060240.GD12002@linux-sh.org>
+References: <201005051720.22617.PeterHuewe@gmx.de> <201005112042.14889.PeterHuewe@gmx.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005112042.14889.PeterHuewe@gmx.de>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_May_2010_16_00_10_+1000_+UiRu81m2lPtIuHl
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Sage,
-
-On Thu, 13 May 2010 21:25:45 -0700 (PDT) Sage Weil <sage@newdream.net> wrot=
-e:
->
-> Aie, sorry...  I rebased everything queued for the next window yesterday=
-=20
-> but forgot to update the for-next tag.  These conflicts should all=20
-> disappear next time around.
-
-Thanks.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__14_May_2010_16_00_10_+1000_+UiRu81m2lPtIuHl
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvs5uoACgkQjjKRsyhoI8yNSACgo9OhxVcHjGd2YjkF1rrH6MuY
-tzwAnimGHjbXSsP/KK3N7x2QmmMTZEGv
-=n8dr
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_May_2010_16_00_10_+1000_+UiRu81m2lPtIuHl--
+On Tue, May 11, 2010 at 08:42:14PM +0200, Peter H?we wrote:
+> Am Mittwoch 05 Mai 2010 17:20:21 schrieb Peter H?we:
+> > From: Peter Huewe <peterhuewe@gmx.de>
+> > 
+> > This patch adds a missing include linux/delay.h to prevent
+> > build failures[1-5]
+> > 
+> > Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
+> > ---
+> Any updates on this patch?
+> Issue still exists with today's linux-next tree
+> 
+You might want to send this to the linux-next list at least. If the
+people who introduced the breakage are unresponsive (as often tends to be
+the case with -next) it's still worth getting trivial fixes rolled in for
+the interim. This change doesn't exist outside of -next and whatever tree
+introduced it, so there's not much else anyone can do about it at
+present.
