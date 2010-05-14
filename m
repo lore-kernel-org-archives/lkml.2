@@ -1,62 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754348Ab0ENJdY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 05:33:24 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:50537 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753675Ab0ENJdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 05:33:23 -0400
-Date: Fri, 14 May 2010 10:33:03 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
-Message-ID: <20100514093303.GA21481@csn.ul.ie>
-References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> <20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org> <4BEC8235.4060509@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <4BEC8235.4060509@redhat.com>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+	id S1758884Ab0ENJt2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 05:49:28 -0400
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:52703 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754537Ab0ENJt0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 05:49:26 -0400
+Subject: [PATCH] fs: inode.c use atomic_inc_return in __iget
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: lkml <linux-kernel@vger.kernel.org>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 10:49:22 +0100
+Message-ID: <1273830562.1986.22.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 06:50:29PM -0400, Rik van Riel wrote:
-> On 05/13/2010 05:09 PM, Andrew Morton wrote:
->
->> I'm not very confident in merging all these onto the current MM pile.
->
-> My apologies, I built them onto Linus's latest git
-> tree (where I know I did get all the anon_vma->lock
-> instances).
->
+Using atomic_inc_return in __iget(struct inode *inode) makes the intent
+of this code clearer and generates less code on processors that have
+this operation.
+   
+On x86_64 this patch reduces the text size of inode.o by 12 bytes.
+   
+    
+Signed-off-by: Richard Kennedy <richard@rsk.demon.co.uk>
 
-And the instance Andrew ran into was specific to a migration fix in
-mmotm where it was possible for anon_vma to disappear during migration.
+----
+patch against 2.6.34-rc7
+compiled & tested on x86_64 AMD X2
 
-> Andrew, Mel, want me to make a version of this series
-> against -mmotm, or does the migrate & compaction code
-> need to be modified in some non-obvious way that would
-> require Mel to create a new compaction series on top
-> of these anon_vma patches?
->
+I've been running with this patch applied for several weeks with no
+obvious problems.
+regards
+Richard
 
-I'd like to see a version on top of mmotm at least. It isn't clear to me what
-order these anon_vma changes were going in. Compaction should not be
-affected by this series but the fixes to migration are. I'd expect the
-main collision points to be with these patches.
 
-mmmigration-take-a-reference-to-the-anon_vma-before-migrating.patch
-mmmigration-share-the-anon_vma-ref-counts-between-ksm-and-page-migration.patch
 
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
+diff --git a/fs/inode.c b/fs/inode.c
+index 407bf39..b405028 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -286,11 +286,9 @@ static void init_once(void *foo)
+  */
+ void __iget(struct inode *inode)
+ {
+-	if (atomic_read(&inode->i_count)) {
+-		atomic_inc(&inode->i_count);
++	if (atomic_inc_return(&inode->i_count) != 1)
+ 		return;
+-	}
+-	atomic_inc(&inode->i_count);
++
+ 	if (!(inode->i_state & (I_DIRTY|I_SYNC)))
+ 		list_move(&inode->i_list, &inode_in_use);
+ 	inodes_stat.nr_unused--;
+
+
