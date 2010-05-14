@@ -1,91 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755463Ab0ENQQh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:16:37 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16958 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751568Ab0ENQQf (ORCPT
+	id S1755560Ab0ENQSV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:18:21 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:59647 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753992Ab0ENQST (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:16:35 -0400
-Date: Fri, 14 May 2010 09:15:49 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
-       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: [PATCH 3/3] input: Default to only using PNP for i8042 probing
- on x86
-Message-Id: <20100514091549.ff3cb4bc.randy.dunlap@oracle.com>
-In-Reply-To: <1273853403-2870-3-git-send-email-mjg@redhat.com>
-References: <1273853403-2870-1-git-send-email-mjg@redhat.com>
-	<1273853403-2870-3-git-send-email-mjg@redhat.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090208.4BED773A.0023:SCFMA4539811,ss=1,fgs=0
+	Fri, 14 May 2010 12:18:19 -0400
+To: Magnus Damm <magnus.damm@gmail.com>
+Cc: Tony Lindgren <tony@atomide.com>, Alan Stern <stern@rowland.harvard.edu>,
+       Paul Walmsley <paul@pwsan.com>,
+       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+References: <20100513191717.GA3428@atomide.com>
+	<Pine.LNX.4.44L0.1005131729510.1731-100000@iolanthe.rowland.org>
+	<20100513214739.GM3428@atomide.com>
+	<AANLkTilL2mvqpwirTfJRWZFdrFJvSihnaY8-xao4pLpH@mail.gmail.com>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Fri, 14 May 2010 09:18:15 -0700
+In-Reply-To: <AANLkTilL2mvqpwirTfJRWZFdrFJvSihnaY8-xao4pLpH@mail.gmail.com> (Magnus Damm's message of "Fri\, 14 May 2010 12\:25\:26 +0900")
+Message-ID: <87fx1uo3so.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010 12:10:03 -0400 Matthew Garrett wrote:
+Magnus Damm <magnus.damm@gmail.com> writes:
 
-> Experimenting with Windows has revealed that it will not probe the
-> keyboard controller unless a valid PNPACPI device is present. Change our
-> behaviour to match, and add a new i8042.forcedprobe parameter to allow
-> people to override it.
+> Still not sure how the system wide suspend is different from Runtime
+> PM and CPUidle from the hardware perspective...
 
-and add that parameter to Documentation/kernel-parameters.txt, please.
+At least on OMAP and other embedded SoCs I'm familiar with, there is
+no difference from the hardware perspecitve.
 
+However, I understand that on ACPI-based systems, there are low-power
+that are only reachable via system-wide suspsend since ACPI does not
+provide the kernel with fine-grained control to hit those states
+during idle.
 
-> Signed-off-by: Matthew Garrett <mjg@redhat.com>
-> ---
->  drivers/input/serio/i8042-x86ia64io.h |    5 +++++
->  drivers/input/serio/i8042.c           |    3 +++
->  2 files changed, 8 insertions(+), 0 deletions(-)
-> 
-> diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-> index 6168469..2c5d9c0 100644
-> --- a/drivers/input/serio/i8042-x86ia64io.h
-> +++ b/drivers/input/serio/i8042-x86ia64io.h
-> @@ -1,6 +1,8 @@
->  #ifndef _I8042_X86IA64IO_H
->  #define _I8042_X86IA64IO_H
->  
-> +#include <linux/acpi.h>
-> +
->  /*
->   * This program is free software; you can redistribute it and/or modify it
->   * under the terms of the GNU General Public License version 2 as published by
-> @@ -747,6 +749,9 @@ static int __init i8042_pnp_init(void)
->  #if defined(__ia64__)
->  		return -ENODEV;
->  #else
-> +		if (!acpi_disabled && !i8042_forceprobe)
-> +			return -ENODEV;
-> +
->  		printk(KERN_INFO "PNP: No PS/2 controller found. Probing ports directly.\n");
->  		return 0;
->  #endif
-> diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-> index 6440a8f..413c5a6 100644
-> --- a/drivers/input/serio/i8042.c
-> +++ b/drivers/input/serio/i8042.c
-> @@ -75,6 +75,9 @@ MODULE_PARM_DESC(dritek, "Force enable the Dritek keyboard extension");
->  static bool i8042_nopnp;
->  module_param_named(nopnp, i8042_nopnp, bool, 0);
->  MODULE_PARM_DESC(nopnp, "Do not use PNP to detect controller settings");
-> +static bool i8042_forceprobe;
-> +module_param_named(forceprobe, i8042_forceprobe, bool, 0);
-> +MODULE_PARM_DESC(forceprobe, "Force probing even if no PNP devices were found");
->  #endif
->  
->  #define DEBUG
-> -- 
+That being said, I don't think this should be an issue since
+opportunistic suspend is currently targetted primarily at embedded HW
+which has much more fine-grained power control than traditional
+ACPI-based systems.
 
+To me the only real difference between system-wide suspend and runtime
+PM + CPUidle is the freezing of userspace.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+As has been discussed elsewhere in this discussion, any alternative
+solution must address the freezing/idling of userspace.  
+
+Kevin
