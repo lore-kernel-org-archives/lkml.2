@@ -1,68 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755853Ab0ENQ14 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:27:56 -0400
-Received: from mho-02-ewr.mailhop.org ([204.13.248.72]:60300 "EHLO
-	mho-02-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753340Ab0ENQ1y (ORCPT
+	id S1756286Ab0ENQ20 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:28:26 -0400
+Received: from fg-out-1718.google.com ([72.14.220.154]:3514 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752621Ab0ENQ2Y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:27:54 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX1+W1r6I2Jbl7pPG+2QQNSEX
-Date: Fri, 14 May 2010 09:27:39 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Eduardo Valentin <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       linux-arm-kernel@lists.infradead.org,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       Peter De-Schrijver <Peter.De-Schrijver@nokia.com>,
-       santosh.shilimkar@ti.com, Ambresh <a0393775@ti.com>,
-       felipe.balbi@nokia.com, Jouni Hogander <jouni.hogander@nokia.com>,
-       Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-Message-ID: <20100514162739.GY3428@atomide.com>
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
- <20100512152424.803ea807.akpm@linux-foundation.org>
+	Fri, 14 May 2010 12:28:24 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=UAp48aZzwHjbk3YgJyEsMyiTGR2WR7MnEmvbUObMKyRUw9DJDvjRuvOeFHaIUhCape
+         h14VDePjNp4VSKdbQLWLUe5AzAsSSLpujhGrUUccA4W/L4FRNI7NkXh6Tl3LaCypfnn3
+         2fiWvGj6INF+i7Y5UiU6ADZRB7ydOljpIzHk0=
+Date: Fri, 14 May 2010 20:28:13 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+Message-ID: <20100514162813.GB13509@lenovo>
+References: <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com> <AANLkTimVmlPfRFu8Wo2KL1pyF6qtTSQriawvrKcsMe9Y@mail.gmail.com> <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100512152424.803ea807.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andrew Morton <akpm@linux-foundation.org> [100512 15:19]:
+On Fri, May 14, 2010 at 09:52:28PM +0530, Jaswinder Singh Rajput wrote:
+... 
+> Yes, this works for me. Now I am not getting general protection fault.
 > 
-> I'd have thought that sysfs was an appropriate place for this info. 
-> Perhaps under /sys/devices/platform?  Or /sys/devices/system?  Peter's
-> original patch didn't tell us where in the hierarchy the file was
-> placed, nor why it was placed there, not what its contents look like. 
-> But crappy changelogs are the norm :(
+> It seems hardware events are not supported for P4 yet.
+> 
+> $ ./perf stat -e
+> cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles
+> ls > /dev/null
+> 
+>  Performance counter stats for 'ls':
+> 
+>   <not counted>  cycles
+>          601636  instructions             #      0.000 IPC    (scaled
+> from 91.80%)
+>   <not counted>  cache-references
+>   <not counted>  cache-misses
+>   <not counted>  branches
+>   <not counted>  branch-misses
+>   <not counted>  bus-cycles
+> 
+>     0.003364910  seconds time elapsed
 
-To me both proc and sys work, I'm fine either way.
- 
-> The objections stated in this email:
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17630.html
-> appear to still apply to this version of the patches?
->
-> Kevin didn't explain why he said "Please export these via debugfs". 
-> Tony didn't clearly explain why he said "I don't think we want to
-> export unique chip identifiers by default".
- 
-The issue I had was with the unique silicon ID getting exposed
-by default to avoid the Pentium id number situation :)
+Thanks Jaswinder,
 
-It's now handled with a Kconfig and cmdline option, basically the
-same way as the id on x86. So the issues in the email thread
-above are sorted out.
+it means counters management somehow screwed at moment (it was working before).
+I'm working on it.
 
-Regards,
-
-Tony 
+	-- Cyrill
