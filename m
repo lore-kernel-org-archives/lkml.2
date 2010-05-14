@@ -1,146 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932268Ab0ENIW0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:22:26 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:48053 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758233Ab0ENIWW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:22:22 -0400
-Date: Fri, 14 May 2010 11:24:03 +0300
-From: Eduardo Valentin <eduardo.valentin@nokia.com>
-To: ext Andrew Morton <akpm@linux-foundation.org>
-Cc: "Valentin Eduardo (Nokia-D/Helsinki)" <eduardo.valentin@nokia.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>,
-       Linux-OMAP <linux-omap@vger.kernel.org>,
-       Russell King <linux@arm.linux.org.uk>,
-       ext Tony Lindgren <tony@atomide.com>,
-       ext Kevin Hilman <khilman@deeprootsystems.com>,
-       "De-Schrijver Peter (Nokia-D/Helsinki)" 
-	<Peter.De-Schrijver@nokia.com>,
-       "santosh.shilimkar@ti.com" <santosh.shilimkar@ti.com>,
-       Ambresh <a0393775@ti.com>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       "Hogander Jouni (Nokia-D/Tampere)" <jouni.hogander@nokia.com>,
-       Paul Mundt <lethal@linux-sh.org>, ext Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCHv5 0/3] Introduce the /proc/socinfo and use it to export
- OMAP data
-Message-ID: <20100514082403.GA4329@besouro.research.nokia.com>
-Reply-To: eduardo.valentin@nokia.com
-References: <1273587331-24604-1-git-send-email-eduardo.valentin@nokia.com>
- <20100512152424.803ea807.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512152424.803ea807.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 14 May 2010 08:19:37.0831 (UTC) FILETIME=[318CBF70:01CAF33E]
-X-Nokia-AV: Clean
+	id S932289Ab0ENIXm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:23:42 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53694 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758233Ab0ENIXi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:23:38 -0400
+Subject: Re: [PATCH 13/35] x86, lmb: Add lmb_free_memory_size()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BECF0E2.90406@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-14-git-send-email-yinghai@kernel.org>
+	 <1273804285.21352.392.camel@pasglop>  <4BECF0E2.90406@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 18:21:27 +1000
+Message-ID: <1273825287.21352.592.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Andrew,
-
-On Thu, May 13, 2010 at 12:24:24AM +0200, Andrew Morton wrote:
-> On Tue, 11 May 2010 17:15:28 +0300
-> Eduardo Valentin <eduardo.valentin@nokia.com> wrote:
-> 
-> > Here is the version 5 of the change to export OMAP data to userspace
-> > (name, revision, id code, production id and die id).
+On Thu, 2010-05-13 at 23:42 -0700, Yinghai wrote:
+> On 05/13/2010 07:31 PM, Benjamin Herrenschmidt wrote:
+> > On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+> >> It will return free memory size in specified range.
+> >>
+> >> We can not use memory_size - reserved_size here, because some reserved area
+> >> may not be in the scope of lmb.memory.region.
+> >>
+> >> Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+> >> then count size of all free ranges.
 > > 
-> > Basically, this version is still attempting to create a new file under /proc.
-> > It is the /proc/socinfo, which should be used to export bits which are SoC specific
-> > (not CPU related, nor machine related).
+> > I remember having already told you that the naming sucks.
+> 
+> any suggestion?
+> 
+> i think this name is clear.
+
+Well, I did have suggestions yes. Among others, because you are
+operating on a range, you should have the word "range" in your name. For
+example, something like lmb_free_memory_in_range(). A bit long but at
+least is self explanatory and doesn't lead to confusion.
+ 
+> > Also, you fail to explain what this is actually needed for.
+> 
+> needed by 
+> 
+> [PATCH 21/35] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
+
+Ok, that's some x86ism that I would need to study more closely, but it's
+fair enough to have those accessors if they are really needed. But
+please, try to make an effort on the naming.
+
+Cheers,
+Ben.
+
+> 
 > > 
-> > So, differences between previous version are:
-> > - merged patch 02/04 with 03/04 to avoid compilation breakages.
-> > - simplified the seq_file usage by using the single_open and single_release functions
-> > - exported a function to register a seq_operation .show callback
-> > - adapted the changes accordingly
+> > Cheers,
+> > Ben.
 > > 
-> > As usual, comments are welcome.
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> ---
+> >>  arch/x86/include/asm/lmb.h |    1 +
+> >>  arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
+> >>  2 files changed, 52 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+> >> index 358d8a6..4fb94b5 100644
+> >> --- a/arch/x86/include/asm/lmb.h
+> >> +++ b/arch/x86/include/asm/lmb.h
+> >> @@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+> >>  					 unsigned long last_pfn);
+> >>  u64 lmb_hole_size(u64 start, u64 end);
+> >>  u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
+> >> +u64 lmb_free_memory_size(u64 addr, u64 limit);
+> >>  
+> >>  #endif
+> >> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+> >> index c5fa1dd..6c69e99 100644
+> >> --- a/arch/x86/mm/lmb.c
+> >> +++ b/arch/x86/mm/lmb.c
+> >> @@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+> >>  }
+> >>  #endif
+> >>  
+> >> +u64 __init lmb_free_memory_size(u64 addr, u64 limit)
+> >> +{
+> >> +	int i, count;
+> >> +	struct range *range;
+> >> +	int nr_range;
+> >> +	u64 final_start, final_end;
+> >> +	u64 free_size;
+> >> +
+> >> +	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
+> >> +
+> >> +	range = find_range_array(count);
+> >> +	nr_range = 0;
+> >> +
+> >> +	addr = PFN_UP(addr);
+> >> +	limit = PFN_DOWN(limit);
+> >> +
+> >> +	for (i = 0; i < lmb.memory.cnt; i++) {
+> >> +		struct lmb_region *r = &lmb.memory.regions[i];
+> >> +
+> >> +		final_start = PFN_UP(r->base);
+> >> +		final_end = PFN_DOWN(r->base + r->size);
+> >> +		if (final_start >= final_end)
+> >> +			continue;
+> >> +		if (final_start >= limit || final_end <= addr)
+> >> +			continue;
+> >> +
+> >> +		nr_range = add_range(range, count, nr_range, final_start, final_end);
+> >> +	}
+> >> +	subtract_range(range, count, 0, addr);
+> >> +	subtract_range(range, count, limit, -1ULL);
+> >> +	for (i = 0; i < lmb.reserved.cnt; i++) {
+> >> +		struct lmb_region *r = &lmb.reserved.regions[i];
+> >> +
+> >> +		final_start = PFN_DOWN(r->base);
+> >> +		final_end = PFN_UP(r->base + r->size);
+> >> +		if (final_start >= final_end)
+> >> +			continue;
+> >> +		if (final_start >= limit || final_end <= addr)
+> >> +			continue;
+> >> +
+> >> +		subtract_range(range, count, final_start, final_end);
+> >> +	}
+> >> +	nr_range = clean_sort_range(range, count);
+> >> +
+> >> +	free_size = 0;
+> >> +	for (i = 0; i < nr_range; i++)
+> >> +		free_size += range[i].end - range[i].start;
+> >> +
+> >> +	return free_size << PAGE_SHIFT;
+> >> +}
+> >> +
+> >>  void __init lmb_add_memory(u64 start, u64 end)
+> >>  {
+> >>  	lmb_add_region(&lmb.memory, start, end - start);
+> > 
 > 
-> This changelog would be rather more useful if it was to show us some
-> sample output from /proc/socinfo, perhaps accompanied with an
-> explanation for people who aren't familar with this area of the kernel.
-
-Indeed. So, after applying this series, one example of output would be,
-in case of OMAP3:
-
-/ # cat /proc/socinfo
-SoC     : OMAP3430 ES3.1
-IDCODE  : 4b7ae02f
-Pr. ID  : 00000000 00000000 000000cc cafeb7ae
-
-These ids can be used, for instance, to track down silicon specific issues.
-
-> 
-> I'd have thought that sysfs was an appropriate place for this info. 
-> Perhaps under /sys/devices/platform?  Or /sys/devices/system?  Peter's
-> original patch didn't tell us where in the hierarchy the file was
-> placed, nor why it was placed there, not what its contents look like. 
-> But crappy changelogs are the norm :(
-
-IIRC, originally, Peter's patch was creating /sys/power/idcode. The content
-was very similar:
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
 
-Nokia-N900:~# cat /sys/power/idcode 
-IDCODE: 4b7ae02f
-Production ID: 00000000 00000000 000000cc cafeb7ae
-Die ID: 05018019 04033312 00000000 54500024
-
-
-> 
-> The objections stated in this email:
-> http://www.mail-archive.com/linux-omap@vger.kernel.org/msg17630.html
-> appear to still apply to this version of the patches?
-
-Yeah, it is not applied on all IDs actually. At some point, the complain has changed.
-More recently, Tony complained about Die ID:
-http://marc.info/?l=linux-omap&m=127230649306842&w=2
-
-And that's what is in patch 03/03 of this series. So, there are two things:
-1. A separated config option to have DIE ID code in
-2. User also have to explicitly pass the omap3_die_id kernel parameter.
-Just like the "serialnumber" parameter for x86's.
-
-Once the user has a kernel with CONFIG_OMAP3_EXPORT_DIE_ID and boots it with omap3_die_id parameter,
-the first output I posted above would also include die id:
-
-/ # cat /proc/socinfo 
-SoC     : OMAP3430 ES3.1
-IDCODE  : 4b7ae02f
-Pr. ID  : 00000000 00000000 000000cc cafeb7ae
-Die ID	: 05018019 04033312 00000000 54500024
-
-
-> 
-> Kevin didn't explain why he said "Please export these via debugfs". 
-> Tony didn't clearly explain why he said "I don't think we want to
-> export unique chip identifiers by default".
-> 
-> 
-> 
-> So apart from having certain opinions regarding communication skills
-> and wondering why people cc me on stuff without vaguely providing
-> enough info for me to understand what they're thinking, I don't know
-> what to make of it all :(
-
-Yeah, I agree here that there are some piece of info missing here and there.
-Anyways, I believe the main point here is what is the best place to export these bits.
-
-Originally was under sysfs (maybe not the correct place: /sys/power/idcode). Then I suggested
-to move it to /proc/cpuinfo, which has been denied because these bits do not belong to CPU.
-Then, it has been suggested to be under /proc/socinfo, which is the current version.
-Now, I think your suggestion is to move back to sysfs, but under sys/devices/platform or /sys/devices/system, right ?
-
-
-
-Thanks for your comments,
-
---
-Eduardo Valentin
