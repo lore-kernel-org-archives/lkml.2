@@ -1,81 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759908Ab0ENULE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:11:04 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:39917 "EHLO mgw2.diku.dk"
+	id S1753850Ab0ENUNn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:13:43 -0400
+Received: from mail.atheros.com ([12.36.123.2]:25028 "EHLO mail.atheros.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759298Ab0ENULB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:11:01 -0400
-Date: Fri, 14 May 2010 22:10:54 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-       linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/10] drivers/s390/char: Use kstrdup
-In-Reply-To: <Pine.LNX.4.64.1005142127100.28935@ask.diku.dk>
-Message-ID: <Pine.LNX.4.64.1005142210320.28935@ask.diku.dk>
-References: <Pine.LNX.4.64.1005142127100.28935@ask.diku.dk>
+	id S1752535Ab0ENUNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 16:13:42 -0400
+Date: Fri, 14 May 2010 13:13:39 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       Bruno Randolf <br1@einfach.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+Message-ID: <20100514201339.GB28198@tux>
+References: <4BEC7A84.3010503@gmail.com>
+ <201005141520.30802.br1@einfach.org>
+ <4BECEE3E.6090303@gmail.com>
+ <201005141538.43416.br1@einfach.org>
+ <4BED6F19.3040608@gmail.com>
+ <20100514165325.GA28198@tux>
+ <4BED8765.8040307@gmail.com>
+ <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
+ <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This introduced an unused variable.  I will send a revised version 
-shortly.
+On Fri, May 14, 2010 at 12:04:15PM -0700, Justin P. Mattock wrote:
+> 
+> 
+> On May 14, 2010, at 10:29 AM, "Luis R. Rodriguez" <lrodriguez@atheros.com 
+>  > wrote:
+> 
+> > On Fri, May 14, 2010 at 10:24 AM, Justin P. Mattock
+> > <justinmattock@gmail.com> wrote:
+> >
+> >>
+> >> here you go:
+> >> (I was grabbing the info
+> >> after rmmod and modprobe)
+> >>
+> >> [    7.034242] ATH9K: cachelsz: 256
+> >> [   69.175348] ATH9K: cachelsz: 256
+> >
+> > Close, so I without any patches applied, and by just running  
+> > modprobe as below:
+> >
+> >
+> > modprobe ath9k debug=0x00000200
+> >
+> >               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u  
+> > rxbufsize %u\n",
+> >                               common->cachelsz, common->rx_bufsize);
+> >
+> >
+> > This is already in the code so just please do this:
+> >
+> > rmmod ath9k
+> > modprobe ath9k debug=0x00000200
+> > dmesg | grep cachelsz
+> 
+> O.k. I did a git reset to the origin
+> Then the above, unfortunantly nothing
+> Shows up when grepping
+> Any CONFIG options I might be missing?
 
-julia
+CONFIG_ATH_DEBUG
 
-
-On Fri, 14 May 2010, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Use kstrdup when the goal of an allocation is copy a string into the
-> allocated region.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,from,to;
-> expression flag,E1,E2,E3;
-> statement S;
-> @@
-> 
-> -   x = strlen(from) + 1;
->     ... when != \( x = E1 \| from = E1 \)
-> -   to = \(kmalloc\|kzalloc\)(x,flag);
-> +   to = kstrdup(from, flag);
->     ... when != \(x = E2 \| from = E2 \| to = E2 \)
->     if (to==NULL || ...) S
->     ... when != \(x = E3 \| from = E3 \| to = E3 \)
-> -   memcpy(to, from, x);
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/s390/char/keyboard.c |    5 ++---
->  1 file changed, 2 insertions(+), 3 deletions(-)
-> 
-> diff -u -p a/drivers/s390/char/keyboard.c b/drivers/s390/char/keyboard.c
-> --- a/drivers/s390/char/keyboard.c
-> +++ b/drivers/s390/char/keyboard.c
-> @@ -72,11 +72,10 @@ kbd_alloc(void) {
->  		goto out_maps;
->  	for (i = 0; i < ARRAY_SIZE(func_table); i++) {
->  		if (func_table[i]) {
-> -			len = strlen(func_table[i]) + 1;
-> -			kbd->func_table[i] = kmalloc(len, GFP_KERNEL);
-> +			kbd->func_table[i] = kstrdup(func_table[i],
-> +						     GFP_KERNEL);
->  			if (!kbd->func_table[i])
->  				goto out_func;
-> -			memcpy(kbd->func_table[i], func_table[i], len);
->  		}
->  	}
->  	kbd->fn_handler =
-> 
+  Luis
