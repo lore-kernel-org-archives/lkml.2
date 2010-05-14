@@ -1,65 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0ENQM6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:12:58 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57028 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752172Ab0ENQM4 (ORCPT
+	id S1755427Ab0ENQNA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:13:00 -0400
+Received: from landau.phys.spbu.ru ([195.19.235.38]:48631 "EHLO
+	landau.phys.spbu.ru" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753352Ab0ENQM6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:12:56 -0400
-Date: Fri, 14 May 2010 18:12:55 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Tom Zanussi <tzanussi@gmail.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] perf/trace: use read() instead of lseek() in
- trace_event_read.c:skip()
-Message-ID: <20100514161255.GA8535@kryptos.osrc.amd.com>
-References: <1273032130.6383.28.camel@tropicana>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273032130.6383.28.camel@tropicana>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 May 2010 12:12:58 -0400
+X-Greylist: delayed 1689 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 May 2010 12:12:58 EDT
+From: Kirill Smelkov <kirr@landau.phys.spbu.ru>
+To: David Airlie <airlied@redhat.com>
+Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
+       Kirill Smelkov <kirr@landau.phys.spbu.ru>
+Subject: [PATCH 2/2] drm: Prefix info printk about registering panic notifier with 'drm'
+Date: Fri, 14 May 2010 19:45:16 +0400
+Message-Id: <6bd8fc34532c307ce2b89f7b32cd6ab52c3927b8.1273851443.git.kirr@landau.phys.spbu.ru>
+X-Mailer: git-send-email 1.7.1.87.gcc8c60.dirty
+In-Reply-To: <cover.1273851443.git.kirr@landau.phys.spbu.ru>
+References: <cover.1273851443.git.kirr@landau.phys.spbu.ru>
+In-Reply-To: <cover.1273851443.git.kirr@landau.phys.spbu.ru>
+References: <cover.1273851443.git.kirr@landau.phys.spbu.ru>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Tom Zanussi <tzanussi@gmail.com>
-Date: Tue, May 04, 2010 at 11:02:10PM -0500
+Recently I've studied my system dmesg and seen this:
 
-Hi,
+  <lots of stuff before>
+1 [    0.478416] ACPI: Battery Slot [C1B4] (battery present)
+2 [    0.478648] ACPI: Battery Slot [C1B3] (battery absent)
+3 [    0.906678] [drm] initialized overlay support
+4 [    1.762304] Console: switching to colour frame buffer device 128x48
+5 [    1.765211] fb0: inteldrmfb frame buffer device
+6 [    1.765242] registered panic notifier
+7 [    1.765272] [drm] Initialized i915 1.6.0 20080730 for 0000:00:02.0 on minor 0
+8 [    1.765372] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+  <lots of stuff after>
 
-> Here's a small fix for a problem affecting live-mode, introduced in the
-> past day or so:
-> 
-> root@tropicana:~# perf trace rwtop
-> perf trace started with Perl
-> script /root/libexec/perf-core/scripts/perl/rwtop.pl
-> 
->   Fatal: did not read header event
-> 
-> commit d00a47cce569a3e660a8c9de5d57af28d6a9f0f7 added a skip()
-> function to skip over e.g. header_page, but this doesn't work for live
-> mode.  This patch re-implements skip() to use read() instead of
-> lseek() to fix that.
-> 
-> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+and it was not evident who registered that panic notifier on line 6.
 
-has this one landed in any tree in the meantime?
+I'd bought it as some low-level stuff needed by kernel itself, but the
+time was inappropriate -- too late for such things.
 
-tip/perf/core doesn't have it.
+So I had to study sources to see it was drm who was registering
+switch-to-fb on panic.
 
+Let's avoid possible confusion and mark this message as going from drm
+subsystem.
+
+(I'm a bit unsure whether to use '[drm]:' or 'drm:' -- the rest of the
+ kernel just uses 'topic:', and even in drm_fb_helper.c we use 'fb%d:'
+ without [] brackets. Either way is ok with me.)
+
+Signed-off-by: Kirill Smelkov <kirr@landau.phys.spbu.ru>
+---
+ drivers/gpu/drm/drm_fb_helper.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpu/drm/drm_fb_helper.c b/drivers/gpu/drm/drm_fb_helper.c
+index 288ea2f..90f1331 100644
+--- a/drivers/gpu/drm/drm_fb_helper.c
++++ b/drivers/gpu/drm/drm_fb_helper.c
+@@ -912,7 +912,7 @@ int drm_fb_helper_single_fb_probe(struct drm_device *dev,
+ 	/* Switch back to kernel console on panic */
+ 	/* multi card linked list maybe */
+ 	if (list_empty(&kernel_fb_helper_list)) {
+-		printk(KERN_INFO "registered panic notifier\n");
++		printk(KERN_INFO "drm: registered panic notifier\n");
+ 		atomic_notifier_chain_register(&panic_notifier_list,
+ 					       &paniced);
+ 		register_sysrq_key('v', &sysrq_drm_fb_helper_restore_op);
+@@ -926,7 +926,7 @@ void drm_fb_helper_free(struct drm_fb_helper *helper)
+ {
+ 	list_del(&helper->kernel_fb_list);
+ 	if (list_empty(&kernel_fb_helper_list)) {
+-		printk(KERN_INFO "unregistered panic notifier\n");
++		printk(KERN_INFO "drm: unregistered panic notifier\n");
+ 		atomic_notifier_chain_unregister(&panic_notifier_list,
+ 						 &paniced);
+ 		unregister_sysrq_key('v', &sysrq_drm_fb_helper_restore_op);
 -- 
-Regards/Gruss,
-Boris.
-
-Operating Systems Research Center
-Advanced Micro Devices, Inc.
+1.7.1.87.gcc8c60.dirty
