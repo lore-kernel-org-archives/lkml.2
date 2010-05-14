@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753655Ab0ENAu6 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:50:58 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:59570 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752638Ab0ENAu4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:50:56 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=o+nNGxWNe/ZTXObPsEy3c/DpD754IBJQCRcOlFIcXPaGEoF9m4GVcpFeBl1z0D5mzD
-         foezGkHNXTJj53+45vzM79uFPy9l9C3CS5A61Hk9F9q8S+4fLkNVnBlWfo2Qwjn+XMPa
-         d1tCpOxUKpvXBjVHXmlGnjQSbpof7Qyl1enk4=
-Message-ID: <4BEC9E6B.30809@gmail.com>
-Date: Thu, 13 May 2010 17:50:51 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-CC: linux-wireless@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-References: <4BEC7A84.3010503@gmail.com> <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com> 	<4BEC9782.2040705@gmail.com> <AANLkTinKoMxdkPYQA_AblpByL6zAiAP5hv2M3Jn2R3hM@mail.gmail.com>
-In-Reply-To: <AANLkTinKoMxdkPYQA_AblpByL6zAiAP5hv2M3Jn2R3hM@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753704Ab0ENA60 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:58:26 -0400
+Received: from mga09.intel.com ([134.134.136.24]:45452 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750748Ab0ENA6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 20:58:25 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,225,1272870000"; 
+   d="scan'208";a="517784513"
+Subject: Re: [PATCH -v2] KVM, Fix QEMU-KVM is killed by guest SRAO MCE
+From: Huang Ying <ying.huang@intel.com>
+To: Marcelo Tosatti <mtosatti@redhat.com>
+Cc: Avi Kivity <avi@redhat.com>, Andi Kleen <andi@firstfloor.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "masbock@linux.vnet.ibm.com" <masbock@linux.vnet.ibm.com>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
+In-Reply-To: <20100513214307.GA25003@amt.cnet>
+References: <1273646643.3564.51.camel@yhuang-dev.sh.intel.com>
+	 <20100513214307.GA25003@amt.cnet>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 08:58:21 +0800
+Message-ID: <1273798701.3564.112.camel@yhuang-dev.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/10 17:28, Luis R. Rodriguez wrote:
-> On Thu, May 13, 2010 at 5:21 PM, Justin P. Mattock
-> <justinmattock@gmail.com>  wrote:
->> On 05/13/10 16:01, Luis R. Rodriguez wrote:
->>>
->>> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
->>> <justinmattock@gmail.com>    wrote:
->>>>
->>>> not sure what this is, but while at a convention
->>>> I was trying to access the internet and(below is
->>>> full dmesg) this showed up.
->>>>
->>>> After receiving this, I sat and tried to re-create
->>>> my steps to reproduce but had no luck(was even going
->>>> todo a bisect n the spot if I could re-create).
->>>
->>> OK this stuff is hard to reproduce it seems.. you have an Atheros
->>> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
->>> to get the poison stuff? I am just surprised we haven't seen it
->>> ourselves yet. Let me make sure all of us get this kconfig option
->>> enabled.
->>>
->>>    Luis
->>>
->>
->>
->>
->> CONFIG_ATH_COMMON=m
->> # CONFIG_ATH_DEBUG is not set
->> CONFIG_ATH5K=m
->> # CONFIG_ATH5K_DEBUG is not set
->> CONFIG_ATH9K_HW=m
->> CONFIG_ATH9K_COMMON=m
->> CONFIG_ATH9K=m
->> # CONFIG_ATH9K_DEBUGFS is not set
->>
->> if you need my .config let me know.
->> (I can try again reproducing, but man
->> just doesn't easily fire off).
->
-> Oh I mean the config options to enable the poison rant.
->
->    Luis
->
+On Fri, 2010-05-14 at 05:43 +0800, Marcelo Tosatti wrote:
+> On Wed, May 12, 2010 at 02:44:03PM +0800, Huang Ying wrote:
+> > @@ -1975,6 +1976,27 @@ static int __direct_map(struct kvm_vcpu
+> >  	return pt_write;
+> >  }
+> >  
+> > +static void kvm_send_hwpoison_signal(struct kvm *kvm, gfn_t gfn)
+> > +{
+> > +	char buf[1];
+> > +	void __user *hva;
+> > +	int r;
+> > +
+> > +	/* Touch the page, so send SIGBUS */
+> > +	hva = (void __user *)gfn_to_hva(kvm, gfn);
+> > +	r = copy_from_user(buf, hva, 1);
+> > +}
+> 
+> A SIGBUS signal has been raised by memory poisoning already, so i don't
+> see why this is needed?
+> 
+> To avoid the MMIO processing in userspace before the MCE is sent to the
+> guest you can just return -EAGAIN from the page fault handlers back to
+> kvm_mmu_page_fault.
 
-shoot.. not sure how to grep for the right info
-in the .config for you, heres what grepping for COFIG_DEBUG
-looks like:
-CONFIG_DEBUG_FS=y
-CONFIG_DEBUG_KERNEL=y
-CONFIG_DEBUG_RT_MUTEXES=y
-CONFIG_DEBUG_PI_LIST=y
-CONFIG_DEBUG_SPINLOCK=y
-CONFIG_DEBUG_MUTEXES=y
-CONFIG_DEBUG_BUGVERBOSE=y
-CONFIG_DEBUG_MEMORY_INIT=y
-CONFIG_DEBUG_STACKOVERFLOW=y
+The SIGBUS signal is necessary here because this SIGBUS is SRAR (Action
+Requirement) while the previously sent one is SRAO (Action Optional).
+They have different semantics and processed differently in QEMU-KVM and
+guest OS.
+
+For example the guest Linux kernel may ignore SRAO MCE (raised by
+QEMU-KVM after receiving SRAO SIGBUS), because it is optional, but for
+SRAR MCE (raised by QEMU-KVM after receiving SRAR SIGBUS) the guest
+Linux kernel must kill corresponding application or go panic.
+
+> > +int is_hwpoison_address(unsigned long addr)
+> > +{
+> > +	pgd_t *pgdp;
+> > +	pud_t *pudp;
+> > +	pmd_t *pmdp;
+> > +	pte_t pte, *ptep;
+> > +	swp_entry_t entry;
+> > +
+> > +	pgdp = pgd_offset(current->mm, addr);
+> > +	if (!pgd_present(*pgdp))
+> > +		return 0;
+> > +	pudp = pud_offset(pgdp, addr);
+> > +	if (!pud_present(*pudp))
+> > +		return 0;
+> > +	pmdp = pmd_offset(pudp, addr);
+> > +	if (!pmd_present(*pmdp))
+> > +		return 0;
+> 
+> Need to bail out if pmd is huge.
+
+Yes. I will change this.
+
+Best Regards,
+Huang Ying
 
 
-Justin P. Mattock
