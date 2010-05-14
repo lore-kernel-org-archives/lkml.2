@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758141Ab0ENMlt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 08:41:49 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:63418 "EHLO
+	id S1758260Ab0ENMlw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 08:41:52 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63417 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757461Ab0ENMlk (ORCPT
+	with ESMTP id S1757370Ab0ENMlk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 May 2010 08:41:40 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=SKM7WLKFwAeH/6O5RM9c/oiinf92UO3aj3/Gf4ZYhDpbx/YwzA36JkhPm+4oxry2m
-	itOs7WsdFb5Oapjz7aSBw==
+	b=cZTS277am2Uc+UcB1jZKrzr2vXqjzDwH58eiC87cMnY8sIFmQ2itqjKXojs3LGhV4
+	AQB3moVYD11ftZWPaxVnA==
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -20,9 +20,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Mike Waychison <mikew@google.com>,
        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 03/10] rwsem: lighter active count checks when waking up readers
-Date: Fri, 14 May 2010 05:39:35 -0700
-Message-Id: <1273840782-5920-4-git-send-email-walken@google.com>
+Subject: [PATCH 07/10] generic rwsem: implement down_read_unfair
+Date: Fri, 14 May 2010 05:39:39 -0700
+Message-Id: <1273840782-5920-8-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1273840782-5920-1-git-send-email-walken@google.com>
 References: <1273840782-5920-1-git-send-email-walken@google.com>
@@ -30,157 +30,127 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In __rwsem_do_wake(), we can skip the active count check unless we come
-there from up_xxxx(). Also when checking the active count, it is not
-actually necessary to increment it; this allows us to get rid of the
-read side undo code and simplify the calculation of the final rwsem count
-adjustment once we've counted the reader threads to wake.
+Add down_read_unfair() API.
 
-The basic observation is the following. When there are waiter threads
-on a rwsem and the spinlock is held, other threads can only increment the
-active count by trying to grab the rwsem in up_xxxx(). However up_xxxx()
-will notice there are waiter threads and take the down_failed path,
-blocking to acquire the spinlock on the way there. Therefore, a thread
-observing an active count of zero with waiters queued and the spinlock held,
-is protected against other threads acquiring the rwsem until it wakes the
-last waiter or releases the spinlock.
+This is similar to down_read() with the following changes:
+- when the rwsem is read owned with queued writers, down_read_unfair() callers
+  are allowed to acquire the rwsem for read without queueing;
+- when the rwsem is write owned, down_read_unfair() callers get queued in
+  front of threads trying to acquire the rwsem by other means.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- lib/rwsem.c |   60 ++++++++++++++++++++++++++++++++--------------------------
- 1 files changed, 33 insertions(+), 27 deletions(-)
+ include/linux/rwsem-spinlock.h |   10 +++++++++-
+ include/linux/rwsem.h          |   10 ++++++++++
+ kernel/rwsem.c                 |   17 +++++++++++++++++
+ lib/rwsem-spinlock.c           |   10 +++++++---
+ 4 files changed, 43 insertions(+), 4 deletions(-)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index e3e133f..93206a3 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -36,6 +36,14 @@ struct rwsem_waiter {
- #define RWSEM_WAITING_FOR_WRITE	0x00000002
- };
+diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
+index bdfcc25..dc849d9 100644
+--- a/include/linux/rwsem-spinlock.h
++++ b/include/linux/rwsem-spinlock.h
+@@ -60,7 +60,15 @@ do {								\
+ 	__init_rwsem((sem), #sem, &__key);			\
+ } while (0)
  
-+/* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
-+ * RWSEM_WAKE_READ_OWNED imply that the spinlock must have been kept held
-+ * since the rwsem value was observed.
+-extern void __down_read(struct rw_semaphore *sem);
++#define __HAVE_DOWN_READ_UNFAIR
++
++static inline void __down_read(struct rw_semaphore *sem)
++	{ __down_read_internal(sem, 0); }
++
++static inline void __sched __down_read_unfair(struct rw_semaphore *sem)
++	{ __down_read_internal(sem, 1);	}
++
++extern void __down_read_internal(struct rw_semaphore *sem, int unfair);
+ extern int __down_read_trylock(struct rw_semaphore *sem);
+ extern void __down_write(struct rw_semaphore *sem);
+ extern void __down_write_nested(struct rw_semaphore *sem, int subclass);
+diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
+index efd348f..0d3310b 100644
+--- a/include/linux/rwsem.h
++++ b/include/linux/rwsem.h
+@@ -28,6 +28,16 @@ struct rw_semaphore;
+ extern void down_read(struct rw_semaphore *sem);
+ 
+ /*
++ * lock for reading - skip waiting threads
 + */
-+#define RWSEM_WAKE_ANY        0 /* Wake whatever's at head of wait list */
-+#define RWSEM_WAKE_NO_ACTIVE  1 /* rwsem was observed with no active thread */
-+#define RWSEM_WAKE_READ_OWNED 2 /* rwsem was observed to be read owned */
++#ifdef __HAVE_DOWN_READ_UNFAIR
++extern void down_read_unfair(struct rw_semaphore *sem);
++#else
++static inline void down_read_unfair(struct rw_semaphore *sem)
++	{ down_read(sem); }
++#endif
++
++/*
+  * trylock for reading -- returns 1 if successful, 0 if contention
+  */
+ extern int down_read_trylock(struct rw_semaphore *sem);
+diff --git a/kernel/rwsem.c b/kernel/rwsem.c
+index cae050b..d7b424b 100644
+--- a/kernel/rwsem.c
++++ b/kernel/rwsem.c
+@@ -26,6 +26,23 @@ void __sched down_read(struct rw_semaphore *sem)
+ 
+ EXPORT_SYMBOL(down_read);
+ 
++#ifdef __HAVE_DOWN_READ_UNFAIR
++
++/*
++ * lock for reading - skip waiting threads
++ */
++void __sched down_read_unfair(struct rw_semaphore *sem)
++{
++	might_sleep();
++	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
++
++	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
++}
++
++EXPORT_SYMBOL(down_read_unfair);
++
++#endif
 +
  /*
-  * handle the lock release when processes blocked on it that can now run
-  * - if we come here from up_xxxx(), then:
-@@ -46,8 +54,8 @@ struct rwsem_waiter {
-  * - woken process blocks are discarded from the list after having task zeroed
-  * - writers are only woken if downgrading is false
+  * trylock for reading -- returns 1 if successful, 0 if contention
   */
--static inline struct rw_semaphore *
--__rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
-+static struct rw_semaphore *
-+__rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
- {
- 	struct rwsem_waiter *waiter;
- 	struct task_struct *tsk;
-@@ -58,7 +66,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
- 	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
- 		goto readers_only;
- 
--	if (downgrading)
-+	if (wake_type == RWSEM_WAKE_READ_OWNED)
- 		goto out;
- 
- 	/* There's a writer at the front of the queue - try to grant it the
-@@ -85,19 +93,24 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
- 	goto out;
- 
-  readers_only:
--	if (!downgrading) {
--
--		/* if we came through an up_xxxx() call, we only only wake
--		 * someone up if we can transition the active part of the
--		 * count from 0 -> 1
--		 */
-- try_again_read:
--		oldcount = rwsem_atomic_update(RWSEM_ACTIVE_BIAS, sem)
--							- RWSEM_ACTIVE_BIAS;
--		if (oldcount & RWSEM_ACTIVE_MASK)
--			/* Someone grabbed the sem already */
--			goto undo_read;
--	}
-+	/* If we come here from up_xxxx(), another thread might have reached
-+	 * rwsem_down_failed_common() before we acquired the spinlock and
-+	 * woken up an active locker.  We prefer to check for this first in
-+	 * order to not spend too much time with the spinlock held if we're
-+	 * not going to be able to wake up readers in the end.
-+	 *
-+	 * Note that we do not need to update the rwsem count: any writer
-+	 * trying to acquire rwsem will run rwsem_down_write_failed() due
-+	 * to the waiting threads, and block trying to acquire the spinlock.
-+	 *
-+	 * We use a dummy atomic update in order to acquire the cache line
-+	 * exclusively since we expect to succeed and run the final rwsem
-+	 * count adjustment pretty soon.
-+	 */
-+	if (wake_type == RWSEM_WAKE_ANY &&
-+	    rwsem_atomic_update(0, sem) & RWSEM_ACTIVE_MASK)
-+		/* Someone grabbed the sem already */
-+		goto out;
- 
- 	/* Grant an infinite number of read locks to the readers at the front
- 	 * of the queue.  Note we increment the 'active part' of the count by
-@@ -117,9 +130,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
- 
- 	loop = woken;
- 	woken *= RWSEM_ACTIVE_BIAS - RWSEM_WAITING_BIAS;
--	if (!downgrading)
--		/* we'd already done one increment earlier */
--		woken -= RWSEM_ACTIVE_BIAS;
- 
- 	rwsem_atomic_add(woken, sem);
- 
-@@ -145,10 +155,6 @@ __rwsem_do_wake(struct rw_semaphore *sem, int downgrading)
- 	if (rwsem_atomic_update(-RWSEM_ACTIVE_BIAS, sem) & RWSEM_ACTIVE_MASK)
- 		goto out;
- 	goto try_again;
-- undo_read:
--	if (rwsem_atomic_update(-RWSEM_ACTIVE_BIAS, sem) & RWSEM_ACTIVE_MASK)
--		goto out;
--	goto try_again_read;
- }
- 
+diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
+index ffc9fc7..b2fd5fb 100644
+--- a/lib/rwsem-spinlock.c
++++ b/lib/rwsem-spinlock.c
+@@ -139,7 +139,7 @@ __rwsem_wake_one_writer(struct rw_semaphore *sem)
  /*
-@@ -170,12 +176,12 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+  * get a read lock on the semaphore
+  */
+-void __sched __down_read(struct rw_semaphore *sem)
++void __sched __down_read_internal(struct rw_semaphore *sem, int unfair)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk;
+@@ -147,7 +147,7 @@ void __sched __down_read(struct rw_semaphore *sem)
  
- 	list_add_tail(&waiter->list, &sem->wait_list);
+ 	spin_lock_irqsave(&sem->wait_lock, flags);
  
--	/* we're now waiting on the lock, but no longer actively read-locking */
-+	/* we're now waiting on the lock, but no longer actively locking */
- 	count = rwsem_atomic_update(adjustment, sem);
+-	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
++	if (sem->activity >= 0 && (unfair || list_empty(&sem->wait_list))) {
+ 		/* granted */
+ 		sem->activity++;
+ 		spin_unlock_irqrestore(&sem->wait_lock, flags);
+@@ -162,7 +162,11 @@ void __sched __down_read(struct rw_semaphore *sem)
+ 	waiter.flags = RWSEM_WAITING_FOR_READ;
+ 	get_task_struct(tsk);
  
- 	/* if there are no active locks, wake the front queued process(es) up */
- 	if (!(count & RWSEM_ACTIVE_MASK))
--		sem = __rwsem_do_wake(sem, 0);
-+		sem = __rwsem_do_wake(sem, RWSEM_WAKE_NO_ACTIVE);
+-	list_add_tail(&waiter.list, &sem->wait_list);
++	if (unfair) {
++		list_add(&waiter.list, &sem->wait_list);
++	} else {
++		list_add_tail(&waiter.list, &sem->wait_list);
++	}
  
- 	spin_unlock_irq(&sem->wait_lock);
- 
-@@ -232,7 +238,7 @@ asmregparm struct rw_semaphore *rwsem_wake(struct rw_semaphore *sem)
- 
- 	/* do nothing if list empty */
- 	if (!list_empty(&sem->wait_list))
--		sem = __rwsem_do_wake(sem, 0);
-+		sem = __rwsem_do_wake(sem, RWSEM_WAKE_ANY);
- 
+ 	/* we don't need to touch the semaphore struct anymore */
  	spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
-@@ -252,7 +258,7 @@ asmregparm struct rw_semaphore *rwsem_downgrade_wake(struct rw_semaphore *sem)
- 
- 	/* do nothing if list empty */
- 	if (!list_empty(&sem->wait_list))
--		sem = __rwsem_do_wake(sem, 1);
-+		sem = __rwsem_do_wake(sem, RWSEM_WAKE_READ_OWNED);
- 
- 	spin_unlock_irqrestore(&sem->wait_lock, flags);
- 
 -- 
 1.7.0.1
 
