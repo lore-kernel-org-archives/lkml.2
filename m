@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755560Ab0ENQSV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:18:21 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:59647 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753992Ab0ENQST (ORCPT
+	id S1754583Ab0ENQUk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:20:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24027 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753553Ab0ENQUi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:18:19 -0400
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Tony Lindgren <tony@atomide.com>, Alan Stern <stern@rowland.harvard.edu>,
-       Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Matthew Garrett <mjg@redhat.com>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Linus Walleij <linus.walleij@ericsson.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-References: <20100513191717.GA3428@atomide.com>
-	<Pine.LNX.4.44L0.1005131729510.1731-100000@iolanthe.rowland.org>
-	<20100513214739.GM3428@atomide.com>
-	<AANLkTilL2mvqpwirTfJRWZFdrFJvSihnaY8-xao4pLpH@mail.gmail.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Fri, 14 May 2010 09:18:15 -0700
-In-Reply-To: <AANLkTilL2mvqpwirTfJRWZFdrFJvSihnaY8-xao4pLpH@mail.gmail.com> (Magnus Damm's message of "Fri\, 14 May 2010 12\:25\:26 +0900")
-Message-ID: <87fx1uo3so.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Fri, 14 May 2010 12:20:38 -0400
+Message-ID: <4BED78F5.2010501@oracle.com>
+Date: Fri, 14 May 2010 09:23:17 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>	 <1273803143.21352.353.camel@pasglop>  <4BECEB8D.8070600@oracle.com> <1273824578.21352.579.camel@pasglop>
+In-Reply-To: <1273824578.21352.579.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090206.4BED7841.00E9:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Magnus Damm <magnus.damm@gmail.com> writes:
+On 05/14/2010 01:09 AM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-13 at 23:19 -0700, Yinghai wrote:
+>   
+>>> If we expose LMB_ERROR then all lmb calls that can fail should
+>>>       
+>> return
+>>     
+>>> that. However, the API calls all return 0 instead. Changing that
+>>>       
+>> means
+>>     
+>>> fixing all callers.
+>>>       
+>> ok will stop use LMB_ERROR out lib/lmb.c
+>>
+>> will go back to use -1ULL for x86 path.
+>>     
+> No. That is not the point. Read the rest of my email !
+>
+> We need to -sanitize- those errors. _Maybe_ exposing LMB_ERROR is the
+> right way to do so, but in that case, we need to make -all- function use
+> the same error code. Right now, some fail with 0 and some with
+> LMB_ERROR.
+>   
 
-> Still not sure how the system wide suspend is different from Runtime
-> PM and CPUidle from the hardware perspective...
+will check what is effects for changing all to LMB_ERROR
 
-At least on OMAP and other embedded SoCs I'm familiar with, there is
-no difference from the hardware perspecitve.
+> You are also not responding to my other comments such as:
+>  
+>   
+>>> I'm also not too happy with exposing lmb_add_region(). Why would you
+>>> ever need to expose it ? Just call lmb_reserve() if you want to
+>>>       
+>> reserve
+>>     
+>>> something. lmb_add_region() is an internal function and has no
+>>>       
+>> business
+>>     
+>>> being used outside of the main lmb.c file.
+>>>       
+in other mail. and updated version in the git dropped that
+lmb_add_region exposing.
 
-However, I understand that on ACPI-based systems, there are low-power
-that are only reachable via system-wide suspsend since ACPI does not
-provide the kernel with fine-grained control to hit those states
-during idle.
+Thanks
 
-That being said, I don't think this should be an issue since
-opportunistic suspend is currently targetted primarily at embedded HW
-which has much more fine-grained power control than traditional
-ACPI-based systems.
-
-To me the only real difference between system-wide suspend and runtime
-PM + CPUidle is the freezing of userspace.
-
-As has been discussed elsewhere in this discussion, any alternative
-solution must address the freezing/idling of userspace.  
-
-Kevin
+Yinghai
