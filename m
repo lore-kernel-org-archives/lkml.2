@@ -1,49 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753560Ab0ENI7d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:59:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:56659 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab0ENI7b (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:59:31 -0400
-Subject: Re: [PATCH] Regulators: ab3100/bq24022: add a missing .owner field
- in regulator_desc
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Mattias Wallin <mattias.wallin@stericsson.com>,
-       Philipp Zabel <philipp.zabel@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-In-Reply-To: <1273743181.10563.4.camel@mola>
-References: <1273743181.10563.4.camel@mola>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 09:59:25 +0100
-Message-ID: <1273827565.3069.0.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758568Ab0ENJCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 05:02:53 -0400
+Received: from cantor.suse.de ([195.135.220.2]:45637 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752874Ab0ENJCw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 05:02:52 -0400
+Date: Fri, 14 May 2010 11:02:50 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: "Arce, Abraham" <x0066660@ti.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "khali@linux-fr.org" <khali@linux-fr.org>,
+       "gregkh@suse.de" <gregkh@suse.de>
+Subject: Re: [PATCH v2 0/3] EEPROM: Clean up headers in files
+In-Reply-To: <20100514013553.GC30794@pengutronix.de>
+Message-ID: <alpine.LNX.2.00.1005141102400.28092@pobox.suse.cz>
+References: <27F9C60D11D683428E133F85D2BB4A53043E113B5C@dlee03.ent.ti.com> <20100514013553.GC30794@pengutronix.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 17:33 +0800, Axel Lin wrote:
-> This patch adds a missing .owner field in regulator_desc, which is used for refcounting.
+On Fri, 14 May 2010, Wolfram Sang wrote:
+
+> On Thu, May 13, 2010 at 03:03:26PM -0500, Arce, Abraham wrote:
+> > 
+> > Change the top header of the required files under driver/misc/eeprom directory to follow the comment guidelines.
+> > 
+> > These patches are against trivial/for-next.
 > 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/regulator/ab3100.c  |   10 ++++++++++
->  drivers/regulator/bq24022.c |    1 +
->  2 files changed, 11 insertions(+), 0 deletions(-)
+> Whole series:
 > 
+> Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Applied.
+Thanks, I have applied all three patches.
 
-Thanks.
-
-Liam
 -- 
-Freelance Developer, SlimLogic Ltd
-ASoC and Voltage Regulator Maintainer.
-http://www.slimlogic.co.uk
-
+Jiri Kosina
+SUSE Labs, Novell Inc.
