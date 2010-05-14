@@ -1,24 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932624Ab0ENVvv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 17:51:51 -0400
-Received: from mga06.intel.com ([134.134.136.21]:49795 "EHLO
+	id S1760048Ab0ENVvc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 17:51:32 -0400
+Received: from mga06.intel.com ([134.134.136.21]:9521 "EHLO
 	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759781Ab0ENVsC (ORCPT
+	with ESMTP id S1759949Ab0ENVsF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 17:48:02 -0400
+	Fri, 14 May 2010 17:48:05 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,233,1272870000"; 
-   d="scan'208";a="621797634"
+   d="scan'208";a="621797652"
 From: Jacob Pan <jacob.jun.pan@linux.intel.com>
 To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
        Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Alan Cox <alan@linux.intel.com>,
        Arjan van de Ven <arjan@linux.intel.com>
-Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH 2/8] x86/mrst: add cpu type detection for Medfield
-Date: Fri, 14 May 2010 14:41:15 -0700
-Message-Id: <1273873281-17489-3-git-send-email-jacob.jun.pan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@intel.com>,
+       Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 4/8] x86/apbt: support more timer configurations on mrst
+Date: Fri, 14 May 2010 14:41:17 -0700
+Message-Id: <1273873281-17489-5-git-send-email-jacob.jun.pan@linux.intel.com>
 X-Mailer: git-send-email 1.6.3.3
 In-Reply-To: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
 References: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
@@ -26,85 +27,109 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Medfield is the follow-up of Moorestown, it is treated under the same
-HW sub-architecture. However, we do need to know the CPU type such that
-some drivers can act accordingly.
+From: Jacob Pan <jacob.jun.pan@intel.com>
 
-We also have different optimal clock configuration for each CPU type.
-For Moorestown the CPU type is Lincroft and for Medfield the CPU type is
-Penwell.
+With the addition of Medfield as a follow-up of Moorestown, more timer
+configurations are available to the kernel. This patch allows the
+optimal default configuration to be chosen and overwritten by cmdline
+as well.
+i.e. For Moorestown, percpu APB timers are default. For Medfield local
+always-on local APIC timers are default (w/o any platform timers).
 
 Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 ---
- arch/x86/include/asm/mrst.h |   13 +++++++++++++
- arch/x86/kernel/mrst.c      |   21 +++++++++++++++++++++
- 2 files changed, 34 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/apb_timer.h |    2 +-
+ arch/x86/kernel/apb_timer.c      |   18 ++++++++++--------
+ 2 files changed, 11 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
-index 451d30e..ddf0ad8 100644
---- a/arch/x86/include/asm/mrst.h
-+++ b/arch/x86/include/asm/mrst.h
-@@ -11,8 +11,21 @@
- #ifndef _ASM_X86_MRST_H
- #define _ASM_X86_MRST_H
- extern int pci_mrst_init(void);
-+extern int mrst_identify_cpu(void);
- int __init sfi_parse_mrtc(struct sfi_table_header *table);
+diff --git a/arch/x86/include/asm/apb_timer.h b/arch/x86/include/asm/apb_timer.h
+index c74a2ee..4127fd1 100644
+--- a/arch/x86/include/asm/apb_timer.h
++++ b/arch/x86/include/asm/apb_timer.h
+@@ -55,7 +55,7 @@ extern unsigned long apbt_quick_calibrate(void);
+ extern int arch_setup_apbt_irqs(int irq, int trigger, int mask, int cpu);
+ extern void apbt_setup_secondary_clock(void);
+ extern unsigned int boot_cpu_id;
+-extern int disable_apbt_percpu;
++extern int mrst_timer_options;
  
-+/**
-+ * Medfield is the follow-up of Moorestown, it combines two chip solution into
-+ * one. Other than that it also added always-on and constant tsc and lapic
-+ * timers. Medfield is the platform name, and the chip name is called Penwell
-+ * we treat Medfield/Penwell as a variant of Moorestown. Penwell can be
-+ * identified via MSRs.
-+ */
-+enum mrst_cpu_type {
-+	MRST_CPU_CHIP_LINCROFT = 1,
-+	MRST_CPU_CHIP_PENWELL,
-+};
-+
- #define SFI_MTMR_MAX_NUM 8
- #define SFI_MRTC_MAX	8
+ extern struct sfi_timer_table_entry *sfi_get_mtmr(int hint);
+ extern void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr);
+diff --git a/arch/x86/kernel/apb_timer.c b/arch/x86/kernel/apb_timer.c
+index a353475..08dfbf8 100644
+--- a/arch/x86/kernel/apb_timer.c
++++ b/arch/x86/kernel/apb_timer.c
+@@ -43,10 +43,11 @@
  
-diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
-index 0aad867..a3e85be 100644
---- a/arch/x86/kernel/mrst.c
-+++ b/arch/x86/kernel/mrst.c
-@@ -27,6 +27,7 @@
+ #include <asm/fixmap.h>
+ #include <asm/apb_timer.h>
++#include <asm/mrst.h>
  
- static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
- static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
-+static u32 mrst_cpu_chip;
- int sfi_mtimer_num;
+ #define APBT_MASK			CLOCKSOURCE_MASK(32)
+ #define APBT_SHIFT			22
+-#define APBT_CLOCKEVENT_RATING		150
++#define APBT_CLOCKEVENT_RATING		110
+ #define APBT_CLOCKSOURCE_RATING		250
+ #define APBT_MIN_DELTA_USEC		200
  
- struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
-@@ -216,6 +217,26 @@ static void __init mrst_setup_boot_clock(void)
- 		setup_boot_APIC_clock();
+@@ -83,8 +84,6 @@ struct apbt_dev {
+ 	char name[10];
  };
  
-+int mrst_identify_cpu(void)
-+{
-+	if (boot_cpu_data.x86 == 6 &&
-+		boot_cpu_data.x86_model == 0x27 &&
-+		boot_cpu_data.x86_mask == 1)
-+		mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
-+	else if (boot_cpu_data.x86 == 6 &&
-+		boot_cpu_data.x86_model == 0x26)
-+		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-+	else {
-+		pr_err("Unknown Moorestown CPU type, default to Lincroft\n");
-+		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-+	}
-+	pr_debug("Moorestown CPU %s identified\n",
-+		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
-+		"Lincroft" : "Penwell");
+-int disable_apbt_percpu __cpuinitdata;
+-
+ static DEFINE_PER_CPU(struct apbt_dev, cpu_apbt_dev);
+ 
+ #ifdef CONFIG_SMP
+@@ -204,9 +203,9 @@ static inline int __init setup_x86_mrst_timer(char *arg)
+ 		return -EINVAL;
+ 
+ 	if (strcmp("apbt_only", arg) == 0)
+-		disable_apbt_percpu = 0;
++		mrst_timer_options = MRST_TIMER_APBT_ONLY;
+ 	else if (strcmp("lapic_and_apbt", arg) == 0)
+-		disable_apbt_percpu = 1;
++		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
+ 	else {
+ 		pr_warning("X86 MRST timer option %s not recognised"
+ 			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
+@@ -335,7 +334,7 @@ static int __init apbt_clockevent_register(void)
+ 	adev->num = smp_processor_id();
+ 	memcpy(&adev->evt, &apbt_clockevent, sizeof(struct clock_event_device));
+ 
+-	if (disable_apbt_percpu) {
++	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
+ 		apbt_clockevent.rating = APBT_CLOCKEVENT_RATING - 100;
+ 		global_clock_event = &adev->evt;
+ 		printk(KERN_DEBUG "%s clockevent registered as global\n",
+@@ -429,7 +428,8 @@ static int apbt_cpuhp_notify(struct notifier_block *n,
+ 
+ static __init int apbt_late_init(void)
+ {
+-	if (disable_apbt_percpu || !apb_timer_block_enabled)
++	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT ||
++		!apb_timer_block_enabled)
+ 		return 0;
+ 	/* This notifier should be called after workqueue is ready */
+ 	hotcpu_notifier(apbt_cpuhp_notify, -20);
+@@ -450,6 +450,8 @@ static void apbt_set_mode(enum clock_event_mode mode,
+ 	int timer_num;
+ 	struct apbt_dev *adev = EVT_TO_APBT_DEV(evt);
+ 
++	BUG_ON(!apbt_virt_address);
 +
-+	return mrst_cpu_chip;
-+}
-+
- /*
-  * Moorestown specific x86_init function overrides and early setup
-  * calls.
+ 	timer_num = adev->num;
+ 	pr_debug("%s CPU %d timer %d mode=%d\n",
+ 		 __func__, first_cpu(*evt->cpumask), timer_num, mode);
+@@ -676,7 +678,7 @@ void __init apbt_time_init(void)
+ 	}
+ #ifdef CONFIG_SMP
+ 	/* kernel cmdline disable apb timer, so we will use lapic timers */
+-	if (disable_apbt_percpu) {
++	if (mrst_timer_options == MRST_TIMER_LAPIC_APBT) {
+ 		printk(KERN_INFO "apbt: disabled per cpu timer\n");
+ 		return;
+ 	}
 -- 
 1.6.3.3
 
