@@ -1,131 +1,461 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab0ENK1w (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 06:27:52 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:34083 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758812Ab0ENK1u (ORCPT
+	id S1759206Ab0ENK2d (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 06:28:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:60036 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758855Ab0ENK2b (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 06:27:50 -0400
-Date: Fri, 14 May 2010 12:27:43 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: daniel@ffwll.ch
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       j.e.van.grootheest@caiway.nl
-Subject: Re: BUG: unable to handle kernel NULL pointer dereference,
- i915_gem_object_move_to_active
-Message-ID: <20100514102743.GE7535@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
+	Fri, 14 May 2010 06:28:31 -0400
+Message-ID: <4BED2620.2070607@colorfullife.com>
+Date: Fri, 14 May 2010 12:29:52 +0200
+From: Manfred Spraul <manfred@colorfullife.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100508180435.GB17682@viiv.ffwll.ch>
- <20100508132750.GA17682@viiv.ffwll.ch>
- <20100504225138.GX3479@localhost>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: Chris Mason <chris.mason@oracle.com>, Nick Piggin <npiggin@suse.de>
+Subject: [CFT] System V sem: test app for comparison with other Unices
+Content-Type: multipart/mixed;
+ boundary="------------070601010907000406010201"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi David,
+This is a multi-part message in MIME format.
+--------------070601010907000406010201
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-  Upon typing the first character of the password in the kdm pw mask, X hung.
-  Luckily, network was still operable so I was able to catch the bug_on.
+Hi all,
 
-  I applied the patch against .33.3. This seems indeed to be the same bug you're
-  already having reports for.
+Attached is a test app that checks three details of the system V 
+semaphore implementation:
+- is forward progress guaranteed before other tasks are woken up?
+- is sem_ctime updated by semctl(SETVAL)?
+- is it handled that a "decrease" operation can wake up a task that does 
+a wait-for-zero, even if the result of the decrease is not 0?
 
-  So: me too!
+If I read the available sources correctly, Linux
+- implements sem_ctime differently from all other Unices I found.
+- tries to implement more (hopefully: all) corner cases with complex 
+semops's.
 
-  I'm somehow unable to get bugzilla to accept my mail addresses.. Can you please
-  add a link to this thread on my behalf? Thank you.
+Here is the result of my code review:
+http://calculix-rpm.sourceforge.net/sysvsem.html
 
-  Cheers,
+It would be great if someone with access to e.g. FreeBSD or other Unix 
+versions could run it and confirm my review.
 
-          Nils
+Chris, Nick: Btw, Linux is the only implementation that guarantees FIFO 
+for semop().
 
-Other msgs:
-http://permalink.gmane.org/gmane.comp.video.dri.devel/45916
-http://permalink.gmane.org/gmane.comp.video.dri.devel/45936
-http://permalink.gmane.org/gmane.comp.video.dri.devel/45909
-http://permalink.gmane.org/gmane.comp.video.dri.devel/45844
-http://permalink.gmane.org/gmane.comp.video.dri.devel/45843
+Here is the Linux output:
+<<<
+   ****************************************
+   test1: do a non-trivial sleep
+  got semaphore array d0002h.
+    SETVAL succeeded.
+   IPC_RMID returned 0, errno now 0 (expected: 0, 0).
+   Child 0(3636): sys 0.000000, user 0.000000.
+   Child 1(3637): sys 0.000000, user 0.000000.
+   Child 2(3638): sys 0.000000, user 0.000000.
+   Child 3(3639): sys 0.000000, user 0.000000.
+   Child 4(3640): sys 0.000000, user 0.000999.
+  Total time: sys 0.000999, user 0.000000.
++++ test1 success: No Livelock
+  got semaphore array d8002h.
+   ****************************************
+   test2: does SETVAL update sem_ctime?
+    before SETVAL: ctime now 1273832652 (3).
+    SETVAL succeeded.
+    before SETVAL: ctime now 1273832655 (0).
+  INFO: OS updates sem_ctime in semctl(SETVAL)
+   ****************************************
+   test3: check that kernel wakes up child that waits for non-zero value.
+    SETVAL succeeded.
+    child completed, before exit: GETVAL now 2.
+    parent: after sleep: GETVAL now 2.
+    parent: after waitpid: GETVAL now 2.
+   +++ test3 success: kernel wakes up child correctly.
+   ****************************************
+   Done, cleanup.
+    IPC_RMID returned 0, errno now 0 (expected: 0, 0).
 
-------------[ cut here ]------------
-kernel BUG at drivers/gpu/drm/i915/i915_gem.c:2694!
-invalid opcode: 0000 [#1] PREEMPT 
-last sysfs file: /sys/devices/pci0000:00/0000:00:1f.2/host2/target2:0:0/2:0:0:0/block/sda/uevent
-Modules linked in: video1394 raw1394 dv1394 vboxnetflt vboxnetadp vboxdrv firewire_ohci firewire_core ohci1394 tg3 uhci_hcd ieee1394 libphy
+ >>>
 
-Pid: 3258, comm: Xorg Not tainted 2.6.33.3 #4 Columbia                       /Extensa 5220                   
-EIP: 0060:[<c1347f0d>] EFLAGS: 00213246 CPU: 0
-EIP is at i915_gem_clflush_object+0x9d/0xb0
-EAX: f0e5d9c0 EBX: f0e950c0 ECX: 00000001 EDX: 00000000
-ESI: f0eb7f40 EDI: 00000000 EBP: 00000044 ESP: f0dbfda0
- DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-Process Xorg (pid: 3258, ti=f0dbe000 task=f19a6580 task.ti=f0dbe000)
-Stack:
- f0e950c0 00000000 00000000 c1349ca7 00000001 00001000 f0eb7f40 f0e950c0
-<0> 00000000 f73cf000 c134ac06 00000289 0000028a 0000028a f6c01614 c10ea294
-<0> f0dd36c0 f0e950c0 f0eb7f40 f73cf000 00000000 c134b755 f73cf000 f0e950c0
-Call Trace:
- [<c1349ca7>] ? i915_gem_object_set_to_cpu_domain+0x147/0x160
- [<c134ac06>] ? i915_gem_object_unbind+0x46/0x250
- [<c10ea294>] ? dput+0x84/0x130
- [<c134b755>] ? i915_gem_free_object+0x45/0x110
- [<c1330ba3>] ? drm_gem_object_free+0x23/0x50
- [<c1330b80>] ? drm_gem_object_free+0x0/0x50
- [<c129de79>] ? kref_put+0x29/0x60
- [<c1330cbf>] ? drm_gem_close_ioctl+0x9f/0xf0
- [<c132f1d0>] ? drm_ioctl+0x1f0/0x360
- [<c1330c20>] ? drm_gem_close_ioctl+0x0/0xf0
- [<c10b9d85>] ? unmap_vmas+0x445/0x650
- [<c132efe0>] ? drm_ioctl+0x0/0x360
- [<c10e6cbb>] ? vfs_ioctl+0x2b/0xa0
- [<c10e6ea9>] ? do_vfs_ioctl+0x79/0x5f0
- [<c10bc568>] ? free_pgtables+0xb8/0xf0
- [<c10bdec4>] ? unmap_region+0xd4/0x140
- [<c10bdf67>] ? remove_vma+0x37/0x50
- [<c10bee82>] ? do_munmap+0x1f2/0x2b0
- [<c10e7496>] ? sys_ioctl+0x76/0x90
- [<c1002c0c>] ? sysenter_do_call+0x12/0x22
-Code: 8d c1 85 ff 74 0f 8b 17 83 c7 04 89 d8 ff d2 8b 17 85 d2 75 f3 89 e0 25 00 e0 ff ff 83 68 14 01 f6 40 08 08 75 09 8b 46 2c eb 94 <0f> 0b eb fe e8 5a 07 33 00 eb f0 90 8d b4 26 00 00 00 00 83 ec 
-EIP: [<c1347f0d>] i915_gem_clflush_object+0x9d/0xb0 SS:ESP 0068:f0dbfda0
----[ end trace fa21ae323a16481c ]---
-SysRq : Emergency Sync
-Emergency Sync complete
-SysRq : Show Memory
-Mem-Info:
-DMA per-cpu:
-CPU    0: hi:    0, btch:   1 usd:   0
-Normal per-cpu:
-CPU    0: hi:  186, btch:  31 usd:  54
-HighMem per-cpu:
-CPU    0: hi:  186, btch:  31 usd: 163
-active_anon:7158 inactive_anon:0 isolated_anon:0
- active_file:63024 inactive_file:18505 isolated_file:0
- unevictable:523 dirty:8 writeback:0 unstable:0
- free:286713 slab_reclaimable:2557 slab_unreclaimable:1917
- mapped:4678 shmem:3860 pagetables:138 bounce:0
-DMA free:15912kB min:64kB low:80kB high:96kB active_anon:0kB inactive_anon:0kB active_file:0kB inactive_file:0kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:15804kB mlocked:0kB dirty:0kB writeback:0kB mapped:0kB shmem:0kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 865 1499 1499
-Normal free:573808kB min:3728kB low:4660kB high:5592kB active_anon:0kB inactive_anon:0kB active_file:237704kB inactive_file:26840kB unevictable:0kB isolated(anon):0kB isolated(file):0kB present:885944kB mlocked:0kB dirty:20kB writeback:0kB mapped:4kB shmem:0kB slab_reclaimable:10228kB slab_unreclaimable:7668kB kernel_stack:888kB pagetables:0kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 5070 5070
-HighMem free:557132kB min:512kB low:1192kB high:1876kB active_anon:28632kB inactive_anon:0kB active_file:14392kB inactive_file:47180kB unevictable:2092kB isolated(anon):0kB isolated(file):0kB present:649040kB mlocked:0kB dirty:12kB writeback:0kB mapped:18708kB shmem:15440kB slab_reclaimable:0kB slab_unreclaimable:0kB kernel_stack:0kB pagetables:552kB unstable:0kB bounce:0kB writeback_tmp:0kB pages_scanned:0 all_unreclaimable? no
-lowmem_reserve[]: 0 0 0 0
-DMA: 2*4kB 2*8kB 1*16kB 2*32kB 1*64kB 1*128kB 1*256kB 0*512kB 1*1024kB 1*2048kB 3*4096kB = 15912kB
-Normal: 2*4kB 7*8kB 1*16kB 1*32kB 0*64kB 2*128kB 0*256kB 0*512kB 2*1024kB 1*2048kB 139*4096kB = 573808kB
-HighMem: 827*4kB 370*8kB 49*16kB 22*32kB 16*64kB 22*128kB 27*256kB 16*512kB 4*1024kB 1*2048kB 128*4096kB = 557132kB
-85912 total pagecache pages
-0 pages in swap cache
-Swap cache stats: add 0, delete 0, find 0/0
-Free swap  = 2931820kB
-Total swap = 2931820kB
-390848 pages RAM
-163538 pages HighMem
-7671 pages reserved
-80972 pages shared
-21433 pages non-shared
+And here opensolaris:
+<<<
+  ./complexdec
+   ****************************************
+   test1: do a non-trivial sleep
+  got semaphore array 2h.
+    SETVAL succeeded.
+   IPC_RMID returned 0, errno now 0 (expected: 0, 0).
+   Child 0(6815): sys 0.000000, user 4.160000.
+   Child 1(6816): sys 0.000000, user 4.160000.
+   Child 2(6817): sys 0.000000, user 4.130000.
+   Child 3(6818): sys 0.000000, user 4.090000.
+   Child 4(6819): sys 0.000000, user 4.080000.
+  Total time: sys 20.20620000, user 0.000000.
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+test 1 bad: OS should hide in shame, Livelock detected.
+  got semaphore array 3h.
+   ****************************************
+   test2: does SETVAL update sem_ctime?
+    before SETVAL: ctime now 1273830869 (3).
+    SETVAL succeeded.
+    before SETVAL: ctime now 1273830869 (3).
+  INFO: OS performs no update to sem_ctime in semctl(SETVAL)
+   ****************************************
+   test3: check that kernel wakes up child that waits for non-zero value.
+    SETVAL succeeded.
+    parent: after sleep: GETVAL now 1.
+XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+Test 3 bad: got unexpected value (child not woken up?).
+   ****************************************
+   Done, cleanup.
+    IPC_RMID returned 0, errno now 0 (expected: 0, 0).
+child: semop failed.
+
+ >>>
+
+--
+     Manfred
+
+--------------070601010907000406010201
+Content-Type: text/plain;
+ name="complexdec.c"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="complexdec.c"
+
+/*
+ * Copyright (C) 1999,2001,2010 by Manfred Spraul.
+ * 
+ * Redistribution of this file is permitted under the terms of the GNU 
+ * General Public License (GPL)
+ * $Header: /home/manfred/cvs-tree/manfred/ipcsem/undotest.c,v 1.2 2003/06/28 15:19:43 manfred Exp $
+ */
+
+#include <sys/types.h>
+#include <sys/ipc.h>
+#include <sys/sem.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <errno.h>
+#include <string.h>
+#include <assert.h>
+#include <signal.h>
+#include <time.h>
+#include <unistd.h>
+#include <pthread.h>
+#include <wait.h>
+
+union semun {
+	int val;
+	struct semid_ds *buf;
+	unsigned short int *array;
+	struct seminfo* __buf;
+};
+
+int getval(char *str, int id)
+{
+	union semun arg;
+	int res;
+
+	res = semctl(id,0,GETVAL,arg);
+	if(res==-1) {
+		printf("GETVAL failed for %s.\n", str);
+		exit(4);
+	}
+	printf("   %s: GETVAL now %d.\n",str, res);
+	return res;
+}
+
+void setval(int id, int val)
+{
+	union semun arg;
+	int res;
+
+	arg.val = val;
+	res = semctl(id,0,SETVAL,arg);
+	if(res==-1) {
+		printf("SETVAL failed, errno %d.\n", errno);
+		exit(4);
+	}
+	printf("   SETVAL succeeded.\n");
+}
+
+long int print_ctime(char *str, int id)
+{
+	union semun arg;
+	struct semid_ds info;
+	time_t cur = time(NULL);
+	int res;
+
+	arg.buf = &info;
+	res = semctl(id,0,IPC_STAT,arg);
+
+	if(res==-1) {
+		printf("semctl(IPC_STAT) failed (%d).\n",errno);
+		exit(5);
+	}
+	printf("%s: ctime now %ld (%ld).\n", str, 
+			(long int) info.sem_ctime, (long int) cur - info.sem_ctime);
+	return info.sem_ctime;
+}
+
+#define CHILD_COUNT		5
+#define EXIT_SUCCESS_MAGIC	0x42
+
+/* test1: check cpu consumption for complex sleeps */
+void test1()
+{
+	int childs[CHILD_COUNT];
+	unsigned long long total_sys, total_user;
+	int res;
+	int i;
+	int id;
+
+	printf("  ****************************************\n");
+	printf("  test1: do a non-trivial sleep\n");
+
+	/* create array */
+	res = semget(IPC_PRIVATE, 1, 0700 | IPC_CREAT);
+	printf(" got semaphore array %xh.\n",res);
+	if(res == -1) {
+		printf(" create failed.\n");
+		return;
+	}
+	id = res;
+
+	setval(id, 3);
+
+	/* create sub-process */
+	for (i=0;i<CHILD_COUNT;i++) {
+		res = fork();
+		if (res < 0) {
+			printf("Fork failed (errno=%d). Aborting.\n", errno);
+			res = semctl(id,1,IPC_RMID,NULL);
+			exit(1);
+		}
+		fflush(stdout);
+		if (!res) {
+			struct sembuf sop[15];
+
+			/* child: */
+			/* Do an "increase by 15, decrease by 30" in step size 3*/
+			for (i=0;i<sizeof(sop)/sizeof(sop[0]);i++) {
+				sop[i].sem_num=0;
+				if (i<sizeof(sop)/sizeof(sop[0])/3)
+					sop[i].sem_op=3;
+				else
+					sop[i].sem_op=-3;
+				sop[i].sem_flg=0;
+			}
+
+			errno = 0;
+
+			res = semop(id,sop,sizeof(sop)/sizeof(sop[0]));
+			if(res!=-1 || errno !=EIDRM) {
+				printf("child: semop returned %d, errno %d, expected %d/%d.\n", res, errno, -1, EIDRM);
+				exit(1);
+			}
+			fflush(stdout);
+			exit(EXIT_SUCCESS_MAGIC);
+		}
+		childs[i] = res;
+	}
+	sleep(5);
+
+	errno = 0;
+	res = semctl(id,1,IPC_RMID,NULL);
+	printf("  IPC_RMID returned %d, errno now %d (expected: 0, 0).\n", res, errno);
+
+	total_user = 0;
+	total_sys = 0;
+	for (i=0;i<CHILD_COUNT;i++) {
+		int retval;
+		struct rusage r;
+
+		retval = wait4(childs[i], &res, 0, &r);
+
+		if (retval != childs[i]) {
+			printf("wait4 returned unexpeted value %d (expected %d), errno now %d.\n", 
+					retval, childs[i], errno);
+		}
+		if (WIFEXITED(res) == 0 || WEXITSTATUS(res) != EXIT_SUCCESS_MAGIC) {
+			printf("unexpected child exit code %d (raw 0x%x. Expected: %d).\n",
+				WEXITSTATUS(res), res, EXIT_SUCCESS_MAGIC);
+		}
+		printf("  Child %d(%d): sys %ld.%06ld, user %ld.%06ld.\n",
+			i, childs[i],
+			(long)r.ru_utime.tv_sec, (long)r.ru_utime.tv_usec, 
+			(long)r.ru_stime.tv_sec, (long)r.ru_stime.tv_usec);
+		total_user += r.ru_utime.tv_sec*1000000;
+		total_user += r.ru_utime.tv_usec;
+		total_sys += r.ru_stime.tv_sec*1000000;
+		total_sys += r.ru_stime.tv_usec;
+		fflush(stdout);
+	}
+	printf(" Total time: sys %ld.%06ld, user %ld.%06ld.\n",
+			(long)total_sys/1000000, (long)total_sys,
+			(long)total_user/1000000, (long)total_user);
+
+	if (total_user < 100000 && total_sys < 100000) {
+		printf("+++ test1 success: No Livelock\n");
+		fflush(stdout);
+	} else {
+		printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+		printf("test 1 bad: OS should hide in shame, Livelock detected.\n");
+		fflush(stdout);
+	}
+}
+
+/* test2: test sem_ctime updates */
+void test2(int id)
+{
+	unsigned long ctime_before, ctime_after;
+
+	printf("  ****************************************\n");
+	printf("  test2: does SETVAL update sem_ctime?\n");
+
+	sleep(3);
+	ctime_before = print_ctime("   before SETVAL", id);
+	setval(id, 2);
+	ctime_after = print_ctime("   before SETVAL", id);
+
+	if (ctime_after != ctime_before)
+		printf(" INFO: OS updates sem_ctime in semctl(SETVAL)\n");
+	else
+		printf(" INFO: OS performs no update to sem_ctime in semctl(SETVAL)\n");
+}
+
+/* test3: test wait for non-zero */
+void test3(int id)
+{
+	int res;
+
+	printf("  ****************************************\n");
+	printf("  test3: check that kernel wakes up child that waits for non-zero value.\n");
+
+	setval(id, 2);
+
+	/* create sub-process */
+	res = fork();
+	if (res < 0) {
+		printf("Fork failed (errno=%d). Aborting.\n", errno);
+		res = semctl(id,1,IPC_RMID,NULL);
+		exit(1);
+	}
+	fflush(stdout);
+	if (!res) {
+		struct sembuf sop[3];
+
+		/* child: */
+		/* Do an "increase by 1 if value is 1" operation */
+		sop[0].sem_num=0;
+		sop[0].sem_op=-1;
+		sop[0].sem_flg=0;
+
+		sop[1].sem_num=0;
+		sop[1].sem_op=0;
+		sop[1].sem_flg=0;
+
+		sop[2].sem_num=0;
+		sop[2].sem_op=2;
+		sop[2].sem_flg=0;
+
+
+		res = semop(id,sop,3);
+		if(res==-1) {
+			printf("child: semop failed.\n");
+			exit(1);
+		}
+		res = getval("child completed, before exit", id);
+		if (res != 2) {
+			printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+			printf("Bad: got unexpected value.\n");
+			exit(99);
+		}
+		fflush(stdout);
+		exit(EXIT_SUCCESS_MAGIC);
+	} else {
+		struct sembuf sop[1];
+		int retval;
+		int childid;
+
+		childid = res;
+		sleep(1);
+
+		/* Do an "decrease by 1" operation */
+		sop[0].sem_num=0;
+		sop[0].sem_op=-1;
+		sop[0].sem_flg=0;
+
+		res = semop(id,sop,1);
+		if(res==-1) {
+			printf("parent: semop failed.\n");
+			exit(1);
+		}
+
+		sleep(1);
+
+		res = getval("parent: after sleep", id);
+		if (res != 2) {
+			printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+			printf("Test 3 bad: got unexpected value (child not woken up?).\n");
+			return;
+		}
+
+		retval = waitpid(childid, &res, 1);
+		if (retval != childid) {
+			printf("waitpid returned unexpeted value %d (expected %d), errno now %d.\n", 
+					retval, childid, errno);
+		}
+		if (WIFEXITED(res) == 0 || WEXITSTATUS(res) != EXIT_SUCCESS_MAGIC) {
+			printf("unexpected child exit code %d (raw 0x%x. Expected: %d).\n",
+				WEXITSTATUS(res), res, EXIT_SUCCESS_MAGIC);
+		}
+		res = getval("parent: after waitpid", id);
+		if (res != 2) {
+			printf("XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX\n");
+			printf("Bad: got unexpected value.\n");
+			return;
+		}
+	}
+	printf("  +++ test3 success: kernel wakes up child correctly.\n");
+}
+
+int main(int argc,char** argv)
+{
+	int res;
+	int id;
+
+	/* test 1 (array created/destroyed in test1()) */
+	test1();
+
+	/* test 2 */
+
+	/* create array */
+	res = semget(IPC_PRIVATE, 1, 0700 | IPC_CREAT);
+	printf(" got semaphore array %xh.\n",res);
+	if(res == -1) {
+		printf(" create failed.\n");
+		return 1;
+	}
+	id = res;
+	test2(id);
+	test3(id);
+
+	printf("  ****************************************\n");
+	printf("  Done, cleanup.\n");
+	errno = 0;
+	res = semctl(id,1,IPC_RMID,NULL);
+	printf("   IPC_RMID returned %d, errno now %d (expected: 0, 0).\n", res, errno);
+
+
+	return 0;
+}
+
+--------------070601010907000406010201--
