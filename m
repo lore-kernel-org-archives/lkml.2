@@ -1,64 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab0ENJJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 05:09:14 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:49814 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751499Ab0ENJJM (ORCPT
+	id S1758662Ab0ENJJq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 05:09:46 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:65187 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752554Ab0ENJJn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 05:09:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:subject:message-id:mime-version:content-type
-         :content-disposition:content-transfer-encoding:x-accept-language
-         :user-agent;
-        b=pqZNG8nvVubrcYmfSbjXsjYedASTzVS3UAp/1Pzo7bYbvxl0VHmL5+vG4nhh+GktLH
-         NY1g0IuDwz0SyjfDBTSsWxF3MMCzMkYgeh0hjtyrTYF2hnnpn0jIuR4nxF5XQj/Ty4Ge
-         3tQ4DjXtvr4zRHRs60K0ajFFcT6FjAE/KkwMQ=
-Date: Fri, 14 May 2010 11:09:05 +0200
-From: =?iso-8859-1?Q?Llu=EDs?= Batlle i Rossell <viriketo@gmail.com>
-To: linux-kernel@vger.kernel.org
-Subject: fds jumping between processes
-Message-ID: <20100514090903.GC8773@vicerveza.homeunix.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Accept-Language: ca, es, eo, ru, en, jbo, tokipona
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 May 2010 05:09:43 -0400
+From: Manfred Spraul <manfred@colorfullife.com>
+To: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: Chris Mason <chris.mason@oracle.com>, Zach Brown <zach.brown@oracle.com>,
+       Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>,
+       Manfred Spraul <manfred@colorfullife.com>
+Subject: [PATCH] ipc/sem.c: Bugfix for incorrect setting of sem_otime
+Date: Fri, 14 May 2010 11:10:56 +0200
+Message-Id: <1273828256-2078-1-git-send-email-manfred@colorfullife.com>
+X-Mailer: git-send-email 1.6.6.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
-here is quite an open bug report... I could not reproduce this again, but it
-involves the fds opened of a killed process being passed to another process, or
-something like this.
+The attached patch corrects a bug that I've introduced with the previous
+patch series:
+sem_otime is the time of the last successful semop() call.
 
-I'm using vanilla 2.6.33.3 in x86_64.
-I was using skype, talking through it using alsa, and trying the
-'share desktop' feature, it died. Starting it again, it could not open the alsa
-device. Using fuser:
+Andrew, could you add it into your -mm tree?
+It is on top of the path that fixes the missing initialization.
 
-...:/dev/snd]$ fuser *
-controlC0:           32341
-pcmC0D0p:            32341
-timer:               32341
+Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
+---
+ ipc/sem.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-Which that was:
-$ ps ax | grep 323
-32341 ?        S      0:01 /home/xxx/.nix-profile/bin/xpdf /tmp/xxx.pdf
+diff --git a/ipc/sem.c b/ipc/sem.c
+index 58dbbf7..a744eb5 100644
+--- a/ipc/sem.c
++++ b/ipc/sem.c
+@@ -534,7 +534,7 @@ static int check_restart(struct sem_array *sma, struct sem_queue *q)
+  * must be set to -1.
+  * The tasks that must be woken up are added to @pt. The return code
+  * is stored in q->pid.
+- * The function return 1 if at least one array variable was modified.
++ * The function return 1 if at least one semop was completed successfully.
+  */
+ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
+ {
+@@ -542,7 +542,7 @@ static int update_queue(struct sem_array *sma, int semnum, struct list_head *pt)
+ 	struct list_head *walk;
+ 	struct list_head *pending_list;
+ 	int offset;
+-	int retval = 0;
++	int semop_completed = 0;
+ 
+ 	/* if there are complex operations around, then knowing the semaphore
+ 	 * that was modified doesn't help us. Assume that multiple semaphores
+@@ -586,19 +586,19 @@ again:
+ 			continue;
+ 
+ 		unlink_queue(sma, q);
+-		if (q->alter)
+-			retval = 1;
+ 
+-		if (error)
++		if (error) {
+ 			restart = 0;
+-		else
++		} else {
++			semop_completed = 1;
+ 			restart = check_restart(sma, q);
++		}
+ 
+ 		wake_up_sem_queue_prepare(pt, q, error);
+ 		if (restart)
+ 			goto again;
+ 	}
+-	return retval;
++	return semop_completed;
+ }
+ 
+ /**
+-- 
+1.6.6.1
 
-So, after skype (using alsa) died, the xpdf process took the soundcard fds
-skype had. It does not make much sense xpdf to use sound... so I guess something
-worth looking happened.
-
-I don't have more details. Killing xpdf made the new skype open the alsa device
-properly.
-
-Sorry for not having analised the situation better. Now I cannot reproduce it
-anymore. Maybe this will make someone knowing say "ah, let me look if ...". I
-just thought if this is a bug in the kernel, it can involve security problems.
-
-Thank you,
-Lluís.
