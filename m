@@ -1,63 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758045Ab0ENIKo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:10:44 -0400
-Received: from e28smtp04.in.ibm.com ([122.248.162.4]:60964 "EHLO
-	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754017Ab0ENIKl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:10:41 -0400
-Date: Fri, 14 May 2010 13:37:32 +0530
-From: Balbir Singh <balbir@linux.vnet.ibm.com>
-To: Paul Mundt <lethal@linux-sh.org>
-Cc: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Shaohui Zheng <shaohui.zheng@intel.com>, akpm@linux-foundation.org,
-       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
-       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
-       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
-Subject: Re: [RFC,2/7] NUMA Hotplug emulator
-Message-ID: <20100514080732.GC3296@balbir.in.ibm.com>
-Reply-To: balbir@linux.vnet.ibm.com
-References: <20100513114544.GC2169@shaohui>
- <20100514111615.c7ca63a5.kamezawa.hiroyu@jp.fujitsu.com>
- <20100514054226.GB12002@linux-sh.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <20100514054226.GB12002@linux-sh.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1758105Ab0ENILt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:11:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:56133 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754301Ab0ENILp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:11:45 -0400
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BECEB8D.8070600@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>
+	 <1273803143.21352.353.camel@pasglop>  <4BECEB8D.8070600@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 18:09:38 +1000
+Message-ID: <1273824578.21352.579.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul Mundt <lethal@linux-sh.org> [2010-05-14 14:42:26]:
+On Thu, 2010-05-13 at 23:19 -0700, Yinghai wrote:
+> > If we expose LMB_ERROR then all lmb calls that can fail should
+> return
+> > that. However, the API calls all return 0 instead. Changing that
+> means
+> > fixing all callers.
+> 
+> ok will stop use LMB_ERROR out lib/lmb.c
+> 
+> will go back to use -1ULL for x86 path.
 
-> On Fri, May 14, 2010 at 11:16:15AM +0900, KAMEZAWA Hiroyuki wrote:
-> > On Thu, 13 May 2010 19:45:44 +0800
-> > Shaohui Zheng <shaohui.zheng@intel.com> wrote:
-> > 
-> > > x86: infrastructure of NUMA hotplug emulation
-> > > 
-> > 
-> > Hmm. do we have to create this for x86 only ?
-> > Can't we live with lmb ? as
-> > 
-> > 	lmb_hide_node() or some.
-> > 
-> > IIUC, x86-version lmb is now under development.
-> > 
-> Indeed. There is very little x86-specific about this patch series at all
-> except for the e820 bits and tying in the CPU topology. Most of what this
-> series is doing wrapping around e820 could be done on top of LMB, which
-> would also make it possible to use on non-x86 architectures.
->
+No. That is not the point. Read the rest of my email !
 
-Yes, that would be very nice addition 
+We need to -sanitize- those errors. _Maybe_ exposing LMB_ERROR is the
+right way to do so, but in that case, we need to make -all- function use
+the same error code. Right now, some fail with 0 and some with
+LMB_ERROR.
 
--- 
-	Three Cheers,
-	Balbir
+You are also not responding to my other comments such as:
+ 
+> > I'm also not too happy with exposing lmb_add_region(). Why would you
+> > ever need to expose it ? Just call lmb_reserve() if you want to
+> reserve
+> > something. lmb_add_region() is an internal function and has no
+> business
+> > being used outside of the main lmb.c file.
+
+etc...
+
+Cheers,
+Ben.
+
+
