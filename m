@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756186Ab0ENNfj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 09:35:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27232 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752563Ab0ENNfh (ORCPT
+	id S1756327Ab0ENNhb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 09:37:31 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:39927 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755354Ab0ENNh3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 09:35:37 -0400
-Date: Fri, 14 May 2010 09:33:15 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@suse.de>, Josef Bacik <josef@redhat.com>,
-       linux-fsdevel@vger.kernel.org, hch@infradead.org,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100514133315.GN30710@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
-	Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-	hch@infradead.org, akpm@linux-foundation.org,
-	linux-kernel@vger.kernel.org
-References: <20100512212403.GE3597@localhost.localdomain>
- <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
- <20100514010042.GI13617@dastard>
- <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
- <20100514064145.GJ13617@dastard>
- <20100514072219.GC4706@laptop>
- <20100514083821.GL13617@dastard>
+	Fri, 14 May 2010 09:37:29 -0400
+Date: Fri, 14 May 2010 15:37:23 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org, rjw@sisk.pl
+Subject: RTL8185 mlme.c:341 warning and failure still in 2.6.34rc7
+Message-ID: <20100514133723.GA10351@basil.fritz.box>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100514083821.GL13617@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BED516B.006C:SCFMA922111,ss=1,fgs=0
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 06:38:21PM +1000, Dave Chinner wrote:
-> On Fri, May 14, 2010 at 05:22:19PM +1000, Nick Piggin wrote:
-> > On Fri, May 14, 2010 at 04:41:45PM +1000, Dave Chinner wrote:
-> > > On Thu, May 13, 2010 at 11:30:57PM -0400, Josef Bacik wrote:
-> > > > So this is what I had envisioned, we make write_begin take a nr_pages pointer
-> > > > and tell it how much data we have to write, then in the filesystem we allocate
-> > > > as many pages as we feel like, idealy something like
-> > > > 
-> > > > min(number of pages we need for the write, some arbitrary limit for security)
-> > > 
-> > > Actually, i was thinking that the RESERVE call determines the size
-> > > of the chunk (in the order of 1-4MB maximum). IOWs, we pass in the
-> > > start offset of the write, the entire length remaining, and the
-> > > RESERVE call determines how much it will allow in one loop.
-> > > 
-> > > 	written = 0;
-> > > 	while (bytes_remaining > 0) {
-> > > 		chunklen = ->allocate(off, bytes_remaining, RESERVE);
-> > > 		write_begin(&pages, off, chunklen);
-> > > 		copied = copy_pages(&pages, iov_iter, chunklen);
-> > > 		.....
-> > > 		bytes_remaining -= copied;
-> > > 		off += copied;
-> > > 		written += copied;
-> > > 	}
-> > 
-> > How much benefit are you expecting to get?
-> 
-> If the max chunk size is 4MB, then three orders of magnitudes fewer
-> allocation calls for x86_64 (i.e. one instead of 1024).  For
-> filesystems with significant allocation overhead (like gaining
-> cluster locks in gfs2), this will be a *massive* win.
 
-It's a pretty big deal in btrfs too.  A 4K write write is much less
-expensive than it used to be, but the part where we mark a range of
-bytes as delayed allocation goes faster if that range is bigger.
+[ccing Rafael because this seems to be a regression. Please add it to your list.]
 
--chris
+When I boot my system with a RTL8185 the wireless doesn't come up at boot,
+only when I manually restart it. Instead i get
+
+I reported this a few rc*s back, but haven't heard anything back and the 
+problem is still there.
+
+For me it's a serious problem when the wireless does not come up.
+
+This didn't happen in .33.
+
+-Andi
+
+wlan0: authenticate with 00:1f:3f:1d:54:46 (try 1)
+wlan0: authenticated
+wlan0: associate with 00:1f:3f:1d:54:46 (try 1)
+wlan0: associate with 00:1f:3f:1d:54:46 (try 2)
+wlan0: associate with 00:1f:3f:1d:54:46 (try 3)
+wlan0: association with 00:1f:3f:1d:54:46 timed out
+------------[ cut here ]------------
+WARNING: at /home/lsrc/linux-2.6.34-rc7/net/wireless/mlme.c:341 cfg80211_send_assoc_timeout+0xff/0x117 [cfg80211]()
+Hardware name: ...
+Modules linked in:  ...
+Pid: 3344, comm: phy0 Not tainted 2.6.34-rc7 #7
+Call Trace:
+ [<ffffffffa0072124>] ? cfg80211_send_assoc_timeout+0xff/0x117 [cfg80211]
+ [<ffffffff8103a4f0>] warn_slowpath_common+0x7c/0xa9
+ [<ffffffff8103a531>] warn_slowpath_null+0x14/0x16
+ [<ffffffffa0072124>] cfg80211_send_assoc_timeout+0xff/0x117 [cfg80211]
+ [<ffffffffa00e6393>] ieee80211_assoc_done+0x74/0xa9 [mac80211]
+ [<ffffffffa00e85f0>] ieee80211_work_work+0xe4c/0xe8d [mac80211]
+ [<ffffffff81033cbe>] ? finish_task_switch+0x42/0xab
+ [<ffffffff810535d7>] ? prepare_to_wait+0x6e/0x7a
+ [<ffffffff8104f832>] worker_thread+0x192/0x227
+ [<ffffffffa00e77a4>] ? ieee80211_work_work+0x0/0xe8d [mac80211]
+ [<ffffffff81053342>] ? autoremove_wake_function+0x0/0x3d
+ [<ffffffff8104f6a0>] ? worker_thread+0x0/0x227
+ [<ffffffff81052efc>] kthread+0x82/0x8a
+ [<ffffffff81003954>] kernel_thread_helper+0x4/0x10
+ [<ffffffff81052e7a>] ? kthread+0x0/0x8a
+ [<ffffffff81003950>] ? kernel_thread_helper+0x0/0x10
+---[ end trace 4e3067114aa2fd06 ]---
+wlan0: deauthenticating from 00:1f:3f:1d:54:46 by local choice (reason=3)
+
+
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
