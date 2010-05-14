@@ -1,182 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0ENQej (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:34:39 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:54027 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751422Ab0ENQef (ORCPT
+	id S1756261Ab0ENQgK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:36:10 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47853 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752240Ab0ENQgH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:34:35 -0400
-Message-ID: <4BED7C34.1060200@oracle.com>
-Date: Fri, 14 May 2010 09:37:08 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+	Fri, 14 May 2010 12:36:07 -0400
+Date: Fri, 14 May 2010 17:35:57 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 13/35] x86, lmb: Add lmb_free_memory_size()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-14-git-send-email-yinghai@kernel.org>	 <1273804285.21352.392.camel@pasglop>  <4BECF0E2.90406@oracle.com> <1273825287.21352.592.camel@pasglop>
-In-Reply-To: <1273825287.21352.592.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090201.4BED7B53.0132:SCFMA4539811,ss=1,fgs=0
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100514163557.GA7843@srcf.ucam.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100514145539.GA5598@srcf.ucam.org> <20100514162951.GB31607@core.coreip.homeip.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514162951.GB31607@core.coreip.homeip.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2010 01:21 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 23:42 -0700, Yinghai wrote:
->   
->> On 05/13/2010 07:31 PM, Benjamin Herrenschmidt wrote:
->>     
->>> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->>>       
->>>> It will return free memory size in specified range.
->>>>
->>>> We can not use memory_size - reserved_size here, because some reserved area
->>>> may not be in the scope of lmb.memory.region.
->>>>
->>>> Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
->>>> then count size of all free ranges.
->>>>         
->>> I remember having already told you that the naming sucks.
->>>       
->> any suggestion?
->>
->> i think this name is clear.
->>     
-> Well, I did have suggestions yes. Among others, because you are
-> operating on a range, you should have the word "range" in your name. For
-> example, something like lmb_free_memory_in_range(). A bit long but at
-> least is self explanatory and doesn't lead to confusion.
->   
+On Fri, May 14, 2010 at 09:29:52AM -0700, Dmitry Torokhov wrote:
+> On Fri, May 14, 2010 at 03:55:39PM +0100, Matthew Garrett wrote:
+> > I've done some experimentation under qemu. On ACPI systems, Windows will 
+> > *only* touch the keyboard controller if there's a device with an 
+> > appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
+> > Otherwise it'll simply ignore the hardware entirely. By the looks of it 
+> > their keyboard probing is also somewhat different to ours, but that's 
+> > probably another story.
+> > 
+> > However, I did find a couple of device IDs that machines may produce 
+> > which we don't currently check for. I'll send a patch.
+> > 
+> 
+> I was wondering if we should be matching for _CID instead of _HID for
+> mouse and keyboard.
 
-lmb_memory_size_in_range()/lmb_free_memory_size_in_range()
+I'm pretty sure the PNP layer will bind to either _HID or _CID.
 
-or
-
-lmb_memory_in_range()/lmb_free_memory_in_range()
-
-?
-
-
-
->  
->   
->>> Also, you fail to explain what this is actually needed for.
->>>       
->> needed by 
->>
->> [PATCH 21/35] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
->>     
-> Ok, that's some x86ism that I would need to study more closely, but it's
-> fair enough to have those accessors if they are really needed. But
-> please, try to make an effort on the naming.
->
-> Cheers,
-> Ben.
->
->   
->>     
->>> Cheers,
->>> Ben.
->>>
->>>       
->>>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->>>> ---
->>>>  arch/x86/include/asm/lmb.h |    1 +
->>>>  arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
->>>>  2 files changed, 52 insertions(+), 0 deletions(-)
->>>>
->>>> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
->>>> index 358d8a6..4fb94b5 100644
->>>> --- a/arch/x86/include/asm/lmb.h
->>>> +++ b/arch/x86/include/asm/lmb.h
->>>> @@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
->>>>  					 unsigned long last_pfn);
->>>>  u64 lmb_hole_size(u64 start, u64 end);
->>>>  u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
->>>> +u64 lmb_free_memory_size(u64 addr, u64 limit);
->>>>  
->>>>  #endif
->>>> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
->>>> index c5fa1dd..6c69e99 100644
->>>> --- a/arch/x86/mm/lmb.c
->>>> +++ b/arch/x86/mm/lmb.c
->>>> @@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
->>>>  }
->>>>  #endif
->>>>  
->>>> +u64 __init lmb_free_memory_size(u64 addr, u64 limit)
->>>> +{
->>>> +	int i, count;
->>>> +	struct range *range;
->>>> +	int nr_range;
->>>> +	u64 final_start, final_end;
->>>> +	u64 free_size;
->>>> +
->>>> +	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
->>>> +
->>>> +	range = find_range_array(count);
->>>> +	nr_range = 0;
->>>> +
->>>> +	addr = PFN_UP(addr);
->>>> +	limit = PFN_DOWN(limit);
->>>> +
->>>> +	for (i = 0; i < lmb.memory.cnt; i++) {
->>>> +		struct lmb_region *r = &lmb.memory.regions[i];
->>>> +
->>>> +		final_start = PFN_UP(r->base);
->>>> +		final_end = PFN_DOWN(r->base + r->size);
->>>> +		if (final_start >= final_end)
->>>> +			continue;
->>>> +		if (final_start >= limit || final_end <= addr)
->>>> +			continue;
->>>> +
->>>> +		nr_range = add_range(range, count, nr_range, final_start, final_end);
->>>> +	}
->>>> +	subtract_range(range, count, 0, addr);
->>>> +	subtract_range(range, count, limit, -1ULL);
->>>> +	for (i = 0; i < lmb.reserved.cnt; i++) {
->>>> +		struct lmb_region *r = &lmb.reserved.regions[i];
->>>> +
->>>> +		final_start = PFN_DOWN(r->base);
->>>> +		final_end = PFN_UP(r->base + r->size);
->>>> +		if (final_start >= final_end)
->>>> +			continue;
->>>> +		if (final_start >= limit || final_end <= addr)
->>>> +			continue;
->>>> +
->>>> +		subtract_range(range, count, final_start, final_end);
->>>> +	}
->>>> +	nr_range = clean_sort_range(range, count);
->>>> +
->>>> +	free_size = 0;
->>>> +	for (i = 0; i < nr_range; i++)
->>>> +		free_size += range[i].end - range[i].start;
->>>> +
->>>> +	return free_size << PAGE_SHIFT;
->>>> +}
->>>> +
->>>>  void __init lmb_add_memory(u64 start, u64 end)
->>>>  {
->>>>  	lmb_add_region(&lmb.memory, start, end - start);
->>>>         
->>>       
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
->>     
->
->   
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
