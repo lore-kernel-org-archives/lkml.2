@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932473Ab0ENTwa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:52:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17326 "EHLO
+	id S932482Ab0ENTwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:52:51 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17318 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753990Ab0ENTt7 (ORCPT
+	with ESMTP id S1753701Ab0ENTt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:49:59 -0400
+	Fri, 14 May 2010 15:49:57 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,77 +16,51 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 27/37] x86: Have nobootmem version setup_bootmem_allocator()
-Date: Fri, 14 May 2010 12:45:53 -0700
-Message-Id: <1273866363-14249-28-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 35/37] x86: Change e820_any_mapped() to __init
+Date: Fri, 14 May 2010 12:46:01 -0700
+Message-Id: <1273866363-14249-36-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090202.4BEDA94C.007F,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090208.4BEDA94C.00C7,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can reduce #ifdef number from 3 to one in init_32.c
+We don't need to expose e820_any_mapped() anymore
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/mm/init_32.c |   15 ++++++++++-----
- 1 files changed, 10 insertions(+), 5 deletions(-)
+ arch/x86/kernel/e820.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
 
-diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
-index c01c711..dfdd035 100644
---- a/arch/x86/mm/init_32.c
-+++ b/arch/x86/mm/init_32.c
-@@ -771,11 +771,9 @@ static unsigned long __init setup_node_bootmem(int nodeid,
- 
- 	return bootmap + bootmap_size;
- }
--#endif
- 
- void __init setup_bootmem_allocator(void)
+diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
+index eb556d0..c2e18f9 100644
+--- a/arch/x86/kernel/e820.c
++++ b/arch/x86/kernel/e820.c
+@@ -47,9 +47,10 @@ EXPORT_SYMBOL(pci_mem_start);
+ /*
+  * This function checks if any part of the range <start,end> is mapped
+  * with type.
++ * phys_pud_init() is using it and is _meminit, but we have !after_bootmem
++ * so could use refok here
+  */
+-int
+-e820_any_mapped(u64 start, u64 end, unsigned type)
++int __init_refok e820_any_mapped(u64 start, u64 end, unsigned type)
  {
--#ifndef CONFIG_NO_BOOTMEM
- 	int nodeid;
- 	unsigned long bootmap_size, bootmap;
- 	/*
-@@ -787,13 +785,11 @@ void __init setup_bootmem_allocator(void)
- 	if (bootmap == -1L)
- 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
- 	lmb_reserve_area(bootmap, bootmap + bootmap_size, "BOOTMAP");
--#endif
+ 	int i;
  
- 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
- 		 max_pfn_mapped<<PAGE_SHIFT);
- 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
- 
--#ifndef CONFIG_NO_BOOTMEM
- 	for_each_online_node(nodeid) {
- 		 unsigned long start_pfn, end_pfn;
- 
-@@ -811,10 +807,19 @@ void __init setup_bootmem_allocator(void)
- 		bootmap = setup_node_bootmem(nodeid, start_pfn, end_pfn,
- 						 bootmap);
+@@ -64,7 +65,6 @@ e820_any_mapped(u64 start, u64 end, unsigned type)
  	}
--#endif
- 
- 	after_bootmem = 1;
+ 	return 0;
  }
-+#else
-+void __init setup_bootmem_allocator(void)
-+{
-+	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
-+		 max_pfn_mapped<<PAGE_SHIFT);
-+	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
-+
-+	after_bootmem = 1;
-+}
-+#endif
+-EXPORT_SYMBOL_GPL(e820_any_mapped);
  
  /*
-  * paging_init() sets up the page tables - note that the first 8MB are
+  * This function checks if the entire range <start,end> is mapped with type.
 -- 
 1.6.4.2
 
