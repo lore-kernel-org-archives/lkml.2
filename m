@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758260Ab0ENMlw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 08:41:52 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:63417 "EHLO
+	id S1754802Ab0ENMl6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 08:41:58 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63424 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757370Ab0ENMlk (ORCPT
+	with ESMTP id S1756850Ab0ENMll (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 08:41:40 -0400
+	Fri, 14 May 2010 08:41:41 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-	b=cZTS277am2Uc+UcB1jZKrzr2vXqjzDwH58eiC87cMnY8sIFmQ2itqjKXojs3LGhV4
-	AQB3moVYD11ftZWPaxVnA==
+	b=memI4IE1fn4Uvr1XmR9aWlwgOYZP1S4YIjFwKkMNrKeel8jGoK2XhJmzka80ZyC0D
+	NhiJqdDjdK0MR+RSfaLlg==
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -20,9 +20,9 @@ Cc: LKML <linux-kernel@vger.kernel.org>,
        Mike Waychison <mikew@google.com>,
        Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
        Michel Lespinasse <walken@google.com>
-Subject: [PATCH 07/10] generic rwsem: implement down_read_unfair
-Date: Fri, 14 May 2010 05:39:39 -0700
-Message-Id: <1273840782-5920-8-git-send-email-walken@google.com>
+Subject: [PATCH 08/10] rwsem: down_read_unfair infrastructure support
+Date: Fri, 14 May 2010 05:39:40 -0700
+Message-Id: <1273840782-5920-9-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1273840782-5920-1-git-send-email-walken@google.com>
 References: <1273840782-5920-1-git-send-email-walken@google.com>
@@ -30,127 +30,62 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add down_read_unfair() API.
-
-This is similar to down_read() with the following changes:
-- when the rwsem is read owned with queued writers, down_read_unfair() callers
-  are allowed to acquire the rwsem for read without queueing;
-- when the rwsem is write owned, down_read_unfair() callers get queued in
-  front of threads trying to acquire the rwsem by other means.
+Add rwsem_down_read_unfair_failed() function in the non-generic rwsem
+library code, similar to  rwsem_down_read_failed() except that blocked
+threads are placed at the head of the queue.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
 ---
- include/linux/rwsem-spinlock.h |   10 +++++++++-
- include/linux/rwsem.h          |   10 ++++++++++
- kernel/rwsem.c                 |   17 +++++++++++++++++
- lib/rwsem-spinlock.c           |   10 +++++++---
- 4 files changed, 43 insertions(+), 4 deletions(-)
+ lib/rwsem.c |   22 +++++++++++++++++++++-
+ 1 files changed, 21 insertions(+), 1 deletions(-)
 
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index bdfcc25..dc849d9 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -60,7 +60,15 @@ do {								\
- 	__init_rwsem((sem), #sem, &__key);			\
- } while (0)
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index 2dd1a1b..f0589b2 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -34,6 +34,7 @@ struct rwsem_waiter {
+ 	unsigned int flags;
+ #define RWSEM_WAITING_FOR_READ	0x00000001
+ #define RWSEM_WAITING_FOR_WRITE	0x00000002
++#define RWSEM_UNFAIR            0x00000004
+ };
  
--extern void __down_read(struct rw_semaphore *sem);
-+#define __HAVE_DOWN_READ_UNFAIR
-+
-+static inline void __down_read(struct rw_semaphore *sem)
-+	{ __down_read_internal(sem, 0); }
-+
-+static inline void __sched __down_read_unfair(struct rw_semaphore *sem)
-+	{ __down_read_internal(sem, 1);	}
-+
-+extern void __down_read_internal(struct rw_semaphore *sem, int unfair);
- extern int __down_read_trylock(struct rw_semaphore *sem);
- extern void __down_write(struct rw_semaphore *sem);
- extern void __down_write_nested(struct rw_semaphore *sem, int subclass);
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index efd348f..0d3310b 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -28,6 +28,16 @@ struct rw_semaphore;
- extern void down_read(struct rw_semaphore *sem);
+ /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
+@@ -186,7 +187,11 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
  
- /*
-+ * lock for reading - skip waiting threads
-+ */
-+#ifdef __HAVE_DOWN_READ_UNFAIR
-+extern void down_read_unfair(struct rw_semaphore *sem);
-+#else
-+static inline void down_read_unfair(struct rw_semaphore *sem)
-+	{ down_read(sem); }
-+#endif
+ 	if (list_empty(&sem->wait_list))
+ 		adjustment += RWSEM_WAITING_BIAS;
+-	list_add_tail(&waiter.list, &sem->wait_list);
 +
-+/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- extern int down_read_trylock(struct rw_semaphore *sem);
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cae050b..d7b424b 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -26,6 +26,23 @@ void __sched down_read(struct rw_semaphore *sem)
++	if (flags & RWSEM_UNFAIR)
++		list_add(&waiter.list, &sem->wait_list);
++	else
++		list_add_tail(&waiter.list, &sem->wait_list);
  
- EXPORT_SYMBOL(down_read);
+ 	/* we're now waiting on the lock, but no longer actively locking */
+ 	count = rwsem_atomic_update(adjustment, sem);
+@@ -228,6 +233,21 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
+ 					-RWSEM_ACTIVE_READ_BIAS);
+ }
  
 +#ifdef __HAVE_DOWN_READ_UNFAIR
 +
 +/*
-+ * lock for reading - skip waiting threads
++ * wait for the read lock to be granted - skip waiting threads
 + */
-+void __sched down_read_unfair(struct rw_semaphore *sem)
++asmregparm struct rw_semaphore __sched *
++rwsem_down_read_unfair_failed(struct rw_semaphore *sem)
 +{
-+	might_sleep();
-+	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
-+
-+	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
++	return rwsem_down_failed_common(sem,
++					RWSEM_WAITING_FOR_READ | RWSEM_UNFAIR,
++					-RWSEM_ACTIVE_READ_BIAS);
 +}
 +
-+EXPORT_SYMBOL(down_read_unfair);
-+
 +#endif
 +
  /*
-  * trylock for reading -- returns 1 if successful, 0 if contention
+  * wait for the write lock to be granted
   */
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index ffc9fc7..b2fd5fb 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -139,7 +139,7 @@ __rwsem_wake_one_writer(struct rw_semaphore *sem)
- /*
-  * get a read lock on the semaphore
-  */
--void __sched __down_read(struct rw_semaphore *sem)
-+void __sched __down_read_internal(struct rw_semaphore *sem, int unfair)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk;
-@@ -147,7 +147,7 @@ void __sched __down_read(struct rw_semaphore *sem)
- 
- 	spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
-+	if (sem->activity >= 0 && (unfair || list_empty(&sem->wait_list))) {
- 		/* granted */
- 		sem->activity++;
- 		spin_unlock_irqrestore(&sem->wait_lock, flags);
-@@ -162,7 +162,11 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	waiter.flags = RWSEM_WAITING_FOR_READ;
- 	get_task_struct(tsk);
- 
--	list_add_tail(&waiter.list, &sem->wait_list);
-+	if (unfair) {
-+		list_add(&waiter.list, &sem->wait_list);
-+	} else {
-+		list_add_tail(&waiter.list, &sem->wait_list);
-+	}
- 
- 	/* we don't need to touch the semaphore struct anymore */
- 	spin_unlock_irqrestore(&sem->wait_lock, flags);
 -- 
 1.7.0.1
 
