@@ -1,77 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759279Ab0ENTED (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:04:03 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:61389 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759195Ab0ENTD6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:03:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=DonGvkAN0BUVq9JlrkQn7hTx0OgsRp5/xffI0QRDupBLUK5GJo7acBhmNXgsy3F80L
-         FMbX/07w5RTi65UqUNB8fXdeZR2RJuBDcEFmLTu2QgTs+HrILAwxKzuMvrnRSAfGHRMS
-         A4BL+BG/JKyCstXgNVRRxcDvWk4aAAv2inrGc=
-References: <4BEC7A84.3010503@gmail.com> <201005141520.30802.br1@einfach.org> <4BECEE3E.6090303@gmail.com> <201005141538.43416.br1@einfach.org> <4BED6F19.3040608@gmail.com> <20100514165325.GA28198@tux> <4BED8765.8040307@gmail.com> <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
-Message-Id: <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-In-Reply-To: <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
-Content-Type: text/plain;
-	charset=us-ascii;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 7bit
-X-Mailer: iPhone Mail (7D11)
-Mime-Version: 1.0 (iPhone Mail 7D11)
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Date: Fri, 14 May 2010 12:04:15 -0700
-Cc: Bruno Randolf <br1@einfach.org>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+	id S1758147Ab0ENTFi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:05:38 -0400
+Received: from mail.lang.hm ([64.81.33.126]:33351 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755455Ab0ENTFg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:05:36 -0400
+Date: Fri, 14 May 2010 12:05:26 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-Reply-To: <alpine.DEB.2.01.1005141151570.8603@asgard.lang.hm>
+Message-ID: <alpine.DEB.2.01.1005141156310.8603@asgard.lang.hm>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100514145539.GA5598@srcf.ucam.org> <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org> <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
+ <20100514184931.GA10113@srcf.ucam.org> <alpine.DEB.2.01.1005141151570.8603@asgard.lang.hm>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 14 May 2010, david@lang.hm wrote:
 
+> On Fri, 14 May 2010, Matthew Garrett wrote:
+>
+>> On Fri, May 14, 2010 at 11:47:43AM -0700, david@lang.hm wrote:
+>> 
+>>> yes, everything has USB ports, so they could use USB keyboards, but it's
+>>> actually pretty common to still use PS/2 keyboards (and while the systems
+>>> all support USB, it's not uncommon to have KVM systems, including pretty
+>>> expensive 'enterprise' KVM systems that still require PS/2 keyboards be
+>>> used to plug into the KVM, so those are the keyboards that are in the
+>>> datacenter that someone will grab to plug into a problem machine)
+>> 
+>> The server hardware I've looked at will all declare the ports regardless
+>> of whether or not there's something plugged in.
+>
+> remember that many people use systems in datacenters that are not 'server 
+> hardware'.
+>
+> when a desktop PC can have 4-6 cores with 8G+ of ram and a couple TB of 
+> storage, a lot of people will end up using those systems for production.
+>
+> As they grow into bigger companies they will shift to 'server class' 
+> hardware, but startups tend to use whatever they can scrounge (or buy 
+> _really_ cheap)
 
-On May 14, 2010, at 10:29 AM, "Luis R. Rodriguez" <lrodriguez@atheros.com 
- > wrote:
+By the way, for what it's worth I think it's a very bad idea to hot-plug 
+PS/2 keyboards. The hardware may be better nowadays, but back when I was a 
+PC repair tech I made very good money replacing the fuses on motherboards 
+that would blow because someone hot-plugged the keyboard.
 
-> On Fri, May 14, 2010 at 10:24 AM, Justin P. Mattock
-> <justinmattock@gmail.com> wrote:
->
->>
->> here you go:
->> (I was grabbing the info
->> after rmmod and modprobe)
->>
->> [    7.034242] ATH9K: cachelsz: 256
->> [   69.175348] ATH9K: cachelsz: 256
->
-> Close, so I without any patches applied, and by just running  
-> modprobe as below:
->
->
-> modprobe ath9k debug=0x00000200
->
->               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u  
-> rxbufsize %u\n",
->                               common->cachelsz, common->rx_bufsize);
->
->
-> This is already in the code so just please do this:
->
-> rmmod ath9k
-> modprobe ath9k debug=0x00000200
-> dmesg | grep cachelsz
+That said, there are times when it happens, and many people don't see any 
+problem with it.
 
-O.k. I did a git reset to the origin
-Then the above, unfortunantly nothing
-Shows up when grepping
-Any CONFIG options I might be missing?
-
-Justin P. Mattock
+David Lang
