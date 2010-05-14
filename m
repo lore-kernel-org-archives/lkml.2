@@ -1,42 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754724Ab0ENW50 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:57:26 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:53902 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750823Ab0ENW5Y (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:57:24 -0400
-Date: Fri, 14 May 2010 23:57:20 +0100
-From: Matt Fleming <matt@console-pimps.org>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>,
-       Adrian Hunter <adrian.hunter@nokia.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Tony Lindgren <tony@atomide.com>,
-       Denis Karpov <ext-denis.2.karpov@nokia.com>,
-       linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] MMC: OMAP HS-MMC: convert to dev_pm_ops
-Message-ID: <20100514225720.GA13046@console-pimps.org>
-References: <1273615036-4516-1-git-send-email-khilman@deeprootsystems.com>
- <87k4r74p01.fsf@linux-g6p1.site>
- <87ljbmmnp2.fsf@deeprootsystems.com>
+	id S1755823Ab0ENW7T (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:59:19 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:37008 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752861Ab0ENW7R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:59:17 -0400
+Message-ID: <4BEDD5BF.5030005@sgi.com>
+Date: Fri, 14 May 2010 15:59:11 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <87ljbmmnp2.fsf@deeprootsystems.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Mike Habeck <habeck@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com>	<201005131256.17997.bjorn.helgaas@hp.com>	<4BEC5530.1000008@sgi.com>	<201005131402.30759.bjorn.helgaas@hp.com>	<20100514152509.3aeb37b4@virtuousgeek.org>	<4BEDCFD9.7020202@sgi.com> <20100514154706.4f36f4ed@virtuousgeek.org>
+In-Reply-To: <20100514154706.4f36f4ed@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 09:51:21AM -0700, Kevin Hilman wrote:
-> 
-> I don't see a reason either, but it requires patching the MMC core as
-> well as all the users.  As I'm not an MMC core person, I thought this
-> best left to someone in that domain.
-> 
-> Fixing the core and callers could easily be done on top of this patch.
 
-I've sent a patch that fixes up all the callers now and Andrew has taken
-it into -mm.
+
+Jesse Barnes wrote:
+> On Fri, 14 May 2010 15:34:01 -0700
+> Mike Travis <travis@sgi.com> wrote:
+> 
+>>
+>> Jesse Barnes wrote:
+>>> On Thu, 13 May 2010 14:02:30 -0600
+>>> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+>>>>>> This issue is not specific to x86, so I don't really like having
+>>>>>> the implementation be x86-specific.
+>>>>> I agree this isn't a x86 specific issue but given the 'norom'
+>>>>> cmdline option is basically doing the same thing (but for pci
+>>>>> Expansion ROM BARs) this code was modeled after it.
+>>>> IMHO, we should fix both.
+>>> Yeah, that would be good.  Mike, have you looked at this at all?
+>>>
+>>> Also, to clarify, this isn't affecting users today, right?  Or do you
+>>> need all this I/O space for multiple IOHs and the drivers that bind to
+>>> them in current UV systems?
+>> We have customers that want to install more than 16 PCI-e cards right
+>> now.  Our window of opportunity closes very soon (days), so either this
+>> patch makes it in as is (or something close), or we wait for another
+>> release cycle.  UV shipments start this month.
+>>
+>> [I wouldn't mind working on an improvement for later.]
+> 
+> Wow and they're using cards that want to use I/O space?  Funky.  It's
+> too late to get this into 2.6.34, but that can't be what you were
+> expecting... I don't see a problem with getting something like this in
+> for 2.6.35.
+
+2.6.35 would be fine.  It's the acceptance that's the key.
+
+And yes, we're using standard cards like everyone else... ;-)
+
+[The message is "UV" is just a really, really big PC. ;-)]
+
+I would appreciate however, some more detail on what's the goal of the
+updates to "fix both".  Thanks!
+
+> 
+>>> Fundamentally, until we have real dynamic PCI resource management (i.e.
+>>> driver hooks for handling relocation, lazy allocation of resources at
+>>> driver bind time, etc.) we're going to continue to need hacks like
+>>> this.  However, we could make them slightly more automated by making
+>>> "nobar" and "norom" the default on systems that typically need them,
+>>> maybe with a DMI table.
+>> It seems that BIOS changes are much more difficult.  The real solution
+>> to this problem is for Card Vendors to not request I/O Bars if they
+>> won't be using them.  But that's the hardest option of all to accomplish.
+> 
+> Right.
+> 
