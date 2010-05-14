@@ -1,113 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759717Ab0ENUqt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:46:49 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34152 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753446Ab0ENUqr (ORCPT
+	id S1759836Ab0ENUrx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:47:53 -0400
+Received: from mtagate7.de.ibm.com ([195.212.17.167]:50496 "EHLO
+	mtagate7.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758330Ab0ENUrv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:46:47 -0400
-Date: Fri, 14 May 2010 13:46:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: stefani@seibold.net
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, gregkh@suse.de,
-       alan@lxorguk.ukuu.org.uk, tytso@mit.edu, iws@ovro.caltech.edu
-Subject: Re: [PATCH 4/4] add example files to the kernel sample directory
-Message-Id: <20100514134609.54e05968.akpm@linux-foundation.org>
-In-Reply-To: <1273654167-31067-5-git-send-email-stefani@seibold.net>
-References: <1273654167-31067-1-git-send-email-stefani@seibold.net>
-	<1273654167-31067-5-git-send-email-stefani@seibold.net>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 14 May 2010 16:47:51 -0400
+From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+To: <virtualization@lists.linux-foundation.org>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jens Axboe <jens.axboe@oracle.com>,
+       <linux-kernel@vger.kernel.org>, <kvm@vger.kernel.org>,
+       <qemu-devel@nongnu.org>, Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+Subject: [PATCH RFC] virtio_blk: Use blk-iopoll for host->guest notify
+Date: Fri, 14 May 2010 21:47:37 +0100
+Message-Id: <1273870057-4287-1-git-send-email-stefanha@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 10:49:27 +0200
-stefani@seibold.net wrote:
+This patch adds blk-iopoll interrupt mitigation to virtio-blk.  Instead
+of processing completed requests inside the virtqueue interrupt handler,
+a softirq is scheduled to process up to a maximum number of completed
+requests in one go.
 
-> This patch add four examples to the kernel sample directory.
+If the number of complete requests exceeds the maximum number, then another
+softirq is scheduled to continue polling.  Otherwise the virtqueue interrupt is
+enabled again and we return to interrupt-driven mode.
 
-x86_64 allmodconfig:
+The patch sets the maximum number of completed requests (aka budget, aka
+weight) to 4.  This is a low number but reflects the expensive context
+switch between guest and host virtio-blk emulation.
 
-samples/kfifo/dma-example.c: In function 'example_init':
-samples/kfifo/dma-example.c:27: error: array type has incomplete element type
-samples/kfifo/dma-example.c:41: error: implicit declaration of function 'kfifo_put'
-samples/kfifo/dma-example.c:44: error: implicit declaration of function 'kfifo_get'
-samples/kfifo/dma-example.c:48: error: implicit declaration of function 'kfifo_dma_in_prepare'
-samples/kfifo/dma-example.c:48: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:48: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:48: error: negative width in bit-field '<anonymous>'
-samples/kfifo/dma-example.c:54: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:54: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:54: error: negative width in bit-field '<anonymous>'
-samples/kfifo/dma-example.c:60: error: implicit declaration of function 'sg_is_last'
-samples/kfifo/dma-example.c:71: error: implicit declaration of function 'kfifo_dma_in_finish'
-samples/kfifo/dma-example.c:74: error: implicit declaration of function 'kfifo_dma_out_prepare'
-samples/kfifo/dma-example.c:74: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:74: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:74: error: negative width in bit-field '<anonymous>'
-samples/kfifo/dma-example.c:80: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:80: warning: type defaults to 'int' in declaration of 'type name'
-samples/kfifo/dma-example.c:80: error: negative width in bit-field '<anonymous>'
-samples/kfifo/dma-example.c:97: error: implicit declaration of function 'kfifo_dma_out_finish'
-samples/kfifo/dma-example.c:27: warning: unused variable 'sg'
-make[2]: *** [samples/kfifo/dma-example.o] Error 1
-make[2]: *** Waiting for unfinished jobs....
-samples/kfifo/bytestream-example.c:44:52: error: macro "DECLARE_KFIFO" passed 3 arguments, but takes just 2
-samples/kfifo/bytestream-example.c:44: warning: type defaults to 'int' in declaration of 'DECLARE_KFIFO'
-samples/kfifo/bytestream-example.c: In function 'testfunc':
-samples/kfifo/bytestream-example.c:56: error: 'test' undeclared (first use in this function)
-samples/kfifo/bytestream-example.c:56: error: (Each undeclared identifier is reported only once
-samples/kfifo/bytestream-example.c:56: error: for each function it appears in.)
-samples/kfifo/bytestream-example.c:60: error: implicit declaration of function 'kfifo_put'
-samples/kfifo/bytestream-example.c:83: error: implicit declaration of function 'kfifo_get'
-samples/kfifo/bytestream-example.c: In function 'fifo_write':
-samples/kfifo/bytestream-example.c:99: error: 'test' undeclared (first use in this function)
-samples/kfifo/bytestream-example.c: In function 'fifo_read':
-samples/kfifo/bytestream-example.c:115: error: 'test' undeclared (first use in this function)
-samples/kfifo/bytestream-example.c: In function 'example_init':
-samples/kfifo/bytestream-example.c:139: error: 'test' undeclared (first use in this function)
-samples/kfifo/bytestream-example.c:139: error: 'testkfifo_buffer' undeclared (first use in this function)
-make[2]: *** [samples/kfifo/bytestream-example.o] Error 1
-samples/kfifo/record-example.c:53: error: syntax error before numeric constant
-samples/kfifo/record-example.c:53: warning: type defaults to 'int' in declaration of 'mytest'
-samples/kfifo/record-example.c:53: warning: data definition has no type or storage class
-samples/kfifo/record-example.c:55: error: syntax error before 'test'
-samples/kfifo/record-example.c:55: warning: type defaults to 'int' in declaration of 'test'
-samples/kfifo/record-example.c:55: warning: data definition has no type or storage class
-samples/kfifo/record-example.c: In function 'testfunc':
-samples/kfifo/record-example.c:67: warning: passing argument 1 of 'kfifo_in' from incompatible pointer type
-samples/kfifo/record-example.c:70: error: implicit declaration of function 'kfifo_peek_len'
-samples/kfifo/record-example.c:75: warning: passing argument 1 of 'kfifo_in' from incompatible pointer type
-samples/kfifo/record-example.c:78: warning: passing argument 1 of 'kfifo_len' from incompatible pointer type
-samples/kfifo/record-example.c:81: warning: passing argument 1 of 'kfifo_out_peek' from incompatible pointer type
-samples/kfifo/record-example.c:81: error: too few arguments to function 'kfifo_out_peek'
-samples/kfifo/record-example.c:86: warning: passing argument 1 of 'kfifo_is_empty' from incompatible pointer type
-samples/kfifo/record-example.c:87: warning: passing argument 1 of 'kfifo_out' from incompatible pointer type
-samples/kfifo/record-example.c: In function 'fifo_write':
-samples/kfifo/record-example.c:103: warning: passing argument 1 of 'kfifo_from_user' from incompatible pointer type
-samples/kfifo/record-example.c: In function 'fifo_read':
-samples/kfifo/record-example.c:119: warning: passing argument 1 of 'kfifo_to_user' from incompatible pointer type
-samples/kfifo/record-example.c: In function 'example_init':
-samples/kfifo/record-example.c:143: error: 'testkfifo_buffer' undeclared (first use in this function)
-samples/kfifo/record-example.c:143: error: (Each undeclared identifier is reported only once
-samples/kfifo/record-example.c:143: error: for each function it appears in.)
-samples/kfifo/record-example.c:143: error: incompatible types in assignment
-make[2]: *** [samples/kfifo/record-example.o] Error 1
-samples/kfifo/inttype-example.c:44:41: error: macro "DEFINE_KFIFO" passed 3 arguments, but takes just 2
-samples/kfifo/inttype-example.c:44: warning: type defaults to 'int' in declaration of 'DEFINE_KFIFO'
-samples/kfifo/inttype-example.c: In function 'testfunc':
-samples/kfifo/inttype-example.c:57: error: implicit declaration of function 'kfifo_put'
-samples/kfifo/inttype-example.c:57: error: 'test' undeclared (first use in this function)
-samples/kfifo/inttype-example.c:57: error: (Each undeclared identifier is reported only once
-samples/kfifo/inttype-example.c:57: error: for each function it appears in.)
-samples/kfifo/inttype-example.c:75: error: implicit declaration of function 'kfifo_peek'
-samples/kfifo/inttype-example.c:79: error: implicit declaration of function 'kfifo_get'
-samples/kfifo/inttype-example.c: In function 'fifo_write':
-samples/kfifo/inttype-example.c:95: error: 'test' undeclared (first use in this function)
-samples/kfifo/inttype-example.c: In function 'fifo_read':
-samples/kfifo/inttype-example.c:111: error: 'test' undeclared (first use in this function)
+The blk-iopoll infrastructure is enabled system-wide by default:
+
+kernel.blk_iopoll = 1
+
+It can be disabled to always use interrupt-driven mode (useful for comparison):
+
+kernel.blk_iopoll = 0
+
+Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
+---
+No performance figures yet.
+
+ drivers/block/virtio_blk.c |   71 ++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 62 insertions(+), 9 deletions(-)
+
+diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
+index 2138a7a..1523895 100644
+--- a/drivers/block/virtio_blk.c
++++ b/drivers/block/virtio_blk.c
+@@ -6,6 +6,7 @@
+ #include <linux/virtio.h>
+ #include <linux/virtio_blk.h>
+ #include <linux/scatterlist.h>
++#include <linux/blk-iopoll.h>
+ 
+ #define PART_BITS 4
+ 
+@@ -26,6 +27,9 @@ struct virtio_blk
+ 
+ 	mempool_t *pool;
+ 
++	/* Host->guest notify mitigation */
++	struct blk_iopoll iopoll;
++
+ 	/* What host tells us, plus 2 for header & tailer. */
+ 	unsigned int sg_elems;
+ 
+@@ -42,16 +46,18 @@ struct virtblk_req
+ 	u8 status;
+ };
+ 
+-static void blk_done(struct virtqueue *vq)
++/* Assumes vblk->lock held */
++static int __virtblk_end_requests(struct virtio_blk *vblk, int weight)
+ {
+-	struct virtio_blk *vblk = vq->vdev->priv;
+ 	struct virtblk_req *vbr;
+ 	unsigned int len;
+-	unsigned long flags;
++	int error;
++	int work = 0;
+ 
+-	spin_lock_irqsave(&vblk->lock, flags);
+-	while ((vbr = vblk->vq->vq_ops->get_buf(vblk->vq, &len)) != NULL) {
+-		int error;
++	while (!weight || work < weight) {
++		vbr = vblk->vq->vq_ops->get_buf(vblk->vq, &len);
++		if (!vbr)
++			break;
+ 
+ 		switch (vbr->status) {
+ 		case VIRTIO_BLK_S_OK:
+@@ -74,10 +80,53 @@ static void blk_done(struct virtqueue *vq)
+ 		__blk_end_request_all(vbr->req, error);
+ 		list_del(&vbr->list);
+ 		mempool_free(vbr, vblk->pool);
++		work++;
+ 	}
++
+ 	/* In case queue is stopped waiting for more buffers. */
+ 	blk_start_queue(vblk->disk->queue);
++	return work;
++}
++
++static int virtblk_iopoll(struct blk_iopoll *iopoll, int weight)
++{
++	struct virtio_blk *vblk =
++		container_of(iopoll, struct virtio_blk, iopoll);
++	unsigned long flags;
++	int work;
++
++	spin_lock_irqsave(&vblk->lock, flags);
++
++	work = __virtblk_end_requests(vblk, weight);
++	if (work < weight) {
++		/* Keep polling if there are pending requests. */
++		if (vblk->vq->vq_ops->enable_cb(vblk->vq))
++			__blk_iopoll_complete(&vblk->iopoll);
++		else
++			vblk->vq->vq_ops->disable_cb(vblk->vq);
++	}
++
+ 	spin_unlock_irqrestore(&vblk->lock, flags);
++	return work;
++}
++
++static void blk_done(struct virtqueue *vq)
++{
++	struct virtio_blk *vblk = vq->vdev->priv;
++	unsigned long flags;
++
++	if (blk_iopoll_enabled) {
++		if (!blk_iopoll_sched_prep(&vblk->iopoll)) {
++			spin_lock_irqsave(&vblk->lock, flags);
++			vblk->vq->vq_ops->disable_cb(vblk->vq);
++			spin_unlock_irqrestore(&vblk->lock, flags);
++			blk_iopoll_sched(&vblk->iopoll);
++		}
++	} else {
++		spin_lock_irqsave(&vblk->lock, flags);
++		__virtblk_end_requests(vblk, 0);
++		spin_unlock_irqrestore(&vblk->lock, flags);
++	}
+ }
+ 
+ static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
+@@ -289,11 +338,14 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 		goto out_free_vq;
+ 	}
+ 
++	blk_iopoll_init(&vblk->iopoll, 4 /* budget */, virtblk_iopoll);
++	blk_iopoll_enable(&vblk->iopoll);
++
+ 	/* FIXME: How many partitions?  How long is a piece of string? */
+ 	vblk->disk = alloc_disk(1 << PART_BITS);
+ 	if (!vblk->disk) {
+ 		err = -ENOMEM;
+-		goto out_mempool;
++		goto out_iopoll;
+ 	}
+ 
+ 	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
+@@ -401,13 +453,13 @@ static int __devinit virtblk_probe(struct virtio_device *vdev)
+ 	if (!err && opt_io_size)
+ 		blk_queue_io_opt(q, blk_size * opt_io_size);
+ 
+-
+ 	add_disk(vblk->disk);
+ 	return 0;
+ 
+ out_put_disk:
+ 	put_disk(vblk->disk);
+-out_mempool:
++out_iopoll:
++	blk_iopoll_disable(&vblk->iopoll);
+ 	mempool_destroy(vblk->pool);
+ out_free_vq:
+ 	vdev->config->del_vqs(vdev);
+@@ -430,6 +482,7 @@ static void __devexit virtblk_remove(struct virtio_device *vdev)
+ 	del_gendisk(vblk->disk);
+ 	blk_cleanup_queue(vblk->disk->queue);
+ 	put_disk(vblk->disk);
++	blk_iopoll_disable(&vblk->iopoll);
+ 	mempool_destroy(vblk->pool);
+ 	vdev->config->del_vqs(vdev);
+ 	kfree(vblk);
+-- 
+1.7.1
 
