@@ -1,66 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758945Ab0EXXJU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:20 -0400
-Received: from kroah.org ([198.145.64.141]:36382 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758820Ab0EXXJS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:49 2010
-Message-Id: <20100524230349.792538291@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:37 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Subject: [05/34] dma-mapping: fix dma_sync_single_range_*
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+	id S1752763Ab0ENEoR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:44:17 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:39093 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751967Ab0ENEoO (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:44:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Z86/Up0py/7y4UYFk8HzKcSoQCxUPs2pZjHqKGjO0J0SnlcVA+qw+JN7wVW3LsLnK2
+         ICaNvmTXPVz1c+Ew6/TsowxZ8DA14IJrSHdCn6RZPmZ0U1mfw32/BQ4NredispTmCUnp
+         SCV+BCeBz8th1w661y5HbnFkkdHVD6DC40z3c=
+Message-ID: <4BECD518.6040801@gmail.com>
+Date: Thu, 13 May 2010 21:44:08 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       Bruno Randolf <br1@einfach.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+References: <4BEC7A84.3010503@gmail.com> <AANLkTinKoMxdkPYQA_AblpByL6zAiAP5hv2M3Jn2R3hM@mail.gmail.com> 	<4BEC9E6B.30809@gmail.com> <201005141008.20667.br1@einfach.org> 	<4BECA3AE.4070607@gmail.com> <20100514012314.GA2170@tux> <4BECA6AC.9060609@gmail.com> 	<20100514014311.GC2170@tux> <20100514014553.GD2170@tux> <4BECB1F2.5050900@gmail.com> <AANLkTilOJMtg1EIlDgY3_T5Xb6Zed0tbqkD7CGr7utol@mail.gmail.com>
+In-Reply-To: <AANLkTilOJMtg1EIlDgY3_T5Xb6Zed0tbqkD7CGr7utol@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+On 05/13/10 21:01, Luis R. Rodriguez wrote:
+> On Thu, May 13, 2010 at 7:14 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>
+>>
+>> what I can try, is(not at the convention, on eth0
+>> at the moment), but when I get back to the convention
+>> center place I can try your patch as well as the
+>> modprobe option, to see if I can get any signs of
+>> a recreation(if so I'll bisect there).
+>
+> The debug info I just need upon load of the module, I don't need you
+> to run the debug stuff to try to reproduce. The debug print upon load
+> will tell us the rxbuf size and cache line size.
+>
+>    Luis
+>
 
-------------------
+o.k. it's not pretty due
+to loads of avc's for SELinux:
+(I run a rootless system).
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+[   84.172649] ath9k: Driver unloaded
+[  100.675300] audit_printk_skb: 6 callbacks suppressed
+[  100.675306] type=1400 audit(1273811633.675:20): avc:  denied  { 
+search } for  pid=2168 comm="modprobe" name="modules" dev=sda3 ino=2500 
+scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=system_u:object_r:modules_object_t:s0 tclass=dir
+[  100.675408] type=1400 audit(1273811633.675:20): avc:  denied  { 
+search } for  pid=2168 comm="modprobe" name="2.6.34-rc7-00057-gcdfda35" 
+dev=sda3 ino=524392 scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=name:object_r:modules_object_t:s0 tclass=dir
+[  100.675552] type=1400 audit(1273811633.675:20): avc:  denied  { read 
+} for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 
+ino=525251 scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=name:object_r:modules_object_t:s0 tclass=file
+[  100.675598] type=1400 audit(1273811633.675:20): avc:  denied  { open 
+} for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 
+ino=525251 scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=name:object_r:modules_object_t:s0 tclass=file
+[  100.675748] type=1300 audit(1273811633.675:20): arch=c000003e 
+syscall=2 success=yes exit=3 a0=60d140 a1=0 a2=1b6 a3=0 items=0 
+ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0 
+sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" exe="/sbin/modprobe" 
+subj=name:staff_r:staff_sudo_t:s0 key=(null)
+[  100.675902] type=1400 audit(1273811633.675:21): avc:  denied  { 
+getattr } for  pid=2168 comm="modprobe" 
+path="/lib/modules/2.6.34-rc7-00057-gcdfda35/modules.dep.bin" dev=sda3 
+ino=525251 scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=name:object_r:modules_object_t:s0 tclass=file
+[  100.676052] type=1300 audit(1273811633.675:21): arch=c000003e 
+syscall=5 success=yes exit=0 a0=3 a1=7fffd2d1dd70 a2=7fffd2d1dd70 a3=0 
+items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 
+egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" 
+exe="/sbin/modprobe" subj=name:staff_r:staff_sudo_t:s0 key=(null)
+[  100.698392] ath9k 0000:03:00.0: PCI INT A -> GSI 17 (level, low) -> 
+IRQ 17
+[  100.698409] ath9k 0000:03:00.0: setting latency timer to 64
+[  100.828787] ath: EEPROM regdomain: 0x64
+[  100.828790] ath: EEPROM indicates we should expect a direct regpair map
+[  100.828793] ath: Country alpha2 being used: 00
+[  100.828795] ath: Regpair used: 0x64
+[  100.848609] type=1400 audit(1273811633.678:22): avc:  denied  { 
+search } for  pid=2168 comm="modprobe" name="ieee80211" dev=debugfs 
+ino=18 scontext=name:staff_r:staff_sudo_t:s0 
+tcontext=system_u:object_r:debugfs_t:s0 tclass=dir
+[  100.848788] phy1: Selected rate control algorithm 'ath9k_rate_control'
+[  100.850035] Registered led device: ath9k-phy1::radio
+[  100.850488] Registered led device: ath9k-phy1::assoc
+[  100.851227] Registered led device: ath9k-phy1::tx
+[  100.851633] Registered led device: ath9k-phy1::rx
+[  100.851640] phy1: Atheros AR5418 MAC/BB Rev:2 AR5133 RF Rev:81 
+mem=0xffffc900005a0000, irq=17
+[  100.852240] type=1300 audit(1273811633.678:22): arch=c000003e 
+syscall=175 success=yes exit=0 a0=7f1e9d6ab010 a1=19580 a2=60d920 a3=0 
+items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 
+egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" 
+exe="/sbin/modprobe" subj=name:staff_r:staff_sudo_t:s0 key=(null)
 
-commit f33d7e2d2d113a63772bbc993cdec3b5327f0ef1 upstream.
+but there you go dmesg of the debug info for you
 
-dma_sync_single_range_for_cpu() and dma_sync_single_range_for_device() use
-a wrong address with a partial synchronization.
-
-Signed-off-by: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Reviewed-by: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- include/asm-generic/dma-mapping-common.h |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
---- a/include/asm-generic/dma-mapping-common.h
-+++ b/include/asm-generic/dma-mapping-common.h
-@@ -131,7 +131,7 @@ static inline void dma_sync_single_range
- 		debug_dma_sync_single_range_for_cpu(dev, addr, offset, size, dir);
- 
- 	} else
--		dma_sync_single_for_cpu(dev, addr, size, dir);
-+		dma_sync_single_for_cpu(dev, addr + offset, size, dir);
- }
- 
- static inline void dma_sync_single_range_for_device(struct device *dev,
-@@ -148,7 +148,7 @@ static inline void dma_sync_single_range
- 		debug_dma_sync_single_range_for_device(dev, addr, offset, size, dir);
- 
- 	} else
--		dma_sync_single_for_device(dev, addr, size, dir);
-+		dma_sync_single_for_device(dev, addr + offset, size, dir);
- }
- 
- static inline void
-
-
+Justin P. Mattock
