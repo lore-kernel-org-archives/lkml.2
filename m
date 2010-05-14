@@ -1,143 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756642Ab0ENGp2 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:45:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57309 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab0ENGp0 (ORCPT
+	id S1756946Ab0ENGpr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:45:47 -0400
+Received: from mail30s.wh2.ocn.ne.jp ([125.206.180.198]:42733 "HELO
+	mail30s.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1756440Ab0ENGpp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:45:26 -0400
-Message-ID: <4BECF0E2.90406@oracle.com>
-Date: Thu, 13 May 2010 23:42:42 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 02:45:45 -0400
+X-Greylist: delayed 398 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 May 2010 02:45:45 EDT
+From: Bruno Randolf <br1@einfach.org>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+Date: Fri, 14 May 2010 15:38:43 +0900
+User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
+Cc: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+References: <4BEC7A84.3010503@gmail.com> <201005141520.30802.br1@einfach.org> <4BECEE3E.6090303@gmail.com>
+In-Reply-To: <4BECEE3E.6090303@gmail.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 13/35] x86, lmb: Add lmb_free_memory_size()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-14-git-send-email-yinghai@kernel.org> <1273804285.21352.392.camel@pasglop>
-In-Reply-To: <1273804285.21352.392.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090206.4BECF150.006F:SCFMA4539811,ss=1,fgs=0
+Message-Id: <201005141538.43416.br1@einfach.org>
+X-SF-Loop: 1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 07:31 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->> It will return free memory size in specified range.
->>
->> We can not use memory_size - reserved_size here, because some reserved area
->> may not be in the scope of lmb.memory.region.
->>
->> Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
->> then count size of all free ranges.
+On Friday 14 May 2010 15:31:26 Justin P. Mattock wrote:
+> On 05/13/10 23:20, Bruno Randolf wrote:
+> > On Friday 14 May 2010 15:16:22 Luis R. Rodriguez wrote:
+> >> On Thu, May 13, 2010 at 9:44 PM, Justin P. Mattock
+> >> 
+> >> <justinmattock@gmail.com>  wrote:
+> >>> On 05/13/10 21:01, Luis R. Rodriguez wrote:
+> >>>> On Thu, May 13, 2010 at 7:14 PM, Justin P. Mattock
+> >>>> 
+> >>>> <justinmattock@gmail.com>   wrote:
+> >>>>> what I can try, is(not at the convention, on eth0
+> >>>>> at the moment), but when I get back to the convention
+> >>>>> center place I can try your patch as well as the
+> >>>>> modprobe option, to see if I can get any signs of
+> >>>>> a recreation(if so I'll bisect there).
+> >>>> 
+> >>>> The debug info I just need upon load of the module, I don't need you
+> >>>> to run the debug stuff to try to reproduce. The debug print upon load
+> >>>> will tell us the rxbuf size and cache line size.
+> >>>> 
+> >>>>    Luis
+> >>> 
+> >>> o.k. it's not pretty due
+> >>> to loads of avc's for SELinux:
+> >>> (I run a rootless system).
+> >>> 
+> >>> [   84.172649] ath9k: Driver unloaded
+> >>> [  100.675300] audit_printk_skb: 6 callbacks suppressed
+> >>> [  100.675306] type=1400 audit(1273811633.675:20): avc:  denied  {
+> >>> search } for  pid=2168 comm="modprobe" name="modules" dev=sda3
+> >>> ino=2500 scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=system_u:object_r:modules_object_t:s0 tclass=dir
+> >>> [  100.675408] type=1400 audit(1273811633.675:20): avc:  denied  {
+> >>> search } for  pid=2168 comm="modprobe"
+> >>> name="2.6.34-rc7-00057-gcdfda35" dev=sda3 ino=524392
+> >>> scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=name:object_r:modules_object_t:s0 tclass=dir
+> >>> [  100.675552] type=1400 audit(1273811633.675:20): avc:  denied  { read
+> >>> } for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3
+> >>> ino=525251 scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+> >>> [  100.675598] type=1400 audit(1273811633.675:20): avc:  denied  { open
+> >>> } for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3
+> >>> ino=525251 scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+> >>> [  100.675748] type=1300 audit(1273811633.675:20): arch=c000003e
+> >>> syscall=2 success=yes exit=3 a0=60d140 a1=0 a2=1b6 a3=0 items=0
+> >>> ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
+> >>> sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" exe="/sbin/modprobe"
+> >>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+> >>> [  100.675902] type=1400 audit(1273811633.675:21): avc:  denied  {
+> >>> getattr } for  pid=2168 comm="modprobe"
+> >>> path="/lib/modules/2.6.34-rc7-00057-gcdfda35/modules.dep.bin" dev=sda3
+> >>> ino=525251 scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+> >>> [  100.676052] type=1300 audit(1273811633.675:21): arch=c000003e
+> >>> syscall=5 success=yes exit=0 a0=3 a1=7fffd2d1dd70 a2=7fffd2d1dd70 a3=0
+> >>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+> >>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+> >>> exe="/sbin/modprobe"
+> >>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+> >>> [  100.698392] ath9k 0000:03:00.0: PCI INT A ->  GSI 17 (level, low) ->
+> >>> IRQ 17
+> >>> [  100.698409] ath9k 0000:03:00.0: setting latency timer to 64
+> >>> [  100.828787] ath: EEPROM regdomain: 0x64
+> >>> [  100.828790] ath: EEPROM indicates we should expect a direct regpair
+> >>> map [  100.828793] ath: Country alpha2 being used: 00
+> >>> [  100.828795] ath: Regpair used: 0x64
+> >>> [  100.848609] type=1400 audit(1273811633.678:22): avc:  denied  {
+> >>> search } for  pid=2168 comm="modprobe" name="ieee80211" dev=debugfs
+> >>> ino=18 scontext=name:staff_r:staff_sudo_t:s0
+> >>> tcontext=system_u:object_r:debugfs_t:s0 tclass=dir
+> >>> [  100.848788] phy1: Selected rate control algorithm
+> >>> 'ath9k_rate_control' [  100.850035] Registered led device:
+> >>> ath9k-phy1::radio
+> >>> [  100.850488] Registered led device: ath9k-phy1::assoc
+> >>> [  100.851227] Registered led device: ath9k-phy1::tx
+> >>> [  100.851633] Registered led device: ath9k-phy1::rx
+> >>> [  100.851640] phy1: Atheros AR5418 MAC/BB Rev:2 AR5133 RF Rev:81
+> >>> mem=0xffffc900005a0000, irq=17
+> >>> [  100.852240] type=1300 audit(1273811633.678:22): arch=c000003e
+> >>> syscall=175 success=yes exit=0 a0=7f1e9d6ab010 a1=19580 a2=60d920 a3=0
+> >>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+> >>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+> >>> exe="/sbin/modprobe"
+> >>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+> >>> 
+> >>> but there you go dmesg of the debug info for you
+> >> 
+> >> Justin, did you forget to use the debug parameter on modprobe ath9k?
+> >> 
+> >> modprobe ath9k debug=0x0000020
+> >> 
+> >> I do not see the output I expected.
+> > 
+> > i think you have to do at least "ifconfig wlan0 up" to see it - (at least
+> > for ath5k).
+> > 
+> > bruno
 > 
-> I remember having already told you that the naming sucks.
+> didn't think todo so, I'll redu
+> again and see. BTW: the connection
+> over here is dodgy(hotel) should I at-least
+> find a stable access point? i.g. convetion
+> center seemed semi somewhat there
 
-any suggestion?
+no that does not matter. just ifconfig up is enough. it's just initialization, 
+you don't need a connection for that.
 
-i think this name is clear.
+bruno
 
-> 
-> Also, you fail to explain what this is actually needed for.
-
-needed by 
-
-[PATCH 21/35] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
-
-
-> 
-> Cheers,
-> Ben.
-> 
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  arch/x86/include/asm/lmb.h |    1 +
->>  arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
->>  2 files changed, 52 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
->> index 358d8a6..4fb94b5 100644
->> --- a/arch/x86/include/asm/lmb.h
->> +++ b/arch/x86/include/asm/lmb.h
->> @@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
->>  					 unsigned long last_pfn);
->>  u64 lmb_hole_size(u64 start, u64 end);
->>  u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
->> +u64 lmb_free_memory_size(u64 addr, u64 limit);
->>  
->>  #endif
->> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
->> index c5fa1dd..6c69e99 100644
->> --- a/arch/x86/mm/lmb.c
->> +++ b/arch/x86/mm/lmb.c
->> @@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
->>  }
->>  #endif
->>  
->> +u64 __init lmb_free_memory_size(u64 addr, u64 limit)
->> +{
->> +	int i, count;
->> +	struct range *range;
->> +	int nr_range;
->> +	u64 final_start, final_end;
->> +	u64 free_size;
->> +
->> +	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
->> +
->> +	range = find_range_array(count);
->> +	nr_range = 0;
->> +
->> +	addr = PFN_UP(addr);
->> +	limit = PFN_DOWN(limit);
->> +
->> +	for (i = 0; i < lmb.memory.cnt; i++) {
->> +		struct lmb_region *r = &lmb.memory.regions[i];
->> +
->> +		final_start = PFN_UP(r->base);
->> +		final_end = PFN_DOWN(r->base + r->size);
->> +		if (final_start >= final_end)
->> +			continue;
->> +		if (final_start >= limit || final_end <= addr)
->> +			continue;
->> +
->> +		nr_range = add_range(range, count, nr_range, final_start, final_end);
->> +	}
->> +	subtract_range(range, count, 0, addr);
->> +	subtract_range(range, count, limit, -1ULL);
->> +	for (i = 0; i < lmb.reserved.cnt; i++) {
->> +		struct lmb_region *r = &lmb.reserved.regions[i];
->> +
->> +		final_start = PFN_DOWN(r->base);
->> +		final_end = PFN_UP(r->base + r->size);
->> +		if (final_start >= final_end)
->> +			continue;
->> +		if (final_start >= limit || final_end <= addr)
->> +			continue;
->> +
->> +		subtract_range(range, count, final_start, final_end);
->> +	}
->> +	nr_range = clean_sort_range(range, count);
->> +
->> +	free_size = 0;
->> +	for (i = 0; i < nr_range; i++)
->> +		free_size += range[i].end - range[i].start;
->> +
->> +	return free_size << PAGE_SHIFT;
->> +}
->> +
->>  void __init lmb_add_memory(u64 start, u64 end)
->>  {
->>  	lmb_add_region(&lmb.memory, start, end - start);
-> 
-
+> Justin P. Mattock
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless"
+> in the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
