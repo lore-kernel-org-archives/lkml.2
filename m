@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932445Ab0ENTw0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:52:26 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17338 "EHLO
+	id S932473Ab0ENTwa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:52:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17326 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754125Ab0ENTuB (ORCPT
+	with ESMTP id S1753990Ab0ENTt7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:50:01 -0400
+	Fri, 14 May 2010 15:49:59 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,96 +16,77 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 31/37] x86: Change e820_saved to __initdata
-Date: Fri, 14 May 2010 12:45:57 -0700
-Message-Id: <1273866363-14249-32-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 27/37] x86: Have nobootmem version setup_bootmem_allocator()
+Date: Fri, 14 May 2010 12:45:53 -0700
+Message-Id: <1273866363-14249-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BEDA950.01B3,ss=1,fgs=0
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090202.4BEDA94C.007F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-for 2.6.34
-
-Add save_e820_map() and change e820_saved to static
-also make it to be __initdata to get some bytes memory back.
+We can reduce #ifdef number from 3 to one in init_32.c
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 +-
- arch/x86/kernel/e820.c      |    9 +++++++--
- arch/x86/kernel/setup.c     |    2 +-
- 3 files changed, 9 insertions(+), 4 deletions(-)
+ arch/x86/mm/init_32.c |   15 ++++++++++-----
+ 1 files changed, 10 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index 25962e1..334281f 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -75,7 +75,6 @@ struct e820map {
- #ifdef __KERNEL__
- /* see comment in arch/x86/kernel/e820.c */
- extern struct e820map e820;
--extern struct e820map e820_saved;
+diff --git a/arch/x86/mm/init_32.c b/arch/x86/mm/init_32.c
+index c01c711..dfdd035 100644
+--- a/arch/x86/mm/init_32.c
++++ b/arch/x86/mm/init_32.c
+@@ -771,11 +771,9 @@ static unsigned long __init setup_node_bootmem(int nodeid,
  
- extern unsigned long pci_mem_start;
- extern int e820_any_mapped(u64 start, u64 end, unsigned type);
-@@ -83,6 +82,7 @@ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
- extern void e820_add_region(u64 start, u64 size, int type);
- extern void e820_print_map(char *who);
- int sanitize_e820_map(void);
-+void save_e820_map(void);
- extern u64 e820_update_range(u64 start, u64 size, unsigned old_type,
- 			       unsigned new_type);
- extern u64 e820_remove_range(u64 start, u64 size, unsigned old_type,
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 3c4ddaa..bae44dd 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -36,7 +36,7 @@
-  * next kernel with full memory.
-  */
- struct e820map e820;
--struct e820map e820_saved;
-+static struct e820map __initdata e820_saved;
- 
- /* For PCI or other memory-mapped resources */
- unsigned long pci_mem_start = 0xaeedbabe;
-@@ -1072,12 +1072,17 @@ char *__init default_machine_specific_memory_setup(void)
- 	return who;
+ 	return bootmap + bootmap_size;
  }
+-#endif
  
-+void __init save_e820_map(void)
-+{
-+	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+}
-+
- void __init setup_memory_map(void)
+ void __init setup_bootmem_allocator(void)
  {
- 	char *who;
+-#ifndef CONFIG_NO_BOOTMEM
+ 	int nodeid;
+ 	unsigned long bootmap_size, bootmap;
+ 	/*
+@@ -787,13 +785,11 @@ void __init setup_bootmem_allocator(void)
+ 	if (bootmap == -1L)
+ 		panic("Cannot find bootmem map of size %ld\n", bootmap_size);
+ 	lmb_reserve_area(bootmap, bootmap + bootmap_size, "BOOTMAP");
+-#endif
  
- 	who = x86_init.resources.memory_setup();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "BIOS-provided physical RAM map:\n");
- 	e820_print_map(who);
- }
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index 33ff7f4..d165b2d 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -463,7 +463,7 @@ static void __init e820_reserve_setup_data(void)
- 		return;
+ 	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
+ 		 max_pfn_mapped<<PAGE_SHIFT);
+ 	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
  
- 	sanitize_e820_map();
--	memcpy(&e820_saved, &e820, sizeof(struct e820map));
-+	save_e820_map();
- 	printk(KERN_INFO "extended physical RAM map:\n");
- 	e820_print_map("reserve setup_data");
+-#ifndef CONFIG_NO_BOOTMEM
+ 	for_each_online_node(nodeid) {
+ 		 unsigned long start_pfn, end_pfn;
+ 
+@@ -811,10 +807,19 @@ void __init setup_bootmem_allocator(void)
+ 		bootmap = setup_node_bootmem(nodeid, start_pfn, end_pfn,
+ 						 bootmap);
+ 	}
+-#endif
+ 
+ 	after_bootmem = 1;
  }
++#else
++void __init setup_bootmem_allocator(void)
++{
++	printk(KERN_INFO "  mapped low ram: 0 - %08lx\n",
++		 max_pfn_mapped<<PAGE_SHIFT);
++	printk(KERN_INFO "  low ram: 0 - %08lx\n", max_low_pfn<<PAGE_SHIFT);
++
++	after_bootmem = 1;
++}
++#endif
+ 
+ /*
+  * paging_init() sets up the page tables - note that the first 8MB are
 -- 
 1.6.4.2
 
