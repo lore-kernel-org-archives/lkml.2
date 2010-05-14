@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932169Ab0ENTsq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:48:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59881 "EHLO
+	id S1759816Ab0ENTym (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:54:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59876 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759692Ab0ENTsk (ORCPT
+	with ESMTP id S1759687Ab0ENTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:48:40 -0400
+	Fri, 14 May 2010 15:48:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,234 +16,50 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 06/37] lmb: Add ARCH_DISCARD_LMB to put lmb code to .init
-Date: Fri, 14 May 2010 12:45:32 -0700
-Message-Id: <1273866363-14249-7-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 03/37] lmb: Print new doubled array location info
+Date: Fri, 14 May 2010 12:45:29 -0700
+Message-Id: <1273866363-14249-4-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090203.4BEDA8E0.0038,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090205.4BEDA8D3.009E,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So those lmb bits could be released after kernel is booted up.
-
-Arch code could define ARCH_DISCARD_LMB in asm/lmb.h,
-__init_lmb will become __init, __initdata_lmb will becom __initdata
-
-x86 code will use that.
-
-if ARCH_DISCARD_LMB is defined, debugfs is not used
-
--v2: use ARCH_DISCARD_LMB according to Michael Ellerman
+so will have more idea where it is,  use lmb_debug to controll it
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    8 ++++++++
- lib/lmb.c           |   46 +++++++++++++++++++++++-----------------------
- 2 files changed, 31 insertions(+), 23 deletions(-)
+ lib/lmb.c |    6 ++++--
+ 1 files changed, 4 insertions(+), 2 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 4c9c84a..e54c1d0 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -144,6 +144,14 @@ static inline unsigned long lmb_region_pages(const struct lmb_region *reg)
- 	     region++)
- 
- 
-+#ifdef ARCH_DISCARD_LMB
-+#define __init_lmb __init
-+#define __initdata_lmb __initdata
-+#else
-+#define __init_lmb
-+#define __initdata_lmb
-+#endif
-+
- #endif /* CONFIG_HAVE_LMB */
- 
- #endif /* __KERNEL__ */
 diff --git a/lib/lmb.c b/lib/lmb.c
-index 3caf58c..c92034b 100644
+index b6725d6..2bdbe87 100644
 --- a/lib/lmb.c
 +++ b/lib/lmb.c
-@@ -20,11 +20,11 @@
- #include <linux/seq_file.h>
- #include <linux/lmb.h>
- 
--struct lmb lmb;
-+struct lmb lmb __initdata_lmb;
- 
--int lmb_debug;
--static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
--struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
-+int lmb_debug __initdata_lmb;
-+static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1] __initdata_lmb;
-+struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1] __initdata_lmb;
- 
- /* inline so we don't get a warning when pr_debug is compiled out */
- static inline const char *lmb_type_name(struct lmb_type *type)
-@@ -41,23 +41,23 @@ static inline const char *lmb_type_name(struct lmb_type *type)
-  * Address comparison utilities
-  */
- 
--static phys_addr_t lmb_align_down(phys_addr_t addr, phys_addr_t size)
-+static phys_addr_t __init_lmb lmb_align_down(phys_addr_t addr, phys_addr_t size)
- {
- 	return addr & ~(size - 1);
- }
- 
--static phys_addr_t lmb_align_up(phys_addr_t addr, phys_addr_t size)
-+static phys_addr_t __init_lmb lmb_align_up(phys_addr_t addr, phys_addr_t size)
- {
- 	return (addr + (size - 1)) & ~(size - 1);
- }
- 
--static unsigned long lmb_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
-+static unsigned long __init_lmb lmb_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
- 				       phys_addr_t base2, phys_addr_t size2)
- {
- 	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
- }
- 
--static long lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
-+static long __init_lmb lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
- 			       phys_addr_t base2, phys_addr_t size2)
- {
- 	if (base2 == base1 + size1)
-@@ -68,7 +68,7 @@ static long lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
- 	return 0;
- }
- 
--static long lmb_regions_adjacent(struct lmb_type *type,
-+static long __init_lmb lmb_regions_adjacent(struct lmb_type *type,
- 				 unsigned long r1, unsigned long r2)
- {
- 	phys_addr_t base1 = type->regions[r1].base;
-@@ -79,7 +79,7 @@ static long lmb_regions_adjacent(struct lmb_type *type,
- 	return lmb_addrs_adjacent(base1, size1, base2, size2);
- }
- 
--long lmb_overlaps_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
-+long __init_lmb lmb_overlaps_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long i;
- 
-@@ -155,7 +155,7 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
- 	return LMB_ERROR;
- }
- 
--static void lmb_remove_region(struct lmb_type *type, unsigned long r)
-+static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
- {
- 	unsigned long i;
- 
-@@ -167,7 +167,7 @@ static void lmb_remove_region(struct lmb_type *type, unsigned long r)
- }
- 
- /* Assumption: base addr of region 1 < base addr of region 2 */
--static void lmb_coalesce_regions(struct lmb_type *type,
-+static void __init_lmb lmb_coalesce_regions(struct lmb_type *type,
- 		unsigned long r1, unsigned long r2)
- {
- 	type->regions[r1].size += type->regions[r2].size;
-@@ -177,7 +177,7 @@ static void lmb_coalesce_regions(struct lmb_type *type,
- /* Defined below but needed now */
- static long lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size);
- 
--static int lmb_double_array(struct lmb_type *type)
-+static int __init_lmb lmb_double_array(struct lmb_type *type)
- {
- 	struct lmb_region *new_array, *old_array;
+@@ -185,8 +185,6 @@ static int lmb_double_array(struct lmb_type *type)
  	phys_addr_t old_size, new_size, addr;
-@@ -243,13 +243,13 @@ static int lmb_double_array(struct lmb_type *type)
- 	return 0;
- }
+ 	int use_slab = slab_is_available();
  
--extern int __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
-+extern int __init_lmb __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
- 					  phys_addr_t addr2, phys_addr_t size2)
- {
- 	return 1;
- }
- 
--static long lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_lmb lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	unsigned long coalesced = 0;
- 	long adjacent, i;
-@@ -336,13 +336,13 @@ static long lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t
- 	return 0;
- }
- 
--long lmb_add(phys_addr_t base, phys_addr_t size)
-+long __init_lmb lmb_add(phys_addr_t base, phys_addr_t size)
- {
- 	return lmb_add_region(&lmb.memory, base, size);
- 
- }
- 
--static long __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
-+static long __init_lmb __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
- {
- 	phys_addr_t rgnbegin, rgnend;
- 	phys_addr_t end = base + size;
-@@ -390,7 +390,7 @@ static long __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t si
- 	return lmb_add_region(type, end, rgnend - end);
- }
- 
--long lmb_remove(phys_addr_t base, phys_addr_t size)
-+long __init_lmb lmb_remove(phys_addr_t base, phys_addr_t size)
- {
- 	return __lmb_remove(&lmb.memory, base, size);
- }
-@@ -547,7 +547,7 @@ phys_addr_t __init lmb_phys_mem_size(void)
- 	return lmb.memory_size;
- }
- 
--phys_addr_t lmb_end_of_DRAM(void)
-+phys_addr_t __init_lmb lmb_end_of_DRAM(void)
- {
- 	int idx = lmb.memory.cnt - 1;
- 
-@@ -608,7 +608,7 @@ int __init lmb_is_reserved(phys_addr_t addr)
- 	return 0;
- }
- 
--int lmb_is_region_reserved(phys_addr_t base, phys_addr_t size)
-+int __init_lmb lmb_is_region_reserved(phys_addr_t base, phys_addr_t size)
- {
- 	return lmb_overlaps_region(&lmb.reserved, base, size);
- }
-@@ -619,7 +619,7 @@ void __init lmb_set_current_limit(phys_addr_t limit)
- 	lmb.current_limit = limit;
- }
- 
--static void lmb_dump(struct lmb_type *region, char *name)
-+static void __init_lmb lmb_dump(struct lmb_type *region, char *name)
- {
- 	unsigned long long base, size;
- 	int i;
-@@ -635,7 +635,7 @@ static void lmb_dump(struct lmb_type *region, char *name)
+-	pr_debug("lmb: %s array full, doubling...", lmb_type_name(type));
+-
+ 	/* Calculate new doubled size */
+ 	old_size = type->max * sizeof(struct lmb_region);
+ 	new_size = old_size << 1;
+@@ -214,6 +212,10 @@ static int lmb_double_array(struct lmb_type *type)
  	}
- }
+ 	new_array = __va(addr);
  
--void lmb_dump_all(void)
-+void __init_lmb lmb_dump_all(void)
- {
- 	if (!lmb_debug)
- 		return;
-@@ -698,7 +698,7 @@ static int __init early_lmb(char *p)
- }
- early_param("lmb", early_lmb);
- 
--#ifdef CONFIG_DEBUG_FS
-+#if defined(CONFIG_DEBUG_FS) && !defined(ARCH_DISCARD_LMB)
- 
- static int lmb_debug_show(struct seq_file *m, void *private)
- {
++	if (lmb_debug)
++		pr_info("lmb: %s array is doubled to %ld at %llx - %llx",
++			 lmb_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size);
++
+ 	/* Found space, we now need to move the array over before
+ 	 * we add the reserved region since it may be our reserved
+ 	 * array itself that is full.
 -- 
 1.6.4.2
 
