@@ -1,80 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759963Ab0ENVD7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 17:03:59 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:38954 "EHLO mgw1.diku.dk"
+	id S1759970Ab0ENVEo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 17:04:44 -0400
+Received: from kroah.org ([198.145.64.141]:47908 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758419Ab0ENVD5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 17:03:57 -0400
-Date: Fri, 14 May 2010 23:03:51 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
-       linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 1/10] drivers/s390/char: Use kstrdup
-In-Reply-To: <Pine.LNX.4.64.1005142210320.28935@ask.diku.dk>
-Message-ID: <Pine.LNX.4.64.1005142303180.28935@ask.diku.dk>
-References: <Pine.LNX.4.64.1005142127100.28935@ask.diku.dk>
- <Pine.LNX.4.64.1005142210320.28935@ask.diku.dk>
+	id S1758419Ab0ENVEm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 17:04:42 -0400
+Date: Fri, 14 May 2010 13:50:23 -0700
+From: Greg KH <greg@kroah.com>
+To: Joe Perches <joe@perches.com>
+Cc: Mark <reodge@gmail.com>, gregkh@suse.de, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org, Bernd Porr <berndporr@f2s.com>,
+       Gorskin Ilya <revent82@gmail.com>
+Subject: Re: [PATCH 2/2] Staging: comedi: Fixed more long line lengths in
+ comedi.h
+Message-ID: <20100514205023.GA23779@kroah.com>
+References: <1273746519-4590-1-git-send-email-reodge@gmail.com>
+ <1273746519-4590-2-git-send-email-reodge@gmail.com>
+ <1273747232.21514.22.camel@Joe-Laptop.home>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273747232.21514.22.camel@Joe-Laptop.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Thu, May 13, 2010 at 03:40:32AM -0700, Joe Perches wrote:
+> On Thu, 2010-05-13 at 18:28 +0800, Mark wrote:
+> > I'd like to get some feedback on this patch, since I'm not sure this is the best
+> > way to fix the long line lengths. 
+> > ---
+> >  drivers/staging/comedi/comedi.h |   15 ++++++++++-----
+> >  1 files changed, 10 insertions(+), 5 deletions(-)
+> > 
+> > diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
+> > index 3e3663f..ea96a83 100644
+> > --- a/drivers/staging/comedi/comedi.h
+> > +++ b/drivers/staging/comedi/comedi.h
+> > @@ -267,7 +267,8 @@
+> >  		 * streaming input/output */
+> >  		INSN_CONFIG_GET_HARDWARE_BUFFER_SIZE = 2006,
+> >  		INSN_CONFIG_SET_COUNTER_MODE = 4097,
+> > -		INSN_CONFIG_8254_SET_MODE = INSN_CONFIG_SET_COUNTER_MODE,	/* deprecated */
+> > +		/* deprecated */
+> 
+> 			/* INSN_CONFIG_8254_SET_MODE is deprecated */
 
-Use kstrdup when the goal of an allocation is copy a string into the
-allocated region.  Additionally drop the now unused variable len.
+Yes, please change this to be like this.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+> > -	static inline unsigned NI_CDIO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
+> > +	static inline unsigned
+> > +		NI_CDIO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
+> >  	{
+> >  		return NI_USUAL_RTSI_SELECT(rtsi_channel);
+> >  	}
+> 
+> It'd be better to start the functions in column 1
+> 
+> static inline unsigned int NI_CDIO_SCAN_BEGIN_RTSI(unsigned int rtsi_channel)
+> {
+> 	return NI_USUAL_RTSI_SELECT(rtsi_channel);
+> }
 
-// <smpl>
-@@
-expression from,to;
-expression flag,E1,E2;
-statement S;
-@@
+Hm, yes, that would fix most of the problems in this file.  Mark, care
+to do this instead?
 
--  to = kmalloc(strlen(from) + 1,flag);
-+  to = kstrdup(from, flag);
-   ... when != \(from = E1 \| to = E1 \)
-   if (to==NULL || ...) S
-   ... when != \(from = E2 \| to = E2 \)
--  strcpy(to, from);
-// </smpl>
+thanks,
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/s390/char/keyboard.c |    7 +++----
- 1 file changed, 3 insertions(+), 4 deletions(-)
-
-diff -u -p a/drivers/s390/char/keyboard.c b/drivers/s390/char/keyboard.c
---- a/drivers/s390/char/keyboard.c
-+++ b/drivers/s390/char/keyboard.c
-@@ -49,7 +49,7 @@ static unsigned char ret_diacr[NR_DEAD] 
- struct kbd_data *
- kbd_alloc(void) {
- 	struct kbd_data *kbd;
--	int i, len;
-+	int i;
- 
- 	kbd = kzalloc(sizeof(struct kbd_data), GFP_KERNEL);
- 	if (!kbd)
-@@ -72,11 +72,10 @@ kbd_alloc(void) {
- 		goto out_maps;
- 	for (i = 0; i < ARRAY_SIZE(func_table); i++) {
- 		if (func_table[i]) {
--			len = strlen(func_table[i]) + 1;
--			kbd->func_table[i] = kmalloc(len, GFP_KERNEL);
-+			kbd->func_table[i] = kstrdup(func_table[i],
-+						     GFP_KERNEL);
- 			if (!kbd->func_table[i])
- 				goto out_func;
--			memcpy(kbd->func_table[i], func_table[i], len);
- 		}
- 	}
- 	kbd->fn_handler =
+greg k-h
