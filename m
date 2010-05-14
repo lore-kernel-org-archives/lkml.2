@@ -1,83 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759914Ab0ENUsB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:48:01 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:32635 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759349Ab0ENUrw (ORCPT
+	id S1759787Ab0ENUvR (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:51:17 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:42384 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757633Ab0ENUvP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:47:52 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer;
-	b=iezJ6YCNiyqWQwkKSqK4m5aZAe8k1Z2ML3H7m/wkwJZNwHNjkcFuzwK0GtBh1lKS+
-	31826ZCyvBClGB4Xxx8sQ==
-From: Greg Thelen <gthelen@google.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-       balbir@linux.vnet.ibm.com
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Greg Thelen <gthelen@google.com>
-Subject: [PATCH] mm: Consider the entire user address space during node migration
-Date: Fri, 14 May 2010 13:46:37 -0700
-Message-Id: <1273869997-12720-1-git-send-email-gthelen@google.com>
-X-Mailer: git-send-email 1.7.0.1
+	Fri, 14 May 2010 16:51:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=XuM3CZWM6An/uvqEziJGXtofOlBKCArH9yUIJVQ1vG3birxpH+9fuiq6c29H+RwCQZ
+         Yi7SFvB8iud9lpO6TSFRgJO4KJvg9N+6f4etsmLhzHjuqlWnA6k31gPW7dW1tTQfBiN3
+         BlLxVFp6DtR+s1aDdL+EJG6IDc5+VKba/hdnM=
+MIME-Version: 1.0
+In-Reply-To: <4BED986D.1010403@zytor.com>
+References: <20100501025423.GA10671@vana.vc.cvut.cz>
+	 <4BED986D.1010403@zytor.com>
+Date: Fri, 14 May 2010 13:51:13 -0700
+X-Google-Sender-Auth: 3kbH9pQLkOs-vIfchBve42tT6TA
+Message-ID: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
+Subject: Re: [PATCH 2.6.34-rcX] Do not expect PCI devices to return zeroes in 
+	PCIe space
+From: Petr Vandrovec <petr@vandrovec.name>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       x86@kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, dcovelli@vmware.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch uses TASK_SIZE_MAX instead of TASK_SIZE to ensure that the entire
-user address space is migrated.  TASK_SIZE_MAX is independent of the calling
-task context.  TASK SIZE may be dependant on the address space size of the
-calling process.  Usage of TASK_SIZE can lead to partial address space migration
-if the calling process was 32 bit and the migrating process was 64 bit.
+On Fri, May 14, 2010 at 11:37 AM, H. Peter Anvin <hpa@zytor.com> wrote:
+> On 04/30/2010 07:54 PM, Petr Vandrovec wrote:
+>> Hello,
+>>   openSUSE11.3 32bit kernels hang when installed to the VMware's VMs because Moorestown
+>> fixed capabilities detection code enters endless loop on Intel's AGP bridges (with
+>> device ID=7191).  See https://bugzilla.kernel.org/show_bug.cgi?id=15888 for additional
+>> details.  arch/x86/pci/mrst.c was introduced after 2.6.33, so only 2.6.34-rcX are
+>> affected.
+>>                               Thanks,
+>>                                       Petr Vandrovec
 
-Here is the test script used on 64 system with a 32 bit echo process:
-  mount -t cgroup none /cgroup -o cpuset
-  cd /cgroup
+> Could you check if this patch fixes your problem, and if so let me know
+> as soon as possible?
+>
+> Sorry for the delay.
 
-  mkdir 0
-  echo 1 > 0/cpuset.cpus
-  echo 0 > 0/cpuset.mems
-  echo 1 > 0/cpuset.memory_migrate
+Thanks for the fix.  Yes, it fixes hang too, and seems much nicer..
 
-  mkdir 1
-  echo 1 > 1/cpuset.cpus
-  echo 1 > 1/cpuset.mems
-  echo 1 > 1/cpuset.memory_migrate
-
-  echo $$ > 0/tasks
-  64_bit_process &
-  pid=$!
-
-  echo $pid > 1/tasks   # This does not migrate all process pages without
-                        # this patch.  If 64 bit echo is used or this patch is
-                        # applied, then the full address space of $pid is
-                        # migrated.
-
-To check memory migration, I watched:
-  grep MemUsed /sys/devices/system/node/node*/meminfo
-
-Signed-off-by: Greg Thelen <gthelen@google.com>
----
- mm/mempolicy.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 9f11728..a42c0f1 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -928,7 +928,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
- 	nodes_clear(nmask);
- 	node_set(source, nmask);
- 
--	check_range(mm, mm->mmap->vm_start, TASK_SIZE, &nmask,
-+	check_range(mm, mm->mmap->vm_start, TASK_SIZE_MAX, &nmask,
- 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
- 
- 	if (!list_empty(&pagelist))
--- 
-1.7.0.1
-
+Petr
