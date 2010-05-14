@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758185Ab0ENRZ6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:25:58 -0400
-Received: from vms173003pub.verizon.net ([206.46.173.3]:39523 "EHLO
-	vms173003pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756344Ab0ENRZ4 (ORCPT
+	id S1757224Ab0ENR3k (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:29:40 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:46883 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756201Ab0ENR3i convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:25:56 -0400
-Message-id: <4BED878F.9010905@acm.org>
-Date: Fri, 14 May 2010 12:25:35 -0500
-From: Corey Minyard <minyard@acm.org>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090707)
-MIME-version: 1.0
-To: Tomas Henzl <thenzl@redhat.com>, "'akpm@osdl.org'" <akpm@osdl.org>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       mjg@redhat.com, openipmi-developer@lists.sourceforge.net
-Subject: Re: [PATCH] ipm: fix mutex use
-References: <4BED80C5.7030503@redhat.com>
-In-reply-to: <4BED80C5.7030503@redhat.com>
-Content-type: text/plain; charset=ISO-8859-1; format=flowed
-Content-transfer-encoding: 7bit
+	Fri, 14 May 2010 13:29:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=bWnNfVz3QkZ4ORrUNn75hCGvq40aw7sXPVBqEYODybSctELS94QRHBvEUV8rC5wGni
+         jd9f4gsUr6PEazP6UceSCBrPSXVv8KwR/UJ3qzZi+s+HolnhzoL/YBF8USuKyGsCzxvI
+         J6MqHGniJfBnigSTzKH/fpOkP2MmbUWFj3sHI=
+MIME-Version: 1.0
+In-Reply-To: <4BED8765.8040307@gmail.com>
+References: <4BEC7A84.3010503@gmail.com> <201005141520.30802.br1@einfach.org> 
+	<4BECEE3E.6090303@gmail.com> <201005141538.43416.br1@einfach.org> 
+	<4BED6F19.3040608@gmail.com> <20100514165325.GA28198@tux> 
+	<4BED8765.8040307@gmail.com>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Fri, 14 May 2010 10:29:17 -0700
+X-Google-Sender-Auth: BIKejgKHmvuEJRZj4e_tdGixk28
+Message-ID: <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Bruno Randolf <br1@einfach.org>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Yes, you are correct, we need this patch.
+On Fri, May 14, 2010 at 10:24 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
 
-Acked-by: Corey Minyard <cminyard@mvista.com>
+>
+> here you go:
+> (I was grabbing the info
+> after rmmod and modprobe)
+>
+> [    7.034242] ATH9K: cachelsz: 256
+> [   69.175348] ATH9K: cachelsz: 256
 
-Thanks.
+Close, so I without any patches applied, and by just running modprobe as below:
 
-Tomas Henzl wrote:
-> It looks like there is an unbalance with the mutexes after the latest 
-> IPMI patchset applied. For example in 
-> "static __devinit int init_ipmi_si(void)"
-> ....
-> 	list_for_each_entry(e, &smi_infos, link) {
-> 		if (!e->irq && (!type || e->addr_source == type)) {
-> 			if (!try_smi_init(e)) {
-> 				type = e->addr_source;
-> 			}
-> 		}
-> 	}
-> 	mutex_unlock(&smi_infos_lock);
->
-> we are calling mutex_unlock twice, because the mutex_unlock(&smi_infos_lock)
-> is also called from try_smi_init.
->
-> If the lock in try_smi_init is not needed this can be then solved
-> by removing the mutex_unlock(&smi_infos_lock) from try_smi_init.
->
-> Signed-off-by: Tomas Henzl <thenzl@redhat.com>
->
-> ---
-> diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
-> index 8d7b879..c6af8e0 100644
-> --- a/drivers/char/ipmi/ipmi_si_intf.c
-> +++ b/drivers/char/ipmi/ipmi_si_intf.c
-> @@ -3060,8 +3060,6 @@ static int try_smi_init(struct smi_info *new_smi)
->  		goto out_err_stop_timer;
->  	}
->  
-> -	mutex_unlock(&smi_infos_lock);
-> -
->  	printk(KERN_INFO "IPMI %s interface initialized\n",
->  	       si_to_str[new_smi->si_type]);
->  
-> @@ -3111,8 +3109,6 @@ static int try_smi_init(struct smi_info *new_smi)
->  		new_smi->dev_registered = 0;
->  	}
->  
-> -	mutex_unlock(&smi_infos_lock);
-> -
->  	return rv;
->  }
->  
->
->
->   
 
+modprobe ath9k debug=0x00000200
+
+               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u rxbufsize %u\n",
+                               common->cachelsz, common->rx_bufsize);
+
+
+This is already in the code so just please do this:
+
+rmmod ath9k
+modprobe ath9k debug=0x00000200
+dmesg | grep cachelsz
