@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760041Ab0ENWkT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:40:19 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:46142 "EHLO relay.sgi.com"
+	id S1760071Ab0ENWkx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:40:53 -0400
+Received: from gate.crashing.org ([63.228.1.57]:41751 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759291Ab0ENWkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:40:17 -0400
-Message-ID: <4BEDD14A.1030400@sgi.com>
-Date: Fri, 14 May 2010 15:40:10 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Bjorn Helgaas <bjorn.helgaas@hp.com>, Mike Habeck <habeck@sgi.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       x86@kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
-       Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
-       Yinghai <yinghai.lu@oracle.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       Myron Stowe <myron.stowe@hp.com>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
- assigned
-References: <4BEAF008.9030805@sgi.com>	<201005131256.17997.bjorn.helgaas@hp.com>	<4BEC5530.1000008@sgi.com>	<201005131402.30759.bjorn.helgaas@hp.com> <20100514152509.3aeb37b4@virtuousgeek.org> <4BEDCFD9.7020202@sgi.com> <4BEDD03B.30106@zytor.com>
-In-Reply-To: <4BEDD03B.30106@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1760028Ab0ENWku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:40:50 -0400
+Subject: Re: [PATCH 07/37] lmb: Add lmb_find_area()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1273866363-14249-8-git-send-email-yinghai@kernel.org>
+References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
+	 <1273866363-14249-8-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 May 2010 08:39:09 +1000
+Message-ID: <1273876749.21352.645.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-H. Peter Anvin wrote:
-> On 05/14/2010 03:34 PM, Mike Travis wrote:
->> It seems that BIOS changes are much more difficult.  The real solution
->> to this problem is for Card Vendors to not request I/O Bars if they
->> won't be using them.  But that's the hardest option of all to accomplish.
->>
+On Fri, 2010-05-14 at 12:45 -0700, Yinghai Lu wrote:
+> it is a wrapper for lmb_find_base
 > 
-> That is a non-option.  Any device which may have to be a boot or console
-> device in a legacy system pretty much needs them.
+> make it more easy for x86 to use lmb. ( rebase )
+> x86 early_res is using find/reserve pattern instead of alloc.
 > 
-> 	-hpa
+> keep it in weak version, so later We can use x86 own version if needed.
+> also We need it in lib/lmb.c, so one called mm/page_alloc.c could get compiled
 
-Yes, that's true.  We're somewhat fortunate in that our Legacy I/O
-devices are confined to those on the first blade, and all of these
-other devices are on other blades (PCI segments 1+).
+I seem to have told you that I didn't want to have that thing in the
+core :-)
 
-But you're right, unless the card vendor supplied some kind of strapping
-option, or something similar, it won't know it's in a UV system or not.
+You keep adding those "wrappers" which basically just do prototype
+adaptation and in this case a bit of cropping, with a name that is
+utterly confusing as to what their intent is.
 
-Thanks,
-Mike
+I might have accepted that one if you had called it something like
+lmb_find_in_range() which at least -means- something.
+
+Cheers,
+Ben.
+
+> -v2: Change name to lmb_find_area() according to Michael Ellerman
+> -v3: Add generic weak version __lmb_find_area()
+>      so keep the path for fallback to x86 version that handle from low
+> -v4: use 0 for failing path
+> -v5: use LMB_ERROR again
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/lmb.h |    4 ++++
+>  lib/lmb.c           |   23 +++++++++++++++++++++++
+>  2 files changed, 27 insertions(+), 0 deletions(-)
+> 
+> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+> index e54c1d0..c05294f 100644
+> --- a/include/linux/lmb.h
+> +++ b/include/linux/lmb.h
+> @@ -44,6 +44,10 @@ extern struct lmb lmb;
+>  extern int lmb_debug;
+>  extern struct lmb_region lmb_reserved_init_regions[];
+>  
+> +u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+> +			u64 size, u64 align);
+> +u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
+> +
+>  extern void __init lmb_init(void);
+>  extern void __init lmb_analyze(void);
+>  extern long lmb_add(phys_addr_t base, phys_addr_t size);
+> diff --git a/lib/lmb.c b/lib/lmb.c
+> index c92034b..1c46336 100644
+> --- a/lib/lmb.c
+> +++ b/lib/lmb.c
+> @@ -155,6 +155,29 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
+>  	return LMB_ERROR;
+>  }
+>  
+> +u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
+> +				 u64 size, u64 align)
+> +{
+> +	u64 final_start, final_end;
+> +	u64 mem;
+> +
+> +	final_start = max(ei_start, start);
+> +	final_end = min(ei_last, end);
+> +
+> +	if (final_start >= final_end)
+> +		return LMB_ERROR;
+> +
+> +	return  lmb_find_base(size, align, final_start, final_end);
+> +}
+> +
+> +/*
+> + * Find a free area with specified alignment in a specific range.
+> + */
+> +u64 __init __weak lmb_find_area(u64 start, u64 end, u64 size, u64 align)
+> +{
+> +	return lmb_find_base(size, align, start, end);
+> +}
+> +
+>  static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
+>  {
+>  	unsigned long i;
+
+
