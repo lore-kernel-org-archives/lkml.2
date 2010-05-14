@@ -1,53 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758115Ab0ENRaU (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:30:20 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:24186 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab0ENRaR (ORCPT
+	id S1758122Ab0ENRly (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:41:54 -0400
+Received: from lazybastard.de ([212.112.238.170]:46720 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752696Ab0ENRlw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:30:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YUCHg+e/DOdfNRzuZR4yS+Cbd0MP2WOn8Dc3KKCD1RBkgCO3xshoRZaX9XZlhDMoKN
-         M+ClZajW8dybsHa2PlHGTVviVoFDuSSnRoTS0mD9R6iacIH/wJqsTZryhMP89FWNzgyi
-         Ig0QnLALTDEmNG5hC8J9yFaCTNjHzgAPf+8yw=
-Date: Fri, 14 May 2010 21:30:12 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-Message-ID: <20100514173012.GD13509@lenovo>
-References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com> <20100514162813.GB13509@lenovo> <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+	Fri, 14 May 2010 13:41:52 -0400
+Date: Fri, 14 May 2010 19:41:43 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: kirjanov@gmail.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] lib/btree: Fix possible NULL pointer dereference
+Message-ID: <20100514174143.GB32417@logfs.org>
+References: <20100512212026.GA5513@coldcone> <20100513131907.a3373db2.akpm@linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100513131907.a3373db2.akpm@linux-foundation.org>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
-... 
-> Ok, I added few more events and now I am able see few hardware events :
+On Thu, 13 May 2010 13:19:07 -0700, Andrew Morton wrote:
+> On Thu, 13 May 2010 01:20:27 +0400
+> "Denis Kirjanov <kirjanov@gmail.com" <kirjanov@gmail.com> wrote:
 > 
-> $ ./perf stat -e
-> cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-dcache-store-misses,L1-dcache-prefetches,L1-dcache-prefetch-misses,L1-icache-loads,L1-icache-load-misses,L1-icache-prefetches,L1-icache-prefetch-misses,LLC-loads,LLC-load-misses,LLC-stores,LLC-store-misses,LLC-prefetches,LLC-prefetch-misses,dTLB-loads,dTLB-load-misses,dTLB-stores,dTLB-store-misses,dTLB-prefetches,dTLB-prefetch-misses,iTLB-loads,iTLB-load-misses
-> ls -lR /dev > /dev/null
+> > mempool_alloc can return null in atomic case.
+> > 
+> > Signed-off-by: Denis Kirjanov <kirjanov@gmail.com>
+> > ---
+> > diff --git a/lib/btree.c b/lib/btree.c
+> > index 41859a8..542c904 100644
+> > --- a/lib/btree.c
+> > +++ b/lib/btree.c
+> > @@ -95,7 +94,8 @@ static unsigned long *btree_node_alloc(struct btree_head *head, gfp_t gfp)
+> >  	unsigned long *node;
+> >  
+> >  	node = mempool_alloc(head->mempool, gfp);
+> > -	memset(node, 0, NODESIZE);
+> > +	if (likely(node))
+> > +		memset(node, 0, NODESIZE);
+> >  	return node;
+> >  }
 > 
+> hm, why is btree.c using mempools?  mempools are only appropriate when
+> it is known that objects will become available if the allocating task
+> simply waits for a while.  Typically, things like BIOs and
+> request-structs.  Simply waiting for the disk to complete some IO will
+> cause some objects to be returned to the mempool.
 
-ok, they work as expected. Could you try only "cycles"? The things are
-that different events may attempt to borrow same resources already allocated
-for another event, ie they can't run simultaneously. And iirc we encode
-only a subset of chache events. Though all "general" events should work.
-(by "general" events I mean "cycles", "instructions", "cache-references",
- "cache-misses", "branch-instructions", "branch-misses", "bus-cycles").
-Could you check them one-by-one?
+For the current caller (logfs), that is a fairly accurate description.
 
-	-- Cyrill
+> If waiting-and-doing-nothing fails to cause objects to be returned to
+> the pool then the mempool code can lock up.
+
+True.  And I am not 100% sure logfs is bug-free in that respect.  One
+item on my todo list is to add some sort of mempool_prefill() that
+either ensures pool->curr_nr == pool->min_nr or returns -ENOMEM.  That
+would allow logfs start some writeback and wait for the flash, when
+necessary.
+
+Jörn
+
+-- 
+When in doubt, punt.  When somebody actually complains, go back and fix it...
+The 90% solution is a good thing.
+-- Rob Landley
