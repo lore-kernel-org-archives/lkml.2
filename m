@@ -1,67 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab0EXXOE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:14:04 -0400
-Received: from kroah.org ([198.145.64.141]:36433 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758983Ab0EXXJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
-Message-Id: <20100524230350.595491347@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:46 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Takashi Iwai <tiwai@suse.de>
-Subject: [14/34] ALSA: ice1724 - Fix ESI Maya44 capture source control
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+	id S1752817Ab0ENEzl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:55:41 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:40237 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751976Ab0ENEzj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:55:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=p1Y4TSGXAxCWtl1m2axVPmeScS3UUUJfIxvLwDFt1ffLrjydt/KAgIeRy+CYoCjb6M
+         5kj5yDkkbG5Aqt+jGd7pq9taS8+rJptxrhpYYQtbXRY5JZg64WyRCTWtAPk4I2f/kjgl
+         17gNn2bcOJf9TWEAJDzLmESL1kboj8pn0k6sg=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
+References: <4BEC7A84.3010503@gmail.com>
+	 <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
+Date: Fri, 14 May 2010 07:55:37 +0300
+X-Google-Sender-Auth: 2516PaLVnr5hFqB81ulk7vfqXuU
+Message-ID: <AANLkTim7fnKebMoEu1DjD3S-15ZqlTUez3Lpp0wGVJQ6@mail.gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       linux-wireless@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+Hi Luis,
 
-------------------
+On Fri, May 14, 2010 at 2:01 AM, Luis R. Rodriguez
+<lrodriguez@atheros.com> wrote:
+> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
+> <justinmattock@gmail.com> wrote:
+>> not sure what this is, but while at a convention
+>> I was trying to access the internet and(below is
+>> full dmesg) this showed up.
+>>
+>> After receiving this, I sat and tried to re-create
+>> my steps to reproduce but had no luck(was even going
+>> todo a bisect n the spot if I could re-create).
+>
+> OK this stuff is hard to reproduce it seems.. you have an Atheros
+> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
+> to get the poison stuff? I am just surprised we haven't seen it
+> ourselves yet. Let me make sure all of us get this kconfig option
+> enabled.
 
-From: Takashi Iwai <tiwai@suse.de>
-
-commit 8213466596bf10b75887754773ee13c10cf86f5c upstream.
-
-The capture source control of maya44 was wrongly coded with the bit
-shift instead of the bit mask.  Also, the slot for line-in was
-wrongly assigned (slot 5 instead of 4).
-
-Reported-by: Alex Chernyshoff <alexdsp@gmail.com>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- sound/pci/ice1712/maya44.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/sound/pci/ice1712/maya44.c
-+++ b/sound/pci/ice1712/maya44.c
-@@ -347,7 +347,7 @@ static int maya_gpio_sw_put(struct snd_k
- 
- /* known working input slots (0-4) */
- #define MAYA_LINE_IN	1	/* in-2 */
--#define MAYA_MIC_IN	4	/* in-5 */
-+#define MAYA_MIC_IN	3	/* in-4 */
- 
- static void wm8776_select_input(struct snd_maya44 *chip, int idx, int line)
- {
-@@ -393,8 +393,8 @@ static int maya_rec_src_put(struct snd_k
- 	int changed;
- 
- 	mutex_lock(&chip->mutex);
--	changed = maya_set_gpio_bits(chip->ice, GPIO_MIC_RELAY,
--				     sel ? GPIO_MIC_RELAY : 0);
-+	changed = maya_set_gpio_bits(chip->ice, 1 << GPIO_MIC_RELAY,
-+				     sel ? (1 << GPIO_MIC_RELAY) : 0);
- 	wm8776_select_input(chip, 0, sel ? MAYA_MIC_IN : MAYA_LINE_IN);
- 	mutex_unlock(&chip->mutex);
- 	return changed;
-
-
+CONFIG_SLUB_DEBUG and then either CONFIG_SLUB_DEBUG_ON or pass
+'slub_debug' as kernel parameter.
