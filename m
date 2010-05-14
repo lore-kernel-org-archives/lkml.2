@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759641Ab0ENTsc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:48:32 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59706 "EHLO
+	id S1759679Ab0ENTsi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:48:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59820 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759369Ab0ENTsZ (ORCPT
+	with ESMTP id S1759638Ab0ENTsc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:48:25 -0400
+	Fri, 14 May 2010 15:48:32 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,67 +16,80 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/37] x86, lmb: Add lmb_find_area_node()
-Date: Fri, 14 May 2010 12:45:41 -0700
-Message-Id: <1273866363-14249-16-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 10/37] x86, lmb: Add lmb_to_bootmem()
+Date: Fri, 14 May 2010 12:45:36 -0700
+Message-Id: <1273866363-14249-11-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090209.4BEDA8E6.00A9,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090209.4BEDA8DF.0158,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It can be used to find NODE_DATA for numa.
+lmb_to_bootmem() will reserve lmb.reserved.region in bootmem after bootmem is
+set up.
 
-Need to make sure early_node_map[] is filled before it is called, otherwise
-it will fallback to lmb_find_area(), with node range.
+We can use it to with all arches that support lmb later.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
  arch/x86/include/asm/lmb.h |    1 +
- arch/x86/mm/lmb.c          |   15 +++++++++++++++
- 2 files changed, 16 insertions(+), 0 deletions(-)
+ arch/x86/mm/lmb.c          |   31 +++++++++++++++++++++++++++++++
+ 2 files changed, 32 insertions(+), 0 deletions(-)
 
 diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index d0ae19f..358d8a6 100644
+index aa3a66e..2f06714 100644
 --- a/arch/x86/include/asm/lmb.h
 +++ b/arch/x86/include/asm/lmb.h
-@@ -15,5 +15,6 @@ int get_free_all_memory_range(struct range **rangep, int nodeid);
- void lmb_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 lmb_hole_size(u64 start, u64 end);
-+u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
+@@ -4,5 +4,6 @@
+ #define ARCH_DISCARD_LMB
+ 
+ u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
++void lmb_to_bootmem(u64 start, u64 end);
  
  #endif
 diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index 11b76d0..17bb1fb 100644
+index 9d26eed..37a05e2 100644
 --- a/arch/x86/mm/lmb.c
 +++ b/arch/x86/mm/lmb.c
-@@ -254,6 +254,21 @@ void __init lmb_free_area(u64 start, u64 end)
+@@ -86,3 +86,34 @@ u64 __init lmb_find_area_size(u64 start, u64 *sizep, u64 align)
+ 	return LMB_ERROR;
  }
  
- /*
-+ * Need to call this function after lmb_register_active_regions,
-+ * so early_node_map[] is filled already.
-+ */
-+u64 __init lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align)
++#ifndef CONFIG_NO_BOOTMEM
++void __init lmb_to_bootmem(u64 start, u64 end)
 +{
-+	u64 addr;
-+	addr = find_memory_core_early(nid, size, align, start, end);
-+	if (addr != LMB_ERROR)
-+		return addr;
++	int i, count;
++	u64 final_start, final_end;
 +
-+	/* Fallback, should already have start end within node range */
-+	return lmb_find_area(start, end, size, align);
++	/* Take out region array itself */
++	if (lmb.reserved.regions != lmb_reserved_init_regions)
++		lmb_free(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
++
++	count  = lmb.reserved.cnt;
++	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
++	for (i = 0; i < count; i++) {
++		struct lmb_region *r = &lmb.reserved.regions[i];
++		pr_info("  #%d [%010llx - %010llx] ", i, (u64)r->base, (u64)r->base + r->size);
++		final_start = max(start, r->base);
++		final_end = min(end, r->base + r->size);
++		if (final_start >= final_end) {
++			pr_cont("\n");
++			continue;
++		}
++		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
++		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
++	}
++	/* Clear them to avoid misusing ? */
++	memset(&lmb.reserved.regions[0], 0, sizeof(struct lmb_region) * lmb.reserved.max);
++	lmb.reserved.regions = NULL;
++	lmb.reserved.max = 0;
++	lmb.reserved.cnt = 0;
 +}
-+
-+/*
-  * Finds an active region in the address range from start_pfn to last_pfn and
-  * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
-  */
++#endif
 -- 
 1.6.4.2
 
