@@ -1,62 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760120Ab0ENXq6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 19:46:58 -0400
-Received: from p01c11o148.mxlogic.net ([208.65.144.71]:58801 "EHLO
-	p01c11o148.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab0ENXq5 (ORCPT
+	id S1760128Ab0ENXxS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 19:53:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:38689 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753767Ab0ENXxP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 19:46:57 -0400
-X-MXL-Hash: 4bede0f155e802e2-1c84de8766d3fb1741c6ca266023376817fcfe54
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Date: Fri, 14 May 2010 18:46:48 -0500
-Subject: Question about futex_atomic_cmpxchg_inatomic
-Thread-Topic: Question about futex_atomic_cmpxchg_inatomic
-Thread-Index: Acrzv7f+saos2cXAR3m2pkp4VGNVBQ==
-Message-ID: <0D753D10438DA54287A00B0270842697636F05337A@AUSP01VMBX24.collaborationhost.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Fri, 14 May 2010 19:53:15 -0400
+Message-ID: <4BEDE1EA.8030103@oracle.com>
+Date: Fri, 14 May 2010 16:51:06 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010050402)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [(unknown)]
-X-AnalysisOut: [v=1.0 c=1 a=7t7oAvubNXAA:10 a=ood2b7iyd8MA:10 a=VphdPIyG4k]
-X-AnalysisOut: [EA:10 a=IkcTkHD0fZMA:10 a=qS3xps/WtSuafY8lc/WARg==:17 a=rp]
-X-AnalysisOut: [bdAngXKw9vgnD23gkA:9 a=hovcRb5Yo14tfKiIFOLtfqcOdBEA:4 a=QE]
-X-AnalysisOut: [XdDO2ut3YA:10]
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: David Miller <davem@davemloft.net>, mingo@elte.hu, tglx@linutronix.de,
+       hpa@zytor.com, akpm@linux-foundation.org, torvalds@linux-foundation.org,
+       hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: lmb type features.
+References: <1273804238.21352.389.camel@pasglop>	 <4BECF00D.6080800@oracle.com>	<1273825187.21352.590.camel@pasglop>	 <20100514.013012.13730149.davem@davemloft.net>	 <4BED7DFE.2090108@oracle.com> <1273876488.21352.643.camel@pasglop>
+In-Reply-To: <1273876488.21352.643.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4BEDE255.0104:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4ENl4aS030810
 
-Hello all,
+like you to make some change to lmb_type and double_array()
 
-futex_atomic_cmpxchg_inatomic is currently defined in all arch's as
-something along the line of (this one is from arch/arm):
+struct lmb_type {
+        unsigned long cnt;      /* number of regions */
+        unsigned long max;      /* size of the allocated array */
+        struct lmb_region *regions;
+};
 
-static inline int
-futex_atomic_cmpxchg_inatomic(int __user *uaddr, int oldval, int newval)
-{
-	...
-}
+==>
 
-The only user of this function is in kernel/futex.c and all of the calls
-pass u32 type parameters and expect an u32 type return.
+struct lmb_type {
+        unsigned long cnt;      /* number of regions */
+        unsigned long max;      /* size of the allocated array */
+	unsigned long features;
+        struct lmb_region *regions;
+};
 
-Should the all arch implementations be changed to use the u32 type, i.e?
 
-static inline u32
-futex_atomic_cmpxchg_inatomic(u32 __user *uaddr, u32 oldval, u32 newval)
-{
-	...
-}
+then have 
 
-Regards,
-Hartley
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+#define LMB_ADD_MERGE (1<<0) 
+#define LMB_ARRAY_DOUBLE (1<<1)
+
+so before call double_lmb_array(), should check the features to bit is set or not.
+otherwise should emit PANIC with clear message.
+
+Usage:
+
+for range replacement,
+
+1. early stage before lmb.reserved, lmb.memory is there.
+so can not use lmb_find_base yet.
+
+2. for bootmem replacement, when do range set subtraction for final free range list,
+don't want to change lmb.reserved in the middle.  callee should make sure to have big
+enough temperately lmb_regions in lmb_type. 
+
+Thanks
+
+Yinghai
+
