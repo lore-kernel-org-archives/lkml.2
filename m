@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759679Ab0ENTsi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:48:38 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59820 "EHLO
+	id S1759703Ab0ENTsm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:48:42 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59810 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759638Ab0ENTsc (ORCPT
+	with ESMTP id S1759605Ab0ENTsb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:48:32 -0400
+	Fri, 14 May 2010 15:48:31 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,80 +16,59 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 10/37] x86, lmb: Add lmb_to_bootmem()
-Date: Fri, 14 May 2010 12:45:36 -0700
-Message-Id: <1273866363-14249-11-git-send-email-yinghai@kernel.org>
+Subject: [PATCH -v17 00/37] Use lmb with x86
+Date: Fri, 14 May 2010 12:45:26 -0700
+Message-Id: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
-References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090209.4BEDA8DF.0158,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090204.4BEDA8D2.00AF,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_to_bootmem() will reserve lmb.reserved.region in bootmem after bootmem is
-set up.
+the new lmb could be used to replace early_res in x86.
 
-We can use it to with all arches that support lmb later.
+Suggested by: David, Ben, and Thomas
 
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/lmb.h |    1 +
- arch/x86/mm/lmb.c          |   31 +++++++++++++++++++++++++++++++
- 2 files changed, 32 insertions(+), 0 deletions(-)
+-v6: change sequence as requested by Thomas
+-v7: seperate them to more patches
+-v8: add boundary checking to make sure not free partial page.
+-v9: use lmb_debug to control print out of reserve_lmb.
+     add e820 clean up, and e820 become __initdata
+-v10:use lmb.rmo_size and ARCH_DISCARD_LMB according to Michael
+     change name to lmb_find_area/reserve_lmb_area/free_lmb_area,
+      according to Michael
+     update find_lmb_area to use __lmb_alloc_base according to ben
+-v11:move find_lmb_area_size back to x86.
+     x86 has own find_lmb_area, and could be disabled by ARCH_LMB_FIND_AREA
+      because _lmb_find_base has different behavoir from x86's old one.
+      one from high to high and one from low to high
+      need more test
+     tested for x86 32bit/64bit, numa/nonuma, nobootmem/bootmem.
+-v12:refresh the series with current tip
+     seperate nobootmem.c, so could remove some #ifdef
+     still keep CONFIG_NO_BOOTMEM, in x86 .c, and could use the as tags
+     so other lmb could refer them to use NO_BOOTMEM.
 
-diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index aa3a66e..2f06714 100644
---- a/arch/x86/include/asm/lmb.h
-+++ b/arch/x86/include/asm/lmb.h
-@@ -4,5 +4,6 @@
- #define ARCH_DISCARD_LMB
- 
- u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
-+void lmb_to_bootmem(u64 start, u64 end);
- 
- #endif
-diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index 9d26eed..37a05e2 100644
---- a/arch/x86/mm/lmb.c
-+++ b/arch/x86/mm/lmb.c
-@@ -86,3 +86,34 @@ u64 __init lmb_find_area_size(u64 start, u64 *sizep, u64 align)
- 	return LMB_ERROR;
- }
- 
-+#ifndef CONFIG_NO_BOOTMEM
-+void __init lmb_to_bootmem(u64 start, u64 end)
-+{
-+	int i, count;
-+	u64 final_start, final_end;
-+
-+	/* Take out region array itself */
-+	if (lmb.reserved.regions != lmb_reserved_init_regions)
-+		lmb_free(__pa(lmb.reserved.regions), sizeof(struct lmb_region) * lmb.reserved.max);
-+
-+	count  = lmb.reserved.cnt;
-+	pr_info("(%d early reservations) ==> bootmem [%010llx - %010llx]\n", count, start, end);
-+	for (i = 0; i < count; i++) {
-+		struct lmb_region *r = &lmb.reserved.regions[i];
-+		pr_info("  #%d [%010llx - %010llx] ", i, (u64)r->base, (u64)r->base + r->size);
-+		final_start = max(start, r->base);
-+		final_end = min(end, r->base + r->size);
-+		if (final_start >= final_end) {
-+			pr_cont("\n");
-+			continue;
-+		}
-+		pr_cont(" ==> [%010llx - %010llx]\n", final_start, final_end);
-+		reserve_bootmem_generic(final_start, final_end - final_start, BOOTMEM_DEFAULT);
-+	}
-+	/* Clear them to avoid misusing ? */
-+	memset(&lmb.reserved.regions[0], 0, sizeof(struct lmb_region) * lmb.reserved.max);
-+	lmb.reserved.regions = NULL;
-+	lmb.reserved.max = 0;
-+	lmb.reserved.cnt = 0;
-+}
-+#endif
--- 
-1.6.4.2
+-v14:refresh to current tip
 
+-v15:remove x86 version lmb_find_area
+     remove other nobootmem and x86 e820 from this patchset
+
+-v16: rebase to Ben's cleanup powerpc/lmb
+     move back most func back to arch/x86/mm/lmb.c
+
+-v17: remove exposing of lmb_add_region
+     seperate first lmb core related patch to several small patches.
+
+this patcheset is based on tip/master+powerpc/lmb
+
+todo:
+	1. use for_each_lmb to replace for cycle
+	2. replace range handling with lmb.
+	3. kill __lmb_find_area and use lmb_find_area directly
+
+Thanks
+
+Yinghai
