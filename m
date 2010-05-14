@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757227Ab0ENRLz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:11:55 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:48699 "EHLO
+	id S1756716Ab0ENROa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:14:30 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:61461 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753968Ab0ENRLx (ORCPT
+	with ESMTP id S1755069Ab0ENRO1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:11:53 -0400
-Date: Fri, 14 May 2010 10:09:57 -0700
+	Fri, 14 May 2010 13:14:27 -0400
+Date: Fri, 14 May 2010 10:12:18 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, linux-media@vger.kernel.org
+To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
+       Jan Engelhardt <jengelh@medozas.de>, netfilter-devel@vger.kernel.org
 Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>
-Subject: [PATCH -next] IR: fix ir-nec-decoder build, select BITREVERSE
-Message-Id: <20100514100957.b4f9753f.randy.dunlap@oracle.com>
+       Patrick McHardy <kaber@trash.net>
+Subject: [PATCH -next] netfilter: xt_TEE depends on NF_CONNTRACK
+Message-Id: <20100514101218.16cdb0ad.randy.dunlap@oracle.com>
 In-Reply-To: <20100514161407.740da901.sfr@canb.auug.org.au>
 References: <20100514161407.740da901.sfr@canb.auug.org.au>
 Organization: Oracle Linux Eng.
@@ -22,35 +23,36 @@ Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4BED8454.0024:SCFMA922111,ss=1,fgs=0
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090208.4BED84EA.0008:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix ir-nec-decoder build: it uses bitrev library code, so
-select BITREVERSE in its Kconfig.
+Fix xt_TEE build for the case of NF_CONNTRACK=m and
+NETFILTER_XT_TARGET_TEE=y:
 
-ir-nec-decoder.c:(.text+0x1a2517): undefined reference to `byte_rev_table'
-ir-nec-decoder.c:(.text+0x1a2526): undefined reference to `byte_rev_table'
-ir-nec-decoder.c:(.text+0x1a2530): undefined reference to `byte_rev_table'
-ir-nec-decoder.c:(.text+0x1a2539): undefined reference to `byte_rev_table'
+xt_TEE.c:(.text+0x6df5c): undefined reference to `nf_conntrack_untracked'
+4x
+
+Built with all 4 m/y combinations.
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc:	Patrick McHardy <kaber@trash.net>
+Cc:	Jan Engelhardt <jengelh@medozas.de>
 ---
- drivers/media/IR/Kconfig |    1 +
+ net/netfilter/Kconfig |    1 +
  1 file changed, 1 insertion(+)
 
---- linux-next-20100514.orig/drivers/media/IR/Kconfig
-+++ linux-next-20100514/drivers/media/IR/Kconfig
-@@ -13,6 +13,7 @@ source "drivers/media/IR/keymaps/Kconfig
- config IR_NEC_DECODER
- 	tristate "Enable IR raw decoder for the NEC protocol"
- 	depends on IR_CORE
-+	select BITREVERSE
- 	default y
- 
+--- linux-next-20100514.orig/net/netfilter/Kconfig
++++ linux-next-20100514/net/netfilter/Kconfig
+@@ -506,6 +506,7 @@ config NETFILTER_XT_TARGET_TEE
+ 	tristate '"TEE" - packet cloning to alternate destiantion'
+ 	depends on NETFILTER_ADVANCED
+ 	depends on (IPV6 || IPV6=n)
++	depends on !NF_CONNTRACK || NF_CONNTRACK
  	---help---
+ 	This option adds a "TEE" target with which a packet can be cloned and
+ 	this clone be rerouted to another nexthop.
