@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757888Ab0ENWcg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:32:36 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:64975 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757408Ab0ENWcd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:32:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=hGeZbhTDtFCFpbjHxJgZVwDGGlmneR0X+Lq8R8SUOJtVMgK+J4rV2SFUuKZ7Q0lQEC
-         t/J60HAizUsRCKiZi/j4Bn9r3yTXEe07l0m3Oijs/tbfw+k52yR9t7D6dBpUzw0uHRxk
-         ujKj3RezFIqrFCvsevEEjc5AmPFW7cKMDKEHU=
-References: <201005141520.30802.br1@einfach.org> <4BECEE3E.6090303@gmail.com> <201005141538.43416.br1@einfach.org> <4BED6F19.3040608@gmail.com> <20100514165325.GA28198@tux> <4BED8765.8040307@gmail.com> <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com> <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com> <20100514201339.GB28198@tux> <4638F7CF-1E00-411F-A086-BA30809E00BD@gmail.com> <20100514205253.GC28198@tux>
-Message-Id: <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com>
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-In-Reply-To: <20100514205253.GC28198@tux>
-Content-Type: text/plain;
-	charset=us-ascii;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 7bit
-X-Mailer: iPhone Mail (7D11)
-Mime-Version: 1.0 (iPhone Mail 7D11)
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Date: Fri, 14 May 2010 15:32:48 -0700
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Bruno Randolf <br1@einfach.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+	id S1756890Ab0ENWdN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:33:13 -0400
+Received: from hera.kernel.org ([140.211.167.34]:38362 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754959Ab0ENWdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:33:09 -0400
+Date: Fri, 14 May 2010 22:32:55 GMT
+Message-Id: <201005142232.o4EMWtV9017946@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [GIT PULL] One additional x86 fix for 2.6.34
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Petr Vandrovec <petr@vandrovec.name>,
+       Jacob Pan <jacob.jun.pan@intel.com>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 May 2010 22:32:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Linus,
 
+One additional fix for the 2.6.34 tree.  It missed my push from
+earlier today because I was waiting for confirmation from the original
+reporter that it indeed solves the problem.
 
+The following changes since commit 7f284d3cc96e02468a42e045f77af11e5ff8b095:
+  Frank Arnold (1):
+        x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
 
+are available in the git repository at:
 
-On May 14, 2010, at 1:52 PM, "Luis R. Rodriguez"  
-<lrodriguez@atheros.com> wrote:
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
 
-> On Fri, May 14, 2010 at 01:21:34PM -0700, Justin P. Mattock wrote:
->> Eveything is on except ath5k
->> For debugging.
->
-> Bleh, try this.
->
-> diff --git a/drivers/net/wireless/ath/ath9k/recv.c b/drivers/net/ 
-> wireless/ath/ath9k/recv.c
-> index 1ca42e5..3404198 100644
-> --- a/drivers/net/wireless/ath/ath9k/recv.c
-> +++ b/drivers/net/wireless/ath/ath9k/recv.c
-> @@ -129,7 +129,7 @@ int ath_rx_init(struct ath_softc *sc, int nbufs)
->    common->rx_bufsize = roundup(IEEE80211_MAX_MPDU_LEN,
->                     min(common->cachelsz, (u16)64));
->
-> -    ath_print(common, ATH_DBG_CONFIG, "cachelsz %u rxbufsize %u\n",
-> +    printk("ATH9K: cachelsz %u rxbufsize %u\n",
->          common->cachelsz, common->rx_bufsize);
->
->    /* Initialize rx descriptors */
->
-> Not sure why this is not printing, the common debug_mask should
-> already be set here prior to this. Anyway this would force the
-> print I want.
->
->  Luis
+H. Peter Anvin (1):
+      x86, mrst: Don't blindly access extended config space
 
-O.k appologize for the delay
-(had to play limo driver),
-Anyways here is the grep info:
-ATH9K: cachelsz 256 rxbufsize 3904
-(messg is the same before and after
-Rrmod/modprobing with debug options)
+ arch/x86/pci/mrst.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-Justin P. Mattock
+commit e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e
+Author: H. Peter Anvin <hpa@linux.intel.com>
+Date:   Fri May 14 13:55:57 2010 -0700
+
+    x86, mrst: Don't blindly access extended config space
+    
+    Do not blindly access extended configuration space unless we actively
+    know we're on a Moorestown platform.  The fixed-size BAR capability
+    lives in the extended configuration space, and thus is not applicable
+    if the configuration space isn't appropriately sized.
+    
+    This fixes booting certain VMware configurations with CONFIG_MRST=y.
+    
+    Moorestown will add a fake PCI-X 266 capability to advertise the
+    presence of extended configuration space.
+    
+    Reported-and-tested-by: Petr Vandrovec <petr@vandrovec.name>
+    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+    Acked-by: Jacob Pan <jacob.jun.pan@intel.com>
+    Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+    LKML-Reference: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
+
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 8bf2fcb..1cdc02c 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -247,6 +247,10 @@ static void __devinit pci_fixed_bar_fixup(struct pci_dev *dev)
+ 	u32 size;
+ 	int i;
+ 
++	/* Must have extended configuration space */
++	if (dev->cfg_size < PCIE_CAP_OFFSET + 4)
++		return;
++
+ 	/* Fixup the BAR sizes for fixed BAR devices and make them unmoveable */
+ 	offset = fixed_bar_cap(dev->bus, dev->devfn);
+ 	if (!offset || PCI_DEVFN(2, 0) == dev->devfn ||
