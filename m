@@ -1,70 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756416Ab0ENQ3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:29:22 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20905 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756028Ab0ENQ3S (ORCPT
+	id S1752743Ab0ENQaG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:30:06 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:41419 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756178Ab0ENQaA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:29:18 -0400
-Date: Fri, 14 May 2010 09:29:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Soren Hansen <soren@linux2go.dk>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2] Make the Xen block device prefix configurable
-Message-Id: <20100514092902.ba0f075a.randy.dunlap@oracle.com>
-In-Reply-To: <f0020ee67542b6b535372d6a7b217d71a2c7293b.1273825543.git.soren@linux2go.dk>
-References: <cover.1273825543.git.soren@linux2go.dk>
-	<f0020ee67542b6b535372d6a7b217d71a2c7293b.1273825543.git.soren@linux2go.dk>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BED7A5B.00A6:SCFMA4539811,ss=1,fgs=0
+	Fri, 14 May 2010 12:30:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bOzd/vExmKKDS86HkBXCUcJbFGFxw6rCPtT+5iRKZ0u9EhCtL1ihQssTU2oDYcdKDb
+         x1TIgKJ0w8iuqFEmh1/ewbTLJGkq4Bs4NuC7Bk8YFQz9ZQ1BSkATYf1Izq5LbaQPK+ms
+         FozadZxPjJeRVriCn6YjV3j1g4K3RVOVj2F8k=
+Date: Fri, 14 May 2010 09:29:52 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100514162951.GB31607@core.coreip.homeip.net>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+ <20100514145539.GA5598@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514145539.GA5598@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010 18:10:48 +0200 Soren Hansen wrote:
-
-> Add a config option to tweak the Xen block device prefix.
+On Fri, May 14, 2010 at 03:55:39PM +0100, Matthew Garrett wrote:
+> I've done some experimentation under qemu. On ACPI systems, Windows will 
+> *only* touch the keyboard controller if there's a device with an 
+> appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
+> Otherwise it'll simply ignore the hardware entirely. By the looks of it 
+> their keyboard probing is also somewhat different to ours, but that's 
+> probably another story.
 > 
-> Signed-off-by: Soren Hansen <soren@linux2go.dk>
-> Tested-By: Major Hayden <major.hayden@rackspace.com>
-> ---
->  drivers/block/Kconfig        |   10 ++++++++++
->  drivers/block/xen-blkfront.c |    2 +-
->  2 files changed, 11 insertions(+), 1 deletions(-)
+> However, I did find a couple of device IDs that machines may produce 
+> which we don't currently check for. I'll send a patch.
 > 
-> diff --git a/drivers/block/Kconfig b/drivers/block/Kconfig
-> index 1d886e0..89c1887 100644
-> --- a/drivers/block/Kconfig
-> +++ b/drivers/block/Kconfig
-> @@ -467,6 +467,16 @@ config XEN_BLKDEV_FRONTEND
->  	  block device driver.  It communicates with a back-end driver
->  	  in another domain which drives the actual block device.
->  
-> +config XEN_BLKDEV_NAME
-> +	string "Base name for Xen block devices"
-> +	depends on XEN_BLKDEV_FRONTEND
-> +	default "xvd"
-> +	help
-> +	  Use this as the base name for Xen block devices. This is
-> +	  traditionally "xvd", but if you're trying to boot a system
-> +	  that expects to find its root device on /dev/sda, you can
-> +	  use this setting to accomodate that.
 
-	                      accommodate
+I was wondering if we should be matching for _CID instead of _HID for
+mouse and keyboard.
 
-> +
->  config VIRTIO_BLK
->  	tristate "Virtio block driver (EXPERIMENTAL)"
->  	depends on EXPERIMENTAL && VIRTIO
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+Dmitry
