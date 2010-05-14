@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759825Ab0ENTzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:55:13 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59872 "EHLO
+	id S1759841Ab0ENTzK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:55:10 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59871 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759658Ab0ENTsj (ORCPT
+	with ESMTP id S1759684Ab0ENTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 May 2010 15:48:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,60 +16,106 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 02/37] lmb: Prepare x86 to use lmb to replace early_res
-Date: Fri, 14 May 2010 12:45:28 -0700
-Message-Id: <1273866363-14249-3-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 16/37] x86, lmb: Add lmb_free_memory_size()
+Date: Fri, 14 May 2010 12:45:42 -0700
+Message-Id: <1273866363-14249-17-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090205.4BEDA8D6.00DF,ss=1,fgs=0
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090205.4BEDA8E7.003F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-1. expose lmb_debug
-2. expose lmb_reserved_init_regions
+It will return free memory size in specified range.
 
--v2: drop lmb_add_region() and LMB_ERROR export
--v3: seperate wrong return of lmb_fin_base to another patch
+We can not use memory_size - reserved_size here, because some reserved area
+may not be in the scope of lmb.memory.region.
+
+Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+then count size of all free ranges.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- include/linux/lmb.h |    2 ++
- lib/lmb.c           |    4 ++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/lmb.h |    1 +
+ arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 52 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/lmb.h b/include/linux/lmb.h
-index 6f8c4bd..d88c92d 100644
---- a/include/linux/lmb.h
-+++ b/include/linux/lmb.h
-@@ -39,6 +39,8 @@ struct lmb {
- };
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+index 358d8a6..4fb94b5 100644
+--- a/arch/x86/include/asm/lmb.h
++++ b/arch/x86/include/asm/lmb.h
+@@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+ 					 unsigned long last_pfn);
+ u64 lmb_hole_size(u64 start, u64 end);
+ u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
++u64 lmb_free_memory_size(u64 addr, u64 limit);
  
- extern struct lmb lmb;
-+extern int lmb_debug;
-+extern struct lmb_region lmb_reserved_init_regions[];
+ #endif
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+index 17bb1fb..3a16cdc 100644
+--- a/arch/x86/mm/lmb.c
++++ b/arch/x86/mm/lmb.c
+@@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+ }
+ #endif
  
- extern void __init lmb_init(void);
- extern void __init lmb_analyze(void);
-diff --git a/lib/lmb.c b/lib/lmb.c
-index 0d4e4c0..b6725d6 100644
---- a/lib/lmb.c
-+++ b/lib/lmb.c
-@@ -22,9 +22,9 @@
- 
- struct lmb lmb;
- 
--static int lmb_debug;
-+int lmb_debug;
- static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
--static struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
-+struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
- 
- #define LMB_ERROR	(~(phys_addr_t)0)
- 
++u64 __init lmb_free_memory_size(u64 addr, u64 limit)
++{
++	int i, count;
++	struct range *range;
++	int nr_range;
++	u64 final_start, final_end;
++	u64 free_size;
++
++	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
++
++	range = find_range_array(count);
++	nr_range = 0;
++
++	addr = PFN_UP(addr);
++	limit = PFN_DOWN(limit);
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		struct lmb_region *r = &lmb.memory.regions[i];
++
++		final_start = PFN_UP(r->base);
++		final_end = PFN_DOWN(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		nr_range = add_range(range, count, nr_range, final_start, final_end);
++	}
++	subtract_range(range, count, 0, addr);
++	subtract_range(range, count, limit, -1ULL);
++	for (i = 0; i < lmb.reserved.cnt; i++) {
++		struct lmb_region *r = &lmb.reserved.regions[i];
++
++		final_start = PFN_DOWN(r->base);
++		final_end = PFN_UP(r->base + r->size);
++		if (final_start >= final_end)
++			continue;
++		if (final_start >= limit || final_end <= addr)
++			continue;
++
++		subtract_range(range, count, final_start, final_end);
++	}
++	nr_range = clean_sort_range(range, count);
++
++	free_size = 0;
++	for (i = 0; i < nr_range; i++)
++		free_size += range[i].end - range[i].start;
++
++	return free_size << PAGE_SHIFT;
++}
++
+ void __init lmb_add_memory(u64 start, u64 end)
+ {
+ 	lmb_add(start, end - start);
 -- 
 1.6.4.2
 
