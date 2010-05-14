@@ -1,57 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758339Ab0ENRpM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:45:12 -0400
-Received: from relay01.mx.bawue.net ([193.7.176.67]:45406 "EHLO
-	relay01.mx.bawue.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756706Ab0ENRpJ (ORCPT
+	id S1758388Ab0ENRs6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:48:58 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:37153 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab0ENRs5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:45:09 -0400
-Date: Fri, 14 May 2010 19:45:06 +0200
-From: Nils Radtke <lkml@Think-Future.de>
-To: reinette.chatre@intel.com
-Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-Message-ID: <20100514174506.GD18740@localhost>
-Reply-To: Nils Radtke <lkml@Think-Future.de>
+	Fri, 14 May 2010 13:48:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=G93R5sFfzhvolvzY1p4N2z/EVjtTFp+kXbnWsJv+/Y1nXYpsYKfx8IVBnyxPSiuTMR
+         nSKeFZ2yZGMxaOnnMdC/+SdAlS2vms2u6JrCXSdIeiMTm6Xo3D2ydN3rETON+OhjNQju
+         6MAOyAlglfIOcDsrO/XwSov7ycnMe6WTNdKds=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273768269.2295.1144.camel@rchatre-DESK>
-X-Url: http://www.Think-Future.de
-X-Editor: Vi it! http://www.vim.org
-X-Bkp: p2mi
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100514164057.GC13509@lenovo>
+References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
+	 <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
+	 <1273834571.3530.82.camel@minggr.sh.intel.com>
+	 <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo>
+	 <20100514145213.GA13509@lenovo>
+	 <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
+	 <20100514162813.GB13509@lenovo>
+	 <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+	 <20100514164057.GC13509@lenovo>
+Date: Fri, 14 May 2010 23:18:52 +0530
+Message-ID: <AANLkTinQL16caUSZnFFr4gs_vfT93mwkNTK7I_eShZvA@mail.gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi Reinette,
+Hello Cyrill,
 
-  Might be of interest:
+On Fri, May 14, 2010 at 10:10 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
+> ...
+>> >
+>> > Thanks Jaswinder,
+>> >
+>> > it means counters management somehow screwed at moment (it was working before).
+>> > I'm working on it.
+>> >
+>>
+>> Ok, I added few more events and now I am able see few hardware events :
+>>
+> ...
+> Thanks, but I need to figure out where they hide in first place. Will keep
+> you in touch.
+>
 
-[63099.789939] eth1: associated
-[63166.919257] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63180.322024] Hangcheck: hangcheck value past margin!
-[63190.664526] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63193.255873] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63194.941768] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63195.099286] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63196.524065] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63197.417740] iwlagn 0000:03:00.0: expected_tpt should have been calculated by now
-[63199.767526] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:aa:aa:aa tid = 0
-[63205.689184] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:aa:aa:aa tid = 0
-[63210.821316] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:aa:aa:aa tid = 0
-[63228.178530] iwlagn 0000:03:00.0: iwl_tx_agg_start on ra = 00:1a:70:aa:aa:aa tid = 0
+Earlier I given the command 'ls' which was very small only 601636
+instructions so branches
+and branch-misses came up with <not counted>
 
-Happened on site B, with high throughput (280-340k/s). So, it's happening w/ both, fast
-and slow conn speed.
+When I given a bigger command 'ls -lR /dev' with 10159428
+instructions, so I get branches and branch-misses count.
 
-Yes, I noticed and had a look into the compat-wireless scripts but preferred to do 
-it manually. Thank you for your explanation.
-
-Cheers,
-
-                Nils
-
+Thanks,
+--
+Jaswinder Singh.
