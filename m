@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932282Ab0ENTbS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:31:18 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:54933 "EHLO mgw1.diku.dk"
+	id S932262Ab0ENTa5 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:30:57 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:54918 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759411Ab0ENTbM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:31:12 -0400
-Date: Fri, 14 May 2010 21:31:07 +0200 (CEST)
+	id S932221Ab0ENTax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:30:53 -0400
+Date: Fri, 14 May 2010 21:30:48 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Neil Brown <neilb@suse.de>, dm-devel@redhat.com,
-       linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
+       ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 9/10] drivers/md: Use kstrdup
-Message-ID: <Pine.LNX.4.64.1005142130490.28935@ask.diku.dk>
+Subject: [PATCH 8/10] fs/ocfs2/dlm: Use kstrdup
+Message-ID: <Pine.LNX.4.64.1005142130310.28935@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -45,23 +45,26 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/md/dm-crypt.c |    3 +--
+ fs/ocfs2/dlm/dlmdomain.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/md/dm-crypt.c b/drivers/md/dm-crypt.c
---- a/drivers/md/dm-crypt.c
-+++ b/drivers/md/dm-crypt.c
-@@ -1168,12 +1168,11 @@ static int crypt_ctr(struct dm_target *t
- 	if (ivmode && cc->iv_gen_ops) {
- 		if (ivopts)
- 			*(ivopts - 1) = ':';
--		cc->iv_mode = kmalloc(strlen(ivmode) + 1, GFP_KERNEL);
-+		cc->iv_mode = kstrdup(ivmode, GFP_KERNEL);
- 		if (!cc->iv_mode) {
- 			ti->error = "Error kmallocing iv_mode string";
- 			goto bad_ivmode_string;
- 		}
--		strcpy(cc->iv_mode, ivmode);
- 	} else
- 		cc->iv_mode = NULL;
+diff -u -p a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
+--- a/fs/ocfs2/dlm/dlmdomain.c
++++ b/fs/ocfs2/dlm/dlmdomain.c
+@@ -1523,7 +1523,7 @@ static struct dlm_ctxt *dlm_alloc_ctxt(c
+ 		goto leave;
+ 	}
+ 
+-	dlm->name = kmalloc(strlen(domain) + 1, GFP_KERNEL);
++	dlm->name = kstrdup(domain, GFP_KERNEL);
+ 	if (dlm->name == NULL) {
+ 		mlog_errno(-ENOMEM);
+ 		kfree(dlm);
+@@ -1557,7 +1557,6 @@ static struct dlm_ctxt *dlm_alloc_ctxt(c
+ 	for (i = 0; i < DLM_HASH_BUCKETS; i++)
+ 		INIT_HLIST_HEAD(dlm_master_hash(dlm, i));
+ 
+-	strcpy(dlm->name, domain);
+ 	dlm->key = key;
+ 	dlm->node_num = o2nm_this_node();
  
