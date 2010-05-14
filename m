@@ -1,48 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758230Ab0ENRmn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:42:43 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:59273 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757006Ab0ENRmk (ORCPT
+	id S1758408Ab0ENRpP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:45:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:62280 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756479Ab0ENRpJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:42:40 -0400
-Date: Fri, 14 May 2010 18:41:53 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Saeed Bishara <saeed@marvell.com>, Nicolas Pitre <nico@marvell.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "James E.J. Bottomley" <jejb@parisc-linux.org>,
-       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
-       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-ext4@vger.kernel.org" <linux-ext4@vger.kernel.org>,
-       "linux-arm-kernel@lists.infradead.org" 
-	<linux-arm-kernel@lists.infradead.org>
-Subject: Re: Rampant ext3/4 corruption on 2.6.34-rc7 with VIVT ARM (Marvell 88f5182)
-Message-ID: <20100514174153.GB10133@shareable.org>
-References: <1273569821.21352.19.camel@pasglop> <1273575478.21352.29.camel@pasglop> <EAF47CD23C76F840A9E7FCE10091EFAB02C545537F@dbde02.ent.ti.com> <20100512222154.GA6841@shareable.org> <1273704431.21352.136.camel@pasglop> <20100512230841.GA10090@n2100.arm.linux.org.uk>
+	Fri, 14 May 2010 13:45:09 -0400
+Message-ID: <4BED8BF1.5080800@ru.mvista.com>
+Date: Fri, 14 May 2010 21:44:17 +0400
+From: Sergei Shtylyov <sshtylyov@mvista.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512230841.GA10090@n2100.arm.linux.org.uk>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: Rupjyoti Sarmah <rsarmah@amcc.com>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
+       sr@denx.de, linuxppc-dev@ozlabs.org
+Subject: Re: [PATCH]460EX on-chip SATA driver <Kernel 2.6.33> < resubmission
+ >
+References: <201005051757.o45HvPmY005954@amcc.com>
+In-Reply-To: <201005051757.o45HvPmY005954@amcc.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Russell King - ARM Linux wrote:
-> On Thu, May 13, 2010 at 08:47:11AM +1000, Benjamin Herrenschmidt wrote:
-> > Now, in the case at hand, which is my ARM based NAS, I believe this
-> > is non cache-coherent and thus uses cache flush ops. I don't know ARM
-> > well enough but I would expect these to be implicit barriers. Russell ?
-> > Nico ?
-> 
-> ARMv5 doesn't have a weak memory ordering model, and doesn't have any
-> memory barrier instructions.
+Hello.
 
-It does have buffered writes, doesn't it?  Are they always flushed by
-the cache flush ops?
+Rupjyoti Sarmah wrote:
 
--- Jamie
+> This patch enables the on-chip DWC SATA controller of the AppliedMicro processor 460EX.
+>
+> Signed-off-by: Rupjyoti Sarmah <rsarmah@appliedmicro.com> 
+> Signed-off-by: Mark Miesfeld <mmiesfeld@appliedmicro.com>
+> Signed-off-by: Prodyut Hazarika <phazarika@appliedmicro.com>
+> ---
+>  arch/powerpc/boot/dts/canyonlands.dts |    8 +
+>  drivers/ata/Kconfig                   |    9 +
+>  drivers/ata/Makefile                  |    1 +
+>  drivers/ata/sata_dwc.c                | 1827 +++++++++++++++++++++++++++++++++
+>  4 files changed, 1845 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/ata/sata_dwc.c
+>
+> diff --git a/arch/powerpc/boot/dts/canyonlands.dts b/arch/powerpc/boot/dts/canyonlands.dts
+> index cd56bb5..d3b2c99 100644
+> --- a/arch/powerpc/boot/dts/canyonlands.dts
+> +++ b/arch/powerpc/boot/dts/canyonlands.dts
+> @@ -163,6 +163,14 @@
+>  			interrupts = <0x1e 4>;
+>  		};
+>  
+> +		SATA0: sata@bffd1000 {
+> +                        compatible = "amcc,sata-460ex";
+> +			reg = <4 0xbffd1000 0x800 4 0xbffd0800 0x400>;
+> +                        interrupt-parent = <&UIC3>;
+> +                        interrupts = <0x0 0x4       /* SATA */
+> +                                      0x5 0x4>;     /* AHBDMA */
+> +                };
+> +
+>  		POB0: opb {
+>  			compatible = "ibm,opb-460ex", "ibm,opb";
+>  			#address-cells = <1>;
+>   
+
+   Please put the device tree update in a separate patch to go thru the 
+PowerPC tree.
+
+MBR, Sergei
+
