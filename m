@@ -1,88 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753700Ab0ENCMe (ORCPT <rfc822;w@1wt.eu>);
+	id S1755229Ab0ENCMk (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:12:40 -0400
+Received: from 29.mail-out.ovh.net ([87.98.216.213]:42385 "HELO
+	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751250Ab0ENCMe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 13 May 2010 22:12:34 -0400
-Received: from mga09.intel.com ([134.134.136.24]:47693 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751250Ab0ENCMc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:12:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
-   d="scan'208";a="621558992"
-Date: Fri, 14 May 2010 10:08:11 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Greg KH <gregkh@suse.de>, akpm@linux-foundation.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 6/7] NUMA hotplug emulator
-Message-ID: <20100514020811.GD4381@shaohui>
-Mail-Followup-To: Wu Fengguang <fengguang.wu@intel.com>,
-	Greg KH <gregkh@suse.de>, akpm@linux-foundation.org,
-	linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
-	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	Heiko Carstens <heiko.carstens@de.ibm.com>,
-	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-	shaohui.zheng@linux.intel.com
-References: <20100513120016.GG2169@shaohui>
- <20100513165603.GC25212@suse.de>
- <20100514014902.GB4381@shaohui>
- <20100514020526.GB7678@localhost>
+Message-ID: <4BECB18C.5050005@example.com>
+Date: Fri, 14 May 2010 04:12:28 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514020526.GB7678@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Greg KH <greg@kroah.com>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: General questiin about SYSFS
+References: <4BEC4B0D.8010102@example.com> <20100513200718.GA18479@kroah.com>
+In-Reply-To: <20100513200718.GA18479@kroah.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 12794163593349394920
+X-Ovh-Remote: 83.24.77.38 (dmv38.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:05:26AM +0800, Wu Fengguang wrote:
-> On Fri, May 14, 2010 at 09:49:02AM +0800, Zheng, Shaohui wrote:
-> > On Thu, May 13, 2010 at 09:56:03AM -0700, Greg KH wrote:
-> > > On Thu, May 13, 2010 at 08:00:16PM +0800, Shaohui Zheng wrote:
-> > > > hotplug emulator:extend memory probe interface to support NUMA
-> > > > 
-> > > > Extend memory probe interface to support an extra paramter nid,
-> > > > the reserved memory can be added into this node if node exists.
-> > > > 
-> > > > Add a memory section(128M) to node 3(boots with mem=1024m)
-> > > > 
-> > > > 	echo 0x40000000,3 > memory/probe
-> > > > 
-> > > > And more we make it friendly, it is possible to add memory to do
-> > > > 
-> > > > 	echo 3g > memory/probe
-> > > > 	echo 1024m,3 > memory/probe
-> > > > 
-> > > > It maintains backwards compatibility.
-> > > 
-> > > Again, please document this.
-> > > 
-> > > thanks,
-> > > 
-> > > greg k-h
-> > 
-> > okay
-> 
-> Shaohui, it's useless to document a wrong interface.
-> Better to fix the interface _first_, then document becomes meaningful.
-Fenggunag,
-	greg reminds me to add the docment into Documentation/ABI/, We miss it in
-the RFC. Currently, the interface format is not finalized, when we decide the
-final interface, the last step is documenting it in.
-> 
-> Thanks,
-> Fengguang
+On 13.05.2010 22:07, Greg KH wrote:
+> On Thu, May 13, 2010 at 08:55:09PM +0200, Piotr Hosowicz wrote:
+>> Hello,
+>>
+>> I have a simple question = I've heard rumours here and there that
+>> SYSFS is deprecated and forthcoming kernels won't use it
+>
+> Nope, not true at all.  Where did you hear those rumors so that I can go
+> after them with a big stick and squash them?
+
+Sorry, these must have been some random rumours in my head which came to 
+being during wild Debian upgrades sessions I had.
+
+>> I even see some warning during boot.
+>
+> What specific warning are you seeing?
+
+See my parallel email. I didn't understand them, this - as it appeared - 
+is udev question.
+
+>> Is it true? And where to disable it in the config?
+>
+> If you want to disable sysfs, you can, it's in the config file, but you
+> have to really know what you are doing otherwise you will usually end up
+> with a system that does not boot properly.
+
+Now I see, thanks for the reply.
+
+Regards,
+
+Piotr Hosowicz
 
 -- 
-Thanks & Regards,
-Shaohui
-
+Janusz Korwin-Mikke:
+"Idiota z dyplomem to taki sam idiota,
+jak przedtem - tylko z pretensjami."
+NP: Patrick O'Hearn - Night Becomes Her
+NB: 2.6.34-rc7-git4
