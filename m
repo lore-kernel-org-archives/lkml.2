@@ -1,74 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759078Ab0EXXJl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:41 -0400
-Received: from kroah.org ([198.145.64.141]:36512 "EHLO coco.kroah.org"
+	id S1752370Ab0ENEnh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:43:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30445 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758782Ab0EXXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:36 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
-Message-Id: <20100524230351.661833955@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:58 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>
-Subject: [26/34] iwlwifi: clear all the stop_queue flag after load firmware
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+	id S1751898Ab0ENEnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:43:35 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Cc: x86@kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] x86: Use .cfi_sections
+X-Fcc: ~/Mail/linus
+Emacs: no job too big... no job.
+Message-Id: <20100514044303.A6FE7400BE@magilla.sf.frob.com>
+Date: Thu, 13 May 2010 21:43:03 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+The following changes since commit 6a251b0ab67989f468f4cb65179e0cf40cf8c295:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../sameo/mfd-2.6
 
-------------------
+are available in the git repository at:
 
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+  git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git x86/cfi
 
-commit a9e10fb9b1c6ad16e73cf2656951fce3a817611e upstream.
+Roland McGrath (1):
+      x86: Use .cfi_sections
 
-All the queues are awake and ready to use after loading firmware,
-for firmware reload case, if any queues was stopped before
-reload, mac80211 will wake those queues after restart hardware, so make
-sure all the flag used to keep track of the queue status are
-reset correctly.
+ arch/x86/Makefile             |    5 +++--
+ arch/x86/include/asm/dwarf2.h |   12 ++++++++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
 
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/drivers/net/wireless/iwlwifi/iwl-4965.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
-@@ -581,6 +581,11 @@ static int iwl4965_alive_notify(struct iwl_priv *priv)
+Thanks,
+Roland
+---
+[PATCH] x86: Use .cfi_sections
+
+The newer assemblers support the .cfi_sections directive so we can put
+the CFI from .S files into the .debug_frame section that is preserved
+in unstripped vmlinux and in separate debuginfo, rather than the
+.eh_frame section that is now discarded by vmlinux.lds.S.
+
+Signed-off-by: Roland McGrath <roland@redhat.com>
+---
+ arch/x86/Makefile             |    5 +++--
+ arch/x86/include/asm/dwarf2.h |   12 ++++++++++++
+ 2 files changed, 15 insertions(+), 2 deletions(-)
+
+diff --git a/arch/x86/Makefile b/arch/x86/Makefile
+index 0a43dc5..8aa1b59 100644
+--- a/arch/x86/Makefile
++++ b/arch/x86/Makefile
+@@ -95,8 +95,9 @@ sp-$(CONFIG_X86_64) := rsp
+ cfi := $(call as-instr,.cfi_startproc\n.cfi_rel_offset $(sp-y)$(comma)0\n.cfi_endproc,-DCONFIG_AS_CFI=1)
+ # is .cfi_signal_frame supported too?
+ cfi-sigframe := $(call as-instr,.cfi_startproc\n.cfi_signal_frame\n.cfi_endproc,-DCONFIG_AS_CFI_SIGNAL_FRAME=1)
+-KBUILD_AFLAGS += $(cfi) $(cfi-sigframe)
+-KBUILD_CFLAGS += $(cfi) $(cfi-sigframe)
++cfi-sections := $(call as-instr,.cfi_sections .debug_frame,-DCONFIG_AS_CFI_SECTIONS=1)
++KBUILD_AFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections)
++KBUILD_CFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections)
  
- 	iwl4965_set_wr_ptrs(priv, IWL_CMD_QUEUE_NUM, 0);
+ LDFLAGS := -m elf_$(UTS_MACHINE)
  
-+	/* make sure all queue are not stopped */
-+	memset(&priv->queue_stopped[0], 0, sizeof(priv->queue_stopped));
-+	for (i = 0; i < 4; i++)
-+		atomic_set(&priv->queue_stop_count[i], 0);
+diff --git a/arch/x86/include/asm/dwarf2.h b/arch/x86/include/asm/dwarf2.h
+index ae6253a..733f7e9 100644
+--- a/arch/x86/include/asm/dwarf2.h
++++ b/arch/x86/include/asm/dwarf2.h
+@@ -34,6 +34,18 @@
+ #define CFI_SIGNAL_FRAME
+ #endif
+ 
++#if defined(CONFIG_AS_CFI_SECTIONS) && defined(__ASSEMBLY__)
++	/*
++	 * Emit CFI data in .debug_frame sections, not .eh_frame sections.
++	 * The latter we currently just discard since we don't do DWARF
++	 * unwinding at runtime.  So only the offline DWARF information is
++	 * useful to anyone.  Note we should not use this directive if this
++	 * file is used in the vDSO assembly, or if vmlinux.lds.S gets
++	 * changed so it doesn't discard .eh_frame.
++	 */
++	.cfi_sections .debug_frame
++#endif
 +
- 	/* reset to 0 to enable all the queue first */
- 	priv->txq_ctx_active_msk = 0;
- 	/* Map each Tx/cmd queue to its corresponding fifo */
-diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
-index a7fa1ad..94fc836 100644
---- a/drivers/net/wireless/iwlwifi/iwl-5000.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
-@@ -648,6 +648,11 @@ int iwl5000_alive_notify(struct iwl_priv *priv)
+ #else
  
- 	iwl5000_set_wr_ptrs(priv, IWL_CMD_QUEUE_NUM, 0);
- 
-+	/* make sure all queue are not stopped */
-+	memset(&priv->queue_stopped[0], 0, sizeof(priv->queue_stopped));
-+	for (i = 0; i < 4; i++)
-+		atomic_set(&priv->queue_stop_count[i], 0);
-+
- 	/* reset to 0 to enable all the queue first */
- 	priv->txq_ctx_active_msk = 0;
- 	/* map qos queues to fifos one-to-one */
-
-
+ /*
