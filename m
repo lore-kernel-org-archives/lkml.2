@@ -1,159 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755062Ab0ENCOR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:14:17 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:43432 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751250Ab0ENCOP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:14:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=ina/9tXgulWbtwcpJnsadvfIrrp6ZYzSKa6ikZpkbYr4x48oAApsVQrC8IgovD4mSN
-         luml1ZrTwm+ojJ+hYXJNEHdFek4QscEiOx1r4KUnYXRfwGbHOJx954yfraA4nlCkrGhD
-         fjvwvr48MnSxjsHIqIvyMuRzvhVWOaSYv7kiY=
-Message-ID: <4BECB1F2.5050900@gmail.com>
-Date: Thu, 13 May 2010 19:14:10 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Bruno Randolf <br1@einfach.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-References: <4BEC7A84.3010503@gmail.com> <AANLkTinKoMxdkPYQA_AblpByL6zAiAP5hv2M3Jn2R3hM@mail.gmail.com> <4BEC9E6B.30809@gmail.com> <201005141008.20667.br1@einfach.org> <4BECA3AE.4070607@gmail.com> <20100514012314.GA2170@tux> <4BECA6AC.9060609@gmail.com> <20100514014311.GC2170@tux> <20100514014553.GD2170@tux>
-In-Reply-To: <20100514014553.GD2170@tux>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1756644Ab0ENCOd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:14:33 -0400
+Received: from gate.crashing.org ([63.228.1.57]:34023 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756152Ab0ENCO1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:14:27 -0400
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1273796396-29649-2-git-send-email-yinghai@kernel.org>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 12:12:23 +1000
+Message-ID: <1273803143.21352.353.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/10 18:45, Luis R. Rodriguez wrote:
-> On Thu, May 13, 2010 at 06:43:11PM -0700, Luis Rodriguez wrote:
->> On Thu, May 13, 2010 at 06:26:04PM -0700, Justin P. Mattock wrote:
->>> On 05/13/10 18:23, Luis R. Rodriguez wrote:
->>>> On Thu, May 13, 2010 at 06:13:18PM -0700, Justin P. Mattock wrote:
->>>>> On 05/13/10 18:08, Bruno Randolf wrote:
->>>>>> On Friday 14 May 2010 09:50:51 Justin P. Mattock wrote:
->>>>>>> On 05/13/10 17:28, Luis R. Rodriguez wrote:
->>>>>>>> On Thu, May 13, 2010 at 5:21 PM, Justin P. Mattock
->>>>>>>>
->>>>>>>> <justinmattock@gmail.com>     wrote:
->>>>>>>>> On 05/13/10 16:01, Luis R. Rodriguez wrote:
->>>>>>>>>> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
->>>>>>>>>>
->>>>>>>>>> <justinmattock@gmail.com>       wrote:
->>>>>>>>>>> not sure what this is, but while at a convention
->>>>>>>>>>> I was trying to access the internet and(below is
->>>>>>>>>>> full dmesg) this showed up.
->>>>>>>>>>>
->>>>>>>>>>> After receiving this, I sat and tried to re-create
->>>>>>>>>>> my steps to reproduce but had no luck(was even going
->>>>>>>>>>> todo a bisect n the spot if I could re-create).
->>>>>>>>>>
->>>>>>>>>> OK this stuff is hard to reproduce it seems.. you have an Atheros
->>>>>>>>>> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
->>>>>>>>>> to get the poison stuff? I am just surprised we haven't seen it
->>>>>>>>>> ourselves yet. Let me make sure all of us get this kconfig option
->>>>>>>>>> enabled.
->>>>>>>>>>
->>>>>>>>>>       Luis
->>>>>>>>>
->>>>>>>>> CONFIG_ATH_COMMON=m
->>>>>>>>> # CONFIG_ATH_DEBUG is not set
->>>>>>>>> CONFIG_ATH5K=m
->>>>>>>>> # CONFIG_ATH5K_DEBUG is not set
->>>>>>>>> CONFIG_ATH9K_HW=m
->>>>>>>>> CONFIG_ATH9K_COMMON=m
->>>>>>>>> CONFIG_ATH9K=m
->>>>>>>>> # CONFIG_ATH9K_DEBUGFS is not set
->>>>>>>>>
->>>>>>>>> if you need my .config let me know.
->>>>>>>>> (I can try again reproducing, but man
->>>>>>>>> just doesn't easily fire off).
->>>>>>>>
->>>>>>>> Oh I mean the config options to enable the poison rant.
->>>>>>>>
->>>>>>>>       Luis
->>>>>>>
->>>>>>> shoot.. not sure how to grep for the right info
->>>>>>> in the .config for you, heres what grepping for COFIG_DEBUG
->>>>>>> looks like:
->>>>>>> CONFIG_DEBUG_FS=y
->>>>>>> CONFIG_DEBUG_KERNEL=y
->>>>>>> CONFIG_DEBUG_RT_MUTEXES=y
->>>>>>> CONFIG_DEBUG_PI_LIST=y
->>>>>>> CONFIG_DEBUG_SPINLOCK=y
->>>>>>> CONFIG_DEBUG_MUTEXES=y
->>>>>>> CONFIG_DEBUG_BUGVERBOSE=y
->>>>>>> CONFIG_DEBUG_MEMORY_INIT=y
->>>>>>> CONFIG_DEBUG_STACKOVERFLOW=y
->>>>>>
->>>>>> oh, this reminds me of a similar report we had for ath5k:
->>>>>>
->>>>>> https://bugzilla.kernel.org/show_bug.cgi?id=15861
->>>>>>
->>>>>> the subject on this mailing list was "ath5k misbehaving affecting other kernel
->>>>>> parts unrelated?"
->>>>>>
->>>>>> bruno
->>>>>>
->>>>>
->>>>> Could be.. From what I remember
->>>>> all I was doing was switching from
->>>>> one wireless network to another
->>>>> (then opening firefox to sign my life away).
->>>>
->>>> Were you using network-manager? Or the supplicant manually?
->>>>
->>>>     Luis
->>>>
->>>
->>> I've got wicd(1.5.9) manager
->>> running over here.
->>
->> Can you try this:
->>
->> diff --git a/drivers/net/wireless/ath/ath9k/init.c b/drivers/net/wireless/ath/ath9k/init.c
->> index 8c79548..a372f2c 100644
->> --- a/drivers/net/wireless/ath/ath9k/init.c
->> +++ b/drivers/net/wireless/ath/ath9k/init.c
->> @@ -599,6 +599,7 @@ static int ath9k_init_softc(u16 devid, struct ath_softc *sc, u16 subsysid,
->>   	 */
->>   	ath_read_cachesize(common,&csz);
->>   	common->cachelsz = csz<<  2; /* convert to bytes */
->> +	printk("ATH9K: cachelsz: %d\n", common->cachelsz);
->>
->>   	/* Initializes the hardware for all supported chipsets */
->>   	ret = ath9k_hw_init(ah);
->>
->>
->> Would like to see what you get there on dmesg upon load.
->
-> Actually don't bother I just realized you can get this with
-> ATH_DBG_CONFIG enabled.
->
->                  ath_print(common, ATH_DBG_CONFIG, "cachelsz %u rxbufsize %u\n",
->                                  common->cachelsz, common->rx_bufsize);
->
->
-> This is already in the code so just
->
-> modprobe ath9k debug=0x00000200
->
->    Luis
->
+On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+> 1. expose lmb_debug
+> 2. expose lmb_reserved_init_regions
+> 3. expose lmb_add_region
+> 4. prection for include linux/lmb.h in mm/page_alloc.c and mm/bootmem.c
+> 5. lmb_find_base() should return LMB_ERROR in one failing path.
+>    (this one cost me 3 hours !)
+> 6. move LMB_ERROR to lmb.h
 
+Oh well, let's start somewhere...
 
-what I can try, is(not at the convention, on eth0
-at the moment), but when I get back to the convention
-center place I can try your patch as well as the
-modprobe option, to see if I can get any signs of
-a recreation(if so I'll bisect there).
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/lmb.h |    4 ++++
+>  lib/lmb.c           |   21 +++++++++------------
+>  2 files changed, 13 insertions(+), 12 deletions(-)
+> 
+> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+> index 6f8c4bd..7987766 100644
+> --- a/include/linux/lmb.h
+> +++ b/include/linux/lmb.h
+> @@ -19,6 +19,7 @@
+>  #include <asm/lmb.h>
+>  
+>  #define INIT_LMB_REGIONS 128
+> +#define LMB_ERROR	(~(phys_addr_t)0)
 
-Justin P. Mattock
+Ok so this was meant to remain internal. You seem to want to expose a
+whole lot of LMB internals, I suppose for your new arch/x86/lmb.c and I
+really really don't like it.
+
+If we expose LMB_ERROR then all lmb calls that can fail should return
+that. However, the API calls all return 0 instead. Changing that means
+fixing all callers.
+
+We can't just have a mix bag of result code in stuff that is exposed.
+
+If all you need LMB_ERROR is to expose lmb_find_area() and
+lmb_add_region() then make the above __ and export a public variant of
+it that returns 0.
+
+But that's not the right approach. The right thing to do I believe is to
+instead change LMB to use proper errno.h values.
+
+For things like lmb_add_region(), return then as a negative int. For
+things that return a phys_addr_t as well with a proper casting macro
+since I -think- we can safely consider that phys addrs in the range
+-PAGE_SIZE..-1 can be error codes. Just like we do for PTR_ERR etc...
+
+This should be a separate patch btw.
+
+I'm also not too happy with exposing lmb_add_region(). Why would you
+ever need to expose it ? Just call lmb_reserve() if you want to reserve
+something. lmb_add_region() is an internal function and has no business
+being used outside of the main lmb.c file.
+
+Also:
+
+>  	/* Calculate new doubled size */
+>  	old_size = type->max * sizeof(struct lmb_region);
+>  	new_size = old_size << 1;
+> @@ -206,7 +199,7 @@ static int lmb_double_array(struct lmb_type *type)
+>  		new_array = kmalloc(new_size, GFP_KERNEL);
+>  		addr = new_array == NULL ? LMB_ERROR : __pa(new_array);
+>  	} else
+> -		addr = lmb_find_base(new_size, sizeof(phys_addr_t), 0, LMB_ALLOC_ACCESSIBLE);
+> +		addr = lmb_find_base(new_size, sizeof(struct lmb_region), 0, LMB_ALLOC_ACCESSIBLE);
+
+Why this change ? Does it need to be aligned to the struct size ? if you
+really want that and have a good justification, make this a separate
+patch and explain why you are doing that in the changeset comment.
+
+>  	if (addr == LMB_ERROR) {
+>  		pr_err("lmb: Failed to double %s array from %ld to %ld entries !\n",
+>  		       lmb_type_name(type), type->max, type->max * 2);
+> @@ -214,6 +207,10 @@ static int lmb_double_array(struct lmb_type *type)
+>  	}
+>  	new_array = __va(addr);
+>  
+> +	if (lmb_debug)
+> +		pr_info("lmb: %s array is doubled to %ld at %llx - %llx",
+> +			 lmb_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size);
+> +
+>  	/* Found space, we now need to move the array over before
+>  	 * we add the reserved region since it may be our reserved
+>  	 * array itself that is full.
+> @@ -249,7 +246,7 @@ extern int __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+>  	return 1;
+>  }
+
+Cheers,
+Ben.
+
