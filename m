@@ -1,247 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab0ENGmo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:42:44 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:44054 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755359Ab0ENGmc (ORCPT
+	id S1756642Ab0ENGp2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:45:28 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:57309 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756132Ab0ENGp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:42:32 -0400
-Date: Fri, 14 May 2010 16:41:45 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-fsdevel@vger.kernel.org, chris.mason@oracle.com, hch@infradead.org,
-       akpm@linux-foundation.org, npiggin@suse.de,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100514064145.GJ13617@dastard>
-References: <20100512212403.GE3597@localhost.localdomain>
- <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
- <20100514010042.GI13617@dastard>
- <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+	Fri, 14 May 2010 02:45:26 -0400
+Message-ID: <4BECF0E2.90406@oracle.com>
+Date: Thu, 13 May 2010 23:42:42 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 13/35] x86, lmb: Add lmb_free_memory_size()
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-14-git-send-email-yinghai@kernel.org> <1273804285.21352.392.camel@pasglop>
+In-Reply-To: <1273804285.21352.392.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090206.4BECF150.006F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 11:30:57PM -0400, Josef Bacik wrote:
-> On Fri, May 14, 2010 at 11:00:42AM +1000, Dave Chinner wrote:
-> > On Wed, May 12, 2010 at 09:39:27PM -0400, Josef Bacik wrote:
-> > > On Wed, May 12, 2010 at 05:24:04PM -0400, Josef Bacik wrote:
-> > > > Hello,
-> > > > 
-> > > > I just started adding aio_write to Btrfs and I noticed we're duplicating _alot_
-> > > > of the generic stuff in mm/filemap.c, even though the only thing thats really
-> > > > unique is the fact that we copy userspace pages in chunks rather than one page a
-> > > > t a time.  What would be best is instead of doing write_begin/write_end with
-> > > > Btrfs, it would be nice if we could just do our own perform_write instead of
-> > > > generic_perform_write.  This way we can drop all of these generic checks we have
-> > > > that we copied from filemap.c and just got to the business of actually writing
-> > > > the data.  I hate to add another file operation, but it would _greatly_ reduce
-> > > > the amount of duplicate code we have.  If there is no violent objection to this
-> > > > I can put something together quickly for review.  Thanks,
-> > > >
-> > > 
-> > > I just got a suggestion from hpa about instead just moving what BTRFS does into
-> > > the generic_perform_write.  What btrfs does is allocates a chunk of pages to
-> > > cover the entirety of the write, sets everything up, does the copy from user
-> > > into the pages, and tears everything down, so essentially what
-> > > generic_perform_write does, just with more pages.
-> > 
-> > Except that btrfs does things in a very different manner to most
-> > other filesystems ;)
-> > 
-> > > I could modify
-> > > generic_perform_write and the write_begin/write_end aops to do this, where
-> > > write_begin will return how many pages it allocated, copy in all of the
-> > > userpages into the pages we allocated at once, and then call write_end with the
-> > > pages we allocated in write begin.  Then I could just make btrfs do
-> > > write_being/write_end.  So which option seems more palatable?  Thanks,
-> > 
-> > I can see how this would work for btrfs, but the issue is how any
-> > other filesystem would handle it.
-> > 
-> > I've been trying to get my head around how any filesystem using
-> > bufferheads and generic code can do multipage writes using
-> > write_begin/write_end without modifying the interface, and I just
-> > threw away my second attempt because the error handling just
-> > couldn't be handled cleanly without duplicating the entire
-> > block_write_begin path in each filesystem that wanted to do
-> > multipage writes.
-> > 
-> > The biggest problem is that block allocation is intermingled with
-> > allocating and attaching bufferheads to pages, hence error handling
-> > can get really nasty and is split across a call chain 3 or 4
-> > functions deep.  The error handling is where I'm finding all the
-> > dangerous and hard-to-kill demons lurking in dark corners. I suspect
-> > there's a grue in there somewhere, too. ;)
-> > 
-> > Separating the page+bufferhead allocation and block allocation would
-> > make this much simpler but I can't fit that easily into the existing
-> > interfaces.
-> >
-> > Hence I think that write_begin/copy pages/write_end is not really
-> > suited to multipage writes when allocation is done in write_begin
-> > and the write can then fail in a later stage without a simple method
-> > of undoing the allocation. We don't have any hole punch interfaces
-> > to the filesystems (and I think only XFS supports that functionality
-> > right now), so handling errors after allocation becomes rather
-> > complex, especially when you have multiple blocks per page. 
-> > 
-> > Hence I've independently come to the conclusion that delaying the
-> > allocation until *after* the copy as btrfs does is probably the best
-> > approach to take here.  This largely avoids the error handling
-> > complexity because the write operation is an all-or-nothing
-> > operation. btrfs has separate hooks for space reservation and
-> > releasing the reservation and doesn't commit to actually allocating
-> > anything until the copying is complete. Hence cleanup is simple no
-> > matter where a failure occurs.
-> > 
-> > Personally, I'm tending towards killing the get_blocks() callback as
-> > the first step in this process - turn it into a real inode/address
-> > space operation (say ->allocate) so we can untangle the write path
-> > somewhat (lots of filesystem just provide operations as wrappers to
-> > provide a fs-specific get_blocks callback to generic code.  If the
-> > "create" flag is then converted to a "command" field, the interface
-> > can pass "RESERVE", "ALLOC", "CREATE", etc to allow different
-> > operations to be clearly handled.
-> > 
-> > e.g.:
-> > 
-> > 	->allocate(mapping, NULL, off, len, RESERVE)
-> > 		reserves necessary space for write
-> > 	->write_begin
-> > 		grab pages into page cache
-> > 		attach bufferheads (if required)
-> > 	fail -> goto drop pages
-> > 	copy data into pages
-> > 	fail -> goto drop pages
-> > 	->allocate(mapping, pages, off, len, ALLOC)
-> > 		allocates reserved space (if required)
-> > 		sets up/maps/updates bufferheads/extents
-> > 	fail -> goto drop pages
-> > 	->write_end
-> > 		set pages dirty + uptodate
-> > 	done
-> > 
-> > drop_pages:
-> > 	->allocate(mapping, NULL, off, len, UNRESERVE)
-> > 	if needed, zero partial pages
-> > 	release pages, clears uptodate.
-> > 
-> > Basically this allows the copying of data before any allocation is
-> > actually done, but also allows ENOSPC to be detected before starting
-> > the copy. The filesystem can call whatver helpers it needs inside
-> > ->get_blocks(ALLOC) to set up bufferhead/extent state to match
-> > what has been reserved/allocated/mapped in the RESERVE call.
-> > 
-> > This will work for btrfs, and it will work for XFS and I think it
-> > will work for other filesystems that are using bufferheads as well.
-> > For those filesystems that will only support a page at a time, then
-> > they can continue to use the current code, but should be able to be
-> > converted to the multipage code by making RESERVE and UNRESERVE
-> > no-ops, and ALLOC does what write_begin+get_blocks currently does to
-> > set up block mappings.
-> > 
-> > Thoughts?
-> >
-> So this is what I had envisioned, we make write_begin take a nr_pages pointer
-> and tell it how much data we have to write, then in the filesystem we allocate
-> as many pages as we feel like, idealy something like
+On 05/13/2010 07:31 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+>> It will return free memory size in specified range.
+>>
+>> We can not use memory_size - reserved_size here, because some reserved area
+>> may not be in the scope of lmb.memory.region.
+>>
+>> Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
+>> then count size of all free ranges.
 > 
-> min(number of pages we need for the write, some arbitrary limit for security)
+> I remember having already told you that the naming sucks.
 
-Actually, i was thinking that the RESERVE call determines the size
-of the chunk (in the order of 1-4MB maximum). IOWs, we pass in the
-start offset of the write, the entire length remaining, and the
-RESERVE call determines how much it will allow in one loop.
+any suggestion?
 
-	written = 0;
-	while (bytes_remaining > 0) {
-		chunklen = ->allocate(off, bytes_remaining, RESERVE);
-		write_begin(&pages, off, chunklen);
-		copied = copy_pages(&pages, iov_iter, chunklen);
-		.....
-		bytes_remaining -= copied;
-		off += copied;
-		written += copied;
-	}
+i think this name is clear.
+
+> 
+> Also, you fail to explain what this is actually needed for.
+
+needed by 
+
+[PATCH 21/35] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
 
 
-> and then we allocate all those pages.  Then you can pass them into
-> block_write_begin, which will walk the pages, allocating buffer heads and
-> allocating the space as needed.
+> 
+> Cheers,
+> Ben.
+> 
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  arch/x86/include/asm/lmb.h |    1 +
+>>  arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
+>>  2 files changed, 52 insertions(+), 0 deletions(-)
+>>
+>> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+>> index 358d8a6..4fb94b5 100644
+>> --- a/arch/x86/include/asm/lmb.h
+>> +++ b/arch/x86/include/asm/lmb.h
+>> @@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
+>>  					 unsigned long last_pfn);
+>>  u64 lmb_hole_size(u64 start, u64 end);
+>>  u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
+>> +u64 lmb_free_memory_size(u64 addr, u64 limit);
+>>  
+>>  #endif
+>> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+>> index c5fa1dd..6c69e99 100644
+>> --- a/arch/x86/mm/lmb.c
+>> +++ b/arch/x86/mm/lmb.c
+>> @@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
+>>  }
+>>  #endif
+>>  
+>> +u64 __init lmb_free_memory_size(u64 addr, u64 limit)
+>> +{
+>> +	int i, count;
+>> +	struct range *range;
+>> +	int nr_range;
+>> +	u64 final_start, final_end;
+>> +	u64 free_size;
+>> +
+>> +	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
+>> +
+>> +	range = find_range_array(count);
+>> +	nr_range = 0;
+>> +
+>> +	addr = PFN_UP(addr);
+>> +	limit = PFN_DOWN(limit);
+>> +
+>> +	for (i = 0; i < lmb.memory.cnt; i++) {
+>> +		struct lmb_region *r = &lmb.memory.regions[i];
+>> +
+>> +		final_start = PFN_UP(r->base);
+>> +		final_end = PFN_DOWN(r->base + r->size);
+>> +		if (final_start >= final_end)
+>> +			continue;
+>> +		if (final_start >= limit || final_end <= addr)
+>> +			continue;
+>> +
+>> +		nr_range = add_range(range, count, nr_range, final_start, final_end);
+>> +	}
+>> +	subtract_range(range, count, 0, addr);
+>> +	subtract_range(range, count, limit, -1ULL);
+>> +	for (i = 0; i < lmb.reserved.cnt; i++) {
+>> +		struct lmb_region *r = &lmb.reserved.regions[i];
+>> +
+>> +		final_start = PFN_DOWN(r->base);
+>> +		final_end = PFN_UP(r->base + r->size);
+>> +		if (final_start >= final_end)
+>> +			continue;
+>> +		if (final_start >= limit || final_end <= addr)
+>> +			continue;
+>> +
+>> +		subtract_range(range, count, final_start, final_end);
+>> +	}
+>> +	nr_range = clean_sort_range(range, count);
+>> +
+>> +	free_size = 0;
+>> +	for (i = 0; i < nr_range; i++)
+>> +		free_size += range[i].end - range[i].start;
+>> +
+>> +	return free_size << PAGE_SHIFT;
+>> +}
+>> +
+>>  void __init lmb_add_memory(u64 start, u64 end)
+>>  {
+>>  	lmb_add_region(&lmb.memory, start, end - start);
+> 
 
-Close - except that I'd like like to move the block allocation out of
-->write_begin until after the copy into the pages has completed.
-Hence write_begin only deals with populating the page cache and
-anything filesystem specific like locking or allocating/populating
-per-page structures like bufferheads.  i.e. ->write_begin does not
-do anything that cannot be undone easily if the copy fails.
-
-> Now since we're coming into write_begin with "we want to write X bytes" we can
-> go ahead and do the enospc checks for X bytes, and then if we are good to go,
-> chances are we won't fail.
-
-Well, the "RESERVE" callout I proposed should mean that the
-allocation that follows the copy should never fail with ENOSPC. i.e.
-if there isn't space, the RESERVE call will fail with ENOSPC, not
-the actual ALLOCATE call that occurs after the data is copied.
-
-Basically I was thinking that in the XFS case, RESERVE would scan the
-range for holes, and reserve all blocks needed to fill all the holes
-in the range. Then the ALLOCATE call would mark them all delalloc.
-The space reservation and delalloc is done in a single call right
-now, but splitting them is not hard...
-
-> Except if we're overwriting a holey section of the file, we're going to be
-> screwed in both your way and my way.  My way probably would be the most likely
-> to fail, since we could fail to do the copy_from_user, but hopefully the segment
-> checks and doing the fault_in_readable before all of this would keep those
-> problems to a minimum.
-
-fault_in_readable() only faults the first page of the first iov
-passed in. It can still fail on any other page the iov points to.
-And even then, fault_in_readable() does not pin the page it faulted
-in memory, so even that can get recycled before we start the copy
-and we'd still get EFAULT.
-
-> In your case the only failure point is in the allocate step.  If we fail on down
-> the line after we've done some hole filling, we'll be hard pressed to go back
-> and free up those blocks.  Is that what you are talking about, having the
-> allocate(UNRESERVE) thing being able to go back and figure out what should have
-> been holes needs to be holes again?
-
-Yeah, that's kind of what I was thinking of. After a bit more
-thought, if the allocation only covers part of the range (for
-whatever reason), we can still allow that allocated part of the
-write to complete succesfully, and the UNRESERVE call simply returns
-the unused part of the space reservation. This would be a partial
-write and be much simpler to deal with than punching out the
-allocations that succeeded.
-
-> If thats the case then I think your idea
-> will work and is probably the best way to move forward.  But from what I can
-> remember about how all this works with buffer heads, there's not a way to say
-> "we _just_ allocated this recently".  Thanks,
-
-buffer_new() would suffice, I think.
-
-In __block_prepare_write(), when a new buffer is mapped that flag is
-cleared. If the buffer is not mapped, we call get_blocks, and any
-buffer it allocates will be marked buffer_new() again. This is used
-to trigger special things in __block_prepare_write() and the flag is
-not cleared until write_end (in __block_commit_write). Hence a
-buffer with the new flag set after allocation is a buffer that had
-space allocated...
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
