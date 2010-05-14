@@ -1,134 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758674Ab0ENStH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 14:49:07 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48421 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757997Ab0ENStE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 14:49:04 -0400
-Date: Fri, 14 May 2010 18:48:46 GMT
-From: tip-bot for Frank Arnold <frank.arnold@amd.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       frank.arnold@amd.com, stable@kernel.org, tglx@linutronix.de,
-       borislav.petkov@amd.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       frank.arnold@amd.com, stable@kernel.org, tglx@linutronix.de,
-       borislav.petkov@amd.com
-In-Reply-To: <1271945222-5283-3-git-send-email-bp@amd64.org>
-References: <1271945222-5283-3-git-send-email-bp@amd64.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
-Message-ID: <tip-13ed79ffcd61dbdf797b0ab928c1738846ba5a97@git.kernel.org>
-Git-Commit-ID: 13ed79ffcd61dbdf797b0ab928c1738846ba5a97
-X-Mailer: tip-git-log-daemon
+	id S1759035Ab0ENStq (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 14:49:46 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:47139 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758091Ab0ENSto (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 14:49:44 -0400
+Date: Fri, 14 May 2010 19:49:31 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: david@lang.hm
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100514184931.GA10113@srcf.ucam.org>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100514145539.GA5598@srcf.ucam.org> <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org> <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 May 2010 18:48:47 +0000 (UTC)
+In-Reply-To: <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  13ed79ffcd61dbdf797b0ab928c1738846ba5a97
-Gitweb:     http://git.kernel.org/tip/13ed79ffcd61dbdf797b0ab928c1738846ba5a97
-Author:     Frank Arnold <frank.arnold@amd.com>
-AuthorDate: Thu, 22 Apr 2010 16:06:59 +0200
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Fri, 14 May 2010 11:46:03 -0700
+On Fri, May 14, 2010 at 11:47:43AM -0700, david@lang.hm wrote:
 
-x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
+> yes, everything has USB ports, so they could use USB keyboards, but it's  
+> actually pretty common to still use PS/2 keyboards (and while the systems 
+> all support USB, it's not uncommon to have KVM systems, including pretty  
+> expensive 'enterprise' KVM systems that still require PS/2 keyboards be  
+> used to plug into the KVM, so those are the keyboards that are in the  
+> datacenter that someone will grab to plug into a problem machine)
 
-When running a quest kernel on xen we get:
+The server hardware I've looked at will all declare the ports regardless 
+of whether or not there's something plugged in.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
-PGD 0
-Oops: 0000 [#1] SMP
-last sysfs file:
-CPU 0
-Modules linked in:
-
-Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
-RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
-2ca/0x3df
-RSP: 0018:ffff880002203e08  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
-RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
-RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
-R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
-R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
-FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
-Stack:
- ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
-<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
-<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
-Call Trace:
- <IRQ>
- [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
- [<ffffffff81059140>] ? mod_timer+0x23/0x25
- [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
- [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
- [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
- [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
- [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
- [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
- [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
- [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
- [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
- <EOI>
- [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
- [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
- [<ffffffff810114eb>] ? default_idle+0x36/0x53
- [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
- [<ffffffff81423a9a>] rest_init+0x7e/0x80
- [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
- [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
- [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
-Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
- 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
- ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
-RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
- RSP <ffff880002203e08>
-CR2: 0000000000000038
----[ end trace a7919e7f17c0a726 ]---
-
-The L3 cache index disable feature of AMD CPUs has to be disabled if the
-kernel is running as guest on top of a hypervisor because northbridge
-devices are not available to the guest. Currently, this fixes a boot
-crash on top of Xen. In the future this will become an issue on KVM as
-well.
-
-Check if northbridge devices are present and do not enable the feature
-if there are none.
-
-[ hpa: backported to 2.6.34 ]
-
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
-LKML-Reference: <1271945222-5283-3-git-send-email-bp@amd64.org>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
-Cc: <stable@kernel.org>
----
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b3eeb66..95962a9 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -340,6 +340,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- 	     (boot_cpu_data.x86_mask  < 0x1)))
- 		return;
- 
-+	/* not in virtualized environments */
-+	if (num_k8_northbridges == 0)
-+		return;
-+
- 	this_leaf->can_disable = true;
- 	this_leaf->l3_indices  = amd_calc_l3_indices();
- }
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
