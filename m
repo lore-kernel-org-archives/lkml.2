@@ -1,61 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756331Ab0ENUaq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:30:46 -0400
-Received: from kroah.org ([198.145.64.141]:40804 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754493Ab0ENUag (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:30:36 -0400
-Date: Fri, 14 May 2010 13:16:40 -0700
-From: Greg KH <greg@kroah.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
-       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
-       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
-       eric.dumazet@gmail.com,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head
- initializations
-Message-ID: <20100514201640.GA25174@kroah.com>
-References: <20100511233241.GA20250@linux.vnet.ibm.com>
- <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100511234523.GA1450@suse.de>
- <20100512000821.GH2336@linux.vnet.ibm.com>
+	id S1755927Ab0ENUff (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:35:35 -0400
+Received: from p01c11o145.mxlogic.net ([208.65.144.68]:33766 "EHLO
+	p01c11o145.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753446Ab0ENUfd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 16:35:33 -0400
+X-MXL-Hash: 4bedb415656e388a-d213e54029a037ded0010287321a607c64f125cb
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: "john@johnmccutchan.com" <john@johnmccutchan.com>,
+       "rlove@rlove.org" <rlove@rlove.org>,
+       "eparis@parisplace.org" <eparis@parisplace.org>
+Date: Fri, 14 May 2010 15:35:21 -0500
+Subject: [PATCH] inotify_user.c: make local symbol static
+Thread-Topic: [PATCH] inotify_user.c: make local symbol static
+Thread-Index: AcrzpPj8jFB5JAntQmOLg2ELPGCFMw==
+Message-ID: <0D753D10438DA54287A00B0270842697636F0530C8@AUSP01VMBX24.collaborationhost.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512000821.GH2336@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010050402)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [(unknown)]
+X-AnalysisOut: [v=1.0 c=1 a=t6T0zWA06uIA:10 a=0qYQvVkOOIcA:10 a=VphdPIyG4k]
+X-AnalysisOut: [EA:10 a=IkcTkHD0fZMA:10 a=qhvANl0glaz90f+3g7Keqg==:17 a=i0]
+X-AnalysisOut: [0gxMtYAAAA:8 a=tg_WFcpRAAAA:8 a=TPhl1QgxAAAA:8 a=77d_1CzMA]
+X-AnalysisOut: [AAA:8 a=2JnYpa40o4YAnwqvz6IA:9 a=U7NAYwx3CeaDjI6Q_VDEu2K5P]
+X-AnalysisOut: [-gA:4 a=QEXdDO2ut3YA:10 a=x1WnkoZAwusA:10 a=Gi4hu8TlFacA:1]
+X-AnalysisOut: [0 a=IhvSSKzWGJYA:10 a=w2G1Yk43JnIA:10 a=cVU5B57R_jJqPBC5:2]
+X-AnalysisOut: [1 a=x8b8-mfWstgIKVBh:21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4EKZjaS029458
 
-On Tue, May 11, 2010 at 05:08:21PM -0700, Paul E. McKenney wrote:
-> On Tue, May 11, 2010 at 04:45:23PM -0700, Greg KH wrote:
-> > On Tue, May 11, 2010 at 04:33:01PM -0700, Paul E. McKenney wrote:
-> > > Remove all rcu head inits. We don't care about the RCU head state before passing
-> > > it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
-> > > keep track of objects on stack.
-> > > 
-> > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-> > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
-> > > ---
-> > >  drivers/staging/batman-adv/hard-interface.c |    1 -
-> > 
-> > Is this safe to apply to my tree now?  Or do you want to take it through
-> > your tree as it depends on other stuff?
-> 
-> Because the rcu_head in this case is not in an auto (on-stack) variable,
-> this commit is safe to apply to your tree now.
-> 
-> Let me know when you have applied it, and I will happily remove it
-> from mine.  ;-)
+The symbol inotify_max_user_watches is not used outside this
+file and should be static.
 
-Now queued up.
+Signed-off-by: H Hartley Sweeten <hsweeten@visionengravers.com>
+Cc: John McCutchan <john@johnmccutchan.com>
+Cc: Robert Love <rlove@rlove.org>
+Cc: Eric Paris <eparis@parisplace.org>
 
-thanks,
+---
 
-greg k-h
+diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
+index e46ca68..9c676a6 100644
+--- a/fs/notify/inotify/inotify_user.c
++++ b/fs/notify/inotify/inotify_user.c
+@@ -46,7 +46,7 @@
+ /* these are configurable via /proc/sys/fs/inotify/ */
+ static int inotify_max_user_instances __read_mostly;
+ static int inotify_max_queued_events __read_mostly;
+-int inotify_max_user_watches __read_mostly;
++static int inotify_max_user_watches __read_mostly;
+ 
+ static struct kmem_cache *inotify_inode_mark_cachep __read_mostly;
+ struct kmem_cache *event_priv_cachep __read_mostly;
+ˇÙË∫{.n«+â∑üÆâ≠Ü+%äÀˇ±È›∂•äwˇ∫{.n«+â∑•ä{±˛G´ùÈˇä{ay∫ á⁄ôÎ,j≠¢f£¢∑höèÔÅÍˇëÍÁz_ËÆ(≠Èöéä›¢j"ù˙∂mßˇˇæ´˛G´ùÈˇ¢∏?ô®Ë≠⁄&£¯ß~è·∂iOïÊ¨z∑övÿ^∂mßˇˇ√ˇ∂Ïˇ¢∏?ñI•
