@@ -1,71 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758941Ab0ENKFA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 06:05:00 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:34791 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753802Ab0ENKE7 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 06:04:59 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YJMMDNgAhQf4YriQpWpHvSVVmOQWKVNNhkm7AFsLvrsvqKTT4gpwtySFPD4tTronXW
-         mzWMJZkgeR87c+GbJuHZHy2d5n78Em1lfdjzP2Cx6ISdYhrpMhFO/54mWqhJdCkB0daH
-         5Hg31Z2VUpl3AYl0nMVcJZayaaU8IErW3QNjM=
+	id S1758952Ab0ENKLJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 06:11:09 -0400
+Received: from tundra.namei.org ([65.99.196.166]:56288 "EHLO tundra.namei.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756251Ab0ENKLF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 06:11:05 -0400
+Date: Fri, 14 May 2010 20:10:39 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: linux-kernel@vger.kernel.org, linux-security-module@vger.kernel.org,
+       "Serge E. Hallyn" <serue@us.ibm.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Adam Lackorzynski <adam@os.inf.tu-dresden.de>,
+       Eric Paris <eparis@redhat.com>, stable@kernel.org
+Subject: [GIT] security/mm: fix regression introduced by mmap_min_addr
+ check
+Message-ID: <alpine.LRH.2.00.1005142002020.32112@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com>
-References: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
-	 <AANLkTiktLXqHhop21ePIXF2kaVQbm3DIHZpLrEQOMA1e@mail.gmail.com>
-	 <AANLkTimCjt0R7A23xTrmToTqTcF4ZW4sNWtjMwjVIVqe@mail.gmail.com>
-	 <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com>
-	 <AANLkTimVmlPfRFu8Wo2KL1pyF6qtTSQriawvrKcsMe9Y@mail.gmail.com>
-	 <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
-	 <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com>
-Date: Fri, 14 May 2010 14:04:56 +0400
-Message-ID: <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Lin Ming <ming.m.lin@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 14, 2010, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Friday, May 14, 2010, Jaswinder Singh Rajput
-> <jaswinderlinux@gmail.com> wrote:
->> Hello Cyrill,
->>
->> On Fri, May 14, 2010 at 11:53 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>> On Friday, May 14, 2010, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
->>>>> Message from syslogd@ht at May 14 09:39:32 ...
->>>>>  kernel:[  thanks Jaswinder, i'll take a look, meanwhile if you get a chance to
->>>> test latest -tip/master it would be great
->>>>
->>>
->>> it's found that we have problem in cache events, we're working on
->>> that, thanks for report!
->>>
->>
->> Great !!
->>
->> If you need any help from my side, please let me know. Even though it
->> is very hot here, I will try my best ;-)
->>
->> Thanks,
->> --
->> Jaswinder Singh.
->>
->
-> Ming is narrowing down the guilty commit. I thought about my last
-> patch related to escr hashing, but it shouldn't bring such effect.
-> Hmm...
->
+A check for CAP_SYS_RAWIO was introduced when accessing 
+/proc/sys/vm/mmap_min_addr in the following patch:
 
-Jaswander, if you manage to bisect it -- this would be just great.
+commit 0e1a6ef2dea88101b056b6d9984f3325c5efced3
+Author: Kees Cook <kees.cook@canonical.com>
+Date:   Sun Nov 8 09:37:00 2009 -0800
+
+    sysctl: require CAP_SYS_RAWIO to set mmap_min_addr
+
+this has caused regressions for unprivileged userland apps which want to 
+read this value:
+
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/568844
+
+A patch to fix this has been in -next for some time, and given the reports 
+of userland breakage, it should probably go into mainline before 2.6.34 -- 
+please pull per the request below.
+
+(The patch may also be suitable for the 2.6.32 and 2.6.33 stable trees).
+
+
+The following changes since commit 6a251b0ab67989f468f4cb65179e0cf40cf8c295:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../sameo/mfd-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6 for-linus
+
+Kees Cook (1):
+      mmap_min_addr check CAP_SYS_RAWIO only for write
+
+ security/min_addr.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+
+-- 
+James Morris
+<jmorris@namei.org>
