@@ -1,61 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab0ENITP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:19:15 -0400
-Received: from csmtp2.one.com ([91.198.169.22]:42613 "EHLO csmtp2.one.com"
+	id S1758499Ab0ENIWF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:22:05 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53653 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758072Ab0ENIS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:18:59 -0400
-Message-ID: <4BED0770.3080608@bitmath.org>
-Date: Fri, 14 May 2010 10:18:56 +0200
-From: Henrik Rydberg <rydberg@bitmath.org>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] input: mt: Simplify event bypass logic
-References: <1272721779-2124-1-git-send-email-rydberg@euromail.se> <20100504064905.GB17482@core.coreip.homeip.net>
-In-Reply-To: <20100504064905.GB17482@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754271Ab0ENIWA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:22:00 -0400
+Subject: Re: [PATCH 11/35] lmb: Add find_memory_core_early()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BECF00D.6080800@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-12-git-send-email-yinghai@kernel.org>
+	 <1273804238.21352.389.camel@pasglop>  <4BECF00D.6080800@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 18:19:47 +1000
+Message-ID: <1273825187.21352.590.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> On Sat, May 01, 2010 at 03:49:39PM +0200, Henrik Rydberg wrote:
->> The input bypass mechanism is only used by the MT events. Since all
->> MT events use bypassing by construction, the current list is a mere
->> duplication of input.h. This patch replaces the bypass list by a
->> simple range test.
->>
+On Thu, 2010-05-13 at 23:39 -0700, Yinghai wrote:
+> > Oh and this wont' work on sparc. You should probably instead add a
+> > lmb_find_in_nid() to lmb which shares code with lmb_alloc_nid().
 > 
-> Henrik,
+> should work with sparc...
 > 
-> I disagree with the patch. I can not guarantee that we will be able to
-> maintain continuous range of ABS_MT_* events and thus current scheme is
-> more flexible.
+> +               if (addr == LMB_ERROR)
+> +                       continue;
+> 
+> should do the trick.
 
-Coming back to this, the current scheme has problems, too.
+Ugh ?
 
-With the introduction of slots, all events, not only EV_ABS events, are
-implicitly partitioned into global events and per-slot events. In the current
-approach, the partitioning is controlled via the hidden list in input.c, and
-hinted using the prefix MT. However, expecting the usage of slots to grow
-outside of a linear range of EV_ABS events, the user will inevitably need to
-known the semantics of particular events in order to parse correctly. And once
-the user starts to deal with that information, it can just as well be dynamic,
-and controlled by the device driver.
+OK, I'll have to let Davem deal with the fine point of the sparc bits,
+but I think basically sparc has CONFIG_ARCH_POPULATES_NODE_MAP set, but
+the way it's NUMA affinity works, the early_node_map[] is crap, you
+cannot rely on the ranges in there.
 
-My proposition is to add a bit field in input_dev which controls whether a
-particular event is used in the slot context or the global context. This
-information should be user-readable via EVIO. The driver should be able to alter
-these settings, and the default should match the current behavior.
+So it will "work" in the sense that you won't get errors, but the
+allocations will -not- be node local. At least that's my understanding.
 
-Thoughts?
+There's a reason we are adding node local allocations to LMB itself, so
+it can deal with that during early boot, please use those and stop
+trying to re-invent things slightly differently in ways that will not
+work with various existing platforms. 
+
+> keep switch smooth. maybe later could try to replace that one by one.
+> also i could use lmb_reserve_area() to take name and print out name to
+> make debug easy.
+
+I don't want those _area() variants. If you want to pass a name for
+debugging purposes, then add it to lmb_reserve() or something like that
+and fix the callers.
 
 Cheers,
-Henrik
+Ben.
 
