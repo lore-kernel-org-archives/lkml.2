@@ -1,51 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753906Ab0ENMjV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 08:39:21 -0400
-Received: from ozlabs.org ([203.10.76.45]:34104 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752584Ab0ENMjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 08:39:20 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Milton Miller <miltonm@bga.com>
-Subject: Re: cpumask: fix compat getaffinity
-Date: Fri, 14 May 2010 22:09:13 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Arnd Bergmann <arnd@arndb.de>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       stable@vger.kernel.org, anton@samba.org
-References: <201005112013.56392.arnd@arndb.de> <20100511031354.GA9327@kroah.com> <1273653045_3386@mail4.comsite.net>
-In-Reply-To: <1273653045_3386@mail4.comsite.net>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005142209.14473.rusty@rustcorp.com.au>
+	id S1754188Ab0ENMlI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 08:41:08 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:63240 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753221Ab0ENMlG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 08:41:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer;
+	b=M5NAPypWQWCYlPpO6zTdloMZycBIkbgCV0AB5LKQDINAOw4/zFWKkgQVj8E3bCwGz
+	Gnm/VZtLUBJoaB+eWJhpQ==
+From: Michel Lespinasse <walken@google.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
+       Michel Lespinasse <walken@google.com>
+Subject: [PATCH 00/10] V2: rwsem changes + down_read_unfair() proposal
+Date: Fri, 14 May 2010 05:39:32 -0700
+Message-Id: <1273840782-5920-1-git-send-email-walken@google.com>
+X-Mailer: git-send-email 1.7.0.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 06:00:45 pm Milton Miller wrote:
-> 
-> At least for parsing, we need to allocate and parse NR_CPUS until
-> all places like arch/powerpc/platforms/pseries/xics.c that compare a
-> user-supplied mask to CPUMASK_ALL are eliminated.
+I would like to sollicit comments regarding the following changes
+against 2.6.34-rc7 + 91af708 (from V1 proposal) already applied.
 
-Good point.  Anton will want to fix those anyway for CONFIG_CPUMASK_OFFSTACK,
-too, but that's the reason the parsing uses nr_cpumask_bits.
+The motivation for this change was some cluster monitoring software we
+use at google; which reads /proc/<pid>/maps files for all running
+processes. When the machines are under load, the mmap_sem is often
+acquire for reads for long periods of time since do_page_fault() holds
+it while doing disk accesses; and fair queueing behavior often ends up
+in the monitoring software making little progress. By introducing
+unfair behavior in a few selected places, are are able to let the
+monitoring software make progress without impacting performance for
+the rest of the system.
 
-> > Would it make sense to use my initial patch for -stable, which reverts
-> > the ABI back to before the change that caused the problem, but apply
-> > the correct fix (changing the ABI throughout) for future releases?
-> 
-> This would definitly be the conservative fix.
+In general, I've made sure to implement this proposal without touching
+the rwsem fast paths. Also, the first 8 patches of this series should
+be of general applicability even if not taking the down_read_unfair()
+changes, addressing minor issues such as situations where reader
+threads can get blocked at the head of the waiting list even though
+the rwsem is currently owned for reads.
 
-Instead of changing back to NR_CPUS which will break libnuma for
-CPUMASK_OFFSTACK, how about changing it to nr_cpumask_bits and having an
-explicit comment above it:
+Changes since v1:
+- Keep the active count check when trying to wake readers in the up_xxxx()
+  slow path (I had suppressed it in v1). However, I did try to lighten the
+  check (this is patch 3 of the series).
+- Added priviledge check before making use of unfair behavior in
+  /proc/<pid>/exe and /proc/<pid>/maps files.
+- Applied David Howell's many small suggestions (I hope I did not miss any).
 
-	/* libnuma assumes we match scnprintf for /sys/.../node/node*/cpumap */
+Michel Lespinasse (10):
+  x86 rwsem: minor cleanups
+  rwsem: fully separate code pathes to wake writers vs readers
+  rwsem: lighter active count checks when waking up readers
+  rwsem: let RWSEM_WAITING_BIAS represent any number of waiting threads
+  rwsem: wake queued readers when writer blocks on active read lock
+  rwsem: smaller wrappers around rwsem_down_failed_common
+  generic rwsem: implement down_read_unfair
+  rwsem: down_read_unfair infrastructure support
+  x86 rwsem: down_read_unfair implementation
+  Use down_read_unfair() for /sys/<pid>/exe and /sys/<pid>/maps files
 
-Thanks,
-Rusty.
+ arch/x86/include/asm/rwsem.h   |   70 ++++++++++++-----
+ arch/x86/lib/rwsem_64.S        |   14 +++-
+ arch/x86/lib/semaphore_32.S    |   21 +++++-
+ fs/proc/base.c                 |    2 +-
+ fs/proc/task_mmu.c             |    2 +-
+ fs/proc/task_nommu.c           |    2 +-
+ include/linux/capability.h     |    1 +
+ include/linux/rwsem-spinlock.h |   10 ++-
+ include/linux/rwsem.h          |   13 +++
+ kernel/rwsem.c                 |   31 ++++++++
+ lib/rwsem-spinlock.c           |   10 ++-
+ lib/rwsem.c                    |  160 ++++++++++++++++++++++++++--------------
+ 12 files changed, 247 insertions(+), 89 deletions(-)
+
