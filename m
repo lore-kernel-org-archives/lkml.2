@@ -1,64 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab0ENR3k (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:29:40 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:46883 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756201Ab0ENR3i convert rfc822-to-8bit (ORCPT
+	id S1758115Ab0ENRaU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:30:20 -0400
+Received: from fg-out-1718.google.com ([72.14.220.152]:24186 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab0ENRaR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:29:38 -0400
+	Fri, 14 May 2010 13:30:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:from:date
-         :x-google-sender-auth:message-id:subject:to:cc:content-type
-         :content-transfer-encoding;
-        b=bWnNfVz3QkZ4ORrUNn75hCGvq40aw7sXPVBqEYODybSctELS94QRHBvEUV8rC5wGni
-         jd9f4gsUr6PEazP6UceSCBrPSXVv8KwR/UJ3qzZi+s+HolnhzoL/YBF8USuKyGsCzxvI
-         J6MqHGniJfBnigSTzKH/fpOkP2MmbUWFj3sHI=
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=YUCHg+e/DOdfNRzuZR4yS+Cbd0MP2WOn8Dc3KKCD1RBkgCO3xshoRZaX9XZlhDMoKN
+         M+ClZajW8dybsHa2PlHGTVviVoFDuSSnRoTS0mD9R6iacIH/wJqsTZryhMP89FWNzgyi
+         Ig0QnLALTDEmNG5hC8J9yFaCTNjHzgAPf+8yw=
+Date: Fri, 14 May 2010 21:30:12 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+Message-ID: <20100514173012.GD13509@lenovo>
+References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com> <20100514162813.GB13509@lenovo> <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <4BED8765.8040307@gmail.com>
-References: <4BEC7A84.3010503@gmail.com> <201005141520.30802.br1@einfach.org> 
-	<4BECEE3E.6090303@gmail.com> <201005141538.43416.br1@einfach.org> 
-	<4BED6F19.3040608@gmail.com> <20100514165325.GA28198@tux> 
-	<4BED8765.8040307@gmail.com>
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Date: Fri, 14 May 2010 10:29:17 -0700
-X-Google-Sender-Auth: BIKejgKHmvuEJRZj4e_tdGixk28
-Message-ID: <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-Cc: Bruno Randolf <br1@einfach.org>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:24 AM, Justin P. Mattock
-<justinmattock@gmail.com> wrote:
+On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
+... 
+> Ok, I added few more events and now I am able see few hardware events :
+> 
+> $ ./perf stat -e
+> cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-dcache-store-misses,L1-dcache-prefetches,L1-dcache-prefetch-misses,L1-icache-loads,L1-icache-load-misses,L1-icache-prefetches,L1-icache-prefetch-misses,LLC-loads,LLC-load-misses,LLC-stores,LLC-store-misses,LLC-prefetches,LLC-prefetch-misses,dTLB-loads,dTLB-load-misses,dTLB-stores,dTLB-store-misses,dTLB-prefetches,dTLB-prefetch-misses,iTLB-loads,iTLB-load-misses
+> ls -lR /dev > /dev/null
+> 
 
->
-> here you go:
-> (I was grabbing the info
-> after rmmod and modprobe)
->
-> [    7.034242] ATH9K: cachelsz: 256
-> [   69.175348] ATH9K: cachelsz: 256
+ok, they work as expected. Could you try only "cycles"? The things are
+that different events may attempt to borrow same resources already allocated
+for another event, ie they can't run simultaneously. And iirc we encode
+only a subset of chache events. Though all "general" events should work.
+(by "general" events I mean "cycles", "instructions", "cache-references",
+ "cache-misses", "branch-instructions", "branch-misses", "bus-cycles").
+Could you check them one-by-one?
 
-Close, so I without any patches applied, and by just running modprobe as below:
-
-
-modprobe ath9k debug=0x00000200
-
-               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u rxbufsize %u\n",
-                               common->cachelsz, common->rx_bufsize);
-
-
-This is already in the code so just please do this:
-
-rmmod ath9k
-modprobe ath9k debug=0x00000200
-dmesg | grep cachelsz
+	-- Cyrill
