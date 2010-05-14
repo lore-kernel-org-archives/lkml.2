@@ -1,77 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753850Ab0ENUNn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:13:43 -0400
-Received: from mail.atheros.com ([12.36.123.2]:25028 "EHLO mail.atheros.com"
+	id S1754653Ab0ENUOH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:14:07 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44913 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752535Ab0ENUNm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:13:42 -0400
-Date: Fri, 14 May 2010 13:13:39 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Bruno Randolf <br1@einfach.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Message-ID: <20100514201339.GB28198@tux>
-References: <4BEC7A84.3010503@gmail.com>
- <201005141520.30802.br1@einfach.org>
- <4BECEE3E.6090303@gmail.com>
- <201005141538.43416.br1@einfach.org>
- <4BED6F19.3040608@gmail.com>
- <20100514165325.GA28198@tux>
- <4BED8765.8040307@gmail.com>
- <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
- <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
+	id S1753861Ab0ENUOC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 16:14:02 -0400
+Date: Fri, 14 May 2010 22:13:57 +0200 (CEST)
+From: Jesper Dangaard Brouer <hawk@diku.dk>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: linux-kernel@vger.kernel.org, netdev <netdev@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Shaohua Li <shaohua.li@intel.com>,
+       hawk@comx.dk
+Subject: TSC unstable due to TSC halts in idle?
+Message-ID: <Pine.LNX.4.64.1005142208290.6220@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 12:04:15PM -0700, Justin P. Mattock wrote:
-> 
-> 
-> On May 14, 2010, at 10:29 AM, "Luis R. Rodriguez" <lrodriguez@atheros.com 
->  > wrote:
-> 
-> > On Fri, May 14, 2010 at 10:24 AM, Justin P. Mattock
-> > <justinmattock@gmail.com> wrote:
-> >
-> >>
-> >> here you go:
-> >> (I was grabbing the info
-> >> after rmmod and modprobe)
-> >>
-> >> [    7.034242] ATH9K: cachelsz: 256
-> >> [   69.175348] ATH9K: cachelsz: 256
-> >
-> > Close, so I without any patches applied, and by just running  
-> > modprobe as below:
-> >
-> >
-> > modprobe ath9k debug=0x00000200
-> >
-> >               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u  
-> > rxbufsize %u\n",
-> >                               common->cachelsz, common->rx_bufsize);
-> >
-> >
-> > This is already in the code so just please do this:
-> >
-> > rmmod ath9k
-> > modprobe ath9k debug=0x00000200
-> > dmesg | grep cachelsz
-> 
-> O.k. I did a git reset to the origin
-> Then the above, unfortunantly nothing
-> Shows up when grepping
-> Any CONFIG options I might be missing?
 
-CONFIG_ATH_DEBUG
+Hi Thomas,
 
-  Luis
+I want to know, if its safe to enable the TSC clocksource, when the
+kernel reports:
+  "Marking TSC unstable due to TSC halts in idle"
+
+The system selects HPET (in current_clocksource), but I can still see
+TSC as an available clocksource (in
+/sys/devices/system/clocksource/clocksource0/available_clocksource).
+
+Is it safe to enable TSC manually (by changing current_clocksource)?
+(my workload is 10Git/s routing, cannot survive with a slow clock)
+
+
+Any trick to avoid this? (e.g. kernel config setting, or a /sys/ setting
+which changes the minimum P-state?)
+
+
+The system is a new HP370-G6 server, with two Xeon X5550 CPUs.  Its
+(currently) running a Debian compiled kernel 2.6.26-2-amd64.
+
+Kernel log:
+  checking TSC synchronization [CPU#0 -> CPU#1]: passed.
+  checking TSC synchronization [CPU#0 -> CPU#2]: passed.
+  ...
+  checking TSC synchronization [CPU#0 -> CPU#14]: passed.
+  checking TSC synchronization [CPU#0 -> CPU#15]: passed.
+  Marking TSC unstable due to TSC halts in idle
+
+
+Cheers,
+   Jesper Brouer
+
+--
+-------------------------------------------------------------------
+MSc. Master of Computer Science
+Dept. of Computer Science, University of Copenhagen
+Author of http://www.adsl-optimizer.dk
+-------------------------------------------------------------------
