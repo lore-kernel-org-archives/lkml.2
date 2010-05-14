@@ -1,42 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753764Ab0ENPtj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 11:49:39 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:55071 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752413Ab0ENPth (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 11:49:37 -0400
-Date: Fri, 14 May 2010 16:49:06 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100514154905.GA6681@srcf.ucam.org>
-References: <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org> <20100513171639.GA23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org> <20100513181002.GB23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131253310.3711@i5.linux-foundation.org> <m1aas2kjb6.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1005140751300.3711@i5.linux-foundation.org> <20100514153842.GA6398@srcf.ucam.org> <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
+	id S1752492Ab0ENQEK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:04:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:27845 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751083Ab0ENQEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 12:04:05 -0400
+Date: Fri, 14 May 2010 18:01:35 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Pavel Emelyanov <xemul@openvz.org>,
+       Stanislaw Gruszka <sgruszka@redhat.com>
+Subject: Re: [PATCH 1/2] posix_timer: separate timer_cleanup from timer_del
+Message-ID: <20100514160135.GA3727@redhat.com>
+References: <1273843731-12595-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
+In-Reply-To: <1273843731-12595-1-git-send-email-avagin@openvz.org>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 08:42:59AM -0700, Linus Torvalds wrote:
+(add Stanislaw)
 
-> Also, even with Windows, I do wonder if they have things like cut-off 
-> dates for trusting ACPI. We certainly do.
+On 05/14, Andrey Vagin wrote:
+>
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
 
-Yeah, I think they cut off around 2000 or so. I should try feeding it 
-different DMI strings to see what happens.
+You forgot to write the changelog ;)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
+
+> --- a/kernel/posix-cpu-timers.c
+> +++ b/kernel/posix-cpu-timers.c
+> @@ -455,14 +455,21 @@ int posix_cpu_timer_del(struct k_itimer *timer)
+>  			spin_unlock(&p->sighand->siglock);
+>  		}
+>  		read_unlock(&tasklist_lock);
+> -
+> -		if (!ret)
+> -			put_task_struct(p);
+>  	}
+>  
+> +	if (!ret)
+> +		posix_cpu_timer_cleanup(timer);
+> +
+>  	return ret;
+>  }
+
+Could you please explain this change?
+
+Oleg.
+
