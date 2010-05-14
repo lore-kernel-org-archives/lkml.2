@@ -1,99 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755728Ab0ENScr (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 14:32:47 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:38046 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754408Ab0ENScq (ORCPT
+	id S1756728Ab0ENSdb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 14:33:31 -0400
+Received: from mail-yx0-f191.google.com ([209.85.210.191]:33157 "EHLO
+	mail-yx0-f191.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754452Ab0ENSd3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 14:32:46 -0400
-Date: Fri, 14 May 2010 14:32:42 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
-Subject: [RFC] Tracer Ring Buffer splice() vs page cache [was: Re: Perf and
-	ftrace [was Re: PyTimechart]]
-Message-ID: <20100514183242.GA11795@Krystal>
+	Fri, 14 May 2010 14:33:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kXDvzUhs4S3CayHXkKdz/BhcalSUJWWySTcbj0FIj4d8bJSQQthjzIyq0U8AcGZpUg
+         etzS/x+IEly09ldaWaueWU5jj9l1rNDJv6NibXm/vAFTciSSR0f+qFfNufpoF0bD/EPN
+         lYq+t4hYY+gRKuCg0GqSUbLurhExazu2kine8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:10:42 up 111 days, 20:47,  9 users,  load average: 0.45, 0.29,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100514180148.GE13509@lenovo>
+References: <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
+	 <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo>
+	 <20100514145213.GA13509@lenovo>
+	 <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
+	 <20100514162813.GB13509@lenovo>
+	 <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+	 <20100514164057.GC13509@lenovo>
+	 <AANLkTinQL16caUSZnFFr4gs_vfT93mwkNTK7I_eShZvA@mail.gmail.com>
+	 <20100514180148.GE13509@lenovo>
+Date: Sat, 15 May 2010 00:03:28 +0530
+Message-ID: <AANLkTimJV-rocIoSzzwuR9sqytM12xH-KZHsihgHss4l@mail.gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra (peterz@infradead.org) wrote:
-> On Thu, 2010-05-13 at 12:31 -0400, Mathieu Desnoyers wrote:
-> > 
-> > In addition, this would play well with mmap() too: we can simply add a
-> > ring_buffer_get_mmap_offset() method to the backend (exported through another
-> > ioctl) that would let user-space know the start of the mmap'd buffer range
-> > currently owned by the reader. So we can inform user-space of the currently
-> > owned page range without even changing the underlying memory map. 
-> 
-> I still think keeping refs to splice pages is tricky at best. Suppose
-> they're spliced into the pagecache of a file, it could stay there for a
-> long time under some conditions.
-> 
-> Also, the splice-client (say the pagecache) and the mmap will both want
-> the pageframe to contain different information.
+Hello Cyrill,
 
-[CCing memory management specialists]
+On Fri, May 14, 2010 at 11:31 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>
+>
+> Jaswinder, could you give this patch a shot so that I will be
+> able to put your tested-by tag and send it upstream? (it's slightly
+> tuned from previous but should be same on bin level). This GP
+> issue need to be fixed before any other things.
+>
+>        -- Cyrill
+> ---
+>  arch/x86/kernel/cpu/perf_event_p4.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+>
+> Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> =====================================================================
+> --- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -18,7 +18,7 @@
+>  struct p4_event_bind {
+>        unsigned int opcode;                    /* Event code and ESCR selector */
+>        unsigned int escr_msr[2];               /* ESCR MSR for this event */
+> -       unsigned char cntr[2][P4_CNTR_LIMIT];   /* counter index (offset), -1 on abscence */
+> +       char cntr[2][P4_CNTR_LIMIT];            /* counter index (offset), -1 on abscence */
+>  };
+>
+>  struct p4_cache_event_bind {
+> @@ -747,11 +747,11 @@ static int p4_get_escr_idx(unsigned int
+>  static int p4_next_cntr(int thread, unsigned long *used_mask,
+>                        struct p4_event_bind *bind)
+>  {
+> -       int i = 0, j;
+> +       int i, j;
+>
+>        for (i = 0; i < P4_CNTR_LIMIT; i++) {
+> -               j = bind->cntr[thread][i++];
+> -               if (j == -1 || !test_bit(j, used_mask))
+> +               j = bind->cntr[thread][i];
+> +               if (j != -1 && !test_bit(j, used_mask))
+>                        return j;
+>        }
+>
+>
 
-You bring a very interesting point. Let me describe what I want to achieve, and
-see what others have to say about it:
-
-I want the ring buffer to allocate pages only at ring buffer creation (never
-while tracing). There are a few reasons why I want to do that, ranging from
-improved performance to limited system disturbance.
-
-Now let suppose we have the synchronization mechanism (detailed in the original
-thread, but not relevant to this part of the discussion) that lets us give the
-pages to the ring buffer "reader", which sends them to splice() so it can use
-them as write buffers. Let also suppose that the ring buffer reader blocks until
-the pages are written to the disk (synchronous write). In my scheme, the reader
-still has pointers to these pages.
-
-The point you bring here is that when the ring buffer "reader" is woken up,
-these pages could still be in the page cache. So when the reader gives these
-pages back to the ring buffer (so they can be used for writing again), the page
-cache may still hold a reference to them, so the pages in the page cache and the
-version on disk could be unsynchronized, and therefore this could possibly lead
-to trace file corruption (in the worse case).
-
-So I have three questions here:
-
-1 - could we enforce removal of these pages from the page cache by calling
-    "page_cache_release()" before giving these pages back to the ring buffer ?
-
-2 - or maybe is there a page flag we could specify when we allocate them to
-    ask for these pages to never be put in the page cache ? (but they should be
-    still usable as write buffers)
-
-3 - is there something more we need to do to grab a reference on the pages
-    before passing them to splice(), so that when we call page_cache_release()
-    they don't get reclaimed ?
+Yes, this patch fixes the GP issue.
 
 Thanks,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--
+Jaswinder Singh.
