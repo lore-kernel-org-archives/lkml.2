@@ -1,206 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758634Ab0ENImk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:42:40 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:45843 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab0ENImh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:42:37 -0400
-From: "Ian Munsie" <imunsie@au1.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@lists.ozlabs.org,
-       Jason Baron <jbaron@redhat.com>,
-       Michael Ellerman <michael@ellerman.id.au>,
-       Ian Munsie <imunsie@au1.ibm.com>, Ian Munsie <imunsie@au1.ibm.com>
-Subject: [PATCH v2] trace, powerpc: Implement raw syscall tracepoints on PowerPC
-Date: Fri, 14 May 2010 18:41:38 +1000
-Message-Id: <1273826498-12222-1-git-send-email-imunsie@au1.ibm.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1273736594-19320-5-git-send-email-imunsie@au1.ibm.com>
-References: <1273736594-19320-5-git-send-email-imunsie@au1.ibm.com>
+	id S1752482Ab0ENItt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:49:49 -0400
+Received: from gate.crashing.org ([63.228.1.57]:53975 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751499Ab0ENItr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:49:47 -0400
+Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BECF158.5070200@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>
+	 <1273804337.21352.396.camel@pasglop>  <4BECF158.5070200@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 18:30:07 +1000
+Message-ID: <1273825807.21352.601.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ian Munsie <imunsie@au.ibm.com>
+On Thu, 2010-05-13 at 23:44 -0700, Yinghai wrote:
+> On 05/13/2010 07:32 PM, Benjamin Herrenschmidt wrote:
+> > On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+> >> Some areas from firmware could be reserved several times from different callers.
+> >>
+> >> If these area are overlapped, We may have overlapped entries in lmb.reserved.
+> >>
+> >> Try to free the area at first, before rerserve them again.
+> > 
+> > I have already told you to make this a property of lmb_reserve() instead
+> > of adding that function with a terrible name.
+> 
+> make every lmb_reserve() call lmb_free at first?
 
-This patch implements the raw syscall tracepoints on PowerPC and exports
-them for ftrace syscalls to use.
+Either that, or make it check for collisions first, and if there's
+one, call free and try again. A little bit more work but I plan toq
+make it smarter at some stage, ie, directly adjust surrounding ranges
+instead which is not -that- hard to do.
 
-To minimise reworking existing code, I slightly re-ordered the thread
-info flags such that the new TIF_SYSCALL_TRACEPOINT bit would still fit
-within the 16 bits of the andi. instruction's UI field. The instructions
-in question are in /arch/powerpc/kernel/entry_{32,64}.S to and the
-_TIF_SYSCALL_T_OR_A with the thread flags to see if system call tracing
-is enabled.
+Ben.
 
-In the case of 64bit PowerPC, arch_syscall_addr and
-arch_syscall_match_sym_name are overridden to allow ftrace syscalls to
-work given the unusual system call table structure and symbol names that
-start with a period.
+> > 
+> > Cheers,
+> > Ben.
+> > 
+> >> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> >> ---
+> >>  arch/x86/include/asm/lmb.h |    1 +
+> >>  arch/x86/mm/lmb.c          |   18 ++++++++++++++++++
+> >>  2 files changed, 19 insertions(+), 0 deletions(-)
+> >>
+> >> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+> >> index dd42ac1..9329e09 100644
+> >> --- a/arch/x86/include/asm/lmb.h
+> >> +++ b/arch/x86/include/asm/lmb.h
+> >> @@ -7,6 +7,7 @@ u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
+> >>  void lmb_to_bootmem(u64 start, u64 end);
+> >>  
+> >>  void lmb_reserve_area(u64 start, u64 end, char *name);
+> >> +void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
+> >>  void lmb_free_area(u64 start, u64 end);
+> >>  void lmb_add_memory(u64 start, u64 end);
+> >>  struct range;
+> >> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+> >> index 19a5f49..1100c18 100644
+> >> --- a/arch/x86/mm/lmb.c
+> >> +++ b/arch/x86/mm/lmb.c
+> >> @@ -309,6 +309,24 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
+> >>  	lmb_add_region(&lmb.reserved, start, end - start);
+> >>  }
+> >>  
+> >> +/*
+> >> + * Could be used to avoid having overlap entries in lmb.reserved.region.
+> >> + *  Don't need to use it with area that is from lmb_find_area()
+> >> + *  Only use it for the area that fw hidden area.
+> >> + */
+> >> +void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
+> >> +{
+> >> +	if (start == end)
+> >> +		return;
+> >> +
+> >> +	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
+> >> +		return;
+> >> +
+> >> +	/* Free that region at first */
+> >> +	lmb_free(start, end - start);
+> >> +	lmb_add_region(&lmb.reserved, start, end - start);
+> >> +}
+> >> +
+> >>  void __init lmb_free_area(u64 start, u64 end)
+> >>  {
+> >>  	if (start == end)
+> > 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-Signed-off-by: Ian Munsie <imunsie@au1.ibm.com>
----
-Changes since v1: No functional changes, just removed the redundant conditional
-export of sys_call_table on PPC32 vs PPC64, removed a cast and added an extra
-comment to explain the arch_syscall_match_sym_name based on the feedback from
-Michael Ellerman.
-
- arch/powerpc/Kconfig                   |    1 +
- arch/powerpc/include/asm/syscall.h     |    5 +++++
- arch/powerpc/include/asm/thread_info.h |    7 +++++--
- arch/powerpc/kernel/Makefile           |    1 +
- arch/powerpc/kernel/ftrace.c           |   19 +++++++++++++++++++
- arch/powerpc/kernel/ptrace.c           |   10 ++++++++++
- 6 files changed, 41 insertions(+), 2 deletions(-)
-
-diff --git a/arch/powerpc/Kconfig b/arch/powerpc/Kconfig
-index c4c4549..41e2f3e 100644
---- a/arch/powerpc/Kconfig
-+++ b/arch/powerpc/Kconfig
-@@ -141,6 +141,7 @@ config PPC
- 	select GENERIC_ATOMIC64 if PPC32
- 	select HAVE_PERF_EVENTS
- 	select HAVE_REGS_AND_STACK_ACCESS_API
-+	select HAVE_SYSCALL_TRACEPOINTS
- 
- config EARLY_PRINTK
- 	bool
-diff --git a/arch/powerpc/include/asm/syscall.h b/arch/powerpc/include/asm/syscall.h
-index 23913e9..b54b2ad 100644
---- a/arch/powerpc/include/asm/syscall.h
-+++ b/arch/powerpc/include/asm/syscall.h
-@@ -15,6 +15,11 @@
- 
- #include <linux/sched.h>
- 
-+/* ftrace syscalls requires exporting the sys_call_table */
-+#ifdef CONFIG_FTRACE_SYSCALLS
-+extern const unsigned long *sys_call_table;
-+#endif /* CONFIG_FTRACE_SYSCALLS */
-+
- static inline long syscall_get_nr(struct task_struct *task,
- 				  struct pt_regs *regs)
- {
-diff --git a/arch/powerpc/include/asm/thread_info.h b/arch/powerpc/include/asm/thread_info.h
-index aa9d383..e7a8af2 100644
---- a/arch/powerpc/include/asm/thread_info.h
-+++ b/arch/powerpc/include/asm/thread_info.h
-@@ -110,7 +110,8 @@ static inline struct thread_info *current_thread_info(void)
- #define TIF_NOERROR		12	/* Force successful syscall return */
- #define TIF_NOTIFY_RESUME	13	/* callback before returning to user */
- #define TIF_FREEZE		14	/* Freezing for suspend */
--#define TIF_RUNLATCH		15	/* Is the runlatch enabled? */
-+#define TIF_SYSCALL_TRACEPOINT	15	/* syscall tracepoint instrumentation */
-+#define TIF_RUNLATCH		16	/* Is the runlatch enabled? */
- 
- /* as above, but as bit values */
- #define _TIF_SYSCALL_TRACE	(1<<TIF_SYSCALL_TRACE)
-@@ -127,8 +128,10 @@ static inline struct thread_info *current_thread_info(void)
- #define _TIF_NOERROR		(1<<TIF_NOERROR)
- #define _TIF_NOTIFY_RESUME	(1<<TIF_NOTIFY_RESUME)
- #define _TIF_FREEZE		(1<<TIF_FREEZE)
-+#define _TIF_SYSCALL_TRACEPOINT	(1<<TIF_SYSCALL_TRACEPOINT)
- #define _TIF_RUNLATCH		(1<<TIF_RUNLATCH)
--#define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE|_TIF_SYSCALL_AUDIT|_TIF_SECCOMP)
-+#define _TIF_SYSCALL_T_OR_A	(_TIF_SYSCALL_TRACE | _TIF_SYSCALL_AUDIT | \
-+				 _TIF_SECCOMP | _TIF_SYSCALL_TRACEPOINT)
- 
- #define _TIF_USER_WORK_MASK	(_TIF_SIGPENDING | _TIF_NEED_RESCHED | \
- 				 _TIF_NOTIFY_RESUME)
-diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
-index 8773263..9c404bb 100644
---- a/arch/powerpc/kernel/Makefile
-+++ b/arch/powerpc/kernel/Makefile
-@@ -98,6 +98,7 @@ obj64-$(CONFIG_AUDIT)		+= compat_audit.o
- 
- obj-$(CONFIG_DYNAMIC_FTRACE)	+= ftrace.o
- obj-$(CONFIG_FUNCTION_GRAPH_TRACER)	+= ftrace.o
-+obj-$(CONFIG_FTRACE_SYSCALLS)	+= ftrace.o
- obj-$(CONFIG_PERF_EVENTS)	+= perf_callchain.o
- 
- obj-$(CONFIG_PPC_PERF_CTRS)	+= perf_event.o
-diff --git a/arch/powerpc/kernel/ftrace.c b/arch/powerpc/kernel/ftrace.c
-index ce1f3e4..f5fadbb 100644
---- a/arch/powerpc/kernel/ftrace.c
-+++ b/arch/powerpc/kernel/ftrace.c
-@@ -22,6 +22,7 @@
- #include <asm/cacheflush.h>
- #include <asm/code-patching.h>
- #include <asm/ftrace.h>
-+#include <asm/syscall.h>
- 
- 
- #ifdef CONFIG_DYNAMIC_FTRACE
-@@ -600,3 +601,21 @@ void prepare_ftrace_return(unsigned long *parent, unsigned long self_addr)
- 	}
- }
- #endif /* CONFIG_FUNCTION_GRAPH_TRACER */
-+
-+#if defined(CONFIG_FTRACE_SYSCALLS) && defined(CONFIG_PPC64)
-+unsigned long __init arch_syscall_addr(int nr)
-+{
-+	return sys_call_table[nr*2];
-+}
-+
-+inline bool arch_syscall_match_sym_name(const char *sym, const char *name)
-+{
-+	/*
-+	 * Compare the symbol name with the system call name. Skip the .sys or
-+	 * .SyS prefix from the symbol name and the sys prefix from the system
-+	 * call name and just match the rest. 32bit can use the generic
-+	 * function since their symbol names don't start with a period.
-+	 */
-+	return (!strcmp(sym + 4, name + 3));
-+}
-+#endif /* CONFIG_FTRACE_SYSCALLS && CONFIG_PPC64 */
-diff --git a/arch/powerpc/kernel/ptrace.c b/arch/powerpc/kernel/ptrace.c
-index 7a0c019..eb7eeb8 100644
---- a/arch/powerpc/kernel/ptrace.c
-+++ b/arch/powerpc/kernel/ptrace.c
-@@ -29,6 +29,7 @@
- #include <linux/signal.h>
- #include <linux/seccomp.h>
- #include <linux/audit.h>
-+#include <trace/syscall.h>
- #ifdef CONFIG_PPC32
- #include <linux/module.h>
- #endif
-@@ -38,6 +39,9 @@
- #include <asm/pgtable.h>
- #include <asm/system.h>
- 
-+#define CREATE_TRACE_POINTS
-+#include <trace/events/syscalls.h>
-+
- /*
-  * The parameter save area on the stack is used to store arguments being passed
-  * to callee function and is located at fixed offset from stack pointer.
-@@ -1615,6 +1619,9 @@ long do_syscall_trace_enter(struct pt_regs *regs)
- 		 */
- 		ret = -1L;
- 
-+	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_enter(regs, regs->gpr[0]);
-+
- 	if (unlikely(current->audit_context)) {
- #ifdef CONFIG_PPC64
- 		if (!test_thread_flag(TIF_32BIT))
-@@ -1643,6 +1650,9 @@ void do_syscall_trace_leave(struct pt_regs *regs)
- 		audit_syscall_exit((regs->ccr&0x10000000)?AUDITSC_FAILURE:AUDITSC_SUCCESS,
- 				   regs->result);
- 
-+	if (unlikely(test_thread_flag(TIF_SYSCALL_TRACEPOINT)))
-+		trace_sys_exit(regs, regs->result);
-+
- 	step = test_thread_flag(TIF_SINGLESTEP);
- 	if (step || test_thread_flag(TIF_SYSCALL_TRACE))
- 		tracehook_report_syscall_exit(regs, step);
--- 
-1.7.1
 
