@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754583Ab0ENQUk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:20:40 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:24027 "EHLO
+	id S1754805Ab0ENQVX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:21:23 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:24469 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753553Ab0ENQUi (ORCPT
+	with ESMTP id S1752362Ab0ENQVU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:20:38 -0400
-Message-ID: <4BED78F5.2010501@oracle.com>
-Date: Fri, 14 May 2010 09:23:17 -0700
+	Fri, 14 May 2010 12:21:20 -0400
+Message-ID: <4BED793C.3090403@oracle.com>
+Date: Fri, 14 May 2010 09:24:28 -0700
 From: Yinghai Lu <yinghai.lu@oracle.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -20,62 +20,39 @@ CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>	 <1273803143.21352.353.camel@pasglop>  <4BECEB8D.8070600@oracle.com> <1273824578.21352.579.camel@pasglop>
-In-Reply-To: <1273824578.21352.579.camel@pasglop>
+Subject: Re: [PATCH 03/35] lmb: Add ARCH_DISCARD_LMB to put lmb code to .init
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-4-git-send-email-yinghai@kernel.org>	 <1273803249.21352.357.camel@pasglop>  <4BECEBF4.7000402@oracle.com> <1273824623.21352.580.camel@pasglop>
+In-Reply-To: <1273824623.21352.580.camel@pasglop>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
 X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090206.4BED7841.00E9:SCFMA4539811,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090201.4BED784C.008F:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2010 01:09 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 23:19 -0700, Yinghai wrote:
+On 05/14/2010 01:10 AM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-13 at 23:21 -0700, Yinghai wrote:
 >   
->>> If we expose LMB_ERROR then all lmb calls that can fail should
+>>> So you do not intend to use lmb after boot ? This will break the
 >>>       
->> return
+>> debugfs
 >>     
->>> that. However, the API calls all return 0 instead. Changing that
+>>> files unless you also remove those.
 >>>       
->> means
->>     
->>> fixing all callers.
->>>       
->> ok will stop use LMB_ERROR out lib/lmb.c
+>> no, x86 don't lmb after boot.
 >>
->> will go back to use -1ULL for x86 path.
+>> yes 
 >>     
-> No. That is not the point. Read the rest of my email !
+> So you need some kind of CONFIG option to keep lmb after boot, at least
+> the data structures, for debugfs, or when not set, disable the debugfs
+> files.
 >
-> We need to -sanitize- those errors. _Maybe_ exposing LMB_ERROR is the
-> right way to do so, but in that case, we need to make -all- function use
-> the same error code. Right now, some fail with 0 and some with
-> LMB_ERROR.
 >   
-
-will check what is effects for changing all to LMB_ERROR
-
-> You are also not responding to my other comments such as:
->  
->   
->>> I'm also not too happy with exposing lmb_add_region(). Why would you
->>> ever need to expose it ? Just call lmb_reserve() if you want to
->>>       
->> reserve
->>     
->>> something. lmb_add_region() is an internal function and has no
->>>       
->> business
->>     
->>> being used outside of the main lmb.c file.
->>>       
-in other mail. and updated version in the git dropped that
-lmb_add_region exposing.
+Just disable the debugfs for lmb if ARCH_DISCARD_LMB is defined in arch
+lmb.h
 
 Thanks
 
-Yinghai
+Yinghai Lu
