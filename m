@@ -1,132 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757017Ab0ENCiS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:38:18 -0400
-Received: from gate.crashing.org ([63.228.1.57]:55299 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754169Ab0ENCiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:38:16 -0400
-Subject: Re: [PATCH 24/35] lmb: Move __alloc_memory_core_early() to
- nobootmem.c
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1273796396-29649-25-git-send-email-yinghai@kernel.org>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-	 <1273796396-29649-25-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 12:36:24 +1000
-Message-ID: <1273804584.21352.404.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1756980Ab0ENCqL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:46:11 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:65163 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751316Ab0ENCqI convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:46:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IZeigzIVU4MoE3wW4LT4Rus3icM2q+4IL2+aQBMzq32gDCIFbNF9jZwRJBIfiDAYP5
+         G/0ZsZTplXM/BlSTYXT/Y3t/rJLEqXHmnNvOFjiKlPUiOlukOeVc7BP7i/zkMBHOAv2m
+         Nq0Ye4qnI20uCbl0bbgOyyjOARwZ+w5EWRG5M=
+MIME-Version: 1.0
+In-Reply-To: <1273776201.11899.23.camel@sven.thebigcorporation.com>
+References: <AANLkTinbwZK5Tp6aI4ja38XaiiB5aIyECzHPdMpvkaIy@mail.gmail.com>
+	 <1273776201.11899.23.camel@sven.thebigcorporation.com>
+Date: Fri, 14 May 2010 08:16:07 +0530
+Message-ID: <AANLkTilMrwdaLrTAUVETYZLYSpoqVFVXfKZ2lZit6uG3@mail.gmail.com>
+Subject: Re: preempt_disable and sleep()
+From: ratheesh k <ratheesh.ksz@gmail.com>
+To: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>
+Cc: linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
-> We can remove #ifdef in mm/page_alloc.c
-> 
-> and change that function to static
+On Fri, May 14, 2010 at 12:13 AM, Sven-Thorsten Dietrich
+<thebigcorporation@gmail.com> wrote:
 
-Don't forget that nid allocation using your early_node_map[] will not
-work properly on sparc due to the scattered nature of page locality.
-
-Cheers,
-Ben.
-
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
->  include/linux/mm.h |    2 --
->  mm/nobootmem.c     |   21 +++++++++++++++++++++
->  mm/page_alloc.c    |   24 ------------------------
->  3 files changed, 21 insertions(+), 26 deletions(-)
-> 
-> diff --git a/include/linux/mm.h b/include/linux/mm.h
-> index 7774e1d..2a14361 100644
-> --- a/include/linux/mm.h
-> +++ b/include/linux/mm.h
-> @@ -1161,8 +1161,6 @@ int add_from_early_node_map(struct range *range, int az,
->  				   int nr_range, int nid);
->  u64 __init find_memory_core_early(int nid, u64 size, u64 align,
->  					u64 goal, u64 limit);
-> -void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
-> -				 u64 goal, u64 limit);
->  typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
->  extern void work_with_active_regions(int nid, work_fn_t work_fn, void *data);
->  extern void sparse_memory_present_with_active_regions(int nid);
-> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
-> index abaec96..e3cbde7 100644
-> --- a/mm/nobootmem.c
-> +++ b/mm/nobootmem.c
-> @@ -40,6 +40,27 @@ unsigned long max_pfn;
->  unsigned long saved_max_pfn;
->  #endif
->  
-> +static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-> +					u64 goal, u64 limit)
-> +{
-> +	void *ptr;
-> +
-> +	u64 addr;
-> +
-> +	if (limit > lmb.current_limit)
-> +		limit = lmb.current_limit;
-> +
-> +	addr = find_memory_core_early(nid, size, align, goal, limit);
-> +
-> +	if (addr == LMB_ERROR)
-> +		return NULL;
-> +
-> +	ptr = phys_to_virt(addr);
-> +	memset(ptr, 0, size);
-> +	lmb_reserve_area(addr, addr + size, "BOOTMEM");
-> +	return ptr;
-> +}
-> +
->  /*
->   * free_bootmem_late - free bootmem pages directly to page allocator
->   * @addr: starting address of the range
-> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
-> index 867a3a8..3449811 100644
-> --- a/mm/page_alloc.c
-> +++ b/mm/page_alloc.c
-> @@ -3437,30 +3437,6 @@ int __init add_from_early_node_map(struct range *range, int az,
->  	return nr_range;
->  }
->  
-> -#ifdef CONFIG_NO_BOOTMEM
-> -void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
-> -					u64 goal, u64 limit)
-> -{
-> -	void *ptr;
-> -
-> -	u64 addr;
-> -
-> -	if (limit > lmb.current_limit)
-> -		limit = lmb.current_limit;
-> -
-> -	addr = find_memory_core_early(nid, size, align, goal, limit);
-> -
-> -	if (addr == LMB_ERROR)
-> -		return NULL;
-> -
-> -	ptr = phys_to_virt(addr);
-> -	memset(ptr, 0, size);
-> -	lmb_reserve_area(addr, addr + size, "BOOTMEM");
-> -	return ptr;
-> -}
-> -#endif
-> -
-> -
->  void __init work_with_active_regions(int nid, work_fn_t work_fn, void *data)
->  {
->  	int i;
+> Why would you do this?
+I was reading some linux kernel journel about preempt_disable() . This
+a doubt came to me .
 
 
+> If you had tried this code, you would have seen the corresponding stack
+> dump on the console.
+
+
+Why it so .? could you explain a little more ? .sleep() will schedule
+() , which inturn give back control to kernel .
+
+Thank,
+Ratheesh
+
+On Fri, May 14, 2010 at 12:13 AM, Sven-Thorsten Dietrich
+<thebigcorporation@gmail.com> wrote:
+> On Fri, 2010-05-14 at 00:02 +0530, ratheesh k wrote:
+>> I am running RT linux .
+>>
+>> /* code snippet */
+>>
+>> preempt_disable()
+>> ...........
+>> sleep(10);
+>> '............
+>> preempt_enable()
+>>
+>>
+>> will this sleep() will cause reschedule ?.
+>>
+>
+> Why would you do this?
+>
+> If you had tried this code, you would have seen the corresponding stack
+> dump on the console.
+>
+>> if an interrupt comes  while premption is disabled , how it is handled ?.
+>>
+>
+> Depends on the number of (idle) cores, the setting of CONFIG_PREEMPT_[]
+> and the type of interrupt.
+>
+> RT threaded IRQs would not run until preemption is enabled on a single
+> core system.
+>
+>
+>
+>> Thanks,
+>> Ratheesh
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
+>
+>
