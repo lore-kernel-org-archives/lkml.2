@@ -1,176 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756508Ab0ENDWz (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 23:22:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20414 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab0ENDWx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 23:22:53 -0400
-Date: Thu, 13 May 2010 23:30:57 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
-       npiggin@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
-References: <20100512212403.GE3597@localhost.localdomain> <20100513013926.GD27011@dhcp231-156.rdu.redhat.com> <20100514010042.GI13617@dastard>
+	id S1757297Ab0ENDZ3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 23:25:29 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:60118 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755074Ab0ENDZ1 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 23:25:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=IG5fLTIlGsS+SCHE3cITmc3jLx6gfsTVadyzaek2gjyqTrJrDMpWXzmqw2KTrv4i3a
+         sTzUPpV2x0IUgpOMR/YjmQpDdjHGJ6KEWmEvwmRUmrXfiMucGgwRwTmr493QAnYXYRyC
+         gkswMrf1bImr0yEx9/3OSp48OgPfC1rlMTgXU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514010042.GI13617@dastard>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100513214739.GM3428@atomide.com>
+References: <20100513191717.GA3428@atomide.com>
+	 <Pine.LNX.4.44L0.1005131729510.1731-100000@iolanthe.rowland.org>
+	 <20100513214739.GM3428@atomide.com>
+Date: Fri, 14 May 2010 12:25:26 +0900
+Message-ID: <AANLkTilL2mvqpwirTfJRWZFdrFJvSihnaY8-xao4pLpH@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: Magnus Damm <magnus.damm@gmail.com>
+To: Tony Lindgren <tony@atomide.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
+       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Matthew Garrett <mjg@redhat.com>,
+       =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Linus Walleij <linus.walleij@ericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 11:00:42AM +1000, Dave Chinner wrote:
-> On Wed, May 12, 2010 at 09:39:27PM -0400, Josef Bacik wrote:
-> > On Wed, May 12, 2010 at 05:24:04PM -0400, Josef Bacik wrote:
-> > > Hello,
-> > > 
-> > > I just started adding aio_write to Btrfs and I noticed we're duplicating _alot_
-> > > of the generic stuff in mm/filemap.c, even though the only thing thats really
-> > > unique is the fact that we copy userspace pages in chunks rather than one page a
-> > > t a time.  What would be best is instead of doing write_begin/write_end with
-> > > Btrfs, it would be nice if we could just do our own perform_write instead of
-> > > generic_perform_write.  This way we can drop all of these generic checks we have
-> > > that we copied from filemap.c and just got to the business of actually writing
-> > > the data.  I hate to add another file operation, but it would _greatly_ reduce
-> > > the amount of duplicate code we have.  If there is no violent objection to this
-> > > I can put something together quickly for review.  Thanks,
-> > >
-> > 
-> > I just got a suggestion from hpa about instead just moving what BTRFS does into
-> > the generic_perform_write.  What btrfs does is allocates a chunk of pages to
-> > cover the entirety of the write, sets everything up, does the copy from user
-> > into the pages, and tears everything down, so essentially what
-> > generic_perform_write does, just with more pages.
-> 
-> Except that btrfs does things in a very different manner to most
-> other filesystems ;)
-> 
-> > I could modify
-> > generic_perform_write and the write_begin/write_end aops to do this, where
-> > write_begin will return how many pages it allocated, copy in all of the
-> > userpages into the pages we allocated at once, and then call write_end with the
-> > pages we allocated in write begin.  Then I could just make btrfs do
-> > write_being/write_end.  So which option seems more palatable?  Thanks,
-> 
-> I can see how this would work for btrfs, but the issue is how any
-> other filesystem would handle it.
-> 
-> I've been trying to get my head around how any filesystem using
-> bufferheads and generic code can do multipage writes using
-> write_begin/write_end without modifying the interface, and I just
-> threw away my second attempt because the error handling just
-> couldn't be handled cleanly without duplicating the entire
-> block_write_begin path in each filesystem that wanted to do
-> multipage writes.
-> 
-> The biggest problem is that block allocation is intermingled with
-> allocating and attaching bufferheads to pages, hence error handling
-> can get really nasty and is split across a call chain 3 or 4
-> functions deep.  The error handling is where I'm finding all the
-> dangerous and hard-to-kill demons lurking in dark corners. I suspect
-> there's a grue in there somewhere, too. ;)
-> 
-> Separating the page+bufferhead allocation and block allocation would
-> make this much simpler but I can't fit that easily into the existing
-> interfaces.
+On Fri, May 14, 2010 at 6:47 AM, Tony Lindgren <tony@atomide.com> wrote:
+> * Alan Stern <stern@rowland.harvard.edu> [100513 14:32]:
+>> On Thu, 13 May 2010, Tony Lindgren wrote:
+>>
+>> > The difference between echo mem > /sys/power/state and suspend blocks
+>> > is that with suspend blocks the system keeps running.
+>>
+>> Irrelevant.  Paul wasn't talking about the suspend blockers; he was
+>> talking about opportunistic suspend.  So what's the difference between
+>> opportunistic suspend and "echo mem >/sys/power/state"?  Especially
+>> when suspend blockers aren't being used?
 >
-> Hence I think that write_begin/copy pages/write_end is not really
-> suited to multipage writes when allocation is done in write_begin
-> and the write can then fail in a later stage without a simple method
-> of undoing the allocation. We don't have any hole punch interfaces
-> to the filesystems (and I think only XFS supports that functionality
-> right now), so handling errors after allocation becomes rather
-> complex, especially when you have multiple blocks per page. 
-> 
-> Hence I've independently come to the conclusion that delaying the
-> allocation until *after* the copy as btrfs does is probably the best
-> approach to take here.  This largely avoids the error handling
-> complexity because the write operation is an all-or-nothing
-> operation. btrfs has separate hooks for space reservation and
-> releasing the reservation and doesn't commit to actually allocating
-> anything until the copying is complete. Hence cleanup is simple no
-> matter where a failure occurs.
-> 
-> Personally, I'm tending towards killing the get_blocks() callback as
-> the first step in this process - turn it into a real inode/address
-> space operation (say ->allocate) so we can untangle the write path
-> somewhat (lots of filesystem just provide operations as wrappers to
-> provide a fs-specific get_blocks callback to generic code.  If the
-> "create" flag is then converted to a "command" field, the interface
-> can pass "RESERVE", "ALLOC", "CREATE", etc to allow different
-> operations to be clearly handled.
-> 
-> e.g.:
-> 
-> 	->allocate(mapping, NULL, off, len, RESERVE)
-> 		reserves necessary space for write
-> 	->write_begin
-> 		grab pages into page cache
-> 		attach bufferheads (if required)
-> 	fail -> goto drop pages
-> 	copy data into pages
-> 	fail -> goto drop pages
-> 	->allocate(mapping, pages, off, len, ALLOC)
-> 		allocates reserved space (if required)
-> 		sets up/maps/updates bufferheads/extents
-> 	fail -> goto drop pages
-> 	->write_end
-> 		set pages dirty + uptodate
-> 	done
-> 
-> drop_pages:
-> 	->allocate(mapping, NULL, off, len, UNRESERVE)
-> 	if needed, zero partial pages
-> 	release pages, clears uptodate.
-> 
-> Basically this allows the copying of data before any allocation is
-> actually done, but also allows ENOSPC to be detected before starting
-> the copy. The filesystem can call whatver helpers it needs inside
-> ->get_blocks(ALLOC) to set up bufferhead/extent state to match
-> what has been reserved/allocated/mapped in the RESERVE call.
-> 
-> This will work for btrfs, and it will work for XFS and I think it
-> will work for other filesystems that are using bufferheads as well.
-> For those filesystems that will only support a page at a time, then
-> they can continue to use the current code, but should be able to be
-> converted to the multipage code by making RESERVE and UNRESERVE
-> no-ops, and ALLOC does what write_begin+get_blocks currently does to
-> set up block mappings.
-> 
-> Thoughts?
+> Opportunistic suspend is really trying to do runtime PM, see below.
 >
-So this is what I had envisioned, we make write_begin take a nr_pages pointer
-and tell it how much data we have to write, then in the filesystem we allocate
-as many pages as we feel like, idealy something like
+>> > And that's why
+>> > it should be handled by runtime power management instead.
+>>
+>> Runtime PM is not capable of freezing userspace and shutting down CPUs.
+>> More or less by definition -- if it could then it wouldn't be "runtime"
+>> any more, since the processor wouldn't be running.
+>
+> Not true. We are already powering off CPUs and rebooting them for
+> at least omaps in every idle loop using cpuidle. The memory stays on.
 
-min(number of pages we need for the write, some arbitrary limit for security)
+I agree with you Tony. I thought shutting down CPUs for power
+managment purposes could be done without freezing user space. At least
+that's what we do today with SH-Mobile.
 
-and then we allocate all those pages.  Then you can pass them into
-block_write_begin, which will walk the pages, allocating buffer heads and
-allocating the space as needed.
+I don't dislike the idea of freezing a misbehaing user space app, but
+I wonder if hardware platforms really need this. I think hardware
+requirements and software requirements should be kept separated.
 
-Now since we're coming into write_begin with "we want to write X bytes" we can
-go ahead and do the enospc checks for X bytes, and then if we are good to go,
-chances are we won't fail.
+There seem to be some confusion regarding what Runtime PM can and can
+not do. For SH-Mobile we use Runtime PM to manage the clocks and power
+supply to on-chip I/O devices, and from CPU idle context we check the
+state of the Runtime PM devices and decide what level of CPU deep
+sleep we can enter. You can call this system CPU deep sleep if you'd
+like depending on the dependencies are layed out on your hardware
+platform.
 
-Except if we're overwriting a holey section of the file, we're going to be
-screwed in both your way and my way.  My way probably would be the most likely
-to fail, since we could fail to do the copy_from_user, but hopefully the segment
-checks and doing the fault_in_readable before all of this would keep those
-problems to a minimum.
+For CPU deep sleep we more or less always stop the clock so we need to
+put the memory in self-refresh to avoid loosing memory contents. In
+some cases the deep sleep means that the power to the CPU core will be
+cut, so a more advanced context save/restore path needs to be used.
 
-In your case the only failure point is in the allocate step.  If we fail on down
-the line after we've done some hole filling, we'll be hard pressed to go back
-and free up those blocks.  Is that what you are talking about, having the
-allocate(UNRESERVE) thing being able to go back and figure out what should have
-been holes needs to be holes again?  If thats the case then I think your idea
-will work and is probably the best way to move forward.  But from what I can
-remember about how all this works with buffer heads, there's not a way to say
-"we _just_ allocated this recently".  Thanks,
+Still not sure how the system wide suspend is different from Runtime
+PM and CPUidle from the hardware perspective...
 
-Josef
+/ magnus
