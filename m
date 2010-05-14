@@ -1,58 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758050Ab0ENNWM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 09:22:12 -0400
-Received: from mail-qy0-f171.google.com ([209.85.221.171]:44015 "EHLO
-	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757342Ab0ENNWK convert rfc822-to-8bit (ORCPT
+	id S1758267Ab0ENNWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 09:22:48 -0400
+Received: from mtagate4.uk.ibm.com ([194.196.100.164]:42721 "EHLO
+	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757342Ab0ENNWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 09:22:10 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :content-type:content-transfer-encoding;
-        b=msVSKI05L+Lv8QzHHMYf72e3lKFf/ULO5w/S/3OGyJFwUq+Q5NZ2BcFR/8ABfTkD+v
-         xy6QdLVyyZ58yZB6R1JbB+r4EevA6lgfWkocyKOz8TZsKiVulmRAO5b11/tdsONHIa2V
-         vr1IlpG2uOVsMWp6otmr8t8g7DcdKD8zhE5lQ=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTimAF1zxXlnEavXSnlKTkQgGD0u9UqCtUVT_r9jV@mail.gmail.com>
-References: <AANLkTimAF1zxXlnEavXSnlKTkQgGD0u9UqCtUVT_r9jV@mail.gmail.com>
-From: dave b <db.pub.mail@gmail.com>
-Date: Fri, 14 May 2010 23:14:23 +1000
-Message-ID: <AANLkTimUYmUCdFMIaVi1qqcz2DqGoILeu43XWZBHSILP@mail.gmail.com>
-Subject: Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	Fri, 14 May 2010 09:22:46 -0400
+Subject: [PATCH] Use microsecond granularity for taskstats accounting
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+Reply-To: holzheu@linux.vnet.ibm.com
+To: linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       tony.luck@intel.com, benh@kernel.crashing.org
+Cc: martin.schwidefsky@de.ibm.com, heiko.carstens@de.ibm.com, jlan@sgi.com,
+       balbir@linux.vnet.ibm.com
+Content-Type: text/plain; charset="us-ascii"
+Organization: IBM
+Date: Fri, 14 May 2010 15:22:32 +0200
+Message-ID: <1273843352.2615.61.camel@holzheu-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 14 May 2010 22:53, dave b <db.pub.mail@gmail.com> wrote:
-> In 2.6.3* kernels (test case was performed on the 2.6.33.3 kernel)
-> when physical memory runs out and there is a large swap partition -
-> the system completely stalls.
->
-> I noticed that when running debian lenny using dm-crypt  with
-> encrypted / and swap with a  2.6.33.3 kernel (and all of the 2.6.3*
-> series iirc) when all physical memory is used (swapiness was left at
-> the default 60) the system hangs and does not respond. It can resume
-> normal operation some time later - however it seems to take a *very*
-> long time for the oom killer to come in. Obviously with swapoff this
-> doesn't happen - the oom killer comes in and does its job.
->
->
-> free -m
->             total       used       free     shared    buffers     cached
-> Mem:          1980       1101        879          0         58        201
-> -/+ buffers/cache:        840       1139
-> Swap:        24943          0      24943
->
->
-> My simple test case is
->
-> dd if=/dev/zero of=/tmp/stall
-> and wait till /tmp fills...
->
+From: Michael Holzheu <holzheu@linux.vnet.ibm.com>
 
-Sorry - I forgot to say I am running x86-64
+The taskstats interface uses microsecond granularity for the user and
+system time values. The conversion from cputime to the taskstats values
+uses the cputime_to_msecs primitive which effectively limits the 
+granularity to milliseconds. Add the cputime_to_usecs primitive for
+architectures that have better, more precise CPU time values.
+
+Signed-off-by: Michael Holzheu <holzheu@linux.vnet.ibm.com>
+---
+ arch/ia64/include/asm/cputime.h    |    6 ++++++
+ arch/powerpc/include/asm/cputime.h |   13 +++++++++++++
+ arch/s390/include/asm/cputime.h    |   15 +++++++++++++++
+ include/asm-generic/cputime.h      |    6 ++++++
+ kernel/tsacct.c                    |   10 ++++------
+ 5 files changed, 44 insertions(+), 6 deletions(-)
+
+--- a/arch/ia64/include/asm/cputime.h
++++ b/arch/ia64/include/asm/cputime.h
+@@ -56,6 +56,12 @@ typedef u64 cputime64_t;
+ #define jiffies64_to_cputime64(__jif)	((__jif) * (NSEC_PER_SEC / HZ))
+ 
+ /*
++ * Convert cputime <-> microseconds
++ */
++#define cputime_to_usecs(__ct)		((__ct) / NSEC_PER_USEC)
++#define usecs_to_cputime(__usecs)	((__usecs) * NSEC_PER_USEC)
++
++/*
+  * Convert cputime <-> milliseconds
+  */
+ #define cputime_to_msecs(__ct)		((__ct) / NSEC_PER_MSEC)
+--- a/arch/powerpc/include/asm/cputime.h
++++ b/arch/powerpc/include/asm/cputime.h
+@@ -151,6 +151,19 @@ static inline cputime_t msecs_to_cputime
+ }
+ 
+ /*
++ * Convert cputime <-> microseconds
++ */
++static inline unsigned long cputime_to_usecs(const cputime_t ct)
++{
++	return cputime_to_msecs(ct) * USEC_PER_MSEC;
++}
++
++static inline cputime_t usecs_to_cputime(const unsigned long us)
++{
++	return msecs_to_cputime(us / USEC_PER_MSEC);
++}
++
++/*
+  * Convert cputime <-> seconds
+  */
+ extern u64 __cputime_sec_factor;
+--- a/arch/s390/include/asm/cputime.h
++++ b/arch/s390/include/asm/cputime.h
+@@ -73,6 +73,21 @@ cputime64_to_jiffies64(cputime64_t cputi
+ }
+ 
+ /*
++ * Convert cputime to microseconds and back.
++ */
++static inline unsigned int
++cputime_to_usecs(const cputime_t cputime)
++{
++	return cputime_div(cputime, 4096);
++}
++
++static inline cputime_t
++usecs_to_cputime(const unsigned int m)
++{
++	return (cputime_t) m * 4096;
++}
++
++/*
+  * Convert cputime to milliseconds and back.
+  */
+ static inline unsigned int
+--- a/include/asm-generic/cputime.h
++++ b/include/asm-generic/cputime.h
+@@ -33,6 +33,12 @@ typedef u64 cputime64_t;
+ 
+ 
+ /*
++ * Convert cputime to microseconds and back.
++ */
++#define cputime_to_usecs(__ct)		jiffies_to_usecs(__ct);
++#define usecs_to_cputime(__msecs)	usecs_to_jiffies(__msecs);
++
++/*
+  * Convert cputime to milliseconds and back.
+  */
+ #define cputime_to_msecs(__ct)		jiffies_to_msecs(__ct)
+--- a/kernel/tsacct.c
++++ b/kernel/tsacct.c
+@@ -63,12 +63,10 @@ void bacct_add_tsk(struct taskstats *sta
+ 	stats->ac_ppid	 = pid_alive(tsk) ?
+ 				rcu_dereference(tsk->real_parent)->tgid : 0;
+ 	rcu_read_unlock();
+-	stats->ac_utime	 = cputime_to_msecs(tsk->utime) * USEC_PER_MSEC;
+-	stats->ac_stime	 = cputime_to_msecs(tsk->stime) * USEC_PER_MSEC;
+-	stats->ac_utimescaled =
+-		cputime_to_msecs(tsk->utimescaled) * USEC_PER_MSEC;
+-	stats->ac_stimescaled =
+-		cputime_to_msecs(tsk->stimescaled) * USEC_PER_MSEC;
++	stats->ac_utime = cputime_to_usecs(tsk->utime);
++	stats->ac_stime = cputime_to_usecs(tsk->stime);
++	stats->ac_utimescaled = cputime_to_usecs(tsk->utimescaled);
++	stats->ac_stimescaled = cputime_to_usecs(tsk->stimescaled);
+ 	stats->ac_minflt = tsk->min_flt;
+ 	stats->ac_majflt = tsk->maj_flt;
+ 
+
+
