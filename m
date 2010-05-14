@@ -1,45 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757273Ab0ENQhc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:37:32 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47861 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755985Ab0ENQgt (ORCPT
+	id S1756690Ab0ENQiE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:38:04 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59044 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755985Ab0ENQh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:36:49 -0400
-Date: Fri, 14 May 2010 17:36:43 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       torvalds@linux-foundation.org
-Subject: Re: [PATCH 3/3] input: Default to only using PNP for i8042 probing
-	on x86
-Message-ID: <20100514163643.GB7843@srcf.ucam.org>
-References: <1273853403-2870-1-git-send-email-mjg@redhat.com> <1273853403-2870-3-git-send-email-mjg@redhat.com> <20100514163158.GC31607@core.coreip.homeip.net>
+	Fri, 14 May 2010 12:37:58 -0400
+Message-ID: <4BED7D50.5070004@oracle.com>
+Date: Fri, 14 May 2010 09:41:52 -0700
+From: Yinghai Lu <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514163158.GC31607@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 17/35] x86, lmb: Add x86 version of __lmb_find_area()
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-18-git-send-email-yinghai@kernel.org>	 <1273804466.21352.400.camel@pasglop>  <4BECF21C.7030006@oracle.com> <1273825884.21352.603.camel@pasglop>
+In-Reply-To: <1273825884.21352.603.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090202.4BED7C38.0058:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 09:31:59AM -0700, Dmitry Torokhov wrote:
-> On Fri, May 14, 2010 at 12:10:03PM -0400, Matthew Garrett wrote:
-> > Experimenting with Windows has revealed that it will not probe the
-> > keyboard controller unless a valid PNPACPI device is present. Change our
-> > behaviour to match, and add a new i8042.forcedprobe parameter to allow
-> > people to override it.
-> > 
-> 
-> i8042.nopnp would not do?
+On 05/14/2010 01:31 AM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-13 at 23:47 -0700, Yinghai wrote:
+>
+>   
+>> for safe, and there is any problem with top to down allocation, we can
+>> ask user to check if low to high works...
+>>
+>> not just make user to get broken kernel.
+>>     
+> Hrm. That's a bit gross. But ok, I don't care that much as long as your
+> x86 variant doesn't differ in semantics with the core lmb one and I'll
+> let Peter and/or Thomas to scream at you if they think it's gross
+> (hint: the code is)
+>
+>
+>   
+those bits are line by line translation from current early_res code, and
+have been used for a while.
 
-It could - it wouldn't be quite semantically equivalent, but I don't see 
-why it wouldn't work.
+so should be good as a fallback.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+YH
+
