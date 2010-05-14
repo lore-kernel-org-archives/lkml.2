@@ -1,134 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932111Ab0ENGky (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:40:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:35998 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755359Ab0ENGku (ORCPT
+	id S1756355Ab0ENGmd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:42:33 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:58099 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755475Ab0ENGmb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:40:50 -0400
-Message-ID: <4BECF00D.6080800@oracle.com>
-Date: Thu, 13 May 2010 23:39:09 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 02:42:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=SBeYOGvJFXho0vD1MuiNZwdvfk95jvBPIyZhp8MUVCXrAj65CicYZAeBRCcrTmGCBq
+         7gwVGixTDVtoIS4AZBIYRpFoWr9hNHmSSkgkn9Uix3KqxBNo1GY1o8V89eEPjtXSsqQl
+         2SHlvEJf/0EktKoN8ofY7SjSAVcC2WXz/+Xxk=
+Message-ID: <4BECF0BE.6000500@gmail.com>
+Date: Thu, 13 May 2010 23:42:06 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 11/35] lmb: Add find_memory_core_early()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-12-git-send-email-yinghai@kernel.org> <1273804238.21352.389.camel@pasglop>
-In-Reply-To: <1273804238.21352.389.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+CC: Bruno Randolf <br1@einfach.org>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+References: <4BEC7A84.3010503@gmail.com> <4BECD518.6040801@gmail.com> 	<AANLkTinE1q2K3j-IwCa3IPzTUChgi9wKTqBrVR1mGlv9@mail.gmail.com> 	<201005141520.30802.br1@einfach.org> <4BECEE3E.6090303@gmail.com> <AANLkTikKqFTS9MyvJKtyP9pNsrYyFPk5ijidjS9IA_30@mail.gmail.com>
+In-Reply-To: <AANLkTikKqFTS9MyvJKtyP9pNsrYyFPk5ijidjS9IA_30@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BECF05B.0182:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 07:30 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->> According to node range in early_node_map[] with __lmb_find_area
->> to find free range.
+On 05/13/10 23:36, Luis R. Rodriguez wrote:
+> On Thu, May 13, 2010 at 11:31 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> On 05/13/10 23:20, Bruno Randolf wrote:
+>>>
+>>> On Friday 14 May 2010 15:16:22 Luis R. Rodriguez wrote:
+>>>>
+>>>> On Thu, May 13, 2010 at 9:44 PM, Justin P. Mattock
+>>>>
+>>>> <justinmattock@gmail.com>    wrote:
+>>>>>
+>>>>> On 05/13/10 21:01, Luis R. Rodriguez wrote:
+>>>>>>
+>>>>>> On Thu, May 13, 2010 at 7:14 PM, Justin P. Mattock
+>>>>>>
+>>>>>> <justinmattock@gmail.com>     wrote:
+>>>>>>>
+>>>>>>> what I can try, is(not at the convention, on eth0
+>>>>>>> at the moment), but when I get back to the convention
+>>>>>>> center place I can try your patch as well as the
+>>>>>>> modprobe option, to see if I can get any signs of
+>>>>>>> a recreation(if so I'll bisect there).
+>>>>>>
+>>>>>> The debug info I just need upon load of the module, I don't need you
+>>>>>> to run the debug stuff to try to reproduce. The debug print upon load
+>>>>>> will tell us the rxbuf size and cache line size.
+>>>>>>
+>>>>>>    Luis
+>>>>>
+>>>>> o.k. it's not pretty due
+>>>>> to loads of avc's for SELinux:
+>>>>> (I run a rootless system).
+>>>>>
+>>>>> [   84.172649] ath9k: Driver unloaded
+>>>>> [  100.675300] audit_printk_skb: 6 callbacks suppressed
+>>>>> [  100.675306] type=1400 audit(1273811633.675:20): avc:  denied  {
+>>>>> search
+>>>>> } for  pid=2168 comm="modprobe" name="modules" dev=sda3 ino=2500
+>>>>> scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=system_u:object_r:modules_object_t:s0 tclass=dir
+>>>>> [  100.675408] type=1400 audit(1273811633.675:20): avc:  denied  {
+>>>>> search
+>>>>> } for  pid=2168 comm="modprobe" name="2.6.34-rc7-00057-gcdfda35"
+>>>>> dev=sda3 ino=524392 scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=name:object_r:modules_object_t:s0 tclass=dir
+>>>>> [  100.675552] type=1400 audit(1273811633.675:20): avc:  denied  { read
+>>>>> }
+>>>>> for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
+>>>>> scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>>>> [  100.675598] type=1400 audit(1273811633.675:20): avc:  denied  { open
+>>>>> }
+>>>>> for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
+>>>>> scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>>>> [  100.675748] type=1300 audit(1273811633.675:20): arch=c000003e
+>>>>> syscall=2 success=yes exit=3 a0=60d140 a1=0 a2=1b6 a3=0 items=0
+>>>>> ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
+>>>>> sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" exe="/sbin/modprobe"
+>>>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>>>> [  100.675902] type=1400 audit(1273811633.675:21): avc:  denied  {
+>>>>> getattr } for  pid=2168 comm="modprobe"
+>>>>> path="/lib/modules/2.6.34-rc7-00057-gcdfda35/modules.dep.bin" dev=sda3
+>>>>> ino=525251 scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>>>> [  100.676052] type=1300 audit(1273811633.675:21): arch=c000003e
+>>>>> syscall=5 success=yes exit=0 a0=3 a1=7fffd2d1dd70 a2=7fffd2d1dd70 a3=0
+>>>>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+>>>>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+>>>>> exe="/sbin/modprobe"
+>>>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>>>> [  100.698392] ath9k 0000:03:00.0: PCI INT A ->    GSI 17 (level, low) ->
+>>>>> IRQ 17
+>>>>> [  100.698409] ath9k 0000:03:00.0: setting latency timer to 64
+>>>>> [  100.828787] ath: EEPROM regdomain: 0x64
+>>>>> [  100.828790] ath: EEPROM indicates we should expect a direct regpair
+>>>>> map [  100.828793] ath: Country alpha2 being used: 00
+>>>>> [  100.828795] ath: Regpair used: 0x64
+>>>>> [  100.848609] type=1400 audit(1273811633.678:22): avc:  denied  {
+>>>>> search
+>>>>> } for  pid=2168 comm="modprobe" name="ieee80211" dev=debugfs ino=18
+>>>>> scontext=name:staff_r:staff_sudo_t:s0
+>>>>> tcontext=system_u:object_r:debugfs_t:s0 tclass=dir
+>>>>> [  100.848788] phy1: Selected rate control algorithm
+>>>>> 'ath9k_rate_control'
+>>>>> [  100.850035] Registered led device: ath9k-phy1::radio
+>>>>> [  100.850488] Registered led device: ath9k-phy1::assoc
+>>>>> [  100.851227] Registered led device: ath9k-phy1::tx
+>>>>> [  100.851633] Registered led device: ath9k-phy1::rx
+>>>>> [  100.851640] phy1: Atheros AR5418 MAC/BB Rev:2 AR5133 RF Rev:81
+>>>>> mem=0xffffc900005a0000, irq=17
+>>>>> [  100.852240] type=1300 audit(1273811633.678:22): arch=c000003e
+>>>>> syscall=175 success=yes exit=0 a0=7f1e9d6ab010 a1=19580 a2=60d920 a3=0
+>>>>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+>>>>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+>>>>> exe="/sbin/modprobe"
+>>>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>>>>
+>>>>> but there you go dmesg of the debug info for you
+>>>>
+>>>> Justin, did you forget to use the debug parameter on modprobe ath9k?
+>>>>
+>>>> modprobe ath9k debug=0x0000020
+>>>>
+>>>> I do not see the output I expected.
+>>>
+>>> i think you have to do at least "ifconfig wlan0 up" to see it - (at least
+>>> for
+>>> ath5k).
+>>>
+>>> bruno
+>>>
 >>
->> Will be used by lmb_find_area_node()
->>
->> lmb_find_area_node will be used to find right buffer for NODE_DATA
->>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
-> 
-> Oh and this wont' work on sparc. You should probably instead add a
-> lmb_find_in_nid() to lmb which shares code with lmb_alloc_nid().
+>> didn't think todo so, I'll redu
+>> again and see. BTW: the connection
+>> over here is dodgy(hotel) should I at-least
+>> find a stable access point?
+>
+> Up to you, just need that print line.
+>
+>               ath_print(common, ATH_DBG_CONFIG, "cachelsz %u rxbufsize %u\n",
+>                                 common->cachelsz, common->rx_bufsize);
+>
+>    Luis
+>
 
-should work with sparc...
+alright.. (in a few) I'll go ahead and enable
+as much as possible, as well as the prink
+ans see if I can grab the right info for you.
 
-+		if (addr == LMB_ERROR)
-+			continue;
-
-should do the trick.
-
-
-> 
-> However, why do you wnat to do this find + separate reserve again ? Why
-> not lmb_alloc ?
-
-keep switch smooth. maybe later could try to replace that one by one.
-also i could use lmb_reserve_area() to take name and print out name to make debug easy.
-
-> 
-> Cheers,
-> Ben.
-> 
->>  include/linux/mm.h |    2 ++
->>  mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
->>  2 files changed, 31 insertions(+), 0 deletions(-)
->>
->> diff --git a/include/linux/mm.h b/include/linux/mm.h
->> index fb19bb9..7774e1d 100644
->> --- a/include/linux/mm.h
->> +++ b/include/linux/mm.h
->> @@ -1159,6 +1159,8 @@ extern void free_bootmem_with_active_regions(int nid,
->>  						unsigned long max_low_pfn);
->>  int add_from_early_node_map(struct range *range, int az,
->>  				   int nr_range, int nid);
->> +u64 __init find_memory_core_early(int nid, u64 size, u64 align,
->> +					u64 goal, u64 limit);
->>  void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
->>  				 u64 goal, u64 limit);
->>  typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
->> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
->> index d03c946..72afd94 100644
->> --- a/mm/page_alloc.c
->> +++ b/mm/page_alloc.c
->> @@ -21,6 +21,7 @@
->>  #include <linux/pagemap.h>
->>  #include <linux/jiffies.h>
->>  #include <linux/bootmem.h>
->> +#include <linux/lmb.h>
->>  #include <linux/compiler.h>
->>  #include <linux/kernel.h>
->>  #include <linux/kmemcheck.h>
->> @@ -3393,6 +3394,34 @@ void __init free_bootmem_with_active_regions(int nid,
->>  	}
->>  }
->>  
->> +#ifdef CONFIG_HAVE_LMB
->> +u64 __init find_memory_core_early(int nid, u64 size, u64 align,
->> +					u64 goal, u64 limit)
->> +{
->> +	int i;
->> +
->> +	/* Need to go over early_node_map to find out good range for node */
->> +	for_each_active_range_index_in_nid(i, nid) {
->> +		u64 addr;
->> +		u64 ei_start, ei_last;
->> +
->> +		ei_last = early_node_map[i].end_pfn;
->> +		ei_last <<= PAGE_SHIFT;
->> +		ei_start = early_node_map[i].start_pfn;
->> +		ei_start <<= PAGE_SHIFT;
->> +		addr = __lmb_find_area(ei_start, ei_last,
->> +					 goal, limit, size, align);
->> +
->> +		if (addr == LMB_ERROR)
->> +			continue;
->> +
->> +		return addr;
->> +	}
->> +
->> +	return -1ULL;
->> +}
->> +#endif
->> +
->>  int __init add_from_early_node_map(struct range *range, int az,
->>  				   int nr_range, int nid)
->>  {
-> 
-
+Justin P. Mattock
