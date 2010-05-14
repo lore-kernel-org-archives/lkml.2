@@ -1,87 +1,191 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752798Ab0ENAJF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:09:05 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:47432 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751175Ab0ENAJD (ORCPT
+	id S1752734Ab0ENALX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:11:23 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:65300 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751783Ab0ENALW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:09:03 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 14 May 2010 09:04:58 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH 3/5] track the root (oldest) anon_vma
-Message-Id: <20100514090458.acaedb48.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <4BEB630B.8070805@redhat.com>
-References: <20100512133815.0d048a86@annuminas.surriel.com>
-	<20100512133958.3aff0515@annuminas.surriel.com>
-	<20100513093828.1cd022db.kamezawa.hiroyu@jp.fujitsu.com>
-	<4BEB630B.8070805@redhat.com>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+	Thu, 13 May 2010 20:11:22 -0400
+X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=yIUWbiYEC5gA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=7d_E57ReAAAA:8 a=meVymXHHAAAA:8 a=TDVm55_1NoOrEodbF3UA:9 a=tf_j3Am_0tSQKCZNr8oA:7 a=JiDhOtSEG8_bwlfzS6jIvK-TI6YA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=D6-X0JM3zdQA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL] ring-buffer: Add cached pages when freeing
+ reader page
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Thu, 13 May 2010 20:11:20 -0400
+Message-ID: <1273795880.27703.1610.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010 22:25:15 -0400
-Rik van Riel <riel@redhat.com> wrote:
 
-> On 05/12/2010 08:38 PM, KAMEZAWA Hiroyuki wrote:
-> > On Wed, 12 May 2010 13:39:58 -0400
-> > Rik van Riel<riel@redhat.com>  wrote:
-> >
-> >> Subject: track the root (oldest) anon_vma
-> >>
-> >> Track the root (oldest) anon_vma in each anon_vma tree.   Because we only
-> >> take the lock on the root anon_vma, we cannot use the lock on higher-up
-> >> anon_vmas to lock anything.  This makes it impossible to do an indirect
-> >> lookup of the root anon_vma, since the data structures could go away from
-> >> under us.
-> >>
-> >> However, a direct pointer is safe because the root anon_vma is always the
-> >> last one that gets freed on munmap or exit, by virtue of the same_vma list
-> >> order and unlink_anon_vmas walking the list forward.
-> >>
-> >> Signed-off-by: Rik van Riel<riel@redhat.com>
-> >
-> >
-> > Acked-by: KAMEZAWA Hiroyuki<kamezawa.hiroyu@jp.fujitsu.com>
-> >
-> > I welcome this. Thank you!
-> >
-> > Reading 4/5, I felt I'm grad if you add a Documentation or very-precise-comment
-> > about the new anon_vma rules and the _meaning_ of anon_vma_root_lock.
-> > I cannot fully convice myself that I understand them all.
-> 
-> Please send me a list of all the questions that come up
-> when you read the patches, and I'll prepare a patch 6/5
-> with just documentation :)
-> 
+Ingo,
 
-0. Why it's dangerous to take vma->anon_vma->lock ?
+This includes the updates in core-2.
 
-1. What kinds of anon_vmas we'll found in
-     page->mapping => anon_vma->head and avc->same_anon_vma ?
-   IOW, what kinds of avc->vmas will see when we walk anon_vma->head.
+Please pull the latest tip/tracing/core-3 tree, which can be found at:
 
-2. Why we have to walk from the root ?
-
-3. What anon_vma_lock guards, actually ?
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/tracing/core-3
 
 
-etc....the facts which is unclear for guys who are not involved in this fix.
-Preparing some explanation seems to be kindly rather than "plz ask google"
+Steven Rostedt (1):
+      ring-buffer: Add cached pages when freeing reader page
 
-Bye.
--Kame
+----
+ kernel/trace/ring_buffer.c |   52 ++++++++++++++++++++++++++++++++++++++------
+ 1 files changed, 45 insertions(+), 7 deletions(-)
+---------------------------
+commit 9d70909920a69e431348c6d5cf46e72d4e3514bc
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Thu May 13 15:33:06 2010 -0400
+
+    ring-buffer: Add cached pages when freeing reader page
+    
+    When the pages are removed from the ring buffer for things like
+    splice they are freed with ring_buffer_free_read_page().
+    They are also allocated with ring_buffer_alloc_read_page().
+    
+    Currently the ring buffer does not take advantage of this situation.
+    Every time the page is freed, the ring buffer simply frees it.
+    When a new page is needed, it allocates it. This means that reading
+    several pages with splice will cause a page to be freed and allocated
+    several times. This is simply a waste.
+    
+    This patch adds a cache of the pages freed (16 max). This allows
+    the pages to be reused quickly without need to go back to the memory
+    pool.
+    
+    v2: Added in locking that should have been there in the first release.
+    
+    Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 7f6059c..7aded7d 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -157,6 +157,8 @@ static unsigned long ring_buffer_flags __read_mostly = RB_BUFFERS_ON;
+ 
+ #define BUF_PAGE_HDR_SIZE offsetof(struct buffer_data_page, data)
+ 
++#define RB_MAX_FREE_PAGES	16
++
+ /**
+  * tracing_on - enable all tracing buffers
+  *
+@@ -325,7 +327,10 @@ EXPORT_SYMBOL_GPL(ring_buffer_event_data);
+ #define RB_MISSED_STORED	(1 << 30)
+ 
+ struct buffer_data_page {
+-	u64		 time_stamp;	/* page time stamp */
++	union {
++		struct buffer_data_page	*next;	/* for free pages */
++		u64		 time_stamp;	/* page time stamp */
++	};
+ 	local_t		 commit;	/* write committed index */
+ 	unsigned char	 data[];	/* data of buffer page */
+ };
+@@ -472,6 +477,10 @@ struct ring_buffer {
+ 	atomic_t			record_disabled;
+ 	cpumask_var_t			cpumask;
+ 
++	struct buffer_data_page		*free_pages;
++	int				nr_free_pages;
++	spinlock_t			free_pages_lock;
++
+ 	struct lock_class_key		*reader_lock_key;
+ 
+ 	struct mutex			mutex;
+@@ -1118,6 +1127,7 @@ struct ring_buffer *__ring_buffer_alloc(unsigned long size, unsigned flags,
+ 	buffer->flags = flags;
+ 	buffer->clock = trace_clock_local;
+ 	buffer->reader_lock_key = key;
++	spin_lock_init(&buffer->free_pages_lock);
+ 
+ 	/* need at least two pages */
+ 	if (buffer->pages < 2)
+@@ -1184,6 +1194,7 @@ EXPORT_SYMBOL_GPL(__ring_buffer_alloc);
+ void
+ ring_buffer_free(struct ring_buffer *buffer)
+ {
++	struct buffer_data_page *bpage;
+ 	int cpu;
+ 
+ 	get_online_cpus();
+@@ -1200,6 +1211,11 @@ ring_buffer_free(struct ring_buffer *buffer)
+ 	kfree(buffer->buffers);
+ 	free_cpumask_var(buffer->cpumask);
+ 
++	while (buffer->free_pages) {
++		bpage = buffer->free_pages;
++		buffer->free_pages = bpage->next;
++		free_page((unsigned long)bpage);
++	};
+ 	kfree(buffer);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_free);
+@@ -3714,14 +3730,24 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
+  */
+ void *ring_buffer_alloc_read_page(struct ring_buffer *buffer)
+ {
+-	struct buffer_data_page *bpage;
++	struct buffer_data_page *bpage = NULL;
+ 	unsigned long addr;
+ 
+-	addr = __get_free_page(GFP_KERNEL);
+-	if (!addr)
+-		return NULL;
++	spin_lock(&buffer->free_pages_lock);
++	if (buffer->free_pages) {
++		bpage = buffer->free_pages;
++		buffer->free_pages = bpage->next;
++		buffer->nr_free_pages--;
++	}
++	spin_unlock(&buffer->free_pages_lock);
+ 
+-	bpage = (void *)addr;
++	if (!bpage) {
++		addr = __get_free_page(GFP_KERNEL);
++		if (!addr)
++			return NULL;
++
++		bpage = (void *)addr;
++	}
+ 
+ 	rb_init_page(bpage);
+ 
+@@ -3738,7 +3764,19 @@ EXPORT_SYMBOL_GPL(ring_buffer_alloc_read_page);
+  */
+ void ring_buffer_free_read_page(struct ring_buffer *buffer, void *data)
+ {
+-	free_page((unsigned long)data);
++	struct buffer_data_page *bpage = data;
++
++	spin_lock(&buffer->free_pages_lock);
++	if (buffer->nr_free_pages >= RB_MAX_FREE_PAGES) {
++		spin_unlock(&buffer->free_pages_lock);
++		free_page((unsigned long)data);
++		return;
++	}
++
++	bpage->next = buffer->free_pages;
++	buffer->free_pages = bpage;
++	buffer->nr_free_pages++;
++	spin_unlock(&buffer->free_pages_lock);
+ }
+ EXPORT_SYMBOL_GPL(ring_buffer_free_read_page);
+ 
 
 
