@@ -1,225 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757307Ab0ENDSs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 23:18:48 -0400
-Received: from mga11.intel.com ([192.55.52.93]:3164 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753006Ab0ENDSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 23:18:21 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
-   d="scan'208";a="798332873"
-From: Sheng Yang <sheng@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>, Marcelo Tosatti <mtosatti@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Sheng Yang <sheng@linux.intel.com>
-Subject: [PATCH 3/3] KVM: x86: Use FPU API
-Date: Fri, 14 May 2010 11:16:53 +0800
-Message-Id: <1273807013-4792-4-git-send-email-sheng@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1273807013-4792-1-git-send-email-sheng@linux.intel.com>
-References: <1273807013-4792-1-git-send-email-sheng@linux.intel.com>
+	id S1751543Ab0ENDTS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 23:19:18 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:53563 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753775Ab0ENDTO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 23:19:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=r5s4MRJwWfz4rS0wHtolho5uAcBO19d/OMuSXk/H0PMIfExJPjt5T8iP/zTq2qK0Tf
+         0uEtdIQ+ZPT5O+raYlvhLK1U5Xml2WdM4bJDWJRoYCV2t2uiADGT1SKuYDFNz7TdpDJc
+         cntRsInEsm94bXx2HDMJFf6C9uU68Rlni6H6g=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
+References: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
+Date: Fri, 14 May 2010 07:19:12 +0400
+Message-ID: <AANLkTiktLXqHhop21ePIXF2kaVQbm3DIHZpLrEQOMA1e@mail.gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert KVM to use generic FPU API.
+On Friday, May 14, 2010, Jaswinder Singh Rajput
+<jaswinderlinux@gmail.com> wrote:
+> Hello,
+>
+> I am testing Performance Events on P4 with HT:
+>
+> [    0.002243] Performance Events: Netburst events, Netburst P4/Xeon PMU driver.
+> [    0.002432] ... version:                0
+> [    0.002545] ... bit width:              40
+> [    0.002659] ... generic registers:      18
+> [    0.002772] ... value mask:             000000ffffffffff
+> [    0.002887] ... max period:             0000007fffffffff
+> [    0.003004] ... fixed-purpose events:   0
+> [    0.003118] ... event mask:             000000000003ffff
+>
+> dmesg : http://userweb.kernel.org/~jaswinder/P4_HT/dmesg-2634-rc7-tip.txt
+> config : http://userweb.kernel.org/~jaswinder/P4_HT/config-2634-rc7-tip.txt
+>
+> [jaswinder@ht perf]$ ./perf stat -e cycles ls > /dev/null
+>
+>  Performance counter stats for 'ls':
+>
+>   <not counted>  cycles
+>
+>     0.003447053  seconds time elapsed
+>
+> [jaswinder@ht perf]$ ./perf stat -e cycles,instructions ls > /dev/null
+>
+>  Performance counter stats for 'ls':
+>
+>   <not counted>  cycles
+>         1862188  instructions             #      0.000 IPC    (scaled
+> from 54.91%)
+>
+>     0.003419230  seconds time elapsed
+>
+> [jaswinder@ht perf]$ ./perf stat -e
+> cycles,instructions,cache-references ls > /dev/null
+>
+> <<this dumps on screen and hangs the systems>>
+>
+> How can I fix this problem.
+>
+> Thanks,
+> --
+> Jaswinder Singh.
+>
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
----
- arch/x86/include/asm/kvm_host.h |   18 +---------
- arch/x86/kvm/x86.c              |   73 ++++++++++++---------------------------
- 2 files changed, 23 insertions(+), 68 deletions(-)
-
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index ed48904..beba6f5 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -300,8 +300,7 @@ struct kvm_vcpu_arch {
- 		unsigned long mmu_seq;
- 	} update_pte;
- 
--	struct i387_fxsave_struct host_fx_image;
--	struct i387_fxsave_struct guest_fx_image;
-+	struct fpu host_fpu, guest_fpu;
- 
- 	gva_t mmio_fault_cr2;
- 	struct kvm_pio_request pio;
-@@ -709,21 +708,6 @@ static inline unsigned long read_msr(unsigned long msr)
- }
- #endif
- 
--static inline void kvm_fx_save(struct i387_fxsave_struct *image)
--{
--	asm("fxsave (%0)":: "r" (image));
--}
--
--static inline void kvm_fx_restore(struct i387_fxsave_struct *image)
--{
--	asm("fxrstor (%0)":: "r" (image));
--}
--
--static inline void kvm_fx_finit(void)
--{
--	asm("finit");
--}
--
- static inline u32 get_rdx_init_val(void)
- {
- 	return 0x600; /* P6 family */
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index cd8a606..2313f76 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -52,6 +52,8 @@
- #include <asm/desc.h>
- #include <asm/mtrr.h>
- #include <asm/mce.h>
-+#include <asm/i387.h>
-+#include <asm/xcr.h>
- 
- #define MAX_IO_MSRS 256
- #define CR0_RESERVED_BITS						\
-@@ -5069,27 +5071,6 @@ unlock_out:
- }
- 
- /*
-- * fxsave fpu state.  Taken from x86_64/processor.h.  To be killed when
-- * we have asm/x86/processor.h
-- */
--struct fxsave {
--	u16	cwd;
--	u16	swd;
--	u16	twd;
--	u16	fop;
--	u64	rip;
--	u64	rdp;
--	u32	mxcsr;
--	u32	mxcsr_mask;
--	u32	st_space[32];	/* 8*16 bytes for each FP-reg = 128 bytes */
--#ifdef CONFIG_X86_64
--	u32	xmm_space[64];	/* 16*16 bytes for each XMM-reg = 256 bytes */
--#else
--	u32	xmm_space[32];	/* 8*16 bytes for each XMM-reg = 128 bytes */
--#endif
--};
--
--/*
-  * Translate a guest virtual address to a guest physical address.
-  */
- int kvm_arch_vcpu_ioctl_translate(struct kvm_vcpu *vcpu,
-@@ -5114,7 +5095,8 @@ int kvm_arch_vcpu_ioctl_translate(struct kvm_vcpu *vcpu,
- 
- int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- {
--	struct fxsave *fxsave = (struct fxsave *)&vcpu->arch.guest_fx_image;
-+	struct i387_fxsave_struct *fxsave =
-+			&vcpu->arch.guest_fpu.state->fxsave;
- 
- 	vcpu_load(vcpu);
- 
-@@ -5134,7 +5116,8 @@ int kvm_arch_vcpu_ioctl_get_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- 
- int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- {
--	struct fxsave *fxsave = (struct fxsave *)&vcpu->arch.guest_fx_image;
-+	struct i387_fxsave_struct *fxsave =
-+			&vcpu->arch.guest_fpu.state->fxsave;
- 
- 	vcpu_load(vcpu);
- 
-@@ -5154,41 +5137,30 @@ int kvm_arch_vcpu_ioctl_set_fpu(struct kvm_vcpu *vcpu, struct kvm_fpu *fpu)
- 
- void fx_init(struct kvm_vcpu *vcpu)
- {
--	unsigned after_mxcsr_mask;
--
--	/*
--	 * Touch the fpu the first time in non atomic context as if
--	 * this is the first fpu instruction the exception handler
--	 * will fire before the instruction returns and it'll have to
--	 * allocate ram with GFP_KERNEL.
--	 */
--	if (!used_math())
--		kvm_fx_save(&vcpu->arch.host_fx_image);
-+	fpu_alloc(&vcpu->arch.host_fpu);
-+	fpu_alloc(&vcpu->arch.guest_fpu);
- 
--	/* Initialize guest FPU by resetting ours and saving into guest's */
--	preempt_disable();
--	kvm_fx_save(&vcpu->arch.host_fx_image);
--	kvm_fx_finit();
--	kvm_fx_save(&vcpu->arch.guest_fx_image);
--	kvm_fx_restore(&vcpu->arch.host_fx_image);
--	preempt_enable();
-+	fpu_save(&vcpu->arch.host_fpu);
-+	fpu_finit(&vcpu->arch.guest_fpu);
- 
- 	vcpu->arch.cr0 |= X86_CR0_ET;
--	after_mxcsr_mask = offsetof(struct i387_fxsave_struct, st_space);
--	vcpu->arch.guest_fx_image.mxcsr = 0x1f80;
--	memset((void *)&vcpu->arch.guest_fx_image + after_mxcsr_mask,
--	       0, sizeof(struct i387_fxsave_struct) - after_mxcsr_mask);
- }
- EXPORT_SYMBOL_GPL(fx_init);
- 
-+static void fx_free(struct kvm_vcpu *vcpu)
-+{
-+	fpu_free(&vcpu->arch.host_fpu);
-+	fpu_free(&vcpu->arch.guest_fpu);
-+}
-+
- void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
- {
- 	if (vcpu->guest_fpu_loaded)
- 		return;
- 
- 	vcpu->guest_fpu_loaded = 1;
--	kvm_fx_save(&vcpu->arch.host_fx_image);
--	kvm_fx_restore(&vcpu->arch.guest_fx_image);
-+	fpu_save(&vcpu->arch.host_fpu);
-+	fpu_restore_checking(&vcpu->arch.guest_fpu);
- 	trace_kvm_fpu(1);
- }
- 
-@@ -5198,8 +5170,8 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
- 		return;
- 
- 	vcpu->guest_fpu_loaded = 0;
--	kvm_fx_save(&vcpu->arch.guest_fx_image);
--	kvm_fx_restore(&vcpu->arch.host_fx_image);
-+	fpu_save(&vcpu->arch.guest_fpu);
-+	fpu_restore_checking(&vcpu->arch.host_fpu);
- 	++vcpu->stat.fpu_reload;
- 	set_bit(KVM_REQ_DEACTIVATE_FPU, &vcpu->requests);
- 	trace_kvm_fpu(0);
-@@ -5212,6 +5184,7 @@ void kvm_arch_vcpu_free(struct kvm_vcpu *vcpu)
- 		vcpu->arch.time_page = NULL;
- 	}
- 
-+	fx_free(vcpu);
- 	kvm_x86_ops->vcpu_free(vcpu);
- }
- 
-@@ -5225,9 +5198,6 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
- {
- 	int r;
- 
--	/* We do fxsave: this must be aligned. */
--	BUG_ON((unsigned long)&vcpu->arch.host_fx_image & 0xF);
--
- 	vcpu->arch.mtrr_state.have_fixed = 1;
- 	vcpu_load(vcpu);
- 	r = kvm_arch_vcpu_reset(vcpu);
-@@ -5249,6 +5219,7 @@ void kvm_arch_vcpu_destroy(struct kvm_vcpu *vcpu)
- 	kvm_mmu_unload(vcpu);
- 	vcpu_put(vcpu);
- 
-+	fx_free(vcpu);
- 	kvm_x86_ops->vcpu_free(vcpu);
- }
- 
--- 
-1.7.0.1
-
+thanks for testing. Is there any issue in dmesg for first two perf
+calls before it hangs? And is there a chance for screen dump (photo or
+netconsole)?
