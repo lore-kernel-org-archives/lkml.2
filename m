@@ -1,39 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab0ENQVi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:21:38 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:33943 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755143Ab0ENQVf (ORCPT
+	id S1755335Ab0ENQW2 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:22:28 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:63559 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752270Ab0ENQW0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:21:35 -0400
-Date: Fri, 14 May 2010 09:19:24 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg@redhat.com>
-cc: linux-input@vger.kernel.org, dmitry.torokhov@gmail.com,
+	Fri, 14 May 2010 12:22:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=AxI+yqB/fS5YxLW4hMeck/1wFYHXGVcoU0Xei/phJdC0xn1QLwX6WYxajyvTNYrpfS
+         CfVSuMZIYtkXoyDAk7JE8Z9FQX8ZSU62+DKZhslFV/2ghfaxbEAvl7G5sbWw2aTQ3lzT
+         g3dBGyGRxfLhfQAh2p3XzNprWiortMdTIK55Q=
+Date: Fri, 14 May 2010 18:22:26 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: Tom Zanussi <tzanussi@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] input: Default to only using PNP for i8042 probing
- on x86
-In-Reply-To: <1273853403-2870-3-git-send-email-mjg@redhat.com>
-Message-ID: <alpine.LFD.2.00.1005140918160.3711@i5.linux-foundation.org>
-References: <1273853403-2870-1-git-send-email-mjg@redhat.com> <1273853403-2870-3-git-send-email-mjg@redhat.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Subject: Re: [PATCH] perf/trace: use read() instead of lseek() in
+	trace_event_read.c:skip()
+Message-ID: <20100514162222.GB5504@nowhere>
+References: <1273032130.6383.28.camel@tropicana> <20100514161255.GA8535@kryptos.osrc.amd.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514161255.GA8535@kryptos.osrc.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 14, 2010 at 06:12:55PM +0200, Borislav Petkov wrote:
+> From: Tom Zanussi <tzanussi@gmail.com>
+> Date: Tue, May 04, 2010 at 11:02:10PM -0500
+> 
+> Hi,
+> 
+> > Here's a small fix for a problem affecting live-mode, introduced in the
+> > past day or so:
+> > 
+> > root@tropicana:~# perf trace rwtop
+> > perf trace started with Perl
+> > script /root/libexec/perf-core/scripts/perl/rwtop.pl
+> > 
+> >   Fatal: did not read header event
+> > 
+> > commit d00a47cce569a3e660a8c9de5d57af28d6a9f0f7 added a skip()
+> > function to skip over e.g. header_page, but this doesn't work for live
+> > mode.  This patch re-implements skip() to use read() instead of
+> > lseek() to fix that.
+> > 
+> > Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+> 
+> has this one landed in any tree in the meantime?
+> 
+> tip/perf/core doesn't have it.
 
-Ok, there's no way I'd merge this for 2.6.34 any more, but one comment:
 
-On Fri, 14 May 2010, Matthew Garrett wrote:
->
-> Experimenting with Windows has revealed that it will not probe the
-> keyboard controller unless a valid PNPACPI device is present. Change our
-> behaviour to match, and add a new i8042.forcedprobe parameter to allow
-> people to override it.
+I forgot to queue it, my bad.
 
-If you do this, then please remove the nasty __ia64__ #ifdef while at it.
+Queued, thanks.
 
-		Linus
