@@ -1,72 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757167Ab0ENMyE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 08:54:04 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:42334 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754498Ab0ENMx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 08:53:59 -0400
-Date: Fri, 14 May 2010 22:53:48 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Peter =?UTF-8?B?SMO8d2U=?= <PeterHuewe@gmx.de>
-Cc: linux-next@vger.kernel.org, Paul Mundt <lethal@linux-sh.org>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>, linuxppc-dev@ozlabs.org,
-       "David H?rdeman" <david@hardeman.nu>, linux-media@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-sh@vger.kernel.org,
-       linux-mips@linux-mips.org, linux-m68k@vger.kernel.org
-Subject: Re: [PATCH] media/IR: Add missing include file to rc-map.c
-Message-Id: <20100514225348.05e25821.sfr@canb.auug.org.au>
-In-Reply-To: <201005141326.52099.PeterHuewe@gmx.de>
-References: <201005051720.22617.PeterHuewe@gmx.de>
-	<201005112042.14889.PeterHuewe@gmx.de>
-	<20100514060240.GD12002@linux-sh.org>
-	<201005141326.52099.PeterHuewe@gmx.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1757592Ab0ENMyw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 08:54:52 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:36370 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754307Ab0ENMyv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 08:54:51 -0400
+X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=r5AvUYk336kA:10 a=GQCbJdZ--msA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=UAaJ_etPrk5clunSabcA:9 a=tot16sTQKds_hdlIcowA:7 a=XEM0lg_YM44zYRu4-TC4DzMgMm8A:4 a=PUjeQqilurYA:10 a=NYk95v7EdE2iIOKv:21 a=wybwJCPS-ktWtS4z:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 2/7] perf trace: Correctly handle arrays
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
+       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Tom Zanussi <tzanussi@gmail.com>
+In-Reply-To: <1273833586.1626.244.camel@laptop>
+References: <1273730632-21008-1-git-send-email-imunsie@au1.ibm.com>
+	 <1273730632-21008-3-git-send-email-imunsie@au1.ibm.com>
+	 <1273768374.27703.1101.camel@gandalf.stny.rr.com>
+	 <1273833586.1626.244.camel@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 14 May 2010 08:54:47 -0400
+Message-ID: <1273841687.27703.2377.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__14_May_2010_22_53_48_+1000_F6ZXC=D=N=F2Vx.l"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_May_2010_22_53_48_+1000_F6ZXC=D=N=F2Vx.l
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Fri, 2010-05-14 at 12:39 +0200, Peter Zijlstra wrote:
+> On Thu, 2010-05-13 at 12:32 -0400, Steven Rostedt wrote:
+> > 
+> > -- Steve
+> > 
+> > > +             else
+> > > +                     field->elementsize = field->size;
+> > > +
+> > >               *fields = field;
+> > >               fields = &field->next;
+> > >  
+> > > @@ -2101,7 +2109,8 @@ static unsigned long long eval_num_arg(void *data, int size,
+> > >                       }
+> > >                       right = eval_num_arg(data, size, event, arg->op.right);
+> > >                       val = read_size(data + larg->field.field->offset +
+> > > -                                     right * long_size, long_size);
+> > > +                                     right * larg->field.field->elementsize,
+> > > +                                     larg->field.field->elementsize);
+> > >                       break;
+> > >               }
+> > >   default_op:
+> > > diff --git a/tools/perf/util/trace-event.h b/tools/perf/util/trace-event.h
+> > > index 406d452..cc58a19 100644
+> > > --- a/tools/perf/util/trace-event.h
+> > > +++ b/tools/perf/util/trace-event.h
+> > > @@ -40,6 +40,8 @@ struct format_field {
+> > >       char                    *name;
+> > >       int                     offset;
+> > >       int                     size;
+> > > +     unsigned int            arraylen;
+> > > +     unsigned int            elementsize;
+> > >       unsigned long           flags;
+> > >  };
+> > >  
+> 
+> What's with this new fad of not trimming emails?
+> 
 
-Hi Peter,
+I usually do, but if it isn't that big I don't. But my rule (and I
+suspect it with others too) is that I end my comments with my sig 
+(-- Steve). After that, I have no more comments so you do not need to
+look further. When I see someone's sig in the mail, I stop reading
+further.
 
-On Fri, 14 May 2010 13:26:51 +0200 Peter H=C3=BCwe <PeterHuewe@gmx.de> wrot=
-e:
->
-> From: Peter Huewe <peterhuewe@gmx.de>
->=20
-> This patch adds a missing include linux/delay.h to prevent
-> build failures[1-5]
->=20
-> Signed-off-by: Peter Huewe <peterhuewe@gmx.de>
-> ---
-> Forwarded to linux-next mailing list -=20
-> breakage still exists in linux-next of 20100514 - please apply
+-- Steve
 
-This patch was included in the v4l-dvb tree (and thus linux-next) today
--see commit 1e19cb4e7d15d724cf2c6ae23f0b871c84a92790.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Fri__14_May_2010_22_53_48_+1000_F6ZXC=D=N=F2Vx.l
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvtR90ACgkQjjKRsyhoI8wyygCfZDik8epd0H05Npyb+DFFvBOx
-CdwAoJMc/3TgT2LBEXA6b3UoshPylvNm
-=cIoQ
------END PGP SIGNATURE-----
-
---Signature=_Fri__14_May_2010_22_53_48_+1000_F6ZXC=D=N=F2Vx.l--
