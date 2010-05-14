@@ -1,51 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757399Ab0ENQlV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:41:21 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:26307 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756684Ab0ENQlT (ORCPT
+	id S1756482Ab0ENQmP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:42:15 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:52648 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750876Ab0ENQmM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:41:19 -0400
+	Fri, 14 May 2010 12:42:12 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=LFpKDjolihfnWb/pWFtTEoBnPiGMEA/SVesuuIXiWlFnsg1BDvrihSEB5SqqZ8GdCN
-         L4a69THjwodn3dsd/3zB895pt5gxZif1iuRo9DRuqvGV37hyyZgmsfCBqivMANzy/JBg
-         HF/vW31/Yp7bUK21wEHsvc3yHh3pNHVfawZDY=
-Date: Fri, 14 May 2010 20:40:57 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-Message-ID: <20100514164057.GC13509@lenovo>
-References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com> <20100514162813.GB13509@lenovo> <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+        b=DVsAHGezp6UfsR1C6aT+Z1qF5Th0+BTQd4EPx0yVLdkq8NItk0UJXz5w6jNv/TcxsM
+         5wUzcyhpNdQFoqNnQeCB1e1aXxRnP9WxKwQfFuvQH9e1DnflAPDYtaPPJoV0/xQbS+kR
+         U5pzA4h7qMU+Qq88hCLAqGgEckiqSWmn0Ban4=
+Date: Fri, 14 May 2010 09:42:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       torvalds@linux-foundation.org
+Subject: Re: [PATCH 3/3] input: Default to only using PNP for i8042 probing
+ on x86
+Message-ID: <20100514164200.GD31607@core.coreip.homeip.net>
+References: <1273853403-2870-1-git-send-email-mjg@redhat.com>
+ <1273853403-2870-3-git-send-email-mjg@redhat.com>
+ <20100514163158.GC31607@core.coreip.homeip.net>
+ <20100514163643.GB7843@srcf.ucam.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100514163643.GB7843@srcf.ucam.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
-...
-> >
-> > Thanks Jaswinder,
-> >
-> > it means counters management somehow screwed at moment (it was working before).
-> > I'm working on it.
-> >
+On Fri, May 14, 2010 at 05:36:43PM +0100, Matthew Garrett wrote:
+> On Fri, May 14, 2010 at 09:31:59AM -0700, Dmitry Torokhov wrote:
+> > On Fri, May 14, 2010 at 12:10:03PM -0400, Matthew Garrett wrote:
+> > > Experimenting with Windows has revealed that it will not probe the
+> > > keyboard controller unless a valid PNPACPI device is present. Change our
+> > > behaviour to match, and add a new i8042.forcedprobe parameter to allow
+> > > people to override it.
+> > > 
+> > 
+> > i8042.nopnp would not do?
 > 
-> Ok, I added few more events and now I am able see few hardware events :
+> It could - it wouldn't be quite semantically equivalent, but I don't see 
+> why it wouldn't work.
 > 
-...
-Thanks, but I need to figure out where they hide in first place. Will keep
-you in touch.
 
-	-- Cyrill
+I think they are exactly equivalent - "piss on what PNP says, bang the ports
+directly".
+
+-- 
+Dmitry
