@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754326Ab0ENA11 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:27:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53864 "EHLO
+	id S1755761Ab0ENA1l (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:27:41 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53686 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753431Ab0ENAYf (ORCPT
+	with ESMTP id S1754315Ab0ENAY1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:24:35 -0400
+	Thu, 13 May 2010 20:24:27 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,74 +16,110 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 34/35] x86: Use walk_system_ream_range() instead of referring e820.map directly for tboot
-Date: Thu, 13 May 2010 17:19:55 -0700
-Message-Id: <1273796396-29649-35-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 24/35] lmb: Move __alloc_memory_core_early() to nobootmem.c
+Date: Thu, 13 May 2010 17:19:45 -0700
+Message-Id: <1273796396-29649-25-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090205.4BEC97B0.0059,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BEC97D0.0140,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-So we can make e820 to be __initdata
+We can remove #ifdef in mm/page_alloc.c
+
+and change that function to static
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/kernel/tboot.c |   22 +++++++++-------------
- 1 files changed, 9 insertions(+), 13 deletions(-)
+ include/linux/mm.h |    2 --
+ mm/nobootmem.c     |   21 +++++++++++++++++++++
+ mm/page_alloc.c    |   24 ------------------------
+ 3 files changed, 21 insertions(+), 26 deletions(-)
 
-diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
-index c2f1b26..20b9531 100644
---- a/arch/x86/kernel/tboot.c
-+++ b/arch/x86/kernel/tboot.c
-@@ -171,34 +171,30 @@ static void tboot_create_trampoline(void)
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index 7774e1d..2a14361 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -1161,8 +1161,6 @@ int add_from_early_node_map(struct range *range, int az,
+ 				   int nr_range, int nid);
+ u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+ 					u64 goal, u64 limit);
+-void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+-				 u64 goal, u64 limit);
+ typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+ extern void work_with_active_regions(int nid, work_fn_t work_fn, void *data);
+ extern void sparse_memory_present_with_active_regions(int nid);
+diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+index abaec96..e3cbde7 100644
+--- a/mm/nobootmem.c
++++ b/mm/nobootmem.c
+@@ -40,6 +40,27 @@ unsigned long max_pfn;
+ unsigned long saved_max_pfn;
+ #endif
  
- #ifdef CONFIG_ACPI_SLEEP
- 
--static void add_mac_region(phys_addr_t start, unsigned long size)
-+static int
-+add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
- {
-+	u64 start = start_pfn;
-+	u64 size = nr_pages;
- 	struct tboot_mac_region *mr;
--	phys_addr_t end = start + size;
- 
- 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
- 		panic("tboot: Too many MAC regions\n");
- 
- 	if (start && size) {
- 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
--		mr->start = round_down(start, PAGE_SIZE);
--		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
-+		mr->start = start << PAGE_SHIFT;
-+		mr->size  = (u32) (size << PAGE_SHIFT);
- 	}
++static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
++					u64 goal, u64 limit)
++{
++	void *ptr;
 +
-+	return 0;
++	u64 addr;
++
++	if (limit > lmb.current_limit)
++		limit = lmb.current_limit;
++
++	addr = find_memory_core_early(nid, size, align, goal, limit);
++
++	if (addr == LMB_ERROR)
++		return NULL;
++
++	ptr = phys_to_virt(addr);
++	memset(ptr, 0, size);
++	lmb_reserve_area(addr, addr + size, "BOOTMEM");
++	return ptr;
++}
++
+ /*
+  * free_bootmem_late - free bootmem pages directly to page allocator
+  * @addr: starting address of the range
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 867a3a8..3449811 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -3437,30 +3437,6 @@ int __init add_from_early_node_map(struct range *range, int az,
+ 	return nr_range;
  }
  
- static int tboot_setup_sleep(void)
+-#ifdef CONFIG_NO_BOOTMEM
+-void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+-					u64 goal, u64 limit)
+-{
+-	void *ptr;
+-
+-	u64 addr;
+-
+-	if (limit > lmb.current_limit)
+-		limit = lmb.current_limit;
+-
+-	addr = find_memory_core_early(nid, size, align, goal, limit);
+-
+-	if (addr == LMB_ERROR)
+-		return NULL;
+-
+-	ptr = phys_to_virt(addr);
+-	memset(ptr, 0, size);
+-	lmb_reserve_area(addr, addr + size, "BOOTMEM");
+-	return ptr;
+-}
+-#endif
+-
+-
+ void __init work_with_active_regions(int nid, work_fn_t work_fn, void *data)
  {
--	int i;
--
- 	tboot->num_mac_regions = 0;
- 
--	for (i = 0; i < e820.nr_map; i++) {
--		if ((e820.map[i].type != E820_RAM)
--		 && (e820.map[i].type != E820_RESERVED_KERN))
--			continue;
--
--		add_mac_region(e820.map[i].addr, e820.map[i].size);
--	}
-+	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
- 
- 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
- 
+ 	int i;
 -- 
 1.6.4.2
 
