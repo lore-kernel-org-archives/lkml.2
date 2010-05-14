@@ -1,110 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757391Ab0ENDhg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 23:37:36 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:37909 "EHLO e3.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751575Ab0ENDhe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 23:37:34 -0400
-Date: Thu, 13 May 2010 20:37:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: ratheesh k <ratheesh.ksz@gmail.com>
-Cc: Sven-Thorsten Dietrich <thebigcorporation@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-rt-users@vger.kernel.org
-Subject: Re: preempt_disable and sleep()
-Message-ID: <20100514033732.GA2418@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <AANLkTinbwZK5Tp6aI4ja38XaiiB5aIyECzHPdMpvkaIy@mail.gmail.com>
- <1273776201.11899.23.camel@sven.thebigcorporation.com>
- <AANLkTilMrwdaLrTAUVETYZLYSpoqVFVXfKZ2lZit6uG3@mail.gmail.com>
+	id S1753171Ab0ENFH3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 01:07:29 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53968 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0ENFH1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 01:07:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type;
+        b=noSBSIQ4nhvfBgqseUv9demq67qiCSXHmYUsT5Yt27tvtmq2CStiZU2gAiBDTl9BSH
+         oa0eNbjetzHim4mEsQ1rw76rcckdIzwufvWMh5FF0mp2Kytuu+1zxN8nqc6yfOKFacHR
+         Ej0tp9K663hlgXCKx6WPLpkEVX7wkKcgXmWkM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTilMrwdaLrTAUVETYZLYSpoqVFVXfKZ2lZit6uG3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTim7fnKebMoEu1DjD3S-15ZqlTUez3Lpp0wGVJQ6@mail.gmail.com>
+References: <4BEC7A84.3010503@gmail.com> <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com> 
+	<AANLkTim7fnKebMoEu1DjD3S-15ZqlTUez3Lpp0wGVJQ6@mail.gmail.com>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Thu, 13 May 2010 22:07:06 -0700
+X-Google-Sender-Auth: LPAtLkKPct0zXMW0Bo06kE-ODIU
+Message-ID: <AANLkTimmctk1GWOTlW8Han7E3gJVgqJjUAMeqYnvyuHn@mail.gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
+       linux-wireless@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Christoph Lameter <cl@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 08:16:07AM +0530, ratheesh k wrote:
-> On Fri, May 14, 2010 at 12:13 AM, Sven-Thorsten Dietrich
-> <thebigcorporation@gmail.com> wrote:
-> 
-> > Why would you do this?
-> I was reading some linux kernel journel about preempt_disable() . This
-> a doubt came to me .
-> 
-> 
-> > If you had tried this code, you would have seen the corresponding stack
-> > dump on the console.
-> 
-> 
-> Why it so .? could you explain a little more ? .sleep() will schedule
-> () , which inturn give back control to kernel .
+On Thu, May 13, 2010 at 9:55 PM, Pekka Enberg <penberg@cs.helsinki.fi> wrote:
+> Hi Luis,
+>
+> On Fri, May 14, 2010 at 2:01 AM, Luis R. Rodriguez
+> <lrodriguez@atheros.com> wrote:
+>> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
+>> <justinmattock@gmail.com> wrote:
+>>> not sure what this is, but while at a convention
+>>> I was trying to access the internet and(below is
+>>> full dmesg) this showed up.
+>>>
+>>> After receiving this, I sat and tried to re-create
+>>> my steps to reproduce but had no luck(was even going
+>>> todo a bisect n the spot if I could re-create).
+>>
+>> OK this stuff is hard to reproduce it seems.. you have an Atheros
+>> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
+>> to get the poison stuff? I am just surprised we haven't seen it
+>> ourselves yet. Let me make sure all of us get this kconfig option
+>> enabled.
+>
+> CONFIG_SLUB_DEBUG and then either CONFIG_SLUB_DEBUG_ON or pass
+> 'slub_debug' as kernel parameter.
 
-Sleeping in the kernel with preemption disabled is considered to be a
-bug.  So the scheduler will print an error and a stack dump when this
-happens.
+Ah OK I had CONFIG_SLUB_DEBUG but not  CONFIG_SLUB_DEBUG_ON, will
+enable it from here on.
 
-In contrast, it is OK to do the following:
-
-	preempt_disable();
-	do_something();
-	preempt_enable();
-	schedule();
-	preempt_disable();
-	do_something_else();
-	preempt_enable();
-
-							Thanx, Paul
-
-> Thank,
-> Ratheesh
-> 
-> On Fri, May 14, 2010 at 12:13 AM, Sven-Thorsten Dietrich
-> <thebigcorporation@gmail.com> wrote:
-> > On Fri, 2010-05-14 at 00:02 +0530, ratheesh k wrote:
-> >> I am running RT linux .
-> >>
-> >> /* code snippet */
-> >>
-> >> preempt_disable()
-> >> ...........
-> >> sleep(10);
-> >> '............
-> >> preempt_enable()
-> >>
-> >>
-> >> will this sleep() will cause reschedule ?.
-> >>
-> >
-> > Why would you do this?
-> >
-> > If you had tried this code, you would have seen the corresponding stack
-> > dump on the console.
-> >
-> >> if an interrupt comes  while premption is disabled , how it is handled ?.
-> >>
-> >
-> > Depends on the number of (idle) cores, the setting of CONFIG_PREEMPT_[]
-> > and the type of interrupt.
-> >
-> > RT threaded IRQs would not run until preemption is enabled on a single
-> > core system.
-> >
-> >
-> >
-> >> Thanks,
-> >> Ratheesh
-> >> --
-> >> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> >> the body of a message to majordomo@vger.kernel.org
-> >> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> >
-> >
-> >
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+  Luis
