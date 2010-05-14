@@ -1,92 +1,253 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756717Ab0ENCPx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:15:53 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33780 "EHLO mga02.intel.com"
+	id S1756794Ab0ENCQS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:16:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:36557 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753083Ab0ENCPu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:15:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
-   d="scan'208";a="621559642"
-Date: Fri, 14 May 2010 10:11:29 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Greg KH <gregkh@suse.de>, akpm@linux-foundation.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
-       linux-kernel@vger.kernel.org, ak@linux.intel.com,
-       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 3/7] NUMA hotplug emulator
-Message-ID: <20100514021129.GE4381@shaohui>
-Mail-Followup-To: Wu Fengguang <fengguang.wu@intel.com>,
-	Greg KH <gregkh@suse.de>, akpm@linux-foundation.org,
-	linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
-	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-	x86@kernel.org, Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-	David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
-	linux-kernel@vger.kernel.org, ak@linux.intel.com,
-	haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
-References: <20100513114835.GD2169@shaohui>
- <20100513165511.GB25212@suse.de>
- <20100514014535.GA4381@shaohui>
- <20100514020135.GA7678@localhost>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514020135.GA7678@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752721Ab0ENCQN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:16:13 -0400
+Subject: Re: [PATCH 03/35] lmb: Add ARCH_DISCARD_LMB to put lmb code to
+ .init
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1273796396-29649-4-git-send-email-yinghai@kernel.org>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-4-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 12:14:09 +1000
+Message-ID: <1273803249.21352.357.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:01:35AM +0800, Wu Fengguang wrote:
-> On Fri, May 14, 2010 at 09:45:35AM +0800, Zheng, Shaohui wrote:
-> > On Thu, May 13, 2010 at 09:55:11AM -0700, Greg KH wrote:
-> > > On Thu, May 13, 2010 at 07:48:35PM +0800, Shaohui Zheng wrote:
-> > > > Userland interface to hotplug-add fake offlined nodes.
-> > > 
-> > > Why include 2 copies of the patch in one email?
-> > I always try to attach the patch as attachment, it is the same with the mail
-> > content, I guess it should take convenience when you need to save the patch 
-> > to local, it might be a bad habbit, I will be careful when I send patch next time.
-> > thanks for the reminding.
+On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+> So those lmb bits could be released after kernel is booted up.
 > 
-> Shaohui, git/quilt are great tools for submitting patch series.
-Thanks fengguang, I am the new fish in LKML, so I send the patches manually one by
-one, I will try this tool next time.
+> Arch code could define ARCH_DISCARD_LMB in asm/lmb.h,
+> __init_lmb will become __init, __initdata_lmb will becom __initdata
+> 
+> x86 code will use that.
 
-> 
-> > > 
-> > > > Add a sysfs entry "probe" under /sys/devices/system/node/:
-> > > > 
-> > > >  - to show all fake offlined nodes:
-> > > >     $ cat /sys/devices/system/node/probe
-> > > > 
-> > > >  - to hotadd a fake offlined node, e.g. nodeid is N:
-> > > >     $ echo N > /sys/devices/system/node/probe
-> > > 
-> > > As you are trying to add a new sysfs file, please create the matching
-> > > Documentation/ABI/ file as well.
-> > 
-> > Agree, We will document it in.
-> > 
-> > > 
-> > > Also note that sysfs files are "one value per file", which I don't think
-> > > this file follows, right?
-> > 
-> > Agree, the cpu/probe interface should write only, and we should create another
-> > file to indicate the hidden nodes, such as cpu/hidden. We will follow this rule
-> > when we send the formal patch.
-> 
-> I'd prefer to avoid new interfaces if not absolutely necessary.
-> 
-> Thanks,
-> Fengguang
+So you do not intend to use lmb after boot ? This will break the debugfs
+files unless you also remove those.
 
--- 
-Thanks & Regards,
-Shaohui
+Cheers,
+Ben.
+
+> -v2: use ARCH_DISCARD_LMB according to Michael Ellerman
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/lmb.h |    8 ++++++++
+>  lib/lmb.c           |   46 +++++++++++++++++++++++-----------------------
+>  2 files changed, 31 insertions(+), 23 deletions(-)
+> 
+> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+> index 2b87641..0b073a3 100644
+> --- a/include/linux/lmb.h
+> +++ b/include/linux/lmb.h
+> @@ -145,6 +145,14 @@ static inline unsigned long lmb_region_pages(const struct lmb_region *reg)
+>  	     region++)
+>  
+> 
+> +#ifdef ARCH_DISCARD_LMB
+> +#define __init_lmb __init
+> +#define __initdata_lmb __initdata
+> +#else
+> +#define __init_lmb
+> +#define __initdata_lmb
+> +#endif
+> +
+>  #endif /* CONFIG_HAVE_LMB */
+>  
+>  #endif /* __KERNEL__ */
+> diff --git a/lib/lmb.c b/lib/lmb.c
+> index fddd72c..6d49a17 100644
+> --- a/lib/lmb.c
+> +++ b/lib/lmb.c
+> @@ -20,11 +20,11 @@
+>  #include <linux/seq_file.h>
+>  #include <linux/lmb.h>
+>  
+> -struct lmb lmb;
+> +struct lmb lmb __initdata_lmb;
+>  
+> -int lmb_debug;
+> -static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1];
+> -struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1];
+> +int lmb_debug __initdata_lmb;
+> +static struct lmb_region lmb_memory_init_regions[INIT_LMB_REGIONS + 1] __initdata_lmb;
+> +struct lmb_region lmb_reserved_init_regions[INIT_LMB_REGIONS + 1] __initdata_lmb;
+>  
+>  /* inline so we don't get a warning when pr_debug is compiled out */
+>  static inline const char *lmb_type_name(struct lmb_type *type)
+> @@ -41,23 +41,23 @@ static inline const char *lmb_type_name(struct lmb_type *type)
+>   * Address comparison utilities
+>   */
+>  
+> -static phys_addr_t lmb_align_down(phys_addr_t addr, phys_addr_t size)
+> +static phys_addr_t __init_lmb lmb_align_down(phys_addr_t addr, phys_addr_t size)
+>  {
+>  	return addr & ~(size - 1);
+>  }
+>  
+> -static phys_addr_t lmb_align_up(phys_addr_t addr, phys_addr_t size)
+> +static phys_addr_t __init_lmb lmb_align_up(phys_addr_t addr, phys_addr_t size)
+>  {
+>  	return (addr + (size - 1)) & ~(size - 1);
+>  }
+>  
+> -static unsigned long lmb_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
+> +static unsigned long __init_lmb lmb_addrs_overlap(phys_addr_t base1, phys_addr_t size1,
+>  				       phys_addr_t base2, phys_addr_t size2)
+>  {
+>  	return ((base1 < (base2 + size2)) && (base2 < (base1 + size1)));
+>  }
+>  
+> -static long lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+> +static long __init_lmb lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+>  			       phys_addr_t base2, phys_addr_t size2)
+>  {
+>  	if (base2 == base1 + size1)
+> @@ -68,7 +68,7 @@ static long lmb_addrs_adjacent(phys_addr_t base1, phys_addr_t size1,
+>  	return 0;
+>  }
+>  
+> -static long lmb_regions_adjacent(struct lmb_type *type,
+> +static long __init_lmb lmb_regions_adjacent(struct lmb_type *type,
+>  				 unsigned long r1, unsigned long r2)
+>  {
+>  	phys_addr_t base1 = type->regions[r1].base;
+> @@ -79,7 +79,7 @@ static long lmb_regions_adjacent(struct lmb_type *type,
+>  	return lmb_addrs_adjacent(base1, size1, base2, size2);
+>  }
+>  
+> -long lmb_overlaps_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+> +long __init_lmb lmb_overlaps_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	unsigned long i;
+>  
+> @@ -155,7 +155,7 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
+>  	return LMB_ERROR;
+>  }
+>  
+> -static void lmb_remove_region(struct lmb_type *type, unsigned long r)
+> +static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
+>  {
+>  	unsigned long i;
+>  
+> @@ -167,14 +167,14 @@ static void lmb_remove_region(struct lmb_type *type, unsigned long r)
+>  }
+>  
+>  /* Assumption: base addr of region 1 < base addr of region 2 */
+> -static void lmb_coalesce_regions(struct lmb_type *type,
+> +static void __init_lmb lmb_coalesce_regions(struct lmb_type *type,
+>  		unsigned long r1, unsigned long r2)
+>  {
+>  	type->regions[r1].size += type->regions[r2].size;
+>  	lmb_remove_region(type, r2);
+>  }
+>  
+> -static int lmb_double_array(struct lmb_type *type)
+> +static int __init_lmb lmb_double_array(struct lmb_type *type)
+>  {
+>  	struct lmb_region *new_array, *old_array;
+>  	phys_addr_t old_size, new_size, addr;
+> @@ -240,13 +240,13 @@ static int lmb_double_array(struct lmb_type *type)
+>  	return 0;
+>  }
+>  
+> -extern int __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+> +extern int __init_lmb __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+>  					  phys_addr_t addr2, phys_addr_t size2)
+>  {
+>  	return 1;
+>  }
+>  
+> -long lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+> +long __init_lmb lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	unsigned long coalesced = 0;
+>  	long adjacent, i;
+> @@ -333,13 +333,13 @@ long lmb_add_region(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+>  	return 0;
+>  }
+>  
+> -long lmb_add(phys_addr_t base, phys_addr_t size)
+> +long __init_lmb lmb_add(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return lmb_add_region(&lmb.memory, base, size);
+>  
+>  }
+>  
+> -static long __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+> +static long __init_lmb __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t size)
+>  {
+>  	phys_addr_t rgnbegin, rgnend;
+>  	phys_addr_t end = base + size;
+> @@ -387,7 +387,7 @@ static long __lmb_remove(struct lmb_type *type, phys_addr_t base, phys_addr_t si
+>  	return lmb_add_region(type, end, rgnend - end);
+>  }
+>  
+> -long lmb_remove(phys_addr_t base, phys_addr_t size)
+> +long __init_lmb lmb_remove(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return __lmb_remove(&lmb.memory, base, size);
+>  }
+> @@ -544,7 +544,7 @@ phys_addr_t __init lmb_phys_mem_size(void)
+>  	return lmb.memory_size;
+>  }
+>  
+> -phys_addr_t lmb_end_of_DRAM(void)
+> +phys_addr_t __init_lmb lmb_end_of_DRAM(void)
+>  {
+>  	int idx = lmb.memory.cnt - 1;
+>  
+> @@ -605,7 +605,7 @@ int __init lmb_is_reserved(phys_addr_t addr)
+>  	return 0;
+>  }
+>  
+> -int lmb_is_region_reserved(phys_addr_t base, phys_addr_t size)
+> +int __init_lmb lmb_is_region_reserved(phys_addr_t base, phys_addr_t size)
+>  {
+>  	return lmb_overlaps_region(&lmb.reserved, base, size);
+>  }
+> @@ -616,7 +616,7 @@ void __init lmb_set_current_limit(phys_addr_t limit)
+>  	lmb.current_limit = limit;
+>  }
+>  
+> -static void lmb_dump(struct lmb_type *region, char *name)
+> +static void __init_lmb lmb_dump(struct lmb_type *region, char *name)
+>  {
+>  	unsigned long long base, size;
+>  	int i;
+> @@ -632,7 +632,7 @@ static void lmb_dump(struct lmb_type *region, char *name)
+>  	}
+>  }
+>  
+> -void lmb_dump_all(void)
+> +void __init_lmb lmb_dump_all(void)
+>  {
+>  	if (!lmb_debug)
+>  		return;
+> @@ -695,7 +695,7 @@ static int __init early_lmb(char *p)
+>  }
+>  early_param("lmb", early_lmb);
+>  
+> -#ifdef CONFIG_DEBUG_FS
+> +#if defined(CONFIG_DEBUG_FS) && !defined(ARCH_DISCARD_LMB)
+>  
+>  static int lmb_debug_show(struct seq_file *m, void *private)
+>  {
+
 
