@@ -1,62 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756783Ab0ENQgf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:36:35 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:56515 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756349Ab0ENQgd (ORCPT
+	id S1756813Ab0ENQgu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:36:50 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:54625 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755229Ab0ENQgs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:36:33 -0400
-Message-ID: <4BED7CE3.1020507@oracle.com>
-Date: Fri, 14 May 2010 09:40:03 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 12:36:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=VA3fpaa19LoJqGOnMZ3WL4i6O0HZWZ++4FYvljgHXxni7zJKsrchCQrC9dIw2O/xav
+         NmDXNcoFKexF+NvlBXkHhkKaHRnm/zfu2dFUB1WX0h1wMZniioszXXMG8/r5/ylzSekf
+         qZF6dHMft+GOj/qlrHt+xTc3cNNDh+3x4TMHs=
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>	 <1273804337.21352.396.camel@pasglop>  <4BECF158.5070200@oracle.com> <1273825807.21352.601.camel@pasglop>
-In-Reply-To: <1273825807.21352.601.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090204.4BED7BE8.005E:SCFMA4539811,ss=1,fgs=0
+In-Reply-To: <20100514162813.GB13509@lenovo>
+References: <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com>
+	 <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
+	 <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com>
+	 <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
+	 <1273834571.3530.82.camel@minggr.sh.intel.com>
+	 <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo>
+	 <20100514145213.GA13509@lenovo>
+	 <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
+	 <20100514162813.GB13509@lenovo>
+Date: Fri, 14 May 2010 22:06:44 +0530
+Message-ID: <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2010 01:30 AM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 23:44 -0700, Yinghai wrote:
->   
->> On 05/13/2010 07:32 PM, Benjamin Herrenschmidt wrote:
->>     
->>> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->>>       
->>>> Some areas from firmware could be reserved several times from different callers.
->>>>
->>>> If these area are overlapped, We may have overlapped entries in lmb.reserved.
->>>>
->>>> Try to free the area at first, before rerserve them again.
->>>>         
->>> I have already told you to make this a property of lmb_reserve() instead
->>> of adding that function with a terrible name.
->>>       
->> make every lmb_reserve() call lmb_free at first?
->>     
-> Either that, or make it check for collisions first, and if there's
-> one, call free and try again. A little bit more work but I plan toq
-> make it smarter at some stage, ie, directly adjust surrounding ranges
-> instead which is not -that- hard to do.
->
->   
-later, after this patchset. this patchset is hanging around too long
-already.
+Hello Cyrill,
 
-YH
+On Fri, May 14, 2010 at 9:58 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+> On Fri, May 14, 2010 at 09:52:28PM +0530, Jaswinder Singh Rajput wrote:
+> ...
+>> Yes, this works for me. Now I am not getting general protection fault.
+>>
+>> It seems hardware events are not supported for P4 yet.
+>>
+>> $ ./perf stat -e
+>> cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles
+>> ls > /dev/null
+>>
+>>  Performance counter stats for 'ls':
+>>
+>>   <not counted>  cycles
+>>          601636  instructions             #      0.000 IPC    (scaled
+>> from 91.80%)
+>>   <not counted>  cache-references
+>>   <not counted>  cache-misses
+>>   <not counted>  branches
+>>   <not counted>  branch-misses
+>>   <not counted>  bus-cycles
+>>
+>>     0.003364910  seconds time elapsed
+>
+> Thanks Jaswinder,
+>
+> it means counters management somehow screwed at moment (it was working before).
+> I'm working on it.
+>
+
+Ok, I added few more events and now I am able see few hardware events :
+
+$ ./perf stat -e
+cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles,L1-dcache-loads,L1-dcache-load-misses,L1-dcache-stores,L1-dcache-store-misses,L1-dcache-prefetches,L1-dcache-prefetch-misses,L1-icache-loads,L1-icache-load-misses,L1-icache-prefetches,L1-icache-prefetch-misses,LLC-loads,LLC-load-misses,LLC-stores,LLC-store-misses,LLC-prefetches,LLC-prefetch-misses,dTLB-loads,dTLB-load-misses,dTLB-stores,dTLB-store-misses,dTLB-prefetches,dTLB-prefetch-misses,iTLB-loads,iTLB-load-misses
+ls -lR /dev > /dev/null
+
+ Performance counter stats for 'ls -lR /dev':
+
+  <not counted>  cycles
+       10159428  instructions             #      0.000 IPC    (scaled
+from 11.71%)
+  <not counted>  cache-references
+  <not counted>  cache-misses
+        2160905  branches                  (scaled from 9.71%)
+          80630  branch-misses            #      3.731 %      (scaled
+from 15.68%)
+  <not counted>  bus-cycles
+  <not counted>  L1-dcache-loads
+          90289  L1-dcache-load-misses     (scaled from 14.23%)
+  <not counted>  L1-dcache-stores
+  <not counted>  L1-dcache-store-misses
+  <not counted>  L1-dcache-prefetches
+  <not counted>  L1-dcache-prefetch-misses
+  <not counted>  L1-icache-loads
+  <not counted>  L1-icache-load-misses
+  <not counted>  L1-icache-prefetches
+  <not counted>  L1-icache-prefetch-misses
+  <not counted>  LLC-loads
+           3162  LLC-load-misses           (scaled from 12.40%)
+  <not counted>  LLC-stores
+  <not counted>  LLC-store-misses
+  <not counted>  LLC-prefetches
+  <not counted>  LLC-prefetch-misses
+  <not counted>  dTLB-loads
+          21825  dTLB-load-misses          (scaled from 11.04%)
+  <not counted>  dTLB-stores
+           1386  dTLB-store-misses         (scaled from 9.96%)
+  <not counted>  dTLB-prefetches
+  <not counted>  dTLB-prefetch-misses
+  <not counted>  iTLB-loads
+  <not counted>  iTLB-load-misses
+
+    0.019403422  seconds time elapsed
+
+
+Thanks, good work :-)
+
+--
+Jaswinder Singh.
