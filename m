@@ -1,75 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755578Ab0EODkS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 23:40:18 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:2269 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752367Ab0EODkP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 23:40:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=cUHYGyn0irsQz5o4qn2ZTc48IKkrrngJjPDURFi+qWxRxz+8AqhJjHYEm1dL2uamG
-	8E0dWXddOgAyuo1+poo+Q==
+	id S1756070Ab0EODnp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 23:43:45 -0400
+Received: from kroah.org ([198.145.64.141]:47337 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752771Ab0EODnn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 23:43:43 -0400
+Date: Thu, 13 May 2010 20:03:44 -0700
+From: Greg KH <greg@kroah.com>
+To: Piotr Hosowicz <piotr@hosowicz.com>
+Cc: Randy Dunlap <rdunlap@xenotime.net>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: General questiin about SYSFS
+Message-ID: <20100514030344.GA32571@kroah.com>
+References: <4BEC4B0D.8010102@example.com> <4BEC4CD6.6090402@example.com> <4BEC52C0.1000403@xenotime.net> <4BECACC3.3020309@example.com>
 MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.44L0.1005142256070.11498-100000@netrider.rowland.org>
-References: <AANLkTil-Ky5L84JF7xn6su8VMtglBpZwCNIh7VgBiHgL@mail.gmail.com>
-	 <Pine.LNX.4.44L0.1005142256070.11498-100000@netrider.rowland.org>
-Date: Fri, 14 May 2010 20:40:08 -0700
-Message-ID: <AANLkTinwJdPneNSlAeTml5fHW2LFy53Dz3DRf95y1Bcl@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Brian Swetland <swetland@google.com>
-To: Alan Stern <stern@rowland.harvard.edu>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Lindgren <tony@atomide.com>,
-       Matthew Garrett <mjg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       magnus.damm@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?UTF-8?Q?Beno=C3=AEt_Cousson?= <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BECACC3.3020309@example.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 7:58 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
-> On Fri, 14 May 2010, Brian Swetland wrote:
+On Fri, May 14, 2010 at 03:52:03AM +0200, Piotr Hosowicz wrote:
+> Thanks, I have it disabled. I asked tyhe question because of such messages 
+> during boot:
 >
->> It provides useful functionality -- you apparently disagree, but the
->> wakelock/suspendblock model is in use, shipping, and solving problems
->> for quite a lot of android devices that have been shipping for a while
->> now.  We actively go to lowest power state in idle (on omap, msm,
->> etc), and use drivers that aggressively declock and depower modules
->> (similar to runtime pm), but we have found that using the
->> opportunistic suspend model combined with wakelocks allows us to
->> attain even lower average power consumption in always-connected,
->> actively-syncing devices.
+> May 13 16:26:24 aapi205 udevd[1432]: SYSFS{}= will be removed in a future 
+> udev version, please use ATTR{}= to match the event device, or ATTRS{}= to 
+> match a parent device, in /etc/udev/rules.d/025_logitechmouse.rules:21
 >
-> Can you explain this in more detail?  Are you saying that some devices
-> go on generating interrupts and causing timers to be scheduled, even
-> though what they're doing isn't important enough to prevent the system
-> from powering down?
+> As far as I can see this is rather udev question. I don't know what to do 
+> about those messages. Can you give me a hint?
 
-In tickless mode, the time until next timer is a signed int, so the
-longest the kernel will ever sleep is ~2 seconds at a go.  In
-practice, userspace entities often have polling behavior that can
-trigger more often than that, and I've observed some kernel periodic
-timers (haven't cataloged them recently) that happen more often than
-once a second.
+The above message tells you exactly what you need to fix in the udev
+rule.  Please file a bug against the package that the rule came from,
+this is not a kernel or even a udev issue, but rather a packaging issue.
 
-When we go to full suspend, we know that only specific wakeup sources
-(keyboard gpios, baseband voice/ip events, rtc alarms, etc) are going
-to wake us up.
+good luck,
 
-Brian
+greg k-h
