@@ -1,93 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756344Ab0ENC13 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:27:29 -0400
-Received: from gate.crashing.org ([63.228.1.57]:54651 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753614Ab0ENC12 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:27:28 -0400
-Subject: Re: [PATCH 08/35] x86,lmb: Add lmb_reserve_area/lmb_free_area
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai Lu <yinghai@kernel.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <1273796396-29649-9-git-send-email-yinghai@kernel.org>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-	 <1273796396-29649-9-git-send-email-yinghai@kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 12:26:04 +1000
-Message-ID: <1273803964.21352.380.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756763Ab0ENC26 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:28:58 -0400
+Received: from smtp-04.mandic.com.br ([200.225.81.151]:47674 "EHLO
+	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755045Ab0ENC25 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:28:57 -0400
+Message-ID: <4BECB562.2080200@cesarb.net>
+Date: Thu, 13 May 2010 23:28:50 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] radix-tree: fix radix_tree_prev_hole underflow case
+References: <1273802724-3414-1-git-send-email-cesarb@cesarb.net> <20100514021508.GA7810@localhost>
+In-Reply-To: <20100514021508.GA7810@localhost>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+Em 13-05-2010 23:15, Wu Fengguang escreveu:
+> On Fri, May 14, 2010 at 10:05:24AM +0800, Cesar Eduardo Barros wrote:
+>> radix_tree_prev_hole() used LONG_MAX to detect underflow; however,
+>> ULONG_MAX is clearly what was intended, both here and by its only user
+>> (count_history_pages at mm/readahead.c).
+>
+> Good catch, thanks! I actually have a more smart
+> radix_tree_prev_hole() that uses ULONG_MAX.
 
->  #endif
-> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-> index 37a05e2..0dbe05b 100644
-> --- a/arch/x86/mm/lmb.c
-> +++ b/arch/x86/mm/lmb.c
-> @@ -117,3 +117,30 @@ void __init lmb_to_bootmem(u64 start, u64 end)
->  	lmb.reserved.cnt = 0;
->  }
->  #endif
-> +
-> +void __init lmb_add_memory(u64 start, u64 end)
-> +{
-> +	lmb_add_region(&lmb.memory, start, end - start);
-> +}
+I saw it already ([PATCH 14/16] radixtree: speed up the search for 
+hole), but it misses the LONG_MAX in the documentation comment.
 
-I completely fail the point of doing such a minor argument conversion
-as an exported function, with a naming that would cause certain
-confusion with the existing lmb_add().
+> Andrew, fortunately this bug has little impact on readahead.
 
-In any case, the above should be done at the call sites. Just call
-lmb_add(start, end-start). You also aren't consistent since you do the
-similar conversion using the _area suffix below, but not above.
+I agree, if I read it correctly it should only have any impact either 
+when very near LONG_MAX or in the unlikely case that there is no hole at 
+ULONG_MAX. And even then, the impact should be limited.
 
-> +void __init lmb_reserve_area(u64 start, u64 end, char *name)
-> +{
-> +	if (start == end)
-> +		return;
-> +
-> +	if (WARN_ONCE(start > end, "lmb_reserve_area: wrong range [%#llx, %#llx]\n", start, end))
-> +		return;
-> +
-> +	lmb_add_region(&lmb.reserved, start, end - start);
-> +}
-
-You seem to be fond of gratuituous bloat... 
-
-> +void __init lmb_free_area(u64 start, u64 end)
-> +{
-> +	if (start == end)
-> +		return;
-> +
-> +	if (WARN_ONCE(start > end, "lmb_free_area: wrong range [%#llx, %#llx]\n", start, end))
-> +		return;
-> +
-> +	lmb_free(start, end - start);
-> +}
-
-And here again.
-
-If you -really- think there's value in the prototype conversions, then
-make those _area() variants static inlines, group the well together in
-the .h with a clear explanation saying something like "it's more
-practical for some arch to use start/end rather than start/size".
-
-I personally don't see why you are doing that tho.
-
-Cheers,
-Ben.
-
-
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
