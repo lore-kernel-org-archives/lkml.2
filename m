@@ -1,96 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758673Ab0ENNeA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 09:34:00 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:14776 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758345Ab0ENNd6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 09:33:58 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Oleg Nesterov <oleg@tv-sign.ru>, Pavel Emelyanov <xemul@openvz.org>,
-       Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 1/2] posix_timer: separate timer_cleanup from timer_del
-Date: Fri, 14 May 2010 17:28:50 +0400
-Message-Id: <1273843731-12595-1-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.6.6
+	id S1756186Ab0ENNfj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 09:35:39 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27232 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752563Ab0ENNfh (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 09:35:37 -0400
+Date: Fri, 14 May 2010 09:33:15 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Nick Piggin <npiggin@suse.de>, Josef Bacik <josef@redhat.com>,
+       linux-fsdevel@vger.kernel.org, hch@infradead.org,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100514133315.GN30710@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Dave Chinner <david@fromorbit.com>, Nick Piggin <npiggin@suse.de>,
+	Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+	hch@infradead.org, akpm@linux-foundation.org,
+	linux-kernel@vger.kernel.org
+References: <20100512212403.GE3597@localhost.localdomain>
+ <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
+ <20100514010042.GI13617@dastard>
+ <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514083821.GL13617@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BED516B.006C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- include/linux/posix-timers.h |    2 ++
- kernel/posix-cpu-timers.c    |   13 ++++++++++---
- kernel/posix-timers.c        |    4 ++++
- 3 files changed, 16 insertions(+), 3 deletions(-)
+On Fri, May 14, 2010 at 06:38:21PM +1000, Dave Chinner wrote:
+> On Fri, May 14, 2010 at 05:22:19PM +1000, Nick Piggin wrote:
+> > On Fri, May 14, 2010 at 04:41:45PM +1000, Dave Chinner wrote:
+> > > On Thu, May 13, 2010 at 11:30:57PM -0400, Josef Bacik wrote:
+> > > > So this is what I had envisioned, we make write_begin take a nr_pages pointer
+> > > > and tell it how much data we have to write, then in the filesystem we allocate
+> > > > as many pages as we feel like, idealy something like
+> > > > 
+> > > > min(number of pages we need for the write, some arbitrary limit for security)
+> > > 
+> > > Actually, i was thinking that the RESERVE call determines the size
+> > > of the chunk (in the order of 1-4MB maximum). IOWs, we pass in the
+> > > start offset of the write, the entire length remaining, and the
+> > > RESERVE call determines how much it will allow in one loop.
+> > > 
+> > > 	written = 0;
+> > > 	while (bytes_remaining > 0) {
+> > > 		chunklen = ->allocate(off, bytes_remaining, RESERVE);
+> > > 		write_begin(&pages, off, chunklen);
+> > > 		copied = copy_pages(&pages, iov_iter, chunklen);
+> > > 		.....
+> > > 		bytes_remaining -= copied;
+> > > 		off += copied;
+> > > 		written += copied;
+> > > 	}
+> > 
+> > How much benefit are you expecting to get?
+> 
+> If the max chunk size is 4MB, then three orders of magnitudes fewer
+> allocation calls for x86_64 (i.e. one instead of 1024).  For
+> filesystems with significant allocation overhead (like gaining
+> cluster locks in gfs2), this will be a *massive* win.
 
-diff --git a/include/linux/posix-timers.h b/include/linux/posix-timers.h
-index 4f71bf4..613ab27 100644
---- a/include/linux/posix-timers.h
-+++ b/include/linux/posix-timers.h
-@@ -78,6 +78,7 @@ struct k_clock {
- 	int (*timer_set) (struct k_itimer * timr, int flags,
- 			  struct itimerspec * new_setting,
- 			  struct itimerspec * old_setting);
-+	void (*timer_cleanup) (struct k_itimer * timr);
- 	int (*timer_del) (struct k_itimer * timr);
- #define TIMER_RETRY 1
- 	void (*timer_get) (struct k_itimer * timr,
-@@ -103,6 +104,7 @@ int posix_cpu_nsleep(const clockid_t which_clock, int flags,
- long posix_cpu_nsleep_restart(struct restart_block *restart_block);
- int posix_cpu_timer_set(struct k_itimer *timer, int flags,
- 			struct itimerspec *new, struct itimerspec *old);
-+void posix_cpu_timer_cleanup(struct k_itimer *timer);
- int posix_cpu_timer_del(struct k_itimer *timer);
- void posix_cpu_timer_get(struct k_itimer *timer, struct itimerspec *itp);
- 
-diff --git a/kernel/posix-cpu-timers.c b/kernel/posix-cpu-timers.c
-index bc7704b..7a57833 100644
---- a/kernel/posix-cpu-timers.c
-+++ b/kernel/posix-cpu-timers.c
-@@ -455,14 +455,21 @@ int posix_cpu_timer_del(struct k_itimer *timer)
- 			spin_unlock(&p->sighand->siglock);
- 		}
- 		read_unlock(&tasklist_lock);
--
--		if (!ret)
--			put_task_struct(p);
- 	}
- 
-+	if (!ret)
-+		posix_cpu_timer_cleanup(timer);
-+
- 	return ret;
- }
- 
-+void posix_cpu_timer_cleanup(struct k_itimer *timer)
-+{
-+	struct task_struct *p = timer->it.cpu.task;
-+	if (likely(p != NULL))
-+		put_task_struct(p);
-+}
-+
- /*
-  * Clean out CPU timers still ticking when a thread exited.  The task
-  * pointer is cleared, and the expiry time is replaced with the residual
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 00d1fda..1195668 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -197,6 +197,10 @@ static int common_timer_create(struct k_itimer *new_timer)
- 	return 0;
- }
- 
-+static inline void common_timer_cleanup(struct k_itimer *timer)
-+{
-+}
-+
- static int no_timer_create(struct k_itimer *new_timer)
- {
- 	return -EOPNOTSUPP;
--- 
-1.6.6
+It's a pretty big deal in btrfs too.  A 4K write write is much less
+expensive than it used to be, but the part where we mark a range of
+bytes as delayed allocation goes faster if that range is bigger.
 
+-chris
