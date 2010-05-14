@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab0ENTaY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:30:24 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:54885 "EHLO mgw1.diku.dk"
+	id S932187Ab0ENTap (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:30:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:51402 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758476Ab0ENTaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:30:18 -0400
-Date: Fri, 14 May 2010 21:30:13 +0200 (CEST)
+	id S932121Ab0ENTah (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:30:37 -0400
+Date: Fri, 14 May 2010 21:30:30 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 6/10] arch/powerpc/platforms/pseries: Use kstrdup
-Message-ID: <Pine.LNX.4.64.1005142129520.28935@ask.diku.dk>
+To: Stephen Smalley <sds@tycho.nsa.gov>, James Morris <jmorris@namei.org>,
+       Eric Paris <eparis@parisplace.org>,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 7/10] security/selinux/ss: Use kstrdup
+Message-ID: <Pine.LNX.4.64.1005142130140.28935@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -45,23 +46,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- arch/powerpc/platforms/pseries/reconfig.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ security/selinux/ss/policydb.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
---- a/arch/powerpc/platforms/pseries/reconfig.c
-+++ b/arch/powerpc/platforms/pseries/reconfig.c
-@@ -118,12 +118,10 @@ static int pSeries_reconfig_add_node(con
- 	if (!np)
- 		goto out_err;
- 
--	np->full_name = kmalloc(strlen(path) + 1, GFP_KERNEL);
-+	np->full_name = kstrdup(path, GFP_KERNEL);
- 	if (!np->full_name)
- 		goto out_err;
- 
--	strcpy(np->full_name, path);
--
- 	np->properties = proplist;
- 	of_node_set_flag(np, OF_DYNAMIC);
- 	kref_init(&np->kref);
+diff -u -p a/security/selinux/ss/policydb.c b/security/selinux/ss/policydb.c
+--- a/security/selinux/ss/policydb.c
++++ b/security/selinux/ss/policydb.c
+@@ -156,12 +156,11 @@ static int roles_init(struct policydb *p
+ 		rc = -EINVAL;
+ 		goto out_free_role;
+ 	}
+-	key = kmalloc(strlen(OBJECT_R) + 1, GFP_KERNEL);
++	key = kstrdup(OBJECT_R, GFP_KERNEL);
+ 	if (!key) {
+ 		rc = -ENOMEM;
+ 		goto out_free_role;
+ 	}
+-	strcpy(key, OBJECT_R);
+ 	rc = hashtab_insert(p->p_roles.table, key, role);
+ 	if (rc)
+ 		goto out_free_key;
