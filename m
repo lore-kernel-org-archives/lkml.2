@@ -1,85 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932534Ab0ENVtO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 17:49:14 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58300 "EHLO ogre.sisk.pl"
+	id S932094Ab0ENVsj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 17:48:39 -0400
+Received: from mga09.intel.com ([134.134.136.24]:47140 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932456Ab0ENVtD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 17:49:03 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Date: Fri, 14 May 2010 23:50:01 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Tony Lindgren <tony@atomide.com>, Matthew Garrett <mjg@redhat.com>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       magnus.damm@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       =?iso-8859-1?q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com> <878w7mgqse.fsf@deeprootsystems.com> <87tyqaduvr.fsf@deeprootsystems.com>
-In-Reply-To: <87tyqaduvr.fsf@deeprootsystems.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005142350.01222.rjw@sisk.pl>
+	id S1759993Ab0ENVsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 17:48:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,233,1272870000"; 
+   d="scan'208";a="621797676"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@linux.intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 7/8] x86/mrst: add nop functions to x86_init mpparse functions
+Date: Fri, 14 May 2010 14:41:20 -0700
+Message-Id: <1273873281-17489-8-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 May 2010, Kevin Hilman wrote:
-> Kevin Hilman <khilman@deeprootsystems.com> writes:
-> 
-> > "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> >
-> >> On Thursday 13 May 2010, Tony Lindgren wrote:
-> >>> * Rafael J. Wysocki <rjw@sisk.pl> [100513 14:16]:
-> >
-> > [...]
-> >
-> >>>  
-> >>> > It solves a practical issue that _at_ _the_ _moment_ cannot be solved
-> >>> > differently, while there's a growing number of out-of-tree drivers depending
-> >>> > on this framework.  We need those drivers in and because we don't have any
-> >>> > viable alternative at hand, we have no good reason to reject it.
-> >>> 
-> >>> Nothing is preventing merging the drivers can be merged without
-> >>> these calls.
-> >>
-> >> And yet, there _is_ a growing nuber of drivers that don't get merge because
-> >> of that.  That's _reality_.  Are you going to discuss with facts, or what?
-> >
-> > It may be reality, but IMO, "preventing other drivers" isn't a good
-> > *technical* argument for merging a feature.  It feels like these "for
-> > the 'good' of the community" arguments are being used to trump the
-> > technical arguments.  Maybe we need to keep the separate.
-> 
-> To continue along the "for the good of the community" path...
-> 
-> If it truly is the lack of a suspend blocker API that is preventing
-> the merge of these out of tree drivers, I second Mark's proposal[1] to
-> merge a noop version of the API while the technical issues continue to
-> be discussed.
+Moorestown does not have BIOS provided MP tables, we can save some time
+by avoiding scaning of these tables. e.g.
+[    0.000000] Scan SMP from c0000000 for 1024 bytes.
+[    0.000000] Scan SMP from c009fc00 for 1024 bytes.
+[    0.000000] Scan SMP from c00f0000 for 65536 bytes.
+[    0.000000] Scan SMP from c00bfff0 for 1024 bytes.
 
-I'm against that, sorry.
+Searching EBDA with the base at 0x40E will also result in random pointer
+deferencing within 1MB. This can be a problem in Lincroft if the pointer
+hits VGA area and VGA mode is not enabled.
 
-> Then we would see how many drivers get submitted and merged.
->
-> Personally, I suspect that lack of this feature is not the real
-> obstacle to getting these out-of-tree drivers upstream.  Having this
-> API upstream will not change the product schedules and corporate
-> cultures that have prevented code from making its way upstream.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+---
+ arch/x86/kernel/mrst.c |    5 +++++
+ 1 files changed, 5 insertions(+), 0 deletions(-)
 
-But apparently it is considered as a suitable excuse.
+diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
+index 83c23d6..9b62d32 100644
+--- a/arch/x86/kernel/mrst.c
++++ b/arch/x86/kernel/mrst.c
+@@ -311,4 +311,9 @@ void __init x86_mrst_early_setup(void)
+ 	x86_init.pci.fixup_irqs = x86_init_noop;
+ 
+ 	legacy_pic = &null_legacy_pic;
++
++	/* Avoid searching for BIOS MP tables */
++	x86_init.mpparse.find_smp_config = x86_init_noop;
++	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
++
+ }
+-- 
+1.6.3.3
 
-Rafael
