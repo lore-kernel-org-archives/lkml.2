@@ -1,58 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756716Ab0ENROa (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:14:30 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:61461 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755069Ab0ENRO1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:14:27 -0400
-Date: Fri, 14 May 2010 10:12:18 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, netdev <netdev@vger.kernel.org>,
-       Jan Engelhardt <jengelh@medozas.de>, netfilter-devel@vger.kernel.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Patrick McHardy <kaber@trash.net>
-Subject: [PATCH -next] netfilter: xt_TEE depends on NF_CONNTRACK
-Message-Id: <20100514101218.16cdb0ad.randy.dunlap@oracle.com>
-In-Reply-To: <20100514161407.740da901.sfr@canb.auug.org.au>
-References: <20100514161407.740da901.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	id S1756778Ab0ENRQh (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:16:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24499 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754271Ab0ENRQg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 13:16:36 -0400
+Date: Fri, 14 May 2010 19:18:00 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>, Andrey Vagin <avagin@openvz.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [PATCH 2/2] posix_timer: clean up properly if anything fails
+ after *_timer_create
+Message-ID: <20100514191800.3e3b6655@dhcp-lab-109.englab.brq.redhat.com>
+In-Reply-To: <20100514160357.GB3727@redhat.com>
+References: <1273843731-12595-1-git-send-email-avagin@openvz.org>
+	<1273843731-12595-2-git-send-email-avagin@openvz.org>
+	<20100514160357.GB3727@redhat.com>
+Organization: RedHat
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090208.4BED84EA.0008:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Fri, 14 May 2010 18:03:57 +0200
+Oleg Nesterov <oleg@redhat.com> wrote:
 
-Fix xt_TEE build for the case of NF_CONNTRACK=m and
-NETFILTER_XT_TARGET_TEE=y:
+> On 05/14, Andrey Vagin wrote:
+> >
+> > *_timer_create may allocate/get some resources, so need call *_timer_cleanup.
+> >
+> > https://bugzilla.sw.ru/show_bug.cgi?id=473702
+> 
+> Authorization Required
+> 
+> > --- a/kernel/posix-timers.c
+> > +++ b/kernel/posix-timers.c
+> > @@ -574,19 +574,19 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+> >  	if (copy_to_user(created_timer_id,
+> >  			 &new_timer_id, sizeof (new_timer_id))) {
+> >  		error = -EFAULT;
+> > -		goto out;
+> > +		goto out_cleanup;
+> >  	}
+> >  	if (timer_event_spec) {
+> >  		if (copy_from_user(&event, timer_event_spec, sizeof (event))) {
+> >  			error = -EFAULT;
+> > -			goto out;
+> > +			goto out_cleanup;
+> >  		}
+> >  		rcu_read_lock();
+> >  		new_timer->it_pid = get_pid(good_sigevent(&event));
+> >  		rcu_read_unlock();
+> >  		if (!new_timer->it_pid) {
+> >  			error = -EINVAL;
+> > -			goto out;
+> > +			goto out_cleanup;
+> >  		}
+> >  	} else {
+> >  		event.sigev_notify = SIGEV_SIGNAL;
+> > @@ -613,6 +613,8 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+> >  	 * and may cease to exist at any time.  Don't use or modify
+> >  	 * new_timer after the unlock call.
+> >  	 */
+> > +out_cleanup:
+> > +	CLOCK_DISPATCH(new_timer->it_clock, timer_cleanup, (new_timer));
+> 
+> But at first glance you are right, posix_cpu_timer_create() does
+> get_task_struct(it.cpu.task).
 
-xt_TEE.c:(.text+0x6df5c): undefined reference to `nf_conntrack_untracked'
-4x
+If I understand problem correctly, seems to be fine to move
+CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
+after all possible EFAULT errors and solve leak without creating
+new timer_cleanup() callback.
 
-Built with all 4 m/y combinations.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc:	Patrick McHardy <kaber@trash.net>
-Cc:	Jan Engelhardt <jengelh@medozas.de>
----
- net/netfilter/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
-
---- linux-next-20100514.orig/net/netfilter/Kconfig
-+++ linux-next-20100514/net/netfilter/Kconfig
-@@ -506,6 +506,7 @@ config NETFILTER_XT_TARGET_TEE
- 	tristate '"TEE" - packet cloning to alternate destiantion'
- 	depends on NETFILTER_ADVANCED
- 	depends on (IPV6 || IPV6=n)
-+	depends on !NF_CONNTRACK || NF_CONNTRACK
- 	---help---
- 	This option adds a "TEE" target with which a packet can be cloned and
- 	this clone be rerouted to another nexthop.
+Stanislaw
