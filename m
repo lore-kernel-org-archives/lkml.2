@@ -1,66 +1,199 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755087Ab0ENW0M (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:26:12 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:52684 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754081Ab0ENW0J (ORCPT
+	id S1755961Ab0ENW0v (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:26:51 -0400
+Received: from tomts40.bellnexxia.net ([209.226.175.97]:51066 "EHLO
+	tomts40-srv.bellnexxia.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754081Ab0ENW0u (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:26:09 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=UYI5HhaJkAvB21EC/UWHCtqCXUvXJbh9aQCzXRMMh7qWixS7m2zdlv9YODweSaAJVyUutDsT2IIQJwYll7sVzJOtzamYYcsQs64LbW8ClZy6IEeRgHxLslmskvcyyH+V;
-Date: Fri, 14 May 2010 15:25:09 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: Bjorn Helgaas <bjorn.helgaas@hp.com>
-Cc: Mike Habeck <habeck@sgi.com>, Mike Travis <travis@sgi.com>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       Myron Stowe <myron.stowe@hp.com>
-Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not
- already assigned
-Message-ID: <20100514152509.3aeb37b4@virtuousgeek.org>
-In-Reply-To: <201005131402.30759.bjorn.helgaas@hp.com>
-References: <4BEAF008.9030805@sgi.com>
-	<201005131256.17997.bjorn.helgaas@hp.com>
-	<4BEC5530.1000008@sgi.com>
-	<201005131402.30759.bjorn.helgaas@hp.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Fri, 14 May 2010 18:26:50 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEADdl7UtGGOJc/2dsb2JhbACeBXK9VYUQBA
+Date: Fri, 14 May 2010 18:26:47 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: [PATCH 12/13 v3] ring-buffer: Add cached pages when freeing
+	reader page
+Message-ID: <20100514222647.GB14234@Krystal>
+References: <20100514192246.079025623@goodmis.org> <20100514192916.945900385@goodmis.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+Content-Disposition: inline
+In-Reply-To: <20100514192916.945900385@goodmis.org>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 18:24:35 up 37 days,  8:18,  3 users,  load average: 0.27, 0.17,
+	0.11
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010 14:02:30 -0600
-Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
-> > > This issue is not specific to x86, so I don't really like having
-> > > the implementation be x86-specific.
-> > 
-> > I agree this isn't a x86 specific issue but given the 'norom'
-> > cmdline option is basically doing the same thing (but for pci
-> > Expansion ROM BARs) this code was modeled after it.
+* Steven Rostedt (rostedt@goodmis.org) wrote:
+> From: Steven Rostedt <srostedt@redhat.com>
 > 
-> IMHO, we should fix both.
+> When the pages are removed from the ring buffer for things like
+> splice they are freed with ring_buffer_free_read_page().
+> They are also allocated with ring_buffer_alloc_read_page().
+> 
+> Currently the ring buffer does not take advantage of this situation.
+> Every time the page is freed, the ring buffer simply frees it.
+> When a new page is needed, it allocates it. This means that reading
+> several pages with splice will cause a page to be freed and allocated
+> several times. This is simply a waste.
+> 
+> This patch adds a cache of the pages freed (16 max). This allows
+> the pages to be reused quickly without need to go back to the memory
+> pool.
 
-Yeah, that would be good.  Mike, have you looked at this at all?
+Trying to understand the effect of splice() putting the page in the page
+cache and how it affects this patch.
 
-Also, to clarify, this isn't affecting users today, right?  Or do you
-need all this I/O space for multiple IOHs and the drivers that bind to
-them in current UV systems?
-
-Fundamentally, until we have real dynamic PCI resource management (i.e.
-driver hooks for handling relocation, lazy allocation of resources at
-driver bind time, etc.) we're going to continue to need hacks like
-this.  However, we could make them slightly more automated by making
-"nobar" and "norom" the default on systems that typically need them,
-maybe with a DMI table.
+Basically, how do you know you can call free_page() from splice() in the
+first place ? Answering this question will probably help us see if this
+page reuse is OK.
 
 Thanks,
+
+Mathieu
+
+> 
+> v2: Added in locking that should have been there in the first release.
+> 
+> Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+> ---
+>  kernel/trace/ring_buffer.c |   52 ++++++++++++++++++++++++++++++++++++++------
+>  1 files changed, 45 insertions(+), 7 deletions(-)
+> 
+> diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+> index 7f6059c..7aded7d 100644
+> --- a/kernel/trace/ring_buffer.c
+> +++ b/kernel/trace/ring_buffer.c
+> @@ -157,6 +157,8 @@ static unsigned long ring_buffer_flags __read_mostly = RB_BUFFERS_ON;
+>  
+>  #define BUF_PAGE_HDR_SIZE offsetof(struct buffer_data_page, data)
+>  
+> +#define RB_MAX_FREE_PAGES	16
+> +
+>  /**
+>   * tracing_on - enable all tracing buffers
+>   *
+> @@ -325,7 +327,10 @@ EXPORT_SYMBOL_GPL(ring_buffer_event_data);
+>  #define RB_MISSED_STORED	(1 << 30)
+>  
+>  struct buffer_data_page {
+> -	u64		 time_stamp;	/* page time stamp */
+> +	union {
+> +		struct buffer_data_page	*next;	/* for free pages */
+> +		u64		 time_stamp;	/* page time stamp */
+> +	};
+>  	local_t		 commit;	/* write committed index */
+>  	unsigned char	 data[];	/* data of buffer page */
+>  };
+> @@ -472,6 +477,10 @@ struct ring_buffer {
+>  	atomic_t			record_disabled;
+>  	cpumask_var_t			cpumask;
+>  
+> +	struct buffer_data_page		*free_pages;
+> +	int				nr_free_pages;
+> +	spinlock_t			free_pages_lock;
+> +
+>  	struct lock_class_key		*reader_lock_key;
+>  
+>  	struct mutex			mutex;
+> @@ -1118,6 +1127,7 @@ struct ring_buffer *__ring_buffer_alloc(unsigned long size, unsigned flags,
+>  	buffer->flags = flags;
+>  	buffer->clock = trace_clock_local;
+>  	buffer->reader_lock_key = key;
+> +	spin_lock_init(&buffer->free_pages_lock);
+>  
+>  	/* need at least two pages */
+>  	if (buffer->pages < 2)
+> @@ -1184,6 +1194,7 @@ EXPORT_SYMBOL_GPL(__ring_buffer_alloc);
+>  void
+>  ring_buffer_free(struct ring_buffer *buffer)
+>  {
+> +	struct buffer_data_page *bpage;
+>  	int cpu;
+>  
+>  	get_online_cpus();
+> @@ -1200,6 +1211,11 @@ ring_buffer_free(struct ring_buffer *buffer)
+>  	kfree(buffer->buffers);
+>  	free_cpumask_var(buffer->cpumask);
+>  
+> +	while (buffer->free_pages) {
+> +		bpage = buffer->free_pages;
+> +		buffer->free_pages = bpage->next;
+> +		free_page((unsigned long)bpage);
+> +	};
+>  	kfree(buffer);
+>  }
+>  EXPORT_SYMBOL_GPL(ring_buffer_free);
+> @@ -3714,14 +3730,24 @@ EXPORT_SYMBOL_GPL(ring_buffer_swap_cpu);
+>   */
+>  void *ring_buffer_alloc_read_page(struct ring_buffer *buffer)
+>  {
+> -	struct buffer_data_page *bpage;
+> +	struct buffer_data_page *bpage = NULL;
+>  	unsigned long addr;
+>  
+> -	addr = __get_free_page(GFP_KERNEL);
+> -	if (!addr)
+> -		return NULL;
+> +	spin_lock(&buffer->free_pages_lock);
+> +	if (buffer->free_pages) {
+> +		bpage = buffer->free_pages;
+> +		buffer->free_pages = bpage->next;
+> +		buffer->nr_free_pages--;
+> +	}
+> +	spin_unlock(&buffer->free_pages_lock);
+>  
+> -	bpage = (void *)addr;
+> +	if (!bpage) {
+> +		addr = __get_free_page(GFP_KERNEL);
+> +		if (!addr)
+> +			return NULL;
+> +
+> +		bpage = (void *)addr;
+> +	}
+>  
+>  	rb_init_page(bpage);
+>  
+> @@ -3738,7 +3764,19 @@ EXPORT_SYMBOL_GPL(ring_buffer_alloc_read_page);
+>   */
+>  void ring_buffer_free_read_page(struct ring_buffer *buffer, void *data)
+>  {
+> -	free_page((unsigned long)data);
+> +	struct buffer_data_page *bpage = data;
+> +
+> +	spin_lock(&buffer->free_pages_lock);
+> +	if (buffer->nr_free_pages >= RB_MAX_FREE_PAGES) {
+> +		spin_unlock(&buffer->free_pages_lock);
+> +		free_page((unsigned long)data);
+> +		return;
+> +	}
+> +
+> +	bpage->next = buffer->free_pages;
+> +	buffer->free_pages = bpage;
+> +	buffer->nr_free_pages++;
+> +	spin_unlock(&buffer->free_pages_lock);
+>  }
+>  EXPORT_SYMBOL_GPL(ring_buffer_free_read_page);
+>  
+> -- 
+> 1.7.0
+> 
+> 
+
 -- 
-Jesse Barnes, Intel Open Source Technology Center
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
