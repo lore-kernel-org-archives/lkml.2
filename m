@@ -1,61 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756152Ab0ENXQ7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 19:16:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:37560 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab0ENXQ6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 19:16:58 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,234,1272870000"; 
-   d="scan'208";a="518086539"
-Subject: Re: TSC unstable due to TSC halts in idle?
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-Reply-To: Suresh Siddha <suresh.b.siddha@intel.com>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Jesper Dangaard Brouer <hawk@diku.dk>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       netdev <netdev@vger.kernel.org>, "Brown, Len" <len.brown@intel.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>, "hawk@comx.dk" <hawk@comx.dk>
-In-Reply-To: <AANLkTimeXEaUnzSBuilbQLHj_oho3ia9EgyPGpB7vJRI@mail.gmail.com>
-References: <Pine.LNX.4.64.1005142208290.6220@ask.diku.dk>
-	 <AANLkTimeXEaUnzSBuilbQLHj_oho3ia9EgyPGpB7vJRI@mail.gmail.com>
-Content-Type: text/plain
-Organization: Intel Corp
-Date: Fri, 14 May 2010 16:15:57 -0700
-Message-Id: <1273878957.2825.175.camel@sbs-t61.sc.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
-Content-Transfer-Encoding: 7bit
+	id S1757810Ab0ENXSb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 19:18:31 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:43300 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752140Ab0ENXSa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 19:18:30 -0400
+Date: Sat, 15 May 2010 00:18:15 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: chris.mason@oracle.com, akpm@linux-foundation.org, adilger@sun.com,
+       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
+       jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
+       npiggin@suse.de, dave.mccracken@oracle.com, riel@redhat.com
+Subject: Re: Cleancache [PATCH 2/7] (was Transcendent Memory): core files
+Message-ID: <20100514231815.GY30031@ZenIV.linux.org.uk>
+References: <20100422132809.GA27302@ca-server1.us.oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100422132809.GA27302@ca-server1.us.oracle.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-14 at 15:28 -0700, john stultz wrote:
-> On Fri, May 14, 2010 at 1:13 PM, Jesper Dangaard Brouer <hawk@diku.dk> wrote:
-> > I want to know, if its safe to enable the TSC clocksource, when the
-> > kernel reports:
-> >  "Marking TSC unstable due to TSC halts in idle"
-> >
-> > The system selects HPET (in current_clocksource), but I can still see
-> > TSC as an available clocksource (in
-> > /sys/devices/system/clocksource/clocksource0/available_clocksource).
-> >
-> > Is it safe to enable TSC manually (by changing current_clocksource)?
-> > (my workload is 10Git/s routing, cannot survive with a slow clock)
-> >
-> >
-> > Any trick to avoid this? (e.g. kernel config setting, or a /sys/ setting
-> > which changes the minimum P-state?)
-> 
-> Might try booting with the max-cstate=1 option.
+On Thu, Apr 22, 2010 at 06:28:09AM -0700, Dan Magenheimer wrote:
+> +struct cleancache_ops {
+> +	int (*init_fs)(unsigned long);
 
-Jesper mentioned that it is xeon 5550. TSC's for that processor doesn't
-stop in idle. Perhaps he is using an older kernel which doesn't detect
-this fact. Jesper, more recent kernels should be able to use TSC as the
-clocksource.
+unsigned long?  Really?  Not even size_t?
 
-thanks,
-suresh
+> +	int (*init_shared_fs)(char *uuid, unsigned long);
 
+Ditto.
+
+> +	int (*get_page)(int, unsigned long, unsigned long, struct page *);
+
+Ugh.  First of all, presumably you have some structure behind that index,
+don't you?  Might be a better way to do it.
+
+What's more, use of ->i_ino is simply wrong.  How stable do you want that
+to be and how much do you want it to outlive struct address_space in question?
+>From my reading of your code, it doesn't outlive that anyway, so...
+
+The third one is pgoff_t; again, use sane types, _if_ you actually want
+the argument #3 at all - it can be derived from struct page you are passing
+there as well.
+
+> +	int (*put_page)(int, unsigned long, unsigned long, struct page *);
+> +	int (*flush_page)(int, unsigned long, unsigned long);
+> +	int (*flush_inode)(int, unsigned long);
+> +	void (*flush_fs)(int);
+
+Same questions as above...
