@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759816Ab0ENTym (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:54:42 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59876 "EHLO
+	id S1759725Ab0ENTyp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:54:45 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59870 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759687Ab0ENTsj (ORCPT
+	with ESMTP id S1759685Ab0ENTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 May 2010 15:48:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,50 +16,152 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 03/37] lmb: Print new doubled array location info
-Date: Fri, 14 May 2010 12:45:29 -0700
-Message-Id: <1273866363-14249-4-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 08/37] x86, lmb: Add lmb_find_area_size()
+Date: Fri, 14 May 2010 12:45:34 -0700
+Message-Id: <1273866363-14249-9-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BEDA8D3.009E,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BEDA8DD.00E5,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-so will have more idea where it is,  use lmb_debug to controll it
+size is returned according free range.
+Will be used to find free ranges for early_memtest and memory corruption check
+
+Do not mess it up with lib/lmb.c yet.
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- lib/lmb.c |    6 ++++--
- 1 files changed, 4 insertions(+), 2 deletions(-)
+ arch/x86/include/asm/lmb.h |    8 ++++
+ arch/x86/mm/Makefile       |    2 +
+ arch/x86/mm/lmb.c          |   88 ++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 98 insertions(+), 0 deletions(-)
+ create mode 100644 arch/x86/include/asm/lmb.h
+ create mode 100644 arch/x86/mm/lmb.c
 
-diff --git a/lib/lmb.c b/lib/lmb.c
-index b6725d6..2bdbe87 100644
---- a/lib/lmb.c
-+++ b/lib/lmb.c
-@@ -185,8 +185,6 @@ static int lmb_double_array(struct lmb_type *type)
- 	phys_addr_t old_size, new_size, addr;
- 	int use_slab = slab_is_available();
- 
--	pr_debug("lmb: %s array full, doubling...", lmb_type_name(type));
--
- 	/* Calculate new doubled size */
- 	old_size = type->max * sizeof(struct lmb_region);
- 	new_size = old_size << 1;
-@@ -214,6 +212,10 @@ static int lmb_double_array(struct lmb_type *type)
- 	}
- 	new_array = __va(addr);
- 
-+	if (lmb_debug)
-+		pr_info("lmb: %s array is doubled to %ld at %llx - %llx",
-+			 lmb_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size);
+diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
+new file mode 100644
+index 0000000..aa3a66e
+--- /dev/null
++++ b/arch/x86/include/asm/lmb.h
+@@ -0,0 +1,8 @@
++#ifndef _X86_LMB_H
++#define _X86_LMB_H
 +
- 	/* Found space, we now need to move the array over before
- 	 * we add the reserved region since it may be our reserved
- 	 * array itself that is full.
++#define ARCH_DISCARD_LMB
++
++u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
++
++#endif
+diff --git a/arch/x86/mm/Makefile b/arch/x86/mm/Makefile
+index a4c7683..8ab0505 100644
+--- a/arch/x86/mm/Makefile
++++ b/arch/x86/mm/Makefile
+@@ -26,4 +26,6 @@ obj-$(CONFIG_NUMA)		+= numa.o numa_$(BITS).o
+ obj-$(CONFIG_K8_NUMA)		+= k8topology_64.o
+ obj-$(CONFIG_ACPI_NUMA)		+= srat_$(BITS).o
+ 
++obj-$(CONFIG_HAVE_LMB)		+= lmb.o
++
+ obj-$(CONFIG_MEMTEST)		+= memtest.o
+diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
+new file mode 100644
+index 0000000..9d26eed
+--- /dev/null
++++ b/arch/x86/mm/lmb.c
+@@ -0,0 +1,88 @@
++#include <linux/kernel.h>
++#include <linux/types.h>
++#include <linux/init.h>
++#include <linux/bitops.h>
++#include <linux/lmb.h>
++#include <linux/bootmem.h>
++#include <linux/mm.h>
++#include <linux/range.h>
++
++/* Check for already reserved areas */
++static inline bool __init bad_addr_size(u64 *addrp, u64 *sizep, u64 align)
++{
++	int i;
++	u64 addr = *addrp, last;
++	u64 size = *sizep;
++	bool changed = false;
++again:
++	last = addr + size;
++	for (i = 0; i < lmb.reserved.cnt && lmb.reserved.regions[i].size; i++) {
++		struct lmb_region *r = &lmb.reserved.regions[i];
++		if (last > r->base && addr < r->base) {
++			size = r->base - addr;
++			changed = true;
++			goto again;
++		}
++		if (last > (r->base + r->size) && addr < (r->base + r->size)) {
++			addr = round_up(r->base + r->size, align);
++			size = last - addr;
++			changed = true;
++			goto again;
++		}
++		if (last <= (r->base + r->size) && addr >= r->base) {
++			(*sizep)++;
++			return false;
++		}
++	}
++	if (changed) {
++		*addrp = addr;
++		*sizep = size;
++	}
++	return changed;
++}
++
++static u64 __init __lmb_find_area_size(u64 ei_start, u64 ei_last, u64 start,
++			 u64 *sizep, u64 align)
++{
++	u64 addr, last;
++
++	addr = round_up(ei_start, align);
++	if (addr < start)
++		addr = round_up(start, align);
++	if (addr >= ei_last)
++		goto out;
++	*sizep = ei_last - addr;
++	while (bad_addr_size(&addr, sizep, align) && addr + *sizep <= ei_last)
++		;
++	last = addr + *sizep;
++	if (last > ei_last)
++		goto out;
++
++	return addr;
++
++out:
++	return LMB_ERROR;
++}
++
++/*
++ * Find next free range after *start
++ */
++u64 __init lmb_find_area_size(u64 start, u64 *sizep, u64 align)
++{
++	int i;
++
++	for (i = 0; i < lmb.memory.cnt; i++) {
++		u64 ei_start = lmb.memory.regions[i].base;
++		u64 ei_last = ei_start + lmb.memory.regions[i].size;
++		u64 addr;
++
++		addr = __lmb_find_area_size(ei_start, ei_last, start,
++					 sizep, align);
++
++		if (addr != LMB_ERROR)
++			return addr;
++	}
++
++	return LMB_ERROR;
++}
++
 -- 
 1.6.4.2
 
