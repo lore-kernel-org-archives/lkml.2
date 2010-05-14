@@ -1,16 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759326Ab0ENT37 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:29:59 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:51394 "EHLO mgw2.diku.dk"
+	id S932107Ab0ENTaY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:30:24 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:54885 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759330Ab0ENT34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:29:56 -0400
-Date: Fri, 14 May 2010 21:29:51 +0200 (CEST)
+	id S1758476Ab0ENTaS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:30:18 -0400
+Date: Fri, 14 May 2010 21:30:13 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/10] drivers/message/i2o/memory.c: Use kstrdup
-Message-ID: <Pine.LNX.4.64.1005142129290.28935@ask.diku.dk>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Paul Mackerras <paulus@samba.org>, linuxppc-dev@ozlabs.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 6/10] arch/powerpc/platforms/pseries: Use kstrdup
+Message-ID: <Pine.LNX.4.64.1005142129520.28935@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,21 +45,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/message/i2o/memory.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ arch/powerpc/platforms/pseries/reconfig.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff -u -p a/drivers/message/i2o/memory.c b/drivers/message/i2o/memory.c
---- a/drivers/message/i2o/memory.c
-+++ b/drivers/message/i2o/memory.c
-@@ -270,10 +270,9 @@ EXPORT_SYMBOL_GPL(i2o_dma_realloc);
- int i2o_pool_alloc(struct i2o_pool *pool, const char *name,
- 				 size_t size, int min_nr)
- {
--	pool->name = kmalloc(strlen(name) + 1, GFP_KERNEL);
-+	pool->name = kstrdup(name, GFP_KERNEL);
- 	if (!pool->name)
- 		goto exit;
--	strcpy(pool->name, name);
+diff -u -p a/arch/powerpc/platforms/pseries/reconfig.c b/arch/powerpc/platforms/pseries/reconfig.c
+--- a/arch/powerpc/platforms/pseries/reconfig.c
++++ b/arch/powerpc/platforms/pseries/reconfig.c
+@@ -118,12 +118,10 @@ static int pSeries_reconfig_add_node(con
+ 	if (!np)
+ 		goto out_err;
  
- 	pool->slab =
- 	    kmem_cache_create(pool->name, size, 0, SLAB_HWCACHE_ALIGN, NULL);
+-	np->full_name = kmalloc(strlen(path) + 1, GFP_KERNEL);
++	np->full_name = kstrdup(path, GFP_KERNEL);
+ 	if (!np->full_name)
+ 		goto out_err;
+ 
+-	strcpy(np->full_name, path);
+-
+ 	np->properties = proplist;
+ 	of_node_set_flag(np, OF_DYNAMIC);
+ 	kref_init(&np->kref);
