@@ -1,44 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab0ENJSM (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 05:18:12 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:11566 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752587Ab0ENJSI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 05:18:08 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=l/l53YDo87SnBA70hRaobh/O3s5xVXsf8uQ8IOMXrDvAPIr++aqNt4QIJLIRA9tdo
-	cPM3RNvSOH3GLmfd9kSAQ==
-Date: Fri, 14 May 2010 02:17:59 -0700 (PDT)
-From: David Rientjes <rientjes@google.com>
-X-X-Sender: rientjes@chino.kir.corp.google.com
-To: Andreas Dilger <adilger@dilger.ca>
-cc: linux-mm@kvack.org,
-       "linux-kernel@vger.kernel.org Mailinglist" 
-	<linux-kernel@vger.kernel.org>,
-       trivial@kernel.org
-Subject: Re: [PATCH 1/1] mm: add descriptive comment for TIF_MEMDIE
- declaration
-In-Reply-To: <930863A4-0E91-4994-8EA0-E18361B0113D@dilger.ca>
-Message-ID: <alpine.DEB.2.00.1005140217400.24388@chino.kir.corp.google.com>
-References: <930863A4-0E91-4994-8EA0-E18361B0113D@dilger.ca>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1754348Ab0ENJdY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 05:33:24 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:50537 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753675Ab0ENJdX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 05:33:23 -0400
+Date: Fri, 14 May 2010 10:33:03 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
+Message-ID: <20100514093303.GA21481@csn.ul.ie>
+References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> <20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org> <4BEC8235.4060509@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
-X-System-Of-Record: true
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <4BEC8235.4060509@redhat.com>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 13 May 2010, Andreas Dilger wrote:
+On Thu, May 13, 2010 at 06:50:29PM -0400, Rik van Riel wrote:
+> On 05/13/2010 05:09 PM, Andrew Morton wrote:
+>
+>> I'm not very confident in merging all these onto the current MM pile.
+>
+> My apologies, I built them onto Linus's latest git
+> tree (where I know I did get all the anon_vma->lock
+> instances).
+>
 
-> From: Andreas Dilger <adilger@dilger.ca>
-> 
-> Add descriptive comment for TIF_MEMDIE task flag declaration.
-> 
+And the instance Andrew ran into was specific to a migration fix in
+mmotm where it was possible for anon_vma to disappear during migration.
 
-It would probably be better to say functionally what it does: gives oom 
-killed tasks access to memory reserves.
+> Andrew, Mel, want me to make a version of this series
+> against -mmotm, or does the migrate & compaction code
+> need to be modified in some non-obvious way that would
+> require Mel to create a new compaction series on top
+> of these anon_vma patches?
+>
+
+I'd like to see a version on top of mmotm at least. It isn't clear to me what
+order these anon_vma changes were going in. Compaction should not be
+affected by this series but the fixes to migration are. I'd expect the
+main collision points to be with these patches.
+
+mmmigration-take-a-reference-to-the-anon_vma-before-migrating.patch
+mmmigration-share-the-anon_vma-ref-counts-between-ksm-and-page-migration.patch
+
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
