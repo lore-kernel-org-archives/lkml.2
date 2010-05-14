@@ -1,83 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758371Ab0ENVlL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 17:41:11 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:46621 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757679Ab0ENVlH (ORCPT
+	id S1759727Ab0ENVr7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 17:47:59 -0400
+Received: from mga06.intel.com ([134.134.136.21]:49795 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1758079Ab0ENVr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 17:41:07 -0400
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Tony Lindgren <tony@atomide.com>, Matthew Garrett <mjg@redhat.com>,
-       Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       magnus.damm@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
-	<201005132321.59245.rjw@sisk.pl> <20100513212556.GI3428@atomide.com>
-	<201005132356.21355.rjw@sisk.pl> <878w7mgqse.fsf@deeprootsystems.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Fri, 14 May 2010 14:40:56 -0700
-In-Reply-To: <878w7mgqse.fsf@deeprootsystems.com> (Kevin Hilman's message of "Fri\, 14 May 2010 13\:41\:05 -0700")
-Message-ID: <87tyqaduvr.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	Fri, 14 May 2010 17:47:58 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,233,1272870000"; 
+   d="scan'208";a="621797610"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@linux.intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 0/8] v2 Moorestown core patches for 35 merge window
+Date: Fri, 14 May 2010 14:41:13 -0700
+Message-Id: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.6.3.3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kevin Hilman <khilman@deeprootsystems.com> writes:
+Hi hpa, ingo, and tglx,
 
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
->
->> On Thursday 13 May 2010, Tony Lindgren wrote:
->>> * Rafael J. Wysocki <rjw@sisk.pl> [100513 14:16]:
->
-> [...]
->
->>>  
->>> > It solves a practical issue that _at_ _the_ _moment_ cannot be solved
->>> > differently, while there's a growing number of out-of-tree drivers depending
->>> > on this framework.  We need those drivers in and because we don't have any
->>> > viable alternative at hand, we have no good reason to reject it.
->>> 
->>> Nothing is preventing merging the drivers can be merged without
->>> these calls.
->>
->> And yet, there _is_ a growing nuber of drivers that don't get merge because
->> of that.  That's _reality_.  Are you going to discuss with facts, or what?
->
-> It may be reality, but IMO, "preventing other drivers" isn't a good
-> *technical* argument for merging a feature.  It feels like these "for
-> the 'good' of the community" arguments are being used to trump the
-> technical arguments.  Maybe we need to keep the separate.
+We have received many comments in v1, specifically regarding the consolidation
+of timer calibration and frequency detection. These two items are being worked
+on and require more time for restructuring. Therefore, i have separated them
+out of the patch series. This series below only inlcude the parts that have
+comments been addressed.
 
-To continue along the "for the good of the community" path...
+thanks,
 
-If it truly is the lack of a suspend blocker API that is preventing
-the merge of these out of tree drivers, I second Mark's proposal[1] to
-merge a noop version of the API while the technical issues continue to
-be discussed.  Then we would see how many drivers get submitted and
-merged.
+Jacob
 
-Personally, I suspect that lack of this feature is not the real
-obstacle to getting these out-of-tree drivers upstream.  Having this
-API upstream will not change the product schedules and corporate
-cultures that have prevented code from making its way upstream.
+*** BLURB HERE ***
 
-Kevin
+Feng Tang (2):
+  x86/platform: add a wallclock_init func to x86_platforms ops
+  x86/mrst: add vrtc driver which serves as a wall clock device
 
-[1] https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025501.html
+Jacob Pan (6):
+  x86/mrst/pci: return 0 for non-present pci bars
+  x86/mrst: add cpu type detection for Medfield
+  x86/mrst: add more timer options to include Medfield
+  x86/apbt: support more timer configurations on mrst
+  x86/mrst: add nop functions to x86_init mpparse functions
+  input: do not select i8042 for x86 mid
+
+ arch/x86/include/asm/apb_timer.h |    2 +-
+ arch/x86/include/asm/fixmap.h    |    4 ++
+ arch/x86/include/asm/mrst.h      |   20 ++++++++
+ arch/x86/include/asm/vrtc.h      |   27 ++++++++++
+ arch/x86/include/asm/x86_init.h  |    2 +
+ arch/x86/kernel/Makefile         |    2 +-
+ arch/x86/kernel/apb_timer.c      |   18 ++++---
+ arch/x86/kernel/mrst.c           |   97 +++++++++++++++++++++++++++++++++---
+ arch/x86/kernel/setup.c          |    2 +
+ arch/x86/kernel/vrtc.c           |  100 ++++++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/x86_init.c       |    2 +
+ arch/x86/pci/mrst.c              |    2 +-
+ drivers/input/keyboard/Kconfig   |    2 +-
+ drivers/input/mouse/Kconfig      |    2 +-
+ 14 files changed, 260 insertions(+), 22 deletions(-)
+ create mode 100644 arch/x86/include/asm/vrtc.h
+ create mode 100644 arch/x86/kernel/vrtc.c
+
