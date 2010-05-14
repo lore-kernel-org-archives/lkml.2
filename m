@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755626Ab0ENA1I (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:27:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:53906 "EHLO
+	id S1754326Ab0ENA11 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:27:27 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:53864 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754604Ab0ENAYh (ORCPT
+	with ESMTP id S1753431Ab0ENAYf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:24:37 -0400
+	Thu, 13 May 2010 20:24:35 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -16,53 +16,74 @@ Cc: David Miller <davem@davemloft.net>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 35/35] x86: make e820 to be __initdata
-Date: Thu, 13 May 2010 17:19:56 -0700
-Message-Id: <1273796396-29649-36-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 34/35] x86: Use walk_system_ream_range() instead of referring e820.map directly for tboot
+Date: Thu, 13 May 2010 17:19:55 -0700
+Message-Id: <1273796396-29649-35-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BEC97CD.0076,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090205.4BEC97B0.0059,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally no user after init boot stage. We can free it to save some bytes.
+So we can make e820 to be __initdata
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 --
- arch/x86/kernel/e820.c      |    2 +-
- 2 files changed, 1 insertions(+), 3 deletions(-)
+ arch/x86/kernel/tboot.c |   22 +++++++++-------------
+ 1 files changed, 9 insertions(+), 13 deletions(-)
 
-diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index cd7de51..f2ab72e 100644
---- a/arch/x86/include/asm/e820.h
-+++ b/arch/x86/include/asm/e820.h
-@@ -73,8 +73,6 @@ struct e820map {
- #define BIOS_END		0x00100000
+diff --git a/arch/x86/kernel/tboot.c b/arch/x86/kernel/tboot.c
+index c2f1b26..20b9531 100644
+--- a/arch/x86/kernel/tboot.c
++++ b/arch/x86/kernel/tboot.c
+@@ -171,34 +171,30 @@ static void tboot_create_trampoline(void)
  
- #ifdef __KERNEL__
--/* see comment in arch/x86/kernel/e820.c */
--extern struct e820map e820;
+ #ifdef CONFIG_ACPI_SLEEP
  
- #if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
- extern int centaur_ram_top;
-diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index 0e30c2e..70255d5 100644
---- a/arch/x86/kernel/e820.c
-+++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * user can e.g. boot the original kernel with mem=1G while still booting the
-  * next kernel with full memory.
-  */
--struct e820map e820;
-+static struct e820map __initdata e820;
- static struct e820map __initdata e820_saved;
+-static void add_mac_region(phys_addr_t start, unsigned long size)
++static int
++add_mac_region(unsigned long start_pfn, unsigned long nr_pages, void  *arg)
+ {
++	u64 start = start_pfn;
++	u64 size = nr_pages;
+ 	struct tboot_mac_region *mr;
+-	phys_addr_t end = start + size;
  
- /* For PCI or other memory-mapped resources */
+ 	if (tboot->num_mac_regions >= MAX_TB_MAC_REGIONS)
+ 		panic("tboot: Too many MAC regions\n");
+ 
+ 	if (start && size) {
+ 		mr = &tboot->mac_regions[tboot->num_mac_regions++];
+-		mr->start = round_down(start, PAGE_SIZE);
+-		mr->size  = round_up(end, PAGE_SIZE) - mr->start;
++		mr->start = start << PAGE_SHIFT;
++		mr->size  = (u32) (size << PAGE_SHIFT);
+ 	}
++
++	return 0;
+ }
+ 
+ static int tboot_setup_sleep(void)
+ {
+-	int i;
+-
+ 	tboot->num_mac_regions = 0;
+ 
+-	for (i = 0; i < e820.nr_map; i++) {
+-		if ((e820.map[i].type != E820_RAM)
+-		 && (e820.map[i].type != E820_RESERVED_KERN))
+-			continue;
+-
+-		add_mac_region(e820.map[i].addr, e820.map[i].size);
+-	}
++	walk_system_ram_range(0, max_pfn, NULL, add_mac_region);
+ 
+ 	tboot->acpi_sinfo.kernel_s3_resume_vector = acpi_wakeup_address;
+ 
 -- 
 1.6.4.2
 
