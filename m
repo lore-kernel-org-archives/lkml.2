@@ -1,71 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754703Ab0ENFxW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 01:53:22 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38514 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751669Ab0ENFxT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 01:53:19 -0400
-Date: Fri, 14 May 2010 15:53:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       David Miller <davem@davemloft.net>, Don Zickus <dzickus@redhat.com>
-Subject: linux-next: build failure after merge of the final tree
-Message-Id: <20100514155312.9684cb9d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__14_May_2010_15_53_12_+1000_h=_M5gj3.AU.T.dQ"
+	id S1753360Ab0ENFzr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 01:55:47 -0400
+Received: from fg-out-1718.google.com ([72.14.220.157]:24395 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751848Ab0ENFzq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 01:55:46 -0400
+Message-ID: <4BECE5B2.3090108@monstr.eu>
+Date: Fri, 14 May 2010 07:54:58 +0200
+From: Michal Simek <monstr@monstr.eu>
+Reply-To: monstr@monstr.eu
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: [GIT PULL] arch/microblaze fixes for 2.6.34-rc8 v2
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__14_May_2010_15_53_12_+1000_h=_M5gj3.AU.T.dQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi all,
+as I mentioned in the previous email. Here is the new pull request 
+which contains one more bug fix.
 
-After merging the final tree, today's linux-next build (sparc64 defconfig)
-failed like this:
+Thanks,
+Michal
 
-kernel/built-in.o: In function `touch_nmi_watchdog':
-(.text+0x449bc): multiple definition of `touch_nmi_watchdog'
-arch/sparc/kernel/built-in.o:(.text+0x11b28): first defined here
 
-Probably caused by commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
-("lockup_detector: Combine nmi_watchdog and softlockup detector").
+The following changes since commit be835674b55324c1abe973b15343c3663910c620:
+   Linus Torvalds (1):
+         Merge branch 'merge' of git://git.kernel.org/.../benh/powerpc
 
-The one in kernel/ used to only be built when CONFIG_NMI_WATCHDOG was set
-which depended on CONFIG_PERF_EVENTS_NMI which was only ever set for
-ARCH=3Dx86.  This probably breaks mn10300 and blackfin as well, at least.
-We also have ARCH_HAS_NMI_WATCHDOG to determine this ...
+are available in the git repository at:
 
-I tried protecting the definition of touch_nmi_watchdog with
-ARCH_HAS_NMI_WATCHDOG, but that broke the x86_64 allmodconfig build
-(which defines ARCH_HAS_NMI_WATCHDOG if CONFIG_X86_LOCAL_APIC is defined
-but only builds its version if CONFIG_LOCKUP_DETECTOR is not 'y').
+   git://git.monstr.eu/linux-2.6-microblaze.git for-linus
 
-So I have left is as it is for today.  Please see if someone can come up
-with a solution.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Michal Simek (4):
+       microblaze: Remove compilation warnings in cache macro
+       microblaze: Remove powerpc code from Microblaze port
+       microblaze: export assembly functions used by modules
+       microblaze: Fix module loading on system with WB cache
 
---Signature=_Fri__14_May_2010_15_53_12_+1000_h=_M5gj3.AU.T.dQ
-Content-Type: application/pgp-signature
+Steven J. Magnani (3):
+       microblaze: re-enable interrupts before calling schedule
+       microblaze: fix get_user/put_user side-effects
+       microblaze: export assembly functions used by modules
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+  arch/microblaze/include/asm/uaccess.h     |   87 
++++++++++++++++++++++++------
+  arch/microblaze/kernel/cpu/cache.c        |    3 +-
+  arch/microblaze/kernel/entry-nommu.S      |    2 +
+  arch/microblaze/kernel/microblaze_ksyms.c |   11 ++++
+  arch/microblaze/kernel/module.c           |    2 +
+  arch/microblaze/mm/init.c                 |    1 +
+  arch/microblaze/mm/pgtable.c              |    1 +
+  arch/microblaze/pci/pci-common.c          |    2 +-
+  8 files changed, 89 insertions(+), 20 deletions(-)
 
-iEYEARECAAYFAkvs5UgACgkQjjKRsyhoI8wVWQCgqErzlj5IJWvw98CDLzE5/vkn
-6MIAoKpFaMLdYWdT4FO/vn3kEz3k6uqg
-=6RBE
------END PGP SIGNATURE-----
 
---Signature=_Fri__14_May_2010_15_53_12_+1000_h=_M5gj3.AU.T.dQ--
+-- 
+Michal Simek, Ing. (M.Eng)
+w: www.monstr.eu p: +42-0-721842854
+Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
+Microblaze U-BOOT custodian
