@@ -1,44 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751767Ab0ENGz4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:55:56 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:63108 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1750837Ab0ENGzy convert rfc822-to-8bit (ORCPT
+	id S1752329Ab0ENHAc (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 03:00:32 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:35194 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751338Ab0ENHAa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:55:54 -0400
-Message-ID: <4BECF467.1060600@cn.fujitsu.com>
-Date: Fri, 14 May 2010 14:57:43 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	Fri, 14 May 2010 03:00:30 -0400
+Date: Fri, 14 May 2010 12:27:44 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: akpm@linux-foundation.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
+       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 0/7] NUMA Hotplug emulator
+Message-ID: <20100514065744.GB3296@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <20100513113629.GA2169@shaohui>
 MIME-Version: 1.0
-To: Michal Marek <mmarek@suse.cz>
-CC: Randy Dunlap <randy.dunlap@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2 1/8] kconfig: print symbol type in help text
-References: <4BE3AB91.80606@cn.fujitsu.com>
-In-Reply-To: <4BE3AB91.80606@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <20100513113629.GA2169@shaohui>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Michal, what do you think about those patches? Seems
-Randy has had no further comments on them.
+* Shaohui Zheng <shaohui.zheng@intel.com> [2010-05-13 19:36:30]:
 
-Li Zefan wrote:
-> Randy suggested to print out the symbol type in gconfig.
+> Hi, All
+> 	This patchset introduces NUMA hotplug emulator for x86. it refers too
+> many files and might introduce new bugs, so we send a RFC to comminity first
+> and expect comments and suggestions, thanks.
 > 
-> Note this change does more than Randy's suggestion, that it also
-> affects menuconfig and "make config".
+> * WHAT IS HOTPLUG EMULATOR 
 > 
->   │ Symbol: BLOCK [=y]
->   │ Type  : boolean
->   │ Prompt: Enable the block layer
->   │   Defined at block/Kconfig:4
->   │   Depends on: EMBEDDED [=n]
+> NUMA hotplug emulator is collectively named for the hotplug emulation
+> it is able to emulate NUMA Node Hotplug thru a pure software way. It
+> intends to help people easily debug and test node/cpu/memory hotplug
+> related stuff on a none-numa-hotplug-support machine, even an UMA machine.
 > 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-> Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> The emulator provides mechanism to emulate the process of physcial cpu/mem
+> hotadd, it provides possibility to debug CPU and memory hotplug on the machines
+> without NUMA support for kenrel developers. It offers an interface for cpu
+> and memory hotplug test purpose.
+>
+
+Sounds like an interesting project, could you please
+
+Post your patches as threaded, ideally having 0/7 to 7/7 in a thread
+helps track the patches and comments.
+
+-- 
+	Three Cheers,
+	Balbir
