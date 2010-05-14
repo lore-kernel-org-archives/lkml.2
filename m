@@ -1,63 +1,119 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab0EXXI2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:08:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55405 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758378Ab0EXXI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:08:27 -0400
-Date: Mon, 24 May 2010 23:08:04 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       akpm@linux-foundation.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
-       hpa@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de,
-       hpa@linux.intel.com
-In-Reply-To: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
-References: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86: remove last traces of quicklist usage
-Message-ID: <tip-48691ff86d91db1090551ec2a5ae0d80ef59105f@git.kernel.org>
-Git-Commit-ID: 48691ff86d91db1090551ec2a5ae0d80ef59105f
-X-Mailer: tip-git-log-daemon
+	id S1752601Ab0ENELw (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:11:52 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51269 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab0ENELo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:11:44 -0400
+From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
+To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
+       Anton Vorontsov <cbou@mail.ru>, David Woodhouse <dwmw2@infradead.org>,
+       Daniel Mack <daniel@caiaq.de>,
+       Andres Salomon <dilinger@collabora.co.uk>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH 8/8] power_supply: Block suspend while power supply change notifications are pending
+Date: Thu, 13 May 2010 21:11:13 -0700
+Message-Id: <1273810273-3039-9-git-send-email-arve@android.com>
+X-Mailer: git-send-email 1.6.5.1
+In-Reply-To: <1273810273-3039-8-git-send-email-arve@android.com>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+ <1273810273-3039-2-git-send-email-arve@android.com>
+ <1273810273-3039-3-git-send-email-arve@android.com>
+ <1273810273-3039-4-git-send-email-arve@android.com>
+ <1273810273-3039-5-git-send-email-arve@android.com>
+ <1273810273-3039-6-git-send-email-arve@android.com>
+ <1273810273-3039-7-git-send-email-arve@android.com>
+ <1273810273-3039-8-git-send-email-arve@android.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 24 May 2010 23:08:08 +0000 (UTC)
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  48691ff86d91db1090551ec2a5ae0d80ef59105f
-Gitweb:     http://git.kernel.org/tip/48691ff86d91db1090551ec2a5ae0d80ef59105f
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Mon, 24 May 2010 12:13:19 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 24 May 2010 13:33:31 -0700
+When connecting usb or the charger the device would often go back to sleep
+before the charge led and screen turned on.
 
-x86: remove last traces of quicklist usage
-
-We still have a stray quicklist header included even though we axed
-quicklist usage quite a while back.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Signed-off-by: Arve Hjønnevåg <arve@android.com>
 ---
- arch/x86/mm/pgtable_32.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/power/power_supply_core.c |    9 ++++++---
+ include/linux/power_supply.h      |    3 ++-
+ 2 files changed, 8 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
-index 7928540..cac7184 100644
---- a/arch/x86/mm/pgtable_32.c
-+++ b/arch/x86/mm/pgtable_32.c
-@@ -9,7 +9,6 @@
- #include <linux/pagemap.h>
- #include <linux/spinlock.h>
- #include <linux/module.h>
--#include <linux/quicklist.h>
+diff --git a/drivers/power/power_supply_core.c b/drivers/power/power_supply_core.c
+index cce75b4..577a131 100644
+--- a/drivers/power/power_supply_core.c
++++ b/drivers/power/power_supply_core.c
+@@ -39,7 +39,7 @@ static int __power_supply_changed_work(struct device *dev, void *data)
+ static void power_supply_changed_work(struct work_struct *work)
+ {
+ 	struct power_supply *psy = container_of(work, struct power_supply,
+-						changed_work);
++						changed_work.work);
  
- #include <asm/system.h>
- #include <asm/pgtable.h>
+ 	dev_dbg(psy->dev, "%s\n", __func__);
+ 
+@@ -55,7 +55,7 @@ void power_supply_changed(struct power_supply *psy)
+ {
+ 	dev_dbg(psy->dev, "%s\n", __func__);
+ 
+-	schedule_work(&psy->changed_work);
++	schedule_suspend_blocking_work(&psy->changed_work);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_changed);
+ 
+@@ -155,7 +155,8 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ 		goto dev_create_failed;
+ 	}
+ 
+-	INIT_WORK(&psy->changed_work, power_supply_changed_work);
++	suspend_blocking_work_init(&psy->changed_work,
++				   power_supply_changed_work, "power-supply");
+ 
+ 	rc = power_supply_create_attrs(psy);
+ 	if (rc)
+@@ -172,6 +173,7 @@ int power_supply_register(struct device *parent, struct power_supply *psy)
+ create_triggers_failed:
+ 	power_supply_remove_attrs(psy);
+ create_attrs_failed:
++	suspend_blocking_work_destroy(&psy->changed_work);
+ 	device_unregister(psy->dev);
+ dev_create_failed:
+ success:
+@@ -184,6 +186,7 @@ void power_supply_unregister(struct power_supply *psy)
+ 	flush_scheduled_work();
+ 	power_supply_remove_triggers(psy);
+ 	power_supply_remove_attrs(psy);
++	suspend_blocking_work_destroy(&psy->changed_work);
+ 	device_unregister(psy->dev);
+ }
+ EXPORT_SYMBOL_GPL(power_supply_unregister);
+diff --git a/include/linux/power_supply.h b/include/linux/power_supply.h
+index ebd2b8f..f6412c8 100644
+--- a/include/linux/power_supply.h
++++ b/include/linux/power_supply.h
+@@ -14,6 +14,7 @@
+ #define __LINUX_POWER_SUPPLY_H__
+ 
+ #include <linux/device.h>
++#include <linux/suspend.h>
+ #include <linux/workqueue.h>
+ #include <linux/leds.h>
+ 
+@@ -152,7 +153,7 @@ struct power_supply {
+ 
+ 	/* private */
+ 	struct device *dev;
+-	struct work_struct changed_work;
++	struct suspend_blocking_work changed_work;
+ 
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	struct led_trigger *charging_full_trig;
+-- 
+1.6.5.1
+
