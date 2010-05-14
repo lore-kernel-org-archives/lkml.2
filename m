@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab0ENAX7 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:23:59 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52610 "EHLO
+	id S1756431Ab0ENAah (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:30:37 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52586 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753197Ab0ENAX4 (ORCPT
+	with ESMTP id S1753813Ab0ENAXu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:23:56 -0400
+	Thu, 13 May 2010 20:23:50 -0400
 From: Yinghai Lu <yinghai@kernel.org>
 To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
        "H. Peter Anvin" <hpa@zytor.com>,
@@ -15,122 +15,99 @@ Cc: David Miller <davem@davemloft.net>,
        Benjamin Herrenschmidt <benh@kernel.crashing.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 10/35] x86, lmb: Add lmb_register_active_regions() and lmb_hole_size()
-Date: Thu, 13 May 2010 17:19:31 -0700
-Message-Id: <1273796396-29649-11-git-send-email-yinghai@kernel.org>
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>,
+       Becky Bruce <beckyb@kernel.crashing.org>
+Subject: [PATCH 27/35] swiotlb: Use page alignment for early buffer allocation
+Date: Thu, 13 May 2010 17:19:48 -0700
+Message-Id: <1273796396-29649-28-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090202.4BEC97C4.005A,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BEC97B2.0142,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-lmb_register_active_regions() will be used to fill early_node_map,
-the result will be lmb.memory.region AND numa data
+for 2.6.34
 
-lmb_hole_size will be used to find hole size on lmb.memory.region
-with specified range.
+We could call free_bootmem_late() if swiotlb is not used, and
+it will shrink to page alignement.
+
+So alloc them with page alignment at first, to avoid lose two pages
+
+before patch:
+[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     lmb_reserve_area: [00d7e7ef40, 00d7e9ef40]     swiotlb list
+[    0.000000]     lmb_reserve_area: [00d7e3ef40, 00d7e7ef40]  swiotlb orig_ad
+[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
+
+after patch will get
+[    0.000000]     lmb_reserve_area: [00d3600000, 00d7600000]   swiotlb buffer
+[    0.000000]     lmb_reserve_area: [00d7e7e000, 00d7e9e000]     swiotlb list
+[    0.000000]     lmb_reserve_area: [00d7e3e000, 00d7e7e000]  swiotlb orig_ad
+[    0.000000]     lmb_reserve_area: [000008a000, 0000092000]  swiotlb overflo
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+Cc: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: Becky Bruce <beckyb@kernel.crashing.org>
 ---
- arch/x86/include/asm/lmb.h |    4 ++
- arch/x86/mm/lmb.c          |   69 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 73 insertions(+), 0 deletions(-)
+ lib/swiotlb.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index 80e9e4c..d0ae19f 100644
---- a/arch/x86/include/asm/lmb.h
-+++ b/arch/x86/include/asm/lmb.h
-@@ -12,4 +12,8 @@ void lmb_add_memory(u64 start, u64 end);
- struct range;
- int get_free_all_memory_range(struct range **rangep, int nodeid);
+diff --git a/lib/swiotlb.c b/lib/swiotlb.c
+index 5fddf72..1bd4258 100644
+--- a/lib/swiotlb.c
++++ b/lib/swiotlb.c
+@@ -159,7 +159,7 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	/*
+ 	 * Get IO TLB memory from the low pages
+ 	 */
+-	io_tlb_start = alloc_bootmem_low_pages(bytes);
++	io_tlb_start = alloc_bootmem_low_pages(PAGE_ALIGN(bytes));
+ 	if (!io_tlb_start)
+ 		panic("Cannot allocate SWIOTLB buffer");
+ 	io_tlb_end = io_tlb_start + bytes;
+@@ -169,16 +169,16 @@ swiotlb_init_with_default_size(size_t default_size, int verbose)
+ 	 * to find contiguous free memory regions of size up to IO_TLB_SEGSIZE
+ 	 * between io_tlb_start and io_tlb_end.
+ 	 */
+-	io_tlb_list = alloc_bootmem(io_tlb_nslabs * sizeof(int));
++	io_tlb_list = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 	for (i = 0; i < io_tlb_nslabs; i++)
+  		io_tlb_list[i] = IO_TLB_SEGSIZE - OFFSET(i, IO_TLB_SEGSIZE);
+ 	io_tlb_index = 0;
+-	io_tlb_orig_addr = alloc_bootmem(io_tlb_nslabs * sizeof(phys_addr_t));
++	io_tlb_orig_addr = alloc_bootmem_pages(PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
  
-+void lmb_register_active_regions(int nid, unsigned long start_pfn,
-+					 unsigned long last_pfn);
-+u64 lmb_hole_size(u64 start, u64 end);
-+
- #endif
-diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index 65a9356..faa9ce6 100644
---- a/arch/x86/mm/lmb.c
-+++ b/arch/x86/mm/lmb.c
-@@ -252,3 +252,72 @@ void __init lmb_free_area(u64 start, u64 end)
- 
- 	lmb_free(start, end - start);
+ 	/*
+ 	 * Get the overflow emergency buffer
+ 	 */
+-	io_tlb_overflow_buffer = alloc_bootmem_low(io_tlb_overflow);
++	io_tlb_overflow_buffer = alloc_bootmem_low_pages(PAGE_ALIGN(io_tlb_overflow));
+ 	if (!io_tlb_overflow_buffer)
+ 		panic("Cannot allocate SWIOTLB overflow buffer!\n");
+ 	if (verbose)
+@@ -304,13 +304,13 @@ void __init swiotlb_free(void)
+ 			   get_order(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	} else {
+ 		free_bootmem_late(__pa(io_tlb_overflow_buffer),
+-				  io_tlb_overflow);
++				  PAGE_ALIGN(io_tlb_overflow));
+ 		free_bootmem_late(__pa(io_tlb_orig_addr),
+-				  io_tlb_nslabs * sizeof(phys_addr_t));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(phys_addr_t)));
+ 		free_bootmem_late(__pa(io_tlb_list),
+-				  io_tlb_nslabs * sizeof(int));
++				  PAGE_ALIGN(io_tlb_nslabs * sizeof(int)));
+ 		free_bootmem_late(__pa(io_tlb_start),
+-				  io_tlb_nslabs << IO_TLB_SHIFT);
++				  PAGE_ALIGN(io_tlb_nslabs << IO_TLB_SHIFT));
+ 	}
  }
-+
-+/*
-+ * Finds an active region in the address range from start_pfn to last_pfn and
-+ * returns its range in ei_startpfn and ei_endpfn for the lmb entry.
-+ */
-+static int __init lmb_find_active_region(const struct lmb_region *ei,
-+				  unsigned long start_pfn,
-+				  unsigned long last_pfn,
-+				  unsigned long *ei_startpfn,
-+				  unsigned long *ei_endpfn)
-+{
-+	u64 align = PAGE_SIZE;
-+
-+	*ei_startpfn = round_up(ei->base, align) >> PAGE_SHIFT;
-+	*ei_endpfn = round_down(ei->base + ei->size, align) >> PAGE_SHIFT;
-+
-+	/* Skip map entries smaller than a page */
-+	if (*ei_startpfn >= *ei_endpfn)
-+		return 0;
-+
-+	/* Skip if map is outside the node */
-+	if (*ei_endpfn <= start_pfn || *ei_startpfn >= last_pfn)
-+		return 0;
-+
-+	/* Check for overlaps */
-+	if (*ei_startpfn < start_pfn)
-+		*ei_startpfn = start_pfn;
-+	if (*ei_endpfn > last_pfn)
-+		*ei_endpfn = last_pfn;
-+
-+	return 1;
-+}
-+
-+/* Walk the lmb.memory map and register active regions within a node */
-+void __init lmb_register_active_regions(int nid, unsigned long start_pfn,
-+					 unsigned long last_pfn)
-+{
-+	unsigned long ei_startpfn;
-+	unsigned long ei_endpfn;
-+	int i;
-+
-+	for (i = 0; i < lmb.memory.cnt; i++)
-+		if (lmb_find_active_region(&lmb.memory.regions[i],
-+					    start_pfn, last_pfn,
-+					    &ei_startpfn, &ei_endpfn))
-+			add_active_range(nid, ei_startpfn, ei_endpfn);
-+}
-+
-+/*
-+ * Find the hole size (in bytes) in the memory range.
-+ * @start: starting address of the memory range to scan
-+ * @end: ending address of the memory range to scan
-+ */
-+u64 __init lmb_hole_size(u64 start, u64 end)
-+{
-+	unsigned long start_pfn = start >> PAGE_SHIFT;
-+	unsigned long last_pfn = end >> PAGE_SHIFT;
-+	unsigned long ei_startpfn, ei_endpfn, ram = 0;
-+	int i;
-+
-+	for (i = 0; i < lmb.memory.cnt; i++) {
-+		if (lmb_find_active_region(&lmb.memory.regions[i],
-+					    start_pfn, last_pfn,
-+					    &ei_startpfn, &ei_endpfn))
-+			ram += ei_endpfn - ei_startpfn;
-+	}
-+	return end - start - ((u64)ram << PAGE_SHIFT);
-+}
-+
+ 
 -- 
 1.6.4.2
 
