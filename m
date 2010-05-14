@@ -1,100 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932199Ab0ENGso (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:48:44 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:47324 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932141Ab0ENGsl (ORCPT
+	id S932247Ab0ENGsu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:48:50 -0400
+Received: from mga05.intel.com ([192.55.52.89]:65081 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S932141Ab0ENGsq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:48:41 -0400
-Message-ID: <4BECF158.5070200@oracle.com>
-Date: Thu, 13 May 2010 23:44:40 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 02:48:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,227,1272870000"; 
+   d="scan'208";a="567101477"
+Date: Fri, 14 May 2010 14:58:08 +0800
+From: Huaxu Wan <huaxu.wan@linux.intel.com>
+To: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
+Cc: huaxu.wan@intel.com, Valdis.Kletnieks@vt.edu,
+       Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+Subject: [PATCH 1/2 V3 minor change] hwmon: (coretemp) Detect the thermal
+ sensors by CPUID
+Message-ID: <20100514065808.GA11598@owl>
+References: <20100507095459.GA12190@owl>
+ <20100510033525.GC9181@owl>
+ <20100511080112.GB19762@owl>
+ <20100514032000.GB17786@khazad-dum.debian.net>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-16-git-send-email-yinghai@kernel.org> <1273804337.21352.396.camel@pasglop>
-In-Reply-To: <1273804337.21352.396.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BECF1F9.0119:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514032000.GB17786@khazad-dum.debian.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 07:32 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->> Some areas from firmware could be reserved several times from different callers.
->>
->> If these area are overlapped, We may have overlapped entries in lmb.reserved.
->>
->> Try to free the area at first, before rerserve them again.
-> 
-> I have already told you to make this a property of lmb_reserve() instead
-> of adding that function with a terrible name.
 
-make every lmb_reserve() call lmb_free at first?
+The thermal sensors of Intel(R) CPUs can be detected by CPUID instruction,
+indicated by CPUID.06H.EAX[0].
 
-> 
-> Cheers,
-> Ben.
-> 
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  arch/x86/include/asm/lmb.h |    1 +
->>  arch/x86/mm/lmb.c          |   18 ++++++++++++++++++
->>  2 files changed, 19 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
->> index dd42ac1..9329e09 100644
->> --- a/arch/x86/include/asm/lmb.h
->> +++ b/arch/x86/include/asm/lmb.h
->> @@ -7,6 +7,7 @@ u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
->>  void lmb_to_bootmem(u64 start, u64 end);
->>  
->>  void lmb_reserve_area(u64 start, u64 end, char *name);
->> +void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
->>  void lmb_free_area(u64 start, u64 end);
->>  void lmb_add_memory(u64 start, u64 end);
->>  struct range;
->> diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
->> index 19a5f49..1100c18 100644
->> --- a/arch/x86/mm/lmb.c
->> +++ b/arch/x86/mm/lmb.c
->> @@ -309,6 +309,24 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
->>  	lmb_add_region(&lmb.reserved, start, end - start);
->>  }
->>  
->> +/*
->> + * Could be used to avoid having overlap entries in lmb.reserved.region.
->> + *  Don't need to use it with area that is from lmb_find_area()
->> + *  Only use it for the area that fw hidden area.
->> + */
->> +void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
->> +{
->> +	if (start == end)
->> +		return;
->> +
->> +	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
->> +		return;
->> +
->> +	/* Free that region at first */
->> +	lmb_free(start, end - start);
->> +	lmb_add_region(&lmb.reserved, start, end - start);
->> +}
->> +
->>  void __init lmb_free_area(u64 start, u64 end)
->>  {
->>  	if (start == end)
-> 
+Signed-off-by: Huaxu Wan <huaxu.wan@linux.intel.com>
+Signed-off-by: Carsten Emde <C.Emde@osadl.org>
+Reviewed-By: Valdis Kletnieks <valdis.kletnieks@vt.edu>
+---
+ drivers/hwmon/coretemp.c |   34 +++++++++++++---------------------
+ 1 files changed, 13 insertions(+), 21 deletions(-)
+
+diff --git a/drivers/hwmon/coretemp.c b/drivers/hwmon/coretemp.c
+index e9b7fbc..885da2b 100644
+--- a/drivers/hwmon/coretemp.c
++++ b/drivers/hwmon/coretemp.c
+@@ -451,28 +451,20 @@ static int __init coretemp_init(void)
+ 
+ 	for_each_online_cpu(i) {
+ 		struct cpuinfo_x86 *c = &cpu_data(i);
++ 		/* 
++		 * CPUID.06H.EAX[0] indicates whether the CPU has thermal
++		 * sensors. We check this bit only, all the early CPUs
++		 * without thermal sensors will be filtered out. 
++		 */
++		if (c->cpuid_level >= 6 && (cpuid_eax(0x06) & 0x01)) {
++			err = coretemp_device_add(i);
++			if (err)
++				goto exit_devices_unreg;
+ 
+-		/* check if family 6, models 0xe (Pentium M DC),
+-		  0xf (Core 2 DC 65nm), 0x16 (Core 2 SC 65nm),
+-		  0x17 (Penryn 45nm), 0x1a (Nehalem), 0x1c (Atom),
+-		  0x1e (Lynnfield) */
+-		if ((c->cpuid_level < 0) || (c->x86 != 0x6) ||
+-		    !((c->x86_model == 0xe) || (c->x86_model == 0xf) ||
+-			(c->x86_model == 0x16) || (c->x86_model == 0x17) ||
+-			(c->x86_model == 0x1a) || (c->x86_model == 0x1c) ||
+-			(c->x86_model == 0x1e))) {
+-
+-			/* supported CPU not found, but report the unknown
+-			   family 6 CPU */
+-			if ((c->x86 == 0x6) && (c->x86_model > 0xf))
+-				printk(KERN_WARNING DRVNAME ": Unknown CPU "
+-					"model 0x%x\n", c->x86_model);
+-			continue;
+-		}
+-
+-		err = coretemp_device_add(i);
+-		if (err)
+-			goto exit_devices_unreg;
++		} else {
++			printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
++				" has no thermal sensor.\n", c->x86_model);
++		} 
+ 	}
+ 	if (list_empty(&pdev_list)) {
+ 		err = -ENODEV;
+-- 
+1.6.3.3.363.g725cf7
 
