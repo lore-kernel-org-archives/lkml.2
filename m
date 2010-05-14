@@ -1,11 +1,11 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756868Ab0ENCbU (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:31:20 -0400
-Received: from gate.crashing.org ([63.228.1.57]:35399 "EHLO gate.crashing.org"
+	id S1756896Ab0ENCcB (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:32:01 -0400
+Received: from gate.crashing.org ([63.228.1.57]:35418 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755045Ab0ENCbS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:31:18 -0400
+	id S1754169Ab0ENCb7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:31:59 -0400
 Subject: Re: [PATCH 11/35] lmb: Add find_memory_core_early()
 From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
 To: Yinghai Lu <yinghai@kernel.org>
@@ -20,8 +20,8 @@ In-Reply-To: <1273796396-29649-12-git-send-email-yinghai@kernel.org>
 References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
 	 <1273796396-29649-12-git-send-email-yinghai@kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 12:29:33 +1000
-Message-ID: <1273804173.21352.386.camel@pasglop>
+Date: Fri, 14 May 2010 12:30:38 +1000
+Message-ID: <1273804238.21352.389.camel@pasglop>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -36,15 +36,19 @@ On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
 > Will be used by lmb_find_area_node()
 > 
 > lmb_find_area_node will be used to find right buffer for NODE_DATA
+> 
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
 
-The prototype for this has nothing to do in lmb.h under that name at
-least.
+Oh and this wont' work on sparc. You should probably instead add a
+lmb_find_in_nid() to lmb which shares code with lmb_alloc_nid().
+
+However, why do you wnat to do this find + separate reserve again ? Why
+not lmb_alloc ?
 
 Cheers,
 Ben.
 
-> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
-> ---
 >  include/linux/mm.h |    2 ++
 >  mm/page_alloc.c    |   29 +++++++++++++++++++++++++++++
 >  2 files changed, 31 insertions(+), 0 deletions(-)
