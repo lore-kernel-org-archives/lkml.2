@@ -1,37 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759112Ab0ENS4A (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 14:56:00 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40145 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758413Ab0ENSz7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 14:55:59 -0400
-Date: Fri, 14 May 2010 11:53:10 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Eric Paris <eparis@redhat.com>
-cc: linux-kernel@vger.kernel.org
-Subject: Re: [GIT PULL] notification updates for 2.6.34-rcX
-In-Reply-To: <1273854980.2826.28.camel@localhost>
-Message-ID: <alpine.LFD.2.00.1005141152090.3711@i5.linux-foundation.org>
-References: <1273854980.2826.28.camel@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1759202Ab0ENS4X (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 14:56:23 -0400
+Received: from mail.lang.hm ([64.81.33.126]:60364 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758458Ab0ENS4W (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 14:56:22 -0400
+Date: Fri, 14 May 2010 11:55:43 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-Reply-To: <20100514184931.GA10113@srcf.ucam.org>
+Message-ID: <alpine.DEB.2.01.1005141151570.8603@asgard.lang.hm>
+References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100514145539.GA5598@srcf.ucam.org> <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org> <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
+ <20100514184931.GA10113@srcf.ucam.org>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, 14 May 2010, Matthew Garrett wrote:
 
+> On Fri, May 14, 2010 at 11:47:43AM -0700, david@lang.hm wrote:
+>
+>> yes, everything has USB ports, so they could use USB keyboards, but it's
+>> actually pretty common to still use PS/2 keyboards (and while the systems
+>> all support USB, it's not uncommon to have KVM systems, including pretty
+>> expensive 'enterprise' KVM systems that still require PS/2 keyboards be
+>> used to plug into the KVM, so those are the keyboards that are in the
+>> datacenter that someone will grab to plug into a problem machine)
+>
+> The server hardware I've looked at will all declare the ports regardless
+> of whether or not there's something plugged in.
 
-On Fri, 14 May 2010, Eric Paris wrote:
-> 
-> Russell King (1):
->       Inotify: undefined reference to `anon_inode_getfd'
+remember that many people use systems in datacenters that are not 'server 
+hardware'.
 
-This one was bogus - it was already done in mainline _and_ in the tree you 
-were applying the patch on.
+when a desktop PC can have 4-6 cores with 8G+ of ram and a couple TB of 
+storage, a lot of people will end up using those systems for production.
 
-I did a manual merge to edit out the duplicate Kconfig line.
+As they grow into bigger companies they will shift to 'server class' 
+hardware, but startups tend to use whatever they can scrounge (or buy 
+_really_ cheap)
 
-		Linus
+David Lang
