@@ -1,64 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759132Ab0ENSty (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 14:49:54 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51342 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759084Ab0ENStw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 14:49:52 -0400
-Subject: Re: [RFC] Tracer Ring Buffer splice() vs page cache [was: Re: Perf
- and ftrace [was Re: PyTimechart]]
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-In-Reply-To: <20100514183242.GA11795@Krystal>
-References: <20100514183242.GA11795@Krystal>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 20:49:05 +0200
-Message-ID: <1273862945.1674.14.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758922Ab0ENSvU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 14:51:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:32160 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757758Ab0ENSvT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 14:51:19 -0400
+Date: Fri, 14 May 2010 20:48:50 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Stanislaw Gruszka <sgruszka@redhat.com>
+Cc: Andrey Vagin <avagin@openvz.org>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Pavel Emelyanov <xemul@openvz.org>
+Subject: Re: [PATCH 2/2] posix_timer: clean up properly if anything fails
+	after *_timer_create
+Message-ID: <20100514184850.GA11352@redhat.com>
+References: <1273843731-12595-1-git-send-email-avagin@openvz.org> <1273843731-12595-2-git-send-email-avagin@openvz.org> <20100514160357.GB3727@redhat.com> <20100514191800.3e3b6655@dhcp-lab-109.englab.brq.redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514191800.3e3b6655@dhcp-lab-109.englab.brq.redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-14 at 14:32 -0400, Mathieu Desnoyers wrote:
+On 05/14, Stanislaw Gruszka wrote:
+>
+> On Fri, 14 May 2010 18:03:57 +0200
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > On 05/14, Andrey Vagin wrote:
+> > >
+> > > @@ -613,6 +613,8 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
+> > >  	 * and may cease to exist at any time.  Don't use or modify
+> > >  	 * new_timer after the unlock call.
+> > >  	 */
+> > > +out_cleanup:
+> > > +	CLOCK_DISPATCH(new_timer->it_clock, timer_cleanup, (new_timer));
+> >
+> > But at first glance you are right, posix_cpu_timer_create() does
+> > get_task_struct(it.cpu.task).
+>
+> If I understand problem correctly, seems to be fine to move
+> CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
+> after all possible EFAULT errors and solve leak without creating
+> new timer_cleanup() callback.
 
-> [CCing memory management specialists]
+I thought about this too, we are doing copy_to_user(created_timer_id)
+"in advance" anyway. Probably we can move all this code block
 
-And jet you forgot Jens who wrote it ;-)
+	new_timer->it_id = (timer_t) new_timer_id;
+	new_timer->it_clock = which_clock;
+	new_timer->it_overrun = -1;
+	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
+	if (error)
+		goto out;
 
-> So I have three questions here:
-> 
-> 1 - could we enforce removal of these pages from the page cache by calling
->     "page_cache_release()" before giving these pages back to the ring buffer ?
-> 
-> 2 - or maybe is there a page flag we could specify when we allocate them to
->     ask for these pages to never be put in the page cache ? (but they should be
->     still usable as write buffers)
-> 
-> 3 - is there something more we need to do to grab a reference on the pages
->     before passing them to splice(), so that when we call page_cache_release()
->     they don't get reclaimed ? 
+down, right before we take ->siglock.
 
-There is no guarantee it is the pagecache they end up in, it could be a
-network packet queue, a pipe, or anything that implements .splice_write.
-
->From what I understand of splice() is that it assumes it passes
-ownership of the page, you're not supposed to touch them again, non of
-the above three are feasible.
+But I don't understand the change in posix_cpu_timer_del() from 1/2.
 
 
+Otoh, currently "The next step is hard to back out if there is an error"
+comment is not right, release_posix_timer() does put_pid(). We can
+move copy_to_user(created_timer_id) down after "if (timer_event_spec)"
+block too. (but before CLOCK_DISPATCH(), of course).
+
+Andrey, what do you think?
+
+Oleg.
 
