@@ -1,185 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754575Ab0ENPUg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 11:20:36 -0400
-Received: from tex.lwn.net ([70.33.254.29]:40724 "EHLO vena.lwn.net"
+	id S1755528Ab0ENPVd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 11:21:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40894 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753282Ab0ENPUe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 11:20:34 -0400
-Date: Fri, 14 May 2010 09:20:32 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Steffen Klassert <steffen.klassert@secunet.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] Add a document for the padata interface
-Message-ID: <20100514092032.56a416ed@bike.lwn.net>
-In-Reply-To: <20100514105859.GA2184@secunet.com>
-References: <20100512142917.4287bf6e@bike.lwn.net>
-	<20100514105859.GA2184@secunet.com>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1751140Ab0ENPVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 11:21:31 -0400
+Date: Fri, 14 May 2010 11:03:43 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       David Miller <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20100514150343.GQ15159@redhat.com>
+References: <20100514155312.9684cb9d.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514155312.9684cb9d.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010 12:58:59 +0200
-Steffen Klassert <steffen.klassert@secunet.com> wrote:
+On Fri, May 14, 2010 at 03:53:12PM +1000, Stephen Rothwell wrote:
+> Hi all,
+> 
+> After merging the final tree, today's linux-next build (sparc64 defconfig)
+> failed like this:
+> 
+> kernel/built-in.o: In function `touch_nmi_watchdog':
+> (.text+0x449bc): multiple definition of `touch_nmi_watchdog'
+> arch/sparc/kernel/built-in.o:(.text+0x11b28): first defined here
+> 
+> Probably caused by commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b
+> ("lockup_detector: Combine nmi_watchdog and softlockup detector").
+> 
+> The one in kernel/ used to only be built when CONFIG_NMI_WATCHDOG was set
+> which depended on CONFIG_PERF_EVENTS_NMI which was only ever set for
+> ARCH=x86.  This probably breaks mn10300 and blackfin as well, at least.
+> We also have ARCH_HAS_NMI_WATCHDOG to determine this ...
+> 
+> I tried protecting the definition of touch_nmi_watchdog with
+> ARCH_HAS_NMI_WATCHDOG, but that broke the x86_64 allmodconfig build
+> (which defines ARCH_HAS_NMI_WATCHDOG if CONFIG_X86_LOCAL_APIC is defined
+> but only builds its version if CONFIG_LOCKUP_DETECTOR is not 'y').
+> 
+> So I have left is as it is for today.  Please see if someone can come up
+> with a solution.
 
-> We disable the BHs before we call parallel(), so sleeping is not allowed.
-> This is necessary to keep up with the networking softirq if padata is used
-> for doing IPsec.
+Sorry for the mess.  I think the following patch cleans it up.  The last
+piece deals with the sparc mess, the other two pieces should deal with the
+x86 fallout.
 
-Oops...you didn't point that out last time :)
+Cheers,
+Don
 
-I've updated that one sentence in the attached patch; everything else
-is the same.  Look good?
 
-Thanks,
-
-jon
-
----
-Add a document describing the padata interface
-
-This originally appeared as http://lwn.net/Articles/382257/.
-
-Cc: Steffen Klassert <steffen.klassert@secunet.com>
-Signed-off-by: Jonathan Corbet <corbet@lwn.net>
----
- Documentation/00-INDEX   |    2 +
- Documentation/padata.txt |  107 ++++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 109 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/padata.txt
-
-diff --git a/Documentation/00-INDEX b/Documentation/00-INDEX
-index 06b982a..dd10b51 100644
---- a/Documentation/00-INDEX
-+++ b/Documentation/00-INDEX
-@@ -250,6 +250,8 @@ numastat.txt
- 	- info on how to read Numa policy hit/miss statistics in sysfs.
- oops-tracing.txt
- 	- how to decode those nasty internal kernel error dump messages.
-+padata.txt
-+	- An introduction to the "padata" parallel execution API
- parisc/
- 	- directory with info on using Linux on PA-RISC architecture.
- parport.txt
-diff --git a/Documentation/padata.txt b/Documentation/padata.txt
-new file mode 100644
-index 0000000..269d7d0
---- /dev/null
-+++ b/Documentation/padata.txt
-@@ -0,0 +1,107 @@
-+The padata parallel execution mechanism
-+Last updated for 2.6.34
-+
-+Padata is a mechanism by which the kernel can farm work out to be done in
-+parallel on multiple CPUs while retaining the ordering of tasks.  It was
-+developed for use with the IPsec code, which needs to be able to perform
-+encryption and decryption on large numbers of packets without reordering
-+those packets.  The crypto developers made a point of writing padata in a
-+sufficiently general fashion that it could be put to other uses as well.
-+
-+The first step in using padata is to set up a padata_instance structure for
-+overall control of how tasks are to be run:
-+
-+    #include <linux/padata.h>
-+
-+    struct padata_instance *padata_alloc(const struct cpumask *cpumask,
-+				         struct workqueue_struct *wq);
-+
-+The cpumask describes which processors will be used to execute work
-+submitted to this instance.  The workqueue wq is where the work will
-+actually be done; it should be a multithreaded queue, naturally.
-+
-+There are functions for enabling and disabling the instance:
-+
-+    void padata_start(struct padata_instance *pinst);
-+    void padata_stop(struct padata_instance *pinst);
-+
-+These functions literally do nothing beyond setting or clearing the
-+"padata_start() was called" flag; if that flag is not set, other functions
-+will refuse to work.
-+
-+The list of CPUs to be used can be adjusted with these functions:
-+
-+    int padata_set_cpumask(struct padata_instance *pinst,
-+			   cpumask_var_t cpumask);
-+    int padata_add_cpu(struct padata_instance *pinst, int cpu);
-+    int padata_remove_cpu(struct padata_instance *pinst, int cpu);
-+
-+Changing the CPU mask has the look of an expensive operation, though, so it
-+probably should not be done with great frequency.
-+
-+Actually submitting work to the padata instance requires the creation of a
-+padata_priv structure:
-+
-+    struct padata_priv {
-+        /* Other stuff here... */
-+	void                    (*parallel)(struct padata_priv *padata);
-+	void                    (*serial)(struct padata_priv *padata);
-+    };
-+
-+This structure will almost certainly be embedded within some larger
-+structure specific to the work to be done.  Most its fields are private to
-+padata, but the structure should be zeroed at initialization time, and the
-+parallel() and serial() functions should be provided.  Those functions will
-+be called in the process of getting the work done as we will see
-+momentarily.
-+
-+The submission of work is done with:
-+
-+    int padata_do_parallel(struct padata_instance *pinst,
-+		           struct padata_priv *padata, int cb_cpu);
-+
-+The pinst and padata structures must be set up as described above; cb_cpu
-+specifies which CPU will be used for the final callback when the work is
-+done; it must be in the current instance's CPU mask.  The return value from
-+padata_do_parallel() is a little strange; zero is an error return
-+indicating that the caller forgot the padata_start() formalities.  -EBUSY
-+means that somebody, somewhere else is messing with the instance's CPU
-+mask, while -EINVAL is a complaint about cb_cpu not being in that CPU mask.
-+If all goes well, this function will return -EINPROGRESS, indicating that
-+the work is in progress.
-+
-+Each task submitted to padata_do_parallel() will, in turn, be passed to
-+exactly one call to the above-mentioned parallel() function, on one CPU, so
-+true parallelism is achieved by submitting multiple tasks.  Despite the
-+fact that the workqueue is used to make these calls, parallel() is run with
-+software interrupts disabled and thus cannot sleep.  The parallel()
-+function gets the padata_priv structure pointer as its lone parameter;
-+information about the actual work to be done is probably obtained by using
-+container_of() to find the enclosing structure.
-+
-+Note that parallel() has no return value; the padata subsystem assumes that
-+parallel() will take responsibility for the task from this point.  The work
-+need not be completed during this call, but, if parallel() leaves work
-+outstanding, it should be prepared to be called again with a new job before
-+the previous one completes.  When a task does complete, parallel() (or
-+whatever function actually finishes the job) should inform padata of the
-+fact with a call to:
-+
-+    void padata_do_serial(struct padata_priv *padata);
-+
-+At some point in the future, padata_do_serial() will trigger a call to the
-+serial() function in the padata_priv structure.  That call will happen on
-+the CPU requested in the initial call to padata_do_parallel(); it, too, is
-+done through the workqueue, but with local software interrupts disabled.
-+Note that this call may be deferred for a while since the padata code takes
-+pains to ensure that tasks are completed in the order in which they were
-+submitted.
-+
-+The one remaining function in the padata API should be called to clean up
-+when a padata instance is no longer needed:
-+
-+    void padata_free(struct padata_instance *pinst);
-+
-+This function will busy-wait while any remaining tasks are completed, so it
-+might be best not to call it while there is work outstanding.  Shutting
-+down the workqueue, if necessary, should be done separately.
--- 
-1.7.0.1
-
+diff --git a/arch/x86/kernel/apic/Makefile b/arch/x86/kernel/apic/Makefile
+index 52f32e0..3a57a04 100644
+--- a/arch/x86/kernel/apic/Makefile
++++ b/arch/x86/kernel/apic/Makefile
+@@ -3,10 +3,10 @@
+ #
+ 
+ obj-$(CONFIG_X86_LOCAL_APIC)	+= apic.o apic_noop.o probe_$(BITS).o ipi.o
+-ifneq ($(CONFIG_LOCKUP_DETECTOR),y)
++ifneq ($(CONFIG_PERF_EVENTS_NMI),y)
+ obj-$(CONFIG_X86_LOCAL_APIC)	+= nmi.o
+ endif
+-obj-$(CONFIG_LOCKUP_DETECTOR)	+= hw_nmi.o
++obj-$(CONFIG_PERF_EVENTS_NMI)	+= hw_nmi.o
+ 
+ obj-$(CONFIG_X86_IO_APIC)	+= io_apic.o
+ obj-$(CONFIG_SMP)		+= ipi.o
+diff --git a/include/linux/nmi.h b/include/linux/nmi.h
+index abd48aa..9a30da4 100644
+--- a/include/linux/nmi.h
++++ b/include/linux/nmi.h
+@@ -20,7 +20,7 @@ extern void touch_nmi_watchdog(void);
+ extern void acpi_nmi_disable(void);
+ extern void acpi_nmi_enable(void);
+ #else
+-#ifndef CONFIG_LOCKUP_DETECTOR
++#ifndef CONFIG_PERF_EVENTS_NMI
+ static inline void touch_nmi_watchdog(void)
+ {
+ 	touch_softlockup_watchdog();
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index be5e74e..61b63ca 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -139,12 +139,14 @@ void touch_all_softlockup_watchdogs(void)
+ 		per_cpu(watchdog_touch_ts, cpu) = 0;
+ }
+ 
++#ifdef CONFIG_PERF_EVENTS_NMI
+ void touch_nmi_watchdog(void)
+ {
+ 	__get_cpu_var(watchdog_nmi_touch) = true;
+ 	touch_softlockup_watchdog();
+ }
+ EXPORT_SYMBOL(touch_nmi_watchdog);
++#endif
+ 
+ void touch_softlockup_watchdog_sync(void)
+ {
