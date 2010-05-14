@@ -1,49 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758191Ab0ENIM3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:12:29 -0400
-Received: from gate.crashing.org ([63.228.1.57]:56151 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754301Ab0ENIMY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:12:24 -0400
-Subject: Re: [PATCH 03/35] lmb: Add ARCH_DISCARD_LMB to put lmb code to
- .init
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BECEBF4.7000402@oracle.com>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-	 <1273796396-29649-4-git-send-email-yinghai@kernel.org>
-	 <1273803249.21352.357.camel@pasglop>  <4BECEBF4.7000402@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 18:10:23 +1000
-Message-ID: <1273824623.21352.580.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758218Ab0ENINE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:13:04 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:39518 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754301Ab0ENIM7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:12:59 -0400
+Date: Fri, 14 May 2010 13:42:48 +0530
+From: Balbir Singh <balbir@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Lennart Poettering <mzxreary@0pointer.de>,
+       Dhaval Giani <dhaval.giani@gmail.com>,
+       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
+       menage@google.com, jsafrane@redhat.com, tglx@linutronix.de
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+Message-ID: <20100514081248.GE3296@balbir.in.ibm.com>
+Reply-To: balbir@linux.vnet.ibm.com
+References: <4BEAB6FC.8090105@intcomgrp.com>
+ <AANLkTinwfvtALZhefqp_KbaUqH0EQFiokqvCQdMZC5M7@mail.gmail.com>
+ <1273674048.1626.117.camel@laptop>
+ <20100512190757.GA421@tango.0pointer.de>
+ <1273755719.5605.3537.camel@twins>
+ <20100513140354.GA12639@tango.0pointer.de>
+ <1273785546.5605.3556.camel@twins>
+ <20100514000252.GB30093@tango.0pointer.de>
+ <20100514054336.GX3296@balbir.in.ibm.com>
+ <1273820028.5605.3565.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1273820028.5605.3565.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 23:21 -0700, Yinghai wrote:
-> > So you do not intend to use lmb after boot ? This will break the
-> debugfs
-> > files unless you also remove those.
+* Peter Zijlstra <peterz@infradead.org> [2010-05-14 08:53:48]:
+
+> On Fri, 2010-05-14 at 11:13 +0530, Balbir Singh wrote:
 > 
-> no, x86 don't lmb after boot.
+> > I think the config options are the domains of the distributors 
 > 
-> yes 
+> Whoever runs a distro kernel anyway? This is LKML, we're kernel devs.
+>
 
-So you need some kind of CONFIG option to keep lmb after boot, at least
-the data structures, for debugfs, or when not set, disable the debugfs
-files.
+Heh! agreed, but we are a small population and moreover a large
+population would benefit from systemd and parallel boot.
+ 
+> > I am not sure why CONFIG_CGROUP=y is so bad, Peter, could you
+> > elaborate? 
+> 
+> Because it adds code I don't use and adds to the compile overhead.
 
-Ben.
+Not anymore, if systemd becomes the default :-)
 
 
+-- 
+	Three Cheers,
+	Balbir
