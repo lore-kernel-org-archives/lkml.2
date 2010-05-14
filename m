@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757567Ab0ENL5J (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 07:57:09 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:51221 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754290Ab0ENL5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 07:57:05 -0400
-Date: Fri, 14 May 2010 13:56:55 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>,
-       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: Performance Events hangs with Intel P4 system
-Message-ID: <20100514115655.GA18069@elte.hu>
-References: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
- <AANLkTiktLXqHhop21ePIXF2kaVQbm3DIHZpLrEQOMA1e@mail.gmail.com>
- <AANLkTimCjt0R7A23xTrmToTqTcF4ZW4sNWtjMwjVIVqe@mail.gmail.com>
- <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com>
- <AANLkTimVmlPfRFu8Wo2KL1pyF6qtTSQriawvrKcsMe9Y@mail.gmail.com>
- <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
- <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com>
- <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
- <1273834571.3530.82.camel@minggr.sh.intel.com>
+	id S1758660Ab0ENL5V (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 07:57:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:42581 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758304Ab0ENL5R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 07:57:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=oP/vHKVEeuN2XJ7RFuWbZ+TpfYcFxw3O3vMRxC6WqZnkJ6SFheMuOua1WYtFaE2YBR
+         WUv7A5iIMkCgtMvGpFoa3N1QZORuQZdAaPq5/XjGAXXpObdrDxTq9plT883kqw2cMV8k
+         +plqh4nJZLiBiHwfrgzLHOsd7EvxYZRFDC/jc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273834571.3530.82.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.0594]
+In-Reply-To: <1273833535.1626.242.camel@laptop>
+References: <4BEAB6FC.8090105@intcomgrp.com>
+	 <20100512190757.GA421@tango.0pointer.de>
+	 <1273755719.5605.3537.camel@twins>
+	 <20100513140354.GA12639@tango.0pointer.de>
+	 <1273785546.5605.3556.camel@twins>
+	 <20100514000252.GB30093@tango.0pointer.de>
+	 <20100514054336.GX3296@balbir.in.ibm.com>
+	 <1273820028.5605.3565.camel@twins>
+	 <20100514081248.GE3296@balbir.in.ibm.com>
+	 <1273833535.1626.242.camel@laptop>
+Date: Fri, 14 May 2010 13:57:14 +0200
+Message-ID: <AANLkTimoTCcDgb9rn7GBhV8PfeOwDNU74GF732inhuSU@mail.gmail.com>
+Subject: Re: [PATCH/RFC] Have sane default values for cpusets
+From: Dhaval Giani <dhaval.giani@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: balbir@linux.vnet.ibm.com, Lennart Poettering <mzxreary@0pointer.de>,
+       James Kosin <jkosin@intcomgrp.com>, linux-kernel@vger.kernel.org,
+       menage@google.com, jsafrane@redhat.com, tglx@linutronix.de
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 14, 2010 at 12:38 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Fri, 2010-05-14 at 13:42 +0530, Balbir Singh wrote:
+>
+>> Heh! agreed, but we are a small population and moreover a large
+>> population would benefit from systemd and parallel boot.
+>
+> CONFIG_CGROUP=y isn't a requirement for parallel boot. People have been
+> doing that for years without it.
+>
+> And I'm not against systemd using cgroups per-se, I'm against it
+> mandating it. It could simply not use them and not provide whatever it
+> needs them for when not present.
+>
+> CONFIG_CGROUP is an option, so people can say no.
+>
 
-* Lin Ming <ming.m.lin@intel.com> wrote:
+I think that is reasonable. There should be a fallback for folks who
+want to run their own kernel (though I cannot imagine why they would
+want to turn off cgroups ;-) ).
 
-> p4_event_bind::cntr is "unsigned char".
-> But p4_next_cntr has return type of "int".
-> So the explicit conversion is needed to get the correct result. 
-
-> @@ -780,7 +780,7 @@ static int p4_pmu_schedule_events(struct cpu_hw_events *cpuc, int n, int *assign
->  		if (unlikely(escr_idx == -1))
->  			goto done;
->  
-> -		if (hwc->idx != -1 && !p4_should_swap_ts(hwc->config, cpu)) {
-> +		if (hwc->idx != (unsigned char)-1 && !p4_should_swap_ts(hwc->config, cpu)) {
-
-That cast is _extremely_ ugly. Please fix the signedness of the types instead.
-
-	Ingo
+Thanks!
+Dhaval
