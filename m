@@ -1,134 +1,140 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab0ENG3Q (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:29:16 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:31763 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab0ENG3O (ORCPT
+	id S1755509Ab0ENGbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:31:33 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40311 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752917Ab0ENGbc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:29:14 -0400
-Message-ID: <4BECECF4.4070205@oracle.com>
-Date: Thu, 13 May 2010 23:25:56 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 02:31:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=pHqvSUhPY3aYayOX82S1ixEolccCkre1NEWkvCoqJp9Gj3xlboZN5qIvpUQkU2j4wv
+         gPM6d5dufSRVEXS2UlBrqGoyyQ0+EFZezxPw57MxUOTvBjD8Ll6h4jmymfs/fWldsW0F
+         hUFYmlqifaxLv7x2DdhtoEf/zdX+6HQSGWlMI=
+Message-ID: <4BECEE3E.6090303@gmail.com>
+Date: Thu, 13 May 2010 23:31:26 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 04/35] lmb: Add lmb_find_area()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-5-git-send-email-yinghai@kernel.org> <1273803410.21352.361.camel@pasglop>
-In-Reply-To: <1273803410.21352.361.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+To: Bruno Randolf <br1@einfach.org>
+CC: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+References: <4BEC7A84.3010503@gmail.com> <4BECD518.6040801@gmail.com> <AANLkTinE1q2K3j-IwCa3IPzTUChgi9wKTqBrVR1mGlv9@mail.gmail.com> <201005141520.30802.br1@einfach.org>
+In-Reply-To: <201005141520.30802.br1@einfach.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BECED73.00CB:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/13/2010 07:16 PM, Benjamin Herrenschmidt wrote:
-> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
->> it is a wrapper for lmb_find_base
+On 05/13/10 23:20, Bruno Randolf wrote:
+> On Friday 14 May 2010 15:16:22 Luis R. Rodriguez wrote:
+>> On Thu, May 13, 2010 at 9:44 PM, Justin P. Mattock
 >>
->> make it more easy for x86 to use lmb. ( rebase )
->> x86 early_res is using find/reserve pattern instead of alloc.
+>> <justinmattock@gmail.com>  wrote:
+>>> On 05/13/10 21:01, Luis R. Rodriguez wrote:
+>>>> On Thu, May 13, 2010 at 7:14 PM, Justin P. Mattock
+>>>>
+>>>> <justinmattock@gmail.com>   wrote:
+>>>>> what I can try, is(not at the convention, on eth0
+>>>>> at the moment), but when I get back to the convention
+>>>>> center place I can try your patch as well as the
+>>>>> modprobe option, to see if I can get any signs of
+>>>>> a recreation(if so I'll bisect there).
+>>>>
+>>>> The debug info I just need upon load of the module, I don't need you
+>>>> to run the debug stuff to try to reproduce. The debug print upon load
+>>>> will tell us the rxbuf size and cache line size.
+>>>>
+>>>>    Luis
+>>>
+>>> o.k. it's not pretty due
+>>> to loads of avc's for SELinux:
+>>> (I run a rootless system).
+>>>
+>>> [   84.172649] ath9k: Driver unloaded
+>>> [  100.675300] audit_printk_skb: 6 callbacks suppressed
+>>> [  100.675306] type=1400 audit(1273811633.675:20): avc:  denied  { search
+>>> } for  pid=2168 comm="modprobe" name="modules" dev=sda3 ino=2500
+>>> scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=system_u:object_r:modules_object_t:s0 tclass=dir
+>>> [  100.675408] type=1400 audit(1273811633.675:20): avc:  denied  { search
+>>> } for  pid=2168 comm="modprobe" name="2.6.34-rc7-00057-gcdfda35"
+>>> dev=sda3 ino=524392 scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=name:object_r:modules_object_t:s0 tclass=dir
+>>> [  100.675552] type=1400 audit(1273811633.675:20): avc:  denied  { read }
+>>> for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
+>>> scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>> [  100.675598] type=1400 audit(1273811633.675:20): avc:  denied  { open }
+>>> for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
+>>> scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>> [  100.675748] type=1300 audit(1273811633.675:20): arch=c000003e
+>>> syscall=2 success=yes exit=3 a0=60d140 a1=0 a2=1b6 a3=0 items=0
+>>> ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
+>>> sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" exe="/sbin/modprobe"
+>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>> [  100.675902] type=1400 audit(1273811633.675:21): avc:  denied  {
+>>> getattr } for  pid=2168 comm="modprobe"
+>>> path="/lib/modules/2.6.34-rc7-00057-gcdfda35/modules.dep.bin" dev=sda3
+>>> ino=525251 scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=name:object_r:modules_object_t:s0 tclass=file
+>>> [  100.676052] type=1300 audit(1273811633.675:21): arch=c000003e
+>>> syscall=5 success=yes exit=0 a0=3 a1=7fffd2d1dd70 a2=7fffd2d1dd70 a3=0
+>>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+>>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+>>> exe="/sbin/modprobe"
+>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>> [  100.698392] ath9k 0000:03:00.0: PCI INT A ->  GSI 17 (level, low) ->
+>>> IRQ 17
+>>> [  100.698409] ath9k 0000:03:00.0: setting latency timer to 64
+>>> [  100.828787] ath: EEPROM regdomain: 0x64
+>>> [  100.828790] ath: EEPROM indicates we should expect a direct regpair
+>>> map [  100.828793] ath: Country alpha2 being used: 00
+>>> [  100.828795] ath: Regpair used: 0x64
+>>> [  100.848609] type=1400 audit(1273811633.678:22): avc:  denied  { search
+>>> } for  pid=2168 comm="modprobe" name="ieee80211" dev=debugfs ino=18
+>>> scontext=name:staff_r:staff_sudo_t:s0
+>>> tcontext=system_u:object_r:debugfs_t:s0 tclass=dir
+>>> [  100.848788] phy1: Selected rate control algorithm 'ath9k_rate_control'
+>>> [  100.850035] Registered led device: ath9k-phy1::radio
+>>> [  100.850488] Registered led device: ath9k-phy1::assoc
+>>> [  100.851227] Registered led device: ath9k-phy1::tx
+>>> [  100.851633] Registered led device: ath9k-phy1::rx
+>>> [  100.851640] phy1: Atheros AR5418 MAC/BB Rev:2 AR5133 RF Rev:81
+>>> mem=0xffffc900005a0000, irq=17
+>>> [  100.852240] type=1300 audit(1273811633.678:22): arch=c000003e
+>>> syscall=175 success=yes exit=0 a0=7f1e9d6ab010 a1=19580 a2=60d920 a3=0
+>>> items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
+>>> egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
+>>> exe="/sbin/modprobe"
+>>> subj=name:staff_r:staff_sudo_t:s0 key=(null)
+>>>
+>>> but there you go dmesg of the debug info for you
 >>
->> -v2: Change name to lmb_find_area() according to Michael Ellerman
->> -v3: Add generic weak version __lmb_find_area()
->>      so keep the path for fallback to x86 version that handle from low
+>> Justin, did you forget to use the debug parameter on modprobe ath9k?
 >>
->> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
->> ---
->>  include/linux/lmb.h |    4 ++++
->>  lib/lmb.c           |   27 ++++++++++++++++++++++++++-
->>  2 files changed, 30 insertions(+), 1 deletions(-)
+>> modprobe ath9k debug=0x0000020
 >>
->> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
->> index 0b073a3..3c23dc8 100644
->> --- a/include/linux/lmb.h
->> +++ b/include/linux/lmb.h
->> @@ -44,6 +44,10 @@ extern struct lmb lmb;
->>  extern int lmb_debug;
->>  extern struct lmb_region lmb_reserved_init_regions[];
->>  
->> +u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
->> +			u64 size, u64 align);
->> +u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
-> 
-> See my comments about sorting out the return from that function.
-> 
-> Also, I don't understand the need for that __ version. It looks like
-> something you should keep inside x86, I don't see the need for it in the
-> generic LMB code, since it just does trivial cropping of the arguments.
+>> I do not see the output I expected.
+>
+> i think you have to do at least "ifconfig wlan0 up" to see it - (at least for
+> ath5k).
+>
+> bruno
+>
 
-otherwise need to export lmb_find_base() and LMB_ERROR
+didn't think todo so, I'll redu
+again and see. BTW: the connection
+over here is dodgy(hotel) should I at-least
+find a stable access point? i.g. convetion
+center seemed semi somewhat there
 
-> 
-> Also "ei_last" and "ei_start" are pretty bad names for its arguments
-> anyways. To some extent I wonder if the caller should be responsible for
-> doing the cropping in the first place.
-
-yes. but need that to keep switch from early_res/nobootmem to lmb/nobootmem smooth.
-
-will clean it after early_res is replaced.
-
-> 
-> Cheers,
-> Ben.
-> 
->>  extern void __init lmb_init(void);
->>  extern void __init lmb_analyze(void);
->>  extern long lmb_add(phys_addr_t base, phys_addr_t size);
->> diff --git a/lib/lmb.c b/lib/lmb.c
->> index 6d49a17..f917dbf 100644
->> --- a/lib/lmb.c
->> +++ b/lib/lmb.c
->> @@ -155,6 +155,31 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
->>  	return LMB_ERROR;
->>  }
->>  
->> +u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
->> +				 u64 size, u64 align)
->> +{
->> +	u64 final_start, final_end;
->> +	u64 mem;
->> +
->> +	final_start = max(ei_start, start);
->> +	final_end = min(ei_last, end);
->> +
->> +	if (final_start >= final_end)
->> +		return LMB_ERROR;
->> +
->> +	mem = lmb_find_base(size, align, final_start, final_end);
->> +
->> +	return mem;
->> +}
->> +
->> +/*
->> + * Find a free area with specified alignment in a specific range.
->> + */
->> +u64 __init __weak lmb_find_area(u64 start, u64 end, u64 size, u64 align)
->> +{
->> +	return lmb_find_base(size, align, start, end);
->> +}
->> +
->>  static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
->>  {
->>  	unsigned long i;
->> @@ -199,7 +224,7 @@ static int __init_lmb lmb_double_array(struct lmb_type *type)
->>  		new_array = kmalloc(new_size, GFP_KERNEL);
->>  		addr = new_array == NULL ? LMB_ERROR : __pa(new_array);
->>  	} else
->> -		addr = lmb_find_base(new_size, sizeof(struct lmb_region), 0, LMB_ALLOC_ACCESSIBLE);
->> +		addr = lmb_find_area(0, lmb.current_limit, new_size, sizeof(struct lmb_region));
->>  	if (addr == LMB_ERROR) {
->>  		pr_err("lmb: Failed to double %s array from %ld to %ld entries !\n",
->>  		       lmb_type_name(type), type->max, type->max * 2);
-> 
-
+Justin P. Mattock
