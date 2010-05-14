@@ -1,74 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756377Ab0ENBwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 21:52:12 -0400
-Received: from 29.mail-out.ovh.net ([87.98.216.213]:38076 "HELO
-	29.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755122Ab0ENBwJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 21:52:09 -0400
-Message-ID: <4BECACC3.3020309@example.com>
-Date: Fri, 14 May 2010 03:52:03 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1756587Ab0ENBxY (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 21:53:24 -0400
+Received: from mga02.intel.com ([134.134.136.20]:26857 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755654Ab0ENBxX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 21:53:23 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,225,1272870000"; 
+   d="scan'208";a="517797179"
+Date: Fri, 14 May 2010 09:49:02 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Greg KH <gregkh@suse.de>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+Message-ID: <20100514014902.GB4381@shaohui>
+Mail-Followup-To: Greg KH <gregkh@suse.de>, akpm@linux-foundation.org,
+	linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Heiko Carstens <heiko.carstens@de.ibm.com>,
+	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
+References: <20100513120016.GG2169@shaohui>
+ <20100513165603.GC25212@suse.de>
 MIME-Version: 1.0
-To: Randy Dunlap <rdunlap@xenotime.net>
-CC: LKML <linux-kernel@vger.kernel.org>
-Subject: Re: General questiin about SYSFS
-References: <4BEC4B0D.8010102@example.com> <4BEC4CD6.6090402@example.com> <4BEC52C0.1000403@xenotime.net>
-In-Reply-To: <4BEC52C0.1000403@xenotime.net>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 12449356745807720949
-X-Ovh-Remote: 83.24.77.38 (dmv38.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100513165603.GC25212@suse.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 13.05.2010 21:28, Randy Dunlap wrote:
-> Piotr Hosowicz wrote:
->> On 13.05.2010 20:55, Piotr Hosowicz wrote:
->>
->>> I could find the option in menuconfig and I don't want to edit .config
->>> by hand, because there are various *SYSFS* options there.
->>
->> Sorry, I mistyped, I meant I _cannot_ find it in menuconfig nor in .config.
->
-> The only thing about  SYSFS that is deprecated AFAIK is in init/Kconfig:
->
-> config SYSFS_DEPRECATED_V2
-> 	bool "enable deprecated sysfs features to support old userspace tools"
-> 	depends on SYSFS
-> 	default n
-> 	select SYSFS_DEPRECATED
-> 	help
-> 	  This option switches the layout of sysfs to the deprecated
-> 	  version. Do not use it on recent distributions.
+On Thu, May 13, 2010 at 09:56:03AM -0700, Greg KH wrote:
+> On Thu, May 13, 2010 at 08:00:16PM +0800, Shaohui Zheng wrote:
+> > hotplug emulator:extend memory probe interface to support NUMA
+> > 
+> > Extend memory probe interface to support an extra paramter nid,
+> > the reserved memory can be added into this node if node exists.
+> > 
+> > Add a memory section(128M) to node 3(boots with mem=1024m)
+> > 
+> > 	echo 0x40000000,3 > memory/probe
+> > 
+> > And more we make it friendly, it is possible to add memory to do
+> > 
+> > 	echo 3g > memory/probe
+> > 	echo 1024m,3 > memory/probe
+> > 
+> > It maintains backwards compatibility.
+> 
+> Again, please document this.
+> 
+> thanks,
+> 
+> greg k-h
 
-Thanks, I have it disabled. I asked tyhe question because of such 
-messages during boot:
-
-May 13 16:26:24 aapi205 udevd[1432]: SYSFS{}= will be removed in a 
-future udev version, please use ATTR{}= to match the event device, or 
-ATTRS{}= to match a parent device, in 
-/etc/udev/rules.d/025_logitechmouse.rules:21
-
-As far as I can see this is rather udev question. I don't know what to 
-do about those messages. Can you give me a hint?
-
-For now I upgraded udev to 154-1, I will see in the morning after I 
-build new kernel if this helps.
-
-Regards,
-
-Piotr Hosowicz
+okay
 
 -- 
-TV: "Rosjanki osi±gnê³y szczyt w niew³a¶ciwym miejscu, w
-niew³a¶ciwym czasie i w³a¶ciwie zupe³nie niepotrzebnie."
-NP: Patrick O'Hearn - Facing the Sun
-NB: 2.6.34-rc7-git4
+Thanks & Regards,
+Shaohui
+
