@@ -1,125 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755432Ab0ENGUz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 02:20:55 -0400
-Received: from mail30f.wh2.ocn.ne.jp ([220.111.41.203]:36235 "HELO
-	mail30f.wh2.ocn.ne.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755359Ab0ENGUx (ORCPT
+	id S1755180Ab0ENGWs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 02:22:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:65248 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753480Ab0ENGWq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 02:20:53 -0400
-From: Bruno Randolf <br1@einfach.org>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Date: Fri, 14 May 2010 15:20:30 +0900
-User-Agent: KMail/1.13.2 (Linux/2.6.32-22-generic; KDE/4.4.2; x86_64; ; )
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-       Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-References: <4BEC7A84.3010503@gmail.com> <4BECD518.6040801@gmail.com> <AANLkTinE1q2K3j-IwCa3IPzTUChgi9wKTqBrVR1mGlv9@mail.gmail.com>
-In-Reply-To: <AANLkTinE1q2K3j-IwCa3IPzTUChgi9wKTqBrVR1mGlv9@mail.gmail.com>
+	Fri, 14 May 2010 02:22:46 -0400
+Message-ID: <4BECEB8D.8070600@oracle.com>
+Date: Thu, 13 May 2010 23:19:57 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-2-git-send-email-yinghai@kernel.org> <1273803143.21352.353.camel@pasglop>
+In-Reply-To: <1273803143.21352.353.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005141520.30802.br1@einfach.org>
-X-SF-Loop: 1
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BECEC01.0018:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 14 May 2010 15:16:22 Luis R. Rodriguez wrote:
-> On Thu, May 13, 2010 at 9:44 PM, Justin P. Mattock
+On 05/13/2010 07:12 PM, Benjamin Herrenschmidt wrote:
+> On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+>> 1. expose lmb_debug
+>> 2. expose lmb_reserved_init_regions
+>> 3. expose lmb_add_region
+>> 4. prection for include linux/lmb.h in mm/page_alloc.c and mm/bootmem.c
+>> 5. lmb_find_base() should return LMB_ERROR in one failing path.
+>>    (this one cost me 3 hours !)
+>> 6. move LMB_ERROR to lmb.h
 > 
-> <justinmattock@gmail.com> wrote:
-> > On 05/13/10 21:01, Luis R. Rodriguez wrote:
-> >> On Thu, May 13, 2010 at 7:14 PM, Justin P. Mattock
-> >> 
-> >> <justinmattock@gmail.com>  wrote:
-> >>> what I can try, is(not at the convention, on eth0
-> >>> at the moment), but when I get back to the convention
-> >>> center place I can try your patch as well as the
-> >>> modprobe option, to see if I can get any signs of
-> >>> a recreation(if so I'll bisect there).
-> >> 
-> >> The debug info I just need upon load of the module, I don't need you
-> >> to run the debug stuff to try to reproduce. The debug print upon load
-> >> will tell us the rxbuf size and cache line size.
-> >> 
-> >>   Luis
-> > 
-> > o.k. it's not pretty due
-> > to loads of avc's for SELinux:
-> > (I run a rootless system).
-> > 
-> > [   84.172649] ath9k: Driver unloaded
-> > [  100.675300] audit_printk_skb: 6 callbacks suppressed
-> > [  100.675306] type=1400 audit(1273811633.675:20): avc:  denied  { search
-> > } for  pid=2168 comm="modprobe" name="modules" dev=sda3 ino=2500
-> > scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=system_u:object_r:modules_object_t:s0 tclass=dir
-> > [  100.675408] type=1400 audit(1273811633.675:20): avc:  denied  { search
-> > } for  pid=2168 comm="modprobe" name="2.6.34-rc7-00057-gcdfda35"
-> > dev=sda3 ino=524392 scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=name:object_r:modules_object_t:s0 tclass=dir
-> > [  100.675552] type=1400 audit(1273811633.675:20): avc:  denied  { read }
-> > for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
-> > scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=name:object_r:modules_object_t:s0 tclass=file
-> > [  100.675598] type=1400 audit(1273811633.675:20): avc:  denied  { open }
-> > for  pid=2168 comm="modprobe" name="modules.dep.bin" dev=sda3 ino=525251
-> > scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=name:object_r:modules_object_t:s0 tclass=file
-> > [  100.675748] type=1300 audit(1273811633.675:20): arch=c000003e
-> > syscall=2 success=yes exit=3 a0=60d140 a1=0 a2=1b6 a3=0 items=0
-> > ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0 egid=0
-> > sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe" exe="/sbin/modprobe"
-> > subj=name:staff_r:staff_sudo_t:s0 key=(null)
-> > [  100.675902] type=1400 audit(1273811633.675:21): avc:  denied  {
-> > getattr } for  pid=2168 comm="modprobe"
-> > path="/lib/modules/2.6.34-rc7-00057-gcdfda35/modules.dep.bin" dev=sda3
-> > ino=525251 scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=name:object_r:modules_object_t:s0 tclass=file
-> > [  100.676052] type=1300 audit(1273811633.675:21): arch=c000003e
-> > syscall=5 success=yes exit=0 a0=3 a1=7fffd2d1dd70 a2=7fffd2d1dd70 a3=0
-> > items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
-> > egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
-> > exe="/sbin/modprobe"
-> > subj=name:staff_r:staff_sudo_t:s0 key=(null)
-> > [  100.698392] ath9k 0000:03:00.0: PCI INT A -> GSI 17 (level, low) ->
-> > IRQ 17
-> > [  100.698409] ath9k 0000:03:00.0: setting latency timer to 64
-> > [  100.828787] ath: EEPROM regdomain: 0x64
-> > [  100.828790] ath: EEPROM indicates we should expect a direct regpair
-> > map [  100.828793] ath: Country alpha2 being used: 00
-> > [  100.828795] ath: Regpair used: 0x64
-> > [  100.848609] type=1400 audit(1273811633.678:22): avc:  denied  { search
-> > } for  pid=2168 comm="modprobe" name="ieee80211" dev=debugfs ino=18
-> > scontext=name:staff_r:staff_sudo_t:s0
-> > tcontext=system_u:object_r:debugfs_t:s0 tclass=dir
-> > [  100.848788] phy1: Selected rate control algorithm 'ath9k_rate_control'
-> > [  100.850035] Registered led device: ath9k-phy1::radio
-> > [  100.850488] Registered led device: ath9k-phy1::assoc
-> > [  100.851227] Registered led device: ath9k-phy1::tx
-> > [  100.851633] Registered led device: ath9k-phy1::rx
-> > [  100.851640] phy1: Atheros AR5418 MAC/BB Rev:2 AR5133 RF Rev:81
-> > mem=0xffffc900005a0000, irq=17
-> > [  100.852240] type=1300 audit(1273811633.678:22): arch=c000003e
-> > syscall=175 success=yes exit=0 a0=7f1e9d6ab010 a1=19580 a2=60d920 a3=0
-> > items=0 ppid=2080 pid=2168 auid=1000 uid=0 gid=0 euid=0 suid=0 fsuid=0
-> > egid=0 sgid=0 fsgid=0 tty=pts0 ses=1 comm="modprobe"
-> > exe="/sbin/modprobe"
-> > subj=name:staff_r:staff_sudo_t:s0 key=(null)
-> > 
-> > but there you go dmesg of the debug info for you
+> Oh well, let's start somewhere...
 > 
-> Justin, did you forget to use the debug parameter on modprobe ath9k?
+>> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+>> ---
+>>  include/linux/lmb.h |    4 ++++
+>>  lib/lmb.c           |   21 +++++++++------------
+>>  2 files changed, 13 insertions(+), 12 deletions(-)
+>>
+>> diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+>> index 6f8c4bd..7987766 100644
+>> --- a/include/linux/lmb.h
+>> +++ b/include/linux/lmb.h
+>> @@ -19,6 +19,7 @@
+>>  #include <asm/lmb.h>
+>>  
+>>  #define INIT_LMB_REGIONS 128
+>> +#define LMB_ERROR	(~(phys_addr_t)0)
 > 
-> modprobe ath9k debug=0x0000020
+> Ok so this was meant to remain internal. You seem to want to expose a
+> whole lot of LMB internals, I suppose for your new arch/x86/lmb.c and I
+> really really don't like it.
 > 
-> I do not see the output I expected.
+> If we expose LMB_ERROR then all lmb calls that can fail should return
+> that. However, the API calls all return 0 instead. Changing that means
+> fixing all callers.
 
-i think you have to do at least "ifconfig wlan0 up" to see it - (at least for 
-ath5k).
+ok will stop use LMB_ERROR out lib/lmb.c
 
-bruno
+will go back to use -1ULL for x86 path.
+
+> 
+> We can't just have a mix bag of result code in stuff that is exposed.
+> 
+> If all you need LMB_ERROR is to expose lmb_find_area() and
+> lmb_add_region() then make the above __ and export a public variant of
+> it that returns 0.
+> 
+> But that's not the right approach. The right thing to do I believe is to
+> instead change LMB to use proper errno.h values.
+> 
+> For things like lmb_add_region(), return then as a negative int. For
+> things that return a phys_addr_t as well with a proper casting macro
+> since I -think- we can safely consider that phys addrs in the range
+> -PAGE_SIZE..-1 can be error codes. Just like we do for PTR_ERR etc...
+> 
+> This should be a separate patch btw.
+> 
+> I'm also not too happy with exposing lmb_add_region(). Why would you
+> ever need to expose it ? Just call lmb_reserve() if you want to reserve
+> something. lmb_add_region() is an internal function and has no business
+> being used outside of the main lmb.c file.
+> 
+> Also:
+> 
+>>  	/* Calculate new doubled size */
+>>  	old_size = type->max * sizeof(struct lmb_region);
+>>  	new_size = old_size << 1;
+>> @@ -206,7 +199,7 @@ static int lmb_double_array(struct lmb_type *type)
+>>  		new_array = kmalloc(new_size, GFP_KERNEL);
+>>  		addr = new_array == NULL ? LMB_ERROR : __pa(new_array);
+>>  	} else
+>> -		addr = lmb_find_base(new_size, sizeof(phys_addr_t), 0, LMB_ALLOC_ACCESSIBLE);
+>> +		addr = lmb_find_base(new_size, sizeof(struct lmb_region), 0, LMB_ALLOC_ACCESSIBLE);
+> 
+> Why this change ? Does it need to be aligned to the struct size ? if you
+> really want that and have a good justification, make this a separate
+> patch and explain why you are doing that in the changeset comment.
+
+will drop that
+
+> 
+>>  	if (addr == LMB_ERROR) {
+>>  		pr_err("lmb: Failed to double %s array from %ld to %ld entries !\n",
+>>  		       lmb_type_name(type), type->max, type->max * 2);
+>> @@ -214,6 +207,10 @@ static int lmb_double_array(struct lmb_type *type)
+>>  	}
+>>  	new_array = __va(addr);
+>>  
+>> +	if (lmb_debug)
+>> +		pr_info("lmb: %s array is doubled to %ld at %llx - %llx",
+>> +			 lmb_type_name(type), type->max * 2, (u64)addr, (u64)addr + new_size);
+>> +
+>>  	/* Found space, we now need to move the array over before
+>>  	 * we add the reserved region since it may be our reserved
+>>  	 * array itself that is full.
+>> @@ -249,7 +246,7 @@ extern int __weak lmb_memory_can_coalesce(phys_addr_t addr1, phys_addr_t size1,
+>>  	return 1;
+>>  }
+> 
+> Cheers,
+> Ben.
+
