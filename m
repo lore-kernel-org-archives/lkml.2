@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759742Ab0ENTw4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:52:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:17319 "EHLO
+	id S1759757Ab0ENTxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:53:01 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17313 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab0ENTt5 (ORCPT
+	with ESMTP id S1753519Ab0ENTt5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 May 2010 15:49:57 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,53 +16,112 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 37/37] x86: make e820 to be __initdata
-Date: Fri, 14 May 2010 12:46:03 -0700
-Message-Id: <1273866363-14249-38-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 23/37] x86, lmb: Use lmb_memory_size()/lmb_free_memory_size() to get correct dma_reserve
+Date: Fri, 14 May 2010 12:45:49 -0700
+Message-Id: <1273866363-14249-24-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
 X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BEDA94B.012A,ss=1,fgs=0
+X-CT-RefId: str=0001.0A090206.4BEDA94B.009C,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Finally no user after init boot stage. We can free it to save some bytes.
+lmb_memory_size() will return memory size in lmb.memory.region.
+lmb_free_memory_size() will return free memory size in lmb.memory.region.
+
+So We can get exact reseved size in specified range.
+
+Set the size right after initmem_init(), because later bootmem API will
+get area above 16M. (except some fallback).
+
+Later after we remove the bootmem, We could call that just before paging_init().
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/e820.h |    2 --
- arch/x86/kernel/e820.c      |    2 +-
- 2 files changed, 1 insertions(+), 3 deletions(-)
+ arch/x86/include/asm/e820.h |    2 ++
+ arch/x86/kernel/e820.c      |   17 +++++++++++++++++
+ arch/x86/kernel/setup.c     |    1 +
+ arch/x86/mm/init_64.c       |    7 -------
+ 4 files changed, 20 insertions(+), 7 deletions(-)
 
 diff --git a/arch/x86/include/asm/e820.h b/arch/x86/include/asm/e820.h
-index cd7de51..f2ab72e 100644
+index 6fbd8cd..f59db16 100644
 --- a/arch/x86/include/asm/e820.h
 +++ b/arch/x86/include/asm/e820.h
-@@ -73,8 +73,6 @@ struct e820map {
- #define BIOS_END		0x00100000
+@@ -118,6 +118,8 @@ extern u64 early_reserve_e820(u64 startt, u64 sizet, u64 align);
  
- #ifdef __KERNEL__
--/* see comment in arch/x86/kernel/e820.c */
--extern struct e820map e820;
- 
- #if defined(CONFIG_X86_OOSTORE) && defined(CONFIG_CPU_SUP_CENTAUR)
- extern int centaur_ram_top;
+ void init_lmb_memory(void);
+ void fill_lmb_memory(void);
++void find_lmb_dma_reserve(void);
++
+ extern void finish_e820_parsing(void);
+ extern void e820_reserve_resources(void);
+ extern void e820_reserve_resources_late(void);
 diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
-index c2e18f9..ad30efd 100644
+index 14b1c26..1144d20 100644
 --- a/arch/x86/kernel/e820.c
 +++ b/arch/x86/kernel/e820.c
-@@ -35,7 +35,7 @@
-  * user can e.g. boot the original kernel with mem=1G while still booting the
-  * next kernel with full memory.
-  */
--struct e820map e820;
-+static struct e820map __initdata e820;
- static struct e820map __initdata e820_saved;
+@@ -1103,3 +1103,20 @@ void __init fill_lmb_memory(void)
+ 	lmb_analyze();
+ 	lmb_dump_all();
+ }
++
++void __init find_lmb_dma_reserve(void)
++{
++#ifdef CONFIG_X86_64
++	u64 free_size_pfn;
++	u64 mem_size_pfn;
++	/*
++	 * need to find out used area below MAX_DMA_PFN
++	 * need to use lmb to get free size in [0, MAX_DMA_PFN]
++	 * at first, and assume boot_mem will not take below MAX_DMA_PFN
++	 */
++	mem_size_pfn = lmb_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	free_size_pfn = lmb_free_memory_size(0, MAX_DMA_PFN << PAGE_SHIFT) >> PAGE_SHIFT;
++	set_dma_reserve(mem_size_pfn - free_size_pfn);
++#endif
++}
++
+diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
+index 1a8888f..aad3e6c 100644
+--- a/arch/x86/kernel/setup.c
++++ b/arch/x86/kernel/setup.c
+@@ -1001,6 +1001,7 @@ void __init setup_arch(char **cmdline_p)
+ #endif
  
- /* For PCI or other memory-mapped resources */
+ 	initmem_init(0, max_pfn, acpi, k8);
++	find_lmb_dma_reserve();
+ #ifndef CONFIG_NO_BOOTMEM
+ 	lmb_to_bootmem(0, max_low_pfn<<PAGE_SHIFT);
+ #endif
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index 0d2252c..37c7a82 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -53,8 +53,6 @@
+ #include <asm/init.h>
+ #include <linux/bootmem.h>
+ 
+-static unsigned long dma_reserve __initdata;
+-
+ static int __init parse_direct_gbpages_off(char *arg)
+ {
+ 	direct_gbpages = 0;
+@@ -821,11 +819,6 @@ int __init reserve_bootmem_generic(unsigned long phys, unsigned long len,
+ 
+ 	reserve_bootmem(phys, len, flags);
+ 
+-	if (phys+len <= MAX_DMA_PFN*PAGE_SIZE) {
+-		dma_reserve += len / PAGE_SIZE;
+-		set_dma_reserve(dma_reserve);
+-	}
+-
+ 	return 0;
+ }
+ #endif
 -- 
 1.6.4.2
 
