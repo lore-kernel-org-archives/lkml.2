@@ -1,98 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753586Ab0ENFmz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 01:42:55 -0400
-Received: from e23smtp09.au.ibm.com ([202.81.31.142]:52579 "EHLO
-	e23smtp09.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751070Ab0ENFmx (ORCPT
+	id S1753745Ab0ENFnS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 01:43:18 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:59426 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753389Ab0ENFnR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 01:42:53 -0400
-Date: Fri, 14 May 2010 11:12:43 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Oleg Nesterov <oleg@redhat.com>, Peter Zijlstra <peterz@infradead.org>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>, Roland McGrath <roland@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH v2 7/11] Uprobes Implementation
-Message-ID: <20100514054243.GQ7426@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100419193139.GA24080@redhat.com>
- <20100420124358.GA20675@linux.vnet.ibm.com>
- <20100420153023.GA9351@redhat.com>
- <20100421065948.GA5440@linux.vnet.ibm.com>
- <20100421160515.GA11321@redhat.com>
- <20100422133154.GA10776@linux.vnet.ibm.com>
- <20100422154059.GA5916@redhat.com>
- <1273610723.1810.105.camel@laptop>
- <20100513194034.GA11207@redhat.com>
- <alpine.LFD.2.00.1005131256050.3711@i5.linux-foundation.org>
+	Fri, 14 May 2010 01:43:17 -0400
+Date: Fri, 14 May 2010 14:42:26 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+Cc: Shaohui Zheng <shaohui.zheng@intel.com>, akpm@linux-foundation.org,
+       linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       x86@kernel.org, Yinghai Lu <yinghai@kernel.org>,
+       David Rientjes <rientjes@google.com>, Mel Gorman <mel@csn.ul.ie>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
+       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: Re: [RFC,2/7] NUMA Hotplug emulator
+Message-ID: <20100514054226.GB12002@linux-sh.org>
+References: <20100513114544.GC2169@shaohui> <20100514111615.c7ca63a5.kamezawa.hiroyu@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005131256050.3711@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100514111615.c7ca63a5.kamezawa.hiroyu@jp.fujitsu.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 14, 2010 at 11:16:15AM +0900, KAMEZAWA Hiroyuki wrote:
+> On Thu, 13 May 2010 19:45:44 +0800
+> Shaohui Zheng <shaohui.zheng@intel.com> wrote:
 > 
-> On Thu, 13 May 2010, Oleg Nesterov wrote:
+> > x86: infrastructure of NUMA hotplug emulation
 > > 
-> > But I still think this doesn't actually matter, replace_page() shouldn't
-> > preserve the mapping, it should always install the anonymous page. I can
-> > be wrong, of course.
 > 
-> Well, if I reasd the patches right, uprobes will use "copy_to_user()" for 
-> the self-probing case. So that would definitely just modify a shared 
-> mapping.
-
-
-Uprobes uses copy_to_user() to write data/stack and never to write to
-instruction addresses.
-
-To write an instruction uprobes either used access_process_vm or the
-replace_page() based background page replacement method. This is true
-even if the process was probing itself.
-
-Soon to be posted v4 will revert to background page replacement method
-on the lines illustrated by Peter in one of his mails.
-
+> Hmm. do we have to create this for x86 only ?
+> Can't we live with lmb ? as
 > 
-> Of course, arguably, who really cares? As long as it's not a security 
-> issue (and it isn't - since the person could just have written to the 
-> thing directly instead), I guess it doesn't much matter. But it's a bit 
-> sad when a probing feature either
+> 	lmb_hide_node() or some.
 > 
->  - changes a global mapping that may be executed by other non-related 
->    processes that the prober isn't even _aware_ of.
+> IIUC, x86-version lmb is now under development.
 > 
->  - changes semantics by creating a non-coherent private page
-
-Do you see these concerns even when uprobes uses background page replacement?
-
-> 
-> so arguably it would be good to just make the rule be that you cannot 
-> probe a shared mapping. Because whatever you do, it's always the wrong 
-> thing.
-> 
-
-Yes, I will be adding a check to discard probing if the vma has
-VM_SHARED flag set. I have already committed to Oleg on this issue.
-I didnt include this check in v3 patchset, because uprobes was using
-access_process_vm in v3 patchset and I thought access_process_vm would
-do the right thing even if VM_SHARED is set.
-
---
-Thanks and Regards
-Srikar
+Indeed. There is very little x86-specific about this patch series at all
+except for the e820 bits and tying in the CPU topology. Most of what this
+series is doing wrapping around e820 could be done on top of LMB, which
+would also make it possible to use on non-x86 architectures.
