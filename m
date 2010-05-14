@@ -1,132 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755444Ab0ENAZy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:25:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49184 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754290Ab0ENAZv convert rfc822-to-8bit (ORCPT
+	id S1754917Ab0ENA0N (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:26:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:54005 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754814Ab0ENAYv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:25:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nriFUjLpsPSjRmBgkdwXdAYBC+qUSwncIpYYFKDhRBf3haAMzd+wHAcVSksp4BEPg8
-         8w0NX0Q98XhYFRyPLcvnu+uH1ZyQf+A2U2hmjn3UJ/TK6TnoCcmLpqKx+CV7b7sKbf9u
-         Z21Gt/SFbOPGgnwtjAlzlH2F2TX9A0hxz6Pwo=
-MIME-Version: 1.0
-In-Reply-To: <Pine.LNX.4.64.1005132158390.6282@ask.diku.dk>
-References: <Pine.LNX.4.64.1005132158390.6282@ask.diku.dk>
-Date: Thu, 13 May 2010 20:25:49 -0400
-Message-ID: <AANLkTilFWD5tykIabA9gM5bKASkPo7I1FNWDZfItY5el@mail.gmail.com>
-Subject: Re: [PATCH 2/20] drivers/gpu/drm: Use kzalloc
-From: Matt Turner <mattst88@gmail.com>
-To: Julia Lawall <julia@diku.dk>
-Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 13 May 2010 20:24:51 -0400
+From: Yinghai Lu <yinghai@kernel.org>
+To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
+Subject: [PATCH 04/35] lmb: Add lmb_find_area()
+Date: Thu, 13 May 2010 17:19:25 -0700
+Message-Id: <1273796396-29649-5-git-send-email-yinghai@kernel.org>
+X-Mailer: git-send-email 1.6.4.2
+In-Reply-To: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BEC97EF.004F,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 3:58 PM, Julia Lawall <julia@diku.dk> wrote:
-> From: Julia Lawall <julia@diku.dk>
->
-> Use kzalloc rather than the combination of kmalloc and memset.
->
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression x,size,flags;
-> statement S;
-> @@
->
-> -x = kmalloc(size,flags);
-> +x = kzalloc(size,flags);
->  if (x == NULL) S
-> -memset(x, 0, size);
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
->
-> ---
->  drivers/gpu/drm/drm_auth.c          |    3 +--
->  drivers/gpu/drm/drm_dma.c           |    4 +---
->  drivers/gpu/drm/drm_fops.c          |    3 +--
->  drivers/gpu/drm/savage/savage_bci.c |    3 +--
->  4 files changed, 4 insertions(+), 9 deletions(-)
->
-> diff -u -p a/drivers/gpu/drm/drm_auth.c b/drivers/gpu/drm/drm_auth.c
-> --- a/drivers/gpu/drm/drm_auth.c
-> +++ b/drivers/gpu/drm/drm_auth.c
-> @@ -79,10 +79,9 @@ static int drm_add_magic(struct drm_mast
->        struct drm_device *dev = master->minor->dev;
->        DRM_DEBUG("%d\n", magic);
->
-> -       entry = kmalloc(sizeof(*entry), GFP_KERNEL);
-> +       entry = kzalloc(sizeof(*entry), GFP_KERNEL);
->        if (!entry)
->                return -ENOMEM;
-> -       memset(entry, 0, sizeof(*entry));
->        entry->priv = priv;
->        entry->hash_item.key = (unsigned long)magic;
->        mutex_lock(&dev->struct_mutex);
-> diff -u -p a/drivers/gpu/drm/drm_dma.c b/drivers/gpu/drm/drm_dma.c
-> --- a/drivers/gpu/drm/drm_dma.c
-> +++ b/drivers/gpu/drm/drm_dma.c
-> @@ -47,12 +47,10 @@ int drm_dma_setup(struct drm_device *dev
->  {
->        int i;
->
-> -       dev->dma = kmalloc(sizeof(*dev->dma), GFP_KERNEL);
-> +       dev->dma = kzalloc(sizeof(*dev->dma), GFP_KERNEL);
->        if (!dev->dma)
->                return -ENOMEM;
->
-> -       memset(dev->dma, 0, sizeof(*dev->dma));
-> -
->        for (i = 0; i <= DRM_MAX_ORDER; i++)
->                memset(&dev->dma->bufs[i], 0, sizeof(dev->dma->bufs[0]));
->
-> diff -u -p a/drivers/gpu/drm/drm_fops.c b/drivers/gpu/drm/drm_fops.c
-> --- a/drivers/gpu/drm/drm_fops.c
-> +++ b/drivers/gpu/drm/drm_fops.c
-> @@ -243,11 +243,10 @@ static int drm_open_helper(struct inode
->
->        DRM_DEBUG("pid = %d, minor = %d\n", task_pid_nr(current), minor_id);
->
-> -       priv = kmalloc(sizeof(*priv), GFP_KERNEL);
-> +       priv = kzalloc(sizeof(*priv), GFP_KERNEL);
->        if (!priv)
->                return -ENOMEM;
->
-> -       memset(priv, 0, sizeof(*priv));
->        filp->private_data = priv;
->        priv->filp = filp;
->        priv->uid = current_euid();
-> diff -u -p a/drivers/gpu/drm/savage/savage_bci.c b/drivers/gpu/drm/savage/savage_bci.c
-> --- a/drivers/gpu/drm/savage/savage_bci.c
-> +++ b/drivers/gpu/drm/savage/savage_bci.c
-> @@ -539,11 +539,10 @@ int savage_driver_load(struct drm_device
->  {
->        drm_savage_private_t *dev_priv;
->
-> -       dev_priv = kmalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
-> +       dev_priv = kzalloc(sizeof(drm_savage_private_t), GFP_KERNEL);
->        if (dev_priv == NULL)
->                return -ENOMEM;
->
-> -       memset(dev_priv, 0, sizeof(drm_savage_private_t));
->        dev->dev_private = (void *)dev_priv;
->
->        dev_priv->chipset = (enum savage_family)chipset;
-> _______________________________________________
-> dri-devel mailing list
-> dri-devel@lists.freedesktop.org
-> http://lists.freedesktop.org/mailman/listinfo/dri-devel
->
+it is a wrapper for lmb_find_base
 
-Reviewed-by: Matt Turner <mattst88@gmail.com>
+make it more easy for x86 to use lmb. ( rebase )
+x86 early_res is using find/reserve pattern instead of alloc.
+
+-v2: Change name to lmb_find_area() according to Michael Ellerman
+-v3: Add generic weak version __lmb_find_area()
+     so keep the path for fallback to x86 version that handle from low
+
+Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+---
+ include/linux/lmb.h |    4 ++++
+ lib/lmb.c           |   27 ++++++++++++++++++++++++++-
+ 2 files changed, 30 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index 0b073a3..3c23dc8 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -44,6 +44,10 @@ extern struct lmb lmb;
+ extern int lmb_debug;
+ extern struct lmb_region lmb_reserved_init_regions[];
+ 
++u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++			u64 size, u64 align);
++u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
++
+ extern void __init lmb_init(void);
+ extern void __init lmb_analyze(void);
+ extern long lmb_add(phys_addr_t base, phys_addr_t size);
+diff --git a/lib/lmb.c b/lib/lmb.c
+index 6d49a17..f917dbf 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -155,6 +155,31 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
+ 	return LMB_ERROR;
+ }
+ 
++u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++				 u64 size, u64 align)
++{
++	u64 final_start, final_end;
++	u64 mem;
++
++	final_start = max(ei_start, start);
++	final_end = min(ei_last, end);
++
++	if (final_start >= final_end)
++		return LMB_ERROR;
++
++	mem = lmb_find_base(size, align, final_start, final_end);
++
++	return mem;
++}
++
++/*
++ * Find a free area with specified alignment in a specific range.
++ */
++u64 __init __weak lmb_find_area(u64 start, u64 end, u64 size, u64 align)
++{
++	return lmb_find_base(size, align, start, end);
++}
++
+ static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
+ {
+ 	unsigned long i;
+@@ -199,7 +224,7 @@ static int __init_lmb lmb_double_array(struct lmb_type *type)
+ 		new_array = kmalloc(new_size, GFP_KERNEL);
+ 		addr = new_array == NULL ? LMB_ERROR : __pa(new_array);
+ 	} else
+-		addr = lmb_find_base(new_size, sizeof(struct lmb_region), 0, LMB_ALLOC_ACCESSIBLE);
++		addr = lmb_find_area(0, lmb.current_limit, new_size, sizeof(struct lmb_region));
+ 	if (addr == LMB_ERROR) {
+ 		pr_err("lmb: Failed to double %s array from %ld to %ld entries !\n",
+ 		       lmb_type_name(type), type->max, type->max * 2);
+-- 
+1.6.4.2
+
