@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753684Ab0ENAYH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:24:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52685 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754050Ab0ENAYA (ORCPT
+	id S1756067Ab0ENA3T (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:29:19 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51367 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554Ab0ENA3K convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:24:00 -0400
-From: Yinghai Lu <yinghai@kernel.org>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: David Miller <davem@davemloft.net>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-Date: Thu, 13 May 2010 17:19:36 -0700
-Message-Id: <1273796396-29649-16-git-send-email-yinghai@kernel.org>
-X-Mailer: git-send-email 1.6.4.2
-In-Reply-To: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090202.4BEC97C2.0018,ss=1,fgs=0
+	Thu, 13 May 2010 20:29:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:from:date
+         :x-google-sender-auth:message-id:subject:to:cc:content-type
+         :content-transfer-encoding;
+        b=S3Lwne0hTHRX3t5tJhblxh5DgKD5mSSn+k/Gqx8YLyXd4+cKkietSWLFR/+PP64qIK
+         Hc/yhtgBtpHAgdkH79aiy399LJ0fyZ7+Qqfd2sxPb1aAemCrv6898rM66JOVv7PGYBCf
+         SKmDv1q+T+Qoe0sgbNf3j2waQA+LTU9duE/7s=
+MIME-Version: 1.0
+In-Reply-To: <4BEC9782.2040705@gmail.com>
+References: <4BEC7A84.3010503@gmail.com> <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com> 
+	<4BEC9782.2040705@gmail.com>
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+Date: Thu, 13 May 2010 17:28:49 -0700
+X-Google-Sender-Auth: pIINQoIvIlD5hAyEP0du2G8QtAc
+Message-ID: <AANLkTinKoMxdkPYQA_AblpByL6zAiAP5hv2M3Jn2R3hM@mail.gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: linux-wireless@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Some areas from firmware could be reserved several times from different callers.
+On Thu, May 13, 2010 at 5:21 PM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 05/13/10 16:01, Luis R. Rodriguez wrote:
+>>
+>> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>>
+>>> not sure what this is, but while at a convention
+>>> I was trying to access the internet and(below is
+>>> full dmesg) this showed up.
+>>>
+>>> After receiving this, I sat and tried to re-create
+>>> my steps to reproduce but had no luck(was even going
+>>> todo a bisect n the spot if I could re-create).
+>>
+>> OK this stuff is hard to reproduce it seems.. you have an Atheros
+>> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
+>> to get the poison stuff? I am just surprised we haven't seen it
+>> ourselves yet. Let me make sure all of us get this kconfig option
+>> enabled.
+>>
+>>   Luis
+>>
+>
+>
+>
+> CONFIG_ATH_COMMON=m
+> # CONFIG_ATH_DEBUG is not set
+> CONFIG_ATH5K=m
+> # CONFIG_ATH5K_DEBUG is not set
+> CONFIG_ATH9K_HW=m
+> CONFIG_ATH9K_COMMON=m
+> CONFIG_ATH9K=m
+> # CONFIG_ATH9K_DEBUGFS is not set
+>
+> if you need my .config let me know.
+> (I can try again reproducing, but man
+> just doesn't easily fire off).
 
-If these area are overlapped, We may have overlapped entries in lmb.reserved.
+Oh I mean the config options to enable the poison rant.
 
-Try to free the area at first, before rerserve them again.
-
-Signed-off-by: Yinghai Lu <yinghai@kernel.org>
----
- arch/x86/include/asm/lmb.h |    1 +
- arch/x86/mm/lmb.c          |   18 ++++++++++++++++++
- 2 files changed, 19 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index dd42ac1..9329e09 100644
---- a/arch/x86/include/asm/lmb.h
-+++ b/arch/x86/include/asm/lmb.h
-@@ -7,6 +7,7 @@ u64 lmb_find_area_size(u64 start, u64 *sizep, u64 align);
- void lmb_to_bootmem(u64 start, u64 end);
- 
- void lmb_reserve_area(u64 start, u64 end, char *name);
-+void lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name);
- void lmb_free_area(u64 start, u64 end);
- void lmb_add_memory(u64 start, u64 end);
- struct range;
-diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index 19a5f49..1100c18 100644
---- a/arch/x86/mm/lmb.c
-+++ b/arch/x86/mm/lmb.c
-@@ -309,6 +309,24 @@ void __init lmb_reserve_area(u64 start, u64 end, char *name)
- 	lmb_add_region(&lmb.reserved, start, end - start);
- }
- 
-+/*
-+ * Could be used to avoid having overlap entries in lmb.reserved.region.
-+ *  Don't need to use it with area that is from lmb_find_area()
-+ *  Only use it for the area that fw hidden area.
-+ */
-+void __init lmb_reserve_area_overlap_ok(u64 start, u64 end, char *name)
-+{
-+	if (start == end)
-+		return;
-+
-+	if (WARN_ONCE(start > end, "lmb_reserve_area_overlap_ok: wrong range [%#llx, %#llx]\n", start, end))
-+		return;
-+
-+	/* Free that region at first */
-+	lmb_free(start, end - start);
-+	lmb_add_region(&lmb.reserved, start, end - start);
-+}
-+
- void __init lmb_free_area(u64 start, u64 end)
- {
- 	if (start == end)
--- 
-1.6.4.2
-
+  Luis
