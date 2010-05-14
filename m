@@ -1,233 +1,263 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759220Ab0EXXLv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:11:51 -0400
-Received: from kroah.org ([198.145.64.141]:36489 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758733Ab0EXXJe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
-Message-Id: <20100524230351.487806462@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:56 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Stefani Seibold <stefani@seibold.net>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Alexey Dobriyan <adobriyan@gmail.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: [24/34] proc: partially revert "procfs: provide stack information for threads"
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+	id S1752653Ab0ENEtp (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:49:45 -0400
+Received: from mga10.intel.com ([192.55.52.92]:8530 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751976Ab0ENEtn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:49:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
+   d="scan'208";a="798350321"
+Message-ID: <4BECD65A.7080004@linux.intel.com>
+Date: Fri, 14 May 2010 12:49:30 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
+MIME-Version: 1.0
+To: akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Yinghai Lu <yinghai@kernel.org>, David Rientjes <rientjes@google.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
+       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [RFC,2/7] NUMA Hotplug emulator
+References: <20100513114544.GC2169@shaohui>
+In-Reply-To: <20100513114544.GC2169@shaohui>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+Shaohui Zheng wrote:
+> x86: infrastructure of NUMA hotplug emulation
+> 
+> NUMA hotplug emulator introduces a new node state N_HIDDEN to
+> identify the fake offlined node. It firstly hides RAM via E820
+> table and then emulates fake offlined nodes with the hidden RAM.
+> 
+> After system bootup, user is able to hotplug-add these offlined
+> nodes, which is just similar to a real hardware hotplug behavior.
+> 
+> Using boot option "numa=hide=N*size" to fake offlined nodes:
+> 	- N is the number of hidden nodes
+> 	- size is the memory size (in MB) per hidden node.
+> 
+> OPEN: Kernel might use part of hidden memory region as RAM buffer,
+>       now emulator directly hide 128M extra space to workaround
+>       this issue.  Any better way to avoid this conflict?
 
-------------------
+I'd like to hear some advices on this OPEN. I'm not sure if it's an undebugged bug, but it might be. 
+Now, removing extra 128M is just a workaround.
 
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+I used to find kernel might map the hidden address space to RAM buffer.
+For example:
+1) I have removed the mem range "0x2c0000000 ~ 0x33fffffff" from e820 table.
+2) however, after kernel bootup, I might find:
+# cat /proc/iomem
+2c0000000-2c5ffffffff : RAM buffer
 
-commit 1306d603fcf1f6682f8575d1ff23631a24184b21 upstream.
+This is just an example, the space range (2c5ffffffff) is not the exact number which I saw in my 
+testing.
 
-Commit d899bf7b (procfs: provide stack information for threads) introduced
-to show stack information in /proc/{pid}/status.  But it cause large
-performance regression.  Unfortunately /proc/{pid}/status is used ps
-command too and ps is one of most important component.  Because both to
-take mmap_sem and page table walk are heavily operation.
+This issue might come from
 
-If many process run, the ps performance is,
+commit 45fbe3ee01b8e463b28c2751b5dcc0cbdc142d90
+Author: Linus Torvalds <torvalds@linux-foundation.org>
+Date:   Wed May 6 08:06:44 2009 -0700
 
-[before d899bf7b]
+     x86, e820, pci: reserve extra free space near end of RAM
 
-% perf stat ps >/dev/null
+     The point is to take all RAM resources we have, and
+     _after_ we've added all the resources we've seen in
+     the E820 tree, we then _also_ try to add fake reserved
+     entries for any "round up to X" at the end of the RAM
+     resources.
 
- Performance counter stats for 'ps':
+     [ Impact: improve PCI mem-resource allocation robustness, protect "stolen RA
+M" ]
 
-     4090.435806  task-clock-msecs         #      0.032 CPUs
-             229  context-switches         #      0.000 M/sec
-               0  CPU-migrations           #      0.000 M/sec
-             234  page-faults              #      0.000 M/sec
-      8587565207  cycles                   #   2099.425 M/sec
-      9866662403  instructions             #      1.149 IPC
-      3789415411  cache-references         #    926.409 M/sec
-        30419509  cache-misses             #      7.437 M/sec
+How could I make a better fix for this OPEN?
 
-   128.859521955  seconds time elapsed
+-haicheng
 
-[after d899bf7b]
-
-% perf stat  ps  > /dev/null
-
- Performance counter stats for 'ps':
-
-     4305.081146  task-clock-msecs         #      0.028 CPUs
-             480  context-switches         #      0.000 M/sec
-               2  CPU-migrations           #      0.000 M/sec
-             237  page-faults              #      0.000 M/sec
-      9021211334  cycles                   #   2095.480 M/sec
-     10605887536  instructions             #      1.176 IPC
-      3612650999  cache-references         #    839.160 M/sec
-        23917502  cache-misses             #      5.556 M/sec
-
-   152.277819582  seconds time elapsed
-
-Thus, this patch revert it. Fortunately /proc/{pid}/task/{tid}/smaps
-provide almost same information. we can use it.
-
-Commit d899bf7b introduced two features:
-
- 1) Add the annotattion of [thread stack: xxxx] mark to
-    /proc/{pid}/task/{tid}/maps.
- 2) Add StackUsage field to /proc/{pid}/status.
-
-I only revert (2), because I haven't seen (1) cause regression.
-
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Alexey Dobriyan <adobriyan@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>
-Cc: Andi Kleen <andi@firstfloor.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- Documentation/filesystems/proc.txt |    2 
- fs/proc/array.c                    |   89 -------------------------------------
- 2 files changed, 91 deletions(-)
-
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -176,7 +176,6 @@ read the file /proc/PID/status:
-   CapBnd: ffffffffffffffff
-   voluntary_ctxt_switches:        0
-   nonvoluntary_ctxt_switches:     1
--  Stack usage:    12 kB
- 
- This shows you nearly the same information you would get if you viewed it with
- the ps  command.  In  fact,  ps  uses  the  proc  file  system  to  obtain its
-@@ -230,7 +229,6 @@ Table 1-2: Contents of the statm files (
-  Mems_allowed_list           Same as previous, but in "list format"
-  voluntary_ctxt_switches     number of voluntary context switches
-  nonvoluntary_ctxt_switches  number of non voluntary context switches
-- Stack usage:                stack usage high water mark (round up to page size)
- ..............................................................................
- 
- Table 1-3: Contents of the statm files (as of 2.6.8-rc3)
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -322,94 +322,6 @@ static inline void task_context_switch_c
- 			p->nivcsw);
- }
- 
--#ifdef CONFIG_MMU
--
--struct stack_stats {
--	struct vm_area_struct *vma;
--	unsigned long	startpage;
--	unsigned long	usage;
--};
--
--static int stack_usage_pte_range(pmd_t *pmd, unsigned long addr,
--				unsigned long end, struct mm_walk *walk)
--{
--	struct stack_stats *ss = walk->private;
--	struct vm_area_struct *vma = ss->vma;
--	pte_t *pte, ptent;
--	spinlock_t *ptl;
--	int ret = 0;
--
--	pte = pte_offset_map_lock(vma->vm_mm, pmd, addr, &ptl);
--	for (; addr != end; pte++, addr += PAGE_SIZE) {
--		ptent = *pte;
--
--#ifdef CONFIG_STACK_GROWSUP
--		if (pte_present(ptent) || is_swap_pte(ptent))
--			ss->usage = addr - ss->startpage + PAGE_SIZE;
--#else
--		if (pte_present(ptent) || is_swap_pte(ptent)) {
--			ss->usage = ss->startpage - addr + PAGE_SIZE;
--			pte++;
--			ret = 1;
--			break;
--		}
--#endif
--	}
--	pte_unmap_unlock(pte - 1, ptl);
--	cond_resched();
--	return ret;
--}
--
--static inline unsigned long get_stack_usage_in_bytes(struct vm_area_struct *vma,
--				struct task_struct *task)
--{
--	struct stack_stats ss;
--	struct mm_walk stack_walk = {
--		.pmd_entry = stack_usage_pte_range,
--		.mm = vma->vm_mm,
--		.private = &ss,
--	};
--
--	if (!vma->vm_mm || is_vm_hugetlb_page(vma))
--		return 0;
--
--	ss.vma = vma;
--	ss.startpage = task->stack_start & PAGE_MASK;
--	ss.usage = 0;
--
--#ifdef CONFIG_STACK_GROWSUP
--	walk_page_range(KSTK_ESP(task) & PAGE_MASK, vma->vm_end,
--		&stack_walk);
--#else
--	walk_page_range(vma->vm_start, (KSTK_ESP(task) & PAGE_MASK) + PAGE_SIZE,
--		&stack_walk);
--#endif
--	return ss.usage;
--}
--
--static inline void task_show_stack_usage(struct seq_file *m,
--						struct task_struct *task)
--{
--	struct vm_area_struct	*vma;
--	struct mm_struct	*mm = get_task_mm(task);
--
--	if (mm) {
--		down_read(&mm->mmap_sem);
--		vma = find_vma(mm, task->stack_start);
--		if (vma)
--			seq_printf(m, "Stack usage:\t%lu kB\n",
--				get_stack_usage_in_bytes(vma, task) >> 10);
--
--		up_read(&mm->mmap_sem);
--		mmput(mm);
--	}
--}
--#else
--static void task_show_stack_usage(struct seq_file *m, struct task_struct *task)
--{
--}
--#endif		/* CONFIG_MMU */
--
- int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
- 			struct pid *pid, struct task_struct *task)
- {
-@@ -429,7 +341,6 @@ int proc_pid_status(struct seq_file *m,
- 	task_show_regs(m, task);
- #endif
- 	task_context_switch_counts(m, task);
--	task_show_stack_usage(m, task);
- 	return 0;
- }
- 
-
-
+> Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+> Signed-off-by: Shaohui Zheng <shaohui.zheng@intel.com>
+> ---
+> diff --git a/arch/x86/mm/numa_64.c b/arch/x86/mm/numa_64.c
+> index 8948f47..3e0d94d 100644
+> --- a/arch/x86/mm/numa_64.c
+> +++ b/arch/x86/mm/numa_64.c
+> @@ -307,6 +307,87 @@ void __init numa_init_array(void)
+>  	}
+>  }
+>  
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +static char *hp_cmdline __initdata;
+> +static struct bootnode *hidden_nodes;
+> +static u64 hp_start, hp_end;
+> +static long hidden_num, hp_size;
+> +
+> +int hotadd_hidden_nodes(int nid)
+> +{
+> +	int ret;
+> +
+> +	if (!node_hidden(nid))
+> +		return -EINVAL;
+> +
+> +	ret = add_memory(nid, hidden_nodes[nid].start,
+> +			 hidden_nodes[nid].end - hidden_nodes[nid].start);
+> +	if (!ret) {
+> +		node_clear_hidden(nid);
+> +		return 0;
+> +	} else {
+> +		return -EEXIST;
+> +	}
+> +}
+> +
+> +static void __init numa_hide_nodes(void)
+> +{
+> +	char *c;
+> +	int ret;
+> +
+> +	c = strchr(hp_cmdline, '*');
+> +	if (!c)
+> +		return;
+> +	else
+> +		*c = '\0';
+> +	ret = strict_strtol(hp_cmdline, 0, &hidden_num);
+> +	if (ret == -EINVAL)
+> +		return;
+> +	ret = strict_strtol(c + 1, 0, &hp_size);
+> +	if (ret == -EINVAL)
+> +		return;
+> +	hp_size <<= 20;
+> +
+> +	hp_start = e820_hide_mem(hidden_num * hp_size);
+> +	if (hp_start <= 0) {
+> +		printk(KERN_ERR "Hide too much memory, disable node hotplug emualtion.");
+> +		hidden_num = 0;
+> +		return;
+> +	}
+> +
+> +	hp_end = hp_start + hidden_num * hp_size;
+> +
+> +	/* leave 128M space for possible RAM buffer usage later
+> +	 * any other better way to avoid this conflict?
+> +	 */
+> +	e820_hide_mem(128*1024*1024);
+> +}
+> +
+> +static void __init numa_hotplug_emulation(void)
+> +{
+> +	int i, num_nodes = 0;
+> +
+> +	for_each_online_node(i)
+> +		if (i > num_nodes)
+> +			num_nodes = i;
+> +
+> +	i = num_nodes + hidden_num;
+> +	if (!hidden_nodes) {
+> +		hidden_nodes = alloc_bootmem(sizeof(struct bootnode) * i);
+> +		memset(hidden_nodes, 0, sizeof(struct bootnode) * i);
+> +	}
+> +
+> +	if (hidden_num)
+> +		for (i = 0; i < hidden_num; i++) {
+> +			int nid = num_nodes + i + 1;
+> +			node_set(nid, node_possible_map);
+> +			hidden_nodes[nid].start = hp_start + hp_size * i;
+> +			hidden_nodes[nid].end = hp_start + hp_size * (i+1);
+> +			node_set_hidden(nid);
+> +		}
+> +}
+> +#endif /* CONFIG_NODE_HOTPLUG_EMU */
+> +
+>  #ifdef CONFIG_NUMA_EMU
+>  /* Numa emulation */
+>  static struct bootnode nodes[MAX_NUMNODES] __initdata;
+> @@ -661,7 +742,7 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+>  
+>  #ifdef CONFIG_NUMA_EMU
+>  	if (cmdline && !numa_emulation(start_pfn, last_pfn, acpi, k8))
+> -		return;
+> +		goto done;
+>  	nodes_clear(node_possible_map);
+>  	nodes_clear(node_online_map);
+>  #endif
+> @@ -669,14 +750,14 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+>  #ifdef CONFIG_ACPI_NUMA
+>  	if (!numa_off && acpi && !acpi_scan_nodes(start_pfn << PAGE_SHIFT,
+>  						  last_pfn << PAGE_SHIFT))
+> -		return;
+> +		goto done;
+>  	nodes_clear(node_possible_map);
+>  	nodes_clear(node_online_map);
+>  #endif
+>  
+>  #ifdef CONFIG_K8_NUMA
+>  	if (!numa_off && k8 && !k8_scan_nodes())
+> -		return;
+> +		goto done;
+>  	nodes_clear(node_possible_map);
+>  	nodes_clear(node_online_map);
+>  #endif
+> @@ -696,6 +777,12 @@ void __init initmem_init(unsigned long start_pfn, unsigned long last_pfn,
+>  		numa_set_node(i, 0);
+>  	e820_register_active_regions(0, start_pfn, last_pfn);
+>  	setup_node_bootmem(0, start_pfn << PAGE_SHIFT, last_pfn << PAGE_SHIFT);
+> +done:
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +	if (hidden_num)
+> +		numa_hotplug_emulation();
+> +#endif
+> +	return;
+>  }
+>  
+>  unsigned long __init numa_free_all_bootmem(void)
+> @@ -723,6 +810,12 @@ static __init int numa_setup(char *opt)
+>  	if (!strncmp(opt, "fake=", 5))
+>  		cmdline = opt + 5;
+>  #endif
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +	if (!strncmp(opt, "hide=", 5)) {
+> +		hp_cmdline = opt + 5;
+> +		numa_hide_nodes();
+> +	}
+> +#endif
+>  #ifdef CONFIG_ACPI_NUMA
+>  	if (!strncmp(opt, "noacpi", 6))
+>  		acpi_numa = -1;
+> diff --git a/include/linux/nodemask.h b/include/linux/nodemask.h
+> index dba35e4..ba0f82d 100644
+> --- a/include/linux/nodemask.h
+> +++ b/include/linux/nodemask.h
+> @@ -371,6 +371,10 @@ static inline void __nodes_fold(nodemask_t *dstp, const nodemask_t *origp,
+>   */
+>  enum node_states {
+>  	N_POSSIBLE,		/* The node could become online at some point */
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +	N_HIDDEN,		/* The node is hidden at booting time, could be
+> +				 * onlined in run time */
+> +#endif
+>  	N_ONLINE,		/* The node is online */
+>  	N_NORMAL_MEMORY,	/* The node has regular memory */
+>  #ifdef CONFIG_HIGHMEM
+> @@ -470,6 +474,13 @@ static inline int num_node_state(enum node_states state)
+>  #define node_online(node)	node_state((node), N_ONLINE)
+>  #define node_possible(node)	node_state((node), N_POSSIBLE)
+>  
+> +#ifdef CONFIG_NODE_HOTPLUG_EMU
+> +#define node_set_hidden(node)	   node_set_state((node), N_HIDDEN)
+> +#define node_clear_hidden(node)	   node_clear_state((node), N_HIDDEN)
+> +#define node_hidden(node)	node_state((node), N_HIDDEN)
+> +extern int hotadd_hidden_nodes(int nid);
+> +#endif
+> +
+>  #define for_each_node(node)	   for_each_node_state(node, N_POSSIBLE)
+>  #define for_each_online_node(node) for_each_node_state(node, N_ONLINE)
+>  
+> 
