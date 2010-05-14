@@ -1,83 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752991Ab0ENAUx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 20:20:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:51913 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750997Ab0ENAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 20:20:52 -0400
-Subject: Re: ftrace syscalls, PowerPC: Fixes and PowerPC raw syscall
- tracepoint implementation
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: rostedt@goodmis.org
-Cc: Ian Munsie <imunsie@au1.ibm.com>, linux-kernel@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@redhat.com>, Paul Mackerras <paulus@samba.org>,
-       linuxppc-dev@lists.ozlabs.org, Jason Baron <jbaron@redhat.com>
-In-Reply-To: <1273766771.27703.1069.camel@gandalf.stny.rr.com>
-References: <1273736594-19320-1-git-send-email-imunsie@au1.ibm.com>
-	 <1273766771.27703.1069.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 09:55:18 +1000
-Message-ID: <1273794918.21352.205.camel@pasglop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1753242Ab0ENAV3 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 20:21:29 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:46861 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751880Ab0ENAV1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 20:21:27 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=GOw/BVjDG03nuDLsbUN8csps20eAM+FFawaBj2gzRTij0bFBDJ+JlARj5stFyEi8DC
+         8UdhjyfHgfAZ/FogI7zUFiIxja/BiTZ5sibT2gtA2o6gUV+RQnZfp/nsyUBpT+q/s+EN
+         3eMsK6A2ZrlJUurMP11YdJASNSrseZTjU2spw=
+Message-ID: <4BEC9782.2040705@gmail.com>
+Date: Thu, 13 May 2010 17:21:22 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+MIME-Version: 1.0
+To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+CC: linux-wireless@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+References: <4BEC7A84.3010503@gmail.com> <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
+In-Reply-To: <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 12:06 -0400, Steven Rostedt wrote:
-> Frederic,
-> 
-> I'm fine with these patches, but since you mainly did the syscall work,
-> I'll let you take them.
-> 
-> The patches that touch the PowerPC code needs an acked-by from Ben or
-> Paul.
-
-Done :-)
-
-Cheers,
-Ben.
-
-> -- Steve
-> 
-> 
-> On Thu, 2010-05-13 at 17:43 +1000, Ian Munsie wrote:
-> > This patch series implements raw system call tracepoints on PowerPC that can be
-> > used with ftrace and perf. Some problems with the generic ftrace syscall
-> > tracepoint code have also been addressed.
-> > 
-> > The patches are based upon Ben's powerpc/next tree merged with tip/tracing/core
-> > 
-> > Patch #1 removes all ftrace syscall events that fail to map the system call
-> > name from the system call metadata with the system call's number, preventing
-> > the events which will not work from showing up in perf list and removing them
-> > from /sys/kernel/debug/tracing/events/syscalls.
-> > 
-> > Patches #2 and #3 allow for archs with unusual system call tables (#2) or
-> > unusual symbol names (#3) to override the appropriate functions so that they
-> > can still work with ftrace syscalls.
-> > 
-> > Patch #4 implements the actual raw system call tracepoints that ftrace syscalls
-> > builds upon, allowing all of the system calls to be used with the raw_syscalls
-> > events category and most to be used with the syscalls category.
-> > 
-> > 
-> > Not all the raw_syscalls are currently mapped to ftrace syscalls - the syscalls
-> > defined in /arch/powerpc/include/asm/syscalls.h do not use the SYSCALL_DEFINE
-> > class of macros and as such have no meta data, likewise some of the ppc_*
-> > syscalls have assembly wrappers. These are on their way, but I wanted to put
-> > the work I have done so far out first.
-> > 
-> > Some of those syscalls have different return types than the __SYSCALL_DEFINE
-> > macro uses (unsigned long, int, time_t) and some have different prefixes (ppc,
-> > ppc64) - I didn't particularly want to change them straight over without asking
-> > the list first, and I certainly don't want to change the return types. I see
-> > that Jason Baron ran into similar issues, but his "add compat syscall support"
-> > patches have yet to be merged, and do not tackle the differing return types.
-> > 
-> 
+On 05/13/10 16:01, Luis R. Rodriguez wrote:
+> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
+> <justinmattock@gmail.com>  wrote:
+>> not sure what this is, but while at a convention
+>> I was trying to access the internet and(below is
+>> full dmesg) this showed up.
+>>
+>> After receiving this, I sat and tried to re-create
+>> my steps to reproduce but had no luck(was even going
+>> todo a bisect n the spot if I could re-create).
+>
+> OK this stuff is hard to reproduce it seems.. you have an Atheros
+> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
+> to get the poison stuff? I am just surprised we haven't seen it
+> ourselves yet. Let me make sure all of us get this kconfig option
+> enabled.
+>
+>    Luis
+>
 
 
+
+CONFIG_ATH_COMMON=m
+# CONFIG_ATH_DEBUG is not set
+CONFIG_ATH5K=m
+# CONFIG_ATH5K_DEBUG is not set
+CONFIG_ATH9K_HW=m
+CONFIG_ATH9K_COMMON=m
+CONFIG_ATH9K=m
+# CONFIG_ATH9K_DEBUGFS is not set
+
+if you need my .config let me know.
+(I can try again reproducing, but man
+just doesn't easily fire off).
+
+Justin P. Mattock
