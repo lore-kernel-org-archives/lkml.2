@@ -1,88 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756864Ab0ENQsA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:48:00 -0400
-Received: from fifo99.com ([67.223.236.141]:51584 "EHLO fifo99.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab0ENQr7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:47:59 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: Daniel Walker <dwalker@fifo99.com>
-To: Greg KH <gregkh@suse.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Matthew Garrett <mjg@redhat.com>,
-       Brian Swetland <swetland@google.com>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+	id S1756622Ab0ENQv3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:51:29 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:51470 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751926Ab0ENQv1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 12:51:27 -0400
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>,
+       Adrian Hunter <adrian.hunter@nokia.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Tony Lindgren <tony@atomide.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?ISO-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-In-Reply-To: <20100513214653.GA21120@suse.de>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <201005132311.26293.rjw@sisk.pl>
-	 <1273785399.19100.98.camel@c-dwalke-linux.qualcomm.com>
-	 <201005132327.16163.rjw@sisk.pl>
-	 <1273786409.19100.104.camel@c-dwalke-linux.qualcomm.com>
-	 <20100513214653.GA21120@suse.de>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 09:47:39 -0700
-Message-ID: <1273855659.25594.29.camel@c-dwalke-linux.qualcomm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+       Denis Karpov <ext-denis.2.karpov@nokia.com>,
+       linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] MMC: OMAP HS-MMC: convert to dev_pm_ops
+References: <1273615036-4516-1-git-send-email-khilman@deeprootsystems.com>
+	<87k4r74p01.fsf@linux-g6p1.site>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Fri, 14 May 2010 09:51:21 -0700
+In-Reply-To: <87k4r74p01.fsf@linux-g6p1.site> (Matt Fleming's message of "Thu\, 13 May 2010 19\:48\:14 +0100")
+Message-ID: <87ljbmmnp2.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 14:46 -0700, Greg KH wrote:
-> On Thu, May 13, 2010 at 02:33:29PM -0700, Daniel Walker wrote:
-> > On Thu, 2010-05-13 at 23:27 +0200, Rafael J. Wysocki wrote:
-> > 
-> > > Because someone would have to remove suspend blockers (or rather wakelocks)
-> > > from the drivers, test that they work correctly without suspend blockers and
-> > > submit the modified versions.  Going forward, every party responsible for such
-> > > a driver would have to maintain an out-of-tree version with suspend blockers
-> > > (or wakelocks) anyway, so the incentive to do that is zero.
-> > 
-> > They should work without wakelock since wakelock are optional .. I mean
-> > there's nothing in suspend blockers I've seen that indicates it's
-> > required for some drivers to work. So it's just a matter of patching out
-> > the wakelocks, with no need to re-test anything.
-> > 
-> > You get the driver mainlined, then maintain a small patch to add
-> > wakelocks. Not hard at all , with lots of incentive to do so since you
-> > don't have to maintain such a large block of code out of tree.
-> 
-> Sorry, but it doesn't seem to work that way.  Look at the large number
-> of out-of-tree android device drivers that remain sitting there because
-> of the lack of this interface being in the kernel.
+Matt Fleming <matt@console-pimps.org> writes:
 
-I don't think that's due to this interface tho. During your CELF
-presentation you noted several bits of code that could go in right now
-but haven't (and still haven't as far as I've seen). I'm actively
-pushing code related to Android (with wakelocks removed).. Putting a
-wakelock contingency on everything to me doesn't make much sense.
+> On Tue, 11 May 2010 14:57:16 -0700, Kevin Hilman <khilman@deeprootsystems.com> wrote:
+>> 
+>> Note that dev_pm_ops version of the suspend hook no longer takes a
+>> 'state' argument.  However, the MMC core function mmc_suspend_host()
+>> still takes a 'state' argument, but it is unused, so a dummy
+>> state variable was created to pass to the MMC core.
+>
+> Hmm.. instead of passing this dummy state argument why don't we just
+> remove the argument from mmc_suspend_host()? Like you said, it's unused,
+> so I don't see a reason to keep it around?
 
-> Also note that such a driver, without wakelocks, would never get tested,
-> and so, things start quickly diverging.
+I don't see a reason either, but it requires patching the MMC core as
+well as all the users.  As I'm not an MMC core person, I thought this
+best left to someone in that domain.
 
-That's not totally true. For example the MMC driver had wakelocks (I
-think, or for sure mmc core does), and the MMC driver has been tested
-for G1 and works fine so far without them. I have code that is queued
-for my tree that will enable MMC on G1. I can merge Nexus one support
-through my tree also which would allow all the drivers for that device
-to eventually be used.
+Fixing the core and callers could easily be done on top of this patch.
 
-With that device support in mainline then those drivers become nice
-things to have with or with out wakelocks. You don't need wakelocks to
-run Debian or anything else except Android.
+Kevin
 
-Daniel
 
