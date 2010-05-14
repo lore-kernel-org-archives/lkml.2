@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756890Ab0ENWdN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:33:13 -0400
-Received: from hera.kernel.org ([140.211.167.34]:38362 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754959Ab0ENWdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:33:09 -0400
-Date: Fri, 14 May 2010 22:32:55 GMT
-Message-Id: <201005142232.o4EMWtV9017946@hera.kernel.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] One additional x86 fix for 2.6.34
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Petr Vandrovec <petr@vandrovec.name>,
-       Jacob Pan <jacob.jun.pan@intel.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 May 2010 22:32:55 +0000 (UTC)
+	id S1758290Ab0ENWeK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:34:10 -0400
+Received: from relay2.sgi.com ([192.48.179.30]:35976 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752495Ab0ENWeH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:34:07 -0400
+Message-ID: <4BEDCFD9.7020202@sgi.com>
+Date: Fri, 14 May 2010 15:34:01 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+MIME-Version: 1.0
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, Mike Habeck <habeck@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com>	<201005131256.17997.bjorn.helgaas@hp.com>	<4BEC5530.1000008@sgi.com>	<201005131402.30759.bjorn.helgaas@hp.com> <20100514152509.3aeb37b4@virtuousgeek.org>
+In-Reply-To: <20100514152509.3aeb37b4@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-One additional fix for the 2.6.34 tree.  It missed my push from
-earlier today because I was waiting for confirmation from the original
-reporter that it indeed solves the problem.
 
-The following changes since commit 7f284d3cc96e02468a42e045f77af11e5ff8b095:
-  Frank Arnold (1):
-        x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
+Jesse Barnes wrote:
+> On Thu, 13 May 2010 14:02:30 -0600
+> Bjorn Helgaas <bjorn.helgaas@hp.com> wrote:
+>>>> This issue is not specific to x86, so I don't really like having
+>>>> the implementation be x86-specific.
+>>> I agree this isn't a x86 specific issue but given the 'norom'
+>>> cmdline option is basically doing the same thing (but for pci
+>>> Expansion ROM BARs) this code was modeled after it.
 
-are available in the git repository at:
+>> IMHO, we should fix both.
+> 
+> Yeah, that would be good.  Mike, have you looked at this at all?
+> 
+> Also, to clarify, this isn't affecting users today, right?  Or do you
+> need all this I/O space for multiple IOHs and the drivers that bind to
+> them in current UV systems?
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+We have customers that want to install more than 16 PCI-e cards right
+now.  Our window of opportunity closes very soon (days), so either this
+patch makes it in as is (or something close), or we wait for another
+release cycle.  UV shipments start this month.
 
-H. Peter Anvin (1):
-      x86, mrst: Don't blindly access extended config space
+[I wouldn't mind working on an improvement for later.]
 
- arch/x86/pci/mrst.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> 
+> Fundamentally, until we have real dynamic PCI resource management (i.e.
+> driver hooks for handling relocation, lazy allocation of resources at
+> driver bind time, etc.) we're going to continue to need hacks like
+> this.  However, we could make them slightly more automated by making
+> "nobar" and "norom" the default on systems that typically need them,
+> maybe with a DMI table.
 
-commit e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e
-Author: H. Peter Anvin <hpa@linux.intel.com>
-Date:   Fri May 14 13:55:57 2010 -0700
+It seems that BIOS changes are much more difficult.  The real solution
+to this problem is for Card Vendors to not request I/O Bars if they
+won't be using them.  But that's the hardest option of all to accomplish.
 
-    x86, mrst: Don't blindly access extended config space
-    
-    Do not blindly access extended configuration space unless we actively
-    know we're on a Moorestown platform.  The fixed-size BAR capability
-    lives in the extended configuration space, and thus is not applicable
-    if the configuration space isn't appropriately sized.
-    
-    This fixes booting certain VMware configurations with CONFIG_MRST=y.
-    
-    Moorestown will add a fake PCI-X 266 capability to advertise the
-    presence of extended configuration space.
-    
-    Reported-and-tested-by: Petr Vandrovec <petr@vandrovec.name>
-    Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-    Acked-by: Jacob Pan <jacob.jun.pan@intel.com>
-    Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-    LKML-Reference: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
-
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index 8bf2fcb..1cdc02c 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -247,6 +247,10 @@ static void __devinit pci_fixed_bar_fixup(struct pci_dev *dev)
- 	u32 size;
- 	int i;
- 
-+	/* Must have extended configuration space */
-+	if (dev->cfg_size < PCIE_CAP_OFFSET + 4)
-+		return;
-+
- 	/* Fixup the BAR sizes for fixed BAR devices and make them unmoveable */
- 	offset = fixed_bar_cap(dev->bus, dev->devfn);
- 	if (!offset || PCI_DEVFN(2, 0) == dev->devfn ||
+Thanks,
+Mike
