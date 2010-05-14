@@ -1,46 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754919Ab0ENPpq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 11:45:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:37010 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751499Ab0ENPpn (ORCPT
+	id S1753764Ab0ENPtj (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 11:49:39 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55071 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752413Ab0ENPth (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 11:45:43 -0400
-Date: Fri, 14 May 2010 08:42:59 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+	Fri, 14 May 2010 11:49:37 -0400
+Date: Fri, 14 May 2010 16:49:06 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
        Dmitry Torokhov <dmitry.torokhov@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
 Subject: Re: [git pull] Input updates for 2.6.34-rc6
-In-Reply-To: <20100514153842.GA6398@srcf.ucam.org>
-Message-ID: <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org> <20100513171639.GA23708@core.coreip.homeip.net>
- <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org> <20100513181002.GB23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131253310.3711@i5.linux-foundation.org> <m1aas2kjb6.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1005140751300.3711@i5.linux-foundation.org>
- <20100514153842.GA6398@srcf.ucam.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+Message-ID: <20100514154905.GA6681@srcf.ucam.org>
+References: <20100513160117.GB22238@core.coreip.homeip.net> <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org> <20100513171639.GA23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org> <20100513181002.GB23708@core.coreip.homeip.net> <alpine.LFD.2.00.1005131253310.3711@i5.linux-foundation.org> <m1aas2kjb6.fsf@fess.ebiederm.org> <alpine.LFD.2.00.1005140751300.3711@i5.linux-foundation.org> <20100514153842.GA6398@srcf.ucam.org> <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 14, 2010 at 08:42:59AM -0700, Linus Torvalds wrote:
 
+> Also, even with Windows, I do wonder if they have things like cut-off 
+> dates for trusting ACPI. We certainly do.
 
-On Fri, 14 May 2010, Matthew Garrett wrote:
-> 
-> I think that's true except in the case where the Leading Other OS won't 
-> use a device unless it's present in ACPI - that kind of enforcement 
-> tends to concentrate vendors' minds, even if they'd otherwise be busy 
-> filling data tables with garbage.
+Yeah, I think they cut off around 2000 or so. I should try feeding it 
+different DMI strings to see what happens.
 
-Largely true. That said, nobody uses Windows in a headless environment, 
-the way people _do_ use Linux and then later plug in a keyboard. 
-
-Also, even with Windows, I do wonder if they have things like cut-off 
-dates for trusting ACPI. We certainly do.
-
-		Linus
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
