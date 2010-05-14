@@ -1,40 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758593Ab0ENIaL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:30:11 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:57920
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754271Ab0ENIaH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:30:07 -0400
-Date: Fri, 14 May 2010 01:30:12 -0700 (PDT)
-Message-Id: <20100514.013012.13730149.davem@davemloft.net>
-To: benh@kernel.crashing.org
-Cc: yinghai.lu@oracle.com, mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
+	id S932341Ab0ENIde (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:33:34 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59178 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932221Ab0ENIda (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:33:30 -0400
+Subject: Re: [PATCH 17/35] x86, lmb: Add x86 version of __lmb_find_area()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org
-Subject: Re: [PATCH 11/35] lmb: Add find_memory_core_early()
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1273825187.21352.590.camel@pasglop>
-References: <1273804238.21352.389.camel@pasglop>
-	<4BECF00D.6080800@oracle.com>
-	<1273825187.21352.590.camel@pasglop>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+In-Reply-To: <4BECF21C.7030006@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-18-git-send-email-yinghai@kernel.org>
+	 <1273804466.21352.400.camel@pasglop>  <4BECF21C.7030006@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 18:31:24 +1000
+Message-ID: <1273825884.21352.603.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Date: Fri, 14 May 2010 18:19:47 +1000
+On Thu, 2010-05-13 at 23:47 -0700, Yinghai wrote:
 
-> OK, I'll have to let Davem deal with the fine point of the sparc bits,
-> but I think basically sparc has CONFIG_ARCH_POPULATES_NODE_MAP set, but
-> the way it's NUMA affinity works, the early_node_map[] is crap, you
-> cannot rely on the ranges in there.
+> for safe, and there is any problem with top to down allocation, we can
+> ask user to check if low to high works...
+> 
+> not just make user to get broken kernel.
 
-Right, we can't use early_node_map[] on sparc, because the NUMA
-mappings are far too granular to use that kind of representation.
+Hrm. That's a bit gross. But ok, I don't care that much as long as your
+x86 variant doesn't differ in semantics with the core lmb one and I'll
+let Peter and/or Thomas to scream at you if they think it's gross
+(hint: the code is)
+
+Cheers,
+Ben.
+
+
