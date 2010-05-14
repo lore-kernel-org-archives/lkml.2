@@ -1,116 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758629Ab0ENIjH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:39:07 -0400
-Received: from mailout1.zih.tu-dresden.de ([141.30.67.72]:45446 "EHLO
-	mailout1.zih.tu-dresden.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758082Ab0ENIjE convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:39:04 -0400
-Subject: [PATCH] power_end event
-From: Robert =?ISO-8859-1?Q?Sch=F6ne?= <robert.schoene@tu-dresden.de>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 14 May 2010 10:38:43 +0200
-Message-ID: <1273826323.5258.133.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1758638Ab0ENIlL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:41:11 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51035 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757348Ab0ENIlH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 04:41:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YDR5ob4yARMx62BexEgYMeY+eU9IuZZQV76LivVf0oQWz4t+t06rU9EmOAxh50Pgiz
+         uJIgX7FZlo3BKCKTt2dsuxmfX+/JM2SoHftK/xw6W8Gh/aNbThIVs6LZ3pk8ObYSAIA5
+         IItcpZLlwLwTSGkyAa7+9oFm91LeakE6G7Nbc=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
+References: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
+	 <AANLkTiktLXqHhop21ePIXF2kaVQbm3DIHZpLrEQOMA1e@mail.gmail.com>
+	 <AANLkTimCjt0R7A23xTrmToTqTcF4ZW4sNWtjMwjVIVqe@mail.gmail.com>
+	 <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com>
+	 <AANLkTimVmlPfRFu8Wo2KL1pyF6qtTSQriawvrKcsMe9Y@mail.gmail.com>
+	 <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
+Date: Fri, 14 May 2010 12:41:02 +0400
+Message-ID: <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Lin Ming <ming.m.lin@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-TUD-Virus-Scanned: mailout1.zih.tu-dresden.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-I reported the power_end tracing problem earlier this year
-(http://lkml.org/lkml/2010/2/24/79) and sent a patch which worked for my
-system. However this patch would have not worked on other systems (as
-for example Arjans). It would had lead to a double posting of these
-events.
+On Friday, May 14, 2010, Jaswinder Singh Rajput
+<jaswinderlinux@gmail.com> wrote:
+> Hello Cyrill,
+>
+> On Fri, May 14, 2010 at 11:53 AM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>> On Friday, May 14, 2010, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
+>>>> Message from syslogd@ht at May 14 09:39:32 ...
+>>>> †kernel:[ †thanks Jaswinder, i'll take a look, meanwhile if you get a chance to
+>>> test latest -tip/master it would be great
+>>>
+>>
+>> it's found that we have problem in cache events, we're working on
+>> that, thanks for report!
+>>
+>
+> Great !!
+>
+> If you need any help from my side, please let me know. Even though it
+> is very hot here, I will try my best ;-)
+>
+> Thanks,
+> --
+> Jaswinder Singh.
+>
 
-However. Here's a diff that should fix the problem on the correct spot.
-
-The reason that it worked for Arjan and not for me is that his system
-uses drivers/acpi/processor_idle.c when idling, mine uses the cpu_idle
-thread from arch/x86/kernel/process_64.c.
-A comparable idle thread also exists for 32 bit x86, so I added it in
-process_32.c too.
-
-However, is there any standard about where to report the start and end
-events? Currently it's the idle routine, which creates the power_start
-event, the routine which calls the idle_routine on the other hand
-creates the power_end event.
-
-For these patches, I'm not sure whether the power_end event should even
-be reported. On kernels, which use the repnop loop when idling, there
-won't be a switch to another c-state and therefore no power_start event,
-the power_end event could belong to. Would that be a problem? If it
-would, the only way to fix this would be to move the power_end events
-into the idle routines, since cpu_idle is dumb and does not know whats
-behind pm_idle.
-
-Robert
-
-PS: I hand over the smp_processor_id() to power_end since i hope that
-the changed interface defined in http://lkml.org/lkml/2010/4/27/271 will
-be part of the standard tree one day. As long as this new interface is
-not included in the standard tree, this patch won't make no harm. When
-it will be included, this code does not have to be touched anymore.
-
-Signed-off-by: Robert Sch√∂ne <robert.schoene@tu-dresden.de>
-
- arch/x86/kernel/process_32.c |    4 ++++
- arch/x86/kernel/process_64.c |    5 +++++
- 2 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/kernel/process_32.c b/arch/x86/kernel/process_32.c
-index f6c6266..134f5f9 100644
---- a/arch/x86/kernel/process_32.c
-+++ b/arch/x86/kernel/process_32.c
-@@ -58,6 +58,8 @@
- #include <asm/ds.h>
- #include <asm/debugreg.h>
- 
-+#include <trace/events/power.h> 
-+
- asmlinkage void ret_from_fork(void) __asm__("ret_from_fork");
- 
- /*
-@@ -112,6 +114,8 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
-+
-+			trace_power_end(smp_processor_id());
- 		}
- 		tick_nohz_restart_sched_tick();
- 		preempt_enable_no_resched();
-diff --git a/arch/x86/kernel/process_64.c b/arch/x86/kernel/process_64.c
-index 17cb329..01c55ed 100644
---- a/arch/x86/kernel/process_64.c
-+++ b/arch/x86/kernel/process_64.c
-@@ -52,6 +52,8 @@
- #include <asm/ds.h>
- #include <asm/debugreg.h>
- 
-+#include <trace/events/power.h> 
-+
- asmlinkage extern void ret_from_fork(void);
- 
- DEFINE_PER_CPU(unsigned long, old_rsp);
-@@ -139,6 +141,9 @@ void cpu_idle(void)
- 			stop_critical_timings();
- 			pm_idle();
- 			start_critical_timings();
-+
-+			trace_power_end(smp_processor_id());
-+
- 			/* In many cases the interrupt that ended idle
- 			   has already called exit_idle. But some idle
- 			   loops can be woken up without interrupt. */
-
-
+Ming is narrowing down the guilty commit. I thought about my last
+patch related to escr hashing, but it shouldn't bring such effect.
+Hmm...
