@@ -1,76 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753809Ab0ENQKy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:10:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:9885 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750958Ab0ENQKw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:10:52 -0400
-From: Matthew Garrett <mjg@redhat.com>
-To: linux-input@vger.kernel.org
-Cc: dmitry.torokhov@gmail.com, linux-kernel@vger.kernel.org,
-       torvalds@linux-foundation.org, Matthew Garrett <mjg@redhat.com>
-Subject: [PATCH 3/3] input: Default to only using PNP for i8042 probing on x86
-Date: Fri, 14 May 2010 12:10:03 -0400
-Message-Id: <1273853403-2870-3-git-send-email-mjg@redhat.com>
-In-Reply-To: <1273853403-2870-1-git-send-email-mjg@redhat.com>
-References: <1273853403-2870-1-git-send-email-mjg@redhat.com>
-X-SA-Do-Not-Run: Yes
-X-SA-Exim-Connect-IP: 209.6.34.250
-X-SA-Exim-Mail-From: mjg@redhat.com
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	id S1754249Ab0ENQM6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:12:58 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:57028 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752172Ab0ENQM4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 12:12:56 -0400
+Date: Fri, 14 May 2010 18:12:55 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Tom Zanussi <tzanussi@gmail.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@ghostprotocols.net>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] perf/trace: use read() instead of lseek() in
+ trace_event_read.c:skip()
+Message-ID: <20100514161255.GA8535@kryptos.osrc.amd.com>
+References: <1273032130.6383.28.camel@tropicana>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273032130.6383.28.camel@tropicana>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
+	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
+	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
+	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
+	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Experimenting with Windows has revealed that it will not probe the
-keyboard controller unless a valid PNPACPI device is present. Change our
-behaviour to match, and add a new i8042.forcedprobe parameter to allow
-people to override it.
+From: Tom Zanussi <tzanussi@gmail.com>
+Date: Tue, May 04, 2010 at 11:02:10PM -0500
 
-Signed-off-by: Matthew Garrett <mjg@redhat.com>
----
- drivers/input/serio/i8042-x86ia64io.h |    5 +++++
- drivers/input/serio/i8042.c           |    3 +++
- 2 files changed, 8 insertions(+), 0 deletions(-)
+Hi,
 
-diff --git a/drivers/input/serio/i8042-x86ia64io.h b/drivers/input/serio/i8042-x86ia64io.h
-index 6168469..2c5d9c0 100644
---- a/drivers/input/serio/i8042-x86ia64io.h
-+++ b/drivers/input/serio/i8042-x86ia64io.h
-@@ -1,6 +1,8 @@
- #ifndef _I8042_X86IA64IO_H
- #define _I8042_X86IA64IO_H
- 
-+#include <linux/acpi.h>
-+
- /*
-  * This program is free software; you can redistribute it and/or modify it
-  * under the terms of the GNU General Public License version 2 as published by
-@@ -747,6 +749,9 @@ static int __init i8042_pnp_init(void)
- #if defined(__ia64__)
- 		return -ENODEV;
- #else
-+		if (!acpi_disabled && !i8042_forceprobe)
-+			return -ENODEV;
-+
- 		printk(KERN_INFO "PNP: No PS/2 controller found. Probing ports directly.\n");
- 		return 0;
- #endif
-diff --git a/drivers/input/serio/i8042.c b/drivers/input/serio/i8042.c
-index 6440a8f..413c5a6 100644
---- a/drivers/input/serio/i8042.c
-+++ b/drivers/input/serio/i8042.c
-@@ -75,6 +75,9 @@ MODULE_PARM_DESC(dritek, "Force enable the Dritek keyboard extension");
- static bool i8042_nopnp;
- module_param_named(nopnp, i8042_nopnp, bool, 0);
- MODULE_PARM_DESC(nopnp, "Do not use PNP to detect controller settings");
-+static bool i8042_forceprobe;
-+module_param_named(forceprobe, i8042_forceprobe, bool, 0);
-+MODULE_PARM_DESC(forceprobe, "Force probing even if no PNP devices were found");
- #endif
- 
- #define DEBUG
+> Here's a small fix for a problem affecting live-mode, introduced in the
+> past day or so:
+> 
+> root@tropicana:~# perf trace rwtop
+> perf trace started with Perl
+> script /root/libexec/perf-core/scripts/perl/rwtop.pl
+> 
+>   Fatal: did not read header event
+> 
+> commit d00a47cce569a3e660a8c9de5d57af28d6a9f0f7 added a skip()
+> function to skip over e.g. header_page, but this doesn't work for live
+> mode.  This patch re-implements skip() to use read() instead of
+> lseek() to fix that.
+> 
+> Signed-off-by: Tom Zanussi <tzanussi@gmail.com>
+
+has this one landed in any tree in the meantime?
+
+tip/perf/core doesn't have it.
+
 -- 
-1.7.0.1
+Regards/Gruss,
+Boris.
 
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
