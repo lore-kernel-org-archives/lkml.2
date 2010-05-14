@@ -1,83 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751543Ab0ENDTS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 23:19:18 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:53563 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753775Ab0ENDTO convert rfc822-to-8bit (ORCPT
+	id S1757182Ab0ENDUN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 23:20:13 -0400
+Received: from out1.smtp.messagingengine.com ([66.111.4.25]:39424 "EHLO
+	out1.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753282Ab0ENDUK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 23:19:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=r5s4MRJwWfz4rS0wHtolho5uAcBO19d/OMuSXk/H0PMIfExJPjt5T8iP/zTq2qK0Tf
-         0uEtdIQ+ZPT5O+raYlvhLK1U5Xml2WdM4bJDWJRoYCV2t2uiADGT1SKuYDFNz7TdpDJc
-         cntRsInEsm94bXx2HDMJFf6C9uU68Rlni6H6g=
+	Thu, 13 May 2010 23:20:10 -0400
+X-Sasl-enc: LiN8Ki+ceHJyRZS4wmk/xoE3C5XiB2/fIekwvIWelHZK 1273807203
+Date: Fri, 14 May 2010 00:20:01 -0300
+From: Henrique de Moraes Holschuh <hmh@hmh.eng.br>
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: huaxu.wan@intel.com, Valdis.Kletnieks@vt.edu, linux-kernel@vger.kernel.org,
+       lm-sensors@lm-sensors.org
+Subject: Re: [lm-sensors] [PATCH 1/2 V3] hwmon: (coretemp) Detect the
+ thermal sensors by CPUID
+Message-ID: <20100514032000.GB17786@khazad-dum.debian.net>
+References: <20100507095459.GA12190@owl>
+ <20100510033525.GC9181@owl>
+ <20100511080112.GB19762@owl>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
-References: <AANLkTimKHkgWJJOOICzQ4TL3mbL-lvYEocwBSe3XSBVR@mail.gmail.com>
-Date: Fri, 14 May 2010 07:19:12 +0400
-Message-ID: <AANLkTiktLXqHhop21ePIXF2kaVQbm3DIHZpLrEQOMA1e@mail.gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100511080112.GB19762@owl>
+X-GPG-Fingerprint: 1024D/1CDB0FE3 5422 5C61 F6B7 06FB 7E04  3738 EE25 DE3F
+ 1CDB 0FE3
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 14, 2010, Jaswinder Singh Rajput
-<jaswinderlinux@gmail.com> wrote:
-> Hello,
->
-> I am testing Performance Events on P4 with HT:
->
-> [    0.002243] Performance Events: Netburst events, Netburst P4/Xeon PMU driver.
-> [    0.002432] ... version:                0
-> [    0.002545] ... bit width:              40
-> [    0.002659] ... generic registers:      18
-> [    0.002772] ... value mask:             000000ffffffffff
-> [    0.002887] ... max period:             0000007fffffffff
-> [    0.003004] ... fixed-purpose events:   0
-> [    0.003118] ... event mask:             000000000003ffff
->
-> dmesg : http://userweb.kernel.org/~jaswinder/P4_HT/dmesg-2634-rc7-tip.txt
-> config : http://userweb.kernel.org/~jaswinder/P4_HT/config-2634-rc7-tip.txt
->
-> [jaswinder@ht perf]$ ./perf stat -e cycles ls > /dev/null
->
->  Performance counter stats for 'ls':
->
->   <not counted>  cycles
->
->     0.003447053  seconds time elapsed
->
-> [jaswinder@ht perf]$ ./perf stat -e cycles,instructions ls > /dev/null
->
->  Performance counter stats for 'ls':
->
->   <not counted>  cycles
->         1862188  instructions             #      0.000 IPC    (scaled
-> from 54.91%)
->
->     0.003419230  seconds time elapsed
->
-> [jaswinder@ht perf]$ ./perf stat -e
-> cycles,instructions,cache-references ls > /dev/null
->
-> <<this dumps on screen and hangs the systems>>
->
-> How can I fix this problem.
->
-> Thanks,
-> --
-> Jaswinder Singh.
->
+On Tue, 11 May 2010, Huaxu Wan wrote:
+> +                       printk(KERN_INFO DRVNAME ": CPU (model=0x%x)"
+> +                               " has no thermal sensor!\n", c->x86_model);
 
-thanks for testing. Is there any issue in dmesg for first two perf
-calls before it hangs? And is there a chance for screen dump (photo or
-netconsole)?
+IMHO, it is better to drop that "!" since it is now a simple status message,
+otherwise it still looks like there is something wrong with the CPU not
+having a thermal sensor.
+
+Minor thing, really, so feel free to ignore this comment.
+
+-- 
+  "One disk to rule them all, One disk to find them. One disk to bring
+  them all and in the darkness grind them. In the Land of Redmond
+  where the shadows lie." -- The Silicon Valley Tarot
+  Henrique Holschuh
