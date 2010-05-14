@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756987Ab0ENQkb (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:40:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26781 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753442Ab0ENQk3 (ORCPT
+	id S1757399Ab0ENQlV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:41:21 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:26307 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756684Ab0ENQlT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:40:29 -0400
-Message-ID: <4BED7DFE.2090108@oracle.com>
-Date: Fri, 14 May 2010 09:44:46 -0700
-From: Yinghai Lu <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Fri, 14 May 2010 12:41:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=LFpKDjolihfnWb/pWFtTEoBnPiGMEA/SVesuuIXiWlFnsg1BDvrihSEB5SqqZ8GdCN
+         L4a69THjwodn3dsd/3zB895pt5gxZif1iuRo9DRuqvGV37hyyZgmsfCBqivMANzy/JBg
+         HF/vW31/Yp7bUK21wEHsvc3yHh3pNHVfawZDY=
+Date: Fri, 14 May 2010 20:40:57 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: Performance Events hangs with Intel P4 system
+Message-ID: <20100514164057.GC13509@lenovo>
+References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com> <20100514162813.GB13509@lenovo> <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: benh@kernel.crashing.org, mingo@elte.hu, tglx@linutronix.de, hpa@zytor.com,
-       akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 11/35] lmb: Add find_memory_core_early()
-References: <1273804238.21352.389.camel@pasglop>	<4BECF00D.6080800@oracle.com>	<1273825187.21352.590.camel@pasglop> <20100514.013012.13730149.davem@davemloft.net>
-In-Reply-To: <20100514.013012.13730149.davem@davemloft.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BED7CEA.00A1:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2010 01:30 AM, David Miller wrote:
-> From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-> Date: Fri, 14 May 2010 18:19:47 +1000
->
->   
->> OK, I'll have to let Davem deal with the fine point of the sparc bits,
->> but I think basically sparc has CONFIG_ARCH_POPULATES_NODE_MAP set, but
->> the way it's NUMA affinity works, the early_node_map[] is crap, you
->> cannot rely on the ranges in there.
->>     
->   
+On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
+...
+> >
+> > Thanks Jaswinder,
+> >
+> > it means counters management somehow screwed at moment (it was working before).
+> > I'm working on it.
+> >
+> 
+> Ok, I added few more events and now I am able see few hardware events :
+> 
+...
+Thanks, but I need to figure out where they hide in first place. Will keep
+you in touch.
 
-> Right, we can't use early_node_map[] on sparc, because the NUMA
-> mappings are far too granular to use that kind of representation.
->   
-good to know.
-
-early_node_map[] doesn't have enough slot?
-
-YH
+	-- Cyrill
