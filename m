@@ -1,132 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758925Ab0ENTIX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:08:23 -0400
-Received: from hera.kernel.org ([140.211.167.34]:39624 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752091Ab0ENTIW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:08:22 -0400
-Date: Fri, 14 May 2010 19:07:04 GMT
-Message-Id: <201005141907.o4EJ74Ck008623@hera.kernel.org>
-From: "H. Peter Anvin" <hpa@zytor.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [GIT PULL] x86 fixes for 2.6.34/2.6.34-rc8
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       <stable@kernel.org>, Andreas Herrmann <andreas.herrmann3@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       David Rientjes <rientjes@google.com>,
-       Frank Arnold <frank.arnold@amd.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Yinghai Lu <yinghai@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 May 2010 19:07:04 +0000 (UTC)
+	id S1759299Ab0ENTId (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:08:33 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:55559 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759205Ab0ENTIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:08:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=PYB1vmCXkhQ98LhkOt1AOyY70znCyHBnT1vgk8ksYkYk+g++4hHg3Kkcdlj2DpZNKi
+         nFNN2pTmwz+snlMOnaMtYHnNLI2L5wzV4IAONc+LLQmne0MXlHECjL3fpVJfpOTrGHNR
+         0Bxz9t2ERaTR0TaVB0n4KJ/dMVeDOKwYCLGjE=
+Date: Fri, 14 May 2010 23:08:15 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+       Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH -tip/master] x86,perf: P4 PMU - fix counters management
+	logic
+Message-ID: <20100514190815.GG13509@lenovo>
+References: <20100514185822.GF13509@lenovo>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514185822.GF13509@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Jaswinder reported GP:
+|
+| Message from syslogd@ht at May 14 09:39:32 ...
+| kernel:[  314.908612] EIP: [<c100ccca>]
+| x86_perf_event_set_period+0x19d/0x1b2 SS:ESP 0068:edac3d70
+|
 
-Four more x86 fixes.  Two of them are very recent commits, but are in
-fact patches that are cherry-picked from another -tip branch -- they
-arrived as part of a larger patchset, but fix issues currently in
-mainline.
+Ming has narrowed it down to comparision issue between arguments with
+different sizes and signs. As result event index reached wrong value
+which in turn led to GP fault.
 
-The following changes since commit 722154e4cacf015161efe60009ae9be23d492296:
-  Linus Torvalds (1):
-        Merge branch 'zerolen' of git://git.kernel.org/.../jgarzik/misc-2.6
+Same time was found that p4_next_cntr has a broken logic and should
+return counter index if only it was not yet borrowed for another event.
 
-are available in the git repository at:
+Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Reported-by: Lin Ming <ming.m.lin@intel.com>
+Bisected-by: Lin Ming <ming.m.lin@intel.com>
+Tested-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Frederic Weisbecker <fweisbec@gmail.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+---
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-fixes-for-linus
+Forgot to CC LKML in first place, sorry for message duplication.
 
-Andreas Herrmann (1):
-      x86, amd: Check X86_FEATURE_OSVW bit before accessing OSVW MSRs
+ arch/x86/kernel/cpu/perf_event_p4.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
-Borislav Petkov (1):
-      x86, k8: Fix build error when K8_NB is disabled
-
-David Rientjes (1):
-      x86: Fix fake apicid to node mapping for numa emulation
-
-Frank Arnold (1):
-      x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
-
- arch/x86/include/asm/k8.h             |    5 +++++
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
- arch/x86/kernel/process.c             |   12 +++++++-----
- arch/x86/mm/srat_64.c                 |    3 ++-
- 4 files changed, 18 insertions(+), 6 deletions(-)
-
-diff --git a/arch/x86/include/asm/k8.h b/arch/x86/include/asm/k8.h
-index f70e600..af00bd1 100644
---- a/arch/x86/include/asm/k8.h
-+++ b/arch/x86/include/asm/k8.h
-@@ -16,11 +16,16 @@ extern int k8_numa_init(unsigned long start_pfn, unsigned long end_pfn);
- extern int k8_scan_nodes(void);
+Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+=====================================================================
+--- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
++++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -18,7 +18,7 @@
+ struct p4_event_bind {
+ 	unsigned int opcode;			/* Event code and ESCR selector */
+ 	unsigned int escr_msr[2];		/* ESCR MSR for this event */
+-	unsigned char cntr[2][P4_CNTR_LIMIT];	/* counter index (offset), -1 on abscence */
++	char cntr[2][P4_CNTR_LIMIT];		/* counter index (offset), -1 on abscence */
+ };
  
- #ifdef CONFIG_K8_NB
-+extern int num_k8_northbridges;
-+
- static inline struct pci_dev *node_to_k8_nb_misc(int node)
+ struct p4_cache_event_bind {
+@@ -747,11 +747,11 @@ static int p4_get_escr_idx(unsigned int 
+ static int p4_next_cntr(int thread, unsigned long *used_mask,
+ 			struct p4_event_bind *bind)
  {
- 	return (node < num_k8_northbridges) ? k8_northbridges[node] : NULL;
- }
-+
- #else
-+#define num_k8_northbridges 0
-+
- static inline struct pci_dev *node_to_k8_nb_misc(int node)
- {
- 	return NULL;
-diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-index b3eeb66..95962a9 100644
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -340,6 +340,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
- 	     (boot_cpu_data.x86_mask  < 0x1)))
- 		return;
+-	int i = 0, j;
++	int i, j;
  
-+	/* not in virtualized environments */
-+	if (num_k8_northbridges == 0)
-+		return;
-+
- 	this_leaf->can_disable = true;
- 	this_leaf->l3_indices  = amd_calc_l3_indices();
- }
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 28ad9f4..0415c3e 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -546,11 +546,13 @@ static int __cpuinit check_c1e_idle(const struct cpuinfo_x86 *c)
- 		 * check OSVW bit for CPUs that are not affected
- 		 * by erratum #400
- 		 */
--		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
--		if (val >= 2) {
--			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
--			if (!(val & BIT(1)))
--				goto no_c1e_idle;
-+		if (cpu_has(c, X86_FEATURE_OSVW)) {
-+			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
-+			if (val >= 2) {
-+				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
-+				if (!(val & BIT(1)))
-+					goto no_c1e_idle;
-+			}
- 		}
- 		return 1;
+ 	for (i = 0; i < P4_CNTR_LIMIT; i++) {
+-		j = bind->cntr[thread][i++];
+-		if (j == -1 || !test_bit(j, used_mask))
++		j = bind->cntr[thread][i];
++		if (j != -1 && !test_bit(j, used_mask))
+ 			return j;
  	}
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 28c6876..38512d0 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -461,7 +461,8 @@ void __init acpi_fake_nodes(const struct bootnode *fake_nodes, int num_nodes)
- 		 * node, it must now point to the fake node ID.
- 		 */
- 		for (j = 0; j < MAX_LOCAL_APIC; j++)
--			if (apicid_to_node[j] == nid)
-+			if (apicid_to_node[j] == nid &&
-+			    fake_apicid_to_node[j] == NUMA_NO_NODE)
- 				fake_apicid_to_node[j] = i;
- 	}
- 	for (i = 0; i < num_nodes; i++)
+ 
