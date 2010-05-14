@@ -1,44 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759217Ab0ENK3W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 06:29:22 -0400
-Received: from ganesha.gnumonks.org ([213.95.27.120]:47894 "EHLO
-	ganesha.gnumonks.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758830Ab0ENK3T (ORCPT
+	id S1759227Ab0ENKbX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 06:31:23 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:36913 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758830Ab0ENKbW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 06:29:19 -0400
-Date: Fri, 14 May 2010 09:57:42 +0200
-From: Harald Welte <HaraldWelte@viatech.com>
-To: Matt Fleming <matt@console-pimps.org>
-Cc: linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
-Subject: Re: [PATCH] mmc: drop the "state" argument to mmc_suspend_host()
-Message-ID: <20100514075742.GA21531@prithivi.gnumonks.org>
-References: <d071c94414fc069d9360ae62a37fd2ad0b68110f.1273777159.git.matt@console-pimps.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <d071c94414fc069d9360ae62a37fd2ad0b68110f.1273777159.git.matt@console-pimps.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Fri, 14 May 2010 06:31:22 -0400
+Subject: usb debug port documentation
+From: Johannes Berg <johannes@sipsolutions.net>
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Jason Wessel <jason.wessel@windriver.com>, Yinghai Lu <yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 12:31:16 +0200
+Message-ID: <1273833076.4950.4.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.29.92.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 08:01:45PM +0100, Matt Fleming wrote:
-> Even though many mmc host drivers pass a pm_message_t argument to
-> mmc_suspend_host() that argument isn't used the by MMC core. As host
-> drivers are converted to dev_pm_ops they'll have to construct
-> pm_message_t's (as they won't be passed by the PM subsystem any more)
-> just to appease the mmc suspend interface.
-> 
-> We might as well just delete the unused paramter.
-> 
-> Signed-off-by: Matt Fleming <matt@console-pimps.org>
+Hi,
 
-for via-sdmmc:
+I've been looking at
+http://www.kernel.org/doc/Documentation/x86/earlyprintk.txt and spent a
+while finding everything correctly in place. One of the big unknowns is
+what way debug ports are enumerated, so if you have a few USB ports you
+end up trying a lot. At the same time, I at least wasn't sure I was
+doing everything correctly to start with. It does seem, for example,
+that I needed the serial driver built in the kernel too?
 
-Acked-by: Harald Welte <laforge@gnumonks.org>
+In any case, to help others I was wondering if we should start a wiki
+page somewhere or so that just lists what port on various machines
+people have gotten it to work on? I have a Toshiba Satellite U505 and
+earlyprintk=dbgp,keep uses the port on the right-hand side of the
+machine... That information could possibly help somebody who is setting
+it up for the first time, since it reduces the search space? :)
 
--- 
-- Harald Welte <HaraldWelte@viatech.com>	    http://linux.via.com.tw/
-============================================================================
-VIA Free and Open Source Software Liaison
+If there's an appropriate wiki, I'd like to be pointed to it so I can
+start a page and submit a kernel patch pointing to it. Otherwise I'll
+just create it internally since we all typically use just a handful of
+machine types, but it seems like public could help more people.
+
+johannes
+
