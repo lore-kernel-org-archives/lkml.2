@@ -1,70 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932262Ab0ENTa5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:30:57 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:54918 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932221Ab0ENTax (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 15:30:53 -0400
-Date: Fri, 14 May 2010 21:30:48 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Mark Fasheh <mfasheh@suse.com>, Joel Becker <joel.becker@oracle.com>,
-       ocfs2-devel@oss.oracle.com, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 8/10] fs/ocfs2/dlm: Use kstrdup
-Message-ID: <Pine.LNX.4.64.1005142130310.28935@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1759554Ab0ENTbu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:31:50 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53803 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759407Ab0ENT3Z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 15:29:25 -0400
+X-Authority-Analysis: v=1.1 cv=QBaIlYAip0cLYvdi/Wu3On4+kilSXYulM+a9j4asJ0c= c=1 sm=0 a=DuHbMwyJcvcA:10 a=Lw_SFsgOoS4A:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=ouCqjlswqEbYyPwJsesA:9 a=KuXRWup53SR2YJ7-HnsA:7 a=9YtNRmgByIuaeroxGnRlQNSgWQYA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100514192916.699062652@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Fri, 14 May 2010 15:22:57 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 11/13 v3] tracing: Fix function declarations if !CONFIG_STACKTRACE
+References: <20100514192246.079025623@goodmis.org>
+Content-Disposition: inline; filename=0011-tracing-Fix-function-declarations-if-CONFIG_STACKTRA.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-Use kstrdup when the goal of an allocation is copy a string into the
-allocated region.
+ftrace_trace_stack() and frace_trace_userstacke() take a
+struct ring_buffer argument, not struct trace_array. Commit
+e77405ad("tracing: pass around ring buffer instead of tracer")
+made this change.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
-
-// <smpl>
-@@
-expression from,to;
-expression flag,E1,E2;
-statement S;
-@@
-
--  to = kmalloc(strlen(from) + 1,flag);
-+  to = kstrdup(from, flag);
-   ... when != \(from = E1 \| to = E1 \)
-   if (to==NULL || ...) S
-   ... when != \(from = E2 \| to = E2 \)
--  strcpy(to, from);
-// </smpl>
-
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4BE77C14.5010806@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- fs/ocfs2/dlm/dlmdomain.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ kernel/trace/trace.h |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff -u -p a/fs/ocfs2/dlm/dlmdomain.c b/fs/ocfs2/dlm/dlmdomain.c
---- a/fs/ocfs2/dlm/dlmdomain.c
-+++ b/fs/ocfs2/dlm/dlmdomain.c
-@@ -1523,7 +1523,7 @@ static struct dlm_ctxt *dlm_alloc_ctxt(c
- 		goto leave;
- 	}
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 6356259..40cd171 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -419,12 +419,12 @@ void ftrace_trace_userstack(struct ring_buffer *buffer, unsigned long flags,
+ void __trace_stack(struct trace_array *tr, unsigned long flags, int skip,
+ 		   int pc);
+ #else
+-static inline void ftrace_trace_stack(struct trace_array *tr,
++static inline void ftrace_trace_stack(struct ring_buffer *buffer,
+ 				      unsigned long flags, int skip, int pc)
+ {
+ }
  
--	dlm->name = kmalloc(strlen(domain) + 1, GFP_KERNEL);
-+	dlm->name = kstrdup(domain, GFP_KERNEL);
- 	if (dlm->name == NULL) {
- 		mlog_errno(-ENOMEM);
- 		kfree(dlm);
-@@ -1557,7 +1557,6 @@ static struct dlm_ctxt *dlm_alloc_ctxt(c
- 	for (i = 0; i < DLM_HASH_BUCKETS; i++)
- 		INIT_HLIST_HEAD(dlm_master_hash(dlm, i));
- 
--	strcpy(dlm->name, domain);
- 	dlm->key = key;
- 	dlm->node_num = o2nm_this_node();
- 
+-static inline void ftrace_trace_userstack(struct trace_array *tr,
++static inline void ftrace_trace_userstack(struct ring_buffer *buffer,
+ 					  unsigned long flags, int pc)
+ {
+ }
+-- 
+1.7.0
+
+
