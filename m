@@ -1,109 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752905Ab0ENWVo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:21:44 -0400
-Received: from tomts13.bellnexxia.net ([209.226.175.34]:59757 "EHLO
-	tomts13-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752315Ab0ENWVm (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:21:42 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEACNq7UtGGOJc/2dsb2JhbACeBXK+AIUQBA
-Date: Fri, 14 May 2010 18:21:40 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+	id S1754163Ab0ENWV6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:21:58 -0400
+Received: from gate.crashing.org ([63.228.1.57]:59021 "EHLO gate.crashing.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753562Ab0ENWVz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:21:55 -0400
+Subject: Re: [PATCH 05/35] x86, lmb: Add lmb_find_area_size()
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai.lu@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [PATCH 13/13 v3] tracing: Comment the use of event_mutex with
-	trace event flags
-Message-ID: <20100514222140.GA14234@Krystal>
-References: <20100514192246.079025623@goodmis.org> <20100514192917.222882793@goodmis.org>
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <4BED7B3E.5020308@oracle.com>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-6-git-send-email-yinghai@kernel.org>
+	 <1273803621.21352.368.camel@pasglop>  <4BECEDAA.9070009@oracle.com>
+	 <1273824809.21352.584.camel@pasglop>  <4BED7B3E.5020308@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 May 2010 08:20:04 +1000
+Message-ID: <1273875604.21352.637.camel@pasglop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100514192917.222882793@goodmis.org>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 18:20:47 up 37 days,  8:14,  3 users,  load average: 0.30, 0.14,
-	0.11
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> The flags variable is protected by the event_mutex when modifying,
-> but the event_mutex is not held when reading the variable.
-> 
-> This is due to the fact that the reads occur in critical sections where
-> taking a mutex (or even a spinlock) is not wanted.
-> 
-> But the two flags that exist (enable and filter_active) have the code
-> written as such to handle the reads to not need a lock.
-> 
-> The enable flag is used just to know if the event is enabled or not
-> and its use is always under the event_mutex. Whether or not the event
-> is actually enabled is really determined by the tracepoint being
-> registered. The flag is just a way to let the code know if the tracepoint
-> is registered.
-> 
-> The filter_active is different. It is read without the lock. If it
-> is set, then the event probes jump to the filter code. There can be a
-> slight mismatch between filters available and filter_active. If the flag is
-> set but no filters are available, the code safely jumps to a filter nop.
-> If the flag is not set and the filters are available, then the filters
-> are skipped. This is acceptable since filters are usually set before
-> tracing or they are set by humans, which would not notice the slight
-> delay that this causes.
-> 
-> Reported-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-> Cc: Tom Zanussi <tzanussi@gmail.com>
-> Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> ---
->  include/linux/ftrace_event.h |    9 ++++++++-
->  1 files changed, 8 insertions(+), 1 deletions(-)
-> 
-> diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
-> index 5ac97a4..3578e90 100644
-> --- a/include/linux/ftrace_event.h
-> +++ b/include/linux/ftrace_event.h
-> @@ -169,7 +169,14 @@ struct ftrace_event_call {
->  	 *   bit 1:		enabled
->  	 *   bit 2:		filter_active
->  	 *
-> -	 *  Must hold event_mutex to change.
-> +	 * Changes to flags must hold the event_mutex.
-> +	 *
-> +	 * Note: Reads of flags do not hold the event_mutex since
-> +	 * they occur in critical sections. But the way flags
-> +	 * is currently used, these changes do no affect the code
-> +	 * except that when a change is made, it may have a slight
-> +	 * delay in propagating the changes to other CPUs due to
-> +	 * cacheing and such.
+On Fri, 2010-05-14 at 09:33 -0700, Yinghai Lu wrote:
+> On 05/14/2010 01:13 AM, Benjamin Herrenschmidt wrote:
+> > On Thu, 2010-05-13 at 23:28 -0700, Yinghai wrote:
+> >   
+> >> this just line by line translation from early_res version to lmb
+> >> changes
+> >>
+> >> please focus on lmb core at this point.
+> >>     
+> > Well, the problem is that you dig into the LMB core with those functions
+> > which means I -will- break your stuff if/when I change it, for example
+> > to use linked lists.
+> >
+> >   
+> then you should don't even struct lmb, and move the definition from
+> lmb.h to lmb.c
 
-cacheing -> caching ?
+Well, figure that it's been considered :-) The only reason it's in lmb.h
+is so that we can write things like for_each_lmb() as inlines, but
+we could just do lmb_first() and lmb_next() and move it all out of line.
 
-Besides this minor nit:
+Ben.
 
-Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
->  	 */
->  	unsigned int		flags;
->  
-> -- 
-> 1.7.0
+> > Besides, the code lacks comments and explanation in the changeset. So
+> > please provide that, I'm sure Thomas and Peter also want to understand
+> > what's going on in the x86 side of things.
+> >
+> >   
 > 
-> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-arch" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+
