@@ -1,68 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757894Ab0ENVcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 17:32:11 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:53150 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752719Ab0ENVcI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 17:32:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=Qs/HdRrujDbTKzRglVUpRr16srgA0YkelXKdTba/8B9x9UVqoUQZkcGdyyW/L7cQCP
-         k+LgMZnKaquGuvP9OLI2QH0vAcLY8HDGCybdZoeSE7qCGkio3EQozbjvo3XZzSdH5txf
-         nVugyvuXqbUodHwQ0YCZ4mVakMGbM3a8y5bM8=
-Message-ID: <4BEDC155.8040204@pobox.com>
-Date: Fri, 14 May 2010 17:32:05 -0400
-From: Jeff Garzik <jgarzik@pobox.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1758256Ab0ENVkH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 17:40:07 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45631 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757489Ab0ENVkD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 17:40:03 -0400
+Date: Fri, 14 May 2010 21:39:44 GMT
+From: "tip-bot for H. Peter Anvin" <hpa@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       petr@vandrovec.name, jbarnes@virtuousgeek.org, jacob.jun.pan@intel.com,
+       tglx@linutronix.de, hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       jbarnes@virtuousgeek.org, jacob.jun.pan@intel.com, petr@vandrovec.name,
+       tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
+References: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86, mrst: Don't blindly access extended config space
+Message-ID: <tip-e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e@git.kernel.org>
+Git-Commit-ID: e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Jiri Olsa <jolsa@redhat.com>
-CC: kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux@arm.linux.org.uk, ysato@users.sourceforge.jp, tony.luck@intel.com,
-       dhowells@redhat.com, kyle@mcmartin.ca, benh@kernel.crashing.org,
-       schwidefsky@de.ibm.com, hare@suse.de, felipe.balbi@nokia.com
-Subject: Re: [PATCH 13/13] drivers/ata: removing redundant ifdef
-References: <1273167377-14270-1-git-send-email-jolsa@redhat.com> <1273167377-14270-14-git-send-email-jolsa@redhat.com>
-In-Reply-To: <1273167377-14270-14-git-send-email-jolsa@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 14 May 2010 21:39:45 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/06/2010 01:36 PM, Jiri Olsa wrote:
-> wbr,
-> jirka
->
->
-> Signed-off-by: Jiri Olsa<jolsa@redhat.com>
-> ---
->   drivers/ata/ahci.c |    2 --
->   1 files changed, 0 insertions(+), 2 deletions(-)
->
-> diff --git a/drivers/ata/ahci.c b/drivers/ata/ahci.c
-> index 8b502f4..5326af2 100644
-> --- a/drivers/ata/ahci.c
-> +++ b/drivers/ata/ahci.c
-> @@ -3179,7 +3179,6 @@ static bool ahci_broken_online(struct pci_dev *pdev)
->   #ifdef CONFIG_ATA_ACPI
->   static void ahci_gtf_filter_workaround(struct ata_host *host)
->   {
-> -#ifdef CONFIG_ATA_ACPI
->   	static const struct dmi_system_id sysids[] = {
->   		/*
->   		 * Aspire 3810T issues a bunch of SATA enable commands
-> @@ -3220,7 +3219,6 @@ static void ahci_gtf_filter_workaround(struct ata_host *host)
->   			ata_for_each_dev(dev, link, ALL)
->   				dev->gtf_filter |= filter;
->   	}
-> -#endif
->   }
+Commit-ID:  e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e
+Gitweb:     http://git.kernel.org/tip/e9b1d5d0ff4d3ae86050dc4c91b3147361c7af9e
+Author:     H. Peter Anvin <hpa@linux.intel.com>
+AuthorDate: Fri, 14 May 2010 13:55:57 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Fri, 14 May 2010 13:55:57 -0700
 
-I don't see this in the linux-next version of ahci.c, so I'm dropping 
-this patch.
+x86, mrst: Don't blindly access extended config space
 
+Do not blindly access extended configuration space unless we actively
+know we're on a Moorestown platform.  The fixed-size BAR capability
+lives in the extended configuration space, and thus is not applicable
+if the configuration space isn't appropriately sized.
 
+This fixes booting certain VMware configurations with CONFIG_MRST=y.
+
+Moorestown will add a fake PCI-X 266 capability to advertise the
+presence of extended configuration space.
+
+Reported-and-tested-by: Petr Vandrovec <petr@vandrovec.name>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+Acked-by: Jacob Pan <jacob.jun.pan@intel.com>
+Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
+LKML-Reference: <AANLkTiltKUa3TrKR1M51eGw8FLNoQJSLT0k0_K5X3-OJ@mail.gmail.com>
+---
+ arch/x86/pci/mrst.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 8bf2fcb..1cdc02c 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -247,6 +247,10 @@ static void __devinit pci_fixed_bar_fixup(struct pci_dev *dev)
+ 	u32 size;
+ 	int i;
+ 
++	/* Must have extended configuration space */
++	if (dev->cfg_size < PCIE_CAP_OFFSET + 4)
++		return;
++
+ 	/* Fixup the BAR sizes for fixed BAR devices and make them unmoveable */
+ 	offset = fixed_bar_cap(dev->bus, dev->devfn);
+ 	if (!offset || PCI_DEVFN(2, 0) == dev->devfn ||
