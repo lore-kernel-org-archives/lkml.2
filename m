@@ -1,94 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759137Ab0EXXLZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:11:25 -0400
-Received: from kroah.org ([198.145.64.141]:36530 "EHLO coco.kroah.org"
+	id S1751945Ab0ENEOO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 00:14:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38306 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759052Ab0EXXJi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:38 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
-Message-Id: <20100524230351.922859029@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:00:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tomas Henzl <thenzl@redhat.com>, Bo Yang <Bo.Yang@lsi.com>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [29/34] [SCSI] megaraid_sas: fix for 32bit apps
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+	id S1751344Ab0ENEOL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 00:14:11 -0400
+Date: Fri, 14 May 2010 14:14:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Don Zickus <dzickus@redhat.com>,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: linux-next: manual merge of the tip tree with the kgdb tree
+Message-Id: <20100514141406.68a6bf6f.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+Hi all,
 
-------------------
+Today's linux-next merge of the tip tree got a conflict in
+kernel/Makefile between commit 7d63ecbc5ce463c8ba60e357eafaf47774521f1a
+("Move kernel/kgdb.c to kernel/debug/debug_core.c") from the kgdb tree
+and commit 58687acba59266735adb8ccd9b5b9aa2c7cd205b ("lockup_detector:
+Combine nmi_watchdog and softlockup detector") from the tip tree.
 
-From: Tomas Henzl <thenzl@redhat.com>
+Just context changes.  I fixed it up (see below) and can carry the fix
+as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-commit b3dc1a212e5167984616445990c76056034f8eeb upstream.
-
-It looks like this patch -
-
-commit 7b2519afa1abd1b9f63aa1e90879307842422dae
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Tue Oct 6 14:52:20 2009 -0600
-
-    [SCSI] megaraid_sas: fix 64 bit sense pointer truncation
-
-has caused a problem for 32bit programs with 64bit os -
-
-http://bugzilla.kernel.org/show_bug.cgi?id=15001
-
-fix by converting the user space 32bit pointer to a 64 bit one when
-needed.
-
-[jejb: fix up some 64 bit warnings]
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
-Cc: Bo Yang <Bo.Yang@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- drivers/scsi/megaraid/megaraid_sas.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
-
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -3282,6 +3282,7 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    compat_alloc_user_space(sizeof(struct megasas_iocpacket));
- 	int i;
- 	int error = 0;
-+	compat_uptr_t ptr;
- 
- 	if (clear_user(ioc, sizeof(*ioc)))
- 		return -EFAULT;
-@@ -3294,9 +3295,22 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    copy_in_user(&ioc->sge_count, &cioc->sge_count, sizeof(u32)))
- 		return -EFAULT;
- 
--	for (i = 0; i < MAX_IOCTL_SGE; i++) {
--		compat_uptr_t ptr;
-+	/*
-+	 * The sense_ptr is used in megasas_mgmt_fw_ioctl only when
-+	 * sense_len is not null, so prepare the 64bit value under
-+	 * the same condition.
-+	 */
-+	if (ioc->sense_len) {
-+		void __user **sense_ioc_ptr =
-+			(void __user **)(ioc->frame.raw + ioc->sense_off);
-+		compat_uptr_t *sense_cioc_ptr =
-+			(compat_uptr_t *)(cioc->frame.raw + cioc->sense_off);
-+		if (get_user(ptr, sense_cioc_ptr) ||
-+		    put_user(compat_ptr(ptr), sense_ioc_ptr))
-+			return -EFAULT;
-+	}
- 
-+	for (i = 0; i < MAX_IOCTL_SGE; i++) {
- 		if (get_user(ptr, &cioc->sgl[i].iov_base) ||
- 		    put_user(compat_ptr(ptr), &ioc->sgl[i].iov_base) ||
- 		    copy_in_user(&ioc->sgl[i].iov_len,
-
-
+diff --cc kernel/Makefile
+index 4313d0e,34d123b..0000000
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@@ -68,17 -68,16 +68,17 @@@ obj-$(CONFIG_USER_NS) += user_namespace
+  obj-$(CONFIG_PID_NS) += pid_namespace.o
+  obj-$(CONFIG_IKCONFIG) += configs.o
+  obj-$(CONFIG_RESOURCE_COUNTERS) += res_counter.o
+- obj-$(CONFIG_STOP_MACHINE) += stop_machine.o
++ obj-$(CONFIG_SMP) += stop_machine.o
+  obj-$(CONFIG_KPROBES_SANITY_TEST) += test_kprobes.o
+ -obj-$(CONFIG_AUDIT) += audit.o auditfilter.o audit_watch.o
+ +obj-$(CONFIG_AUDIT) += audit.o auditfilter.o
+  obj-$(CONFIG_AUDITSYSCALL) += auditsc.o
+ -obj-$(CONFIG_GCOV_KERNEL) += gcov/
+ +obj-$(CONFIG_AUDIT_WATCH) += audit_watch.o
+  obj-$(CONFIG_AUDIT_TREE) += audit_tree.o
+ +obj-$(CONFIG_GCOV_KERNEL) += gcov/
+  obj-$(CONFIG_KPROBES) += kprobes.o
+ -obj-$(CONFIG_KGDB) += kgdb.o
+ +obj-$(CONFIG_KGDB) += debug/
+- obj-$(CONFIG_DETECT_SOFTLOCKUP) += softlockup.o
+  obj-$(CONFIG_DETECT_HUNG_TASK) += hung_task.o
++ obj-$(CONFIG_LOCKUP_DETECTOR) += watchdog.o
+  obj-$(CONFIG_GENERIC_HARDIRQS) += irq/
+  obj-$(CONFIG_SECCOMP) += seccomp.o
+  obj-$(CONFIG_RCU_TORTURE_TEST) += rcutorture.o
