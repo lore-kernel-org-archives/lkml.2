@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759788Ab0ENUGj (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 16:06:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:21880 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758476Ab0ENUGi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 16:06:38 -0400
-From: Eric Paris <eparis@redhat.com>
-Subject: [PATCH] anon_inode: set S_IFREG on the anon_inode
-To: linux-kernel@vger.kernel.org
-Cc: viro@zeniv.linux.org.uk, akpm@linux-foundation.org, npiggin@suse.de
-Date: Fri, 14 May 2010 16:05:59 -0400
-Message-ID: <20100514200555.17387.92658.stgit@paris.rdu.redhat.com>
-User-Agent: StGIT/0.14.3
+	id S1759892Ab0ENUHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 16:07:21 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48606 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759447Ab0ENUHS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 16:07:18 -0400
+Date: Fri, 14 May 2010 13:06:33 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 8/10] fs/ocfs2/dlm: Use kstrdup
+Message-ID: <20100514200632.GD29764@mail.oracle.com>
+Mail-Followup-To: Julia Lawall <julia@diku.dk>,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <Pine.LNX.4.64.1005142130310.28935@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1005142130310.28935@ask.diku.dk>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090208.4BEDAD71.01B9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-anon_inode_mkinode() sets inode->i_mode = S_IRUSR | S_IWUSR;  This means
-that (inode->i_mode & S_IFMT) == 0.  This trips up some SELinux code that
-needs to determine if a given inode is a regular file, a directory, etc.
-The easiest solution is to just make sure that the anon_inode also sets
-S_IFREG.
+On Fri, May 14, 2010 at 09:30:48PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Use kstrdup when the goal of an allocation is copy a string into the
+> allocated region.
 
-Signed-off-by: Eric Paris <eparis@redhat.com>
----
+	Seems fine.  I'll send it along.
 
- fs/anon_inodes.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Joel
 
-diff --git a/fs/anon_inodes.c b/fs/anon_inodes.c
-index e4b75d6..9bd4b38 100644
---- a/fs/anon_inodes.c
-+++ b/fs/anon_inodes.c
-@@ -205,7 +205,7 @@ static struct inode *anon_inode_mkinode(void)
- 	 * that it already _is_ on the dirty list.
- 	 */
- 	inode->i_state = I_DIRTY;
--	inode->i_mode = S_IRUSR | S_IWUSR;
-+	inode->i_mode = S_IFREG | S_IRUSR | S_IWUSR;
- 	inode->i_uid = current_fsuid();
- 	inode->i_gid = current_fsgid();
- 	inode->i_flags |= S_PRIVATE;
+-- 
 
+"In the arms of the angel, fly away from here,
+ From this dark, cold hotel room and the endlessness that you fear.
+ You are pulled from the wreckage of your silent reverie.
+ In the arms of the angel, may you find some comfort here."
+
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
