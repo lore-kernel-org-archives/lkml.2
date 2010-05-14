@@ -1,46 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759035Ab0ENStq (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 14:49:46 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:47139 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758091Ab0ENSto (ORCPT
+	id S1759132Ab0ENSty (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 14:49:54 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51342 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759084Ab0ENStw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 14:49:44 -0400
-Date: Fri, 14 May 2010 19:49:31 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: david@lang.hm
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
-Subject: Re: [git pull] Input updates for 2.6.34-rc6
-Message-ID: <20100514184931.GA10113@srcf.ucam.org>
-References: <20100513075728.GF30110@core.coreip.homeip.net> <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org> <20100514145539.GA5598@srcf.ucam.org> <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org> <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.01.1005141144250.8603@asgard.lang.hm>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+	Fri, 14 May 2010 14:49:52 -0400
+Subject: Re: [RFC] Tracer Ring Buffer splice() vs page cache [was: Re: Perf
+ and ftrace [was Re: PyTimechart]]
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
+       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <20100514183242.GA11795@Krystal>
+References: <20100514183242.GA11795@Krystal>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 20:49:05 +0200
+Message-ID: <1273862945.1674.14.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 11:47:43AM -0700, david@lang.hm wrote:
+On Fri, 2010-05-14 at 14:32 -0400, Mathieu Desnoyers wrote:
 
-> yes, everything has USB ports, so they could use USB keyboards, but it's  
-> actually pretty common to still use PS/2 keyboards (and while the systems 
-> all support USB, it's not uncommon to have KVM systems, including pretty  
-> expensive 'enterprise' KVM systems that still require PS/2 keyboards be  
-> used to plug into the KVM, so those are the keyboards that are in the  
-> datacenter that someone will grab to plug into a problem machine)
+> [CCing memory management specialists]
 
-The server hardware I've looked at will all declare the ports regardless 
-of whether or not there's something plugged in.
+And jet you forgot Jens who wrote it ;-)
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+> So I have three questions here:
+> 
+> 1 - could we enforce removal of these pages from the page cache by calling
+>     "page_cache_release()" before giving these pages back to the ring buffer ?
+> 
+> 2 - or maybe is there a page flag we could specify when we allocate them to
+>     ask for these pages to never be put in the page cache ? (but they should be
+>     still usable as write buffers)
+> 
+> 3 - is there something more we need to do to grab a reference on the pages
+>     before passing them to splice(), so that when we call page_cache_release()
+>     they don't get reclaimed ? 
+
+There is no guarantee it is the pagecache they end up in, it could be a
+network packet queue, a pipe, or anything that implements .splice_write.
+
+>From what I understand of splice() is that it assumes it passes
+ownership of the page, you're not supposed to touch them again, non of
+the above three are feasible.
+
+
+
