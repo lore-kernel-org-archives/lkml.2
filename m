@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759841Ab0ENTzK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 15:55:10 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:59871 "EHLO
+	id S1759866Ab0ENTzs (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 15:55:48 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:59869 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759684Ab0ENTsj (ORCPT
+	with ESMTP id S1759638Ab0ENTsj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Fri, 14 May 2010 15:48:39 -0400
 From: Yinghai Lu <yinghai@kernel.org>
@@ -16,106 +16,88 @@ To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
 Cc: Linus Torvalds <torvalds@linux-foundation.org>,
        Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
        linux-arch@vger.kernel.org, Yinghai Lu <yinghai@kernel.org>
-Subject: [PATCH 16/37] x86, lmb: Add lmb_free_memory_size()
-Date: Fri, 14 May 2010 12:45:42 -0700
-Message-Id: <1273866363-14249-17-git-send-email-yinghai@kernel.org>
+Subject: [PATCH 07/37] lmb: Add lmb_find_area()
+Date: Fri, 14 May 2010 12:45:33 -0700
+Message-Id: <1273866363-14249-8-git-send-email-yinghai@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>
 X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BEDA8E7.003F,ss=1,fgs=0
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090202.4BEDA8DE.00B1,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It will return free memory size in specified range.
+it is a wrapper for lmb_find_base
 
-We can not use memory_size - reserved_size here, because some reserved area
-may not be in the scope of lmb.memory.region.
+make it more easy for x86 to use lmb. ( rebase )
+x86 early_res is using find/reserve pattern instead of alloc.
 
-Use lmb.memory.region subtracting lmb.reserved.region to get free range array.
-then count size of all free ranges.
+keep it in weak version, so later We can use x86 own version if needed.
+also We need it in lib/lmb.c, so one called mm/page_alloc.c could get compiled
+
+-v2: Change name to lmb_find_area() according to Michael Ellerman
+-v3: Add generic weak version __lmb_find_area()
+     so keep the path for fallback to x86 version that handle from low
+-v4: use 0 for failing path
+-v5: use LMB_ERROR again
 
 Signed-off-by: Yinghai Lu <yinghai@kernel.org>
 ---
- arch/x86/include/asm/lmb.h |    1 +
- arch/x86/mm/lmb.c          |   51 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 52 insertions(+), 0 deletions(-)
+ include/linux/lmb.h |    4 ++++
+ lib/lmb.c           |   23 +++++++++++++++++++++++
+ 2 files changed, 27 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/lmb.h b/arch/x86/include/asm/lmb.h
-index 358d8a6..4fb94b5 100644
---- a/arch/x86/include/asm/lmb.h
-+++ b/arch/x86/include/asm/lmb.h
-@@ -16,5 +16,6 @@ void lmb_register_active_regions(int nid, unsigned long start_pfn,
- 					 unsigned long last_pfn);
- u64 lmb_hole_size(u64 start, u64 end);
- u64 lmb_find_area_node(int nid, u64 start, u64 end, u64 size, u64 align);
-+u64 lmb_free_memory_size(u64 addr, u64 limit);
+diff --git a/include/linux/lmb.h b/include/linux/lmb.h
+index e54c1d0..c05294f 100644
+--- a/include/linux/lmb.h
++++ b/include/linux/lmb.h
+@@ -44,6 +44,10 @@ extern struct lmb lmb;
+ extern int lmb_debug;
+ extern struct lmb_region lmb_reserved_init_regions[];
  
- #endif
-diff --git a/arch/x86/mm/lmb.c b/arch/x86/mm/lmb.c
-index 17bb1fb..3a16cdc 100644
---- a/arch/x86/mm/lmb.c
-+++ b/arch/x86/mm/lmb.c
-@@ -226,6 +226,57 @@ void __init lmb_to_bootmem(u64 start, u64 end)
++u64 __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++			u64 size, u64 align);
++u64 lmb_find_area(u64 start, u64 end, u64 size, u64 align);
++
+ extern void __init lmb_init(void);
+ extern void __init lmb_analyze(void);
+ extern long lmb_add(phys_addr_t base, phys_addr_t size);
+diff --git a/lib/lmb.c b/lib/lmb.c
+index c92034b..1c46336 100644
+--- a/lib/lmb.c
++++ b/lib/lmb.c
+@@ -155,6 +155,29 @@ static phys_addr_t __init lmb_find_base(phys_addr_t size, phys_addr_t align,
+ 	return LMB_ERROR;
  }
- #endif
  
-+u64 __init lmb_free_memory_size(u64 addr, u64 limit)
++u64 __init __weak __lmb_find_area(u64 ei_start, u64 ei_last, u64 start, u64 end,
++				 u64 size, u64 align)
 +{
-+	int i, count;
-+	struct range *range;
-+	int nr_range;
 +	u64 final_start, final_end;
-+	u64 free_size;
++	u64 mem;
 +
-+	count = (lmb.reserved.cnt + lmb.memory.cnt) * 2;
++	final_start = max(ei_start, start);
++	final_end = min(ei_last, end);
 +
-+	range = find_range_array(count);
-+	nr_range = 0;
++	if (final_start >= final_end)
++		return LMB_ERROR;
 +
-+	addr = PFN_UP(addr);
-+	limit = PFN_DOWN(limit);
-+
-+	for (i = 0; i < lmb.memory.cnt; i++) {
-+		struct lmb_region *r = &lmb.memory.regions[i];
-+
-+		final_start = PFN_UP(r->base);
-+		final_end = PFN_DOWN(r->base + r->size);
-+		if (final_start >= final_end)
-+			continue;
-+		if (final_start >= limit || final_end <= addr)
-+			continue;
-+
-+		nr_range = add_range(range, count, nr_range, final_start, final_end);
-+	}
-+	subtract_range(range, count, 0, addr);
-+	subtract_range(range, count, limit, -1ULL);
-+	for (i = 0; i < lmb.reserved.cnt; i++) {
-+		struct lmb_region *r = &lmb.reserved.regions[i];
-+
-+		final_start = PFN_DOWN(r->base);
-+		final_end = PFN_UP(r->base + r->size);
-+		if (final_start >= final_end)
-+			continue;
-+		if (final_start >= limit || final_end <= addr)
-+			continue;
-+
-+		subtract_range(range, count, final_start, final_end);
-+	}
-+	nr_range = clean_sort_range(range, count);
-+
-+	free_size = 0;
-+	for (i = 0; i < nr_range; i++)
-+		free_size += range[i].end - range[i].start;
-+
-+	return free_size << PAGE_SHIFT;
++	return  lmb_find_base(size, align, final_start, final_end);
 +}
 +
- void __init lmb_add_memory(u64 start, u64 end)
++/*
++ * Find a free area with specified alignment in a specific range.
++ */
++u64 __init __weak lmb_find_area(u64 start, u64 end, u64 size, u64 align)
++{
++	return lmb_find_base(size, align, start, end);
++}
++
+ static void __init_lmb lmb_remove_region(struct lmb_type *type, unsigned long r)
  {
- 	lmb_add(start, end - start);
+ 	unsigned long i;
 -- 
 1.6.4.2
 
