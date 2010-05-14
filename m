@@ -1,207 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759869Ab0ENWiK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 18:38:10 -0400
-Received: from theiggy.com ([66.220.1.110]:53155 "EHLO mail.theiggy.com"
+	id S1760041Ab0ENWkT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 18:40:19 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:46142 "EHLO relay.sgi.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755497Ab0ENWiI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 18:38:08 -0400
-X-Greylist: delayed 427 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 May 2010 18:38:08 EDT
-From: Brian Jackson <iggy@theiggy.com>
-To: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-Subject: Re: [PATCH RFC] virtio_blk: Use blk-iopoll for host->guest notify
-Date: Fri, 14 May 2010 17:30:56 -0500
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: virtualization@lists.linux-foundation.org,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org
-References: <1273870057-4287-1-git-send-email-stefanha@linux.vnet.ibm.com>
-In-Reply-To: <1273870057-4287-1-git-send-email-stefanha@linux.vnet.ibm.com>
+	id S1759291Ab0ENWkR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 18:40:17 -0400
+Message-ID: <4BEDD14A.1030400@sgi.com>
+Date: Fri, 14 May 2010 15:40:10 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-15"
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Bjorn Helgaas <bjorn.helgaas@hp.com>, Mike Habeck <habeck@sgi.com>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       x86@kernel.org, Jacob Pan <jacob.jun.pan@intel.com>,
+       Tejun Heo <tj@kernel.org>, LKML <linux-kernel@vger.kernel.org>,
+       Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com>	<201005131256.17997.bjorn.helgaas@hp.com>	<4BEC5530.1000008@sgi.com>	<201005131402.30759.bjorn.helgaas@hp.com> <20100514152509.3aeb37b4@virtuousgeek.org> <4BEDCFD9.7020202@sgi.com> <4BEDD03B.30106@zytor.com>
+In-Reply-To: <4BEDD03B.30106@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005141730.57158.iggy@theiggy.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 14, 2010 03:47:37 pm Stefan Hajnoczi wrote:
-> This patch adds blk-iopoll interrupt mitigation to virtio-blk.  Instead
-> of processing completed requests inside the virtqueue interrupt handler,
-> a softirq is scheduled to process up to a maximum number of completed
-> requests in one go.
-> 
-> If the number of complete requests exceeds the maximum number, then another
-> softirq is scheduled to continue polling.  Otherwise the virtqueue
-> interrupt is enabled again and we return to interrupt-driven mode.
-> 
-> The patch sets the maximum number of completed requests (aka budget, aka
-> weight) to 4.  This is a low number but reflects the expensive context
-> switch between guest and host virtio-blk emulation.
-> 
-> The blk-iopoll infrastructure is enabled system-wide by default:
-> 
-> kernel.blk_iopoll = 1
-> 
-> It can be disabled to always use interrupt-driven mode (useful for
-> comparison):
-> 
-> kernel.blk_iopoll = 0
 
 
-Any preliminary numbers? latency, throughput, cpu use? What about comparing 
-different "weights"?
+H. Peter Anvin wrote:
+> On 05/14/2010 03:34 PM, Mike Travis wrote:
+>> It seems that BIOS changes are much more difficult.  The real solution
+>> to this problem is for Card Vendors to not request I/O Bars if they
+>> won't be using them.  But that's the hardest option of all to accomplish.
+>>
+> 
+> That is a non-option.  Any device which may have to be a boot or console
+> device in a legacy system pretty much needs them.
+> 
+> 	-hpa
 
+Yes, that's true.  We're somewhat fortunate in that our Legacy I/O
+devices are confined to those on the first blade, and all of these
+other devices are on other blades (PCI segments 1+).
 
-> 
-> Signed-off-by: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-> ---
-> No performance figures yet.
-> 
->  drivers/block/virtio_blk.c |   71
-> ++++++++++++++++++++++++++++++++++++++----- 1 files changed, 62
-> insertions(+), 9 deletions(-)
-> 
-> diff --git a/drivers/block/virtio_blk.c b/drivers/block/virtio_blk.c
-> index 2138a7a..1523895 100644
-> --- a/drivers/block/virtio_blk.c
-> +++ b/drivers/block/virtio_blk.c
-> @@ -6,6 +6,7 @@
->  #include <linux/virtio.h>
->  #include <linux/virtio_blk.h>
->  #include <linux/scatterlist.h>
-> +#include <linux/blk-iopoll.h>
-> 
->  #define PART_BITS 4
-> 
-> @@ -26,6 +27,9 @@ struct virtio_blk
-> 
->  	mempool_t *pool;
-> 
-> +	/* Host->guest notify mitigation */
-> +	struct blk_iopoll iopoll;
-> +
->  	/* What host tells us, plus 2 for header & tailer. */
->  	unsigned int sg_elems;
-> 
-> @@ -42,16 +46,18 @@ struct virtblk_req
->  	u8 status;
->  };
-> 
-> -static void blk_done(struct virtqueue *vq)
-> +/* Assumes vblk->lock held */
-> +static int __virtblk_end_requests(struct virtio_blk *vblk, int weight)
->  {
-> -	struct virtio_blk *vblk = vq->vdev->priv;
->  	struct virtblk_req *vbr;
->  	unsigned int len;
-> -	unsigned long flags;
-> +	int error;
-> +	int work = 0;
-> 
-> -	spin_lock_irqsave(&vblk->lock, flags);
-> -	while ((vbr = vblk->vq->vq_ops->get_buf(vblk->vq, &len)) != NULL) {
-> -		int error;
-> +	while (!weight || work < weight) {
-> +		vbr = vblk->vq->vq_ops->get_buf(vblk->vq, &len);
-> +		if (!vbr)
-> +			break;
-> 
->  		switch (vbr->status) {
->  		case VIRTIO_BLK_S_OK:
-> @@ -74,10 +80,53 @@ static void blk_done(struct virtqueue *vq)
->  		__blk_end_request_all(vbr->req, error);
->  		list_del(&vbr->list);
->  		mempool_free(vbr, vblk->pool);
-> +		work++;
->  	}
-> +
->  	/* In case queue is stopped waiting for more buffers. */
->  	blk_start_queue(vblk->disk->queue);
-> +	return work;
-> +}
-> +
-> +static int virtblk_iopoll(struct blk_iopoll *iopoll, int weight)
-> +{
-> +	struct virtio_blk *vblk =
-> +		container_of(iopoll, struct virtio_blk, iopoll);
-> +	unsigned long flags;
-> +	int work;
-> +
-> +	spin_lock_irqsave(&vblk->lock, flags);
-> +
-> +	work = __virtblk_end_requests(vblk, weight);
-> +	if (work < weight) {
-> +		/* Keep polling if there are pending requests. */
-> +		if (vblk->vq->vq_ops->enable_cb(vblk->vq))
-> +			__blk_iopoll_complete(&vblk->iopoll);
-> +		else
-> +			vblk->vq->vq_ops->disable_cb(vblk->vq);
-> +	}
-> +
->  	spin_unlock_irqrestore(&vblk->lock, flags);
-> +	return work;
-> +}
-> +
-> +static void blk_done(struct virtqueue *vq)
-> +{
-> +	struct virtio_blk *vblk = vq->vdev->priv;
-> +	unsigned long flags;
-> +
-> +	if (blk_iopoll_enabled) {
-> +		if (!blk_iopoll_sched_prep(&vblk->iopoll)) {
-> +			spin_lock_irqsave(&vblk->lock, flags);
-> +			vblk->vq->vq_ops->disable_cb(vblk->vq);
-> +			spin_unlock_irqrestore(&vblk->lock, flags);
-> +			blk_iopoll_sched(&vblk->iopoll);
-> +		}
-> +	} else {
-> +		spin_lock_irqsave(&vblk->lock, flags);
-> +		__virtblk_end_requests(vblk, 0);
-> +		spin_unlock_irqrestore(&vblk->lock, flags);
-> +	}
->  }
-> 
->  static bool do_req(struct request_queue *q, struct virtio_blk *vblk,
-> @@ -289,11 +338,14 @@ static int __devinit virtblk_probe(struct
-> virtio_device *vdev) goto out_free_vq;
->  	}
-> 
-> +	blk_iopoll_init(&vblk->iopoll, 4 /* budget */, virtblk_iopoll);
-> +	blk_iopoll_enable(&vblk->iopoll);
-> +
->  	/* FIXME: How many partitions?  How long is a piece of string? */
->  	vblk->disk = alloc_disk(1 << PART_BITS);
->  	if (!vblk->disk) {
->  		err = -ENOMEM;
-> -		goto out_mempool;
-> +		goto out_iopoll;
->  	}
-> 
->  	q = vblk->disk->queue = blk_init_queue(do_virtblk_request, &vblk->lock);
-> @@ -401,13 +453,13 @@ static int __devinit virtblk_probe(struct
-> virtio_device *vdev) if (!err && opt_io_size)
->  		blk_queue_io_opt(q, blk_size * opt_io_size);
-> 
-> -
->  	add_disk(vblk->disk);
->  	return 0;
-> 
->  out_put_disk:
->  	put_disk(vblk->disk);
-> -out_mempool:
-> +out_iopoll:
-> +	blk_iopoll_disable(&vblk->iopoll);
->  	mempool_destroy(vblk->pool);
->  out_free_vq:
->  	vdev->config->del_vqs(vdev);
-> @@ -430,6 +482,7 @@ static void __devexit virtblk_remove(struct
-> virtio_device *vdev) del_gendisk(vblk->disk);
->  	blk_cleanup_queue(vblk->disk->queue);
->  	put_disk(vblk->disk);
-> +	blk_iopoll_disable(&vblk->iopoll);
->  	mempool_destroy(vblk->pool);
->  	vdev->config->del_vqs(vdev);
->  	kfree(vblk);
+But you're right, unless the card vendor supplied some kind of strapping
+option, or something similar, it won't know it's in a UV system or not.
+
+Thanks,
+Mike
