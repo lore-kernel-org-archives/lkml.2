@@ -1,70 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758388Ab0ENRs6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 13:48:58 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:37153 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754271Ab0ENRs5 (ORCPT
+	id S1758552Ab0ENRuf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 13:50:35 -0400
+Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:43996 "EHLO
+	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754271Ab0ENRud (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 13:48:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=G93R5sFfzhvolvzY1p4N2z/EVjtTFp+kXbnWsJv+/Y1nXYpsYKfx8IVBnyxPSiuTMR
-         nSKeFZ2yZGMxaOnnMdC/+SdAlS2vms2u6JrCXSdIeiMTm6Xo3D2ydN3rETON+OhjNQju
-         6MAOyAlglfIOcDsrO/XwSov7ycnMe6WTNdKds=
+	Fri, 14 May 2010 13:50:33 -0400
+Date: Fri, 14 May 2010 12:46:52 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Dave Chinner <david@fromorbit.com>
+cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>, npiggin@suse.de
+Subject: Defrag in shrinkers (was Re: [PATCH 0/5] Per-superblock shrinkers)
+In-Reply-To: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+Message-ID: <alpine.DEB.2.00.1005141244380.9466@router.home>
+References: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <20100514164057.GC13509@lenovo>
-References: <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com>
-	 <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com>
-	 <1273834571.3530.82.camel@minggr.sh.intel.com>
-	 <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo>
-	 <20100514145213.GA13509@lenovo>
-	 <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
-	 <20100514162813.GB13509@lenovo>
-	 <AANLkTinSAEATJbnj5MwhuKlBtXEGzpdeoktkzktrESvw@mail.gmail.com>
-	 <20100514164057.GC13509@lenovo>
-Date: Fri, 14 May 2010 23:18:52 +0530
-Message-ID: <AANLkTinQL16caUSZnFFr4gs_vfT93mwkNTK7I_eShZvA@mail.gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Cyrill,
+Would it also be possible to add some defragmentation logic when you
+revise the shrinkers? Here is a prototype patch that would allow you to
+determine the other objects sitting in the same page as a given object.
 
-On Fri, May 14, 2010 at 10:10 PM, Cyrill Gorcunov <gorcunov@gmail.com> wrote:
-> On Fri, May 14, 2010 at 10:06:44PM +0530, Jaswinder Singh Rajput wrote:
-> ...
->> >
->> > Thanks Jaswinder,
->> >
->> > it means counters management somehow screwed at moment (it was working before).
->> > I'm working on it.
->> >
->>
->> Ok, I added few more events and now I am able see few hardware events :
->>
-> ...
-> Thanks, but I need to figure out where they hide in first place. Will keep
-> you in touch.
->
+With that I hope that you have enough information to determine if its
+worth to evict the other objects as well to reclaim the slab page.
 
-Earlier I given the command 'ls' which was very small only 601636
-instructions so branches
-and branch-misses came up with <not counted>
 
-When I given a bigger command 'ls -lR /dev' with 10159428
-instructions, so I get branches and branch-misses count.
+From: Christoph Lameter <cl@linux-foundation.org>
+Subject: Slab allocators: Introduce function to determine other objects in the same slab page
 
-Thanks,
---
-Jaswinder Singh.
+kmem_cache_objects() can be used to determin other objects sharing the same
+slab. With such knowledge a slab user can intentionally free all slab objects
+in a slab to allow the freeing of the slab as a whole. This is particularly
+important for the dentry and inode cache handling since they reclaim objects
+in LRU fashion. With this function they can see if the object is sitting in
+a sparsely populated slab page and if so decide to reclaim the other objects
+in the slab page. In many situations we can otherwise get high memory use
+since only a very small portion of the available object slots are in use
+(this can occur after a file scan or when the computational load on a server
+changes).
+
+kmem_cache_object() returns the number of objects currently in use. A parameter
+allows the retrieval of the maximum number of objects that would fit into this
+slab page.
+
+The user must then use these numbers to determine if an effort should be made
+to free the remaining objects. The allocated objects are returned in an array
+of pointers.
+
+Objects can only stay allocated if the user has some way of locking out
+kmem_cache_free() operations on the slab. Otherwise the operations on the
+returned object pointers cause race conditions.
+
+Signed-off-by: Christoph Lameter <cl@linux-foundation.org>
+
+---
+ include/linux/slab.h |   18 ++++++++++++++++++
+ mm/slab.c            |   23 +++++++++++++++++++++++
+ mm/slob.c            |    6 ++++++
+ mm/slub.c            |   42 ++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 89 insertions(+)
+
+Index: linux-2.6/include/linux/slab.h
+===================================================================
+--- linux-2.6.orig/include/linux/slab.h	2010-05-14 12:24:44.000000000 -0500
++++ linux-2.6/include/linux/slab.h	2010-05-14 12:37:36.000000000 -0500
+@@ -110,6 +110,24 @@ int kern_ptr_validate(const void *ptr, u
+ int kmem_ptr_validate(struct kmem_cache *cachep, const void *ptr);
+
+ /*
++ * Determine objects in the same slab page as a given object.
++ *
++ * The return value is the number of objects currently allocated in the slab
++ * or a negative error value and the maximum number of objects that this
++ * slab page could handle.
++ *
++ * Warning: The objects returned can be freed at any time and therefore the
++ * pointer can be invalid unless other measures are taken to avoid objects
++ * being freed while looping through the list of objects.
++ *
++ * Return codes:
++ *	-E2BIG	More objects than fit into the provided list.
++ *	-EBUSY	Objects in the slab are allocation queues.
++ */
++int kmem_cache_objects(struct kmem_cache *slab, const void *x,
++		 const void **list, int max, int *capacity);
++
++/*
+  * Please use this macro to create slab caches. Simply specify the
+  * name of the structure and maybe some flags that are listed above.
+  *
+Index: linux-2.6/mm/slub.c
+===================================================================
+--- linux-2.6.orig/mm/slub.c	2010-05-14 12:37:27.000000000 -0500
++++ linux-2.6/mm/slub.c	2010-05-14 12:40:10.000000000 -0500
+@@ -2868,6 +2868,48 @@ void kfree(const void *x)
+ }
+ EXPORT_SYMBOL(kfree);
+
++static void get_object(struct kmem_cache *s, void *object, void *private)
++{
++	const void ***list = private;
++
++	*(*list)++ = object;
++}
++
++int kmem_cache_objects(struct kmem_cache *s, const void *x,
++		const void **list, int list_size, int *capacity)
++{
++	int r;
++	struct page *page;
++	unsigned long *map;
++
++	page = virt_to_head_page(x);
++	BUG_ON(!PageSlab(page));
++	BUG_ON(page->slab != s);
++	*capacity = page->objects;
++
++	map = kmalloc(BITS_TO_LONGS(page->objects), GFP_KERNEL);
++
++	slab_lock(page);
++	r = page->inuse;
++
++	if (page->inuse > list_size) {
++		r = -E2BIG;
++		goto abort;
++	}
++
++	if (PageSlubFrozen(page)) {
++		r = -EBUSY;
++		goto abort;
++	}
++
++	traverse_objects(s, page, get_object, &list, map);
++
++abort:
++	slab_unlock(page);
++	kfree(map);
++	return r;
++}
++
+ /*
+  * kmem_cache_shrink removes empty slabs from the partial lists and sorts
+  * the remaining slabs by the number of items in use. The slabs with the
+Index: linux-2.6/mm/slab.c
+===================================================================
+--- linux-2.6.orig/mm/slab.c	2010-05-14 12:24:44.000000000 -0500
++++ linux-2.6/mm/slab.c	2010-05-14 12:37:36.000000000 -0500
+@@ -3617,6 +3617,29 @@ out:
+ 	return 0;
+ }
+
++int kmem_cache_objects(struct kmem_cache *cachep, const void *objp,
++		const void **list, int list_size, int *capacity)
++{
++	struct slab *slabp = virt_to_slab(objp);
++	void *p;
++	int i;
++
++	BUG_ON(cachep != virt_to_cache(objp));
++
++	*capacity = cachep->num;
++	if (slabp->inuse > list_size)
++		return -E2BIG;
++
++	for (i = 0, p = slabp->s_mem; i < cachep->num;
++				 i++, p += cachep->buffer_size) {
++
++		if (slab_bufctl(slabp)[i] == BUFCTL_ACTIVE)
++			*(list) ++ = p;
++
++	}
++	return slabp->inuse;
++}
++
+ #ifdef CONFIG_NUMA
+ void *kmem_cache_alloc_node(struct kmem_cache *cachep, gfp_t flags, int nodeid)
+ {
+Index: linux-2.6/mm/slob.c
+===================================================================
+--- linux-2.6.orig/mm/slob.c	2010-05-14 12:24:44.000000000 -0500
++++ linux-2.6/mm/slob.c	2010-05-14 12:37:36.000000000 -0500
+@@ -658,6 +658,12 @@ void kmem_cache_free(struct kmem_cache *
+ }
+ EXPORT_SYMBOL(kmem_cache_free);
+
++void kmem_cache_objects(struct kmem_cache *c, const void *b, void **list,
++						int list_size, int *capacity)
++{
++	return -EBUSY;
++}
++
+ unsigned int kmem_cache_size(struct kmem_cache *c)
+ {
+ 	return c->size;
+
