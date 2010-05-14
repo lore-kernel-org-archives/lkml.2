@@ -1,57 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754207Ab0ENIE1 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 04:04:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:57163 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752127Ab0ENIEV convert rfc822-to-8bit (ORCPT
+	id S1757128Ab0ENIJx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 04:09:53 -0400
+Received: from TYO202.gate.nec.co.jp ([202.32.8.206]:41360 "EHLO
+	tyo202.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754017Ab0ENIJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 04:04:21 -0400
-Subject: Re: [PATCH 1/9] mm: add generic adaptive large memory allocation
- APIs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Changli Gao <xiaosuo@gmail.com>
-Cc: akpm@linux-foundation.org, Hoang-Nam Nguyen <hnguyen@de.ibm.com>,
-       Christoph Raisch <raisch@de.ibm.com>, Roland Dreier <rolandd@cisco.com>,
-       Sean Hefty <sean.hefty@intel.com>,
-       Hal Rosenstock <hal.rosenstock@gmail.com>,
-       Divy Le Ray <divy@chelsio.com>,
-       "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       "Theodore Ts'o" <tytso@mit.edu>, Andreas Dilger <adilger@sun.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>,
-       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
-       linux-rdma@vger.kernel.org, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, linux-scsi@vger.kernel.org,
-       linux-ext4@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, containers@lists.linux-foundation.org,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       Tetsuo Handa <penguin-kernel@i-love.sakura.ne.jp>
-In-Reply-To: <AANLkTinLT5g5SKjqmQlS2kxvvMq1gsi1jPDgOKTnrT-q@mail.gmail.com>
-References: <1273744285-8128-1-git-send-email-xiaosuo@gmail.com>
-	 <1273756816.5605.3547.camel@twins>
-	 <AANLkTinLT5g5SKjqmQlS2kxvvMq1gsi1jPDgOKTnrT-q@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Fri, 14 May 2010 10:03:34 +0200
-Message-ID: <1273824214.5605.3625.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 14 May 2010 04:09:50 -0400
+Message-ID: <4BED049C.5040409@ct.jp.nec.com>
+Date: Fri, 14 May 2010 17:06:52 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Mike Snitzer <snitzer@redhat.com>
+CC: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       Vivek Goyal <vgoyal@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
+       Alasdair Kergon <agk@redhat.com>
+Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for request-based
+ device
+References: <1273532139-23043-1-git-send-email-snitzer@redhat.com> <1273532139-23043-2-git-send-email-snitzer@redhat.com> <4BE8DBB0.5060701@ct.jp.nec.com> <20100511131502.GA25211@redhat.com> <4BEA659F.9050206@ct.jp.nec.com> <20100513035750.GA25523@redhat.com>
+In-Reply-To: <20100513035750.GA25523@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-13 at 22:08 +0800, Changli Gao wrote:
-> > NAK, I really utterly dislike that inatomic argument. The alloc side
-> > doesn't function in atomic context either. Please keep the thing
-> > symmetric in that regards.
-> >
+Hi Mike,
+
+On 05/13/2010 12:57 PM +0900, Mike Snitzer wrote:
+> On Wed, May 12 2010 at  4:23am -0400,
+> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
 > 
-> There are some users, who release memory in atomic context. for
-> example: fs/file.c: fdmem. 
+>> Hi Mike,
+>>
+>> On 05/11/2010 10:15 PM +0900, Mike Snitzer wrote:
+>>> It is clear we need to resolve the current full request_queue
+>>> initialization that occurs even for bio-based DM devices.
+>>>
+>>> I believe the 2 patches I posted accomplish this in a stright-forward
+>>> way.  We can always improve on it (by looking at what you proposed
+>>> below) but we need a minimlaist fix that doesn't depend on userspace
+>>> LVM2 changes right now.
+>> Humm, OK.
+>> Indeed, showing iosched directory in bio-based device's sysfs is
+>> confusing users actually, and we need something to resolve that soon.
+>> So I don't strongly object to your approach as the first step, as long
+>> as we can accept the risk of the maintenance cost which I mentioned.
+> 
+> OK, I understand your concern (especially after having gone through this
+> further over the past couple days).  I'm hopeful maintenance will be
+> minimal.
+> 
+>> By the way, your current patch has a problem below.
+>> It needs to be fixed at least.
+> 
+> Thanks for the review.  I've addressed both your points with additional
+> changes (split between 2 patches).
 
-urgh, but yeah, aside from not using vmalloc to allocate fd tables one
-needs to deal with this.
+I found another bug; blk_init_allocated_queue() overwrites q->unplug_fn
+with generic one. (Although it's currently harmless for multipath target.)
 
-But if that is the only one, I'd let them do the workqueue thing that's
-already there. If there really are more people wanting to do this, then
-maybe add: kvfree_atomic().
+I feel your patch-set is growing and becoming complex fix rather than
+minimalist/simple fix.
+I think touching mapped_device/queue at table loading time makes
+things complex.  It is natural that table's arguments are reflected
+to mapped_device/queue at table binding time instead.
+
+> I confirmed with Alasdair that we don't want to conditionally relax DM's
+> allocation constraints for request-based DM.  Best to be consistent
+> about not allowing allocations during resume.
+
+OK.
+Then, how about the patch below?
+It still fully initializes queue at device creation time for both
+bio-based and request-based.  Then, it drops elevator when the device
+type is decided as bio-based at table binding time.
+So no memory allocation during resume (freeing instead).
+
+I hope this simple work-around approach is acceptable for you and
+Alasdair (and others).
+(Then, let's focus on making a right fix rather than hacking
+ the block layer.)
+
+
+[PATCH] dm: drop elevator when the device is bio-based
+
+I/O scheduler affects nothing for bio-based dm device.
+Showing I/O scheduler's attributes in sysfs for bio-based dm devices
+is confusing users.
+So drop them from sysfs when a dm device is decided as bio-based.
+
+This patch depends on the commit below in the for-2.6.35 of Jens'
+linux-2.6-block git:
+commit 01effb0dc1451fad55925873ffbfb88fa4eadce0
+Author: Mike Snitzer <snitzer@redhat.com>
+Date:   Tue May 11 08:57:42 2010 +0200
+
+    block: allow initialization of previously allocated request_queue
+
+Signed-off-by: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Signed-off-by: Jun'ichi Nomura <j-nomura@ce.jp.nec.com>
+Cc: Mike Snitzer <snitzer@redhat.com>
+Cc: Alasdair G Kergon <agk@redhat.com>
+---
+ drivers/md/dm.c |    8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+Index: 2.6.34-rc7/drivers/md/dm.c
+===================================================================
+--- 2.6.34-rc7.orig/drivers/md/dm.c
++++ 2.6.34-rc7/drivers/md/dm.c
+@@ -2410,6 +2410,14 @@ struct dm_table *dm_swap_table(struct ma
+ 		goto out;
+ 	}
+ 
++	/* drop elevator when the device type is decided as bio-based */
++	if (!md->map && dm_table_get_type(table) == DM_TYPE_BIO_BASED) {
++		elv_unregister_queue(md->queue);
++		elevator_exit(md->queue->elevator);
++		md->queue->request_fn = NULL;
++		md->queue->elevator = NULL;
++	}
++
+ 	map = __bind(md, table, &limits);
+ 
+ out:
