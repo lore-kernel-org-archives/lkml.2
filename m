@@ -1,64 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0ENQ20 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 12:28:26 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:3514 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752621Ab0ENQ2Y (ORCPT
+	id S1755814Ab0ENQ3R (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 12:29:17 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:61450 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752743Ab0ENQ3P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 12:28:24 -0400
+	Fri, 14 May 2010 12:29:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=UAp48aZzwHjbk3YgJyEsMyiTGR2WR7MnEmvbUObMKyRUw9DJDvjRuvOeFHaIUhCape
-         h14VDePjNp4VSKdbQLWLUe5AzAsSSLpujhGrUUccA4W/L4FRNI7NkXh6Tl3LaCypfnn3
-         2fiWvGj6INF+i7Y5UiU6ADZRB7ydOljpIzHk0=
-Date: Fri, 14 May 2010 20:28:13 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Lin Ming <ming.m.lin@intel.com>,
+        b=ObaSlJF4mkJo/W1MNIpUFTLTuOcaQ+Kd7nfkvoK2EtBCclwaXV+Q4KdYkAgYPsByFu
+         Rx176oSPkMYzDcWpx15tiarr4YEoh6uOtOgMAEUpdFsqp7QfLxQtkqpo23nahWlGCeti
+         HUiRi1xuvllksyV0jS1i8gUGU9uLvjZjXGBYs=
+Date: Fri, 14 May 2010 09:28:59 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: Performance Events hangs with Intel P4 system
-Message-ID: <20100514162813.GB13509@lenovo>
-References: <AANLkTinbrhuGqHss_aML3EAccOq792GUZtqzzjQqzG6I@mail.gmail.com> <AANLkTimVmlPfRFu8Wo2KL1pyF6qtTSQriawvrKcsMe9Y@mail.gmail.com> <AANLkTimrHGq1kZwPev7gBZu6Hqxlhe0ZscSKjEinZtcf@mail.gmail.com> <AANLkTik-gIjZu60pFWEhhe8MolQITrtk0wfpvSUCLnrD@mail.gmail.com> <AANLkTinPcjUyPyUP4L7opELEbLZy-tXxkbm-nqe8Co0f@mail.gmail.com> <1273834571.3530.82.camel@minggr.sh.intel.com> <20100514115655.GA18069@elte.hu> <20100514135240.GA4952@lenovo> <20100514145213.GA13509@lenovo> <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+Message-ID: <20100514162858.GA31607@core.coreip.homeip.net>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130724280.3711@i5.linux-foundation.org>
+ <20100514145539.GA5598@srcf.ucam.org>
+ <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTik6rwpU665xKUWfaOhV-h3Xgm_xeSiXH0Ax-n2u@mail.gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <alpine.LFD.2.00.1005140814380.3711@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 09:52:28PM +0530, Jaswinder Singh Rajput wrote:
-... 
-> Yes, this works for me. Now I am not getting general protection fault.
+On Fri, May 14, 2010 at 08:16:34AM -0700, Linus Torvalds wrote:
 > 
-> It seems hardware events are not supported for P4 yet.
 > 
-> $ ./perf stat -e
-> cycles,instructions,cache-references,cache-misses,branches,branch-misses,bus-cycles
-> ls > /dev/null
+> On Fri, 14 May 2010, Matthew Garrett wrote:
+> >
+> > I've done some experimentation under qemu. On ACPI systems, Windows will 
+> > *only* touch the keyboard controller if there's a device with an 
+> > appropriate PNP HID or CID and if _STA evaluates to 0x0b or 0x0f. 
+> > Otherwise it'll simply ignore the hardware entirely. By the looks of it 
+> > their keyboard probing is also somewhat different to ours, but that's 
+> > probably another story.
 > 
->  Performance counter stats for 'ls':
+> Well, I'd hate to lose the keyboard hotplug capability, but at the same 
+> time, it _is_ 2010, and while I have personally used it historically, I 
+> don't really foresee ever using it again.
 > 
->   <not counted>  cycles
->          601636  instructions             #      0.000 IPC    (scaled
-> from 91.80%)
->   <not counted>  cache-references
->   <not counted>  cache-misses
->   <not counted>  branches
->   <not counted>  branch-misses
->   <not counted>  bus-cycles
-> 
->     0.003364910  seconds time elapsed
 
-Thanks Jaswinder,
+FWIW we also using active multiplexing while windows does not as far as
+I know. I'd like us to be better than them.
 
-it means counters management somehow screwed at moment (it was working before).
-I'm working on it.
+> So we _could_ decide to just try it, and see if anybody screams. If nobody 
+> does, that would be a very simple solution to the problem.
+> 
+> 			Linus
 
-	-- Cyrill
+-- 
+Dmitry
