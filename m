@@ -1,53 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932143Ab0ENChm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 13 May 2010 22:37:42 -0400
-Received: from mga09.intel.com ([134.134.136.24]:24456 "EHLO mga09.intel.com"
+	id S1757017Ab0ENCiS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 13 May 2010 22:38:18 -0400
+Received: from gate.crashing.org ([63.228.1.57]:55299 "EHLO gate.crashing.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab0ENChl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 13 May 2010 22:37:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
-   d="scan'208";a="517807146"
-Date: Fri, 14 May 2010 10:37:37 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] radix-tree: fix radix_tree_prev_hole underflow case
-Message-ID: <20100514023737.GB8695@localhost>
-References: <1273802724-3414-1-git-send-email-cesarb@cesarb.net>
- <20100514021508.GA7810@localhost>
- <4BECB562.2080200@cesarb.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BECB562.2080200@cesarb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754169Ab0ENCiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 13 May 2010 22:38:16 -0400
+Subject: Re: [PATCH 24/35] lmb: Move __alloc_memory_core_early() to
+ nobootmem.c
+From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+To: Yinghai Lu <yinghai@kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+In-Reply-To: <1273796396-29649-25-git-send-email-yinghai@kernel.org>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+	 <1273796396-29649-25-git-send-email-yinghai@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 14 May 2010 12:36:24 +1000
+Message-ID: <1273804584.21352.404.camel@pasglop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 10:28:50AM +0800, Cesar Eduardo Barros wrote:
-> Em 13-05-2010 23:15, Wu Fengguang escreveu:
-> > On Fri, May 14, 2010 at 10:05:24AM +0800, Cesar Eduardo Barros wrote:
-> >> radix_tree_prev_hole() used LONG_MAX to detect underflow; however,
-> >> ULONG_MAX is clearly what was intended, both here and by its only user
-> >> (count_history_pages at mm/readahead.c).
-> >
-> > Good catch, thanks! I actually have a more smart
-> > radix_tree_prev_hole() that uses ULONG_MAX.
+On Thu, 2010-05-13 at 17:19 -0700, Yinghai Lu wrote:
+> We can remove #ifdef in mm/page_alloc.c
 > 
-> I saw it already ([PATCH 14/16] radixtree: speed up the search for 
-> hole), but it misses the LONG_MAX in the documentation comment.
+> and change that function to static
 
-Yes, thanks!
+Don't forget that nid allocation using your early_node_map[] will not
+work properly on sparc due to the scattered nature of page locality.
 
-> > Andrew, fortunately this bug has little impact on readahead.
+Cheers,
+Ben.
+
+> Signed-off-by: Yinghai Lu <yinghai@kernel.org>
+> ---
+>  include/linux/mm.h |    2 --
+>  mm/nobootmem.c     |   21 +++++++++++++++++++++
+>  mm/page_alloc.c    |   24 ------------------------
+>  3 files changed, 21 insertions(+), 26 deletions(-)
 > 
-> I agree, if I read it correctly it should only have any impact either 
-> when very near LONG_MAX or in the unlikely case that there is no hole at 
-> ULONG_MAX. And even then, the impact should be limited.
+> diff --git a/include/linux/mm.h b/include/linux/mm.h
+> index 7774e1d..2a14361 100644
+> --- a/include/linux/mm.h
+> +++ b/include/linux/mm.h
+> @@ -1161,8 +1161,6 @@ int add_from_early_node_map(struct range *range, int az,
+>  				   int nr_range, int nid);
+>  u64 __init find_memory_core_early(int nid, u64 size, u64 align,
+>  					u64 goal, u64 limit);
+> -void *__alloc_memory_core_early(int nodeid, u64 size, u64 align,
+> -				 u64 goal, u64 limit);
+>  typedef int (*work_fn_t)(unsigned long, unsigned long, void *);
+>  extern void work_with_active_regions(int nid, work_fn_t work_fn, void *data);
+>  extern void sparse_memory_present_with_active_regions(int nid);
+> diff --git a/mm/nobootmem.c b/mm/nobootmem.c
+> index abaec96..e3cbde7 100644
+> --- a/mm/nobootmem.c
+> +++ b/mm/nobootmem.c
+> @@ -40,6 +40,27 @@ unsigned long max_pfn;
+>  unsigned long saved_max_pfn;
+>  #endif
+>  
+> +static void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+> +					u64 goal, u64 limit)
+> +{
+> +	void *ptr;
+> +
+> +	u64 addr;
+> +
+> +	if (limit > lmb.current_limit)
+> +		limit = lmb.current_limit;
+> +
+> +	addr = find_memory_core_early(nid, size, align, goal, limit);
+> +
+> +	if (addr == LMB_ERROR)
+> +		return NULL;
+> +
+> +	ptr = phys_to_virt(addr);
+> +	memset(ptr, 0, size);
+> +	lmb_reserve_area(addr, addr + size, "BOOTMEM");
+> +	return ptr;
+> +}
+> +
+>  /*
+>   * free_bootmem_late - free bootmem pages directly to page allocator
+>   * @addr: starting address of the range
+> diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+> index 867a3a8..3449811 100644
+> --- a/mm/page_alloc.c
+> +++ b/mm/page_alloc.c
+> @@ -3437,30 +3437,6 @@ int __init add_from_early_node_map(struct range *range, int az,
+>  	return nr_range;
+>  }
+>  
+> -#ifdef CONFIG_NO_BOOTMEM
+> -void * __init __alloc_memory_core_early(int nid, u64 size, u64 align,
+> -					u64 goal, u64 limit)
+> -{
+> -	void *ptr;
+> -
+> -	u64 addr;
+> -
+> -	if (limit > lmb.current_limit)
+> -		limit = lmb.current_limit;
+> -
+> -	addr = find_memory_core_early(nid, size, align, goal, limit);
+> -
+> -	if (addr == LMB_ERROR)
+> -		return NULL;
+> -
+> -	ptr = phys_to_virt(addr);
+> -	memset(ptr, 0, size);
+> -	lmb_reserve_area(addr, addr + size, "BOOTMEM");
+> -	return ptr;
+> -}
+> -#endif
+> -
+> -
+>  void __init work_with_active_regions(int nid, work_fn_t work_fn, void *data)
+>  {
+>  	int i;
 
-Right.
+
