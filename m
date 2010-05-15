@@ -1,67 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755540Ab0EOAtl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 20:49:41 -0400
-Received: from mail3.sea5.speakeasy.net ([69.17.117.42]:45686 "EHLO
-	mail3.sea5.speakeasy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753642Ab0EOAtj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 20:49:39 -0400
-X-Greylist: delayed 1199 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 May 2010 20:49:39 EDT
-From: Frank Mori Hess <fmhess@speakeasy.net>
-Reply-To: fmhess@users.sourceforge.net
-To: Greg KH <greg@kroah.com>
-Subject: Re: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers grouped by bustype.
-Date: Fri, 14 May 2010 20:29:33 -0400
-User-Agent: KMail/1.9.9
-Cc: Alexander Kurz <linux@blala.de>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Frank Mori Hess <fmhess@users.sourceforge.net>,
-       Ian Abbott <abbotti@mev.co.uk>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com>
-In-Reply-To: <20100514190142.GA2505@kroah.com>
+	id S1756316Ab0EOAwI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 20:52:08 -0400
+Received: from mail.atheros.com ([12.36.123.2]:45168 "EHLO mail.atheros.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753671Ab0EOAwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 20:52:03 -0400
+Date: Fri, 14 May 2010 17:52:01 -0700
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
+       Bruno Randolf <br1@einfach.org>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Miles Lane <miles.lane@gmail.com>
+Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
+Message-ID: <20100515005201.GH28198@tux>
+References: <201005141538.43416.br1@einfach.org>
+ <4BED6F19.3040608@gmail.com>
+ <20100514165325.GA28198@tux>
+ <4BED8765.8040307@gmail.com>
+ <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
+ <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
+ <20100514201339.GB28198@tux>
+ <4638F7CF-1E00-411F-A086-BA30809E00BD@gmail.com>
+ <20100514205253.GC28198@tux>
+ <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com>
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1810117.UCjsJxFdU0";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005142029.37408.fmhess@speakeasy.net>
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1810117.UCjsJxFdU0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
-Content-Disposition: inline
+On Fri, May 14, 2010 at 03:32:48PM -0700, Justin P. Mattock wrote:
+> ATH9K: cachelsz 256 rxbufsize 3904
 
-On Friday 14 May 2010, Greg KH wrote:
-> Wow.  Is this something that we really want?  That's a lot of new
-> Kconfig options, and while it seems like it makes sense, I would like to
-> get the comedi developers opinion here.
+OK I see nothing odd with these values, and I do not see how
+these values can make ath_rxbuf_alloc() barf. I'd like to
+reproduce this myself at least once, I left iperf running over
+night with no rants from SLAB. I should note this should be
+reproducible with RX only if it is ath_rxbuf_alloc() to blame
+but without a concrete reproducible instructions it is hard
+to guess what to do and if this can only come up during RX.
 
-It doesn't matter to me how granular the Kconfig stuff is.  Personally, the=
-=20
-only thing I tend to do is disable are the pcmcia drivers as a group on=20
-desktop machines.  Also, I noticed in the patch it includes the 8255=20
-module as part of the PCI and ISA groups, but not PCMCIA.  But it is used=20
-by some of the PCMCIA drivers as well.
+Can you describe a little more when you have seen this? What
+were you doing exactly, for how long? When was the last time
+you saw this, what were you doing then?
 
-
---nextPart1810117.UCjsJxFdU0
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iD8DBQBL7eru5vihyNWuA4URAiXVAKCQUVUQtZs3KOdYMZEZgh58OJBCJQCeKSDS
-bIWkeKFvzdTrbInyXLQSooA=
-=DZmA
------END PGP SIGNATURE-----
-
---nextPart1810117.UCjsJxFdU0--
+  Luis
