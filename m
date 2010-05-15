@@ -1,20 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753228Ab0EOVMh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:12:37 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:48179 "EHLO mgw1.diku.dk"
+	id S1753623Ab0EOVNX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:13:23 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59010 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0EOVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:12:35 -0400
-Date: Sat, 15 May 2010 23:12:28 +0200 (CEST)
+	id S1752564Ab0EOVNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:13:21 -0400
+Date: Sat, 15 May 2010 23:13:16 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Dan Williams <dcbw@redhat.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/37] drivers/net/wireless/libertas: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152312060.21345@ask.diku.dk>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/37] drivers/memstick/core/mspro_block.c: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152312290.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -44,28 +40,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/libertas/if_usb.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ drivers/memstick/core/mspro_block.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
---- a/drivers/net/wireless/libertas/if_usb.c
-+++ b/drivers/net/wireless/libertas/if_usb.c
-@@ -618,16 +618,14 @@ static void if_usb_receive_fwload(struct
- 		return;
+diff -u -p a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
+--- a/drivers/memstick/core/mspro_block.c
++++ b/drivers/memstick/core/mspro_block.c
+@@ -1012,12 +1012,11 @@ static int mspro_block_read_attributes(s
  	}
+ 	msb->attr_group.name = "media_attributes";
  
--	syncfwheader = kmalloc(sizeof(struct fwsyncheader), GFP_ATOMIC);
-+	syncfwheader = kmemdup(skb->data + IPFIELD_ALIGN_OFFSET,
-+			       sizeof(struct fwsyncheader), GFP_ATOMIC);
- 	if (!syncfwheader) {
- 		lbs_deb_usbd(&cardp->udev->dev, "Failure to allocate syncfwheader\n");
- 		kfree_skb(skb);
- 		return;
+-	buffer = kmalloc(msb->page_size, GFP_KERNEL);
++	buffer = kmemdup((char *)attr, msb->page_size, GFP_KERNEL);
+ 	if (!buffer) {
+ 		rc = -ENOMEM;
+ 		goto out_free_attr;
  	}
+-	memcpy(buffer, (char *)attr, msb->page_size);
+ 	page_count = 1;
  
--	memcpy(syncfwheader, skb->data + IPFIELD_ALIGN_OFFSET,
--	       sizeof(struct fwsyncheader));
--
- 	if (!syncfwheader->cmd) {
- 		lbs_deb_usb2(&cardp->udev->dev, "FW received Blk with correct CRC\n");
- 		lbs_deb_usb2(&cardp->udev->dev, "FW received Blk seqnum = %d\n",
+ 	for (cnt = 0; cnt < attr_count; ++cnt) {
