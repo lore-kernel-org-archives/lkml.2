@@ -1,83 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753925Ab0EOB0W (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 21:26:22 -0400
-Received: from mail-yw0-f198.google.com ([209.85.211.198]:61031 "EHLO
-	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751674Ab0EOB0S convert rfc822-to-8bit (ORCPT
+	id S1754385Ab0EOBaM (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 21:30:12 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48076 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753127Ab0EOBaK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 21:26:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=references:message-id:from:to:in-reply-to:content-type
-         :content-transfer-encoding:x-mailer:mime-version:subject:date:cc;
-        b=Njn7SArSYZATM+wGU1txynqAa+j8ku1aI9RCecuzSp9iEBymPuLwmaMdj+/bmriivd
-         wdviIUGjAvYDHH6l6uN8nPv3p65I2k22ZUjF+NVvKCElmT7EAK1Pe0IkgcC2cjzMLqZT
-         qYskjbyl4JjIM85R0kHG0XSWBPAml6MSYh2JI=
-References: <201005141538.43416.br1@einfach.org> <4BED6F19.3040608@gmail.com> <20100514165325.GA28198@tux> <4BED8765.8040307@gmail.com> <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com> <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com> <20100514201339.GB28198@tux> <4638F7CF-1E00-411F-A086-BA30809E00BD@gmail.com> <20100514205253.GC28198@tux> <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com> <20100515005201.GH28198@tux>
-Message-Id: <99B6B8BB-F155-4B15-95AF-C8DF3F5B4382@gmail.com>
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-In-Reply-To: <20100515005201.GH28198@tux>
-Content-Type: text/plain;
-	charset=utf-8;
-	format=flowed;
-	delsp=yes
-Content-Transfer-Encoding: 8BIT
-X-Mailer: iPhone Mail (7D11)
-Mime-Version: 1.0 (iPhone Mail 7D11)
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Date: Fri, 14 May 2010 18:26:33 -0700
-Cc: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Bruno Randolf <br1@einfach.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Miles Lane <miles.lane@gmail.com>
+	Fri, 14 May 2010 21:30:10 -0400
+Date: Sat, 15 May 2010 02:30:05 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/5] Per-superblock shrinkers
+Message-ID: <20100515013005.GA31073@ZenIV.linux.org.uk>
+References: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 14, 2010 at 05:24:18PM +1000, Dave Chinner wrote:
+> 
+> This series reworks the filesystem shrinkers. We currently have a
+> set of issues with the current filesystem shrinkers:
+> 
+> 	1. There is an dependency between dentry and inode cache
+> 	   shrinking that is only implicitly defined by the order of
+> 	   shrinker registration.
+> 	2. The shrinkers need to walk the superblock list and pin
+> 	   the superblock to avoid unmount races with the sb going
+> 	   away.
+> 	3. The dentry cache uses per-superblock LRUs and proportions
+> 	   reclaim between all the superblocks which means we are
+> 	   doing breadth based reclaim. This means we touch every
+> 	   superblock for every shrinker call, and may only reclaim
+> 	   a single dentry at a time from a given superblock.
+> 	4. The inode cache has a global LRU, so it has different
+> 	   reclaim patterns to the dentry cache, despite the fact
+> 	   that the dentry cache is generally the only thing that
+> 	   pins inodes in memory.
+> 	5. Filesystems need to register their own shrinkers for
+> 	   caches and can't co-ordinate them with the dentry and
+> 	   inode cache shrinkers.
 
+NAK in that form; sb refcounting and iterators had been reworked for .34,
+so at least it needs rediff on top of that.  What's more, it's very
+obviously broken wrt locking - you are unregistering a shrinker
+from __put_super().  I.e. grab rwsem exclusively under a spinlock.
 
-Justin P. Mattock
-
-
-
-On May 14, 2010, at 5:52 PM, "Luis R. Rodriguez"  
-<lrodriguez@atheros.com> wrote:
-
-> On Fri, May 14, 2010 at 03:32:48PM -0700, Justin P. Mattock wrote:
->> ATH9K: cachelsz 256 rxbufsize 3904
->
-> OK I see nothing odd with these values, and I do not see how
-> these values can make ath_rxbuf_alloc() barf. I'd like to
-> reproduce this myself at least once, I left iperf running over
-> night with no rants from SLAB. I should note this should be
-> reproducible with RX only if it is ath_rxbuf_alloc() to blame
-> but without a concrete reproducible instructions it is hard
-> to guess what to do and if this can only come up during RX.
->
-> Can you describe a little more when you have seen this? What
-> were you doing exactly, for how long? When was the last time
-> you saw this, what were you doing then?
->
->  Luis
-
-This is hard to reproduce(reason for looking a kmemchek).
-
-As for what I remember, walked into the las Vegas convention cntr 
-(Hilton),
-Found the Internet hub, scanned for networks, wicd said it was  
-connected, opened firefox to see the prices, ended up seeing a blank  
-page(at this point didn't look at dmesg(could have already happened)),  
-then switched to another network(did this a few times),
-Eventually opened firefox(saw the prices, said fuc*k this), then  
-started to read up on i8042.c(cause Linus was pull requesting and I  
-wanted to find out what was going on in that area), then
-Checked dmesg, and voilà there the bug is.
-
-After this rebooted, was hoping this was reproducable for a bisect,  
-but realized it's not the reproducable..
-
-
-Justin P. Mattock
+Essentially, you've turned dropping a _passive_ reference to superblock
+(currently an operation safe in any context) into an operation allowed
+only when no fs or vm locks are held by caller.  Not going to work...
