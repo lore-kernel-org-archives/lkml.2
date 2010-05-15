@@ -1,95 +1,123 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755041Ab0EOVkZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:40:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:45644 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753838Ab0EOVkO (ORCPT
+	id S1753838Ab0EOVnB (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:43:01 -0400
+Received: from p3plsmtpa01-02.prod.phx3.secureserver.net ([72.167.82.82]:54354
+	"HELO p3plsmtpa01-02.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752660Ab0EOVm7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:40:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:from:to:cc:subject:date:message-id:x-mailer;
-        b=azopTElKxuGVFuJLNpA0bF9zDtoU0461cTJ9Fq6V4/yhyEIeAHNL7RgVm9/TSFcVjl
-         TQwjQEsxRST9YMOK4RL/omOvMl30Y0hb4C44O3ILSgeLhFqjSQiIXWV8RYSQA6qDgHiU
-         jpCmWociN0xDfX+oCJSrs6QTUWVsQUFNzKC70=
-From: Alessio Igor Bogani <abogani@texware.it>
-To: Greg Kroah-Hartman <gregkh@suse.de>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Bill Pemberton <wfp5p@virginia.edu>, Jiri Kosina <jkosina@suse.cz>,
-       Javier Martinez Canillas <martinez.javier@gmail.com>
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Alessio Igor Bogani <abogani@texware.it>
-Subject: [PATCH] Staging: quatech_usb2: Convert eos semaphore to mutex
-Date: Sat, 15 May 2010 23:40:02 +0200
-Message-Id: <1273959602-15465-1-git-send-email-abogani@texware.it>
-X-Mailer: git-send-email 1.7.0.4
+	Sat, 15 May 2010 17:42:59 -0400
+Date: Sat, 15 May 2010 14:42:56 -0700
+From: mgross <markgross@thegnar.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, Valdis.Kletnieks@vt.eu, mgross@linux.intel.com,
+       akpm@linux-foundation.org, davem@davemloft.net,
+       linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+       netdev@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [patch] pm_qos update fixing mmotm 2010-05-11 -dies in
+ pm_qos_update_request()
+Message-ID: <20100515214256.GA3506@thegnar.org>
+Reply-To: markgross@thegnar.org
+References: <20100515021922.GA5041@thegnar.org>
+ <201005152138.47178.rjw@sisk.pl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005152138.47178.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The eos semaphore is used as a mutex so replace it with a real mutex.
+On Sat, May 15, 2010 at 09:38:47PM +0200, Rafael J. Wysocki wrote:
+> On Saturday 15 May 2010, mgross wrote:
+> > I apologize for the goofy email address.  
+> > 
+> > The following is a fix for the crash reported by Valdis.
+> > 
+> > The problem was that the original pm_qos silently fails when a request
+> > update is passed to a parameter that has not been added to the list
+> > yet.  It seems that the e1000e is doing this.  This update restores this
+> > behavior.
+> > 
+> > I need to think about how to better handle such abuse, but for now this
+> > restores the original behavior.
+> 
+> Can you please post a signed-off incremental patch against
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-llinus
+> 
+> that contains your original PM QOS update?
+> 
+> Thanks,
+> Rafael
+> 
 
-Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
+
+No problem:
+
+Signed-off-by: markgross <markgross@thegnar.org>
+
+--mgross
+
+
+>From 487b8dcaeb66d3c226d4c06c1bd99689f93024be Mon Sep 17 00:00:00 2001
+From: mgross <mgross@mgross-desktop.(none)>
+Date: Sat, 15 May 2010 14:30:15 -0700
+Subject: [PATCH] Gard against pm_qos users calling API before registering a proper
+ request.
+
+This update handles a use case where pm_qos update requests need to
+silently fail if the update is being sent to a handle that is null.
+
+The problem was that the original pm_qos silently fails when a request
+update is passed to a parameter that has not been added to the list yet.
+This update restores that behavior.
+
+Signed-off-by: markgross <markgross@thegnar.org>
+
 ---
- drivers/staging/comedi/drivers/quatech_daqp_cs.c |   15 ++++++++-------
- 1 files changed, 8 insertions(+), 7 deletions(-)
+ kernel/pm_qos_params.c |   26 ++++++++++++++------------
+ 1 files changed, 14 insertions(+), 12 deletions(-)
 
-diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-index 6e9f482..3076666 100644
---- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-+++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
-@@ -67,7 +67,7 @@ struct local_info_t {
+diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+index a1aea04..f42d3f7 100644
+--- a/kernel/pm_qos_params.c
++++ b/kernel/pm_qos_params.c
+@@ -252,19 +252,21 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+ 	int pending_update = 0;
+ 	s32 temp;
  
- 	enum { semaphore, buffer } interrupt_mode;
- 
--	struct semaphore eos;
-+	struct mutex eos;
- 
- 	struct comedi_device *dev;
- 	struct comedi_subdevice *s;
-@@ -238,7 +238,7 @@ static int daqp_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
- /* Interrupt handler
-  *
-  * Operates in one of two modes.  If local->interrupt_mode is
-- * 'semaphore', just signal the local->eos semaphore and return
-+ * 'semaphore', just signal the local->eos mutex and return
-  * (one-shot mode).  Otherwise (continuous mode), read data in from
-  * the card, transfer it to the buffer provided by the higher-level
-  * comedi kernel module, and signal various comedi callback routines,
-@@ -287,7 +287,7 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
- 
- 	case semaphore:
- 
--		up(&local->eos);
-+		mutex_unlock(&local->eos);
- 		break;
- 
- 	case buffer:
-@@ -401,8 +401,9 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
- 		return -1;
+-	spin_lock_irqsave(&pm_qos_lock, flags);
+-	if (new_value == PM_QOS_DEFAULT_VALUE)
+-		temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+-	else
+-		temp = new_value;
+-
+-	if (temp != pm_qos_req->value) {
+-		pending_update = 1;
+-		pm_qos_req->value = temp;
++	if (pm_qos_req) { /*guard against callers passing in null */
++		spin_lock_irqsave(&pm_qos_lock, flags);
++		if (new_value == PM_QOS_DEFAULT_VALUE)
++			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
++		else
++			temp = new_value;
++
++		if (temp != pm_qos_req->value) {
++			pending_update = 1;
++			pm_qos_req->value = temp;
++		}
++		spin_unlock_irqrestore(&pm_qos_lock, flags);
++		if (pending_update)
++			update_target(pm_qos_req->pm_qos_class);
  	}
+-	spin_unlock_irqrestore(&pm_qos_lock, flags);
+-	if (pending_update)
+-		update_target(pm_qos_req->pm_qos_class);
+ }
+ EXPORT_SYMBOL_GPL(pm_qos_update_request);
  
--	/* Make sure semaphore is blocked */
--	sema_init(&local->eos, 0);
-+	mutex_init(&local->eos);
-+	/* Make sure mutex is blocked */
-+	mutex_lock(&local->eos);
- 	local->interrupt_mode = semaphore;
- 	local->dev = dev;
- 	local->s = s;
-@@ -413,9 +414,9 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
- 		outb(DAQP_COMMAND_ARM | DAQP_COMMAND_FIFO_DATA,
- 		     dev->iobase + DAQP_COMMAND);
- 
--		/* Wait for interrupt service routine to unblock semaphore */
-+		/* Wait for interrupt service routine to unblock mutex */
- 		/* Maybe could use a timeout here, but it's interruptible */
--		if (down_interruptible(&local->eos))
-+		if (mutex_lock_interruptible(&local->eos))
- 			return -EINTR;
- 
- 		data[i] = inb(dev->iobase + DAQP_FIFO);
 -- 
-1.7.0.4
+1.6.3.3
 
