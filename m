@@ -1,49 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab0EOO2p (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 10:28:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49755 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753946Ab0EOO2o (ORCPT
+	id S1754485Ab0EOObX (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 10:31:23 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:54079 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751997Ab0EOObW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 10:28:44 -0400
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Peter Zijlstra <peterz@infradead.org>
-To: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <1273924628.10630.24.camel@marge.simson.net>
-References: <1273924628.10630.24.camel@marge.simson.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 15 May 2010 14:04:12 +0200
-Message-ID: <1273925052.1674.138.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sat, 15 May 2010 10:31:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=XUh381c03vk2zmE9zkoUtp+x3wwf8snxyx2/ekQDMd1YpxtjVSU5hmCUDJa7LZ/+ub
+         qGt1zZ0xlpaEFqTR6qX0iDuIxc2kjw5urwVJtCblk7qqSxCxbyuChvAF2Cu+wqpFReow
+         NdHV4Td+H7RIjJ3cuunANRtzxMFT6Uq8cWmfk=
+MIME-Version: 1.0
+In-Reply-To: <alpine.DEB.2.00.1005141626250.20193@router.home>
+References: <1273869997-12720-1-git-send-email-gthelen@google.com>
+	 <alpine.DEB.2.00.1005141626250.20193@router.home>
+Date: Sat, 15 May 2010 23:31:16 +0900
+X-Google-Sender-Auth: MzuVEHXiNTuBblx8KUnrlJIkyuU
+Message-ID: <AANLkTil4zgqBtBAp--P8VdynpbohxVosQ-qFiQQ_c5Bb@mail.gmail.com>
+Subject: Re: [PATCH] mm: Consider the entire user address space during node 
+	migration
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: Greg Thelen <gthelen@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>, Mel Gorman <mel@csn.ul.ie>,
+       kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
+       balbir@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-15 at 13:57 +0200, Mike Galbraith wrote:
-> Hi Peter,
-> 
-> This commit excluded RT tasks from rq->load, was that intentional?  The
-> comment in struct rq states that load reflects *all* tasks, but since
-> this commit, that's no longer true.
+Hi
 
-Right, because a static load value does not accurately reflect a RT task
-which can run as long as it pretty well pleases. So instead we measure
-the time spend running !fair tasks and scale down the cpu_power
-proportionally.
+Mysteriously, I haven't receive original post.
+So now I'm guessing you acked following patch.
 
-> Looking at lmbench lat_udp in a PREEMPT_RT kernel, I noticed that
-> wake_affine() is failing for sync wakeups when it should not.  It's
-> doing so because the waker in this case is an RT kernel thread
-> (sirq-net-rx) - we subtract the sync waker's weight, when it was never
-> added in the first place, resulting in this_load going gaga.  End result
-> is quite high latency numbers due to tasks jabbering cross-cache.
-> 
-> If the exclusion was intentional, I suppose I can do a waker class check
-> in wake_affine() to fix it.
+http://lkml.org/lkml/2010/5/14/393
 
-So basically make all RT wakeups sync?
+but I don't think it is correct.
 
+> -	check_range(mm, mm->mmap->vm_start, TASK_SIZE, &nmask,
+> +	check_range(mm, mm->mmap->vm_start, TASK_SIZE_MAX, &nmask,
+> 			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
+
+Because TASK_SIZE_MAX is defined on x86 only. Why can we ignore other platform?
+Please put following line anywhere.
+
+#define TASK_SIZE_MAX TASK_SIZE
+
+
+But this patch is conceptually good. if it fixes the bug. I'll ack gladly.
+
+Thanks.
