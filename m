@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755620Ab0EOAoo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 20:44:44 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:60304 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754139Ab0EOAon (ORCPT
+	id S1755540Ab0EOAtl (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 20:49:41 -0400
+Received: from mail3.sea5.speakeasy.net ([69.17.117.42]:45686 "EHLO
+	mail3.sea5.speakeasy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753642Ab0EOAtj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 20:44:43 -0400
-X-Authority-Analysis: v=1.1 cv=PaD2Wv+9xJqXNP3J8apim3QBTBpXOuB+BaCFQon6buA= c=1 sm=0 a=lF5mZmV-YUMA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=7d_E57ReAAAA:8 a=ddOBt4qP3uBnB0IAYEgA:9 a=Ytd-v563lRQ3tSbxVn0u0xNXJTcA:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=D6-X0JM3zdQA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 13/13 v3] tracing: Comment the use of event_mutex with
- trace event flags
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>
-In-Reply-To: <20100514222140.GA14234@Krystal>
-References: <20100514192246.079025623@goodmis.org>
-	 <20100514192917.222882793@goodmis.org>  <20100514222140.GA14234@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 14 May 2010 20:44:40 -0400
-Message-ID: <1273884280.27703.3131.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Fri, 14 May 2010 20:49:39 -0400
+X-Greylist: delayed 1199 seconds by postgrey-1.27 at vger.kernel.org; Fri, 14 May 2010 20:49:39 EDT
+From: Frank Mori Hess <fmhess@speakeasy.net>
+Reply-To: fmhess@users.sourceforge.net
+To: Greg KH <greg@kroah.com>
+Subject: Re: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers grouped by bustype.
+Date: Fri, 14 May 2010 20:29:33 -0400
+User-Agent: KMail/1.9.9
+Cc: Alexander Kurz <linux@blala.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Frank Mori Hess <fmhess@users.sourceforge.net>,
+       Ian Abbott <abbotti@mev.co.uk>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com>
+In-Reply-To: <20100514190142.GA2505@kroah.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed;
+  boundary="nextPart1810117.UCjsJxFdU0";
+  protocol="application/pgp-signature";
+  micalg=pgp-sha1
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005142029.37408.fmhess@speakeasy.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-14 at 18:21 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
+--nextPart1810117.UCjsJxFdU0
+Content-Type: text/plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: quoted-printable
+Content-Disposition: inline
 
-> > +	 * Note: Reads of flags do not hold the event_mutex since
-> > +	 * they occur in critical sections. But the way flags
-> > +	 * is currently used, these changes do no affect the code
-> > +	 * except that when a change is made, it may have a slight
-> > +	 * delay in propagating the changes to other CPUs due to
-> > +	 * cacheing and such.
-> 
-> cacheing -> caching ?
+On Friday 14 May 2010, Greg KH wrote:
+> Wow.  Is this something that we really want?  That's a lot of new
+> Kconfig options, and while it seems like it makes sense, I would like to
+> get the comedi developers opinion here.
 
-hehe, I need spellcheck. I first wrote "caching", and thought to myself,
-that looked wrong. Then I added the 'e'. Oh well.
-
-> 
-> Besides this minor nit:
-> 
-> Acked-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-
-Thanks!
-
--- Steve
-
-> 
-> >  	 */
-> >  	unsigned int		flags;
-> >  
-> > -- 
-> > 1.7.0
-> > 
-> > 
-> 
+It doesn't matter to me how granular the Kconfig stuff is.  Personally, the=
+=20
+only thing I tend to do is disable are the pcmcia drivers as a group on=20
+desktop machines.  Also, I noticed in the patch it includes the 8255=20
+module as part of the PCI and ISA groups, but not PCMCIA.  But it is used=20
+by some of the PCMCIA drivers as well.
 
 
+--nextPart1810117.UCjsJxFdU0
+Content-Type: application/pgp-signature; name=signature.asc 
+Content-Description: This is a digitally signed message part.
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iD8DBQBL7eru5vihyNWuA4URAiXVAKCQUVUQtZs3KOdYMZEZgh58OJBCJQCeKSDS
+bIWkeKFvzdTrbInyXLQSooA=
+=DZmA
+-----END PGP SIGNATURE-----
+
+--nextPart1810117.UCjsJxFdU0--
