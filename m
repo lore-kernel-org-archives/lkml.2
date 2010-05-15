@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753623Ab0EOVNX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:13:23 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59010 "EHLO mgw2.diku.dk"
+	id S1753467Ab0EOVOA (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:14:00 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59029 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0EOVNV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:13:21 -0400
-Date: Sat, 15 May 2010 23:13:16 +0200 (CEST)
+	id S1752737Ab0EOVN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:13:58 -0400
+Date: Sat, 15 May 2010 23:13:53 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/37] drivers/memstick/core/mspro_block.c: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152312290.21345@ask.diku.dk>
+Subject: [PATCH 3/37] drivers/misc/iwmc3200top/log.c: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152313170.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,23 +40,45 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/memstick/core/mspro_block.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/misc/iwmc3200top/log.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff -u -p a/drivers/memstick/core/mspro_block.c b/drivers/memstick/core/mspro_block.c
---- a/drivers/memstick/core/mspro_block.c
-+++ b/drivers/memstick/core/mspro_block.c
-@@ -1012,12 +1012,11 @@ static int mspro_block_read_attributes(s
- 	}
- 	msb->attr_group.name = "media_attributes";
+diff -u -p a/drivers/misc/iwmc3200top/log.c b/drivers/misc/iwmc3200top/log.c
+--- a/drivers/misc/iwmc3200top/log.c
++++ b/drivers/misc/iwmc3200top/log.c
+@@ -214,7 +214,7 @@ ssize_t store_iwmct_log_level(struct dev
+ 	if (!count)
+ 		goto exit;
  
--	buffer = kmalloc(msb->page_size, GFP_KERNEL);
-+	buffer = kmemdup((char *)attr, msb->page_size, GFP_KERNEL);
- 	if (!buffer) {
- 		rc = -ENOMEM;
- 		goto out_free_attr;
+-	str_buf = kzalloc(count, GFP_KERNEL);
++	str_buf = kmemdup(buf, count, GFP_KERNEL);
+ 	if (!str_buf) {
+ 		LOG_ERROR(priv, DEBUGFS,
+ 			"failed to allocate %zd bytes\n", count);
+@@ -222,8 +222,6 @@ ssize_t store_iwmct_log_level(struct dev
+ 		goto exit;
  	}
--	memcpy(buffer, (char *)attr, msb->page_size);
- 	page_count = 1;
  
- 	for (cnt = 0; cnt < attr_count; ++cnt) {
+-	memcpy(str_buf, buf, count);
+-
+ 	while ((token = strsep(&str_buf, ",")) != NULL) {
+ 		while (isspace(*token))
+ 			++token;
+@@ -291,7 +289,7 @@ ssize_t store_iwmct_log_level_fw(struct 
+ 	if (!count)
+ 		goto exit;
+ 
+-	str_buf = kzalloc(count, GFP_KERNEL);
++	str_buf = kmemdup(buf, count, GFP_KERNEL);
+ 	if (!str_buf) {
+ 		LOG_ERROR(priv, DEBUGFS,
+ 			"failed to allocate %zd bytes\n", count);
+@@ -299,8 +297,6 @@ ssize_t store_iwmct_log_level_fw(struct 
+ 		goto exit;
+ 	}
+ 
+-	memcpy(str_buf, buf, count);
+-
+ 	cmd.hdr.type = COMM_TYPE_H2D;
+ 	cmd.hdr.category = COMM_CATEGORY_DEBUG;
+ 	cmd.hdr.opcode = CMD_DBG_LOG_LEVEL;
