@@ -1,53 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756316Ab0EOAwI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 20:52:08 -0400
-Received: from mail.atheros.com ([12.36.123.2]:45168 "EHLO mail.atheros.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753671Ab0EOAwD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 20:52:03 -0400
-Date: Fri, 14 May 2010 17:52:01 -0700
-From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Luis Rodriguez <Luis.Rodriguez@atheros.com>,
-       Bruno Randolf <br1@einfach.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Miles Lane <miles.lane@gmail.com>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-Message-ID: <20100515005201.GH28198@tux>
-References: <201005141538.43416.br1@einfach.org>
- <4BED6F19.3040608@gmail.com>
- <20100514165325.GA28198@tux>
- <4BED8765.8040307@gmail.com>
- <AANLkTiky103uOz38yZPlLypEQ8DnkdCk1X3zPl9014Yi@mail.gmail.com>
- <67773379-350A-42D4-BEB5-DAC7D8277615@gmail.com>
- <20100514201339.GB28198@tux>
- <4638F7CF-1E00-411F-A086-BA30809E00BD@gmail.com>
- <20100514205253.GC28198@tux>
- <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <B796B1C7-D7CC-457A-9C86-7C70EA9451CF@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753001Ab0EOBHE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 21:07:04 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53006 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752495Ab0EOBHB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 21:07:01 -0400
+X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=NQpeRPGH1YwA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=ibsV2mwkFbXULv0D5a8A:9 a=9agLyGMvdERFPIYEmWctjRbqlw8A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 12/13 v3] ring-buffer: Add cached pages when freeing
+ reader page
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>
+In-Reply-To: <20100514222647.GB14234@Krystal>
+References: <20100514192246.079025623@goodmis.org>
+	 <20100514192916.945900385@goodmis.org>  <20100514222647.GB14234@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 14 May 2010 21:06:58 -0400
+Message-ID: <1273885618.27703.3168.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 03:32:48PM -0700, Justin P. Mattock wrote:
-> ATH9K: cachelsz 256 rxbufsize 3904
+[ Added Peter Zijlsta since he had an interest in this topic ]
 
-OK I see nothing odd with these values, and I do not see how
-these values can make ath_rxbuf_alloc() barf. I'd like to
-reproduce this myself at least once, I left iperf running over
-night with no rants from SLAB. I should note this should be
-reproducible with RX only if it is ath_rxbuf_alloc() to blame
-but without a concrete reproducible instructions it is hard
-to guess what to do and if this can only come up during RX.
+On Fri, 2010-05-14 at 18:26 -0400, Mathieu Desnoyers wrote:
+> * Steven Rostedt (rostedt@goodmis.org) wrote:
 
-Can you describe a little more when you have seen this? What
-were you doing exactly, for how long? When was the last time
-you saw this, what were you doing then?
+> Trying to understand the effect of splice() putting the page in the page
+> cache and how it affects this patch.
+> 
+> Basically, how do you know you can call free_page() from splice() in the
+> first place ? Answering this question will probably help us see if this
+> page reuse is OK.
 
-  Luis
+Actually, looking at the code, I'm not sure this is safe. I was thinking
+that free_page() would always free the page. But I forgot that pages
+have a ref count. And a get_page() will prevent a page from freeing.
+
+So I need to revert this patch, or rather, make a core-5 that removes
+this patch and fixes the spelling in the comment.
+
+I can later add something that checks the page ref count, but that can
+wait till .36.
+
+-- Steve
+
+
+
+
