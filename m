@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754254Ab0EOVAo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:00:44 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:50216 "EHLO
+	id S1754552Ab0EOVAu (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:00:50 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:51253 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753963Ab0EOVA0 (ORCPT
+	with ESMTP id S1754334Ab0EOVAr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:00:26 -0400
+	Sat, 15 May 2010 17:00:47 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
@@ -15,212 +15,251 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>,
        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 05/10] tty: introduce wait_event_interruptible_tty
-Date: Sat, 15 May 2010 22:59:51 +0200
-Message-Id: <1273957196-13768-6-git-send-email-arnd@arndb.de>
+Subject: [PATCH 09/10] tty: remove tty_lock_nested
+Date: Sat, 15 May 2010 22:59:55 +0200
+Message-Id: <1273957196-13768-10-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1273957196-13768-1-git-send-email-arnd@arndb.de>
 References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19k3TwcDquRqcNwkWQTRHjvrE7CrsdoD2wJG7y
- m6Ek+trwFCkw3jSewzqPonDWrvCwc+KfiwyVhe2jr6fwsxuGUX
- 6OeXVIxaEtG+HLzRPK9wQ==
+X-Provags-ID: V01U2FsdGVkX1+K7MUhyfGxHxfySUq/ek60WKumOweyVyxssUx
+ nWtLl6G5+gpAvuvVNgU3M6OzyAQrVkf/rbFY+mH9SlKcBvIbtr
+ wE/8FYSB+dl+aVvsQYoMg==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Calling wait_event_interruptible implicitly
-releases the BKL when it sleeps, but we need
-to do this explcitly when we have converted
-it to a mutex.
+This changes all remaining users of tty_lock_nested
+to be non-recursive, which lets us kill this function.
+As a consequence, we won't need to keep the lock count
+any more, which allows more simplifications later.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/char/cyclades.c  |    2 +-
- drivers/char/istallion.c |   12 ++++++++----
- drivers/char/n_r3964.c   |    2 +-
- drivers/char/tty_port.c  |    2 +-
- drivers/char/vt_ioctl.c  |    2 +-
- drivers/serial/crisv10.c |    4 ++--
- include/linux/tty.h      |   42 ++++++++++++++++++++++++++++++++++++++++++
- 7 files changed, 56 insertions(+), 10 deletions(-)
+ drivers/char/pty.c       |    2 +-
+ drivers/char/selection.c |    4 ++--
+ drivers/char/stallion.c  |    2 ++
+ drivers/char/tty_io.c    |   41 ++++++++++++++++++++---------------------
+ drivers/char/tty_ldisc.c |    3 +--
+ include/linux/tty.h      |   16 +---------------
+ 6 files changed, 27 insertions(+), 41 deletions(-)
 
-diff --git a/drivers/char/cyclades.c b/drivers/char/cyclades.c
-index 51acfe3..27aad94 100644
---- a/drivers/char/cyclades.c
-+++ b/drivers/char/cyclades.c
-@@ -1607,7 +1607,7 @@ static int cy_open(struct tty_struct *tty, struct file *filp)
- 	 * If the port is the middle of closing, bail out now
- 	 */
- 	if (tty_hung_up_p(filp) || (info->port.flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->port.close_wait,
-+		wait_event_interruptible_tty(info->port.close_wait,
- 				!(info->port.flags & ASYNC_CLOSING));
- 		return (info->port.flags & ASYNC_HUP_NOTIFY) ? -EAGAIN: -ERESTARTSYS;
+diff --git a/drivers/char/pty.c b/drivers/char/pty.c
+index b441ebd..89c13eb 100644
+--- a/drivers/char/pty.c
++++ b/drivers/char/pty.c
+@@ -62,7 +62,7 @@ static void pty_close(struct tty_struct *tty, struct file *filp)
+ 		if (tty->driver == ptm_driver)
+ 			devpts_pty_kill(tty->link);
+ #endif
+-		tty_vhangup(tty->link);
++		tty_vhangup_locked(tty->link);
  	}
-diff --git a/drivers/char/istallion.c b/drivers/char/istallion.c
-index 5e9a81d..be28391 100644
---- a/drivers/char/istallion.c
-+++ b/drivers/char/istallion.c
-@@ -954,7 +954,7 @@ static int stli_rawopen(struct stlibrd *brdp, struct stliport *portp, unsigned l
-  *	order of opens and closes may not be preserved across shared
-  *	memory, so we must wait until it is complete.
-  */
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_CLOSING, &portp->state));
- 	if (signal_pending(current)) {
- 		return -ERESTARTSYS;
-@@ -989,7 +989,7 @@ static int stli_rawopen(struct stlibrd *brdp, struct stliport *portp, unsigned l
- 	set_bit(ST_OPENING, &portp->state);
- 	spin_unlock_irqrestore(&brd_lock, flags);
+ }
  
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_OPENING, &portp->state));
- 	if (signal_pending(current))
- 		rc = -ERESTARTSYS;
-@@ -1020,7 +1020,7 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
-  *	occurs on this port.
-  */
- 	if (wait) {
--		wait_event_interruptible(portp->raw_wait,
-+		wait_event_interruptible_tty(portp->raw_wait,
- 				!test_bit(ST_CLOSING, &portp->state));
- 		if (signal_pending(current)) {
- 			return -ERESTARTSYS;
-@@ -1052,7 +1052,7 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
-  *	to come back.
-  */
- 	rc = 0;
--	wait_event_interruptible(portp->raw_wait,
-+	wait_event_interruptible_tty(portp->raw_wait,
- 			!test_bit(ST_CLOSING, &portp->state));
- 	if (signal_pending(current))
- 		rc = -ERESTARTSYS;
-@@ -1073,6 +1073,10 @@ static int stli_rawclose(struct stlibrd *brdp, struct stliport *portp, unsigned
+diff --git a/drivers/char/selection.c b/drivers/char/selection.c
+index 75889cd..ebae344 100644
+--- a/drivers/char/selection.c
++++ b/drivers/char/selection.c
+@@ -313,7 +313,8 @@ int paste_selection(struct tty_struct *tty)
+ 	struct  tty_ldisc *ld;
+ 	DECLARE_WAITQUEUE(wait, current);
  
- static int stli_cmdwait(struct stlibrd *brdp, struct stliport *portp, unsigned long cmd, void *arg, int size, int copyback)
- {
-+	/*
-+	 * no need for wait_event_tty because clearing ST_CMDING cannot block
-+	 * on BTM
-+	 */
- 	wait_event_interruptible(portp->raw_wait,
- 			!test_bit(ST_CMDING, &portp->state));
- 	if (signal_pending(current))
-diff --git a/drivers/char/n_r3964.c b/drivers/char/n_r3964.c
-index f4bd259..a98290d 100644
---- a/drivers/char/n_r3964.c
-+++ b/drivers/char/n_r3964.c
-@@ -1079,7 +1079,7 @@ static ssize_t r3964_read(struct tty_struct *tty, struct file *file,
- 				goto unlock;
+-	tty_lock_nested(); /* always called with BTM from vt_ioctl */
++	/* always called with BTM from vt_ioctl */
++	WARN_ON(!tty_locked());
+ 
+ 	acquire_console_sem();
+ 	poke_blanked_console();
+@@ -343,6 +344,5 @@ int paste_selection(struct tty_struct *tty)
+ 	__set_current_state(TASK_RUNNING);
+ 
+ 	tty_ldisc_deref(ld);
+-	tty_unlock();
+ 	return 0;
+ }
+diff --git a/drivers/char/stallion.c b/drivers/char/stallion.c
+index f2167f8..feed311 100644
+--- a/drivers/char/stallion.c
++++ b/drivers/char/stallion.c
+@@ -1656,7 +1656,9 @@ static void stl_cleanup_panels(struct stlbrd *brdp)
+ 				continue;
+ 			tty = tty_port_tty_get(&portp->port);
+ 			if (tty != NULL) {
++				tty_lock(); /* call tty_port_hangup with BTM */
+ 				stl_hangup(tty);
++				tty_unlock();
+ 				tty_kref_put(tty);
  			}
- 			/* block until there is a message: */
--			wait_event_interruptible(pInfo->read_wait,
-+			wait_event_interruptible_tty(pInfo->read_wait,
- 					(pMsg = remove_msg(pInfo, pClient)));
- 		}
+ 			kfree(portp->tx.buf);
+diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
+index 36aecba..7bb9685 100644
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -492,10 +492,8 @@ EXPORT_SYMBOL_GPL(tty_wakeup);
+  *		  tasklist_lock to walk task list for hangup event
+  *		    ->siglock to protect ->signal/->sighand
+  */
+-static void do_tty_hangup(struct work_struct *work)
++void tty_vhangup_locked(struct tty_struct *tty)
+ {
+-	struct tty_struct *tty =
+-		container_of(work, struct tty_struct, hangup_work);
+ 	struct file *cons_filp = NULL;
+ 	struct file *filp, *f = NULL;
+ 	struct task_struct *p;
+@@ -517,8 +515,6 @@ static void do_tty_hangup(struct work_struct *work)
+ 	/* inuse_filps is protected by the single tty lock,
+ 	   this really needs to change if we want to flush the
+ 	   workqueue with the lock held */
+-	tty_lock_nested(); /* called with BTM held from pty_close and
+-				others */
+ 	check_tty_count(tty, "do_tty_hangup");
  
-diff --git a/drivers/char/tty_port.c b/drivers/char/tty_port.c
-index a3bd1d0..35eb304 100644
---- a/drivers/char/tty_port.c
-+++ b/drivers/char/tty_port.c
-@@ -231,7 +231,7 @@ int tty_port_block_til_ready(struct tty_port *port,
+ 	file_list_lock();
+@@ -598,11 +594,20 @@ static void do_tty_hangup(struct work_struct *work)
+ 	 */
+ 	set_bit(TTY_HUPPED, &tty->flags);
+ 	tty_ldisc_enable(tty);
+-	tty_unlock();
+ 	if (f)
+ 		fput(f);
+ }
  
- 	/* block if port is in the process of being closed */
- 	if (tty_hung_up_p(filp) || port->flags & ASYNC_CLOSING) {
--		wait_event_interruptible(port->close_wait,
-+		wait_event_interruptible_tty(port->close_wait,
- 				!(port->flags & ASYNC_CLOSING));
- 		if (port->flags & ASYNC_HUP_NOTIFY)
- 			return -EAGAIN;
-diff --git a/drivers/char/vt_ioctl.c b/drivers/char/vt_ioctl.c
-index cc07fab..c56c4f3 100644
---- a/drivers/char/vt_ioctl.c
-+++ b/drivers/char/vt_ioctl.c
-@@ -133,7 +133,7 @@ static void vt_event_wait(struct vt_event_wait *vw)
- 	list_add(&vw->list, &vt_events);
- 	spin_unlock_irqrestore(&vt_event_lock, flags);
- 	/* Wait for it to pass */
--	wait_event_interruptible(vt_event_waitqueue, vw->done);
-+	wait_event_interruptible_tty(vt_event_waitqueue, vw->done);
- 	/* Dequeue it */
- 	spin_lock_irqsave(&vt_event_lock, flags);
- 	list_del(&vw->list);
-diff --git a/drivers/serial/crisv10.c b/drivers/serial/crisv10.c
-index d11d898..e6a1cb7 100644
---- a/drivers/serial/crisv10.c
-+++ b/drivers/serial/crisv10.c
-@@ -3981,7 +3981,7 @@ block_til_ready(struct tty_struct *tty, struct file * filp,
- 	 */
- 	if (tty_hung_up_p(filp) ||
- 	    (info->flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->close_wait,
-+		wait_event_interruptible_tty(info->close_wait,
- 			!(info->flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
- 		if (info->flags & ASYNC_HUP_NOTIFY)
-@@ -4139,7 +4139,7 @@ rs_open(struct tty_struct *tty, struct file * filp)
- 	 */
- 	if (tty_hung_up_p(filp) ||
- 	    (info->flags & ASYNC_CLOSING)) {
--		wait_event_interruptible(info->close_wait,
-+		wait_event_interruptible_tty(info->close_wait,
- 			!(info->flags & ASYNC_CLOSING));
- #ifdef SERIAL_DO_RESTART
- 		return ((info->flags & ASYNC_HUP_NOTIFY) ?
++static void do_tty_hangup(struct work_struct *work)
++{
++	struct tty_struct *tty =
++		container_of(work, struct tty_struct, hangup_work);
++
++	tty_lock();
++	tty_vhangup_locked(tty);
++	tty_unlock();
++}
++
+ /**
+  *	tty_hangup		-	trigger a hangup event
+  *	@tty: tty to hangup
+@@ -638,7 +643,9 @@ void tty_vhangup(struct tty_struct *tty)
+ 
+ 	printk(KERN_DEBUG "%s vhangup...\n", tty_name(tty, buf));
+ #endif
+-	do_tty_hangup(&tty->hangup_work);
++	tty_lock();
++	tty_vhangup_locked(tty);
++	tty_unlock();
+ }
+ 
+ EXPORT_SYMBOL(tty_vhangup);
+@@ -719,10 +726,12 @@ void disassociate_ctty(int on_exit)
+ 	tty = get_current_tty();
+ 	if (tty) {
+ 		tty_pgrp = get_pid(tty->pgrp);
+-		tty_lock_nested(); /* see above */
+-		if (on_exit && tty->driver->type != TTY_DRIVER_TYPE_PTY)
+-			tty_vhangup(tty);
+-		tty_unlock();
++		if (on_exit) {
++			tty_lock();
++			if (tty->driver->type != TTY_DRIVER_TYPE_PTY)
++				tty_vhangup_locked(tty);
++			tty_unlock();
++		}
+ 		tty_kref_put(tty);
+ 	} else if (on_exit) {
+ 		struct pid *old_pgrp;
+@@ -1218,18 +1227,14 @@ static int tty_driver_install_tty(struct tty_driver *driver,
+ 	int ret;
+ 
+ 	if (driver->ops->install) {
+-		tty_lock_nested(); /* already called with BTM held */
+ 		ret = driver->ops->install(driver, tty);
+-		tty_unlock();
+ 		return ret;
+ 	}
+ 
+ 	if (tty_init_termios(tty) == 0) {
+-		tty_lock_nested();
+ 		tty_driver_kref_get(driver);
+ 		tty->count++;
+ 		driver->ttys[idx] = tty;
+-		tty_unlock();
+ 		return 0;
+ 	}
+ 	return -ENOMEM;
+@@ -1322,15 +1327,11 @@ struct tty_struct *tty_init_dev(struct tty_driver *driver, int idx,
+ 	struct tty_struct *tty;
+ 	int retval;
+ 
+-	tty_lock_nested(); /* always called with tty lock held already */
+-
+ 	/* Check if pty master is being opened multiple times */
+ 	if (driver->subtype == PTY_TYPE_MASTER &&
+ 		(driver->flags & TTY_DRIVER_DEVPTS_MEM) && !first_ok) {
+-		tty_unlock();
+ 		return ERR_PTR(-EIO);
+ 	}
+-	tty_unlock();
+ 
+ 	/*
+ 	 * First time open is complex, especially for PTY devices.
+@@ -1374,9 +1375,7 @@ release_mem_out:
+ 	if (printk_ratelimit())
+ 		printk(KERN_INFO "tty_init_dev: ldisc open failed, "
+ 				 "clearing slot %d\n", idx);
+-	tty_lock_nested();
+ 	release_tty(tty, idx);
+-	tty_unlock();
+ 	return ERR_PTR(retval);
+ }
+ 
+diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
+index 0f49479..412f977 100644
+--- a/drivers/char/tty_ldisc.c
++++ b/drivers/char/tty_ldisc.c
+@@ -450,9 +450,8 @@ static int tty_ldisc_open(struct tty_struct *tty, struct tty_ldisc *ld)
+ 	if (ld->ops->open) {
+ 		int ret;
+                 /* BTM here locks versus a hangup event */
+-		tty_lock_nested(); /* always held here already */
++		WARN_ON(!tty_locked());
+ 		ret = ld->ops->open(tty);
+-		tty_unlock();
+ 		return ret;
+ 	}
+ 	return 0;
 diff --git a/include/linux/tty.h b/include/linux/tty.h
-index c35ad81..9d4c87f 100644
+index 9d4c87f..b227616 100644
 --- a/include/linux/tty.h
 +++ b/include/linux/tty.h
-@@ -599,5 +599,47 @@ static inline void tty_unlock(void) __releases(kernel_lock)
- }
- #define tty_locked()		(kernel_locked())
+@@ -415,6 +415,7 @@ extern int is_ignored(int sig);
+ extern int tty_signal(int sig, struct tty_struct *tty);
+ extern void tty_hangup(struct tty_struct *tty);
+ extern void tty_vhangup(struct tty_struct *tty);
++extern void tty_vhangup_locked(struct tty_struct *tty);
+ extern void tty_vhangup_self(void);
+ extern void tty_unhangup(struct file *filp);
+ extern int tty_hung_up_p(struct file *filp);
+@@ -573,21 +574,6 @@ extern long vt_compat_ioctl(struct tty_struct *tty, struct file * file,
+ 		     unsigned int cmd, unsigned long arg);
  
-+/*
-+ * wait_event_interruptible_tty -- wait for a condition with the tty lock held
-+ *
-+ * The condition we are waiting for might take a long time to
-+ * become true, or might depend on another thread taking the
-+ * BTM. In either case, we need to drop the BTM to guarantee
-+ * forward progress. This is a leftover from the conversion
-+ * from the BKL and should eventually get removed as the BTM
-+ * falls out of use.
-+ *
-+ * Do not use in new code.
-+ */
-+#define wait_event_interruptible_tty(wq, condition)			\
-+({									\
-+	int __ret = 0;							\
-+	if (!(condition)) {						\
-+		__wait_event_interruptible_tty(wq, condition, __ret);	\
-+	}								\
-+	__ret;								\
-+})
-+
-+#define __wait_event_interruptible_tty(wq, condition, ret)		\
-+do {									\
-+	DEFINE_WAIT(__wait);						\
-+									\
-+	for (;;) {							\
-+		prepare_to_wait(&wq, &__wait, TASK_INTERRUPTIBLE);	\
-+		if (condition)						\
-+			break;						\
-+		if (!signal_pending(current)) {				\
-+			tty_unlock();					\
-+			schedule();					\
-+			tty_lock();					\
-+			continue;					\
-+		}							\
-+		ret = -ERESTARTSYS;					\
-+		break;							\
-+	}								\
-+	finish_wait(&wq, &__wait);					\
-+} while (0)
-+
-+
- #endif /* __KERNEL__ */
- #endif
+ /* functions for preparation of BKL removal */
+-
+-/*
+- * tty_lock_nested get the tty_lock while potentially holding it
+- *
+- * The Big TTY Mutex is a recursive lock, meaning you can take it
+- * from a thread that is already holding it.
+- * This is bad for a number of reasons, so tty_lock_nested should
+- * really be used as rarely as possible. If a code location can
+- * be shown to never get called with this held already, it should
+- * use tty_lock() instead.
+- */
+-static inline void __lockfunc tty_lock_nested(void) __acquires(kernel_lock)
+-{
+-	lock_kernel();
+-}
+ static inline void tty_lock(void) __acquires(kernel_lock)
+ {
+ 	WARN_ON(kernel_locked());
 -- 
 1.7.0.4
 
