@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755909Ab0EOVTj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:19:39 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51365 "EHLO mgw1.diku.dk"
+	id S1756004Ab0EOVT4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:19:56 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41757 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752564Ab0EOVTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:19:36 -0400
-Date: Sat, 15 May 2010 23:19:30 +0200 (CEST)
+	id S1755930Ab0EOVTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:19:53 -0400
+Date: Sat, 15 May 2010 23:19:48 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 21/37] drivers/hid: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152319150.21345@ask.diku.dk>
+To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 22/37] drivers/scsi/mpt2sas: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152319310.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,21 +42,27 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/hid/hid-core.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff -u -p a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
---- a/drivers/hid/hid-core.c
-+++ b/drivers/hid/hid-core.c
-@@ -653,10 +653,9 @@ int hid_parse_report(struct hid_device *
- 	if (device->driver->report_fixup)
- 		device->driver->report_fixup(device, start, size);
+diff -u -p a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+--- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
++++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
+@@ -6056,7 +6056,7 @@ mpt2sas_scsih_event_callback(struct MPT2
+ 		return 1;
+ 	}
+ 	sz = le16_to_cpu(mpi_reply->EventDataLength) * 4;
+-	fw_event->event_data = kzalloc(sz, GFP_ATOMIC);
++	fw_event->event_data = kmemdup(mpi_reply->EventData, sz, GFP_ATOMIC);
+ 	if (!fw_event->event_data) {
+ 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
+ 		    ioc->name, __FILE__, __LINE__, __func__);
+@@ -6064,8 +6064,6 @@ mpt2sas_scsih_event_callback(struct MPT2
+ 		return 1;
+ 	}
  
--	device->rdesc = kmalloc(size, GFP_KERNEL);
-+	device->rdesc = kmemdup(start, size, GFP_KERNEL);
- 	if (device->rdesc == NULL)
- 		return -ENOMEM;
--	memcpy(device->rdesc, start, size);
- 	device->rsize = size;
- 
- 	parser = vmalloc(sizeof(struct hid_parser));
+-	memcpy(fw_event->event_data, mpi_reply->EventData,
+-	    sz);
+ 	fw_event->ioc = ioc;
+ 	fw_event->VF_ID = mpi_reply->VF_ID;
+ 	fw_event->VP_ID = mpi_reply->VP_ID;
