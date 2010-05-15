@@ -1,68 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754047Ab0EOQlR (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 12:41:17 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58425 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752708Ab0EOQlP (ORCPT
+	id S1754869Ab0EOQsd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 12:48:33 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:13059 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754627Ab0EOQsc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 12:41:15 -0400
-Date: Sat, 15 May 2010 09:39:08 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stefani Seibold <stefani@seibold.net>
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, gregkh@suse.de,
-       alan@lxorguk.ukuu.org.uk, tytso@mit.edu, iws@ovro.caltech.edu
-Subject: Re: [PATCH 4/4] add example files to the kernel sample directory
-Message-Id: <20100515093908.54290762.akpm@linux-foundation.org>
-In-Reply-To: <1273930418.32082.12.camel@wall-e.seibold.net>
-References: <1273654167-31067-1-git-send-email-stefani@seibold.net>
-	<1273654167-31067-5-git-send-email-stefani@seibold.net>
-	<20100514134609.54e05968.akpm@linux-foundation.org>
-	<1273930418.32082.12.camel@wall-e.seibold.net>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 15 May 2010 12:48:32 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=njTao5+rz8QrXUy/I6gOtTrQVAoYYyQScBrBx5sccb4bUr7YMQFMuPnZusf6SCNrU
+	sNCt3QFXEEi4hGam+54Yw==
+MIME-Version: 1.0
+In-Reply-To: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+References: <87tyq9mqrz.fsf@basil.nowhere.org>
+	 <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+Date: Sat, 15 May 2010 09:48:26 -0700
+Message-ID: <AANLkTikRnoI1XeXkpIJXERD8kw2Akl4FgbBeuJ_vCPrX@mail.gmail.com>
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: Venkatesh Pallipadi <venki@google.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 May 2010 15:33:38 +0200 Stefani Seibold <stefani@seibold.net> wrote:
+On Sat, May 15, 2010 at 6:29 AM, Dan Magenheimer
+<dan.magenheimer@oracle.com> wrote:
+>> From: Andi Kleen [mailto:andi@firstfloor.org]
+>>
+>> > Kernel information about calibrated value of tsc_khz and
+>> > tsc_stability (result of tsc warp test) are useful bits of
+>> information
+>> > for any app that wants to use TSC directly. Export this read_only
+>> > information in sysfs.
+>>
+>> Is this really a good idea?  It will encourage the applications
+>> to use RDTSC directly, but there are all kinds of constraints on
+>
+> Indeed, that is what it is intended to do.
+>
+>> that. Even the kernel has a hard time with them, how likely
+>> is it that applications will get all that right?
+>
+> That's the point of exposing the tsc_reliable kernel data.
+> If the processor has Invariant TSC and the system has
+> successfully passed Ingo's warp test and, as a result
+> the kernel is using TSC as a clocksource, why not enable
+> userland apps that need to obtain timestamp data
+> tens or hundreds of thousands of times per second to
+> also use the TSC directly?
+>
 
-> Hi,
-> 
-> is the patch 0003-replace-the-old-non-generic-API.patch correct applied?
-> 
-> This patch renames the files created by patch 
-> 
-> 0002-add-the-new-generic-kfifo-API.patch 
-> 
-> from 
-> kernel/kfifo-new.c into kernel/kfifo.c
-> and
-> include/linux/kfifo-new.h into include/linux/kfifo.h.
-> 
-> Both destination files still exists, so git must overwrite them.
+I am a little concerned about applications getting this right, with
+rdtsc and related barriers etc. May be that calls for a userspace
+library.
 
-oh, doh, no.  This stuff:
+Despite of that, it is useful information to human user to know
+whether tsc is stable and what TSC freq is. It will be very hard for
+userspace to do the TSC calibration. And to know whether TSC warp test
+passed or whether TSC is marked unstable by the kernel, there is no
+one place to get these answers today. Users have to look at
+clocksource, dmesg, etc.
 
-: diff --git a/include/linux/kfifo-new.h b/include/linux/kfifo.h
-: similarity index 100%
-: rename from include/linux/kfifo-new.h
-: rename to include/linux/kfifo.h
-: diff --git a/kernel/kfifo-new.c b/kernel/kfifo.c
-: similarity index 100%
-: rename from kernel/kfifo-new.c
-: rename to kernel/kfifo.c
-
-is git-specific and doesn't mean anything to patch(1).  I'll fix it.
-
-> This
-> was done in request by Greg, not to break the kernel build at this point
-> in the patch sequence.
-
-Well, there can be no build problem here (joining two
-non-build-breaking patches will yield a non-build-breaking patch!) but
-if the add-new-api and replace-old-api patches were folded into a
-single patch, the diff would be quite unreadable.
-
+Thanks,
+Venki
