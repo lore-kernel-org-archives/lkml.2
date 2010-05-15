@@ -1,90 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754613Ab0EOKyp (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 06:54:45 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56830 "EHLO song.cn.fujitsu.com"
+	id S1754671Ab0EOK4K (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 06:56:10 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:60998 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753637Ab0EOKyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 06:54:43 -0400
-Message-ID: <4BEE7CAC.5020603@cn.fujitsu.com>
-Date: Sat, 15 May 2010 18:51:24 +0800
+	id S1753637Ab0EOK4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 06:56:08 -0400
+Message-ID: <4BEE7CF2.3080502@cn.fujitsu.com>
+Date: Sat, 15 May 2010 18:52:34 +0800
 From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
 To: Avi Kivity <avi@redhat.com>
 CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
        KVM list <kvm@vger.kernel.org>
-Subject: [PATCH 1/3] KVM: MMU: split kvm_sync_page() function
+Subject: [PATCH 2/3] KVM: MMU: don't write-protect if have new mapping to
+ unsync page
+References: <4BEE7CAC.5020603@cn.fujitsu.com>
+In-Reply-To: <4BEE7CAC.5020603@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Split kvm_sync_page() into kvm_sync_page() and kvm_sync_page_transient()
-to clarify the code address Avi's suggestion
+Two cases maybe happen in kvm_mmu_get_page() function:
 
-kvm_sync_page_transient() function only update shadow page but not mark
-it sync and not write protect sp->gfn. it will be used by later patch
+- one case is, the goal sp is already in cache, if the sp is unsync,
+  we only need update it to assure this mapping is valid, but not
+  mark it sync and not write-protect sp->gfn since it not broke unsync
+  rule(one shadow page for a gfn)
+
+- another case is, the goal sp not existed, we need create a new sp
+  for gfn, i.e, gfn (may)has another shadow page, to keep unsync rule,
+  we should sync(mark sync and write-protect) gfn's unsync shadow page.
+  After enabling multiple unsync shadows, we sync those shadow pages
+  only when the new sp not allow to become unsync(also for the unsyc
+  rule, the new rule is: allow all pte page become unsync)
 
 Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/x86/kvm/mmu.c |   29 +++++++++++++++++++++++++----
- 1 files changed, 25 insertions(+), 4 deletions(-)
+ arch/x86/kvm/mmu.c |   18 ++++++++++++++----
+ 1 files changed, 14 insertions(+), 4 deletions(-)
 
 diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
-index 48ed42e..549255d 100644
+index 549255d..97c5217 100644
 --- a/arch/x86/kvm/mmu.c
 +++ b/arch/x86/kvm/mmu.c
-@@ -1198,16 +1198,20 @@ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+@@ -1336,7 +1336,7 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	unsigned index;
+ 	unsigned quadrant;
+ 	struct hlist_head *bucket;
+-	struct kvm_mmu_page *sp;
++	struct kvm_mmu_page *sp, *unsync_sp = NULL;
+ 	struct hlist_node *node, *tmp;
  
- static int kvm_mmu_zap_page(struct kvm *kvm, struct kvm_mmu_page *sp);
+ 	role = vcpu->arch.mmu.base_role;
+@@ -1355,20 +1355,30 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
+ 		if (sp->gfn == gfn) {
+ 			if (sp->unsync)
+-				if (kvm_sync_page(vcpu, sp))
+-					continue;
++				unsync_sp = sp;
  
--static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
-+static int __kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp,
-+			   bool clear_unsync)
- {
- 	if (sp->role.cr4_pae != !!is_pae(vcpu)) {
- 		kvm_mmu_zap_page(vcpu->kvm, sp);
- 		return 1;
- 	}
+ 			if (sp->role.word != role.word)
+ 				continue;
  
--	if (rmap_write_protect(vcpu->kvm, sp->gfn))
--		kvm_flush_remote_tlbs(vcpu->kvm);
--	kvm_unlink_unsync_page(vcpu->kvm, sp);
-+	if (clear_unsync) {
-+		if (rmap_write_protect(vcpu->kvm, sp->gfn))
-+			kvm_flush_remote_tlbs(vcpu->kvm);
-+		kvm_unlink_unsync_page(vcpu->kvm, sp);
-+	}
++			if (!direct && unsync_sp &&
++			      kvm_sync_page_transient(vcpu, unsync_sp)) {
++				unsync_sp = NULL;
++				break;
++			}
 +
- 	if (vcpu->arch.mmu.sync_page(vcpu, sp)) {
- 		kvm_mmu_zap_page(vcpu->kvm, sp);
- 		return 1;
-@@ -1217,6 +1221,23 @@ static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
- 	return 0;
- }
- 
-+static void mmu_convert_notrap(struct kvm_mmu_page *sp);
-+static int kvm_sync_page_transient(struct kvm_vcpu *vcpu,
-+				   struct kvm_mmu_page *sp)
-+{
-+	int ret;
+ 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+ 			if (sp->unsync_children) {
+ 				set_bit(KVM_REQ_MMU_SYNC, &vcpu->requests);
+ 				kvm_mmu_mark_parents_unsync(sp);
+-			}
++			} else if (sp->unsync)
++				kvm_mmu_mark_parents_unsync(sp);
 +
-+	ret = __kvm_sync_page(vcpu, sp, false);
-+	if (!ret)
-+		mmu_convert_notrap(sp);
-+	return ret;
-+}
+ 			trace_kvm_mmu_get_page(sp, false);
+ 			return sp;
+ 		}
++	if (!direct && unsync_sp)
++		kvm_sync_page(vcpu, unsync_sp);
 +
-+static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
-+{
-+	return __kvm_sync_page(vcpu, sp, true);
-+}
-+
- struct mmu_page_path {
- 	struct kvm_mmu_page *parent[PT64_ROOT_LEVEL-1];
- 	unsigned int idx[PT64_ROOT_LEVEL-1];
+ 	++vcpu->kvm->stat.mmu_cache_miss;
+ 	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
+ 	if (!sp)
 -- 
 1.6.1.2
+
 
