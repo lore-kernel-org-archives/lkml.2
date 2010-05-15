@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755355Ab0EOLpD (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 07:45:03 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41128 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751832Ab0EOLpA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 07:45:00 -0400
-Date: Sat, 15 May 2010 12:44:58 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [git pull][vfs].34 fixes
-Message-ID: <20100515114458.GD31073@ZenIV.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1753642Ab0EOL5N (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 07:57:13 -0400
+Received: from mail.gmx.net ([213.165.64.20]:40508 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751832Ab0EOL5M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 07:57:12 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/NC+EHuJ7Na0yercRtMA1yGQv0sAkn5ihnr8fiPZ
+	SvXHoIbWTODkFm
+Subject: commit e9e9250b: sync wakeup bustage when waker is an RT task
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain
+Date: Sat, 15 May 2010 13:57:08 +0200
+Message-Id: <1273924628.10630.24.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-	Misc fixes; the most serious one is unlink/mount regression.
-Please, pull from
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git/ for-linus
+Hi Peter,
 
-Shortlog:
-Al Viro (2):
-      Fix the regression created by "set S_DEAD on unlink()..." commit
-      Fix double-free in logfs
+This commit excluded RT tasks from rq->load, was that intentional?  The
+comment in struct rq states that load reflects *all* tasks, but since
+this commit, that's no longer true.
 
-Dan Carpenter (1):
-      fs/sysv: dereferencing ERR_PTR()
+Looking at lmbench lat_udp in a PREEMPT_RT kernel, I noticed that
+wake_affine() is failing for sync wakeups when it should not.  It's
+doing so because the waker in this case is an RT kernel thread
+(sirq-net-rx) - we subtract the sync waker's weight, when it was never
+added in the first place, resulting in this_load going gaga.  End result
+is quite high latency numbers due to tasks jabbering cross-cache.
 
-Jan Blunck (1):
-      JFS: Free sbi memory in error path
+If the exclusion was intentional, I suppose I can do a waker class check
+in wake_affine() to fix it.
 
-Diffstat:
- drivers/usb/core/inode.c |    1 +
- fs/configfs/dir.c        |    4 ++++
- fs/jfs/super.c           |   13 ++++++-------
- fs/logfs/super.c         |   14 +++++++-------
- fs/namei.c               |   21 +++++++++++++--------
- fs/namespace.c           |    6 +++---
- fs/sysv/dir.c            |    2 +-
- include/linux/dcache.h   |   14 ++++++++++++++
- 8 files changed, 49 insertions(+), 26 deletions(-)
+	-Mike
+
 
