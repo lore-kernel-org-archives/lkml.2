@@ -1,46 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756781Ab0EODnu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 23:43:50 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46415 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756233Ab0EODns (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 23:43:48 -0400
-Date: Fri, 14 May 2010 20:44:23 -0700
-From: Greg KH <gregkh@suse.de>
-To: fmhess@users.sourceforge.net
-Cc: Greg KH <greg@kroah.com>, Alexander Kurz <linux@blala.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers
-	grouped by bustype.
-Message-ID: <20100515034423.GA3811@suse.de>
-References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com> <201005142029.37408.fmhess@speakeasy.net>
+	id S1750936Ab0EOEEl (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 00:04:41 -0400
+Received: from mail-pz0-f204.google.com ([209.85.222.204]:34188 "EHLO
+	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750751Ab0EOEEj convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 00:04:39 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005142029.37408.fmhess@speakeasy.net>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <Pine.LNX.4.44L0.1005142233070.11498-100000@netrider.rowland.org>
+References: <201005140028.49443.rjw@sisk.pl>
+	 <Pine.LNX.4.44L0.1005142233070.11498-100000@netrider.rowland.org>
+Date: Fri, 14 May 2010 21:04:38 -0700
+Message-ID: <AANLkTim7Gh7045xiEbnPSBFAWPmPstfi71zdgZb8KXD4@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Lindgren <tony@atomide.com>,
+       Paul Walmsley <paul@pwsan.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
+       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>, Matthew Garrett <mjg@redhat.com>,
+       =?ISO-8859-1?Q?Beno=EEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 08:29:33PM -0400, Frank Mori Hess wrote:
-> On Friday 14 May 2010, Greg KH wrote:
-> > Wow.  Is this something that we really want?  That's a lot of new
-> > Kconfig options, and while it seems like it makes sense, I would like to
-> > get the comedi developers opinion here.
-> 
-> It doesn't matter to me how granular the Kconfig stuff is.  Personally, the 
-> only thing I tend to do is disable are the pcmcia drivers as a group on 
-> desktop machines.  Also, I noticed in the patch it includes the 8255 
-> module as part of the PCI and ISA groups, but not PCMCIA.  But it is used 
-> by some of the PCMCIA drivers as well.
+On Fri, May 14, 2010 at 7:35 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Fri, 14 May 2010, Rafael J. Wysocki wrote:
+>
+>> > > How do you handle situations where the CPU is currently idle but an
+>> > > event (such as I/O completion) is expected to occur in the near future?
+>> > > You don't want to power-off and reboot then, do you?
+>> >
+>> > The idle code looks at next_timer_interrupt() value, then if the
+>> > next timer event if far enough ahead, the system powers down and
+>> > wakes to the timer interrupt. It also wakes to device interrupts.
+>>
+>> For the record, waking to interrupts doesn't work on quite some systems
+>> (like ACPI-based PCs for one example).
+>
+> Ironically, it appears that ACPI-based PCs are in a position to benefit
+> more from opportunistic suspend and suspend blockers than are embedded
+> systems -- and yet they are being proposed for use on cell phones
+> rather than on desktops.
+>
 
-Ok, I'll queue this up.  Alex can you send a follow-on patch to fix up
-the 8255 stuff?
+I would also use it on a desktop.
 
-thanks,
-
-greg k-h
+-- 
+Arve Hjønnevåg
