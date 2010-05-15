@@ -1,16 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753467Ab0EOVOA (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:14:00 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59029 "EHLO mgw2.diku.dk"
+	id S1753975Ab0EOVOU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:14:20 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:46573 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752737Ab0EOVN6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:13:58 -0400
-Date: Sat, 15 May 2010 23:13:53 +0200 (CEST)
+	id S1753849Ab0EOVOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:14:17 -0400
+Date: Sat, 15 May 2010 23:14:12 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/37] drivers/misc/iwmc3200top/log.c: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152313170.21345@ask.diku.dk>
+To: Jeremy Fitzhardinge <jeremy@xensource.com>,
+       Chris Wright <chrisw@sous-sol.org>, virtualization@lists.osdl.org,
+       xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/37] drivers/block: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152313540.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -40,45 +43,22 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/misc/iwmc3200top/log.c |    8 ++------
- 1 file changed, 2 insertions(+), 6 deletions(-)
+ drivers/block/xen-blkfront.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/misc/iwmc3200top/log.c b/drivers/misc/iwmc3200top/log.c
---- a/drivers/misc/iwmc3200top/log.c
-+++ b/drivers/misc/iwmc3200top/log.c
-@@ -214,7 +214,7 @@ ssize_t store_iwmct_log_level(struct dev
- 	if (!count)
- 		goto exit;
+diff -u -p a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
+--- a/drivers/block/xen-blkfront.c
++++ b/drivers/block/xen-blkfront.c
+@@ -775,11 +775,10 @@ static int blkif_recover(struct blkfront
+ 	int j;
  
--	str_buf = kzalloc(count, GFP_KERNEL);
-+	str_buf = kmemdup(buf, count, GFP_KERNEL);
- 	if (!str_buf) {
- 		LOG_ERROR(priv, DEBUGFS,
- 			"failed to allocate %zd bytes\n", count);
-@@ -222,8 +222,6 @@ ssize_t store_iwmct_log_level(struct dev
- 		goto exit;
- 	}
+ 	/* Stage 1: Make a safe copy of the shadow state. */
+-	copy = kmalloc(sizeof(info->shadow),
++	copy = kmemdup(info->shadow, sizeof(info->shadow),
+ 		       GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
+ 	if (!copy)
+ 		return -ENOMEM;
+-	memcpy(copy, info->shadow, sizeof(info->shadow));
  
--	memcpy(str_buf, buf, count);
--
- 	while ((token = strsep(&str_buf, ",")) != NULL) {
- 		while (isspace(*token))
- 			++token;
-@@ -291,7 +289,7 @@ ssize_t store_iwmct_log_level_fw(struct 
- 	if (!count)
- 		goto exit;
- 
--	str_buf = kzalloc(count, GFP_KERNEL);
-+	str_buf = kmemdup(buf, count, GFP_KERNEL);
- 	if (!str_buf) {
- 		LOG_ERROR(priv, DEBUGFS,
- 			"failed to allocate %zd bytes\n", count);
-@@ -299,8 +297,6 @@ ssize_t store_iwmct_log_level_fw(struct 
- 		goto exit;
- 	}
- 
--	memcpy(str_buf, buf, count);
--
- 	cmd.hdr.type = COMM_TYPE_H2D;
- 	cmd.hdr.category = COMM_CATEGORY_DEBUG;
- 	cmd.hdr.opcode = CMD_DBG_LOG_LEVEL;
+ 	/* Stage 2: Set up free list. */
+ 	memset(&info->shadow, 0, sizeof(info->shadow));
