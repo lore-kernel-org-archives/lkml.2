@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756004Ab0EOVT4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:19:56 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41757 "EHLO mgw2.diku.dk"
+	id S1755973Ab0EOVUR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:20:17 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51382 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755930Ab0EOVTx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:19:53 -0400
-Date: Sat, 15 May 2010 23:19:48 +0200 (CEST)
+	id S1755968Ab0EOVUM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:20:12 -0400
+Date: Sat, 15 May 2010 23:20:07 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "James E.J. Bottomley" <James.Bottomley@suse.de>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>, linux390@de.ibm.com,
+       linux-s390@vger.kernel.org, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 22/37] drivers/scsi/mpt2sas: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152319310.21345@ask.diku.dk>
+Subject: [PATCH 23/37] drivers/s390/char: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152319490.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,27 +43,41 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/scsi/mpt2sas/mpt2sas_scsih.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/s390/char/keyboard.c |   14 ++++++--------
+ 1 file changed, 6 insertions(+), 8 deletions(-)
 
-diff -u -p a/drivers/scsi/mpt2sas/mpt2sas_scsih.c b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
---- a/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-+++ b/drivers/scsi/mpt2sas/mpt2sas_scsih.c
-@@ -6056,7 +6056,7 @@ mpt2sas_scsih_event_callback(struct MPT2
- 		return 1;
+diff -u -p a/drivers/s390/char/keyboard.c b/drivers/s390/char/keyboard.c
+--- a/drivers/s390/char/keyboard.c
++++ b/drivers/s390/char/keyboard.c
+@@ -59,12 +59,11 @@ kbd_alloc(void) {
+ 		goto out_kbd;
+ 	for (i = 0; i < ARRAY_SIZE(key_maps); i++) {
+ 		if (key_maps[i]) {
+-			kbd->key_maps[i] =
+-				kmalloc(sizeof(u_short)*NR_KEYS, GFP_KERNEL);
++			kbd->key_maps[i] = kmemdup(key_maps[i],
++						   sizeof(u_short) * NR_KEYS,
++						   GFP_KERNEL);
+ 			if (!kbd->key_maps[i])
+ 				goto out_maps;
+-			memcpy(kbd->key_maps[i], key_maps[i],
+-			       sizeof(u_short)*NR_KEYS);
+ 		}
  	}
- 	sz = le16_to_cpu(mpi_reply->EventDataLength) * 4;
--	fw_event->event_data = kzalloc(sz, GFP_ATOMIC);
-+	fw_event->event_data = kmemdup(mpi_reply->EventData, sz, GFP_ATOMIC);
- 	if (!fw_event->event_data) {
- 		printk(MPT2SAS_ERR_FMT "failure at %s:%d/%s()!\n",
- 		    ioc->name, __FILE__, __LINE__, __func__);
-@@ -6064,8 +6064,6 @@ mpt2sas_scsih_event_callback(struct MPT2
- 		return 1;
- 	}
+ 	kbd->func_table = kzalloc(sizeof(func_table), GFP_KERNEL);
+@@ -83,12 +82,11 @@ kbd_alloc(void) {
+ 		kzalloc(sizeof(fn_handler_fn *) * NR_FN_HANDLER, GFP_KERNEL);
+ 	if (!kbd->fn_handler)
+ 		goto out_func;
+-	kbd->accent_table =
+-		kmalloc(sizeof(struct kbdiacruc)*MAX_DIACR, GFP_KERNEL);
++	kbd->accent_table = kmemdup(accent_table,
++				    sizeof(struct kbdiacruc) * MAX_DIACR,
++				    GFP_KERNEL);
+ 	if (!kbd->accent_table)
+ 		goto out_fn_handler;
+-	memcpy(kbd->accent_table, accent_table,
+-	       sizeof(struct kbdiacruc)*MAX_DIACR);
+ 	kbd->accent_table_size = accent_table_size;
+ 	return kbd;
  
--	memcpy(fw_event->event_data, mpi_reply->EventData,
--	    sz);
- 	fw_event->ioc = ioc;
- 	fw_event->VF_ID = mpi_reply->VF_ID;
- 	fw_event->VP_ID = mpi_reply->VP_ID;
