@@ -1,89 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0EONaq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 09:30:46 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27647 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751882Ab0EONao convert rfc822-to-8bit (ORCPT
+	id S1753507Ab0EONdy (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 09:33:54 -0400
+Received: from www84.your-server.de ([213.133.104.84]:56640 "EHLO
+	www84.your-server.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751988Ab0EONdx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 09:30:44 -0400
-MIME-Version: 1.0
-Message-ID: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-Date: Sat, 15 May 2010 06:29:25 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>, Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] x86: Export tsc related information in sysfs
-References: <1273887635-27610-1-git-send-email-venki@google.com
- 87tyq9mqrz.fsf@basil.nowhere.org>
-In-Reply-To: <87tyq9mqrz.fsf@basil.nowhere.org>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090208.4BEEA1C8.011A:SCFMA4539811,ss=1,fgs=0
+	Sat, 15 May 2010 09:33:53 -0400
+Subject: Re: [PATCH 4/4] add example files to the kernel sample directory
+From: Stefani Seibold <stefani@seibold.net>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org, gregkh@suse.de,
+       alan@lxorguk.ukuu.org.uk, tytso@mit.edu, iws@ovro.caltech.edu
+In-Reply-To: <20100514134609.54e05968.akpm@linux-foundation.org>
+References: <1273654167-31067-1-git-send-email-stefani@seibold.net>
+	 <1273654167-31067-5-git-send-email-stefani@seibold.net>
+	 <20100514134609.54e05968.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Date: Sat, 15 May 2010 15:33:38 +0200
+Message-ID: <1273930418.32082.12.camel@wall-e.seibold.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3.1 
+Content-Transfer-Encoding: 7bit
+X-Authenticated-Sender: stefani@seibold.net
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
->
-> > Kernel information about calibrated value of tsc_khz and
-> > tsc_stability (result of tsc warp test) are useful bits of
-> information
-> > for any app that wants to use TSC directly. Export this read_only
-> > information in sysfs.
+Hi,
+
+is the patch 0003-replace-the-old-non-generic-API.patch correct applied?
+
+This patch renames the files created by patch 
+
+0002-add-the-new-generic-kfifo-API.patch 
+
+from 
+kernel/kfifo-new.c into kernel/kfifo.c
+and
+include/linux/kfifo-new.h into include/linux/kfifo.h.
+
+Both destination files still exists, so git must overwrite them. This
+was done in request by Greg, not to break the kernel build at this point
+in the patch sequence.
+
+Stefani
+
+Am Freitag, den 14.05.2010, 13:46 -0700 schrieb Andrew Morton:
+> On Wed, 12 May 2010 10:49:27 +0200
+> stefani@seibold.net wrote:
 > 
-> Is this really a good idea?  It will encourage the applications
-> to use RDTSC directly, but there are all kinds of constraints on
+> > This patch add four examples to the kernel sample directory.
+> 
+> x86_64 allmodconfig:
+> 
+> samples/kfifo/dma-example.c: In function 'example_init':
+> samples/kfifo/dma-example.c:27: error: array type has incomplete element type
+> samples/kfifo/dma-example.c:41: error: implicit declaration of function 'kfifo_put'
+> samples/kfifo/dma-example.c:44: error: implicit declaration of function 'kfifo_get'
+> samples/kfifo/dma-example.c:48: error: implicit declaration of function 'kfifo_dma_in_prepare'
+> samples/kfifo/dma-example.c:48: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:48: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:48: error: negative width in bit-field '<anonymous>'
+> samples/kfifo/dma-example.c:54: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:54: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:54: error: negative width in bit-field '<anonymous>'
+> samples/kfifo/dma-example.c:60: error: implicit declaration of function 'sg_is_last'
+> samples/kfifo/dma-example.c:71: error: implicit declaration of function 'kfifo_dma_in_finish'
+> samples/kfifo/dma-example.c:74: error: implicit declaration of function 'kfifo_dma_out_prepare'
+> samples/kfifo/dma-example.c:74: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:74: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:74: error: negative width in bit-field '<anonymous>'
+> samples/kfifo/dma-example.c:80: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:80: warning: type defaults to 'int' in declaration of 'type name'
+> samples/kfifo/dma-example.c:80: error: negative width in bit-field '<anonymous>'
+> samples/kfifo/dma-example.c:97: error: implicit declaration of function 'kfifo_dma_out_finish'
+> samples/kfifo/dma-example.c:27: warning: unused variable 'sg'
+> make[2]: *** [samples/kfifo/dma-example.o] Error 1
+> make[2]: *** Waiting for unfinished jobs....
+> samples/kfifo/bytestream-example.c:44:52: error: macro "DECLARE_KFIFO" passed 3 arguments, but takes just 2
+> samples/kfifo/bytestream-example.c:44: warning: type defaults to 'int' in declaration of 'DECLARE_KFIFO'
+> samples/kfifo/bytestream-example.c: In function 'testfunc':
+> samples/kfifo/bytestream-example.c:56: error: 'test' undeclared (first use in this function)
+> samples/kfifo/bytestream-example.c:56: error: (Each undeclared identifier is reported only once
+> samples/kfifo/bytestream-example.c:56: error: for each function it appears in.)
+> samples/kfifo/bytestream-example.c:60: error: implicit declaration of function 'kfifo_put'
+> samples/kfifo/bytestream-example.c:83: error: implicit declaration of function 'kfifo_get'
+> samples/kfifo/bytestream-example.c: In function 'fifo_write':
+> samples/kfifo/bytestream-example.c:99: error: 'test' undeclared (first use in this function)
+> samples/kfifo/bytestream-example.c: In function 'fifo_read':
+> samples/kfifo/bytestream-example.c:115: error: 'test' undeclared (first use in this function)
+> samples/kfifo/bytestream-example.c: In function 'example_init':
+> samples/kfifo/bytestream-example.c:139: error: 'test' undeclared (first use in this function)
+> samples/kfifo/bytestream-example.c:139: error: 'testkfifo_buffer' undeclared (first use in this function)
+> make[2]: *** [samples/kfifo/bytestream-example.o] Error 1
+> samples/kfifo/record-example.c:53: error: syntax error before numeric constant
+> samples/kfifo/record-example.c:53: warning: type defaults to 'int' in declaration of 'mytest'
+> samples/kfifo/record-example.c:53: warning: data definition has no type or storage class
+> samples/kfifo/record-example.c:55: error: syntax error before 'test'
+> samples/kfifo/record-example.c:55: warning: type defaults to 'int' in declaration of 'test'
+> samples/kfifo/record-example.c:55: warning: data definition has no type or storage class
+> samples/kfifo/record-example.c: In function 'testfunc':
+> samples/kfifo/record-example.c:67: warning: passing argument 1 of 'kfifo_in' from incompatible pointer type
+> samples/kfifo/record-example.c:70: error: implicit declaration of function 'kfifo_peek_len'
+> samples/kfifo/record-example.c:75: warning: passing argument 1 of 'kfifo_in' from incompatible pointer type
+> samples/kfifo/record-example.c:78: warning: passing argument 1 of 'kfifo_len' from incompatible pointer type
+> samples/kfifo/record-example.c:81: warning: passing argument 1 of 'kfifo_out_peek' from incompatible pointer type
+> samples/kfifo/record-example.c:81: error: too few arguments to function 'kfifo_out_peek'
+> samples/kfifo/record-example.c:86: warning: passing argument 1 of 'kfifo_is_empty' from incompatible pointer type
+> samples/kfifo/record-example.c:87: warning: passing argument 1 of 'kfifo_out' from incompatible pointer type
+> samples/kfifo/record-example.c: In function 'fifo_write':
+> samples/kfifo/record-example.c:103: warning: passing argument 1 of 'kfifo_from_user' from incompatible pointer type
+> samples/kfifo/record-example.c: In function 'fifo_read':
+> samples/kfifo/record-example.c:119: warning: passing argument 1 of 'kfifo_to_user' from incompatible pointer type
+> samples/kfifo/record-example.c: In function 'example_init':
+> samples/kfifo/record-example.c:143: error: 'testkfifo_buffer' undeclared (first use in this function)
+> samples/kfifo/record-example.c:143: error: (Each undeclared identifier is reported only once
+> samples/kfifo/record-example.c:143: error: for each function it appears in.)
+> samples/kfifo/record-example.c:143: error: incompatible types in assignment
+> make[2]: *** [samples/kfifo/record-example.o] Error 1
+> samples/kfifo/inttype-example.c:44:41: error: macro "DEFINE_KFIFO" passed 3 arguments, but takes just 2
+> samples/kfifo/inttype-example.c:44: warning: type defaults to 'int' in declaration of 'DEFINE_KFIFO'
+> samples/kfifo/inttype-example.c: In function 'testfunc':
+> samples/kfifo/inttype-example.c:57: error: implicit declaration of function 'kfifo_put'
+> samples/kfifo/inttype-example.c:57: error: 'test' undeclared (first use in this function)
+> samples/kfifo/inttype-example.c:57: error: (Each undeclared identifier is reported only once
+> samples/kfifo/inttype-example.c:57: error: for each function it appears in.)
+> samples/kfifo/inttype-example.c:75: error: implicit declaration of function 'kfifo_peek'
+> samples/kfifo/inttype-example.c:79: error: implicit declaration of function 'kfifo_get'
+> samples/kfifo/inttype-example.c: In function 'fifo_write':
+> samples/kfifo/inttype-example.c:95: error: 'test' undeclared (first use in this function)
+> samples/kfifo/inttype-example.c: In function 'fifo_read':
+> samples/kfifo/inttype-example.c:111: error: 'test' undeclared (first use in this function)
+> 
 
-Indeed, that is what it is intended to do.
 
-> that. Even the kernel has a hard time with them, how likely
-> is it that applications will get all that right?
-
-That's the point of exposing the tsc_reliable kernel data.
-If the processor has Invariant TSC and the system has
-successfully passed Ingo's warp test and, as a result
-the kernel is using TSC as a clocksource, why not enable
-userland apps that need to obtain timestamp data
-tens or hundreds of thousands of times per second to
-also use the TSC directly?
- 
-> It would be better to fix them to use the vsyscalls instead.
-> Or if they can't use the vsyscalls for some reason today fix them.
-
-The problem is from an app point-of-view there is no vsyscall.
-There are two syscalls: gettimeofday and clock_gettime.  Sometimes,
-if it gets lucky, they turn out to be very fast and sometimes
-it doesn't get lucky and they are VERY slow (resulting in a performance
-hit of 10% or more), depending on a number of factors completely
-out of the control of the app and even undetectable to the app.
-
-Note also that even vsyscall with TSC as the clocksource will
-still be significantly slower than rdtsc, especially in the
-common case where a timestamp is directly stored and the
-delta between two timestamps is later evaluated; in the
-vsyscall case, each timestamp is a function call and a convert
-to nsec but in the TSC case, each timestamp is a single
-instruction.
-
-> This way if anything changes again in TSC the kernel could
-> shield the applications.
-
-If tsc_reliable is 1, the system and the kernel are guaranteeing
-to the app that nothing will change in the TSC.  In an Invariant
-TSC system that has passed Ingo's warp test (to eliminate the
-possibility of a fixed interprocessor TSC gap due to a broken BIOS
-in a multi-node NUMA system), if anything changes in the clock
-signal that drives the TSC, the system is badly broken and far
-worse things -- like inter-processor cache incoherency -- may happen.
-
-Is it finally possible to get past the horrible SMP TSC problems
-of the past and allow apps, under the right conditions, to be able
-to use rdtsc again? This patch argues "yes".
