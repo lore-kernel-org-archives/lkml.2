@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755803Ab0EOBmV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 21:42:21 -0400
-Received: from mail-gx0-f217.google.com ([209.85.217.217]:42401 "EHLO
-	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab0EOBmO (ORCPT
+	id S1756165Ab0EOBmW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 21:42:22 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:57074 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755316Ab0EOBmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 21:42:14 -0400
+	Fri, 14 May 2010 21:42:16 -0400
 From: Will Drewry <wad@chromium.org>
 To: dm-devel@redhat.com, linux-kernel@vger.kernel.org
 Cc: agk@redhat.com, snitzer@redhat.com, Will Drewry <wad@chromium.org>
-Subject: [RFC PATCH v2 1/2] dm: allow a dm-fs-style device to be shared via dm-ioctl
-Date: Fri, 14 May 2010 20:41:40 -0500
-Message-Id: <1273887701-2152-1-git-send-email-wad@chromium.org>
+Subject: [RFC PATCH v2 2/2] init: boot to device-mapper targets without an initr*
+Date: Fri, 14 May 2010 20:41:41 -0500
+Message-Id: <1273887701-2152-2-git-send-email-wad@chromium.org>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <20100514035347.GA20636@redhat.com>
 References: <20100514035347.GA20636@redhat.com>
@@ -20,230 +20,435 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This change adds one function which is used for binding
-a given mapped device to a name+uuid in the dm-ioctl hash table.
-In addition, it ensures that public functions are available that
-allow mapped devices and tables to be created and associated
-with the shared code paths with dm-ioctl:
-- suspend flags are available
-- dm_table_complete() now prepares a table for use completely
+Add a dm= kernel parameter modeled after the md= parameter from
+do_mounts_md.  It allows for device-mapper targets to be configured at
+boot time for use early in the boot process (as the root device or
+otherwise).
+
+The format is dm="name uuid ro,table line 1,table line 2,...".  The
+parser expects the comma to be safe to use as a newline substitute but,
+otherwise, uses the normal separator of space.  Some attempt has been
+made to make it forgiving of additional spaces (using skip_spaces()).
+
+A mapped device created during boot will be assigned a minor of 0 and
+may be access via /dev/dm-0.
+
+An example dm-linear root with no uuid may look like:
+
+  root=/dev/dm-0  dm="lroot none 0, 0 4096 linear 98:16 0, 4096 4096 linear 98:32 0"
+
+Once udev is started, /dev/dm-0 will become /dev/mapper/lroot.
 
 Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- drivers/md/dm-ioctl.c         |   72 +++++++++++++++++++++-------------------
- drivers/md/dm-table.c         |   50 ++++++++++++++++++++++++++++-
- drivers/md/dm.h               |    6 ---
- include/linux/device-mapper.h |   12 +++++++
- 4 files changed, 99 insertions(+), 41 deletions(-)
+ init/Makefile       |    1 +
+ init/do_mounts.c    |    1 +
+ init/do_mounts.h    |   10 ++
+ init/do_mounts_dm.c |  353 +++++++++++++++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 365 insertions(+), 0 deletions(-)
+ create mode 100644 init/do_mounts_dm.c
 
-diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-index d7500e1..006be9d 100644
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1112,28 +1112,9 @@ static int populate_table(struct dm_table *table,
- 		next = spec->next;
- 	}
+diff --git a/init/Makefile b/init/Makefile
+index 0bf677a..1677baa 100644
+--- a/init/Makefile
++++ b/init/Makefile
+@@ -14,6 +14,7 @@ mounts-y			:= do_mounts.o
+ mounts-$(CONFIG_BLK_DEV_RAM)	+= do_mounts_rd.o
+ mounts-$(CONFIG_BLK_DEV_INITRD)	+= do_mounts_initrd.o
+ mounts-$(CONFIG_BLK_DEV_MD)	+= do_mounts_md.o
++mounts-$(CONFIG_BLK_DEV_DM)	+= do_mounts_dm.o
  
--	r = dm_table_set_type(table);
--	if (r) {
--		DMWARN("unable to set table type");
--		return r;
--	}
--
- 	return dm_table_complete(table);
- }
+ # dependencies on generated files need to be listed explicitly
+ $(obj)/version.o: include/generated/compile.h
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 02e3ca4..0848a5b 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -383,6 +383,7 @@ void __init prepare_namespace(void)
+ 	wait_for_device_probe();
  
--static int table_prealloc_integrity(struct dm_table *t,
--				    struct mapped_device *md)
--{
--	struct list_head *devices = dm_table_get_devices(t);
--	struct dm_dev_internal *dd;
--
--	list_for_each_entry(dd, devices, list)
--		if (bdev_get_integrity(dd->dm_dev.bdev))
--			return blk_integrity_register(dm_disk(md), NULL);
--
--	return 0;
--}
--
- static int table_load(struct dm_ioctl *param, size_t param_size)
- {
- 	int r;
-@@ -1155,21 +1136,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
- 		goto out;
- 	}
+ 	md_run_setup();
++	dm_run_setup();
  
--	r = table_prealloc_integrity(t, md);
--	if (r) {
--		DMERR("%s: could not register integrity profile.",
--		      dm_device_name(md));
--		dm_table_destroy(t);
--		goto out;
--	}
--
--	r = dm_table_alloc_md_mempools(t);
--	if (r) {
--		DMWARN("unable to allocate mempools for this table");
--		dm_table_destroy(t);
--		goto out;
--	}
--
- 	down_write(&_hash_lock);
- 	hc = dm_get_mdptr(md);
- 	if (!hc || hc->md != md) {
-@@ -1637,6 +1603,44 @@ void dm_interface_exit(void)
- 	dm_hash_exit();
- }
+ 	if (saved_root_name[0]) {
+ 		root_device_name = saved_root_name;
+diff --git a/init/do_mounts.h b/init/do_mounts.h
+index f5b978a..09d2286 100644
+--- a/init/do_mounts.h
++++ b/init/do_mounts.h
+@@ -74,3 +74,13 @@ void md_run_setup(void);
+ static inline void md_run_setup(void) {}
  
+ #endif
 +
-+/**
-+ * dm_ioctl_export - Permanently export a mapped device via the ioctl interface
-+ * @md: Pointer to mapped_device
-+ * @name: Buffer (size DM_NAME_LEN) for name
-+ * @uuid: Buffer (size DM_UUID_LEN) for uuid or NULL if not desired
++#ifdef CONFIG_BLK_DEV_DM
++
++void dm_run_setup(void);
++
++#else
++
++static inline void dm_run_setup(void) {}
++
++#endif
+diff --git a/init/do_mounts_dm.c b/init/do_mounts_dm.c
+new file mode 100644
+index 0000000..7b188e2
+--- /dev/null
++++ b/init/do_mounts_dm.c
+@@ -0,0 +1,353 @@
++/* do_mounts_dm.c
++ * Copyright (C) 2010 The Chromium OS Authors <chromium-os-dev@chromium.org>
++ *                    All Rights Reserved.
++ * Based on do_mounts_md.c
++ *
++ * This file is released under the GPL.
 + */
-+int dm_ioctl_export(struct mapped_device *md, const char *name, const char *uuid)
-+{
-+	int r = 0;
-+	struct hash_cell *hc;
++#include <linux/device-mapper.h>
++#include <linux/fs.h>
++#include <linux/string.h>
 +
-+	if (!md) {
-+		r = -ENXIO;
-+		goto out;
-+	}
++#include "do_mounts.h"
 +
-+	/* The name and uuid can only be set once. */
-+	mutex_lock(&dm_hash_cells_mutex);
-+	hc = dm_get_mdptr(md);
-+	mutex_unlock(&dm_hash_cells_mutex);
-+	if (hc) {
-+		DMERR("%s: already exported", dm_device_name(md));
-+		r = -ENXIO;
-+		goto out;
-+	}
++#define DM_MAX_NAME 32
++#define DM_MAX_UUID 129
++#define DM_NO_UUID "none"
 +
-+	r = dm_hash_insert(name, uuid, md);
-+	if (r) {
-+		DMERR("%s: could not bind to '%s'", dm_device_name(md), name);
-+		goto out;
-+	}
++#define DM_MSG_PREFIX "init"
 +
-+	/* Let udev know we've changed. */
-+	dm_kobject_uevent(md, KOBJ_CHANGE, dm_get_event_nr(md));
-+out:
-+	return r;
-+}
- /**
-  * dm_copy_name_and_uuid - Copy mapped device name & uuid into supplied buffers
-  * @md: Pointer to mapped_device
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 9924ea2..ef6a3ab 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -900,7 +900,7 @@ static int setup_indexes(struct dm_table *t)
- /*
-  * Builds the btree to index the map.
-  */
--int dm_table_complete(struct dm_table *t)
-+int dm_table_build_index(struct dm_table *t)
- {
- 	int r = 0;
- 	unsigned int leaf_nodes;
-@@ -919,6 +919,54 @@ int dm_table_complete(struct dm_table *t)
- 	return r;
- }
- 
++/* Separators used for parsing the dm= argument. */
++#define DM_FIELD_SEP ' '
++#define DM_LINE_SEP ','
++
 +/*
-+ * Register the mapped device for blk_integrity support if
-+ * the underlying devices support it.
++ * When the device-mapper and any targets are compiled into the kernel
++ * (not a module), one target may be created and used as the root device at
++ * boot time with the parameters given with the boot line dm=...
++ * The code for that is here.
 + */
-+static int dm_table_prealloc_integrity(struct dm_table *t, struct mapped_device *md)
++
++struct dm_setup_target {
++	sector_t begin;
++	sector_t length;
++	char *type;
++	char *params;
++	/* simple singly linked list */
++	struct dm_setup_target *next;
++};
++
++static struct {
++	int minor;
++	int ro;
++	char name[DM_MAX_NAME];
++	char uuid[DM_MAX_UUID];
++	char *targets;
++	struct dm_setup_target *target;
++	int target_count;
++} dm_setup_args __initdata;
++
++static __initdata int dm_early_setup = 0;
++
++static size_t __init get_dm_option(char *str, char **next, char sep)
 +{
-+	struct list_head *devices = dm_table_get_devices(t);
-+	struct dm_dev_internal *dd;
++	size_t len = 0;
++	char *endp = NULL;
 +
-+	list_for_each_entry(dd, devices, list)
-+		if (bdev_get_integrity(dd->dm_dev.bdev))
-+			return blk_integrity_register(dm_disk(md), NULL);
++	if (!str)
++		return 0;
 +
++	endp = strchr(str, sep);
++	if (!endp) {  /* act like strchrnul */
++		len = strlen(str);
++		endp = str + len;
++	} else {
++		len = endp - str;
++	}
++
++	if (endp == str)
++		return 0;
++
++	if (!next)
++		return len;
++
++	if (*endp == 0) {
++		/* Don't advance past the nul. */
++		*next = endp;
++	} else {
++		*next = endp + 1;
++	}
++	return len;
++}
++
++static int __init dm_setup_args_init(void)
++{
++	dm_setup_args.minor = 0;
++	dm_setup_args.ro = 0;
++	dm_setup_args.target = NULL;
++	dm_setup_args.target_count = 0;
 +	return 0;
 +}
 +
-+/*
-+ * Prepares the table for use by building the indices,
-+ * setting the type, and allocating mempools.
-+ */
-+int dm_table_complete(struct dm_table *t)
++static int __init dm_setup_cleanup(void)
 +{
-+	int r = 0;
-+	r = dm_table_set_type(t);
-+	if (r) {
-+		DMERR("unable to set table type");
-+		return r;
++	struct dm_setup_target *target = dm_setup_args.target;
++	struct dm_setup_target *old_target = NULL;
++	while (target) {
++		if (target->type)
++			kfree(target->type);
++		if (target->params)
++			kfree(target->params);
++		old_target = target;
++		target = target->next;
++		kfree(old_target);
++		dm_setup_args.target_count--;
 +	}
-+
-+	r = dm_table_build_index(t);
-+	if (r) {
-+		DMERR("unable to build btrees");
-+		return r;
-+	}
-+
-+	r = dm_table_prealloc_integrity(t, t->md);
-+	if (r) {
-+		DMERR("could not register integrity profile.");
-+		return r;
-+	}
-+
-+	r = dm_table_alloc_md_mempools(t);
-+	if (r) {
-+		DMERR("unable to allocate mempools");
-+	}
-+	return r;
++	BUG_ON(dm_setup_args.target_count);
++	return 0;
 +}
 +
- static DEFINE_MUTEX(_event_lock);
- void dm_table_event_callback(struct dm_table *t,
- 			     void (*fn)(void *), void *context)
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index bad1724..782d867 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -17,12 +17,6 @@
- #include <linux/hdreg.h>
- 
- /*
-- * Suspend feature flags
-- */
--#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
--#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
--
--/*
-  * Type of table and mapped_device's mempool
-  */
- #define DM_TYPE_NONE		0
-diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
-index 1381cd9..6c1c230 100644
---- a/include/linux/device-mapper.h
-+++ b/include/linux/device-mapper.h
-@@ -215,6 +215,18 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
- void *dm_get_mdptr(struct mapped_device *md);
- 
- /*
-+ * Export the device via the ioctl interface (uses mdptr).
-+ */
-+int dm_ioctl_export(struct mapped_device *md, const char *name,
-+		    const char *uuid);
++static char * __init dm_setup_parse_device_args(char *str)
++{
++	char *next = NULL;
++	size_t len = 0;
++
++	/* Grab the logical name of the device to be exported to udev */
++	len = get_dm_option(str, &next, DM_FIELD_SEP);
++	if (!len) {
++		DMERR("failed to parse device name");
++		goto parse_fail;
++	}
++	len = min(len + 1, sizeof(dm_setup_args.name));
++	strlcpy(dm_setup_args.name, str, len + 1);  /* includes nul */
++	str = skip_spaces(next);
++
++	/* Grab the UUID value or "none" */
++	len = get_dm_option(str, &next, DM_FIELD_SEP);
++	if (!len) {
++		DMERR("failed to parse device uuid");
++		goto parse_fail;
++	}
++	len = min(len + 1, sizeof(dm_setup_args.uuid));
++	strlcpy(dm_setup_args.uuid, str, len);
++	str = skip_spaces(next);
++
++	/* If ro is non-zero, the table will be create FMODE_READ. */
++	if (*str++ != '0')
++		dm_setup_args.ro = 1;
++	if (*str++ != ',') {
++		DMERR("failed to parse table mode");
++		goto parse_fail;
++	}
++	str = skip_spaces(str);
++
++	return str;
++
++parse_fail:
++	return NULL;
++}
++
++static int __init dm_setup_parse_targets(char *str)
++{
++	char *next = NULL;
++	size_t len = 0;
++	struct dm_setup_target **target = NULL;
++
++	/* Targets are defined as per the table format but with a
++	 * comma as a newline separator. */
++	target = &dm_setup_args.target;
++	while (str && *str) {
++		*target = kzalloc(sizeof(struct dm_setup_target), GFP_KERNEL);
++		if (!*target) {
++			DMERR("failed to allocate memory for target %d",
++			      dm_setup_args.target_count);
++			goto parse_fail;
++		}
++		dm_setup_args.target_count++;
++
++		(*target)->begin = simple_strtoull(str, &next, 10);
++		if (!next || *next != DM_FIELD_SEP) {
++			DMERR("failed to parse starting sector for target %d",
++			      dm_setup_args.target_count - 1);
++			goto parse_fail;
++		}
++		str = skip_spaces(next + 1);
++
++		(*target)->length = simple_strtoull(str, &next, 10);
++		if (!next || *next != DM_FIELD_SEP) {
++			DMERR("failed to parse length for target %d",
++			      dm_setup_args.target_count - 1);
++			goto parse_fail;
++		}
++		str = skip_spaces(next + 1);
++
++		len = get_dm_option(str, &next, DM_FIELD_SEP);
++		if (!len ||
++		    !((*target)->type = kstrndup(str, len, GFP_KERNEL))) {
++			DMERR("failed to parse type for target %d",
++			      dm_setup_args.target_count - 1);
++			goto parse_fail;
++		}
++		str = skip_spaces(next);
++
++		len = get_dm_option(str, &next, DM_LINE_SEP);
++		if (!len ||
++		    !((*target)->params = kstrndup(str, len, GFP_KERNEL))) {
++			DMERR("failed to parse params for target %d",
++			      dm_setup_args.target_count - 1);
++			goto parse_fail;
++		}
++		str = skip_spaces(next);
++
++		target = &((*target)->next);
++	}
++	DMDEBUG("parsed %d targets", dm_setup_args.target_count);
++
++	return 0;
++
++parse_fail:
++	return 1;
++}
 +
 +/*
-+ * Suspend feature flags
++ * Parse the command-line parameters given our kernel, but do not
++ * actually try to invoke the DM device now; that is handled by
++ * dm_setup_drive after the low-level disk drivers have initialised.
++ * dm format is as follows:
++ *  dm="name uuid fmode,[table line 1],[table line 2],..."
++ * May be used with root=/dev/dm-0 as it always uses the first dm minor.
 + */
-+#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
-+#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
 +
-+/*
-  * A device can still be used while suspended, but I/O is deferred.
-  */
- int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
++static int __init dm_setup(char *str)
++{
++	dm_setup_args_init();
++
++	str = dm_setup_parse_device_args(str);
++	if (!str) {
++		DMDEBUG("str is NULL");
++		goto parse_fail;
++	}
++
++	/* Target parsing is delayed until we have dynamic memory */
++	dm_setup_args.targets = str;
++
++	printk(KERN_INFO "dm: will configure '%s' on dm-%d\n",
++	       dm_setup_args.name, dm_setup_args.minor);
++
++	dm_early_setup = 1;
++	return 1;
++
++parse_fail:
++	printk(KERN_WARNING "dm: Invalid arguments supplied to dm=.\n");
++	return 0;
++}
++
++
++static void __init dm_setup_drive(void)
++{
++	struct mapped_device *md = NULL;
++	struct dm_table *table = NULL;
++	struct dm_setup_target *target;
++	char *uuid = dm_setup_args.uuid;
++	fmode_t fmode = FMODE_READ;
++
++	/* Finish parsing the targets. */
++	if (dm_setup_parse_targets(dm_setup_args.targets)) {
++		goto parse_fail;
++	}
++
++	if (dm_create(dm_setup_args.minor, &md)) {
++		DMDEBUG("failed to create the device");
++		goto dm_create_fail;
++	}
++	DMDEBUG("created device '%s'", dm_device_name(md));
++
++	/* In addition to flagging the table below, the disk must be
++	 * set explicitly ro/rw. */
++	if (dm_setup_args.ro) {
++		set_disk_ro(dm_disk(md), 1);
++	} else {
++		set_disk_ro(dm_disk(md), 0);
++	}
++
++	fmode |= (dm_setup_args.ro ? 0 : FMODE_WRITE);
++	if (dm_table_create(&table, fmode, dm_setup_args.target_count, md)) {
++		DMDEBUG("failed to create the table");
++		goto dm_table_create_fail;
++	}
++
++	target = dm_setup_args.target;
++	while (target) {
++		DMINFO("adding target '%llu %llu %s %s'",
++		       (unsigned long long) target->begin,
++		       (unsigned long long) target->length, target->type,
++		       target->params);
++		if (dm_table_add_target(table, target->type, target->begin,
++					target->length, target->params)) {
++			DMDEBUG("failed to add the target to the table");
++			goto add_target_fail;
++		}
++		target = target->next;
++	}
++
++	if (dm_table_complete(table)) {
++		DMDEBUG("failed to complete the table");
++		goto table_complete_fail;
++	}
++
++	/* Suspend the device so that we can bind it to the table. */
++	if (dm_suspend(md, DM_SUSPEND_NOFLUSH_FLAG)) {
++		DMDEBUG("failed to suspend the device pre-bind");
++		goto suspend_fail;
++	}
++
++	/* Bind the table to the device. This is the only way to associate
++	 * md->map with the table and set the disk capacity directly. */
++	if (dm_swap_table(md, table)) {  /* should return NULL. */
++		DMDEBUG("failed to bind the device to the table");
++		goto table_bind_fail;
++	}
++	
++	/* Finally, resume and the device should be ready. */
++	if (dm_resume(md)) {
++		DMDEBUG("failed to resume the device");
++		goto resume_fail;
++	}
++
++	/* Export the dm device via the ioctl interface */
++	if (!strcmp(DM_NO_UUID, dm_setup_args.uuid))
++		uuid = NULL;
++	if (dm_ioctl_export(md, dm_setup_args.name, uuid)) {
++		DMDEBUG("failed to export device with given name and uuid");
++		goto export_fail;
++	}
++	printk(KERN_INFO "dm: dm-%d is ready\n", dm_setup_args.minor);
++
++	dm_setup_cleanup();
++	return;
++
++export_fail:
++resume_fail:
++table_bind_fail:
++suspend_fail:
++table_complete_fail:
++add_target_fail:
++	dm_table_put(table);
++dm_table_create_fail:
++	dm_put(md);
++dm_create_fail:
++	dm_setup_cleanup();
++parse_fail:
++	printk(KERN_WARNING "dm: starting dm-%d (%s) failed\n",
++	       dm_setup_args.minor, dm_setup_args.name);
++}
++
++__setup("dm=", dm_setup);
++
++void __init dm_run_setup(void)
++{
++	if (!dm_early_setup)
++		return;
++	printk(KERN_INFO "dm: attempting early device configuration.\n");
++	dm_setup_drive();
++}
 -- 
 1.7.0.4
 
