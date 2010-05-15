@@ -1,86 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752615Ab0EOHht (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 03:37:49 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52079 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751744Ab0EOHhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 03:37:47 -0400
-Date: Sat, 15 May 2010 09:37:32 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Don Zickus <dzickus@redhat.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
-Subject: Re: linux-next: build failure after merge of the final tree
-Message-ID: <20100515073732.GA17120@elte.hu>
-References: <20100514155312.9684cb9d.sfr@canb.auug.org.au>
- <20100514150343.GQ15159@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514150343.GQ15159@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1752339Ab0EOHqL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 03:46:11 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:46863 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750771Ab0EOHqJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 03:46:09 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
+         :x-mailer:mime-version:content-type:content-transfer-encoding;
+        b=nVufhDVqWH7oPScFIUpO8BROatRuSenqKiWvEDj1Yo6QG3hCAWWj65iNVLF403ewNN
+         yuRKBdOxEgseaQtEJpeee8MikEvDKCZMFWrGs7hcp2e+04Edrm/jq6Yjkwx0WgUzWLY4
+         iAXm9hqDEgFM0q8sUPB9J7cbAVMcCNY8+Iiag=
+Date: Sat, 15 May 2010 10:46:02 +0300
+From: Pekka Paalanen <pq@iki.fi>
+To: rostedt@goodmis.org
+Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Larry Finger <Larry.Finger@lwfinger.net>
+Subject: Re: [PATCH 3/4] tracing: Allow mmio tracer to display
+ trace_printk() and other events
+Message-ID: <20100515104602.59c1f0e1@daedalus.pq.iki.fi>
+In-Reply-To: <1273763483.27703.991.camel@gandalf.stny.rr.com>
+References: <20100513012110.558313399@goodmis.org>
+	<20100513012302.352845720@goodmis.org>
+	<20100513115414.7688b51d@daedalus.pq.iki.fi>
+	<1273752909.27703.809.camel@gandalf.stny.rr.com>
+	<20100513152915.3d3f852b@daedalus.pq.iki.fi>
+	<1273763483.27703.991.camel@gandalf.stny.rr.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Sorry, I'm not at my email every day. Real life...
 
-* Don Zickus <dzickus@redhat.com> wrote:
+On Thu, 13 May 2010 11:11:23 -0400
+Steven Rostedt <rostedt@goodmis.org> wrote:
 
-> Sorry for the mess.  I think the following patch 
-> cleans it up.  The last piece deals with the sparc 
-> mess, the other two pieces should deal with the x86 
-> fallout.
+> On Thu, 2010-05-13 at 15:29 +0300, Pekka Paalanen wrote:
+> > On Thu, 13 May 2010 08:15:09 -0400
+> 
+> > > It only displays other events if the user enabled those
+> > > events.
+> > > 
+> > > But that said, I don't want to break existing userspace
+> > > tools. I can add a mmiotrace option "mmiotrace_all_events",
+> > > if the user wants to see all events within the mmiotracer
+> > > then they can just enable that option, otherwise, the
+> > > mmiotracer will act like it currently does.
+> > > 
+> > > How does that sound?
+> > 
+> > That would be fine. Is it not redundant with what you said in
+> > your first sentence?
+> > 
+> 
+> Right now with this patch as is. When you enable the mmiotracer it
+> clears the ring buffer. But if someone previously enabled an
+> event (like sched_switch for example) then that event will appear
+> in the output of the tracer.
+> 
+> The user will need to disable that event and restart the
+> mmiotracer so the output will not break the userspace tools. Is
+> this OK?
 
-This patch breaks x86:
+I think it is ok. No non-mmiotrace events are enabled automatically,
+right? Except perhaps trace_printk()?
 
-arch/x86/built-in.o: In function `show_stack_log_lvl':
-(.text+0xc2c0): undefined reference to `touch_nmi_watchdog'
-arch/x86/built-in.o: In function `print_trace_address':
-dumpstack.c:(.text+0xd893): undefined reference to `touch_nmi_watchdog'
-arch/x86/built-in.o: In function `mce_timed_out':
-mce.c:(.text+0x20008): undefined reference to `touch_nmi_watchdog'
-arch/x86/built-in.o: In function `enable_lapic_nmi_watchdog':
-(.text+0x261f2): undefined reference to `touch_nmi_watchdog'
+If a user enables other events while mmiotracing, I would
+assume he knows what he is doing. End users doing dumps per
+request never even know about other kinds of tracing than
+mmiotrace.
 
-CONFIG_CLOCKSOURCE_WATCHDOG=y
-CONFIG_PERF_EVENTS_NMI=y
-CONFIG_IPMI_WATCHDOG=m
-CONFIG_WATCHDOG=y
-CONFIG_WATCHDOG_NOWAYOUT=y
-# CONFIG_SOFT_WATCHDOG is not set
-CONFIG_HP_WATCHDOG=y
-CONFIG_SBC_EPX_C3_WATCHDOG=m
-# CONFIG_PCIPCWATCHDOG is not set
-# CONFIG_USBPCWATCHDOG is not set
-CONFIG_HAVE_FTRACE_NMI_ENTER=y
-CONFIG_FTRACE_NMI_ENTER=y
+> If not, then my suggestion is to have an mmiotracer option that
+> keeps it from printing out any event except for the ones it knows
+> about.
+> 
+> The reason I added this patch in the first place was because Larry
+> Finger was using the mmiotrace with trace_printk() and the
+> current code does not print out the trace_printk() when
+> mmiotracer is active.
 
-I'd _strongly_ suggest to simplify the code. There's 
-a few things that could be done to that end:
+If this is *only* about trace_printk(), why not make a handler
+for it to emit MARK lines? Actually, I somehow assumed that
+would have been the case, but apparently the event type is
+different. I do not recall these things too well anymore.
 
-- just have a single watchdog option and dont split 
-  the soft-dog from the hard-dog.
 
-- use config options to define default behavior: i.e.
-  whether the soft-dog and hard-dog is enabled by default,
-  but otherwise keep them both included.
+Thanks for keeping me in the loop.
 
-- provide a smooth pathway for architectures that 
-  have an NMI watchdog right now. Dont overlap their 
-  symbols for example.
-
-... and similar measures.
-
-Thanks,
-
-	Ingo
+-- 
+Pekka Paalanen
+http://www.iki.fi/pq/
