@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756137Ab0EOVUf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:20:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41762 "EHLO mgw2.diku.dk"
+	id S1756265Ab0EOVUz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:20:55 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51393 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753029Ab0EOVUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:20:31 -0400
-Date: Sat, 15 May 2010 23:20:26 +0200 (CEST)
+	id S1755789Ab0EOVUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:20:50 -0400
+Date: Sat, 15 May 2010 23:20:45 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Stefano Brivio <stefano.brivio@polimi.it>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 24/37] drivers/net/wireless/b43: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152320070.21345@ask.diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 25/37] drivers/net/usb: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152320270.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,26 +42,39 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/b43/dma.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/net/usb/asix.c    |    3 +--
+ drivers/net/usb/mcs7830.c |    4 +---
+ 2 files changed, 2 insertions(+), 5 deletions(-)
 
-diff -u -p a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
---- a/drivers/net/wireless/b43/dma.c
-+++ b/drivers/net/wireless/b43/dma.c
-@@ -1221,14 +1221,14 @@ static int dma_tx_fragment(struct b43_dm
- 	meta->dmaaddr = map_descbuffer(ring, skb->data, skb->len, 1);
- 	/* create a bounce buffer in zone_dma on mapping failure. */
- 	if (b43_dma_mapping_error(ring, meta->dmaaddr, skb->len, 1)) {
--		priv_info->bouncebuffer = kmalloc(skb->len, GFP_ATOMIC | GFP_DMA);
-+		priv_info->bouncebuffer = kmemdup(skb->data, skb->len,
-+						  GFP_ATOMIC | GFP_DMA);
- 		if (!priv_info->bouncebuffer) {
- 			ring->current_slot = old_top_slot;
- 			ring->used_slots = old_used_slots;
- 			err = -ENOMEM;
- 			goto out_unmap_hdr;
- 		}
--		memcpy(priv_info->bouncebuffer, skb->data, skb->len);
+diff -u -p a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
+--- a/drivers/net/usb/asix.c
++++ b/drivers/net/usb/asix.c
+@@ -224,10 +224,9 @@ static int asix_write_cmd(struct usbnet 
+ 		   cmd, value, index, size);
  
- 		meta->dmaaddr = map_descbuffer(ring, priv_info->bouncebuffer, skb->len, 1);
- 		if (b43_dma_mapping_error(ring, meta->dmaaddr, skb->len, 1)) {
+ 	if (data) {
+-		buf = kmalloc(size, GFP_KERNEL);
++		buf = kmemdup(data, size, GFP_KERNEL);
+ 		if (!buf)
+ 			goto out;
+-		memcpy(buf, data, size);
+ 	}
+ 
+ 	err = usb_control_msg(
+diff -u -p a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
+--- a/drivers/net/usb/mcs7830.c
++++ b/drivers/net/usb/mcs7830.c
+@@ -142,12 +142,10 @@ static int mcs7830_set_reg(struct usbnet
+ 	int ret;
+ 	void *buffer;
+ 
+-	buffer = kmalloc(size, GFP_NOIO);
++	buffer = kmemdup(data, size, GFP_NOIO);
+ 	if (buffer == NULL)
+ 		return -ENOMEM;
+ 
+-	memcpy(buffer, data, size);
+-
+ 	ret = usb_control_msg(xdev, usb_sndctrlpipe(xdev, 0), MCS7830_WR_BREQ,
+ 			      MCS7830_WR_BMREQ, 0x0000, index, buffer,
+ 			      size, MCS7830_CTRL_TIMEOUT);
