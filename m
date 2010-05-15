@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755391Ab0EOVQb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:16:31 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:41696 "EHLO mgw2.diku.dk"
+	id S1755435Ab0EOVQr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:16:47 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41702 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754731Ab0EOVQ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:16:27 -0400
-Date: Sat, 15 May 2010 23:16:21 +0200 (CEST)
+	id S1755161Ab0EOVQo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:16:44 -0400
+Date: Sat, 15 May 2010 23:16:39 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Alexey Starikovskiy <astarikovskiy@suse.de>, Len Brown <lenb@kernel.org>,
-       linux-acpi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 11/37] drivers/acpi: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152316030.21345@ask.diku.dk>
+To: Luciano Coelho <luciano.coelho@nokia.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 12/37] drivers/net/wireless/wl12xx: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152316220.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,21 +43,44 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/acpi/ec.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/wl12xx/wl1271_main.c |    8 ++------
+ 1 file changed, 2 insertions(+), 6 deletions(-)
 
-diff -u -p a/drivers/acpi/ec.c b/drivers/acpi/ec.c
---- a/drivers/acpi/ec.c
-+++ b/drivers/acpi/ec.c
-@@ -1027,10 +1027,9 @@ int __init acpi_ec_ecdt_probe(void)
- 		/* Don't trust ECDT, which comes from ASUSTek */
- 		if (!EC_FLAGS_VALIDATE_ECDT)
- 			goto install;
--		saved_ec = kmalloc(sizeof(struct acpi_ec), GFP_KERNEL);
-+		saved_ec = kmemdup(boot_ec, sizeof(struct acpi_ec), GFP_KERNEL);
- 		if (!saved_ec)
- 			return -ENOMEM;
--		memcpy(saved_ec, boot_ec, sizeof(struct acpi_ec));
- 	/* fall through */
+diff -u -p a/drivers/net/wireless/wl12xx/wl1271_main.c b/drivers/net/wireless/wl12xx/wl1271_main.c
+--- a/drivers/net/wireless/wl12xx/wl1271_main.c
++++ b/drivers/net/wireless/wl12xx/wl1271_main.c
+@@ -573,7 +573,7 @@ static int wl1271_fetch_nvs(struct wl127
+ 		goto out;
  	}
+ 
+-	wl->nvs = kmalloc(sizeof(struct wl1271_nvs_file), GFP_KERNEL);
++	wl->nvs = kmemdup(fw->data, sizeof(struct wl1271_nvs_file), GFP_KERNEL);
+ 
+ 	if (!wl->nvs) {
+ 		wl1271_error("could not allocate memory for the nvs file");
+@@ -581,8 +581,6 @@ static int wl1271_fetch_nvs(struct wl127
+ 		goto out;
+ 	}
+ 
+-	memcpy(wl->nvs, fw->data, sizeof(struct wl1271_nvs_file));
+-
+ out:
+ 	release_firmware(fw);
+ 
+@@ -2350,15 +2348,13 @@ struct ieee80211_hw *wl1271_alloc_hw(voi
+ 		goto err_hw_alloc;
+ 	}
+ 
+-	plat_dev = kmalloc(sizeof(wl1271_device), GFP_KERNEL);
++	plat_dev = kmemdup(&wl1271_device, sizeof(wl1271_device), GFP_KERNEL);
+ 	if (!plat_dev) {
+ 		wl1271_error("could not allocate platform_device");
+ 		ret = -ENOMEM;
+ 		goto err_plat_alloc;
+ 	}
+ 
+-	memcpy(plat_dev, &wl1271_device, sizeof(wl1271_device));
+-
+ 	wl = hw->priv;
+ 	memset(wl, 0, sizeof(*wl));
  
