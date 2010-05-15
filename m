@@ -1,54 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753817Ab0EOANI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 20:13:08 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:52108 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752844Ab0EOANF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 20:13:05 -0400
-Message-ID: <4BEDE6A4.4050505@oracle.com>
-Date: Fri, 14 May 2010 17:11:16 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1754289Ab0EOAOy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 20:14:54 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:51374 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752844Ab0EOAOw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 20:14:52 -0400
+Message-ID: <4BEDE763.4040802@zytor.com>
+Date: Fri, 14 May 2010 17:14:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 07/37] lmb: Add lmb_find_area()
-References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>	 <1273866363-14249-8-git-send-email-yinghai@kernel.org> <1273876749.21352.645.camel@pasglop> <4BEDD7D4.90002@oracle.com>
-In-Reply-To: <4BEDD7D4.90002@oracle.com>
-Content-Type: text/plain; charset=UTF-8
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: Mike Travis <travis@sgi.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Mike Habeck <habeck@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not already
+ assigned
+References: <4BEAF008.9030805@sgi.com>	<201005131256.17997.bjorn.helgaas@hp.com>	<4BEC5530.1000008@sgi.com>	<201005131402.30759.bjorn.helgaas@hp.com>	<20100514152509.3aeb37b4@virtuousgeek.org>	<4BEDCFD9.7020202@sgi.com>	<20100514154706.4f36f4ed@virtuousgeek.org>	<4BEDDACD.9040704@zytor.com>	<20100514162836.27e0325a@virtuousgeek.org>	<4BEDDD77.1050205@zytor.com>	<20100514163416.0e940f64@virtuousgeek.org>	<4BEDDF4F.3010902@zytor.com> <20100514170004.6577415b@virtuousgeek.org>
+In-Reply-To: <20100514170004.6577415b@virtuousgeek.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BEDE6FB.0022:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/14/2010 04:08 PM, Yinghai wrote:
-> On 05/14/2010 03:39 PM, Benjamin Herrenschmidt wrote:
+On 05/14/2010 05:00 PM, Jesse Barnes wrote:
+> On Fri, 14 May 2010 16:39:59 -0700
+> "H. Peter Anvin" <hpa@zytor.com> wrote:
+> 
+>> On 05/14/2010 04:34 PM, Jesse Barnes wrote:
+>>>> I'm not lamenting that fact, because my experience is that what ends up
+>>>> replacing it is often far worse.  Consider UARTs -- no MMU dependencies
+>>>> at all, can be accessed with four lines of assembly, and compare it to
+>>>> EHCI debug port, the driver for which is over 900 lines in the Linux
+>>>> kernel -- and that assumes that you're already in flat mode.
+>>>
+>>> Heh, you're so old and crufty!
 >>
->> I might have accepted that one if you had called it something like
->> lmb_find_in_range() which at least -means- something.
+>> I know.  Debugging is so 20th century.
 > 
-> thanks. will use sed to replace them.
+> Yeah, get with the times.  Debugging on today's machines means you have
+> to look up register block offsets in ACPI, run some AML to setup your
+> debug port, and then load a microkernel onto the debug device to get
+> your vnc enabled debug console!
 > 
-> lmb_find_area ==> lmb_find_in_range()
-> 
 
-updated version is in
+An excellent plan!  Cannot fail!
 
-	git://git.kernel.org/pub/scm/linux/kernel/git/yinghai/linux-2.6-yinghai.git lmb
+	-hpa
 
-it is on top of tip/master + powerpc/lmb
-
-Thanks
-
-Yinghai
