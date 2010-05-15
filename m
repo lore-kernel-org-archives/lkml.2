@@ -1,52 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0EOTWf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 15:22:35 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49384 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752542Ab0EOTWc (ORCPT
+	id S1752928Ab0EOT3t (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 15:29:49 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:43390 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752170Ab0EOT3r convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 15:22:32 -0400
+	Sat, 15 May 2010 15:29:47 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=VVUpxrKe9lU9Z9f7mqB+u/Uu1bLuF+XMbGzWuz7Nhrhk/yFembLPq0kpMm6tfDm4LC
-         RJe3moUEbiFnHs5yuZzXDp/uwxv+XbkOllUM49AryM2/Uze9hBp5yzNxEWiM3yqFPnuD
-         970NKQj2PNp71WQ/3DtI/HRRBdDnacGy217+8=
-Message-ID: <4BEEF475.5000501@garzik.org>
-Date: Sat, 15 May 2010 15:22:29 -0400
-From: Jeff Garzik <jeff@garzik.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=aNSl4+EpWiMYqnIISIm/eOC0vs7fS1Y4/U5gpCbinwjBcNHUp/CtOI1QU/PIFJqeAK
+         5zUGQEagyoCHnxxDl7yW8OpNbCrhz9l3INQneETQFYOBPObcczLf1bEI5faMhu9l71JT
+         ZrnhgThgjTepHo0OqE73JtetgV2Q+167+5Nls=
 MIME-Version: 1.0
-To: Tejun Heo <tj@kernel.org>
-CC: linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, ben@decadent.org.uk, davem@davemloft.net,
-       bzolnier@gmail.com
-Subject: Re: [PATCH 8/8] libata: implement on-demand HPA unlocking
-References: <1273946974-29131-1-git-send-email-tj@kernel.org> <1273946974-29131-9-git-send-email-tj@kernel.org>
-In-Reply-To: <1273946974-29131-9-git-send-email-tj@kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1271945222-5283-3-git-send-email-bp@amd64.org>
+References: <1271945222-5283-1-git-send-email-bp@amd64.org>
+	 <1271945222-5283-3-git-send-email-bp@amd64.org>
+Date: Sun, 16 May 2010 00:59:45 +0530
+Message-ID: <AANLkTil5NSYTF0e0DRWteyIkymSf1YErPKp25ty9eMAM@mail.gmail.com>
+Subject: Re: [PATCH 2/5] x86, cacheinfo: Turn off L3 cache index disable 
+	feature in virtualized environments
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Borislav Petkov <bp@amd64.org>
+Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
+       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2010 02:09 PM, Tejun Heo wrote:
-> Implement ata_scsi_unlock_native_capacity() which will be called
-> through SCSI layer when block layer notices that partitions on a
-> device extend beyond the end of the device.  It requests EH to unlock
-> HPA, waits for completion and returns the current device capacity.
+Hello Frank and Borislav,
+
+On Thu, Apr 22, 2010 at 7:36 PM, Borislav Petkov <bp@amd64.org> wrote:
+> From: Frank Arnold <frank.arnold@amd.com>
 >
-> This allows libata to unlock HPA on demand instead of having to decide
-> whether to unlock upfront.  Unlocking on demand is safer than
-> unlocking by upfront because some BIOSes write private data to the
-> area beyond HPA limit.  This was suggested by Ben Hutchings.
+> When running a quest kernel on xen we get:
 >
-> Signed-off-by: Tejun Heo<tj@kernel.org>
-> Suggested-by: Ben Hutchings<ben@decadent.org.uk>
+> BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+> IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+> PGD 0
+> Oops: 0000 [#1] SMP
+> last sysfs file:
+> CPU 0
+> Modules linked in:
+>
+> Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
+> RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
+> 2ca/0x3df
+> RSP: 0018:ffff880002203e08  EFLAGS: 00010046
+> RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
+> RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
+> RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
+> R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
+> R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
+> FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
+> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+> CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
+> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+> Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
+> Stack:
+>  ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
+> <0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
+> <0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
+> Call Trace:
+>  <IRQ>
+>  [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
+>  [<ffffffff81059140>] ? mod_timer+0x23/0x25
+>  [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
+>  [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
+>  [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
+>  [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
+>  [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
+>  [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
+>  [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
+>  [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
+>  [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
+>  <EOI>
+>  [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
+>  [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
+>  [<ffffffff810114eb>] ? default_idle+0x36/0x53
+>  [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
+>  [<ffffffff81423a9a>] rest_init+0x7e/0x80
+>  [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
+>  [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
+>  [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
+> Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
+>  00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
+>  ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
+> RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+>  RSP <ffff880002203e08>
+> CR2: 0000000000000038
+> ---[ end trace a7919e7f17c0a726 ]---
+>
+> The L3 cache index disable feature of AMD CPUs has to be disabled if the
+> kernel is running as guest on top of a hypervisor because northbridge
+> devices are not available to the guest. Currently, this fixes a boot
+> crash on top of Xen. In the future this will become an issue on KVM as
+> well.
+>
+> Check if northbridge devices are present and do not enable the feature
+> if there are none.
+>
+> Signed-off-by: Frank Arnold <frank.arnold@amd.com>
+> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+> ---
+>  arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
+>  1 files changed, 4 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> index acfb083..5ab14c8 100644
+> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
+> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+> @@ -344,6 +344,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
+>             boot_cpu_data.x86_mask < 0x1)
+>                        return;
+>
+> +       /* not in virtualized environments */
+> +       if (num_k8_northbridges == 0)
+> +               return;
+> +
+>        this_leaf->can_disable = true;
+>        this_leaf->l3_indices  = amd_calc_l3_indices();
+>  }
 
-Acked-by: Jeff Garzik <jgarzik@redhat.com>
+I think :
 
+1. checking num_k8_northbridges is not sufficient as
+node_to_k8_nb_misc() of amd_calc_l3_indices() is almost doing the same
+thing.
 
+2. num_k8_northbridges is CONFIG_K8_NB specific
+
+Can you try this :
+
+If you return from amd_calc_l3_indices() if dev == NULL.
+
+Thanks,
+--
+Jaswinder Singh.
