@@ -1,26 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752531Ab0EOGg4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 02:36:56 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:46954 "EHLO mx2.mail.elte.hu"
+	id S1752556Ab0EOHdK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 03:33:10 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:51513 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751871Ab0EOGgz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 02:36:55 -0400
-Date: Sat, 15 May 2010 08:36:21 +0200
+	id S1751988Ab0EOHdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 03:33:08 -0400
+Date: Sat, 15 May 2010 09:32:31 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org,
-       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/4] perf tools improvements
-Message-ID: <20100515063621.GC23275@elte.hu>
-References: <1273878577-12578-1-git-send-email-acme@infradead.org>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Yinghai Lu <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
+Message-ID: <20100515073231.GB9877@elte.hu>
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
+ <1273796396-29649-16-git-send-email-yinghai@kernel.org>
+ <1273804337.21352.396.camel@pasglop>
+ <4BECF158.5070200@oracle.com>
+ <1273825807.21352.601.camel@pasglop>
+ <4BED7CE3.1020507@oracle.com>
+ <1273876234.21352.639.camel@pasglop>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273878577-12578-1-git-send-email-acme@infradead.org>
+In-Reply-To: <1273876234.21352.639.camel@pasglop>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -34,46 +42,36 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+* Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
 
-> Hi Ingo,
+> On Fri, 2010-05-14 at 09:40 -0700, Yinghai Lu wrote:
+> > later, after this patchset. this patchset is hanging around too long
+> > already.
 > 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (4):
->   perf hist: Make event__totals per hists
->   perf hist: Clarify events_stats fields usage
->   perf report: Report number of events, not samples
->   perf newt: Make <- zoom out filters
-> 
->  tools/perf/Makefile           |    2 +
->  tools/perf/builtin-annotate.c |    2 +-
->  tools/perf/builtin-diff.c     |    8 ++--
->  tools/perf/builtin-report.c   |   44 +++++++++++-----
->  tools/perf/builtin-sched.c    |   17 ++----
->  tools/perf/builtin-trace.c    |    2 +-
->  tools/perf/util/event.c       |   19 ++++++-
->  tools/perf/util/event.h       |    2 +
->  tools/perf/util/hist.c        |  121 +++++++++++++++++++++++++----------------
->  tools/perf/util/hist.h        |   24 +++++++-
->  tools/perf/util/newt.c        |   46 +++++++++++++---
->  tools/perf/util/pstack.c      |   75 +++++++++++++++++++++++++
->  tools/perf/util/pstack.h      |   12 ++++
->  tools/perf/util/session.c     |   36 +------------
->  tools/perf/util/session.h     |    8 ++-
->  tools/perf/util/sort.h        |   11 ++--
->  tools/perf/util/util.c        |   22 ++++++++
->  tools/perf/util/util.h        |    1 +
->  18 files changed, 322 insertions(+), 130 deletions(-)
->  create mode 100644 tools/perf/util/pstack.c
->  create mode 100644 tools/perf/util/pstack.h
+> That's where I strongly disagree with Ingo :-) 
+> There's no such thing as a patch set hanging around 
+> too long. Patches should go in when they are ready 
+> and in good shape, not due to some kind of time 
+> bomb, which results in tons of unfixable crap being 
+> merged, which is very bad engineering.
 
-Pulled, thanks a lot Arnaldo!
+The thing i disagreed with was that the patches were 
+posted in March and there was no progress for a long 
+time. That kind of situation only leads to patches 
+being piled up unreasonably and results in Yinghai 
+wasting time and effort.
+
+But now there's real progress: you posted patches and 
+Yinghai is posting patches and is reacting to your 
+review feedback. As long there's steady progress (and 
+not just the steady decay of entropy destroying 
+already created value) i'm a happy camper.
+
+Btw., it would be nice to ready the LMB core bits for 
+upstream for 2.6.35 if there's agreement about them - 
+that will make the subsequent x86 patches much easier 
+to merge.
+
+Thanks,
 
 	Ingo
