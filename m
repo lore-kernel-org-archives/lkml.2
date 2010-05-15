@@ -1,144 +1,877 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752928Ab0EOT3t (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 15:29:49 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:43390 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752170Ab0EOT3r convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 15:29:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=aNSl4+EpWiMYqnIISIm/eOC0vs7fS1Y4/U5gpCbinwjBcNHUp/CtOI1QU/PIFJqeAK
-         5zUGQEagyoCHnxxDl7yW8OpNbCrhz9l3INQneETQFYOBPObcczLf1bEI5faMhu9l71JT
-         ZrnhgThgjTepHo0OqE73JtetgV2Q+167+5Nls=
+	id S1753381Ab0EOTiJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 15:38:09 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59964 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752449Ab0EOTiG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 15:38:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [patch] pm_qos update fixing mmotm 2010-05-11 -dies in pm_qos_update_request()
+Date: Sat, 15 May 2010 21:38:47 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Valdis.Kletnieks@vt.eu, mgross@linux.intel.com, akpm@linux-foundation.org,
+       davem@davemloft.net, linux-kernel@vger.kernel.org,
+       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+       linux-pm@lists.linux-foundation.org
+References: <20100515021922.GA5041@thegnar.org>
+In-Reply-To: <20100515021922.GA5041@thegnar.org>
 MIME-Version: 1.0
-In-Reply-To: <1271945222-5283-3-git-send-email-bp@amd64.org>
-References: <1271945222-5283-1-git-send-email-bp@amd64.org>
-	 <1271945222-5283-3-git-send-email-bp@amd64.org>
-Date: Sun, 16 May 2010 00:59:45 +0530
-Message-ID: <AANLkTil5NSYTF0e0DRWteyIkymSf1YErPKp25ty9eMAM@mail.gmail.com>
-Subject: Re: [PATCH 2/5] x86, cacheinfo: Turn off L3 cache index disable 
-	feature in virtualized environments
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Borislav Petkov <bp@amd64.org>
-Cc: hpa@zytor.com, mingo@elte.hu, tglx@linutronix.de, x86@kernel.org,
-       linux-kernel@vger.kernel.org, Frank Arnold <frank.arnold@amd.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005152138.47178.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Frank and Borislav,
+On Saturday 15 May 2010, mgross wrote:
+> I apologize for the goofy email address.  
+> 
+> The following is a fix for the crash reported by Valdis.
+> 
+> The problem was that the original pm_qos silently fails when a request
+> update is passed to a parameter that has not been added to the list
+> yet.  It seems that the e1000e is doing this.  This update restores this
+> behavior.
+> 
+> I need to think about how to better handle such abuse, but for now this
+> restores the original behavior.
 
-On Thu, Apr 22, 2010 at 7:36 PM, Borislav Petkov <bp@amd64.org> wrote:
-> From: Frank Arnold <frank.arnold@amd.com>
->
-> When running a quest kernel on xen we get:
->
-> BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-> IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
-> PGD 0
-> Oops: 0000 [#1] SMP
-> last sysfs file:
-> CPU 0
-> Modules linked in:
->
-> Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
-> RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
-> 2ca/0x3df
-> RSP: 0018:ffff880002203e08  EFLAGS: 00010046
-> RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
-> RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
-> RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
-> R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
-> R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
-> FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
-> CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-> CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
-> DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-> DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-> Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
-> Stack:
->  ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
-> <0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
-> <0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
-> Call Trace:
->  <IRQ>
->  [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
->  [<ffffffff81059140>] ? mod_timer+0x23/0x25
->  [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
->  [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
->  [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
->  [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
->  [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
->  [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
->  [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
->  [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
->  [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
->  <EOI>
->  [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
->  [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
->  [<ffffffff810114eb>] ? default_idle+0x36/0x53
->  [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
->  [<ffffffff81423a9a>] rest_init+0x7e/0x80
->  [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
->  [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
->  [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
-> Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
->  00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
->  ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
-> RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
->  RSP <ffff880002203e08>
-> CR2: 0000000000000038
-> ---[ end trace a7919e7f17c0a726 ]---
->
-> The L3 cache index disable feature of AMD CPUs has to be disabled if the
-> kernel is running as guest on top of a hypervisor because northbridge
-> devices are not available to the guest. Currently, this fixes a boot
-> crash on top of Xen. In the future this will become an issue on KVM as
-> well.
->
-> Check if northbridge devices are present and do not enable the feature
-> if there are none.
->
-> Signed-off-by: Frank Arnold <frank.arnold@amd.com>
-> Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-> ---
->  arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
->  1 files changed, 4 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/kernel/cpu/intel_cacheinfo.c b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> index acfb083..5ab14c8 100644
-> --- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-> +++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-> @@ -344,6 +344,10 @@ amd_check_l3_disable(int index, struct _cpuid4_info_regs *this_leaf)
->             boot_cpu_data.x86_mask < 0x1)
->                        return;
->
-> +       /* not in virtualized environments */
-> +       if (num_k8_northbridges == 0)
-> +               return;
-> +
->        this_leaf->can_disable = true;
->        this_leaf->l3_indices  = amd_calc_l3_indices();
->  }
+Can you please post a signed-off incremental patch against
 
-I think :
+git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-llinus
 
-1. checking num_k8_northbridges is not sufficient as
-node_to_k8_nb_misc() of amd_calc_l3_indices() is almost doing the same
-thing.
-
-2. num_k8_northbridges is CONFIG_K8_NB specific
-
-Can you try this :
-
-If you return from amd_calc_l3_indices() if dev == NULL.
+that contains your original PM QOS update?
 
 Thanks,
---
-Jaswinder Singh.
+Rafael
+
+
+> Signed-off-by: markgross <markgross@thegnar.org>
+> --mgross
+> 
+> 
+> From 66700dc26ab7582bc7351541ba2e6241cc4b4144 Mon Sep 17 00:00:00 2001
+> From: mgross <mgross@mgross-desktop.(none)>
+> Date: Fri, 14 May 2010 19:05:44 -0700
+> Subject: [PATCH] PM QOS update
+>  This patch changes the string based list management to a handle base
+>  implementation to help with the hot path use of pm-qos, it also renames
+>  much of the API to use "request" as opposed to "requirement" that was
+>  used in the initial implementation.  I did this because request more
+>  accurately represents what it actually does.
+> 
+> Also, I added a string based ABI for users wanting to use a string
+> interface.  So if the user writes 0xDDDDDDDD formatted hex it will be
+> accepted by the interface.  (someone asked me for it and I don't think
+> it hurts anything.)
+> 
+> This patch updates some documentation input I got from Randy.
+> 
+> This version handles a use case where pm_qos update requests need to
+> silently not fail if the update is being sent to a handle that is null.
+> This is what happened in the initial version of pm-qos if you used a
+> string that wasn't in the list.
+> 
+> Signed-off-by: markgross <mgross@linux.intel.com>
+> ---
+>  Documentation/power/pm_qos_interface.txt |   48 ++++---
+>  drivers/acpi/processor_idle.c            |    2 +-
+>  drivers/cpuidle/governors/ladder.c       |    2 +-
+>  drivers/cpuidle/governors/menu.c         |    2 +-
+>  drivers/net/e1000e/netdev.c              |   22 ++--
+>  drivers/net/igbvf/netdev.c               |    6 +-
+>  drivers/net/wireless/ipw2x00/ipw2100.c   |   11 +-
+>  include/linux/netdevice.h                |    4 +
+>  include/linux/pm_qos_params.h            |   14 +-
+>  include/sound/pcm.h                      |    3 +-
+>  kernel/pm_qos_params.c                   |  217 +++++++++++++++---------------
+>  net/mac80211/mlme.c                      |    2 +-
+>  sound/core/pcm.c                         |    3 -
+>  sound/core/pcm_native.c                  |   14 +-
+>  14 files changed, 179 insertions(+), 171 deletions(-)
+> 
+> diff --git a/Documentation/power/pm_qos_interface.txt b/Documentation/power/pm_qos_interface.txt
+> index c40866e..bfed898 100644
+> --- a/Documentation/power/pm_qos_interface.txt
+> +++ b/Documentation/power/pm_qos_interface.txt
+> @@ -18,44 +18,46 @@ and pm_qos_params.h.  This is done because having the available parameters
+>  being runtime configurable or changeable from a driver was seen as too easy to
+>  abuse.
+>  
+> -For each parameter a list of performance requirements is maintained along with
+> +For each parameter a list of performance requests is maintained along with
+>  an aggregated target value.  The aggregated target value is updated with
+> -changes to the requirement list or elements of the list.  Typically the
+> -aggregated target value is simply the max or min of the requirement values held
+> +changes to the request list or elements of the list.  Typically the
+> +aggregated target value is simply the max or min of the request values held
+>  in the parameter list elements.
+>  
+>  From kernel mode the use of this interface is simple:
+> -pm_qos_add_requirement(param_id, name, target_value):
+> -Will insert a named element in the list for that identified PM_QOS parameter
+> -with the target value.  Upon change to this list the new target is recomputed
+> -and any registered notifiers are called only if the target value is now
+> -different.
+>  
+> -pm_qos_update_requirement(param_id, name, new_target_value):
+> -Will search the list identified by the param_id for the named list element and
+> -then update its target value, calling the notification tree if the aggregated
+> -target is changed.  with that name is already registered.
+> +handle = pm_qos_add_request(param_class, target_value):
+> +Will insert an element into the list for that identified PM_QOS class with the
+> +target value.  Upon change to this list the new target is recomputed and any
+> +registered notifiers are called only if the target value is now different.
+> +Clients of pm_qos need to save the returned handle.
+>  
+> -pm_qos_remove_requirement(param_id, name):
+> -Will search the identified list for the named element and remove it, after
+> -removal it will update the aggregate target and call the notification tree if
+> -the target was changed as a result of removing the named requirement.
+> +void pm_qos_update_request(handle, new_target_value):
+> +Will update the list element pointed to by the handle with the new target value
+> +and recompute the new aggregated target, calling the notification tree if the
+> +target is changed.
+> +
+> +void pm_qos_remove_request(handle):
+> +Will remove the element.  After removal it will update the aggregate target and
+> +call the notification tree if the target was changed as a result of removing
+> +the request.
+>  
+>  
+>  From user mode:
+> -Only processes can register a pm_qos requirement.  To provide for automatic
+> -cleanup for process the interface requires the process to register its
+> -parameter requirements in the following way:
+> +Only processes can register a pm_qos request.  To provide for automatic
+> +cleanup of a process, the interface requires the process to register its
+> +parameter requests in the following way:
+>  
+>  To register the default pm_qos target for the specific parameter, the process
+>  must open one of /dev/[cpu_dma_latency, network_latency, network_throughput]
+>  
+>  As long as the device node is held open that process has a registered
+> -requirement on the parameter.  The name of the requirement is "process_<PID>"
+> -derived from the current->pid from within the open system call.
+> +request on the parameter.
+>  
+> -To change the requested target value the process needs to write a s32 value to
+> -the open device node.  This translates to a pm_qos_update_requirement call.
+> +To change the requested target value the process needs to write an s32 value to
+> +the open device node.  Alternatively the user mode program could write a hex
+> +string for the value using 10 char long format e.g. "0x12345678".  This
+> +translates to a pm_qos_update_request call.
+>  
+>  To remove the user mode request for a target value simply close the device
+>  node.
+> diff --git a/drivers/acpi/processor_idle.c b/drivers/acpi/processor_idle.c
+> index 5939e7f..c3817e1 100644
+> --- a/drivers/acpi/processor_idle.c
+> +++ b/drivers/acpi/processor_idle.c
+> @@ -698,7 +698,7 @@ static int acpi_processor_power_seq_show(struct seq_file *seq, void *offset)
+>  		   "max_cstate:              C%d\n"
+>  		   "maximum allowed latency: %d usec\n",
+>  		   pr->power.state ? pr->power.state - pr->power.states : 0,
+> -		   max_cstate, pm_qos_requirement(PM_QOS_CPU_DMA_LATENCY));
+> +		   max_cstate, pm_qos_request(PM_QOS_CPU_DMA_LATENCY));
+>  
+>  	seq_puts(seq, "states:\n");
+>  
+> diff --git a/drivers/cpuidle/governors/ladder.c b/drivers/cpuidle/governors/ladder.c
+> index 1c1ceb4..12c9890 100644
+> --- a/drivers/cpuidle/governors/ladder.c
+> +++ b/drivers/cpuidle/governors/ladder.c
+> @@ -67,7 +67,7 @@ static int ladder_select_state(struct cpuidle_device *dev)
+>  	struct ladder_device *ldev = &__get_cpu_var(ladder_devices);
+>  	struct ladder_device_state *last_state;
+>  	int last_residency, last_idx = ldev->last_state_idx;
+> -	int latency_req = pm_qos_requirement(PM_QOS_CPU_DMA_LATENCY);
+> +	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+>  
+>  	/* Special case when user has set very strict latency requirement */
+>  	if (unlikely(latency_req == 0)) {
+> diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
+> index f8e57c6..b81ad9c 100644
+> --- a/drivers/cpuidle/governors/menu.c
+> +++ b/drivers/cpuidle/governors/menu.c
+> @@ -182,7 +182,7 @@ static u64 div_round64(u64 dividend, u32 divisor)
+>  static int menu_select(struct cpuidle_device *dev)
+>  {
+>  	struct menu_device *data = &__get_cpu_var(menu_devices);
+> -	int latency_req = pm_qos_requirement(PM_QOS_CPU_DMA_LATENCY);
+> +	int latency_req = pm_qos_request(PM_QOS_CPU_DMA_LATENCY);
+>  	int i;
+>  	int multiplier;
+>  
+> diff --git a/drivers/net/e1000e/netdev.c b/drivers/net/e1000e/netdev.c
+> index dbf8178..d5d55c6 100644
+> --- a/drivers/net/e1000e/netdev.c
+> +++ b/drivers/net/e1000e/netdev.c
+> @@ -2524,12 +2524,12 @@ static void e1000_configure_rx(struct e1000_adapter *adapter)
+>  			 * excessive C-state transition latencies result in
+>  			 * dropped transactions.
+>  			 */
+> -			pm_qos_update_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -						  adapter->netdev->name, 55);
+> +			pm_qos_update_request(
+> +				adapter->netdev->pm_qos_req, 55);
+>  		} else {
+> -			pm_qos_update_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -						  adapter->netdev->name,
+> -						  PM_QOS_DEFAULT_VALUE);
+> +			pm_qos_update_request(
+> +				adapter->netdev->pm_qos_req,
+> +				PM_QOS_DEFAULT_VALUE);
+>  		}
+>  	}
+>  
+> @@ -2824,8 +2824,8 @@ int e1000e_up(struct e1000_adapter *adapter)
+>  
+>  	/* DMA latency requirement to workaround early-receive/jumbo issue */
+>  	if (adapter->flags & FLAG_HAS_ERT)
+> -		pm_qos_add_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -		                       adapter->netdev->name,
+> +		adapter->netdev->pm_qos_req =
+> +			pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
+>  				       PM_QOS_DEFAULT_VALUE);
+>  
+>  	/* hardware has been reset, we need to reload some things */
+> @@ -2887,9 +2887,11 @@ void e1000e_down(struct e1000_adapter *adapter)
+>  	e1000_clean_tx_ring(adapter);
+>  	e1000_clean_rx_ring(adapter);
+>  
+> -	if (adapter->flags & FLAG_HAS_ERT)
+> -		pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -		                          adapter->netdev->name);
+> +	if (adapter->flags & FLAG_HAS_ERT) {
+> +		pm_qos_remove_request(
+> +			      adapter->netdev->pm_qos_req);
+> +		adapter->netdev->pm_qos_req = NULL;
+> +	}
+>  
+>  	/*
+>  	 * TODO: for power management, we could drop the link and
+> diff --git a/drivers/net/igbvf/netdev.c b/drivers/net/igbvf/netdev.c
+> index 1b1edad..f16e981 100644
+> --- a/drivers/net/igbvf/netdev.c
+> +++ b/drivers/net/igbvf/netdev.c
+> @@ -48,6 +48,7 @@
+>  #define DRV_VERSION "1.0.0-k0"
+>  char igbvf_driver_name[] = "igbvf";
+>  const char igbvf_driver_version[] = DRV_VERSION;
+> +struct pm_qos_request_list *igbvf_driver_pm_qos_req;
+>  static const char igbvf_driver_string[] =
+>  				"Intel(R) Virtual Function Network Driver";
+>  static const char igbvf_copyright[] = "Copyright (c) 2009 Intel Corporation.";
+> @@ -2899,7 +2900,7 @@ static int __init igbvf_init_module(void)
+>  	printk(KERN_INFO "%s\n", igbvf_copyright);
+>  
+>  	ret = pci_register_driver(&igbvf_driver);
+> -	pm_qos_add_requirement(PM_QOS_CPU_DMA_LATENCY, igbvf_driver_name,
+> +	igbvf_driver_pm_qos_req = pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
+>  	                       PM_QOS_DEFAULT_VALUE);
+>  
+>  	return ret;
+> @@ -2915,7 +2916,8 @@ module_init(igbvf_init_module);
+>  static void __exit igbvf_exit_module(void)
+>  {
+>  	pci_unregister_driver(&igbvf_driver);
+> -	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY, igbvf_driver_name);
+> +	pm_qos_remove_request(igbvf_driver_pm_qos_req);
+> +	igbvf_driver_pm_qos_req = NULL;
+>  }
+>  module_exit(igbvf_exit_module);
+>  
+> diff --git a/drivers/net/wireless/ipw2x00/ipw2100.c b/drivers/net/wireless/ipw2x00/ipw2100.c
+> index 9b72c45..2b05fe5 100644
+> --- a/drivers/net/wireless/ipw2x00/ipw2100.c
+> +++ b/drivers/net/wireless/ipw2x00/ipw2100.c
+> @@ -174,6 +174,8 @@ that only one external action is invoked at a time.
+>  #define DRV_DESCRIPTION	"Intel(R) PRO/Wireless 2100 Network Driver"
+>  #define DRV_COPYRIGHT	"Copyright(c) 2003-2006 Intel Corporation"
+>  
+> +struct pm_qos_request_list *ipw2100_pm_qos_req;
+> +
+>  /* Debugging stuff */
+>  #ifdef CONFIG_IPW2100_DEBUG
+>  #define IPW2100_RX_DEBUG	/* Reception debugging */
+> @@ -1739,7 +1741,7 @@ static int ipw2100_up(struct ipw2100_priv *priv, int deferred)
+>  	/* the ipw2100 hardware really doesn't want power management delays
+>  	 * longer than 175usec
+>  	 */
+> -	pm_qos_update_requirement(PM_QOS_CPU_DMA_LATENCY, "ipw2100", 175);
+> +	pm_qos_update_request(ipw2100_pm_qos_req, 175);
+>  
+>  	/* If the interrupt is enabled, turn it off... */
+>  	spin_lock_irqsave(&priv->low_lock, flags);
+> @@ -1887,8 +1889,7 @@ static void ipw2100_down(struct ipw2100_priv *priv)
+>  	ipw2100_disable_interrupts(priv);
+>  	spin_unlock_irqrestore(&priv->low_lock, flags);
+>  
+> -	pm_qos_update_requirement(PM_QOS_CPU_DMA_LATENCY, "ipw2100",
+> -			PM_QOS_DEFAULT_VALUE);
+> +	pm_qos_update_request(ipw2100_pm_qos_req, PM_QOS_DEFAULT_VALUE);
+>  
+>  	/* We have to signal any supplicant if we are disassociating */
+>  	if (associated)
+> @@ -6669,7 +6670,7 @@ static int __init ipw2100_init(void)
+>  	if (ret)
+>  		goto out;
+>  
+> -	pm_qos_add_requirement(PM_QOS_CPU_DMA_LATENCY, "ipw2100",
+> +	ipw2100_pm_qos_req = pm_qos_add_request(PM_QOS_CPU_DMA_LATENCY,
+>  			PM_QOS_DEFAULT_VALUE);
+>  #ifdef CONFIG_IPW2100_DEBUG
+>  	ipw2100_debug_level = debug;
+> @@ -6692,7 +6693,7 @@ static void __exit ipw2100_exit(void)
+>  			   &driver_attr_debug_level);
+>  #endif
+>  	pci_unregister_driver(&ipw2100_pci_driver);
+> -	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY, "ipw2100");
+> +	pm_qos_remove_request(ipw2100_pm_qos_req);
+>  }
+>  
+>  module_init(ipw2100_init);
+> diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+> index fa8b476..3857517 100644
+> --- a/include/linux/netdevice.h
+> +++ b/include/linux/netdevice.h
+> @@ -31,6 +31,7 @@
+>  #include <linux/if_link.h>
+>  
+>  #ifdef __KERNEL__
+> +#include <linux/pm_qos_params.h>
+>  #include <linux/timer.h>
+>  #include <linux/delay.h>
+>  #include <linux/mm.h>
+> @@ -711,6 +712,9 @@ struct net_device {
+>  	 * the interface.
+>  	 */
+>  	char			name[IFNAMSIZ];
+> +
+> +	struct pm_qos_request_list *pm_qos_req;
+> +
+>  	/* device name hash chain */
+>  	struct hlist_node	name_hlist;
+>  	/* snmp alias */
+> diff --git a/include/linux/pm_qos_params.h b/include/linux/pm_qos_params.h
+> index d74f75e..8ba440e 100644
+> --- a/include/linux/pm_qos_params.h
+> +++ b/include/linux/pm_qos_params.h
+> @@ -14,12 +14,14 @@
+>  #define PM_QOS_NUM_CLASSES 4
+>  #define PM_QOS_DEFAULT_VALUE -1
+>  
+> -int pm_qos_add_requirement(int qos, char *name, s32 value);
+> -int pm_qos_update_requirement(int qos, char *name, s32 new_value);
+> -void pm_qos_remove_requirement(int qos, char *name);
+> +struct pm_qos_request_list;
+>  
+> -int pm_qos_requirement(int qos);
+> +struct pm_qos_request_list *pm_qos_add_request(int pm_qos_class, s32 value);
+> +void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+> +		s32 new_value);
+> +void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req);
+>  
+> -int pm_qos_add_notifier(int qos, struct notifier_block *notifier);
+> -int pm_qos_remove_notifier(int qos, struct notifier_block *notifier);
+> +int pm_qos_request(int pm_qos_class);
+> +int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier);
+> +int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier);
+>  
+> diff --git a/include/sound/pcm.h b/include/sound/pcm.h
+> index 8b611a5..dd76cde 100644
+> --- a/include/sound/pcm.h
+> +++ b/include/sound/pcm.h
+> @@ -29,6 +29,7 @@
+>  #include <linux/poll.h>
+>  #include <linux/mm.h>
+>  #include <linux/bitops.h>
+> +#include <linux/pm_qos_params.h>
+>  
+>  #define snd_pcm_substream_chip(substream) ((substream)->private_data)
+>  #define snd_pcm_chip(pcm) ((pcm)->private_data)
+> @@ -365,7 +366,7 @@ struct snd_pcm_substream {
+>  	int number;
+>  	char name[32];			/* substream name */
+>  	int stream;			/* stream (direction) */
+> -	char latency_id[20];		/* latency identifier */
+> +	struct pm_qos_request_list *latency_pm_qos_req; /* pm_qos request */
+>  	size_t buffer_bytes_max;	/* limit ring buffer size */
+>  	struct snd_dma_buffer dma_buffer;
+>  	unsigned int dma_buf_id;
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index 3db49b9..dfa1425 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -2,7 +2,7 @@
+>   * This module exposes the interface to kernel space for specifying
+>   * QoS dependencies.  It provides infrastructure for registration of:
+>   *
+> - * Dependents on a QoS value : register requirements
+> + * Dependents on a QoS value : register requests
+>   * Watchers of QoS value : get notified when target QoS value changes
+>   *
+>   * This QoS design is best effort based.  Dependents register their QoS needs.
+> @@ -14,19 +14,21 @@
+>   * timeout: usec <-- currently not used.
+>   * throughput: kbs (kilo byte / sec)
+>   *
+> - * There are lists of pm_qos_objects each one wrapping requirements, notifiers
+> + * There are lists of pm_qos_objects each one wrapping requests, notifiers
+>   *
+> - * User mode requirements on a QOS parameter register themselves to the
+> + * User mode requests on a QOS parameter register themselves to the
+>   * subsystem by opening the device node /dev/... and writing there request to
+>   * the node.  As long as the process holds a file handle open to the node the
+>   * client continues to be accounted for.  Upon file release the usermode
+> - * requirement is removed and a new qos target is computed.  This way when the
+> - * requirement that the application has is cleaned up when closes the file
+> + * request is removed and a new qos target is computed.  This way when the
+> + * request that the application has is cleaned up when closes the file
+>   * pointer or exits the pm_qos_object will get an opportunity to clean up.
+>   *
+>   * Mark Gross <mgross@linux.intel.com>
+>   */
+>  
+> +/*#define DEBUG*/
+> +
+>  #include <linux/pm_qos_params.h>
+>  #include <linux/sched.h>
+>  #include <linux/spinlock.h>
+> @@ -42,25 +44,25 @@
+>  #include <linux/uaccess.h>
+>  
+>  /*
+> - * locking rule: all changes to requirements or notifiers lists
+> + * locking rule: all changes to requests or notifiers lists
+>   * or pm_qos_object list and pm_qos_objects need to happen with pm_qos_lock
+>   * held, taken with _irqsave.  One lock to rule them all
+>   */
+> -struct requirement_list {
+> +struct pm_qos_request_list {
+>  	struct list_head list;
+>  	union {
+>  		s32 value;
+>  		s32 usec;
+>  		s32 kbps;
+>  	};
+> -	char *name;
+> +	int pm_qos_class;
+>  };
+>  
+>  static s32 max_compare(s32 v1, s32 v2);
+>  static s32 min_compare(s32 v1, s32 v2);
+>  
+>  struct pm_qos_object {
+> -	struct requirement_list requirements;
+> +	struct pm_qos_request_list requests;
+>  	struct blocking_notifier_head *notifiers;
+>  	struct miscdevice pm_qos_power_miscdev;
+>  	char *name;
+> @@ -72,7 +74,7 @@ struct pm_qos_object {
+>  static struct pm_qos_object null_pm_qos;
+>  static BLOCKING_NOTIFIER_HEAD(cpu_dma_lat_notifier);
+>  static struct pm_qos_object cpu_dma_pm_qos = {
+> -	.requirements = {LIST_HEAD_INIT(cpu_dma_pm_qos.requirements.list)},
+> +	.requests = {LIST_HEAD_INIT(cpu_dma_pm_qos.requests.list)},
+>  	.notifiers = &cpu_dma_lat_notifier,
+>  	.name = "cpu_dma_latency",
+>  	.default_value = 2000 * USEC_PER_SEC,
+> @@ -82,7 +84,7 @@ static struct pm_qos_object cpu_dma_pm_qos = {
+>  
+>  static BLOCKING_NOTIFIER_HEAD(network_lat_notifier);
+>  static struct pm_qos_object network_lat_pm_qos = {
+> -	.requirements = {LIST_HEAD_INIT(network_lat_pm_qos.requirements.list)},
+> +	.requests = {LIST_HEAD_INIT(network_lat_pm_qos.requests.list)},
+>  	.notifiers = &network_lat_notifier,
+>  	.name = "network_latency",
+>  	.default_value = 2000 * USEC_PER_SEC,
+> @@ -93,8 +95,7 @@ static struct pm_qos_object network_lat_pm_qos = {
+>  
+>  static BLOCKING_NOTIFIER_HEAD(network_throughput_notifier);
+>  static struct pm_qos_object network_throughput_pm_qos = {
+> -	.requirements =
+> -		{LIST_HEAD_INIT(network_throughput_pm_qos.requirements.list)},
+> +	.requests = {LIST_HEAD_INIT(network_throughput_pm_qos.requests.list)},
+>  	.notifiers = &network_throughput_notifier,
+>  	.name = "network_throughput",
+>  	.default_value = 0,
+> @@ -135,31 +136,34 @@ static s32 min_compare(s32 v1, s32 v2)
+>  }
+>  
+>  
+> -static void update_target(int target)
+> +static void update_target(int pm_qos_class)
+>  {
+>  	s32 extreme_value;
+> -	struct requirement_list *node;
+> +	struct pm_qos_request_list *node;
+>  	unsigned long flags;
+>  	int call_notifier = 0;
+>  
+>  	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	extreme_value = pm_qos_array[target]->default_value;
+> +	extreme_value = pm_qos_array[pm_qos_class]->default_value;
+>  	list_for_each_entry(node,
+> -			&pm_qos_array[target]->requirements.list, list) {
+> -		extreme_value = pm_qos_array[target]->comparitor(
+> +			&pm_qos_array[pm_qos_class]->requests.list, list) {
+> +		extreme_value = pm_qos_array[pm_qos_class]->comparitor(
+>  				extreme_value, node->value);
+>  	}
+> -	if (atomic_read(&pm_qos_array[target]->target_value) != extreme_value) {
+> +	if (atomic_read(&pm_qos_array[pm_qos_class]->target_value) !=
+> +			extreme_value) {
+>  		call_notifier = 1;
+> -		atomic_set(&pm_qos_array[target]->target_value, extreme_value);
+> -		pr_debug(KERN_ERR "new target for qos %d is %d\n", target,
+> -			atomic_read(&pm_qos_array[target]->target_value));
+> +		atomic_set(&pm_qos_array[pm_qos_class]->target_value,
+> +				extreme_value);
+> +		pr_debug(KERN_ERR "new target for qos %d is %d\n", pm_qos_class,
+> +			atomic_read(&pm_qos_array[pm_qos_class]->target_value));
+>  	}
+>  	spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  
+>  	if (call_notifier)
+> -		blocking_notifier_call_chain(pm_qos_array[target]->notifiers,
+> -			(unsigned long) extreme_value, NULL);
+> +		blocking_notifier_call_chain(
+> +				pm_qos_array[pm_qos_class]->notifiers,
+> +					(unsigned long) extreme_value, NULL);
+>  }
+>  
+>  static int register_pm_qos_misc(struct pm_qos_object *qos)
+> @@ -185,125 +189,113 @@ static int find_pm_qos_object_by_minor(int minor)
+>  }
+>  
+>  /**
+> - * pm_qos_requirement - returns current system wide qos expectation
+> + * pm_qos_request - returns current system wide qos expectation
+>   * @pm_qos_class: identification of which qos value is requested
+>   *
+>   * This function returns the current target value in an atomic manner.
+>   */
+> -int pm_qos_requirement(int pm_qos_class)
+> +int pm_qos_request(int pm_qos_class)
+>  {
+>  	return atomic_read(&pm_qos_array[pm_qos_class]->target_value);
+>  }
+> -EXPORT_SYMBOL_GPL(pm_qos_requirement);
+> +EXPORT_SYMBOL_GPL(pm_qos_request);
+>  
+>  /**
+> - * pm_qos_add_requirement - inserts new qos request into the list
+> + * pm_qos_add_request - inserts new qos request into the list
+>   * @pm_qos_class: identifies which list of qos request to us
+> - * @name: identifies the request
+>   * @value: defines the qos request
+>   *
+>   * This function inserts a new entry in the pm_qos_class list of requested qos
+>   * performance characteristics.  It recomputes the aggregate QoS expectations
+> - * for the pm_qos_class of parameters.
+> + * for the pm_qos_class of parameters, and returns the pm_qos_request list
+> + * element as a handle for use in updating and removal.  Call needs to save
+> + * this handle for later use.
+>   */
+> -int pm_qos_add_requirement(int pm_qos_class, char *name, s32 value)
+> +struct pm_qos_request_list *pm_qos_add_request(int pm_qos_class, s32 value)
+>  {
+> -	struct requirement_list *dep;
+> +	struct pm_qos_request_list *dep;
+>  	unsigned long flags;
+>  
+> -	dep = kzalloc(sizeof(struct requirement_list), GFP_KERNEL);
+> +	dep = kzalloc(sizeof(struct pm_qos_request_list), GFP_KERNEL);
+>  	if (dep) {
+>  		if (value == PM_QOS_DEFAULT_VALUE)
+>  			dep->value = pm_qos_array[pm_qos_class]->default_value;
+>  		else
+>  			dep->value = value;
+> -		dep->name = kstrdup(name, GFP_KERNEL);
+> -		if (!dep->name)
+> -			goto cleanup;
+> +		dep->pm_qos_class = pm_qos_class;
+>  
+>  		spin_lock_irqsave(&pm_qos_lock, flags);
+>  		list_add(&dep->list,
+> -			&pm_qos_array[pm_qos_class]->requirements.list);
+> +			&pm_qos_array[pm_qos_class]->requests.list);
+>  		spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  		update_target(pm_qos_class);
+> -
+> -		return 0;
+>  	}
+>  
+> -cleanup:
+> -	kfree(dep);
+> -	return -ENOMEM;
+> +	return dep;
+>  }
+> -EXPORT_SYMBOL_GPL(pm_qos_add_requirement);
+> +EXPORT_SYMBOL_GPL(pm_qos_add_request);
+>  
+>  /**
+> - * pm_qos_update_requirement - modifies an existing qos request
+> - * @pm_qos_class: identifies which list of qos request to us
+> - * @name: identifies the request
+> + * pm_qos_update_request - modifies an existing qos request
+> + * @pm_qos_req : handle to list element holding a pm_qos request to use
+>   * @value: defines the qos request
+>   *
+> - * Updates an existing qos requirement for the pm_qos_class of parameters along
+> + * Updates an existing qos request for the pm_qos_class of parameters along
+>   * with updating the target pm_qos_class value.
+>   *
+> - * If the named request isn't in the list then no change is made.
+> + * Attempts are made to make this code callable on hot code paths.
+>   */
+> -int pm_qos_update_requirement(int pm_qos_class, char *name, s32 new_value)
+> +void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+> +		s32 new_value)
+>  {
+>  	unsigned long flags;
+> -	struct requirement_list *node;
+>  	int pending_update = 0;
+> +	s32 temp;
+>  
+> -	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	list_for_each_entry(node,
+> -		&pm_qos_array[pm_qos_class]->requirements.list, list) {
+> -		if (strcmp(node->name, name) == 0) {
+> -			if (new_value == PM_QOS_DEFAULT_VALUE)
+> -				node->value =
+> -				pm_qos_array[pm_qos_class]->default_value;
+> -			else
+> -				node->value = new_value;
+> +	if (pm_qos_req) { /*guard against callers passing in null */
+> +		spin_lock_irqsave(&pm_qos_lock, flags);
+> +		if (new_value == PM_QOS_DEFAULT_VALUE)
+> +			temp = pm_qos_array[pm_qos_req->pm_qos_class]->
+> +				default_value;
+> +		else
+> +			temp = new_value;
+> +
+> +		if (temp != pm_qos_req->value) {
+>  			pending_update = 1;
+> -			break;
+> +			pm_qos_req->value = temp;
+>  		}
+> +		spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  	}
+> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
+>  	if (pending_update)
+> -		update_target(pm_qos_class);
+> -
+> -	return 0;
+> +		update_target(pm_qos_req->pm_qos_class);
+>  }
+> -EXPORT_SYMBOL_GPL(pm_qos_update_requirement);
+> +EXPORT_SYMBOL_GPL(pm_qos_update_request);
+>  
+>  /**
+> - * pm_qos_remove_requirement - modifies an existing qos request
+> - * @pm_qos_class: identifies which list of qos request to us
+> - * @name: identifies the request
+> + * pm_qos_remove_request - modifies an existing qos request
+> + * @pm_qos_req: handle to request list element
+>   *
+> - * Will remove named qos request from pm_qos_class list of parameters and
+> - * recompute the current target value for the pm_qos_class.
+> + * Will remove pm qos request from the list of requests and
+> + * recompute the current target value for the pm_qos_class.  Call this
+> + * on slow code paths.
+>   */
+> -void pm_qos_remove_requirement(int pm_qos_class, char *name)
+> +void pm_qos_remove_request(struct pm_qos_request_list *pm_qos_req)
+>  {
+>  	unsigned long flags;
+> -	struct requirement_list *node;
+> -	int pending_update = 0;
+> +	int qos_class;
+> +
+> +	if (pm_qos_req == NULL)
+> +		return;
+> +		/* silent return to keep pcm code cleaner */
+>  
+> +	qos_class = pm_qos_req->pm_qos_class;
+>  	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	list_for_each_entry(node,
+> -		&pm_qos_array[pm_qos_class]->requirements.list, list) {
+> -		if (strcmp(node->name, name) == 0) {
+> -			kfree(node->name);
+> -			list_del(&node->list);
+> -			kfree(node);
+> -			pending_update = 1;
+> -			break;
+> -		}
+> -	}
+> +	list_del(&pm_qos_req->list);
+> +	kfree(pm_qos_req);
+>  	spin_unlock_irqrestore(&pm_qos_lock, flags);
+> -	if (pending_update)
+> -		update_target(pm_qos_class);
+> +	update_target(qos_class);
+>  }
+> -EXPORT_SYMBOL_GPL(pm_qos_remove_requirement);
+> +EXPORT_SYMBOL_GPL(pm_qos_remove_request);
+>  
+>  /**
+>   * pm_qos_add_notifier - sets notification entry for changes to target value
+> @@ -313,7 +305,7 @@ EXPORT_SYMBOL_GPL(pm_qos_remove_requirement);
+>   * will register the notifier into a notification chain that gets called
+>   * upon changes to the pm_qos_class target value.
+>   */
+> - int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
+> +int pm_qos_add_notifier(int pm_qos_class, struct notifier_block *notifier)
+>  {
+>  	int retval;
+>  
+> @@ -343,21 +335,16 @@ int pm_qos_remove_notifier(int pm_qos_class, struct notifier_block *notifier)
+>  }
+>  EXPORT_SYMBOL_GPL(pm_qos_remove_notifier);
+>  
+> -#define PID_NAME_LEN 32
+> -
+>  static int pm_qos_power_open(struct inode *inode, struct file *filp)
+>  {
+> -	int ret;
+>  	long pm_qos_class;
+> -	char name[PID_NAME_LEN];
+>  
+>  	pm_qos_class = find_pm_qos_object_by_minor(iminor(inode));
+>  	if (pm_qos_class >= 0) {
+> -		filp->private_data = (void *)pm_qos_class;
+> -		snprintf(name, PID_NAME_LEN, "process_%d", current->pid);
+> -		ret = pm_qos_add_requirement(pm_qos_class, name,
+> -					PM_QOS_DEFAULT_VALUE);
+> -		if (ret >= 0)
+> +		filp->private_data = (void *) pm_qos_add_request(pm_qos_class,
+> +				PM_QOS_DEFAULT_VALUE);
+> +
+> +		if (filp->private_data)
+>  			return 0;
+>  	}
+>  	return -EPERM;
+> @@ -365,32 +352,40 @@ static int pm_qos_power_open(struct inode *inode, struct file *filp)
+>  
+>  static int pm_qos_power_release(struct inode *inode, struct file *filp)
+>  {
+> -	int pm_qos_class;
+> -	char name[PID_NAME_LEN];
+> +	struct pm_qos_request_list *req;
+>  
+> -	pm_qos_class = (long)filp->private_data;
+> -	snprintf(name, PID_NAME_LEN, "process_%d", current->pid);
+> -	pm_qos_remove_requirement(pm_qos_class, name);
+> +	req = (struct pm_qos_request_list *)filp->private_data;
+> +	pm_qos_remove_request(req);
+>  
+>  	return 0;
+>  }
+>  
+> +
+>  static ssize_t pm_qos_power_write(struct file *filp, const char __user *buf,
+>  		size_t count, loff_t *f_pos)
+>  {
+>  	s32 value;
+> -	int pm_qos_class;
+> -	char name[PID_NAME_LEN];
+> -
+> -	pm_qos_class = (long)filp->private_data;
+> -	if (count != sizeof(s32))
+> +	int x;
+> +	char ascii_value[11];
+> +	struct pm_qos_request_list *pm_qos_req;
+> +
+> +	if (count == sizeof(s32)) {
+> +		if (copy_from_user(&value, buf, sizeof(s32)))
+> +			return -EFAULT;
+> +	} else if (count == 11) { /* len('0x12345678/0') */
+> +		if (copy_from_user(ascii_value, buf, 11))
+> +			return -EFAULT;
+> +		x = sscanf(ascii_value, "%x", &value);
+> +		if (x != 1)
+> +			return -EINVAL;
+> +		pr_debug(KERN_ERR "%s, %d, 0x%x\n", ascii_value, x, value);
+> +	} else
+>  		return -EINVAL;
+> -	if (copy_from_user(&value, buf, sizeof(s32)))
+> -		return -EFAULT;
+> -	snprintf(name, PID_NAME_LEN, "process_%d", current->pid);
+> -	pm_qos_update_requirement(pm_qos_class, name, value);
+>  
+> -	return  sizeof(s32);
+> +	pm_qos_req = (struct pm_qos_request_list *)filp->private_data;
+> +	pm_qos_update_request(pm_qos_req, value);
+> +
+> +	return count;
+>  }
+>  
+>  
+> diff --git a/net/mac80211/mlme.c b/net/mac80211/mlme.c
+> index 875c8de..88f95e7 100644
+> --- a/net/mac80211/mlme.c
+> +++ b/net/mac80211/mlme.c
+> @@ -495,7 +495,7 @@ void ieee80211_recalc_ps(struct ieee80211_local *local, s32 latency)
+>  		s32 beaconint_us;
+>  
+>  		if (latency < 0)
+> -			latency = pm_qos_requirement(PM_QOS_NETWORK_LATENCY);
+> +			latency = pm_qos_request(PM_QOS_NETWORK_LATENCY);
+>  
+>  		beaconint_us = ieee80211_tu_to_usec(
+>  					found->vif.bss_conf.beacon_int);
+> diff --git a/sound/core/pcm.c b/sound/core/pcm.c
+> index 0d428d0..cbe815d 100644
+> --- a/sound/core/pcm.c
+> +++ b/sound/core/pcm.c
+> @@ -648,9 +648,6 @@ int snd_pcm_new_stream(struct snd_pcm *pcm, int stream, int substream_count)
+>  		substream->number = idx;
+>  		substream->stream = stream;
+>  		sprintf(substream->name, "subdevice #%i", idx);
+> -		snprintf(substream->latency_id, sizeof(substream->latency_id),
+> -			 "ALSA-PCM%d-%d%c%d", pcm->card->number, pcm->device,
+> -			 (stream ? 'c' : 'p'), idx);
+>  		substream->buffer_bytes_max = UINT_MAX;
+>  		if (prev == NULL)
+>  			pstr->substream = substream;
+> diff --git a/sound/core/pcm_native.c b/sound/core/pcm_native.c
+> index 20b5982..192dd40 100644
+> --- a/sound/core/pcm_native.c
+> +++ b/sound/core/pcm_native.c
+> @@ -484,11 +484,13 @@ static int snd_pcm_hw_params(struct snd_pcm_substream *substream,
+>  	snd_pcm_timer_resolution_change(substream);
+>  	runtime->status->state = SNDRV_PCM_STATE_SETUP;
+>  
+> -	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -				substream->latency_id);
+> +	if (substream->latency_pm_qos_req) {
+> +		pm_qos_remove_request(substream->latency_pm_qos_req);
+> +		substream->latency_pm_qos_req = NULL;
+> +	}
+>  	if ((usecs = period_to_usecs(runtime)) >= 0)
+> -		pm_qos_add_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -					substream->latency_id, usecs);
+> +		substream->latency_pm_qos_req = pm_qos_add_request(
+> +					PM_QOS_CPU_DMA_LATENCY, usecs);
+>  	return 0;
+>   _error:
+>  	/* hardware might be unuseable from this time,
+> @@ -543,8 +545,8 @@ static int snd_pcm_hw_free(struct snd_pcm_substream *substream)
+>  	if (substream->ops->hw_free)
+>  		result = substream->ops->hw_free(substream);
+>  	runtime->status->state = SNDRV_PCM_STATE_OPEN;
+> -	pm_qos_remove_requirement(PM_QOS_CPU_DMA_LATENCY,
+> -		substream->latency_id);
+> +	pm_qos_remove_request(substream->latency_pm_qos_req);
+> +	substream->latency_pm_qos_req = NULL;
+>  	return result;
+>  }
+>  
+> 
+
