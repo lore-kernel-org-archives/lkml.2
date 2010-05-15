@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753422Ab0EOTyk (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 15:54:40 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:52883 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751792Ab0EOTyj (ORCPT
+	id S1753299Ab0EOT5W (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 15:57:22 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:37833 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751792Ab0EOT5U (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 15:54:39 -0400
-Date: Sat, 15 May 2010 20:54:01 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Tony Lindgren <tony@atomide.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>, Paul Walmsley <paul@pwsan.com>,
-       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?iso-8859-1?Q?Beno=EEt?= Cousson <b-cousson@ti.com>,
-       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100515195401.GA29677@srcf.ucam.org>
-References: <20100513192522.GA19256@srcf.ucam.org> <20100513194205.GC3428@atomide.com> <20100513195349.GB19722@srcf.ucam.org> <20100513200003.GE3428@atomide.com> <20100513200814.GA20254@srcf.ucam.org> <20100513202320.GF3428@atomide.com> <20100513203412.GA21244@srcf.ucam.org> <20100513211006.GG3428@atomide.com> <20100513212108.GA22103@srcf.ucam.org> <20100513213455.GK3428@atomide.com>
+	Sat, 15 May 2010 15:57:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:date:subject:mime-version:x-tuid:x-uid:x-length:to
+         :reply-to:content-type:content-transfer-encoding:message-id;
+        b=HvFZCzoLZ8H5qfU6f7aI+/z2iNNKKZip/pTKoLMMSgDYmPk4q8sNbi2oR9S190sr0J
+         M+jGD4DRPA14H18RZAexPnDnY80UUI8nLO42MZo4w82cTfVS53yzjkWDGieKxE3Hcsdl
+         GYFpLod8DssNy3wYt73fJi/OddUWn1cvZrKOI=
+From: Florian Fainelli <florian@openwrt.org>
+Date: Sat, 15 May 2010 21:57:10 +0200
+Subject: [PATCH] MFD: prevent null pointer dereference in mfd_add_device
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513213455.GK3428@atomide.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+X-TUID: 1c1f2082a0eff895
+X-Length: 1605
+To: Samuel Ortiz <sameo@linux.intel.com>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Reply-To: Florian Fainelli <florian@openwrt.org>
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005152157.13121.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 02:34:55PM -0700, Tony Lindgren wrote:
-> * Matthew Garrett <mjg@redhat.com> [100513 14:16]:
-> > What race-free mechanism do you use to ensure that? It's very easy to 
-> > handwave these problems away. It's very difficult to actually write an 
-> > implementation that works.
-> 
-> Can you describe where do you see the race now?
+If a driver calls mfd_add_device with a NULL argument for the mem_base resource
+we will end up dereferencing it without checking for its validity here:
+res[r].start = mem_base->start cell->resources[r].start; (line 53 of mfd-core.c)
 
-1) Trusted app decides to suspend
-2) Network packet that would otherwise wake the system is received
-3) Trusted app sends SIGSTOP to untrusted userspace
-4) Network packet sits waiting for stopped userspace to process it
+This patch adds the checking on the mem_base argument and bails out accordingly
+if it is NULL.
 
-Unless the trusted userspace gets woken up on every event that would 
-potentially cause a wakeup, you're racy. And the alternative involves an 
-extra userspace wakeup for every network packet - which is expensive.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+CC: stable@kernel.org
+---
+diff --git a/drivers/mfd/mfd-core.c b/drivers/mfd/mfd-core.c
+index 8ffbb7a..f890b27 100644
+--- a/drivers/mfd/mfd-core.c
++++ b/drivers/mfd/mfd-core.c
+@@ -49,6 +49,8 @@ static int mfd_add_device(struct device *parent, int id,
+ 
+ 		/* Find out base to use */
+ 		if (cell->resources[r].flags & IORESOURCE_MEM) {
++			if (!mem_base)
++				goto fail_res;
+ 			res[r].parent = mem_base;
+ 			res[r].start = mem_base->start +
+ 				cell->resources[r].start;
