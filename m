@@ -1,59 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752946Ab0EOS62 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 14:58:28 -0400
-Received: from hera.kernel.org ([140.211.167.34]:47484 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751564Ab0EOS60 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 14:58:26 -0400
-Message-ID: <4BEEEEBA.9050506@kernel.org>
-Date: Sat, 15 May 2010 20:58:02 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Bartlomiej Zolnierkiewicz <bzolnier@gmail.com>
-CC: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
-       linux-kernel@vger.kernel.org, ben@decadent.org.uk, davem@davemloft.net
-Subject: Re: [PATCH 3/8] block,ide: simplify bdops->set_capacity() to ->unlock_native_capacity()
-References: <1273946974-29131-1-git-send-email-tj@kernel.org> <1273946974-29131-4-git-send-email-tj@kernel.org> <201005152048.00259.bzolnier@gmail.com>
-In-Reply-To: <201005152048.00259.bzolnier@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1753019Ab0EOTLx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 15:11:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58800 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752322Ab0EOTLw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 15:11:52 -0400
+Date: Sat, 15 May 2010 12:14:24 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Andi Kleen <andi@firstfloor.org>, Venkatesh Pallipadi <venki@google.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100515121424.38f5b389@infradead.org>
+In-Reply-To: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+References: <1273887635-27610-1-git-send-email-venki@google.com
+ 87tyq9mqrz.fsf@basil.nowhere.org>
+	<35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 15 May 2010 18:58:07 +0000 (UTC)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Bartlomiej.
+On Sat, 15 May 2010 06:29:25 -0700 (PDT)
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-On 05/15/2010 08:48 PM, Bartlomiej Zolnierkiewicz wrote:
-> This seems to rely on an optimistic assumption that command execution
-> will always be successful and that no errors on disk or host level can
-> ever happen..
+> > It would be better to fix them to use the vsyscalls instead.
+> > Or if they can't use the vsyscalls for some reason today fix them.
+> 
+> The problem is from an app point-of-view there is no vsyscall.
+> There are two syscalls: gettimeofday and clock_gettime.  Sometimes,
+> if it gets lucky, they turn out to be very fast and sometimes
+> it doesn't get lucky and they are VERY slow (resulting in a
+> performance hit of 10% or more), depending on a number of factors
+> completely out of the control of the app and even undetectable to the
+> app.
+
+But the point is.. in the case you get that 10% hit.... that is exactly
+the case where tsc would not work either!!!
 >
-> [ The assumption in question was introduced in the previous patch:
-...
-> originally if the command execution failed the 'capacity' would be 0 ]
 
-Hmm... nothing really changes by this tho.  Whether unlocking succeeds
-or not, the block layer will revalidate the disk and the state at that
-point will be taken as the configuration to use.  There really is
-nothing much else to do.  You try unlocking, if it unlocks, use new
-capacity.  If unlocking fails, revalidation will report the limited
-size and block layer will have to use that.  If the device dies due to
-the unlocking attempt, well, the device is dead all the same.
+> If tsc_reliable is 1, the system and the kernel are guaranteeing
+> to the app that nothing will change in the TSC.  In an Invariant
+> TSC system that has passed Ingo's warp test (to eliminate the
+> possibility of a fixed interprocessor TSC gap due to a broken BIOS
+> in a multi-node NUMA system), if anything changes in the clock
 
-> It also seems that the original code could be improved a lot to handle
-> (very unlikely but not impossible) error situations better..
+just when we're trying to get rid of this constraint by allowing a per
+cpu offset... (this is needed to cope with cpus not powering on at the
+exact same time... including hotplug cpu etc etc)
 
-If retry is deemed necessary, it's best handled inside the per-driver
-unlock handler.  I don't think pushing EH logic upto block layer in
-this case would be a good idea.  Block layer is basically telling the
-driver "do whatever you can do to unlock the native capacity, when
-you're done, I'll restart from the beginning".
 
-Thanks.
+oh and.. what notification mechanism do you have to notify the
+application that the tsc now is no longer reliable? Such conditions
+can exist... for example due to a CPU being hotplugged, or some SMM
+screwing around and the kernel detecting that or .. or ...
+
+
+really. Use the vsyscall. If the vsyscall does not do exactly what you
+want, make a better vsyscall. 
+
+But friends don't let friends use rdtsc in application code.
+
+
+
 
 -- 
-tejun
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
