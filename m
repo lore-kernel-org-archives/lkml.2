@@ -1,41 +1,30 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758507Ab0ENMA0 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Fri, 14 May 2010 08:00:26 -0400
-Received: from server5a.woolnet.net ([209.59.181.202]:50676 "EHLO
-	server5a.woolnet.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754327Ab0ENMAY (ORCPT
+	id S1754467Ab0EOKVK (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Sat, 15 May 2010 06:21:10 -0400
+Received: from mxapp13.jaring.my ([192.228.250.215]:58709 "EHLO
+	vsmtp.jaring.my" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754222Ab0EOKVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 08:00:24 -0400
-To: linux-kernel@vger.kernel.org
-Subject: 2% loan offer
-From: Royalmarble loans <rmarbleloaninc@aol.com>
-Reply-To: rmarbleloan@hotmail.com
+	Sat, 15 May 2010 06:21:08 -0400
+X-Greylist: delayed 902 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 May 2010 06:21:08 EDT
+X-AuditID: c0e4fad7-b7b94ae0000052e3-ca-4bee72c023a8
+To: undisclosed-recipients:;
+Message-ID: <1273917959.4bee720716f17@webmail.jaring.my>
+Date: Sat, 15 May 2010 18:05:59 +0800
+From: Loan Solution Team <info@loan.com>
+Reply-to: solutionteam2009@f-mail.net
+Subject: Loan Application
 MIME-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7BIT
-Message-Id: <E1OCtYs-0000nx-GA@server5a.woolnet.net>
-Date: Fri, 14 May 2010 08:00:14 -0400
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - server5a.woolnet.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [99 99] / [47 12]
-X-AntiAbuse: Sender Address Domain - server5a.woolnet.net
+User-Agent: JARING Webmail v1.2 (http://www.jaring.my)
+X-Originating-IP: 78.138.3.235
+X-Brightmail-Tracker: AAAABAr+n9QUKSHAFClQvRQqHSM=
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Royalmarble Loan
-Bridge Studios,34a Deodar Road,
-London, SW15 2NN
- 
-     We offer loans ranging from $5000 to $150,000,000 at a 2% interest
-rate on a duration for a year to 50 years. If you are
-interested,contact me asap
- 
-Thomas Gary.
-Email: rmarbleloan@hotmail.com
- 
- 
-
-
+we lend loan at 3%,contact us via email: solutionteam2009@f-mail.net
+----------------------------------------------------------------
+This e-mail has been sent via JARING webmail at http://www.jaring.my
 
