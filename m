@@ -1,18 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756574Ab0EOVWq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:22:46 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35472 "EHLO mgw2.diku.dk"
+	id S1756674Ab0EOVXF (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:23:05 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51522 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755331Ab0EOVWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:22:43 -0400
-Date: Sat, 15 May 2010 23:22:38 +0200 (CEST)
+	id S1755331Ab0EOVXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:23:00 -0400
+Date: Sat, 15 May 2010 23:22:55 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+To: Michael Wu <flamingice@sourmilk.net>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 31/37] drivers/infiniband/core: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152322190.21345@ask.diku.dk>
+Subject: [PATCH 32/37] drivers/net/wireless/p54: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152322390.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,44 +43,41 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/infiniband/core/cma.c |    4 ++--
- drivers/infiniband/core/mad.c |    4 +---
- 2 files changed, 3 insertions(+), 5 deletions(-)
+ drivers/net/wireless/p54/eeprom.c |    4 ++--
+ drivers/net/wireless/p54/p54usb.c |    3 +--
+ 2 files changed, 3 insertions(+), 4 deletions(-)
 
-diff -u -p a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
---- a/drivers/infiniband/core/cma.c
-+++ b/drivers/infiniband/core/cma.c
-@@ -1676,13 +1676,13 @@ int rdma_set_ib_paths(struct rdma_cm_id 
- 	if (!cma_comp_exch(id_priv, CMA_ADDR_RESOLVED, CMA_ROUTE_RESOLVED))
- 		return -EINVAL;
+diff -u -p a/drivers/net/wireless/p54/p54usb.c b/drivers/net/wireless/p54/p54usb.c
+--- a/drivers/net/wireless/p54/p54usb.c
++++ b/drivers/net/wireless/p54/p54usb.c
+@@ -433,10 +433,9 @@ static int p54u_firmware_reset_3887(stru
+ 	u8 *buf;
+ 	int ret;
  
--	id->route.path_rec = kmalloc(sizeof *path_rec * num_paths, GFP_KERNEL);
-+	id->route.path_rec = kmemdup(path_rec, sizeof *path_rec * num_paths,
-+				     GFP_KERNEL);
- 	if (!id->route.path_rec) {
- 		ret = -ENOMEM;
- 		goto err;
- 	}
+-	buf = kmalloc(4, GFP_KERNEL);
++	buf = kmemdup(p54u_romboot_3887, 4, GFP_KERNEL);
+ 	if (!buf)
+ 		return -ENOMEM;
+-	memcpy(buf, p54u_romboot_3887, 4);
+ 	ret = p54u_bulk_msg(priv, P54U_PIPE_DATA,
+ 			    buf, 4);
+ 	kfree(buf);
+diff -u -p a/drivers/net/wireless/p54/eeprom.c b/drivers/net/wireless/p54/eeprom.c
+--- a/drivers/net/wireless/p54/eeprom.c
++++ b/drivers/net/wireless/p54/eeprom.c
+@@ -599,13 +599,13 @@ int p54_parse_eeprom(struct ieee80211_hw
+ 			}
+ 			break;
+ 		case PDR_PRISM_ZIF_TX_IQ_CALIBRATION:
+-			priv->iq_autocal = kmalloc(data_len, GFP_KERNEL);
++			priv->iq_autocal = kmemdup(entry->data, data_len,
++						   GFP_KERNEL);
+ 			if (!priv->iq_autocal) {
+ 				err = -ENOMEM;
+ 				goto err;
+ 			}
  
--	memcpy(id->route.path_rec, path_rec, sizeof *path_rec * num_paths);
- 	id->route.num_paths = num_paths;
- 	return 0;
- err:
-diff -u -p a/drivers/infiniband/core/mad.c b/drivers/infiniband/core/mad.c
---- a/drivers/infiniband/core/mad.c
-+++ b/drivers/infiniband/core/mad.c
-@@ -291,13 +291,11 @@ struct ib_mad_agent *ib_register_mad_age
- 	}
- 
- 	if (mad_reg_req) {
--		reg_req = kmalloc(sizeof *reg_req, GFP_KERNEL);
-+		reg_req = kmemdup(mad_reg_req, sizeof *reg_req, GFP_KERNEL);
- 		if (!reg_req) {
- 			ret = ERR_PTR(-ENOMEM);
- 			goto error3;
- 		}
--		/* Make a copy of the MAD registration request */
--		memcpy(reg_req, mad_reg_req, sizeof *reg_req);
- 	}
- 
- 	/* Now, fill in the various structures */
+-			memcpy(priv->iq_autocal, entry->data, data_len);
+ 			priv->iq_autocal_len = data_len / sizeof(struct pda_iq_autocal_entry);
+ 			break;
+ 		case PDR_DEFAULT_COUNTRY:
