@@ -1,101 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753352Ab0EOImK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 04:42:10 -0400
-Received: from hera.kernel.org ([140.211.167.34]:60539 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753163Ab0EOImG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 04:42:06 -0400
-Date: Sat, 15 May 2010 08:41:02 GMT
-From: tip-bot for Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       gorcunov@openvz.org, a.p.zijlstra@chello.nl, gorcunov@gmail.com,
-       fweisbec@gmail.com, jaswinderlinux@gmail.com, ming.m.lin@intel.com,
-       tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       gorcunov@openvz.org, a.p.zijlstra@chello.nl, gorcunov@gmail.com,
-       fweisbec@gmail.com, jaswinderlinux@gmail.com, ming.m.lin@intel.com,
-       tglx@linutronix.de, mingo@elte.hu
-In-Reply-To: <20100514190815.GG13509@lenovo>
-References: <20100514190815.GG13509@lenovo>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86, perf: P4 PMU - fix counters management logic
-Message-ID: <tip-1ff3d7d79204612ebe2e611d2592f8898908ca00@git.kernel.org>
-Git-Commit-ID: 1ff3d7d79204612ebe2e611d2592f8898908ca00
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 15 May 2010 08:41:03 +0000 (UTC)
+	id S1753108Ab0EOImH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 04:42:07 -0400
+Received: from penguin.host-ns.co.uk ([213.229.84.196]:55064 "EHLO
+	penguin.host-ns.co.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752624Ab0EOImF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 04:42:05 -0400
+Subject: Patch for Drivers:Staging:winbond:mds.c
+From: Adam Latham <adam.latham@unisontorbay.org.uk>
+Reply-To: adam.latham@unisontorbay.org.uk
+To: gregkh@suse.de, pavel@ucw.cz, penberg@cs.helsinki.fi, diegoliz@gmail.com,
+       mike@mikeasoft.com
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 15 May 2010 09:38:44 +0100
+Message-ID: <1273912724.3925.2.camel@ubuntu.ubuntu-domain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - penguin.host-ns.co.uk
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - unisontorbay.org.uk
+X-Source: 
+X-Source-Args: 
+X-Source-Dir: 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  1ff3d7d79204612ebe2e611d2592f8898908ca00
-Gitweb:     http://git.kernel.org/tip/1ff3d7d79204612ebe2e611d2592f8898908ca00
-Author:     Cyrill Gorcunov <gorcunov@gmail.com>
-AuthorDate: Fri, 14 May 2010 23:08:15 +0400
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sat, 15 May 2010 08:38:55 +0200
+>From 684e3064727e1334d47cb73833205593cd3b1d7d Mon Sep 17 00:00:00 2001
+From: Adam Latham <adam.latham@unisontorbay.org.uk>
+Date: Sat, 15 May 2010 09:31:01 +0100
+Subject: [PATCH] Staging: winbond: Fix for pointer name format issue in mds.c
 
-x86, perf: P4 PMU - fix counters management logic
+This patch fixes the unnecessary whitespace found in pointer names in the mds.c
+file found by the checkpatch.pl tool
 
-Jaswinder reported this #GP:
-
- |
- | Message from syslogd@ht at May 14 09:39:32 ...
- | kernel:[  314.908612] EIP: [<c100ccca>]
- | x86_perf_event_set_period+0x19d/0x1b2 SS:ESP 0068:edac3d70
- |
-
-Ming has narrowed it down to a comparision issue
-between arguments with different sizes and
-signs. As result event index reached a wrong
-value which in turn led to a GP fault.
-
-At the same time it was found that p4_next_cntr
-has broken logic and should return the counter
-index only if it was not yet borrowed for
-another event.
-
-Reported-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Reported-by: Lin Ming <ming.m.lin@intel.com>
-Bisected-by: Lin Ming <ming.m.lin@intel.com>
-Tested-by: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
-LKML-Reference: <20100514190815.GG13509@lenovo>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Adam Latham <adam.latham@unisontorbay.org.uk>
 ---
- arch/x86/kernel/cpu/perf_event_p4.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+ drivers/staging/winbond/mds.c |   14 +++++++-------
+ 1 files changed, 7 insertions(+), 7 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index cb875b1..424fc8d 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -18,7 +18,7 @@
- struct p4_event_bind {
- 	unsigned int opcode;			/* Event code and ESCR selector */
- 	unsigned int escr_msr[2];		/* ESCR MSR for this event */
--	unsigned char cntr[2][P4_CNTR_LIMIT];	/* counter index (offset), -1 on abscence */
-+	char cntr[2][P4_CNTR_LIMIT];		/* counter index (offset), -1 on abscence */
- };
+diff --git a/drivers/staging/winbond/mds.c b/drivers/staging/winbond/mds.c
+index 65063c3..e8320a6 100644
+--- a/drivers/staging/winbond/mds.c
++++ b/drivers/staging/winbond/mds.c
+@@ -6,7 +6,7 @@
+ #include "wblinux_f.h"
  
- struct p4_cache_event_bind {
-@@ -747,11 +747,11 @@ static int p4_get_escr_idx(unsigned int addr)
- static int p4_next_cntr(int thread, unsigned long *used_mask,
- 			struct p4_event_bind *bind)
+ unsigned char
+-Mds_initial(struct wbsoft_priv * adapter)
++Mds_initial(struct wbsoft_priv *adapter)
  {
--	int i = 0, j;
-+	int i, j;
+ 	struct wb35_mds *pMds = &adapter->Mds;
  
- 	for (i = 0; i < P4_CNTR_LIMIT; i++) {
--		j = bind->cntr[thread][i++];
--		if (j == -1 || !test_bit(j, used_mask))
-+		j = bind->cntr[thread][i];
-+		if (j != -1 && !test_bit(j, used_mask))
- 			return j;
- 	}
+@@ -18,7 +18,7 @@ Mds_initial(struct wbsoft_priv * adapter)
+ }
  
+ void
+-Mds_Destroy(struct wbsoft_priv * adapter)
++Mds_Destroy(struct wbsoft_priv *adapter)
+ {
+ }
+ 
+@@ -318,7 +318,7 @@ static u16 Mds_BodyCopy(struct wbsoft_priv *adapter, struct wb35_descriptor *pDe
+ 	return Size;
+ }
+ 
+-static void Mds_HeaderCopy(struct wbsoft_priv * adapter, struct wb35_descriptor *pDes, u8 *TargetBuffer)
++static void Mds_HeaderCopy(struct wbsoft_priv *adapter, struct wb35_descriptor *pDes, u8 *TargetBuffer)
+ {
+ 	struct wb35_mds *pMds = &adapter->Mds;
+ 	u8	*src_buffer = pDes->buffer_address[0]; /* 931130.5.g */
+@@ -414,9 +414,9 @@ static void Mds_HeaderCopy(struct wbsoft_priv * adapter, struct wb35_descriptor
+ }
+ 
+ void
+-Mds_Tx(struct wbsoft_priv * adapter)
++Mds_Tx(struct wbsoft_priv *adapter)
+ {
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	struct wb35_mds *pMds = &adapter->Mds;
+ 	struct wb35_descriptor	TxDes;
+ 	struct wb35_descriptor *pTxDes = &TxDes;
+@@ -550,10 +550,10 @@ Mds_Tx(struct wbsoft_priv * adapter)
+ }
+ 
+ void
+-Mds_SendComplete(struct wbsoft_priv * adapter, PT02_DESCRIPTOR pT02)
++Mds_SendComplete(struct wbsoft_priv *adapter, PT02_DESCRIPTOR pT02)
+ {
+ 	struct wb35_mds *pMds = &adapter->Mds;
+-	struct hw_data *	pHwData = &adapter->sHwData;
++	struct hw_data *pHwData = &adapter->sHwData;
+ 	u8	PacketId = (u8)pT02->T02_Tx_PktID;
+ 	unsigned char	SendOK = true;
+ 	u8	RetryCount, TxRate;
+-- 
+1.7.0.4
+
+
+
