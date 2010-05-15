@@ -1,63 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab0EOBHE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 21:07:04 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:53006 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752495Ab0EOBHB (ORCPT
+	id S1753539Ab0EOBPy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 21:15:54 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:56615 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751943Ab0EOBPx (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 21:07:01 -0400
-X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=NQpeRPGH1YwA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=meVymXHHAAAA:8 a=ibsV2mwkFbXULv0D5a8A:9 a=9agLyGMvdERFPIYEmWctjRbqlw8A:4 a=PUjeQqilurYA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 12/13 v3] ring-buffer: Add cached pages when freeing
- reader page
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>
-In-Reply-To: <20100514222647.GB14234@Krystal>
-References: <20100514192246.079025623@goodmis.org>
-	 <20100514192916.945900385@goodmis.org>  <20100514222647.GB14234@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Fri, 14 May 2010 21:06:58 -0400
-Message-ID: <1273885618.27703.3168.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Fri, 14 May 2010 21:15:53 -0400
+Date: Sat, 15 May 2010 11:15:23 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Christoph Lameter <cl@linux.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       Pekka Enberg <penberg@cs.helsinki.fi>, npiggin@suse.de
+Subject: Re: Defrag in shrinkers (was Re: [PATCH 0/5] Per-superblock
+ shrinkers)
+Message-ID: <20100515011523.GG8120@dastard>
+References: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+ <alpine.DEB.2.00.1005141244380.9466@router.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.DEB.2.00.1005141244380.9466@router.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-[ Added Peter Zijlsta since he had an interest in this topic ]
-
-On Fri, 2010-05-14 at 18:26 -0400, Mathieu Desnoyers wrote:
-> * Steven Rostedt (rostedt@goodmis.org) wrote:
-
-> Trying to understand the effect of splice() putting the page in the page
-> cache and how it affects this patch.
+On Fri, May 14, 2010 at 12:46:52PM -0500, Christoph Lameter wrote:
+> Would it also be possible to add some defragmentation logic when you
+> revise the shrinkers? Here is a prototype patch that would allow you to
+> determine the other objects sitting in the same page as a given object.
 > 
-> Basically, how do you know you can call free_page() from splice() in the
-> first place ? Answering this question will probably help us see if this
-> page reuse is OK.
+> With that I hope that you have enough information to determine if its
+> worth to evict the other objects as well to reclaim the slab page.
 
-Actually, looking at the code, I'm not sure this is safe. I was thinking
-that free_page() would always free the page. But I forgot that pages
-have a ref count. And a get_page() will prevent a page from freeing.
+I'll have a think about how this might fit in - the real problem is
+when the list returns objects that belong to a different superblock.
+We can only safely check whether the object belongs to the current
+superblock - to check if it belongs to a different sb we a lot of
+locks and reference counting to juggle. That would require
+re-introducing all the muck (and then some) that this patchset
+removes from the shrinkers.
 
-So I need to revert this patch, or rather, make a core-5 that removes
-this patch and fixes the spelling in the comment.
+Perhaps just freeing the objects that belong to the current sb would
+be sufficient to realise significant improvements (will be fine for
+systems that only have one active or dominant filesystem), but i
+think some experimentation would be needed.
 
-I can later add something that checks the page ref count, but that can
-wait till .36.
+The that brings us to test cases - we need a good one. I think we
+need to re-evaluate where we stand with regard to slab fragmentation
+(which probably hasn't changed much), and we need to be able to
+quantify the amount of improvement the increase in complexity will
+provide.  I don't have anything close to hand to generate such
+fragmentation, so it might take a little time to write a test that
+does the IO patterns I know will generate problems...
 
--- Steve
+Cheers,
 
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
