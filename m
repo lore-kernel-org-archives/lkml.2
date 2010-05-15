@@ -1,72 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1760128Ab0ENXxS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 19:53:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:38689 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753767Ab0ENXxP (ORCPT
+	id S1752927Ab0EOABK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 20:01:10 -0400
+Received: from cpoproxy2-pub.bluehost.com ([67.222.39.38]:48266 "HELO
+	outbound-mail-158.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751682Ab0EOABH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 19:53:15 -0400
-Message-ID: <4BEDE1EA.8030103@oracle.com>
-Date: Fri, 14 May 2010 16:51:06 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: David Miller <davem@davemloft.net>, mingo@elte.hu, tglx@linutronix.de,
-       hpa@zytor.com, akpm@linux-foundation.org, torvalds@linux-foundation.org,
-       hannes@cmpxchg.org, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: lmb type features.
-References: <1273804238.21352.389.camel@pasglop>	 <4BECF00D.6080800@oracle.com>	<1273825187.21352.590.camel@pasglop>	 <20100514.013012.13730149.davem@davemloft.net>	 <4BED7DFE.2090108@oracle.com> <1273876488.21352.643.camel@pasglop>
-In-Reply-To: <1273876488.21352.643.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+	Fri, 14 May 2010 20:01:07 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Cc:Subject:Message-ID:In-Reply-To:References:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=pPiLu3XTqiZwJs5yih6N3b1CgYS5oVYcV3ditZObixK4yQJR2+mcm9bC7PbiZ8wMimBRXCDKdX4iMRCd3OFX53m3XRw0iaCNMRe4oo0ecZ3qnZs647bf/M7V9041HK2z;
+Date: Fri, 14 May 2010 17:00:04 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Mike Travis <travis@sgi.com>, Bjorn Helgaas <bjorn.helgaas@hp.com>,
+       Mike Habeck <habeck@sgi.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Jacob Pan <jacob.jun.pan@intel.com>, Tejun Heo <tj@kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, Yinghai <yinghai.lu@oracle.com>,
+       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
+       Myron Stowe <myron.stowe@hp.com>
+Subject: Re: [Patch 1/1] x86 pci: Add option to not assign BAR's if not
+ already assigned
+Message-ID: <20100514170004.6577415b@virtuousgeek.org>
+In-Reply-To: <4BEDDF4F.3010902@zytor.com>
+References: <4BEAF008.9030805@sgi.com>
+	<201005131256.17997.bjorn.helgaas@hp.com>
+	<4BEC5530.1000008@sgi.com>
+	<201005131402.30759.bjorn.helgaas@hp.com>
+	<20100514152509.3aeb37b4@virtuousgeek.org>
+	<4BEDCFD9.7020202@sgi.com>
+	<20100514154706.4f36f4ed@virtuousgeek.org>
+	<4BEDDACD.9040704@zytor.com>
+	<20100514162836.27e0325a@virtuousgeek.org>
+	<4BEDDD77.1050205@zytor.com>
+	<20100514163416.0e940f64@virtuousgeek.org>
+	<4BEDDF4F.3010902@zytor.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BEDE255.0104:SCFMA922111,ss=1,fgs=0
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-like you to make some change to lmb_type and double_array()
+On Fri, 14 May 2010 16:39:59 -0700
+"H. Peter Anvin" <hpa@zytor.com> wrote:
 
-struct lmb_type {
-        unsigned long cnt;      /* number of regions */
-        unsigned long max;      /* size of the allocated array */
-        struct lmb_region *regions;
-};
+> On 05/14/2010 04:34 PM, Jesse Barnes wrote:
+> >> I'm not lamenting that fact, because my experience is that what ends up
+> >> replacing it is often far worse.  Consider UARTs -- no MMU dependencies
+> >> at all, can be accessed with four lines of assembly, and compare it to
+> >> EHCI debug port, the driver for which is over 900 lines in the Linux
+> >> kernel -- and that assumes that you're already in flat mode.
+> > 
+> > Heh, you're so old and crufty!
+> 
+> I know.  Debugging is so 20th century.
 
-==>
+Yeah, get with the times.  Debugging on today's machines means you have
+to look up register block offsets in ACPI, run some AML to setup your
+debug port, and then load a microkernel onto the debug device to get
+your vnc enabled debug console!
 
-struct lmb_type {
-        unsigned long cnt;      /* number of regions */
-        unsigned long max;      /* size of the allocated array */
-	unsigned long features;
-        struct lmb_region *regions;
-};
-
-
-then have 
-
-#define LMB_ADD_MERGE (1<<0) 
-#define LMB_ARRAY_DOUBLE (1<<1)
-
-so before call double_lmb_array(), should check the features to bit is set or not.
-otherwise should emit PANIC with clear message.
-
-Usage:
-
-for range replacement,
-
-1. early stage before lmb.reserved, lmb.memory is there.
-so can not use lmb_find_base yet.
-
-2. for bootmem replacement, when do range set subtraction for final free range list,
-don't want to change lmb.reserved in the middle.  callee should make sure to have big
-enough temperately lmb_regions in lmb_type. 
-
-Thanks
-
-Yinghai
-
+-- 
+Jesse Barnes, Intel Open Source Technology Center
