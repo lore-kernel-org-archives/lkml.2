@@ -1,51 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754115Ab0EOMJH (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 08:09:07 -0400
-Received: from vs81.sauer-cs.de ([80.244.252.81]:58658 "EHLO kbdbabel.org"
+	id S1754041Ab0EOMEU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 08:04:20 -0400
+Received: from mga03.intel.com ([143.182.124.21]:27702 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752295Ab0EOMJF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 08:09:05 -0400
-Date: Sat, 15 May 2010 16:03:43 +0400 (MSD)
-From: Alexander Kurz <linux@blala.de>
-X-X-Sender: linux@blala.de
-To: Frank Mori Hess <fmhess@users.sourceforge.net>
-cc: Greg KH <greg@kroah.com>, Alexander Kurz <linux@blala.de>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>, Ian Abbott <abbotti@mev.co.uk>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers
- grouped by bustype.
-In-Reply-To: <201005142029.37408.fmhess@speakeasy.net>
-Message-ID: <alpine.DEB.1.10.1005151601510.26254@blala.de>
-References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com> <201005142029.37408.fmhess@speakeasy.net>
-User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
+	id S1753168Ab0EOMET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 08:04:19 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,236,1272870000"; 
+   d="scan'208";a="277466178"
+Date: Sat, 15 May 2010 19:59:50 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Balbir Singh <balbir@linux.vnet.ibm.com>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
+       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 0/7] NUMA Hotplug emulator
+Message-ID: <20100515115950.GA23083@shaohui>
+Mail-Followup-To: Balbir Singh <balbir@linux.vnet.ibm.com>,
+	akpm@linux-foundation.org, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, ak@linux.intel.co,
+	fengguang.wu@intel.com, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
+References: <20100513113629.GA2169@shaohui>
+ <20100514065744.GB3296@balbir.in.ibm.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514065744.GB3296@balbir.in.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-On Fri, 14 May 2010, Frank Mori Hess wrote:
-
-> On Friday 14 May 2010, Greg KH wrote:
-> > Wow.  Is this something that we really want?  That's a lot of new
-> > Kconfig options, and while it seems like it makes sense, I would like to
-> > get the comedi developers opinion here.
+On Fri, May 14, 2010 at 12:27:44PM +0530, Balbir Singh wrote:
+> * Shaohui Zheng <shaohui.zheng@intel.com> [2010-05-13 19:36:30]:
 > 
-> It doesn't matter to me how granular the Kconfig stuff is.  Personally, the 
-> only thing I tend to do is disable are the pcmcia drivers as a group on 
-> desktop machines.  Also, I noticed in the patch it includes the 8255 
-> module as part of the PCI and ISA groups, but not PCMCIA.  But it is used 
-> by some of the PCMCIA drivers as well.
+> > Hi, All
+> > 	This patchset introduces NUMA hotplug emulator for x86. it refers too
+> > many files and might introduce new bugs, so we send a RFC to comminity first
+> > and expect comments and suggestions, thanks.
+> > 
+> > * WHAT IS HOTPLUG EMULATOR 
+> > 
+> > NUMA hotplug emulator is collectively named for the hotplug emulation
+> > it is able to emulate NUMA Node Hotplug thru a pure software way. It
+> > intends to help people easily debug and test node/cpu/memory hotplug
+> > related stuff on a none-numa-hotplug-support machine, even an UMA machine.
+> > 
+> > The emulator provides mechanism to emulate the process of physcial cpu/mem
+> > hotadd, it provides possibility to debug CPU and memory hotplug on the machines
+> > without NUMA support for kenrel developers. It offers an interface for cpu
+> > and memory hotplug test purpose.
+> >
 > 
-Hm, I cannot see a build-dependancy from any of the PCMCIA-Modules
-to 8255.c. All PCMCIA-modules do build and load fine without compiling 
-8255.c. There is a dependancy from das08_cs (PCMCIA) to das08 (ISA) via
-config COMEDI_DAS08_CS select COMEDI_DAS08.
-This will lead to a hidden select of COMEDI_DAS08 when 
-COMEDI_ISA_DRIVERS is not enabled.
-Is there something that I have missed?
+> Sounds like an interesting project, could you please
+> 
+> Post your patches as threaded, ideally having 0/7 to 7/7 in a thread
+> helps track the patches and comments.
+> 
+> -- 
+> 	Three Cheers,
+> 	Balbir
+
+Sorry for the late response, I have no experience to post all the patches into one 
+thread, I will consult local expert.
+
+Thanks Balbir, because of your guys's feedbacks and review comments, the code quality
+should be guaranteed. 
+
+-- 
+Thanks & Regards,
+Shaohui
 
