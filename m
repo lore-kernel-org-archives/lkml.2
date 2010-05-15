@@ -1,107 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755692Ab0EOSK6 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 14:10:58 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40271 "EHLO hera.kernel.org"
+	id S1755619Ab0EOSKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 14:10:51 -0400
+Received: from hera.kernel.org ([140.211.167.34]:40267 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755195Ab0EOSK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 14:10:27 -0400
+	id S1755045Ab0EOSKW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 14:10:22 -0400
 From: Tejun Heo <tj@kernel.org>
 To: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
        linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
        linux-kernel@vger.kernel.org, ben@decadent.org.uk, davem@davemloft.net,
        bzolnier@gmail.com
 Cc: Tejun Heo <tj@kernel.org>
-Subject: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
-Date: Sat, 15 May 2010 20:09:32 +0200
-Message-Id: <1273946974-29131-7-git-send-email-tj@kernel.org>
+Subject: [PATCH 5/8] block: improve automatic native capacity unlocking
+Date: Sat, 15 May 2010 20:09:31 +0200
+Message-Id: <1273946974-29131-6-git-send-email-tj@kernel.org>
 X-Mailer: git-send-email 1.6.4.2
 In-Reply-To: <1273946974-29131-1-git-send-email-tj@kernel.org>
 References: <1273946974-29131-1-git-send-email-tj@kernel.org>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 15 May 2010 18:09:41 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sat, 15 May 2010 18:09:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Implement sd_unlock_native_capacity() method which calls into
-hostt->unlock_native_capacity() if implemented.  This will be invoked
-by block layer if partitions extend beyond the end of the device and
-can be used to implement, for example, on-demand ATA host protected
-area unlocking.
+Currently, native capacity unlocking is initiated only when a
+recognized partition extends beyond the end of the disk.  However,
+there are several other unhandled cases where truncated capacity can
+lead to misdetection of partitions.
+
+* Partition table is fully beyond EOD.
+
+* Partition table is partially beyond EOD (daisy chained ones).
+
+* Recognized partition starts beyond EOD.
+
+This patch updates generic partition check code such that all the
+above three cases are handled too.  For the first two, @state tracks
+whether low level partition check code tried to read beyond EOD during
+partition scan and triggers native capacity unlocking accordingly.
+The third is now handled similarly to the original unlocking case.
 
 Signed-off-by: Tejun Heo <tj@kernel.org>
 Cc: Ben Hutchings <ben@decadent.org.uk>
 ---
- drivers/scsi/sd.c        |   22 ++++++++++++++++++++++
- include/scsi/scsi_host.h |    8 ++++++++
- 2 files changed, 30 insertions(+), 0 deletions(-)
+ fs/partitions/check.c |   69 +++++++++++++++++++++++++++++++++++++++----------
+ fs/partitions/check.h |    5 +++
+ 2 files changed, 60 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/scsi/sd.c b/drivers/scsi/sd.c
-index 8b827f3..b85906e 100644
---- a/drivers/scsi/sd.c
-+++ b/drivers/scsi/sd.c
-@@ -97,6 +97,7 @@ MODULE_ALIAS_SCSI_DEVICE(TYPE_RBC);
- #endif
+diff --git a/fs/partitions/check.c b/fs/partitions/check.c
+index a19995c..5dcd4b0 100644
+--- a/fs/partitions/check.c
++++ b/fs/partitions/check.c
+@@ -161,7 +161,7 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
+ 	struct parsed_partitions *state;
+ 	int i, res, err;
  
- static int  sd_revalidate_disk(struct gendisk *);
-+static void sd_unlock_native_capacity(struct gendisk *disk);
- static int  sd_probe(struct device *);
- static int  sd_remove(struct device *);
- static void sd_shutdown(struct device *);
-@@ -1100,6 +1101,7 @@ static const struct block_device_operations sd_fops = {
- #endif
- 	.media_changed		= sd_media_changed,
- 	.revalidate_disk	= sd_revalidate_disk,
-+	.unlock_native_capacity	= sd_unlock_native_capacity,
- };
+-	state = kmalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
++	state = kzalloc(sizeof(struct parsed_partitions), GFP_KERNEL);
+ 	if (!state)
+ 		return NULL;
  
- static unsigned int sd_completed_bytes(struct scsi_cmnd *scmd)
-@@ -2101,6 +2103,26 @@ static int sd_revalidate_disk(struct gendisk *disk)
+@@ -187,6 +187,8 @@ check_partition(struct gendisk *hd, struct block_device *bdev)
+ 	}
+ 	if (res > 0)
+ 		return state;
++	if (state->access_beyond_eod)
++		err = -ENOSPC;
+ 	if (err)
+ 	/* The partition is unrecognized. So report I/O errors if there were any */
+ 		res = err;
+@@ -539,13 +541,34 @@ exit:
+ 	disk_part_iter_exit(&piter);
  }
  
- /**
-+ *	sd_unlock_native_capacity - unlock native capacity
-+ *	@disk: struct gendisk to set capacity for
-+ *
-+ *	Block layer calls this function if it detects that partitions
-+ *	on @disk reach beyond the end of the device.  If the SCSI host
-+ *	implements ->unlock_native_capacity() method, it's invoked to
-+ *	give it a chance to adjust the device capacity.
-+ *
-+ *	CONTEXT:
-+ *	Defined by block layer.  Might sleep.
-+ */
-+static void sd_unlock_native_capacity(struct gendisk *disk)
++static bool disk_unlock_native_capacity(struct gendisk *disk)
 +{
-+	struct scsi_device *sdev = scsi_disk(disk)->device;
++	const struct block_device_operations *bdops = disk->fops;
 +
-+	if (sdev->host->hostt->unlock_native_capacity)
-+		sdev->host->hostt->unlock_native_capacity(sdev);
++	if (bdops->unlock_native_capacity &&
++	    !(disk->flags & GENHD_FL_NATIVE_CAPACITY)) {
++		printk(KERN_CONT "enabling native capacity\n");
++		bdops->unlock_native_capacity(disk);
++		disk->flags |= GENHD_FL_NATIVE_CAPACITY;
++		return true;
++	} else {
++		printk(KERN_CONT "truncated\n");
++		return false;
++	}
 +}
 +
-+/**
-  *	sd_format_disk_name - format disk name
-  *	@prefix: name prefix - ie. "sd" for SCSI disks
-  *	@index: index of the disk to format name for
-diff --git a/include/scsi/scsi_host.h b/include/scsi/scsi_host.h
-index c50a97f..b7bdecb 100644
---- a/include/scsi/scsi_host.h
-+++ b/include/scsi/scsi_host.h
-@@ -327,6 +327,14 @@ struct scsi_host_template {
- 			sector_t, int []);
- 
- 	/*
-+	 * This function is called when one or more partitions on the
-+	 * device reach beyond the end of the device.
-+	 *
-+	 * Status: OPTIONAL
-+	 */
-+	void (*unlock_native_capacity)(struct scsi_device *);
+ int rescan_partitions(struct gendisk *disk, struct block_device *bdev)
+ {
++	struct parsed_partitions *state = NULL;
+ 	struct disk_part_iter piter;
+ 	struct hd_struct *part;
+-	struct parsed_partitions *state;
+ 	int p, highest, res;
+ rescan:
++	if (state && !IS_ERR(state)) {
++		kfree(state);
++		state = NULL;
++	}
 +
+ 	if (bdev->bd_part_count)
+ 		return -EBUSY;
+ 	res = invalidate_partition(disk, 0);
+@@ -563,8 +586,32 @@ rescan:
+ 	bdev->bd_invalidated = 0;
+ 	if (!get_capacity(disk) || !(state = check_partition(disk, bdev)))
+ 		return 0;
+-	if (IS_ERR(state))	/* I/O error reading the partition table */
++	if (IS_ERR(state)) {
++		/*
++		 * I/O error reading the partition table.  If any
++		 * partition code tried to read beyond EOD, retry
++		 * after unlocking native capacity.
++		 */
++		if (PTR_ERR(state) == -ENOSPC) {
++			printk(KERN_WARNING "%s: partition table beyond EOD, ",
++			       disk->disk_name);
++			if (disk_unlock_native_capacity(disk))
++				goto rescan;
++		}
+ 		return -EIO;
++	}
 +	/*
- 	 * Can be used to export driver statistics and other infos to the
- 	 * world outside the kernel ie. userspace and it also provides an
- 	 * interface to feed the driver with information.
++	 * If any partition code tried to read beyond EOD, try
++	 * unlocking native capacity even if partition table is
++	 * sucessfully read as we could be missing some partitions.
++	 */
++	if (state->access_beyond_eod) {
++		printk(KERN_WARNING
++		       "%s: partition table partially beyond EOD, ",
++		       disk->disk_name);
++		if (disk_unlock_native_capacity(disk))
++			goto rescan;
++	}
+ 
+ 	/* tell userspace that the media / partition table may have changed */
+ 	kobject_uevent(&disk_to_dev(disk)->kobj, KOBJ_CHANGE);
+@@ -590,25 +637,20 @@ rescan:
+ 		from = state->parts[p].from;
+ 		if (from >= get_capacity(disk)) {
+ 			printk(KERN_WARNING
+-			       "%s: p%d ignored, start %llu is behind the end of the disk\n",
++			       "%s: p%d start %llu is beyond EOD, ",
+ 			       disk->disk_name, p, (unsigned long long) from);
++			if (disk_unlock_native_capacity(disk))
++				goto rescan;
+ 			continue;
+ 		}
+ 
+ 		if (from + size > get_capacity(disk)) {
+-			const struct block_device_operations *bdops = disk->fops;
+-
+ 			printk(KERN_WARNING
+-			       "%s: p%d size %llu exceeds device capacity, ",
++			       "%s: p%d size %llu extends beyond EOD, ",
+ 			       disk->disk_name, p, (unsigned long long) size);
+ 
+-			if (bdops->unlock_native_capacity &&
+-			    (disk->flags & GENHD_FL_NATIVE_CAPACITY) == 0) {
+-				printk(KERN_CONT "enabling native capacity\n");
+-				bdops->unlock_native_capacity(disk);
+-				disk->flags |= GENHD_FL_NATIVE_CAPACITY;
++			if (disk_unlock_native_capacity(disk)) {
+ 				/* free state and restart */
+-				kfree(state);
+ 				goto rescan;
+ 			} else {
+ 				/*
+@@ -617,7 +659,6 @@ rescan:
+ 				 * we limit them to the end of the disk to avoid
+ 				 * creating invalid block devices
+ 				 */
+-				printk(KERN_CONT "limited to end of disk\n");
+ 				size = get_capacity(disk) - from;
+ 			}
+ 		}
+diff --git a/fs/partitions/check.h b/fs/partitions/check.h
+index 4b31a97..52f8bd3 100644
+--- a/fs/partitions/check.h
++++ b/fs/partitions/check.h
+@@ -15,11 +15,16 @@ struct parsed_partitions {
+ 	} parts[DISK_MAX_PARTS];
+ 	int next;
+ 	int limit;
++	bool access_beyond_eod;
+ };
+ 
+ static inline void *read_part_sector(struct parsed_partitions *state,
+ 				     sector_t n, Sector *p)
+ {
++	if (n >= get_capacity(state->bdev->bd_disk)) {
++		state->access_beyond_eod = true;
++		return NULL;
++	}
+ 	return read_dev_sector(state->bdev, n, p);
+ }
+ 
 -- 
 1.6.4.2
 
