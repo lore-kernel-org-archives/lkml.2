@@ -1,56 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756763Ab0EOCyI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 22:54:08 -0400
-Received: from crca.org.au ([74.207.252.120]:40553 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755745Ab0EOCyG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 22:54:06 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BEE0CC5.60804@crca.org.au>
-Date: Sat, 15 May 2010 12:53:57 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1756810Ab0EOC6x (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 22:58:53 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:34880 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752258Ab0EOC6u (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 14 May 2010 22:58:50 -0400
+Date: Fri, 14 May 2010 22:58:48 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Brian Swetland <swetland@google.com>
+cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Lindgren <tony@atomide.com>,
+       Matthew Garrett <mjg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       <magnus.damm@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       =?UTF-8?Q?Beno=C3=AEt_Cousson?= <b-cousson@ti.com>,
+       <linux-omap@vger.kernel.org>, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+In-Reply-To: <AANLkTil-Ky5L84JF7xn6su8VMtglBpZwCNIh7VgBiHgL@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1005142256070.11498-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: Matt Reimer <mattjreimer@gmail.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
- userspace is frozen?
-References: <Pine.LNX.4.44L0.1005142235580.11498-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005142235580.11498-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Fri, 14 May 2010, Brian Swetland wrote:
 
-On 15/05/10 12:37, Alan Stern wrote:
-> On Fri, 14 May 2010, Nigel Cunningham wrote:
->
->> Hi.
->
->>> Subject: [PATCH] fs: prevent hang on suspend/resume when MMC/SD card present
->>>
->>> Devices can come and go bus during suspend or resume, when the
->>> writeback thread is frozen, resulting in a hang. Prevent the hang
->>> by thawing the writeback thread in del_gendisk().
->
->> Why not just make it unfreezeable to start with?
->
-> If the writeback thread were unfreezable, it might wake up and try to
-> write dirty pages back to disks after they were already suspended.
-> That would not lead to good consequences...
+> It provides useful functionality -- you apparently disagree, but the
+> wakelock/suspendblock model is in use, shipping, and solving problems
+> for quite a lot of android devices that have been shipping for a while
+> now.  We actively go to lowest power state in idle (on omap, msm,
+> etc), and use drivers that aggressively declock and depower modules
+> (similar to runtime pm), but we have found that using the
+> opportunistic suspend model combined with wakelocks allows us to
+> attain even lower average power consumption in always-connected,
+> actively-syncing devices.
 
-If it syncs data as it should when we freeze processes, there won't be 
-any problem. Perhaps this is just an argument against making syncing 
-optional?
+Can you explain this in more detail?  Are you saying that some devices
+go on generating interrupts and causing timers to be scheduled, even 
+though what they're doing isn't important enough to prevent the system 
+from powering down?
 
-Regards,
+Alan Stern
 
-Nigel
