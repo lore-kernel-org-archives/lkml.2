@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab0EOVAZ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:00:25 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:49618 "EHLO
+	id S1754100Ab0EOVA3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:00:29 -0400
+Received: from moutng.kundenserver.de ([212.227.126.186]:60866 "EHLO
 	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753792Ab0EOVAT (ORCPT
+	with ESMTP id S1753904Ab0EOVAZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:00:19 -0400
+	Sat, 15 May 2010 17:00:25 -0400
 From: Arnd Bergmann <arnd@arndb.de>
 To: linux-kernel@vger.kernel.org
 Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
@@ -15,128 +15,156 @@ Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
        Andrew Morton <akpm@linux-foundation.org>,
        John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
        Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 07/10] tty: reorder ldisc locking
-Date: Sat, 15 May 2010 22:59:53 +0200
-Message-Id: <1273957196-13768-8-git-send-email-arnd@arndb.de>
+Subject: [PATCH 10/10] tty: implement BTM as mutex instead of BKL
+Date: Sat, 15 May 2010 22:59:56 +0200
+Message-Id: <1273957196-13768-11-git-send-email-arnd@arndb.de>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1273957196-13768-1-git-send-email-arnd@arndb.de>
 References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19DZTx80F4yMdcE0ktmHpgElc83x3ASvX9b7mx
- kAjdfCFB2u0u8ioPPUOmi7du5h52Vszk35PqaoMkcqLna6mQ8m
- 8YY2S91wOWjZpThXWHylQ==
+X-Provags-ID: V01U2FsdGVkX1967MQM7nj0YdPwCKrD1o3INPAYkpL4IX7vwQl
+ 4YOWNa+sO1VIK0hr2aK0XT/Ov6kC9EANt2nHvI0jXzrlzwnChD
+ KGtBLvBZvn105A2WG91yQ==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to release the BTM in paste_selection() when
-sleeping in tty_ldisc_ref_wait to avoid deadlocks
-with tty_ldisc_enable.
+The tty locking now follows the rules for mutexes, so
+we can replace the BKL usage with a new subsystem
+wide mutex.
 
-In tty_set_ldisc, we now always grab the BTM before
-taking the ldisc_mutex in order to avoid AB-BA
-deadlocks between the two.
+This patch for now makes the new behaviour an optional
+experimental feature that can be enabled for testing
+purposes.
 
-tty_ldisc_halt potentially blocks on a workqueue
-function that takes the BTM, so we must release
-the BTM before calling it.
+Using a regular mutex here will change the behaviour
+when blocked on the BTM from spinning to sleeping,
+but that should not be visible to the user.
+
+Using the mutex also means that all the BTM is now
+covered by lockdep.
 
 Signed-off-by: Arnd Bergmann <arnd@arndb.de>
 ---
- drivers/char/selection.c |    9 +++++++--
- drivers/char/tty_ldisc.c |   24 ++++++++++++++++++++----
- 2 files changed, 27 insertions(+), 6 deletions(-)
+ drivers/char/Makefile    |    1 +
+ drivers/char/tty_mutex.c |   47 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/tty.h      |    8 +++++++
+ lib/Kconfig.debug        |   10 +++++++++
+ 4 files changed, 66 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/char/tty_mutex.c
 
-diff --git a/drivers/char/selection.c b/drivers/char/selection.c
-index 85211a3..75889cd 100644
---- a/drivers/char/selection.c
-+++ b/drivers/char/selection.c
-@@ -319,8 +319,13 @@ int paste_selection(struct tty_struct *tty)
- 	poke_blanked_console();
- 	release_console_sem();
+diff --git a/drivers/char/Makefile b/drivers/char/Makefile
+index f957edf..74ee3fa 100644
+--- a/drivers/char/Makefile
++++ b/drivers/char/Makefile
+@@ -9,6 +9,7 @@ FONTMAPFILE = cp437.uni
  
--	ld = tty_ldisc_ref_wait(tty);
--	
-+	ld = tty_ldisc_ref(tty);
-+	if (!ld) {
-+		tty_unlock();
-+		ld = tty_ldisc_ref_wait(tty);
-+		tty_lock();
-+	}
+ obj-y	 += mem.o random.o tty_io.o n_tty.o tty_ioctl.o tty_ldisc.o tty_buffer.o tty_port.o
+ 
++obj-$(CONFIG_TTY_MUTEX)		+= tty_mutex.o
+ obj-$(CONFIG_LEGACY_PTYS)	+= pty.o
+ obj-$(CONFIG_UNIX98_PTYS)	+= pty.o
+ obj-y				+= misc.o
+diff --git a/drivers/char/tty_mutex.c b/drivers/char/tty_mutex.c
+new file mode 100644
+index 0000000..f66dfdf
+--- /dev/null
++++ b/drivers/char/tty_mutex.c
+@@ -0,0 +1,47 @@
++/*
++ * drivers/char/tty_lock.c
++ */
++#include <linux/tty.h>
++#include <linux/module.h>
++#include <linux/kallsyms.h>
++#include <linux/semaphore.h>
++#include <linux/sched.h>
 +
- 	add_wait_queue(&vc->paste_wait, &wait);
- 	while (sel_buffer && sel_buffer_lth > pasted) {
- 		set_current_state(TASK_INTERRUPTIBLE);
-diff --git a/drivers/char/tty_ldisc.c b/drivers/char/tty_ldisc.c
-index 97681ff..0f49479 100644
---- a/drivers/char/tty_ldisc.c
-+++ b/drivers/char/tty_ldisc.c
-@@ -582,6 +582,7 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	tty_wait_until_sent(tty, 0);
- 
-+	tty_lock();
- 	mutex_lock(&tty->ldisc_mutex);
- 
- 	/*
-@@ -591,13 +592,13 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	while (test_bit(TTY_LDISC_CHANGING, &tty->flags)) {
- 		mutex_unlock(&tty->ldisc_mutex);
-+		tty_unlock();
- 		wait_event(tty_ldisc_wait,
- 			test_bit(TTY_LDISC_CHANGING, &tty->flags) == 0);
-+		tty_lock();
- 		mutex_lock(&tty->ldisc_mutex);
- 	}
- 
--	tty_lock();
--
- 	set_bit(TTY_LDISC_CHANGING, &tty->flags);
- 
- 	/*
-@@ -634,8 +635,8 @@ int tty_set_ldisc(struct tty_struct *tty, int ldisc)
- 
- 	flush_scheduled_work();
- 
--	mutex_lock(&tty->ldisc_mutex);
- 	tty_lock();
-+	mutex_lock(&tty->ldisc_mutex);
- 	if (test_bit(TTY_HUPPED, &tty->flags)) {
- 		/* We were raced by the hangup method. It will have stomped
- 		   the ldisc data and closed the ldisc down */
-@@ -782,7 +783,20 @@ void tty_ldisc_hangup(struct tty_struct *tty)
- 	 * Avoid racing set_ldisc or tty_ldisc_release
- 	 */
- 	mutex_lock(&tty->ldisc_mutex);
--	tty_ldisc_halt(tty);
++/*
++ * The 'big tty semaphore'
++ *
++ * This mutex is taken and released by tty_lock() and tty_unlock(),
++ * replacing the older big kernel mutex.
++ * It can no longer be taken recursively, and does not get
++ * released implicitly while sleeping.
++ *
++ * Don't use in new code.
++ */
++static DEFINE_MUTEX(big_tty_mutex);
++struct task_struct *__big_tty_mutex_owner;
++EXPORT_SYMBOL_GPL(__big_tty_mutex_owner);
 +
-+	/*
-+	 * this is like tty_ldisc_halt, but we need to give up
-+	 * the BTM before calling cancel_delayed_work_sync,
-+	 * which may need to wait for another function taking the BTM
-+	 */
-+	clear_bit(TTY_LDISC, &tty->flags);
-+	tty_unlock();
-+	cancel_delayed_work_sync(&tty->buf.work);
-+	mutex_unlock(&tty->ldisc_mutex);
++/*
++ * Getting the big tty mutex.
++ */
++void __lockfunc tty_lock(void)
++{
++	struct task_struct *task = current;
 +
-+	tty_lock();
-+	mutex_lock(&tty->ldisc_mutex);
++	WARN_ON(__big_tty_mutex_owner == task);
 +
- 	/* At this point we have a closed ldisc and we want to
- 	   reopen it. We could defer this to the next open but
- 	   it means auditing a lot of other paths so this is
-@@ -853,8 +867,10 @@ void tty_ldisc_release(struct tty_struct *tty, struct tty_struct *o_tty)
- 	 * race with the set_ldisc code path.
- 	 */
++	mutex_lock(&big_tty_mutex);
++	__big_tty_mutex_owner = task;
++}
++EXPORT_SYMBOL(tty_lock);
++
++void __lockfunc tty_unlock(void)
++{
++	struct task_struct *task = current;
++
++	WARN_ON(__big_tty_mutex_owner != task);
++	__big_tty_mutex_owner = NULL;
++
++	mutex_unlock(&big_tty_mutex);
++}
++EXPORT_SYMBOL(tty_unlock);
+diff --git a/include/linux/tty.h b/include/linux/tty.h
+index b227616..d8d90f6 100644
+--- a/include/linux/tty.h
++++ b/include/linux/tty.h
+@@ -573,7 +573,14 @@ extern int vt_ioctl(struct tty_struct *tty, struct file *file,
+ extern long vt_compat_ioctl(struct tty_struct *tty, struct file * file,
+ 		     unsigned int cmd, unsigned long arg);
  
-+	tty_unlock();
- 	tty_ldisc_halt(tty);
- 	flush_scheduled_work();
-+	tty_lock();
++/* tty_mutex.c */
+ /* functions for preparation of BKL removal */
++#ifdef CONFIG_TTY_MUTEX
++extern void __lockfunc tty_lock(void) __acquires(tty_lock);
++extern void __lockfunc tty_unlock(void) __releases(tty_lock);
++extern struct task_struct *__big_tty_mutex_owner;
++#define tty_locked()		(current == __big_tty_mutex_owner)
++#else
+ static inline void tty_lock(void) __acquires(kernel_lock)
+ {
+ 	WARN_ON(kernel_locked());
+@@ -584,6 +591,7 @@ static inline void tty_unlock(void) __releases(kernel_lock)
+ 	unlock_kernel();
+ }
+ #define tty_locked()		(kernel_locked())
++#endif
  
- 	mutex_lock(&tty->ldisc_mutex);
- 	/*
+ /*
+  * wait_event_interruptible_tty -- wait for a condition with the tty lock held
+diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
+index 935248b..0b3e1ad 100644
+--- a/lib/Kconfig.debug
++++ b/lib/Kconfig.debug
+@@ -428,6 +428,16 @@ config RT_MUTEX_TESTER
+ 	help
+ 	  This option enables a rt-mutex tester.
+ 
++config TTY_MUTEX
++	bool "Use a mutex instead of BKL for TTY locking"
++	depends on EXPERIMENTAL && SMP
++	help
++	  The TTY subsystem traditionally depends on the big kernel lock
++	  for serialization. Saying Y here replaces the BKL with the Big
++	  TTY Mutex (BTM).
++	  Building a kernel without the BKL is only possible with TTY_MUTEX
++	  enabled.
++
+ config DEBUG_SPINLOCK
+ 	bool "Spinlock and rw-lock debugging: basic checks"
+ 	depends on DEBUG_KERNEL
 -- 
 1.7.0.4
 
