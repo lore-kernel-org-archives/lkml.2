@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756008Ab0EOVWJ (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:22:09 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51463 "EHLO mgw1.diku.dk"
+	id S1756349Ab0EOVW2 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:22:28 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51489 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab0EOVWF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:22:05 -0400
-Date: Sat, 15 May 2010 23:22:00 +0200 (CEST)
+	id S1753458Ab0EOVWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:22:23 -0400
+Date: Sat, 15 May 2010 23:22:18 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Miloslav Trmac <mitr@volny.cz>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 29/37] drivers/input/misc: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152321430.21345@ask.diku.dk>
+To: Carlos Corbacho <carlos@strangeworlds.co.uk>,
+       Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 30/37] drivers/platform/x86: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152322010.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,23 +42,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/input/misc/wistron_btns.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ drivers/platform/x86/wmi.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff -u -p a/drivers/input/misc/wistron_btns.c b/drivers/input/misc/wistron_btns.c
---- a/drivers/input/misc/wistron_btns.c
-+++ b/drivers/input/misc/wistron_btns.c
-@@ -983,11 +983,11 @@ static int __init copy_keymap(void)
- 	for (key = keymap; key->type != KE_END; key++)
- 		length++;
+diff -u -p a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
+--- a/drivers/platform/x86/wmi.c
++++ b/drivers/platform/x86/wmi.c
+@@ -756,12 +756,10 @@ static __init acpi_status parse_wdg(acpi
  
--	new_keymap = kmalloc(length * sizeof(struct key_entry), GFP_KERNEL);
-+	new_keymap = kmemdup(keymap, length * sizeof(struct key_entry),
-+			     GFP_KERNEL);
- 	if (!new_keymap)
- 		return -ENOMEM;
+ 	total = obj->buffer.length / sizeof(struct guid_block);
  
--	memcpy(new_keymap, keymap, length * sizeof(struct key_entry));
- 	keymap = new_keymap;
+-	gblock = kzalloc(obj->buffer.length, GFP_KERNEL);
++	gblock = kmemdup(obj->buffer.pointer, obj->buffer.length, GFP_KERNEL);
+ 	if (!gblock)
+ 		return AE_NO_MEMORY;
  
- 	return 0;
+-	memcpy(gblock, obj->buffer.pointer, obj->buffer.length);
+-
+ 	for (i = 0; i < total; i++) {
+ 		/*
+ 		  Some WMI devices, like those for nVidia hooks, have a
