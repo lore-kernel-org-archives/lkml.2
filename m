@@ -1,80 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753019Ab0EOTLx (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 15:11:53 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58800 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752322Ab0EOTLw (ORCPT
+	id S1753313Ab0EOTWT (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 15:22:19 -0400
+Received: from mail-yw0-f198.google.com ([209.85.211.198]:40354 "EHLO
+	mail-yw0-f198.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752542Ab0EOTWR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 15:11:52 -0400
-Date: Sat, 15 May 2010 12:14:24 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Venkatesh Pallipadi <venki@google.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-Message-ID: <20100515121424.38f5b389@infradead.org>
-In-Reply-To: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-References: <1273887635-27610-1-git-send-email-venki@google.com
- 87tyq9mqrz.fsf@basil.nowhere.org>
-	<35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Sat, 15 May 2010 15:22:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=XjlUq/kTpNcoOnD4TMR9X6BM2CRUj+sAx+DPuzvxizMMmAslVIKhdduUppRvyJmAL4
+         yWb0fHY49V4rCiROfinnJVd8wckbeglblEVrRRvgks/ATU4iUbyPNQsNhEvX3dGcbpaE
+         E9yRtTZ/vdLu5TX0eQA4hxuIeE8yMwTKwwyzA=
+Message-ID: <4BEEF467.9030300@garzik.org>
+Date: Sat, 15 May 2010 15:22:15 -0400
+From: Jeff Garzik <jeff@garzik.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Tejun Heo <tj@kernel.org>
+CC: linux-ide@vger.kernel.org, jens.axboe@oracle.com,
+       linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
+       linux-kernel@vger.kernel.org, ben@decadent.org.uk, davem@davemloft.net,
+       bzolnier@gmail.com
+Subject: Re: [PATCH 7/8] libata: use the enlarged capacity after late HPA
+ unlock
+References: <1273946974-29131-1-git-send-email-tj@kernel.org> <1273946974-29131-8-git-send-email-tj@kernel.org>
+In-Reply-To: <1273946974-29131-8-git-send-email-tj@kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 15 May 2010 06:29:25 -0700 (PDT)
-Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
-
-> > It would be better to fix them to use the vsyscalls instead.
-> > Or if they can't use the vsyscalls for some reason today fix them.
-> 
-> The problem is from an app point-of-view there is no vsyscall.
-> There are two syscalls: gettimeofday and clock_gettime.  Sometimes,
-> if it gets lucky, they turn out to be very fast and sometimes
-> it doesn't get lucky and they are VERY slow (resulting in a
-> performance hit of 10% or more), depending on a number of factors
-> completely out of the control of the app and even undetectable to the
-> app.
-
-But the point is.. in the case you get that 10% hit.... that is exactly
-the case where tsc would not work either!!!
+On 05/15/2010 02:09 PM, Tejun Heo wrote:
+> After late HPA unlock, libata kept using the original capacity
+> ignoring the new larger native capacity.  Enlarging device on the fly
+> doesn't cause any harm.  Use the larger native capacity instead.  This
+> will enable on-demand HPA unlocking.
 >
+> Signed-off-by: Tejun Heo<tj@kernel.org>
+> Cc: Ben Hutchings<ben@decadent.org.uk>
 
-> If tsc_reliable is 1, the system and the kernel are guaranteeing
-> to the app that nothing will change in the TSC.  In an Invariant
-> TSC system that has passed Ingo's warp test (to eliminate the
-> possibility of a fixed interprocessor TSC gap due to a broken BIOS
-> in a multi-node NUMA system), if anything changes in the clock
-
-just when we're trying to get rid of this constraint by allowing a per
-cpu offset... (this is needed to cope with cpus not powering on at the
-exact same time... including hotplug cpu etc etc)
+Acked-by: Jeff Garzik <jgarzik@redhat.com>
 
 
-oh and.. what notification mechanism do you have to notify the
-application that the tsc now is no longer reliable? Such conditions
-can exist... for example due to a CPU being hotplugged, or some SMM
-screwing around and the kernel detecting that or .. or ...
-
-
-really. Use the vsyscall. If the vsyscall does not do exactly what you
-want, make a better vsyscall. 
-
-But friends don't let friends use rdtsc in application code.
-
-
-
-
--- 
-Arjan van de Ven 	Intel Open Source Technology Centre
-For development, discussion and tips for power savings, 
-visit http://www.lesswatts.org
