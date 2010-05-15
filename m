@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754894Ab0EOVPU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:15:20 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46624 "EHLO mgw1.diku.dk"
+	id S1754938Ab0EOVPf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:15:35 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59046 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754024Ab0EOVPQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:15:16 -0400
-Date: Sat, 15 May 2010 23:15:10 +0200 (CEST)
+	id S1752744Ab0EOVPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:15:32 -0400
+Date: Sat, 15 May 2010 23:15:27 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Kalle Valo <kalle.valo@iki.fi>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+       mjpeg-users@lists.sourceforge.net, linux-media@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 7/37] drivers/net/wireless/wl12xx: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152314540.21345@ask.diku.dk>
+Subject: [PATCH 8/37] drivers/media/video/zoran: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152315100.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,27 +42,27 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/wl12xx/wl1251_main.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/media/video/zoran/videocodec.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff -u -p a/drivers/net/wireless/wl12xx/wl1251_main.c b/drivers/net/wireless/wl12xx/wl1251_main.c
---- a/drivers/net/wireless/wl12xx/wl1251_main.c
-+++ b/drivers/net/wireless/wl12xx/wl1251_main.c
-@@ -124,7 +124,7 @@ static int wl1251_fetch_nvs(struct wl125
- 	}
+diff -u -p a/drivers/media/video/zoran/videocodec.c b/drivers/media/video/zoran/videocodec.c
+--- a/drivers/media/video/zoran/videocodec.c
++++ b/drivers/media/video/zoran/videocodec.c
+@@ -107,15 +107,14 @@ videocodec_attach (struct videocodec_mas
+ 			if (!try_module_get(h->codec->owner))
+ 				return NULL;
  
- 	wl->nvs_len = fw->size;
--	wl->nvs = kmalloc(wl->nvs_len, GFP_KERNEL);
-+	wl->nvs = kmemdup(fw->data, wl->nvs_len, GFP_KERNEL);
+-			codec =
+-			    kmalloc(sizeof(struct videocodec), GFP_KERNEL);
++			codec = kmemdup(h->codec, sizeof(struct videocodec),
++					GFP_KERNEL);
+ 			if (!codec) {
+ 				dprintk(1,
+ 					KERN_ERR
+ 					"videocodec_attach: no mem\n");
+ 				goto out_module_put;
+ 			}
+-			memcpy(codec, h->codec, sizeof(struct videocodec));
  
- 	if (!wl->nvs) {
- 		wl1251_error("could not allocate memory for the nvs file");
-@@ -132,8 +132,6 @@ static int wl1251_fetch_nvs(struct wl125
- 		goto out;
- 	}
- 
--	memcpy(wl->nvs, fw->data, wl->nvs_len);
--
- 	ret = 0;
- 
- out:
+ 			snprintf(codec->name, sizeof(codec->name),
+ 				 "%s[%d]", codec->name, h->attached);
