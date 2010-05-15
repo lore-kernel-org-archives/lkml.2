@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755579Ab0EOVRt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:17:49 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46737 "EHLO mgw1.diku.dk"
+	id S1755569Ab0EOVSI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:18:08 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:46749 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755460Ab0EOVRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:17:47 -0400
-Date: Sat, 15 May 2010 23:17:40 +0200 (CEST)
+	id S1755520Ab0EOVSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:18:04 -0400
+Date: Sat, 15 May 2010 23:17:59 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 15/37] drivers/gpu/drm: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152317190.21345@ask.diku.dk>
+To: Laurent Pinchart <laurent.pinchart@skynet.be>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 16/37] drivers/media/video/uvc: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152317410.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,58 +43,26 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/gpu/drm/nouveau/nouveau_grctx.c |    6 ++----
- drivers/gpu/drm/radeon/radeon_bios.c    |    3 +--
- 2 files changed, 3 insertions(+), 6 deletions(-)
+ drivers/media/video/uvc/uvc_driver.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
-diff -u -p a/drivers/gpu/drm/nouveau/nouveau_grctx.c b/drivers/gpu/drm/nouveau/nouveau_grctx.c
---- a/drivers/gpu/drm/nouveau/nouveau_grctx.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_grctx.c
-@@ -68,13 +68,12 @@ nouveau_grctx_prog_load(struct drm_devic
- 			return ret;
- 		}
- 
--		pgraph->ctxprog = kmalloc(fw->size, GFP_KERNEL);
-+		pgraph->ctxprog = kmemdup(fw->data, fw->size, GFP_KERNEL);
- 		if (!pgraph->ctxprog) {
- 			NV_ERROR(dev, "OOM copying ctxprog\n");
- 			release_firmware(fw);
- 			return -ENOMEM;
- 		}
--		memcpy(pgraph->ctxprog, fw->data, fw->size);
- 
- 		cp = pgraph->ctxprog;
- 		if (le32_to_cpu(cp->signature) != 0x5043564e ||
-@@ -97,14 +96,13 @@ nouveau_grctx_prog_load(struct drm_devic
- 			return ret;
- 		}
- 
--		pgraph->ctxvals = kmalloc(fw->size, GFP_KERNEL);
-+		pgraph->ctxvals = kmemdup(fw->data, fw->size, GFP_KERNEL);
- 		if (!pgraph->ctxvals) {
- 			NV_ERROR(dev, "OOM copying ctxvals\n");
- 			release_firmware(fw);
- 			nouveau_grctx_fini(dev);
- 			return -ENOMEM;
- 		}
--		memcpy(pgraph->ctxvals, fw->data, fw->size);
- 
- 		cv = (void *)pgraph->ctxvals;
- 		if (le32_to_cpu(cv->signature) != 0x5643564e ||
-diff -u -p a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
---- a/drivers/gpu/drm/radeon/radeon_bios.c
-+++ b/drivers/gpu/drm/radeon/radeon_bios.c
-@@ -85,12 +85,11 @@ static bool radeon_read_bios(struct rade
- 		pci_unmap_rom(rdev->pdev, bios);
- 		return false;
+diff -u -p a/drivers/media/video/uvc/uvc_driver.c b/drivers/media/video/uvc/uvc_driver.c
+--- a/drivers/media/video/uvc/uvc_driver.c
++++ b/drivers/media/video/uvc/uvc_driver.c
+@@ -637,14 +637,13 @@ static int uvc_parse_streaming(struct uv
  	}
--	rdev->bios = kmalloc(size, GFP_KERNEL);
-+	rdev->bios = kmemdup(bios, size, GFP_KERNEL);
- 	if (rdev->bios == NULL) {
- 		pci_unmap_rom(rdev->pdev, bios);
- 		return false;
+ 	streaming->header.bControlSize = n;
+ 
+-	streaming->header.bmaControls = kmalloc(p*n, GFP_KERNEL);
++	streaming->header.bmaControls = kmemdup(&buffer[size], p * n,
++						GFP_KERNEL);
+ 	if (streaming->header.bmaControls == NULL) {
+ 		ret = -ENOMEM;
+ 		goto error;
  	}
--	memcpy(rdev->bios, bios, size);
- 	pci_unmap_rom(rdev->pdev, bios);
- 	return true;
- }
+ 
+-	memcpy(streaming->header.bmaControls, &buffer[size], p*n);
+-
+ 	buflen -= buffer[0];
+ 	buffer += buffer[0];
+ 
