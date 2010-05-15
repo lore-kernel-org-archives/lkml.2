@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753361Ab0EOVqF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:46:05 -0400
-Received: from fg-out-1718.google.com ([72.14.220.154]:59391 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751737Ab0EOVqC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:46:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:mime-version:content-type
-         :content-disposition:user-agent;
-        b=g5HfHX04kTvxdVVxQCmUBEDxTvPiRs7QoF69HfUXaFCfx1DgfYbqHnSX1qAzmLbnp6
-         KHU56ug3hhl5oIRtq+75ZTX02kgKZ01r4ZF+aDIdfQJVHzPm10gSkJov7nZ5z3R4CCV9
-         XDP5YG7NyvGbQ61VqVN6+//mXyuVR8eOgu7aw=
-Date: Sun, 16 May 2010 01:45:52 +0400
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Lin Ming <ming.m.lin@intel.com>, LKML <linux-kernel@vger.kernel.org>
-Subject: [PATCH -tip/master] x86,perf: p4_pmu_schedule_events -- use
-	smp_processor_id
-Message-ID: <20100515214552.GA26557@lenovo>
+	id S1754034Ab0EOVuS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:50:18 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:32989 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753080Ab0EOVuP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:50:15 -0400
+Date: Sat, 15 May 2010 14:50:10 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Greg KH <greg@kroah.com>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       laijs@cn.fujitsu.com, dipankar@in.ibm.com, akpm@linux-foundation.org,
+       mathieu.desnoyers@polymtl.ca, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, peterz@infradead.org,
+       rostedt@goodmis.org, Valdis.Kletnieks@vt.edu, dhowells@redhat.com,
+       eric.dumazet@gmail.com,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Subject: Re: [PATCH RFC tip/core/rcu 06/11] staging: remove all rcu head
+ initializations
+Message-ID: <20100515215010.GE2418@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100511233241.GA20250@linux.vnet.ibm.com>
+ <1273620786-20392-6-git-send-email-paulmck@linux.vnet.ibm.com>
+ <20100511234523.GA1450@suse.de>
+ <20100512000821.GH2336@linux.vnet.ibm.com>
+ <20100514201640.GA25174@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100514201640.GA25174@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This snippet somehow escaped the commit
+On Fri, May 14, 2010 at 01:16:40PM -0700, Greg KH wrote:
+> On Tue, May 11, 2010 at 05:08:21PM -0700, Paul E. McKenney wrote:
+> > On Tue, May 11, 2010 at 04:45:23PM -0700, Greg KH wrote:
+> > > On Tue, May 11, 2010 at 04:33:01PM -0700, Paul E. McKenney wrote:
+> > > > Remove all rcu head inits. We don't care about the RCU head state before passing
+> > > > it to call_rcu() anyway. Only leave the "on_stack" variants so debugobjects can
+> > > > keep track of objects on stack.
+> > > > 
+> > > > Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+> > > > Signed-off-by: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
+> > > > Cc: Greg Kroah-Hartman <gregkh@suse.de>
+> > > > ---
+> > > >  drivers/staging/batman-adv/hard-interface.c |    1 -
+> > > 
+> > > Is this safe to apply to my tree now?  Or do you want to take it through
+> > > your tree as it depends on other stuff?
+> > 
+> > Because the rcu_head in this case is not in an auto (on-stack) variable,
+> > this commit is safe to apply to your tree now.
+> > 
+> > Let me know when you have applied it, and I will happily remove it
+> > from mine.  ;-)
+> 
+> Now queued up.
 
- | commit 137351e0feeb9f25d99488ee1afc1c79f5499a9a
- | Author: Cyrill Gorcunov <gorcunov@openvz.org>
- | Date:   Sat May 8 15:25:52 2010 +0400
- |
- |    x86, perf: P4 PMU -- protect sensible procedures from preemption
+And happily removed from mine.
 
-so make it eventually. In short -- it helps to catch preemption issue.
-
-Cc: Steven Rostedt <rostedt@goodmis.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
----
- arch/x86/kernel/cpu/perf_event_p4.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
-Index: linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-=====================================================================
---- linux-2.6.git.orig/arch/x86/kernel/cpu/perf_event_p4.c
-+++ linux-2.6.git/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -762,7 +762,7 @@ static int p4_pmu_schedule_events(struct
- {
- 	unsigned long used_mask[BITS_TO_LONGS(X86_PMC_IDX_MAX)];
- 	unsigned long escr_mask[BITS_TO_LONGS(P4_ESCR_MSR_TABLE_SIZE)];
--	int cpu = raw_smp_processor_id();
-+	int cpu = smp_processor_id();
- 	struct hw_perf_event *hwc;
- 	struct p4_event_bind *bind;
- 	unsigned int i, thread, num;
+							Thanx, Paul
