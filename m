@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754096Ab0EOJqo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 05:46:44 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:53951 "EHLO mgw2.diku.dk"
+	id S1753992Ab0EOJqU (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 05:46:20 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:44201 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab0EOJql (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 05:46:41 -0400
-Date: Sat, 15 May 2010 11:46:36 +0200 (CEST)
+	id S1753807Ab0EOJqR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 05:46:17 -0400
+Date: Sat, 15 May 2010 11:46:12 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/4] drivers/hid: Eliminate use after free
-Message-ID: <Pine.LNX.4.64.1005151146120.15566@ask.diku.dk>
+To: Adaptec OEM Raid Solutions <aacraid@adaptec.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/4] drivers/scsi/aacraid: Eliminate use after free
+Message-ID: <Pine.LNX.4.64.1005151145540.15566@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,9 +22,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-The skip label frees resp, which has not been allocated at the point of
-this goto and then does a break, based on the fact that err is non-zero.
-This is replaced by a break directly.
+The debugging code using the freed structure is moved before the kfree.
 
 A simplified version of the semantic match that finds this problem is as
 follows: (http://coccinelle.lip6.fr/)
@@ -51,19 +51,22 @@ position free.p;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/hid/hid-picolcd.c |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+ drivers/scsi/aacraid/commctrl.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/hid/hid-picolcd.c b/drivers/hid/hid-picolcd.c
-index 95253b3..7aabf65 100644
---- a/drivers/hid/hid-picolcd.c
-+++ b/drivers/hid/hid-picolcd.c
-@@ -1616,7 +1616,7 @@ static ssize_t _picolcd_flash_write(struct picolcd_data *data, int report_id,
- 		raw_data[len_off] = s > 32 ? 32 : s;
- 		if (copy_from_user(raw_data+len_off+1, u, raw_data[len_off])) {
- 			err = -EFAULT;
--			goto skip;
-+			break;
- 		}
- 		resp = picolcd_send_and_wait(data->hdev, report_id, raw_data,
- 				len_off+1+raw_data[len_off]);
+diff --git a/drivers/scsi/aacraid/commctrl.c b/drivers/scsi/aacraid/commctrl.c
+index 9c0c911..1b761d5 100644
+--- a/drivers/scsi/aacraid/commctrl.c
++++ b/drivers/scsi/aacraid/commctrl.c
+@@ -655,9 +655,9 @@ static int aac_send_raw_srb(struct aac_dev* dev, void __user * arg)
+ 				/* Does this really need to be GFP_DMA? */
+ 				p = kmalloc(usg->sg[i].count,GFP_KERNEL|__GFP_DMA);
+ 				if(!p) {
+-					kfree (usg);
+-					dprintk((KERN_DEBUG"aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
++					dprintk((KERN_DEBUG "aacraid: Could not allocate SG buffer - size = %d buffer number %d of %d\n",
+ 					  usg->sg[i].count,i,usg->count));
++					kfree(usg);
+ 					rcode = -ENOMEM;
+ 					goto cleanup;
+ 				}
