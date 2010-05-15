@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756265Ab0EOVUz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:20:55 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51393 "EHLO mgw1.diku.dk"
+	id S1756313Ab0EOVVP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:21:15 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35454 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755789Ab0EOVUu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:20:50 -0400
-Date: Sat, 15 May 2010 23:20:45 +0200 (CEST)
+	id S1756076Ab0EOVVH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:21:07 -0400
+Date: Sat, 15 May 2010 23:21:01 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 25/37] drivers/net/usb: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152320270.21345@ask.diku.dk>
+To: Zhu Yi <yi.zhu@intel.com>, Reinette Chatre <reinette.chatre@intel.com>,
+       Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 26/37] drivers/net/wireless/ipw2x00: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152320450.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,39 +44,24 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/usb/asix.c    |    3 +--
- drivers/net/usb/mcs7830.c |    4 +---
- 2 files changed, 2 insertions(+), 5 deletions(-)
+ drivers/net/wireless/ipw2x00/ipw2200.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -224,10 +224,9 @@ static int asix_write_cmd(struct usbnet 
- 		   cmd, value, index, size);
+diff -u -p a/drivers/net/wireless/ipw2x00/ipw2200.c b/drivers/net/wireless/ipw2x00/ipw2200.c
+--- a/drivers/net/wireless/ipw2x00/ipw2200.c
++++ b/drivers/net/wireless/ipw2x00/ipw2200.c
+@@ -6626,13 +6626,12 @@ static int ipw_wx_set_genie(struct net_d
+ 		return -EINVAL;
  
- 	if (data) {
--		buf = kmalloc(size, GFP_KERNEL);
-+		buf = kmemdup(data, size, GFP_KERNEL);
- 		if (!buf)
+ 	if (wrqu->data.length) {
+-		buf = kmalloc(wrqu->data.length, GFP_KERNEL);
++		buf = kmemdup(extra, wrqu->data.length, GFP_KERNEL);
+ 		if (buf == NULL) {
+ 			err = -ENOMEM;
  			goto out;
--		memcpy(buf, data, size);
- 	}
+ 		}
  
- 	err = usb_control_msg(
-diff -u -p a/drivers/net/usb/mcs7830.c b/drivers/net/usb/mcs7830.c
---- a/drivers/net/usb/mcs7830.c
-+++ b/drivers/net/usb/mcs7830.c
-@@ -142,12 +142,10 @@ static int mcs7830_set_reg(struct usbnet
- 	int ret;
- 	void *buffer;
- 
--	buffer = kmalloc(size, GFP_NOIO);
-+	buffer = kmemdup(data, size, GFP_NOIO);
- 	if (buffer == NULL)
- 		return -ENOMEM;
- 
--	memcpy(buffer, data, size);
--
- 	ret = usb_control_msg(xdev, usb_sndctrlpipe(xdev, 0), MCS7830_WR_BREQ,
- 			      MCS7830_WR_BMREQ, 0x0000, index, buffer,
- 			      size, MCS7830_CTRL_TIMEOUT);
+-		memcpy(buf, extra, wrqu->data.length);
+ 		kfree(ieee->wpa_ie);
+ 		ieee->wpa_ie = buf;
+ 		ieee->wpa_ie_len = wrqu->data.length;
