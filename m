@@ -1,53 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756060Ab0EOVUE (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:20:04 -0400
-Received: from netrider.rowland.org ([192.131.102.5]:50901 "HELO
-	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755968Ab0EOVT4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:19:56 -0400
-Date: Sat, 15 May 2010 17:19:55 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@netrider.rowland.org
-To: Brian Swetland <swetland@google.com>
-cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Lindgren <tony@atomide.com>,
-       Matthew Garrett <mjg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       <magnus.damm@gmail.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       =?UTF-8?Q?Beno=C3=AEt_Cousson?= <b-cousson@ti.com>,
-       <linux-omap@vger.kernel.org>, Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-In-Reply-To: <AANLkTinwJdPneNSlAeTml5fHW2LFy53Dz3DRf95y1Bcl@mail.gmail.com>
-Message-ID: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
+	id S1756137Ab0EOVUf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:20:35 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41762 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753029Ab0EOVUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:20:31 -0400
+Date: Sat, 15 May 2010 23:20:26 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Stefano Brivio <stefano.brivio@polimi.it>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 24/37] drivers/net/wireless/b43: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152320070.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010, Brian Swetland wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> In tickless mode, the time until next timer is a signed int, so the
-> longest the kernel will ever sleep is ~2 seconds at a go.  In
-> practice, userspace entities often have polling behavior that can
-> trigger more often than that, and I've observed some kernel periodic
-> timers (haven't cataloged them recently) that happen more often than
-> once a second.
+Use kmemdup when some other buffer is immediately copied into the
+allocated region.
 
-Paul and Kevin, how does the OMAP implementation handle these 
-difficulties?
+A simplified version of the semantic patch that makes this change is as
+follows: (http://coccinelle.lip6.fr/)
 
-Also, how does it handle the issue of ill-behaved apps?
+// <smpl>
+@@
+expression from,to,size,flag;
+statement S;
+@@
 
-Alan Stern
+-  to = \(kmalloc\|kzalloc\)(size,flag);
++  to = kmemdup(from,size,flag);
+   if (to==NULL || ...) S
+-  memcpy(to, from, size);
+// </smpl>
 
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/net/wireless/b43/dma.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff -u -p a/drivers/net/wireless/b43/dma.c b/drivers/net/wireless/b43/dma.c
+--- a/drivers/net/wireless/b43/dma.c
++++ b/drivers/net/wireless/b43/dma.c
+@@ -1221,14 +1221,14 @@ static int dma_tx_fragment(struct b43_dm
+ 	meta->dmaaddr = map_descbuffer(ring, skb->data, skb->len, 1);
+ 	/* create a bounce buffer in zone_dma on mapping failure. */
+ 	if (b43_dma_mapping_error(ring, meta->dmaaddr, skb->len, 1)) {
+-		priv_info->bouncebuffer = kmalloc(skb->len, GFP_ATOMIC | GFP_DMA);
++		priv_info->bouncebuffer = kmemdup(skb->data, skb->len,
++						  GFP_ATOMIC | GFP_DMA);
+ 		if (!priv_info->bouncebuffer) {
+ 			ring->current_slot = old_top_slot;
+ 			ring->used_slots = old_used_slots;
+ 			err = -ENOMEM;
+ 			goto out_unmap_hdr;
+ 		}
+-		memcpy(priv_info->bouncebuffer, skb->data, skb->len);
+ 
+ 		meta->dmaaddr = map_descbuffer(ring, priv_info->bouncebuffer, skb->len, 1);
+ 		if (b43_dma_mapping_error(ring, meta->dmaaddr, skb->len, 1)) {
