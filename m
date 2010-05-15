@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0EOQsd (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 12:48:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:13059 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754627Ab0EOQsc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 12:48:32 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=njTao5+rz8QrXUy/I6gOtTrQVAoYYyQScBrBx5sccb4bUr7YMQFMuPnZusf6SCNrU
-	sNCt3QFXEEi4hGam+54Yw==
-MIME-Version: 1.0
-In-Reply-To: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-References: <87tyq9mqrz.fsf@basil.nowhere.org>
-	 <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-Date: Sat, 15 May 2010 09:48:26 -0700
-Message-ID: <AANLkTikRnoI1XeXkpIJXERD8kw2Akl4FgbBeuJ_vCPrX@mail.gmail.com>
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: Venkatesh Pallipadi <venki@google.com>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
-       chris.mason@oracle.com, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1754684Ab0EORHH (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 13:07:07 -0400
+Received: from mail.gmx.net ([213.165.64.20]:53360 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1751054Ab0EORHF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 13:07:05 -0400
+X-Authenticated: #14349625
+X-Provags-ID: V01U2FsdGVkX1/v4AR9963vmE0NV3Cxnz5LiDEZUuO7c5d0eEmNOU
+	aVrSS3tEYc4vs3
+Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
+From: Mike Galbraith <efault@gmx.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <1273925052.1674.138.camel@laptop>
+References: <1273924628.10630.24.camel@marge.simson.net>
+	 <1273925052.1674.138.camel@laptop>
+Content-Type: text/plain
+Date: Sat, 15 May 2010 19:07:02 +0200
+Message-Id: <1273943222.8752.7.camel@marge.simson.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1.1 
+Content-Transfer-Encoding: 7bit
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 15, 2010 at 6:29 AM, Dan Magenheimer
-<dan.magenheimer@oracle.com> wrote:
->> From: Andi Kleen [mailto:andi@firstfloor.org]
->>
->> > Kernel information about calibrated value of tsc_khz and
->> > tsc_stability (result of tsc warp test) are useful bits of
->> information
->> > for any app that wants to use TSC directly. Export this read_only
->> > information in sysfs.
->>
->> Is this really a good idea?  It will encourage the applications
->> to use RDTSC directly, but there are all kinds of constraints on
->
-> Indeed, that is what it is intended to do.
->
->> that. Even the kernel has a hard time with them, how likely
->> is it that applications will get all that right?
->
-> That's the point of exposing the tsc_reliable kernel data.
-> If the processor has Invariant TSC and the system has
-> successfully passed Ingo's warp test and, as a result
-> the kernel is using TSC as a clocksource, why not enable
-> userland apps that need to obtain timestamp data
-> tens or hundreds of thousands of times per second to
-> also use the TSC directly?
->
+On Sat, 2010-05-15 at 14:04 +0200, Peter Zijlstra wrote:
+> On Sat, 2010-05-15 at 13:57 +0200, Mike Galbraith wrote:
+> > Hi Peter,
+> > 
+> > This commit excluded RT tasks from rq->load, was that intentional?  The
+> > comment in struct rq states that load reflects *all* tasks, but since
+> > this commit, that's no longer true.
+> 
+> Right, because a static load value does not accurately reflect a RT task
+> which can run as long as it pretty well pleases. So instead we measure
+> the time spend running !fair tasks and scale down the cpu_power
+> proportionally.
+> 
+> > Looking at lmbench lat_udp in a PREEMPT_RT kernel, I noticed that
+> > wake_affine() is failing for sync wakeups when it should not.  It's
+> > doing so because the waker in this case is an RT kernel thread
+> > (sirq-net-rx) - we subtract the sync waker's weight, when it was never
+> > added in the first place, resulting in this_load going gaga.  End result
+> > is quite high latency numbers due to tasks jabbering cross-cache.
+> > 
+> > If the exclusion was intentional, I suppose I can do a waker class check
+> > in wake_affine() to fix it.
+> 
+> So basically make all RT wakeups sync?
 
-I am a little concerned about applications getting this right, with
-rdtsc and related barriers etc. May be that calls for a userspace
-library.
+I was going to just skip subtracting waker's weight ala
 
-Despite of that, it is useful information to human user to know
-whether tsc is stable and what TSC freq is. It will be very hard for
-userspace to do the TSC calibration. And to know whether TSC warp test
-passed or whether TSC is marked unstable by the kernel, there is no
-one place to get these answers today. Users have to look at
-clocksource, dmesg, etc.
+        /*
+         * If sync wakeup then subtract the (maximum possible)
+         * effect of the currently running task from the load
+         * of the current CPU:
+         */
+	if (sync && !task_has_rt_policy(curr))
+		...
 
-Thanks,
-Venki
+	-Mike
+
