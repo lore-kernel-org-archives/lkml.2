@@ -1,18 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754938Ab0EOVPf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:15:35 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:59046 "EHLO mgw2.diku.dk"
+	id S1755104Ab0EOVPx (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:15:53 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59055 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752744Ab0EOVPc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:15:32 -0400
-Date: Sat, 15 May 2010 23:15:27 +0200 (CEST)
+	id S1754201Ab0EOVPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:15:49 -0400
+Date: Sat, 15 May 2010 23:15:44 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Mauro Carvalho Chehab <mchehab@infradead.org>,
-       mjpeg-users@lists.sourceforge.net, linux-media@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 8/37] drivers/media/video/zoran: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152315100.21345@ask.diku.dk>
+To: Haavard Skinnemoen <hskinnemoen@atmel.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, kernel@avr32linux.org,
+       linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 9/37] drivers/usb/gadget: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152315280.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,27 +44,21 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/media/video/zoran/videocodec.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/usb/gadget/atmel_usba_udc.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/media/video/zoran/videocodec.c b/drivers/media/video/zoran/videocodec.c
---- a/drivers/media/video/zoran/videocodec.c
-+++ b/drivers/media/video/zoran/videocodec.c
-@@ -107,15 +107,14 @@ videocodec_attach (struct videocodec_mas
- 			if (!try_module_get(h->codec->owner))
- 				return NULL;
+diff -u -p a/drivers/usb/gadget/atmel_usba_udc.c b/drivers/usb/gadget/atmel_usba_udc.c
+--- a/drivers/usb/gadget/atmel_usba_udc.c
++++ b/drivers/usb/gadget/atmel_usba_udc.c
+@@ -48,10 +48,9 @@ static int queue_dbg_open(struct inode *
  
--			codec =
--			    kmalloc(sizeof(struct videocodec), GFP_KERNEL);
-+			codec = kmemdup(h->codec, sizeof(struct videocodec),
-+					GFP_KERNEL);
- 			if (!codec) {
- 				dprintk(1,
- 					KERN_ERR
- 					"videocodec_attach: no mem\n");
- 				goto out_module_put;
- 			}
--			memcpy(codec, h->codec, sizeof(struct videocodec));
- 
- 			snprintf(codec->name, sizeof(codec->name),
- 				 "%s[%d]", codec->name, h->attached);
+ 	spin_lock_irq(&ep->udc->lock);
+ 	list_for_each_entry(req, &ep->queue, queue) {
+-		req_copy = kmalloc(sizeof(*req_copy), GFP_ATOMIC);
++		req_copy = kmemdup(req, sizeof(*req_copy), GFP_ATOMIC);
+ 		if (!req_copy)
+ 			goto fail;
+-		memcpy(req_copy, req, sizeof(*req_copy));
+ 		list_add_tail(&req_copy->queue, queue_data);
+ 	}
+ 	spin_unlock_irq(&ep->udc->lock);
