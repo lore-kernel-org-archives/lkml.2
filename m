@@ -1,24 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab0EOVR2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:17:28 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46709 "EHLO mgw1.diku.dk"
+	id S1755579Ab0EOVRt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:17:49 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:46737 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753833Ab0EOVRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:17:24 -0400
-Date: Sat, 15 May 2010 23:17:19 +0200 (CEST)
+	id S1755460Ab0EOVRr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:17:47 -0400
+Date: Sat, 15 May 2010 23:17:40 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>,
-       Jouni Malinen <jmalinen@atheros.com>,
-       Sujith Manoharan <Sujith.Manoharan@atheros.com>,
-       Vasanthakumar Thiagarajan <vasanth@atheros.com>,
-       Senthil Balasubramanian <senthilkumar@atheros.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-wireless@vger.kernel.org, ath9k-devel@venema.h4ckr.net,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 14/37] drivers/net/wireless/ath/ath9k: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152316580.21345@ask.diku.dk>
+To: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 15/37] drivers/gpu/drm: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152317190.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -48,23 +41,58 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wireless/ath/ath9k/hif_usb.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/gpu/drm/nouveau/nouveau_grctx.c |    6 ++----
+ drivers/gpu/drm/radeon/radeon_bios.c    |    3 +--
+ 2 files changed, 3 insertions(+), 6 deletions(-)
 
-diff -u -p a/drivers/net/wireless/ath/ath9k/hif_usb.c b/drivers/net/wireless/ath/ath9k/hif_usb.c
---- a/drivers/net/wireless/ath/ath9k/hif_usb.c
-+++ b/drivers/net/wireless/ath/ath9k/hif_usb.c
-@@ -901,12 +901,10 @@ static void ath9k_hif_usb_reboot(struct 
- 	void *buf;
- 	int ret;
+diff -u -p a/drivers/gpu/drm/nouveau/nouveau_grctx.c b/drivers/gpu/drm/nouveau/nouveau_grctx.c
+--- a/drivers/gpu/drm/nouveau/nouveau_grctx.c
++++ b/drivers/gpu/drm/nouveau/nouveau_grctx.c
+@@ -68,13 +68,12 @@ nouveau_grctx_prog_load(struct drm_devic
+ 			return ret;
+ 		}
  
--	buf = kmalloc(4, GFP_KERNEL);
-+	buf = kmemdup(&reboot_cmd, 4, GFP_KERNEL);
- 	if (!buf)
- 		return;
+-		pgraph->ctxprog = kmalloc(fw->size, GFP_KERNEL);
++		pgraph->ctxprog = kmemdup(fw->data, fw->size, GFP_KERNEL);
+ 		if (!pgraph->ctxprog) {
+ 			NV_ERROR(dev, "OOM copying ctxprog\n");
+ 			release_firmware(fw);
+ 			return -ENOMEM;
+ 		}
+-		memcpy(pgraph->ctxprog, fw->data, fw->size);
  
--	memcpy(buf, &reboot_cmd, 4);
--
- 	ret = usb_bulk_msg(udev, usb_sndbulkpipe(udev, USB_REG_OUT_PIPE),
- 			   buf, 4, NULL, HZ);
- 	if (ret)
+ 		cp = pgraph->ctxprog;
+ 		if (le32_to_cpu(cp->signature) != 0x5043564e ||
+@@ -97,14 +96,13 @@ nouveau_grctx_prog_load(struct drm_devic
+ 			return ret;
+ 		}
+ 
+-		pgraph->ctxvals = kmalloc(fw->size, GFP_KERNEL);
++		pgraph->ctxvals = kmemdup(fw->data, fw->size, GFP_KERNEL);
+ 		if (!pgraph->ctxvals) {
+ 			NV_ERROR(dev, "OOM copying ctxvals\n");
+ 			release_firmware(fw);
+ 			nouveau_grctx_fini(dev);
+ 			return -ENOMEM;
+ 		}
+-		memcpy(pgraph->ctxvals, fw->data, fw->size);
+ 
+ 		cv = (void *)pgraph->ctxvals;
+ 		if (le32_to_cpu(cv->signature) != 0x5643564e ||
+diff -u -p a/drivers/gpu/drm/radeon/radeon_bios.c b/drivers/gpu/drm/radeon/radeon_bios.c
+--- a/drivers/gpu/drm/radeon/radeon_bios.c
++++ b/drivers/gpu/drm/radeon/radeon_bios.c
+@@ -85,12 +85,11 @@ static bool radeon_read_bios(struct rade
+ 		pci_unmap_rom(rdev->pdev, bios);
+ 		return false;
+ 	}
+-	rdev->bios = kmalloc(size, GFP_KERNEL);
++	rdev->bios = kmemdup(bios, size, GFP_KERNEL);
+ 	if (rdev->bios == NULL) {
+ 		pci_unmap_rom(rdev->pdev, bios);
+ 		return false;
+ 	}
+-	memcpy(rdev->bios, bios, size);
+ 	pci_unmap_rom(rdev->pdev, bios);
+ 	return true;
+ }
