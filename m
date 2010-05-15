@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab0EOVSI (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:18:08 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46749 "EHLO mgw1.diku.dk"
+	id S1755752Ab0EOVSY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:18:24 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:51321 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755520Ab0EOVSE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:18:04 -0400
-Date: Sat, 15 May 2010 23:17:59 +0200 (CEST)
+	id S1755678Ab0EOVSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:18:21 -0400
+Date: Sat, 15 May 2010 23:18:16 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Laurent Pinchart <laurent.pinchart@skynet.be>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 16/37] drivers/media/video/uvc: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152317410.21345@ask.diku.dk>
+To: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 17/37] drivers/pci/hotplug: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152318000.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,26 +41,24 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/media/video/uvc/uvc_driver.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/pci/hotplug/cpqphp_core.c |    3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/media/video/uvc/uvc_driver.c b/drivers/media/video/uvc/uvc_driver.c
---- a/drivers/media/video/uvc/uvc_driver.c
-+++ b/drivers/media/video/uvc/uvc_driver.c
-@@ -637,14 +637,13 @@ static int uvc_parse_streaming(struct uv
+diff -u -p a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
+--- a/drivers/pci/hotplug/cpqphp_core.c
++++ b/drivers/pci/hotplug/cpqphp_core.c
+@@ -1075,13 +1075,12 @@ static int cpqhpc_probe(struct pci_dev *
+ 
+ 	/* make our own copy of the pci bus structure,
+ 	 * as we like tweaking it a lot */
+-	ctrl->pci_bus = kmalloc(sizeof(*ctrl->pci_bus), GFP_KERNEL);
++	ctrl->pci_bus = kmemdup(pdev->bus, sizeof(*ctrl->pci_bus), GFP_KERNEL);
+ 	if (!ctrl->pci_bus) {
+ 		err("out of memory\n");
+ 		rc = -ENOMEM;
+ 		goto err_free_ctrl;
  	}
- 	streaming->header.bControlSize = n;
+-	memcpy(ctrl->pci_bus, pdev->bus, sizeof(*ctrl->pci_bus));
  
--	streaming->header.bmaControls = kmalloc(p*n, GFP_KERNEL);
-+	streaming->header.bmaControls = kmemdup(&buffer[size], p * n,
-+						GFP_KERNEL);
- 	if (streaming->header.bmaControls == NULL) {
- 		ret = -ENOMEM;
- 		goto error;
- 	}
- 
--	memcpy(streaming->header.bmaControls, &buffer[size], p*n);
--
- 	buflen -= buffer[0];
- 	buffer += buffer[0];
- 
+ 	ctrl->bus = pdev->bus->number;
+ 	ctrl->rev = pdev->revision;
