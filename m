@@ -1,138 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0EOBmK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 21:42:10 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:41549 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754626Ab0EOBmG (ORCPT
+	id S1755803Ab0EOBmV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 21:42:21 -0400
+Received: from mail-gx0-f217.google.com ([209.85.217.217]:42401 "EHLO
+	mail-gx0-f217.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754626Ab0EOBmO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 21:42:06 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
-	b=KRhf3aAQFNbdclQHnaW1MEtraBwdVg7iiL+YRf9ZkHi5BtOw3OV5/BGglMdGoKDz2
-	P2ZxY66qEwm9KH9buB0AQ==
-From: Venkatesh Pallipadi <venki@google.com>
-To: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Cc: Chris Mason <chris.mason@oracle.com>, linux-kernel@vger.kernel.org,
-       Venkatesh Pallipadi <venki@google.com>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>
-Subject: [PATCH] x86: Export tsc related information in sysfs
-Date: Fri, 14 May 2010 18:40:35 -0700
-Message-Id: <1273887635-27610-1-git-send-email-venki@google.com>
-X-Mailer: git-send-email 1.7.0.1
-X-System-Of-Record: true
+	Fri, 14 May 2010 21:42:14 -0400
+From: Will Drewry <wad@chromium.org>
+To: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Cc: agk@redhat.com, snitzer@redhat.com, Will Drewry <wad@chromium.org>
+Subject: [RFC PATCH v2 1/2] dm: allow a dm-fs-style device to be shared via dm-ioctl
+Date: Fri, 14 May 2010 20:41:40 -0500
+Message-Id: <1273887701-2152-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100514035347.GA20636@redhat.com>
+References: <20100514035347.GA20636@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
+This change adds one function which is used for binding
+a given mapped device to a name+uuid in the dm-ioctl hash table.
+In addition, it ensures that public functions are available that
+allow mapped devices and tables to be created and associated
+with the shared code paths with dm-ioctl:
+- suspend flags are available
+- dm_table_complete() now prepares a table for use completely
 
-Kernel information about calibrated value of tsc_khz and
-tsc_stability (result of tsc warp test) are useful bits of information
-for any app that wants to use TSC directly. Export this read_only
-information in sysfs.
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
-Signed-off-by: Dan Magenheimer <dan.magenheimer@oracle.com>
+Signed-off-by: Will Drewry <wad@chromium.org>
 ---
- arch/x86/kernel/tsc.c |   76 +++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 76 insertions(+), 0 deletions(-)
+ drivers/md/dm-ioctl.c         |   72 +++++++++++++++++++++-------------------
+ drivers/md/dm-table.c         |   50 ++++++++++++++++++++++++++++-
+ drivers/md/dm.h               |    6 ---
+ include/linux/device-mapper.h |   12 +++++++
+ 4 files changed, 99 insertions(+), 41 deletions(-)
 
-diff --git a/arch/x86/kernel/tsc.c b/arch/x86/kernel/tsc.c
-index 9faf91a..24dd484 100644
---- a/arch/x86/kernel/tsc.c
-+++ b/arch/x86/kernel/tsc.c
-@@ -10,6 +10,7 @@
- #include <linux/clocksource.h>
- #include <linux/percpu.h>
- #include <linux/timex.h>
-+#include <linux/sysdev.h>
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index d7500e1..006be9d 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1112,28 +1112,9 @@ static int populate_table(struct dm_table *table,
+ 		next = spec->next;
+ 	}
  
- #include <asm/hpet.h>
- #include <asm/timer.h>
-@@ -857,6 +858,81 @@ static void __init init_tsc_clocksource(void)
- 	clocksource_register(&clocksource_tsc);
+-	r = dm_table_set_type(table);
+-	if (r) {
+-		DMWARN("unable to set table type");
+-		return r;
+-	}
+-
+ 	return dm_table_complete(table);
  }
  
-+#ifdef CONFIG_SYSFS
-+/*
-+ * Export TSC related info to user land. This reflects kernel usage of TSC
-+ * as hints to userspace users of TSC. The read_only info provided here:
-+ * - tsc_stable: 1 implies system has TSC that always counts at a constant
-+ *   rate, sync across CPUs and has passed the kernel warp test.
-+ * - tsc_khz: TSC frequency in khz.
-+ * - tsc_mult and tsc_shift: multiplier and shift to optimally convert
-+ *   TSC delta to ns; ns = ((u64) delta * mult) >> shift
+-static int table_prealloc_integrity(struct dm_table *t,
+-				    struct mapped_device *md)
+-{
+-	struct list_head *devices = dm_table_get_devices(t);
+-	struct dm_dev_internal *dd;
+-
+-	list_for_each_entry(dd, devices, list)
+-		if (bdev_get_integrity(dd->dm_dev.bdev))
+-			return blk_integrity_register(dm_disk(md), NULL);
+-
+-	return 0;
+-}
+-
+ static int table_load(struct dm_ioctl *param, size_t param_size)
+ {
+ 	int r;
+@@ -1155,21 +1136,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
+ 		goto out;
+ 	}
+ 
+-	r = table_prealloc_integrity(t, md);
+-	if (r) {
+-		DMERR("%s: could not register integrity profile.",
+-		      dm_device_name(md));
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+-	r = dm_table_alloc_md_mempools(t);
+-	if (r) {
+-		DMWARN("unable to allocate mempools for this table");
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+ 	down_write(&_hash_lock);
+ 	hc = dm_get_mdptr(md);
+ 	if (!hc || hc->md != md) {
+@@ -1637,6 +1603,44 @@ void dm_interface_exit(void)
+ 	dm_hash_exit();
+ }
+ 
++
++/**
++ * dm_ioctl_export - Permanently export a mapped device via the ioctl interface
++ * @md: Pointer to mapped_device
++ * @name: Buffer (size DM_NAME_LEN) for name
++ * @uuid: Buffer (size DM_UUID_LEN) for uuid or NULL if not desired
 + */
-+
-+#define define_show_var_function(_name, _var) \
-+static ssize_t show_##_name( \
-+	struct sys_device *dev, struct sysdev_attribute *attr, char *buf) \
-+{ \
-+	return sprintf(buf, "%u\n", (unsigned int) _var);\
-+}
-+
-+define_show_var_function(tsc_stable, !tsc_unstable);
-+define_show_var_function(tsc_khz, tsc_khz);
-+define_show_var_function(tsc_mult, clocksource_tsc.mult);
-+define_show_var_function(tsc_shift, clocksource_tsc.shift);
-+
-+static SYSDEV_ATTR(tsc_stable, 0444, show_tsc_stable, NULL);
-+static SYSDEV_ATTR(tsc_khz, 0444, show_tsc_khz, NULL);
-+static SYSDEV_ATTR(tsc_mult, 0444, show_tsc_mult, NULL);
-+static SYSDEV_ATTR(tsc_shift, 0444, show_tsc_shift, NULL);
-+
-+static struct sysdev_attribute *tsc_attrs[] = {
-+	&attr_tsc_stable,
-+	&attr_tsc_khz,
-+	&attr_tsc_mult,
-+	&attr_tsc_shift,
-+};
-+
-+static struct sysdev_class tsc_sysclass = {
-+	.name = "tsc",
-+};
-+
-+static struct sys_device device_tsc = {
-+	.id = 0,
-+	.cls = &tsc_sysclass,
-+};
-+
-+static int __init init_tsc_sysfs(void)
++int dm_ioctl_export(struct mapped_device *md, const char *name, const char *uuid)
 +{
-+	int err, i = 0;
++	int r = 0;
++	struct hash_cell *hc;
 +
-+	err = sysdev_class_register(&tsc_sysclass);
-+	if (err)
-+		return err;
-+
-+	err = sysdev_register(&device_tsc);
-+	if (err)
-+		goto fail;
-+
-+	for (i = 0; i < ARRAY_SIZE(tsc_attrs); i++) {
-+		err = sysdev_create_file(&device_tsc, tsc_attrs[i]);
-+		if (err)
-+			goto fail;
++	if (!md) {
++		r = -ENXIO;
++		goto out;
 +	}
 +
-+	return 0;
++	/* The name and uuid can only be set once. */
++	mutex_lock(&dm_hash_cells_mutex);
++	hc = dm_get_mdptr(md);
++	mutex_unlock(&dm_hash_cells_mutex);
++	if (hc) {
++		DMERR("%s: already exported", dm_device_name(md));
++		r = -ENXIO;
++		goto out;
++	}
 +
-+fail:
-+	while (--i >= 0)
-+		sysdev_remove_file(&device_tsc, tsc_attrs[i]);
++	r = dm_hash_insert(name, uuid, md);
++	if (r) {
++		DMERR("%s: could not bind to '%s'", dm_device_name(md), name);
++		goto out;
++	}
 +
-+	sysdev_unregister(&device_tsc);
-+	sysdev_class_unregister(&tsc_sysclass);
-+	return err;
++	/* Let udev know we've changed. */
++	dm_kobject_uevent(md, KOBJ_CHANGE, dm_get_event_nr(md));
++out:
++	return r;
 +}
-+device_initcall(init_tsc_sysfs);
-+#endif
-+
- #ifdef CONFIG_X86_64
+ /**
+  * dm_copy_name_and_uuid - Copy mapped device name & uuid into supplied buffers
+  * @md: Pointer to mapped_device
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index 9924ea2..ef6a3ab 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -900,7 +900,7 @@ static int setup_indexes(struct dm_table *t)
  /*
-  * calibrate_cpu is used on systems with fixed rate TSCs to determine
+  * Builds the btree to index the map.
+  */
+-int dm_table_complete(struct dm_table *t)
++int dm_table_build_index(struct dm_table *t)
+ {
+ 	int r = 0;
+ 	unsigned int leaf_nodes;
+@@ -919,6 +919,54 @@ int dm_table_complete(struct dm_table *t)
+ 	return r;
+ }
+ 
++/*
++ * Register the mapped device for blk_integrity support if
++ * the underlying devices support it.
++ */
++static int dm_table_prealloc_integrity(struct dm_table *t, struct mapped_device *md)
++{
++	struct list_head *devices = dm_table_get_devices(t);
++	struct dm_dev_internal *dd;
++
++	list_for_each_entry(dd, devices, list)
++		if (bdev_get_integrity(dd->dm_dev.bdev))
++			return blk_integrity_register(dm_disk(md), NULL);
++
++	return 0;
++}
++
++/*
++ * Prepares the table for use by building the indices,
++ * setting the type, and allocating mempools.
++ */
++int dm_table_complete(struct dm_table *t)
++{
++	int r = 0;
++	r = dm_table_set_type(t);
++	if (r) {
++		DMERR("unable to set table type");
++		return r;
++	}
++
++	r = dm_table_build_index(t);
++	if (r) {
++		DMERR("unable to build btrees");
++		return r;
++	}
++
++	r = dm_table_prealloc_integrity(t, t->md);
++	if (r) {
++		DMERR("could not register integrity profile.");
++		return r;
++	}
++
++	r = dm_table_alloc_md_mempools(t);
++	if (r) {
++		DMERR("unable to allocate mempools");
++	}
++	return r;
++}
++
+ static DEFINE_MUTEX(_event_lock);
+ void dm_table_event_callback(struct dm_table *t,
+ 			     void (*fn)(void *), void *context)
+diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+index bad1724..782d867 100644
+--- a/drivers/md/dm.h
++++ b/drivers/md/dm.h
+@@ -17,12 +17,6 @@
+ #include <linux/hdreg.h>
+ 
+ /*
+- * Suspend feature flags
+- */
+-#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
+-#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
+-
+-/*
+  * Type of table and mapped_device's mempool
+  */
+ #define DM_TYPE_NONE		0
+diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
+index 1381cd9..6c1c230 100644
+--- a/include/linux/device-mapper.h
++++ b/include/linux/device-mapper.h
+@@ -215,6 +215,18 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
+ void *dm_get_mdptr(struct mapped_device *md);
+ 
+ /*
++ * Export the device via the ioctl interface (uses mdptr).
++ */
++int dm_ioctl_export(struct mapped_device *md, const char *name,
++		    const char *uuid);
++
++/*
++ * Suspend feature flags
++ */
++#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
++#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
++
++/*
+  * A device can still be used while suspended, but I/O is deferred.
+  */
+ int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
 -- 
-1.7.0.1
+1.7.0.4
 
