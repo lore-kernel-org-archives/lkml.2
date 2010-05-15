@@ -1,94 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753112Ab0EON01 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 09:26:27 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:39146 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1750897Ab0EON0Y (ORCPT
+	id S1753292Ab0EONaq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 09:30:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:27647 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751882Ab0EONao convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 09:26:24 -0400
-Subject: Re: [PATCHSET] libata: implement ->set_capacity()
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Tejun Heo <tj@kernel.org>
-Cc: jeff@garzik.org, linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, James.Bottomley@suse.de,
+	Sat, 15 May 2010 09:30:44 -0400
+MIME-Version: 1.0
+Message-ID: <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+Date: Sat, 15 May 2010 06:29:25 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Andi Kleen <andi@firstfloor.org>, Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
        linux-kernel@vger.kernel.org
-In-Reply-To: <1273766206-17402-1-git-send-email-tj@kernel.org>
-References: <1273766206-17402-1-git-send-email-tj@kernel.org>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-NodSar6M8FT6VD6xUf5J"
-Date: Sat, 15 May 2010 14:22:07 +0100
-Message-ID: <1273929727.2564.7.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-X-SA-Exim-Connect-IP: 192.168.4.185
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SA Timed out after 240 secs
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+References: <1273887635-27610-1-git-send-email-venki@google.com
+ 87tyq9mqrz.fsf@basil.nowhere.org>
+In-Reply-To: <87tyq9mqrz.fsf@basil.nowhere.org>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090208.4BEEA1C8.011A:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> From: Andi Kleen [mailto:andi@firstfloor.org]
+>
+> > Kernel information about calibrated value of tsc_khz and
+> > tsc_stability (result of tsc warp test) are useful bits of
+> information
+> > for any app that wants to use TSC directly. Export this read_only
+> > information in sysfs.
+> 
+> Is this really a good idea?  It will encourage the applications
+> to use RDTSC directly, but there are all kinds of constraints on
 
---=-NodSar6M8FT6VD6xUf5J
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Indeed, that is what it is intended to do.
 
-On Thu, 2010-05-13 at 17:56 +0200, Tejun Heo wrote:
-> Hello, Jens, James, Jeff,
->=20
-> This patchset implements ->set_capacity() in libata so that HPA can be
-> unlocked on demand.
+> that. Even the kernel has a hard time with them, how likely
+> is it that applications will get all that right?
 
-Thanks Tejun.
+That's the point of exposing the tsc_reliable kernel data.
+If the processor has Invariant TSC and the system has
+successfully passed Ingo's warp test and, as a result
+the kernel is using TSC as a clocksource, why not enable
+userland apps that need to obtain timestamp data
+tens or hundreds of thousands of times per second to
+also use the TSC directly?
+ 
+> It would be better to fix them to use the vsyscalls instead.
+> Or if they can't use the vsyscalls for some reason today fix them.
 
->  0001-block-restart-partition-scan-after-resizing-a-device.patch
->  0002-SCSI-implement-sd_set_capacity.patch
->  0003-libata-use-the-enlarged-capacity-after-late-HPA-unlo.patch
->  0004-libata-implement-on-demand-HPA-unlocking.patch
->=20
-> 0001 makes partition scan code to restart after ->set_capacity().
-> This makes sure that partitions which start beyond the HPA limit are
-> discovered.
->=20
-> 0002 implements ->set_capacity() in sd.
->=20
-> 0003 makes libata accept device capacity larger than the initial one.
->=20
-> 0004 implements ->set_capacity() in libata which asks libata EH to
-> unlock HPA, waits and returns the new capacity.
->=20
-> Ben Hutchings suggeseted implementing ->set_capacity() in libata and
-> also reported the bug in the current partition scan code where it
-> fails to discover partitions which start beyond the HPA limit.
-[...]
+The problem is from an app point-of-view there is no vsyscall.
+There are two syscalls: gettimeofday and clock_gettime.  Sometimes,
+if it gets lucky, they turn out to be very fast and sometimes
+it doesn't get lucky and they are VERY slow (resulting in a performance
+hit of 10% or more), depending on a number of factors completely
+out of the control of the app and even undetectable to the app.
 
-And I've already successfully tested the combination of patches 2-4.
+Note also that even vsyscall with TSC as the clocksource will
+still be significantly slower than rdtsc, especially in the
+common case where a timestamp is directly stored and the
+delta between two timestamps is later evaluated; in the
+vsyscall case, each timestamp is a function call and a convert
+to nsec but in the TSC case, each timestamp is a single
+instruction.
 
-Ben.
+> This way if anything changes again in TSC the kernel could
+> shield the applications.
 
---=20
-Ben Hutchings
-Once a job is fouled up, anything done to improve it makes it worse.
+If tsc_reliable is 1, the system and the kernel are guaranteeing
+to the app that nothing will change in the TSC.  In an Invariant
+TSC system that has passed Ingo's warp test (to eliminate the
+possibility of a fixed interprocessor TSC gap due to a broken BIOS
+in a multi-node NUMA system), if anything changes in the clock
+signal that drives the TSC, the system is badly broken and far
+worse things -- like inter-processor cache incoherency -- may happen.
 
---=-NodSar6M8FT6VD6xUf5J
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iQIVAwUAS+6f/ue/yOyVhhEJAQJ+2A//R/QGoxDps1lDtY3MI9MDOOKAbNN3h43k
-k5hpZYXYxQQ9eZpqv/it5nH4a9XqZl079i7xvBD2/h5V0AA6QootwHOATNY7xI8p
-lEQGtdqmYT2ufaszwgWpfBF8Ehs28EgqIZ2lPXClh9u8UM3L/2bob3cJ0d0NAtZF
-vdnpq4WcsYk9RDKtlT9gnAS7e0jlKpU29h2X2K5rARv91NHAE/8VYK1ClvKH9Yhf
-jqxaUZ1eV7GwcVSLSuMEkKltlTanEkk7Jk9ZikcFQIJqUIVz6hvoZGUTxEL2c4ub
-OKoq9bfKdE3Zsw1bgm5FikUO4k8yR+L2wKjCe56s2pB6ZpBYXzg/NAhsCZ3iczBG
-TyAMCqhicReJwqRBdE24KOn347cVsdOG0CQhYNANrV9ACBjIOpJK0Pjm6Xkdvds5
-+dn336jobvpRa1UjQssoQb0SV1xhQOwAXq2GW7aVkK2vmzCq8pWHvoq1XV1PJwNl
-JgMyyGKZ+BgEMjxrOEgduS2gI6YyqraA/DjUGg4RbIyW6LyKLa4MfTPyAXp0/vUf
-+oF7ocbIp1ETci0RwnfxQV1/JAoZ1tkeEIwUFPMg9CdxiDDCoerSKCZy8S0WxlMT
-ABYCRBGvoNPQ/VLRlUs/HA670nOJxBnrfdfb7lAHZ7JZ+pmpxphGpPKoHsxB7T0G
-UxZdrROpthU=
-=cjj8
------END PGP SIGNATURE-----
-
---=-NodSar6M8FT6VD6xUf5J--
+Is it finally possible to get past the horrible SMP TSC problems
+of the past and allow apps, under the right conditions, to be able
+to use rdtsc again? This patch argues "yes".
