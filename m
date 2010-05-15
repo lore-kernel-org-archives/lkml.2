@@ -1,75 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab0EOMEU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 08:04:20 -0400
-Received: from mga03.intel.com ([143.182.124.21]:27702 "EHLO mga03.intel.com"
+	id S1754231Ab0EOMOS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 08:14:18 -0400
+Received: from vs81.sauer-cs.de ([80.244.252.81]:40433 "EHLO kbdbabel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753168Ab0EOMET (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 08:04:19 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,236,1272870000"; 
-   d="scan'208";a="277466178"
-Date: Sat, 15 May 2010 19:59:50 +0800
-From: Shaohui Zheng <shaohui.zheng@intel.com>
-To: Balbir Singh <balbir@linux.vnet.ibm.com>
-Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, ak@linux.intel.co, fengguang.wu@intel.com,
-       haicheng.li@linux.intel.com, shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 0/7] NUMA Hotplug emulator
-Message-ID: <20100515115950.GA23083@shaohui>
-Mail-Followup-To: Balbir Singh <balbir@linux.vnet.ibm.com>,
-	akpm@linux-foundation.org, linux-mm@kvack.org,
-	linux-kernel@vger.kernel.org, ak@linux.intel.co,
-	fengguang.wu@intel.com, haicheng.li@linux.intel.com,
-	shaohui.zheng@linux.intel.com
-References: <20100513113629.GA2169@shaohui>
- <20100514065744.GB3296@balbir.in.ibm.com>
+	id S1752295Ab0EOMOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 08:14:17 -0400
+Date: Sat, 15 May 2010 16:09:01 +0400 (MSD)
+From: Alexander Kurz <linux@blala.de>
+X-X-Sender: linux@blala.de
+To: Greg KH <greg@kroah.com>
+cc: Alexander Kurz <linux@blala.de>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Randy Dunlap <randy.dunlap@oracle.com>,
+       Frank Mori Hess <fmhess@users.sourceforge.net>,
+       Ian Abbott <abbotti@mev.co.uk>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] staging/comedi: Kconfig dependancy fixes
+In-Reply-To: <20100514190142.GA2505@kroah.com>
+Message-ID: <alpine.DEB.1.10.1005151604320.26254@blala.de>
+References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514065744.GB3296@balbir.in.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 12:27:44PM +0530, Balbir Singh wrote:
-> * Shaohui Zheng <shaohui.zheng@intel.com> [2010-05-13 19:36:30]:
-> 
-> > Hi, All
-> > 	This patchset introduces NUMA hotplug emulator for x86. it refers too
-> > many files and might introduce new bugs, so we send a RFC to comminity first
-> > and expect comments and suggestions, thanks.
-> > 
-> > * WHAT IS HOTPLUG EMULATOR 
-> > 
-> > NUMA hotplug emulator is collectively named for the hotplug emulation
-> > it is able to emulate NUMA Node Hotplug thru a pure software way. It
-> > intends to help people easily debug and test node/cpu/memory hotplug
-> > related stuff on a none-numa-hotplug-support machine, even an UMA machine.
-> > 
-> > The emulator provides mechanism to emulate the process of physcial cpu/mem
-> > hotadd, it provides possibility to debug CPU and memory hotplug on the machines
-> > without NUMA support for kenrel developers. It offers an interface for cpu
-> > and memory hotplug test purpose.
-> >
-> 
-> Sounds like an interesting project, could you please
-> 
-> Post your patches as threaded, ideally having 0/7 to 7/7 in a thread
-> helps track the patches and comments.
-> 
-> -- 
-> 	Three Cheers,
-> 	Balbir
+There are tree minor changes I would like to do on my last patch:
+> Subject: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers grouped by bustype.
 
-Sorry for the late response, I have no experience to post all the patches into one 
-thread, I will consult local expert.
+* Comedi is formally not dependant on any hardware, e.g. it is possible
+ to use comedi_test without (PCI || PCMCIA || PCCARD || USB || ISA)
+* comedi_parport is not dependant on PARPORT_PC.
+* indirect ni_mio_cs (16-bit PCMCIA) dependancy on mite PCI-chip may 
+ confuse users, thus changing COMEDI_NI_TIO depends on COMEDI_MITE
+ to select COMEDI_MITE.
 
-Thanks Balbir, because of your guys's feedbacks and review comments, the code quality
-should be guaranteed. 
+thanks, Alexander
 
+>From 14bdde13616e734fbd66c1d0cb826ab6456afa44 Mon Sep 17 00:00:00 2001
+From: Alexander Kurz <linux@kbdbabel.org>
+Date: Sat, 15 May 2010 13:49:52 +0200
+Subject: [PATCH] staging/comedi: Kconfig dependancy fixes
+
+Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
+---
+ drivers/staging/comedi/Kconfig |    5 ++---
+ 1 files changed, 2 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+index e9ce9c8..75e060f 100644
+--- a/drivers/staging/comedi/Kconfig
++++ b/drivers/staging/comedi/Kconfig
+@@ -1,7 +1,7 @@
+ config COMEDI
+ 	tristate "Data acquisition support (comedi)"
+ 	default N
+-	depends on m && (PCI || PCMCIA || PCCARD || USB)
++	depends on m
+ 	---help---
+ 	  Enable support a wide range of data acquisition devices
+ 	  for Linux.
+@@ -57,7 +57,6 @@ config COMEDI_TEST
+ 
+ config COMEDI_PARPORT
+ 	tristate "Parallel port support"
+-	depends on PARPORT_PC
+ 	default N
+ 	---help---
+ 	  Enable support for the standard parallel port.
+@@ -1257,7 +1256,7 @@ config COMEDI_MITE
+ 
+ config COMEDI_NI_TIO
+ 	tristate "NI general purpose counter support"
+-	depends on COMEDI_MITE
++	select COMEDI_MITE
+ 	default N
+ 	---help---
+ 	  Enable support for National Instruments general purpose counters.
 -- 
-Thanks & Regards,
-Shaohui
+1.7.1
 
+> 
