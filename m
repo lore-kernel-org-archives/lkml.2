@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753975Ab0EOVOU (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:14:20 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46573 "EHLO mgw1.diku.dk"
+	id S1754092Ab0EOVOp (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:14:45 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:59033 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753849Ab0EOVOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:14:17 -0400
-Date: Sat, 15 May 2010 23:14:12 +0200 (CEST)
+	id S1753053Ab0EOVOm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:14:42 -0400
+Date: Sat, 15 May 2010 23:14:36 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jeremy Fitzhardinge <jeremy@xensource.com>,
-       Chris Wright <chrisw@sous-sol.org>, virtualization@lists.osdl.org,
-       xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/37] drivers/block: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152313540.21345@ask.diku.dk>
+To: Eric Moore <Eric.Moore@lsi.com>, support@lsi.com,
+       DL-MPTFusionLinux@lsi.com, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 5/37] drivers/message/fusion: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152314130.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -43,22 +42,22 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/block/xen-blkfront.c |    3 +--
+ drivers/message/fusion/mptbase.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/block/xen-blkfront.c b/drivers/block/xen-blkfront.c
---- a/drivers/block/xen-blkfront.c
-+++ b/drivers/block/xen-blkfront.c
-@@ -775,11 +775,10 @@ static int blkif_recover(struct blkfront
- 	int j;
+diff -u -p a/drivers/message/fusion/mptbase.c b/drivers/message/fusion/mptbase.c
+--- a/drivers/message/fusion/mptbase.c
++++ b/drivers/message/fusion/mptbase.c
+@@ -5945,11 +5945,10 @@ mpt_findImVolumes(MPT_ADAPTER *ioc)
+ 	if (mpt_config(ioc, &cfg) != 0)
+ 		goto out;
  
- 	/* Stage 1: Make a safe copy of the shadow state. */
--	copy = kmalloc(sizeof(info->shadow),
-+	copy = kmemdup(info->shadow, sizeof(info->shadow),
- 		       GFP_NOIO | __GFP_REPEAT | __GFP_HIGH);
- 	if (!copy)
- 		return -ENOMEM;
--	memcpy(copy, info->shadow, sizeof(info->shadow));
+-	mem = kmalloc(iocpage2sz, GFP_KERNEL);
++	mem = kmemdup((u8 *)pIoc2, iocpage2sz, GFP_KERNEL);
+ 	if (!mem)
+ 		goto out;
  
- 	/* Stage 2: Set up free list. */
- 	memset(&info->shadow, 0, sizeof(info->shadow));
+-	memcpy(mem, (u8 *)pIoc2, iocpage2sz);
+ 	ioc->raid_data.pIocPg2 = (IOCPage2_t *) mem;
+ 
+ 	mpt_read_ioc_pg_3(ioc);
