@@ -1,101 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752339Ab0EOHqL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 03:46:11 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:46863 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750771Ab0EOHqJ (ORCPT
+	id S1752607Ab0EOHrP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 03:47:15 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:55154 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751001Ab0EOHrN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 03:46:09 -0400
+	Sat, 15 May 2010 03:47:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:date:from:to:cc:subject:message-id:in-reply-to:references
-         :x-mailer:mime-version:content-type:content-transfer-encoding;
-        b=nVufhDVqWH7oPScFIUpO8BROatRuSenqKiWvEDj1Yo6QG3hCAWWj65iNVLF403ewNN
-         yuRKBdOxEgseaQtEJpeee8MikEvDKCZMFWrGs7hcp2e+04Edrm/jq6Yjkwx0WgUzWLY4
-         iAXm9hqDEgFM0q8sUPB9J7cbAVMcCNY8+Iiag=
-Date: Sat, 15 May 2010 10:46:02 +0300
-From: Pekka Paalanen <pq@iki.fi>
-To: rostedt@goodmis.org
-Cc: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Larry Finger <Larry.Finger@lwfinger.net>
-Subject: Re: [PATCH 3/4] tracing: Allow mmio tracer to display
- trace_printk() and other events
-Message-ID: <20100515104602.59c1f0e1@daedalus.pq.iki.fi>
-In-Reply-To: <1273763483.27703.991.camel@gandalf.stny.rr.com>
-References: <20100513012110.558313399@goodmis.org>
-	<20100513012302.352845720@goodmis.org>
-	<20100513115414.7688b51d@daedalus.pq.iki.fi>
-	<1273752909.27703.809.camel@gandalf.stny.rr.com>
-	<20100513152915.3d3f852b@daedalus.pq.iki.fi>
-	<1273763483.27703.991.camel@gandalf.stny.rr.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.7; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=DbFpZEA9V09Vu6qsr4T8YUK61XbcWVB4pCeHERgNKJXVWBuzhTh20QWaOgjK5yZ+Qg
+         55G9NcCDIWfOwA/d8nvm42mqPn+bST7mFL9J5mxbUcDtHwnJSazA2KtaNEpQlcroPin9
+         FG3iVj/UiDmIQ0gyHYUdJbVwmT0B2Rkh35oxg=
+Message-ID: <4BEE517E.4040404@gmail.com>
+Date: Sat, 15 May 2010 09:47:10 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.1 Thunderbird/3.1b2
+MIME-Version: 1.0
+To: linux-kernel@vger.kernel.org
+CC: akpm@linux-foundation.org, mm-commits@vger.kernel.org, steiner@sgi.com
+Subject: Re: mmotm 2010-05-14-13-33 uploaded
+References: <201005142101.o4EL1Mf2022381@imap1.linux-foundation.org>
+In-Reply-To: <201005142101.o4EL1Mf2022381@imap1.linux-foundation.org>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Sorry, I'm not at my email every day. Real life...
+On 05/14/2010 10:33 PM, akpm@linux-foundation.org wrote:
+> The mm-of-the-moment snapshot 2010-05-14-13-33 has been uploaded to
 
-On Thu, 13 May 2010 11:11:23 -0400
-Steven Rostedt <rostedt@goodmis.org> wrote:
+Hi,
 
-> On Thu, 2010-05-13 at 15:29 +0300, Pekka Paalanen wrote:
-> > On Thu, 13 May 2010 08:15:09 -0400
-> 
-> > > It only displays other events if the user enabled those
-> > > events.
-> > > 
-> > > But that said, I don't want to break existing userspace
-> > > tools. I can add a mmiotrace option "mmiotrace_all_events",
-> > > if the user wants to see all events within the mmiotracer
-> > > then they can just enable that option, otherwise, the
-> > > mmiotracer will act like it currently does.
-> > > 
-> > > How does that sound?
-> > 
-> > That would be fine. Is it not redundant with what you said in
-> > your first sentence?
-> > 
-> 
-> Right now with this patch as is. When you enable the mmiotracer it
-> clears the ring buffer. But if someone previously enabled an
-> event (like sched_switch for example) then that event will appear
-> in the output of the tracer.
-> 
-> The user will need to disable that event and restart the
-> mmiotracer so the output will not break the userspace tools. Is
-> this OK?
+with
+CONFIG_CPUSETS=y
+# CONFIG_NUMA is not set
+I get
+kernel/built-in.o: In function `copy_process':
+fork.c:(.text+0xbcfa): undefined reference to `__node_random'
+fork.c:(.text+0xbd0e): undefined reference to `__node_random'
+make[1]: *** [.tmp_vmlinux1] Error 1
+make: *** [sub-make] Error 2
 
-I think it is ok. No non-mmiotrace events are enabled automatically,
-right? Except perhaps trace_printk()?
+You seem to forgot to add an inline returning 0 on !NUMA in
+cpusets-randomize-node-rotor-used-in-cpuset_mem_spread_node.patch
+?
 
-If a user enables other events while mmiotracing, I would
-assume he knows what he is doing. End users doing dumps per
-request never even know about other kinds of tracing than
-mmiotrace.
-
-> If not, then my suggestion is to have an mmiotracer option that
-> keeps it from printing out any event except for the ones it knows
-> about.
-> 
-> The reason I added this patch in the first place was because Larry
-> Finger was using the mmiotrace with trace_printk() and the
-> current code does not print out the trace_printk() when
-> mmiotracer is active.
-
-If this is *only* about trace_printk(), why not make a handler
-for it to emit MARK lines? Actually, I somehow assumed that
-would have been the case, but apparently the event type is
-different. I do not recall these things too well anymore.
-
-
-Thanks for keeping me in the loop.
-
+regards,
 -- 
-Pekka Paalanen
-http://www.iki.fi/pq/
+
+js
