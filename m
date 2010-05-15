@@ -1,58 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0EOVBy (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:01:54 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:53663 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752937Ab0EOVAF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:00:05 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: linux-kernel@vger.kernel.org
-Cc: Arnd Bergmann <arnd@arndb.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-Subject: [PATCH 06/10] tty: annotate tty_write_lock
-Date: Sat, 15 May 2010 22:59:52 +0200
-Message-Id: <1273957196-13768-7-git-send-email-arnd@arndb.de>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX19US2fxw50h74ffRrfo/kF4o1rj7Fh6dVFfLbS
- GXhydEqiRbYjYVAfAyiNIdjU30p3DysN+tqu/dJa2ZGu94xc7+
- 34jPD+4vDt6v9SFBF5Gwg==
+	id S1753228Ab0EOVMh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:12:37 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:48179 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752564Ab0EOVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:12:35 -0400
+Date: Sat, 15 May 2010 23:12:28 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dan Williams <dcbw@redhat.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       libertas-dev@lists.infradead.org, linux-wireless@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/37] drivers/net/wireless/libertas: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152312060.21345@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-atomic_write_lock never nests below BTM, so
-there are no lock order problems between the
-two.
+From: Julia Lawall <julia@diku.dk>
 
-Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+Use kmemdup when some other buffer is immediately copied into the
+allocated region.
+
+A simplified version of the semantic patch that makes this change is as
+follows: (http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression from,to,size,flag;
+statement S;
+@@
+
+-  to = \(kmalloc\|kzalloc\)(size,flag);
++  to = kmemdup(from,size,flag);
+   if (to==NULL || ...) S
+-  memcpy(to, from, size);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
 ---
- drivers/char/tty_io.c |    5 +++++
- 1 files changed, 5 insertions(+), 0 deletions(-)
+ drivers/net/wireless/libertas/if_usb.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
 
-diff --git a/drivers/char/tty_io.c b/drivers/char/tty_io.c
-index d51993b..36aecba 100644
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -912,6 +912,11 @@ void tty_write_unlock(struct tty_struct *tty)
+diff -u -p a/drivers/net/wireless/libertas/if_usb.c b/drivers/net/wireless/libertas/if_usb.c
+--- a/drivers/net/wireless/libertas/if_usb.c
++++ b/drivers/net/wireless/libertas/if_usb.c
+@@ -618,16 +618,14 @@ static void if_usb_receive_fwload(struct
+ 		return;
+ 	}
  
- int tty_write_lock(struct tty_struct *tty, int ndelay)
- {
-+	/*
-+	 * code inspection has shown that this is never called
-+	 * with the BTM held. Make sure this stays that way.
-+	 */
-+	WARN_ON_ONCE(tty_locked());
- 	if (!mutex_trylock(&tty->atomic_write_lock)) {
- 		if (ndelay)
- 			return -EAGAIN;
--- 
-1.7.0.4
-
+-	syncfwheader = kmalloc(sizeof(struct fwsyncheader), GFP_ATOMIC);
++	syncfwheader = kmemdup(skb->data + IPFIELD_ALIGN_OFFSET,
++			       sizeof(struct fwsyncheader), GFP_ATOMIC);
+ 	if (!syncfwheader) {
+ 		lbs_deb_usbd(&cardp->udev->dev, "Failure to allocate syncfwheader\n");
+ 		kfree_skb(skb);
+ 		return;
+ 	}
+ 
+-	memcpy(syncfwheader, skb->data + IPFIELD_ALIGN_OFFSET,
+-	       sizeof(struct fwsyncheader));
+-
+ 	if (!syncfwheader->cmd) {
+ 		lbs_deb_usb2(&cardp->udev->dev, "FW received Blk with correct CRC\n");
+ 		lbs_deb_usb2(&cardp->udev->dev, "FW received Blk seqnum = %d\n",
