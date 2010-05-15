@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756730Ab0EOVX1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:23:27 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35479 "EHLO mgw2.diku.dk"
+	id S1756766Ab0EOVXj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:23:39 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35485 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756465Ab0EOVXU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:23:20 -0400
-Date: Sat, 15 May 2010 23:23:15 +0200 (CEST)
+	id S1755841Ab0EOVXg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:23:36 -0400
+Date: Sat, 15 May 2010 23:23:31 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Peter Korsgaard <jacmet@sunsite.dk>, Greg Kroah-Hartman <gregkh@suse.de>,
-       netdev@vger.kernel.org, linux-usb@vger.kernel.org,
+To: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 33/37] drivers/net/usb: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152322560.21345@ask.diku.dk>
+Subject: [PATCH 34/37] drivers/mtd: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152323150.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,21 +41,21 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/usb/dm9601.c |    3 +--
+ drivers/mtd/mtdconcat.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/net/usb/dm9601.c b/drivers/net/usb/dm9601.c
---- a/drivers/net/usb/dm9601.c
-+++ b/drivers/net/usb/dm9601.c
-@@ -93,10 +93,9 @@ static int dm_write(struct usbnet *dev, 
- 	netdev_dbg(dev->net, "dm_write() reg=0x%02x, length=%d\n", reg, length);
- 
- 	if (data) {
--		buf = kmalloc(length, GFP_KERNEL);
-+		buf = kmemdup(data, length, GFP_KERNEL);
- 		if (!buf)
- 			goto out;
--		memcpy(buf, data, length);
+diff -u -p a/drivers/mtd/mtdconcat.c b/drivers/mtd/mtdconcat.c
+--- a/drivers/mtd/mtdconcat.c
++++ b/drivers/mtd/mtdconcat.c
+@@ -183,10 +183,9 @@ concat_writev(struct mtd_info *mtd, cons
  	}
  
- 	err = usb_control_msg(dev->udev,
+ 	/* make a copy of vecs */
+-	vecs_copy = kmalloc(sizeof(struct kvec) * count, GFP_KERNEL);
++	vecs_copy = kmemdup(vecs, sizeof(struct kvec) * count, GFP_KERNEL);
+ 	if (!vecs_copy)
+ 		return -ENOMEM;
+-	memcpy(vecs_copy, vecs, sizeof(struct kvec) * count);
+ 
+ 	entry_low = 0;
+ 	for (i = 0; i < concat->num_subdev; i++) {
