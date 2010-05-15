@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755752Ab0EOVSY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:18:24 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51321 "EHLO mgw1.diku.dk"
+	id S1755793Ab0EOVSs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:18:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:41729 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755678Ab0EOVSV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:18:21 -0400
-Date: Sat, 15 May 2010 23:18:16 +0200 (CEST)
+	id S1755487Ab0EOVSp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:18:45 -0400
+Date: Sat, 15 May 2010 23:18:40 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 17/37] drivers/pci/hotplug: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152318000.21345@ask.diku.dk>
+To: Huang Shijie <shijie8@gmail.com>, Kang Yong <kangyong@telegent.com>,
+       Zhang Xiaobing <xbzhang@telegent.com>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 18/37] drivers/media/video/tlg2300: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152318160.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,24 +44,23 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/pci/hotplug/cpqphp_core.c |    3 +--
+ drivers/media/video/tlg2300/pd-main.c |    3 +--
  1 file changed, 1 insertion(+), 2 deletions(-)
 
-diff -u -p a/drivers/pci/hotplug/cpqphp_core.c b/drivers/pci/hotplug/cpqphp_core.c
---- a/drivers/pci/hotplug/cpqphp_core.c
-+++ b/drivers/pci/hotplug/cpqphp_core.c
-@@ -1075,13 +1075,12 @@ static int cpqhpc_probe(struct pci_dev *
+diff -u -p a/drivers/media/video/tlg2300/pd-main.c b/drivers/media/video/tlg2300/pd-main.c
+--- a/drivers/media/video/tlg2300/pd-main.c
++++ b/drivers/media/video/tlg2300/pd-main.c
+@@ -227,12 +227,11 @@ static int firmware_download(struct usb_
  
- 	/* make our own copy of the pci bus structure,
- 	 * as we like tweaking it a lot */
--	ctrl->pci_bus = kmalloc(sizeof(*ctrl->pci_bus), GFP_KERNEL);
-+	ctrl->pci_bus = kmemdup(pdev->bus, sizeof(*ctrl->pci_bus), GFP_KERNEL);
- 	if (!ctrl->pci_bus) {
- 		err("out of memory\n");
- 		rc = -ENOMEM;
- 		goto err_free_ctrl;
+ 	fwlength = fw->size;
+ 
+-	fwbuf = kzalloc(fwlength, GFP_KERNEL);
++	fwbuf = kmemdup(fw->data, fwlength, GFP_KERNEL);
+ 	if (!fwbuf) {
+ 		ret = -ENOMEM;
+ 		goto out;
  	}
--	memcpy(ctrl->pci_bus, pdev->bus, sizeof(*ctrl->pci_bus));
+-	memcpy(fwbuf, fw->data, fwlength);
  
- 	ctrl->bus = pdev->bus->number;
- 	ctrl->rev = pdev->revision;
+ 	max_packet_size = udev->ep_out[0x1]->desc.wMaxPacketSize;
+ 	log("\t\t download size : %d", (int)max_packet_size);
