@@ -1,17 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0EOVXz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:23:55 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:35493 "EHLO mgw2.diku.dk"
+	id S1756836Ab0EOVYQ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:24:16 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35502 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756707Ab0EOVXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:23:53 -0400
-Date: Sat, 15 May 2010 23:23:48 +0200 (CEST)
+	id S1755841Ab0EOVYM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:24:12 -0400
+Date: Sat, 15 May 2010 23:24:07 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "Ed L. Cashin" <ecashin@coraid.com>, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 35/37] drivers/block/aoe: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152323310.21345@ask.diku.dk>
+To: Pavel Roskin <proski@gnu.org>, David Gibson <hermes@gibson.dropbear.id.au>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, orinoco-users@lists.sourceforge.net,
+       orinoco-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 36/37] drivers/net/wireless/orinoco: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152323480.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -41,24 +44,22 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/block/aoe/aoechr.c |    3 +--
- 1 file changed, 1 insertion(+), 2 deletions(-)
+ drivers/net/wireless/orinoco/wext.c |    4 +---
+ 1 file changed, 1 insertion(+), 3 deletions(-)
 
-diff -u -p a/drivers/block/aoe/aoechr.c b/drivers/block/aoe/aoechr.c
---- a/drivers/block/aoe/aoechr.c
-+++ b/drivers/block/aoe/aoechr.c
-@@ -132,13 +132,12 @@ bail:		spin_unlock_irqrestore(&emsgs_loc
- 		return;
- 	}
+diff -u -p a/drivers/net/wireless/orinoco/wext.c b/drivers/net/wireless/orinoco/wext.c
+--- a/drivers/net/wireless/orinoco/wext.c
++++ b/drivers/net/wireless/orinoco/wext.c
+@@ -993,11 +993,9 @@ static int orinoco_ioctl_set_genie(struc
+ 		return -EINVAL;
  
--	mp = kmalloc(n, GFP_ATOMIC);
-+	mp = kmemdup(msg, n, GFP_ATOMIC);
- 	if (mp == NULL) {
- 		printk(KERN_ERR "aoe: allocation failure, len=%ld\n", n);
- 		goto bail;
- 	}
+ 	if (wrqu->data.length) {
+-		buf = kmalloc(wrqu->data.length, GFP_KERNEL);
++		buf = kmemdup(extra, wrqu->data.length, GFP_KERNEL);
+ 		if (buf == NULL)
+ 			return -ENOMEM;
+-
+-		memcpy(buf, extra, wrqu->data.length);
+ 	} else
+ 		buf = NULL;
  
--	memcpy(mp, msg, n);
- 	em->msg = mp;
- 	em->flags |= EMFL_VALID;
- 	em->len = n;
