@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756349Ab0EOVW2 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 17:22:28 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:51489 "EHLO mgw1.diku.dk"
+	id S1756574Ab0EOVWq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 17:22:46 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:35472 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753458Ab0EOVWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 17:22:23 -0400
-Date: Sat, 15 May 2010 23:22:18 +0200 (CEST)
+	id S1755331Ab0EOVWn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 17:22:43 -0400
+Date: Sat, 15 May 2010 23:22:38 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Carlos Corbacho <carlos@strangeworlds.co.uk>,
-       Matthew Garrett <mjg@redhat.com>, platform-driver-x86@vger.kernel.org,
+To: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 30/37] drivers/platform/x86: Use kmemdup
-Message-ID: <Pine.LNX.4.64.1005152322010.21345@ask.diku.dk>
+Subject: [PATCH 31/37] drivers/infiniband/core: Use kmemdup
+Message-ID: <Pine.LNX.4.64.1005152322190.21345@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -42,23 +42,44 @@ statement S;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/platform/x86/wmi.c |    4 +---
- 1 file changed, 1 insertion(+), 3 deletions(-)
+ drivers/infiniband/core/cma.c |    4 ++--
+ drivers/infiniband/core/mad.c |    4 +---
+ 2 files changed, 3 insertions(+), 5 deletions(-)
 
-diff -u -p a/drivers/platform/x86/wmi.c b/drivers/platform/x86/wmi.c
---- a/drivers/platform/x86/wmi.c
-+++ b/drivers/platform/x86/wmi.c
-@@ -756,12 +756,10 @@ static __init acpi_status parse_wdg(acpi
+diff -u -p a/drivers/infiniband/core/cma.c b/drivers/infiniband/core/cma.c
+--- a/drivers/infiniband/core/cma.c
++++ b/drivers/infiniband/core/cma.c
+@@ -1676,13 +1676,13 @@ int rdma_set_ib_paths(struct rdma_cm_id 
+ 	if (!cma_comp_exch(id_priv, CMA_ADDR_RESOLVED, CMA_ROUTE_RESOLVED))
+ 		return -EINVAL;
  
- 	total = obj->buffer.length / sizeof(struct guid_block);
+-	id->route.path_rec = kmalloc(sizeof *path_rec * num_paths, GFP_KERNEL);
++	id->route.path_rec = kmemdup(path_rec, sizeof *path_rec * num_paths,
++				     GFP_KERNEL);
+ 	if (!id->route.path_rec) {
+ 		ret = -ENOMEM;
+ 		goto err;
+ 	}
  
--	gblock = kzalloc(obj->buffer.length, GFP_KERNEL);
-+	gblock = kmemdup(obj->buffer.pointer, obj->buffer.length, GFP_KERNEL);
- 	if (!gblock)
- 		return AE_NO_MEMORY;
+-	memcpy(id->route.path_rec, path_rec, sizeof *path_rec * num_paths);
+ 	id->route.num_paths = num_paths;
+ 	return 0;
+ err:
+diff -u -p a/drivers/infiniband/core/mad.c b/drivers/infiniband/core/mad.c
+--- a/drivers/infiniband/core/mad.c
++++ b/drivers/infiniband/core/mad.c
+@@ -291,13 +291,11 @@ struct ib_mad_agent *ib_register_mad_age
+ 	}
  
--	memcpy(gblock, obj->buffer.pointer, obj->buffer.length);
--
- 	for (i = 0; i < total; i++) {
- 		/*
- 		  Some WMI devices, like those for nVidia hooks, have a
+ 	if (mad_reg_req) {
+-		reg_req = kmalloc(sizeof *reg_req, GFP_KERNEL);
++		reg_req = kmemdup(mad_reg_req, sizeof *reg_req, GFP_KERNEL);
+ 		if (!reg_req) {
+ 			ret = ERR_PTR(-ENOMEM);
+ 			goto error3;
+ 		}
+-		/* Make a copy of the MAD registration request */
+-		memcpy(reg_req, mad_reg_req, sizeof *reg_req);
+ 	}
+ 
+ 	/* Now, fill in the various structures */
