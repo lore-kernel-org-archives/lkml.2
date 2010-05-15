@@ -1,34 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752556Ab0EOHdK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 03:33:10 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:51513 "EHLO mx3.mail.elte.hu"
+	id S1752615Ab0EOHht (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 03:37:49 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52079 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751988Ab0EOHdI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 03:33:08 -0400
-Date: Sat, 15 May 2010 09:32:31 +0200
+	id S1751744Ab0EOHhr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 15 May 2010 03:37:47 -0400
+Date: Sat, 15 May 2010 09:37:32 +0200
 From: Ingo Molnar <mingo@elte.hu>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-Message-ID: <20100515073231.GB9877@elte.hu>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
- <1273796396-29649-16-git-send-email-yinghai@kernel.org>
- <1273804337.21352.396.camel@pasglop>
- <4BECF158.5070200@oracle.com>
- <1273825807.21352.601.camel@pasglop>
- <4BED7CE3.1020507@oracle.com>
- <1273876234.21352.639.camel@pasglop>
+To: Don Zickus <dzickus@redhat.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Miller <davem@davemloft.net>
+Subject: Re: linux-next: build failure after merge of the final tree
+Message-ID: <20100515073732.GA17120@elte.hu>
+References: <20100514155312.9684cb9d.sfr@canb.auug.org.au>
+ <20100514150343.GQ15159@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273876234.21352.639.camel@pasglop>
+In-Reply-To: <20100514150343.GQ15159@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
 X-ELTE-SpamScore: -2.0
 X-ELTE-SpamLevel: 
@@ -42,35 +34,52 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-* Benjamin Herrenschmidt <benh@kernel.crashing.org> wrote:
+* Don Zickus <dzickus@redhat.com> wrote:
 
-> On Fri, 2010-05-14 at 09:40 -0700, Yinghai Lu wrote:
-> > later, after this patchset. this patchset is hanging around too long
-> > already.
-> 
-> That's where I strongly disagree with Ingo :-) 
-> There's no such thing as a patch set hanging around 
-> too long. Patches should go in when they are ready 
-> and in good shape, not due to some kind of time 
-> bomb, which results in tons of unfixable crap being 
-> merged, which is very bad engineering.
+> Sorry for the mess.  I think the following patch 
+> cleans it up.  The last piece deals with the sparc 
+> mess, the other two pieces should deal with the x86 
+> fallout.
 
-The thing i disagreed with was that the patches were 
-posted in March and there was no progress for a long 
-time. That kind of situation only leads to patches 
-being piled up unreasonably and results in Yinghai 
-wasting time and effort.
+This patch breaks x86:
 
-But now there's real progress: you posted patches and 
-Yinghai is posting patches and is reacting to your 
-review feedback. As long there's steady progress (and 
-not just the steady decay of entropy destroying 
-already created value) i'm a happy camper.
+arch/x86/built-in.o: In function `show_stack_log_lvl':
+(.text+0xc2c0): undefined reference to `touch_nmi_watchdog'
+arch/x86/built-in.o: In function `print_trace_address':
+dumpstack.c:(.text+0xd893): undefined reference to `touch_nmi_watchdog'
+arch/x86/built-in.o: In function `mce_timed_out':
+mce.c:(.text+0x20008): undefined reference to `touch_nmi_watchdog'
+arch/x86/built-in.o: In function `enable_lapic_nmi_watchdog':
+(.text+0x261f2): undefined reference to `touch_nmi_watchdog'
 
-Btw., it would be nice to ready the LMB core bits for 
-upstream for 2.6.35 if there's agreement about them - 
-that will make the subsequent x86 patches much easier 
-to merge.
+CONFIG_CLOCKSOURCE_WATCHDOG=y
+CONFIG_PERF_EVENTS_NMI=y
+CONFIG_IPMI_WATCHDOG=m
+CONFIG_WATCHDOG=y
+CONFIG_WATCHDOG_NOWAYOUT=y
+# CONFIG_SOFT_WATCHDOG is not set
+CONFIG_HP_WATCHDOG=y
+CONFIG_SBC_EPX_C3_WATCHDOG=m
+# CONFIG_PCIPCWATCHDOG is not set
+# CONFIG_USBPCWATCHDOG is not set
+CONFIG_HAVE_FTRACE_NMI_ENTER=y
+CONFIG_FTRACE_NMI_ENTER=y
+
+I'd _strongly_ suggest to simplify the code. There's 
+a few things that could be done to that end:
+
+- just have a single watchdog option and dont split 
+  the soft-dog from the hard-dog.
+
+- use config options to define default behavior: i.e.
+  whether the soft-dog and hard-dog is enabled by default,
+  but otherwise keep them both included.
+
+- provide a smooth pathway for architectures that 
+  have an NMI watchdog right now. Dont overlap their 
+  symbols for example.
+
+... and similar measures.
 
 Thanks,
 
