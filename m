@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754006Ab0EODjg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 23:39:36 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:47353 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752239Ab0EODjf (ORCPT
+	id S1755578Ab0EODkS (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 14 May 2010 23:40:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:2269 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752367Ab0EODkP convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 23:39:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=oKdU+fEQnh7wX4ij04oHGkDdU6KQqsyWZ98eRuqEh5Ix/aLj15bAZQiIh/fa4p1GfQ
-         txGHM00kWdcNFKSmMcIc2fRLTiEnBeHHEDv3U0ZSV7sUJnAlEWVHx1KAEqb4womkIDof
-         FTdRnCyezB+2NnGQYHKt/AmAdBxxzCkr7iYBw=
-Date: Sat, 15 May 2010 05:39:35 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ian Munsie <imunsie@au1.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Tom Zanussi <tzanussi@gmail.com>,
-       Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-Subject: Re: [PATCH 3/7] Revert "perf: Fix warning while reading ring
-	buffer headers"
-Message-ID: <20100515033933.GC8150@nowhere>
-References: <1273730632-21008-1-git-send-email-imunsie@au1.ibm.com> <1273730632-21008-4-git-send-email-imunsie@au1.ibm.com>
+	Fri, 14 May 2010 23:40:15 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=cUHYGyn0irsQz5o4qn2ZTc48IKkrrngJjPDURFi+qWxRxz+8AqhJjHYEm1dL2uamG
+	8E0dWXddOgAyuo1+poo+Q==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273730632-21008-4-git-send-email-imunsie@au1.ibm.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <Pine.LNX.4.44L0.1005142256070.11498-100000@netrider.rowland.org>
+References: <AANLkTil-Ky5L84JF7xn6su8VMtglBpZwCNIh7VgBiHgL@mail.gmail.com>
+	 <Pine.LNX.4.44L0.1005142256070.11498-100000@netrider.rowland.org>
+Date: Fri, 14 May 2010 20:40:08 -0700
+Message-ID: <AANLkTinwJdPneNSlAeTml5fHW2LFy53Dz3DRf95y1Bcl@mail.gmail.com>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: Brian Swetland <swetland@google.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Tony Lindgren <tony@atomide.com>,
+       Matthew Garrett <mjg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
+       magnus.damm@gmail.com, "Theodore Ts'o" <tytso@mit.edu>,
+       mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       =?UTF-8?Q?Beno=C3=AEt_Cousson?= <b-cousson@ti.com>,
+       linux-omap@vger.kernel.org, Vitaly Wool <vitalywool@gmail.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 04:03:48PM +1000, Ian Munsie wrote:
-> From: Ian Munsie <imunsie@au1.ibm.com>
-> 
-> This reverts commit d00a47cce569a3e660a8c9de5d57af28d6a9f0f7.
->     "perf: Fix warning while reading ring buffer headers"
-> 
-> The reverted patch removed the processing of the header_page, skipping
-> over it instead on the assumption that perf was not using any of the
-> data from that header. The patch neglected to remove the header_page_
-> variables which were initialised in the removed code, nor did it fix any
-> code that was using those variables.
-> 
-> In particular, long_size was set based on one of those variables
-> (header_page_size_size) to learn the size of a long from the kernel,
-> which is necessary to correctly print out some of the trace information
-> in some circumstances. For instance, the size of a long in a 64 bit
-> kernel would differ from the size of a long in perf if it was compiled
-> for a 32 bit userspace. Perf trace needs to know the size of a long in
-> the kernel so that it can print out the correct value without
-> truncation.
+On Fri, May 14, 2010 at 7:58 PM, Alan Stern <stern@rowland.harvard.edu> wrote:
+> On Fri, 14 May 2010, Brian Swetland wrote:
+>
+>> It provides useful functionality -- you apparently disagree, but the
+>> wakelock/suspendblock model is in use, shipping, and solving problems
+>> for quite a lot of android devices that have been shipping for a while
+>> now.  We actively go to lowest power state in idle (on omap, msm,
+>> etc), and use drivers that aggressively declock and depower modules
+>> (similar to runtime pm), but we have found that using the
+>> opportunistic suspend model combined with wakelocks allows us to
+>> attain even lower average power consumption in always-connected,
+>> actively-syncing devices.
+>
+> Can you explain this in more detail?  Are you saying that some devices
+> go on generating interrupts and causing timers to be scheduled, even
+> though what they're doing isn't important enough to prevent the system
+> from powering down?
 
+In tickless mode, the time until next timer is a signed int, so the
+longest the kernel will ever sleep is ~2 seconds at a go.  In
+practice, userspace entities often have polling behavior that can
+trigger more often than that, and I've observed some kernel periodic
+timers (haven't cataloged them recently) that happen more often than
+once a second.
 
+When we go to full suspend, we know that only specific wakeup sources
+(keyboard gpios, baseband voice/ip events, rtc alarms, etc) are going
+to wake us up.
 
-I don't understand.
-In the format file we have the size of the fields beside their type name,
-so why do we need this?
-
-Thanks.
-
+Brian
