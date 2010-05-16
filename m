@@ -1,61 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753142Ab0EPLul (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 07:50:41 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:37098 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751409Ab0EPLuk (ORCPT
+	id S1754378Ab0EPMR3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 08:17:29 -0400
+Received: from honeysuckle.london.02.net ([87.194.255.144]:35287 "EHLO
+	honeysuckle.london.02.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753087Ab0EPMR1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 07:50:40 -0400
-Date: Fri, 7 May 2010 15:43:02 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Nico Schottelius <nico-kernel@schottelius.org>,
-       Nico Schottelius <nico-linux-20100427@schottelius.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.osdl.org>
-Subject: Re: 2.6.33-2.6.34-rc5 suspend issues
-Message-ID: <20100507134302.GB3089@ucw.cz>
-References: <20100427074609.GA3261@ikn.schottelius.org>
- <20100427083202.GA3143@ikn.schottelius.org>
- <20100428160935.GA4010@schottelius.org>
- <20100429191241.GA3407@schottelius.org>
- <20100501122441.GA3273@schottelius.org>
- <20100504041849.GA1262@ucw.cz>
- <20100504144714.GA3527@schottelius.org>
- <20100507135704.GB3455@schottelius.org>
- <20100512060843.GA20895@schottelius.org>
+	Sun, 16 May 2010 08:17:27 -0400
+X-Greylist: delayed 303 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 May 2010 08:17:27 EDT
+X-Antivirus-MYDOMAIN-Mail-From: don@prince.homedns.org via fireman-smp.dhp.mpl
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(192.168.1.163):. Processed in 0.042299 secs Process 10288)
+Message-ID: <4BEFE126.4080606@prince.homedns.org>
+Date: Sun, 16 May 2010 13:12:22 +0100
+From: "don@homedns" <don@prince.homedns.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100422 Mandriva/3.0.4-0.4mdv2010.0 (2010.0) Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100512060843.GA20895@schottelius.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Robert Schedel <r.schedel@yahoo.de>
+CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2.6.34-rc7] HID: hid-samsung: add support for Creative
+ Desktop Wireless 6000
+References: <4BEF3D1F.6080403@yahoo.co.uk> <4BEFCA05.8000402@yahoo.de>
+In-Reply-To: <4BEFCA05.8000402@yahoo.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 16/05/10 11:33, Robert Schedel wrote:
 
-> > > > > Same happens on 2.6.34-rc5-00340-g79dba2e, now testing
-> > > > > 2.6.34-rc6-00063-gbe1066b.
-> > > > 
-> > > > There's one bit that needs to be set to stay in the acpi mode, and
-> > > > there's blacklist somewhere...?
-> > > 
-> > > Don't know if I should answer the question, but the problem also happens
-> > > on 2.6.34-rc6-00063-gbe1066b.
-> > > 
-> > > Now compiling v2.6.34-rc6-106-gd93ac51.
-> > 
-> > Same issue on 2.6.34-rc6-00201-g722154e.
-> 
-> Success, success! With 2.6.34-rc7 I can resume at least two times!
-> 
-> I'll keep an eye on it and notify you if things continue to work / break again.
-> 
+> Hello,
+>
+> On 16.05.2010 02:32, Don Prince wrote:
+>   
+>> Add support for the Creative Desktop Wireless 6000 keyboard/mouse
+>> bundle's multimedia buttons which are not currently handled by
+>> the default/samsung HID driver.
+>>
+>> Signed-off-by: Don Prince <dhprince-devel@yahoo.co.uk>
+>>
+>> ---
+>> [...]
+>>     
+> As originator of the "old" 0419:0001 IrDA driver parts had a short look at it:
+> - Merging with old code looks OK. Tested with old 0419:0001 (184) device, still functional.
+> - 0419:0600 not yet known in usb.ids, might be worth a contribution
+> - As you merged in a new device, and for explaining why this handling was added, my suggestion is to adapt the existing comments, e.g.:
+>
+> /*
+>  * This driver supports several HID devices:
+>  *
+>  * [0419:0001] Samsung IrDA remote controller (reports as Cypress USB Mouse).
+>  *
+>  * There are several variants:
+>  *
+>  * 1. 184 byte report descriptor
+> [...]
+>  * [0419:0600] Creative Desktop Wireless 6000 keyboard/mouse combo
+>  *
+>  * Several key mappings used from the consumer usage page
+>  * deviate from the USB HUT 1.12 standard.
+>  */
+>
+> Of course some HID maintainer should also review it, for general policy.
+>
+> Regards,
+> Robert Schedel
+>
+>   
+Ok I'll add some comments and re-submit patch as v2.
 
-Congratulations. I have no idea what fixed it, but hopefully it will
-keep working.
+Regards
 
+Don Prince
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
