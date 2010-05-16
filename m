@@ -1,191 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753604Ab0EPQnS (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 12:43:18 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:35546 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751105Ab0EPQnQ (ORCPT
+	id S1753816Ab0EPQoD (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 12:44:03 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:16894 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752041Ab0EPQn7 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 12:43:16 -0400
-From: Manfred Spraul <manfred@colorfullife.com>
-To: LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: Chris Mason <chris.mason@oracle.com>, Zach Brown <zach.brown@oracle.com>,
-       Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>,
-       Manfred Spraul <manfred@colorfullife.com>
-Subject: [PATCH] ipc/sem.c: Update description of the implementation
-Date: Sun, 16 May 2010 18:44:38 +0200
-Message-Id: <1274028278-1990-1-git-send-email-manfred@colorfullife.com>
-X-Mailer: git-send-email 1.6.6.1
+	Sun, 16 May 2010 12:43:59 -0400
+MIME-Version: 1.0
+Message-ID: <b7b4f345-944c-4cbc-b98a-700f915183b9@default>
+Date: Sun, 16 May 2010 09:42:40 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@infradead.org>
+Cc: Andi Kleen <andi@firstfloor.org>, Venkatesh Pallipadi <venki@google.com>,
+       Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+References: <1273887635-27610-1-git-send-email-venki@google.com>
+ <87tyq9mqrz.fsf@basil.nowhere.org>
+ <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+ <20100515121424.38f5b389@infradead.org>
+ <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
+ <20100515224305.17a04022@infradead.org
+ alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090207.4BF02095.0007:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ipc/sem.c begins with a 15 year old description about bugs in the initial
-implementation in Linux-1.0.
-The patch replaces that with a top level description of the current code.
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> What we can talk about is a vget_tsc_raw() interface along with a
+> vconvert_tsc_delta() interface, where vget_tsc_raw() returns you an
+> nasty error code for everything which is not usable.
 
->From this text, a TODO could be derived:
-The opengroup man page for semop() does not mandate FIFO.
-Thus there is no need for a semaphore array list of pending operations.
+I'm open to something like that provided:
 
-If
-- this list is removed
-- the per-semaphore array spinlock is removed (possible if there is no
-  list to protect)
-- sem_otime is moved into the semaphores and calculated on demand during
-  semctl()
-then the array would be read-mostly - which would significantly improve
-scaling for applications that use semaphore arrays with lots of entries.
+1) It works (whenever possible) without changing privilege levels
+   or causing vmexits or other "hidden slowness" problems when
+   used both in bare-metal Linux and in a virtual machine.
+2) The "transformation" performed by the kernel on the TSC
+   does not require some hidden pcpu number that won't work
+   in a virtual machine.
 
-The price would be expensive semctl() calls:
+If TSC is indeed reliable (see below), it is both faster AND
+meets the above constraints.
 
-	for(i=0;i<sma->sem_nsems;i++) spin_lock(sma->sem_lock);
-	<do stuff>
-	for(i=0;i<sma->sem_nsems;i++) spin_unlock(sma->sem_lock);
+> > From: Arjan van de Ven [mailto:arjan@infradead.org]
+> > If you want a sysfs variable that is always 0... go wild.
+> 
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> Nah, there are systems which will have it set to 1:
+> Dig out your good old Pentium-I box and enjoy.
 
-I'm not sure if the complexity is worth the effort, thus here is the
-documentation of the current behavior first.
+Hot stove syndrome again?  Are you truly saying that there
+are NO single-socket multi-core systems that don't have
+stupid firmware (SMI and/or BIOS)?  Or are you saying that
+significant TSC clock skew occurs even between the cores
+on a single-socket Nehalem system?
 
-Andrew - could you add the patch to your -mm tree?
-It's on top of the series you have in your tree right now.
+If things are this bad, why on earth would the kernel itself
+EVER use TSC even as its own internal clocksource?  Or
+even to provide additional precision to a slow platform timer?
 
-And: IMHO the whole series is ready for 2.6.35: It improves the scaling
-and fixes some of the O(N^2) cases.
+Or are you saying that many systems (and especially large
+multi-socket systems) DO exist where the kernel isn't able
+to proactively determine that the firmware is broken and/or
+significant thermal variation may occur across sockets?
+This I believe.
 
-Signed-off-by: Manfred Spraul <manfred@colorfullife.com>
----
- ipc/sem.c |  103 +++++++++++++++++++++++++++++++-----------------------------
- 1 files changed, 53 insertions(+), 50 deletions(-)
+I understand that you both are involved in pushing the
+limits of large systems and that time synchronization is
+a very hard problem, perhaps effectively unsolvable,
+in these systems.
 
-diff --git a/ipc/sem.c b/ipc/sem.c
-index a744eb5..9a22cdb 100644
---- a/ipc/sem.c
-+++ b/ipc/sem.c
-@@ -3,56 +3,6 @@
-  * Copyright (C) 1992 Krishna Balasubramanian
-  * Copyright (C) 1995 Eric Schenk, Bruno Haible
-  *
-- * IMPLEMENTATION NOTES ON CODE REWRITE (Eric Schenk, January 1995):
-- * This code underwent a massive rewrite in order to solve some problems
-- * with the original code. In particular the original code failed to
-- * wake up processes that were waiting for semval to go to 0 if the
-- * value went to 0 and was then incremented rapidly enough. In solving
-- * this problem I have also modified the implementation so that it
-- * processes pending operations in a FIFO manner, thus give a guarantee
-- * that processes waiting for a lock on the semaphore won't starve
-- * unless another locking process fails to unlock.
-- * In addition the following two changes in behavior have been introduced:
-- * - The original implementation of semop returned the value
-- *   last semaphore element examined on success. This does not
-- *   match the manual page specifications, and effectively
-- *   allows the user to read the semaphore even if they do not
-- *   have read permissions. The implementation now returns 0
-- *   on success as stated in the manual page.
-- * - There is some confusion over whether the set of undo adjustments
-- *   to be performed at exit should be done in an atomic manner.
-- *   That is, if we are attempting to decrement the semval should we queue
-- *   up and wait until we can do so legally?
-- *   The original implementation attempted to do this.
-- *   The current implementation does not do so. This is because I don't
-- *   think it is the right thing (TM) to do, and because I couldn't
-- *   see a clean way to get the old behavior with the new design.
-- *   The POSIX standard and SVID should be consulted to determine
-- *   what behavior is mandated.
-- *
-- * Further notes on refinement (Christoph Rohland, December 1998):
-- * - The POSIX standard says, that the undo adjustments simply should
-- *   redo. So the current implementation is o.K.
-- * - The previous code had two flaws:
-- *   1) It actively gave the semaphore to the next waiting process
-- *      sleeping on the semaphore. Since this process did not have the
-- *      cpu this led to many unnecessary context switches and bad
-- *      performance. Now we only check which process should be able to
-- *      get the semaphore and if this process wants to reduce some
-- *      semaphore value we simply wake it up without doing the
-- *      operation. So it has to try to get it later. Thus e.g. the
-- *      running process may reacquire the semaphore during the current
-- *      time slice. If it only waits for zero or increases the semaphore,
-- *      we do the operation in advance and wake it up.
-- *   2) It did not wake up all zero waiting processes. We try to do
-- *      better but only get the semops right which only wait for zero or
-- *      increase. If there are decrement operations in the operations
-- *      array we do the same as before.
-- *
-- * With the incarnation of O(1) scheduler, it becomes unnecessary to perform
-- * check/retry algorithm for waking up blocked processes as the new scheduler
-- * is better at handling thread switch than the old one.
-- *
-  * /proc/sysvipc/sem support (c) 1999 Dragos Acostachioaie <dragos@iname.com>
-  *
-  * SMP-threaded, sysctl's added
-@@ -61,6 +11,8 @@
-  * (c) 2001 Red Hat Inc
-  * Lockless wakeup
-  * (c) 2003 Manfred Spraul <manfred@colorfullife.com>
-+ * Further wakeup optimizations, documentation
-+ * (c) 2010 Manfred Spraul <manfred@colorfullife.com>
-  *
-  * support for audit of ipc object properties and permission changes
-  * Dustin Kirkland <dustin.kirkland@us.ibm.com>
-@@ -68,6 +20,57 @@
-  * namespaces support
-  * OpenVZ, SWsoft Inc.
-  * Pavel Emelianov <xemul@openvz.org>
-+ *
-+ * Implementation notes: (May 2010)
-+ * This file implements System V semaphores.
-+ *
-+ * User space visible behavior:
-+ * - FIFO ordering for semop() operations (just FIFO, not starvation
-+ *   protection)
-+ * - multiple semaphore operations that alter the same semaphore in
-+ *   one semop() are handled.
-+ * - sem_ctime (time of last semctl()) is updated in the IPC_SET, SETVAL and
-+ *   SETALL calls.
-+ * - two Linux specific semctl() commands: SEM_STAT, SEM_INFO.
-+ * - undo adjustments at process exit are limited to 0..SEMVMX.
-+ * - namespace are supported.
-+ * - SEMMSL, SEMMNS, SEMOPM and SEMMNI can be configured at runtine by writing
-+ *   to /proc/sys/kernel/sem.
-+ * - statistics about the usage are reported in /proc/sysvipc/sem.
-+ *
-+ * Internals:
-+ * - scalability:
-+ *   - all global variables are read-mostly.
-+ *   - semop() calls and semctl(RMID) are synchronized by RCU.
-+ *   - most operations do write operations (actually: spin_lock calls) to
-+ *     the per-semaphore array structure.
-+ *   Thus: Perfect SMP scaling between independent semaphore arrays.
-+ *         If multiple semaphores in one array are used, then cache line
-+ *         trashing on the semaphore array spinlock will limit the scaling.
-+ * - semncnt and semzcnt are calculated on demand in count_semncnt() and
-+ *   count_semzcnt()
-+ * - the task that performs a successful semop() scans the list of all
-+ *   sleeping tasks and completes any pending operations that can be fulfilled.
-+ *   Semaphores are actively given to waiting tasks (necessary for FIFO).
-+ *   (see update_queue())
-+ * - To improve the scalability, the actual wake-up calls are performed after
-+ *   dropping all locks. (see wake_up_sem_queue_prepare(),
-+ *   wake_up_sem_queue_do())
-+ * - All work is done by the waker, the woken up task does not have to do
-+ *   anything - not even acquiring a lock or dropping a refcount.
-+ * - A woken up task may not even touch the semaphore array anymore, it may
-+ *   have been destroyed already by a semctl(RMID). 
-+ * - The synchronizations between wake-ups due to a timeout/signal and a
-+ *   wake-up due to a completed semaphore operation is achieved by using an
-+ *   intermediate state (IN_WAKEUP).
-+ * - UNDO values are stored in an array (one per process and per
-+ *   semaphore array, lazily allocated). For backwards compatibility, multiple
-+ *   modes for the UNDO variables are supported (per process, per thread)
-+ *   (see copy_semundo, CLONE_SYSVSEM)
-+ * - There are two lists of the pending operations: a per-array list
-+ *   and per-semaphore list (stored in the array). This allows to achieve FIFO
-+ *   ordering without always scanning all pending operations.
-+ *   The worst-case behavior is nevertheless O(N^2) for N wakeups.
-  */
- 
- #include <linux/slab.h>
--- 
-1.6.6.1
+But that doesn't mean the vast majority of latest generation
+single-socket systems can't set "tsc_reliable" to 1.  Or that
+the kernel is responsible for detecting and/or correcting
+every system with buggy firmware.
 
+Maybe the best way to solve the "buggy firmware problem"
+is exactly by encouraging enterprise apps to use TSC
+and to expose and *blacklist* systems and/or system vendors
+who ship boxes with crappy firmware!
+
+> From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> What we could expose is an estimate about the performance of
+> gettimeofday/clock_gettime. The kernel has all the information to do
+> that, but this still does not solve the notification problem when we
+> need to switch to a different clock source.
+
+This would at least be a big step in the right direction.
+
+But if we go with a vget_raw_tsc() or direct TSC solution,
+you have convinced me of the need for notification.
+Maybe this is a perfect use for (at least one bit in)
+the TSC_AUX register and the rdtscp instruction?
+
+And I do agree with Venki that some user library (or at
+least published sample code) should be made available
+to demonstrate proper usage and to dampen out the worst
+of the "broken user problem".
+
+> > From: Arjan van de Ven [mailto:arjan@infradead.org]
+> > can you name said "enterprise" software by name please? We need a huge
+> > advertisement to let people know not to trust their important data to
+> > it..
+
+For obvious reasons I can't do that, but I can point to
+enterprise *operating systems* that have long since solved
+this same problem one way or another:  Solaris on x86 and
+HP-UX (the latter admittedly on ia64).  Enterprise app
+vendors are quite happy with requiring conformance to a
+very completely specified software/hardware/firmware stack
+before providing support to an app customer.  I'm just trying
+to ensure that Linux can be part of that spec.
