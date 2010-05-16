@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754700Ab0EPWxY (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 18:53:24 -0400
-Received: from mga09.intel.com ([134.134.136.24]:44681 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752012Ab0EPWxW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 18:53:22 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,243,1272870000"; 
-   d="scan'208";a="518399996"
-Date: Mon, 17 May 2010 00:53:55 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rabin Vincent <rabin.vincent@stericsson.com>
-Cc: linux-kernel@vger.kernel.org, STEricsson_nomadik_linux@list.st.com,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH] mfd: new AB8500 driver
-Message-ID: <20100516225355.GF3236@sortiz.org>
-References: <1273553131-9312-1-git-send-email-rabin.vincent@stericsson.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273553131-9312-1-git-send-email-rabin.vincent@stericsson.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754792Ab0EPW4U (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 18:56:20 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:52302 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752920Ab0EPW4T (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 18:56:19 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=EO2BIb0ZXv9CTvRLHV0GjOjj78vRy4eMlFj+X97OG9qyYLarSAwx0W0kXwUoJ5mW8b
+         FSN87qWUU0bur5yUa2YaJzBwKCPQReQQjnIzHptD730RaizjTSFQo2QygxZSIO6AeVtF
+         2AWNQ46FiOg9SYlVhFVgiwB2iXLmNRV8S+3Js=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Roland McGrath <roland@redhat.com>, Oleg Nesterov <oleg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Lassabe <frederic.lassabe@gmail.com>
+Subject: [GIT PULL] Ptrace bkl removal for 2.6.35-rc1
+Date: Mon, 17 May 2010 00:56:20 +0200
+Message-Id: <1274050580-21450-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
+Linus,
 
-On Tue, May 11, 2010 at 10:15:31AM +0530, Rabin Vincent wrote:
-> Add a new driver to support the AB8500 Power Management chip, replacing
-> the current AB4500.  The new driver replaces the old one, instead of an
-> incremental modification, because this is a substantial overhaul
-> including:
-> 
->  - Split of the driver into -core and -spi portions, to allow another
->    interface layer to be added
-> 
->  - Addition of interrupt support
-> 
->  - Switch to MFD core API for handling subdevices
-> 
->  - Simplification of the APIs to remove a redundant block parameter
-> 
->  - Rename of the APIs and macros from ab4500_* to ab8500_*
-> 
->  - Rename of the files from ab4500* to ab8500*
-> 
-> The driver still identifes itself as "ab4500" 
-The patch looks good, but why not changing that to "ab8500" and integrating
-the relevant board file changes to this patch ?
+Please pull the bkl/core branch that can be found at:
 
-Cheers,
-Samuel.
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/core
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+Thanks,
+	Frederic
+---
+
+Alessio Igor Bogani (1):
+      ptrace: Cleanup useless header
+
+Arnd Bergmann (1):
+      ptrace: kill BKL in ptrace syscall
+
+
+ kernel/ptrace.c |   11 -----------
+ 1 files changed, 0 insertions(+), 11 deletions(-)
