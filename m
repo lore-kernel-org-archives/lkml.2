@@ -1,57 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab0EPWdb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 18:33:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:26167 "EHLO mga09.intel.com"
+	id S1754674Ab0EPWhM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 18:37:12 -0400
+Received: from www.tglx.de ([62.245.132.106]:39610 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754593Ab0EPWd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 18:33:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,243,1272870000"; 
-   d="scan'208";a="518398360"
-Date: Mon, 17 May 2010 00:34:03 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/2] mfd: add TC35892 MFD core
-Message-ID: <20100516223402.GE3236@sortiz.org>
-References: <1272514380-8160-1-git-send-email-rabin.vincent@stericsson.com>
- <20100509220050.GD3269@sortiz.org>
- <20100514104902.GA19869@bnru02.bnr.st.com>
+	id S1754593Ab0EPWhL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 18:37:11 -0400
+Date: Mon, 17 May 2010 00:35:01 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@linux.intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>
+Subject: Re: [PATCH 1/8] x86/mrst/pci: return 0 for non-present pci bars
+In-Reply-To: <1273873281-17489-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Message-ID: <alpine.LFD.2.00.1005170034400.3368@localhost.localdomain>
+References: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com> <1273873281-17489-2-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100514104902.GA19869@bnru02.bnr.st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
+On Fri, 14 May 2010, Jacob Pan wrote:
 
-On Fri, May 14, 2010 at 04:19:03PM +0530, Rabin VINCENT wrote:
-> Hi Samuel,
+> Moorestown PCI code has special handling of devices with fixed BARs. In
+> case of BAR sizing writes, we need to update the fake PCI MMCFG space with real
+> size decode value.
 > 
-> On Mon, May 10, 2010 at 12:00:51AM +0200, Samuel Ortiz wrote:
-> > On Thu, Apr 29, 2010 at 09:42:59AM +0530, Rabin Vincent wrote:
-> > > The TC35892 I/O Expander provides 24 GPIOs, a keypad controller, timers,
-> > > and a rotator wheel interface.  This patch adds the MFD core.
-> > Both this one and the GPIO patch applied, many thanks.
+> When a BAR is not present, we need to return 0 instead of ~0. ~0 will be
+> treated as device error per bugzilla 12006.
 > 
-> Thanks.  In your for-next tree, it looks like the Author: information
-> for these two patches seems to have been lost.  Perhaps this could be
-> fixed up?  Thanks again.
-Sorry, I had to apply those patches manually and forgot to change the author
-field when committing. Should be fixed now.
+> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+> Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
 
-Cheers,
-Samuel.
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
 
-
-> Rabin
-
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+> ---
+>  arch/x86/pci/mrst.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+> index 8bf2fcb..d5c7aef 100644
+> --- a/arch/x86/pci/mrst.c
+> +++ b/arch/x86/pci/mrst.c
+> @@ -109,7 +109,7 @@ static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
+>  			decode++;
+>  			decode = ~(decode - 1);
+>  		} else {
+> -			decode = ~0;
+> +			decode = 0;
+>  		}
+>  
+>  		/*
+> -- 
+> 1.6.3.3
+> 
