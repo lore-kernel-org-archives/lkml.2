@@ -1,214 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab0EPTOp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 15:14:45 -0400
-Received: from www.tglx.de ([62.245.132.106]:46037 "EHLO www.tglx.de"
+	id S1753228Ab0EPTXc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 15:23:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:34870 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754322Ab0EPTOn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 15:14:43 -0400
-Date: Sun, 16 May 2010 21:14:12 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-cc: Arjan van de Ven <arjan@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] x86: Export tsc related information in sysfs
-In-Reply-To: <b7b4f345-944c-4cbc-b98a-700f915183b9@default>
-Message-ID: <alpine.LFD.2.00.1005161925480.3368@localhost.localdomain>
-References: <1273887635-27610-1-git-send-email-venki@google.com> <87tyq9mqrz.fsf@basil.nowhere.org> <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default> <20100515121424.38f5b389@infradead.org> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default> <20100515224305.17a04022@infradead.org
- alpine.LFD.2.00.1005161113450.3199@localhost.localdomain> <b7b4f345-944c-4cbc-b98a-700f915183b9@default>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1752798Ab0EPTXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 15:23:31 -0400
+Subject: Re: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tejun Heo <tj@kernel.org>
+Cc: Ben Hutchings <ben@decadent.org.uk>, jeff@garzik.org,
+       linux-ide@vger.kernel.org, jens.axboe@oracle.com,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       davem@davemloft.net, bzolnier@gmail.com
+In-Reply-To: <4BF024A2.4090804@kernel.org>
+References: <1273946974-29131-1-git-send-email-tj@kernel.org>
+	 <1273946974-29131-7-git-send-email-tj@kernel.org>
+	 <1274017175.14187.9.camel@mulgrave.site>
+	 <1274022457.2564.105.camel@localhost>
+	 <1274025636.14187.24.camel@mulgrave.site>  <4BF024A2.4090804@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 May 2010 15:23:17 -0400
+Message-ID: <1274037797.14187.50.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dan,
-
-On Sun, 16 May 2010, Dan Magenheimer wrote:
-
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > What we can talk about is a vget_tsc_raw() interface along with a
-> > vconvert_tsc_delta() interface, where vget_tsc_raw() returns you an
-> > nasty error code for everything which is not usable.
+On Sun, 2010-05-16 at 19:00 +0200, Tejun Heo wrote:
+> Hello, James.
 > 
-> I'm open to something like that provided:
+> On 05/16/2010 06:00 PM, James Bottomley wrote:
+> > This layering problem is partly the fault of libata ... if we had an ATA
+> > native disk driver, it would be able to unlock the capacity on its own.
 > 
-> 1) It works (whenever possible) without changing privilege levels
->    or causing vmexits or other "hidden slowness" problems when
->    used both in bare-metal Linux and in a virtual machine.
-> 2) The "transformation" performed by the kernel on the TSC
->    does not require some hidden pcpu number that won't work
->    in a virtual machine.
-
-What I have in mind and what I'm working on for quite a while is going
-to work on both bare metal and VMs w/o hidden slowness.
- 
-> If TSC is indeed reliable (see below), it is both faster AND
-> meets the above constraints.
+> Yeap.
 > 
-> > > From: Arjan van de Ven [mailto:arjan@infradead.org]
-> > > If you want a sysfs variable that is always 0... go wild.
+> > It's just we're using SCSI which has no SAT command it can issue for
+> > this, so the functional request has to be pushed down to libata ...
+> > leading to the need to thread it through the host template.
 > > 
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > Nah, there are systems which will have it set to 1:
-> > Dig out your good old Pentium-I box and enjoy.
+> > I was just pointing out that the whole thing is simplified if we use a
+> > block queue function approach instead.  ide_disk_t has access to the
+> > queue, as does gendisk, so it would all "just work" with a simple call
+> > site change if we used queue ops instead of block dev ops.  The plus
+> > side of doing it this way is that the SCSI threading becomes
+> > unnecessary: libata gets directly hooked into the unlock function
+> > instead of having to do it via an intermediary.
 > 
-> Hot stove syndrome again?  Are you truly saying that there
-
-Kinda hot stove, yes. I'm unfortunately forced to deal with the 500+
-different variants of borked timers and that makes me very reluctant
-to believe anything what chip/board/bios vendors promise. It's not the
-one time hot stove experience, it's the constant exposure to the never
-ending supply of hot stoves, which makes me nervous.
-
-I wish I could say something different.
-
-> are NO single-socket multi-core systems that don't have
-> stupid firmware (SMI and/or BIOS)?  Or are you saying that
-
-There are single socket multi-core x86 systems with a sane BIOS, but
-there is no reliable way to tell which ones belong into that category.
-
-> significant TSC clock skew occurs even between the cores
-> on a single-socket Nehalem system?
-
-There is no clock skew between the cores of a package - at least we
-are not aware of such a problem. Though I wouldn't rely on that
-forever: they also said that the Titanic was unsinkable :)
-
-> If things are this bad, why on earth would the kernel itself
-> EVER use TSC even as its own internal clocksource?  Or
-
-We try to use it for performance sake, but the kernel does at least
-it's very best to find out when it goes bad. We then switch back to a
-hpet or pm-timer which is horrible performance wise but does not screw
-up timekeeping and everything which relies on it completely.
-
-> even to provide additional precision to a slow platform timer?
-
-We don't do that anymore.
-
-> Or are you saying that many systems (and especially large
-> multi-socket systems) DO exist where the kernel isn't able
-> to proactively determine that the firmware is broken and/or
-> significant thermal variation may occur across sockets?
-> This I believe.
-
-As I said, we try our very best to determine when things go awry, but
-there are small errors which occur either sporadic or after longer
-uptime which we cannot yet detect reliably. Multi-socket falls into
-that category, but we are working on that.
- 
-> I understand that you both are involved in pushing the
-> limits of large systems and that time synchronization is
-> a very hard problem, perhaps effectively unsolvable,
-> in these systems.
-
-Well, it would be solvable in hardware and it has been done in
-hardware more than 20 years ago. Just not there where it would have
-been important: inside of x86 cpus. Hint: there are other
-architectures which got that right from the very beginning even on
-multi-socket systems.
-
-Admitted, x86 made progress, but we are still some steps away from
-something which I would consider reliable under all circumstances.
-
-But you are right, some of the problems with the existing hardware are
-just unsolvable and I spent a serious amount of time on trying to
-convince myself otherwise.
-
-The nasty thing about the subtle wreckage is that it is really hard to
-investigate and debug and I wasted a whole week recently to figure out
-what caused the time going backwards problem on a dual socket
-westmere. Not fun !
-
-> But that doesn't mean the vast majority of latest generation
-> single-socket systems can't set "tsc_reliable" to 1.  Or that
-> the kernel is responsible for detecting and/or correcting
-> every system with buggy firmware.
-
-It _IS_ responsible to detect buggy firmware otherwise we would just
-drain in bug reports about broken timekeeping. We've been there, no
-way to go back to this.
-
-> Maybe the best way to solve the "buggy firmware problem"
-> is exactly by encouraging enterprise apps to use TSC
-> and to expose and *blacklist* systems and/or system vendors
-> who ship boxes with crappy firmware!
-
-Blacklists are the last resort if a problem is not detectable by the
-kernel. We usually detect the non usability of TSC and emit a
-prominent warning into dmesg. Those warnings are there for years, but
-the number of systems with BIOS caused TSC wreckage has grown.
-
-> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > What we could expose is an estimate about the performance of
-> > gettimeofday/clock_gettime. The kernel has all the information to do
-> > that, but this still does not solve the notification problem when we
-> > need to switch to a different clock source.
+> Yeah, it can be made to work via a queue callback but I'm afraid that
+> would be a genuine layering violation (although going through SCSI is
+> extra layering, it isn't really a layering violation).
 > 
-> This would at least be a big step in the right direction.
-
-Ok.
- 
-> But if we go with a vget_raw_tsc() or direct TSC solution,
-> you have convinced me of the need for notification.
-> Maybe this is a perfect use for (at least one bit in)
-> the TSC_AUX register and the rdtscp instruction?
-
-Uurgh, no. The vsyscall will return a proper error code when shit
-happens. And really, we don't want to encourage the direct use of
-rdtsc at all. Also rdtscp is a full serializing instruction, which is
-probably not what you want to get fast timestamps.
-
-> And I do agree with Venki that some user library (or at
-> least published sample code) should be made available
-> to demonstrate proper usage and to dampen out the worst
-> of the "broken user problem".
-
-Using a vsyscall is the best way to achieve that. Simple function call
-interface with a well defined ABI and a proper return code. If the
-user ignores the return code - none of my problems.
-
-Further it allows us 
-
- - to keep the various CPU generation specific quirks well confined in
-   the kernel and we can even do fixups for correctable wreckage.
-
- - to expose coarser grained fast timestamps when the TSC is not
-   usable. [So the best name for it would be vget_timestamp(), which btw. 
-   allows us to provide the same interface to non x86 as well ]
-
-Thoughts ?
-
-> > > From: Arjan van de Ven [mailto:arjan@infradead.org]
-> > > can you name said "enterprise" software by name please? We need a huge
-> > > advertisement to let people know not to trust their important data to
-> > > it..
+> These are request_queue methods.
 > 
-> For obvious reasons I can't do that, but I can point to
-> enterprise *operating systems* that have long since solved
-> this same problem one way or another:  Solaris on x86 and
+> 	request_fn_proc		*request_fn;
+> 	make_request_fn		*make_request_fn;
+> 	prep_rq_fn		*prep_rq_fn;
+> 	unplug_fn		*unplug_fn;
+> 	merge_bvec_fn		*merge_bvec_fn;
+> 	prepare_flush_fn	*prepare_flush_fn;
+> 	softirq_done_fn		*softirq_done_fn;
+> 	rq_timed_out_fn		*rq_timed_out_fn;
+> 	dma_drain_needed_fn	*dma_drain_needed;
+> 	lld_busy_fn		*lld_busy_fn;
+> 
+> These are gendisk methods.
+> 
+> 	int (*open) (struct block_device *, fmode_t);
+> 	int (*release) (struct gendisk *, fmode_t);
+> 	int (*locked_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+> 	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+> 	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+> 	int (*direct_access) (struct block_device *, sector_t,
+> 						void **, unsigned long *);
+> 	int (*media_changed) (struct gendisk *);
+> 	void (*unlock_native_capacity) (struct gendisk *);
+> 	int (*revalidate_disk) (struct gendisk *);
+> 	int (*getgeo)(struct block_device *, struct hd_geometry *);
+> 
+> request_queue is (or at least supposed to be) oblivious about genhd
+> and its attributes including capacity.  After all, request_queue can
+> exist w/o genhd associated, so it would be quite odd to have capacity
+> related method living in request_queue.
 
-On a well selected subset of the machines which they control themself.
+Yes, I'll sort of buy this ... although it's not quite that clean:
+barrier methods, which are only used for filesystem above block devices
+also live in the queue.
 
-> HP-UX (the latter admittedly on ia64).  Enterprise app
+> Another thing is that there is no generic way to reach the associated
+> genhd from request_queue and I can't think of a clean way to map
+> request_queue to the associated ata device w/o in-flight requests (can
+> you even do that from SCSI?).
 
-But that's probably just a property of ia64 and not the merit of HP,
-as their x86 machines have a proven track record of BIOS/SMI problems.
+No ... that's by design ... but you don't need it if all you're doing is
+unlocking the native capacity (whether on behalf of block dev ops or
+queue ops).
 
-> vendors are quite happy with requiring conformance to a
-> very completely specified software/hardware/firmware stack
-> before providing support to an app customer.  I'm just trying
-> to ensure that Linux can be part of that spec.
+> Unfortunately, libata is still properly layered below SCSI, so I'm
+> afraid threading through sd is clumsy yet the cleanest way to do it.
 
-I understand that and I'm willing to help, but in a sane and
-controlled way which does me not expose to a new category of unfixable
-bugreports and complaints.
+s/properly/im\&/
 
-Thanks,
+but yes,
 
-	tglx
+Reluctantly-Acked-by: James Bottomley <James.Bottomley@suse.de>
+
+James
+
+
