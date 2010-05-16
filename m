@@ -1,129 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754595Ab0EPWIr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 18:08:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58123 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751962Ab0EPWIp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 18:08:45 -0400
-Message-ID: <4BF06CB4.5000909@zytor.com>
-Date: Sun, 16 May 2010 15:07:48 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
+	id S1754562Ab0EPWN4 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 18:13:56 -0400
+Received: from mga06.intel.com ([134.134.136.21]:11725 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751962Ab0EPWNz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 18:13:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,242,1272870000"; 
+   d="scan'208";a="622111006"
+Date: Mon, 17 May 2010 00:14:29 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
 To: Florian Fainelli <florian@openwrt.org>
-CC: Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
-       linux-kernel <linux-kernel@vger.kernel.org>, andi@firstfloor.org
-Subject: Re: [PATCH] x86: CPU detection for RDC System-on-Chip
-References: <201005161455.34100.florian@openwrt.org> <20100516141917.0d2e69e2@lxorguk.ukuu.org.uk> <201005161521.47097.florian@openwrt.org>
-In-Reply-To: <201005161521.47097.florian@openwrt.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2] MFD: rdc321x: change resources flags to
+ IORESOURCE_IO
+Message-ID: <20100516221428.GC3236@sortiz.org>
+References: <201005152258.28538.florian@openwrt.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005152258.28538.florian@openwrt.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2010 06:21 AM, Florian Fainelli wrote:
+Hi Florian,
+
+On Sat, May 15, 2010 at 10:58:27PM +0200, Florian Fainelli wrote:
+> The rdc321x southbridge PCI device has no MEM PCI resources that we could
+> pass to mfd_add_devices. Since 33254dd5, mfd_add_device checks for the
+> mem_base argument that we set to NULL. Changing the resources passed to
+> our MFD cells from IORESOURCE_MEM to IORESOURCE_IO fixes that. Since we use
+> those resources as offsets to the PCI configuration space base address of
+> the southbridge device this is also more adequate.
+Patch applied, many thanks.
+
+Cheers,
+Samuel.
+
+
+> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+> ---
+> diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
+> index e344907..22f31dc 100644
+> --- a/drivers/gpio/rdc321x-gpio.c
+> +++ b/drivers/gpio/rdc321x-gpio.c
+> @@ -147,7 +147,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
+>  		return -ENOMEM;
+>  	}
 >  
-> diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
-> new file mode 100644
-> index 0000000..909c2b5
-> --- /dev/null
-> +++ b/arch/x86/kernel/cpu/rdc.c
-> @@ -0,0 +1,71 @@
-> +/*
-> + * See Documentation/x86/rdc.txt
-> + *
-> + * mark@bifferos.com
-> + */
-> +
-> +#include <linux/pci.h>
-> +#include <asm/pci-direct.h>
-> +#include "cpu.h"
-> +
-> +
-> +static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
-> +{
-> +	u16 vendor, device;
-> +	u32 customer_id;
-> +
-> +	if (!early_pci_allowed())
-> +		return;
-> +
-> +	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
-> +	vendor = read_pci_config_16(0, 0, 0, PCI_VENDOR_ID);
-> +	device = read_pci_config_16(0, 0, 0, PCI_DEVICE_ID);
-> +
-> +	if (vendor != PCI_VENDOR_ID_RDC || device != PCI_DEVICE_ID_RDC_R6020)
-> +		return;  /* not RDC */
-> +	/*
-> +	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
-> +	 * that's probably overkill
-> +	 */
-> +
-> +	customer_id = read_pci_config(0, 0, 0, 0x90);
-> +
-> +	switch (customer_id) {
-> +		/* id names are from RDC */
-> +	case 0x00321000:
-> +		strcpy(c->x86_model_id, "R3210/R3211");
-> +		break;
-> +	case 0x00321001:
-> +		strcpy(c->x86_model_id, "AMITRISC20000/20010");
-> +		break;
-> +	case 0x00321002:
-> +		strcpy(c->x86_model_id, "R3210X/Edimax");
-> +		break;
-> +	case 0x00321003:
-> +		strcpy(c->x86_model_id, "R3210/Kcodes");
-> +		break;
-> +	case 0x00321004:  /* tested */
-> +		strcpy(c->x86_model_id, "S3282/CodeTek");
-> +		break;
-> +	case 0x00321007:
-> +		strcpy(c->x86_model_id, "R8610");
-> +		break;
-> +	default:
-> +		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
-> +			"report to: linux-kernel@vger.kernel.org\n",
-> +			customer_id);
-> +		break;
-
-This pr_info() is completely useless... reporting things to LKML is very
-likely to get lost in the din.  If someone (like yourself) wants to be
-the maintainer for it that's one thing, otherwise it's probably better
-to tell them to file a bugzilla... or just report it as "unknown" like
-we do for all other CPU vendors.
-
-> +	}
-> +
-> +	strcpy(c->x86_vendor_id, "RDC");
-> +	c->x86_vendor = X86_VENDOR_RDC;
-> +}
-> +
-> +static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
-> +	.c_vendor	= "RDC",
-> +	.c_ident	= { "RDC" },
-> +	.c_identify	= rdc_identify,
-> +	.c_x86_vendor	= X86_VENDOR_RDC,
-> +};
-> +
-> +cpu_dev_register(rdc_cpu_dev);
-
-.c_ident here is bogus: c_ident is supposed to represent the CPUID
-string, but this device apparently doesn't have CPUID.
-
-This adds at least one PCI reference to every boot on every device.  As
-such, at least please read vendor and device as a single 32-bit
-reference.  Since this identification isn't actually used for any real
-purpose (like workarounds) we could also set it up as a PCI quirk... but
-it's probably better to just keep the same code flow.
-
-	-hpa
-
-
+> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpio-reg1");
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "gpio-reg1");
+>  	if (!r) {
+>  		dev_err(&pdev->dev, "failed to get gpio-reg1 resource\n");
+>  		err = -ENODEV;
+> @@ -159,7 +159,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
+>  	rdc321x_gpio_dev->reg1_ctrl_base = r->start;
+>  	rdc321x_gpio_dev->reg1_data_base = r->start + 0x4;
+>  
+> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpio-reg2");
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "gpio-reg2");
+>  	if (!r) {
+>  		dev_err(&pdev->dev, "failed to get gpio-reg2 resource\n");
+>  		err = -ENODEV;
+> diff --git a/drivers/mfd/rdc321x-southbridge.c b/drivers/mfd/rdc321x-southbridge.c
+> index 256dd56..5092297 100644
+> --- a/drivers/mfd/rdc321x-southbridge.c
+> +++ b/drivers/mfd/rdc321x-southbridge.c
+> @@ -34,7 +34,7 @@ static struct resource rdc321x_wdt_resource[] = {
+>  		.name	= "wdt-reg",
+>  		.start	= RDC321X_WDT_CTRL,
+>  		.end	= RDC321X_WDT_CTRL + 0x3,
+> -		.flags	= IORESOURCE_MEM,
+> +		.flags	= IORESOURCE_IO,
+>  	}
+>  };
+>  
+> @@ -47,12 +47,12 @@ static struct resource rdc321x_gpio_resources[] = {
+>  		.name	= "gpio-reg1",
+>  		.start	= RDC321X_GPIO_CTRL_REG1,
+>  		.end	= RDC321X_GPIO_CTRL_REG1 + 0x7,
+> -		.flags	= IORESOURCE_MEM,
+> +		.flags	= IORESOURCE_IO,
+>  	}, {
+>  		.name	= "gpio-reg2",
+>  		.start	= RDC321X_GPIO_CTRL_REG2,
+>  		.end	= RDC321X_GPIO_CTRL_REG2 + 0x7,
+> -		.flags	= IORESOURCE_MEM,
+> +		.flags	= IORESOURCE_IO,
+>  	}
+>  };
+>  
+> diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
+> index 4733a99..428f8a1 100644
+> --- a/drivers/watchdog/rdc321x_wdt.c
+> +++ b/drivers/watchdog/rdc321x_wdt.c
+> @@ -237,7 +237,7 @@ static int __devinit rdc321x_wdt_probe(struct platform_device *pdev)
+>  		return -ENODEV;
+>  	}
+>  
+> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "wdt-reg");
+> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "wdt-reg");
+>  	if (!r) {
+>  		dev_err(&pdev->dev, "failed to get wdt-reg resource\n");
+>  		return -ENODEV;
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
-
+Intel Open Source Technology Centre
+http://oss.intel.com/
