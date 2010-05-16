@@ -1,97 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab0EPRAr (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 13:00:47 -0400
-Received: from hera.kernel.org ([140.211.167.34]:48968 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753456Ab0EPRAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 13:00:44 -0400
-Message-ID: <4BF024A2.4090804@kernel.org>
-Date: Sun, 16 May 2010 19:00:18 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754273Ab0EPRhc (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 13:37:32 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:54392 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752518Ab0EPRhb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 13:37:31 -0400
+Date: Sun, 16 May 2010 18:37:29 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Julia Lawall <julia@diku.dk>
+Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: ERR_PTR and PTR_ERR
+Message-ID: <20100516173729.GE31073@ZenIV.linux.org.uk>
+References: <Pine.LNX.4.64.1005161055580.6573@ask.diku.dk>
+ <Pine.LNX.4.64.1005161104520.6573@ask.diku.dk>
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Ben Hutchings <ben@decadent.org.uk>, jeff@garzik.org,
-       linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       davem@davemloft.net, bzolnier@gmail.com
-Subject: Re: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
-References: <1273946974-29131-1-git-send-email-tj@kernel.org>	 <1273946974-29131-7-git-send-email-tj@kernel.org>	 <1274017175.14187.9.camel@mulgrave.site>	 <1274022457.2564.105.camel@localhost> <1274025636.14187.24.camel@mulgrave.site>
-In-Reply-To: <1274025636.14187.24.camel@mulgrave.site>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 16 May 2010 17:00:21 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <Pine.LNX.4.64.1005161104520.6573@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, James.
-
-On 05/16/2010 06:00 PM, James Bottomley wrote:
-> This layering problem is partly the fault of libata ... if we had an ATA
-> native disk driver, it would be able to unlock the capacity on its own.
-
-Yeap.
-
-> It's just we're using SCSI which has no SAT command it can issue for
-> this, so the functional request has to be pushed down to libata ...
-> leading to the need to thread it through the host template.
+On Sun, May 16, 2010 at 11:05:23AM +0200, Julia Lawall wrote:
+> On Sun, 16 May 2010, Julia Lawall wrote:
 > 
-> I was just pointing out that the whole thing is simplified if we use a
-> block queue function approach instead.  ide_disk_t has access to the
-> queue, as does gendisk, so it would all "just work" with a simple call
-> site change if we used queue ops instead of block dev ops.  The plus
-> side of doing it this way is that the SCSI threading becomes
-> unnecessary: libata gets directly hooked into the unlock function
-> instead of having to do it via an intermediary.
+> > I see a number of occurrences of code like the following:
+> > 
+> >  	if (IS_ERR(alg))
+> > 		return ERR_PTR(PTR_ERR(alg));
+> > 
+> > Is there any reason why the second line couldn't just be return alg?
+> 
+> Hmm, never mind.  It seems to address a type problem.
 
-Yeah, it can be made to work via a queue callback but I'm afraid that
-would be a genuine layering violation (although going through SCSI is
-extra layering, it isn't really a layering violation).
+More idiomatic way to deal with that is ERR_CAST(); see e.g. ext2_lookup() for
+use case:
+	...
+	inode = NULL;
+	if (ino) {
+		inode = ext2_iget(dir->i_sb, ino);
+		if (unlikely(IS_ERR(inode))) {
+			if (PTR_ERR(inode) == -ESTALE) {
+				ext2_error(dir->i_sb, __func__,
+						"deleted inode referenced: %lu",
+						(unsigned long) ino);
+				return ERR_PTR(-EIO);
+			} else {
+				return ERR_CAST(inode);
+			}
+		}
+	}
+	return d_splice_alias(inode, dentry);
 
-These are request_queue methods.
-
-	request_fn_proc		*request_fn;
-	make_request_fn		*make_request_fn;
-	prep_rq_fn		*prep_rq_fn;
-	unplug_fn		*unplug_fn;
-	merge_bvec_fn		*merge_bvec_fn;
-	prepare_flush_fn	*prepare_flush_fn;
-	softirq_done_fn		*softirq_done_fn;
-	rq_timed_out_fn		*rq_timed_out_fn;
-	dma_drain_needed_fn	*dma_drain_needed;
-	lld_busy_fn		*lld_busy_fn;
-
-These are gendisk methods.
-
-	int (*open) (struct block_device *, fmode_t);
-	int (*release) (struct gendisk *, fmode_t);
-	int (*locked_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
-	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
-	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
-	int (*direct_access) (struct block_device *, sector_t,
-						void **, unsigned long *);
-	int (*media_changed) (struct gendisk *);
-	void (*unlock_native_capacity) (struct gendisk *);
-	int (*revalidate_disk) (struct gendisk *);
-	int (*getgeo)(struct block_device *, struct hd_geometry *);
-
-request_queue is (or at least supposed to be) oblivious about genhd
-and its attributes including capacity.  After all, request_queue can
-exist w/o genhd associated, so it would be quite odd to have capacity
-related method living in request_queue.
-
-Another thing is that there is no generic way to reach the associated
-genhd from request_queue and I can't think of a clean way to map
-request_queue to the associated ata device w/o in-flight requests (can
-you even do that from SCSI?).
-
-Unfortunately, libata is still properly layered below SCSI, so I'm
-afraid threading through sd is clumsy yet the cleanest way to do it.
-
-Thanks.
-
--- 
-tejun
