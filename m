@@ -1,75 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752809Ab0EPJgs (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 05:36:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:42201 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0EPJgr (ORCPT
+	id S1753950Ab0EPKC3 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 06:02:29 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:34253 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752129Ab0EPKC1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 05:36:47 -0400
+	Sun, 16 May 2010 06:02:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=kS5Yw4BO3y4ElI3EH0oYW5uH1vjNkKwDGeU4DTY+eW+sgbMFiDgOPivDndMH6LCZsW
-         IofX7g0i0oLhNmTZIBJlEMFt8oD9vdnQ/w3Ej4f3ut0edv9ZmpOM0ZN3mVcsfKRz5vi0
-         rUsiNNy57jio18HPzBewu43cBtazYQ1wUrKzY=
-Date: Sun, 16 May 2010 13:36:36 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Simon Kagstrom <simon.kagstrom@netinsight.net>,
-       Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>
-Subject: Re: [PATCH] lktdm: Bring support for hardlockup, softlockup and
-	hung task crashes
-Message-ID: <20100516093636.GE5133@lenovo>
-References: <1273988391-16401-1-git-send-regression-fweisbec@gmail.com>
+        h=sender:from:date:subject:mime-version:x-tuid:x-uid:x-length:to
+         :reply-to:content-type:content-transfer-encoding:message-id;
+        b=L9nHj0jCg38sX5ljvAxTp2X7nVOa7OAKybKqYV51imjZG17IY2qXUOXDBsYNMKMoXU
+         5SQiD/bkaBft6ipqzmZgAynOfHGfJUiCSOgLUyzmMF5Hrcl3wnC8YCHcksJV9dCVrOxG
+         S4TdE+/Nrxr6fpUAufpZLJ4m7DuTcJBY047oI=
+From: Florian Fainelli <florian@openwrt.org>
+Date: Sun, 16 May 2010 12:02:18 +0200
+Subject: [PATCH] GPIO: rdc321x fix inverted gpio data out registers
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273988391-16401-1-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-TUID: acb6245bc277ea58
+X-Length: 1409
+To: "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Samuel Ortiz <sameo@linux.intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Reply-To: Florian Fainelli <florian@openwrt.org>
+Content-Type: text/plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005161202.21614.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 16, 2010 at 07:39:51AM +0200, Frederic Weisbecker wrote:
-...  
->  static struct jprobe lkdtm;
-> @@ -320,6 +326,20 @@ static void lkdtm_do_action(enum ctype which)
->  		memset(data, 0x78, len);
->  		break;
->  	}
-> +	case SOFTLOCKUP:
-> +		preempt_disable();
-> +		for (;;)
-> +			cpu_relax();
-> +		break;
-> +	case HARDLOCKUP:
-> +		local_irq_disable();
-> +		for (;;)
-> +			cpu_relax();
-> +		break;
-> +	case HUNG_TASK:
-> +		set_current_state(TASK_UNINTERRUPTIBLE);
-> +		schedule();
-> +		break;
->  	case NONE:
->  	default:
->  		break;
+rdc_gpio_set_value_impl has the gpio data registers 1 and 2 inverted, fix this.
 
-Looks good to me. Btw perhaps we may simplify it a bit:
-
-	case HARDLOCKUP:
-		local_irq_disable();
-	case SOFTLOCKUP:
-		preempt_disable();
-		for (;;)
-			cpu_relax();
-		break;
-
-since it'll save a few bytes. What do you think? Did I miss
-something?
-
-	-- Cyrill
+Signed-off-by: Bernhard Loos <bernhardloos@gmail.com>
+Signed-off-by: Florian Fainelli <florian@openwrt.org>
+---
+diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
+index 22f31dc..2762698 100644
+--- a/drivers/gpio/rdc321x-gpio.c
++++ b/drivers/gpio/rdc321x-gpio.c
+@@ -73,7 +73,7 @@ static void rdc_gpio_set_value_impl(struct gpio_chip *chip,
+ 		gpch->data_reg[reg] &= ~(1 << (gpio & 0x1f));
+ 
+ 	pci_write_config_dword(gpch->sb_pdev,
+-			reg ? gpch->reg1_data_base : gpch->reg2_data_base,
++			reg ? gpch->reg2_data_base : gpch->reg1_data_base,
+ 			gpch->data_reg[reg]);
+ }
+ 
