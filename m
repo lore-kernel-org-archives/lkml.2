@@ -1,69 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754444Ab0EPM7B (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 08:59:01 -0400
-Received: from moutng.kundenserver.de ([212.227.17.8]:59361 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab0EPM7A (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 08:59:00 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: "Daniel K." <dk@uw.no>
-Subject: Re: [PATCH 10/10] tty: implement BTM as mutex instead of BKL
-Date: Sun, 16 May 2010 14:58:37 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00202-gac5d593; KDE/4.4.2; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
-       Ingo Molnar <mingo@elte.hu>
-References: <1273957196-13768-1-git-send-email-arnd@arndb.de> <1273957196-13768-11-git-send-email-arnd@arndb.de> <4BEF677A.2030003@uw.no>
-In-Reply-To: <4BEF677A.2030003@uw.no>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1754517Ab0EPM7M (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 08:59:12 -0400
+Received: from ns1.co-raid.com ([12.51.113.4]:34893 "EHLO coraid.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754479Ab0EPM7H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 08:59:07 -0400
+X-Greylist: delayed 965 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 May 2010 08:59:07 EDT
+Subject: Re: [PATCH 35/37] drivers/block/aoe: Use kmemdup
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Ed Cashin <ecashin@coraid.com>
+In-Reply-To: <Pine.LNX.4.64.1005152323310.21345@ask.diku.dk>
+Date: Sun, 16 May 2010 08:42:59 -0400
+Cc: kernel-janitors@vger.kernel.org, Julia Lawall <julia@diku.dk>
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005161458.37866.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/Mvhc5ie6e9oaPPbHBjAgnVrJ0YnS2mP3RSG/
- hOKCXOm21WuViYZkwmHSOzQCxwVaMg0bFUi91gDUoJgfng1s6z
- viQ9RY+ZXckp7vMv3CFgQ==
+Message-Id: <FA04A0D0-4BAF-4E1D-B8E8-3148E290009F@coraid.com>
+References: <Pine.LNX.4.64.1005152323310.21345@ask.diku.dk>
+To: linux-kernel@vger.kernel.org
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 16 May 2010 05:33:14 Daniel K. wrote:
-> Arnd Bergmann wrote:
-> > diff --git a/drivers/char/tty_mutex.c b/drivers/char/tty_mutex.c
-> > new file mode 100644
-> > index 0000000..f66dfdf
-> > --- /dev/null
-> > +++ b/drivers/char/tty_mutex.c
-> > @@ -0,0 +1,47 @@
-> > +/*
-> > + * drivers/char/tty_lock.c
-> > + */
-> > +#include <linux/tty.h>
-> > +#include <linux/module.h>
-> > +#include <linux/kallsyms.h>
-> > +#include <linux/semaphore.h>
-> > +#include <linux/sched.h>
-> > +
-> > +/*
-> > + * The 'big tty semaphore'
-> 
-> Referred to as Big TTY Mutex or BTM elsewhere.
-> 
-> 
-> > + * This mutex is taken and released by tty_lock() and tty_unlock(),
-> > + * replacing the older big kernel mutex.
-> 
-> big kernel lock, or BKL?
-> 
+On May 15, 2010, at 5:23 PM, Julia Lawall wrote:
 
-Thanks for looking at this, this (and the bug you found in amiserial)
-were caused by changing it a few times from one implementation to the next.
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Use kmemdup when some other buffer is immediately copied into the
+> allocated region.
 
-Fixed now and pushed out to git.
+I have seen this patch but have no comment about it specifically.
 
-	Anrd
+(Because the argument about whether this kind of change
+adds value in general has already taken place.  I'd say no, but that's 
+based on a maybe faulty idea that if folks weren't doing this they'd have
+more time for reviewing patches, etc.)
+
+-- 
+  Ed Cashin
+  ecashin@coraid.com
+
