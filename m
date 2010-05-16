@@ -1,177 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752948Ab0EPKUq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 06:20:46 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:61006 "EHLO
+	id S1753539Ab0EPKfH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 06:35:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60826 "EHLO
 	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752022Ab0EPKUo (ORCPT
+	with ESMTP id S1752022Ab0EPKfF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 06:20:44 -0400
+	Sun, 16 May 2010 06:35:05 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=As/wEJF7XsbBeTKuF2FJQ4Ne5qRMoMYsnyFdgCff591KqBVLAPPJSWXLGNVqePvhiw
-         yPj+BXbiR/0WBQAkNjoOeKjmX8Ujl0td8TySv256K/Gz0QTCCKoaMffdfmbx6rigNBVR
-         UsNA0LD9Sp7AfcLk2/SujnNI0WjHJczIeg1Kw=
-Date: Sun, 16 May 2010 14:20:38 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
-Cc: David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Kristoffer Glembo <kristoffer@gaisler.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial: apbuart: Let boards without apbuart boot
-Message-ID: <20100516102038.GA24271@oksana.dev.rtsoft.ru>
-References: <20100514141949.GA9244@oksana.dev.rtsoft.ru>
- <AANLkTikivSaAB9PehMYoqr5rpDOyScFPb9FI4tB9W14c@mail.gmail.com>
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=SLiGS6FOGLwBthPNwSlZMuKsINWfsIpYehJ2MkPPWqahOH8i7kmRLparPnR2flMS5b
+         cpJkfmdL1BYybETY+R3vV0VN31ogCuafbeDeY+ad8DNhzTPRFvSdUjI5n0Ik7xS58O77
+         ommQAtoWZu+T+J3wO0Npc6fmZKta8gykTgUwY=
+Date: Sun, 16 May 2010 12:35:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Simon Kagstrom <simon.kagstrom@netinsight.net>,
+       Ingo Molnar <mingo@elte.hu>, Don Zickus <dzickus@redhat.com>
+Subject: Re: [PATCH] lktdm: Bring support for hardlockup, softlockup and
+	hung task crashes
+Message-ID: <20100516103506.GD5306@nowhere>
+References: <1273988391-16401-1-git-send-regression-fweisbec@gmail.com> <20100516093636.GE5133@lenovo>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTikivSaAB9PehMYoqr5rpDOyScFPb9FI4tB9W14c@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100516093636.GE5133@lenovo>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 16, 2010 at 10:41:50AM +0200, Miguel Ojeda wrote:
-> On Fri, May 14, 2010 at 4:19 PM, Anton Vorontsov <avorontsov@mvista.com> wrote:
-> > This patch fixes the following oops:
-> >
+On Sun, May 16, 2010 at 01:36:36PM +0400, Cyrill Gorcunov wrote:
+> On Sun, May 16, 2010 at 07:39:51AM +0200, Frederic Weisbecker wrote:
+> ...  
+> >  static struct jprobe lkdtm;
+> > @@ -320,6 +326,20 @@ static void lkdtm_do_action(enum ctype which)
+> >  		memset(data, 0x78, len);
+> >  		break;
+> >  	}
+> > +	case SOFTLOCKUP:
+> > +		preempt_disable();
+> > +		for (;;)
+> > +			cpu_relax();
+> > +		break;
+> > +	case HARDLOCKUP:
+> > +		local_irq_disable();
+> > +		for (;;)
+> > +			cpu_relax();
+> > +		break;
+> > +	case HUNG_TASK:
+> > +		set_current_state(TASK_UNINTERRUPTIBLE);
+> > +		schedule();
+> > +		break;
+> >  	case NONE:
+> >  	default:
+> >  		break;
 > 
-> I sent a patch that fixes that oops too. It is in mm right now. Please check it.
+> Looks good to me. Btw perhaps we may simplify it a bit:
+> 
+> 	case HARDLOCKUP:
+> 		local_irq_disable();
+> 	case SOFTLOCKUP:
+> 		preempt_disable();
+> 		for (;;)
+> 			cpu_relax();
+> 		break;
+> 
+> since it'll save a few bytes. What do you think? Did I miss
+> something?
 
-Hm, and my patch is in Greg's tree already...
 
-Greg, if it didn't make it anywhere further your tree, please
-drop it in favour of Miguel's patch, Miguel was the first who
-sent a fix for this problem.
+It would make the code a bit less clear in that people
+might stick on the reason to disable preemption after disabling
+irq, especially with a code that already does something rather
+unusual ;)
 
-Thanks,
-
-> >  Unable to handle kernel paging request for data at address 0x00000000
-> >  Faulting instruction address: 0xc016dea8
-> >  Oops: Kernel access of bad area, sig: 11 [#1]
-> >  P1020 RDB
-> >  last sysfs file:
-> >  NIP: c016dea8 LR: c016dea0 CTR: c0010948
-> >  REGS: c033fea0 TRAP: 0300   Not tainted  (2.6.34-rc7-00108-g83b5177-dirty)
-> >  [...]
-> >  NIP [c016dea8] grlib_apbuart_configure+0xd0/0x3bc
-> >  LR [c016dea0] grlib_apbuart_configure+0xc8/0x3bc
-> >  Call Trace:
-> >  [c033ff50] [c016dea0] grlib_apbuart_configure+0xc8/0x3bc (unreliable)
-> >  [c033ffa0] [c0316144] apbuart_console_init+0x10/0x34
-> >  [c033ffb0] [c0314a10] console_init+0x40/0x5c
-> >
-> > There's no apbuart on P1020 boards, and what's worse, there's no
-> > clock-frequency property for it. The driver didn't handle this
-> > case, which resulted in the oops above. Once we fix this, the
-> > next oops pops up:
-> >
-> >  Unable to handle kernel paging request for data at address 0x00000030
-> >  Faulting instruction address: 0xc0166ecc
-> >  Oops: Kernel access of bad area, sig: 11 [#1]
-> >  P1020 RDB
-> >  [...]
-> >  NIP [c0166ecc] uart_set_options+0xd0/0x164
-> >  LR [c0166e38] uart_set_options+0x3c/0x164
-> >  Call Trace:
-> >  [c033fef0] [c0330000] 0xc0330000 (unreliable)
-> >  [c033ff50] [c03160dc] apbuart_console_setup+0xa8/0x100
-> >  [c033ff70] [c003d668] register_console+0x338/0x3ec
-> >  [c033ffa0] [c0316154] apbuart_console_init+0x20/0x34
-> >  [c033ffb0] [c0314a10] console_init+0x40/0x5c
-> >  [c033ffc0] [c0300968] start_kernel+0x12c/0x234
-> >  [c033fff0] [c0000398] skpinv+0x2b0/0x2ec
-> >
-> > And that one is because the driver tries to register the console
-> > even if there were no matches in grlib_apbuart_configure().
-> >
-> > While at it, also annotate grlib_apbuart_configure() with __init,
-> > that fixes several section mismatches:
-> >
-> >  Section mismatch in reference from the function
-> >  grlib_apbuart_configure() to the variable .init.data:apbuart_match
-> >  The function grlib_apbuart_configure() references the variable
-> >  __initdata apbuart_match.
-> >
-> > Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
-> > ---
-> >  drivers/serial/apbuart.c |   19 ++++++++++++++-----
-> >  1 files changed, 14 insertions(+), 5 deletions(-)
-> >
-> > diff --git a/drivers/serial/apbuart.c b/drivers/serial/apbuart.c
-> > index fe91319..c908734 100644
-> > --- a/drivers/serial/apbuart.c
-> > +++ b/drivers/serial/apbuart.c
-> > @@ -520,11 +520,16 @@ static struct console grlib_apbuart_console = {
-> >  };
-> >
-> >
-> > -static void grlib_apbuart_configure(void);
-> > +static int __init grlib_apbuart_configure(void);
-> >
-> >  static int __init apbuart_console_init(void)
-> >  {
-> > -       grlib_apbuart_configure();
-> > +       int ret;
-> > +
-> > +       ret = grlib_apbuart_configure();
-> > +       if (ret)
-> > +               return ret;
-> > +
-> >        register_console(&grlib_apbuart_console);
-> >        return 0;
-> >  }
-> > @@ -593,7 +598,7 @@ static struct of_platform_driver grlib_apbuart_of_driver = {
-> >  };
-> >
-> >
-> > -static void grlib_apbuart_configure(void)
-> > +static int __init grlib_apbuart_configure(void)
-> >  {
-> >        static int enum_done;
-> >        struct device_node *np, *rp;
-> > @@ -606,12 +611,14 @@ static void grlib_apbuart_configure(void)
-> >        struct amba_prom_registers *regs;
-> >
-> >        if (enum_done)
-> > -               return;
-> > +               return -ENODEV;
-> >
-> >        /* Get bus frequency */
-> >        rp = of_find_node_by_path("/");
-> >        rp = of_get_next_child(rp, NULL);
-> >        prop = of_get_property(rp, "clock-frequency", NULL);
-> > +       if (!prop)
-> > +               return -ENODEV;
-> >        freq_khz = *prop;
-> >
-> >        line = 0;
-> > @@ -629,7 +636,7 @@ static void grlib_apbuart_configure(void)
-> >                        d = *device;
-> >
-> >                if (!irqs || !regs)
-> > -                       return;
-> > +                       return -ENODEV;
-> >
-> >                grlib_apbuart_nodes[line] = np;
-> >
-> > @@ -658,6 +665,8 @@ static void grlib_apbuart_configure(void)
-> >        enum_done = 1;
-> >
-> >        grlib_apbuart_driver.nr = grlib_apbuart_port_nr = line;
-> > +
-> > +       return line ? 0 : -ENODEV;
-> >  }
-> >
-> >  static int __init grlib_apbuart_init(void)
-> > --
-> > 1.7.0.5
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
