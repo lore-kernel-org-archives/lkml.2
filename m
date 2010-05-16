@@ -1,67 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754408Ab0EPS0i (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 14:26:38 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:56465 "EHLO mgw2.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752806Ab0EPS0h (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 14:26:37 -0400
-Date: Sun, 16 May 2010 20:26:31 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: ERR_PTR and PTR_ERR
-In-Reply-To: <20100516173729.GE31073@ZenIV.linux.org.uk>
-Message-ID: <Pine.LNX.4.64.1005162025560.12921@ask.diku.dk>
-References: <Pine.LNX.4.64.1005161055580.6573@ask.diku.dk>
- <Pine.LNX.4.64.1005161104520.6573@ask.diku.dk> <20100516173729.GE31073@ZenIV.linux.org.uk>
+	id S1754527Ab0EPS2K (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 14:28:10 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53898 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754096Ab0EPS2I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 14:28:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=TBvjoXv8SiLSbEwqLtj6YNNKFqqu7x83Nll52NljiD+lE5izVY44POBH8wQDVnpUTP
+         5hEc/2UQ11U9buhuCVWv36KIxblOx7YqRiK1W1Wk7tH1CzuUym4M75RGAcGnP4DCbARS
+         zqz3bhld7iBh6WWiaOZN4IdVTDN18rkldB994=
+Message-ID: <4BF03956.6020105@gmail.com>
+Date: Sun, 16 May 2010 11:28:38 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+CC: linux-ext4@vger.kernel.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: INFO: task umount:1524 blocked for more than 120 seconds
+References: <h2xdd18b0c31005101446pf8201153vaed5b38afe72d7ad@mail.gmail.com> <4BE88705.9030105@gmail.com> <4BE890E8.9010700@s5r6.in-berlin.de>
+In-Reply-To: <4BE890E8.9010700@s5r6.in-berlin.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 May 2010, Al Viro wrote:
+well, I'm confused on this one..
 
-> On Sun, May 16, 2010 at 11:05:23AM +0200, Julia Lawall wrote:
-> > On Sun, 16 May 2010, Julia Lawall wrote:
-> > 
-> > > I see a number of occurrences of code like the following:
-> > > 
-> > >  	if (IS_ERR(alg))
-> > > 		return ERR_PTR(PTR_ERR(alg));
-> > > 
-> > > Is there any reason why the second line couldn't just be return alg?
-> > 
-> > Hmm, never mind.  It seems to address a type problem.
-> 
-> More idiomatic way to deal with that is ERR_CAST(); see e.g. ext2_lookup() for
-> use case:
+If I cp -R 2.6.34(kernel) using the macbook pro
+I can umount cleanly. But if I do the same for
+the iMac9,1 I get this issue.
 
-Thanks.  That looks much nicer than ERR_PTR(PTR_ERR(alg)).
+At first thought this might be an ext4 sync(and possibly)
+hardware issue but if it was, then the  macbook would portrait
+similar issues as well(but could be wrong).
 
-julia
+I did add(hopefully)the firelite device to the
+workaround list with as many options as possible,
+but had no difference(added/removed options as well)
+here is what the patch looks like:
 
 
-> 	...
-> 	inode = NULL;
-> 	if (ino) {
-> 		inode = ext2_iget(dir->i_sb, ino);
-> 		if (unlikely(IS_ERR(inode))) {
-> 			if (PTR_ERR(inode) == -ESTALE) {
-> 				ext2_error(dir->i_sb, __func__,
-> 						"deleted inode referenced: %lu",
-> 						(unsigned long) ino);
-> 				return ERR_PTR(-EIO);
-> 			} else {
-> 				return ERR_CAST(inode);
-> 			}
-> 		}
-> 	}
-> 	return d_splice_alias(inode, dentry);
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe kernel-janitors" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+  From 445d63a80e336408151f4dff7c23fb59a070d246 Mon Sep 17 00:00:00 2001
+  From: Justin P. Mattock <justinmattock@gmail.com>
+  Date: Sun, 16 May 2010 11:23:00 -0700
+  Subject: [PATCH] fix an umount bug
+   Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+
+  ---
+   drivers/ieee1394/sbp2.c |   11 +++++++++++
+   1 files changed, 11 insertions(+), 0 deletions(-)
+
+  diff --git a/drivers/ieee1394/sbp2.c b/drivers/ieee1394/sbp2.c
+  index 4565cb5..ce826f3 100644
+  --- a/drivers/ieee1394/sbp2.c
+  +++ b/drivers/ieee1394/sbp2.c
+  @@ -393,6 +393,17 @@ static const struct {
+   		.model			= SBP2_ROM_VALUE_WILDCARD,
+   		.workarounds		= SBP2_WORKAROUND_128K_MAX_TRANS,
+   	},
+  +		/* SmartDsk FireLite Model #FWFL60-N */
+  +	{
+  +		.firmware_revision	= 0x000470,
+  +		.model			= 0x000000,
+  +		.workarounds		= SBP2_WORKAROUND_128K_MAX_TRANS |
+  +					  SBP2_WORKAROUND_INQUIRY_36 |
+  +					  SBP2_WORKAROUND_MODE_SENSE_8 |
+  +					  SBP2_WORKAROUND_FIX_CAPACITY |
+  +					  SBP2_WORKAROUND_DELAY_INQUIRY |
+  +					  SBP2_WORKAROUND_POWER_CONDITION,
+  +	},
+   	/*
+   	 * iPod 2nd generation: needs 128k max transfer size workaround
+   	 * iPod 3rd generation: needs fix capacity workaround
+  --
+  1.6.5.2.180.gc5b3e
+
+
+I'm might be wrong with the .firmware_revision and model
+which I got  echo 1 >  /sys/module/sbp2/parameters/workarounds
+
+only thing I didn't test was adding this patch, then doing
+the echo command(not sure if it matters or not though).
+
+Justin P. Mattock
