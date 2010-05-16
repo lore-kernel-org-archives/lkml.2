@@ -1,317 +1,232 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754260Ab0EPMZM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 08:25:12 -0400
-Received: from smtp106.plus.mail.re1.yahoo.com ([69.147.102.69]:27769 "HELO
-	smtp106.plus.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751409Ab0EPMZI (ORCPT
+	id S1754362Ab0EPMzn (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 08:55:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47488 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751719Ab0EPMzl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 08:25:08 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
-  b=fTpXq3XiIy12BTiP+CV07jTg46opM3n3+WrFkTL8jG2V78ZiwmcH/Fz6NL38W28iDJYzQhUwNfGRHuMEKOiFkQ1nBtTk2sNj+uSoHkjX9l1rcmQ5ODMVgEu3eGim3HX4xACUHc0rK56+MzMSmdxftPPMl6hrPzlx8EuvoP/uRy8=  ;
-X-Yahoo-SMTP: 7VYQSIiswBBpfI3oQQ5mbefGCpOrHbDC5qsO
-X-YMail-OSG: lFlEDm4VM1nc8Ex02wUHA2v1FpYIHJ50.IYRsEp92um4R27
- M930IQKCTKF1.p6lf07UnfetPAStTOW8jAwusVKOGfMn3KKjw.ZFOQ5r7j6v
- B3FrJuoV8jjD8i7IaQ2THXqwPmUaHr3KthyrODXcbuhVc1EAfDxPqku8qvQS
- p5K_6CoA55Jj.iAKntPUl5tbycF002DjLGBU.N0IMJeVt5xx5aDfCG5cjvCG
- _uUNGuiDCv6tEv.dfCxw2X_37.v5eplAf7aIfOKD.vcM9wrY1q3G9.XuQcga
- RtJnJnK_.BrPwUtFqXHvpXbyjLrHHL885k3RCQVpqlL4iTxfbv..7FaNpYJn
- VIlC6plxKxBbrpy1mCPFuPc7LUO8518L5vQUXdISZxLAduQ4Hb2_MIPDEzVu
- mHn6qgTqOzUWc12DqnITTCHDz8lxNZIpqRaBEmFc-
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4BEFE420.8090608@yahoo.co.uk>
-Date: Sun, 16 May 2010 13:25:04 +0100
-From: Don Prince <dhprince.devel@yahoo.co.uk>
-Reply-To: dhprince.devel@yahoo.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100422 Mandriva/3.0.4-0.4mdv2010.0 (2010.0) Thunderbird/3.0.4
+	Sun, 16 May 2010 08:55:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:date:subject:mime-version:x-tuid:x-uid:x-length:to
+         :reply-to:content-type:content-transfer-encoding:message-id;
+        b=baatwPMkQVbch2ZL6YX352SuVCQ946GhjAfrGEwD6M020N80fx0xPE0TNlecSRhi5x
+         32RyfMC0MDx4RMOnfNoLrToTNbRHTjqMtmMm0mj8OlJjNfz1wl9WkG31NBQk/uSVaq5T
+         4K8a8WT4ECcoB80fJr47CaAW5k9o6VvHjMJlI=
+From: Florian Fainelli <florian@openwrt.org>
+Date: Sun, 16 May 2010 14:55:32 +0200
+Subject: [PATCH] x86: CPU detection for RDC System-on-Chip
 MIME-Version: 1.0
-CC: Jiri Kosina <jkosina@suse.cz>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.34-rc7 v2] HID: hid-samsung: add support for Creative
- Desktop Wireless 6000
-References: <4BEF3D1F.6080403@yahoo.co.uk>
-In-Reply-To: <4BEF3D1F.6080403@yahoo.co.uk>
-Content-Type: text/plain; charset=UTF-8
+X-TUID: 8b3022c604c40eaa
+X-Length: 6834
+To: mingo@elte.hu, "linux-kernel" <linux-kernel@vger.kernel.org>,
+       andi@firstfloor.org
+Reply-To: Florian Fainelli <florian@openwrt.org>
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
+Message-Id: <201005161455.34100.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the multimedia buttons of the Creative Desktop Wireless
-6000 keyboard/mouse combo which are not currently handled by the 
-default/samsung HID driver.
+From: Mark Kelly <mark@bifferos.com>
 
-Signed-off-by: Don Prince <dhprince-devel@yahoo.co.uk>
+The RDC System-on-Chip i486 compatible core does not support the cpuid
+instruction and specific detection logic is required for this chip. The patch
+below adds proper vendor and SoC type detection.
 
+Signed-off-by: Mark Kelly <mark@bifferos.com>
+Tested-by: Florian Fainelli <florian@openwrt.org>
 ---
-
-Added comments as requested by Robert Schedel <r.schedel@yahoo.de>
-
----
-
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
---- a/drivers/hid/hid-core.c	2010-05-15 15:38:23.938711974 +0100
-+++ b/drivers/hid/hid-core.c	2010-05-15 20:43:36.363484676 +0100
-@@ -1343,6 +1343,7 @@ static const struct hid_device_id hid_bl
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
---- a/drivers/hid/hid-ids.h	2010-05-15 15:38:23.946652184 +0100
-+++ b/drivers/hid/hid-ids.h	2010-05-15 20:40:06.313485144 +0100
-@@ -409,6 +409,7 @@
- 
- #define USB_VENDOR_ID_SAMSUNG		0x0419
- #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
-+#define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
- 
- #define USB_VENDOR_ID_SONY			0x054c
- #define USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE	0x024b
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-samsung.c b/drivers/hid/hid-samsung.c
---- a/drivers/hid/hid-samsung.c	2010-03-09 13:53:06.892466071 +0000
-+++ b/drivers/hid/hid-samsung.c	2010-05-16 12:59:09.709690282 +0100
-@@ -7,6 +7,18 @@
-  *  Copyright (c) 2006-2007 Jiri Kosina
-  *  Copyright (c) 2007 Paul Walmsley
-  *  Copyright (c) 2008 Jiri Slaby
-+ *  Copyright (c) 2010 Don Prince <dhprince.devel@yahoo.co.uk>
-+ *
-+ *
-+ *  This driver supports several HID devices:
-+ *
-+ *  [0419:0001] Samsung IrDA remote controller (reports as Cypress USB Mouse).
-+ *	various hid report fixups for different variants.
-+ *
-+ *  [0419:0600] Creative Desktop Wireless 6000 keyboard/mouse combo.
-+ *	several key mappings used from the consumer usage page
-+ *	deviate from the USB HUT 1.12 standard.
-+ *
-  */
- 
- /*
-@@ -17,14 +29,13 @@
-  */
- 
- #include <linux/device.h>
-+#include <linux/usb.h>
- #include <linux/hid.h>
- #include <linux/module.h>
- 
- #include "hid-ids.h"
- 
- /*
-- * Samsung IrDA remote controller (reports as Cypress USB Mouse).
-- *
-  * There are several variants for 0419:0001:
-  *
-  * 1. 184 byte report descriptor
-@@ -43,21 +54,21 @@
-  * 4. 171 byte report descriptor
-  * Report #3 has an array field with logical range 0..1 instead of 1..3.
-  */
--static inline void samsung_dev_trace(struct hid_device *hdev,
-+static inline void samsung_irda_dev_trace(struct hid_device *hdev,
- 		unsigned int rsize)
- {
- 	dev_info(&hdev->dev, "fixing up Samsung IrDA %d byte report "
- 			"descriptor\n", rsize);
- }
- 
--static void samsung_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-+static void samsung_irda_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int rsize)
- {
- 	if (rsize == 184 && rdesc[175] == 0x25 && rdesc[176] == 0x40 &&
- 			rdesc[177] == 0x75 && rdesc[178] == 0x30 &&
- 			rdesc[179] == 0x95 && rdesc[180] == 0x01 &&
- 			rdesc[182] == 0x40) {
--		samsung_dev_trace(hdev, 184);
-+		samsung_irda_dev_trace(hdev, 184);
- 		rdesc[176] = 0xff;
- 		rdesc[178] = 0x08;
- 		rdesc[180] = 0x06;
-@@ -65,24 +76,123 @@ static void samsung_report_fixup(struct 
- 	} else
- 	if (rsize == 203 && rdesc[192] == 0x15 && rdesc[193] == 0x0 &&
- 			rdesc[194] == 0x25 && rdesc[195] == 0x12) {
--		samsung_dev_trace(hdev, 203);
-+		samsung_irda_dev_trace(hdev, 203);
- 		rdesc[193] = 0x1;
- 		rdesc[195] = 0xf;
- 	} else
- 	if (rsize == 135 && rdesc[124] == 0x15 && rdesc[125] == 0x0 &&
- 			rdesc[126] == 0x25 && rdesc[127] == 0x11) {
--		samsung_dev_trace(hdev, 135);
-+		samsung_irda_dev_trace(hdev, 135);
- 		rdesc[125] = 0x1;
- 		rdesc[127] = 0xe;
- 	} else
- 	if (rsize == 171 && rdesc[160] == 0x15 && rdesc[161] == 0x0 &&
- 			rdesc[162] == 0x25 && rdesc[163] == 0x01) {
--		samsung_dev_trace(hdev, 171);
-+		samsung_irda_dev_trace(hdev, 171);
- 		rdesc[161] = 0x1;
- 		rdesc[163] = 0x3;
- 	}
- }
- 
-+#define samsung_kbd_mouse_map_key_clear(c) \
-+	hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
+diff --git a/Documentation/x86/rdc.txt b/Documentation/x86/rdc.txt
+new file mode 100644
+index 0000000..f9591af
+--- /dev/null
++++ b/Documentation/x86/rdc.txt
+@@ -0,0 +1,69 @@
 +
-+static int samsung_kbd_mouse_input_mapping(struct hid_device *hdev,
-+	struct hid_input *hi, struct hid_field *field, struct hid_usage *usage,
-+	unsigned long **bit, int *max)
++Introduction
++============
++
++RDC (http://www.rdc.com.tw) have been manufacturing x86-compatible SoC
++(system-on-chips) for a number of years.  They are not the fastest of
++CPUs (clock speeds ranging from 133-150MHz) but 486SX compatibility
++coupled with very low power consumption[1] and low cost make them ideal
++for embedded applications.
++
++
++Where to find
++=============
++
++RDC chips show up in numerous embedded devices, but be careful since
++many of them will not run Linux 2.6 without significant expertise.
++
++There are several variants of what the linux kernel refers to generically
++as RDC321X:  R8610, R321x, S3282 and AMRISC20000.
++
++R321x: Found in various routers, see the OpenWrt project for details,
++   http://wiki.openwrt.org/oldwiki/rdcport
++
++R8610: Found on the RDC evaluation board
++   http://www.ivankuten.com/system-on-chip-soc/rdc-r8610/
++
++AMRISC20000: Found in the MGB-100 wireless hard disk
++   http://tintuc.no-ip.com/linux/tipps/mgb100/
++
++S3282: Found in various NAS devices, including the Bifferboard
++   http://www.bifferos.com
++
++
++Kernel Configuration
++====================
++
++Add support for this CPU with CONFIG_X86_RDC321X.  Ensure that maths
++emulation is included (CONFIG_MATH_EMULATION selected) and avoid MCE
++(CONFIG_X86_MCE not selected).
++
++
++CPU detection
++=============
++
++None of these chips support the cpuid instruction, so as with some
++other x86 compatible SoCs, we must check the north bridge and look
++for specific 'signature' PCI device config.
++
++The current detection code has been tested only on the Bifferboard
++(S3282 CPU), please send bug reports or success stories with
++other devices to bifferos@yahoo.co.uk.
++
++
++Credits
++=======
++
++Many thanks to RDC for providing the customer codes to allow
++detection of all known variants, without which this detection code
++would have been very hard to ascertain.
++
++
++References
++==========
++
++[1] S3282 in certain NAS solutions consumes less than 1W
++
++
++mark@bifferos.com 2009
++
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 39e8e10..21b02f2 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -419,6 +419,7 @@ config X86_RDC321X
+ 	bool "RDC R-321x SoC"
+ 	depends on X86_32
+ 	depends on X86_EXTENDED_PLATFORM
++	select PCI
+ 	select M486
+ 	select X86_REBOOTFIXUPS
+ 	---help---
+diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
+index 5a51379..eddf979 100644
+--- a/arch/x86/include/asm/processor.h
++++ b/arch/x86/include/asm/processor.h
+@@ -122,7 +122,8 @@ struct cpuinfo_x86 {
+ #define X86_VENDOR_CENTAUR	5
+ #define X86_VENDOR_TRANSMETA	7
+ #define X86_VENDOR_NSC		8
+-#define X86_VENDOR_NUM		9
++#define X86_VENDOR_RDC		9
++#define X86_VENDOR_NUM		10
+ 
+ #define X86_VENDOR_UNKNOWN	0xff
+ 
+diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+index 3a785da..af2d4a6 100644
+--- a/arch/x86/kernel/cpu/Makefile
++++ b/arch/x86/kernel/cpu/Makefile
+@@ -25,6 +25,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
+ obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
+ obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
+ obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
++obj-$(CONFIG_X86_RDC321X)		+= rdc.o
+ 
+ obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
+ 
+diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
+new file mode 100644
+index 0000000..f49bfed
+--- /dev/null
++++ b/arch/x86/kernel/cpu/rdc.c
+@@ -0,0 +1,71 @@
++/*
++ * See Documentation/x86/rdc.txt
++ *
++ * mark@bifferos.com
++ */
++
++#include <linux/pci.h>
++#include <asm/pci-direct.h>
++#include "cpu.h"
++
++
++static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
 +{
-+	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-+	unsigned short ifnum = intf->cur_altsetting->desc.bInterfaceNumber;
++	u16 vendor, device;
++	u32 customer_id;
 +
-+	if (1 != ifnum || HID_UP_CONSUMER != (usage->hid & HID_USAGE_PAGE))
-+		return 0;
++	if (!early_pci_allowed())
++		return;
 +
-+	dbg_hid("samsung wireless keyboard/mouse input mapping event [0x%x]\n",
-+		usage->hid & HID_USAGE);
++	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
++	vendor = read_pci_config_16(0, 0, 0, PCI_VENDOR_ID);
++	device = read_pci_config_16(0, 0, 0, PCI_DEVICE_ID);
 +
-+	switch (usage->hid & HID_USAGE) {
-+	/* report 2 */
-+	case 0x0b5:
-+		samsung_kbd_mouse_map_key_clear(KEY_NEXTSONG);
++	if (vendor != PCI_VENDOR_ID_RDC || device != PCI_DEVICE_ID_RDC_R6020)
++		return;  /* not RDC */
++	/*
++	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
++	 * that's probably overkill
++	 */
++
++	customer_id = read_pci_config(0, 0, 0, 0x90);
++
++	switch (customer_id) {
++		/* id names are from RDC */
++	case 0x00321000:
++		strcpy(c->x86_model_id, "R3210/R3211");
 +		break;
-+	case 0x0b6:
-+		samsung_kbd_mouse_map_key_clear(KEY_PREVIOUSSONG);
++	case 0x00321001:
++		strcpy(c->x86_model_id, "AMITRISC20000/20010");
 +		break;
-+	case 0x0b7:
-+		samsung_kbd_mouse_map_key_clear(KEY_STOPCD);
++	case 0x00321002:
++		strcpy(c->x86_model_id, "R3210X/Edimax");
 +		break;
-+	case 0x0cd:
-+		samsung_kbd_mouse_map_key_clear(KEY_PLAYPAUSE);
++	case 0x00321003:
++		strcpy(c->x86_model_id, "R3210/Kcodes");
 +		break;
-+	case 0x0e2:
-+		samsung_kbd_mouse_map_key_clear(KEY_MUTE);
++	case 0x00321004:  /* tested */
++		strcpy(c->x86_model_id, "S3282/CodeTek");
 +		break;
-+	case 0x0e9:
-+		samsung_kbd_mouse_map_key_clear(KEY_VOLUMEUP);
-+		break;
-+	case 0x0ea:
-+		samsung_kbd_mouse_map_key_clear(KEY_VOLUMEDOWN);
-+		break;
-+	case 0x183:
-+		samsung_kbd_mouse_map_key_clear(KEY_MEDIA);
-+		break;
-+	case 0x195:
-+		samsung_kbd_mouse_map_key_clear(KEY_EMAIL);
-+		break;
-+	case 0x196:
-+		samsung_kbd_mouse_map_key_clear(KEY_CALC);
-+		break;
-+	case 0x197:
-+		samsung_kbd_mouse_map_key_clear(KEY_COMPUTER);
-+		break;
-+	case 0x22b:
-+		samsung_kbd_mouse_map_key_clear(KEY_SEARCH);
-+		break;
-+	case 0x22c:
-+		samsung_kbd_mouse_map_key_clear(KEY_WWW);
-+		break;
-+	case 0x22d:
-+		samsung_kbd_mouse_map_key_clear(KEY_BACK);
-+		break;
-+	case 0x22e:
-+		samsung_kbd_mouse_map_key_clear(KEY_FORWARD);
-+		break;
-+	case 0x22f:
-+		samsung_kbd_mouse_map_key_clear(KEY_FAVORITES);
-+		break;
-+	case 0x230:
-+		samsung_kbd_mouse_map_key_clear(KEY_REFRESH);
-+		break;
-+	case 0x231:
-+		samsung_kbd_mouse_map_key_clear(KEY_STOP);
++	case 0x00321007:
++		strcpy(c->x86_model_id, "R8610");
 +		break;
 +	default:
-+		return 0;
++		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
++			"report to: linux-kernel@vger.kernel.org\n",
++			customer_id);
++		return;
 +	}
 +
-+	return 1;
++	strcpy(c->x86_vendor_id, "RDC");
++	c->x86_vendor = X86_VENDOR_RDC;
 +}
 +
-+static void samsung_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-+	unsigned int rsize)
-+{
-+	if (USB_DEVICE_ID_SAMSUNG_IR_REMOTE == hdev->product)
-+		samsung_irda_report_fixup(hdev, rdesc, rsize);
-+}
++static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
++	.c_vendor	= "RDC",
++	.c_ident	= { "RDC" },
++	.c_identify	= rdc_identify,
++	.c_x86_vendor	= X86_VENDOR_RDC,
++};
 +
-+static int samsung_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+	struct hid_field *field, struct hid_usage *usage,
-+	unsigned long **bit, int *max)
-+{
-+	int ret = 0;
-+
-+	if (USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE == hdev->product)
-+		ret = samsung_kbd_mouse_input_mapping(hdev,
-+			hi, field, usage, bit, max);
-+
-+	return ret;
-+}
-+
- static int samsung_probe(struct hid_device *hdev,
- 		const struct hid_device_id *id)
- {
-@@ -95,10 +205,12 @@ static int samsung_probe(struct hid_devi
- 		goto err_free;
- 	}
- 
--	if (hdev->rsize == 184) {
--		/* disable hidinput, force hiddev */
--		cmask = (cmask & ~HID_CONNECT_HIDINPUT) |
--			HID_CONNECT_HIDDEV_FORCE;
-+	if (USB_DEVICE_ID_SAMSUNG_IR_REMOTE == hdev->product) {
-+		if (hdev->rsize == 184) {
-+			/* disable hidinput, force hiddev */
-+			cmask = (cmask & ~HID_CONNECT_HIDINPUT) |
-+				HID_CONNECT_HIDDEV_FORCE;
-+		}
- 	}
- 
- 	ret = hid_hw_start(hdev, cmask);
-@@ -114,6 +226,7 @@ err_free:
- 
- static const struct hid_device_id samsung_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, samsung_devices);
-@@ -122,6 +235,7 @@ static struct hid_driver samsung_driver 
- 	.name = "samsung",
- 	.id_table = samsung_devices,
- 	.report_fixup = samsung_report_fixup,
-+	.input_mapping = samsung_input_mapping,
- 	.probe = samsung_probe,
- };
- 
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/Kconfig b/drivers/hid/Kconfig
---- a/drivers/hid/Kconfig	2010-03-09 13:53:05.930183131 +0000
-+++ b/drivers/hid/Kconfig	2010-05-15 20:38:53.584485932 +0100
-@@ -273,7 +273,7 @@ config HID_SAMSUNG
- 	depends on USB_HID
- 	default !EMBEDDED
- 	---help---
--	Support for Samsung InfraRed remote control.
-+	Support for Samsung InfraRed remote control or keyboards.
- 
- config HID_SONY
- 	tristate "Sony" if EMBEDDED
-
-
-
-		
-___________________________________________________________ 
-To help you stay safe and secure online, we've developed the all new Yahoo! Security Centre. http://uk.security.yahoo.com
++cpu_dev_register(rdc_cpu_dev);
