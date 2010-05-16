@@ -1,45 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753793Ab0EPHZ0 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 03:25:26 -0400
-Received: from smtp2.ustc.edu.cn ([202.38.64.46]:45343 "HELO ustc.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1753318Ab0EPHZZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 03:25:25 -0400
-Date: Sun, 16 May 2010 15:25:23 +0800
-From: "backyes" <backyes@mail.ustc.edu.cn>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>
-Subject: About HOW TO use "SCHED_FIFO"
-Message-ID: <201005161525234066346@mail.ustc.edu.cn>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
+	id S1754043Ab0EPH0D (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 03:26:03 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41499
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753501Ab0EPH0A (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 03:26:00 -0400
+Date: Sun, 16 May 2010 00:26:07 -0700 (PDT)
+Message-Id: <20100516.002607.84408834.davem@davemloft.net>
+To: Tristram.Ha@Micrel.Com
+Cc: ben@simtec.co.uk, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       x0066660@ti.com, s-jan@ti.com
+Subject: Re: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
+References: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: yia_0ZCbA17ene9LAL0BBQ--.48188S2
-X-Coremail-Antispam: 1Uf129KBjDUn29KB7ZKAUJUUUUUYxn0WfASr-VFAUDa7-sFnT
-	9fnUUIcSsGvfJTRUUUjGxYjxAI6xCIbckI1I0E57IF64kEYxAxM7k042IE4asKkaVY67At
-	M7k0a2IF6F4UM7kC6x804xWl14x267AKxVWUJVW8JwAFxVCF77xC6IxKo4kEV4yl1I0Esc
-	IYIxCEI4klw4CSwwAFIxvE14AKwVWUJVWUGwA2z4x0Y4vE2Ix0cI8IcVAFwI0_Ar0_tr1l
-	84ACjcxK6xIIjxv20xvEc7CjxVAFwI0_Cr0_Gr1UM28EF7xvwVC2z280aVAFwI0_GcCE3s
-	1l84ACjcxK6I8E87Iv6xkF7I0E14v26rxl6s0DM2kK67kvxFCE548m6r1fGryUXwAqjxCE
-	34x0Y48IcwAqx4xG64xvF2IEw4CE5I8CrVC2j2WlYx0E2Ix0cI8IcVAFwI0_Jr0_Jr4lYx
-	0Ex4A2jsIE14v26r1j6r4UM4x0Y48IcxkI7VAKI48JMxAIw28IcxkI7VAKI48JMxCIbckI
-	1I0E14v26r1Y6r17MxCIbVAxMI8E67AF67kF1VAFwI0_Jr0_JrylIxAIcVC2z280aVAFwI
-	0_Jr0_Gr1lIxAIcVC2z280aVCY1x0267AKxVWUJVW8JwCqF7xvr2IY62kE34x0Y4UvcSsG
-	vfC2KfnxnUUI43ZEXa7IU86OJ5UUUUU==
-X-CM-SenderInfo: 5edfy51hv6zt1loo32lwfovvfxof0/
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-Anyone has the experience of using the linux real-schedule with SCHED_FIFO? Or any material about HOw to use it?
-I have designed a scheme with 5 threads running in the 5 cores. I set the affinity of threads to enable one thread run in one core. All threads own SCHED_FIFO policy. 
-All threas have no I/O operation. And I want to make these cores occupied by these threads only. 
-So Any problem?
- I do not know wether it has some better method to take advantage of the SCHED_FIFO policy in linux? Or what function can SCHED_FIFO do ? What's the target for SCHED_FIFO?
-That's all , Thanks .
---Peter Wang 
+From: "Ha, Tristram" <Tristram.Ha@Micrel.Com>
+Date: Thu, 6 May 2010 15:50:27 -0700
 
+> From: Tristram Ha <Tristram.Ha@micrel.com>
+> 
+> Under heavy transmission the driver will put 4 1514-byte packets in
+> queue and stop the device transmit queue.  Only the last packet
+> triggers the transmit done interrupt and wakes up the device
+> transmit queue.  That means a bit of time is wasted when the CPU
+> cannot send any more packet.
+> 
+> The new implementation triggers the transmit interrupt when the
+> transmit buffer left is less than 3 packets.  The maximum transmit
+> buffer size is 6144 bytes.  This allows the device transmit queue to
+> be restarted sooner so that CPU can send more packets.
+> 
+> For TCP receiving it also has the benefit of not triggering any transmit interrupt at all.
+> 
+> There is a driver option no_tx_opt so that the driver can revert to
+> original implementation.  This allows user to verify if the transmit
+> performance actually improves.
+> 
+> Signed-off-by: Tristram Ha <Tristram.Ha@micrel.com>
 
+First, if you want to post patches you have to format them properly as
+ascii text with no longer than 80 column lines in your commit message.
+I really don't want to hear about your email client being a reason
+you can't do this properly :-)
+
+Second, I don't think you can use the skb->ip_summed for this hacked
+state tracking you are using.  The packet might be shared with other
+entities, and therefore if you change the field it won't be correct
+for them any more.
