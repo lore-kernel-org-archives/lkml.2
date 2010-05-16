@@ -1,1371 +1,1559 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab0EPTsk (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 15:48:40 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:34365 "EHLO ogre.sisk.pl"
+	id S1752928Ab0EPUPW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 16:15:22 -0400
+Received: from mail.perches.com ([173.55.12.10]:2260 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753330Ab0EPTsh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 15:48:37 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: pm list <linux-pm@lists.linux-foundation.org>
-Subject: [RFC][PATCH] PM / PCI: Update PCI power management documentation
-Date: Sun, 16 May 2010 21:49:31 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       ACPI Devel Maling List <linux-acpi@vger.kernel.org>,
-       Linux PCI <linux-pci@vger.kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Matthew Garrett <mjg@redhat.com>, "Greg Kroah-Hartman" <gregkh@suse.de>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Randy Dunlap <randy.dunlap@oracle.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1751422Ab0EPUPU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 16:15:20 -0400
+Subject: [PATCH] staging/comedi/comedi.h: cleanups
+From: Joe Perches <joe@perches.com>
+To: Greg KH <greg@kroah.com>
+Cc: Mark Rankilor <reodge@gmail.com>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Bernd Porr <berndporr@f2s.com>, Gorskin Ilya <revent82@gmail.com>
+In-Reply-To: <20100514205114.GA27844@kroah.com>
+References: <1273746519-4590-1-git-send-email-reodge@gmail.com>
+	 <1273746519-4590-2-git-send-email-reodge@gmail.com>
+	 <1273747232.21514.22.camel@Joe-Laptop.home>
+	 <20100514205023.GA23779@kroah.com>  <20100514205114.GA27844@kroah.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 16 May 2010 13:15:18 -0700
+Message-ID: <1274040918.1705.432.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005162149.31770.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Just general neatening, reduces checkpatch plaints
+from 15 to 3.
 
-I've just finished rewriting the PCI PM documentation.  I hope I didn't forget
-of anything important, so please let me know if I did.
-
-Generally, please let me know what you think.
-
-Thanks,
-Rafael
-
+Signed-off-by: Joe Perches <joe@perches.com>
 ---
-From: Rafael J. Wysocki <rjw@sisk.pl>
+ drivers/staging/comedi/comedi.h | 1410 ++++++++++++++++++++-------------------
+ 1 files changed, 729 insertions(+), 681 deletions(-)
 
-The PCI power management document, Documentation/power/pci.txt, is
-outdated and partially inaccurate.  It also is missing some important
-information about the power management of PCI device.  Rewrite it to
-make it more up to date and more complete.
-
-Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
----
- Documentation/power/pci.txt | 1306 ++++++++++++++++++++++++++++++++++----------
- 1 file changed, 1015 insertions(+), 291 deletions(-)
-
-Index: linux-2.6/Documentation/power/pci.txt
-===================================================================
---- linux-2.6.orig/Documentation/power/pci.txt
-+++ linux-2.6/Documentation/power/pci.txt
-@@ -1,299 +1,1023 @@
--
- PCI Power Management
--~~~~~~~~~~~~~~~~~~~~
+diff --git a/drivers/staging/comedi/comedi.h b/drivers/staging/comedi/comedi.h
+index 1538146..3e26370 100644
+--- a/drivers/staging/comedi/comedi.h
++++ b/drivers/staging/comedi/comedi.h
+@@ -58,21 +58,21 @@
+ /* packs and unpacks a channel/range number */
  
--An overview of the concepts and the related functions in the Linux kernel
-+Copyright (c) 2010 Rafael J. Wysocki <rjw@sisk.pl>, Novell Inc.
+ #define CR_PACK(chan, rng, aref)					\
+-	((((aref)&0x3)<<24) | (((rng)&0xff)<<16) | (chan))
++	((((aref) & 0x3) << 24) | (((rng) & 0xff) << 16) | (chan))
+ #define CR_PACK_FLAGS(chan, range, aref, flags)				\
+ 	(CR_PACK(chan, range, aref) | ((flags) & CR_FLAGS_MASK))
  
--Patrick Mochel <mochel@transmeta.com>
--(and others)
-+An overview of concepts and the Linux kernel's interfaces related to PCI power
-+management.  Based on previous work by Patrick Mochel <mochel@transmeta.com>
-+(and others).
-+
-+This document only covers the aspects of power management specific to PCI
-+devices.  For general description of the kernel's interfaces related to device
-+power management refer to Documentation/power/devices.txt and
-+Documentation/power/runtime_pm.txt.
+-#define CR_CHAN(a)	((a)&0xffff)
+-#define CR_RANGE(a)	(((a)>>16)&0xff)
+-#define CR_AREF(a)	(((a)>>24)&0x03)
++#define CR_CHAN(a)	((a) & 0xffff)
++#define CR_RANGE(a)	(((a) >> 16) & 0xff)
++#define CR_AREF(a)	(((a) >> 24) & 0x03)
  
- ---------------------------------------------------------------------------
+ #define CR_FLAGS_MASK	0xfc000000
+-#define CR_ALT_FILTER	(1<<26)
++#define CR_ALT_FILTER	(1 << 26)
+ #define CR_DITHER	CR_ALT_FILTER
+ #define CR_DEGLITCH	CR_ALT_FILTER
+-#define CR_ALT_SOURCE	(1<<27)
+-#define CR_EDGE		(1<<30)
+-#define CR_INVERT	(1<<31)
++#define CR_ALT_SOURCE	(1 << 27)
++#define CR_EDGE		(1 << 30)
++#define CR_INVERT	(1 << 31)
  
--1. Overview
--2. How the PCI Subsystem Does Power Management
--3. PCI Utility Functions
--4. PCI Device Drivers
--5. Resources
+ #define AREF_GROUND	0x00	/* analog ref = analog ground */
+ #define AREF_COMMON	0x01	/* analog ref = analog common */
+@@ -109,11 +109,11 @@
+ 
+ #define INSN_READ		(0 | INSN_MASK_READ)
+ #define INSN_WRITE		(1 | INSN_MASK_WRITE)
+-#define INSN_BITS		(2 | INSN_MASK_READ|INSN_MASK_WRITE)
+-#define INSN_CONFIG		(3 | INSN_MASK_READ|INSN_MASK_WRITE)
+-#define INSN_GTOD		(4 | INSN_MASK_READ|INSN_MASK_SPECIAL)
+-#define INSN_WAIT		(5 | INSN_MASK_WRITE|INSN_MASK_SPECIAL)
+-#define INSN_INTTRIG		(6 | INSN_MASK_WRITE|INSN_MASK_SPECIAL)
++#define INSN_BITS		(2 | INSN_MASK_READ | INSN_MASK_WRITE)
++#define INSN_CONFIG		(3 | INSN_MASK_READ | INSN_MASK_WRITE)
++#define INSN_GTOD		(4 | INSN_MASK_READ | INSN_MASK_SPECIAL)
++#define INSN_WAIT		(5 | INSN_MASK_WRITE | INSN_MASK_SPECIAL)
++#define INSN_INTTRIG		(6 | INSN_MASK_WRITE | INSN_MASK_SPECIAL)
+ 
+ /* trigger flags */
+ /* These flags are used in comedi_trig structures */
+@@ -121,10 +121,10 @@
+ #define TRIG_BOGUS	0x0001	/* do the motions */
+ #define TRIG_DITHER	0x0002	/* enable dithering */
+ #define TRIG_DEGLITCH	0x0004	/* enable deglitching */
+-	/*#define TRIG_RT       0x0008 *//* perform op in real time */
++/*#define TRIG_RT       0x0008 *//* perform op in real time */
+ #define TRIG_CONFIG	0x0010	/* perform configuration, not triggering */
+ #define TRIG_WAKE_EOS	0x0020	/* wake up on end-of-scan events */
+-	/*#define TRIG_WRITE    0x0040*//* write to bidirectional devices */
++/*#define TRIG_WRITE    0x0040 *//* write to bidirectional devices */
+ 
+ /* command flags */
+ /* These flags are used in comedi_cmd structures */
+@@ -132,10 +132,10 @@
+ /* try to use a real-time interrupt while performing command */
+ #define CMDF_PRIORITY		0x00000008
+ 
+-#define TRIG_RT		CMDF_PRIORITY	/* compatibility definition */
++#define TRIG_RT			CMDF_PRIORITY	/* compatibility definition */
+ 
+ #define CMDF_WRITE		0x00000040
+-#define TRIG_WRITE	CMDF_WRITE	/* compatibility definition */
++#define TRIG_WRITE		CMDF_WRITE	/* compatibility definition */
+ 
+ #define CMDF_RAWDATA		0x00000080
+ 
+@@ -156,42 +156,40 @@
+ #define TRIG_ANY	0xffffffff
+ #define TRIG_INVALID	0x00000000
+ 
+-#define TRIG_NONE	0x00000001 /* never trigger */
+-#define TRIG_NOW	0x00000002 /* trigger now + N ns */
+-#define TRIG_FOLLOW	0x00000004 /* trigger on next lower level trig */
+-#define TRIG_TIME	0x00000008 /* trigger at time N ns */
+-#define TRIG_TIMER	0x00000010 /* trigger at rate N ns */
+-#define TRIG_COUNT	0x00000020 /* trigger when count reaches N */
+-#define TRIG_EXT	0x00000040 /* trigger on external signal N */
+-#define TRIG_INT	0x00000080 /* trigger on comedi-internal signal N */
+-#define TRIG_OTHER	0x00000100 /* driver defined */
++#define TRIG_NONE	0x00000001	/* never trigger */
++#define TRIG_NOW	0x00000002	/* trigger now + N ns */
++#define TRIG_FOLLOW	0x00000004	/* trigger on next lower level trig */
++#define TRIG_TIME	0x00000008	/* trigger at time N ns */
++#define TRIG_TIMER	0x00000010	/* trigger at rate N ns */
++#define TRIG_COUNT	0x00000020	/* trigger when count reaches N */
++#define TRIG_EXT	0x00000040	/* trigger on external signal N */
++#define TRIG_INT	0x00000080	/* trigger on comedi-internal signal N */
++#define TRIG_OTHER	0x00000100	/* driver defined */
+ 
+ /* subdevice flags */
+ 
+-#define SDF_BUSY	0x0001	/* device is busy */
+-#define SDF_BUSY_OWNER	0x0002	/* device is busy with your job */
+-#define SDF_LOCKED	0x0004	/* subdevice is locked */
+-#define SDF_LOCK_OWNER	0x0008	/* you own lock */
+-#define SDF_MAXDATA	0x0010	/* maxdata depends on channel */
+-#define SDF_FLAGS	0x0020	/* flags depend on channel */
+-#define SDF_RANGETYPE	0x0040	/* range type depends on channel */
+-#define SDF_MODE0	0x0080	/* can do mode 0 */
+-#define SDF_MODE1	0x0100	/* can do mode 1 */
+-#define SDF_MODE2	0x0200	/* can do mode 2 */
+-#define SDF_MODE3	0x0400	/* can do mode 3 */
+-#define SDF_MODE4	0x0800	/* can do mode 4 */
+-#define SDF_CMD		0x1000	/* can do commands (deprecated) */
+-#define SDF_SOFT_CALIBRATED	0x2000 /* subdevice uses software calibration */
+-#define SDF_CMD_WRITE		0x4000 /* can do output commands */
+-#define SDF_CMD_READ		0x8000 /* can do input commands */
 -
--1. Overview
--~~~~~~~~~~~
+-/* subdevice can be read (e.g. analog input) */
+-#define SDF_READABLE	0x00010000
+-/* subdevice can be written (e.g. analog output) */
+-#define SDF_WRITABLE	0x00020000
++#define SDF_BUSY	0x00000001	/* device is busy */
++#define SDF_BUSY_OWNER	0x00000002	/* device is busy with your job */
++#define SDF_LOCKED	0x00000004	/* subdevice is locked */
++#define SDF_LOCK_OWNER	0x00000008	/* you own lock */
++#define SDF_MAXDATA	0x00000010	/* maxdata depends on channel */
++#define SDF_FLAGS	0x00000020	/* flags depend on channel */
++#define SDF_RANGETYPE	0x00000040	/* range type depends on channel */
++#define SDF_MODE0	0x00000080	/* can do mode 0 */
++#define SDF_MODE1	0x00000100	/* can do mode 1 */
++#define SDF_MODE2	0x00000200	/* can do mode 2 */
++#define SDF_MODE3	0x00000400	/* can do mode 3 */
++#define SDF_MODE4	0x00000800	/* can do mode 4 */
++#define SDF_CMD		0x00001000	/* can do commands (deprecated) */
++#define SDF_SOFT_CALIBRATED	0x00002000
++					/* uses software calibration */
++#define SDF_CMD_WRITE	0x00004000	/* can do output commands */
++#define SDF_CMD_READ	0x00008000	/* can do input commands */
++
++#define SDF_READABLE	0x00010000	/* can be read (e.g. analog input) */
++#define SDF_WRITABLE	0x00020000	/* can be written (e.g. analog output) */
+ #define SDF_WRITEABLE	SDF_WRITABLE	/* spelling error in API */
+-/* subdevice does not have externally visible lines */
+-#define SDF_INTERNAL	0x00040000
++#define SDF_INTERNAL	0x00040000	/* does not have externally visible lines */
+ #define SDF_GROUND	0x00100000	/* can do aref=ground */
+ #define SDF_COMMON	0x00200000	/* can do aref=common */
+ #define SDF_DIFF	0x00400000	/* can do aref=diff */
+@@ -208,251 +206,252 @@
+ 
+ /* subdevice types */
+ 
+-	enum comedi_subdevice_type {
+-		COMEDI_SUBD_UNUSED,	/* unused by driver */
+-		COMEDI_SUBD_AI,	/* analog input */
+-		COMEDI_SUBD_AO,	/* analog output */
+-		COMEDI_SUBD_DI,	/* digital input */
+-		COMEDI_SUBD_DO,	/* digital output */
+-		COMEDI_SUBD_DIO,	/* digital input/output */
+-		COMEDI_SUBD_COUNTER,	/* counter */
+-		COMEDI_SUBD_TIMER,	/* timer */
+-		COMEDI_SUBD_MEMORY,	/* memory, EEPROM, DPRAM */
+-		COMEDI_SUBD_CALIB,	/* calibration DACs */
+-		COMEDI_SUBD_PROC,	/* processor, DSP */
+-		COMEDI_SUBD_SERIAL,	/* serial IO */
+-		COMEDI_SUBD_PWM	/* PWM */
+-	};
++enum comedi_subdevice_type {
++	COMEDI_SUBD_UNUSED,	/* unused by driver */
++	COMEDI_SUBD_AI,		/* analog input */
++	COMEDI_SUBD_AO,		/* analog output */
++	COMEDI_SUBD_DI,		/* digital input */
++	COMEDI_SUBD_DO,		/* digital output */
++	COMEDI_SUBD_DIO,	/* digital input/output */
++	COMEDI_SUBD_COUNTER,	/* counter */
++	COMEDI_SUBD_TIMER,	/* timer */
++	COMEDI_SUBD_MEMORY,	/* memory, EEPROM, DPRAM */
++	COMEDI_SUBD_CALIB,	/* calibration DACs */
++	COMEDI_SUBD_PROC,	/* processor, DSP */
++	COMEDI_SUBD_SERIAL,	/* serial IO */
++	COMEDI_SUBD_PWM		/* PWM */
++};
+ 
+ /* configuration instructions */
+ 
+-	enum configuration_ids {
+-		INSN_CONFIG_DIO_INPUT = 0,
+-		INSN_CONFIG_DIO_OUTPUT = 1,
+-		INSN_CONFIG_DIO_OPENDRAIN = 2,
+-		INSN_CONFIG_ANALOG_TRIG = 16,
++enum configuration_ids {
++	INSN_CONFIG_DIO_INPUT = 0,
++	INSN_CONFIG_DIO_OUTPUT = 1,
++	INSN_CONFIG_DIO_OPENDRAIN = 2,
++	INSN_CONFIG_ANALOG_TRIG = 16,
+ /*	INSN_CONFIG_WAVEFORM = 17, */
+ /*	INSN_CONFIG_TRIG = 18, */
+ /*	INSN_CONFIG_COUNTER = 19, */
+-		INSN_CONFIG_ALT_SOURCE = 20,
+-		INSN_CONFIG_DIGITAL_TRIG = 21,
+-		INSN_CONFIG_BLOCK_SIZE = 22,
+-		INSN_CONFIG_TIMER_1 = 23,
+-		INSN_CONFIG_FILTER = 24,
+-		INSN_CONFIG_CHANGE_NOTIFY = 25,
 -
--The PCI Power Management Specification was introduced between the PCI 2.1 and
--PCI 2.2 Specifications. It a standard interface for controlling various 
--power management operations.
+-		 /*ALPHA*/ INSN_CONFIG_SERIAL_CLOCK = 26,
+-		INSN_CONFIG_BIDIRECTIONAL_DATA = 27,
+-		INSN_CONFIG_DIO_QUERY = 28,
+-		INSN_CONFIG_PWM_OUTPUT = 29,
+-		INSN_CONFIG_GET_PWM_OUTPUT = 30,
+-		INSN_CONFIG_ARM = 31,
+-		INSN_CONFIG_DISARM = 32,
+-		INSN_CONFIG_GET_COUNTER_STATUS = 33,
+-		INSN_CONFIG_RESET = 34,
+-		/* Use CTR as single pulsegenerator */
+-		INSN_CONFIG_GPCT_SINGLE_PULSE_GENERATOR = 1001,
+-		/* Use CTR as pulsetraingenerator */
+-		INSN_CONFIG_GPCT_PULSE_TRAIN_GENERATOR = 1002,
+-		/* Use the counter as encoder */
+-		INSN_CONFIG_GPCT_QUADRATURE_ENCODER = 1003,
+-		INSN_CONFIG_SET_GATE_SRC = 2001,	/* Set gate source */
+-		INSN_CONFIG_GET_GATE_SRC = 2002,	/* Get gate source */
+-		/* Set master clock source */
+-		INSN_CONFIG_SET_CLOCK_SRC = 2003,
+-		INSN_CONFIG_GET_CLOCK_SRC = 2004, /* Get master clock source */
+-		INSN_CONFIG_SET_OTHER_SRC = 2005, /* Set other source */
+-		/* INSN_CONFIG_GET_OTHER_SRC = 2006,*//* Get other source */
+-		/* Get size in bytes of subdevice's on-board fifos used during
+-		 * streaming input/output */
+-		INSN_CONFIG_GET_HARDWARE_BUFFER_SIZE = 2006,
+-		INSN_CONFIG_SET_COUNTER_MODE = 4097,
+-		INSN_CONFIG_8254_SET_MODE = INSN_CONFIG_SET_COUNTER_MODE,	/* deprecated */
+-		INSN_CONFIG_8254_READ_STATUS = 4098,
+-		INSN_CONFIG_SET_ROUTING = 4099,
+-		INSN_CONFIG_GET_ROUTING = 4109,
++	INSN_CONFIG_ALT_SOURCE = 20,
++	INSN_CONFIG_DIGITAL_TRIG = 21,
++	INSN_CONFIG_BLOCK_SIZE = 22,
++	INSN_CONFIG_TIMER_1 = 23,
++	INSN_CONFIG_FILTER = 24,
++	INSN_CONFIG_CHANGE_NOTIFY = 25,
++
++	 /*ALPHA*/ INSN_CONFIG_SERIAL_CLOCK = 26,
++	INSN_CONFIG_BIDIRECTIONAL_DATA = 27,
++	INSN_CONFIG_DIO_QUERY = 28,
++	INSN_CONFIG_PWM_OUTPUT = 29,
++	INSN_CONFIG_GET_PWM_OUTPUT = 30,
++	INSN_CONFIG_ARM = 31,
++	INSN_CONFIG_DISARM = 32,
++	INSN_CONFIG_GET_COUNTER_STATUS = 33,
++	INSN_CONFIG_RESET = 34,
++	/* Use CTR as single pulsegenerator */
++	INSN_CONFIG_GPCT_SINGLE_PULSE_GENERATOR = 1001,
++	/* Use CTR as pulsetraingenerator */
++	INSN_CONFIG_GPCT_PULSE_TRAIN_GENERATOR = 1002,
++	/* Use the counter as encoder */
++	INSN_CONFIG_GPCT_QUADRATURE_ENCODER = 1003,
++	INSN_CONFIG_SET_GATE_SRC = 2001,	/* Set gate source */
++	INSN_CONFIG_GET_GATE_SRC = 2002,	/* Get gate source */
++	/* Set master clock source */
++	INSN_CONFIG_SET_CLOCK_SRC = 2003,
++	INSN_CONFIG_GET_CLOCK_SRC = 2004,	/* Get master clock source */
++	INSN_CONFIG_SET_OTHER_SRC = 2005,	/* Set other source */
++	/* INSN_CONFIG_GET_OTHER_SRC = 2006, *//* Get other source */
++	/* Get size in bytes of subdevice's on-board fifos used during
++	 * streaming input/output */
++	INSN_CONFIG_GET_HARDWARE_BUFFER_SIZE = 2006,
++	INSN_CONFIG_SET_COUNTER_MODE = 4097,
++	INSN_CONFIG_8254_SET_MODE = INSN_CONFIG_SET_COUNTER_MODE,
++		/* INSN_CONFIG_8254_SET_MODE is deprecated */
++	INSN_CONFIG_8254_READ_STATUS = 4098,
++	INSN_CONFIG_SET_ROUTING = 4099,
++	INSN_CONFIG_GET_ROUTING = 4109,
+ /* PWM */
+-		INSN_CONFIG_PWM_SET_PERIOD = 5000,	/* sets frequency */
+-		INSN_CONFIG_PWM_GET_PERIOD = 5001,	/* gets frequency */
+-		INSN_CONFIG_GET_PWM_STATUS = 5002,	/* is it running? */
+-		/* sets H bridge: duty cycle and sign bit for a relay at the
+-		 * same time */
+-		INSN_CONFIG_PWM_SET_H_BRIDGE = 5003,
+-		/* gets H bridge data: duty cycle and the sign bit */
+-		INSN_CONFIG_PWM_GET_H_BRIDGE = 5004
+-	};
 -
--Implementation of the PCI PM Spec is optional, as are several sub-components of
--it. If a device supports the PCI PM Spec, the device will have an 8 byte
--capability field in its PCI configuration space. This field is used to describe
--and control the standard PCI power management features.
+-	enum comedi_io_direction {
+-		COMEDI_INPUT = 0,
+-		COMEDI_OUTPUT = 1,
+-		COMEDI_OPENDRAIN = 2
+-	};
 -
--The PCI PM spec defines 4 operating states for devices (D0 - D3) and for buses
--(B0 - B3). The higher the number, the less power the device consumes. However,
--the higher the number, the longer the latency is for the device to return to 
--an operational state (D0).
--
--There are actually two D3 states.  When someone talks about D3, they usually
--mean D3hot, which corresponds to an ACPI D2 state (power is reduced, the
--device may lose some context).  But they may also mean D3cold, which is an
--ACPI D3 state (power is fully off, all state was discarded); or both.
--
--Bus power management is not covered in this version of this document.
--
--Note that all PCI devices support D0 and D3cold by default, regardless of
--whether or not they implement any of the PCI PM spec.
--
--The possible state transitions that a device can undergo are:
--
--+---------------------------+
--| Current State | New State |
--+---------------------------+
--| D0            | D1, D2, D3|
--+---------------------------+
--| D1            | D2, D3    |
--+---------------------------+
--| D2            | D3        |
--+---------------------------+
--| D1, D2, D3    | D0        |
--+---------------------------+
--
--Note that when the system is entering a global suspend state, all devices will
--be placed into D3 and when resuming, all devices will be placed into D0.
--However, when the system is running, other state transitions are possible.
--
--2. How The PCI Subsystem Handles Power Management
--~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
--
--The PCI suspend/resume functionality is accessed indirectly via the Power
--Management subsystem. At boot, the PCI driver registers a power management
--callback with that layer. Upon entering a suspend state, the PM layer iterates
--through all of its registered callbacks. This currently takes place only during
--APM state transitions.
--
--Upon going to sleep, the PCI subsystem walks its device tree twice. Both times,
--it does a depth first walk of the device tree. The first walk saves each of the
--device's state and checks for devices that will prevent the system from entering
--a global power state. The next walk then places the devices in a low power
-+1. Hardware and Platform Support for PCI Power Management
-+2. PCI Subsystem and Device Power Management
-+3. PCI Device Drivers and Power Management
-+4. Resources
-+
-+
-+1. Hardware and Platform Support for PCI Power Management
-+=========================================================
-+
-+1.1. Native and Platform-Based Power Management
-+-----------------------------------------------
-+In general, power management is a feature allowing one to save energy by putting
-+devices into states in which they draw less power (low-power states) at the
-+price of reduced functionality or performance.
-+
-+Usually, a device is put into a low-power state when it is underutilized or
-+completely inactive.  However, when it is necessary to use the device once
-+again, it has to be put back into the "fully functional" state (full-power
-+state).  This may happen when there are some data for the device to handle or
-+as a result of an external event requiring the device to be active, which may
-+be signaled by the device itself.
-+
-+PCI devices may be put into low-power states in two ways, by using the device
-+capabilities introduced by the PCI Bus Power Management Interface Specification,
-+or with the help of platform firmware, such as an ACPI BIOS.  In the first
-+approach, that is referred to as the native PCI power management (native PCI PM)
-+in what follows, the device power state is changed as a result of writing a
-+specific value into one of its standard configuration registers.  The second
-+approach requires the platform firmware to provide special methods that may be
-+used by the kernel to change the device's power state.
-+
-+Devices supporting the native PCI PM ususally can generate wakeup signals called
-+Power Management Events (PMEs) to let the kernel know about external events
-+requiring the device to be active.  After receiving a PME the kernel is supposed
-+to put the device that sent it into the full-power state.  However, the PCI Bus
-+Power Management Interface Specification doesn't define any standard method of
-+delivering the PME from the device to the CPU and the operating system kernel.
-+It is assumed that the platform firmware will perform this task and therefore,
-+even though a PCI device is set up to generate PMEs, it also may be necessary to
-+prepare the platform firmware for notifying the CPU of the PMEs coming from the
-+device (e.g. by generating interrupts).
-+
-+In turn, if the methods provided by the platform firmware are used for changing
-+the power state of a device, usually the platform also provides a method for
-+preparing the device to generate wakeup signals.  In that cases, however, it
-+often also is necessary to prepare the device for generating PMEs using the
-+native PCI PM mechanism, because the method provided by the platform depends on
-+that.
-+
-+Thus in many situations both the native and the platform-based power management
-+mechanisms have to be used simultaneously to obtain the desired result.
-+
-+1.2. Native PCI Power Management
-+--------------------------------
-+The PCI Bus Power Management Interface Specification (PCI PM Spec) was
-+introduced between the PCI 2.1 and PCI 2.2 Specifications.  It defined a
-+standard interface for performing various operations related to power
-+management.
-+
-+The implementation of the PCI PM Spec is optional for conventional PCI devices,
-+but it is mandatory for PCI Express devices.  If a device supports the PCI PM
-+Spec, it has an 8 byte power management capability field in its PCI
-+configuration space.  This field is used to describe and control the standard
-+features related to the native PCI power management.
-+
-+The PCI PM Spec defines 4 operating states for devices (D0-D3) and for buses
-+(B0-B3).  The higher the number, the less power is drawn by the device or bus
-+in that state.  However, the higher the number, the longer the latency for
-+the device or bus to return to the full-power state (D0 or B0, respectively).
-+
-+There are two variants of the D3 state defined by the specification.  The first
-+one is D3hot, referred to as the software accessible D3, because devices can be
-+programmed to go into it.  The second one, D3cold, is the state that PCI devices
-+are in when the supply voltage (Vcc) is removed from them.  It is not possible
-+to program a PCI device to go into D3cold, although there may be a programmable
-+interface for putting the bus the device is on into a state in which Vcc is
-+removed from all devices on the bus.
-+
-+PCI bus power management, however, is not supported by the Linux kernel at the
-+time of this writing and therefore it is not covered by this document.
-+
-+Note that every PCI device can be in the full-power state (D0) or in D3cold,
-+regardless of whether or not it implements the PCI PM Spec.  In addition to
-+that, if the PCI PM Spec is implemented by the device, it must support D3hot
-+as well as D0.  The support for the D1 and D2 power states is optional.
-+
-+PCI devices supporting the PCI PM Spec can be programmed to go to any of the
-+supported low-power states (except for D3cold).  While in D1-D3hot the
-+standard configuration registers of the device must be accessible to software
-+(i.e. the device is required to respond to PCI configuration accesses), although
-+its I/O and memory spaces are then disabled.  This allows the device to be
-+programmatically put into D0.  Thus the kernel can switch the device back and
-+forth between D0 and the supported low-power states (except for D3cold) and the
-+possible power state transitions the device can undergo are the following:
-+
-++----------------------------+
-+| Current State | New State  |
-++----------------------------+
-+| D0            | D1, D2, D3 |
-++----------------------------+
-+| D1            | D2, D3     |
-++----------------------------+
-+| D2            | D3         |
-++----------------------------+
-+| D1, D2, D3    | D0         |
-++----------------------------+
-+
-+The transition from D3cold to D0 occurs when the supply voltage is provided to
-+the device (i.e. power is restored).  In that case the device returns to D0 with
-+a full power-on reset sequence and the power-on defaults are restored to the
-+device by hardware just as at initial power up.
-+
-+PCI devices supporting the PCI PM Spec can be programmed to generate PMEs
-+while in a low-power state (D1-D3), but they are not required to be capable
-+of generating PMEs from all supported low-power states.  In particular, the
-+capability of generating PMEs from D3cold is optional and depends on the
-+presence of additional voltage (3.3Vaux) allowing the device to remain
-+sufficiently active to generate a wakeup signal.
-+
-+1.3. ACPI Device Power Management
-+---------------------------------
-+The platform firmware support for the power management of PCI devices is
-+system-specific.  However, if the system in question is compliant with the
-+Advanced Configuration and Power Interface (ACPI) Specification, like the
-+majority of x86-based systems, it is supposed to implement device power
-+management interfaces defined by the ACPI standard.
-+
-+For this purpose the ACPI BIOS provides special functions called "control
-+methods" that may be executed by the kernel to perform specific tasks, such as
-+putting a device into a low-power state.  These control methods are encoded
-+using special byte-code language called the ACPI Machine Language (AML) and
-+stored in the machine's BIOS.  The kernel loads them from the BIOS and executes
-+them as needed using an AML interpreter that translates the AML byte code into
-+computations and memory or I/O space accesses.  This way, in theory, a BIOS
-+writer can provide the kernel with a means to perform actions depending
-+on the system design in a system-specific fashion.
-+
-+ACPI control methods may be divided into global control methods, that are not
-+associated with any particular devices, and device control methods, that have
-+to be defined separately for each device supposed to be handled with the help of
-+the platform.  This means, in particular, that ACPI device control methods can
-+only be used to handle devices that the BIOS writer knew about in advance.  The
-+ACPI methods used for device power management fall into that category.
-+
-+The ACPI specification assumes that devices can be in one of four power states
-+labeled as D0, D1, D2, and D3 that roughly correspond to the native PCI PM
-+D0-D3 states (although the difference between D3hot and D3cold is not taken
-+into account by ACPI).  Moreover, for each power state of a device there is a
-+set of power resources that have to be enabled for the device to be put into
-+that state.  These power resources are controlled (i.e. enabled or disabled)
-+with the help of their own control methods, _ON and _OFF, that have to be
-+defined individually for each of them.
-+
-+To put a device into the ACPI power state Dx (where x is a number between 0 and
-+3 inclusive) the kernel is supposed to (1) enable the power resources required
-+by the device in this state using their _ON control methods and (2) execute the
-+_PSx control method defined for the device.  In addition to that, if the device
-+is going to be put into a low-power state (D1-D3) and is supposed to generate
-+wakeup signals from that state, the _DSW (or _PSW, replaced with _DSW by ACPI
-+3.0) control method defined for it has to be executed before _PSx.  Power
-+resources that are not required by the device in the target power state and are
-+not required any more by any other device should be disabled (by executing their
-+_OFF control methods).  If the current power state of the device is D3, it can
-+only be put into D0 this way.
-+
-+However, quite often the power states of devices are changed during a
-+system-wide transition into a sleep state or back into the working state.  ACPI
-+defines four system sleep states, S1, S2, S3, and S4, and denotes the system
-+working state as S0.  In general, the target system sleep (or working) state
-+determines the highest power (lowest number) state the device can be put
-+into and the kernel is supposed to obtain this information by executing the
-+device's _SxD control method (where x is a number between 0 and 4 inclusive).
-+If the device is required to wake up the system from the target sleep state, the
-+lowest power (highest number) state it can be put into is also determined by the
-+target state of the system.  The kernel is then supposed to use the device's
-+_SxW control method to obtain the number of that state.  It also is supposed to
-+use the device's _PRW control method to learn which power resources need to be
-+enabled for the device to be able to generate wakeup signals.
-+
-+1.4. Wakeup Signaling
-+---------------------
-+Wakeup signals generated by PCI devices, either as native PCI PMEs, or as
-+a result of the execution of the _DSW (or _PSW) ACPI control method before
-+putting the device into a low-power state, have to be caught and handled as
-+appropriate.  If they are sent while the system is in the working state
-+(ACPI S0), they should be translated into interrupts so that the kernel can
-+put the devices generating them into the full-power state and take care of the
-+events that triggered them.  In turn, if they are send while the system is
-+sleeping, they should cause the system's core logic to trigger wakeup.
-+
-+On ACPI-based systems wakeup signals sent by conventional PCI devices are
-+converted into ACPI General-Purpose Events (GPEs) which are hardware signals
-+from the system core logic generated in response to various events that need to
-+be acted upon.  Every GPE is associated with one or more sources of potentially
-+interesting events.  In particular, a GPE may be associated with a PCI device
-+capable of signaling wakeup.  The information on the connections between GPEs
-+and event sources is recorded in the system's ACPI BIOS from where it can be
-+read by the kernel.
-+
-+If a PCI device known to the system's ACPI BIOS signals wakeup, the GPE
-+associated with it (if there is one) is triggered.  The GPEs associated with PCI
-+bridges may also be triggered in response to a wakeup signal from one of the
-+devices below the bridge (this also is the case for root bridges) and, for
-+example, native PCI PMEs from devices unknown to the system's ACPI BIOS may be
-+handled this way.
-+
-+A GPE may be triggered when the system is sleeping (i.e. when it is in one of
-+the ACPI S1-S4 states), in which case system wakeup is started by its core logic
-+(the device that was the source of the signal causing the system wakeup to occur
-+may be identified later).  The GPEs used in such situations are referred to as
-+wakeup GPEs.
-+
-+Usually, however, GPEs are also triggered when the system is in the working
-+state (ACPI S0) and in that cases the system's core logic generates a System
-+Control Interrupt (SCI) to notify the kernel of the event.  Then, the SCI
-+handler identifies the GPE that caused the interrupt to be generated which,
-+in turn, allows the kernel to identify the source of the event (that may be
-+a PCI device signaling wakeup).  The GPEs used for notifying the kernel of
-+events occurring while the system is in the working state are referred to as
-+runtime GPEs.
-+
-+Unfortunately, there is no standard way of handling wakeup signals sent by
-+conventional PCI devices on systems that are not ACPI-based, but there is one
-+for PCI Express devices.  Namely, the PCI Express Base Specification introduced
-+a native mechanism for converting native PCI PMEs into interrupts generated by
-+root ports.  For conventional PCI devices native PMEs are out-of-band, so they
-+are routed separately and they need not pass through bridges (in principle they
-+may be routed directly to the system's core logic), but for PCI Express devices
-+they are in-band messages that have to pass through the PCI Express hierarchy,
-+including the root port on the path from the device to the Root Complex.  Thus
-+it was possible to introduce a mechanism by which a root port generates an
-+interrupt whenever it receives a PME message from one of the devices below it.
-+The PCI Express Requester ID of the device that sent the PME message is then
-+recorded in one of the root port's configuration registers from where it may be
-+read by the interrupt handler allowing the device to be identified.  [PME
-+messages sent by PCI Express endpoints integrated with the Root Complex don't
-+pass through root ports, but instead they cause a Root Complex Event Collector
-+(if there is one) to generate interrupts.]
-+
-+In principle the native PCI Express PME signaling may also be used on ACPI-based
-+systems along with the GPEs, but to use it the kernel has to ask the system's
-+ACPI BIOS to release control of root port configuration registers.  The ACPI
-+BIOS, however, is not required to allow the kernel to control these registers
-+and if it doesn't do that, the kernel must not modify their contents.  Of course
-+the native PCI Express PME signaling cannot be used by the kernel in that cases.
-+
-+
-+2. PCI Subsystem and Device Power Management
-+============================================
-+
-+2.1. Device Power Management Callbacks
-+--------------------------------------
-+The PCI Subsystem participates in the power management of PCI devices in a
-+number of ways.  First of all, it provides an intermediate code layer between
-+the device power managemen core (PM core) and PCI device drivers.  Specifically,
-+the pm field of the PCI subsystem's struct bus_type object, pci_bus_type, points
-+to a struct dev_pm_ops object, pci_dev_pm_ops, containing pointers to several
-+device power management callbacks:
-+
-+const struct dev_pm_ops pci_dev_pm_ops = {
-+	.prepare = pci_pm_prepare,
-+	.complete = pci_pm_complete,
-+	.suspend = pci_pm_suspend,
-+	.resume = pci_pm_resume,
-+	.freeze = pci_pm_freeze,
-+	.thaw = pci_pm_thaw,
-+	.poweroff = pci_pm_poweroff,
-+	.restore = pci_pm_restore,
-+	.suspend_noirq = pci_pm_suspend_noirq,
-+	.resume_noirq = pci_pm_resume_noirq,
-+	.freeze_noirq = pci_pm_freeze_noirq,
-+	.thaw_noirq = pci_pm_thaw_noirq,
-+	.poweroff_noirq = pci_pm_poweroff_noirq,
-+	.restore_noirq = pci_pm_restore_noirq,
-+	.runtime_suspend = pci_pm_runtime_suspend,
-+	.runtime_resume = pci_pm_runtime_resume,
-+	.runtime_idle = pci_pm_runtime_idle,
+-	enum comedi_support_level {
+-		COMEDI_UNKNOWN_SUPPORT = 0,
+-		COMEDI_SUPPORTED,
+-		COMEDI_UNSUPPORTED
+-	};
++	INSN_CONFIG_PWM_SET_PERIOD = 5000,	/* sets frequency */
++	INSN_CONFIG_PWM_GET_PERIOD = 5001,	/* gets frequency */
++	INSN_CONFIG_GET_PWM_STATUS = 5002,	/* is it running? */
++	/* sets H bridge: duty cycle and sign bit for a relay at the
++	 * same time */
++	INSN_CONFIG_PWM_SET_H_BRIDGE = 5003,
++	/* gets H bridge data: duty cycle and the sign bit */
++	INSN_CONFIG_PWM_GET_H_BRIDGE = 5004
 +};
 +
-+These callbacks are executed by the PM core in various situations related to
-+device power management and they, in turn, execute power management callbacks
-+provided by PCI device drivers.  They also perform power management operations
-+involving some standard configuration registers of PCI devices that device
-+drivers need not know or care about.
-+
-+The structure representing a PCI device, struct pci_dev, contains several fields
-+that these callbacks operate on:
-+
-+struct pci_dev {
-+	...
-+	pci_power_t     current_state;  /* Current operating state. */
-+	int		pm_cap;		/* PM capability offset in the
-+					   configuration space */
-+	unsigned int	pme_support:5;	/* Bitmask of states from which PME#
-+					   can be generated */
-+	unsigned int	pme_interrupt:1;/* Is native PCIe PME signaling used? */
-+	unsigned int	d1_support:1;	/* Low power state D1 is supported */
-+	unsigned int	d2_support:1;	/* Low power state D2 is supported */
-+	unsigned int	no_d1d2:1;	/* D1 and D2 are forbidden */
-+	unsigned int	wakeup_prepared:1;  /* Device prepared for wake up */
-+	unsigned int	d3_delay;	/* D3->D0 transition time in ms */
-+	...
++enum comedi_io_direction {
++	COMEDI_INPUT = 0,
++	COMEDI_OUTPUT = 1,
++	COMEDI_OPENDRAIN = 2
 +};
 +
-+They also indirectly use some fields of the struct device that is embedded in
-+struct pci_dev.
-+
-+2.2. Device Initialization
-+--------------------------
-+The first PCI subsystem's task related to device power management is to
-+prepare the device for power management and initialize the fields of struct
-+pci_dev used for this purpose.  This happens in two functions defined in
-+drivers/pci/pci.c, pci_pm_init() and platform_pci_wakeup_init().
-+
-+The first of these functions checks if the device supports native PCI PM
-+and if that's the case the offset of its power management capability structure
-+in the configuration space is stored in the pm_cap field of the device's struct
-+pci_dev object.  Next, the function checks which PCI low-power states are
-+supported by the device and from which low-power states the device can generate
-+native PCI PMEs.  The power management fields of the device's struct pci_dev and
-+the struct device embedded in it are updated accordingly and the generation of
-+PMEs by the device is disabled.
-+
-+The second function checks if the device can be prepared to signal wakeup with
-+the help of the platform firmware, such as the ACPI BIOS.  If that is the case,
-+the function updates the wakeup fields in struct device embedded in the
-+device's struct pci_dev and uses the firmware-provided method to prevent the
-+device from signaling wakeup.
-+
-+At this point the device is ready for power management.  For driverless devices,
-+however, this functionality is limited to a few basic operations carried out
-+during system-wide transitions to a sleep state and back to the working state.
-+
-+2.3. Runtime Device Power Management
-+------------------------------------
-+The PCI subsystem plays a vital role in the runtime power management of PCI
-+devices.  For this purpose it uses the general runtime power management
-+(runtime PM) framework described in Documentation/power/runtime_pm.txt.
-+Namely, it provides subsystem-level callbacks:
-+
-+	pci_pm_runtime_suspend()
-+	pci_pm_runtime_resume()
-+	pci_pm_runtime_idle()
-+
-+that are executed by the core runtime PM routines.  It also implements the
-+entire mechanics necessary for handling runtime wakeup signals from PCI devices
-+in low-power states, which at the time of this writing works for both the native
-+PCI Express PME signaling and the ACPI GPE-based wakeup signaling described in
-+Section 1.
-+
-+First, a PCI device is put into a low-power state, or suspended, with the help
-+of pm_schedule_suspend() or pm_runtime_suspend() which for PCI devices call
-+pci_pm_runtime_suspend() to do the actual job.  For this to work, the device's
-+driver has to provide a pm->runtime_suspend() callback (see below), which is
-+run by pci_pm_runtime_suspend() as the first action.  If the driver's callback
-+returns successfully, the device's standard configuration registers are saved,
-+the device is prepared to generate wakeup signals and, finally, it is put into
-+the target low-power state.
-+
-+The low-power state to put the device into is the lowest-power (highest number)
-+state from which it can signal wakeup.  The exact method of signaling wakeup is
-+system-dependent and is determined by the PCI subsystem on the basis of the
-+reported capabilities of the device and the platform firmware.  To prepare the
-+device for signaling wakeup and put it into the selected low-power state, the
-+PCI subsystem can use the platform firmware as well as the device's native PCI
-+PM capabilities, if supported.
-+
-+It is expected that the device driver's pm->runtime_suspend() callback will
-+not attempt to prepare the device for signaling wakeup or to put it into a
-+low-power state.  The driver ought to leave these tasks to the PCI subsystem
-+that has all of the information necessary to perform them.
-+
-+A suspended device is brought back into the "active" state, or resumed,
-+with the help of pm_request_resume() or pm_runtime_resume() which both call
-+pci_pm_runtime_resume() for PCI devices.  Again, this only works if the device's
-+driver provides a pm->runtime_resume() callback (see below).  However, before
-+the driver's callback is executed, pci_pm_runtime_resume() brings the device
-+back into the full-power state, prevents it from signaling wakeup while in that
-+state and restores its standard configuration registers.  Thus the driver's
-+callback need not worry about the PCI-specific aspects of the device resume.
-+
-+Note that generally pci_pm_runtime_resume() may be called in two different
-+situations.  First, it may be called at the request of the device's driver, for
-+example if there are some data for it to process.  Second, it may be called
-+as a result of a wakeup signal from the device itself (this sometimes is
-+referred to as "remote wakeup").  Of course, for this purpose the wakeup signal
-+is handled in one of the ways described in Section 1 and finally converted into
-+a notification for the PCI subsystem after the source device has been
-+identified.
-+
-+The pci_pm_runtime_idle() function, called for PCI devices by pm_runtime_idle()
-+and pm_request_idle(), executes the device driver's pm->runtime_idle()
-+callback, if defined, and if that callback doesn't return error code (or is not
-+present at all), suspends the device with the help of pm_runtime_suspend().
-+Sometimes pci_pm_runtime_idle() is called automatically by the PM core (for
-+example, it is called right after the device has just been resumed), in which
-+cases it is expected to suspend the device if that makes sense.  Usually,
-+however, the PCI subsystem doesn't really know if the device really can be
-+suspended, so it lets the device's driver decide by running its
-+pm->runtime_idle() callback.
-+
-+2.4. System-Wide Power Transitions
-+----------------------------------
-+There are a few different types of system-wide power transitions, described in
-+Documentation/power/devices.txt.  Each of them requires devices to be handled
-+in a specific way and the PM core executes subsystem-level power management
-+callbacks for this purpose.  They are executed in phases such that each phase
-+involves executing the same subsystem-level callback for every device belonging
-+to the given subsystem before the next phase begins.  These phases always run
-+after tasks have been frozen.
-+
-+2.4.1. System Suspend
-+
-+When the system is going into a sleep state in which the contents of memory will
-+be preserved, such as one of the ACPI sleep states S1-S3, the phases are:
-+
-+	prepare, suspend, suspend_noirq.
-+
-+The following PCI bus type's callbacks, respectively, are used in these phases:
-+
-+	pci_pm_prepare()
-+	pci_pm_suspend()
-+	pci_pm_suspend_noirq()
-+
-+The pci_pm_prepare() routine first puts the device into the "fully functional"
-+state with the help of pm_runtime_resume().  Then, it executes the device
-+driver's pm->prepare() callback if defined (i.e. if the driver's struct
-+dev_pm_ops object is present and the prepare pointer in that object is valid).
-+
-+The pci_pm_suspend() routine first checks if the device's driver implements
-+legacy PCI suspend routines (see Section 3), in which case the driver's legacy
-+suspend callback is executed, if present, and its result is returned.  Next, if
-+the device's driver doesn't provide a struct dev_pm_ops object (containing
-+pointers to the driver's callbacks), pci_pm_default_suspend() is called, which
-+simply turns off the device's bus master capability and runs
-+pcibios_disable_device() to disable it, unless the device is a bridge (PCI
-+bridges are ignored by this routine).  Next, the device driver's pm->suspend()
-+callback is executed, if defined, and its result is returned if it fails.
-+Finally, pci_fixup_device() is called to apply hardware suspend quirks related
-+to the device if necessary.
-+
-+Note that the suspend phase is carried out asynchronously for PCI devices, so
-+the pci_pm_suspend() callback may be executed in parallel for any pair of PCI
-+devices that don't depend on each other in a known way (i.e. none of the paths
-+in the device tree from the root bridge to a leaf device contains both of them).
-+
-+The pci_pm_suspend_noirq() routine is executed after suspend_device_irqs() has
-+been called, which means that the device driver's interrupt handler won't be
-+invoked while this routine is running.  It first checks if the device's driver
-+implements legacy PCI suspends routines (Section 3), in which case the legacy
-+late suspend routine is called and its result is returned (the standard
-+configuration registers of the device are saved if the driver's callback hasn't
-+done that).  Second, if the device driver's struct dev_pm_ops object is not
-+present, the device's standard configuration registers are saved and the routine
-+returns success.  Otherwise the device driver's pm->suspend_noirq() callback is
-+executed, if present, and its result is returned if it fails.  Next, if the
-+device's standard configuration registers haven't been saved yet (one of the
-+device driver's callbacks executed before might do that), pci_pm_suspend_noirq()
-+saves them, prepares the device to signal wakeup (if necessary) and puts it into
-+a low-power state.
-+
-+The low-power state to put the device into is the lowest-power (highest number)
-+state from which it can signal wakeup while the system is in the target sleep
-+state.  Just like in the runtime PM case described above, the mechanism of
-+signaling wakeup is system-dependent and determined by the PCI subsystem, which
-+is also responsible for preparing the device to signal wakeup from the system's
-+target sleep state as appropriate.
-+
-+PCI device drivers (that don't implement legacy power management callbacks) are
-+generally not expected to prepare devices for signaling wakeup or to put them
-+into low-power states.  However, if one of the driver's suspend callbacks
-+(pm->suspend() or pm->suspend_noirq()) saves the device's standard configuration
-+registers, pci_pm_suspend_noirq() will assume that the device has been prepared
-+to signal wakeup and put into a low-power state by the driver (the driver is
-+then assumed to have used the helper functions provided by the PCI subsystem for
-+this purpose).  PCI device drivers are not encouraged to do that, but in some
-+rare cases doing that in the driver may be the optimum approach.
-+
-+2.4.2. System Resume
-+
-+When the system is undergoing a transition from a sleep state in which the
-+contents of memory have been preserved, such as one of the ACPI sleep states
-+S1-S3, into the working state (ACPI S0), the phases are:
-+
-+	resume_noirq, resume, complete.
-+
-+The following PCI bus type's callbacks, respectively, are executed in these
-+phases:
-+
-+	pci_pm_resume_noirq()
-+	pci_pm_resume()
-+	pci_pm_complete()
-+
-+The pci_pm_resume_noirq() routine first puts the device into the full-power
-+state, restores its standard configuration registers and applies early resume
-+hardware quirks related to the device, if necessary.  This is done
-+unconditionally, regardless of whether or not the device's driver implements
-+legacy PCI power management callbacks (this way all PCI devices are in the
-+full-power state and their standard configuration registers have been restored
-+when their interrupt handlers are invoked for the first time during resume,
-+which allows the kernel to avoid problems with the handling of shared interrupts
-+by drivers whose devices are still suspended).  If legacy PCI power management
-+callbacks (see Section 3) are implemented by the device's driver, the legacy
-+early resume callback is executed and its result is returned.  Otherwise, the
-+device driver's pm->resume_noirq() callback is executed, if defined, and its
-+result is returned.
-+
-+The pci_pm_resume() routine first checks if the device's standard configuration
-+registers have been restored and restores them if that's not the case (this
-+only is necessary in the error path during a failing suspend).  Next, resume
-+hardware quirks related to the device are applied, if necessary, and if the
-+device's driver implements legacy PCI power management callbacks (see
-+Section 3), the driver's legacy resume callback is executed and its result is
-+returned.  Otherwise, the device's wakeup signaling mechanisms are blocked and
-+its driver's pm->resume() callback is executed, if defined (the callback's
-+result is then returned).
-+
-+The resume phase is carried out asynchronously for PCI devices, like the
-+suspend phase described above, which means that if two PCI devices don't depend
-+on each other in a known way, the pci_pm_resume() routine may be executed for
-+the both of them in parallel.
-+
-+The pci_pm_complete() routine only executes the device driver's pm->complete()
-+callback, if defined.
-+
-+2.4.3. System Hibernation
-+
-+System hibernation is more complicated than system suspend, because it requires
-+a system image to be created and written into a persistent storage medium.  The
-+image is created atomically and all devices are quiesced, or frozen, before that
-+happens.
-+
-+The freezing of devices is carried out after enough memory has been freed (at
-+the time of this writing the image creation requires at least 50% of system RAM
-+to be free) in the following three phases:
-+
-+	prepare, freeze, freeze_noirq
-+
-+that correspond to the PCI bus type's callbacks:
-+
-+	pci_pm_prepare()
-+	pci_pm_freeze()
-+	pci_pm_freeze_noirq()
-+
-+This means that the prepare phase is exactly the same as for system suspend.
-+The other two phases, however, are different.
-+
-+The pci_pm_freeze() routine is quite similar to pci_pm_suspend(), but it runs
-+the device driver's pm->freeze() callback, if defined, instead of pm->suspend(),
-+and it doesn't apply the suspend-related hardware quirks.  It is executed
-+asynchronously for different PCI devices that don't depend on each other in a
-+known way.
-+
-+The pci_pm_freeze_noirq() routine, in turn, is similar to
-+pci_pm_suspend_noirq(), but it calls the device driver's pm->freeze_noirq()
-+routine instead of pm->suspend_noirq().  It also doesn't attempt to prepare the
-+device for signaling wakeup and put it into a low-power state.  Still, it saves
-+the device's standard configuration registers if they haven't been saved by one
-+of the driver's callbacks.
-+
-+Once the image has been created, it has to be saved.  For this purpose devices
-+are activated in the following phases:
-+
-+	thaw_noirq, thaw, complete
-+
-+using the following PCI bus type's callbacks:
-+
-+	pci_pm_thaw_noirq()
-+	pci_pm_thaw()
-+	pci_pm_complete()
-+
-+respectively.
-+
-+The first of them, pci_pm_thaw_noirq(), is analogous to pci_pm_resume_noirq(),
-+but it doesn't put the device into the full power state and doesn't attempt to
-+restore its standard configuration registers.  It also executes the device
-+driver's pm->thaw_noirq() callback, if defined, instead of pm->resume_noirq().
-+
-+The pci_pm_thaw() routine is similar to pci_pm_resume(), but it runs the device
-+driver's pm->thaw() callback instead of pm->resume().  It is executed
-+asynchronously for different PCI devices that don't depend on each other in a
-+known way.
-+
-+The complete phase it the same as for system resume.
-+
-+After saving the image, devices need to be powered down before the system can
-+enter the target sleep state (ACPI S4 for ACPI-based systems).  This is done in
-+three phases:
-+
-+	prepare, poweroff, poweroff_noirq
-+
-+where the prepare phase is exactly the same as for system suspend.  The other
-+two phases are analogous to the suspend and suspend_noirq phases, respectively.
-+The PCI subsystem-level callbacks they correspond to
-+
-+	pci_pm_poweroff()
-+	pci_pm_poweroff_noirq()
-+
-+work in analogy with pci_pm_suspend() and pci_pm_poweroff_noirq(), respectively,
-+although they don't attempt to save the device's standard configuration
-+registers.
-+
-+2.4.4. System Restore
-+
-+System restore requires a hibernation image to be loaded into memory and the
-+pre-hibernation memory contents to be restored before the pre-hibernation system
-+activity can be resumed.
-+
-+As described in Documentation/power/devices.txt, the hibernation image is loaded
-+into memory by a fresh instance of the kernel, called the boot kernel, which in
-+turn is loaded and run by a boot loader in the usual way.  After the boot kernel
-+has loaded the image, it needs to replace its own code and data with the code
-+and data of the "hibernated" kernel stored within the image, called the image
-+kernel.  For this purpose all devices are frozen just like before creating
-+the image during hibernation, in the
-+
-+	prepare, freeze, freeze_noirq
-+
-+phases described above.  However, the devices affected by these phases are only
-+those having drivers in the boot kernel; other devices will still be in whatever
-+state the boot loader left them.
-+
-+Should the restoration of the pre-hibernation memory contents fail, the boot
-+kernel would go through the "thawing" procedure described above, using the
-+thaw_noirq, thaw, and complete phases (that will only affect the devices having
-+drivers in the boot kernel), and then continue running normally.
-+
-+If the pre-hibernation memory contents are restored successfully, which is the
-+usual situation, control is passed to the image kernel, which then becomes
-+responsible for bringing the system back to the working state.  To achieve this,
-+it must restore the devices' pre-hibernation functionality, which is done much
-+like waking up from the memory sleep state, although it involves different
-+phases:
-+
-+	restore_noirq, restore, complete
-+
-+The first two of them are analogous to the resume_noirq and resume phases
-+described above, respectively, and correspond to the following PCI subsystem
-+callbacks:
-+
-+	pci_pm_restore_noirq()
-+	pci_pm_restore()
-+
-+These callbacks work in analogy with pci_pm_resume_noirq() and pci_pm_resume(),
-+respectively, but they execute the device driver's pm->restore_noirq() and
-+pm->restore() callbacks, if available.
-+
-+The complete phase is carried out in exactly the same way as during system
-+resume.
-+
-+
-+3. PCI Device Drivers and Power Management
-+==========================================
-+
-+3.1. Power Management Callbacks
-+-------------------------------
-+PCI device drivers participate in power management by providing callbacks to be
-+executed by the PCI subsystem's power management routines described above and by
-+controlling the runtime power management of their devices.
-+
-+At the time of this writing there are two ways to define power management
-+callbacks for a PCI device driver, the recommended one, based on using a
-+dev_pm_ops structure described in Documentation/power/devices.txt, and the
-+"legacy" one, in which the .suspend(), .suspend_late(), .resume_early(), and
-+.resume() callbacks from struct pci_driver are used.  The legacy approach,
-+however, doesn't allow one to define runtime power management callbacks and is
-+not really suitable for any new drivers.  Therefore it is not covered by this
-+document (refer to the source code to learn more about it).
-+
-+It is recommended that all PCI device drivers define a struct dev_pm_ops object
-+containing pointers to power management (PM) callbacks that will be executed by
-+the PCI subsystem's PM routines in various circumstances.  A pointer to the
-+driver's struct dev_pm_ops object has to be assigned to the driver.pm field in
-+its struct pci_driver object.  Once that has happened, the "legacy" PM callbacks
-+in struct pci_driver are ignored (even if they are not NULL).
-+
-+The PM callbacks in struct dev_pm_ops are not mandatory and if they are not
-+defined (i.e. the respective fields of struct dev_pm_ops are unset) the PCI
-+subsystem will handle the device in a simplified default manner.  If they are
-+defined, though, they are expected to behave as described in the following
-+subsections.
-+
-+3.1.1. prepare()
-+
-+The prepare() callback is executed during system suspend, during hibernation
-+(i.e. when hibernation image is about to be created), during power-off after
-+saving a hibernation image and during system restore, when hibernation image
-+has just been loaded into memory.
-+
-+This callback is only necessary if the driver's device has children that in
-+general may be registered at any time.  In that cases the role of the prepare()
-+callback is to prevent new children of the device from being registered until
-+one of the resume_noirq(), thaw_noirq(), or restore_noirq() callbacks is run.
-+
-+In addition to that the prepare() callback may carry out some operations
-+preparing the device to be suspended, although it should not allocate memory
-+(if additional memory is required to suspend the device, it has to be
-+preallocated earlier, for example in a suspend/hibernate notifier as described
-+in Documentation/power/notifiers.txt).
-+
-+3.1.2. suspend()
-+
-+The suspend() callback is only executed during system suspend, after prepare()
-+callbacks have been executed for all devices in the system.
-+
-+This callback is expected to quiesce the device and prepare it to be put into a
-+low-power state by the PCI subsystem.  It is not required (in fact it even is
-+not recommended) that a PCI driver's suspend() callback save the standard
-+configuration registers of the device, prepare it for waking up the system, or
-+put it into a low-power state.  All of these operations can very well be taken
-+care of by the PCI subsystem, without the driver's participation.
-+
-+However, in some rare cases it is convenient to carry out these operations in
-+a PCI driver.  Then, pci_save_state(), pci_prepare_to_sleep(), and
-+pci_set_power_state() should be used to save the device's standard configuration
-+registers, to prepare it for system wakeup (if necessary), and to put it into a
-+low-power state, respectively.  Moreover, if the driver calls pci_save_state(),
-+the PCI subsystem will not execute either pci_prepare_to_sleep(), or
-+pci_set_power_state() for its device, so the driver is then responsible for
-+handling the device as appropriate.
-+
-+While the suspend() callback is being executed, the driver's interrupt handler
-+can be invoked to handle an interrupt from the device, so all suspend-related
-+operations relying on the driver's ability to handle interrupts should be
-+carried out in this callback.
-+
-+3.1.3. suspend_noirq()
-+
-+The suspend_noirq() callback is only executed during system suspend, after
-+suspend() callbacks have been executed for all devices in the system and
-+after device interrupts have been disabled by the PM core.
-+
-+The difference between suspend_noirq() and suspend() is that the driver's
-+interrupt handler will not be invoked while suspend_noirq() is running.  Thus
-+suspend_noirq() can carry out operations that would cause race conditions to
-+arise if they were performed in suspend().
-+
-+3.1.4. freeze()
-+
-+The freeze() callback is hibernation-specific and is executed in two situations,
-+during hibernation, after prepare() callbacks have been executed for all devices
-+in preparation for the creation of a system image, and during restore,
-+after a system image has been loaded into memory from persistent storage and the
-+prepare() callbacks have been executed for all devices.
-+
-+The role of this callback is analogous to the role of the suspend() callback
-+described above.  In fact, they only need to be different in the rare cases when
-+the driver takes the responsibility for putting the device into a low-power
- state.
++enum comedi_support_level {
++	COMEDI_UNKNOWN_SUPPORT = 0,
++	COMEDI_SUPPORTED,
++	COMEDI_UNSUPPORTED
++};
  
--The first walk allows a graceful recovery in the event of a failure, since none
--of the devices have actually been powered down.
--
--In both walks, in particular the second, all children of a bridge are touched
--before the actual bridge itself. This allows the bridge to retain power while
--its children are being accessed.
--
--Upon resuming from sleep, just the opposite must be true: all bridges must be
--powered on and restored before their children are powered on. This is easily
--accomplished with a breadth-first walk of the PCI device tree.
--
--
--3. PCI Utility Functions
--~~~~~~~~~~~~~~~~~~~~~~~~
--
--These are helper functions designed to be called by individual device drivers.
--Assuming that a device behaves as advertised, these should be applicable in most
--cases. However, results may vary.
--
--Note that these functions are never implicitly called for the driver. The driver
--is always responsible for deciding when and if to call these.
--
--
--pci_save_state
----------------
--
--Usage:
--	pci_save_state(struct pci_dev *dev);
--
--Description:
--	Save first 64 bytes of PCI config space, along with any additional
--	PCI-Express or PCI-X information.
--
--
--pci_restore_state
-------------------
--
--Usage:
--	pci_restore_state(struct pci_dev *dev);
--
--Description:
--	Restore previously saved config space.
--
--
--pci_set_power_state
---------------------
--
--Usage:
--	pci_set_power_state(struct pci_dev *dev, pci_power_t state);
--
--Description:
--	Transition device to low power state using PCI PM Capabilities
--	registers.
--
--	Will fail under one of the following conditions:
--	- If state is less than current state, but not D0 (illegal transition)
--	- Device doesn't support PM Capabilities
--	- Device does not support requested state
--
--
--pci_enable_wake
-----------------
--
--Usage:
--	pci_enable_wake(struct pci_dev *dev, pci_power_t state, int enable);
--
--Description:
--	Enable device to generate PME# during low power state using PCI PM 
--	Capabilities.
--
--	Checks whether if device supports generating PME# from requested state
--	and fail if it does not, unless enable == 0 (request is to disable wake
--	events, which is implicit if it doesn't even support it in the first
--	place).
--
--	Note that the PMC Register in the device's PM Capabilities has a bitmask
--	of the states it supports generating PME# from. D3hot is bit 3 and
--	D3cold is bit 4. So, while a value of 4 as the state may not seem
--	semantically correct, it is. 
--
--
--4. PCI Device Drivers
--~~~~~~~~~~~~~~~~~~~~~
--
--These functions are intended for use by individual drivers, and are defined in 
--struct pci_driver:
--
--        int  (*suspend) (struct pci_dev *dev, pm_message_t state);
--        int  (*resume) (struct pci_dev *dev);
--
--
--suspend
---------
--
--Usage:
--
--if (dev->driver && dev->driver->suspend)
--	dev->driver->suspend(dev,state);
--
--A driver uses this function to actually transition the device into a low power
--state. This should include disabling I/O, IRQs, and bus-mastering, as well as
--physically transitioning the device to a lower power state; it may also include
--calls to pci_enable_wake().
--
--Bus mastering may be disabled by doing:
--
--pci_disable_device(dev);
--
--For devices that support the PCI PM Spec, this may be used to set the device's
--power state to match the suspend() parameter:
--
--pci_set_power_state(dev,state);
--
--The driver is also responsible for disabling any other device-specific features
--(e.g blanking screen, turning off on-card memory, etc).
--
--The driver should be sure to track the current state of the device, as it may
--obviate the need for some operations.
--
--The driver should update the current_state field in its pci_dev structure in
--this function, except for PM-capable devices when pci_set_power_state is used.
--
--resume
--------
--
--Usage:
--
--if (dev->driver && dev->driver->resume)
--	dev->driver->resume(dev)
--
--The resume callback may be called from any power state, and is always meant to
--transition the device to the D0 state. 
--
--The driver is responsible for reenabling any features of the device that had
--been disabled during previous suspend calls, such as IRQs and bus mastering,
--as well as calling pci_restore_state().
--
--If the device is currently in D3, it may need to be reinitialized in resume().
--
--  * Some types of devices, like bus controllers, will preserve context in D3hot
--    (using Vcc power).  Their drivers will often want to avoid re-initializing
--    them after re-entering D0 (perhaps to avoid resetting downstream devices).
--
--  * Other kinds of devices in D3hot will discard device context as part of a
--    soft reset when re-entering the D0 state.
--    
--  * Devices resuming from D3cold always go through a power-on reset.  Some
--    device context can also be preserved using Vaux power.
--
--  * Some systems hide D3cold resume paths from drivers.  For example, on PCs
--    the resume path for suspend-to-disk often runs BIOS powerup code, which
--    will sometimes re-initialize the device.
--
--To handle resets during D3 to D0 transitions, it may be convenient to share
--device initialization code between probe() and resume().  Device parameters
--can also be saved before the driver suspends into D3, avoiding re-probe.
--
--If the device supports the PCI PM Spec, it can use this to physically transition
--the device to D0:
--
--pci_set_power_state(dev,0);
--
--Note that if the entire system is transitioning out of a global sleep state, all
--devices will be placed in the D0 state, so this is not necessary. However, in
--the event that the device is placed in the D3 state during normal operation,
--this call is necessary. It is impossible to determine which of the two events is
--taking place in the driver, so it is always a good idea to make that call.
--
--The driver should take note of the state that it is resuming from in order to
--ensure correct (and speedy) operation.
--
--The driver should update the current_state field in its pci_dev structure in
--this function, except for PM-capable devices when pci_set_power_state is used.
--
--
--
--A reference implementation
---------------------------
--.suspend()
--{
--	/* driver specific operations */
--
--	/* Disable IRQ */
--	free_irq();
--	/* If using MSI */
--	pci_disable_msi();
--
--	pci_save_state();
--	pci_enable_wake();
--	/* Disable IO/bus master/irq router */
--	pci_disable_device();
--	pci_set_power_state(pci_choose_state());
--}
--
--.resume()
--{
--	pci_set_power_state(PCI_D0);
--	pci_restore_state();
--	/* device's irq possibly is changed, driver should take care */
--	pci_enable_device();
--	pci_set_master();
--
--	/* if using MSI, device's vector possibly is changed */
--	pci_enable_msi();
--
--	request_irq();
--	/* driver specific operations; */
--}
--
--This is a typical implementation. Drivers can slightly change the order
--of the operations in the implementation, ignore some operations or add
--more driver specific operations in it, but drivers should do something like
--this on the whole.
--
--5. Resources
--~~~~~~~~~~~~
--
--PCI Local Bus Specification 
--PCI Bus Power Management Interface Specification
--
--  http://www.pcisig.com
--
-+In that cases the freeze() callback should not prepare the device system wakeup
-+or put it into a low-power state.  Still, either it or freeze_noirq() should
-+save the device's standard configuration registers using pci_save_state().
+ /* ioctls */
+ 
+ #define CIO 'd'
+-#define COMEDI_DEVCONFIG _IOW(CIO, 0, struct comedi_devconfig)
+-#define COMEDI_DEVINFO _IOR(CIO, 1, struct comedi_devinfo)
+-#define COMEDI_SUBDINFO _IOR(CIO, 2, struct comedi_subdinfo)
+-#define COMEDI_CHANINFO _IOR(CIO, 3, struct comedi_chaninfo)
+-#define COMEDI_TRIG _IOWR(CIO, 4, comedi_trig)
+-#define COMEDI_LOCK _IO(CIO, 5)
+-#define COMEDI_UNLOCK _IO(CIO, 6)
+-#define COMEDI_CANCEL _IO(CIO, 7)
+-#define COMEDI_RANGEINFO _IOR(CIO, 8, struct comedi_rangeinfo)
+-#define COMEDI_CMD _IOR(CIO, 9, struct comedi_cmd)
+-#define COMEDI_CMDTEST _IOR(CIO, 10, struct comedi_cmd)
+-#define COMEDI_INSNLIST _IOR(CIO, 11, struct comedi_insnlist)
+-#define COMEDI_INSN _IOR(CIO, 12, struct comedi_insn)
+-#define COMEDI_BUFCONFIG _IOR(CIO, 13, struct comedi_bufconfig)
+-#define COMEDI_BUFINFO _IOWR(CIO, 14, struct comedi_bufinfo)
+-#define COMEDI_POLL _IO(CIO, 15)
++#define COMEDI_DEVCONFIG	_IOW(CIO, 0, struct comedi_devconfig)
++#define COMEDI_DEVINFO		_IOR(CIO, 1, struct comedi_devinfo)
++#define COMEDI_SUBDINFO		_IOR(CIO, 2, struct comedi_subdinfo)
++#define COMEDI_CHANINFO		_IOR(CIO, 3, struct comedi_chaninfo)
++#define COMEDI_TRIG		_IOWR(CIO, 4, comedi_trig)
++#define COMEDI_LOCK		_IO(CIO, 5)
++#define COMEDI_UNLOCK		_IO(CIO, 6)
++#define COMEDI_CANCEL		_IO(CIO, 7)
++#define COMEDI_RANGEINFO	_IOR(CIO, 8, struct comedi_rangeinfo)
++#define COMEDI_CMD		_IOR(CIO, 9, struct comedi_cmd)
++#define COMEDI_CMDTEST		_IOR(CIO, 10, struct comedi_cmd)
++#define COMEDI_INSNLIST		_IOR(CIO, 11, struct comedi_insnlist)
++#define COMEDI_INSN		_IOR(CIO, 12, struct comedi_insn)
++#define COMEDI_BUFCONFIG	_IOR(CIO, 13, struct comedi_bufconfig)
++#define COMEDI_BUFINFO		_IOWR(CIO, 14, struct comedi_bufinfo)
++#define COMEDI_POLL		_IO(CIO, 15)
+ 
+ /* structures */
+ 
+-	struct comedi_trig {
+-		unsigned int subdev;	/* subdevice */
+-		unsigned int mode;	/* mode */
+-		unsigned int flags;
+-		unsigned int n_chan;	/* number of channels */
+-		unsigned int *chanlist;	/* channel/range list */
+-		short *data;	/* data list, size depends on subd flags */
+-		unsigned int n;	/* number of scans */
+-		unsigned int trigsrc;
+-		unsigned int trigvar;
+-		unsigned int trigvar1;
+-		unsigned int data_len;
+-		unsigned int unused[3];
+-	};
+-
+-	struct comedi_insn {
+-		unsigned int insn;
+-		unsigned int n;
+-		unsigned int __user *data;
+-		unsigned int subdev;
+-		unsigned int chanspec;
+-		unsigned int unused[3];
+-	};
+-
+-	struct comedi_insnlist {
+-		unsigned int n_insns;
+-		struct comedi_insn __user *insns;
+-	};
+-
+-	struct comedi_cmd {
+-		unsigned int subdev;
+-		unsigned int flags;
+-
+-		unsigned int start_src;
+-		unsigned int start_arg;
+-
+-		unsigned int scan_begin_src;
+-		unsigned int scan_begin_arg;
+-
+-		unsigned int convert_src;
+-		unsigned int convert_arg;
+-
+-		unsigned int scan_end_src;
+-		unsigned int scan_end_arg;
+-
+-		unsigned int stop_src;
+-		unsigned int stop_arg;
+-
+-		unsigned int __user *chanlist;	/* channel/range list */
+-		unsigned int chanlist_len;
+-
+-		short __user *data; /* data list, size depends on subd flags */
+-		unsigned int data_len;
+-	};
+-
+-	struct comedi_chaninfo {
+-		unsigned int subdev;
+-		unsigned int __user *maxdata_list;
+-		unsigned int __user *flaglist;
+-		unsigned int __user *rangelist;
+-		unsigned int unused[4];
+-	};
+-
+-	struct comedi_rangeinfo {
+-		unsigned int range_type;
+-		void __user *range_ptr;
+-	};
+-
+-	struct comedi_krange {
+-		int min;	/* fixed point, multiply by 1e-6 */
+-		int max;	/* fixed point, multiply by 1e-6 */
+-		unsigned int flags;
+-	};
+-
+-	struct comedi_subdinfo {
+-		unsigned int type;
+-		unsigned int n_chan;
+-		unsigned int subd_flags;
+-		unsigned int timer_type;
+-		unsigned int len_chanlist;
+-		unsigned int maxdata;
+-		unsigned int flags;	/* channel flags */
+-		unsigned int range_type;	/* lookup in kernel */
+-		unsigned int settling_time_0;
+-		/* see support_level enum for values */
+-		unsigned insn_bits_support;
+-		unsigned int unused[8];
+-	};
+-
+-	struct comedi_devinfo {
+-		unsigned int version_code;
+-		unsigned int n_subdevs;
+-		char driver_name[COMEDI_NAMELEN];
+-		char board_name[COMEDI_NAMELEN];
+-		int read_subdevice;
+-		int write_subdevice;
+-		int unused[30];
+-	};
+-
+-	struct comedi_devconfig {
+-		char board_name[COMEDI_NAMELEN];
+-		int options[COMEDI_NDEVCONFOPTS];
+-	};
+-
+-	struct comedi_bufconfig {
+-		unsigned int subdevice;
+-		unsigned int flags;
+-
+-		unsigned int maximum_size;
+-		unsigned int size;
+-
+-		unsigned int unused[4];
+-	};
+-
+-	struct comedi_bufinfo {
+-		unsigned int subdevice;
+-		unsigned int bytes_read;
+-
+-		unsigned int buf_write_ptr;
+-		unsigned int buf_read_ptr;
+-		unsigned int buf_write_count;
+-		unsigned int buf_read_count;
+-
+-		unsigned int bytes_written;
+-
+-		unsigned int unused[4];
+-	};
++struct comedi_trig {
++	unsigned int subdev;	/* subdevice */
++	unsigned int mode;	/* mode */
++	unsigned int flags;
++	unsigned int n_chan;	/* number of channels */
++	unsigned int *chanlist;	/* channel/range list */
++	short *data;		/* data list, size depends on subd flags */
++	unsigned int n;		/* number of scans */
++	unsigned int trigsrc;
++	unsigned int trigvar;
++	unsigned int trigvar1;
++	unsigned int data_len;
++	unsigned int unused[3];
++};
 +
-+3.1.5. freeze_noirq()
++struct comedi_insn {
++	unsigned int insn;
++	unsigned int n;
++	unsigned int __user *data;
++	unsigned int subdev;
++	unsigned int chanspec;
++	unsigned int unused[3];
++};
 +
-+The freeze_noirq() callback is hibernation-specific.  It is executed during
-+hibernation, after prepare() and freeze() callbacks have been executed for all
-+devices in preparation for the creation of a system image, and during restore,
-+after a system image has been loaded into memory and after prepare() and
-+freeze() callbacks have been executed for all devices.  It is always executed
-+after device interrupts have been disabled by the PM core.
++struct comedi_insnlist {
++	unsigned int n_insns;
++	struct comedi_insn __user *insns;
++};
 +
-+The role of this callback is analogous to the role of the suspend_noirq()
-+callback described above and it very rarely is necessary to define
-+freeze_noirq().
++struct comedi_cmd {
++	unsigned int subdev;
++	unsigned int flags;
 +
-+The difference between freeze_noirq() and freeze() is analogous to the
-+difference between suspend_noirq() and suspend().
++	unsigned int start_src;
++	unsigned int start_arg;
 +
-+3.1.6. poweroff()
++	unsigned int scan_begin_src;
++	unsigned int scan_begin_arg;
 +
-+The poweroff() callback is hibernation-specific.  It is executed when the system
-+is about to be powered off after saving a hibernation image to a persistent
-+storage.  prepare() callbacks are executed for all devices before poweroff() is
-+called.
++	unsigned int convert_src;
++	unsigned int convert_arg;
 +
-+The role of this callback is analogous to the role of the suspend() and freeze()
-+callbacks described above, although it does not need to save the contents of
-+the device's registers.  In particular, if the driver wants to put the device
-+into a low-power state itself instead of allowing the PCI subsystem to do that,
-+the poweroff() callback should use pci_prepare_to_sleep() and
-+pci_set_power_state() to prepare the device for system wakeup and to put it
-+into a low-power state, respectively, but it need not save the device's standard
-+configuration registers.
++	unsigned int scan_end_src;
++	unsigned int scan_end_arg;
 +
-+3.1.7. poweroff_noirq()
++	unsigned int stop_src;
++	unsigned int stop_arg;
 +
-+The poweroff() callback is hibernation-specific.  It is executed after
-+poweroff() callbacks have been executed for all devices in the system.
++	unsigned int __user *chanlist;	/* channel/range list */
++	unsigned int chanlist_len;
 +
-+The role of this callback is analogous to the role of the suspend_noirq() and
-+freeze_noirq() callbacks described above, but it does not need to save the
-+contents of the device's registers.
++	short __user *data;	/* data list, size depends on subd flags */
++	unsigned int data_len;
++};
 +
-+The difference between poweroff_noirq() and poweroff() is analogous to the
-+difference between suspend_noirq() and suspend().
++struct comedi_chaninfo {
++	unsigned int subdev;
++	unsigned int __user *maxdata_list;
++	unsigned int __user *flaglist;
++	unsigned int __user *rangelist;
++	unsigned int unused[4];
++};
 +
-+3.1.8. resume_noirq()
++struct comedi_rangeinfo {
++	unsigned int range_type;
++	void __user *range_ptr;
++};
 +
-+The resume_noirq() callback is only executed during system resume, after the
-+PM core has enabled the non-boot CPUs.  The driver's interrupt handler will not
-+be invoked while resume_noirq() is running, so this callback can carry out
-+operations that might race with the interrupt handler.
++struct comedi_krange {
++	int min;		/* fixed point, multiply by 1e-6 */
++	int max;		/* fixed point, multiply by 1e-6 */
++	unsigned int flags;
++};
 +
-+Since the PCI subsystem unconditionally puts all devices into the full power
-+state in the resume_noirq phase of system resume and restores their standard
-+configuration registers, resume_noirq() is usually not necessary.  In general
-+it should only be used for performing operations that would lead to race
-+conditions if carried out by resume().
++struct comedi_subdinfo {
++	unsigned int type;
++	unsigned int n_chan;
++	unsigned int subd_flags;
++	unsigned int timer_type;
++	unsigned int len_chanlist;
++	unsigned int maxdata;
++	unsigned int flags;		/* channel flags */
++	unsigned int range_type;	/* lookup in kernel */
++	unsigned int settling_time_0;
++	/* see support_level enum for values */
++	unsigned insn_bits_support;
++	unsigned int unused[8];
++};
 +
-+3.1.9. resume()
++struct comedi_devinfo {
++	unsigned int version_code;
++	unsigned int n_subdevs;
++	char driver_name[COMEDI_NAMELEN];
++	char board_name[COMEDI_NAMELEN];
++	int read_subdevice;
++	int write_subdevice;
++	int unused[30];
++};
 +
-+The resume() callback is only executed during system resume, after
-+resume_noirq() callbacks have been executed for all devices in the system and
-+device interrupts have been enabled by the PM core.
++struct comedi_devconfig {
++	char board_name[COMEDI_NAMELEN];
++	int options[COMEDI_NDEVCONFOPTS];
++};
 +
-+This callback is responsible for restoring the pre-suspend configuration of the
-+device and bringing it back to the fully functional state.  The device should be
-+able to process I/O in a usual way after resume() has returned.
++struct comedi_bufconfig {
++	unsigned int subdevice;
++	unsigned int flags;
 +
-+3.1.10. thaw_noirq()
++	unsigned int maximum_size;
++	unsigned int size;
 +
-+The thaw_noirq() callback is hibernation-specific.  It is executed after a
-+system image has been created and the non-boot CPUs have been enabled by the PM
-+core, in the thaw_noirq phase of hibernation.  It also may be executed if the
-+loading of a hibernation image fails during system restore (it is then executed
-+after enabling the non-boot CPUs).  The driver's interrupt handler will not be
-+invoked while thaw_noirq() is running.
++	unsigned int unused[4];
++};
 +
-+The role of this callback is analogous to the role of resume_noirq().  The
-+difference between these two callbacks is that thaw_noirq() is executed after
-+freeze() and freeze_noirq(), so in general it does not need to modify the
-+contents of the device's registers.
++struct comedi_bufinfo {
++	unsigned int subdevice;
++	unsigned int bytes_read;
 +
-+3.1.11. thaw()
++	unsigned int buf_write_ptr;
++	unsigned int buf_read_ptr;
++	unsigned int buf_write_count;
++	unsigned int buf_read_count;
 +
-+The thaw() callback is hibernation-specific.  It is executed after thaw_noirq()
-+callbacks have been executed for all devices in the system and after device
-+interrupts have been enabled by the PM core.
++	unsigned int bytes_written;
 +
-+This callback is responsible for restoring the pre-freeze configuration of
-+the device, so that it will work in a usual way after thaw() has returned.
++	unsigned int unused[4];
++};
+ 
+ /* range stuff */
+ 
+-#define __RANGE(a, b)	((((a)&0xffff)<<16)|((b)&0xffff))
++#define __RANGE(a, b)		((((a) & 0xffff) << 16) | ((b) & 0xffff))
+ 
+-#define RANGE_OFFSET(a)		(((a)>>16)&0xffff)
+-#define RANGE_LENGTH(b)		((b)&0xffff)
++#define RANGE_OFFSET(a)		(((a) >> 16) & 0xffff)
++#define RANGE_LENGTH(b)		((b) & 0xffff)
+ 
+-#define RF_UNIT(flags)		((flags)&0xff)
+-#define RF_EXTERNAL		(1<<8)
++#define RF_UNIT(flags)		((flags) & 0xff)
++#define RF_EXTERNAL		(1 << 8)
+ 
+ #define UNIT_volt		0
+ #define UNIT_mA			1
+@@ -465,7 +464,8 @@
+ 
+ #define COMEDI_CB_EOS		1	/* end of scan */
+ #define COMEDI_CB_EOA		2	/* end of acquisition */
+-#define COMEDI_CB_BLOCK		4	/* data has arrived: wakes up read() / write() */
++#define COMEDI_CB_BLOCK		4	/* data has arrived:
++					 * wakes up read() / write() */
+ #define COMEDI_CB_EOBUF		8	/* DEPRECATED: end of buffer */
+ #define COMEDI_CB_ERROR		16	/* card error during acquisition */
+ #define COMEDI_CB_OVERFLOW	32	/* buffer overflow/underflow */
+@@ -475,427 +475,475 @@
+ /**********************************************************/
+ 
+ /*
+-  8254 specific configuration.
+-
+-  It supports two config commands:
+-
+-  0 ID: INSN_CONFIG_SET_COUNTER_MODE
+-  1 8254 Mode
+-    I8254_MODE0, I8254_MODE1, ..., I8254_MODE5
+-    OR'ed with:
+-    I8254_BCD, I8254_BINARY
+-
+-  0 ID: INSN_CONFIG_8254_READ_STATUS
+-  1 <-- Status byte returned here.
+-    B7 = Output
+-    B6 = NULL Count
+-    B5 - B0 Current mode.
++ *  8254 specific configuration.
++ *
++ * It supports two config commands:
++ *
++ * 0 ID: INSN_CONFIG_SET_COUNTER_MODE
++ * 1 8254 Mode
++ *   I8254_MODE0, I8254_MODE1, ..., I8254_MODE5
++ *   OR'ed with:
++ *   I8254_BCD, I8254_BINARY
++ *
++ * 0 ID: INSN_CONFIG_8254_READ_STATUS
++ * 1 <-- Status byte returned here.
++ *   B7 = Output
++ *   B6 = NULL Count
++ *   B5 - B0 Current mode.
++ */
+ 
+-*/
++enum i8254_mode {
++	I8254_MODE0 = (0 << 1),	/* Interrupt on terminal count */
++	I8254_MODE1 = (1 << 1),	/* Hardware retriggerable one-shot */
++	I8254_MODE2 = (2 << 1),	/* Rate generator */
++	I8254_MODE3 = (3 << 1),	/* Square wave mode */
++	I8254_MODE4 = (4 << 1),	/* Software triggered strobe */
++	I8254_MODE5 = (5 << 1),	/* Hardware triggered strobe (retriggerable) */
++	I8254_BCD = 1,		/* use binary-coded decimal instead of binary
++				 * (pretty useless) */
++	I8254_BINARY = 0
++};
 +
-+3.1.12. restore_noirq()
++static inline unsigned NI_USUAL_PFI_SELECT(unsigned pfi_channel)
++{
++	if (pfi_channel < 10)
++		return 0x1 + pfi_channel;
++	else
++		return 0xb + pfi_channel;
++}
 +
-+The restore_noirq() callback is hibernation-specific.  It is executed in the
-+restore_noirq phase of hibernation, when the boot kernel has passed control to
-+the image kernel and the non-boot CPUs have been enabled by the image kernel's
-+PM core.
++static inline unsigned NI_USUAL_RTSI_SELECT(unsigned rtsi_channel)
++{
++	if (rtsi_channel < 7)
++		return 0xb + rtsi_channel;
++	else
++		return 0x1b;
++}
+ 
+-	enum i8254_mode {
+-		I8254_MODE0 = (0 << 1),	/* Interrupt on terminal count */
+-		I8254_MODE1 = (1 << 1),	/* Hardware retriggerable one-shot */
+-		I8254_MODE2 = (2 << 1),	/* Rate generator */
+-		I8254_MODE3 = (3 << 1),	/* Square wave mode */
+-		I8254_MODE4 = (4 << 1),	/* Software triggered strobe */
+-		I8254_MODE5 = (5 << 1),	/* Hardware triggered strobe (retriggerable) */
+-		I8254_BCD = 1,	/* use binary-coded decimal instead of binary (pretty useless) */
+-		I8254_BINARY = 0
+-	};
+-
+-	static inline unsigned NI_USUAL_PFI_SELECT(unsigned pfi_channel)
+-	{
+-		if (pfi_channel < 10)
+-			return 0x1 + pfi_channel;
+-		else
+-			return 0xb + pfi_channel;
+-	} static inline unsigned NI_USUAL_RTSI_SELECT(unsigned rtsi_channel) {
+-		if (rtsi_channel < 7)
+-			return 0xb + rtsi_channel;
+-		else
+-			return 0x1b;
+-	}
+-/* mode bits for NI general-purpose counters, set with
+- * INSN_CONFIG_SET_COUNTER_MODE */
++/*
++ * mode bits for NI general-purpose counters, set with
++ * INSN_CONFIG_SET_COUNTER_MODE
++ */
+ #define NI_GPCT_COUNTING_MODE_SHIFT 16
+ #define NI_GPCT_INDEX_PHASE_BITSHIFT 20
+ #define NI_GPCT_COUNTING_DIRECTION_SHIFT 24
+-	enum ni_gpct_mode_bits {
+-		NI_GPCT_GATE_ON_BOTH_EDGES_BIT = 0x4,
+-		NI_GPCT_EDGE_GATE_MODE_MASK = 0x18,
+-		NI_GPCT_EDGE_GATE_STARTS_STOPS_BITS = 0x0,
+-		NI_GPCT_EDGE_GATE_STOPS_STARTS_BITS = 0x8,
+-		NI_GPCT_EDGE_GATE_STARTS_BITS = 0x10,
+-		NI_GPCT_EDGE_GATE_NO_STARTS_NO_STOPS_BITS = 0x18,
+-		NI_GPCT_STOP_MODE_MASK = 0x60,
+-		NI_GPCT_STOP_ON_GATE_BITS = 0x00,
+-		NI_GPCT_STOP_ON_GATE_OR_TC_BITS = 0x20,
+-		NI_GPCT_STOP_ON_GATE_OR_SECOND_TC_BITS = 0x40,
+-		NI_GPCT_LOAD_B_SELECT_BIT = 0x80,
+-		NI_GPCT_OUTPUT_MODE_MASK = 0x300,
+-		NI_GPCT_OUTPUT_TC_PULSE_BITS = 0x100,
+-		NI_GPCT_OUTPUT_TC_TOGGLE_BITS = 0x200,
+-		NI_GPCT_OUTPUT_TC_OR_GATE_TOGGLE_BITS = 0x300,
+-		NI_GPCT_HARDWARE_DISARM_MASK = 0xc00,
+-		NI_GPCT_NO_HARDWARE_DISARM_BITS = 0x000,
+-		NI_GPCT_DISARM_AT_TC_BITS = 0x400,
+-		NI_GPCT_DISARM_AT_GATE_BITS = 0x800,
+-		NI_GPCT_DISARM_AT_TC_OR_GATE_BITS = 0xc00,
+-		NI_GPCT_LOADING_ON_TC_BIT = 0x1000,
+-		NI_GPCT_LOADING_ON_GATE_BIT = 0x4000,
+-		NI_GPCT_COUNTING_MODE_MASK = 0x7 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_NORMAL_BITS =
+-		    0x0 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_QUADRATURE_X1_BITS =
+-		    0x1 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_QUADRATURE_X2_BITS =
+-		    0x2 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_QUADRATURE_X4_BITS =
+-		    0x3 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_TWO_PULSE_BITS =
+-		    0x4 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_COUNTING_MODE_SYNC_SOURCE_BITS =
+-		    0x6 << NI_GPCT_COUNTING_MODE_SHIFT,
+-		NI_GPCT_INDEX_PHASE_MASK = 0x3 << NI_GPCT_INDEX_PHASE_BITSHIFT,
+-		NI_GPCT_INDEX_PHASE_LOW_A_LOW_B_BITS =
+-		    0x0 << NI_GPCT_INDEX_PHASE_BITSHIFT,
+-		NI_GPCT_INDEX_PHASE_LOW_A_HIGH_B_BITS =
+-		    0x1 << NI_GPCT_INDEX_PHASE_BITSHIFT,
+-		NI_GPCT_INDEX_PHASE_HIGH_A_LOW_B_BITS =
+-		    0x2 << NI_GPCT_INDEX_PHASE_BITSHIFT,
+-		NI_GPCT_INDEX_PHASE_HIGH_A_HIGH_B_BITS =
+-		    0x3 << NI_GPCT_INDEX_PHASE_BITSHIFT,
+-		NI_GPCT_INDEX_ENABLE_BIT = 0x400000,
+-		NI_GPCT_COUNTING_DIRECTION_MASK =
+-		    0x3 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
+-		NI_GPCT_COUNTING_DIRECTION_DOWN_BITS =
+-		    0x00 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
+-		NI_GPCT_COUNTING_DIRECTION_UP_BITS =
+-		    0x1 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
+-		NI_GPCT_COUNTING_DIRECTION_HW_UP_DOWN_BITS =
+-		    0x2 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
+-		NI_GPCT_COUNTING_DIRECTION_HW_GATE_BITS =
+-		    0x3 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
+-		NI_GPCT_RELOAD_SOURCE_MASK = 0xc000000,
+-		NI_GPCT_RELOAD_SOURCE_FIXED_BITS = 0x0,
+-		NI_GPCT_RELOAD_SOURCE_SWITCHING_BITS = 0x4000000,
+-		NI_GPCT_RELOAD_SOURCE_GATE_SELECT_BITS = 0x8000000,
+-		NI_GPCT_OR_GATE_BIT = 0x10000000,
+-		NI_GPCT_INVERT_OUTPUT_BIT = 0x20000000
+-	};
+-
+-/* Bits for setting a clock source with
+- * INSN_CONFIG_SET_CLOCK_SRC when using NI general-purpose counters. */
+-	enum ni_gpct_clock_source_bits {
+-		NI_GPCT_CLOCK_SRC_SELECT_MASK = 0x3f,
+-		NI_GPCT_TIMEBASE_1_CLOCK_SRC_BITS = 0x0,
+-		NI_GPCT_TIMEBASE_2_CLOCK_SRC_BITS = 0x1,
+-		NI_GPCT_TIMEBASE_3_CLOCK_SRC_BITS = 0x2,
+-		NI_GPCT_LOGIC_LOW_CLOCK_SRC_BITS = 0x3,
+-		NI_GPCT_NEXT_GATE_CLOCK_SRC_BITS = 0x4,
+-		NI_GPCT_NEXT_TC_CLOCK_SRC_BITS = 0x5,
+-		NI_GPCT_SOURCE_PIN_i_CLOCK_SRC_BITS = 0x6,	/* NI 660x-specific */
+-		NI_GPCT_PXI10_CLOCK_SRC_BITS = 0x7,
+-		NI_GPCT_PXI_STAR_TRIGGER_CLOCK_SRC_BITS = 0x8,
+-		NI_GPCT_ANALOG_TRIGGER_OUT_CLOCK_SRC_BITS = 0x9,
+-		NI_GPCT_PRESCALE_MODE_CLOCK_SRC_MASK = 0x30000000,
+-		NI_GPCT_NO_PRESCALE_CLOCK_SRC_BITS = 0x0,
+-		NI_GPCT_PRESCALE_X2_CLOCK_SRC_BITS = 0x10000000,	/* divide source by 2 */
+-		NI_GPCT_PRESCALE_X8_CLOCK_SRC_BITS = 0x20000000,	/* divide source by 8 */
+-		NI_GPCT_INVERT_CLOCK_SRC_BIT = 0x80000000
+-	};
+-	static inline unsigned NI_GPCT_SOURCE_PIN_CLOCK_SRC_BITS(unsigned n)
+-	{
+-		/* NI 660x-specific */
+-		return 0x10 + n;
+-	}
+-	static inline unsigned NI_GPCT_RTSI_CLOCK_SRC_BITS(unsigned n)
+-	{
+-		return 0x18 + n;
+-	}
+-	static inline unsigned NI_GPCT_PFI_CLOCK_SRC_BITS(unsigned n)
+-	{
+-		/* no pfi on NI 660x */
+-		return 0x20 + n;
+-	}
+-
+-/* Possibilities for setting a gate source with
+-INSN_CONFIG_SET_GATE_SRC when using NI general-purpose counters.
+-May be bitwise-or'd with CR_EDGE or CR_INVERT. */
+-	enum ni_gpct_gate_select {
+-		/* m-series gates */
+-		NI_GPCT_TIMESTAMP_MUX_GATE_SELECT = 0x0,
+-		NI_GPCT_AI_START2_GATE_SELECT = 0x12,
+-		NI_GPCT_PXI_STAR_TRIGGER_GATE_SELECT = 0x13,
+-		NI_GPCT_NEXT_OUT_GATE_SELECT = 0x14,
+-		NI_GPCT_AI_START1_GATE_SELECT = 0x1c,
+-		NI_GPCT_NEXT_SOURCE_GATE_SELECT = 0x1d,
+-		NI_GPCT_ANALOG_TRIGGER_OUT_GATE_SELECT = 0x1e,
+-		NI_GPCT_LOGIC_LOW_GATE_SELECT = 0x1f,
+-		/* more gates for 660x */
+-		NI_GPCT_SOURCE_PIN_i_GATE_SELECT = 0x100,
+-		NI_GPCT_GATE_PIN_i_GATE_SELECT = 0x101,
+-		/* more gates for 660x "second gate" */
+-		NI_GPCT_UP_DOWN_PIN_i_GATE_SELECT = 0x201,
+-		NI_GPCT_SELECTED_GATE_GATE_SELECT = 0x21e,
+-		/* m-series "second gate" sources are unknown,
+-		   we should add them here with an offset of 0x300 when known. */
+-		NI_GPCT_DISABLED_GATE_SELECT = 0x8000,
+-	};
+-	static inline unsigned NI_GPCT_GATE_PIN_GATE_SELECT(unsigned n)
+-	{
+-		return 0x102 + n;
+-	}
+-	static inline unsigned NI_GPCT_RTSI_GATE_SELECT(unsigned n)
+-	{
+-		return NI_USUAL_RTSI_SELECT(n);
+-	}
+-	static inline unsigned NI_GPCT_PFI_GATE_SELECT(unsigned n)
+-	{
+-		return NI_USUAL_PFI_SELECT(n);
+-	}
+-	static inline unsigned NI_GPCT_UP_DOWN_PIN_GATE_SELECT(unsigned n)
+-	{
+-		return 0x202 + n;
+-	}
+-
+-/* Possibilities for setting a source with
+-INSN_CONFIG_SET_OTHER_SRC when using NI general-purpose counters. */
+-	enum ni_gpct_other_index {
+-		NI_GPCT_SOURCE_ENCODER_A,
+-		NI_GPCT_SOURCE_ENCODER_B,
+-		NI_GPCT_SOURCE_ENCODER_Z
+-	};
+-	enum ni_gpct_other_select {
+-		/* m-series gates */
+-		/* Still unknown, probably only need NI_GPCT_PFI_OTHER_SELECT */
+-		NI_GPCT_DISABLED_OTHER_SELECT = 0x8000,
+-	};
+-	static inline unsigned NI_GPCT_PFI_OTHER_SELECT(unsigned n)
+-	{
+-		return NI_USUAL_PFI_SELECT(n);
+-	}
+-
+-/* start sources for ni general-purpose counters for use with
+-INSN_CONFIG_ARM */
+-	enum ni_gpct_arm_source {
+-		NI_GPCT_ARM_IMMEDIATE = 0x0,
+-		NI_GPCT_ARM_PAIRED_IMMEDIATE = 0x1,	/* Start both the counter and
+-							   the adjacent paired counter
+-							   simultaneously */
+-		/* NI doesn't document bits for selecting hardware arm triggers.  If
+-		 * the NI_GPCT_ARM_UNKNOWN bit is set, we will pass the least
+-		 * significant bits (3 bits for 660x or 5 bits for m-series) through to
+-		 * the hardware.  This will at least allow someone to figure out what
+-		 * the bits do later. */
+-		NI_GPCT_ARM_UNKNOWN = 0x1000,
+-	};
++enum ni_gpct_mode_bits {
++	NI_GPCT_GATE_ON_BOTH_EDGES_BIT = 0x4,
++	NI_GPCT_EDGE_GATE_MODE_MASK = 0x18,
++	NI_GPCT_EDGE_GATE_STARTS_STOPS_BITS = 0x0,
++	NI_GPCT_EDGE_GATE_STOPS_STARTS_BITS = 0x8,
++	NI_GPCT_EDGE_GATE_STARTS_BITS = 0x10,
++	NI_GPCT_EDGE_GATE_NO_STARTS_NO_STOPS_BITS = 0x18,
++	NI_GPCT_STOP_MODE_MASK = 0x60,
++	NI_GPCT_STOP_ON_GATE_BITS = 0x00,
++	NI_GPCT_STOP_ON_GATE_OR_TC_BITS = 0x20,
++	NI_GPCT_STOP_ON_GATE_OR_SECOND_TC_BITS = 0x40,
++	NI_GPCT_LOAD_B_SELECT_BIT = 0x80,
++	NI_GPCT_OUTPUT_MODE_MASK = 0x300,
++	NI_GPCT_OUTPUT_TC_PULSE_BITS = 0x100,
++	NI_GPCT_OUTPUT_TC_TOGGLE_BITS = 0x200,
++	NI_GPCT_OUTPUT_TC_OR_GATE_TOGGLE_BITS = 0x300,
++	NI_GPCT_HARDWARE_DISARM_MASK = 0xc00,
++	NI_GPCT_NO_HARDWARE_DISARM_BITS = 0x000,
++	NI_GPCT_DISARM_AT_TC_BITS = 0x400,
++	NI_GPCT_DISARM_AT_GATE_BITS = 0x800,
++	NI_GPCT_DISARM_AT_TC_OR_GATE_BITS = 0xc00,
++	NI_GPCT_LOADING_ON_TC_BIT = 0x1000,
++	NI_GPCT_LOADING_ON_GATE_BIT = 0x4000,
++	NI_GPCT_COUNTING_MODE_MASK = 0x7 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_NORMAL_BITS = 0x0 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_QUADRATURE_X1_BITS =
++	    0x1 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_QUADRATURE_X2_BITS =
++	    0x2 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_QUADRATURE_X4_BITS =
++	    0x3 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_TWO_PULSE_BITS =
++	    0x4 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_COUNTING_MODE_SYNC_SOURCE_BITS =
++	    0x6 << NI_GPCT_COUNTING_MODE_SHIFT,
++	NI_GPCT_INDEX_PHASE_MASK = 0x3 << NI_GPCT_INDEX_PHASE_BITSHIFT,
++	NI_GPCT_INDEX_PHASE_LOW_A_LOW_B_BITS =
++	    0x0 << NI_GPCT_INDEX_PHASE_BITSHIFT,
++	NI_GPCT_INDEX_PHASE_LOW_A_HIGH_B_BITS =
++	    0x1 << NI_GPCT_INDEX_PHASE_BITSHIFT,
++	NI_GPCT_INDEX_PHASE_HIGH_A_LOW_B_BITS =
++	    0x2 << NI_GPCT_INDEX_PHASE_BITSHIFT,
++	NI_GPCT_INDEX_PHASE_HIGH_A_HIGH_B_BITS =
++	    0x3 << NI_GPCT_INDEX_PHASE_BITSHIFT,
++	NI_GPCT_INDEX_ENABLE_BIT = 0x400000,
++	NI_GPCT_COUNTING_DIRECTION_MASK =
++	    0x3 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
++	NI_GPCT_COUNTING_DIRECTION_DOWN_BITS =
++	    0x00 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
++	NI_GPCT_COUNTING_DIRECTION_UP_BITS =
++	    0x1 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
++	NI_GPCT_COUNTING_DIRECTION_HW_UP_DOWN_BITS =
++	    0x2 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
++	NI_GPCT_COUNTING_DIRECTION_HW_GATE_BITS =
++	    0x3 << NI_GPCT_COUNTING_DIRECTION_SHIFT,
++	NI_GPCT_RELOAD_SOURCE_MASK = 0xc000000,
++	NI_GPCT_RELOAD_SOURCE_FIXED_BITS = 0x0,
++	NI_GPCT_RELOAD_SOURCE_SWITCHING_BITS = 0x4000000,
++	NI_GPCT_RELOAD_SOURCE_GATE_SELECT_BITS = 0x8000000,
++	NI_GPCT_OR_GATE_BIT = 0x10000000,
++	NI_GPCT_INVERT_OUTPUT_BIT = 0x20000000
++};
 +
-+This callback is analogous to resume_noirq() with the exception that it cannot
-+make any assumption on the previous state of the device, even if the BIOS (or
-+generally the platform firmware) is known to preserve that state over a
-+suspend-resume cycle.
++/*
++ * Bits for setting a clock source with INSN_CONFIG_SET_CLOCK_SRC
++ * when using NI general-purpose counters.
++ */
++enum ni_gpct_clock_source_bits {
++	NI_GPCT_CLOCK_SRC_SELECT_MASK = 0x3f,
++	NI_GPCT_TIMEBASE_1_CLOCK_SRC_BITS = 0x0,
++	NI_GPCT_TIMEBASE_2_CLOCK_SRC_BITS = 0x1,
++	NI_GPCT_TIMEBASE_3_CLOCK_SRC_BITS = 0x2,
++	NI_GPCT_LOGIC_LOW_CLOCK_SRC_BITS = 0x3,
++	NI_GPCT_NEXT_GATE_CLOCK_SRC_BITS = 0x4,
++	NI_GPCT_NEXT_TC_CLOCK_SRC_BITS = 0x5,
++	NI_GPCT_SOURCE_PIN_i_CLOCK_SRC_BITS = 0x6,	/* NI 660x-specific */
++	NI_GPCT_PXI10_CLOCK_SRC_BITS = 0x7,
++	NI_GPCT_PXI_STAR_TRIGGER_CLOCK_SRC_BITS = 0x8,
++	NI_GPCT_ANALOG_TRIGGER_OUT_CLOCK_SRC_BITS = 0x9,
++	NI_GPCT_PRESCALE_MODE_CLOCK_SRC_MASK = 0x30000000,
++	NI_GPCT_NO_PRESCALE_CLOCK_SRC_BITS = 0x0,
++	NI_GPCT_PRESCALE_X2_CLOCK_SRC_BITS = 0x10000000,
++				/* divide source by 2 */
++	NI_GPCT_PRESCALE_X8_CLOCK_SRC_BITS = 0x20000000,
++				/* divide source by 8 */
++	NI_GPCT_INVERT_CLOCK_SRC_BIT = 0x80000000
++};
++static inline unsigned NI_GPCT_SOURCE_PIN_CLOCK_SRC_BITS(unsigned n)
++{
++	/* NI 660x-specific */
++	return 0x10 + n;
++}
 +
-+For the vast majority of PCI device drivers there is no difference between
-+resume_noirq() and restore_noirq().
++static inline unsigned NI_GPCT_RTSI_CLOCK_SRC_BITS(unsigned n)
++{
++	return 0x18 + n;
++}
 +
-+3.1.13. restore()
++static inline unsigned NI_GPCT_PFI_CLOCK_SRC_BITS(unsigned n)
++{
++	/* no pfi on NI 660x */
++	return 0x20 + n;
++}
 +
-+The restore() callback is hibernation-specific.  It is executed after
-+restore_noirq() callbacks have been executed for all devices in the system and
-+after the PM core has enabled device drivers' interrupt handlers to be invoked.
++/*
++ * Possibilities for setting a gate source with INSN_CONFIG_SET_GATE_SRC
++ * when using NI general-purpose counters.
++ * May be bitwise-or'd with CR_EDGE or CR_INVERT.
++ */
++enum ni_gpct_gate_select {
++	/* m-series gates */
++	NI_GPCT_TIMESTAMP_MUX_GATE_SELECT = 0x0,
++	NI_GPCT_AI_START2_GATE_SELECT = 0x12,
++	NI_GPCT_PXI_STAR_TRIGGER_GATE_SELECT = 0x13,
++	NI_GPCT_NEXT_OUT_GATE_SELECT = 0x14,
++	NI_GPCT_AI_START1_GATE_SELECT = 0x1c,
++	NI_GPCT_NEXT_SOURCE_GATE_SELECT = 0x1d,
++	NI_GPCT_ANALOG_TRIGGER_OUT_GATE_SELECT = 0x1e,
++	NI_GPCT_LOGIC_LOW_GATE_SELECT = 0x1f,
++	/* more gates for 660x */
++	NI_GPCT_SOURCE_PIN_i_GATE_SELECT = 0x100,
++	NI_GPCT_GATE_PIN_i_GATE_SELECT = 0x101,
++	/* more gates for 660x "second gate" */
++	NI_GPCT_UP_DOWN_PIN_i_GATE_SELECT = 0x201,
++	NI_GPCT_SELECTED_GATE_GATE_SELECT = 0x21e,
++	/* m-series "second gate" sources are unknown,
++	 * we should add them here with an offset of 0x300 when known. */
++	NI_GPCT_DISABLED_GATE_SELECT = 0x8000,
++};
 +
-+This callback is analogous to resume(), just like restore_noirq() is analogous
-+to resume_noirq().  Consequently, the difference between restore_noirq() and
-+restore() is analogous to the difference between resume_noirq() and resume().
++static inline unsigned NI_GPCT_GATE_PIN_GATE_SELECT(unsigned n)
++{
++	return 0x102 + n;
++}
 +
-+For the vast majority of PCI device drivers there is no difference between
-+resume() and restore().
++static inline unsigned NI_GPCT_RTSI_GATE_SELECT(unsigned n)
++{
++	return NI_USUAL_RTSI_SELECT(n);
++}
 +
-+3.1.14. complete()
++static inline unsigned NI_GPCT_PFI_GATE_SELECT(unsigned n)
++{
++	return NI_USUAL_PFI_SELECT(n);
++}
 +
-+The complete() callback is executed in the following situations:
-+  - during system resume, after resume() callbacks have been executed for all
-+    devices,
-+  - during hibernation, before saving the system image, after thaw() callbacks
-+    have been executed for all devices,
-+  - during system restore, when the system is going back to its pre-hibernation
-+    state, after restore() callbacks have been executed for all devices.
-+It also may be executed if the loading of a hibernation image into memory fails
-+(in that case it is run after thaw() callbacks have been executed for all
-+devices that have drivers in the boot kernel).
++static inline unsigned NI_GPCT_UP_DOWN_PIN_GATE_SELECT(unsigned n)
++{
++	return 0x202 + n;
++}
 +
-+This callback is entirely optional, although it may be necessary if the
-+prepare() callback performs operations that need to be reversed.
++/*
++ * Possibilities for setting a source with INSN_CONFIG_SET_OTHER_SRC
++ * when using NI general-purpose counters.
++ */
++enum ni_gpct_other_index {
++	NI_GPCT_SOURCE_ENCODER_A,
++	NI_GPCT_SOURCE_ENCODER_B,
++	NI_GPCT_SOURCE_ENCODER_Z
++};
 +
-+3.1.15. runtime_suspend()
++enum ni_gpct_other_select {
++	/* m-series gates */
++	/* Still unknown, probably only need NI_GPCT_PFI_OTHER_SELECT */
++	NI_GPCT_DISABLED_OTHER_SELECT = 0x8000,
++};
 +
-+The runtime_suspend() callback is specific to device runtime power management
-+(runtime PM).  It is executed by the PM core's runtime PM framework when the
-+device is about to be suspended (i.e. quiesced and put into a low-power state)
-+at run time.
++static inline unsigned NI_GPCT_PFI_OTHER_SELECT(unsigned n)
++{
++	return NI_USUAL_PFI_SELECT(n);
++}
 +
-+This callback is responsible for freezing the device and preparing it to be
-+put into a low-power state, but it must allow the PCI subsystem to perform all
-+of the PCI-specific actions necessary for suspending the device.
++/* start sources for ni general-purpose counters for use with INSN_CONFIG_ARM */
++enum ni_gpct_arm_source {
++	NI_GPCT_ARM_IMMEDIATE = 0x0,
++	NI_GPCT_ARM_PAIRED_IMMEDIATE = 0x1,
++				/* Start both the counter and the adjacent
++				 * paired counter simultaneously */
++	NI_GPCT_ARM_UNKNOWN = 0x1000,
++				/* NI doesn't document bits for selecting
++				 * hardware arm triggers.
++				 * If the NI_GPCT_ARM_UNKNOWN bit is set,
++				 * we will pass the least significant bits
++				 * (3 bits for 660x or 5 bits for m-series)
++				 * through to the hardware.
++				 * This will at least allow someone to figure
++				 * out what the bits do later. */
++};
+ 
+ /* digital filtering options for ni 660x for use with INSN_CONFIG_FILTER. */
+-	enum ni_gpct_filter_select {
+-		NI_GPCT_FILTER_OFF = 0x0,
+-		NI_GPCT_FILTER_TIMEBASE_3_SYNC = 0x1,
+-		NI_GPCT_FILTER_100x_TIMEBASE_1 = 0x2,
+-		NI_GPCT_FILTER_20x_TIMEBASE_1 = 0x3,
+-		NI_GPCT_FILTER_10x_TIMEBASE_1 = 0x4,
+-		NI_GPCT_FILTER_2x_TIMEBASE_1 = 0x5,
+-		NI_GPCT_FILTER_2x_TIMEBASE_3 = 0x6
+-	};
+-
+-/* PFI digital filtering options for ni m-series for use with
+- * INSN_CONFIG_FILTER. */
+-	enum ni_pfi_filter_select {
+-		NI_PFI_FILTER_OFF = 0x0,
+-		NI_PFI_FILTER_125ns = 0x1,
+-		NI_PFI_FILTER_6425ns = 0x2,
+-		NI_PFI_FILTER_2550us = 0x3
+-	};
++enum ni_gpct_filter_select {
++	NI_GPCT_FILTER_OFF = 0x0,
++	NI_GPCT_FILTER_TIMEBASE_3_SYNC = 0x1,
++	NI_GPCT_FILTER_100x_TIMEBASE_1 = 0x2,
++	NI_GPCT_FILTER_20x_TIMEBASE_1 = 0x3,
++	NI_GPCT_FILTER_10x_TIMEBASE_1 = 0x4,
++	NI_GPCT_FILTER_2x_TIMEBASE_1 = 0x5,
++	NI_GPCT_FILTER_2x_TIMEBASE_3 = 0x6
++};
 +
-+3.1.16. runtime_resume()
++/*
++ * PFI digital filtering options for ni m-series for use with
++ * INSN_CONFIG_FILTER.
++ */
++enum ni_pfi_filter_select {
++	NI_PFI_FILTER_OFF = 0x0,
++	NI_PFI_FILTER_125ns = 0x1,
++	NI_PFI_FILTER_6425ns = 0x2,
++	NI_PFI_FILTER_2550us = 0x3
++};
+ 
+ /* master clock sources for ni mio boards and INSN_CONFIG_SET_CLOCK_SRC */
+-	enum ni_mio_clock_source {
+-		NI_MIO_INTERNAL_CLOCK = 0,
+-		NI_MIO_RTSI_CLOCK = 1,	/* doesn't work for m-series, use
+-					   NI_MIO_PLL_RTSI_CLOCK() */
+-		/* the NI_MIO_PLL_* sources are m-series only */
+-		NI_MIO_PLL_PXI_STAR_TRIGGER_CLOCK = 2,
+-		NI_MIO_PLL_PXI10_CLOCK = 3,
+-		NI_MIO_PLL_RTSI0_CLOCK = 4
+-	};
+-	static inline unsigned NI_MIO_PLL_RTSI_CLOCK(unsigned rtsi_channel)
+-	{
+-		return NI_MIO_PLL_RTSI0_CLOCK + rtsi_channel;
+-	}
+-
+-/* Signals which can be routed to an NI RTSI pin with INSN_CONFIG_SET_ROUTING.
+- The numbers assigned are not arbitrary, they correspond to the bits required
+- to program the board. */
+-	enum ni_rtsi_routing {
+-		NI_RTSI_OUTPUT_ADR_START1 = 0,
+-		NI_RTSI_OUTPUT_ADR_START2 = 1,
+-		NI_RTSI_OUTPUT_SCLKG = 2,
+-		NI_RTSI_OUTPUT_DACUPDN = 3,
+-		NI_RTSI_OUTPUT_DA_START1 = 4,
+-		NI_RTSI_OUTPUT_G_SRC0 = 5,
+-		NI_RTSI_OUTPUT_G_GATE0 = 6,
+-		NI_RTSI_OUTPUT_RGOUT0 = 7,
+-		NI_RTSI_OUTPUT_RTSI_BRD_0 = 8,
+-		NI_RTSI_OUTPUT_RTSI_OSC = 12	/* pre-m-series always have RTSI clock
+-						   on line 7 */
+-	};
+-	static inline unsigned NI_RTSI_OUTPUT_RTSI_BRD(unsigned n)
+-	{
+-		return NI_RTSI_OUTPUT_RTSI_BRD_0 + n;
+-	}
+-
+-/* Signals which can be routed to an NI PFI pin on an m-series board with
++enum ni_mio_clock_source {
++	NI_MIO_INTERNAL_CLOCK = 0,
++	NI_MIO_RTSI_CLOCK = 1,	/* doesn't work for m-series, use
++				 * NI_MIO_PLL_RTSI_CLOCK() */
++	/* the NI_MIO_PLL_* sources are m-series only */
++	NI_MIO_PLL_PXI_STAR_TRIGGER_CLOCK = 2,
++	NI_MIO_PLL_PXI10_CLOCK = 3,
++	NI_MIO_PLL_RTSI0_CLOCK = 4
++};
 +
-+The runtime_suspend() callback is specific to device runtime PM.  It is executed
-+by the PM core's runtime PM framework when the device is about to be resumed
-+(i.e. put into the full-power state and programmed to process I/O normally) at
-+run time.
++static inline unsigned NI_MIO_PLL_RTSI_CLOCK(unsigned rtsi_channel)
++{
++	return NI_MIO_PLL_RTSI0_CLOCK + rtsi_channel;
++}
 +
-+This callback is responsible for restoring the normal functionality of the
-+device after it has been put into the full-power state by the PCI subsystem.
-+The device is expected to be able to process I/O in the usual way after
-+runtime_resume() has returned.
++/*
++ * Signals which can be routed to an NI RTSI pin with INSN_CONFIG_SET_ROUTING.
++ * The numbers assigned are not arbitrary, they correspond to the bits required
++ * to program the board.
++ */
++enum ni_rtsi_routing {
++	NI_RTSI_OUTPUT_ADR_START1 = 0,
++	NI_RTSI_OUTPUT_ADR_START2 = 1,
++	NI_RTSI_OUTPUT_SCLKG = 2,
++	NI_RTSI_OUTPUT_DACUPDN = 3,
++	NI_RTSI_OUTPUT_DA_START1 = 4,
++	NI_RTSI_OUTPUT_G_SRC0 = 5,
++	NI_RTSI_OUTPUT_G_GATE0 = 6,
++	NI_RTSI_OUTPUT_RGOUT0 = 7,
++	NI_RTSI_OUTPUT_RTSI_BRD_0 = 8,
++	NI_RTSI_OUTPUT_RTSI_OSC = 12	/* pre-m-series always have RTSI clock
++					   on line 7 */
++};
 +
-+3.1.17. runtime_idle()
++static inline unsigned NI_RTSI_OUTPUT_RTSI_BRD(unsigned n)
++{
++	return NI_RTSI_OUTPUT_RTSI_BRD_0 + n;
++}
 +
-+The runtime_idle() callback is specific to device runtime PM.  It is executed
-+by the PM core's runtime PM framework whenever it may be desirable to suspend
-+the device according to the PM core's information.  In particular, it is
-+automatically executed right after runtime_resume() has returned in case the
-+resume of the device has happened as a result of a spurious event.
++/*
++ * Signals which can be routed to an NI PFI pin on an m-series board with
+  * INSN_CONFIG_SET_ROUTING.  These numbers are also returned by
+  * INSN_CONFIG_GET_ROUTING on pre-m-series boards, even though their routing
+  * cannot be changed.  The numbers assigned are not arbitrary, they correspond
+- * to the bits required to program the board. */
+-	enum ni_pfi_routing {
+-		NI_PFI_OUTPUT_PFI_DEFAULT = 0,
+-		NI_PFI_OUTPUT_AI_START1 = 1,
+-		NI_PFI_OUTPUT_AI_START2 = 2,
+-		NI_PFI_OUTPUT_AI_CONVERT = 3,
+-		NI_PFI_OUTPUT_G_SRC1 = 4,
+-		NI_PFI_OUTPUT_G_GATE1 = 5,
+-		NI_PFI_OUTPUT_AO_UPDATE_N = 6,
+-		NI_PFI_OUTPUT_AO_START1 = 7,
+-		NI_PFI_OUTPUT_AI_START_PULSE = 8,
+-		NI_PFI_OUTPUT_G_SRC0 = 9,
+-		NI_PFI_OUTPUT_G_GATE0 = 10,
+-		NI_PFI_OUTPUT_EXT_STROBE = 11,
+-		NI_PFI_OUTPUT_AI_EXT_MUX_CLK = 12,
+-		NI_PFI_OUTPUT_GOUT0 = 13,
+-		NI_PFI_OUTPUT_GOUT1 = 14,
+-		NI_PFI_OUTPUT_FREQ_OUT = 15,
+-		NI_PFI_OUTPUT_PFI_DO = 16,
+-		NI_PFI_OUTPUT_I_ATRIG = 17,
+-		NI_PFI_OUTPUT_RTSI0 = 18,
+-		NI_PFI_OUTPUT_PXI_STAR_TRIGGER_IN = 26,
+-		NI_PFI_OUTPUT_SCXI_TRIG1 = 27,
+-		NI_PFI_OUTPUT_DIO_CHANGE_DETECT_RTSI = 28,
+-		NI_PFI_OUTPUT_CDI_SAMPLE = 29,
+-		NI_PFI_OUTPUT_CDO_UPDATE = 30
+-	};
+-	static inline unsigned NI_PFI_OUTPUT_RTSI(unsigned rtsi_channel)
+-	{
+-		return NI_PFI_OUTPUT_RTSI0 + rtsi_channel;
+-	}
+-
+-/* Signals which can be routed to output on a NI PFI pin on a 660x board
+- with INSN_CONFIG_SET_ROUTING.  The numbers assigned are
+- not arbitrary, they correspond to the bits required
+- to program the board.  Lines 0 to 7 can only be set to
+- NI_660X_PFI_OUTPUT_DIO.  Lines 32 to 39 can only be set to
+- NI_660X_PFI_OUTPUT_COUNTER. */
+-	enum ni_660x_pfi_routing {
+-		NI_660X_PFI_OUTPUT_COUNTER = 1,	/* counter */
+-		NI_660X_PFI_OUTPUT_DIO = 2,	/* static digital output */
+-	};
+-
+-/* NI External Trigger lines.  These values are not arbitrary, but are related
+- * to the bits required to program the board (offset by 1 for historical
+- * reasons). */
+-	static inline unsigned NI_EXT_PFI(unsigned pfi_channel)
+-	{
+-		return NI_USUAL_PFI_SELECT(pfi_channel) - 1;
+-	}
+-	static inline unsigned NI_EXT_RTSI(unsigned rtsi_channel)
+-	{
+-		return NI_USUAL_RTSI_SELECT(rtsi_channel) - 1;
+-	}
++ * to the bits required to program the board.
++ */
++enum ni_pfi_routing {
++	NI_PFI_OUTPUT_PFI_DEFAULT = 0,
++	NI_PFI_OUTPUT_AI_START1 = 1,
++	NI_PFI_OUTPUT_AI_START2 = 2,
++	NI_PFI_OUTPUT_AI_CONVERT = 3,
++	NI_PFI_OUTPUT_G_SRC1 = 4,
++	NI_PFI_OUTPUT_G_GATE1 = 5,
++	NI_PFI_OUTPUT_AO_UPDATE_N = 6,
++	NI_PFI_OUTPUT_AO_START1 = 7,
++	NI_PFI_OUTPUT_AI_START_PULSE = 8,
++	NI_PFI_OUTPUT_G_SRC0 = 9,
++	NI_PFI_OUTPUT_G_GATE0 = 10,
++	NI_PFI_OUTPUT_EXT_STROBE = 11,
++	NI_PFI_OUTPUT_AI_EXT_MUX_CLK = 12,
++	NI_PFI_OUTPUT_GOUT0 = 13,
++	NI_PFI_OUTPUT_GOUT1 = 14,
++	NI_PFI_OUTPUT_FREQ_OUT = 15,
++	NI_PFI_OUTPUT_PFI_DO = 16,
++	NI_PFI_OUTPUT_I_ATRIG = 17,
++	NI_PFI_OUTPUT_RTSI0 = 18,
++	NI_PFI_OUTPUT_PXI_STAR_TRIGGER_IN = 26,
++	NI_PFI_OUTPUT_SCXI_TRIG1 = 27,
++	NI_PFI_OUTPUT_DIO_CHANGE_DETECT_RTSI = 28,
++	NI_PFI_OUTPUT_CDI_SAMPLE = 29,
++	NI_PFI_OUTPUT_CDO_UPDATE = 30
++};
 +
-+This callback is optional, but if it is not implemented or if it returns 0, the
-+PCI subsystem will call pm_runtime_suspend() for the device, which in turn will
-+cause the driver's runtime_suspend() callback to be executed.
++static inline unsigned NI_PFI_OUTPUT_RTSI(unsigned rtsi_channel)
++{
++	return NI_PFI_OUTPUT_RTSI0 + rtsi_channel;
++}
 +
-+3.1.18. Pointing Multiple Callback Pointers to One Routine
++/*
++ * Signals which can be routed to output on a NI PFI pin on a 660x board
++ * with INSN_CONFIG_SET_ROUTING.
++ * The numbers assigned are not arbitrary, they correspond to the bits required
++ * to program the board.
++ * Lines 0 to 7 can only be set to NI_660X_PFI_OUTPUT_DIO.
++ * Lines 32 to 39 can only be set to NI_660X_PFI_OUTPUT_COUNTER.
++ */
++enum ni_660x_pfi_routing {
++	NI_660X_PFI_OUTPUT_COUNTER = 1,	/* counter */
++	NI_660X_PFI_OUTPUT_DIO = 2,	/* static digital output */
++};
 +
-+Although in principle each of the callbacks described in the previous
-+subsections can be defined as a separate function, it often is convenient to
-+point two or more members of struct dev_pm_ops to the same routine.  There are
-+a few convenience macros that can be used for this purpose.
++/*
++ * NI External Trigger lines.
++ * These values are not arbitrary, but are related to the bits required to
++ * program the board (offset by 1 for historical reasons).
++ */
++static inline unsigned NI_EXT_PFI(unsigned pfi_channel)
++{
++	return NI_USUAL_PFI_SELECT(pfi_channel) - 1;
++}
 +
-+The SIMPLE_DEV_PM_OPS macro declares a struct dev_pm_ops object with one
-+suspend routine pointed to by the .suspend(), .freeze(), and .poweroff()
-+members and one resume routine pointed to by the .resume(), .thaw(), and
-+.restore() members.  The other function pointers in this struct dev_pm_ops are
-+unset.
++static inline unsigned NI_EXT_RTSI(unsigned rtsi_channel)
++{
++	return NI_USUAL_RTSI_SELECT(rtsi_channel) - 1;
++}
+ 
+ /* status bits for INSN_CONFIG_GET_COUNTER_STATUS */
+-	enum comedi_counter_status_flags {
+-		COMEDI_COUNTER_ARMED = 0x1,
+-		COMEDI_COUNTER_COUNTING = 0x2,
+-		COMEDI_COUNTER_TERMINAL_COUNT = 0x4,
+-	};
+-
+-/* Clock sources for CDIO subdevice on NI m-series boards.  Used as the
+- * scan_begin_arg for a comedi_command. These sources may also be bitwise-or'd
+- * with CR_INVERT to change polarity. */
+-	enum ni_m_series_cdio_scan_begin_src {
+-		NI_CDIO_SCAN_BEGIN_SRC_GROUND = 0,
+-		NI_CDIO_SCAN_BEGIN_SRC_AI_START = 18,
+-		NI_CDIO_SCAN_BEGIN_SRC_AI_CONVERT = 19,
+-		NI_CDIO_SCAN_BEGIN_SRC_PXI_STAR_TRIGGER = 20,
+-		NI_CDIO_SCAN_BEGIN_SRC_G0_OUT = 28,
+-		NI_CDIO_SCAN_BEGIN_SRC_G1_OUT = 29,
+-		NI_CDIO_SCAN_BEGIN_SRC_ANALOG_TRIGGER = 30,
+-		NI_CDIO_SCAN_BEGIN_SRC_AO_UPDATE = 31,
+-		NI_CDIO_SCAN_BEGIN_SRC_FREQ_OUT = 32,
+-		NI_CDIO_SCAN_BEGIN_SRC_DIO_CHANGE_DETECT_IRQ = 33
+-	};
+-	static inline unsigned NI_CDIO_SCAN_BEGIN_SRC_PFI(unsigned pfi_channel)
+-	{
+-		return NI_USUAL_PFI_SELECT(pfi_channel);
+-	}
+-	static inline unsigned NI_CDIO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
+-	{
+-		return NI_USUAL_RTSI_SELECT(rtsi_channel);
+-	}
+-
+-/* scan_begin_src for scan_begin_arg==TRIG_EXT with analog output command on NI
+- * boards.  These scan begin sources can also be bitwise-or'd with CR_INVERT to
+- * change polarity. */
+-	static inline unsigned NI_AO_SCAN_BEGIN_SRC_PFI(unsigned pfi_channel)
+-	{
+-		return NI_USUAL_PFI_SELECT(pfi_channel);
+-	}
+-	static inline unsigned NI_AO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
+-	{
+-		return NI_USUAL_RTSI_SELECT(rtsi_channel);
+-	}
+-
+-/* Bits for setting a clock source with
+- * INSN_CONFIG_SET_CLOCK_SRC when using NI frequency output subdevice. */
+-	enum ni_freq_out_clock_source_bits {
+-		NI_FREQ_OUT_TIMEBASE_1_DIV_2_CLOCK_SRC,	/* 10 MHz */
+-		NI_FREQ_OUT_TIMEBASE_2_CLOCK_SRC	/* 100 KHz */
+-	};
+-
+-/* Values for setting a clock source with INSN_CONFIG_SET_CLOCK_SRC for
+- * 8254 counter subdevices on Amplicon DIO boards (amplc_dio200 driver). */
+-	enum amplc_dio_clock_source {
+-		AMPLC_DIO_CLK_CLKN,	/* per channel external clock
+-					   input/output pin (pin is only an
+-					   input when clock source set to this
+-					   value, otherwise it is an output) */
+-		AMPLC_DIO_CLK_10MHZ,	/* 10 MHz internal clock */
+-		AMPLC_DIO_CLK_1MHZ,	/* 1 MHz internal clock */
+-		AMPLC_DIO_CLK_100KHZ,	/* 100 kHz internal clock */
+-		AMPLC_DIO_CLK_10KHZ,	/* 10 kHz internal clock */
+-		AMPLC_DIO_CLK_1KHZ,	/* 1 kHz internal clock */
+-		AMPLC_DIO_CLK_OUTNM1,	/* output of preceding counter channel
+-					   (for channel 0, preceding counter
+-					   channel is channel 2 on preceding
+-					   counter subdevice, for first counter
+-					   subdevice, preceding counter
+-					   subdevice is the last counter
+-					   subdevice) */
+-		AMPLC_DIO_CLK_EXT	/* per chip external input pin */
+-	};
++enum comedi_counter_status_flags {
++	COMEDI_COUNTER_ARMED = 0x1,
++	COMEDI_COUNTER_COUNTING = 0x2,
++	COMEDI_COUNTER_TERMINAL_COUNT = 0x4,
++};
 +
-+The UNIVERSAL_DEV_PM_OPS macro is similar to SIMPLE_DEV_PM_OPS, but it
-+additionally sets the .runtime_resume() pointer to the same value as
-+.resume() (and .thaw(), and .restore()) and the .runtime_suspend() pointer to
-+the same value as .suspend() (and .freeze() and .poweroff()).
++/*
++ * Clock sources for CDIO subdevice on NI m-series boards.
++ * Used as the scan_begin_arg for a comedi_command.
++ * These sources may also be bitwise-or'd with CR_INVERT to change polarity.
++ */
++enum ni_m_series_cdio_scan_begin_src {
++	NI_CDIO_SCAN_BEGIN_SRC_GROUND = 0,
++	NI_CDIO_SCAN_BEGIN_SRC_AI_START = 18,
++	NI_CDIO_SCAN_BEGIN_SRC_AI_CONVERT = 19,
++	NI_CDIO_SCAN_BEGIN_SRC_PXI_STAR_TRIGGER = 20,
++	NI_CDIO_SCAN_BEGIN_SRC_G0_OUT = 28,
++	NI_CDIO_SCAN_BEGIN_SRC_G1_OUT = 29,
++	NI_CDIO_SCAN_BEGIN_SRC_ANALOG_TRIGGER = 30,
++	NI_CDIO_SCAN_BEGIN_SRC_AO_UPDATE = 31,
++	NI_CDIO_SCAN_BEGIN_SRC_FREQ_OUT = 32,
++	NI_CDIO_SCAN_BEGIN_SRC_DIO_CHANGE_DETECT_IRQ = 33
++};
 +
-+The SET_SYSTEM_SLEEP_PM_OPS can be used inside of a declaration of struct
-+dev_pm_ops to indicate that one suspend routine is to be pointed to by the
-+.suspend(), .freeze(), and .poweroff() members and one resume routine is to
-+be pointed to by the .resume(), .thaw(), and .restore() members.
++static inline unsigned NI_CDIO_SCAN_BEGIN_SRC_PFI(unsigned pfi_channel)
++{
++	return NI_USUAL_PFI_SELECT(pfi_channel);
++}
 +
-+3.2. Device Runtime Power Management
-+------------------------------------
-+In addition to providing device power management callbacks PCI device drivers
-+are responsible for controlling the runtime power management (runtime PM) of
-+their devices.
++static inline unsigned NI_CDIO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
++{
++	return NI_USUAL_RTSI_SELECT(rtsi_channel);
++}
 +
-+The PCI device runtime PM is optional, but it is recommended that PCI device
-+drivers implement it at least in the cases where there is a reliable way of
-+verifying that the device is not used (like when the network cable is detached
-+from an Ethernet adapter or there are no devices attached to a USB controller).
++/*
++ * scan_begin_src for scan_begin_arg==TRIG_EXT with analog output command
++ * on NI boards.
++ * These scan begin sources can also be bitwise-or'd with CR_INVERT to
++ * change polarity.
++ */
++static inline unsigned NI_AO_SCAN_BEGIN_SRC_PFI(unsigned pfi_channel)
++{
++	return NI_USUAL_PFI_SELECT(pfi_channel);
++}
 +
-+To support the PCI runtime PM the driver first needs to implement the
-+runtime_suspend() and runtime_resume() callbacks.  It also may need to implement
-+the runtime_idle() callback to prevent the device from being suspended again
-+every time right after the runtime_resume() callback has returned
-+(alternatively, the runtime_suspend() callback will have to check if the
-+device should really be suspended and return -EAGAIN if that is not the case).
++static inline unsigned NI_AO_SCAN_BEGIN_SRC_RTSI(unsigned rtsi_channel)
++{
++	return NI_USUAL_RTSI_SELECT(rtsi_channel);
++}
 +
-+The runtime PM of PCI devices is disabled by default.  It is also blocked by
-+pci_pm_init() that runs the pm_runtime_forbid() helper function.  If a PCI
-+driver implements the runtime PM callbacks and intends to use the runtime PM
-+framework provided by the PM core and the PCI subsystem, it should enable this
-+feature by executing the pm_runtime_enable() helper function.  However, the
-+driver should not call the pm_runtime_allow() helper function unblocking
-+the runtime PM of the device.  Instead, it should allow user space or some
-+platform-specific code to do that, although once it has called
-+pm_runtime_enable(), it must be prepared to handle the runtime PM of the device
-+correctly as soon as pm_runtime_allow() is called (which may happen at any
-+time).  [It also is possible that user space causes pm_runtime_allow() to be
-+called via sysfs before the driver is loaded, so in fact the driver has to be
-+prepared to handle the runtime PM of the device as soon as it calls
-+pm_runtime_enable().]
++/*
++ * Bits for setting a clock source with INSN_CONFIG_SET_CLOCK_SRC
++ * when using NI frequency output subdevice.
++ */
++enum ni_freq_out_clock_source_bits {
++	NI_FREQ_OUT_TIMEBASE_1_DIV_2_CLOCK_SRC,	/* 10 MHz */
++	NI_FREQ_OUT_TIMEBASE_2_CLOCK_SRC	/* 100 KHz */
++};
 +
-+The runtime PM framework works by processing requests to suspend or resume
-+devices, or to check if they are idle (in which cases it is reasonable to
-+subsequently request that they be suspended).  These requests are represented
-+by work items put into the power management workqueue, pm_wq.  Although there
-+are a few situations in which power management requests are automatically
-+queued by the PM core (for example, after processing a request to resume a
-+device the PM core automatically queues a request to check if the device is
-+idle), device drivers are generally responsible for queuing power management
-+requests for their devices.  For this purpose they should use the runtime PM
-+helper functions provided by the PM core, discussed in
-+Documentation/power/runtime_pm.txt.
-+
-+Devices can also be suspended and resumed synchronously, without placing a
-+request into pm_wq.  In the majority of cases this also is done by their
-+drivers that use helper functions provided by the PM core for this purpose.
-+
-+For more information on the runtime PM of devices refer to
-+Documentation/power/runtime_pm.txt.
-+
-+
-+4. Resources
-+============
-+
-+PCI Local Bus Specification, Rev. 3.0
-+PCI Bus Power Management Interface Specification, Rev. 1.2
-+Advanced Configuration and Power Interface (ACPI) Specification, Rev. 3.0b
-+PCI Express Base Specification, Rev. 2.0
-+Documentation/power/devices.txt
-+Documentation/power/runtime_pm.txt
++/*
++ * Values for setting a clock source with INSN_CONFIG_SET_CLOCK_SRC for
++ * 8254 counter subdevices on Amplicon DIO boards (amplc_dio200 driver).
++ */
++enum amplc_dio_clock_source {
++	AMPLC_DIO_CLK_CLKN,	/* per channel external clock
++				 * input/output pin (pin is only an
++				 * input when clock source set to this
++				 * value, otherwise it is an output) */
++	AMPLC_DIO_CLK_10MHZ,	/* 10 MHz internal clock */
++	AMPLC_DIO_CLK_1MHZ,	/* 1 MHz internal clock */
++	AMPLC_DIO_CLK_100KHZ,	/* 100 kHz internal clock */
++	AMPLC_DIO_CLK_10KHZ,	/* 10 kHz internal clock */
++	AMPLC_DIO_CLK_1KHZ,	/* 1 kHz internal clock */
++	AMPLC_DIO_CLK_OUTNM1,	/* output of preceding counter channel
++				 * (for channel 0, preceding counter
++				 * channel is channel 2 on preceding
++				 * counter subdevice, for first counter
++				 * subdevice, preceding counter
++				 * subdevice is the last counter
++				 * subdevice) */
++	AMPLC_DIO_CLK_EXT	/* per chip external input pin */
++};
+ 
+ /* Values for setting a gate source with INSN_CONFIG_SET_GATE_SRC for
+  * 8254 counter subdevices on Amplicon DIO boards (amplc_dio200 driver). */
+-	enum amplc_dio_gate_source {
+-		AMPLC_DIO_GAT_VCC,	/* internal high logic level */
+-		AMPLC_DIO_GAT_GND,	/* internal low logic level */
+-		AMPLC_DIO_GAT_GATN,	/* per channel external gate input */
+-		AMPLC_DIO_GAT_NOUTNM2,	/* negated output of counter channel
+-					   minus 2 (for channels 0 or 1,
+-					   channel minus 2 is channel 1 or 2 on
+-					   the preceding counter subdevice, for
+-					   the first counter subdevice the
+-					   preceding counter subdevice is the
+-					   last counter subdevice) */
+-		AMPLC_DIO_GAT_RESERVED4,
+-		AMPLC_DIO_GAT_RESERVED5,
+-		AMPLC_DIO_GAT_RESERVED6,
+-		AMPLC_DIO_GAT_RESERVED7
+-	};
++enum amplc_dio_gate_source {
++	AMPLC_DIO_GAT_VCC,	/* internal high logic level */
++	AMPLC_DIO_GAT_GND,	/* internal low logic level */
++	AMPLC_DIO_GAT_GATN,	/* per channel external gate input */
++	AMPLC_DIO_GAT_NOUTNM2,	/* negated output of counter channel minus 2
++				 * (for channels 0 or 1, channel minus 2 is
++				 *  channel 1 or 2 on the preceding counter
++				 *  subdevice, for the first counter subdevice
++				 *  the preceding counter subdevice is the
++				 *  last counter subdevice) */
++	AMPLC_DIO_GAT_RESERVED4,
++	AMPLC_DIO_GAT_RESERVED5,
++	AMPLC_DIO_GAT_RESERVED6,
++	AMPLC_DIO_GAT_RESERVED7
++};
+ 
+ #endif /* _COMEDI_H */
+
+
