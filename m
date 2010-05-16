@@ -1,113 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754562Ab0EPWN4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 18:13:56 -0400
-Received: from mga06.intel.com ([134.134.136.21]:11725 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751962Ab0EPWNz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 18:13:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,242,1272870000"; 
-   d="scan'208";a="622111006"
-Date: Mon, 17 May 2010 00:14:29 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH v2] MFD: rdc321x: change resources flags to
- IORESOURCE_IO
-Message-ID: <20100516221428.GC3236@sortiz.org>
-References: <201005152258.28538.florian@openwrt.org>
+	id S1754620Ab0EPWUX (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 18:20:23 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:34535 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754494Ab0EPWUV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 18:20:21 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: markgross@thegnar.org
+Subject: Re: [patch] pm_qos update fixing mmotm 2010-05-11 -dies in pm_qos_update_request()
+Date: Mon, 17 May 2010 00:21:25 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rc7-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Valdis.Kletnieks@vt.eu, mgross@linux.intel.com, akpm@linux-foundation.org,
+       davem@davemloft.net, linux-kernel@vger.kernel.org,
+       e1000-devel@lists.sourceforge.net, netdev@vger.kernel.org,
+       linux-pm@lists.linux-foundation.org
+References: <20100515021922.GA5041@thegnar.org> <201005152138.47178.rjw@sisk.pl> <20100515214256.GA3506@thegnar.org>
+In-Reply-To: <20100515214256.GA3506@thegnar.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005152258.28538.florian@openwrt.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005170021.25427.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Florian,
+On Saturday 15 May 2010, mgross wrote:
+> On Sat, May 15, 2010 at 09:38:47PM +0200, Rafael J. Wysocki wrote:
+> > On Saturday 15 May 2010, mgross wrote:
+> > > I apologize for the goofy email address.  
+> > > 
+> > > The following is a fix for the crash reported by Valdis.
+> > > 
+> > > The problem was that the original pm_qos silently fails when a request
+> > > update is passed to a parameter that has not been added to the list
+> > > yet.  It seems that the e1000e is doing this.  This update restores this
+> > > behavior.
+> > > 
+> > > I need to think about how to better handle such abuse, but for now this
+> > > restores the original behavior.
+> > 
+> > Can you please post a signed-off incremental patch against
+> > 
+> > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-llinus
+> > 
+> > that contains your original PM QOS update?
+> 
+> No problem:
+>
+> Signed-off-by: markgross <markgross@thegnar.org>
 
-On Sat, May 15, 2010 at 10:58:27PM +0200, Florian Fainelli wrote:
-> The rdc321x southbridge PCI device has no MEM PCI resources that we could
-> pass to mfd_add_devices. Since 33254dd5, mfd_add_device checks for the
-> mem_base argument that we set to NULL. Changing the resources passed to
-> our MFD cells from IORESOURCE_MEM to IORESOURCE_IO fixes that. Since we use
-> those resources as offsets to the PCI configuration space base address of
-> the southbridge device this is also more adequate.
-Patch applied, many thanks.
+Thanks!  Do you want to use this address for the sign-off or the Intel one?
 
-Cheers,
-Samuel.
+Rafael
 
-
-> Signed-off-by: Florian Fainelli <florian@openwrt.org>
+ 
+> From 487b8dcaeb66d3c226d4c06c1bd99689f93024be Mon Sep 17 00:00:00 2001
+> From: mgross <mgross@mgross-desktop.(none)>
+> Date: Sat, 15 May 2010 14:30:15 -0700
+> Subject: [PATCH] Gard against pm_qos users calling API before registering a proper
+>  request.
+> 
+> This update handles a use case where pm_qos update requests need to
+> silently fail if the update is being sent to a handle that is null.
+> 
+> The problem was that the original pm_qos silently fails when a request
+> update is passed to a parameter that has not been added to the list yet.
+> This update restores that behavior.
+> 
+> Signed-off-by: markgross <markgross@thegnar.org>
+> 
 > ---
-> diff --git a/drivers/gpio/rdc321x-gpio.c b/drivers/gpio/rdc321x-gpio.c
-> index e344907..22f31dc 100644
-> --- a/drivers/gpio/rdc321x-gpio.c
-> +++ b/drivers/gpio/rdc321x-gpio.c
-> @@ -147,7 +147,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
->  		return -ENOMEM;
+>  kernel/pm_qos_params.c |   26 ++++++++++++++------------
+>  1 files changed, 14 insertions(+), 12 deletions(-)
+> 
+> diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> index a1aea04..f42d3f7 100644
+> --- a/kernel/pm_qos_params.c
+> +++ b/kernel/pm_qos_params.c
+> @@ -252,19 +252,21 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+>  	int pending_update = 0;
+>  	s32 temp;
+>  
+> -	spin_lock_irqsave(&pm_qos_lock, flags);
+> -	if (new_value == PM_QOS_DEFAULT_VALUE)
+> -		temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+> -	else
+> -		temp = new_value;
+> -
+> -	if (temp != pm_qos_req->value) {
+> -		pending_update = 1;
+> -		pm_qos_req->value = temp;
+> +	if (pm_qos_req) { /*guard against callers passing in null */
+> +		spin_lock_irqsave(&pm_qos_lock, flags);
+> +		if (new_value == PM_QOS_DEFAULT_VALUE)
+> +			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+> +		else
+> +			temp = new_value;
+> +
+> +		if (temp != pm_qos_req->value) {
+> +			pending_update = 1;
+> +			pm_qos_req->value = temp;
+> +		}
+> +		spin_unlock_irqrestore(&pm_qos_lock, flags);
+> +		if (pending_update)
+> +			update_target(pm_qos_req->pm_qos_class);
 >  	}
+> -	spin_unlock_irqrestore(&pm_qos_lock, flags);
+> -	if (pending_update)
+> -		update_target(pm_qos_req->pm_qos_class);
+>  }
+>  EXPORT_SYMBOL_GPL(pm_qos_update_request);
 >  
-> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpio-reg1");
-> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "gpio-reg1");
->  	if (!r) {
->  		dev_err(&pdev->dev, "failed to get gpio-reg1 resource\n");
->  		err = -ENODEV;
-> @@ -159,7 +159,7 @@ static int __devinit rdc321x_gpio_probe(struct platform_device *pdev)
->  	rdc321x_gpio_dev->reg1_ctrl_base = r->start;
->  	rdc321x_gpio_dev->reg1_data_base = r->start + 0x4;
->  
-> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "gpio-reg2");
-> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "gpio-reg2");
->  	if (!r) {
->  		dev_err(&pdev->dev, "failed to get gpio-reg2 resource\n");
->  		err = -ENODEV;
-> diff --git a/drivers/mfd/rdc321x-southbridge.c b/drivers/mfd/rdc321x-southbridge.c
-> index 256dd56..5092297 100644
-> --- a/drivers/mfd/rdc321x-southbridge.c
-> +++ b/drivers/mfd/rdc321x-southbridge.c
-> @@ -34,7 +34,7 @@ static struct resource rdc321x_wdt_resource[] = {
->  		.name	= "wdt-reg",
->  		.start	= RDC321X_WDT_CTRL,
->  		.end	= RDC321X_WDT_CTRL + 0x3,
-> -		.flags	= IORESOURCE_MEM,
-> +		.flags	= IORESOURCE_IO,
->  	}
->  };
->  
-> @@ -47,12 +47,12 @@ static struct resource rdc321x_gpio_resources[] = {
->  		.name	= "gpio-reg1",
->  		.start	= RDC321X_GPIO_CTRL_REG1,
->  		.end	= RDC321X_GPIO_CTRL_REG1 + 0x7,
-> -		.flags	= IORESOURCE_MEM,
-> +		.flags	= IORESOURCE_IO,
->  	}, {
->  		.name	= "gpio-reg2",
->  		.start	= RDC321X_GPIO_CTRL_REG2,
->  		.end	= RDC321X_GPIO_CTRL_REG2 + 0x7,
-> -		.flags	= IORESOURCE_MEM,
-> +		.flags	= IORESOURCE_IO,
->  	}
->  };
->  
-> diff --git a/drivers/watchdog/rdc321x_wdt.c b/drivers/watchdog/rdc321x_wdt.c
-> index 4733a99..428f8a1 100644
-> --- a/drivers/watchdog/rdc321x_wdt.c
-> +++ b/drivers/watchdog/rdc321x_wdt.c
-> @@ -237,7 +237,7 @@ static int __devinit rdc321x_wdt_probe(struct platform_device *pdev)
->  		return -ENODEV;
->  	}
->  
-> -	r = platform_get_resource_byname(pdev, IORESOURCE_MEM, "wdt-reg");
-> +	r = platform_get_resource_byname(pdev, IORESOURCE_IO, "wdt-reg");
->  	if (!r) {
->  		dev_err(&pdev->dev, "failed to get wdt-reg resource\n");
->  		return -ENODEV;
+> 
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
