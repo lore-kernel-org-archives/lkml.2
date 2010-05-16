@@ -1,47 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754325Ab0EPCib (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 15 May 2010 22:38:31 -0400
-Received: from ipacj-fe-vl4.cluj.astral.ro ([89.137.17.188]:55712 "EHLO
-	automation.ro" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751872Ab0EPCi3 (ORCPT
+	id S1753689Ab0EPDFt (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 15 May 2010 23:05:49 -0400
+Received: from sj-iport-6.cisco.com ([171.71.176.117]:56563 "EHLO
+	sj-iport-6.cisco.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751511Ab0EPDFr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 15 May 2010 22:38:29 -0400
-X-Greylist: delayed 8223 seconds by postgrey-1.27 at vger.kernel.org; Sat, 15 May 2010 22:38:29 EDT
-Message-ID: <e95cd965b36827dd2079d5a8d8380246.squirrel@server.automation.ro>
-Date: Sat, 15 May 2010 19:27:33 -0400 (AST)
-Subject: Microsoft Award Office England
-From: "Microsoft Award Office England" <info@yahoo.com>
-Reply-To: donaldpreece1@w.cn
-User-Agent: SquirrelMail/1.4.15
+	Sat, 15 May 2010 23:05:47 -0400
+Authentication-Results: sj-iport-6.cisco.com; dkim=neutral (message not signed) header.i=none
+X-IronPort-AV: E=Sophos;i="4.53,239,1272844800"; 
+   d="scan'208";a="530394141"
+From: Roland Dreier <rdreier@cisco.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 31/37] drivers/infiniband/core: Use kmemdup
+References: <Pine.LNX.4.64.1005152322190.21345@ask.diku.dk>
+X-Message-Flag: Warning: May contain useful information
+Date: Sat, 15 May 2010 20:05:43 -0700
+In-Reply-To: <Pine.LNX.4.64.1005152322190.21345@ask.diku.dk> (Julia Lawall's
+	message of "Sat, 15 May 2010 23:22:38 +0200 (CEST)")
+Message-ID: <adazl00o8ag.fsf@roland-alpha.cisco.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: undisclosed-recipients:;
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-ATTN:
-You have won the sum of Seven Hundred And Ten
-Thousand Pounds from Microsoft Company on our 2010 bonanza.
-
-You are to contact him with your details below;
-1.Name.2.Address.3.Nationality.4.Age.5.Occupation.6.Phone/Fax.
-
-You can as well reach him on his cell for details.
-
-Contact Person:Donald Preece
-Email :donaldpreece1@w.cn
-Tel:+44 702 408 3922
-
-Congratulations once again.
-Regards,
-Dr.Mary Simon
-Microsoft Award Office England
-
-
-
+looks good, applied, thanks.
+-- 
+Roland Dreier <rolandd@cisco.com> || For corporate legal information go to:
+http://www.cisco.com/web/about/doing_business/legal/cri/index.html
