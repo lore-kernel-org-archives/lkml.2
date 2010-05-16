@@ -1,111 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753638Ab0EPHVz (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 03:21:55 -0400
-Received: from mail.gmx.net ([213.165.64.20]:42913 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751521Ab0EPHVy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 03:21:54 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX1+V/wYUL/SV/3N3uaNJeFAH97IYPJf5u0vNA6nCj9
-	nNwj0npq9hd1pj
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1273943222.8752.7.camel@marge.simson.net>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Sun, 16 May 2010 09:21:50 +0200
-Message-Id: <1273994510.7873.10.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1753873Ab0EPHYt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 03:24:49 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:33625 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753063Ab0EPHYs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 03:24:48 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: Steve French <smfrench@gmail.com>,
+       linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH -V7 4/9] vfs: Add open by file handle support
+In-Reply-To: <AANLkTim6lwu7Vt72PYSQ7r2swXkEIIYXYeo9z22PKJcz@mail.gmail.com>
+References: <AANLkTim6lwu7Vt72PYSQ7r2swXkEIIYXYeo9z22PKJcz@mail.gmail.com>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Sun, 16 May 2010 12:54:43 +0530
+Message-ID: <87eihccnr8.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-15 at 19:07 +0200, Mike Galbraith wrote:
-> On Sat, 2010-05-15 at 14:04 +0200, Peter Zijlstra wrote:
-> > On Sat, 2010-05-15 at 13:57 +0200, Mike Galbraith wrote:
-> > > Hi Peter,
-> > > 
-> > > This commit excluded RT tasks from rq->load, was that intentional?  The
-> > > comment in struct rq states that load reflects *all* tasks, but since
-> > > this commit, that's no longer true.
-> > 
-> > Right, because a static load value does not accurately reflect a RT task
-> > which can run as long as it pretty well pleases. So instead we measure
-> > the time spend running !fair tasks and scale down the cpu_power
-> > proportionally.
-> > 
-> > > Looking at lmbench lat_udp in a PREEMPT_RT kernel, I noticed that
-> > > wake_affine() is failing for sync wakeups when it should not.  It's
-> > > doing so because the waker in this case is an RT kernel thread
-> > > (sirq-net-rx) - we subtract the sync waker's weight, when it was never
-> > > added in the first place, resulting in this_load going gaga.  End result
-> > > is quite high latency numbers due to tasks jabbering cross-cache.
-> > > 
-> > > If the exclusion was intentional, I suppose I can do a waker class check
-> > > in wake_affine() to fix it.
-> > 
-> > So basically make all RT wakeups sync?
-> 
-> I was going to just skip subtracting waker's weight ala
-> 
->         /*
->          * If sync wakeup then subtract the (maximum possible)
->          * effect of the currently running task from the load
->          * of the current CPU:
->          */
-> 	if (sync && !task_has_rt_policy(curr))
+On Fri, 14 May 2010 14:56:08 -0500, Steve French <smfrench@gmail.com> wrote:
+> I think open by handle will turn out to be useful, but in discussing
+> various "duplicate inode number" checks that we are having to add to
+> cifs, it reminded me that we probably need a "generation number" or
+> some equivalent (birth time is probably good enough as well) to be
+> able to tell the case where a file is deleted and new file is created
+> reusing the same inode number (eventually Samba needs to return this
+> to posix clients if inode numbers are to be useful - and I don't know
+> how to tell Samba how to get birth time or generation numbers out of
+> stat in userspace)
+>
 
-One-liner doesn't work.  We have one task on the cfs_rq, the one who is
-the waker in !PREEMPT_RT, which is a fail case for wake_affine() if you
-don't do the weight subtraction.  I did the below instead.
+The file handle already have generation number encoded. The patches
+describe file handle as 
 
-sched: RT waker sync wakeup bugfix
+struct file_handle {
+	int handle_size;
+	int handle_type;
+	/* File system identifier */
+	struct uuid fsid;
+	/* file identifier */
+	unsigned char f_handle[0];
+};
 
-An RT waker's weight is not on the runqueue, but we try to subrtact it anyway
-in the sync wakeup case,  sending this_load negative.  This leads to affine
-wakeup failure in cases where it should succeed.  This was found while testing
-an PREEMPT_RT kernel with lmbench's lat_udp.  In a PREEMPT_RT kernel, softirq
-threads act as a ~proxy for the !RT buddy.  Approximate !PREEMPT_RT sync wakeup
-behavior by looking at the buddy instead, and subtracting the maximum task weight
-that will not send this_load negative.
+The file identifier which is stored in f_handle and of size handle_size
+is obtained via exportfs_encode_fh (default to export_encode_fh). File 
+system can hook a super_block->export_operations there. The default one
+export_encode_fh actually use inode number and generation number as a
+part of handle. So we shoud be having different file identifier on the
+client side for these files which happened to have duplicate inode
+number due to inode number reuse. But being able to determine generation
+number in the userspace would be nice.
 
-Signed-off-by: Mike Galbraith <efault@gmx.de>
-Cc: Ingo Molnar <mingo@elte.hu> 
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-LKML-Reference: <new-submission>
 
- kernel/sched_fair.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 5240469..cc40849 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -1280,6 +1280,15 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
- 		tg = task_group(current);
- 		weight = current->se.load.weight;
- 
-+		/*
-+		 * An RT waker's weight is not on the runqueue.  Subtract the
-+		 * maximum task weight that will not send this_load negative.
-+		 */
-+		if (task_has_rt_policy(current)) {
-+			weight = max_t(unsigned long, NICE_0_LOAD, p->se.load.weight);
-+			weight = min(weight, this_load);
-+		}
-+
- 		this_load += effective_load(tg, this_cpu, -weight, -weight);
- 		load += effective_load(tg, prev_cpu, 0, -weight);
- 	}
-
+-aneesh
 
