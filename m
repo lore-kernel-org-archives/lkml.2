@@ -1,43 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754143Ab0EPKNe (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 06:13:34 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:60165 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752129Ab0EPKNc (ORCPT
+	id S1752948Ab0EPKUq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 06:20:46 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:61006 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752022Ab0EPKUo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 06:13:32 -0400
-Date: Sun, 16 May 2010 12:13:25 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Greg KH <greg@kroah.com>
-Cc: Daniel Walker <dwalker@codeaurora.org>, linux-kernel@vger.kernel.org,
-       linux-arm-msm@vger.kernel.org
-Subject: Re: [PATCH] staging: dream: smd: remove all smd related code
-Message-ID: <20100516101325.GA8235@elf.ucw.cz>
-References: <1273618604-8817-1-git-send-email-dwalker@codeaurora.org>
- <20100511234024.GD31311@kroah.com>
+	Sun, 16 May 2010 06:20:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=As/wEJF7XsbBeTKuF2FJQ4Ne5qRMoMYsnyFdgCff591KqBVLAPPJSWXLGNVqePvhiw
+         yPj+BXbiR/0WBQAkNjoOeKjmX8Ujl0td8TySv256K/Gz0QTCCKoaMffdfmbx6rigNBVR
+         UsNA0LD9Sp7AfcLk2/SujnNI0WjHJczIeg1Kw=
+Date: Sun, 16 May 2010 14:20:38 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+Cc: David Miller <davem@davemloft.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Kristoffer Glembo <kristoffer@gaisler.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] serial: apbuart: Let boards without apbuart boot
+Message-ID: <20100516102038.GA24271@oksana.dev.rtsoft.ru>
+References: <20100514141949.GA9244@oksana.dev.rtsoft.ru>
+ <AANLkTikivSaAB9PehMYoqr5rpDOyScFPb9FI4tB9W14c@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <20100511234024.GD31311@kroah.com>
-X-Warning: Reading this can be dangerous to your mental health.
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikivSaAB9PehMYoqr5rpDOyScFPb9FI4tB9W14c@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 2010-05-11 16:40:24, Greg KH wrote:
-> On Tue, May 11, 2010 at 03:56:44PM -0700, Daniel Walker wrote:
-> > Part of this code is already in my MSM tree. I'll move the rest
-> > forward through my tree also.
-> > 
-> > Signed-off-by: Daniel Walker <dwalker@codeaurora.org>
-> > CC: Pavel Machek <pavel@ucw.cz>
+On Sun, May 16, 2010 at 10:41:50AM +0200, Miguel Ojeda wrote:
+> On Fri, May 14, 2010 at 4:19 PM, Anton Vorontsov <avorontsov@mvista.com> wrote:
+> > This patch fixes the following oops:
+> >
 > 
-> Pavel, any objections?
+> I sent a patch that fixes that oops too. It is in mm right now. Please check it.
 
-No problem.
-									Pavel
+Hm, and my patch is in Greg's tree already...
+
+Greg, if it didn't make it anywhere further your tree, please
+drop it in favour of Miguel's patch, Miguel was the first who
+sent a fix for this problem.
+
+Thanks,
+
+> >  Unable to handle kernel paging request for data at address 0x00000000
+> >  Faulting instruction address: 0xc016dea8
+> >  Oops: Kernel access of bad area, sig: 11 [#1]
+> >  P1020 RDB
+> >  last sysfs file:
+> >  NIP: c016dea8 LR: c016dea0 CTR: c0010948
+> >  REGS: c033fea0 TRAP: 0300   Not tainted  (2.6.34-rc7-00108-g83b5177-dirty)
+> >  [...]
+> >  NIP [c016dea8] grlib_apbuart_configure+0xd0/0x3bc
+> >  LR [c016dea0] grlib_apbuart_configure+0xc8/0x3bc
+> >  Call Trace:
+> >  [c033ff50] [c016dea0] grlib_apbuart_configure+0xc8/0x3bc (unreliable)
+> >  [c033ffa0] [c0316144] apbuart_console_init+0x10/0x34
+> >  [c033ffb0] [c0314a10] console_init+0x40/0x5c
+> >
+> > There's no apbuart on P1020 boards, and what's worse, there's no
+> > clock-frequency property for it. The driver didn't handle this
+> > case, which resulted in the oops above. Once we fix this, the
+> > next oops pops up:
+> >
+> >  Unable to handle kernel paging request for data at address 0x00000030
+> >  Faulting instruction address: 0xc0166ecc
+> >  Oops: Kernel access of bad area, sig: 11 [#1]
+> >  P1020 RDB
+> >  [...]
+> >  NIP [c0166ecc] uart_set_options+0xd0/0x164
+> >  LR [c0166e38] uart_set_options+0x3c/0x164
+> >  Call Trace:
+> >  [c033fef0] [c0330000] 0xc0330000 (unreliable)
+> >  [c033ff50] [c03160dc] apbuart_console_setup+0xa8/0x100
+> >  [c033ff70] [c003d668] register_console+0x338/0x3ec
+> >  [c033ffa0] [c0316154] apbuart_console_init+0x20/0x34
+> >  [c033ffb0] [c0314a10] console_init+0x40/0x5c
+> >  [c033ffc0] [c0300968] start_kernel+0x12c/0x234
+> >  [c033fff0] [c0000398] skpinv+0x2b0/0x2ec
+> >
+> > And that one is because the driver tries to register the console
+> > even if there were no matches in grlib_apbuart_configure().
+> >
+> > While at it, also annotate grlib_apbuart_configure() with __init,
+> > that fixes several section mismatches:
+> >
+> >  Section mismatch in reference from the function
+> >  grlib_apbuart_configure() to the variable .init.data:apbuart_match
+> >  The function grlib_apbuart_configure() references the variable
+> >  __initdata apbuart_match.
+> >
+> > Signed-off-by: Anton Vorontsov <avorontsov@mvista.com>
+> > ---
+> >  drivers/serial/apbuart.c |   19 ++++++++++++++-----
+> >  1 files changed, 14 insertions(+), 5 deletions(-)
+> >
+> > diff --git a/drivers/serial/apbuart.c b/drivers/serial/apbuart.c
+> > index fe91319..c908734 100644
+> > --- a/drivers/serial/apbuart.c
+> > +++ b/drivers/serial/apbuart.c
+> > @@ -520,11 +520,16 @@ static struct console grlib_apbuart_console = {
+> >  };
+> >
+> >
+> > -static void grlib_apbuart_configure(void);
+> > +static int __init grlib_apbuart_configure(void);
+> >
+> >  static int __init apbuart_console_init(void)
+> >  {
+> > -       grlib_apbuart_configure();
+> > +       int ret;
+> > +
+> > +       ret = grlib_apbuart_configure();
+> > +       if (ret)
+> > +               return ret;
+> > +
+> >        register_console(&grlib_apbuart_console);
+> >        return 0;
+> >  }
+> > @@ -593,7 +598,7 @@ static struct of_platform_driver grlib_apbuart_of_driver = {
+> >  };
+> >
+> >
+> > -static void grlib_apbuart_configure(void)
+> > +static int __init grlib_apbuart_configure(void)
+> >  {
+> >        static int enum_done;
+> >        struct device_node *np, *rp;
+> > @@ -606,12 +611,14 @@ static void grlib_apbuart_configure(void)
+> >        struct amba_prom_registers *regs;
+> >
+> >        if (enum_done)
+> > -               return;
+> > +               return -ENODEV;
+> >
+> >        /* Get bus frequency */
+> >        rp = of_find_node_by_path("/");
+> >        rp = of_get_next_child(rp, NULL);
+> >        prop = of_get_property(rp, "clock-frequency", NULL);
+> > +       if (!prop)
+> > +               return -ENODEV;
+> >        freq_khz = *prop;
+> >
+> >        line = 0;
+> > @@ -629,7 +636,7 @@ static void grlib_apbuart_configure(void)
+> >                        d = *device;
+> >
+> >                if (!irqs || !regs)
+> > -                       return;
+> > +                       return -ENODEV;
+> >
+> >                grlib_apbuart_nodes[line] = np;
+> >
+> > @@ -658,6 +665,8 @@ static void grlib_apbuart_configure(void)
+> >        enum_done = 1;
+> >
+> >        grlib_apbuart_driver.nr = grlib_apbuart_port_nr = line;
+> > +
+> > +       return line ? 0 : -ENODEV;
+> >  }
+> >
+> >  static int __init grlib_apbuart_init(void)
+> > --
+> > 1.7.0.5
+
 -- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
