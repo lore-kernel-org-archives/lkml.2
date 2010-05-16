@@ -1,69 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0EPQAx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 12:00:53 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57477 "EHLO mx2.suse.de"
+	id S1753274Ab0EPQDu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 12:03:50 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:48608 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752797Ab0EPQAw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 12:00:52 -0400
-Subject: Re: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
-From: James Bottomley <James.Bottomley@suse.de>
-To: Ben Hutchings <ben@decadent.org.uk>
-Cc: Tejun Heo <tj@kernel.org>, jeff@garzik.org, linux-ide@vger.kernel.org,
-       jens.axboe@oracle.com, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, davem@davemloft.net, bzolnier@gmail.com
-In-Reply-To: <1274022457.2564.105.camel@localhost>
-References: <1273946974-29131-1-git-send-email-tj@kernel.org>
-	 <1273946974-29131-7-git-send-email-tj@kernel.org>
-	 <1274017175.14187.9.camel@mulgrave.site>
-	 <1274022457.2564.105.camel@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 16 May 2010 11:00:36 -0500
-Message-ID: <1274025636.14187.24.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1752632Ab0EPQDt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 12:03:49 -0400
+Date: Sun, 16 May 2010 18:03:42 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Dan Carpenter <error27@gmail.com>
+Cc: Ed Cashin <ecashin@coraid.com>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 35/37] drivers/block/aoe: Use kmemdup
+In-Reply-To: <20100516155043.GB12354@bicker>
+Message-ID: <Pine.LNX.4.64.1005161800140.11288@ask.diku.dk>
+References: <Pine.LNX.4.64.1005152323310.21345@ask.diku.dk>
+ <FA04A0D0-4BAF-4E1D-B8E8-3148E290009F@coraid.com> <20100516155043.GB12354@bicker>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-16 at 16:07 +0100, Ben Hutchings wrote:
-> On Sun, 2010-05-16 at 08:39 -0500, James Bottomley wrote:
-> [...]
-> > Then there's no need for anything at all in SCSI ... and it becomes a
-> > whole lot more obvious how to do legacy ide (if we ever get problems
-> > there).
+On Sun, 16 May 2010, Dan Carpenter wrote:
+
+> On Sun, May 16, 2010 at 08:42:59AM -0400, Ed Cashin wrote:
+> > On May 15, 2010, at 5:23 PM, Julia Lawall wrote:
+> > 
+> > > From: Julia Lawall <julia@diku.dk>
+> > > 
+> > > Use kmemdup when some other buffer is immediately copied into the
+> > > allocated region.
+> > 
+> > I have seen this patch but have no comment about it specifically.
+> > 
+> > (Because the argument about whether this kind of change
+> > adds value in general has already taken place.  I'd say no, but that's 
+> > based on a maybe faulty idea that if folks weren't doing this they'd have
+> > more time for reviewing patches, etc.)
 > 
-> The block device set_capacity() interface is already defined and was
-> implemented for the IDE disk driver some time ago.  The purpose of
-> Tejun's work on sd and libata is to implement this existing interface
-> and so avoid a regression when users switch from IDE to libata-based
-> drivers.  I don't see why he should have to replace the interface as
-> well.
+> Nah nah.  Nit-picky patches like this is what you get when people start
+> reviewing code.  It's really hard to review code properly without being
+> annoyed and writing clean up patches is very calming.
 
-I thought we already reached the conclusion that set_capacity wasn't the
-right interface, hence the redo as a binary lock/unlock of native
-capacity ... which is revoking the set_capacity interface in this patch.
+Actually, someone asked me to convery a kmalloc to kstrdup, and I saw 
+kmemdup nearby, and thought why not...  There is also the similar 
+memdup_user.  Using that would more significantly simplify the code, in 
+particular reducing the amount of error handling code, since it 
+encompasses two calls that can fail (kmalloc and copy_from_user).
 
-The point I was making is that bdops just works for ide because it's
-completely monolithic.  It gives us a layering problem in SCSI because
-you have to hook it into the lower layers which don't have access to
-bdops (since they're an upper layer thing in SCSI).
-
-This layering problem is partly the fault of libata ... if we had an ATA
-native disk driver, it would be able to unlock the capacity on its own.
-It's just we're using SCSI which has no SAT command it can issue for
-this, so the functional request has to be pushed down to libata ...
-leading to the need to thread it through the host template.
-
-I was just pointing out that the whole thing is simplified if we use a
-block queue function approach instead.  ide_disk_t has access to the
-queue, as does gendisk, so it would all "just work" with a simple call
-site change if we used queue ops instead of block dev ops.  The plus
-side of doing it this way is that the SCSI threading becomes
-unnecessary: libata gets directly hooked into the unlock function
-instead of having to do it via an intermediary.
-
-James
-
-
+julia
