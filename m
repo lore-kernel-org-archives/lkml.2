@@ -1,80 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751381Ab0EPXXI (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 19:23:08 -0400
-Received: from tundra.namei.org ([65.99.196.166]:33410 "EHLO tundra.namei.org"
+	id S1751434Ab0EPXgW (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 19:36:22 -0400
+Received: from www.tglx.de ([62.245.132.106]:57648 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751142Ab0EPXXF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 19:23:05 -0400
-Date: Mon, 17 May 2010 09:23:01 +1000 (EST)
-From: James Morris <jmorris@namei.org>
-To: Mimi Zohar <zohar@linux.vnet.ibm.com>
-cc: linux-kernel@vger.kernel.org, Jean-Christophe Dubois <jcd@tribudubois.net>,
-       Serge Hallyn <serue@us.ibm.com>,
-       Rajiv Andrade <srajiv@linux.vnet.ibm.com>
-Subject: Re: [PATCH] ima: remove ACPI dependency
-In-Reply-To: <1273847996.3215.42.camel@localhost.localdomain>
-Message-ID: <alpine.LRH.2.00.1005170922350.12313@tundra.namei.org>
-References: <1273011390-6090-1-git-send-email-zohar@linux.vnet.ibm.com> <1273847996.3215.42.camel@localhost.localdomain>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1751142Ab0EPXgU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 19:36:20 -0400
+Date: Mon, 17 May 2010 01:36:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Donald Allen <donaldcallen@gmail.com>
+cc: john stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+       Arjan van de Ven <arjan@infradead.org>
+Subject: Re: PROBLEM: tickless scheduling
+In-Reply-To: <AANLkTinBPDY_WVGaq2LUuOzH0niRpgJ4LEpXWkwBxVqh@mail.gmail.com>
+Message-ID: <alpine.LFD.2.00.1005170123090.3368@localhost.localdomain>
+References: <AANLkTin6D2GP0yJJbPYGH1AcAM9-g219rAxSyW_ZlrXV@mail.gmail.com>  <AANLkTikjgoBQWqvNxncMUFqWOEXtq4ePvGkvF-m0sGUE@mail.gmail.com>  <AANLkTimnlZYonxKzfGHZTV8vwaDptOPHEPBjNhwnV55Y@mail.gmail.com>  <1273540344.3843.101.camel@localhost.localdomain> 
+ <AANLkTilg2cn3lAIOruz6oZE7V-9uAFDORlbvTX3qxmwF@mail.gmail.com>  <AANLkTilb_CGBolyv5Ps9VuhNxFZKtjck4om4G21ICaif@mail.gmail.com>  <1273697523.2856.3.camel@localhost.localdomain> <AANLkTinBPDY_WVGaq2LUuOzH0niRpgJ4LEpXWkwBxVqh@mail.gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010, Mimi Zohar wrote:
+Donald,
 
-> Once the 'TPM: ACPI/PNP dependency removal' patch is accepted
-> http://lkml.org/lkml/2010/5/13/410, please accept this previously posted
-> patch (with either updating the prereq URL or removing it.)
+On Sat, 15 May 2010, Donald Allen wrote:
+> Attached. This is from the 2.6.30 kernel on the Arch Linux install cd.
 > 
+> Here's another bit of data. As I've said previously, the problems I'm
+> reporting were observed on a Toshiba NB310-305 netbook with a
+> single-core Atom 450 processor. I just built myself a mini-ITX system
+> using the Intel D510MO motherboard, which provides a dual-core D510
+> Atom processor. The other hardware on the board is similar to the
+> Toshiba. I installed the same Slackware snapshot I used on the
+> Toshiba, and did the home directory transfer without any problem at
+> all with the default tickless kernel. The hardware isn't identical,
+> and while I don't know the internals of the Linux kernel at all, my
+> gut, backed up by many years of OS development work in scheduling and
+> memory management, is telling me that the key difference is dual- vs.
+> single-core. Just a guess.
 
-Applied to
-git://git.kernel.org/pub/scm/linux/kernel/git/jmorris/security-testing-2.6#next
+I fear you are wrong. 
 
-> 
-> On Tue, 2010-05-04 at 18:16 -0400, Mimi Zohar wrote:
-> > The ACPI dependency moved to the TPM, where it belongs.  Although
-> > IMA per-se does not require access to the bios measurement log,
-> > verifying the IMA boot aggregate does, which requires ACPI.
-> > 
-> > This patch prereq's 'TPM: ACPI/PNP dependency removal'
-> > http://lkml.org/lkml/2010/5/4/378.
-> > 
-> > Signed-off-by: Mimi Zohar <zohar@us.ibm.com>
-> > Reported-by: Jean-Christophe Dubois <jcd@tribudubois.net>
-> > Acked-by: Serge Hallyn <serue@us.ibm.com>
-> > Tested-by: Serge Hallyn <serue@us.ibm.com>
-> > ---
-> >  security/integrity/ima/Kconfig |    5 ++---
-> >  1 files changed, 2 insertions(+), 3 deletions(-)
-> > 
-> > diff --git a/security/integrity/ima/Kconfig b/security/integrity/ima/Kconfig
-> > index 3d7846d..b6ecfd4 100644
-> > --- a/security/integrity/ima/Kconfig
-> > +++ b/security/integrity/ima/Kconfig
-> > @@ -2,15 +2,14 @@
-> >  #
-> >  config IMA
-> >  	bool "Integrity Measurement Architecture(IMA)"
-> > -	depends on ACPI
-> >  	depends on SECURITY
-> >  	select SECURITYFS
-> >  	select CRYPTO
-> >  	select CRYPTO_HMAC
-> >  	select CRYPTO_MD5
-> >  	select CRYPTO_SHA1
-> > -	select TCG_TPM
-> > -	select TCG_TIS
-> > +	select TCG_TPM if !S390
-> > +	select TCG_TIS if TCG_TPM
-> >  	help
-> >  	  The Trusted Computing Group(TCG) runtime Integrity
-> >  	  Measurement Architecture(IMA) maintains a list of hash
-> 
-> 
+The key difference is almost certainly that the BIOS of your netbook
+tries to be overly clever vs. power management and is not aware of the
+fact that the Linux kernel uses timer hardware in a very different way
+than the other OS which comes preinstalled on that machine. 
 
--- 
-James Morris
-<jmorris@namei.org>
+The overly clever BIOS power management which works nicely with the
+vendor provided "drivers" for the other OS is just interfering with
+the kernels way of dealing with the problem.
+
+Can you please boot with "hpet=disable" on the kernel command line ?
+
+Thanks,
+
+	tglx
