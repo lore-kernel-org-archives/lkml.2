@@ -1,63 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754041Ab0EPQ4O (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 12:56:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:57781 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752434Ab0EPQ4M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 12:56:12 -0400
-Message-ID: <4BF02402.8060204@colorfullife.com>
-Date: Sun, 16 May 2010 18:57:38 +0200
-From: Manfred Spraul <manfred@colorfullife.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754160Ab0EPRAr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 13:00:47 -0400
+Received: from hera.kernel.org ([140.211.167.34]:48968 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753456Ab0EPRAo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 13:00:44 -0400
+Message-ID: <4BF024A2.4090804@kernel.org>
+Date: Sun, 16 May 2010 19:00:18 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>, Chris Mason <chris.mason@oracle.com>
-CC: zach.brown@oracle.com, jens.axboe@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] ipc semaphores: reduce ipc_lock contention in semtimedop
-References: <1271098163-3663-1-git-send-email-chris.mason@oracle.com> <1271098163-3663-2-git-send-email-chris.mason@oracle.com> <4BC4A6B2.1090906@colorfullife.com> <20100413173941.GI13327@think> <20100413180945.GD5683@laptop> <20100413181937.GM13327@think> <20100413185756.GE5683@laptop>
-In-Reply-To: <20100413185756.GE5683@laptop>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Ben Hutchings <ben@decadent.org.uk>, jeff@garzik.org,
+       linux-ide@vger.kernel.org, jens.axboe@oracle.com,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       davem@davemloft.net, bzolnier@gmail.com
+Subject: Re: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
+References: <1273946974-29131-1-git-send-email-tj@kernel.org>	 <1273946974-29131-7-git-send-email-tj@kernel.org>	 <1274017175.14187.9.camel@mulgrave.site>	 <1274022457.2564.105.camel@localhost> <1274025636.14187.24.camel@mulgrave.site>
+In-Reply-To: <1274025636.14187.24.camel@mulgrave.site>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 16 May 2010 17:00:21 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 04/13/2010 08:57 PM, Nick Piggin wrote:
-> On Tue, Apr 13, 2010 at 02:19:37PM -0400, Chris Mason wrote:
->    
->> I don't see anything in the docs about the FIFO order.  I could add an
->> extra sort on sequence number pretty easily, but is the starvation case
->> really that bad?
->>      
-> Yes, because it's not just a theoretical livelock, it can be basically
-> a certainty, given the right pattern of semops.
->
-> You could have two mostly-independent groups of processes, each taking
-> and releasing a different sem, which are always contended (eg. if it is
-> being used for a producer-consumer type situation, or even just mutual
-> exclusion with high contention).
->
-> Then you could have some overall management process for example which
-> tries to take both sems. It will never get it.
->
->    
-The management process won't get the sem on Linux either:
-Linux implements FIFO, but there is no protection at all against starvation.
+Hello, James.
 
-If I understand the benchmark numbers correctly, a 4-core, 2 GHz Phenom 
-is able to do ~ 2 million semaphore operations per second in one 
-semaphore array.
-That's the limit - cache line trashing on the sma structure prevent 
-higher numbers.
+On 05/16/2010 06:00 PM, James Bottomley wrote:
+> This layering problem is partly the fault of libata ... if we had an ATA
+> native disk driver, it would be able to unlock the capacity on its own.
 
-For a NUMA system, the limit is probably lower.
+Yeap.
 
-Chris:
-Do you have an estimate how many semop() your app will perform in one array?
+> It's just we're using SCSI which has no SAT command it can issue for
+> this, so the functional request has to be pushed down to libata ...
+> leading to the need to thread it through the host template.
+> 
+> I was just pointing out that the whole thing is simplified if we use a
+> block queue function approach instead.  ide_disk_t has access to the
+> queue, as does gendisk, so it would all "just work" with a simple call
+> site change if we used queue ops instead of block dev ops.  The plus
+> side of doing it this way is that the SCSI threading becomes
+> unnecessary: libata gets directly hooked into the unlock function
+> instead of having to do it via an intermediary.
 
-Perhaps we should really remove the per-array list, sma->sem_perm.lock 
-and sma->sem_otime.
+Yeah, it can be made to work via a queue callback but I'm afraid that
+would be a genuine layering violation (although going through SCSI is
+extra layering, it isn't really a layering violation).
 
---
-     Manfred
+These are request_queue methods.
+
+	request_fn_proc		*request_fn;
+	make_request_fn		*make_request_fn;
+	prep_rq_fn		*prep_rq_fn;
+	unplug_fn		*unplug_fn;
+	merge_bvec_fn		*merge_bvec_fn;
+	prepare_flush_fn	*prepare_flush_fn;
+	softirq_done_fn		*softirq_done_fn;
+	rq_timed_out_fn		*rq_timed_out_fn;
+	dma_drain_needed_fn	*dma_drain_needed;
+	lld_busy_fn		*lld_busy_fn;
+
+These are gendisk methods.
+
+	int (*open) (struct block_device *, fmode_t);
+	int (*release) (struct gendisk *, fmode_t);
+	int (*locked_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+	int (*ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+	int (*compat_ioctl) (struct block_device *, fmode_t, unsigned, unsigned long);
+	int (*direct_access) (struct block_device *, sector_t,
+						void **, unsigned long *);
+	int (*media_changed) (struct gendisk *);
+	void (*unlock_native_capacity) (struct gendisk *);
+	int (*revalidate_disk) (struct gendisk *);
+	int (*getgeo)(struct block_device *, struct hd_geometry *);
+
+request_queue is (or at least supposed to be) oblivious about genhd
+and its attributes including capacity.  After all, request_queue can
+exist w/o genhd associated, so it would be quite odd to have capacity
+related method living in request_queue.
+
+Another thing is that there is no generic way to reach the associated
+genhd from request_queue and I can't think of a clean way to map
+request_queue to the associated ata device w/o in-flight requests (can
+you even do that from SCSI?).
+
+Unfortunately, libata is still properly layered below SCSI, so I'm
+afraid threading through sd is clumsy yet the cleanest way to do it.
+
+Thanks.
+
+-- 
+tejun
