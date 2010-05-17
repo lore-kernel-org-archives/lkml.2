@@ -1,87 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab0EQVGT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 17:06:19 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:55708 "EHLO e5.ny.us.ibm.com"
+	id S1756081Ab0EQVGp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 17:06:45 -0400
+Received: from mail.perches.com ([173.55.12.10]:2307 "EHLO mail.perches.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752090Ab0EQVGR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 17:06:17 -0400
-Date: Mon, 17 May 2010 14:06:06 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100517210606.GW2320@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100512213317.GA15085@linux.vnet.ibm.com>
- <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100512214847.GD22930@redhat.com>
- <20100512230057.GH2303@linux.vnet.ibm.com>
- <1273756043.5605.3542.camel@twins>
- <20100513152340.GA2879@linux.vnet.ibm.com>
- <20100517203349.GA14994@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100517203349.GA14994@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1752090Ab0EQVGn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 17:06:43 -0400
+Subject: Re: [PATCH 229/229] Staging: Rt2860: Fixed all but one error in
+ mlme.h.
+From: Joe Perches <joe@perches.com>
+To: Neil Munro <neilmunro@gmail.com>
+Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1274096666-3282-1-git-send-email-neilmunro@gmail.com>
+References: <1274096666-3282-1-git-send-email-neilmunro@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 May 2010 14:06:41 -0700
+Message-ID: <1274130401.17703.20.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 11:33:49PM +0300, Michael S. Tsirkin wrote:
-> On Thu, May 13, 2010 at 08:23:40AM -0700, Paul E. McKenney wrote:
-> > On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
-> > > On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
-> > > > Any thoughts?  One approach would be to create a separate lockdep class
-> > > > for vhost workqueue state, similar to the approach used in instrument
-> > > > rcu_read_lock() and friends. 
-> > > 
-> > > workqueue_struct::lockdep_map, its held while executing worklets.
-> > > 
-> > > lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
-> > 
-> > Thank you, Peter!!!
-> > 
-> > 							Thanx, Paul
+On Mon, 2010-05-17 at 12:44 +0100, Neil Munro wrote: 
+> Fixed all but error in mlme.h, I don't know how to fix the remaining
+> error. It complains about parenthesis and do-while loops, maybe
+> someone else can fix that?
+
+Hello Neil.
+
+>  drivers/staging/rt2860/mlme.h |   13 ++++++-------
+>  1 files changed, 6 insertions(+), 7 deletions(-)
 > 
-> vhost in fact does flush_work rather than
-> flush_workqueue, so while for now everything runs
-> from vhost_workqueue in theory nothing would break
-> if we use some other workqueue or even a combination
-> thereof.
-> 
-> I guess when/if this happens, we could start by converting
-> to _raw and then devise a solution.
+> diff --git a/drivers/staging/rt2860/mlme.h b/drivers/staging/rt2860/mlme.h
+> index 1143413..63cada3 100644
+> --- a/drivers/staging/rt2860/mlme.h
+> +++ b/drivers/staging/rt2860/mlme.h
+> @@ -60,7 +60,7 @@
+>  #define JAP_W56	4
+>  #define MAX_RD_REGION 5
+>  
+> -#define BEACON_LOST_TIME            4 * OS_HZ	/* 2048 msec = 2 sec */
+> +#define BEACON_LOST_TIME            { 4 * OS_HZ }	/* 2048 msec = 2 sec */
 
-If there are a small finite number of work queues involved, we can
-easily do something like:
+You want parentheses not braces here.
 
-	#ifdef CONFIG_PROVE_RCU
-	int in_vhost_workqueue(void)
-	{
-		return in_workqueue_context(vhost_workqueue) ||
-		       in_workqueue_context(vhost_other_workqueue) ||
-		       in_workqueue_context(yet_another_vhost_workqueue);
-	}
-	#endif /* #ifdef CONFIG_PROVE_RCU */
+> #define DLS_TIMEOUT                 1200	/* unit: msec */
+>  #define AUTH_TIMEOUT                300	/* unit: msec */
+> @@ -119,8 +119,8 @@
+>  #define MAC_ADDR_IS_GROUP(Addr)       (((Addr[0]) & 0x01))
 
-Seem reasonable?
+This should be is_multicast_ether_addr(Addr) I presume.
+It'd probably be better to remove the macro and just
+use is_multicast_ether_addr in the code directly.
 
-> By the way what would be really nice is if we had a way
-> to trap when rcu protected pointer is freed without a flush
-> while some reader is running. Current annotation does not
-> allow this, does it?
+> #define MAC_ADDR_HASH(Addr)            (Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+>  #define MAC_ADDR_HASH_INDEX(Addr)      (MAC_ADDR_HASH(Addr) % HASH_TABLE_SIZE)
+> -#define TID_MAC_HASH(Addr,TID)            (TID^Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+> -#define TID_MAC_HASH_INDEX(Addr,TID)      (TID_MAC_HASH(Addr,TID) % HASH_TABLE_SIZE)
+> +#define TID_MAC_HASH(Addr, TID)            (TID^Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
 
-Right now, it does not, but I wonder if something like Thomas's and
-Mathieu's debugobjects work could be brought to bear on this problem?
-This would need to be implemented in vhost, as synchronize_rcu() has
-no way to know what memory it is flushing, nor does flush_work().
+It'd be better to use consistent spacing for xors.
 
-						Thanx, Paul
+#define TID_MAC_HASH(Addr, TID)		(TID ^ Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+or
+#define TID_MAC_HASH(Addr, TID)		(TID ^ MAC_ADDR_HASH(Addr))
+
+> +#define TID_MAC_HASH_INDEX(Addr, TID)      (TID_MAC_HASH(Addr, TID) % HASH_TABLE_SIZE)
+>  
+>  /* LED Control */
+>  /* assoiation ON. one LED ON. another blinking when TX, OFF when idle */
+> @@ -145,7 +145,7 @@
+>  #define CAP_IS_DSSS_OFDM(x)              (((x) & 0x2000) != 0)
+>  #define CAP_IS_DELAY_BA(x)               (((x) & 0x4000) != 0)	/* 802.11e d9 */
+>  
+> -#define CAP_GENERATE(ess,ibss,priv,s_pre,s_slot,spectrum)  (((ess) ? 0x0001 : 0x0000) | ((ibss) ? 0x0002 : 0x0000) | ((priv) ? 0x0010 : 0x0000) | ((s_pre) ? 0x0020 : 0x0000) | ((s_slot) ? 0x0400 : 0x0000) | ((spectrum) ? 0x0100 : 0x0000))
+> +#define CAP_GENERATE(ess, ibss, priv, s_pre, s_slot, spectrum)  (((ess) ? 0x0001 : 0x0000) | ((ibss) ? 0x0002 : 0x0000) | ((priv) ? 0x0010 : 0x0000) | ((s_pre) ? 0x0020 : 0x0000) | ((s_slot) ? 0x0400 : 0x0000) | ((spectrum) ? 0x0100 : 0x0000))
+
+Rather a long line.  Maybe better as something like: 
+#define CAP_GENERATE(ess, ibss, priv, s_pre, s_slot, spectrum)	\
+	(((ess)		? 0x0001 : 0x0000) |			\
+	 ((ibss)	? 0x0002 : 0x0000) |			\
+	 ((priv)	? 0x0010 : 0x0000) |			\
+	 ((s_pre)	? 0x0020 : 0x0000) |			\
+	 ((s_slot)	? 0x0400 : 0x0000) |			\
+	 ((spectrum)	? 0x0100 : 0x0000))
+
+> #define ERP_IS_NON_ERP_PRESENT(x)        (((x) & 0x01) != 0)	/* 802.11g */
+> #define ERP_IS_USE_PROTECTION(x)         (((x) & 0x02) != 0)	/* 802.11g */
+> @@ -176,8 +176,7 @@
+>  
+>  /* reset all OneSecTx counters */
+>  #define RESET_ONE_SEC_TX_CNT(__pEntry) \
+> -if (((__pEntry)) != NULL) \
+> -{ \
+> +if (((__pEntry)) != NULL) { \
+>  	(__pEntry)->OneSecTxRetryOkCount = 0; \
+>  	(__pEntry)->OneSecTxFailCount = 0; \
+>  	(__pEntry)->OneSecTxNoRetryOkCount = 0; \
+
+Ideally surrounded by a do { foo } while (0)
+
+> @@ -846,7 +845,7 @@ struct rt_mlme_queue {
+>  	struct rt_mlme_queue_elem Entry[MAX_LEN_OF_MLME_QUEUE];
+>  };
+>  
+> -typedef void(*STATE_MACHINE_FUNC) (void * Adaptor, struct rt_mlme_queue_elem *Elem);
+> +typedef void(*STATE_MACHINE_FUNC) (void *Adaptor, struct rt_mlme_queue_elem * Elem);
+
+Might be better without the typedef
+
+
