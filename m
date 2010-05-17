@@ -1,58 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755248Ab0EQSUd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:20:33 -0400
-Received: from kroah.org ([198.145.64.141]:34189 "EHLO coco.kroah.org"
+	id S1755158Ab0EQSUa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 14:20:30 -0400
+Received: from kroah.org ([198.145.64.141]:34178 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755050Ab0EQSU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:20:28 -0400
-Date: Mon, 17 May 2010 11:11:33 -0700
+	id S1752039Ab0EQSUY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 14:20:24 -0400
+Date: Mon, 17 May 2010 11:01:56 -0700
 From: Greg KH <greg@kroah.com>
-To: David Miller <davem@davemloft.net>
-Cc: ebiederm@xmission.com, gregkh@suse.de, kay.sievers@vrfy.org,
-       linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com,
-       eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com,
-       netdev@vger.kernel.org
-Subject: Re: [PATCH 0/6] netns support in the kobject layer
-Message-ID: <20100517181133.GB18721@kroah.com>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
- <m1d3xb4239.fsf@fess.ebiederm.org>
- <20100506200404.GA21805@kroah.com>
- <20100515.232643.212422307.davem@davemloft.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Prashant P. Shah" <pshah.mumbai@gmail.com>,
+       Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: linux-next: manual merge of the staging-next tree with the rr
+ tree
+Message-ID: <20100517180156.GD16419@kroah.com>
+References: <20100517154452.93fbac66.sfr@canb.auug.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100515.232643.212422307.davem@davemloft.net>
+In-Reply-To: <20100517154452.93fbac66.sfr@canb.auug.org.au>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 15, 2010 at 11:26:43PM -0700, David Miller wrote:
-> From: Greg KH <greg@kroah.com>
-> Date: Thu, 6 May 2010 13:04:04 -0700
+On Mon, May 17, 2010 at 03:44:52PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> > On Tue, May 04, 2010 at 05:35:54PM -0700, Eric W. Biederman wrote:
-> >> 
-> >> With the tagged sysfs support finally merged into Greg's tree,
-> >> it is time for the last little bits of work to get the kobject
-> >> layer and network namespaces to play together properly.
-> >> 
-> >> These patches are roughly evenly divided between network layer work
-> >> and sysfs layer work.  Last time this conundrum came up I believe
-> >> we decided that the easiest way to handle this was for Greg to carry
-> >> all of the patches.  David, Greg does that still make sense?
-> > 
-> > That's fine, if I get David's ack on these.
+> Today's linux-next merge of the staging-next tree got a conflict in
+> drivers/staging/rtl8187se/r8180_core.c between commit
+> 9080984577cb3e04226d94c8f733534b60541f01
+> ("param:remove-useless-writable-charp") from the rr tree and commit
+> bbfb56520c8da666383c08220985495ff918d4ad ("") from the staging-next tree.
 > 
-> Looks good to me:
-> 
-> Acked-by: David S. Miller <davem@davemloft.net>
+> I fixed it up (see below) and can carry the fix as necessary.
 
-Ok.  Eric, can you resend these to me when .35-rc1 is out so I can queue
-them up then to get some testing in linux-next so that they can make it
-into .36?
-
-thanks,
+Looks good, thanks.
 
 greg k-h
