@@ -1,124 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab0EQXGr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:06:47 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:48866 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756407Ab0EQXGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:06:46 -0400
-Date: Tue, 18 May 2010 01:06:28 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/microcode changes for v2.6.35
-Message-ID: <20100517230628.GA5703@elte.hu>
+	id S1756585Ab0EQXKE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:10:04 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41603 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752171Ab0EQXKA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:10:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=YNz80YD+d/rK5mg88/iiO9BU5EY56FpcYOAxqxKtHT7/gybIXzb8bP/aCvuFZ/I1Sp
+         pqh6o1lQZe4k2QxvkP0kfROCSo6UABay7m4AS5cwvWNb4EIQw+jR4U9GUpDp/irbS8fk
+         aq2zAfnBRAeBx3zAk9XmmrUI8SUni1aXUV6Pg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+From: Michal Bozon <michal.bozon@gmail.com>
+Date: Tue, 18 May 2010 01:09:39 +0200
+Message-ID: <AANLkTinY3FxiBFoFwK20sGp2YU9N9WHgOsY03F1HpH_G@mail.gmail.com>
+Subject: [PATCH] leds: separate read/write ide-disk triggers
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: multipart/mixed; boundary=0016367fb13fea01380486d25216
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+--0016367fb13fea01380486d25216
+Content-Type: text/plain; charset=UTF-8
 
-Please pull the latest x86-microcode-for-linus git tree from:
+here is a humble extension of leds module, adding separate
+"ide-disk-read" and "ide-disk-write" triggers to existing "ide-disk"
+one.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-microcode-for-linus
+tested on pc engines ALIX.3c3 board, kernel 2.6.32, patches smoothly
+current 2.6.34 as well
 
- Thanks,
+following scenario configures the three leds on ALIX board as
+heartbeat, ide-read and ide-write indicators, respectively:
 
-	Ingo
+modprobe leds-alix2 force=1
+modprobe ledtrig-heartbeat # not relevant to this patch
+echo heartbeat > /sys/class/leds/"alix:1"/
+trigger # not relevant to this patch
+echo ide-disk-read > /sys/class/leds/"alix:2"/trigger
+echo ide-disk-write > /sys/class/leds/"alix:3"/trigger
 
------------------->
-Arnd Bergmann (1):
-      x86/microcode: Use nonseekable_open()
+--0016367fb13fea01380486d25216
+Content-Type: text/x-diff; charset=US-ASCII; name="led-triggers-ide-disk-read-write.patch"
+Content-Disposition: attachment; 
+	filename="led-triggers-ide-disk-read-write.patch"
+Content-Transfer-Encoding: base64
+X-Attachment-Id: f_g9bwpbx00
 
-Dimitri Sivanich (1):
-      x86: Improve Intel microcode loader performance
-
-
- arch/x86/kernel/microcode_core.c  |    4 ++--
- arch/x86/kernel/microcode_intel.c |   22 ++++++++++++++++------
- 2 files changed, 18 insertions(+), 8 deletions(-)
-
-diff --git a/arch/x86/kernel/microcode_core.c b/arch/x86/kernel/microcode_core.c
-index cceb5bc..2cd8c54 100644
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -201,9 +201,9 @@ static int do_microcode_update(const void __user *buf, size_t size)
- 	return error;
- }
- 
--static int microcode_open(struct inode *unused1, struct file *unused2)
-+static int microcode_open(struct inode *inode, struct file *file)
- {
--	return capable(CAP_SYS_RAWIO) ? 0 : -EPERM;
-+	return capable(CAP_SYS_RAWIO) ? nonseekable_open(inode, file) : -EPERM;
- }
- 
- static ssize_t microcode_write(struct file *file, const char __user *buf,
-diff --git a/arch/x86/kernel/microcode_intel.c b/arch/x86/kernel/microcode_intel.c
-index 85a343e..3561702 100644
---- a/arch/x86/kernel/microcode_intel.c
-+++ b/arch/x86/kernel/microcode_intel.c
-@@ -343,10 +343,11 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 				int (*get_ucode_data)(void *, const void *, size_t))
- {
- 	struct ucode_cpu_info *uci = ucode_cpu_info + cpu;
--	u8 *ucode_ptr = data, *new_mc = NULL, *mc;
-+	u8 *ucode_ptr = data, *new_mc = NULL, *mc = NULL;
- 	int new_rev = uci->cpu_sig.rev;
- 	unsigned int leftover = size;
- 	enum ucode_state state = UCODE_OK;
-+	unsigned int curr_mc_size = 0;
- 
- 	while (leftover) {
- 		struct microcode_header_intel mc_header;
-@@ -361,9 +362,15 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 			break;
- 		}
- 
--		mc = vmalloc(mc_size);
--		if (!mc)
--			break;
-+		/* For performance reasons, reuse mc area when possible */
-+		if (!mc || mc_size > curr_mc_size) {
-+			if (mc)
-+				vfree(mc);
-+			mc = vmalloc(mc_size);
-+			if (!mc)
-+				break;
-+			curr_mc_size = mc_size;
-+		}
- 
- 		if (get_ucode_data(mc, ucode_ptr, mc_size) ||
- 		    microcode_sanity_check(mc) < 0) {
-@@ -376,13 +383,16 @@ static enum ucode_state generic_load_microcode(int cpu, void *data, size_t size,
- 				vfree(new_mc);
- 			new_rev = mc_header.rev;
- 			new_mc  = mc;
--		} else
--			vfree(mc);
-+			mc = NULL;	/* trigger new vmalloc */
-+		}
- 
- 		ucode_ptr += mc_size;
- 		leftover  -= mc_size;
- 	}
- 
-+	if (mc)
-+		vfree(mc);
-+
- 	if (leftover) {
- 		if (new_mc)
- 			vfree(new_mc);
+LS0tIGxpbnV4LXNvdXJjZS0yLjYuMzIvZHJpdmVycy9pZGUvaWRlLWRpc2suY19vcmlnXwkyMDEw
+LTA1LTE3IDIyOjExOjA3LjAwMDAwMDAwMCArMDIwMAorKysgbGludXgtc291cmNlLTIuNi4zMi9k
+cml2ZXJzL2lkZS9pZGUtZGlzay5jCTIwMTAtMDUtMTcgMjI6MzM6NDEuMDAwMDAwMDAwICswMjAw
+CkBAIC0xODgsNiArMTg4LDEyIEBAIHN0YXRpYyBpZGVfc3RhcnRzdG9wX3QgaWRlX2RvX3J3X2Rp
+c2soaWQKIAogCWxlZHRyaWdfaWRlX2FjdGl2aXR5KCk7CiAKKwlpZiAocnFfZGF0YV9kaXIocnEp
+ID09IFJFQUQpIHsKKwkJbGVkdHJpZ19pZGVfcmVhZF9hY3Rpdml0eSgpOworCX0gZWxzZSB7CisJ
+CWxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2aXR5KCk7CisJfQorCiAJcHJfZGVidWcoIiVzOiAlc2lu
+ZzogYmxvY2s9JWxsdSwgc2VjdG9ycz0ldSwgYnVmZmVyPTB4JTA4bHhcbiIsCiAJCSBkcml2ZS0+
+bmFtZSwgcnFfZGF0YV9kaXIocnEpID09IFJFQUQgPyAicmVhZCIgOiAid3JpdCIsCiAJCSAodW5z
+aWduZWQgbG9uZyBsb25nKWJsb2NrLCBibGtfcnFfc2VjdG9ycyhycSksCi0tLSBsaW51eC1zb3Vy
+Y2UtMi42LjMyL2luY2x1ZGUvbGludXgvbGVkcy5oX29yaWdfCTIwMTAtMDUtMTcgMjI6Mjk6MDIu
+MDAwMDAwMDAwICswMjAwCisrKyBsaW51eC1zb3VyY2UtMi42LjMyL2luY2x1ZGUvbGludXgvbGVk
+cy5oCTIwMTAtMDUtMTcgMjI6MzA6MDUuMDAwMDAwMDAwICswMjAwCkBAIC0xMjEsOCArMTIxLDEy
+IEBAIGV4dGVybiB2b2lkIGxlZF90cmlnZ2VyX2V2ZW50KHN0cnVjdCBsZWQKIC8qIFRyaWdnZXIg
+c3BlY2lmaWMgZnVuY3Rpb25zICovCiAjaWZkZWYgQ09ORklHX0xFRFNfVFJJR0dFUl9JREVfRElT
+SwogZXh0ZXJuIHZvaWQgbGVkdHJpZ19pZGVfYWN0aXZpdHkodm9pZCk7CitleHRlcm4gdm9pZCBs
+ZWR0cmlnX2lkZV9yZWFkX2FjdGl2aXR5KHZvaWQpOworZXh0ZXJuIHZvaWQgbGVkdHJpZ19pZGVf
+d3JpdGVfYWN0aXZpdHkodm9pZCk7CiAjZWxzZQogI2RlZmluZSBsZWR0cmlnX2lkZV9hY3Rpdml0
+eSgpIGRvIHt9IHdoaWxlKDApCisjZGVmaW5lIGxlZHRyaWdfaWRlX3JlYWRfYWN0aXZpdHkoKSBk
+byB7fSB3aGlsZSgwKQorI2RlZmluZSBsZWR0cmlnX2lkZV93cml0ZV9hY3Rpdml0eSgpIGRvIHt9
+IHdoaWxlKDApCiAjZW5kaWYKIAogLyoKLS0tIGxpbnV4LXNvdXJjZS0yLjYuMzIvZHJpdmVycy9s
+ZWRzL2xlZHRyaWctaWRlLWRpc2suY19vcmlnXwkyMDEwLTA1LTE3IDIyOjE1OjUyLjAwMDAwMDAw
+MCArMDIwMAorKysgbGludXgtc291cmNlLTIuNi4zMi9kcml2ZXJzL2xlZHMvbGVkdHJpZy1pZGUt
+ZGlzay5jCTIwMTAtMDUtMTcgMjI6MzU6MjcuMDAwMDAwMDAwICswMjAwCkBAIC0xOSwxMSArMTks
+MjEgQEAKICNpbmNsdWRlIDxsaW51eC9sZWRzLmg+CiAKIHN0YXRpYyB2b2lkIGxlZHRyaWdfaWRl
+X3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpOworc3RhdGljIHZvaWQgbGVkdHJpZ19pZGVf
+cmVhZF90aW1lcmZ1bmModW5zaWduZWQgbG9uZyBkYXRhKTsKK3N0YXRpYyB2b2lkIGxlZHRyaWdf
+aWRlX3dyaXRlX3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpOwogCiBERUZJTkVfTEVEX1RS
+SUdHRVIobGVkdHJpZ19pZGUpOworREVGSU5FX0xFRF9UUklHR0VSKGxlZHRyaWdfaWRlX3JlYWQp
+OworREVGSU5FX0xFRF9UUklHR0VSKGxlZHRyaWdfaWRlX3dyaXRlKTsKIHN0YXRpYyBERUZJTkVf
+VElNRVIobGVkdHJpZ19pZGVfdGltZXIsIGxlZHRyaWdfaWRlX3RpbWVyZnVuYywgMCwgMCk7Citz
+dGF0aWMgREVGSU5FX1RJTUVSKGxlZHRyaWdfaWRlX3JlYWRfdGltZXIsIGxlZHRyaWdfaWRlX3Jl
+YWRfdGltZXJmdW5jLCAwLCAwKTsKK3N0YXRpYyBERUZJTkVfVElNRVIobGVkdHJpZ19pZGVfd3Jp
+dGVfdGltZXIsIGxlZHRyaWdfaWRlX3dyaXRlX3RpbWVyZnVuYywgMCwgMCk7CiBzdGF0aWMgaW50
+IGlkZV9hY3Rpdml0eTsKIHN0YXRpYyBpbnQgaWRlX2xhc3RhY3Rpdml0eTsKK3N0YXRpYyBpbnQg
+aWRlX3JlYWRfYWN0aXZpdHk7CitzdGF0aWMgaW50IGlkZV9yZWFkX2xhc3RhY3Rpdml0eTsKK3N0
+YXRpYyBpbnQgaWRlX3dyaXRlX2FjdGl2aXR5Oworc3RhdGljIGludCBpZGVfd3JpdGVfbGFzdGFj
+dGl2aXR5OwogCiB2b2lkIGxlZHRyaWdfaWRlX2FjdGl2aXR5KHZvaWQpCiB7CkBAIC0zMyw2ICs0
+MywyMiBAQCB2b2lkIGxlZHRyaWdfaWRlX2FjdGl2aXR5KHZvaWQpCiB9CiBFWFBPUlRfU1lNQk9M
+KGxlZHRyaWdfaWRlX2FjdGl2aXR5KTsKIAordm9pZCBsZWR0cmlnX2lkZV9yZWFkX2FjdGl2aXR5
+KHZvaWQpCit7CisJaWRlX3JlYWRfYWN0aXZpdHkrKzsKKwlpZiAoIXRpbWVyX3BlbmRpbmcoJmxl
+ZHRyaWdfaWRlX3JlYWRfdGltZXIpKQorCQltb2RfdGltZXIoJmxlZHRyaWdfaWRlX3JlYWRfdGlt
+ZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7Cit9CitFWFBPUlRfU1lNQk9MKGxl
+ZHRyaWdfaWRlX3JlYWRfYWN0aXZpdHkpOworCit2b2lkIGxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2
+aXR5KHZvaWQpCit7CisJaWRlX3dyaXRlX2FjdGl2aXR5Kys7CisJaWYgKCF0aW1lcl9wZW5kaW5n
+KCZsZWR0cmlnX2lkZV93cml0ZV90aW1lcikpCisJCW1vZF90aW1lcigmbGVkdHJpZ19pZGVfd3Jp
+dGVfdGltZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7Cit9CitFWFBPUlRfU1lN
+Qk9MKGxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2aXR5KTsKKwogc3RhdGljIHZvaWQgbGVkdHJpZ19p
+ZGVfdGltZXJmdW5jKHVuc2lnbmVkIGxvbmcgZGF0YSkKIHsKIAlpZiAoaWRlX2xhc3RhY3Rpdml0
+eSAhPSBpZGVfYWN0aXZpdHkpIHsKQEAgLTQ1LDkgKzcxLDM1IEBAIHN0YXRpYyB2b2lkIGxlZHRy
+aWdfaWRlX3RpbWVyZnVuYyh1bnNpZ24KIAl9CiB9CiAKK3N0YXRpYyB2b2lkIGxlZHRyaWdfaWRl
+X3JlYWRfdGltZXJmdW5jKHVuc2lnbmVkIGxvbmcgZGF0YSkKK3sKKwlpZiAoaWRlX3JlYWRfbGFz
+dGFjdGl2aXR5ICE9IGlkZV9yZWFkX2FjdGl2aXR5KSB7CisJCWlkZV9yZWFkX2xhc3RhY3Rpdml0
+eSA9IGlkZV9yZWFkX2FjdGl2aXR5OworCQkvKiBJTlRfTUFYIHdpbGwgc2V0IGVhY2ggTEVEIHRv
+IGl0cyBtYXhpbXVtIGJyaWdodG5lc3MgKi8KKwkJbGVkX3RyaWdnZXJfZXZlbnQobGVkdHJpZ19p
+ZGVfcmVhZCwgSU5UX01BWCk7CisJCW1vZF90aW1lcigmbGVkdHJpZ19pZGVfcmVhZF90aW1lciwg
+amlmZmllcyArIG1zZWNzX3RvX2ppZmZpZXMoMTApKTsKKwl9IGVsc2UgeworCQlsZWRfdHJpZ2dl
+cl9ldmVudChsZWR0cmlnX2lkZV9yZWFkLCBMRURfT0ZGKTsKKwl9Cit9CisKK3N0YXRpYyB2b2lk
+IGxlZHRyaWdfaWRlX3dyaXRlX3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpCit7CisJaWYg
+KGlkZV93cml0ZV9sYXN0YWN0aXZpdHkgIT0gaWRlX3dyaXRlX2FjdGl2aXR5KSB7CisJCWlkZV93
+cml0ZV9sYXN0YWN0aXZpdHkgPSBpZGVfd3JpdGVfYWN0aXZpdHk7CisJCS8qIElOVF9NQVggd2ls
+bCBzZXQgZWFjaCBMRUQgdG8gaXRzIG1heGltdW0gYnJpZ2h0bmVzcyAqLworCQlsZWRfdHJpZ2dl
+cl9ldmVudChsZWR0cmlnX2lkZV93cml0ZSwgSU5UX01BWCk7CisJCW1vZF90aW1lcigmbGVkdHJp
+Z19pZGVfd3JpdGVfdGltZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7CisJfSBl
+bHNlIHsKKwkJbGVkX3RyaWdnZXJfZXZlbnQobGVkdHJpZ19pZGVfd3JpdGUsIExFRF9PRkYpOwor
+CX0KK30KKwogc3RhdGljIGludCBfX2luaXQgbGVkdHJpZ19pZGVfaW5pdCh2b2lkKQogewogCWxl
+ZF90cmlnZ2VyX3JlZ2lzdGVyX3NpbXBsZSgiaWRlLWRpc2siLCAmbGVkdHJpZ19pZGUpOworCWxl
+ZF90cmlnZ2VyX3JlZ2lzdGVyX3NpbXBsZSgiaWRlLWRpc2stcmVhZCIsICZsZWR0cmlnX2lkZV9y
+ZWFkKTsKKwlsZWRfdHJpZ2dlcl9yZWdpc3Rlcl9zaW1wbGUoImlkZS1kaXNrLXdyaXRlIiwgJmxl
+ZHRyaWdfaWRlX3dyaXRlKTsKIAlyZXR1cm4gMDsKIH0KIAo=
+--0016367fb13fea01380486d25216--
