@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754314Ab0EQHlp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 03:41:45 -0400
-Received: from smtp-out3.blueyonder.co.uk ([195.188.213.6]:55208 "EHLO
-	smtp-out3.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753773Ab0EQHlo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 03:41:44 -0400
-Message-ID: <4BF0F334.8090108@blueyonder.co.uk>
-Date: Mon, 17 May 2010 08:41:40 +0100
-From: Sid Boyce <sboyce@blueyonder.co.uk>
-Reply-To: sboyce@blueyonder.co.uk
-Organization: blueyonder.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.15 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
+	id S1754362Ab0EQHpS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 03:45:18 -0400
+Received: from crca.org.au ([74.207.252.120]:39180 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754273Ab0EQHpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 03:45:16 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BF0F3FF.2010603@crca.org.au>
+Date: Mon, 17 May 2010 17:45:03 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-CC: piotr@hosowicz.com, LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: General questiin about SYSFS
-References: <4BF05EC9.6070102@blueyonder.co.uk> <4BF0AA6C.1050102@example.com>
-In-Reply-To: <4BF0AA6C.1050102@example.com>
-Content-Type: text/plain; charset=ISO-8859-1
+To: Alan Stern <stern@rowland.harvard.edu>
+CC: linux-kernel <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       Matt Reimer <mattjreimer@gmail.com>
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
+ userspace is frozen?
+References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 17/05/10 03:31, Piotr Hosowicz wrote:
-> On 16.05.2010 23:08, Sid Boyce wrote:
->> As the message says, you have to change all instances of SSYSFS to ATTR
->>   in the rules files in /etc/udev/rules.d to stop those messages
->> appearing on boot up.
-> 
-> Ok, forget my next question - I risked breaking things and made a plain
-> search and replace, reboot, things seem to work, no errors. I also had
-> to change BUS to SUBSYSTEM.
-> 
-> Regards,
-> 
-> Piotr Hosowicz
-> 
+Hi.
 
-I forgot to mention the BUS to SUBSYSTEM  change, but it was obvious
-when looking at the messages. One other I've seen (on openSUSE 11.3),
-/etc/modprobe.conf deprecated, so I've moved it out of /etc and also
-changed files in /etc/modprobe.d from xxxxxxx to xxxxxxx.conf. It all
-helps keep the noise down.
-No problems, I have been running with the modified files for some months.
-Regards
-Sid.
--- 
-Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
-Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
-Specialist, Cricket Coach
-Microsoft Windows Free Zone - Linux used for all Computing Tasks
+On 17/05/10 12:22, Alan Stern wrote:
+> On Mon, 17 May 2010, Nigel Cunningham wrote:
+>
+>>>> I object to the patch.
+>>>>
+>>>> Tell the patch it ought to exit once thawed, by all means.
+>>>
+>>> I'm not sure what you mean.  Care to explain?
+>>
+>> I mean "Set up some sort of flag that it can look at once thawed at
+>> resume time, and use that to tell it to exit at that point."
+>
+> Doesn't the patch do exactly that?  The "flag" is set by virtue of the
+> fact that this is part of del_gendisk -- which means the disk is being
+> unregistered and hence the writeback thread will exit shortly.
+>
+>>>> Make the patch unfreezeable to begin with, by all means.
+>>>
+>>> That wouldn't work.
+>>
+>> Why not?
+>
+> It would be nice to know exactly why.  Perhaps the underlying problem
+> can be fixed.
+>
+>>>> If you know a disk is going to be unregistered during resume,
+>>>
+>>> How do we check that, exactly?
+>>
+>> Well, if you can figure out that you need to go down this path at this
+>> point in the process, you must be able to apply the same logic to come
+>> to the same conclusion earlier in the process.
+>
+> That's not true.  You don't know that a device is going to be unplugged
+> until it actually _is_ unplugged.
 
+Sorry - I got unregistered during suspend (instead of resume) in my 
+head. That said, I'd argue that we should be...
+
+1) Syncing all the data at the start of the suspend/hibernate, so 
+there's nothing for the workthread to do if we do del_gendisk.
+2) Telling things to exit if we do find the device is gone away at 
+resume time, but not relying on the going-away happening until post 
+process thaw, for a couple of reasons:
+- Potential for races/confusion/mess etc in having $random process 
+thawing other processes. Only the thread doing the suspend/hibernate 
+should be freezing/thawing.
+- We're dealing with the symptom, not the cause. Almost always a bad idea.
+
+Regards,
+
+Nigel
