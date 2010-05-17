@@ -1,129 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754770Ab0EQJPY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:15:24 -0400
-Received: from smtp-out110.alice.it ([85.37.17.110]:2609 "EHLO
-	smtp-out110.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab0EQJPW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:15:22 -0400
-Date: Mon, 17 May 2010 11:15:13 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Richard Purdie <rpurdie@linux.intel.com>
-Subject: Re: [PATCH] leds-lp3944: properly handle lp3944_configure fail in
- lp3944_probe
-Message-Id: <20100517111513.f76c0bb9.ospite@studenti.unina.it>
-In-Reply-To: <1274060042.17226.2.camel@mola>
-References: <1274060042.17226.2.camel@mola>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP"
-X-OriginalArrivalTime: 17 May 2010 09:15:19.0928 (UTC) FILETIME=[78D58780:01CAF5A1]
+	id S1754858Ab0EQJQc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:16:32 -0400
+Received: from www.tglx.de ([62.245.132.106]:37417 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608Ab0EQJQa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:16:30 -0400
+Date: Mon, 17 May 2010 11:15:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Tang <feng.tang@intel.com>
+cc: Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       "Du, Alek" <alek.du@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
+ clock device
+In-Reply-To: <20100512103422.1d59cc85@feng-i7>
+Message-ID: <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com> <1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com> <alpine.LFD.2.00.1005111643380.3401@localhost.localdomain> <20100512103422.1d59cc85@feng-i7>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Feng,
 
-On Mon, 17 May 2010 09:34:02 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+[ Cc'ed John ]
 
-> In current implementation, lp3944_probe return 0 even if lp3944_configure=
- fail.
-> Therefore, led_classdev_unregister will be executed twice ( in error hand=
-ling of lp3944_configure and lp3944_remove ).
-> This patch properly handles lp3944_configure fail in lp3944_probe.
->
+On Wed, 12 May 2010, Feng Tang wrote:
+> > >  void __init mrst_rtc_init(void)
+> > >  {
+> > > +	unsigned long rtc_paddr;
+> > > +	void __iomem *virt_base;
+> > > +
+> > >  	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
+> > > +	if (!sfi_mrtc_num)
+> > > +		return;
+> > > +
+> > > +	rtc_paddr = sfi_mrtc_array[0].phys_addr;
+> > > +
+> > > +	/* vRTC's register address may not be page aligned */
+> > > +	set_fixmap_nocache(FIX_LNW_VRTC, rtc_paddr);
+> > 
+> > Why do we need a fixmap for that ? There is no need to setup RTC that
+> > early. The first call is from timekeeping_init() 
+> 
+> Actually when to init the vrtc register is a big problem for me, vrtc
+> need be inited before timekeeping_init(), and I thought better to put it
+> somewhere in setup_arch(), as it is architecture specific, and ioremap
+> is not working at that time. Also that's the reason I created a new
+> wallclock_init func for x86_platforms, I could not find a better way
+> to do the vrtc init.
 
-Hi Axel, thanks for the fix, I agree it's needed.
-There are some minor comments inlined below.
+There is no particular reason why we need to read it in
+timekeeping_init(). Nothing in the kernel needs the correct wall time
+at that point. So we can safely move the setting of xtime to rtc wall
+clock time to a separate timekeeping_late_init() function.
 
-Plus, when possible, I prefer commit messages to be wrapped to 72/80
-characters per line. Please, consider this if you are sending a v2.
+John ???
+ 
+> > Also this RTC init code should be in vrtc.c
+> I agree I should move this init code to vrtc.c, but still think it should
+> be called in the setup_arch() than in start_kernel()
 
-Ah, may I ask where you are using this driver? Just curious.
+I do not :)
 
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
-> ---
->  drivers/leds/leds-lp3944.c |   10 +++++++++-
->  1 files changed, 9 insertions(+), 1 deletions(-)
->=20
-> diff --git a/drivers/leds/leds-lp3944.c b/drivers/leds/leds-lp3944.c
-> index 8d5ecce..03a24d0 100644
-> --- a/drivers/leds/leds-lp3944.c
-> +++ b/drivers/leds/leds-lp3944.c
-> @@ -379,6 +379,7 @@ static int __devinit lp3944_probe(struct i2c_client *=
-client,
->  {
->  	struct lp3944_platform_data *lp3944_pdata =3D client->dev.platform_data;
->  	struct lp3944_data *data;
-> +	int err;
-> =20
->  	if (lp3944_pdata =3D=3D NULL) {
->  		dev_err(&client->dev, "no platform data\n");
-> @@ -403,8 +404,15 @@ static int __devinit lp3944_probe(struct i2c_client =
-*client,
-> =20
->  	dev_info(&client->dev, "lp3944 enabled\n");
-> =20
-> -	lp3944_configure(client, data, lp3944_pdata);
-> +	err =3D lp3944_configure(client, data, lp3944_pdata);
-> +	if (err < 0)
-> +		goto err_configure;
-> +
+> > > +	lock_cmos_prefix(reg);
+> > 
+> >   This lock_cmos magic should just die. I have no idea why something
+> >   wants or wanted to access the RTC from an NMI.
+> 
+> I will try to reuse the rtc_lock defined in rtc.c whose get/set_time
+> service won't be called with vrtc's at the same time.
 
-The dev_info(&client->dev, "lp3944 enabled\n"); could now go right
-here, before the return 0, so we don't report the driver as enabled
-even in the case its probe fails.
+Please don't create artifical dependencies. Use a separate vrtc_lock
+to serialize the access to vrtc.
 
->  	return 0;
-> +
-> +err_configure:
-> +	kfree(data);
+Thanks,
 
-add i2c_set_clientdata(client, NULL) here just like in lp3944_remove()
-
-> +	return err;
->  }
-> =20
->  static int __devexit lp3944_remove(struct i2c_client *client)
-> --=20
-> 1.5.4.3
->=20
-
-Regards,
-   Antonio
-
---=20
-Antonio Ospite
-http://ao2.it
-
-PGP public key ID: 0x4553B001
-
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
-
---Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvxCSEACgkQ5xr2akVTsAFFmwCgnZX3yFmev4sH2fnbqLhuxbih
-714Ani0k4SG16mjXIPY5OEDDOC4gOBAC
-=Pnmt
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP--
+	tglx
