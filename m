@@ -1,165 +1,570 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755908Ab0EQTD6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:03:58 -0400
-Received: from mga14.intel.com ([143.182.124.37]:7101 "EHLO mga14.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754290Ab0EQTCu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:02:50 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,248,1272870000"; 
-   d="scan'208";a="278095801"
-Message-Id: <20100517184027.680459666@sbs-t61.sc.intel.com>
-User-Agent: quilt/0.47-1
-Date: Mon, 17 May 2010 11:27:28 -0700
-From: Suresh Siddha <suresh.b.siddha@intel.com>
-To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@linux.jf.intel.com>
-Cc: Venkatesh Pallipadi <venki@google.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
-       LKML <linux-kernel@vger.kernel.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       "David S. Miller" <davem@davemloft.net>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: [patch 2/7] softirq: add init_remote_softirq_csd()
-References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-Content-Disposition: inline; filename=add_init_remote_softirq_csd.patch
+	id S1755792Ab0EQTEY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:04:24 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:44443 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752266Ab0EQTCs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:02:48 -0400
+Date: Mon, 17 May 2010 21:02:42 +0200
+From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>
+To: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Cc: s.hauer@pengutronix.de, maramaopercheseimorto@gmail.com,
+       sameo@linux.intel.com, valentin.longchamp@epfl.ch,
+       rpurdie@linux.intel.com, linux-kernel@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org
+Subject: Re: [PATCH 1/2] mc13783: add LED support
+Message-ID: <20100517190242.GA17604@pengutronix.de>
+References: <1274114423-30020-1-git-send-email-philippe.retornaz@epfl.ch> <1274114423-30020-2-git-send-email-philippe.retornaz@epfl.ch>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <1274114423-30020-2-git-send-email-philippe.retornaz@epfl.ch>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: ukl@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently send_remote_softirq() API's don't allow single call_single_data
-struct(like per cpu call_single_data) to be used with multiple
-send_remote_softirq() calls in parallel (as each of the send_remote_softirq()
-call reinitializes the call_single_data overwriting the inflight usage.
+Hi Philippe,
 
-Add a new init_remote_softirq_csd() which will init the call_single_data.
-Second send_remote_softirq() from the same cpu will now wait on the csd_lock()
-if the prior send_remote_softirq() is not complete.
+On Mon, May 17, 2010 at 06:40:22PM +0200, Philippe Rétornaz wrote:
+> This adds basic led support for Freescale MC13783 PMIC.
+> 
+> Signed-off-by: Philippe Rétornaz <philippe.retornaz@epfl.ch>
+> ---
+>  drivers/leds/Kconfig        |    7 +
+>  drivers/leds/Makefile       |    1 +
+>  drivers/leds/leds-mc13783.c |  375 +++++++++++++++++++++++++++++++++++++++++++
+>  drivers/mfd/mc13783-core.c  |    4 +
+>  include/linux/mfd/mc13783.h |   68 ++++++++
+>  5 files changed, 455 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/leds/leds-mc13783.c
+> 
+> diff --git a/drivers/leds/Kconfig b/drivers/leds/Kconfig
+> index 505eb64..706386c 100644
+> --- a/drivers/leds/Kconfig
+> +++ b/drivers/leds/Kconfig
+> @@ -285,6 +285,13 @@ config LEDS_DELL_NETBOOKS
+>  	  This adds support for the Latitude 2100 and similar
+>  	  notebooks that have an external LED.
+>  
+> +config LEDS_MC13783
+> +	tristate "LED Support for MC13783 PMIC"
+> +	depends on MFD_MC13783
+> +	help
+> +	  This option enable support for on-chip LED drivers found
+> +	  on Freescale Semiconductor MC13783 PMIC.
+> +
+>  config LEDS_TRIGGERS
+>  	bool "LED Trigger support"
+>  	help
+> diff --git a/drivers/leds/Makefile b/drivers/leds/Makefile
+> index 0cd8b99..d084e3b 100644
+> --- a/drivers/leds/Makefile
+> +++ b/drivers/leds/Makefile
+> @@ -35,6 +35,7 @@ obj-$(CONFIG_LEDS_INTEL_SS4200)		+= leds-ss4200.o
+>  obj-$(CONFIG_LEDS_LT3593)		+= leds-lt3593.o
+>  obj-$(CONFIG_LEDS_ADP5520)		+= leds-adp5520.o
+>  obj-$(CONFIG_LEDS_DELL_NETBOOKS)	+= dell-led.o
+> +obj-$(CONFIG_LEDS_MC13783)		+= leds-mc13783.o
+>  
+>  # LED SPI Drivers
+>  obj-$(CONFIG_LEDS_DAC124S085)		+= leds-dac124s085.o
+> diff --git a/drivers/leds/leds-mc13783.c b/drivers/leds/leds-mc13783.c
+> new file mode 100644
+> index 0000000..c0427fd
+> --- /dev/null
+> +++ b/drivers/leds/leds-mc13783.c
+> @@ -0,0 +1,375 @@
+> +/*
+> + * LEDs driver for Freescale MC13783
+> + *
+> + * Copyright (C) 2010 Philippe Rétornaz
+> + *
+> + * Based on leds-da903x:
+> + * Copyright (C) 2008 Compulab, Ltd.
+> + *      Mike Rapoport <mike@compulab.co.il>
+> + *
+> + * Copyright (C) 2006-2008 Marvell International Ltd.
+> + *      Eric Miao <eric.miao@marvell.com>
+> + *
+> + * This program is free software; you can redistribute it and/or modify
+> + * it under the terms of the GNU General Public License version 2 as
+> + * published by the Free Software Foundation.
+> + */
+> +
+> +#include <linux/module.h>
+> +#include <linux/kernel.h>
+> +#include <linux/init.h>
+> +#include <linux/platform_device.h>
+> +#include <linux/leds.h>
+> +#include <linux/workqueue.h>
+> +#include <linux/mfd/mc13783.h>
+> +#include <linux/mfd/mc13783-private.h>
+please don't use mc13783-private.h.
 
-Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Jens Axboe <jens.axboe@oracle.com>
----
- include/linux/interrupt.h |    8 ++++++--
- kernel/softirq.c          |   41 +++++++++++++++++++++++++++--------------
- 2 files changed, 33 insertions(+), 16 deletions(-)
+> +#include <linux/slab.h>
+> +
+> +struct mc13783_led {
+> +	struct led_classdev	cdev;
+> +	struct work_struct	work;
+> +	struct mc13783		*master;
+> +	enum led_brightness	new_brightness;
+> +	int			id;
+> +};
+> +
+> +#define BL_P_MASK 0xf
+> +#define MD_P_SHIFT 9
+> +#define AD_P_SHIFT 13
+> +#define KP_P_SHIFT 17
+> +#define TC_P_BASE_SHIFT 6
+> +#define TC_P_MASK 0x1f
+> +static void mc13783_led_work(struct work_struct *work)
+> +{
+> +	struct mc13783_led *led = container_of(work, struct mc13783_led, work);
+> +	int off;
+> +	int shift;
+> +	int bank;
+> +	int o;
+> +
+> +	mc13783_lock(led->master);
+> +	switch (led->id) {
+> +	case MC13783_LED_MD:
+> +		mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +			BL_P_MASK << MD_P_SHIFT,
+> +			(led->new_brightness >> 4) << MD_P_SHIFT);
+> +		break;
+> +	case MC13783_LED_AD:
+> +		mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +			BL_P_MASK << AD_P_SHIFT,
+> +			(led->new_brightness >> 4) << AD_P_SHIFT);
+> +		break;
+> +	case MC13783_LED_KP:
+> +		mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +			BL_P_MASK << KP_P_SHIFT,
+> +			(led->new_brightness >> 4) << KP_P_SHIFT);
+> +		break;
+> +	case MC13783_LED_R1:
+> +	case MC13783_LED_G1:
+> +	case MC13783_LED_B1:
+> +	case MC13783_LED_R2:
+> +	case MC13783_LED_G2:
+> +	case MC13783_LED_B2:
+> +	case MC13783_LED_R3:
+> +	case MC13783_LED_G3:
+> +	case MC13783_LED_B3:
+> +		o = led->id - MC13783_LED_R1;
+> +		bank = o/3;
+> +		off = MC13783_REG_LED_CONTROL_3 + o/3;
+> +		shift = (o - bank * 3) * 5 + TC_P_BASE_SHIFT;
+> +		mc13783_reg_rmw(led->master, off, TC_P_MASK << shift,
+> +				(led->new_brightness >> 3) << shift);
+> +
+> +		break;
+> +	}
+> +	mc13783_unlock(led->master);
+> +}
+> +
+> +static void mc13783_led_set(struct led_classdev *led_cdev,
+> +			   enum led_brightness value)
+> +{
+> +	struct mc13783_led *led;
+> +
+> +	led = container_of(led_cdev, struct mc13783_led, cdev);
+> +	led->new_brightness = value;
+> +	schedule_work(&led->work);
+> +}
+I wonder why you don't set the registers directly here, but use a work
+struct instead.
 
-Index: tip/kernel/softirq.c
-===================================================================
---- tip.orig/kernel/softirq.c
-+++ tip/kernel/softirq.c
-@@ -578,24 +578,23 @@ static void remote_softirq_receive(void 
- 	local_irq_restore(flags);
- }
- 
--static int __try_remote_softirq(struct call_single_data *cp, int cpu, int softirq)
-+static int __try_remote_softirq(struct call_single_data *cp, int cpu)
- {
- 	if (cpu_online(cpu)) {
--		cp->func = remote_softirq_receive;
--		cp->info = cp;
--		cp->flags = 0;
--		cp->priv = softirq;
--
- 		__smp_call_function_single(cpu, cp, 0);
- 		return 0;
- 	}
- 	return 1;
- }
- #else /* CONFIG_USE_GENERIC_SMP_HELPERS */
--static int __try_remote_softirq(struct call_single_data *cp, int cpu, int softirq)
-+static int __try_remote_softirq(struct call_single_data *cp, int cpu)
- {
- 	return 1;
- }
-+static void remote_softirq_receive(void *data)
-+{
-+	return;
-+}
- #endif
- 
- /**
-@@ -611,12 +610,12 @@ static int __try_remote_softirq(struct c
-  * Interrupts must be disabled.
-  */
- void __send_remote_softirq(struct call_single_data *cp, int cpu, int this_cpu,
--			   int softirq, int fallback)
-+			   int fallback)
- {
- 	if (cpu == this_cpu)
--		__local_trigger(cp, softirq);
--	else if (__try_remote_softirq(cp, cpu, softirq) && fallback)
--		__local_trigger(cp, softirq);
-+		__local_trigger(cp, cp->priv);
-+	else if (__try_remote_softirq(cp, cpu) && fallback)
-+		__local_trigger(cp, cp->priv);
- }
- EXPORT_SYMBOL(__send_remote_softirq);
- 
-@@ -629,19 +628,33 @@ EXPORT_SYMBOL(__send_remote_softirq);
-  * Like __send_remote_softirq except that disabling interrupts and
-  * computing the current cpu is done for the caller.
-  */
--void send_remote_softirq(struct call_single_data *cp, int cpu, int softirq,
--			 int fallback)
-+void send_remote_softirq(struct call_single_data *cp, int cpu, int fallback)
- {
- 	unsigned long flags;
- 	int this_cpu;
- 
- 	local_irq_save(flags);
- 	this_cpu = smp_processor_id();
--	__send_remote_softirq(cp, cpu, this_cpu, softirq, fallback);
-+	__send_remote_softirq(cp, cpu, this_cpu, fallback);
- 	local_irq_restore(flags);
- }
- EXPORT_SYMBOL(send_remote_softirq);
- 
-+/***
-+ * init_remote_softirq_csd - initialize the smp_call_function_single()'s
-+ * call single data that will be later used by send_remote_softirq()
-+ * @cp: private SMP call function data area to be initialized
-+ * @softirq: the softirq to be used for the work
-+ */
-+void init_remote_softirq_csd(struct call_single_data *cp, int softirq)
-+{
-+	cp->func = remote_softirq_receive;
-+	cp->info = cp;
-+	cp->flags = 0;
-+	cp->priv = softirq;
-+}
-+EXPORT_SYMBOL(init_remote_softirq_csd);
-+
- static int __cpuinit remote_softirq_cpu_notify(struct notifier_block *self,
- 					       unsigned long action, void *hcpu)
- {
-Index: tip/include/linux/interrupt.h
-===================================================================
---- tip.orig/include/linux/interrupt.h
-+++ tip/include/linux/interrupt.h
-@@ -420,13 +420,17 @@ DECLARE_PER_CPU(struct list_head [NR_SOF
-  * work will be queued to the local cpu.
-  */
- extern void send_remote_softirq(struct call_single_data *cp, int cpu,
--				int softirq, int fallback);
-+				int fallback);
- 
- /* Like send_remote_softirq(), but the caller must disable local cpu interrupts
-  * and compute the current cpu, passed in as 'this_cpu'.
-  */
- extern void __send_remote_softirq(struct call_single_data *cp, int cpu,
--				  int this_cpu, int softirq, int fallback);
-+				  int this_cpu, int fallback);
-+
-+/* Initialize the call_single_data to be later used with send_remote_softirq().
-+ */
-+extern void init_remote_softirq_csd(struct call_single_data *cp, int softirq);
- 
- /* Tasklets --- multithreaded analogue of BHs.
- 
+> +#define BL_C_MASK 0x7
+> +#define MD_C_SHIFT 0
+> +#define AD_C_SHIFT 3
+> +#define KP_C_SHIFT 6
+> +#define TC_C_MASK 0x3
+> +static int __devinit mc13783_led_setup(struct mc13783_led *led, int max_current)
+> +{
+> +	int off;
+> +	int shift;
+> +	int ret;
+> +	int bank;
+> +	mc13783_lock(led->master);
+> +
+> +	switch (led->id) {
+> +	case MC13783_LED_MD:
+> +		ret = mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +				BL_C_MASK << MD_C_SHIFT,
+> +				(max_current & BL_C_MASK) << MD_C_SHIFT);
+> +		break;
+> +	case MC13783_LED_AD:
+> +		ret = mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +				BL_C_MASK << AD_C_SHIFT,
+> +				(max_current & BL_C_MASK) << AD_C_SHIFT);
+> +		break;
+> +	case MC13783_LED_KP:
+> +		ret = mc13783_reg_rmw(led->master, MC13783_REG_LED_CONTROL_2,
+> +				BL_C_MASK << KP_C_SHIFT,
+> +				(max_current & BL_C_MASK) << KP_C_SHIFT);
+> +		break;
+> +	case MC13783_LED_R1:
+> +	case MC13783_LED_G1:
+> +	case MC13783_LED_B1:
+> +	case MC13783_LED_R2:
+> +	case MC13783_LED_G2:
+> +	case MC13783_LED_B2:
+> +	case MC13783_LED_R3:
+> +	case MC13783_LED_G3:
+> +	case MC13783_LED_B3:
+> +		bank = (led->id - MC13783_LED_R1)/3;
+> +		off = MC13783_REG_LED_CONTROL_3 + bank;
+> +		shift = ((led->id - MC13783_LED_R1) - bank * 3) * 2;
+> +
+> +		ret = mc13783_reg_rmw(led->master, off, TC_C_MASK << shift,
+> +					(max_current & TC_C_MASK) << shift);
+> +		break;
+> +	}
+> +
+> +	mc13783_unlock(led->master);
+> +	return ret;
+> +}
+> +
+> +#define TC1HALF_BIT 18
+> +#define SLEWLIM_BIT 23
+> +#define TRIODE_TC_BIT 23
+> +#define TRIODE_MD_BIT 7
+> +#define TRIODE_AD_BIT 8
+> +#define TRIODE_KP_BIT 9
+> +#define BOOST_BIT 10
+> +#define PERIOD_MASK 0x3
+> +#define PERIOD_SHIFT 21
+> +#define ABMODE_MASK 0x7
+> +#define ABMODE_SHIFT 11
+> +#define ABREF_MASK 0x3
+> +#define ABREF_SHIFT 14
+Why not group the defines at the beginning of the file and properly
+namespace them?
 
+> +static int __devinit mc13783_leds_prepare(struct platform_device *pdev)
+> +{
+> +	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
+> +	int ret = 0;
+> +	int reg = 0;
+> +
+> +	mc13783_lock(dev);
+> +
+> +	if (pdata->flags & MC13783_LED_TC1HALF)
+> +		reg |= 1 << TC1HALF_BIT;
+> +
+> +	if (pdata->flags & MC13783_LED_SLEWLIMTC)
+> +		reg |= 1 << SLEWLIM_BIT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_1, reg);
+> +	if (ret)
+> +		goto out;
+> +
+> +	reg = (pdata->bl_period & PERIOD_MASK) << PERIOD_SHIFT;
+> +
+> +	if (pdata->flags & MC13783_LED_SLEWLIMBL)
+> +		reg |= 1 << SLEWLIM_BIT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_2, reg);
+> +	if (ret)
+> +		goto out;
+> +
+> +
+only one empty line please.
 
+> +	reg = (pdata->tc1_period & PERIOD_MASK) << PERIOD_SHIFT;
+> +	if (pdata->flags & MC13783_LED_TRIODE_TC1)
+> +		reg |= 1 << TRIODE_TC_BIT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_3, reg);
+> +	if (ret)
+> +		goto out;
+> +
+> +	reg = (pdata->tc2_period & PERIOD_MASK) << PERIOD_SHIFT;
+> +	if (pdata->flags & MC13783_LED_TRIODE_TC2)
+> +		reg |= 1 << TRIODE_TC_BIT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_4, reg);
+> +	if (ret)
+> +		goto out;
+> +
+> +	reg = (pdata->tc3_period & PERIOD_MASK) << PERIOD_SHIFT;
+> +	if (pdata->flags & MC13783_LED_TRIODE_TC3)
+> +		reg |= 1 << TRIODE_TC_BIT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_5, reg);
+> +	if (ret)
+> +		goto out;
+> +
+> +	reg = 1;
+> +	if (pdata->flags & MC13783_LED_TRIODE_MD)
+> +		reg |= 1 << TRIODE_MD_BIT;
+> +	if (pdata->flags & MC13783_LED_TRIODE_AD)
+> +		reg |= 1 << TRIODE_AD_BIT;
+> +	if (pdata->flags & MC13783_LED_TRIODE_KP)
+> +		reg |= 1 << TRIODE_KP_BIT;
+> +	if (pdata->flags & MC13783_LED_BOOST_EN)
+> +		reg |= 1 << BOOST_BIT;
+> +
+> +	reg |= (pdata->abmode & ABMODE_MASK) << ABMODE_SHIFT;
+> +	reg |= (pdata->abref & ABREF_MASK) << ABREF_SHIFT;
+> +
+> +	ret = mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_0, reg);
+> +
+> +out:
+> +	mc13783_unlock(dev);
+> +	return ret;
+> +}
+> +
+> +static int __devinit mc13783_led_probe(struct platform_device *pdev)
+> +{
+> +	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +	struct mc13783_led_platform_data *led_cur;
+> +	struct mc13783_led *led, *led_dat;
+> +	int ret, i;
+> +	int init_led = 0;
+> +
+> +	if (pdata == NULL) {
+> +		dev_err(&pdev->dev, "missing platform data\n");
+> +		return -ENODEV;
+> +	}
+> +
+> +	if (pdata->num_leds < 1 || pdata->num_leds > MC13783_LED_MAX) {
+> +		dev_err(&pdev->dev, "Invalid led count %d\n", pdata->num_leds);
+> +		return -EINVAL;
+> +	}
+> +
+> +	led = kzalloc(sizeof(*led) * pdata->num_leds, GFP_KERNEL);
+> +	if (led == NULL) {
+> +		dev_err(&pdev->dev, "failed to alloc memory\n");
+> +		return -ENOMEM;
+> +	}
+> +
+> +	ret = mc13783_leds_prepare(pdev);
+> +	if (ret) {
+> +		dev_err(&pdev->dev, "unable to init led driver\n");
+> +		goto err_free;
+> +	}
+> +
+> +	for (i = 0; i < pdata->num_leds; i++) {
+> +		led_dat = &led[i];
+> +		led_cur = &pdata->led[i];
+> +
+> +		if (led_cur->id > MC13783_LED_MAX || led_cur->id < 0) {
+> +			dev_err(&pdev->dev, "invalid id %d\n", led_cur->id);
+> +			ret = -EINVAL;
+> +			goto err_register;
+> +		}
+> +
+> +		if (init_led & (1 << led_cur->id)) {
+> +			dev_err(&pdev->dev, "led %d already initialized\n",
+> +					led_cur->id);
+> +			ret = -EINVAL;
+> +			goto err_register;
+> +		}
+> +
+> +		init_led |= 1 << led_cur->id;
+> +		led_dat->cdev.name = led_cur->name;
+> +		led_dat->cdev.default_trigger = led_cur->default_trigger;
+> +		led_dat->cdev.brightness_set = mc13783_led_set;
+> +		led_dat->cdev.brightness = LED_OFF;
+> +		led_dat->id = led_cur->id;
+> +		led_dat->master = dev_get_drvdata(pdev->dev.parent);
+> +
+> +		INIT_WORK(&led_dat->work, mc13783_led_work);
+> +
+> +		ret = led_classdev_register(pdev->dev.parent, &led_dat->cdev);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "failed to register led %d\n",
+> +					led_dat->id);
+> +			goto err_register;
+> +		}
+> +
+> +		ret = mc13783_led_setup(led_dat, led_cur->max_current);
+> +		if (ret) {
+> +			dev_err(&pdev->dev, "unable to init led %d\n",
+> +					led_dat->id);
+> +			i++;
+> +			goto err_register;
+> +		}
+> +	}
+> +
+> +	platform_set_drvdata(pdev, led);
+> +	return 0;
+> +
+> +err_register:
+> +	if (i > 0) {
+> +		for (i = i - 1; i >= 0; i--) {
+> +			led_classdev_unregister(&led[i].cdev);
+> +			cancel_work_sync(&led[i].work);
+> +		}
+> +	}
+the if isn't necessary, just doing for(...) is enough.
+
+> +
+> +err_free:
+> +	kfree(led);
+> +	return ret;
+> +}
+> +
+> +static int __devexit mc13783_led_remove(struct platform_device *pdev)
+> +{
+> +	struct mc13783_leds_platform_data *pdata = dev_get_platdata(&pdev->dev);
+> +	struct mc13783_led *led = platform_get_drvdata(pdev);
+> +	struct mc13783 *dev = dev_get_drvdata(pdev->dev.parent);
+> +	int i;
+> +
+> +	for (i = 0; i < pdata->num_leds; i++) {
+> +		led_classdev_unregister(&led[i].cdev);
+> +		cancel_work_sync(&led[i].work);
+> +	}
+> +
+> +	mc13783_lock(dev);
+> +
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_0, 0);
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_1, 0);
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_2, 0);
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_3, 0);
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_4, 0);
+> +	mc13783_reg_write(dev, MC13783_REG_LED_CONTROL_5, 0);
+> +
+> +	mc13783_unlock(dev);
+> +
+> +	kfree(led);
+> +	return 0;
+> +}
+> +
+> +static struct platform_driver mc13783_led_driver = {
+> +	.driver	= {
+> +		.name	= "mc13783-led",
+> +		.owner	= THIS_MODULE,
+> +	},
+> +	.probe		= mc13783_led_probe,
+> +	.remove		= __devexit_p(mc13783_led_remove),
+> +};
+> +
+> +static int __init mc13783_led_init(void)
+> +{
+> +	return platform_driver_register(&mc13783_led_driver);
+> +}
+> +module_init(mc13783_led_init);
+> +
+> +static void __exit mc13783_led_exit(void)
+> +{
+> +	platform_driver_unregister(&mc13783_led_driver);
+> +}
+> +module_exit(mc13783_led_exit);
+> +
+> +MODULE_DESCRIPTION("LEDs driver for Freescale MC13783 PMIC");
+> +MODULE_AUTHOR("Philipe Rétornaz <philippe.retorna@epfl.ch>");
+Philippe with two p?  I'm not sure if non-ASCII chars are allowed here.
+
+> +MODULE_LICENSE("GPL");
+> +MODULE_ALIAS("platform:mc13783-led");
+> diff --git a/drivers/mfd/mc13783-core.c b/drivers/mfd/mc13783-core.c
+> index 1f68eca..fecf38a 100644
+> --- a/drivers/mfd/mc13783-core.c
+> +++ b/drivers/mfd/mc13783-core.c
+> @@ -679,6 +679,10 @@ err_revision:
+>  	if (pdata->flags & MC13783_USE_TOUCHSCREEN)
+>  		mc13783_add_subdevice(mc13783, "mc13783-ts");
+>  
+> +	if (pdata->flags & MC13783_USE_LED)
+> +		mc13783_add_subdevice_pdata(mc13783, "mc13783-led",
+> +					pdata->leds, sizeof(*pdata->leds));
+> +
+>  	return 0;
+>  }
+>  
+> diff --git a/include/linux/mfd/mc13783.h b/include/linux/mfd/mc13783.h
+> index 8895d9d..95aa8b6 100644
+> --- a/include/linux/mfd/mc13783.h
+> +++ b/include/linux/mfd/mc13783.h
+> @@ -64,6 +64,72 @@ static inline int mc13783_ackirq(struct mc13783 *mc13783, int irq)
+>  					MC13783_ADC0_TSMOD1 | \
+>  					MC13783_ADC0_TSMOD2)
+>  
+> +struct mc13783_led_platform_data {
+> +#define MC13783_LED_MD		0
+> +#define MC13783_LED_AD		1
+> +#define MC13783_LED_KP		2
+> +#define MC13783_LED_R1		3
+> +#define MC13783_LED_G1		4
+> +#define MC13783_LED_B1		5
+> +#define MC13783_LED_R2		6
+> +#define MC13783_LED_G2		7
+> +#define MC13783_LED_B2		8
+> +#define MC13783_LED_R3		9
+> +#define MC13783_LED_G3		10
+> +#define MC13783_LED_B3		11
+> +#define MC13783_LED_MAX MC13783_LED_B3
+> +	int id;
+> +	const char *name;
+> +	const char *default_trigger;
+> +
+> +/* Three or two bits current selection depending on the led */
+> +	char max_current;
+> +};
+> +
+> +struct mc13783_leds_platform_data {
+> +	int num_leds;
+> +	struct mc13783_led_platform_data *led;
+> +
+> +#define MC13783_LED_TRIODE_MD	(1 << 0)
+> +#define MC13783_LED_TRIODE_AD	(1 << 1)
+> +#define MC13783_LED_TRIODE_KP	(1 << 2)
+> +#define MC13783_LED_BOOST_EN	(1 << 3)
+> +#define MC13783_LED_TC1HALF	(1 << 4)
+> +#define MC13783_LED_SLEWLIMTC	(1 << 5)
+> +#define MC13783_LED_SLEWLIMBL	(1 << 6)
+> +#define MC13783_LED_TRIODE_TC1	(1 << 7)
+> +#define MC13783_LED_TRIODE_TC2	(1 << 8)
+> +#define MC13783_LED_TRIODE_TC3	(1 << 9)
+> +	int flags;
+> +
+> +#define MC13783_LED_AB_DISABLED		0
+> +#define MC13783_LED_AB_MD1		1
+> +#define MC13783_LED_AB_MD12		2
+> +#define MC13783_LED_AB_MD123		3
+> +#define MC13783_LED_AB_MD1234		4
+> +#define MC13783_LED_AB_MD1234_AD1	5
+> +#define MC13783_LED_AB_MD1234_AD12	6
+> +#define MC13783_LED_AB_MD1_AD		7
+> +	char abmode;
+> +
+> +#define MC13783_LED_ABREF_200MV	0
+> +#define MC13783_LED_ABREF_400MV	1
+> +#define MC13783_LED_ABREF_600MV	2
+> +#define MC13783_LED_ABREF_800MV	3
+> +	char abref;
+> +
+> +#define MC13783_LED_PERIOD_10MS		0
+> +#define MC13783_LED_PERIOD_100MS	1
+> +#define MC13783_LED_PERIOD_500MS	2
+> +#define MC13783_LED_PERIOD_2S		3
+> +	char bl_period;
+> +	char tc1_period;
+> +	char tc2_period;
+> +	char tc3_period;
+> +};
+> +
+> +
+> +
+too many empty lines
+
+Best regards
+Uwe
+
+-- 
+Pengutronix e.K.                           | Uwe Kleine-König            |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
