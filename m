@@ -1,75 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755553Ab0EQR5L (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:57:11 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:60722 "EHLO mail.vyatta.com"
+	id S1755540Ab0EQR5t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:57:49 -0400
+Received: from fifo99.com ([67.223.236.141]:37199 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751657Ab0EQR5F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:57:05 -0400
-Date: Mon, 17 May 2010 10:56:54 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-       davem@davemloft.net
-Subject: Re: [PATCH -next] bridge: fix build for CONFIG_SYSFS disabled
-Message-ID: <20100517105654.2451e61f@nehalam>
-In-Reply-To: <20100517091756.e232bdc2.randy.dunlap@oracle.com>
-References: <20100517163521.649526d0.sfr@canb.auug.org.au>
- <20100517091756.e232bdc2.randy.dunlap@oracle.com>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
+	id S1751657Ab0EQR5r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 13:57:47 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: Daniel Walker <dwalker@fifo99.com>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Matthew Garrett <mjg@redhat.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Brian Swetland <swetland@google.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Geoff Smith <geoffx.smith@intel.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       linux-omap@vger.kernel.org, Liam Girdwood <lrg@slimlogic.co.uk>,
+       Arjan van de Ven <arjan@infradead.org>
+In-Reply-To: <1274115885.4418.59.camel@mulgrave.site>
+References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
+	 <87hbm6cz90.fsf@deeprootsystems.com>
+	 <1274115885.4418.59.camel@mulgrave.site>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 May 2010 10:57:19 -0700
+Message-ID: <1274119039.25625.12.camel@c-dwalke-linux.qualcomm.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010 09:17:56 -0700
-Randy Dunlap <randy.dunlap@oracle.com> wrote:
+On Mon, 2010-05-17 at 13:04 -0400, James Bottomley wrote:
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
+> I'm not sure this is real world, either.  Developers can fire up
+> powertop from the command line when their phone isn't idling for as long
+> as it should.  But a phone is a consumer device: the average smart phone
+> user just wants to browse the web, get email, go to facebook and play
+> with some cool apps.  If one of those cool apps is rogue, they're not
+> really going to know which one or how to find it (and firing up powertop
+> from the command line isn't something which will occur to them as a
+> matter of routine).
 > 
-> Fix build when CONFIG_SYSFS is not enabled:
-> 
-> net/bridge/br_if.c:136: error: 'struct net_bridge_port' has no member named 'sysfs_name'
-> 
-> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-> ---
->  net/bridge/br_if.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> --- linux-next-20100517.orig/net/bridge/br_if.c
-> +++ linux-next-20100517/net/bridge/br_if.c
-> @@ -133,7 +133,9 @@ static void del_nbp(struct net_bridge_po
->  	struct net_bridge *br = p->br;
->  	struct net_device *dev = p->dev;
->  
-> +#ifdef CONFIG_SYSFS
->  	sysfs_remove_link(br->ifobj, p->sysfs_name);
-> +#endif
->  
->  	dev_set_promiscuity(dev, -1);
->  
+> One of the nice things that suspend blockers actually does is to give
+> the kernel a clear name for the process blocking suspend (and thus
+> consuming power).  This allows a nice way to assign power budget to the
+> application and present who's using what in a nice visible form, which
+> does facilitate the reporting of bad apps, even for the non-developer
+> user.
 
-I don't like peppering code with #ifdef like this.
+If you have an idle based PM system you could get the same information
+from having scheduler statistics. Since the "bad" apps are the ones that
+are always either running or ready to run, and they would hardly ever
+sleep. I don't know if there are specific scheduler statistics for that,
+but it doesn't seem like it would be hard to make. It's even much more
+natural than getting statistics from suspend blockers, since it requires
+the app to be custom made to use suspend blockers.
 
-Turns out that in this place sysfs_name is always the same
-as the device name so instead:
+Daniel
 
-
---- a/net/bridge/br_if.c	2010-05-17 10:40:49.808031840 -0700
-+++ b/net/bridge/br_if.c	2010-05-17 10:49:47.767669246 -0700
-@@ -133,7 +133,7 @@ static void del_nbp(struct net_bridge_po
- 	struct net_bridge *br = p->br;
- 	struct net_device *dev = p->dev;
- 
--	sysfs_remove_link(br->ifobj, p->sysfs_name);
-+	sysfs_remove_link(br->ifobj, p->dev->name);
- 
- 	dev_set_promiscuity(dev, -1);
- 
-
-
--- 
