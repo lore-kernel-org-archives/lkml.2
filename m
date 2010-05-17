@@ -1,67 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755475Ab0EQTma (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:42:30 -0400
-Received: from mga06.intel.com ([134.134.136.21]:25432 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753506Ab0EQTm2 (ORCPT
+	id S1755550Ab0EQToP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:44:15 -0400
+Received: from brigitte.telenet-ops.be ([195.130.137.66]:56610 "EHLO
+	brigitte.telenet-ops.be" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab0EQToO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:42:28 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,249,1272870000"; 
-   d="scan'208";a="518673183"
-From: Jacob Pan <jacob.jun.pan@linux.intel.com>
-To: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Alan Cox <alan@linux.intel.com>
-Cc: Jacob Pan <jacob.jun.pan@intel.com>,
-       Jacob Pan <jacob.jun.pan@linux.intel.com>
-Subject: [PATCH] input: do not select i8042 for x86 mid
-Date: Mon, 17 May 2010 12:35:16 -0700
-Message-Id: <1274124916-23668-1-git-send-email-jacob.jun.pan@linux.intel.com>
-X-Mailer: git-send-email 1.6.3.3
+	Mon, 17 May 2010 15:44:14 -0400
+Date: Mon, 17 May 2010 21:44:08 +0200 (CEST)
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       Linux/m68k <linux-m68k@vger.kernel.org>,
+       Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [git pull] m68k updates for 2.6.35
+Message-ID: <alpine.DEB.2.00.1005172139470.30344@ayla.of.borg>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacob Pan <jacob.jun.pan@intel.com>
+	Hi Linus,
 
-Moorestown does not have i8042 based keyboard controller, so give
-an option to deselect i8042 for non-pc mid
+Please pull to receive the first batch of m68k updates for 2.6.35.
+The platform patch has been acked by GregKH.
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
----
- drivers/input/keyboard/Kconfig |    2 +-
- drivers/input/mouse/Kconfig    |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
+I have a second batch ready, but it has to wait a bit since it depends on
+a big pile of SCSI patches.
 
-diff --git a/drivers/input/keyboard/Kconfig b/drivers/input/keyboard/Kconfig
-index 64c1023..42aa650 100644
---- a/drivers/input/keyboard/Kconfig
-+++ b/drivers/input/keyboard/Kconfig
-@@ -73,7 +73,7 @@ config KEYBOARD_ATKBD
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
--	select SERIO_I8042 if X86
-+	select SERIO_I8042 if X86 && !X86_MRST
- 	select SERIO_GSCPS2 if GSC
- 	help
- 	  Say Y here if you want to use a standard AT or PS/2 keyboard. Usually
-diff --git a/drivers/input/mouse/Kconfig b/drivers/input/mouse/Kconfig
-index c714ca2..eeb58c1 100644
---- a/drivers/input/mouse/Kconfig
-+++ b/drivers/input/mouse/Kconfig
-@@ -17,7 +17,7 @@ config MOUSE_PS2
- 	default y
- 	select SERIO
- 	select SERIO_LIBPS2
--	select SERIO_I8042 if X86
-+	select SERIO_I8042 if X86 && !X86_MRST
- 	select SERIO_GSCPS2 if GSC
- 	help
- 	  Say Y here if you have a PS/2 mouse connected to your system. This
--- 
-1.6.3.3
+Thanks for pulling!
 
+The following changes since commit e40152ee1e1c7a63f4777791863215e3faa37a86:
+  Linus Torvalds (1):
+        Linus 2.6.34
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/geert/linux-m68k.git for-linus
+
+Andrea Gelmini (1):
+      m68k: hp300 - Checkpatch cleanup
+
+Frans Pop (1):
+      m68k: Remove trailing spaces in messages
+
+Geert Uytterhoeven (8):
+      m68k: Implement generic_find_next_{zero_,}le_bit()
+      serial167: Kill unused variables
+      platform: Make platform resource input parameters const
+      m68k: amiga - Zorro bus modalias support
+      m68k: amiga - Zorro host bridge platform device conversion
+      m68k: amiga - Frame buffer platform device conversion
+      m68k: amiga - Sound platform device conversion
+      m68k: amiga - Floppy platform device conversion
+
+Nick Piggin (1):
+      m68k: invoke oom-killer from page fault
+
+Robert P. J. Day (1):
+      m68k: Simplify param.h by using <asm-generic/param.h>
+
+Thomas Gleixner (1):
+      m68k: Remove BKL from rtc implementations
+
+ arch/m68k/amiga/Makefile            |    2 +-
+ arch/m68k/amiga/platform.c          |   83 ++++++++++++
+ arch/m68k/bvme6000/rtc.c            |   29 ++---
+ arch/m68k/hp300/time.h              |    4 +-
+ arch/m68k/include/asm/bitops_mm.h   |   14 +-
+ arch/m68k/include/asm/param.h       |   16 +--
+ arch/m68k/kernel/traps.c            |    2 +-
+ arch/m68k/mac/config.c              |   10 +-
+ arch/m68k/mm/fault.c                |   14 +--
+ arch/m68k/mvme16x/rtc.c             |   19 +--
+ arch/m68k/q40/config.c              |    2 +-
+ drivers/base/platform.c             |    4 +-
+ drivers/block/amiflop.c             |   47 +++----
+ drivers/char/serial167.c            |    2 -
+ drivers/net/a2065.c                 |    1 +
+ drivers/net/ariadne.c               |    1 +
+ drivers/net/hydra.c                 |    1 +
+ drivers/net/zorro8390.c             |    1 +
+ drivers/scsi/zorro7xx.c             |    1 +
+ drivers/video/amifb.c               |   49 +++++---
+ drivers/video/cirrusfb.c            |    1 +
+ drivers/video/fm2fb.c               |    1 +
+ drivers/zorro/proc.c                |    6 +-
+ drivers/zorro/zorro-driver.c        |   24 ++++
+ drivers/zorro/zorro-sysfs.c         |   11 ++
+ drivers/zorro/zorro.c               |  243 ++++++++++++++++++-----------------
+ include/linux/mod_devicetable.h     |    9 ++
+ include/linux/platform_device.h     |    6 +-
+ include/linux/zorro.h               |   22 +---
+ scripts/mod/file2alias.c            |   14 ++
+ sound/oss/dmasound/dmasound_paula.c |   51 +++++---
+ 31 files changed, 405 insertions(+), 285 deletions(-)
+ create mode 100644 arch/m68k/amiga/platform.c
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
