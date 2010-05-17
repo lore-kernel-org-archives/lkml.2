@@ -1,141 +1,543 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756305Ab0EQXFm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:05:42 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:40893 "EHLO e5.ny.us.ibm.com"
+	id S1756454Ab0EQXFt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:05:49 -0400
+Received: from hera.kernel.org ([140.211.167.34]:45791 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756227Ab0EQXFi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:05:38 -0400
-Date: Mon, 17 May 2010 16:05:33 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100517230533.GX2320@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100512213317.GA15085@linux.vnet.ibm.com>
- <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com>
- <20100512214847.GD22930@redhat.com>
- <20100512230057.GH2303@linux.vnet.ibm.com>
- <1273756043.5605.3542.camel@twins>
- <20100513152340.GA2879@linux.vnet.ibm.com>
- <20100517203349.GA14994@redhat.com>
- <20100517210606.GW2320@linux.vnet.ibm.com>
- <20100517220025.GA1366@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100517220025.GA1366@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1753913Ab0EQXFp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:05:45 -0400
+Date: Mon, 17 May 2010 23:04:22 GMT
+Message-Id: <201005172304.o4HN4MKd002440@hera.kernel.org>
+From: "H. Peter Anvin" <hpa@zytor.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Borislav Petkov <petkovbb@googlemail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] UPDATED - core/hweight changes for v2.6.35
+In-Reply-To: <alpine.LFD.2.00.1005171443060.4195@i5.linux-foundation.org>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 17 May 2010 23:04:23 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 06:00:25PM -0400, Mathieu Desnoyers wrote:
-> * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > On Mon, May 17, 2010 at 11:33:49PM +0300, Michael S. Tsirkin wrote:
-> > > On Thu, May 13, 2010 at 08:23:40AM -0700, Paul E. McKenney wrote:
-> > > > On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
-> > > > > On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
-> > > > > > Any thoughts?  One approach would be to create a separate lockdep class
-> > > > > > for vhost workqueue state, similar to the approach used in instrument
-> > > > > > rcu_read_lock() and friends. 
-> > > > > 
-> > > > > workqueue_struct::lockdep_map, its held while executing worklets.
-> > > > > 
-> > > > > lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
-> > > > 
-> > > > Thank you, Peter!!!
-> > > > 
-> > > > 							Thanx, Paul
-> > > 
-> > > vhost in fact does flush_work rather than
-> > > flush_workqueue, so while for now everything runs
-> > > from vhost_workqueue in theory nothing would break
-> > > if we use some other workqueue or even a combination
-> > > thereof.
-> > > 
-> > > I guess when/if this happens, we could start by converting
-> > > to _raw and then devise a solution.
-> > 
-> > If there are a small finite number of work queues involved, we can
-> > easily do something like:
-> > 
-> > 	#ifdef CONFIG_PROVE_RCU
-> > 	int in_vhost_workqueue(void)
-> > 	{
-> > 		return in_workqueue_context(vhost_workqueue) ||
-> > 		       in_workqueue_context(vhost_other_workqueue) ||
-> > 		       in_workqueue_context(yet_another_vhost_workqueue);
-> > 	}
-> > 	#endif /* #ifdef CONFIG_PROVE_RCU */
-> > 
-> > Seem reasonable?
-> > 
-> > > By the way what would be really nice is if we had a way
-> > > to trap when rcu protected pointer is freed without a flush
-> > > while some reader is running. Current annotation does not
-> > > allow this, does it?
-> > 
-> > Right now, it does not, but I wonder if something like Thomas's and
-> > Mathieu's debugobjects work could be brought to bear on this problem?
-> > This would need to be implemented in vhost, as synchronize_rcu() has
-> > no way to know what memory it is flushing, nor does flush_work().
-> 
-> We can think of my recent debugobjects addition as a small state machine
-> that is described by the code that owns the objects. At each state
-> transition, the code passes the expected state as well as the next
-> state.
-> 
-> The current implementation can only keep track of a single "state" per
-> object at once. This should be extended to be able to count the number
-> RCU read side C.S. in flight that are accessing to an object.
+Hi Linus,
 
-Not a problem, as vhost doesn't use call_rcu().  So there won't be a
-conflict between different debugobjects views of the same memory.
+Here is the updated core/hweight tree.
 
-> We could use a hook in rcu_dereference (which knows about the object)
-> and a hook in rcu_read_unlock (which determines the end of valid object
-> use).
-> 
-> We should hook into rcu_assign_pointer() to detect RCU structure
-> privatization. It should put these objects in a "privatized" hash table.
-> 
-> We should also hook into synchronize_rcu/sched() to remove the
-> privatized structures from the privatized hash.
-> 
-> A hook in "kfree" (maybe a new rcu_free(void (fctptr*)(void *)) wrapper ?)
-> would call a debugobject hook that would lookup the "privatized" hash.
-> If it contains the object to free, we check if there are RCU read-side
-> C.S. in flight using this object at the same time, and show an error if
-> both are true.
+The following changes since commit 0fdf86754f70e813845af4abaa805165ce57a0bb:
+  Linus Torvalds (1):
+        Merge branch 'urgent' of git://git.kernel.org/.../brodo/pcmcia-2.6
 
-I believe that we can't bury this into the RCU primitives, because
-rcu_read_unlock() doesn't know what objects were referenced in the
-RCU read-side critical section.
+are available in the git repository at:
 
-But perhaps we should be simply treating this as a use-after-free
-problem, so that RCU is not directly involved. Isn't that the standard
-use of debugobjects anyway?
+  git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-hweight-for-linus
 
-							Thanx, Paul
+Borislav Petkov (2):
+      x86: Add optimized popcnt variants
+      arch, hweight: Fix compilation errors
 
-> Thoughts ?
-> 
-> Mathieu
-> 
-> 
-> > 
-> > 						Thanx, Paul
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+H. Peter Anvin (1):
+      x86, hweight: Use a 32-bit popcnt for __arch_hweight32()
+
+Peter Zijlstra (1):
+      bitops: Optimize hweight() by making use of compile-time evaluation
+
+ arch/alpha/include/asm/bitops.h            |   18 +++++----
+ arch/ia64/include/asm/bitops.h             |   11 +++--
+ arch/sparc/include/asm/bitops_64.h         |   11 +++--
+ arch/x86/Kconfig                           |    5 ++
+ arch/x86/include/asm/alternative.h         |    9 +++-
+ arch/x86/include/asm/arch_hweight.h        |   61 ++++++++++++++++++++++++++++
+ arch/x86/include/asm/bitops.h              |    4 +-
+ include/asm-generic/bitops/arch_hweight.h  |   25 +++++++++++
+ include/asm-generic/bitops/const_hweight.h |   42 +++++++++++++++++++
+ include/asm-generic/bitops/hweight.h       |    8 +---
+ include/linux/bitops.h                     |   30 ++-----------
+ lib/Makefile                               |    3 +
+ lib/hweight.c                              |   19 +++++----
+ scripts/Makefile.lib                       |    4 ++
+ 14 files changed, 188 insertions(+), 62 deletions(-)
+ create mode 100644 arch/x86/include/asm/arch_hweight.h
+ create mode 100644 include/asm-generic/bitops/arch_hweight.h
+ create mode 100644 include/asm-generic/bitops/const_hweight.h
+
+diff --git a/arch/alpha/include/asm/bitops.h b/arch/alpha/include/asm/bitops.h
+index 15f3ae2..296da1d 100644
+--- a/arch/alpha/include/asm/bitops.h
++++ b/arch/alpha/include/asm/bitops.h
+@@ -405,29 +405,31 @@ static inline int fls(int x)
+ 
+ #if defined(CONFIG_ALPHA_EV6) && defined(CONFIG_ALPHA_EV67)
+ /* Whee.  EV67 can calculate it directly.  */
+-static inline unsigned long hweight64(unsigned long w)
++static inline unsigned long __arch_hweight64(unsigned long w)
+ {
+ 	return __kernel_ctpop(w);
+ }
+ 
+-static inline unsigned int hweight32(unsigned int w)
++static inline unsigned int __arch_weight32(unsigned int w)
+ {
+-	return hweight64(w);
++	return __arch_hweight64(w);
+ }
+ 
+-static inline unsigned int hweight16(unsigned int w)
++static inline unsigned int __arch_hweight16(unsigned int w)
+ {
+-	return hweight64(w & 0xffff);
++	return __arch_hweight64(w & 0xffff);
+ }
+ 
+-static inline unsigned int hweight8(unsigned int w)
++static inline unsigned int __arch_hweight8(unsigned int w)
+ {
+-	return hweight64(w & 0xff);
++	return __arch_hweight64(w & 0xff);
+ }
+ #else
+-#include <asm-generic/bitops/hweight.h>
++#include <asm-generic/bitops/arch_hweight.h>
+ #endif
+ 
++#include <asm-generic/bitops/const_hweight.h>
++
+ #endif /* __KERNEL__ */
+ 
+ #include <asm-generic/bitops/find.h>
+diff --git a/arch/ia64/include/asm/bitops.h b/arch/ia64/include/asm/bitops.h
+index 6ebc229..9da3df6 100644
+--- a/arch/ia64/include/asm/bitops.h
++++ b/arch/ia64/include/asm/bitops.h
+@@ -437,17 +437,18 @@ __fls (unsigned long x)
+  * hweightN: returns the hamming weight (i.e. the number
+  * of bits set) of a N-bit word
+  */
+-static __inline__ unsigned long
+-hweight64 (unsigned long x)
++static __inline__ unsigned long __arch_hweight64(unsigned long x)
+ {
+ 	unsigned long result;
+ 	result = ia64_popcnt(x);
+ 	return result;
+ }
+ 
+-#define hweight32(x)	(unsigned int) hweight64((x) & 0xfffffffful)
+-#define hweight16(x)	(unsigned int) hweight64((x) & 0xfffful)
+-#define hweight8(x)	(unsigned int) hweight64((x) & 0xfful)
++#define __arch_hweight32(x) ((unsigned int) __arch_hweight64((x) & 0xfffffffful))
++#define __arch_hweight16(x) ((unsigned int) __arch_hweight64((x) & 0xfffful))
++#define __arch_hweight8(x)  ((unsigned int) __arch_hweight64((x) & 0xfful))
++
++#include <asm-generic/bitops/const_hweight.h>
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/arch/sparc/include/asm/bitops_64.h b/arch/sparc/include/asm/bitops_64.h
+index e72ac9c..766121a 100644
+--- a/arch/sparc/include/asm/bitops_64.h
++++ b/arch/sparc/include/asm/bitops_64.h
+@@ -44,7 +44,7 @@ extern void change_bit(unsigned long nr, volatile unsigned long *addr);
+ 
+ #ifdef ULTRA_HAS_POPULATION_COUNT
+ 
+-static inline unsigned int hweight64(unsigned long w)
++static inline unsigned int __arch_hweight64(unsigned long w)
+ {
+ 	unsigned int res;
+ 
+@@ -52,7 +52,7 @@ static inline unsigned int hweight64(unsigned long w)
+ 	return res;
+ }
+ 
+-static inline unsigned int hweight32(unsigned int w)
++static inline unsigned int __arch_hweight32(unsigned int w)
+ {
+ 	unsigned int res;
+ 
+@@ -60,7 +60,7 @@ static inline unsigned int hweight32(unsigned int w)
+ 	return res;
+ }
+ 
+-static inline unsigned int hweight16(unsigned int w)
++static inline unsigned int __arch_hweight16(unsigned int w)
+ {
+ 	unsigned int res;
+ 
+@@ -68,7 +68,7 @@ static inline unsigned int hweight16(unsigned int w)
+ 	return res;
+ }
+ 
+-static inline unsigned int hweight8(unsigned int w)
++static inline unsigned int __arch_hweight8(unsigned int w)
+ {
+ 	unsigned int res;
+ 
+@@ -78,9 +78,10 @@ static inline unsigned int hweight8(unsigned int w)
+ 
+ #else
+ 
+-#include <asm-generic/bitops/hweight.h>
++#include <asm-generic/bitops/arch_hweight.h>
+ 
+ #endif
++#include <asm-generic/bitops/const_hweight.h>
+ #include <asm-generic/bitops/lock.h>
+ #endif /* __KERNEL__ */
+ 
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index 0eacb1f..89d8c54 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -238,6 +238,11 @@ config X86_32_LAZY_GS
+ 	def_bool y
+ 	depends on X86_32 && !CC_STACKPROTECTOR
+ 
++config ARCH_HWEIGHT_CFLAGS
++	string
++	default "-fcall-saved-ecx -fcall-saved-edx" if X86_32
++	default "-fcall-saved-rdi -fcall-saved-rsi -fcall-saved-rdx -fcall-saved-rcx -fcall-saved-r8 -fcall-saved-r9 -fcall-saved-r10 -fcall-saved-r11" if X86_64
++
+ config KTIME_SCALAR
+ 	def_bool X86_32
+ source "init/Kconfig"
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index b09ec55..67dae51 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -39,9 +39,6 @@
+ #define LOCK_PREFIX ""
+ #endif
+ 
+-/* This must be included *after* the definition of LOCK_PREFIX */
+-#include <asm/cpufeature.h>
+-
+ struct alt_instr {
+ 	u8 *instr;		/* original instruction */
+ 	u8 *replacement;
+@@ -96,6 +93,12 @@ static inline int alternatives_text_reserved(void *start, void *end)
+       ".previous"
+ 
+ /*
++ * This must be included *after* the definition of ALTERNATIVE due to
++ * <asm/arch_hweight.h>
++ */
++#include <asm/cpufeature.h>
++
++/*
+  * Alternative instructions for different CPU types or capabilities.
+  *
+  * This allows to use optimized instructions even on generic binary
+diff --git a/arch/x86/include/asm/arch_hweight.h b/arch/x86/include/asm/arch_hweight.h
+new file mode 100644
+index 0000000..9686c3d
+--- /dev/null
++++ b/arch/x86/include/asm/arch_hweight.h
+@@ -0,0 +1,61 @@
++#ifndef _ASM_X86_HWEIGHT_H
++#define _ASM_X86_HWEIGHT_H
++
++#ifdef CONFIG_64BIT
++/* popcnt %edi, %eax -- redundant REX prefix for alignment */
++#define POPCNT32 ".byte 0xf3,0x40,0x0f,0xb8,0xc7"
++/* popcnt %rdi, %rax */
++#define POPCNT64 ".byte 0xf3,0x48,0x0f,0xb8,0xc7"
++#define REG_IN "D"
++#define REG_OUT "a"
++#else
++/* popcnt %eax, %eax */
++#define POPCNT32 ".byte 0xf3,0x0f,0xb8,0xc0"
++#define REG_IN "a"
++#define REG_OUT "a"
++#endif
++
++/*
++ * __sw_hweightXX are called from within the alternatives below
++ * and callee-clobbered registers need to be taken care of. See
++ * ARCH_HWEIGHT_CFLAGS in <arch/x86/Kconfig> for the respective
++ * compiler switches.
++ */
++static inline unsigned int __arch_hweight32(unsigned int w)
++{
++	unsigned int res = 0;
++
++	asm (ALTERNATIVE("call __sw_hweight32", POPCNT32, X86_FEATURE_POPCNT)
++		     : "="REG_OUT (res)
++		     : REG_IN (w));
++
++	return res;
++}
++
++static inline unsigned int __arch_hweight16(unsigned int w)
++{
++	return __arch_hweight32(w & 0xffff);
++}
++
++static inline unsigned int __arch_hweight8(unsigned int w)
++{
++	return __arch_hweight32(w & 0xff);
++}
++
++static inline unsigned long __arch_hweight64(__u64 w)
++{
++	unsigned long res = 0;
++
++#ifdef CONFIG_X86_32
++	return  __arch_hweight32((u32)w) +
++		__arch_hweight32((u32)(w >> 32));
++#else
++	asm (ALTERNATIVE("call __sw_hweight64", POPCNT64, X86_FEATURE_POPCNT)
++		     : "="REG_OUT (res)
++		     : REG_IN (w));
++#endif /* CONFIG_X86_32 */
++
++	return res;
++}
++
++#endif
+diff --git a/arch/x86/include/asm/bitops.h b/arch/x86/include/asm/bitops.h
+index 02b47a6..545776e 100644
+--- a/arch/x86/include/asm/bitops.h
++++ b/arch/x86/include/asm/bitops.h
+@@ -444,7 +444,9 @@ static inline int fls(int x)
+ 
+ #define ARCH_HAS_FAST_MULTIPLIER 1
+ 
+-#include <asm-generic/bitops/hweight.h>
++#include <asm/arch_hweight.h>
++
++#include <asm-generic/bitops/const_hweight.h>
+ 
+ #endif /* __KERNEL__ */
+ 
+diff --git a/include/asm-generic/bitops/arch_hweight.h b/include/asm-generic/bitops/arch_hweight.h
+new file mode 100644
+index 0000000..6a211f4
+--- /dev/null
++++ b/include/asm-generic/bitops/arch_hweight.h
+@@ -0,0 +1,25 @@
++#ifndef _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
++#define _ASM_GENERIC_BITOPS_ARCH_HWEIGHT_H_
++
++#include <asm/types.h>
++
++static inline unsigned int __arch_hweight32(unsigned int w)
++{
++	return __sw_hweight32(w);
++}
++
++static inline unsigned int __arch_hweight16(unsigned int w)
++{
++	return __sw_hweight16(w);
++}
++
++static inline unsigned int __arch_hweight8(unsigned int w)
++{
++	return __sw_hweight8(w);
++}
++
++static inline unsigned long __arch_hweight64(__u64 w)
++{
++	return __sw_hweight64(w);
++}
++#endif /* _ASM_GENERIC_BITOPS_HWEIGHT_H_ */
+diff --git a/include/asm-generic/bitops/const_hweight.h b/include/asm-generic/bitops/const_hweight.h
+new file mode 100644
+index 0000000..fa2a50b
+--- /dev/null
++++ b/include/asm-generic/bitops/const_hweight.h
+@@ -0,0 +1,42 @@
++#ifndef _ASM_GENERIC_BITOPS_CONST_HWEIGHT_H_
++#define _ASM_GENERIC_BITOPS_CONST_HWEIGHT_H_
++
++/*
++ * Compile time versions of __arch_hweightN()
++ */
++#define __const_hweight8(w)		\
++      (	(!!((w) & (1ULL << 0))) +	\
++	(!!((w) & (1ULL << 1))) +	\
++	(!!((w) & (1ULL << 2))) +	\
++	(!!((w) & (1ULL << 3))) +	\
++	(!!((w) & (1ULL << 4))) +	\
++	(!!((w) & (1ULL << 5))) +	\
++	(!!((w) & (1ULL << 6))) +	\
++	(!!((w) & (1ULL << 7)))	)
++
++#define __const_hweight16(w) (__const_hweight8(w)  + __const_hweight8((w)  >> 8 ))
++#define __const_hweight32(w) (__const_hweight16(w) + __const_hweight16((w) >> 16))
++#define __const_hweight64(w) (__const_hweight32(w) + __const_hweight32((w) >> 32))
++
++/*
++ * Generic interface.
++ */
++#define hweight8(w)  (__builtin_constant_p(w) ? __const_hweight8(w)  : __arch_hweight8(w))
++#define hweight16(w) (__builtin_constant_p(w) ? __const_hweight16(w) : __arch_hweight16(w))
++#define hweight32(w) (__builtin_constant_p(w) ? __const_hweight32(w) : __arch_hweight32(w))
++#define hweight64(w) (__builtin_constant_p(w) ? __const_hweight64(w) : __arch_hweight64(w))
++
++/*
++ * Interface for known constant arguments
++ */
++#define HWEIGHT8(w)  (BUILD_BUG_ON_ZERO(!__builtin_constant_p(w)) + __const_hweight8(w))
++#define HWEIGHT16(w) (BUILD_BUG_ON_ZERO(!__builtin_constant_p(w)) + __const_hweight16(w))
++#define HWEIGHT32(w) (BUILD_BUG_ON_ZERO(!__builtin_constant_p(w)) + __const_hweight32(w))
++#define HWEIGHT64(w) (BUILD_BUG_ON_ZERO(!__builtin_constant_p(w)) + __const_hweight64(w))
++
++/*
++ * Type invariant interface to the compile time constant hweight functions.
++ */
++#define HWEIGHT(w)   HWEIGHT64((u64)w)
++
++#endif /* _ASM_GENERIC_BITOPS_CONST_HWEIGHT_H_ */
+diff --git a/include/asm-generic/bitops/hweight.h b/include/asm-generic/bitops/hweight.h
+index fbbc383..a94d651 100644
+--- a/include/asm-generic/bitops/hweight.h
++++ b/include/asm-generic/bitops/hweight.h
+@@ -1,11 +1,7 @@
+ #ifndef _ASM_GENERIC_BITOPS_HWEIGHT_H_
+ #define _ASM_GENERIC_BITOPS_HWEIGHT_H_
+ 
+-#include <asm/types.h>
+-
+-extern unsigned int hweight32(unsigned int w);
+-extern unsigned int hweight16(unsigned int w);
+-extern unsigned int hweight8(unsigned int w);
+-extern unsigned long hweight64(__u64 w);
++#include <asm-generic/bitops/arch_hweight.h>
++#include <asm-generic/bitops/const_hweight.h>
+ 
+ #endif /* _ASM_GENERIC_BITOPS_HWEIGHT_H_ */
+diff --git a/include/linux/bitops.h b/include/linux/bitops.h
+index b793898..26caa60 100644
+--- a/include/linux/bitops.h
++++ b/include/linux/bitops.h
+@@ -10,6 +10,11 @@
+ #define BITS_TO_LONGS(nr)	DIV_ROUND_UP(nr, BITS_PER_BYTE * sizeof(long))
+ #endif
+ 
++extern unsigned int __sw_hweight8(unsigned int w);
++extern unsigned int __sw_hweight16(unsigned int w);
++extern unsigned int __sw_hweight32(unsigned int w);
++extern unsigned long __sw_hweight64(__u64 w);
++
+ /*
+  * Include this here because some architectures need generic_ffs/fls in
+  * scope
+@@ -47,31 +52,6 @@ static inline unsigned long hweight_long(unsigned long w)
+ 	return sizeof(w) == 4 ? hweight32(w) : hweight64(w);
+ }
+ 
+-/*
+- * Clearly slow versions of the hweightN() functions, their benefit is
+- * of course compile time evaluation of constant arguments.
+- */
+-#define HWEIGHT8(w)					\
+-      (	BUILD_BUG_ON_ZERO(!__builtin_constant_p(w)) +	\
+-	(!!((w) & (1ULL << 0))) +			\
+-	(!!((w) & (1ULL << 1))) +			\
+-	(!!((w) & (1ULL << 2))) +			\
+-	(!!((w) & (1ULL << 3))) +			\
+-	(!!((w) & (1ULL << 4))) +			\
+-	(!!((w) & (1ULL << 5))) +			\
+-	(!!((w) & (1ULL << 6))) +			\
+-	(!!((w) & (1ULL << 7)))	)
+-
+-#define HWEIGHT16(w) (HWEIGHT8(w)  + HWEIGHT8((w) >> 8))
+-#define HWEIGHT32(w) (HWEIGHT16(w) + HWEIGHT16((w) >> 16))
+-#define HWEIGHT64(w) (HWEIGHT32(w) + HWEIGHT32((w) >> 32))
+-
+-/*
+- * Type invariant version that simply casts things to the
+- * largest type.
+- */
+-#define HWEIGHT(w)   HWEIGHT64((u64)(w))
+-
+ /**
+  * rol32 - rotate a 32-bit value left
+  * @word: value to rotate
+diff --git a/lib/Makefile b/lib/Makefile
+index 2e152ae..abe63a8 100644
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -39,7 +39,10 @@ lib-$(CONFIG_RWSEM_XCHGADD_ALGORITHM) += rwsem.o
+ lib-$(CONFIG_GENERIC_FIND_FIRST_BIT) += find_next_bit.o
+ lib-$(CONFIG_GENERIC_FIND_NEXT_BIT) += find_next_bit.o
+ obj-$(CONFIG_GENERIC_FIND_LAST_BIT) += find_last_bit.o
++
++CFLAGS_hweight.o = $(subst $(quote),,$(CONFIG_ARCH_HWEIGHT_CFLAGS))
+ obj-$(CONFIG_GENERIC_HWEIGHT) += hweight.o
++
+ obj-$(CONFIG_LOCK_KERNEL) += kernel_lock.o
+ obj-$(CONFIG_BTREE) += btree.o
+ obj-$(CONFIG_DEBUG_PREEMPT) += smp_processor_id.o
+diff --git a/lib/hweight.c b/lib/hweight.c
+index 63ee4eb..3c79d50 100644
+--- a/lib/hweight.c
++++ b/lib/hweight.c
+@@ -9,7 +9,7 @@
+  * The Hamming Weight of a number is the total number of bits set in it.
+  */
+ 
+-unsigned int hweight32(unsigned int w)
++unsigned int __sw_hweight32(unsigned int w)
+ {
+ #ifdef ARCH_HAS_FAST_MULTIPLIER
+ 	w -= (w >> 1) & 0x55555555;
+@@ -24,29 +24,30 @@ unsigned int hweight32(unsigned int w)
+ 	return (res + (res >> 16)) & 0x000000FF;
+ #endif
+ }
+-EXPORT_SYMBOL(hweight32);
++EXPORT_SYMBOL(__sw_hweight32);
+ 
+-unsigned int hweight16(unsigned int w)
++unsigned int __sw_hweight16(unsigned int w)
+ {
+ 	unsigned int res = w - ((w >> 1) & 0x5555);
+ 	res = (res & 0x3333) + ((res >> 2) & 0x3333);
+ 	res = (res + (res >> 4)) & 0x0F0F;
+ 	return (res + (res >> 8)) & 0x00FF;
+ }
+-EXPORT_SYMBOL(hweight16);
++EXPORT_SYMBOL(__sw_hweight16);
+ 
+-unsigned int hweight8(unsigned int w)
++unsigned int __sw_hweight8(unsigned int w)
+ {
+ 	unsigned int res = w - ((w >> 1) & 0x55);
+ 	res = (res & 0x33) + ((res >> 2) & 0x33);
+ 	return (res + (res >> 4)) & 0x0F;
+ }
+-EXPORT_SYMBOL(hweight8);
++EXPORT_SYMBOL(__sw_hweight8);
+ 
+-unsigned long hweight64(__u64 w)
++unsigned long __sw_hweight64(__u64 w)
+ {
+ #if BITS_PER_LONG == 32
+-	return hweight32((unsigned int)(w >> 32)) + hweight32((unsigned int)w);
++	return __sw_hweight32((unsigned int)(w >> 32)) +
++	       __sw_hweight32((unsigned int)w);
+ #elif BITS_PER_LONG == 64
+ #ifdef ARCH_HAS_FAST_MULTIPLIER
+ 	w -= (w >> 1) & 0x5555555555555555ul;
+@@ -63,4 +64,4 @@ unsigned long hweight64(__u64 w)
+ #endif
+ #endif
+ }
+-EXPORT_SYMBOL(hweight64);
++EXPORT_SYMBOL(__sw_hweight64);
+diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
+index f9bdf26..cbcd654 100644
+--- a/scripts/Makefile.lib
++++ b/scripts/Makefile.lib
+@@ -245,3 +245,7 @@ quiet_cmd_lzo = LZO    $@
+ cmd_lzo = (cat $(filter-out FORCE,$^) | \
+ 	lzop -9 && $(call size_append, $(filter-out FORCE,$^))) > $@ || \
+ 	(rm -f $@ ; false)
++
++# misc stuff
++# ---------------------------------------------------------------------------
++quote:="
