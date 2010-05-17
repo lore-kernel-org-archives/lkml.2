@@ -1,46 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab0EQSzw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:55:52 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56273 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753391Ab0EQSzu (ORCPT
+	id S1755453Ab0EQS5z (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 14:57:55 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:52009 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754034Ab0EQS5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:55:50 -0400
-Date: Mon, 17 May 2010 19:55:28 +0100 (BST)
-From: David Woodhouse <dwmw2@infradead.org>
-X-X-Sender: dwmw2@dwoodhou-mobl2.ger.corp.intel.com
-To: Randy Dunlap <randy.dunlap@oracle.com>
-cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
-       linux-pcmcia@lists.infradead.org
-Subject: Re: [PATCH -next] pcmciamtd: fix printk format warnings
-In-Reply-To: <20100517091632.59c2696c.randy.dunlap@oracle.com>
-Message-ID: <alpine.LFD.2.00.1005171954080.8170@dwoodhou-mobl2.ger.corp.intel.com>
-References: <20100517163521.649526d0.sfr@canb.auug.org.au> <20100517091632.59c2696c.randy.dunlap@oracle.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 17 May 2010 14:57:54 -0400
+To: jiayingz@google.com (Jiaying Zhang)
+Cc: hch@infradead.org, jens.axboe@oracle.com, linux-kernel@vger.kernel.org,
+       mrubin@google.com
+Subject: Re: [PATCH, RFC] addjust discard request to be aligned with hwsect size to support SSDs with larger sector size
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20100513051953.532821BC316@ruihe.smo.corp.google.com>
+Date: Mon, 17 May 2010 14:57:22 -0400
+In-Reply-To: <20100513051953.532821BC316@ruihe.smo.corp.google.com> (Jiaying
+	Zhang's message of "Wed, 12 May 2010 22:19:53 -0700 (PDT)")
+Message-ID: <yq1pr0u8igd.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090204.4BF191A8.00A4:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010, Randy Dunlap wrote:
+>>>>> "Jiaying" == Jiaying Zhang <jiayingz@google.com> writes:
 
-> From: Randy Dunlap <randy.dunlap@oracle.com>
->
-> Fix printk format warnings in pcmciamtd debug code:
->
-> drivers/mtd/maps/pcmciamtd.c:163: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
-> drivers/mtd/maps/pcmciamtd.c:212: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
-> drivers/mtd/maps/pcmciamtd.c:274: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
-> drivers/mtd/maps/pcmciamtd.c:312: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
+Jiaying,
 
-I pushed something identical to that earlier today, but thanks.
+Jiaying> The currect blkdev_issue_discard() function assumes 512 sector
+Jiaying> size.
 
+All of the block layer works on 512-byte sector units.  We don't
+generally convert to logical blocks until we're in the disk driver.
+
+
+Jiaying> We have seen some problem when using discard on a SSD that has
+Jiaying> larger sector size. The following patch adjusts the starting
+Jiaying> address and size of a discard request to be aligned with hwsect
+Jiaying> size.
+
+Jiaying> + int hwsect_shift =
+Jiaying>  	blksize_bits(bdev_logical_block_size(bdev)) - 9;
+
+Let's stop using the term hardware sector size.  It's an anachronism.
+
+I guess I could understand if you aligned to the physical block size.
+But the logical doesn't make much sense to me.
+
+What is your logical block size?  Right now we only handle 512 bytes and
+4KB in the discard path.
 
 -- 
-dwmw2
-
+Martin K. Petersen	Oracle Linux Engineering
