@@ -1,17 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755563Ab0EQR6q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:58:46 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:50848 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753547Ab0EQR6p (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:58:45 -0400
-Date: Mon, 17 May 2010 18:58:20 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Felipe Balbi <me@felipebalbi.com>
-Cc: James Bottomley <James.Bottomley@suse.de>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
+	id S1755575Ab0EQR7t (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:59:49 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:42181 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753653Ab0EQR7r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 13:59:47 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: James Bottomley <James.Bottomley@suse.de>
+To: me@felipebalbi.com
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
        Alan Stern <stern@rowland.harvard.edu>, linux-omap@vger.kernel.org,
        "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
        Brian Swetland <swetland@google.com>,
@@ -21,38 +19,102 @@ Cc: James Bottomley <James.Bottomley@suse.de>,
        Tejun Heo <tj@kernel.org>,
        Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
        Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100517175820.GA29773@srcf.ucam.org>
-References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org> <87hbm6cz90.fsf@deeprootsystems.com> <1274115885.4418.59.camel@mulgrave.site> <20100517174647.GA11512@gandalf>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
 In-Reply-To: <20100517174647.GA11512@gandalf>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
+	 <87hbm6cz90.fsf@deeprootsystems.com>
+	 <1274115885.4418.59.camel@mulgrave.site>  <20100517174647.GA11512@gandalf>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 May 2010 13:59:39 -0400
+Message-ID: <1274119179.4418.68.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 08:47:31PM +0300, Felipe Balbi wrote:
+On Mon, 2010-05-17 at 20:47 +0300, Felipe Balbi wrote:
+> On Mon, May 17, 2010 at 01:04:45PM -0400, James Bottomley wrote:
+> > > For userspace, apps that have polling behavior or are ill-behaved must
+> > > be found and fixed.  Thanks to tools like powertop, this is a farily
+> > > easy task.
+> > 
+> > That's a bit glib ... powertop can detect power consumption stats on a
+> > running system ... if you have a polling app preventing your system from
+> > suspending, powertop isn't necessarily going to find it ... especially
+> > if the polling interval is of the order of powertop's.  Powertop can
+> > find the bad tens of wakeups per second, but it only takes one wakup
+> > every few seconds or so to drain the battery significantly when
+> > operating on suspend from idle.
+> 
+> you can always increase powertop's interval through command line and
+> once you went down to 1 wakeup every two seconds, you increase
+> powertop's interval and try to cut down 10 more ill-behaved apps. And
+> you keep going until you have e.g. 1 wakeup per minute or whatever your
+> target is.
 
+Have you actually tried this?  On my N1 with CM5.0.6 just running
+powertop requires me to keep the USB system up (debugging cable) and
+paths into the usb console ... all of this produces significant wakeup
+distortion, mostly in the msm i2c subsystem.  But in all the noise it's
+hard to find rogue applications.
+
+> > > But really, I don't consider the "ill-behaved app" problem to be a
+> > > real-world problem.  Both in maemo/meego and Android, if someone
+> > > writes an app that kills battery life, it will get reported as a bug,
+> > > or get bad ratings etc.  On these kinds of devices, there is a *stong*
+> > > developer incentive to not write battery sucking apps.
+> > 
+> > I'm not sure this is real world, either.  Developers can fire up
+> > powertop from the command line when their phone isn't idling for as long
+> > as it should.  But a phone is a consumer device: the average smart phone
+> > user just wants to browse the web, get email, go to facebook and play
+> > with some cool apps.  If one of those cool apps is rogue, they're not
+> > really going to know which one or how to find it (and firing up powertop
+> > from the command line isn't something which will occur to them as a
+> > matter of routine).
+> 
+> Agree with you here.
+> 
+> > One of the nice things that suspend blockers actually does is to give
+> > the kernel a clear name for the process blocking suspend (and thus
+> > consuming power).  This allows a nice way to assign power budget to the
+> > application and present who's using what in a nice visible form, which
+> > does facilitate the reporting of bad apps, even for the non-developer
+> > user.
+> 
+> if that's the only thing we want suspend_blockers for, there are other
+> simpler ways to do it.
+
+Nice straw man slide.
+
+The technical reason for wanting suspend blockers (as has been stated
+more times than I can be bothered to go back and count) is that no-one
+can currently produce a working model for race free kernel to user work
+handoff and, in the face of open app stores, rogue applications are a
+significant problem.  The fact that suspend blockers enables easy
+identification of power hogging apps is just a very useful side effect.
+
+James
+
+
+>  Just add a kernel debugging option for anyone
+> doing poll() or keeping a device open() or whatever and you have the
+> name the of the processes consuming power and preventing system from
+> going into sleep.
+> 
+> IMO, suspend_blocker is trying to fix application problems in kernel
+> space by unconditionaly (well sort of) freezing userspace if there are
+> no suspen_blockers held. So even if application is doing
+> poll(pfds, ARRAY_SIZE(pfds), 2); that won't be noticed because as long as
+> the suspend_blocker is released, that poll() will be frozen, no ?
+> 
 > IMO the real fix would be on that particular poll(), changing the
 > timeout e.g. based on cpufreq notifications or even relying completely
 > on IRQs with poll(pdfs, ARRAY_SIZE(pfds), -1); Of course, this is only a
 > crude example trying to show that the real issue lies on the application
 > rather than on kernel.
 
-We know that this problem is mostly uninteresting if your userland is 
-well written. The sad truth is that it's impossible to trust that your 
-userland is well written, and broadly impossible to communicate to users 
-that the reason that their battery life is miserable is because of the 
-applications and not because of the platform. If you don't believe that 
-that's a worthwhile use case to deal with then suspend blockers buy you 
-pretty much nothing. But if you do, then nobody's yet demonstrated 
-another workable way for this to be handled.
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+
