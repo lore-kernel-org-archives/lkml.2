@@ -1,77 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755066Ab0EQKZx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 06:25:53 -0400
-Received: from smtp-out108.alice.it ([85.37.17.108]:2725 "EHLO
-	smtp-out108.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751894Ab0EQKZv (ORCPT
+	id S1755162Ab0EQK0i (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:26:38 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:51138 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751894Ab0EQK0h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 06:25:51 -0400
-X-Greylist: delayed 612 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 06:25:51 EDT
-Date: Mon, 17 May 2010 12:15:25 +0200
-From: Antonio Ospite <ospite@studenti.unina.it>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Richard Purdie <rpurdie@linux.intel.com>
-Subject: Re: [PATCH v2] leds-lp3944: properly handle lp3944_configure fail
- in lp3944_probe
-Message-Id: <20100517121525.c895d8d9.ospite@studenti.unina.it>
-In-Reply-To: <1274089668.28623.3.camel@mola>
-References: <1274089668.28623.3.camel@mola>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
- ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__17_May_2010_12_15_26_+0200_F=Y0Wwa_vVbDTnkN"
-X-OriginalArrivalTime: 17 May 2010 10:15:36.0917 (UTC) FILETIME=[E4BA4050:01CAF5A9]
+	Mon, 17 May 2010 06:26:37 -0400
+Date: Mon, 17 May 2010 12:26:35 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Arjan van de Ven <arjan@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, "H. Peter Anvin" <hpa@zytor.com>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100517102635.GB20761@basil.fritz.box>
+References: <1273887635-27610-1-git-send-email-venki@google.com> <87tyq9mqrz.fsf@basil.nowhere.org> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_May_2010_12_15_26_+0200_F=Y0Wwa_vVbDTnkN
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> Yes, understood.  But the kernel doesn't expose a "gettimeofday
+> performance sucks" flag either.  If it did (or in the case of
+> the patch, if tsc_reliable is zero) the application could at least
+> choose to turn off the 10000-100000 timestamps/second and log
+> a message saying "you are running on old hardware so you get
+> fewer features".
 
-On Mon, 17 May 2010 17:47:48 +0800
-Axel Lin <axel.lin@gmail.com> wrote:
+I don't think anyone would object to exporting such a flag if 
+it's cleanly designed.
 
-> In current implementation, lp3944_probe return 0 even if lp3944_configure=
- fail.
-> Therefore, led_classdev_unregister will be executed twice
-> ( in error handling of lp3944_configure and lp3944_remove ).
-> This patch properly handles lp3944_configure fail in lp3944_probe.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Getting the semantics right for that might be somewhat tricky
+though. How is "slow" defined?
 
-Acked-by: Antonio Ospite <ospite@studenti.unina.it>
+> A CPU-hotplugable system is a good example of a case where
+> the kernel should expose that tsc_reliable is 0.  (I've heard
 
-Thanks.
+That would mean that a large class of systems which
+are always hotplug capable (even if it's not used) 
+would never get fast TSC time.
 
---=20
-Antonio Ospite
-http://ao2.it
+Wasn't the goal here to be faster? 
 
-PGP public key ID: 0x4553B001
+> anecdotally that CPU hotplug into a QPI or Hypertransport system
+> will have some other interesting challenges, so may require some
+> special kernel parameters anyway.)  Even if tsc_reliable were
+> only enabled if a "no-cpu_hotplug" kernel parameter is set,
+> that is still useful.  And with cores-per-socket (and even
+> nodes-per-socket) going up seemingly every day, multi-socket
+> systems will likely be an ever smaller percentage of new
+> systems.
 
-A: Because it messes up the order in which people normally read text.
-   See http://en.wikipedia.org/wiki/Posting_style
-Q: Why is top-posting such a bad thing?
-A: Top-posting.
-Q: What is the most annoying thing in e-mail?
+Still the people running them will expect as good performance
+as possible.
 
---Signature=_Mon__17_May_2010_12_15_26_+0200_F=Y0Wwa_vVbDTnkN
-Content-Type: application/pgp-signature
+-Andi
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvxFz4ACgkQ5xr2akVTsAF+wgCfYgqRqiVuX7/budB5yGdU3dLs
-OtoAoJKYXkhXvWcGNEoQ7o6vuZvCy7MB
-=q9Xd
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_May_2010_12_15_26_+0200_F=Y0Wwa_vVbDTnkN--
+-- 
+ak@linux.intel.com -- Speaking for myself only.
