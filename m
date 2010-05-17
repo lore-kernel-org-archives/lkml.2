@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753671Ab0EQKMx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 06:12:53 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:51081 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751482Ab0EQKMv (ORCPT
+	id S1754763Ab0EQKNT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:13:19 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47964 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751096Ab0EQKNS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 06:12:51 -0400
-Date: Mon, 17 May 2010 13:08:46 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 5/5] arm: omap: move all gpio defines to plat/gpio.h
-Message-ID: <20100517100846.GC20314@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
- <1274090554-19420-6-git-send-email-felipe.balbi@nokia.com>
+	Mon, 17 May 2010 06:13:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=eIKDNltez8fy48RegCEBzUR4+4dRi6jq9mi3pxbfvjL7b3VrTMhMQDo2uJCZBYltMK
+         d8e6DzOttw1pDDKatcrH4ZAKTjDEefo8rZPojLPTDvoDFKhoP9hpUT0MO0snBQiNe/t3
+         yNRSvGvZFmp8QKdf554sGu5qpFFR3FGZ8hnlc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1274090554-19420-6-git-send-email-felipe.balbi@nokia.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 17 May 2010 10:10:35.0246 (UTC) FILETIME=[30EAE8E0:01CAF5A9]
-X-Nokia-AV: Clean
+In-Reply-To: <AANLkTik2OcSBGdkRQKFl6xh06PEr7Al6xaUsmMGGC6jo@mail.gmail.com>
+References: <AANLkTikD7M_PKH3YgOWIvrcD6aW6X-gYIo2iw52QRRq_@mail.gmail.com>
+	 <20100517160319.A195.A69D9226@jp.fujitsu.com>
+	 <AANLkTik2OcSBGdkRQKFl6xh06PEr7Al6xaUsmMGGC6jo@mail.gmail.com>
+Date: Mon, 17 May 2010 15:43:17 +0530
+Message-ID: <AANLkTilGLJJG_eLHaqvJ5jOzxp96SbOroTCbHe9g5TXE@mail.gmail.com>
+Subject: Re: Which function returns LWP in Linux.
+From: Srinivas Nayak <sinu.nayak2001@gmail.com>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 12:02:34PM +0200, Balbi Felipe (Nokia-D/Helsinki) wrote:
->From: Felipe Balbi <felipe.balbi@nokia.com>
 >
->move everything to a common location. No functional
->changes.
+> You are asking procps question in LKML.
 >
->Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
 
-sorry, this patch shouldn't be here... it was a broken cherry-pick from 
-myself. Please ignore this one.
+Dear Jaswinder,
 
--- 
-balbi
+I am new to linux mailing lists. Thought, this process id related
+question can only be answered by linux kernel developers, as they may be
+working with this almost everyday. And more to this, I searched in the
+Internet for LWP id, but found no positive answer. Many places gettid
+was the answer, but it doesn't work.
 
-DefectiveByDesign.org
+I apologize, if lkml is not the best place to ask programming related
+questions. It would be kind, if you let me know the correct mailing
+list where general linux programming discussions happen. To my find,
+linux-c-programming mailing list is not so active.
+
+After some more research, i foind that
+
+syscall(SYS_gettid)
+
+returns LWP id. Isn't this correct?
+
+Sincerely,
+Srinivas Nayak
