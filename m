@@ -1,73 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab0EQNmT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 09:42:19 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:24012 "EHLO relay.sw.ru"
+	id S1755470Ab0EQNnQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 09:43:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:42821 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752365Ab0EQNlz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 09:41:55 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Oleg Nesterov <oleg@tv-sign.ru>, Pavel Emelyanov <xemul@openvz.org>,
-       Stanislaw Gruszka <sgruszka@redhat.com>,
-       Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 2/3] posix_timer: fix error path in timer_create
-Date: Mon, 17 May 2010 17:41:43 +0400
-Message-Id: <1274103704-11230-2-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.6.6
-In-Reply-To: <1274103704-11230-1-git-send-email-avagin@openvz.org>
-References: <1274103704-11230-1-git-send-email-avagin@openvz.org>
+	id S1752365Ab0EQNnO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 09:43:14 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] KEYS: Return more accurate error codes
+To: torvalds@osdl.org, akpm@linux-foundation.org
+Cc: jmorris@namei.org, oleg@redhat.com, keyrings@linux-nfs.org,
+       linux-security-module@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Dan Carpenter <error27@gmail.com>, David Howells <dhowells@redhat.com>
+Date: Mon, 17 May 2010 14:42:35 +0100
+Message-ID: <20100517134235.19013.90388.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
+MIME-Version: 1.0
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move CLOCK_DISPATCH(which_clock, timer_create, (new_timer)) after all
-possible EFAULT errors.
+From: Dan Carpenter <error27@gmail.com>
 
-*_timer_create may allocate/get resources.
-(for example posix_cpu_timer_create does get_task_struct)
+We were using the wrong variable here so the error codes weren't being returned
+properly.  The original code returns -ENOKEY.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- kernel/posix-timers.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 5555e7c..8393624 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -555,14 +555,6 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 		goto out;
- 	}
+ security/keys/process_keys.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/security/keys/process_keys.c b/security/keys/process_keys.c
+index 06c2ccf..20a38fe 100644
+--- a/security/keys/process_keys.c
++++ b/security/keys/process_keys.c
+@@ -508,7 +508,7 @@ try_again:
  
--	it_id_set = IT_ID_SET;
--	new_timer->it_id = (timer_t) new_timer_id;
--	new_timer->it_clock = which_clock;
--	new_timer->it_overrun = -1;
--	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
--	if (error)
--		goto out;
--
- 	if (copy_to_user(created_timer_id,
- 			 &new_timer_id, sizeof (new_timer_id))) {
- 		error = -EFAULT;
-@@ -593,6 +585,14 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->sigq->info.si_tid   = new_timer->it_id;
- 	new_timer->sigq->info.si_code  = SI_TIMER;
+ 			ret = install_thread_keyring();
+ 			if (ret < 0) {
+-				key = ERR_PTR(ret);
++				key_ref = ERR_PTR(ret);
+ 				goto error;
+ 			}
+ 			goto reget_creds;
+@@ -526,7 +526,7 @@ try_again:
  
-+	it_id_set = IT_ID_SET;
-+	new_timer->it_id = (timer_t) new_timer_id;
-+	new_timer->it_clock = which_clock;
-+	new_timer->it_overrun = -1;
-+	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
-+	if (error)
-+		goto out;
-+
- 	spin_lock_irq(&current->sighand->siglock);
- 	new_timer->it_signal = current->signal;
- 	list_add(&new_timer->list, &current->signal->posix_timers);
--- 
-1.6.6
+ 			ret = install_process_keyring();
+ 			if (ret < 0) {
+-				key = ERR_PTR(ret);
++				key_ref = ERR_PTR(ret);
+ 				goto error;
+ 			}
+ 			goto reget_creds;
+@@ -585,7 +585,7 @@ try_again:
+ 
+ 	case KEY_SPEC_GROUP_KEYRING:
+ 		/* group keyrings are not yet supported */
+-		key = ERR_PTR(-EINVAL);
++		key_ref = ERR_PTR(-EINVAL);
+ 		goto error;
+ 
+ 	case KEY_SPEC_REQKEY_AUTH_KEY:
 
