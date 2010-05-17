@@ -1,113 +1,129 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754954Ab0EQJLa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:11:30 -0400
-Received: from mga02.intel.com ([134.134.136.20]:40345 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754614Ab0EQJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:10:47 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
-   d="scan'208";a="622224078"
-From: Sheng Yang <sheng@linux.intel.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>
-Subject: [PATCH][v2 2/3] KVM: x86: Use unlazy_fpu() for host FPU
-Date: Mon, 17 May 2010 17:08:27 +0800
-Message-Id: <1274087308-26676-3-git-send-email-sheng@linux.intel.com>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1274087308-26676-1-git-send-email-sheng@linux.intel.com>
-References: <1274087308-26676-1-git-send-email-sheng@linux.intel.com>
+	id S1754770Ab0EQJPY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:15:24 -0400
+Received: from smtp-out110.alice.it ([85.37.17.110]:2609 "EHLO
+	smtp-out110.alice.it" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752113Ab0EQJPW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:15:22 -0400
+Date: Mon, 17 May 2010 11:15:13 +0200
+From: Antonio Ospite <ospite@studenti.unina.it>
+To: Axel Lin <axel.lin@gmail.com>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Richard Purdie <rpurdie@linux.intel.com>
+Subject: Re: [PATCH] leds-lp3944: properly handle lp3944_configure fail in
+ lp3944_probe
+Message-Id: <20100517111513.f76c0bb9.ospite@studenti.unina.it>
+In-Reply-To: <1274060042.17226.2.camel@mola>
+References: <1274060042.17226.2.camel@mola>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+X-Face: z*RaLf`X<@C75u6Ig9}{oW$H;1_\2t5)({*|jhM<pyWR#k60!#=#>/Vb;]yA5<GWI5`6u&+
+ ;6b'@y|8w"wB;4/e!7wYYrcqdJFY,~%Gk_4]cq$Ei/7<j&N3ah(m`ku?pX.&+~:_/wC~dwn^)MizBG !pE^+iDQQ1yC6^,)YDKkxDd!T>\I~93>J<_`<4)A{':UrE
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP"
+X-OriginalArrivalTime: 17 May 2010 09:15:19.0928 (UTC) FILETIME=[78D58780:01CAF5A1]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We can avoid unnecessary fpu load when userspace process
-didn't use FPU frequently.
+--Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Derived from Avi's idea.
+On Mon, 17 May 2010 09:34:02 +0800
+Axel Lin <axel.lin@gmail.com> wrote:
 
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
----
- arch/x86/include/asm/kvm_host.h |    1 -
- arch/x86/kvm/x86.c              |   18 ++----------------
- 2 files changed, 2 insertions(+), 17 deletions(-)
+> In current implementation, lp3944_probe return 0 even if lp3944_configure=
+ fail.
+> Therefore, led_classdev_unregister will be executed twice ( in error hand=
+ling of lp3944_configure and lp3944_remove ).
+> This patch properly handles lp3944_configure fail in lp3944_probe.
+>
 
-diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
-index 0c06148..d93601c 100644
---- a/arch/x86/include/asm/kvm_host.h
-+++ b/arch/x86/include/asm/kvm_host.h
-@@ -301,7 +301,6 @@ struct kvm_vcpu_arch {
- 		unsigned long mmu_seq;
- 	} update_pte;
- 
--	struct i387_fxsave_struct host_fx_image;
- 	struct i387_fxsave_struct guest_fx_image;
- 
- 	gva_t mmio_fault_cr2;
-diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
-index 7500cba..ba8c2d2 100644
---- a/arch/x86/kvm/x86.c
-+++ b/arch/x86/kvm/x86.c
-@@ -52,6 +52,7 @@
- #include <asm/desc.h>
- #include <asm/mtrr.h>
- #include <asm/mce.h>
-+#include <asm/i387.h>
- 
- #define MAX_IO_MSRS 256
- #define CR0_RESERVED_BITS						\
-@@ -5134,21 +5135,10 @@ void fx_init(struct kvm_vcpu *vcpu)
- {
- 	unsigned after_mxcsr_mask;
- 
--	/*
--	 * Touch the fpu the first time in non atomic context as if
--	 * this is the first fpu instruction the exception handler
--	 * will fire before the instruction returns and it'll have to
--	 * allocate ram with GFP_KERNEL.
--	 */
--	if (!used_math())
--		kvm_fx_save(&vcpu->arch.host_fx_image);
--
- 	/* Initialize guest FPU by resetting ours and saving into guest's */
- 	preempt_disable();
--	kvm_fx_save(&vcpu->arch.host_fx_image);
- 	kvm_fx_finit();
- 	kvm_fx_save(&vcpu->arch.guest_fx_image);
--	kvm_fx_restore(&vcpu->arch.host_fx_image);
- 	preempt_enable();
- 
- 	vcpu->arch.cr0 |= X86_CR0_ET;
-@@ -5165,7 +5155,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
- 		return;
- 
- 	vcpu->guest_fpu_loaded = 1;
--	kvm_fx_save(&vcpu->arch.host_fx_image);
-+	unlazy_fpu(current);
- 	kvm_fx_restore(&vcpu->arch.guest_fx_image);
- 	trace_kvm_fpu(1);
- }
-@@ -5177,7 +5167,6 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
- 
- 	vcpu->guest_fpu_loaded = 0;
- 	kvm_fx_save(&vcpu->arch.guest_fx_image);
--	kvm_fx_restore(&vcpu->arch.host_fx_image);
- 	++vcpu->stat.fpu_reload;
- 	set_bit(KVM_REQ_DEACTIVATE_FPU, &vcpu->requests);
- 	trace_kvm_fpu(0);
-@@ -5203,9 +5192,6 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
- {
- 	int r;
- 
--	/* We do fxsave: this must be aligned. */
--	BUG_ON((unsigned long)&vcpu->arch.host_fx_image & 0xF);
--
- 	vcpu->arch.mtrr_state.have_fixed = 1;
- 	vcpu_load(vcpu);
- 	r = kvm_arch_vcpu_reset(vcpu);
--- 
-1.7.0.1
+Hi Axel, thanks for the fix, I agree it's needed.
+There are some minor comments inlined below.
 
+Plus, when possible, I prefer commit messages to be wrapped to 72/80
+characters per line. Please, consider this if you are sending a v2.
+
+Ah, may I ask where you are using this driver? Just curious.
+
+> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+> ---
+>  drivers/leds/leds-lp3944.c |   10 +++++++++-
+>  1 files changed, 9 insertions(+), 1 deletions(-)
+>=20
+> diff --git a/drivers/leds/leds-lp3944.c b/drivers/leds/leds-lp3944.c
+> index 8d5ecce..03a24d0 100644
+> --- a/drivers/leds/leds-lp3944.c
+> +++ b/drivers/leds/leds-lp3944.c
+> @@ -379,6 +379,7 @@ static int __devinit lp3944_probe(struct i2c_client *=
+client,
+>  {
+>  	struct lp3944_platform_data *lp3944_pdata =3D client->dev.platform_data;
+>  	struct lp3944_data *data;
+> +	int err;
+> =20
+>  	if (lp3944_pdata =3D=3D NULL) {
+>  		dev_err(&client->dev, "no platform data\n");
+> @@ -403,8 +404,15 @@ static int __devinit lp3944_probe(struct i2c_client =
+*client,
+> =20
+>  	dev_info(&client->dev, "lp3944 enabled\n");
+> =20
+> -	lp3944_configure(client, data, lp3944_pdata);
+> +	err =3D lp3944_configure(client, data, lp3944_pdata);
+> +	if (err < 0)
+> +		goto err_configure;
+> +
+
+The dev_info(&client->dev, "lp3944 enabled\n"); could now go right
+here, before the return 0, so we don't report the driver as enabled
+even in the case its probe fails.
+
+>  	return 0;
+> +
+> +err_configure:
+> +	kfree(data);
+
+add i2c_set_clientdata(client, NULL) here just like in lp3944_remove()
+
+> +	return err;
+>  }
+> =20
+>  static int __devexit lp3944_remove(struct i2c_client *client)
+> --=20
+> 1.5.4.3
+>=20
+
+Regards,
+   Antonio
+
+--=20
+Antonio Ospite
+http://ao2.it
+
+PGP public key ID: 0x4553B001
+
+A: Because it messes up the order in which people normally read text.
+   See http://en.wikipedia.org/wiki/Posting_style
+Q: Why is top-posting such a bad thing?
+A: Top-posting.
+Q: What is the most annoying thing in e-mail?
+
+--Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvxCSEACgkQ5xr2akVTsAFFmwCgnZX3yFmev4sH2fnbqLhuxbih
+714Ani0k4SG16mjXIPY5OEDDOC4gOBAC
+=Pnmt
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_May_2010_11_15_13_+0200_S47N2iG7Ae2yteIP--
