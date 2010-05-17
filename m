@@ -1,51 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754114Ab0EQGMy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 02:12:54 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:23910 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753099Ab0EQGMx (ORCPT
+	id S1754160Ab0EQGNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 02:13:41 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:44884 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753261Ab0EQGNj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 02:12:53 -0400
-Message-ID: <4BF0DE0C.2000905@oracle.com>
-Date: Sun, 16 May 2010 23:11:24 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 17 May 2010 02:13:39 -0400
+Message-ID: <4BF0DE5E.4010904@petalogix.com>
+Date: Mon, 17 May 2010 08:12:46 +0200
+From: Michal Simek <michal.simek@petalogix.com>
+Reply-To: michal.simek@petalogix.com
+User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+To: Mike Frysinger <vapier.adi@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Johannes Weiner <jw@emlix.com>, Christoph Lameter <cl@linux.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>	 <1273804337.21352.396.camel@pasglop> <4BECF158.5070200@oracle.com>	 <1273825807.21352.601.camel@pasglop> <4BED7CE3.1020507@oracle.com>	 <1273876234.21352.639.camel@pasglop>  <20100515073231.GB9877@elte.hu> <1274056773.21352.700.camel@pasglop>
-In-Reply-To: <1274056773.21352.700.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
+       =?UTF-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>, Nick Piggin <npiggin@suse.de>,
+       David Rientjes <rientjes@google.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Grant Likely <grant.likely@secretlab.ca>
+Subject: Re: [PATCH v3] ad7877: keep dma rx buffers in seperate cache lines
+References: <20100511063309.GC9644@core.coreip.homeip.net> 	<AANLkTinV79HZqS1cktHDsTsHDel-0Nti_Uk4i7mGaRiK@mail.gmail.com> 	<1273608441.15067.1002.camel@calx> <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com> 	<alpine.DEB.2.00.1005111520260.1500@router.home> <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com> 	<alpine.DEB.2.00.1005111544330.8388@router.home> <AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com> 	<20100511214836.GH1726@emlix.com> <20100511215359.GF7396@core.coreip.homeip.net> <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
+In-Reply-To: <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BF0DE52.0020:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2010 05:39 PM, Benjamin Herrenschmidt wrote:
-> On Sat, 2010-05-15 at 09:32 +0200, Ingo Molnar wrote:
+Mike Frysinger wrote:
+> On Tue, May 11, 2010 at 17:53, Dmitry Torokhov wrote:
+>> On Tue, May 11, 2010 at 11:48:36PM +0200, Johannes Weiner wrote:
+>>> On Tue, May 11, 2010 at 04:54:41PM -0400, Mike Frysinger wrote:
+>>>> does the phrase "DMA safe buffer" imply cache alignment ?
+>>> I guess that depends on the architectural requirements.  On x86,
+>>> apparently, not so much.  On ARM, probably yes, as it's the
+>>> requirement to properly maintain coherency.
+>> It looks liek ARM (and a few others) do this:
 >>
->> Btw., it would be nice to ready the LMB core bits for 
->> upstream for 2.6.35 if there's agreement about them - 
->> that will make the subsequent x86 patches much easier 
->> to merge.
+>> [dtor@hammer work]$ grep -r ARCH_KMALLOC_MINALIGN arch/
+>> arch/sh/include/asm/page.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
+>> arch/frv/include/asm/mem-layout.h:#define       ARCH_KMALLOC_MINALIGN           8
+>> arch/powerpc/include/asm/page_32.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
+>> arch/arm/include/asm/cache.h:#define ARCH_KMALLOC_MINALIGN      L1_CACHE_BYTES
+>> arch/microblaze/include/asm/page.h:#define ARCH_KMALLOC_MINALIGN        L1_CACHE_BYTES
+>> arch/mips/include/asm/mach-tx49xx/kmalloc.h: * All happy, no need to define ARCH_KMALLOC_MINALIGN
+>> arch/mips/include/asm/mach-ip27/kmalloc.h: * All happy, no need to define ARCH_KMALLOC_MINALIGN
+>> arch/mips/include/asm/mach-ip32/kmalloc.h:#define ARCH_KMALLOC_MINALIGN 32
+>> arch/mips/include/asm/mach-ip32/kmalloc.h:#define ARCH_KMALLOC_MINALIGN 128
+>> arch/mips/include/asm/mach-generic/kmalloc.h:#define ARCH_KMALLOC_MINALIGN      128
+>> arch/avr32/include/asm/cache.h:#define ARCH_KMALLOC_MINALIGN    L1_CACHE_BYTES
 > 
-> Well, 2.6.34 was released already. I think it's a bit premature. We need
-> to fix a few more things (the result codes for example) and do more
-> testing to ensure we didn't break other archs.
+> if ARCH_KMALLOC_MINALIGN is not defined, the current allocators default to:
+>  slub - alignof(unsigned long long)
+>  slab - alignof(unsigned long long)
+>  slob - alignof(unsigned long)
+> which for many arches can mean an alignment of merely 4 or 8
 > 
-so looks like your change will hit 2.6.35, and my x86 changes will hit 2.6.36?
+> lets look at the cacheline sizes for arches that dont set
+> ARCH_KMALLOC_MINALIGN to L1_CACHE_BYTES:
+>  - alplha - 32 or 64
+>  - frv - 32 or 64
+>  - blackfin - 32
+>  - parisc - 32 or 64
+>  - mn10300 - 16
+>  - s390 - 256
+>  - score - 16
+>  - sparc - 32
+>  - xtensa - 16 or 32
 
-that is too long.
+Just for completion.
 
-YH
+microblaze - 16 or 32.
+
+Michal
+
+-- 
+Michal Simek, Ing. (M.Eng)
+PetaLogix - Linux Solutions for a Reconfigurable World
+w: www.petalogix.com p: +61-7-30090663,+42-0-721842854 f: +61-7-30090663
