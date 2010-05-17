@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752860Ab0EQDcu (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 23:32:50 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36061 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752343Ab0EQDct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 23:32:49 -0400
-Date: Mon, 17 May 2010 13:32:39 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Michael Hennerich <michael.hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>
-Subject: Re: linux-next: build failure after merge of the backlight tree
-Message-Id: <20100517133239.8a30df8e.sfr@canb.auug.org.au>
-In-Reply-To: <20100510124304.2249532c.sfr@canb.auug.org.au>
-References: <20100510124304.2249532c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1752966Ab0EQDub (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 23:50:31 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21577 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752842Ab0EQDua (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 23:50:30 -0400
+Date: Sun, 16 May 2010 20:48:26 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: J??rn Engel <joern@logfs.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
+       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       logfs@logfs.org
+Subject: Re: linux-next -> 2.6.34: Tree for April 28 (logfs)
+Message-Id: <20100516204826.2625eed2.randy.dunlap@oracle.com>
+In-Reply-To: <20100509062010.GA9485@elte.hu>
+References: <20100428164341.cee2911a.sfr@canb.auug.org.au>
+	<20100428085604.0566092a.randy.dunlap@oracle.com>
+	<20100505092020.66a461fa.randy.dunlap@oracle.com>
+	<20100505203548.GI25129@logfs.org>
+	<20100509062010.GA9485@elte.hu>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4BF0BCF6.00B6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Sun, 9 May 2010 08:20:10 +0200 Ingo Molnar wrote:
 
-Hi Richard,
+> 
+> * J??rn Engel <joern@logfs.org> wrote:
+> 
+> > On Wed, 5 May 2010 09:20:20 -0700, Randy Dunlap wrote:
+> > > On Wed, 28 Apr 2010 08:56:04 -0700 Randy Dunlap wrote:
+> > > 
+> > > > When CONFIG_BLOCK is not enabled:
+> > > > 
+> > > > fs/logfs/super.c:142: error: implicit declaration of function 'bdev_get_queue'
+> > > > fs/logfs/super.c:142: error: invalid type argument of '->' (have 'int')
+> > > 
+> > > Still have this build error in linux-next-May 5-2010.
+> > 
+> > Should be fixed now.  Sorry about the delay.
+> 
+> Please post the fix itself as well, i've ran into this and so did others.
 
-On Mon, 10 May 2010 12:43:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> After merging the backlight tree, today's linux-next build (x86_64
-> allmodconfig) failed like this:
->=20
-> drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
-> drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of =
-function 'kzalloc'
-> drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes point=
-er from integer without a cast
-> drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of =
-function 'kfree'
-> drivers/video/backlight/adp8860_bl.c: In function 'adp8860_probe':
-> drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes point=
-er from integer without a cast
-> drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to fun=
-ction 'backlight_device_register'
->=20
-> Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
-> new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
-> requires including linux/slab.h (see Rule 1 in
-> Documentation/SubmitChecklist) and the prototype of
-> backlight_device_register changed before v2.6.34-rc2.
 
-I am still getting these build failures ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+This fix is now needed in 2.6.34....
 
---Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvwuNcACgkQjjKRsyhoI8xxhQCfbDXhOp/R078FVfaLUYmqaFUc
-JosAoLZMlNpAW0LtW/nA8EYdCgkkuR5w
-=/pVg
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f--
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
