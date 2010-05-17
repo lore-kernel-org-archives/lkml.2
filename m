@@ -1,204 +1,252 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753503Ab0EQFeJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:34:09 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:36674 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753228Ab0EQFeE (ORCPT
+	id S1753414Ab0EQFeH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:34:07 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46243 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab0EQFeE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 May 2010 01:34:04 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH -V8 0/9] Generic name to handle and open by handle syscalls 
-Date: Mon, 17 May 2010 11:03:43 +0530
-Message-Id: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+       linux-kernel@vger.kernel.org,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 1/9] exportfs: Return the minimum required handle size
+Date: Mon, 17 May 2010 11:03:44 +0530
+Message-Id: <1274074432-29695-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.78.g212f0
+In-Reply-To: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+The exportfs encode handle function should return the minimum required
+handle size. This helps user to find out the handle size by passing 0
+handle size in the first step and then redoing to the call again with
+the returned handle size value.
 
-The below set of patches implement open by handle support using exportfs
-operations. This allows user space application to map a file name to file 
-handle and later open the file using handle. This should be usable
-for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
-XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
-
-[1] http://nfs-ganesha.sourceforge.net/
-[2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
-
-Changes from V7:
-a) open_by_handle now use mountdirfd to identify the vfsmount.
-b) We don't validate the UUID passed as a part of file handle in open_by_handle.
-   UUID is provided as a part of file handle as an easy way for userspace to
-   use the kernel returned handle as it is. It also helps in finding the 16 byte
-   filessytem UUID in userspace without using file system specific libraries to
-   read file system superblock. If a particular file system doesn't support UUID
-   or any form of unique id this field in the file handle will be zero filled.
-c) drop freadlink syscall. Instead use readlinkat with NULL pathname to indicate
-   read the link target name of the link pointed by fd. This is similar to
-   sys_utimensat
-d) Instead of opencoding all the open flag related check use helper functions.
-   Did finish_open_by_handle similar to finish_open.
-c) Fix may_open to not return ELOOP for symlink when we are called from handle open.
-   open(2) still returns error as expected. 
-
-Changes from V6:
-a) Add uuid to vfsmount lookup and drop uuid to superblock lookup
-b) Return -EOPNOTSUPP in sys_name_to_handle if the file system returned uuid
-   doesn't give the same vfsmount on lookup. This ensure that we fail
-   sys_name_to_handle when we have multiple file system returning same UUID.
-
-Changes from V5:
-a) added sys_name_to_handle_at syscall which takes AT_SYMLINK_NOFOLLOW flag 
-   instead of two syscalls sys_name_to_handle and sys_lname_to_handle.
-b) addressed review comments from Niel Brown
-c) rebased to b91ce4d14a21fc04d165be30319541e0f9204f15
-d) Add compat_sys_open_by_handle
-
-Chages from V4:
-a) Changed the syscal arguments so that we don't need compat syscalls
-   as suggested by Christoph
-c) Added two new syscall sys_lname_to_handle and sys_freadlink to work with
-   symlinks
-d) Changed open_by_handle to work with all file types
-e) Add ext3 support
-
-Changes from V3:
-a) Code cleanup suggested by Andreas
-b) x86_64 syscall support
-c) add compat syscall
-
-Chages from V2:
-a) Support system wide unique handle.
-
-Changes from v1:
-a) handle size is now specified in bytes
-b) returns -EOVERFLOW if the handle size is small
-c) dropped open_handle syscall and added open_by_handle_at syscall
-   open_by_handle_at takes mount_fd as the directory fd of the mount point
-   containing the file
-e) handle will only be unique in a given file system. So for an NFS server
-   exporting multiple file system, NFS server will have to internally track the
-   mount point to which a file handle belongs to. We should be able to do it much
-   easily than expecting kernel to give a system wide unique file handle. System
-   wide unique file handle would need much larger changes to the exportfs or VFS
-   interface and I was not sure whether we really need to do that in the kernel or
-   in the user space
-f) open_handle_at now only check for DAC_OVERRIDE capability
-
-
-Example program: (x86_32). (x86_64 would need a different syscall number)
+Acked-by: Serge Hallyn <serue@us.ibm.com>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
-CC -D_GNU_SOURCE <source.c>
-----
-#include <stdio.h>
-#include <stdlib.h>
+ fs/btrfs/export.c             |    8 ++++++--
+ fs/exportfs/expfs.c           |    9 +++++++--
+ fs/fat/inode.c                |    4 +++-
+ fs/fuse/inode.c               |    4 +++-
+ fs/gfs2/export.c              |    8 ++++++--
+ fs/isofs/export.c             |    8 ++++++--
+ fs/ocfs2/export.c             |    8 +++++++-
+ fs/reiserfs/inode.c           |    7 ++++++-
+ fs/udf/namei.c                |    7 ++++++-
+ fs/xfs/linux-2.6/xfs_export.c |    4 +++-
+ mm/shmem.c                    |    4 +++-
+ 11 files changed, 56 insertions(+), 15 deletions(-)
 
-#include <fcntl.h>
-#include <unistd.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <string.h>
-
-struct uuid {
-	unsigned char uuid[16];
-};
-
-struct file_handle {
-        int handle_size;
-        int handle_type;
-	struct uuid fsid;
-        unsigned char handle[0];
-};
-
-#define AT_FDCWD		-100
-#define AT_SYMLINK_FOLLOW	0x400
-
-static int name_to_handle(const char *name, struct file_handle  *fh)
-{
-	return syscall(338, AT_FDCWD, name, fh, AT_SYMLINK_FOLLOW);
-}
-
-static int lname_to_handle(const char *name, struct file_handle  *fh)
-{
-	return syscall(338, AT_FDCWD, name, fh, 0);
-}
-
-static int open_by_handle(int mountfd, struct file_handle *fh,  int flags)
-{
-	return syscall(339, mountfd, fh, flags);
-}
-
-#define BUFSZ 100
-int main(int argc, char *argv[])
-{
-        int fd;
-        int ret;
-	int mountfd;
-	int handle_sz;
-	struct stat bufstat;
-        char buf[BUFSZ];
-        struct file_handle *fh = NULL;;
-	if (argc != 3 ) {
-		printf("Usage: %s <filename> <mount-dir-name>\n", argv[0]);
-		exit(1);
-	}
-again:
-	if (fh && fh->handle_size) {
-		handle_sz = fh->handle_size;
-		free(fh);
-		fh = malloc(sizeof(struct file_handle) + handle_sz);
-		fh->handle_size = handle_sz;
-	} else {
-		fh = malloc(sizeof(struct file_handle));
-		fh->handle_size = 0;
-	}
-        errno  = 0;
-        ret = lname_to_handle(argv[1], fh);
-        if (ret && errno == EOVERFLOW) {
-		printf("Found the handle size needed to be %d\n", fh->handle_size);
-		goto again;
-        } else if (ret) {
-                perror("Error:");
-		exit(1);
-	}
-	printf("Waiting for input");
-	getchar();
-	mountfd = open(argv[2], O_RDONLY | O_DIRECTORY);
-	if (mountfd <= 0) {
-                perror("Error:");
-                exit(1);
-        }
-        fd = open_by_handle(mountfd, fh, O_RDWR);
-        if (fd <= 0 ) {
-                perror("Error:");
-                exit(1);
-        }
-	printf("Reading the content now \n");
-	fstat(fd, &bufstat);
-	ret = S_ISLNK(bufstat.st_mode);
-	if (ret) {
-		memset(buf, 0 , BUFSZ);
-		readlinkat(fd, NULL, buf, BUFSZ);
-		printf("%s is a symlink pointing to %s\n", argv[1], buf);
-	}
-        memset(buf, 0 , BUFSZ);
-	while (1) {
-		ret = read(fd, buf, BUFSZ -1);
-		if (ret <= 0)
-			break;
-		buf[ret] = '\0';
-                printf("%s", buf);
-                memset(buf, 0 , BUFSZ);
-        }
-        return 0;
-}
-
--aneesh
+diff --git a/fs/btrfs/export.c b/fs/btrfs/export.c
+index 951ef09..5f8ee5a 100644
+--- a/fs/btrfs/export.c
++++ b/fs/btrfs/export.c
+@@ -21,9 +21,13 @@ static int btrfs_encode_fh(struct dentry *dentry, u32 *fh, int *max_len,
+ 	int len = *max_len;
+ 	int type;
+ 
+-	if ((len < BTRFS_FID_SIZE_NON_CONNECTABLE) ||
+-	    (connectable && len < BTRFS_FID_SIZE_CONNECTABLE))
++	if (connectable && (len < BTRFS_FID_SIZE_CONNECTABLE)) {
++		*max_len = BTRFS_FID_SIZE_CONNECTABLE;
+ 		return 255;
++	} else if (len < BTRFS_FID_SIZE_NON_CONNECTABLE) {
++		*max_len = BTRFS_FID_SIZE_NON_CONNECTABLE;
++		return 255;
++	}
+ 
+ 	len  = BTRFS_FID_SIZE_NON_CONNECTABLE;
+ 	type = FILEID_BTRFS_WITHOUT_PARENT;
+diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
+index e9e1759..cfee0f0 100644
+--- a/fs/exportfs/expfs.c
++++ b/fs/exportfs/expfs.c
+@@ -319,9 +319,14 @@ static int export_encode_fh(struct dentry *dentry, struct fid *fid,
+ 	struct inode * inode = dentry->d_inode;
+ 	int len = *max_len;
+ 	int type = FILEID_INO32_GEN;
+-	
+-	if (len < 2 || (connectable && len < 4))
++
++	if (connectable && (len < 4)) {
++		*max_len = 4;
++		return 255;
++	} else if (len < 2) {
++		*max_len = 2;
+ 		return 255;
++	}
+ 
+ 	len = 2;
+ 	fid->i32.ino = inode->i_ino;
+diff --git a/fs/fat/inode.c b/fs/fat/inode.c
+index 0ce143b..6f83bc7 100644
+--- a/fs/fat/inode.c
++++ b/fs/fat/inode.c
+@@ -738,8 +738,10 @@ fat_encode_fh(struct dentry *de, __u32 *fh, int *lenp, int connectable)
+ 	struct inode *inode =  de->d_inode;
+ 	u32 ipos_h, ipos_m, ipos_l;
+ 
+-	if (len < 5)
++	if (len < 5) {
++		*lenp = 5;
+ 		return 255; /* no room */
++	}
+ 
+ 	ipos_h = MSDOS_I(inode)->i_pos >> 8;
+ 	ipos_m = (MSDOS_I(inode)->i_pos & 0xf0) << 24;
+diff --git a/fs/fuse/inode.c b/fs/fuse/inode.c
+index ec14d19..beaea69 100644
+--- a/fs/fuse/inode.c
++++ b/fs/fuse/inode.c
+@@ -638,8 +638,10 @@ static int fuse_encode_fh(struct dentry *dentry, u32 *fh, int *max_len,
+ 	u64 nodeid;
+ 	u32 generation;
+ 
+-	if (*max_len < len)
++	if (*max_len < len) {
++		*max_len = len;
+ 		return  255;
++	}
+ 
+ 	nodeid = get_fuse_inode(inode)->nodeid;
+ 	generation = inode->i_generation;
+diff --git a/fs/gfs2/export.c b/fs/gfs2/export.c
+index c22c211..d022236 100644
+--- a/fs/gfs2/export.c
++++ b/fs/gfs2/export.c
+@@ -36,9 +36,13 @@ static int gfs2_encode_fh(struct dentry *dentry, __u32 *p, int *len,
+ 	struct super_block *sb = inode->i_sb;
+ 	struct gfs2_inode *ip = GFS2_I(inode);
+ 
+-	if (*len < GFS2_SMALL_FH_SIZE ||
+-	    (connectable && *len < GFS2_LARGE_FH_SIZE))
++	if (connectable && (*len < GFS2_LARGE_FH_SIZE)) {
++		*len = GFS2_LARGE_FH_SIZE;
+ 		return 255;
++	} else if (*len < GFS2_SMALL_FH_SIZE) {
++		*len = GFS2_SMALL_FH_SIZE;
++		return 255;
++	}
+ 
+ 	fh[0] = cpu_to_be32(ip->i_no_formal_ino >> 32);
+ 	fh[1] = cpu_to_be32(ip->i_no_formal_ino & 0xFFFFFFFF);
+diff --git a/fs/isofs/export.c b/fs/isofs/export.c
+index ed752cb..dd4687f 100644
+--- a/fs/isofs/export.c
++++ b/fs/isofs/export.c
+@@ -124,9 +124,13 @@ isofs_export_encode_fh(struct dentry *dentry,
+ 	 * offset of the inode and the upper 16 bits of fh32[1] to
+ 	 * hold the offset of the parent.
+ 	 */
+-
+-	if (len < 3 || (connectable && len < 5))
++	if (connectable && (len < 5)) {
++		*max_len = 5;
++		return 255;
++	} else if (len < 3) {
++		*max_len = 3;
+ 		return 255;
++	}
+ 
+ 	len = 3;
+ 	fh32[0] = ei->i_iget5_block;
+diff --git a/fs/ocfs2/export.c b/fs/ocfs2/export.c
+index 19ad145..250a347 100644
+--- a/fs/ocfs2/export.c
++++ b/fs/ocfs2/export.c
+@@ -201,8 +201,14 @@ static int ocfs2_encode_fh(struct dentry *dentry, u32 *fh_in, int *max_len,
+ 		   dentry->d_name.len, dentry->d_name.name,
+ 		   fh, len, connectable);
+ 
+-	if (len < 3 || (connectable && len < 6)) {
++	if (connectable && (len < 6)) {
+ 		mlog(ML_ERROR, "fh buffer is too small for encoding\n");
++		*max_len = 6;
++		type = 255;
++		goto bail;
++	} else if (len < 3) {
++		mlog(ML_ERROR, "fh buffer is too small for encoding\n");
++		*max_len = 3;
+ 		type = 255;
+ 		goto bail;
+ 	}
+diff --git a/fs/reiserfs/inode.c b/fs/reiserfs/inode.c
+index dc2c65e..5fff1e2 100644
+--- a/fs/reiserfs/inode.c
++++ b/fs/reiserfs/inode.c
+@@ -1588,8 +1588,13 @@ int reiserfs_encode_fh(struct dentry *dentry, __u32 * data, int *lenp,
+ 	struct inode *inode = dentry->d_inode;
+ 	int maxlen = *lenp;
+ 
+-	if (maxlen < 3)
++	if (need_parent && (maxlen < 5)) {
++		*lenp = 5;
+ 		return 255;
++	} else if (maxlen < 3) {
++		*lenp = 3;
++		return 255;
++	}
+ 
+ 	data[0] = inode->i_ino;
+ 	data[1] = le32_to_cpu(INODE_PKEY(inode)->k_dir_id);
+diff --git a/fs/udf/namei.c b/fs/udf/namei.c
+index 7581602..37ce713 100644
+--- a/fs/udf/namei.c
++++ b/fs/udf/namei.c
+@@ -1360,8 +1360,13 @@ static int udf_encode_fh(struct dentry *de, __u32 *fh, int *lenp,
+ 	struct fid *fid = (struct fid *)fh;
+ 	int type = FILEID_UDF_WITHOUT_PARENT;
+ 
+-	if (len < 3 || (connectable && len < 5))
++	if (connectable && (len < 5)) {
++		*lenp = 5;
++		return 255;
++	} else if (len < 3) {
++		*lenp = 3;
+ 		return 255;
++	}
+ 
+ 	*lenp = 3;
+ 	fid->udf.block = location.logicalBlockNum;
+diff --git a/fs/xfs/linux-2.6/xfs_export.c b/fs/xfs/linux-2.6/xfs_export.c
+index 846b75a..82c0553 100644
+--- a/fs/xfs/linux-2.6/xfs_export.c
++++ b/fs/xfs/linux-2.6/xfs_export.c
+@@ -81,8 +81,10 @@ xfs_fs_encode_fh(
+ 	 * seven combinations work.  The real answer is "don't use v2".
+ 	 */
+ 	len = xfs_fileid_length(fileid_type);
+-	if (*max_len < len)
++	if (*max_len < len) {
++		*max_len = len
+ 		return 255;
++	}
+ 	*max_len = len;
+ 
+ 	switch (fileid_type) {
+diff --git a/mm/shmem.c b/mm/shmem.c
+index eef4ebe..bbeda1c 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -2125,8 +2125,10 @@ static int shmem_encode_fh(struct dentry *dentry, __u32 *fh, int *len,
+ {
+ 	struct inode *inode = dentry->d_inode;
+ 
+-	if (*len < 3)
++	if (*len < 3) {
++		*len = 3;
+ 		return 255;
++	}
+ 
+ 	if (hlist_unhashed(&inode->i_hash)) {
+ 		/* Unfortunately insert_inode_hash is not idempotent,
+-- 
+1.7.1.78.g212f0
 
