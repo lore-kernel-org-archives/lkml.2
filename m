@@ -1,72 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755251Ab0EQL5b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 07:57:31 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:45113 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754827Ab0EQL53 convert rfc822-to-8bit (ORCPT
+	id S1752759Ab0EQL6J (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 07:58:09 -0400
+Received: from mailhost.elitecore.com ([203.88.135.194]:45222 "EHLO
+	elitecore.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751090Ab0EQL6H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 07:57:29 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=Sj0qv3Bo0q1xaHrPitwF/ppwtTt3RHmh4xAhgfDBJGal6Bossk9hoqm8ABfb3iG1w
-	7I171UNhU/ZqBsI0Aer2w==
+	Mon, 17 May 2010 07:58:07 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 07:58:06 EDT
+Message-ID: <4BF17B0A.70309@elitecore.com>
+Date: Mon, 17 May 2010 22:51:14 +0530
+From: krunal <krunal.patel@elitecore.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-In-Reply-To: <alpine.LFD.2.00.1005171303260.21420@localhost.localdomain>
-References: <4bf11ea4.dd29e30a.026d.4627@mx.google.com>
-	 <alpine.LFD.2.00.1005171303260.21420@localhost.localdomain>
-Date: Mon, 17 May 2010 13:57:25 +0200
-Message-ID: <AANLkTinvvU2G-KxSK6cAU-fYQyCF1m_5i282oq8rbJ8-@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix errors path in perf_output_begin()
-From: Stephane Eranian <eranian@google.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       acme@infradead.org, perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+To: linux-kernel@vger.kernel.org
+Subject: PROBLEM: e100 driver not working when bridge and vlan configured.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 1:04 PM, John Kacur <jkacur@redhat.com> wrote:
->
->
-> On Mon, 17 May 2010, Stephane Eranian wrote:
->
->>   In case the sampling buffer has no "payload" pages, nr_pages is 0.
->>   The problem is that the error path in perf_output_begin() skips to
->>   a label which assumes perf_output_lock() has been issued which is
->>   not the case. That triggers a WARN_ON() is perf_output_unlock().
->>
->>   This patch fixes the problem by adding a new label and skipping
->>   perf_task_unlock() in case data->nr_pages is 0.
->
-> It does? Your code looks good to me, but the description above is
-> a little flawed, since no new label is added.
->
-Sorry about that. I had written the text before the final version of the patch!
-I will resubmit.
+I have seen this bug in many threads also checked 
+"http://www.mailinglistarchive.com/xen-users@lists.xensource.com/msg19768.html", 
+but nothing works for me.
 
->> --
->> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
->> index a4fa381..95137b6 100644
->> --- a/kernel/perf_event.c
->> +++ b/kernel/perf_event.c
->> @@ -3035,8 +3035,10 @@ int perf_output_begin(struct perf_output_handle *handle,
->>       handle->nmi     = nmi;
->>       handle->sample  = sample;
->>
->> -     if (!data->nr_pages)
->> -             goto fail;
->> +     if (!data->nr_pages) {
->> +             atomic_inc(&data->lost);
->> +             goto out;
->> +     }
->>
->>       have_lost = atomic_read(&data->lost);
->>       if (have_lost)
->> --
->
+I am having 4 nics, driver for 2 nics is e1000 and 2 nics is e100.
+
+Setup
+( 192.168.1.1)br0-----------eth0
+                         |-------------eth1
+
+traffic flows through my bridge machine and i can ping 192.168.1.1, vlan 
+traffic also pass through it.
+
+I am not able to ping 192.168.1.1 using vlan interface
+
+so i created and added vlan interfaces to bridge
+( 192.168.1.1)br0-----------eth0
+                         |-------------eth1
+                         |-------------eth0.3
+                         |-------------eth1.3
+
+Still i am not able to ping 192.168.1.1.
+
+I then removed eth0, and eth1 from br0
+( 192.168.1.1)br0-----------eth0.3
+                         |-------------eth1.3
+
+Now I am able to ping 192.168.1.1
+
+My kernel is linux-2.6.27.45 and e100 driver is "3.5.23-k4-NAPI" which 
+comes with kernel.
+
+
+Same scenario works fine with e1000 driver.
+
+This bug is already reported and i am not able to find any patch for it.
+
+
+Regards,
+Krunal
