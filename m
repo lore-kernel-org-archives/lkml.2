@@ -1,85 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab0EQJEg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:04:36 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48072 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754857Ab0EQJEe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:04:34 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19r0UNW/1Zrlc5YanVuC8sXBeetwNEXt5WOetHcp9
-	SzPOHAYNfT8vSB
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1274086140.5605.3719.camel@twins>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-	 <1273994510.7873.10.camel@marge.simson.net>
-	 <1274071120.15000.10.camel@marge.simson.net>
-	 <1274086140.5605.3719.camel@twins>
-Content-Type: text/plain
-Date: Mon, 17 May 2010 11:04:30 +0200
-Message-Id: <1274087070.17267.37.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754877Ab0EQJKt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:10:49 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40345 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754360Ab0EQJKq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:10:46 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
+   d="scan'208";a="518507164"
+From: Sheng Yang <sheng@linux.intel.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>
+Subject: [PATCH][v2 0/3] Convert KVM to use FPU API
+Date: Mon, 17 May 2010 17:08:25 +0800
+Message-Id: <1274087308-26676-1-git-send-email-sheng@linux.intel.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 10:49 +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-17 at 06:38 +0200, Mike Galbraith wrote:
-> > What would be the harm/consequence of restoring RT tasks to rq->load so
-> > the wake_affine()::sync logic just worked as before without hackery?
-> 
-> Well, you'd have to constantly adjust the task weight of RT tasks to
-> reflect their actual consumption. Not really feasible.
+Change from v1:
+Use unlazy_fpu() to handle host FPU, avoiding save/restore of host FPU states.
 
-Egad, forget that.
+Sheng Yang (3):
+  x86: Export FPU API for KVM use
+  KVM: x86: Use unlazy_fpu() for host FPU
+  KVM: x86: Use FPU API
 
-> So the proportional stuff works like:
-> 
->  slice_i = w_i / (\Sum_j w_j) * dt
-> 
-> Giving a RT task a sensible weight we'd have to reverse that:
-> 
->  w_i = slice_i/dt * (\Sum_j w_j)
-> 
-> which is something that depends on the rq->load, so every time you
-> change the rq->load you'd have to recompute the weight of all the RT
-> tasks, which again changes the rq->load (got a head-ache already? :-)
-
-Yup.
-
-> > The weight is a more or less random number, but looking around, with
-> > them excluded, avg_load_per_task is lowered when RT tasks enter the
-> > system, and rq->load[] misses their weight.  (Dunno what effect it has
-> > on tg shares). 
-> 
-> Well, those things are more or less a 'good' thing, it makes it purely
-> about sched_fair.
-
-(Yeah, I was pondering up/down sides)
-
-> So the thing to do I think is to teach wake_affine about cpu_power,
-> because that is what includes the RT tasks.
-> 
-> The proper comparison of rq weights (like the regular load balancer
-> already does) is:
-> 
->   A->load / A->cpu_power ~ B->load / B->cpu_power
-> 
-> The lower the cpu_power of a particular cpu, the less processing
-> capacity it has, the smaller its share of the total weight should be to
-> provide equal work for each task.
-
-Hm, sounds kinda heavy/complicated for fast-path.  I think I like little
-hack better than trying to teach it about cpu_power :)
-
-	-Mike
+ arch/x86/include/asm/i387.h     |    2 +
+ arch/x86/include/asm/kvm_host.h |   18 +---------
+ arch/x86/include/asm/xsave.h    |    3 ++
+ arch/x86/kernel/i387.c          |    3 +-
+ arch/x86/kernel/process.c       |    1 +
+ arch/x86/kvm/x86.c              |   70 ++++++++++-----------------------------
+ 6 files changed, 27 insertions(+), 70 deletions(-)
 
