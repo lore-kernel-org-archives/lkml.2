@@ -1,65 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755987Ab0EQWRK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 18:17:10 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:57821 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755928Ab0EQWRI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 18:17:08 -0400
-Subject: RE: [linux-pm] Power Domain Framework
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Linus WALLEIJ <linus.walleij@stericsson.com>
-Cc: Sundar R IYER <sundar.iyer@stericsson.com>,
-       Deepak Sikri <deepak.sikri79@gmail.com>,
-       Viresh KUMAR <viresh.kumar@st.com>,
-       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-       Armando VISCONTI <armando.visconti@st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-In-Reply-To: <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local> (sfid-20100517_224652_794912_8E56D9D6)
-References: <AANLkTinZU1D1rMOBQDi47tRhXrOXwduQIdni7bCXdce0@mail.gmail.com>
-	 <20100510140527.GG5199@sirena.org.uk>
-	 <AANLkTikyqnKDNz7FIUvLDAvBReHskHvRCrEz2qBBqseH@mail.gmail.com>
-	 <20100517031613.GA3130@opensource.wolfsonmicro.com>
-	 <AANLkTimDdBCnRFMDiUkuNKanOzuPNwCpfRv9Gsi03Lsy@mail.gmail.com>
-	 <AANLkTinZRhUpFTOOUCdH5dEl3QaXn10USL_hPPQX8cie@mail.gmail.com>
-	 <20100517143319.GC5257@opensource.wolfsonmicro.com>
-	 <AANLkTiniwUDg8rQzwgm_X7EbkQJ9tHzBfVtaJRiNE9az@mail.gmail.com>
-	 <1274114107.20589.64.camel@bnru01>
-	 (sfid-20100517_173524_963855_B42F2966) <1274115886.2698.22.camel@finisterre.wolfsonmicro.main>
-	 <1274118332.17303.17.camel@bnru01>
-	 <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
-	 (sfid-20100517_213915_202336_5BFAA478) <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
-	 <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local>
-	 (sfid-20100517_224652_794912_8E56D9D6)
-Content-Type: text/plain; charset="UTF-8"
-Organization: Wolfson Microelectronics
-Date: Mon, 17 May 2010 15:17:16 -0700
-Message-ID: <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755964Ab0EQWUT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 18:20:19 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38037 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab0EQWUQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 18:20:16 -0400
+Message-ID: <4BF1BF61.4030605@zytor.com>
+Date: Mon, 17 May 2010 15:12:49 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>	 <1273803143.21352.353.camel@pasglop>  <4BECEB8D.8070600@oracle.com>	 <1273824578.21352.579.camel@pasglop>  <4BF18500.60105@zytor.com> <1274133749.21352.756.camel@pasglop>
+In-Reply-To: <1274133749.21352.756.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 23:46 +0200, Linus WALLEIJ wrote:
-> [Mark]
+On 05/17/2010 03:02 PM, Benjamin Herrenschmidt wrote:
+> On Mon, 2010-05-17 at 11:03 -0700, H. Peter Anvin wrote:
+>> On 05/14/2010 01:09 AM, Benjamin Herrenschmidt wrote:
+>>>
+>>> No. That is not the point. Read the rest of my email !
+>>>
+>>> We need to -sanitize- those errors. _Maybe_ exposing LMB_ERROR is the
+>>> right way to do so, but in that case, we need to make -all- function use
+>>> the same error code. Right now, some fail with 0 and some with
+>>> LMB_ERROR.
+>>>
+>>
+>> Using errnos like the rest of the kernel seems like the right thing to
+>> do, IMO.
+> 
+> Maybe. The allocator/find functions return a physical address. If we all
+> agree that a physical address between -PAGE_SIZE and 0 is never valid,
+> then we can overlay the negative errno codes like we do for pointers.
+> 
+> I'll have a look at that, it shouldn't be very hard.
+> 
 
-> > I do agree that separating out the common bits of power
-> > domain implementation would be good, my concerns here are around the
-> > level of integration with the regulator API.
+For x86 with 64-bit resource_t, this is always true (physical addresses
+are never negative.)  For x86 with 32-bit resource_t negative physical
+addresses can be negative, but the top of the address space will always
+be occupied by the boot ROM (it's a hardware constraint.)
 
-> The plenty talk about power domains in
-> Documentation/power/regulators/overview.txt
-> was what got us started in this regulator direction from the
-> beginning.
-
-Yeah, sure - obviously, the generic concept of power domains is
-something that does exist within the off-SoC hardware, but on-SoC the
-end implementation is a bit different.
-
+	-hpa
