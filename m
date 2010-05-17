@@ -1,432 +1,204 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755946Ab0EQTc0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:32:26 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:32867 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755521Ab0EQTcW (ORCPT
+	id S1755958Ab0EQTcn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:32:43 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:32902 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753126Ab0EQTbe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:32:22 -0400
-Message-ID: <4BF1993D.2070000@lougher.demon.co.uk>
-Date: Mon, 17 May 2010 20:30:05 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Mon, 17 May 2010 15:31:34 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 2/4] perf options: Check v type in OPT_U?INTEGER
+Date: Mon, 17 May 2010 16:31:16 -0300
+Message-Id: <1274124678-24781-3-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274124678-24781-1-git-send-email-acme@infradead.org>
+References: <1274124678-24781-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH 2/4] squashfs: add support for xattr reading
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-Add support for listxattr and getxattr.  Also add xattr definitions.
+To avoid problems like the one fixed by Stephane Eranian in 3de29ca, now
+we'll got this instead:
 
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+	bench/sched-messaging.c:259: error: negative width in bit-field ‘<anonymous>’
+	bench/sched-messaging.c:261: error: negative width in bit-field ‘<anonymous>’
+
+Which is rather cryptic, but is how BUILD_BUG_ON_ZERO works, so kernel
+hackers should be already used to this.
+
+With it in place found some problems, fixed by changing the affected
+variables to sensible types or changed some OPT_INTEGER to OPT_UINTEGER.
+
+Next csets will go thru converting each of the remaining OPT_ so that
+review can be made easier by grouping changes per type per patch.
+
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
-  fs/squashfs/Makefile        |    2 +-
-  fs/squashfs/squashfs_fs.h   |   19 +++
-  fs/squashfs/squashfs_fs_i.h |    3 +
-  fs/squashfs/xattr.c         |  319 +++++++++++++++++++++++++++++++++++++++++++
-  4 files changed, 342 insertions(+), 1 deletions(-)
-  create mode 100644 fs/squashfs/xattr.c
+ tools/perf/bench/sched-messaging.c     |    6 ++----
+ tools/perf/builtin-record.c            |    8 +++-----
+ tools/perf/builtin-sched.c             |    6 +++---
+ tools/perf/builtin-top.c               |    5 ++---
+ tools/perf/util/include/linux/kernel.h |    2 ++
+ tools/perf/util/parse-options.h        |    8 ++++++--
+ 6 files changed, 18 insertions(+), 17 deletions(-)
 
-diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index c0da4a1..56684d4 100644
---- a/fs/squashfs/Makefile
-+++ b/fs/squashfs/Makefile
-@@ -5,5 +5,5 @@
-  obj-$(CONFIG_SQUASHFS) += squashfs.o
-  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
-  squashfs-y += namei.o super.o symlink.o zlib_wrapper.o decompressor.o
--squashfs-y += xattr_id.o
-+squashfs-y += xattr.o xattr_id.o
-
-diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
-index c654e86..6fe940c 100644
---- a/fs/squashfs/squashfs_fs.h
-+++ b/fs/squashfs/squashfs_fs.h
-@@ -46,6 +46,7 @@
-  #define SQUASHFS_NAME_LEN		256
-
-  #define SQUASHFS_INVALID_FRAG		(0xffffffffU)
-+#define SQUASHFS_INVALID_XATTR		(0xffffffffU)
-  #define SQUASHFS_INVALID_BLK		(-1LL)
-
-  /* Filesystem flags */
-@@ -96,6 +97,13 @@
-  #define SQUASHFS_LFIFO_TYPE		13
-  #define SQUASHFS_LSOCKET_TYPE		14
-
-+/* Xattr types */
-+#define SQUASHFS_XATTR_USER             0
-+#define SQUASHFS_XATTR_TRUSTED          1
-+#define SQUASHFS_XATTR_SECURITY         2
-+#define SQUASHFS_XATTR_VALUE_OOL        256
-+#define SQUASHFS_XATTR_PREFIX_MASK      0xff
+diff --git a/tools/perf/bench/sched-messaging.c b/tools/perf/bench/sched-messaging.c
+index da1b2e9..d1d1b30 100644
+--- a/tools/perf/bench/sched-messaging.c
++++ b/tools/perf/bench/sched-messaging.c
+@@ -256,10 +256,8 @@ static const struct option options[] = {
+ 		    "Use pipe() instead of socketpair()"),
+ 	OPT_BOOLEAN('t', "thread", &thread_mode,
+ 		    "Be multi thread instead of multi process"),
+-	OPT_INTEGER('g', "group", &num_groups,
+-		    "Specify number of groups"),
+-	OPT_INTEGER('l', "loop", &loops,
+-		    "Specify number of loops"),
++	OPT_UINTEGER('g', "group", &num_groups, "Specify number of groups"),
++	OPT_UINTEGER('l', "loop", &loops, "Specify number of loops"),
+ 	OPT_END()
+ };
+ 
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index b93573c..cb46c7d 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -45,7 +45,7 @@ static int			output;
+ static int			pipe_output			=      0;
+ static const char		*output_name			= "perf.data";
+ static int			group				=      0;
+-static unsigned int		realtime_prio			=      0;
++static int			realtime_prio			=      0;
+ static bool			raw_samples			=  false;
+ static bool			system_wide			=  false;
+ static int			profile_cpu			=     -1;
+@@ -822,10 +822,8 @@ static const struct option options[] = {
+ 		    "output file name"),
+ 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
+ 		    "child tasks do not inherit counters"),
+-	OPT_INTEGER('F', "freq", &user_freq,
+-		    "profile at this frequency"),
+-	OPT_INTEGER('m', "mmap-pages", &mmap_pages,
+-		    "number of mmap data pages"),
++	OPT_UINTEGER('F', "freq", &user_freq, "profile at this frequency"),
++	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
+ 	OPT_BOOLEAN('g', "call-graph", &call_graph,
+ 		    "do call-graph (stack chain/backtrace) recording"),
+ 	OPT_INCR('v', "verbose", &verbose,
+diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
+index be7bc92..c80acdf 100644
+--- a/tools/perf/builtin-sched.c
++++ b/tools/perf/builtin-sched.c
+@@ -105,7 +105,7 @@ static u64			sum_runtime;
+ static u64			sum_fluct;
+ static u64			run_avg;
+ 
+-static unsigned long		replay_repeat = 10;
++static unsigned int		replay_repeat = 10;
+ static unsigned long		nr_timestamps;
+ static unsigned long		nr_unordered_timestamps;
+ static unsigned long		nr_state_machine_bugs;
+@@ -1816,8 +1816,8 @@ static const char * const replay_usage[] = {
+ };
+ 
+ static const struct option replay_options[] = {
+-	OPT_INTEGER('r', "repeat", &replay_repeat,
+-		    "repeat the workload replay N times (-1: infinite)"),
++	OPT_UINTEGER('r', "repeat", &replay_repeat,
++		     "repeat the workload replay N times (-1: infinite)"),
+ 	OPT_INCR('v', "verbose", &verbose,
+ 		    "be more verbose (show symbol address, etc)"),
+ 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
+diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
+index ed9b5b6..9f0cfa0 100644
+--- a/tools/perf/builtin-top.c
++++ b/tools/perf/builtin-top.c
+@@ -71,7 +71,7 @@ static int			thread_num			=      0;
+ static bool			inherit				=  false;
+ static int			profile_cpu			=     -1;
+ static int			nr_cpus				=      0;
+-static unsigned int		realtime_prio			=      0;
++static int			realtime_prio			=      0;
+ static bool			group				=  false;
+ static unsigned int		page_size;
+ static unsigned int		mmap_pages			=     16;
+@@ -1357,8 +1357,7 @@ static const struct option options[] = {
+ 		   "file", "vmlinux pathname"),
+ 	OPT_BOOLEAN('K', "hide_kernel_symbols", &hide_kernel_symbols,
+ 		    "hide kernel symbols"),
+-	OPT_INTEGER('m', "mmap-pages", &mmap_pages,
+-		    "number of mmap data pages"),
++	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
+ 	OPT_INTEGER('r', "realtime", &realtime_prio,
+ 		    "collect data with this RT SCHED_FIFO priority"),
+ 	OPT_INTEGER('d', "delay", &delay_secs,
+diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
+index 388ab1b..1eb804f 100644
+--- a/tools/perf/util/include/linux/kernel.h
++++ b/tools/perf/util/include/linux/kernel.h
+@@ -28,6 +28,8 @@
+ 	(type *)((char *)__mptr - offsetof(type, member)); })
+ #endif
+ 
++#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
 +
-  /* Flag whether block is compressed or uncompressed, bit is set if block is
-   * uncompressed */
-  #define SQUASHFS_COMPRESSED_BIT		(1 << 15)
-@@ -395,6 +403,17 @@ struct squashfs_fragment_entry {
-  	unsigned int		unused;
-  };
-
-+struct squashfs_xattr_entry {
-+	__le16			type;
-+	__le16			size;
-+	char			data[0];
-+};
+ #ifndef max
+ #define max(x, y) ({				\
+ 	typeof(x) _max1 = (x);			\
+diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
+index c6aa4ee..9ca348e 100644
+--- a/tools/perf/util/parse-options.h
++++ b/tools/perf/util/parse-options.h
+@@ -1,6 +1,8 @@
+ #ifndef __PERF_PARSE_OPTIONS_H
+ #define __PERF_PARSE_OPTIONS_H
+ 
++#include <linux/kernel.h>
 +
-+struct squashfs_xattr_val {
-+	__le32			vsize;
-+	char			value[0];
-+};
+ enum parse_opt_type {
+ 	/* special types */
+ 	OPTION_END,
+@@ -93,6 +95,8 @@ struct option {
+ 	intptr_t defval;
+ };
+ 
++#define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
 +
-  struct squashfs_xattr_id {
-  	__le64			xattr;
-  	__le32			count;
-diff --git a/fs/squashfs/squashfs_fs_i.h b/fs/squashfs/squashfs_fs_i.h
-index fbfca30..d3e3a37 100644
---- a/fs/squashfs/squashfs_fs_i.h
-+++ b/fs/squashfs/squashfs_fs_i.h
-@@ -26,6 +26,9 @@
-  struct squashfs_inode_info {
-  	u64		start;
-  	int		offset;
-+	u64		xattr;
-+	unsigned int	xattr_size;
-+	int		xattr_count;
-  	union {
-  		struct {
-  			u64		fragment_block;
-diff --git a/fs/squashfs/xattr.c b/fs/squashfs/xattr.c
-new file mode 100644
-index 0000000..147ecc3
---- /dev/null
-+++ b/fs/squashfs/xattr.c
-@@ -0,0 +1,319 @@
-+/*
-+ * Squashfs - a compressed read only filesystem for Linux
-+ *
-+ * Copyright (c) 2010
-+ * Phillip Lougher <phillip@lougher.demon.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2,
-+ * or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * xattr_id.c
-+ */
-+
-+#include <linux/init.h>
-+#include <linux/module.h>
-+#include <linux/string.h>
-+#include <linux/fs.h>
-+#include <linux/vfs.h>
-+#include <linux/xattr.h>
-+#include <linux/slab.h>
-+
-+#include "squashfs_fs.h"
-+#include "squashfs_fs_sb.h"
-+#include "squashfs_fs_i.h"
-+#include "squashfs.h"
-+
-+static inline struct xattr_handler *squashfs_xattr_handler(int);
-+
-+ssize_t squashfs_listxattr(struct dentry *d, char *buffer,
-+	size_t buffer_size)
-+{
-+	struct inode *inode = d->d_inode;
-+	struct super_block *sb = inode->i_sb;
-+	struct squashfs_sb_info *msblk = sb->s_fs_info;
-+	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
-+						 + msblk->xattr_table;
-+	int offset = SQUASHFS_XATTR_OFFSET(squashfs_i(inode)->xattr);
-+	int count = squashfs_i(inode)->xattr_count;
-+	size_t rest = buffer_size;
-+	int err;
-+
-+	/* check that the file system has xattrs */
-+	if (msblk->xattr_id_table == NULL)
-+		return -EOPNOTSUPP;
-+
-+	/* loop reading each xattr name */
-+	while (count--) {
-+		struct squashfs_xattr_entry entry;
-+		struct squashfs_xattr_val val;
-+		struct xattr_handler *handler;
-+		int name_size, prefix_size = 0;
-+
-+		err = squashfs_read_metadata(sb, &entry, &start, &offset,
-+							sizeof(entry));
-+		if (err < 0)
-+			goto failed;
-+
-+		name_size = le16_to_cpu(entry.size);
-+		handler = squashfs_xattr_handler(le16_to_cpu(entry.type));
-+		if (handler)
-+			prefix_size = handler->list(d, buffer, rest, NULL,
-+				name_size, handler->flags);
-+		if (prefix_size) {
-+			if (buffer) {
-+				if (prefix_size + name_size + 1 > rest) {
-+					err = -ERANGE;
-+					goto failed;
-+				}
-+				buffer += prefix_size;
-+			}
-+			err = squashfs_read_metadata(sb, buffer, &start,
-+				&offset, name_size);
-+			if (err < 0)
-+				goto failed;
-+			if (buffer) {
-+				buffer[name_size] = '\0';
-+				buffer += name_size + 1;
-+			}
-+			rest -= prefix_size + name_size + 1;
-+		} else  {
-+			/* no handler or insuffficient privileges, so skip */
-+			err = squashfs_read_metadata(sb, NULL, &start,
-+				&offset, name_size);
-+			if (err < 0)
-+				goto failed;
-+		}
-+
-+
-+		/* skip remaining xattr entry */
-+		err = squashfs_read_metadata(sb, &val, &start, &offset,
-+						sizeof(val));
-+		if (err < 0)
-+			goto failed;
-+
-+		err = squashfs_read_metadata(sb, NULL, &start, &offset,
-+						le32_to_cpu(val.vsize));
-+		if (err < 0)
-+			goto failed;
-+	}
-+	err = buffer_size - rest;
-+
-+failed:
-+	return err;
-+}
-+
-+
-+static int squashfs_xattr_get(struct inode *inode, int name_index,
-+	const char *name, void *buffer, size_t buffer_size)
-+{
-+	struct super_block *sb = inode->i_sb;
-+	struct squashfs_sb_info *msblk = sb->s_fs_info;
-+	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
-+						 + msblk->xattr_table;
-+	int offset = SQUASHFS_XATTR_OFFSET(squashfs_i(inode)->xattr);
-+	int count = squashfs_i(inode)->xattr_count;
-+	int name_len = strlen(name);
-+	int err, vsize;
-+	char *target = kmalloc(name_len, GFP_KERNEL);
-+
-+	if (target == NULL)
-+		return  -ENOMEM;
-+
-+	/* loop reading each xattr name */
-+	for (; count; count--) {
-+		struct squashfs_xattr_entry entry;
-+		struct squashfs_xattr_val val;
-+		int type, prefix, name_size;
-+
-+		err = squashfs_read_metadata(sb, &entry, &start, &offset,
-+							sizeof(entry));
-+		if (err < 0)
-+			goto failed;
-+
-+		name_size = le16_to_cpu(entry.size);
-+		type = le16_to_cpu(entry.type);
-+		prefix = type & SQUASHFS_XATTR_PREFIX_MASK;
-+
-+		err = squashfs_read_metadata(sb, target, &start, &offset,
-+							name_size);
-+		if (err < 0)
-+			goto failed;
-+
-+		if (prefix == name_index && name_size == name_len &&
-+					strncmp(target, name, name_size) == 0) {
-+			/* found xattr */
-+			if (type & SQUASHFS_XATTR_VALUE_OOL) {
-+				__le64 xattr;
-+				/* val is a reference to the real location */
-+				err = squashfs_read_metadata(sb, &val, &start,
-+						&offset, sizeof(val));
-+				if (err < 0)
-+					goto failed;
-+				err = squashfs_read_metadata(sb, &xattr, &start,
-+					 &offset, sizeof(xattr));
-+				if (err < 0)
-+					goto failed;
-+				xattr = le64_to_cpu(xattr);
-+				start = SQUASHFS_XATTR_BLK(xattr) +
-+							msblk->xattr_table;
-+				offset = SQUASHFS_XATTR_OFFSET(xattr);
-+			}
-+			/* read xattr value */
-+			err = squashfs_read_metadata(sb, &val, &start, &offset,
-+							sizeof(val));
-+			if (err < 0)
-+				goto failed;
-+
-+			vsize = le32_to_cpu(val.vsize);
-+			if (buffer) {
-+				if (vsize > buffer_size) {
-+					err = -ERANGE;
-+					goto failed;
-+				}
-+				err = squashfs_read_metadata(sb, buffer, &start,
-+					 &offset, vsize);
-+				if (err < 0)
-+					goto failed;
-+			}
-+			break;
-+		}
-+
-+		/* no match, skip remaining xattr entry */
-+		err = squashfs_read_metadata(sb, &val, &start, &offset,
-+							sizeof(val));
-+		if (err < 0)
-+			goto failed;
-+		err = squashfs_read_metadata(sb, NULL, &start, &offset,
-+						le32_to_cpu(val.vsize));
-+		if (err < 0)
-+			goto failed;
-+	}
-+	err = count ? vsize : -ENODATA;
-+
-+failed:
-+	kfree(target);
-+	return err;
-+}
-+
-+
-+/*
-+ * User namespace support
-+ */
-+static size_t squashfs_user_list(struct dentry *d, char *list, size_t list_size,
-+	const char *name, size_t name_len, int type)
-+{
-+	if (list && XATTR_USER_PREFIX_LEN <= list_size)
-+		memcpy(list, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN);
-+	return XATTR_USER_PREFIX_LEN;
-+}
-+
-+static int squashfs_user_get(struct dentry *d, const char *name, void *buffer,
-+	size_t size, int type)
-+{
-+	if (name[0] == '\0')
-+		return  -EINVAL;
-+
-+	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_USER, name,
-+		buffer, size);
-+}
-+
-+struct xattr_handler squashfs_xattr_user_handler = {
-+	.prefix	= XATTR_USER_PREFIX,
-+	.list	= squashfs_user_list,
-+	.get	= squashfs_user_get
-+};
-+
-+/*
-+ * Trusted namespace support
-+ */
-+static size_t squashfs_trusted_list(struct dentry *d, char *list,
-+	size_t list_size, const char *name, size_t name_len, int type)
-+{
-+	if (!capable(CAP_SYS_ADMIN))
-+		return 0;
-+
-+	if (list && XATTR_TRUSTED_PREFIX_LEN <= list_size)
-+		memcpy(list, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN);
-+	return XATTR_TRUSTED_PREFIX_LEN;
-+}
-+
-+static int squashfs_trusted_get(struct dentry *d, const char *name,
-+	void *buffer, size_t size, int type)
-+{
-+	if (name[0] == '\0')
-+		return  -EINVAL;
-+
-+	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_TRUSTED, name,
-+		buffer, size);
-+}
-+
-+struct xattr_handler squashfs_xattr_trusted_handler = {
-+	.prefix	= XATTR_TRUSTED_PREFIX,
-+	.list	= squashfs_trusted_list,
-+	.get	= squashfs_trusted_get
-+};
-+
-+/*
-+ * Security namespace support
-+ */
-+static size_t squashfs_security_list(struct dentry *d, char *list,
-+	size_t list_size, const char *name, size_t name_len, int type)
-+{
-+	if (list && XATTR_SECURITY_PREFIX_LEN <= list_size)
-+		memcpy(list, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
-+	return XATTR_SECURITY_PREFIX_LEN;
-+}
-+
-+static int squashfs_security_get(struct dentry *d, const char *name,
-+	void *buffer, size_t size, int type)
-+{
-+	if (name[0] == '\0')
-+		return  -EINVAL;
-+
-+	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_SECURITY, name,
-+		buffer, size);
-+}
-+
-+struct xattr_handler squashfs_xattr_security_handler = {
-+	.prefix	= XATTR_SECURITY_PREFIX,
-+	.list	= squashfs_security_list,
-+	.get	= squashfs_security_get
-+};
-+
-+static inline struct xattr_handler *squashfs_xattr_handler(int type)
-+{
-+	if (type & ~(SQUASHFS_XATTR_PREFIX_MASK | SQUASHFS_XATTR_VALUE_OOL))
-+		/* ignore unrecognised type */
-+		return NULL;
-+
-+	switch (type & SQUASHFS_XATTR_PREFIX_MASK) {
-+	case SQUASHFS_XATTR_USER:
-+		return &squashfs_xattr_user_handler;
-+	case SQUASHFS_XATTR_TRUSTED:
-+		return &squashfs_xattr_trusted_handler;
-+	case SQUASHFS_XATTR_SECURITY:
-+		return &squashfs_xattr_security_handler;
-+	default:
-+		/* ignore unrecognised type */
-+		return NULL;
-+	}
-+}
-+
-+struct xattr_handler *squashfs_xattr_handlers[] = {
-+	&squashfs_xattr_user_handler,
-+	&squashfs_xattr_trusted_handler,
-+	&squashfs_xattr_security_handler,
-+	NULL
-+};
-+
+ #define OPT_END()                   { .type = OPTION_END }
+ #define OPT_ARGUMENT(l, h)          { .type = OPTION_ARGUMENT, .long_name = (l), .help = (h) }
+ #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
+@@ -101,8 +105,8 @@ struct option {
+ #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
+ #define OPT_SET_INT(s, l, v, h, i)  { .type = OPTION_SET_INT, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (i) }
+ #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
+-#define OPT_INTEGER(s, l, v, h)     { .type = OPTION_INTEGER, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
+-#define OPT_UINTEGER(s, l, v, h)    { .type = OPTION_UINTEGER, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
++#define OPT_INTEGER(s, l, v, h)     { .type = OPTION_INTEGER, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
++#define OPT_UINTEGER(s, l, v, h)    { .type = OPTION_UINTEGER, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h) }
+ #define OPT_LONG(s, l, v, h)        { .type = OPTION_LONG, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
+ #define OPT_U64(s, l, v, h)         { .type = OPTION_U64, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
+ #define OPT_STRING(s, l, v, a, h)   { .type = OPTION_STRING,  .short_name = (s), .long_name = (l), .value = (v), (a), .help = (h) }
 -- 
-1.6.3.3
+1.6.2.5
 
