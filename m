@@ -1,81 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756476Ab0EQWj1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 18:39:27 -0400
-Received: from crca.org.au ([74.207.252.120]:58335 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab0EQWj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 18:39:26 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BF1C595.3070707@crca.org.au>
-Date: Tue, 18 May 2010 08:39:17 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@linux.jf.intel.com>,
-       Venkatesh Pallipadi <venki@google.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
-       LKML <linux-kernel@vger.kernel.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to push
- model
-References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-In-Reply-To: <20100517182726.089700767@sbs-t61.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756019Ab0EQWk5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 18:40:57 -0400
+Received: from mail.df.lth.se ([194.47.250.12]:45424 "EHLO df.lth.se"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751381Ab0EQWk4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 18:40:56 -0400
+From: Linus Walleij <linus.walleij@stericsson.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: linux-kernel@vger.kernel.org, Jonas Aaberg <jonas.aberg@stericsson.com>,
+       Linus Walleij <linus.walleij@stericsson.com>
+Subject: [PATCH 1/3] DMAENGINE: DMA40 support paused channel status
+Date: Tue, 18 May 2010 00:41:09 +0200
+Message-Id: <1274136069-11850-1-git-send-email-linus.walleij@stericsson.com>
+X-Mailer: git-send-email 1.6.2.rc1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Suresh.
+From: Jonas Aaberg <jonas.aberg@stericsson.com>
 
-On 18/05/10 04:27, Suresh Siddha wrote:
-> This is an updated version of patchset which is posted earlier at
-> http://lkml.org/lkml/2009/12/10/470
->
-> Description:
-> Existing nohz idle load balance logic uses the pull model, with one
-> idle load balancer CPU nominated on any partially idle system and that
-> balancer CPU not going into nohz mode. With the periodic tick, the
-> balancer does the idle balancing on behalf of all the CPUs in nohz mode.
->
-> This is not very optimal and has few issues:
-> * the balancer will continue to have periodic ticks and wakeup
->    frequently (HZ rate), even though it may not have any rebalancing to do on
->    behalf of any of the idle CPUs.
-> * On x86 and CPUs that have APIC timer stoppage on idle CPUs, this periodic
->    wakeup can result in an additional interrupt on a CPU doing the timer
->    broadcast.
->
-> The alternative is to have a push model, where all idle CPUs can enter nohz
-> mode and any busy CPU kicks one of the idle CPUs to take care of idle
-> balancing on behalf of a group of idle CPUs.
->
-> Following patches switches idle load balancer to this push approach.
->
-> Updates from the previous version:
->
-> * Busy CPU uses send_remote_softirq() for invoking SCHED_SOFTIRQ on the
->    idle load balancing cpu, which does the load balancing on behalf of
->    all the idle CPUs.
->
-> * Dropped the per NUMA node nohz load balancing as it doesn't detect
->    certain imbalance scenarios. This will be addressed later.
->
-> Signed-off-by: Suresh Siddha<suresh.b.siddha@intel.com>
-> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
+Support determining whether a channel is paused or
+not using the status function.
 
-Sounds great.
+Signed-off-by: Jonas Aaberg <jonas.aberg@stericsson.com>
+Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+---
+The majority of this patch was a bugfix for the PrimeCell
+extensions which included the paused channel status. This
+breaks out that small generic part and integrates the bugfix
+patch.
+---
+ drivers/dma/ste_dma40.c |   75 ++++++++++++++++++++++++++++++++++++++++++-----
+ 1 files changed, 67 insertions(+), 8 deletions(-)
 
-I'm in the middle of packing at the moment, but will try to find time to 
-test the patches.
+diff --git a/drivers/dma/ste_dma40.c b/drivers/dma/ste_dma40.c
+index e4295a2..16a7d2b 100644
+--- a/drivers/dma/ste_dma40.c
++++ b/drivers/dma/ste_dma40.c
+@@ -659,7 +659,7 @@ static void d40_config_set_event(struct d40_chan *d40c, bool do_enable)
+ 	spin_unlock_irqrestore(&d40c->phy_chan->lock, flags);
+ }
+ 
+-static bool d40_chan_has_events(struct d40_chan *d40c)
++static u32 d40_chan_has_events(struct d40_chan *d40c)
+ {
+ 	u32 val = 0;
+ 
+@@ -674,7 +674,7 @@ static bool d40_chan_has_events(struct d40_chan *d40c)
+ 		val = readl(d40c->base->virtbase + D40_DREG_PCBASE +
+ 			    d40c->phy_chan->num * D40_DREG_PCDELTA +
+ 			    D40_CHAN_REG_SDLNK);
+-	return (bool) val;
++	return val;
+ }
+ 
+ static void d40_config_enable_lidx(struct d40_chan *d40c)
+@@ -1389,6 +1389,65 @@ static int d40_pause(struct dma_chan *chan)
+ 	return res;
+ }
+ 
++static bool d40_is_paused(struct d40_chan *d40c)
++{
++	bool is_paused = false;
++	unsigned long flags;
++	void __iomem *active_reg;
++	u32 status;
++	u32 event;
++	int res;
++
++	spin_lock_irqsave(&d40c->lock, flags);
++
++	if (d40c->log_num == D40_PHY_CHAN) {
++		if (d40c->phy_chan->num % 2 == 0)
++			active_reg = d40c->base->virtbase + D40_DREG_ACTIVE;
++		else
++			active_reg = d40c->base->virtbase + D40_DREG_ACTIVO;
++
++		status = (readl(active_reg) &
++			  D40_CHAN_POS_MASK(d40c->phy_chan->num)) >>
++			D40_CHAN_POS(d40c->phy_chan->num);
++		if (status == D40_DMA_SUSPENDED || status == D40_DMA_STOP)
++			is_paused = true;
++
++		goto _exit;
++	}
++
++	res = d40_channel_execute_command(d40c, D40_DMA_SUSPEND_REQ);
++	if (res != 0)
++		goto _exit;
++
++	if (d40c->dma_cfg.dir == STEDMA40_MEM_TO_PERIPH ||
++	    d40c->dma_cfg.dir == STEDMA40_MEM_TO_MEM)
++		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.dst_dev_type);
++	else if (d40c->dma_cfg.dir == STEDMA40_PERIPH_TO_MEM)
++		event = D40_TYPE_TO_EVENT(d40c->dma_cfg.src_dev_type);
++	else {
++		dev_err(&d40c->chan.dev->device,
++			"[%s] Unknown direction\n", __func__);
++		goto _exit;
++	}
++	status = d40_chan_has_events(d40c);
++	status = (status & D40_EVENTLINE_MASK(event)) >>
++		D40_EVENTLINE_POS(event);
++
++	if (status != D40_DMA_RUN)
++		is_paused = true;
++
++	/* Resume the other logical channels if any */
++	if (d40_chan_has_events(d40c))
++		res = d40_channel_execute_command(d40c,
++						  D40_DMA_RUN);
++
++_exit:
++	spin_unlock_irqrestore(&d40c->lock, flags);
++	return is_paused;
++
++}
++
++
+ static bool d40_tx_is_linked(struct d40_chan *d40c)
+ {
+ 	bool is_link;
+@@ -1980,13 +2039,13 @@ static enum dma_status d40_tx_status(struct dma_chan *chan,
+ 	last_complete = d40c->completed;
+ 	last_used = chan->cookie;
+ 
+-	ret = dma_async_is_complete(cookie, last_complete, last_used);
++	if (d40_is_paused(d40c))
++		ret = DMA_PAUSED;
++	else
++		ret = dma_async_is_complete(cookie, last_complete, last_used);
+ 
+-	if (txstate) {
+-		txstate->last = last_complete;
+-		txstate->used = last_used;
+-		txstate->residue = stedma40_residue(chan);
+-	}
++	dma_set_tx_state(txstate, last_complete, last_used,
++			 stedma40_residue(chan));
+ 
+ 	return ret;
+ }
+-- 
+1.7.0.1
 
-It might help to show the difference that the patch series makes 
-(powertop output?)
-
-Regards,
-
-Nigel
