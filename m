@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752511Ab0EQJqv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:46:51 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53025 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752113Ab0EQJqu (ORCPT
+	id S1753372Ab0EQJsA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:48:00 -0400
+Received: from mailout3.w1.samsung.com ([210.118.77.13]:31852 "EHLO
+	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752242Ab0EQJr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:46:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=hh4PFqxad3YCCxuAbgRjdBZz4MCVg+csSuZ6N+q+X71YOkDHmymMPr8caGrx+GZbjj
-         xoIg6jJ5rdrfk5W/76m61nJRGuYINHcgPrVcAcPBQlg9/YxV3sFU16LCzJIAU3IMIDho
-         mRjX1HY+0bPlOXVyuQQOW3jlG40ZewLqfLXbE=
-Subject: [PATCH v2] leds-lp3944: properly handle lp3944_configure fail in
-	lp3944_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Antonio Ospite <ospite@studenti.unina.it>,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Richard Purdie <rpurdie@linux.intel.com>
-Content-Type: text/plain
-Date: Mon, 17 May 2010 17:47:48 +0800
-Message-Id: <1274089668.28623.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Mon, 17 May 2010 05:47:58 -0400
+MIME-version: 1.0
+Content-transfer-encoding: 7BIT
+Content-type: TEXT/PLAIN
+Date: Mon, 17 May 2010 11:48:26 +0200
+From: Michal Nazarewicz <m.nazarewicz@samsung.com>
+Subject: [PATCH] USB: gadget: g_mass_storage: static data instead of dynamic
+ allocation
+In-reply-to: <e3abf3898ffa038852e8b3307d37927f886fb72c.1273772850.git.mina86@mina86.com>
+To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org
+Cc: Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       Linux Kernel <linux-kernel@vger.kernel.org>
+Message-id: <6fef14ee3d854a995817fe6fde39f14b1d853905.1274088911.git.mina86@mina86.com>
+X-Mailer: git-send-email 1.7.1
+References: <e3abf3898ffa038852e8b3307d37927f886fb72c.1273772850.git.mina86@mina86.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, lp3944_probe return 0 even if lp3944_configure fail.
-Therefore, led_classdev_unregister will be executed twice
-( in error handling of lp3944_configure and lp3944_remove ).
-This patch properly handles lp3944_configure fail in lp3944_probe.
+From: Michal Nazarewicz <mina86@mina86.com>
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This patch changes msg_do_config() function so that it uses
+a static object for a fsg_common structure instead of dynamically
+allocated.  This is a micro-optimisation.
+
+Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
+Cc: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/leds/leds-lp3944.c |    9 +++++++--
- 1 files changed, 7 insertions(+), 2 deletions(-)
+Greg KH wrote:
+> This patch doesn't apply.  Care to redo it against the linux-next tree?
 
-diff --git a/drivers/leds/leds-lp3944.c b/drivers/leds/leds-lp3944.c
-index 8d5ecce..932a58d 100644
---- a/drivers/leds/leds-lp3944.c
-+++ b/drivers/leds/leds-lp3944.c
-@@ -379,6 +379,7 @@ static int __devinit lp3944_probe(struct i2c_client *client,
+Hope this works.
+
+ drivers/usb/gadget/mass_storage.c |   13 +++++++------
+ 1 files changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index 705cc1f..a3349f2 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -143,7 +143,7 @@ static int msg_thread_exits(struct fsg_common *common)
+ 
+ static int __init msg_do_config(struct usb_configuration *c)
  {
- 	struct lp3944_platform_data *lp3944_pdata = client->dev.platform_data;
- 	struct lp3944_data *data;
-+	int err;
+-	struct fsg_common *common;
++	static struct fsg_common common, *retp;
+ 	struct fsg_config config;
+ 	int ret;
  
- 	if (lp3944_pdata == NULL) {
- 		dev_err(&client->dev, "no platform data\n");
-@@ -401,9 +402,13 @@ static int __devinit lp3944_probe(struct i2c_client *client,
+@@ -154,12 +154,13 @@ static int __init msg_do_config(struct usb_configuration *c)
  
- 	mutex_init(&data->lock);
+ 	fsg_config_from_params(&config, &mod_data);
+ 	config.thread_exits = msg_thread_exits;
+-	common = fsg_common_init(0, c->cdev, &config);
+-	if (IS_ERR(common))
+-		return PTR_ERR(common);
  
--	dev_info(&client->dev, "lp3944 enabled\n");
-+	err = lp3944_configure(client, data, lp3944_pdata);
-+	if (err < 0) {
-+		kfree(data);
-+		return err;
-+	}
- 
--	lp3944_configure(client, data, lp3944_pdata);
-+	dev_info(&client->dev, "lp3944 enabled\n");
- 	return 0;
+-	ret = fsg_add(c->cdev, c, common);
+-	fsg_common_put(common);
++	retp = fsg_common_init(&common, c->cdev, &config);
++	if (IS_ERR(retp))
++		return PTR_ERR(retp);
++
++	ret = fsg_add(c->cdev, c, &common);
++	fsg_common_put(&common);
+ 	return ret;
  }
  
 -- 
-1.5.4.3
-
-
+1.7.1
 
