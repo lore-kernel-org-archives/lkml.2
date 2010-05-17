@@ -1,61 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755722Ab0EQUjO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:39:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:60490 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754852Ab0EQUjL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1755559Ab0EQUjM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:39:12 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:47825 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754843Ab0EQUjL convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 May 2010 16:39:11 -0400
-Date: Mon, 17 May 2010 23:33:49 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, mathieu.desnoyers@polymtl.ca,
-       josh@joshtriplett.org, dvhltc@us.ibm.com, niv@us.ibm.com,
-       tglx@linutronix.de, rostedt@goodmis.org, Valdis.Kletnieks@vt.edu,
-       dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100517203349.GA14994@redhat.com>
-References: <20100512213317.GA15085@linux.vnet.ibm.com> <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com> <20100512214847.GD22930@redhat.com> <20100512230057.GH2303@linux.vnet.ibm.com> <1273756043.5605.3542.camel@twins> <20100513152340.GA2879@linux.vnet.ibm.com>
+From: Linus WALLEIJ <linus.walleij@stericsson.com>
+To: Sundar R IYER <sundar.iyer@stericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Deepak Sikri <deepak.sikri79@gmail.com>,
+       Viresh KUMAR <viresh.kumar@st.com>,
+       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+       Armando VISCONTI <armando.visconti@st.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+Date: Mon, 17 May 2010 22:38:53 +0200
+Subject: RE: [linux-pm] Power Domain Framework
+Thread-Topic: [linux-pm] Power Domain Framework
+Thread-Index: Acr16MHp20jObKm+Sl6JhmVxIBRL4QAF/rOw
+Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
+References: <AANLkTinZU1D1rMOBQDi47tRhXrOXwduQIdni7bCXdce0@mail.gmail.com>
+	 <20100510140527.GG5199@sirena.org.uk>
+	 <AANLkTikyqnKDNz7FIUvLDAvBReHskHvRCrEz2qBBqseH@mail.gmail.com>
+	 <20100517031613.GA3130@opensource.wolfsonmicro.com>
+	 <AANLkTimDdBCnRFMDiUkuNKanOzuPNwCpfRv9Gsi03Lsy@mail.gmail.com>
+	 <AANLkTinZRhUpFTOOUCdH5dEl3QaXn10USL_hPPQX8cie@mail.gmail.com>
+	 <20100517143319.GC5257@opensource.wolfsonmicro.com>
+	 <AANLkTiniwUDg8rQzwgm_X7EbkQJ9tHzBfVtaJRiNE9az@mail.gmail.com>
+	 <1274114107.20589.64.camel@bnru01>	 (sfid-20100517_173524_963855_B42F2966)
+  <1274115886.2698.22.camel@finisterre.wolfsonmicro.main>
+ <1274118332.17303.17.camel@bnru01>
+In-Reply-To: <1274118332.17303.17.camel@bnru01>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="Windows-1252"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513152340.GA2879@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 13, 2010 at 08:23:40AM -0700, Paul E. McKenney wrote:
-> On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
-> > > Any thoughts?  One approach would be to create a separate lockdep class
-> > > for vhost workqueue state, similar to the approach used in instrument
-> > > rcu_read_lock() and friends. 
-> > 
-> > workqueue_struct::lockdep_map, its held while executing worklets.
-> > 
-> > lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
-> 
-> Thank you, Peter!!!
-> 
-> 							Thanx, Paul
+[Sundar]
 
-vhost in fact does flush_work rather than
-flush_workqueue, so while for now everything runs
-from vhost_workqueue in theory nothing would break
-if we use some other workqueue or even a combination
-thereof.
+> This is one of the most important aspect for such a change in the
+> regulator framework: bringing in the domain aspect can encourage all
+> newer (possibly older) architectures to come under a generic umbrella.
 
-I guess when/if this happens, we could start by converting
-to _raw and then devise a solution.
+I have the same view, and I've been enouraging Sundar to bring this
+discussion with the community in order to avoid code duplication.
 
-By the way what would be really nice is if we had a way
-to trap when rcu protected pointer is freed without a flush
-while some reader is running. Current annotation does not
-allow this, does it?
+Of course we can start inventing our own power-domain machine
+like everyone else, but before we do that, let's atleast try to
+do something generic, so bear with us...
 
--- 
-MST
+Yours,
+Linus Walleij
