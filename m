@@ -1,60 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752966Ab0EQDub (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 23:50:31 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21577 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752842Ab0EQDua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 23:50:30 -0400
-Date: Sun, 16 May 2010 20:48:26 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: J??rn Engel <joern@logfs.org>, Stephen Rothwell <sfr@canb.auug.org.au>,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       logfs@logfs.org
-Subject: Re: linux-next -> 2.6.34: Tree for April 28 (logfs)
-Message-Id: <20100516204826.2625eed2.randy.dunlap@oracle.com>
-In-Reply-To: <20100509062010.GA9485@elte.hu>
-References: <20100428164341.cee2911a.sfr@canb.auug.org.au>
-	<20100428085604.0566092a.randy.dunlap@oracle.com>
-	<20100505092020.66a461fa.randy.dunlap@oracle.com>
-	<20100505203548.GI25129@logfs.org>
-	<20100509062010.GA9485@elte.hu>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753041Ab0EQD7z (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 23:59:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64427 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752877Ab0EQD7y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 23:59:54 -0400
+Message-ID: <4BF0BF8E.5050407@cn.fujitsu.com>
+Date: Mon, 17 May 2010 12:01:18 +0800
+From: Miao Xie <miaox@cn.fujitsu.com>
+Reply-To: miaox@cn.fujitsu.com
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; zh-CN; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Rientjes <rientjes@google.com>,
+       Lee Schermerhorn <lee.schermerhorn@hp.com>,
+       Nick Piggin <npiggin@suse.de>, Paul Menage <menage@google.com>,
+       Linux-Kernel <linux-kernel@vger.kernel.org>,
+       Linux-MM <linux-mm@kvack.org>
+Subject: Re: [PATCH -mm] cpuset,mm: fix no node to alloc memory when changing
+ cpuset's mems - fix2
+References: <4BEA56D3.6040705@cn.fujitsu.com>	<20100512003246.9f0ee03c.akpm@linux-foundation.org>	<4BEA6E3D.10503@cn.fujitsu.com>	<20100512104817.beeee3b5.akpm@linux-foundation.org>	<4BEB9941.7040609@cn.fujitsu.com> <20100513121123.e105ac97.akpm@linux-foundation.org>
+In-Reply-To: <20100513121123.e105ac97.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090203.4BF0BCF6.00B6:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 9 May 2010 08:20:10 +0200 Ingo Molnar wrote:
-
+on 2010-5-14 3:11, Andrew Morton wrote:
+> On Thu, 13 May 2010 14:16:33 +0800
+> Miao Xie <miaox@cn.fujitsu.com> wrote:
 > 
-> * J??rn Engel <joern@logfs.org> wrote:
+>>>
+>>> The code you have at present is fairly similar to sequence locks.  I
+>>> wonder if there's some way of (ab)using sequence locks for this. 
+>>> seqlocks don't have lockdep support either...
+>>>
+>>
+>> We can't use sequence locks here, because the read-side may read the data
+>> in changing, but it can't put off cleaning the old bits.
 > 
-> > On Wed, 5 May 2010 09:20:20 -0700, Randy Dunlap wrote:
-> > > On Wed, 28 Apr 2010 08:56:04 -0700 Randy Dunlap wrote:
-> > > 
-> > > > When CONFIG_BLOCK is not enabled:
-> > > > 
-> > > > fs/logfs/super.c:142: error: implicit declaration of function 'bdev_get_queue'
-> > > > fs/logfs/super.c:142: error: invalid type argument of '->' (have 'int')
-> > > 
-> > > Still have this build error in linux-next-May 5-2010.
-> > 
-> > Should be fixed now.  Sorry about the delay.
+> I don't understand that sentence.  Can you expand on it please?
 > 
-> Please post the fix itself as well, i've ran into this and so did others.
 
+the mempolicy and mems_allowed tell the task that it should allocates the memory
+space on the specified node. so when allocating the memory space, the memory
+allocation functions that the task invokes must accesses the mempolicy and
+mems_allowed to find a node on which it can do memory allocation.
 
-This fix is now needed in 2.6.34....
+But those memory allocation functions can be used in both the context that the
+task can sleep and the context that the task can't sleep(etc. disable irq). so
+the real lock is not suitable.
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+And it is not a problem that the task allocates the memory space on the old
+allowed node when the mempolicy and mems_allowed is in changing, because the
+mempolicy and mems_allowed is not mandatory. So I think we needn't use a real
+lock to protect the mempolicy and mems_allowed in the read-side, and just use a
+real lock in the write-side. But there is a serious problem, that is the read
+-side may find no node to allocate memory and oom occurs, just like the
+following case(mentioned in the patch's changelog):
+(mpol: mempolicy)
+	task1			task1's mpol	task2
+	alloc page		1
+	  alloc on node0? NO	1
+				1		change mems from 1 to 0
+				0		rebind task1's mpol
+	  alloc on node1? NO	0
+	  ...
+	can't alloc page
+	  goto oom
+
+In order to fix this problem, I got an idea that we set the newly allowed nodes
+first, and then clean the disallowed nodes, But there is still a problem.
+(mpol: mempolicy)
+	task1			task1's mpol	task2
+	alloc page		1
+	  alloc on node0? NO	1
+				1		change mems from 1 to 0
+				1		rebind task1's mpol
+				0-1		  set new bits
+				0	  	  clear disallowed bits
+	  alloc on node1? NO	0
+	  ...
+	can't alloc page
+	  goto oom
+	  
+It is because we cleanup disallowed nodes early, so I use a variable to tell the
+write-side that the task is accessing the mempolicy and mems_allowed now, the
+write-side must cleanup disallowed nodes soon after.
+
+And the seq read lock can't provide this function. And besides that, the read-side
+will goto oom and not go back if it find no node to allcate memory, so it won't
+check the seq number of lock to find whether the mempolicy and mems_allowed have
+been changed. so the seq lock is also not suitable, I think.
+
+Thanks
+Miao
+
