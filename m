@@ -1,106 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0EQRwz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:52:55 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:42593 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752892Ab0EQRwy convert rfc822-to-8bit (ORCPT
+	id S1754544Ab0EQR4u (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:56:50 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46112 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab0EQR4s (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:52:54 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=dwfpJ0O8vHrLBNQ22tW0nPqRYEZ+z0iGMBluXQs/OF5fTBmG3378/eatTknLiaiAb
-	FnnkRcVmY6LjC+NCdVjRQ==
-MIME-Version: 1.0
-In-Reply-To: <1274117717.1674.1539.camel@laptop>
-References: <1273886490-15627-1-git-send-email-venki@google.com>
-	 <1274084399.5605.3655.camel@twins>
-	 <AANLkTikWWEYpwmqhQ0oYz30SUFY-y2erqStw2T6h0WXg@mail.gmail.com>
-	 <1274117717.1674.1539.camel@laptop>
-Date: Mon, 17 May 2010 10:52:50 -0700
-Message-ID: <AANLkTik4EvvSwz9rD3zemuaSN3FMAIqsncZ5AKYOdaEn@mail.gmail.com>
-Subject: Re: [PATCH] sched: Avoid side-effect of tickless idle on 
-	update_cpu_load (v2)
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       Ken Chen <kenchen@google.com>, Paul Turner <pjt@google.com>,
-       Nikhil Rao <ncrao@google.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 17 May 2010 13:56:48 -0400
+Date: Mon, 17 May 2010 10:54:04 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: David Airlie <airlied@linux.ie>, dri-devel@lists.freedesktop.org,
+       akpm <akpm@linux-foundation.org>
+Subject: [PATCH] vga: fix kconfig text typos
+Message-Id: <20100517105404.449486a8.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BF18338.0033:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 10:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-05-17 at 09:52 -0700, Venkatesh Pallipadi wrote:
->
->> >  load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * load_(i-1)
->
->> > So because we're in no_hz, current load == 0 and we could approximate
->> > the thing by:
->> >
->> >  load_i = ((2^i)-1)/(2^i) * load_i
->> >
->> > Because for i ~ 1, there is no new input, and for i >> 1 the fraction is
->> > small.
->>
->> Something like that. But, with total_updates = n and missed_updates = n - 1
->> We do this for (n - 1)
->> load_i = ((2^i)-1)/(2^i) * load_i
->> And do this once.
->> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * cur_load
->
->> That way we do not differentiate between whether we are in tickless or
->> not and we use the same code path.
->
-> But by the above, that's not the same as without, because that does
->
-> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * load_(i-1)
->
-> not
->
-> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * cur_load
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Hmm. I assumed you meant
-load_(i-1) is same as cur_load when you said
->> >Where load_-1 == current load.
+Fix typos in vga/Kconfig file
+and use GPU (upper case) consistently.
 
-No? Or did I miss something?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc:	David Airlie <airlied@linux.ie>
+Cc:	dri-devel@lists.freedesktop.org
+---
+ drivers/gpu/vga/Kconfig |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
-For the updates done every tick, it is
-load = degrade * load + (1-degrade) * cur_load
-For updates done with missed ticks
-load = degrade^(missed-1) * load
-load = degrade * load + (1-degrade) * cur_load
-
-So, cur_load is only accounted for the last tick, and zero load
-assumed for all the missed ticks.
-
->> > But why then do we precalculate these factors? It seems to me
->> > ((2^i)-1)/(2^i) is something that is trivial to compute and doesn't
->> > warrant a lookup table?
->> >
->>
->> Yes. Initially I had a for loop running for missed_updates to calculate
->>  ((2^i)-1)/(2^i) * load_i
->> in a loop.
->
-> Ah, right! So you want to calculate:
->
->  (((2^i)-1)/(2^i))^n
->
-> Which ends up being a nasty binomial sum: 1/(2^ni) * \Sum_k^n (n choose
-> k) * 2^k, so yeah, I don't see a fancy way to quickly compute that.
->
->
-> OK, could you summarize our discussion into that comment?
->
-
-OK. Will do.
-
-Thanks,
-Venki
+--- lnx-2634.orig/drivers/gpu/vga/Kconfig
++++ lnx-2634/drivers/gpu/vga/Kconfig
+@@ -18,12 +18,12 @@ config VGA_ARB_MAX_GPUS
+ 	  multiple GPUS.  The overhead for each GPU is very small.
+ 
+ config VGA_SWITCHEROO
+-	bool "Laptop Hybrid Grapics - GPU switching support"
++	bool "Laptop Hybrid Graphics - GPU switching support"
+ 	depends on X86
+ 	depends on ACPI
+ 	help
+-	  Many laptops released in 2008/9/10 have two gpus with a multiplxer
++	  Many laptops released in 2008/9/10 have two GPUs with a multiplexer
+ 	  to switch between them. This adds support for dynamic switching when
+           X isn't running and delayed switching until the next logoff. This
+-	  features is called hybrid graphics, ATI PowerXpress, and Nvidia
++	  feature is called hybrid graphics, ATI PowerXpress, and Nvidia
+ 	  HybridPower.
