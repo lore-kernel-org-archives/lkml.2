@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753762Ab0EQFeR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:34:17 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:43773 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753568Ab0EQFeM (ORCPT
+	id S1753823Ab0EQFeU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:34:20 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:46259 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753539Ab0EQFeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:34:12 -0400
+	Mon, 17 May 2010 01:34:11 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V8 7/9] x86: Add new syscalls for x86_32
-Date: Mon, 17 May 2010 11:03:50 +0530
-Message-Id: <1274074432-29695-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 6/9] ext4: Add get_fsid callback
+Date: Mon, 17 May 2010 11:03:49 +0530
+Message-Id: <1274074432-29695-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.78.g212f0
 In-Reply-To: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -23,44 +23,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds sys_name_to_handle_at and sys_open_by_handle_at
-syscalls to x86_32
-
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- arch/x86/include/asm/unistd_32.h   |    4 +++-
- arch/x86/kernel/syscall_table_32.S |    2 ++
- 2 files changed, 5 insertions(+), 1 deletions(-)
+ fs/ext4/super.c |   15 +++++++++++++++
+ 1 files changed, 15 insertions(+), 0 deletions(-)
 
-diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
-index beb9b5f..ca792fb 100644
---- a/arch/x86/include/asm/unistd_32.h
-+++ b/arch/x86/include/asm/unistd_32.h
-@@ -343,10 +343,12 @@
- #define __NR_rt_tgsigqueueinfo	335
- #define __NR_perf_event_open	336
- #define __NR_recvmmsg		337
-+#define __NR_name_to_handle_at	338
-+#define __NR_open_by_handle     339
+diff --git a/fs/ext4/super.c b/fs/ext4/super.c
+index e14d22c..fc7d464 100644
+--- a/fs/ext4/super.c
++++ b/fs/ext4/super.c
+@@ -1049,6 +1049,19 @@ static int bdev_try_to_free_page(struct super_block *sb, struct page *page,
+ 	return try_to_free_buffers(page);
+ }
  
- #ifdef __KERNEL__
++static int ext4_get_fsid(struct super_block *sb, struct uuid *fsid)
++{
++	struct ext4_sb_info *sbi = EXT4_SB(sb);
++	struct ext4_super_block *es = sbi->s_es;
++
++	memcpy(fsid->uuid, es->s_uuid, sizeof(fsid->uuid));
++	/*
++	 * We may want to make sure we return error if the s_uuid is not
++	 * exactly unique
++	 */
++	return 0;
++}
++
+ #ifdef CONFIG_QUOTA
+ #define QTYPE2NAME(t) ((t) == USRQUOTA ? "user" : "group")
+ #define QTYPE2MOPT(on, t) ((t) == USRQUOTA?((on)##USRJQUOTA):((on)##GRPJQUOTA))
+@@ -1109,6 +1122,7 @@ static const struct super_operations ext4_sops = {
+ 	.quota_write	= ext4_quota_write,
+ #endif
+ 	.bdev_try_to_free_page = bdev_try_to_free_page,
++	.get_fsid	= ext4_get_fsid,
+ };
  
--#define NR_syscalls 338
-+#define NR_syscalls 340
+ static const struct super_operations ext4_nojournal_sops = {
+@@ -1128,6 +1142,7 @@ static const struct super_operations ext4_nojournal_sops = {
+ 	.quota_write	= ext4_quota_write,
+ #endif
+ 	.bdev_try_to_free_page = bdev_try_to_free_page,
++	.get_fsid	= ext4_get_fsid,
+ };
  
- #define __ARCH_WANT_IPC_PARSE_VERSION
- #define __ARCH_WANT_OLD_READDIR
-diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
-index 8b37293..399b49e 100644
---- a/arch/x86/kernel/syscall_table_32.S
-+++ b/arch/x86/kernel/syscall_table_32.S
-@@ -337,3 +337,5 @@ ENTRY(sys_call_table)
- 	.long sys_rt_tgsigqueueinfo	/* 335 */
- 	.long sys_perf_event_open
- 	.long sys_recvmmsg
-+	.long sys_name_to_handle_at
-+	.long sys_open_by_handle	/* 339 */
+ static const struct export_operations ext4_export_ops = {
 -- 
 1.7.1.78.g212f0
 
