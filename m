@@ -1,72 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754596Ab0EQJza (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:55:30 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:63698 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752077Ab0EQJz3 convert rfc822-to-8bit (ORCPT
+	id S1753365Ab0EQKFJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:05:09 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:48758 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab0EQKFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:55:29 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=F7c43AqG0Oy5dQFspymN55VsdiR3uP9zHFZy1G8MS6R3xnFxKNv7b2sdwP0Y4jJChH
-         JWf0epetbppNXqF99IhlLOxQVtZ/8cbKPsEaEvVLzYTbDyg44FOFlM8/XJwCL6LWQGZr
-         uoykt7VUZkAYCoFGT/XFbrPgDx2LwiFyX9oaM=
-MIME-Version: 1.0
-In-Reply-To: <1273641798-26579-1-git-send-email-jassi.brar@samsung.com>
-References: <1273641798-26579-1-git-send-email-jassi.brar@samsung.com>
-Date: Mon, 17 May 2010 02:55:28 -0700
-X-Google-Sender-Auth: sJ53lrJgZju79hmmu3CZ360WCls
-Message-ID: <AANLkTinAmHkVBii9nTZ5tNYU21whHy8awP55nGEc-8Tp@mail.gmail.com>
-Subject: Re: [PATCH] DMA: PL330: Add dma api driver
-From: Dan Williams <dan.j.williams@intel.com>
-To: Jassi Brar <jassi.brar@samsung.com>
-Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       jy0922.shim@samsung.com, linus.ml.walleij@gmail.com,
-       maciej.sosnowski@intel.com, ben-linux@fluff.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Mon, 17 May 2010 06:05:07 -0400
+From: felipe.balbi@nokia.com
+To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Felipe Balbi <felipe.balbi@nokia.com>
+Subject: [PATCH 1/5] gpiolib: introduce set_debounce method
+Date: Mon, 17 May 2010 13:02:30 +0300
+Message-Id: <1274090554-19420-2-git-send-email-felipe.balbi@nokia.com>
+X-Mailer: git-send-email 1.7.1
+In-Reply-To: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
+References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
+X-OriginalArrivalTime: 17 May 2010 10:04:31.0443 (UTC) FILETIME=[5812FA30:01CAF5A8]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jassi,
+From: Felipe Balbi <felipe.balbi@nokia.com>
 
-Looks good, one comment:
+Few architectures, like OMAP, allow you to set
+a debouncing time for the gpio before generating
+the IRQ. Teach gpiolib about that.
 
-On Tue, May 11, 2010 at 10:23 PM, Jassi Brar <jassi.brar@samsung.com> wrote:
-> Add DMA Engine API driver for the PL330 DMAC.
-> This driver is supposed to be reusable by various
-> platforms that have one or more PL330 DMACs.
-> Atm, DMA_SLAVE and DMA_MEMCPY capabilities have been
-> implemented.
->
-> Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
-[..]
-> +static void dma_pl330_rqcb(void *token, enum pl330_op_err err)
-> +{
-> +       struct dma_pl330_desc *desc = token;
-> +       struct dma_pl330_chan *pch = desc->pchan;
-> +       unsigned long flags;
-> +
-> +       /* If desc aborted */
-> +       if (!pch)
-> +               return;
-> +
-> +       spin_lock_irqsave(&pch->lock, flags);
-> +
-> +       desc->status = DONE;
-> +
-> +       spin_unlock_irqrestore(&pch->lock, flags);
+Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
+---
+ drivers/gpio/gpiolib.c     |   43 +++++++++++++++++++++++++++++++++++++++++++
+ include/asm-generic/gpio.h |    5 +++++
+ include/linux/gpio.h       |    5 +++++
+ 3 files changed, 53 insertions(+), 0 deletions(-)
 
-I don't think you need the lock here.  Assigning an integer is atomic,
-and you reschedule the tasklet.
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index eb0c3fe..cd85fd1 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1447,6 +1447,49 @@ fail:
+ }
+ EXPORT_SYMBOL_GPL(gpio_direction_output);
+ 
++/**
++ * gpio_set_debounce - sets @debounce time for a @gpio
++ * @gpio: the gpio to set debounce time
++ * @debounce: debounce time is microseconds
++ */
++int gpio_set_debounce(unsigned gpio, unsigned debounce)
++{
++	unsigned long		flags;
++	struct gpio_chip	*chip;
++	struct gpio_desc	*desc = &gpio_desc[gpio];
++	int			status = -EINVAL;
++
++	spin_lock_irqsave(&gpio_lock, flags);
++
++	if (!gpio_is_valid(gpio))
++		goto fail;
++	chip = desc->chip;
++	if (!chip || !chip->set || !chip->set_debounce)
++		goto fail;
++	gpio -= chip->base;
++	if (gpio >= chip->ngpio)
++		goto fail;
++	status = gpio_ensure_requested(desc, gpio);
++	if (status < 0)
++		goto fail;
++
++	/* now we know the gpio is valid and chip won't vanish */
++
++	spin_unlock_irqrestore(&gpio_lock, flags);
++
++	might_sleep_if(extra_checks && chip->can_sleep);
++
++	return chip->set_debounce(chip, gpio, debounce);
++
++fail:
++	spin_unlock_irqrestore(&gpio_lock, flags);
++	if (status)
++		pr_debug("%s: gpio-%d status %d\n",
++			__func__, gpio, status);
++
++	return status;
++}
++EXPORT_SYMBOL_GPL(gpio_set_debounce);
+ 
+ /* I/O calls are only valid after configuration completed; the relevant
+  * "is this a valid GPIO" error checks should already have been done.
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index 979c6a5..ce3eb87 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -88,6 +88,9 @@ struct gpio_chip {
+ 						unsigned offset);
+ 	int			(*direction_output)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
++	int			(*set_debounce)(struct gpio_chip *chip,
++						unsigned offset, unsigned debounce);
++
+ 	void			(*set)(struct gpio_chip *chip,
+ 						unsigned offset, int value);
+ 
+@@ -121,6 +124,8 @@ extern void gpio_free(unsigned gpio);
+ extern int gpio_direction_input(unsigned gpio);
+ extern int gpio_direction_output(unsigned gpio, int value);
+ 
++extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
++
+ extern int gpio_get_value_cansleep(unsigned gpio);
+ extern void gpio_set_value_cansleep(unsigned gpio, int value);
+ 
+diff --git a/include/linux/gpio.h b/include/linux/gpio.h
+index 4e949a5..03f616b 100644
+--- a/include/linux/gpio.h
++++ b/include/linux/gpio.h
+@@ -51,6 +51,11 @@ static inline int gpio_direction_output(unsigned gpio, int value)
+ 	return -ENOSYS;
+ }
+ 
++static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
++{
++	return -ENOSYS;
++}
++
+ static inline int gpio_get_value(unsigned gpio)
+ {
+ 	/* GPIO can never have been requested or set as {in,out}put */
+-- 
+1.7.1
 
-Since this patch depends on the generic bits in Russell's tree I need
-to wait until after the ARM tree is pulled to take it through the dma
-tree.  So, for now...
-
-Acked-by: Dan Williams <dan.j.williams@intel.com>
