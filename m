@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab0EQFuX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:50:23 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:57993 "EHLO mail.zytor.com"
+	id S1753640Ab0EQF61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:58:27 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52097 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753068Ab0EQFuV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:50:21 -0400
-Message-ID: <4BF0D90E.5030503@zytor.com>
-Date: Sun, 16 May 2010 22:50:06 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Alan Cox <alan@linux.intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       Jacob Pan <jacob.jun.pan@intel.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Subject: Re: [PATCH 8/8] input: do not select i8042 for x86 mid
-References: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com> <1273873281-17489-9-git-send-email-jacob.jun.pan@linux.intel.com> <alpine.LFD.2.00.1005170045160.3368@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005170045160.3368@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1753068Ab0EQF6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 01:58:25 -0400
+Date: Mon, 17 May 2010 15:58:02 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tony Breeds <tony@bakeyournoodle.com>,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Subject: linux-next: build warning after merge of the tip tree
+Message-Id: <20100517155802.5f82a85c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2010 03:48 PM, Thomas Gleixner wrote:
-> On Fri, 14 May 2010, Jacob Pan wrote:
-> 
->> From: Jacob Pan <jacob.jun.pan@intel.com>
->>
->> Moorestown does not have i8042 based keyboard controller, so give
->> an option to deselect i8042 for non-pc mid
->>
->> Signed-off-by: Jacob Pan <jacob.jun.pan@intel.com>
->> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-> 
-> Still sending patches to your other self ? :)
-> 
-> Acked-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> Though this patch should go via Dmitry (Cc'ed).
-> 
+--Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Dmitry -- let us know if you want us to take this patch via -tip,
-otherwise I'll assume you are handling it.
+Hi all,
 
-	-hpa
+After merging the staging-next tree, today's linux-next build (powerpc
+ppc64_defconfig) produced this warning:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+kernel/mutex.c: In function '__mutex_lock_common':
+kernel/mutex.c:148: warning: unused variable 'timeout'
 
+Introduced by commit 227945799cc10d77c6ef812f3eb8a61a78689454 ("mutex:
+Fix optimistic spinning vs. BKL") for a build with
+CONFIG_MUTEX_SPIN_ON_OWNER not set.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvw2uoACgkQjjKRsyhoI8xedACfbcDygqdoPEZC1kqUQjGYjrQ4
+PAMAn3y8FpxAzvdoXmRUCVubmDC/ijFw
+=WSTo
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv--
