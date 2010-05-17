@@ -1,98 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752623Ab0EQCOl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:14:41 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39748 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752141Ab0EQCOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:14:40 -0400
-Date: Mon, 17 May 2010 12:14:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Ben Hutchings <ben@decadent.org.uk>
-Subject: linux-next: manual merge of the net tree with the m68k tree
-Message-Id: <20100517121438.63772f56.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1752656Ab0EQCQN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:16:13 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:56405 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141Ab0EQCQM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 22:16:12 -0400
+Message-ID: <4BF0A770.6020806@cn.fujitsu.com>
+Date: Mon, 17 May 2010 10:18:24 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Michal Marek <mmarek@suse.cz>
+CC: Randy Dunlap <randy.dunlap@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kbuild@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH v2 1/8] kconfig: print symbol type in help text
+References: <4BE3AB91.80606@cn.fujitsu.com> <4BECF467.1060600@cn.fujitsu.com> <4BEDB5EA.5000305@suse.cz>
+In-Reply-To: <4BEDB5EA.5000305@suse.cz>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+>> Hi Michal, what do you think about those patches? Seems
+>> Randy has had no further comments on them.
+>
+> Sorry, I've been quite busy this week due to a new arrival in our
 
-Today's linux-next merge of the net tree got a conflict in
-scripts/mod/file2alias.c between commit
-52498c252690651f915aecbcd10e26bcbafbe2a3 ("m68k: amiga - Zorro bus
-modalias support") from the m68k tree and commit
-8626d3b4328061f5b82b11ae1d6918a0c3602f42 ("phylib: Support phy module
-autoloading") from the net tree.
+Congratulation!
 
-Again, just overlapping additions.  I fixed it up (see below) and can
-carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+> family. The patches are ok, thank you for your work and Randy for his
+> review! I'll apply them.
 
-diff --cc scripts/mod/file2alias.c
-index df90f31,36a60a8..0000000
---- a/scripts/mod/file2alias.c
-+++ b/scripts/mod/file2alias.c
-@@@ -796,16 -796,28 +796,38 @@@ static int do_platform_entry(const cha
-  	return 1;
-  }
-  
- +/* Looks like: zorro:iN. */
- +static int do_zorro_entry(const char *filename, struct zorro_device_id *id,
- +			  char *alias)
- +{
- +	id->id = TO_NATIVE(id->id);
- +	strcpy(alias, "zorro:");
- +	ADD(alias, "i", id->id != ZORRO_WILDCARD, id->id);
- +	return 1;
- +}
- +
-+ static int do_mdio_entry(const char *filename,
-+ 			 struct mdio_device_id *id, char *alias)
-+ {
-+ 	int i;
-+ 
-+ 	alias += sprintf(alias, MDIO_MODULE_PREFIX);
-+ 
-+ 	for (i = 0; i < 32; i++) {
-+ 		if (!((id->phy_id_mask >> (31-i)) & 1))
-+ 			*(alias++) = '?';
-+ 		else if ((id->phy_id >> (31-i)) & 1)
-+ 			*(alias++) = '1';
-+ 		else
-+ 			*(alias++) = '0';
-+ 	}
-+ 
-+ 	/* Terminate the string */
-+ 	*alias = 0;
-+ 
-+ 	return 1;
-+ }
-+ 
-  /* Ignore any prefix, eg. some architectures prepend _ */
-  static inline int sym_is(const char *symbol, const char *name)
-  {
-@@@ -953,10 -965,10 +975,14 @@@ void handle_moddevtable(struct module *
-  		do_table(symval, sym->st_size,
-  			 sizeof(struct platform_device_id), "platform",
-  			 do_platform_entry, mod);
- +	else if (sym_is(symname, "__mod_zorro_device_table"))
- +		do_table(symval, sym->st_size,
- +			 sizeof(struct zorro_device_id), "zorro",
- +			 do_zorro_entry, mod);
-+ 	else if (sym_is(symname, "__mod_mdio_device_table"))
-+ 		do_table(symval, sym->st_size,
-+ 			 sizeof(struct mdio_device_id), "mdio",
-+ 			 do_mdio_entry, mod);
-  	free(zeros);
-  }
-  
+Thanks! And take your time. :)
+
