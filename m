@@ -1,57 +1,265 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755188Ab0EQMEt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 08:04:49 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:12408 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751731Ab0EQMEs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 08:04:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=OSYbBKpe1VYURWwRBp+68Z2k6e2KIa1v4K1dOMO82M6ArHXS7SX/qee7+FXSHphGV
-	Ad0TjdJOdhRJpQJmHW2Lg==
-MIME-Version: 1.0
-In-Reply-To: <1274097780.5605.4642.camel@twins>
-References: <4bf11ea4.dd29e30a.026d.4627@mx.google.com>
-	 <20100517114605.GB5291@nowhere>
-	 <AANLkTil2QBjH2qvnH7VKrg6s7RcKvHC1m0HZkDVDPzv5@mail.gmail.com>
-	 <1274097780.5605.4642.camel@twins>
-Date: Mon, 17 May 2010 14:04:43 +0200
-Message-ID: <AANLkTilJH8RnWjBIY7vrOnXi7w1_z8j9_abD-8tuwL-u@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix errors path in perf_output_begin()
-From: Stephane Eranian <eranian@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       acme@infradead.org, perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S1755248Ab0EQMFG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 08:05:06 -0400
+Received: from mail.perches.com ([173.55.12.10]:2283 "EHLO mail.perches.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753350Ab0EQMFE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 08:05:04 -0400
+Subject: Re: [PATCH] Staging: comedi: Fixed long line lengths in drivers.c
+From: Joe Perches <joe@perches.com>
+To: Mark <reodge@gmail.com>
+Cc: gregkh@suse.de, Mithlesh Thukral <mithlesh@linsyssoft.com>,
+       Bill Pemberton <wfp5p@virginia.edu>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1274093311-6309-1-git-send-email-reodge@gmail.com>
+References: <1274093311-6309-1-git-send-email-reodge@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 May 2010 05:05:01 -0700
+Message-ID: <1274097901.1705.575.camel@Joe-Laptop.home>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-05-17 at 13:56 +0200, Stephane Eranian wrote:
->> >> +     if (!data->nr_pages) {
->> >> +             atomic_inc(&data->lost);
->> >> +             goto out;
->> >> +     }
->
->
->> Well, nr_pages = 0 means all you have is the sampling buffer
->> header page. You cannot save any sample, so you  actually
->> loose everything. Perf reports a dozen samples but those
->> are synthetic. The kernel cannot reject an mmap() for
->> just one page because of the remapped counters, thus it
->> has to handle this gracefully and at least report the lost
->> samples.
->
-> So you want to preserve this state for when you munmap() and mmap()
-> again? The only user of data->lost is writing the PERF_RECORD_LOST
-> event, which only ever happens when you have pages, so counting it when
-> there's no pages seems futile.
+On Mon, 2010-05-17 at 18:48 +0800, Mark wrote:
+> This patch clears up some long line length warnings in drivers.c found by
+> checkpatch
+> 
+> Signed-off-by: Mark Rankilor <reodge@gmail.com>
 
-You're right. But couldn't you report lost samples in the buffer header as well?
+Hi Mark.
+
+> diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+> index 4a29ed7..7da4625 100644
+> --- a/drivers/staging/comedi/drivers.c
+> +++ b/drivers/staging/comedi/drivers.c
+> @@ -442,7 +444,10 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+>  		unsigned i;
+>  		for (i = 0; i < async->n_buf_pages; ++i) {
+>  			if (async->buf_page_list[i].virt_addr) {
+> -				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+
+It's better to not just fix the checkpatch errors by simply
+wrapping the code, but rather to factor the code for clarity.
+
+Using a temporary would fix a lot of these long line problems.
+
+Moving these into static alloc/free functions would help as well.
+
+Perhaps something like:
+---
+ drivers/staging/comedi/drivers.c |  188 ++++++++++++++++++--------------------
+ 1 files changed, 87 insertions(+), 101 deletions(-)
+
+diff --git a/drivers/staging/comedi/drivers.c b/drivers/staging/comedi/drivers.c
+index 4a29ed7..bdbbe8e 100644
+--- a/drivers/staging/comedi/drivers.c
++++ b/drivers/staging/comedi/drivers.c
+@@ -420,6 +420,91 @@ static inline unsigned long kvirt_to_kva(unsigned long adr)
+ 	return kva;
+ }
+ 
++static void free_buf_page_list(struct comedi_device *dev,
++			       struct comedi_subdevice *s)
++{
++	int i;
++	struct comedi_async *async = s->async;
++	struct comedi_buf_page *bp = async->buf_page_list;
++
++	if (!async->buf_page_list)
++		return;
++
++	for (i = 0; i < async->n_buf_pages; ++i) {
++		if (bp->virt_addr) {
++			clear_bit(PG_reserved,
++				  &virt_to_page(bp->virt_addr)->flags);
++			if (s->async_dma_dir != DMA_NONE) {
++				dma_free_coherent(dev->hw_dev, PAGE_SIZE,
++						  bp->virt_addr, bp->dma_addr);
++			} else {
++				free_page((unsigned long)bp->virt_addr);
++			}
++		}
++		bp++;
++	}
++	vfree(async->buf_page_list);
++	async->buf_page_list = NULL;
++	async->n_buf_pages = 0;
++}
++
++static int alloc_buf_page_list(struct comedi_device *dev,
++			       struct comedi_subdevice *s,
++			       unsigned long new_size)
++{
++	unsigned i = 0;
++	struct comedi_async *async = s->async;
++	unsigned n_pages = new_size >> PAGE_SHIFT;
++	unsigned bp_size = sizeof(struct comedi_buf_page) * n_pages;
++	struct page **pages = NULL;
++
++	/*  allocate new buffer */
++	if (!new_size)
++		return 0;
++
++	async->buf_page_list = vmalloc(bp_size);
++	if (!async->buf_page_list)
++		return -ENOMEM;
++	memset(async->buf_page_list, 0, bp_size);
++	pages = vmalloc(sizeof(struct page *) * n_pages);
++	if (pages) {
++		struct comedi_buf_page *bp = async->buf_page_list;
++		for (i = 0; i < n_pages; i++) {
++			if (s->async_dma_dir != DMA_NONE) {
++				bp->virt_addr =
++					dma_alloc_coherent(dev->hw_dev,
++							   PAGE_SIZE,
++							   &bp->dma_addr,
++							   GFP_KERNEL |
++							   __GFP_COMP);
++			} else {
++				bp->virt_addr = (void *)
++					get_zeroed_page(GFP_KERNEL);
++			}
++			if (bp->virt_addr == NULL) {
++				vfree(pages);
++				free_buf_page_list(dev, s);
++				return -ENOMEM;
++			}
++
++			set_bit(PG_reserved,
++				&virt_to_page(bp->virt_addr)->flags);
++			pages[i] = virt_to_page(bp->virt_addr);
++			bp++;
++		}
++	}
++
++	async->prealloc_buf = vmap(pages, n_pages, VM_MAP, PAGE_KERNEL_NOCACHE);
++	vfree(pages);
++	if (!async->prealloc_buf) {
++		free_buf_page_list(dev, s);
++		return -ENOMEM;
++	}
++	async->n_buf_pages = n_pages;
++	async->prealloc_bufsz = new_size;
++	return 0;
++}
++
+ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		     unsigned long new_size)
+ {
+@@ -438,108 +523,9 @@ int comedi_buf_alloc(struct comedi_device *dev, struct comedi_subdevice *s,
+ 		async->prealloc_buf = NULL;
+ 		async->prealloc_bufsz = 0;
+ 	}
+-	if (async->buf_page_list) {
+-		unsigned i;
+-		for (i = 0; i < async->n_buf_pages; ++i) {
+-			if (async->buf_page_list[i].virt_addr) {
+-				clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+-				if (s->async_dma_dir != DMA_NONE) {
+-					dma_free_coherent(dev->hw_dev,
+-							  PAGE_SIZE,
+-							  async->
+-							  buf_page_list
+-							  [i].virt_addr,
+-							  async->
+-							  buf_page_list
+-							  [i].dma_addr);
+-				} else {
+-					free_page((unsigned long)
+-						  async->buf_page_list[i].
+-						  virt_addr);
+-				}
+-			}
+-		}
+-		vfree(async->buf_page_list);
+-		async->buf_page_list = NULL;
+-		async->n_buf_pages = 0;
+-	}
+-	/*  allocate new buffer */
+-	if (new_size) {
+-		unsigned i = 0;
+-		unsigned n_pages = new_size >> PAGE_SHIFT;
+-		struct page **pages = NULL;
+-
+-		async->buf_page_list =
+-		    vmalloc(sizeof(struct comedi_buf_page) * n_pages);
+-		if (async->buf_page_list) {
+-			memset(async->buf_page_list, 0,
+-			       sizeof(struct comedi_buf_page) * n_pages);
+-			pages = vmalloc(sizeof(struct page *) * n_pages);
+-		}
+-		if (pages) {
+-			for (i = 0; i < n_pages; i++) {
+-				if (s->async_dma_dir != DMA_NONE) {
+-					async->buf_page_list[i].virt_addr =
+-					    dma_alloc_coherent(dev->hw_dev,
+-							       PAGE_SIZE,
+-							       &async->
+-							       buf_page_list
+-							       [i].dma_addr,
+-							       GFP_KERNEL |
+-							       __GFP_COMP);
+-				} else {
+-					async->buf_page_list[i].virt_addr =
+-					    (void *)
+-					    get_zeroed_page(GFP_KERNEL);
+-				}
+-				if (async->buf_page_list[i].virt_addr == NULL)
+-					break;
+-
+-				set_bit(PG_reserved,
+-					&(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+-				pages[i] = virt_to_page(async->buf_page_list[i].virt_addr);
+-			}
+-		}
+-		if (i == n_pages) {
+-			async->prealloc_buf =
+-			    vmap(pages, n_pages, VM_MAP, PAGE_KERNEL_NOCACHE);
+-		}
+-		vfree(pages);
+-
+-		if (async->prealloc_buf == NULL) {
+-			/* Some allocation failed above. */
+-			if (async->buf_page_list) {
+-				for (i = 0; i < n_pages; i++) {
+-					if (async->buf_page_list[i].virt_addr ==
+-					    NULL) {
+-						break;
+-					}
+-					clear_bit(PG_reserved, &(virt_to_page(async->buf_page_list[i].virt_addr)->flags));
+-					if (s->async_dma_dir != DMA_NONE) {
+-						dma_free_coherent(dev->hw_dev,
+-								  PAGE_SIZE,
+-								  async->
+-								  buf_page_list
+-								  [i].virt_addr,
+-								  async->
+-								  buf_page_list
+-								  [i].dma_addr);
+-					} else {
+-						free_page((unsigned long)
+-							  async->buf_page_list
+-							  [i].virt_addr);
+-					}
+-				}
+-				vfree(async->buf_page_list);
+-				async->buf_page_list = NULL;
+-			}
+-			return -ENOMEM;
+-		}
+-		async->n_buf_pages = n_pages;
+-	}
+-	async->prealloc_bufsz = new_size;
+ 
+-	return 0;
++	free_buf_page_list(dev, s);
++	return alloc_buf_page_list(dev, s, new_size);
+ }
+ 
+ /* munging is applied to data by core as it passes between user
+
+
