@@ -1,49 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0EQPPk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:15:40 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50634 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751261Ab0EQPPj (ORCPT
+	id S1753085Ab0EQPSR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:18:17 -0400
+Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:47626 "EHLO
+	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751482Ab0EQPSQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:15:39 -0400
-Date: Mon, 17 May 2010 08:12:59 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Andreas Herrmann <andreas.herrmann3@amd.com>
-cc: Yuhong Bao <yuhongbao_386@hotmail.com>, venkatesh.pallipadi@intel.com,
-       markh@compro.net, dmarkh@cfl.rr.com, andi@firstfloor.org,
-       alain@knaff.lu, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Disable HPET MSI on ATI SB700/SB800
-In-Reply-To: <20100517145943.GV5888@alberich.amd.com>
-Message-ID: <alpine.LFD.2.00.1005170811400.4195@i5.linux-foundation.org>
-References: <87bphpd4rt.fsf@basil.nowhere.org> <4B32565E.6000501@compro.net> <20091223191806.GA3336@linux-os.sc.intel.com> <4B3270FE.5090607@compro.net> <1261600243.16916.56.camel@localhost.localdomain> <4B476E8D.1030308@compro.net> <20100121190952.GA32523@linux-os.sc.intel.com>
- <SNT125-W12BC46C506A5BB777A06B5C3610@phx.gbl> <20100125171059.GB5041@alberich.amd.com> <20100517145943.GV5888@alberich.amd.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Mon, 17 May 2010 11:18:16 -0400
+Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
+ requested
+From: Sundar R Iyer <sundar.iyer@stericsson.com>
+Reply-To: <sundar.iyer@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>
+In-Reply-To: <1274108214.20589.28.camel@bnru01>
+References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
+	 <20100517144411.GD5257@opensource.wolfsonmicro.com>
+	 <1274108214.20589.28.camel@bnru01>
+Content-Type: text/plain
+Organization: STEricsson
+Date: Mon, 17 May 2010 20:48:03 +0530
+Message-ID: <1274109483.20589.41.camel@bnru01>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-Mailer: Evolution 2.24.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-05-17 at 16:56 +0200, Sundar R IYER wrote:
+> Oops. My bad. I messed by typoing up the commit message.
+> Okay. I will add a sanity check for that.
+> Okay. I came up across this and hence the change. This is intended when
+> the same mode is requested! I will edit the commit message appropriately.
+
+Please find the updated patch below:
+
+>From edab94fefd2e9087f4c27df8d352097ddda2dac0 Mon Sep 17 00:00:00 2001
+From: Sundar R Iyer <sundar.iyer@stericsson.com>
+Date: Fri, 14 May 2010 15:14:17 +0530
+Subject: [PATCH 1/1] regulator: return set_mode when same mode is
+requested
+
+save I/O costs by returning when the same mode is
+requested for the regulator
+
+Cc: Liam Girdwood <lrg@slimlogic.co.uk>
+Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Sundar R Iyer <sundar.iyer@stericsson.com>
+---
+ drivers/regulator/core.c |   14 ++++++++++++++
+ 1 files changed, 14 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
+index 98e5d14..9cb21cd 100644
+--- a/drivers/regulator/core.c
++++ b/drivers/regulator/core.c
+@@ -1745,6 +1745,7 @@ int regulator_set_mode(struct regulator
+*regulator, unsigned int mode)
+ {
+ 	struct regulator_dev *rdev = regulator->rdev;
+ 	int ret;
++	int regulator_curr_mode;
+ 
+ 	mutex_lock(&rdev->mutex);
+ 
+@@ -1754,6 +1755,19 @@ int regulator_set_mode(struct regulator
+*regulator, unsigned int mode)
+ 		goto out;
+ 	}
+ 
++	/* sanity check */
++	if (!rdev->desc->ops->get_mode) {
++		ret = -EINVAL;
++		goto out;
++	}
++
++	/* return if the same mode is requested */
++	regulator_curr_mode = rdev->desc->ops->get_mode(rdev);
++	if (regulator_curr_mode == mode) {
++		ret = 0;
++		goto out;
++	}
++
+ 	/* constraints check */
+ 	ret = regulator_check_mode(rdev, mode);
+ 	if (ret < 0)
+-- 
+1.7.0
 
 
-On Mon, 17 May 2010, Andreas Herrmann wrote:
-> 
-> FYI. I've tried to trigger the publication of errata information for that
-> chipset. Finally this has happened.
-> 
-> The discussed problem is indeed due to an erratum. See erratum #27 in
-> http://support.amd.com/us/Embedded_TechDocs/46837.pdf
-> 
-> The suggested workaround for this is to disable HPET MSI if LPC
-> devices are used. I doubt that there is a convenient way for Linux to
-> find out whether LPC devices are used. Thus I think the only solution
-> to safely avoid the problem is the currently implemented quirk to
-> disable HPET MSI on this chipset.
-
-Goodie. It would be good to point this out in the source too. Would you be 
-willing to send in a patch that documents this quirk as a result of that 
-erratum #27, so that we don't lose sight of why we're doing that odd MSI 
-disable?
-
-		Linus
