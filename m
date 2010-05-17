@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754916Ab0EQJLJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:11:09 -0400
-Received: from mga02.intel.com ([134.134.136.20]:56978 "EHLO mga02.intel.com"
+	id S1754954Ab0EQJLa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:11:30 -0400
+Received: from mga02.intel.com ([134.134.136.20]:40345 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754687Ab0EQJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754614Ab0EQJKr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 May 2010 05:10:47 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
-   d="scan'208";a="622224077"
+   d="scan'208";a="622224078"
 From: Sheng Yang <sheng@linux.intel.com>
 To: Avi Kivity <avi@redhat.com>
 Cc: Marcelo Tosatti <mtosatti@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
        Ingo Molnar <mingo@elte.hu>, kvm@vger.kernel.org,
        linux-kernel@vger.kernel.org, Sheng Yang <sheng@linux.intel.com>
-Subject: [PATCH][v2 1/3] x86: Export FPU API for KVM use
-Date: Mon, 17 May 2010 17:08:26 +0800
-Message-Id: <1274087308-26676-2-git-send-email-sheng@linux.intel.com>
+Subject: [PATCH][v2 2/3] KVM: x86: Use unlazy_fpu() for host FPU
+Date: Mon, 17 May 2010 17:08:27 +0800
+Message-Id: <1274087308-26676-3-git-send-email-sheng@linux.intel.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1274087308-26676-1-git-send-email-sheng@linux.intel.com>
 References: <1274087308-26676-1-git-send-email-sheng@linux.intel.com>
@@ -24,76 +24,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Also add some constants.
+We can avoid unnecessary fpu load when userspace process
+didn't use FPU frequently.
+
+Derived from Avi's idea.
 
 Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 ---
- arch/x86/include/asm/i387.h  |    2 ++
- arch/x86/include/asm/xsave.h |    3 +++
- arch/x86/kernel/i387.c       |    3 ++-
- arch/x86/kernel/process.c    |    1 +
- 4 files changed, 8 insertions(+), 1 deletions(-)
+ arch/x86/include/asm/kvm_host.h |    1 -
+ arch/x86/kvm/x86.c              |   18 ++----------------
+ 2 files changed, 2 insertions(+), 17 deletions(-)
 
-diff --git a/arch/x86/include/asm/i387.h b/arch/x86/include/asm/i387.h
-index 8002e9c..9610628 100644
---- a/arch/x86/include/asm/i387.h
-+++ b/arch/x86/include/asm/i387.h
-@@ -488,6 +488,8 @@ static inline void fpu_copy(struct fpu *dst, struct fpu *src)
- 	memcpy(dst->state, src->state, xstate_size);
- }
+diff --git a/arch/x86/include/asm/kvm_host.h b/arch/x86/include/asm/kvm_host.h
+index 0c06148..d93601c 100644
+--- a/arch/x86/include/asm/kvm_host.h
++++ b/arch/x86/include/asm/kvm_host.h
+@@ -301,7 +301,6 @@ struct kvm_vcpu_arch {
+ 		unsigned long mmu_seq;
+ 	} update_pte;
  
-+extern void fpu_finit(struct fpu *fpu);
-+
- #endif /* __ASSEMBLY__ */
+-	struct i387_fxsave_struct host_fx_image;
+ 	struct i387_fxsave_struct guest_fx_image;
  
- #define PSHUFB_XMM5_XMM0 .byte 0x66, 0x0f, 0x38, 0x00, 0xc5
-diff --git a/arch/x86/include/asm/xsave.h b/arch/x86/include/asm/xsave.h
-index 2c4390c..29ee4e4 100644
---- a/arch/x86/include/asm/xsave.h
-+++ b/arch/x86/include/asm/xsave.h
-@@ -13,6 +13,9 @@
+ 	gva_t mmio_fault_cr2;
+diff --git a/arch/x86/kvm/x86.c b/arch/x86/kvm/x86.c
+index 7500cba..ba8c2d2 100644
+--- a/arch/x86/kvm/x86.c
++++ b/arch/x86/kvm/x86.c
+@@ -52,6 +52,7 @@
+ #include <asm/desc.h>
+ #include <asm/mtrr.h>
+ #include <asm/mce.h>
++#include <asm/i387.h>
  
- #define FXSAVE_SIZE	512
- 
-+#define XSTATE_YMM_SIZE 256
-+#define XSTATE_YMM_OFFSET (512 + 64)
-+
- /*
-  * These are the features that the OS can handle currently.
-  */
-diff --git a/arch/x86/kernel/i387.c b/arch/x86/kernel/i387.c
-index 86cef6b..c4444bc 100644
---- a/arch/x86/kernel/i387.c
-+++ b/arch/x86/kernel/i387.c
-@@ -107,7 +107,7 @@ void __cpuinit fpu_init(void)
- }
- #endif	/* CONFIG_X86_64 */
- 
--static void fpu_finit(struct fpu *fpu)
-+void fpu_finit(struct fpu *fpu)
+ #define MAX_IO_MSRS 256
+ #define CR0_RESERVED_BITS						\
+@@ -5134,21 +5135,10 @@ void fx_init(struct kvm_vcpu *vcpu)
  {
- #ifdef CONFIG_X86_32
- 	if (!HAVE_HWFP) {
-@@ -132,6 +132,7 @@ static void fpu_finit(struct fpu *fpu)
- 		fp->fos = 0xffff0000u;
- 	}
+ 	unsigned after_mxcsr_mask;
+ 
+-	/*
+-	 * Touch the fpu the first time in non atomic context as if
+-	 * this is the first fpu instruction the exception handler
+-	 * will fire before the instruction returns and it'll have to
+-	 * allocate ram with GFP_KERNEL.
+-	 */
+-	if (!used_math())
+-		kvm_fx_save(&vcpu->arch.host_fx_image);
+-
+ 	/* Initialize guest FPU by resetting ours and saving into guest's */
+ 	preempt_disable();
+-	kvm_fx_save(&vcpu->arch.host_fx_image);
+ 	kvm_fx_finit();
+ 	kvm_fx_save(&vcpu->arch.guest_fx_image);
+-	kvm_fx_restore(&vcpu->arch.host_fx_image);
+ 	preempt_enable();
+ 
+ 	vcpu->arch.cr0 |= X86_CR0_ET;
+@@ -5165,7 +5155,7 @@ void kvm_load_guest_fpu(struct kvm_vcpu *vcpu)
+ 		return;
+ 
+ 	vcpu->guest_fpu_loaded = 1;
+-	kvm_fx_save(&vcpu->arch.host_fx_image);
++	unlazy_fpu(current);
+ 	kvm_fx_restore(&vcpu->arch.guest_fx_image);
+ 	trace_kvm_fpu(1);
  }
-+EXPORT_SYMBOL_GPL(fpu_finit);
+@@ -5177,7 +5167,6 @@ void kvm_put_guest_fpu(struct kvm_vcpu *vcpu)
  
- /*
-  * The _current_ task is using the FPU for the first time
-diff --git a/arch/x86/kernel/process.c b/arch/x86/kernel/process.c
-index 8bcc21f..373fec9 100644
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -28,6 +28,7 @@ unsigned long idle_nomwait;
- EXPORT_SYMBOL(idle_nomwait);
- 
- struct kmem_cache *task_xstate_cachep;
-+EXPORT_SYMBOL(task_xstate_cachep);
- 
- int arch_dup_task_struct(struct task_struct *dst, struct task_struct *src)
+ 	vcpu->guest_fpu_loaded = 0;
+ 	kvm_fx_save(&vcpu->arch.guest_fx_image);
+-	kvm_fx_restore(&vcpu->arch.host_fx_image);
+ 	++vcpu->stat.fpu_reload;
+ 	set_bit(KVM_REQ_DEACTIVATE_FPU, &vcpu->requests);
+ 	trace_kvm_fpu(0);
+@@ -5203,9 +5192,6 @@ int kvm_arch_vcpu_setup(struct kvm_vcpu *vcpu)
  {
+ 	int r;
+ 
+-	/* We do fxsave: this must be aligned. */
+-	BUG_ON((unsigned long)&vcpu->arch.host_fx_image & 0xF);
+-
+ 	vcpu->arch.mtrr_state.have_fixed = 1;
+ 	vcpu_load(vcpu);
+ 	r = kvm_arch_vcpu_reset(vcpu);
 -- 
 1.7.0.1
 
