@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753414Ab0EQO5N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 10:57:13 -0400
-Received: from eu1sys200aog106.obsmtp.com ([207.126.144.121]:41100 "EHLO
-	eu1sys200aog106.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752595Ab0EQO5L (ORCPT
+	id S1753754Ab0EQO6F (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 10:58:05 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:42879 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752595Ab0EQO6D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 10:57:11 -0400
-Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
- requested
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
-Reply-To: <sundar.iyer@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>
-In-Reply-To: <20100517144411.GD5257@opensource.wolfsonmicro.com>
-References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
-	 <20100517144411.GD5257@opensource.wolfsonmicro.com>
-Content-Type: text/plain
-Organization: STEricsson
-Date: Mon, 17 May 2010 20:26:54 +0530
-Message-ID: <1274108214.20589.28.camel@bnru01>
+	Mon, 17 May 2010 10:58:03 -0400
+Date: Mon, 17 May 2010 16:57:58 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
+       Jan Blunck <jblunck@suse.de>, Emese Revfy <re.emese@gmail.com>,
+       "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+       linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH] Typo in drivers/base/core.c
+Message-ID: <20100517145757.GA3686@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-X-Mailer: Evolution 2.24.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 16:44 +0200, Mark Brown wrote:
-> The commit message reads "regulator: return set_mode is same mode is
-> requested".  I'm having a hard time parsing what that actually means,
-> you probably need a "when" in there...
-> 
-Oops. My bad. I messed by typoing up the commit message.
+Hi all!
 
-> This is going to oops if the regulator doesn't implement a get_mode()
-> operation.  
-Okay. I will add a sanity check for that.
+	As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> I'm also a little ambivalent on the benefit of it - if the goal is to
-> save I/O costs (you didn't say...) it's not clear to me that the effort
-> of checking the current mode is going to be a win in situations where
-> the mode is actually being changed a lot.
-Okay. I came up across this and hence the change. This is intended when
-the same mode is requested! I will edit the commit message appropriately.
+	There's a typo in linux' source (CONFIG_MODULE -- missing the
+final S) making the whole codeblock unselectable. The included patch
+should address this issue.
 
-> 
-> As I said in reply to your previous message the trend is away from
-> having any mode configration at all, with regulators being able to adapt
-> to their current load without any software assistance.
-I posted this as this is currently supported in the tree.
+	Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-Thanx for the prompt review and reply,
+Regards
 
-Regards,
-Sundar
+	Christoph Egger
+
+[0] http://vamos1.informatik.uni-erlangen.de/
+
+----
+>From d5fe80140757fedfe19c293cd7af4c1030b92353 Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Mon, 17 May 2010 16:48:59 +0200
+Subject: [PATCH] CONFIG_MODULES misstyped as _MODULE
+
+In this code section the final S of CONFIG_MODULES was missed making
+the whole check useless
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/base/core.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index b56a0ba..f801c36 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1372,7 +1372,7 @@ struct device *__root_device_register(const char *name, struct module *owner)
+ 		return ERR_PTR(err);
+ 	}
+ 
+-#ifdef CONFIG_MODULE	/* gotta find a "cleaner" way to do this */
++#ifdef CONFIG_MODULES	/* gotta find a "cleaner" way to do this */
+ 	if (owner) {
+ 		struct module_kobject *mk = &owner->mkobj;
+ 
+-- 
+1.6.3.3
+
+
+
+
+
+
+
+
+
+
 
 
