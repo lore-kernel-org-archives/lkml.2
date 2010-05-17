@@ -1,84 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752470Ab0EQCL6 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:11:58 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:39643 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752138Ab0EQCL4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:11:56 -0400
-Date: Mon, 17 May 2010 12:11:53 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       Ben Hutchings <ben@decadent.org.uk>
-Subject: linux-next: manual merge of the net tree with the m68k tree
-Message-Id: <20100517121153.438f94dc.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1752381Ab0EQCM7 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:12:59 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:63535 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0EQCM5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 22:12:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=bvGpoLZ+b2TOl0JTWtpvbF621SdLB3CpEq3w3VwDOv754vL5arq3UaTKW3dIVk56G9
+         OXCrFIbsrEtiKh+/qgmEKIrj8j78fPAdSoFdmB9Fh9qS+XPVmRqYLFa9CqL/YaNV1oFa
+         /Mq6V+fY/DkSQ8jT2RARqWmKlCnslBY4yyzrc=
+Date: Mon, 17 May 2010 04:13:00 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Jan Harkes <jaharkes@cs.cmu.edu>, coda@cs.cmu.edu
+Subject: Re: [PATCH 2/6] coda: Clean-up whitespace problems in pioctl.c
+Message-ID: <20100517021258.GE22299@nowhere>
+References: <1273065339-21669-1-git-send-email-jkacur@redhat.com> <1273065339-21669-3-git-send-email-jkacur@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273065339-21669-3-git-send-email-jkacur@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
+On Wed, May 05, 2010 at 03:15:35PM +0200, John Kacur wrote:
+> Signed-off-by: John Kacur <jkacur@redhat.com>
+> ---
 
-Today's linux-next merge of the net tree got a conflict in
-include/linux/mod_devicetable.h between commit
-52498c252690651f915aecbcd10e26bcbafbe2a3 ("m68k: amiga - Zorro bus
-modalias support") from the m68k tree and commit
-8626d3b4328061f5b82b11ae1d6918a0c3602f42 ("phylib: Support phy module
-autoloading") from the net tree.
 
-Just overlapping additions.  I fixed it up (see below) and can carry the
-fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+Applied too, thanks.
 
-diff --cc include/linux/mod_devicetable.h
-index 56fde43,55f1f9c..0000000
---- a/include/linux/mod_devicetable.h
-+++ b/include/linux/mod_devicetable.h
-@@@ -474,13 -474,30 +474,39 @@@ struct platform_device_id 
-  			__attribute__((aligned(sizeof(kernel_ulong_t))));
-  };
-  
- +struct zorro_device_id {
- +	__u32 id;			/* Device ID or ZORRO_WILDCARD */
- +	kernel_ulong_t driver_data;	/* Data private to the driver */
- +};
- +
- +#define ZORRO_WILDCARD			(0xffffffff)	/* not official */
- +
- +#define ZORRO_DEVICE_MODALIAS_FMT	"zorro:i%08X"
- +
-+ #define MDIO_MODULE_PREFIX	"mdio:"
-+ 
-+ #define MDIO_ID_FMT "%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d%d"
-+ #define MDIO_ID_ARGS(_id) \
-+ 	(_id)>>31, ((_id)>>30) & 1, ((_id)>>29) & 1, ((_id)>>28) & 1,	\
-+ 	((_id)>>27) & 1, ((_id)>>26) & 1, ((_id)>>25) & 1, ((_id)>>24) & 1, \
-+ 	((_id)>>23) & 1, ((_id)>>22) & 1, ((_id)>>21) & 1, ((_id)>>20) & 1, \
-+ 	((_id)>>19) & 1, ((_id)>>18) & 1, ((_id)>>17) & 1, ((_id)>>16) & 1, \
-+ 	((_id)>>15) & 1, ((_id)>>14) & 1, ((_id)>>13) & 1, ((_id)>>12) & 1, \
-+ 	((_id)>>11) & 1, ((_id)>>10) & 1, ((_id)>>9) & 1, ((_id)>>8) & 1, \
-+ 	((_id)>>7) & 1, ((_id)>>6) & 1, ((_id)>>5) & 1, ((_id)>>4) & 1, \
-+ 	((_id)>>3) & 1, ((_id)>>2) & 1, ((_id)>>1) & 1, (_id) & 1
-+ 
-+ /**
-+  * struct mdio_device_id - identifies PHY devices on an MDIO/MII bus
-+  * @phy_id: The result of
-+  *     (mdio_read(&MII_PHYSID1) << 16 | mdio_read(&PHYSID2)) & @phy_id_mask
-+  *     for this PHY type
-+  * @phy_id_mask: Defines the significant bits of @phy_id.  A value of 0
-+  *     is used to terminate an array of struct mdio_device_id.
-+  */
-+ struct mdio_device_id {
-+ 	__u32 phy_id;
-+ 	__u32 phy_id_mask;
-+ };
-+ 
-  #endif /* LINUX_MOD_DEVICETABLE_H */
