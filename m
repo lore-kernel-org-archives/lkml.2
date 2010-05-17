@@ -1,247 +1,336 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab0EQPZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:25:28 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:45207 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753067Ab0EQPZ1 convert rfc822-to-8bit (ORCPT
+	id S1754072Ab0EQPZ7 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:25:59 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:47089 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753265Ab0EQPZ6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:25:27 -0400
+	Mon, 17 May 2010 11:25:58 -0400
+Date: Mon, 17 May 2010 17:25:54 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>, Jiri Kosina <jkosina@suse.cz>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Anirban Sinha <asinha@zeugmasystems.com>, linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH] Tidy REMOTE_DEBUG
+Message-ID: <20100517152554.GB3686@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-Message-ID: <a3572531-ca89-4959-b190-bcb9309a0193@default>
-Date: Mon, 17 May 2010 08:23:59 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Andi Kleen <andi@firstfloor.org>, Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@infradead.org>
-Cc: Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] x86: Export tsc related information in sysfs
-References: <87tyq9mqrz.fsf@basil.nowhere.org>
- <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default
- 20100517102214.GA20761@basil.fritz.box>
-In-Reply-To: <20100517102214.GA20761@basil.fritz.box>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
 Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BF15FA9.0192:SCFMA922111,ss=1,fgs=0
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(note important alternate proposal suggested below, please
-don't get bored and stop reading yet ;-)
+Hi all!
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> > "won't let my friends use rdtsc" :-)  Anything I can do
-> > to help?
-> 
-> Yes, stop trying to convince me that rdtsc in apps is a good idea. :)
+	As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-You've convinced ME that it is NOT a good idea in many many cases
-and that some of those cases are very very hard to detect.  Unfortunately,
-convincing ME is not sufficient.  The problem is that Pandora's
-box is already open and it is getting ever more wide open. (Each
-of you has implied that TSC on future systems is getting even
-more likely to be reliable.) Not only is rdtsc unprivileged
-but so is the CPUID Invariant TSC bit.  And the kernel already
-publishes current_clocksource and puts a tempting MHz rate in
-its logs.  While we all might hope that every system programmer
-will read this long thread and also be convinced never to use
-rdtsc, the problem is there is a high and increasing chance that
-any given systems programmer will write code that uses rdtsc and,
-in all of his/her test machines will NEVER see a problem.  But,
-sadly, some of the customers using that app WILL see the problem
-BUT neither the customers nor the systems programmer may ever know
-what really went wrong (unless they hire Thomas to debug it :-)
+	CONFIG_REMOTE_DEBUG seems to be a leftover from 2.2 and 2.4
+kernel series only present today at one single space (and no longer at
+all if the patch is applied). As it's unreferenced from Kconfig side
+we might as well drop it?
 
-So let me suggest inverting the logic of the patch and maybe
-it will serve all of us better.  (see proposal below)
+	Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-> From: Arjan van de Ven [mailto:arjan@infradead.org]
-> If you want to find out yourself if the tsc is good enough for you
-> that is one thing.... but if you want the kernel to have an official
-> interface for it.... the kernel has to live by that commitment.
-> We cannot put in that interface "oh and you need to implement the same
-> workarounds, scaling and offsets as the kernel does", because that's
-> in a huge flux, and will change from kernel version to kernel version.
-> The only shot you could get is some vsyscall/vdso function that gives
-> you a unit (but that is not easy given per cpu offset/frequency/etc..
-> but at least the kernel can try)
+Regards
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> Please understand that once we expose that tsc_reliable information we
-> are responsible for its correctness. People will use it whether the
-> enterprise entity who wants this feature has qualified that particular
-> piece of hardware or not. And while the support of that enity refuses
-> to help on non qualified hardware (your own words), we'll end up with
-> the mess which was created to help that very entity.
+	Christoph Egger
 
-OK, so let's invert the sense of the sysfs file and call it (for now)
-"tsc_detected_as_UNreliable".  Then anytime the kernel detects
-a failed warp test (or any other suspicious condition), it changes
-the bit from 0 to 1 effectively saying "if you are using rdtsc
-against our recommendation, we told you that it might go bad and
-it has, so consider yourself warned that some of the timestamps
-you've taken since the last time you've checked this flag
-may be b*rked"
+[0] http://vamos1.informatik.uni-erlangen.de/
 
-IMHO, addressing the issue directly and clearly documenting it
-(instead of trying to hide the dirty laundry in the kernel)
-will result in far better education of systems programmers
-and far fewer end user problems. Which raises another good analogy:
+----
+>From 7cc3dbcc665505816368268dee33f6f54d97fc84 Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Mon, 17 May 2010 17:21:02 +0200
+Subject: [PATCH 2/2] Remove CONFIG_REMOTE_DEBUG
 
-You are telling teenagers to abstain and I am proposing that we
-instead encourage them to use a condom.
+REMOTE_DEBUG does already appear in 2.2 kernel sources but didn't
+appear as a config Option in the initial git import 2.6.12-rc. It's
+currently just used in one single place of the linux kernel and should
+probably be dropped totally
 
-You are simply not going to stop systems programmers from using
-rdtsc... let's at least allow them to practice "safe TSC usage"
-which, to extend the analogy, we all know is still not 100.0%
-effective but, if they are going to do "it" anyway, is still
-far better than completely unprotected TSC usage.
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/char/serial167.c |  223 +---------------------------------------------
+ 1 files changed, 1 insertions(+), 222 deletions(-)
 
-(The remainder of this response is discussion of individual
-points raised, so can be skipped by most readers.)
+diff --git a/drivers/char/serial167.c b/drivers/char/serial167.c
+index 8dfd247..36e620a 100644
+--- a/drivers/char/serial167.c
++++ b/drivers/char/serial167.c
+@@ -176,23 +176,6 @@ static void config_setup(struct cyclades_port *);
+ static void show_status(int);
+ #endif
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-static void debug_setup(void);
+-void queueDebugChar(int c);
+-int getDebugChar(void);
+-
+-#define DEBUG_PORT	1
+-#define DEBUG_LEN	256
+-
+-typedef struct {
+-	int in;
+-	int out;
+-	unsigned char buf[DEBUG_LEN];
+-} debugq;
+-
+-debugq debugiq;
+-#endif
+-
+ /*
+  * I have my own version of udelay(), as it is needed when initialising
+  * the chip, before the delay loop has been calibrated.  Should probably
+@@ -515,11 +498,6 @@ static irqreturn_t cd2401_tx_interrupt(int irq, void *dev_id)
+ 	/* determine the channel and change to that context */
+ 	channel = (u_short) (base_addr[CyLICR] >> 2);
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-	if (channel == DEBUG_PORT) {
+-		panic("TxInt on debug port!!!");
+-	}
+-#endif
+ 	/* validate the port number (as configured and open) */
+ 	if ((channel < 0) || (NR_PORTS <= channel)) {
+ 		base_addr[CyIER] &= ~(CyTxMpty | CyTxRdy);
+@@ -635,14 +613,6 @@ static irqreturn_t cd2401_rx_interrupt(int irq, void *dev_id)
+ 	info->last_active = jiffies;
+ 	save_cnt = char_count = base_addr[CyRFOC];
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-	if (channel == DEBUG_PORT) {
+-		while (char_count--) {
+-			data = base_addr[CyRDR];
+-			queueDebugChar(data);
+-		}
+-	} else
+-#endif
+ 		/* if there is nowhere to put the data, discard it */
+ 	if (info->tty == 0) {
+ 		while (char_count--) {
+@@ -2197,9 +2167,7 @@ static int __init serial167_init(void)
+ 		port_num++;
+ 		info++;
+ 	}
+-#ifdef CONFIG_REMOTE_DEBUG
+-	debug_setup();
+-#endif
++
+ 	ret = request_irq(MVME167_IRQ_SER_ERR, cd2401_rxerr_interrupt, 0,
+ 			  "cd2401_errors", cd2401_rxerr_interrupt);
+ 	if (ret) {
+@@ -2520,193 +2488,4 @@ static int __init serial167_console_init(void)
+ 
+ console_initcall(serial167_console_init);
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-void putDebugChar(int c)
+-{
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	unsigned long flags;
+-	volatile u_char sink;
+-	u_char ier;
+-	int port;
+-
+-	local_irq_save(flags);
+-
+-	/* Ensure transmitter is enabled! */
+-
+-	port = DEBUG_PORT;
+-	base_addr[CyCAR] = (u_char) port;
+-	while (base_addr[CyCCR])
+-		;
+-	base_addr[CyCCR] = CyENB_XMTR;
+-
+-	ier = base_addr[CyIER];
+-	base_addr[CyIER] = CyTxMpty;
+-
+-	while (1) {
+-		if (pcc2chip[PccSCCTICR] & 0x20) {
+-			/* We have a Tx int. Acknowledge it */
+-			sink = pcc2chip[PccTPIACKR];
+-			if ((base_addr[CyLICR] >> 2) == port) {
+-				base_addr[CyTDR] = c;
+-				base_addr[CyTEOIR] = 0;
+-				break;
+-			} else
+-				base_addr[CyTEOIR] = CyNOTRANS;
+-		}
+-	}
+-
+-	base_addr[CyIER] = ier;
+-
+-	local_irq_restore(flags);
+-}
+-
+-int getDebugChar()
+-{
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	unsigned long flags;
+-	volatile u_char sink;
+-	u_char ier;
+-	int port;
+-	int i, c;
+-
+-	i = debugiq.out;
+-	if (i != debugiq.in) {
+-		c = debugiq.buf[i];
+-		if (++i == DEBUG_LEN)
+-			i = 0;
+-		debugiq.out = i;
+-		return c;
+-	}
+-	/* OK, nothing in queue, wait in poll loop */
+-
+-	local_irq_save(flags);
+-
+-	/* Ensure receiver is enabled! */
+-
+-	port = DEBUG_PORT;
+-	base_addr[CyCAR] = (u_char) port;
+-#if 0
+-	while (base_addr[CyCCR])
+-		;
+-	base_addr[CyCCR] = CyENB_RCVR;
+-#endif
+-	ier = base_addr[CyIER];
+-	base_addr[CyIER] = CyRxData;
+-
+-	while (1) {
+-		if (pcc2chip[PccSCCRICR] & 0x20) {
+-			/* We have a Rx int. Acknowledge it */
+-			sink = pcc2chip[PccRPIACKR];
+-			if ((base_addr[CyLICR] >> 2) == port) {
+-				int cnt = base_addr[CyRFOC];
+-				while (cnt-- > 0) {
+-					c = base_addr[CyRDR];
+-					if (c == 0)
+-						printk
+-						    ("!! debug char is null (cnt=%d) !!",
+-						     cnt);
+-					else
+-						queueDebugChar(c);
+-				}
+-				base_addr[CyREOIR] = 0;
+-				i = debugiq.out;
+-				if (i == debugiq.in)
+-					panic("Debug input queue empty!");
+-				c = debugiq.buf[i];
+-				if (++i == DEBUG_LEN)
+-					i = 0;
+-				debugiq.out = i;
+-				break;
+-			} else
+-				base_addr[CyREOIR] = CyNOTRANS;
+-		}
+-	}
+-
+-	base_addr[CyIER] = ier;
+-
+-	local_irq_restore(flags);
+-
+-	return (c);
+-}
+-
+-void queueDebugChar(int c)
+-{
+-	int i;
+-
+-	i = debugiq.in;
+-	debugiq.buf[i] = c;
+-	if (++i == DEBUG_LEN)
+-		i = 0;
+-	if (i != debugiq.out)
+-		debugiq.in = i;
+-}
+-
+-static void debug_setup()
+-{
+-	unsigned long flags;
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	int i, cflag;
+-
+-	cflag = B19200;
+-
+-	local_irq_save(flags);
+-
+-	for (i = 0; i < 4; i++) {
+-		base_addr[CyCAR] = i;
+-		base_addr[CyLICR] = i << 2;
+-	}
+-
+-	debugiq.in = debugiq.out = 0;
+-
+-	base_addr[CyCAR] = DEBUG_PORT;
+-
+-	/* baud rate */
+-	i = cflag & CBAUD;
+-
+-	base_addr[CyIER] = 0;
+-
+-	base_addr[CyCMR] = CyASYNC;
+-	base_addr[CyLICR] = DEBUG_PORT << 2;
+-	base_addr[CyLIVR] = 0x5c;
+-
+-	/* tx and rx baud rate */
+-
+-	base_addr[CyTCOR] = baud_co[i];
+-	base_addr[CyTBPR] = baud_bpr[i];
+-	base_addr[CyRCOR] = baud_co[i] >> 5;
+-	base_addr[CyRBPR] = baud_bpr[i];
+-
+-	/* set line characteristics  according configuration */
+-
+-	base_addr[CySCHR1] = 0;
+-	base_addr[CySCHR2] = 0;
+-	base_addr[CySCRL] = 0;
+-	base_addr[CySCRH] = 0;
+-	base_addr[CyCOR1] = Cy_8_BITS | CyPARITY_NONE;
+-	base_addr[CyCOR2] = 0;
+-	base_addr[CyCOR3] = Cy_1_STOP;
+-	base_addr[CyCOR4] = baud_cor4[i];
+-	base_addr[CyCOR5] = 0;
+-	base_addr[CyCOR6] = 0;
+-	base_addr[CyCOR7] = 0;
+-
+-	write_cy_cmd(base_addr, CyINIT_CHAN);
+-	write_cy_cmd(base_addr, CyENB_RCVR);
+-
+-	base_addr[CyCAR] = DEBUG_PORT;	/* !!! Is this needed? */
+-
+-	base_addr[CyRTPRL] = 2;
+-	base_addr[CyRTPRH] = 0;
+-
+-	base_addr[CyMSVR1] = CyRTS;
+-	base_addr[CyMSVR2] = CyDTR;
+-
+-	base_addr[CyIER] = CyRxData;
+-
+-	local_irq_restore(flags);
+-
+-}				/* debug_setup */
+-
+-#endif
+-
+ MODULE_LICENSE("GPL");
+-- 
+1.6.3.3
 
-====
 
-> From: Arjan van de Ven [mailto:arjan@infradead.org]
-> and 3) the kernel gets thermal interrupts and the app does not
-> and 4) the kernel decides which power management to use when
-> and 5) the kernel can find out if SMI's happened, and the app cannot.
-> and 6) the kernel can access tsc and a per cpu offset/frequency
-> data atomically, without being scheduled to another CPU. The app cannot
-> [well it can ask the kernel to be pinned, and that's a 99.99% thing,
-> but still]
 
-These are all very good reasons where the kernel might turn
-on a "tsc_detected_as_unreliable" bit.  And CPU-hotplug_add
-too.
 
-And, by the way, are any of these valid in a virtual machine?
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> What would the application do in the 10% case?
 
-(and in the "tsc_detected_as_unreliable" == 1 case)
-Well, some possibilities are:
-- Disable the heavy TSC usage and log/notify that it has been
-  disabled because the TSC is not reliable.
-- Switch to gettimeofday and log/notify that, sorry, overall
-  performance has become slower due to the fact that the
-  TSC has become reliable
-- Log a message telling the user to confirm that the hardware
-  they are using is on the app's supported/compatibility list
-  and that they are using the latest firmware and that their
-  thermal logs are OK, because something might not be quite
-  right with their system
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> 32bit doesn't have a fast ring 3 gtod() today but that could be also
-> fixed.
 
-That might have helped, because the enterprise app I mentioned
-earlier was 32-bit... but I'll bet the genie is out of the
-bottle now and the app has already shipped using rdtsc.
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> It seems to me you're bordering on violating Steinberg's rule
-> of system programming here :-)
 
-<Embarrassed to not know this rule, Dan goes off and googles
-but fails to find any good matches before his TSC goes bad>
 
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> First the single instruction is typically quite slow. Then
-> to really get monotonous time you need a barrier anyways.
 
-Agreed, I've measured 30-ish and 60-ish cycles on a
-couple of machines.
-
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> When I originally wrote vsyscalls that overhead wasn't that big
-> with all that compared to open coding. The only thing that could
-> be stripped might be the unit conversion. In principle
-> a new vsyscall could be added for that (what units do you need?)
-> 
-> I remember when they were converted to clocksources they got
-> somewhat slower, but I suspect with some tuning work that
-> could be also fixed again.
-> 
-> I think glibc also still does a unnecessary indirect jump
-> (might hurt you if your CPU cannot predict that), but that could
-> be fixed too. I think I have an old patch for that in fact,
-> if you're still willing to use the old style vsyscalls.
-
-I think vsyscall is an excellent idea and I'm very much in
-favor of continuing to improve it and encouraging people
-to use it.  But until it either "always" "just works" in "all"
-of the software/hardware environments used by a systems
-programmer in their development and testing and in the systems
-the apps get deployed on (including virtual machines) OR until
-it clearly provides an indicator that it is hiding dirty performance
-laundry, IMHO it won't convince the (admittedly undereducated)
-pro-TSC crowd.
-
-> > signal that drives the TSC, the system is badly broken and far
-> > worse things -- like inter-processor cache incoherency -- may happen.
->
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> I don't think that's true. There are various large systems with
-> non synchronized TSC and I haven't heard of any unique cache coherency
-> problems on that.
-
-Here I was referring to clock skew/drift, not the "fixed offset"
-problem.  I'm far from an expert in PLL's etc, but I think if
-the clock signal is delayed far enough to cause TSC to skew
-significantly, eventually some critical cache coherency protocol
-is eventually going to miss a beat and screw up and corrupt data.
-
-> If the idea is to use the TSC on not fully synchronized systems?
-
-That has never been my intent, though others might be interested
-in that.
-
-> From: Andi Kleen [mailto:andi@firstfloor.org]
-> I haven't fully kept track, but at some point there was an attempt
-> to have more POSIX clocks with loser semantics (like per thread
-> monotonous). If you use that you'll get fast time (well not day time,
-> but perhaps useful time) which might be good enough without
-> hacks like this?
-> 
-> If the semantics are not exactly right I think more POSIX clocks
-> could be added too.
-> 
-> Or if the time conversion is a problem we could add a
-> posix_gettime_otherunit()
-> or so (e.g. with a second vsyscall that converts units so you don't
-> need to do it in the fast path)
-> 
-> A long time ago there was also the idea to export the information
-> if gettimeofday()/clock_gettime() was fast or not. If this helps this
-> could
-> be probably revisited. But I'm not sure what the application
-> should really do in this case.
-> 
-> 32bit doesn't have a fast ring 3 gtod() today but that could be also
-> fixed.
-
-I believe (and this is strictly a personal opinion based on my
-view of human psychology) that adding more obscure interfaces and
-more obscure options is a losing battle.
-
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> I think you understand that I have no intention to put a ticking time
-> bomb into the code I'm responsible for. I really have better things to
-> do than shooting myself in the foot.
-
-As we both know, the ticking time bomb is already there.  IMHO this
-revised proposal provides you with "plausible deniability"**
-"The kernel now advertises when it detects the TSC is bad or has gone
-bad... did your app vendor check the kernel-provided info?"
-
-** http://en.wikipedia.org/wiki/Plausible_deniability 
