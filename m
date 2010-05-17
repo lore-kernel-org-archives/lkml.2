@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755767Ab0EQTC7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:02:59 -0400
-Received: from mga02.intel.com ([134.134.136.20]:11713 "EHLO mga02.intel.com"
+	id S1755701Ab0EQTCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:02:53 -0400
+Received: from mga14.intel.com ([143.182.124.37]:32383 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755734Ab0EQTC5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:02:57 -0400
+	id S1755675Ab0EQTCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:02:51 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,248,1272870000"; 
-   d="scan'208";a="518662464"
-Message-Id: <20100517184028.114595207@sbs-t61.sc.intel.com>
+   d="scan'208";a="278095809"
+Message-Id: <20100517184027.948141391@sbs-t61.sc.intel.com>
 User-Agent: quilt/0.47-1
-Date: Mon, 17 May 2010 11:27:33 -0700
+Date: Mon, 17 May 2010 11:27:31 -0700
 From: Suresh Siddha <suresh.b.siddha@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Thomas Gleixner <tglx@linutronix.de>,
@@ -22,110 +22,134 @@ Cc: Venkatesh Pallipadi <venki@google.com>,
        Dominik Brodowski <linux@dominikbrodowski.net>,
        Nigel Cunningham <ncunningham@crca.org.au>,
        Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [patch 7/7] timers: use nearest busy cpu for migrating timers from an idle cpu
+Subject: [patch 5/7] sched: Change select_nohz_load_balancer to return void
 References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-Content-Disposition: inline; filename=use_nearest_busy_cpu_for_migrating_timers_from_idle_cpu.patch
+Content-Disposition: inline; filename=sched_select_nohz_load_balancer_to_return_void.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Currently we are migrating the unpinned timers from an idle to the cpu
-doing idle load balancing (when all the cpus in the system are idle,
-there is no idle load balacncing cpu and timers get added to the same idle cpu
-where the request was made. So the current optimization works only on semi idle
-system).
+From: Venkatesh Pallipadi <venki@google.com>
+Subject: sched: Change select_nohz_load_balancer to return void
 
-And In semi idle system, we no longer have periodic ticks on the idle cpu
-doing the idle load balancing on behalf of all the cpu's. Using that cpu
-will add more delays to the timers than intended (as that cpu's timer base
-may not be uptodate wrt jiffies etc). This was causing mysterious slowdowns
-during boot etc.
+select_nohz_load_balancer used to return 1 when ticks are not to be
+stopped (idle_balancer), 0 otherwise. With change to nohz idle_balancer logic,
+all idle cpus can go to tickless mode and be woken up by a kick from one
+of the busy cpus, if and when idle balancing is required. As a result,
+select_nohz_load_balancer can return void.
 
-For now, in the semi idle case, use the nearest busy cpu for migrating timers from an
-idle cpu.  This is good for power-savings anyway.
-
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
 ---
- include/linux/sched.h |    2 +-
- kernel/hrtimer.c      |    8 ++------
- kernel/sched.c        |   13 +++++++++++++
- kernel/timer.c        |    8 ++------
- 4 files changed, 18 insertions(+), 13 deletions(-)
+ include/linux/sched.h    |    7 ++-----
+ kernel/sched_fair.c      |   16 ++++++++--------
+ kernel/time/tick-sched.c |    8 +-------
+ 3 files changed, 11 insertions(+), 20 deletions(-)
 
-Index: tip/kernel/hrtimer.c
+Index: tip/kernel/sched_fair.c
 ===================================================================
---- tip.orig/kernel/hrtimer.c
-+++ tip/kernel/hrtimer.c
-@@ -144,12 +144,8 @@ struct hrtimer_clock_base *lock_hrtimer_
- static int hrtimer_get_target(int this_cpu, int pinned)
+--- tip.orig/kernel/sched_fair.c
++++ tip/kernel/sched_fair.c
+@@ -3266,14 +3266,14 @@ static void nohz_balancer_kick(int cpu)
+  * ilb owner CPU in future (when there is a need for idle load balancing on
+  * behalf of all idle CPUs).
+  */
+-int select_nohz_load_balancer(int stop_tick)
++void select_nohz_load_balancer(int stop_tick)
  {
- #ifdef CONFIG_NO_HZ
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu)) {
--		int preferred_cpu = get_nohz_load_balancer();
--
--		if (preferred_cpu < nr_cpu_ids)
--			return preferred_cpu;
--	}
-+	if (!pinned && get_sysctl_timer_migration() && idle_cpu(this_cpu))
-+		return get_nohz_timer_target();
- #endif
- 	return this_cpu;
+ 	int cpu = smp_processor_id();
+ 
+ 	if (stop_tick) {
+ 		if (!cpu_active(cpu)) {
+ 			if (atomic_read(&nohz.load_balancer) != cpu)
+-				return 0;
++				return;
+ 
+ 			/*
+ 			 * If we are going offline and still the leader,
+@@ -3282,7 +3282,7 @@ int select_nohz_load_balancer(int stop_t
+ 			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
+ 				BUG();
+ 
+-			return 0;
++			return;
+ 		}
+ 
+ 		cpumask_set_cpu(cpu, nohz.idle_cpus_mask);
+@@ -3297,7 +3297,7 @@ int select_nohz_load_balancer(int stop_t
+ 
+ 			/* make me the ilb owner */
+ 			if (atomic_cmpxchg(&nohz.load_balancer, -1, cpu) != -1)
+-				return 0;
++				return;
+ 
+ 			/*
+ 			 * Check to see if there is a more power-efficient
+@@ -3307,13 +3307,13 @@ int select_nohz_load_balancer(int stop_t
+ 			if (new_ilb < nr_cpu_ids && new_ilb != cpu) {
+ 				atomic_set(&nohz.load_balancer, -1);
+ 				resched_cpu(new_ilb);
+-				return 0;
++				return;
+ 			}
+-			return 0;
++			return;
+ 		}
+ 	} else {
+ 		if (!cpumask_test_cpu(cpu, nohz.idle_cpus_mask))
+-			return 0;
++			return;
+ 
+ 		cpumask_clear_cpu(cpu, nohz.idle_cpus_mask);
+ 
+@@ -3321,7 +3321,7 @@ int select_nohz_load_balancer(int stop_t
+ 			if (atomic_cmpxchg(&nohz.load_balancer, cpu, -1) != cpu)
+ 				BUG();
+ 	}
+-	return 0;
++	return;
  }
-Index: tip/kernel/sched.c
-===================================================================
---- tip.orig/kernel/sched.c
-+++ tip/kernel/sched.c
-@@ -1201,6 +1201,19 @@ static void resched_cpu(int cpu)
- }
- 
- #ifdef CONFIG_NO_HZ
-+int get_nohz_timer_target(void)
-+{
-+	int cpu = smp_processor_id();
-+	int i;
-+	struct sched_domain *sd;
-+
-+	for_each_domain(cpu, sd) {
-+		for_each_cpu(i, sched_domain_span(sd))
-+			if (!idle_cpu(i))
-+				return i;
-+	}
-+	return cpu;
-+}
- /*
-  * When add_timer_on() enqueues a timer into the timer wheel of an
-  * idle CPU then this timer might expire before the next timer event
-Index: tip/kernel/timer.c
-===================================================================
---- tip.orig/kernel/timer.c
-+++ tip/kernel/timer.c
-@@ -679,12 +679,8 @@ __mod_timer(struct timer_list *timer, un
- 	cpu = smp_processor_id();
- 
- #if defined(CONFIG_NO_HZ) && defined(CONFIG_SMP)
--	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu)) {
--		int preferred_cpu = get_nohz_load_balancer();
--
--		if (preferred_cpu < nr_cpu_ids)
--			cpu = preferred_cpu;
--	}
-+	if (!pinned && get_sysctl_timer_migration() && idle_cpu(cpu))
-+		cpu = get_nohz_timer_target();
  #endif
- 	new_base = per_cpu(tvec_bases, cpu);
  
+Index: tip/kernel/time/tick-sched.c
+===================================================================
+--- tip.orig/kernel/time/tick-sched.c
++++ tip/kernel/time/tick-sched.c
+@@ -408,13 +408,7 @@ void tick_nohz_stop_sched_tick(int inidl
+ 		 * the scheduler tick in nohz_restart_sched_tick.
+ 		 */
+ 		if (!ts->tick_stopped) {
+-			if (select_nohz_load_balancer(1)) {
+-				/*
+-				 * sched tick not stopped!
+-				 */
+-				cpumask_clear_cpu(cpu, nohz_cpu_mask);
+-				goto out;
+-			}
++			select_nohz_load_balancer(1);
+ 
+ 			ts->idle_tick = hrtimer_get_expires(&ts->sched_timer);
+ 			ts->tick_stopped = 1;
 Index: tip/include/linux/sched.h
 ===================================================================
 --- tip.orig/include/linux/sched.h
 +++ tip/include/linux/sched.h
-@@ -273,7 +273,7 @@ extern void task_rq_unlock_wait(struct t
+@@ -272,14 +272,11 @@ extern void task_rq_unlock_wait(struct t
+ 
  extern cpumask_var_t nohz_cpu_mask;
  #if defined(CONFIG_SMP) && defined(CONFIG_NO_HZ)
- extern void select_nohz_load_balancer(int stop_tick);
--extern int get_nohz_load_balancer(void);
-+extern int get_nohz_timer_target(void);
+-extern int select_nohz_load_balancer(int cpu);
++extern void select_nohz_load_balancer(int stop_tick);
+ extern int get_nohz_load_balancer(void);
  extern int nohz_ratelimit(int cpu);
  #else
- static inline void select_nohz_load_balancer(int stop_tick) { }
+-static inline int select_nohz_load_balancer(int cpu)
+-{
+-	return 0;
+-}
++static inline void select_nohz_load_balancer(int stop_tick) { }
+ 
+ static inline int nohz_ratelimit(int cpu)
+ {
 
 
