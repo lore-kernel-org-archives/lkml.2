@@ -1,63 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752759Ab0EQL6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 07:58:09 -0400
-Received: from mailhost.elitecore.com ([203.88.135.194]:45222 "EHLO
-	elitecore.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751090Ab0EQL6H (ORCPT
+	id S1754918Ab0EQL6T (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 07:58:19 -0400
+Received: from mail-iw0-f179.google.com ([209.85.214.179]:34726 "EHLO
+	mail-iw0-f179.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754068Ab0EQL6Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 07:58:07 -0400
-X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 07:58:06 EDT
-Message-ID: <4BF17B0A.70309@elitecore.com>
-Date: Mon, 17 May 2010 22:51:14 +0530
-From: krunal <krunal.patel@elitecore.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 17 May 2010 07:58:16 -0400
+X-Greylist: delayed 490 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 07:58:16 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=BjAHa8mgcrE74lyanGHB0tkZEYjYQMFft8y5HvAsrnjY7z12r7ruhN+wjgsjQzUPZn
+         Scq/NboBWv1dqxkHGn1WHHaC8NEW1nKgeVp7v8awk10WbeiEab6L5kjXDxwBDXeeHD1s
+         kdq5FHRjCkgQifGykM67C791g7jeHLyZR0e80=
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: e100 driver not working when bridge and vlan configured.
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1274074364-8838-2-git-send-email-ngupta@vflare.org>
+References: <1274074364-8838-1-git-send-email-ngupta@vflare.org>
+	 <1274074364-8838-2-git-send-email-ngupta@vflare.org>
+Date: Mon, 17 May 2010 20:50:03 +0900
+Message-ID: <AANLkTikvu85a6Ckl-iJaF_iHlCCsK9tMRYoT21EeZ_CV@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Add flag to identify block swap devices
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Nitin Gupta <ngupta@vflare.org>
+Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have seen this bug in many threads also checked 
-"http://www.mailinglistarchive.com/xen-users@lists.xensource.com/msg19768.html", 
-but nothing works for me.
+On Mon, May 17, 2010 at 2:32 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+> Added SWP_BLKDEV flag to distinguish block and regular file backed
+> swap devices. We could also check if a swap is entire block device,
+> rather than a file, by:
+> S_ISBLK(swap_info_struct->swap_file->f_mapping->host->i_mode)
+> but, I think, simply checking this flag is more convenient.
+>
+> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-I am having 4 nics, driver for 2 nics is e1000 and 2 nics is e100.
+We can enhance swap_show by the flag as further patch.
 
-Setup
-( 192.168.1.1)br0-----------eth0
-                         |-------------eth1
-
-traffic flows through my bridge machine and i can ping 192.168.1.1, vlan 
-traffic also pass through it.
-
-I am not able to ping 192.168.1.1 using vlan interface
-
-so i created and added vlan interfaces to bridge
-( 192.168.1.1)br0-----------eth0
-                         |-------------eth1
-                         |-------------eth0.3
-                         |-------------eth1.3
-
-Still i am not able to ping 192.168.1.1.
-
-I then removed eth0, and eth1 from br0
-( 192.168.1.1)br0-----------eth0.3
-                         |-------------eth1.3
-
-Now I am able to ping 192.168.1.1
-
-My kernel is linux-2.6.27.45 and e100 driver is "3.5.23-k4-NAPI" which 
-comes with kernel.
-
-
-Same scenario works fine with e1000 driver.
-
-This bug is already reported and i am not able to find any patch for it.
-
-
-Regards,
-Krunal
+-- 
+Kind regards,
+Minchan Kim
