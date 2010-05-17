@@ -1,124 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756585Ab0EQXKE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:10:04 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:41603 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752171Ab0EQXKA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:10:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:content-type;
-        b=YNz80YD+d/rK5mg88/iiO9BU5EY56FpcYOAxqxKtHT7/gybIXzb8bP/aCvuFZ/I1Sp
-         pqh6o1lQZe4k2QxvkP0kfROCSo6UABay7m4AS5cwvWNb4EIQw+jR4U9GUpDp/irbS8fk
-         aq2zAfnBRAeBx3zAk9XmmrUI8SUni1aXUV6Pg=
+	id S1756681Ab0EQXKS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:10:18 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:59032 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756620Ab0EQXKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:10:16 -0400
+Date: Tue, 18 May 2010 01:09:43 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [GIT PULL] x86/mm change for v2.6.35
+Message-ID: <20100517230943.GA7541@elte.hu>
 MIME-Version: 1.0
-From: Michal Bozon <michal.bozon@gmail.com>
-Date: Tue, 18 May 2010 01:09:39 +0200
-Message-ID: <AANLkTinY3FxiBFoFwK20sGp2YU9N9WHgOsY03F1HpH_G@mail.gmail.com>
-Subject: [PATCH] leds: separate read/write ide-disk triggers
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: multipart/mixed; boundary=0016367fb13fea01380486d25216
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---0016367fb13fea01380486d25216
-Content-Type: text/plain; charset=UTF-8
+Linus,
 
-here is a humble extension of leds module, adding separate
-"ide-disk-read" and "ide-disk-write" triggers to existing "ide-disk"
-one.
+Please pull the latest x86-mm-for-linus git tree from:
 
-tested on pc engines ALIX.3c3 board, kernel 2.6.32, patches smoothly
-current 2.6.34 as well
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-mm-for-linus
 
-following scenario configures the three leds on ALIX board as
-heartbeat, ide-read and ide-write indicators, respectively:
+ Thanks,
 
-modprobe leds-alix2 force=1
-modprobe ledtrig-heartbeat # not relevant to this patch
-echo heartbeat > /sys/class/leds/"alix:1"/
-trigger # not relevant to this patch
-echo ide-disk-read > /sys/class/leds/"alix:2"/trigger
-echo ide-disk-write > /sys/class/leds/"alix:3"/trigger
+	Ingo
 
---0016367fb13fea01380486d25216
-Content-Type: text/x-diff; charset=US-ASCII; name="led-triggers-ide-disk-read-write.patch"
-Content-Disposition: attachment; 
-	filename="led-triggers-ide-disk-read-write.patch"
-Content-Transfer-Encoding: base64
-X-Attachment-Id: f_g9bwpbx00
+------------------>
+Jan Beulich (1):
+      x86-64: Combine SRAT regions when possible
 
-LS0tIGxpbnV4LXNvdXJjZS0yLjYuMzIvZHJpdmVycy9pZGUvaWRlLWRpc2suY19vcmlnXwkyMDEw
-LTA1LTE3IDIyOjExOjA3LjAwMDAwMDAwMCArMDIwMAorKysgbGludXgtc291cmNlLTIuNi4zMi9k
-cml2ZXJzL2lkZS9pZGUtZGlzay5jCTIwMTAtMDUtMTcgMjI6MzM6NDEuMDAwMDAwMDAwICswMjAw
-CkBAIC0xODgsNiArMTg4LDEyIEBAIHN0YXRpYyBpZGVfc3RhcnRzdG9wX3QgaWRlX2RvX3J3X2Rp
-c2soaWQKIAogCWxlZHRyaWdfaWRlX2FjdGl2aXR5KCk7CiAKKwlpZiAocnFfZGF0YV9kaXIocnEp
-ID09IFJFQUQpIHsKKwkJbGVkdHJpZ19pZGVfcmVhZF9hY3Rpdml0eSgpOworCX0gZWxzZSB7CisJ
-CWxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2aXR5KCk7CisJfQorCiAJcHJfZGVidWcoIiVzOiAlc2lu
-ZzogYmxvY2s9JWxsdSwgc2VjdG9ycz0ldSwgYnVmZmVyPTB4JTA4bHhcbiIsCiAJCSBkcml2ZS0+
-bmFtZSwgcnFfZGF0YV9kaXIocnEpID09IFJFQUQgPyAicmVhZCIgOiAid3JpdCIsCiAJCSAodW5z
-aWduZWQgbG9uZyBsb25nKWJsb2NrLCBibGtfcnFfc2VjdG9ycyhycSksCi0tLSBsaW51eC1zb3Vy
-Y2UtMi42LjMyL2luY2x1ZGUvbGludXgvbGVkcy5oX29yaWdfCTIwMTAtMDUtMTcgMjI6Mjk6MDIu
-MDAwMDAwMDAwICswMjAwCisrKyBsaW51eC1zb3VyY2UtMi42LjMyL2luY2x1ZGUvbGludXgvbGVk
-cy5oCTIwMTAtMDUtMTcgMjI6MzA6MDUuMDAwMDAwMDAwICswMjAwCkBAIC0xMjEsOCArMTIxLDEy
-IEBAIGV4dGVybiB2b2lkIGxlZF90cmlnZ2VyX2V2ZW50KHN0cnVjdCBsZWQKIC8qIFRyaWdnZXIg
-c3BlY2lmaWMgZnVuY3Rpb25zICovCiAjaWZkZWYgQ09ORklHX0xFRFNfVFJJR0dFUl9JREVfRElT
-SwogZXh0ZXJuIHZvaWQgbGVkdHJpZ19pZGVfYWN0aXZpdHkodm9pZCk7CitleHRlcm4gdm9pZCBs
-ZWR0cmlnX2lkZV9yZWFkX2FjdGl2aXR5KHZvaWQpOworZXh0ZXJuIHZvaWQgbGVkdHJpZ19pZGVf
-d3JpdGVfYWN0aXZpdHkodm9pZCk7CiAjZWxzZQogI2RlZmluZSBsZWR0cmlnX2lkZV9hY3Rpdml0
-eSgpIGRvIHt9IHdoaWxlKDApCisjZGVmaW5lIGxlZHRyaWdfaWRlX3JlYWRfYWN0aXZpdHkoKSBk
-byB7fSB3aGlsZSgwKQorI2RlZmluZSBsZWR0cmlnX2lkZV93cml0ZV9hY3Rpdml0eSgpIGRvIHt9
-IHdoaWxlKDApCiAjZW5kaWYKIAogLyoKLS0tIGxpbnV4LXNvdXJjZS0yLjYuMzIvZHJpdmVycy9s
-ZWRzL2xlZHRyaWctaWRlLWRpc2suY19vcmlnXwkyMDEwLTA1LTE3IDIyOjE1OjUyLjAwMDAwMDAw
-MCArMDIwMAorKysgbGludXgtc291cmNlLTIuNi4zMi9kcml2ZXJzL2xlZHMvbGVkdHJpZy1pZGUt
-ZGlzay5jCTIwMTAtMDUtMTcgMjI6MzU6MjcuMDAwMDAwMDAwICswMjAwCkBAIC0xOSwxMSArMTks
-MjEgQEAKICNpbmNsdWRlIDxsaW51eC9sZWRzLmg+CiAKIHN0YXRpYyB2b2lkIGxlZHRyaWdfaWRl
-X3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpOworc3RhdGljIHZvaWQgbGVkdHJpZ19pZGVf
-cmVhZF90aW1lcmZ1bmModW5zaWduZWQgbG9uZyBkYXRhKTsKK3N0YXRpYyB2b2lkIGxlZHRyaWdf
-aWRlX3dyaXRlX3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpOwogCiBERUZJTkVfTEVEX1RS
-SUdHRVIobGVkdHJpZ19pZGUpOworREVGSU5FX0xFRF9UUklHR0VSKGxlZHRyaWdfaWRlX3JlYWQp
-OworREVGSU5FX0xFRF9UUklHR0VSKGxlZHRyaWdfaWRlX3dyaXRlKTsKIHN0YXRpYyBERUZJTkVf
-VElNRVIobGVkdHJpZ19pZGVfdGltZXIsIGxlZHRyaWdfaWRlX3RpbWVyZnVuYywgMCwgMCk7Citz
-dGF0aWMgREVGSU5FX1RJTUVSKGxlZHRyaWdfaWRlX3JlYWRfdGltZXIsIGxlZHRyaWdfaWRlX3Jl
-YWRfdGltZXJmdW5jLCAwLCAwKTsKK3N0YXRpYyBERUZJTkVfVElNRVIobGVkdHJpZ19pZGVfd3Jp
-dGVfdGltZXIsIGxlZHRyaWdfaWRlX3dyaXRlX3RpbWVyZnVuYywgMCwgMCk7CiBzdGF0aWMgaW50
-IGlkZV9hY3Rpdml0eTsKIHN0YXRpYyBpbnQgaWRlX2xhc3RhY3Rpdml0eTsKK3N0YXRpYyBpbnQg
-aWRlX3JlYWRfYWN0aXZpdHk7CitzdGF0aWMgaW50IGlkZV9yZWFkX2xhc3RhY3Rpdml0eTsKK3N0
-YXRpYyBpbnQgaWRlX3dyaXRlX2FjdGl2aXR5Oworc3RhdGljIGludCBpZGVfd3JpdGVfbGFzdGFj
-dGl2aXR5OwogCiB2b2lkIGxlZHRyaWdfaWRlX2FjdGl2aXR5KHZvaWQpCiB7CkBAIC0zMyw2ICs0
-MywyMiBAQCB2b2lkIGxlZHRyaWdfaWRlX2FjdGl2aXR5KHZvaWQpCiB9CiBFWFBPUlRfU1lNQk9M
-KGxlZHRyaWdfaWRlX2FjdGl2aXR5KTsKIAordm9pZCBsZWR0cmlnX2lkZV9yZWFkX2FjdGl2aXR5
-KHZvaWQpCit7CisJaWRlX3JlYWRfYWN0aXZpdHkrKzsKKwlpZiAoIXRpbWVyX3BlbmRpbmcoJmxl
-ZHRyaWdfaWRlX3JlYWRfdGltZXIpKQorCQltb2RfdGltZXIoJmxlZHRyaWdfaWRlX3JlYWRfdGlt
-ZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7Cit9CitFWFBPUlRfU1lNQk9MKGxl
-ZHRyaWdfaWRlX3JlYWRfYWN0aXZpdHkpOworCit2b2lkIGxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2
-aXR5KHZvaWQpCit7CisJaWRlX3dyaXRlX2FjdGl2aXR5Kys7CisJaWYgKCF0aW1lcl9wZW5kaW5n
-KCZsZWR0cmlnX2lkZV93cml0ZV90aW1lcikpCisJCW1vZF90aW1lcigmbGVkdHJpZ19pZGVfd3Jp
-dGVfdGltZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7Cit9CitFWFBPUlRfU1lN
-Qk9MKGxlZHRyaWdfaWRlX3dyaXRlX2FjdGl2aXR5KTsKKwogc3RhdGljIHZvaWQgbGVkdHJpZ19p
-ZGVfdGltZXJmdW5jKHVuc2lnbmVkIGxvbmcgZGF0YSkKIHsKIAlpZiAoaWRlX2xhc3RhY3Rpdml0
-eSAhPSBpZGVfYWN0aXZpdHkpIHsKQEAgLTQ1LDkgKzcxLDM1IEBAIHN0YXRpYyB2b2lkIGxlZHRy
-aWdfaWRlX3RpbWVyZnVuYyh1bnNpZ24KIAl9CiB9CiAKK3N0YXRpYyB2b2lkIGxlZHRyaWdfaWRl
-X3JlYWRfdGltZXJmdW5jKHVuc2lnbmVkIGxvbmcgZGF0YSkKK3sKKwlpZiAoaWRlX3JlYWRfbGFz
-dGFjdGl2aXR5ICE9IGlkZV9yZWFkX2FjdGl2aXR5KSB7CisJCWlkZV9yZWFkX2xhc3RhY3Rpdml0
-eSA9IGlkZV9yZWFkX2FjdGl2aXR5OworCQkvKiBJTlRfTUFYIHdpbGwgc2V0IGVhY2ggTEVEIHRv
-IGl0cyBtYXhpbXVtIGJyaWdodG5lc3MgKi8KKwkJbGVkX3RyaWdnZXJfZXZlbnQobGVkdHJpZ19p
-ZGVfcmVhZCwgSU5UX01BWCk7CisJCW1vZF90aW1lcigmbGVkdHJpZ19pZGVfcmVhZF90aW1lciwg
-amlmZmllcyArIG1zZWNzX3RvX2ppZmZpZXMoMTApKTsKKwl9IGVsc2UgeworCQlsZWRfdHJpZ2dl
-cl9ldmVudChsZWR0cmlnX2lkZV9yZWFkLCBMRURfT0ZGKTsKKwl9Cit9CisKK3N0YXRpYyB2b2lk
-IGxlZHRyaWdfaWRlX3dyaXRlX3RpbWVyZnVuYyh1bnNpZ25lZCBsb25nIGRhdGEpCit7CisJaWYg
-KGlkZV93cml0ZV9sYXN0YWN0aXZpdHkgIT0gaWRlX3dyaXRlX2FjdGl2aXR5KSB7CisJCWlkZV93
-cml0ZV9sYXN0YWN0aXZpdHkgPSBpZGVfd3JpdGVfYWN0aXZpdHk7CisJCS8qIElOVF9NQVggd2ls
-bCBzZXQgZWFjaCBMRUQgdG8gaXRzIG1heGltdW0gYnJpZ2h0bmVzcyAqLworCQlsZWRfdHJpZ2dl
-cl9ldmVudChsZWR0cmlnX2lkZV93cml0ZSwgSU5UX01BWCk7CisJCW1vZF90aW1lcigmbGVkdHJp
-Z19pZGVfd3JpdGVfdGltZXIsIGppZmZpZXMgKyBtc2Vjc190b19qaWZmaWVzKDEwKSk7CisJfSBl
-bHNlIHsKKwkJbGVkX3RyaWdnZXJfZXZlbnQobGVkdHJpZ19pZGVfd3JpdGUsIExFRF9PRkYpOwor
-CX0KK30KKwogc3RhdGljIGludCBfX2luaXQgbGVkdHJpZ19pZGVfaW5pdCh2b2lkKQogewogCWxl
-ZF90cmlnZ2VyX3JlZ2lzdGVyX3NpbXBsZSgiaWRlLWRpc2siLCAmbGVkdHJpZ19pZGUpOworCWxl
-ZF90cmlnZ2VyX3JlZ2lzdGVyX3NpbXBsZSgiaWRlLWRpc2stcmVhZCIsICZsZWR0cmlnX2lkZV9y
-ZWFkKTsKKwlsZWRfdHJpZ2dlcl9yZWdpc3Rlcl9zaW1wbGUoImlkZS1kaXNrLXdyaXRlIiwgJmxl
-ZHRyaWdfaWRlX3dyaXRlKTsKIAlyZXR1cm4gMDsKIH0KIAo=
---0016367fb13fea01380486d25216--
+
+ arch/x86/mm/srat_64.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 48 insertions(+), 0 deletions(-)
+
+diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
+index 28c6876..3ebe651 100644
+--- a/arch/x86/mm/srat_64.c
++++ b/arch/x86/mm/srat_64.c
+@@ -363,6 +363,54 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
+ 	for (i = 0; i < MAX_NUMNODES; i++)
+ 		cutoff_node(i, start, end);
+ 
++	/*
++	 * Join together blocks on the same node, holes between
++	 * which don't overlap with memory on other nodes.
++	 */
++	for (i = 0; i < num_node_memblks; ++i) {
++		int j, k;
++
++		for (j = i + 1; j < num_node_memblks; ++j) {
++			unsigned long start, end;
++
++			if (memblk_nodeid[i] != memblk_nodeid[j])
++				continue;
++			start = min(node_memblk_range[i].end,
++			            node_memblk_range[j].end);
++			end = max(node_memblk_range[i].start,
++			          node_memblk_range[j].start);
++			for (k = 0; k < num_node_memblks; ++k) {
++				if (memblk_nodeid[i] == memblk_nodeid[k])
++					continue;
++				if (start < node_memblk_range[k].end &&
++				    end > node_memblk_range[k].start)
++					break;
++			}
++			if (k < num_node_memblks)
++				continue;
++			start = min(node_memblk_range[i].start,
++			            node_memblk_range[j].start);
++			end = max(node_memblk_range[i].end,
++			          node_memblk_range[j].end);
++			printk(KERN_INFO "SRAT: Node %d "
++			       "[%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
++			       memblk_nodeid[i],
++			       node_memblk_range[i].start,
++			       node_memblk_range[i].end,
++			       node_memblk_range[j].start,
++			       node_memblk_range[j].end,
++			       start, end);
++			node_memblk_range[i].start = start;
++			node_memblk_range[i].end = end;
++			k = --num_node_memblks - j;
++			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
++				k * sizeof(*memblk_nodeid));
++			memmove(node_memblk_range + j, node_memblk_range + j+1,
++				k * sizeof(*node_memblk_range));
++			--j;
++		}
++	}
++
+ 	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
+ 					   memblk_nodeid);
+ 	if (memnode_shift < 0) {
