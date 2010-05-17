@@ -1,96 +1,167 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab0EQPS3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:18:29 -0400
-Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:55433 "EHLO
-	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753833Ab0EQPS1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:18:27 -0400
-Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
- requested
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
-Reply-To: <sundar.iyer@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>
-In-Reply-To: <1274108214.20589.28.camel@bnru01>
-References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
-	 <20100517144411.GD5257@opensource.wolfsonmicro.com>
-	 <1274108214.20589.28.camel@bnru01>
-Content-Type: text/plain
-Organization: STEricsson
-Date: Mon, 17 May 2010 20:45:45 +0530
-Message-ID: <1274109402.20589.39.camel@bnru01>
+	id S1753556Ab0EQPYs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:24:48 -0400
+Received: from toro.web-alm.net ([62.245.132.31]:55151 "EHLO toro.web-alm.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752530Ab0EQPYq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 11:24:46 -0400
+Message-ID: <4BF15F08.5050108@osadl.org>
+Date: Mon, 17 May 2010 17:21:44 +0200
+From: Carsten Emde <C.Emde@osadl.org>
+Organization: Open Source Automation Development Lab (OSADL) eG
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-X-Mailer: Evolution 2.24.1 
-Content-Transfer-Encoding: 7bit
+To: Peter Zijlstra <peterz@infradead.org>
+CC: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: [PATCH 1/1] fix-task-states-in-sched_switch-event.patch
+References: <20100516221844.515632338@osadl.org>	 <20100516222207.541520625@osadl.org> <1274098973.5605.4695.camel@twins>
+In-Reply-To: <1274098973.5605.4695.camel@twins>
+Content-Type: multipart/mixed;
+ boundary="------------010907070203060209030807"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 16:56 +0200, Sundar R IYER wrote:
-> Oops. My bad. I messed by typoing up the commit message.
-> Okay. I will add a sanity check for that.
-> Okay. I came up across this and hence the change. This is intended when
-> the same mode is requested! I will edit the commit message appropriately.
+This is a multi-part message in MIME format.
+--------------010907070203060209030807
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Please find the updated patch below:
+Hi Peter,
 
->From edab94fefd2e9087f4c27df8d352097ddda2dac0 Mon Sep 17 00:00:00 2001
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
-Date: Fri, 14 May 2010 15:14:17 +0530
-Subject: [PATCH 1/1] regulator: return set_mode when same mode is
-requested
+>>   #define TASK_RUNNING           0
+>> +#define TASK_STATE_0           "R"
+>> +#define TASK_STATE_NAME_0      "running"
+>> +
+>>   #define TASK_INTERRUPTIBLE     1
+>> +#define TASK_STATE_1           "S"
+>> +#define TASK_STATE_NAME_1      "sleeping"
+>> +
+>>   #define TASK_UNINTERRUPTIBLE   2
+>> +#define TASK_STATE_2           "D"
+>> +#define TASK_STATE_NAME_2      "disk sleep"
+>> +
+>>   #define __TASK_STOPPED         4
+>> +#define TASK_STATE_4           "T"
+>> +#define TASK_STATE_NAME_4      "stopped"
+>> +
+>>   #define __TASK_TRACED          8
+>> +#define TASK_STATE_8           "t"
+>> +#define TASK_STATE_NAME_8      "tracing stop"
+>> +
+>>   /* in tsk->exit_state */
+>>   #define EXIT_ZOMBIE            16
+>> +#define TASK_STATE_16          "Z"
+>> +#define TASK_STATE_NAME_16     "zombie"
+>> +
+>>   #define EXIT_DEAD              32
+>> +#define TASK_STATE_32          "X"
+>> +#define TASK_STATE_NAME_32     "dead"
+>> +
+>>   /* in tsk->state again */
+>>   #define TASK_DEAD              64
+>> +#define TASK_STATE_64          "x"
+>> +#define TASK_STATE_NAME_64     "dead"
+>> +
+>>   #define TASK_WAKEKILL          128
+>> +#define TASK_STATE_128         "K"
+>> +#define TASK_STATE_NAME_128    "wakekill"
+>> +
+>>   #define TASK_WAKING            256
+>> +#define TASK_STATE_256         "W"
+>> +#define TASK_STATE_NAME_256    "waking"
+>
+> Since we all love vile macro magic, is the below any better?
+>
+> include/linux/task_states.h
+>
+> TASK_STATE(RUNNING, "R", "running")
+> TASK_STATE(INTERRUPTIBLE, "S", "sleeping")
+> ...
+Well, yes, this looks very nice and is perfectly readable and
+maintainable.
 
-save I/O costs by returning when the same mode is
-requested for the regulator
+> enum {
+> #define TASK_STATE(tstate, tstate_c, tstate_s) __TASK_##tstate,
+> #include<linux/task_states.h>
+> #undef TASK_STATE
+> };
+>
+> enum {
+> #define TASK_STATE(tstate, tstate_c, tstate_s) \
+> 	TASK_##tstate = 1<<  __TASK_##tstate,
+> #include<linux/task_states.h>
+> #undef TASK_STATE
+> };
+>
+> const char *task_state_to_char =
+> #define TASK_STATE(tstate, tstate_c, tstate_s) tstate_c
+> #include<linux/task_states.h>
+> #undef TASK_STATE
+> ;
+>
+> const char *task_state_to_string[] = {
+> #define TASK_STATE(tstate, tstate_c, tstate_s) tstate_s,
+> #include<linux/task_states.h>
+> #undef TASK_STATE
+> };
+I find this section less convincing (although certainly
+indistinguishable from magic).
 
-Cc: Liam Girdwood <lrg@slimlogic.co.uk>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Sundar R Iyer <sundar.iyer@stericsson.com>
----
- drivers/regulator/core.c |   14 ++++++++++++++
- 1 files changed, 14 insertions(+), 0 deletions(-)
+In addition, we need to take care of the various state name prefixes
+TASK, __TASK and EXIT and name clashes:
+TASK_RUNNING
+TASK_INTERRUPTIBLE
+TASK_UNINTERRUPTIBLE
+__TASK_STOPPED
+__TASK_TRACED
+EXIT_ZOMBIE
+EXIT_DEAD
+TASK_DEAD
+TASK_WAKEKILL
+TASK_WAKING
 
-diff --git a/drivers/regulator/core.c b/drivers/regulator/core.c
-index 98e5d14..9cb21cd 100644
---- a/drivers/regulator/core.c
-+++ b/drivers/regulator/core.c
-@@ -1745,6 +1745,7 @@ int regulator_set_mode(struct regulator
-*regulator, unsigned int mode)
- {
- 	struct regulator_dev *rdev = regulator->rdev;
- 	int ret;
-+	int regulator_curr_mode;
- 
- 	mutex_lock(&rdev->mutex);
- 
-@@ -1754,6 +1755,19 @@ int regulator_set_mode(struct regulator
-*regulator, unsigned int mode)
- 		goto out;
- 	}
- 
-+	/* sanity check */
-+	if (!rdev->desc->ops->get_mode) {
-+		ret = -EINVAL;
-+		goto out;
-+	}
-+
-+	/* return if the same mode is requested */
-+	regulator_curr_mode = rdev->desc->ops->get_mode(rdev);
-+	if (regulator_curr_mode == mode) {
-+		ret = 0;
-+		goto out;
-+	}
-+
- 	/* constraints check */
- 	ret = regulator_check_mode(rdev, mode);
- 	if (ret < 0)
--- 
-1.7.0
+And we still need to maintain the defines in include/trace/events/
+sched.h:
+{ 1, TASK_STATE_1 } , { 2, TASK_STATE_2 },
+{ 4, TASK_STATE_4 }, { 8, TASK_STATE_8 },
+{ 16, TASK_STATE_16 }, { 32, TASK_STATE_32 },
+{ 64, TASK_STATE_64 }, { 128, TASK_STATE_128 },
+{ 256, TASK_STATE_256 }
+) : TASK_STATE_0,
+
+If we could use a general approach for all states, I would immediately
+go for your proposal. But since we anyway need to define the states
+individually, I would vote for the current version of the patch.
+
+Or would you prefer to simply apply a minimal fix to correct the
+erroneous output of the sched_switch event and to leave the rest as an
+exercise for the future?
 
 
+	Carsten.
+
+--------------010907070203060209030807
+Content-Type: text/plain;
+ name="fix-just-task-states-in-sched_switch-event.patch"
+Content-Transfer-Encoding: base64
+Content-Disposition: attachment;
+ filename="fix-just-task-states-in-sched_switch-event.patch"
+
+LS0tCiBpbmNsdWRlL3RyYWNlL2V2ZW50cy9zY2hlZC5oIHwgICAgMiArLQogMSBmaWxlIGNo
+YW5nZWQsIDEgaW5zZXJ0aW9uKCspLCAxIGRlbGV0aW9uKC0pCgpJbmRleDogaGVhZC9pbmNs
+dWRlL3RyYWNlL2V2ZW50cy9zY2hlZC5oCj09PT09PT09PT09PT09PT09PT09PT09PT09PT09
+PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT09PT0KLS0tIGhlYWQub3JpZy9p
+bmNsdWRlL3RyYWNlL2V2ZW50cy9zY2hlZC5oCisrKyBoZWFkL2luY2x1ZGUvdHJhY2UvZXZl
+bnRzL3NjaGVkLmgKQEAgLTE1MSw3ICsxNTEsNyBAQCBUUkFDRV9FVkVOVChzY2hlZF9zd2l0
+Y2gsCiAJCSAgX19wcmludF9mbGFncyhfX2VudHJ5LT5wcmV2X3N0YXRlLCAifCIsCiAJCQkJ
+eyAxLCAiUyJ9ICwgeyAyLCAiRCIgfSwgeyA0LCAiVCIgfSwgeyA4LCAidCIgfSwKIAkJCQl7
+IDE2LCAiWiIgfSwgeyAzMiwgIlgiIH0sIHsgNjQsICJ4IiB9LAotCQkJCXsgMTI4LCAiVyIg
+fSkgOiAiUiIsCisJCQkJeyAxMjgsICJLIiB9LCB7IDI1NiwgIlciIH0pIDogIlIiLAogCQlf
+X2VudHJ5LT5uZXh0X2NvbW0sIF9fZW50cnktPm5leHRfcGlkLCBfX2VudHJ5LT5uZXh0X3By
+aW8pCiApOwogCg==
+--------------010907070203060209030807--
