@@ -1,188 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755441Ab0EQM6e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 08:58:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49825 "EHLO mx1.redhat.com"
+	id S1755312Ab0EQM6h (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 08:58:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20052 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755335Ab0EQM6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 08:58:11 -0400
+	id S1755341Ab0EQM6M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 08:58:12 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Abhijith Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 08/11] GFS2: Fix writing to non-page aligned gfs2_quota structures
-Date: Mon, 17 May 2010 13:40:22 +0100
-Message-Id: <1274100025-26629-9-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1274100025-26629-8-git-send-email-swhiteho@redhat.com>
+Cc: Christoph Hellwig <hch@lst.de>, Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 06/11] GFS2: fix quota state reporting
+Date: Mon, 17 May 2010 13:40:20 +0100
+Message-Id: <1274100025-26629-7-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1274100025-26629-6-git-send-email-swhiteho@redhat.com>
 References: <1274100025-26629-1-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-2-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-3-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-4-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-5-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-6-git-send-email-swhiteho@redhat.com>
- <1274100025-26629-7-git-send-email-swhiteho@redhat.com>
- <1274100025-26629-8-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijith Das <adas@redhat.com>
+From: Christoph Hellwig <hch@lst.de>
 
-This is the upstream fix for this bug. This patch differs
-from the RHEL5 fix (Red Hat bz #555754) which simply writes to the 8-byte
-value field of the quota. In upstream quota code, we're
-required to write the entire quota (88 bytes) which can be split
-across a page boundary. We check for such quotas, and read/write
-the two parts from/to the corresponding pages holding these parts.
+We need to report both the accounting and enforcing flags if we are
+in enforcing mode.
 
-With this patch, I don't see the bug anymore using the reproducer
-in Red Hat bz 555754. I successfully ran a couple of simple tests/mounts/
-umounts and it doesn't seem like this patch breaks anything else.
-
-Signed-off-by: Abhi Das <adas@redhat.com>
+Signed-off-by: Christoph Hellwig <hch@lst.de>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 ---
- fs/gfs2/quota.c |   86 +++++++++++++++++++++++++++++++++++++++----------------
- 1 files changed, 61 insertions(+), 25 deletions(-)
+ fs/gfs2/quota.c |   16 ++++++++++++----
+ 1 files changed, 12 insertions(+), 4 deletions(-)
 
 diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
-index 6ca0967..d5f4661 100644
+index 6dbcbad..6ca0967 100644
 --- a/fs/gfs2/quota.c
 +++ b/fs/gfs2/quota.c
-@@ -637,15 +637,40 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	unsigned blocksize, iblock, pos;
- 	struct buffer_head *bh, *dibh;
- 	struct page *page;
--	void *kaddr;
--	struct gfs2_quota *qp;
--	s64 value;
--	int err = -EIO;
-+	void *kaddr, *ptr;
-+	struct gfs2_quota q, *qp;
-+	int err, nbytes;
- 	u64 size;
+@@ -1418,10 +1418,18 @@ static int gfs2_quota_get_xstate(struct super_block *sb,
  
- 	if (gfs2_is_stuffed(ip))
- 		gfs2_unstuff_dinode(ip, NULL);
--	
+ 	memset(fqs, 0, sizeof(struct fs_quota_stat));
+ 	fqs->qs_version = FS_QSTAT_VERSION;
+-	if (sdp->sd_args.ar_quota == GFS2_QUOTA_ON)
+-		fqs->qs_flags = (XFS_QUOTA_UDQ_ENFD | XFS_QUOTA_GDQ_ENFD);
+-	else if (sdp->sd_args.ar_quota == GFS2_QUOTA_ACCOUNT)
+-		fqs->qs_flags = (XFS_QUOTA_UDQ_ACCT | XFS_QUOTA_GDQ_ACCT);
 +
-+	memset(&q, 0, sizeof(struct gfs2_quota));
-+	err = gfs2_internal_read(ip, NULL, (char *)&q, &loc, sizeof(q));
-+	if (err < 0)
-+		return err;
-+
-+	err = -EIO;
-+	qp = &q;
-+	qp->qu_value = be64_to_cpu(qp->qu_value);
-+	qp->qu_value += change;
-+	qp->qu_value = cpu_to_be64(qp->qu_value);
-+	qd->qd_qb.qb_value = qp->qu_value;
-+	if (fdq) {
-+		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
-+			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
-+			qd->qd_qb.qb_warn = qp->qu_warn;
-+		}
-+		if (fdq->d_fieldmask & FS_DQ_BHARD) {
-+			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
-+			qd->qd_qb.qb_limit = qp->qu_limit;
-+		}
++	switch (sdp->sd_args.ar_quota) {
++	case GFS2_QUOTA_ON:
++		fqs->qs_flags |= (XFS_QUOTA_UDQ_ENFD | XFS_QUOTA_GDQ_ENFD);
++		/*FALLTHRU*/
++	case GFS2_QUOTA_ACCOUNT:
++		fqs->qs_flags |= (XFS_QUOTA_UDQ_ACCT | XFS_QUOTA_GDQ_ACCT);
++		break;
++	case GFS2_QUOTA_OFF:
++		break;
 +	}
 +
-+	/* Write the quota into the quota file on disk */
-+	ptr = qp;
-+	nbytes = sizeof(struct gfs2_quota);
-+get_a_page:
- 	page = grab_cache_page(mapping, index);
- 	if (!page)
- 		return -ENOMEM;
-@@ -667,7 +692,12 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	if (!buffer_mapped(bh)) {
- 		gfs2_block_map(inode, iblock, bh, 1);
- 		if (!buffer_mapped(bh))
--			goto unlock;
-+			goto unlock_out;
-+		/* If it's a newly allocated disk block for quota, zero it */
-+		if (buffer_new(bh)) {
-+			memset(bh->b_data, 0, bh->b_size);
-+			set_buffer_uptodate(bh);
-+		}
- 	}
- 
- 	if (PageUptodate(page))
-@@ -677,32 +707,34 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 		ll_rw_block(READ_META, 1, &bh);
- 		wait_on_buffer(bh);
- 		if (!buffer_uptodate(bh))
--			goto unlock;
-+			goto unlock_out;
- 	}
- 
- 	gfs2_trans_add_bh(ip->i_gl, bh, 0);
- 
- 	kaddr = kmap_atomic(page, KM_USER0);
--	qp = kaddr + offset;
--	value = (s64)be64_to_cpu(qp->qu_value) + change;
--	qp->qu_value = cpu_to_be64(value);
--	qd->qd_qb.qb_value = qp->qu_value;
--	if (fdq) {
--		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
--			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
--			qd->qd_qb.qb_warn = qp->qu_warn;
--		}
--		if (fdq->d_fieldmask & FS_DQ_BHARD) {
--			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
--			qd->qd_qb.qb_limit = qp->qu_limit;
--		}
--	}
-+	if (offset + sizeof(struct gfs2_quota) > PAGE_CACHE_SIZE)
-+		nbytes = PAGE_CACHE_SIZE - offset;
-+	memcpy(kaddr + offset, ptr, nbytes);
- 	flush_dcache_page(page);
- 	kunmap_atomic(kaddr, KM_USER0);
-+	unlock_page(page);
-+	page_cache_release(page);
-+
-+	/* If quota straddles page boundary, we need to update the rest of the
-+	 * quota at the beginning of the next page */
-+	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
-+		ptr = ptr + nbytes;
-+		nbytes = sizeof(struct gfs2_quota) - nbytes;
-+		offset = 0;
-+		index++;
-+		goto get_a_page;
-+	}
- 
-+	/* Update the disk inode timestamp and size (if extended) */
- 	err = gfs2_meta_inode_buffer(ip, &dibh);
- 	if (err)
--		goto unlock;
-+		goto out;
- 
- 	size = loc + sizeof(struct gfs2_quota);
- 	if (size > inode->i_size) {
-@@ -715,7 +747,9 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
- 	brelse(dibh);
- 	mark_inode_dirty(inode);
- 
--unlock:
-+out:
-+	return err;
-+unlock_out:
- 	unlock_page(page);
- 	page_cache_release(page);
- 	return err;
-@@ -779,8 +813,10 @@ static int do_sync(unsigned int num_qd, struct gfs2_quota_data **qda)
- 	 * rgrp since it won't be allocated during the transaction
- 	 */
- 	al->al_requested = 1;
--	/* +1 in the end for block requested above for unstuffing */
--	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 1;
-+	/* +3 in the end for unstuffing block, inode size update block
-+	 * and another block in case quota straddles page boundary and 
-+	 * two blocks need to be updated instead of 1 */
-+	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 3;
- 
- 	if (nalloc)
- 		al->al_requested += nalloc * (data_blocks + ind_blocks);		
+ 	if (sdp->sd_quota_inode) {
+ 		fqs->qs_uquota.qfs_ino = GFS2_I(sdp->sd_quota_inode)->i_no_addr;
+ 		fqs->qs_uquota.qfs_nblks = sdp->sd_quota_inode->i_blocks;
 -- 
 1.6.2.5
 
