@@ -1,284 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754300Ab0EQKmo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 06:42:44 -0400
-Received: from smtp110.plus.mail.re1.yahoo.com ([69.147.102.73]:46561 "HELO
-	smtp110.plus.mail.re1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1752067Ab0EQKmm (ORCPT
+	id S1754413Ab0EQKrI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:47:08 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:27366 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751893Ab0EQKrE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 06:42:42 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.co.uk;
-  h=DKIM-Signature:Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:Reply-To:User-Agent:MIME-Version:To:CC:Subject:Content-Type:Content-Transfer-Encoding;
-  b=xv4nZaTFt3DlAGkxTVFKKGXpMwy+QLkjtgoornIFHOvHI7vvrJFjALQZDUAWYL8s1hF18CEHUgjVIcRQZDbtryhldBRRK1fnQV+PJkOP/V1pOoKI2XCEwEWMPxwNJrZRS4DUcKjWYB2oAm8iKGE6bZSVKRnpxTyhmgvVcv7xl1M=  ;
-X-Yahoo-SMTP: 7VYQSIiswBBpfI3oQQ5mbefGCpOrHbDC5qsO
-X-YMail-OSG: G8E.0MQVM1nBEd_lGLci8CuP7Xuf7vya7yLtzy1jOjxoCQR
- HKoS0ba0y0_5DktHjNU7QuZA43EaxeUwCtzVWvUT6CujsjfVYJSVtIeCZckO
- 5Bd1LXU6FUvpf6b7Bx9iMhL2T356yPU0mzsw5_P44SM7NLE_O1C11IPpzaj4
- uqpzws2BL_LfRmKEMNFescFD9w4MFPVyb1GzQZ_KzoFUHUMkpDglga5c8ztV
- ycBxPDkVJn_DBLeZrHp6AfywSn_.5uNyzwFIr45UEOUDKD7WoFn59iCs0FpB
- HYcz3EEXAcxP7mImgg4CmU.UDqwWUYriyvFrTjg588f4FOmmuOtakaibnJwv
- TRlOgwEfG6PpH__S1V_qtFzxQxV8KQ8SksczzbCjQuJ6BT31euj98sKnHGYV
- xUsnF3iDdFa2Ij3kNLdBFlXL5pbA09IsDePCCKi8ItVXsATttwOAgcGGi6AK
- xL1nnrw--
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4BF11D9F.80605@yahoo.co.uk>
-Date: Mon, 17 May 2010 11:42:39 +0100
-From: Don Prince <dhprince.devel@yahoo.co.uk>
-Reply-To: dhprince.devel@yahoo.co.uk
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100422 Mandriva/3.0.4-0.4mdv2010.0 (2010.0) Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Jiri Kosina <jkosina@suse.cz>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH 2.6.34-rc7 v4] HID: hid-samsung: add support for Creative
- Desktop Wireless 6000
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	Mon, 17 May 2010 06:47:04 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=cGqynIj/+L02lkmAbDU4zOVngm+8cGrddq3GSEKNHSC7/NZ4kpQMtCB3FJ+GSx3s4
+	IVxSixawQtKRZxqGLpnvg==
+Message-ID: <4bf11ea4.dd29e30a.026d.4627@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Mon, 17 May 2010 12:46:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com
+Subject: [PATCH] perf_events: fix errors path in perf_output_begin()
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for the multimedia buttons of the Creative Desktop Wireless
-6000 keyboard/mouse combo which are not currently handled by the
-default/samsung HID driver.
+  In case the sampling buffer has no "payload" pages, nr_pages is 0.
+  The problem is that the error path in perf_output_begin() skips to
+  a label which assumes perf_output_lock() has been issued which is
+  not the case. That triggers a WARN_ON() is perf_output_unlock().
 
-Signed-off-by: Don Prince <dhprince-devel@yahoo.co.uk>
+  This patch fixes the problem by adding a new label and skipping
+  perf_task_unlock() in case data->nr_pages is 0. 
 
----
+  Signed-off-by: Stephane Eranian <eranian@google.com>
 
-Added comments as requested by Robert Schedel <r.schedel@yahoo.de>
-
-As requested by Jiri Kosina, made key mapping code more concise
-i.e. ignored checkpatch.pl's wingeing about code style.
-
-
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
---- a/drivers/hid/hid-core.c	2010-05-15 15:38:23.938711974 +0100
-+++ b/drivers/hid/hid-core.c	2010-05-15 20:43:36.363484676 +0100
-@@ -1343,6 +1343,7 @@ static const struct hid_device_id hid_bl
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_QUANTA_OPTICAL_TOUCH) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_QUANTA, USB_DEVICE_ID_PIXART_IMAGING_INC_OPTICAL_TOUCH_SCREEN) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
- 	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_PS3_CONTROLLER) },
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SONY, USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE) },
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-ids.h b/drivers/hid/hid-ids.h
---- a/drivers/hid/hid-ids.h	2010-05-15 15:38:23.946652184 +0100
-+++ b/drivers/hid/hid-ids.h	2010-05-15 20:40:06.313485144 +0100
-@@ -409,6 +409,7 @@
+--
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index a4fa381..95137b6 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3035,8 +3035,10 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->nmi	= nmi;
+ 	handle->sample	= sample;
  
- #define USB_VENDOR_ID_SAMSUNG		0x0419
- #define USB_DEVICE_ID_SAMSUNG_IR_REMOTE	0x0001
-+#define USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE	0x0600
- 
- #define USB_VENDOR_ID_SONY			0x054c
- #define USB_DEVICE_ID_SONY_VAIO_VGX_MOUSE	0x024b
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-samsung.c b/drivers/hid/hid-samsung.c
---- a/drivers/hid/hid-samsung.c	2010-03-09 13:53:06.892466071 +0000
-+++ b/drivers/hid/hid-samsung.c	2010-05-17 11:01:26.772377750 +0100
-@@ -7,6 +7,18 @@
-  *  Copyright (c) 2006-2007 Jiri Kosina
-  *  Copyright (c) 2007 Paul Walmsley
-  *  Copyright (c) 2008 Jiri Slaby
-+ *  Copyright (c) 2010 Don Prince <dhprince.devel@yahoo.co.uk>
-+ *
-+ *
-+ *  This driver supports several HID devices:
-+ *
-+ *  [0419:0001] Samsung IrDA remote controller (reports as Cypress USB Mouse).
-+ *	various hid report fixups for different variants.
-+ *
-+ *  [0419:0600] Creative Desktop Wireless 6000 keyboard/mouse combo
-+ *	several key mappings used from the consumer usage page
-+ *	deviate from the USB HUT 1.12 standard.
-+ *
-  */
- 
- /*
-@@ -17,14 +29,13 @@
-  */
- 
- #include <linux/device.h>
-+#include <linux/usb.h>
- #include <linux/hid.h>
- #include <linux/module.h>
- 
- #include "hid-ids.h"
- 
- /*
-- * Samsung IrDA remote controller (reports as Cypress USB Mouse).
-- *
-  * There are several variants for 0419:0001:
-  *
-  * 1. 184 byte report descriptor
-@@ -43,21 +54,21 @@
-  * 4. 171 byte report descriptor
-  * Report #3 has an array field with logical range 0..1 instead of 1..3.
-  */
--static inline void samsung_dev_trace(struct hid_device *hdev,
-+static inline void samsung_irda_dev_trace(struct hid_device *hdev,
- 		unsigned int rsize)
- {
- 	dev_info(&hdev->dev, "fixing up Samsung IrDA %d byte report "
- 			"descriptor\n", rsize);
- }
- 
--static void samsung_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-+static void samsung_irda_report_fixup(struct hid_device *hdev, __u8 *rdesc,
- 		unsigned int rsize)
- {
- 	if (rsize == 184 && rdesc[175] == 0x25 && rdesc[176] == 0x40 &&
- 			rdesc[177] == 0x75 && rdesc[178] == 0x30 &&
- 			rdesc[179] == 0x95 && rdesc[180] == 0x01 &&
- 			rdesc[182] == 0x40) {
--		samsung_dev_trace(hdev, 184);
-+		samsung_irda_dev_trace(hdev, 184);
- 		rdesc[176] = 0xff;
- 		rdesc[178] = 0x08;
- 		rdesc[180] = 0x06;
-@@ -65,24 +76,87 @@ static void samsung_report_fixup(struct 
- 	} else
- 	if (rsize == 203 && rdesc[192] == 0x15 && rdesc[193] == 0x0 &&
- 			rdesc[194] == 0x25 && rdesc[195] == 0x12) {
--		samsung_dev_trace(hdev, 203);
-+		samsung_irda_dev_trace(hdev, 203);
- 		rdesc[193] = 0x1;
- 		rdesc[195] = 0xf;
- 	} else
- 	if (rsize == 135 && rdesc[124] == 0x15 && rdesc[125] == 0x0 &&
- 			rdesc[126] == 0x25 && rdesc[127] == 0x11) {
--		samsung_dev_trace(hdev, 135);
-+		samsung_irda_dev_trace(hdev, 135);
- 		rdesc[125] = 0x1;
- 		rdesc[127] = 0xe;
- 	} else
- 	if (rsize == 171 && rdesc[160] == 0x15 && rdesc[161] == 0x0 &&
- 			rdesc[162] == 0x25 && rdesc[163] == 0x01) {
--		samsung_dev_trace(hdev, 171);
-+		samsung_irda_dev_trace(hdev, 171);
- 		rdesc[161] = 0x1;
- 		rdesc[163] = 0x3;
- 	}
- }
- 
-+#define samsung_kbd_mouse_map_key_clear(c) \
-+	hid_map_usage_clear(hi, usage, bit, max, EV_KEY, (c))
-+
-+static int samsung_kbd_mouse_input_mapping(struct hid_device *hdev,
-+	struct hid_input *hi, struct hid_field *field, struct hid_usage *usage,
-+	unsigned long **bit, int *max)
-+{
-+	struct usb_interface *intf = to_usb_interface(hdev->dev.parent);
-+	unsigned short ifnum = intf->cur_altsetting->desc.bInterfaceNumber;
-+
-+	if (1 != ifnum || HID_UP_CONSUMER != (usage->hid & HID_USAGE_PAGE))
-+		return 0;
-+
-+	dbg_hid("samsung wireless keyboard/mouse input mapping event [0x%x]\n",
-+		usage->hid & HID_USAGE);
-+
-+	switch (usage->hid & HID_USAGE) {
-+	/* report 2 */
-+	case 0x0b5: samsung_kbd_mouse_map_key_clear(KEY_NEXTSONG); break;
-+	case 0x0b6: samsung_kbd_mouse_map_key_clear(KEY_PREVIOUSSONG); break;
-+	case 0x0b7: samsung_kbd_mouse_map_key_clear(KEY_STOPCD); break;
-+	case 0x0cd: samsung_kbd_mouse_map_key_clear(KEY_PLAYPAUSE); break;
-+	case 0x0e2: samsung_kbd_mouse_map_key_clear(KEY_MUTE); break;
-+	case 0x0e9: samsung_kbd_mouse_map_key_clear(KEY_VOLUMEUP); break;
-+	case 0x0ea: samsung_kbd_mouse_map_key_clear(KEY_VOLUMEDOWN); break;
-+	case 0x183: samsung_kbd_mouse_map_key_clear(KEY_MEDIA); break;
-+	case 0x195: samsung_kbd_mouse_map_key_clear(KEY_EMAIL);	break;
-+	case 0x196: samsung_kbd_mouse_map_key_clear(KEY_CALC); break;
-+	case 0x197: samsung_kbd_mouse_map_key_clear(KEY_COMPUTER); break;
-+	case 0x22b: samsung_kbd_mouse_map_key_clear(KEY_SEARCH); break;
-+	case 0x22c: samsung_kbd_mouse_map_key_clear(KEY_WWW); break;
-+	case 0x22d: samsung_kbd_mouse_map_key_clear(KEY_BACK); break;
-+	case 0x22e: samsung_kbd_mouse_map_key_clear(KEY_FORWARD); break;
-+	case 0x22f: samsung_kbd_mouse_map_key_clear(KEY_FAVORITES); break;
-+	case 0x230: samsung_kbd_mouse_map_key_clear(KEY_REFRESH); break;
-+	case 0x231: samsung_kbd_mouse_map_key_clear(KEY_STOP); break;
-+	default:
-+		return 0;
+-	if (!data->nr_pages)
+-		goto fail;
++	if (!data->nr_pages) {
++		atomic_inc(&data->lost);
++		goto out;
 +	}
-+
-+	return 1;
-+}
-+
-+static void samsung_report_fixup(struct hid_device *hdev, __u8 *rdesc,
-+	unsigned int rsize)
-+{
-+	if (USB_DEVICE_ID_SAMSUNG_IR_REMOTE == hdev->product)
-+		samsung_irda_report_fixup(hdev, rdesc, rsize);
-+}
-+
-+static int samsung_input_mapping(struct hid_device *hdev, struct hid_input *hi,
-+	struct hid_field *field, struct hid_usage *usage,
-+	unsigned long **bit, int *max)
-+{
-+	int ret = 0;
-+
-+	if (USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE == hdev->product)
-+		ret = samsung_kbd_mouse_input_mapping(hdev,
-+			hi, field, usage, bit, max);
-+
-+	return ret;
-+}
-+
- static int samsung_probe(struct hid_device *hdev,
- 		const struct hid_device_id *id)
- {
-@@ -95,10 +169,12 @@ static int samsung_probe(struct hid_devi
- 		goto err_free;
- 	}
  
--	if (hdev->rsize == 184) {
--		/* disable hidinput, force hiddev */
--		cmask = (cmask & ~HID_CONNECT_HIDINPUT) |
--			HID_CONNECT_HIDDEV_FORCE;
-+	if (USB_DEVICE_ID_SAMSUNG_IR_REMOTE == hdev->product) {
-+		if (hdev->rsize == 184) {
-+			/* disable hidinput, force hiddev */
-+			cmask = (cmask & ~HID_CONNECT_HIDINPUT) |
-+				HID_CONNECT_HIDDEV_FORCE;
-+		}
- 	}
- 
- 	ret = hid_hw_start(hdev, cmask);
-@@ -114,6 +190,7 @@ err_free:
- 
- static const struct hid_device_id samsung_devices[] = {
- 	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_IR_REMOTE) },
-+	{ HID_USB_DEVICE(USB_VENDOR_ID_SAMSUNG, USB_DEVICE_ID_SAMSUNG_WIRELESS_KBD_MOUSE) },
- 	{ }
- };
- MODULE_DEVICE_TABLE(hid, samsung_devices);
-@@ -122,6 +199,7 @@ static struct hid_driver samsung_driver 
- 	.name = "samsung",
- 	.id_table = samsung_devices,
- 	.report_fixup = samsung_report_fixup,
-+	.input_mapping = samsung_input_mapping,
- 	.probe = samsung_probe,
- };
- 
-diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/Kconfig b/drivers/hid/Kconfig
---- a/drivers/hid/Kconfig	2010-03-09 13:53:05.930183131 +0000
-+++ b/drivers/hid/Kconfig	2010-05-15 20:38:53.584485932 +0100
-@@ -273,7 +273,7 @@ config HID_SAMSUNG
- 	depends on USB_HID
- 	default !EMBEDDED
- 	---help---
--	Support for Samsung InfraRed remote control.
-+	Support for Samsung InfraRed remote control or keyboards.
- 
- config HID_SONY
- 	tristate "Sony" if EMBEDDED
-
-
-
-	
-	
-		
-___________________________________________________________ 
-All new Yahoo! Mail "The new Interface is stunning in its simplicity and ease of use." - PC Magazine 
-http://uk.docs.yahoo.com/nowyoucan.html
+ 	have_lost = atomic_read(&data->lost);
+ 	if (have_lost)
