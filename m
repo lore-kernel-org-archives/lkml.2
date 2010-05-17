@@ -1,56 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753923Ab0EQIRH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:17:07 -0400
-Received: from www.tglx.de ([62.245.132.106]:58996 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752686Ab0EQIRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:17:03 -0400
-Date: Mon, 17 May 2010 10:16:40 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Feng Tang <feng.tang@intel.com>
-cc: Ingo Molnar <mingo@elte.hu>, "H.Peter Anvin" <hpa@zytor.com>,
-       "Brown, Len" <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
-       "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH] x86: unify current 3 similar ways of saving IRQ info
-In-Reply-To: <20100517162521.6fc93552@feng-i7>
-Message-ID: <alpine.LFD.2.00.1005171016150.3368@localhost.localdomain>
-References: <20100517153156.4439d62b@feng-i7> <alpine.LFD.2.00.1005171004500.3368@localhost.localdomain> <20100517162521.6fc93552@feng-i7>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754606Ab0EQIR4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 04:17:56 -0400
+Received: from mga10.intel.com ([192.55.52.92]:34273 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753461Ab0EQIRz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 04:17:55 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
+   d="scan'208";a="799052565"
+Message-ID: <4BF0FBB0.1080707@linux.intel.com>
+Date: Mon, 17 May 2010 16:17:52 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>,
+       Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 0/3] Fix boot_pageset sharing issue for new populated zones
+ of hotadded nodes
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010, Feng Tang wrote:
+In our recent cpu/memory hotadd testing, with multiple nodes hotadded,
+kernel easily panics under stress workload like kernel building.
 
-> On Mon, 17 May 2010 16:07:05 +0800
-> Thomas Gleixner <tglx@linutronix.de> wrote:
-> 
-> > On Mon, 17 May 2010, Feng Tang wrote:
-> > 
-> > >  {
-> > >  	if (mp_irq->dstapic != m->dstapic)
-> > > @@ -211,7 +211,8 @@ static int __init mp_irq_mpc_intsrc_cmp(struct
-> > > mpc_intsrc *mp_irq, return 0;
-> > >  }
-> > >  
-> > > -static void __init MP_intsrc_info(struct mpc_intsrc *m)
-> > > +/* Will also be called in acpi/sfi related code */
-> > > +void mp_save_irq(struct mpc_intsrc *m)
-> > 
-> >   Again, this code is called from __init context only and should stay
-> >   __init.
-> 
-> Hi Thomas,
-> 
-> The reason I removed the __init is it will be called by non __init functions
-> from acpi/boot.c and mrst.c
+The root cause is that the new populated zones of hotadded nodes are
+sharing same per_cpu_pageset, i.e. boot strapping boot_pageset, which
+finally causes page state wrong.
 
-Why should that happen ?
+The following three patches will setup the pagesets for hotadded nodes
+with dynamically allocated per_cpu_pageset struct.
 
-Thanks,
-
-	tglx
+---
+  include/linux/memory_hotplug.h |    8 +++++
+  include/linux/mmzone.h         |    2 +-
+  init/main.c                    |    2 +-
+  mm/memory_hotplug.c            |   27 +++++++++++-----
+  mm/page_alloc.c                |   66 +++++++++++++++++++++++++++-------------
+  5 files changed, 74 insertions(+), 31 deletions(-)
