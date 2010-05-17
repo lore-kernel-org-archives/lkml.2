@@ -1,60 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753640Ab0EQF61 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:58:27 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52097 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753068Ab0EQF6Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:58:25 -0400
-Date: Mon, 17 May 2010 15:58:02 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tony Breeds <tony@bakeyournoodle.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: linux-next: build warning after merge of the tip tree
-Message-Id: <20100517155802.5f82a85c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv"
+	id S1753764Ab0EQGDN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 02:03:13 -0400
+Received: from srv15.digitalpacific.com.au ([203.19.59.70]:57463 "EHLO
+	srv15.digitalpacific.com.au" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753068Ab0EQGDM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 02:03:12 -0400
+X-Greylist: delayed 4819 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 02:03:11 EDT
+X-ClientAddr: 127.0.0.1
+Date: Mon, 17 May 2010 14:42:49 +1000
+Message-Id: <201005170442.o4H4gn1q011282@youthculture.com.au>
+To: linux-kernel@vger.kernel.org
+Subject: Quote Price Below........
+From: Kelly Joe <ksparts0005@gmail.com>
+Reply-To: ksparts0005@gmail.com
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hello, Sales dept
 
-Hi all,
+I will like to place an order for this item kindly get me the price,
 
-After merging the staging-next tree, today's linux-next build (powerpc
-ppc64_defconfig) produced this warning:
+fargo 86200 YMCKO Color Ribbon - 500 Images - DTC550
+Fargo  DTC550 Dual Sided ID Card Printers
+HP OEM INKJET CARTRIDGES C6578DN
+HP OEM TONER CARTRIDGES C9733A
 
-kernel/mutex.c: In function '__mutex_lock_common':
-kernel/mutex.c:148: warning: unused variable 'timeout'
 
-Introduced by commit 227945799cc10d77c6ef812f3eb8a61a78689454 ("mutex:
-Fix optimistic spinning vs. BKL") for a build with
-CONFIG_MUTEX_SPIN_ON_OWNER not set.
+with pricing and availability on those item from the factory and type of credit card you do accept for the payment (Visa, MasterCard)so that i can advice with quantity needed on  each item and forward you with payment detail for the full order as soon as possible today. Hoping to Read from you soon.
+Thanks and stay bless 
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+kelly joe
+KSP & Mechanical Equipment Inc
+83 Jericho Road,
+Middlebury, CT 06762
+Te;-800-765-3434
+FAX-203-583-3956
+ksparts0005@gmail.com
 
---Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkvw2uoACgkQjjKRsyhoI8xedACfbcDygqdoPEZC1kqUQjGYjrQ4
-PAMAn3y8FpxAzvdoXmRUCVubmDC/ijFw
-=WSTo
------END PGP SIGNATURE-----
-
---Signature=_Mon__17_May_2010_15_58_02_+1000__GCW4Hf6WIGDaCyv--
