@@ -1,50 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754380Ab0EQMDk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 08:03:40 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48945 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753868Ab0EQMDj convert rfc822-to-8bit (ORCPT
+	id S1755235Ab0EQMDp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 08:03:45 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:46695 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755185Ab0EQMDn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 08:03:39 -0400
-Subject: Re: [PATCH] perf_events: fix errors path in perf_output_begin()
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       acme@infradead.org, perfmon2-devel@lists.sf.net, eranian@gmail.com
-In-Reply-To: <AANLkTil2QBjH2qvnH7VKrg6s7RcKvHC1m0HZkDVDPzv5@mail.gmail.com>
-References: <4bf11ea4.dd29e30a.026d.4627@mx.google.com>
-	 <20100517114605.GB5291@nowhere>
-	 <AANLkTil2QBjH2qvnH7VKrg6s7RcKvHC1m0HZkDVDPzv5@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 17 May 2010 14:03:00 +0200
-Message-ID: <1274097780.5605.4642.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 17 May 2010 08:03:43 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=jKSh9V6H/Zqc7bp9cEpOQyueWyTyoy5VXPkkKtuiFcueu+MO3eSWfOGtiHHi5Lgua
+	ZLUqRzRM3wN2+cLopgvSw==
+Message-ID: <4bf13099.698fd80a.503a.ffffacd5@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Mon, 17 May 2010 12:46:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com, jkacur@redhat.com
+Subject: [PATCH] perf_events: fix errors path in perf_output_begin() (take 2)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 13:56 +0200, Stephane Eranian wrote:
-> >> +     if (!data->nr_pages) {
-> >> +             atomic_inc(&data->lost);
-> >> +             goto out;
-> >> +     }
+In case the sampling buffer has no "payload" pages, nr_pages is 0.
+The problem is that the error path in perf_output_begin() skips to
+a label which assumes perf_output_lock() has been issued which is
+not the case. That triggers a WARN_ON() is perf_output_unlock().
 
+This patch fixes the problem by skipping perf_output_unlock()
+in case data->nr_pages is 0 while maintaining the accounting
+for data->lost.
 
-> Well, nr_pages = 0 means all you have is the sampling buffer
-> header page. You cannot save any sample, so you  actually
-> loose everything. Perf reports a dozen samples but those
-> are synthetic. The kernel cannot reject an mmap() for
-> just one page because of the remapped counters, thus it
-> has to handle this gracefully and at least report the lost
-> samples.
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
-So you want to preserve this state for when you munmap() and mmap()
-again? The only user of data->lost is writing the PERF_RECORD_LOST
-event, which only ever happens when you have pages, so counting it when
-there's no pages seems futile.
-
-
+--
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index a4fa381..95137b6 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -3035,8 +3035,10 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->nmi	= nmi;
+ 	handle->sample	= sample;
+ 
+-	if (!data->nr_pages)
+-		goto fail;
++	if (!data->nr_pages) {
++		atomic_inc(&data->lost);
++		goto out;
++	}
+ 
+ 	have_lost = atomic_read(&data->lost);
+ 	if (have_lost)
