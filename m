@@ -1,66 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751542Ab0EQAZN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 20:25:13 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:43167 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750793Ab0EQAZL (ORCPT
+	id S1751695Ab0EQAiZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 20:38:25 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:42362 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab0EQAiX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 20:25:11 -0400
-Date: Mon, 17 May 2010 10:24:44 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Ed Tomlinson <edt@aei.ca>
-Cc: Andi Kleen <andi@firstfloor.org>, Christoph Lameter <cl@linux.com>,
-       linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       Pekka Enberg <penberg@cs.helsinki.fi>, npiggin@suse.de
-Subject: Re: Defrag in shrinkers
-Message-ID: <20100517002444.GJ8120@dastard>
-References: <1273821863-29524-1-git-send-email-david@fromorbit.com>
- <alpine.DEB.2.00.1005141244380.9466@router.home>
- <87y6fmmdak.fsf@basil.nowhere.org>
- <201005151308.18090.edt@aei.ca>
+	Sun, 16 May 2010 20:38:23 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 1/2] Adds ratelimit_state_init()
+Date: Mon, 17 May 2010 09:38:20 +0900
+Message-ID: <87k4r3cqgz.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.93 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005151308.18090.edt@aei.ca>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 15, 2010 at 01:08:17PM -0400, Ed Tomlinson wrote:
-> On Friday 14 May 2010 16:36:03 Andi Kleen wrote:
-> > Christoph Lameter <cl@linux.com> writes:
-> > 
-> > > Would it also be possible to add some defragmentation logic when you
-> > > revise the shrinkers? Here is a prototype patch that would allow you to
-> > > determine the other objects sitting in the same page as a given object.
-> > >
-> > > With that I hope that you have enough information to determine if its
-> > > worth to evict the other objects as well to reclaim the slab page.
-> > 
-> > I like the idea, it would be useful for the hwpoison code too,
-> > when it tries to clean a page.
-> 
-> If this is done generally we probably want to retune the 'pressure' put on the slab.  The
-> whole reason for the callbacks was to keep the 'pressure on the slab proportional to the
-> memory pressure (scan rate).  
+Hi,
 
-I don't see that defrag based reclaim changes the concept of
-pressure at all. As long as reclaim follows the nr_to_scan
-guideline, then it doesn't matter if we do reclaim from the LRU or
-reclaim from a list provided by the slab cache....
+Please review.
 
-FWIW, one thing that would be necessary, I think, is to avoid defrag
-until a certain level of fragmentation has occurred - we should do
-LRU-based reclaim as much as possible, and only trigger defrag-style
-reclaim once we hit a trigger (e.g. once the slab is 25% partial
-pages).
+Andrew, this is the part of fatfs error ratelimit. I.e. fatfs change is
+depending to this patch.
 
-Cheers,
+I guess this area usually is sent to you. But, if this patch
+wasn't applied before fatfs change, fatfs will break.
 
-Dave.
+Well, so, can I pass fatfs patch to you? Or, I should apply this to
+fatfs-tree too?
+
+Thanks.
 -- 
-Dave Chinner
-david@fromorbit.com
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+
+
+For now, all users of ratelimit_state allocates it statically, so
+DEFINE_RATELIMIT_STATE() is enough. But, I want to use ratelimit_state
+for fs, i.e. per super_block to suppress too many error reports.
+
+So, this adds ratelimit_state_init() to initialize ratelimite_state
+which is dynamically allocated, instead of opencoding.
+
+Signed-off-by: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+---
+
+ include/linux/ratelimit.h |   13 ++++++++++++-
+ 1 file changed, 12 insertions(+), 1 deletion(-)
+
+diff -puN include/linux/ratelimit.h~ratelimit-enhance include/linux/ratelimit.h
+--- linux-2.6/include/linux/ratelimit.h~ratelimit-enhance	2010-05-17 03:44:27.000000000 +0900
++++ linux-2.6-hirofumi/include/linux/ratelimit.h	2010-05-17 03:44:27.000000000 +0900
+@@ -2,7 +2,7 @@
+ #define _LINUX_RATELIMIT_H
+ 
+ #include <linux/param.h>
+-#include <linux/spinlock_types.h>
++#include <linux/spinlock.h>
+ 
+ #define DEFAULT_RATELIMIT_INTERVAL	(5 * HZ)
+ #define DEFAULT_RATELIMIT_BURST		10
+@@ -25,6 +25,17 @@ struct ratelimit_state {
+ 		.burst		= burst_init,				\
+ 	}
+ 
++static inline void ratelimit_state_init(struct ratelimit_state *rs,
++					int interval, int burst)
++{
++	spin_lock_init(&rs->lock);
++	rs->interval = interval;
++	rs->burst = burst;
++	rs->printed = 0;
++	rs->missed = 0;
++	rs->begin = 0;
++}
++
+ extern int ___ratelimit(struct ratelimit_state *rs, const char *func);
+ #define __ratelimit(state) ___ratelimit(state, __func__)
+ 
+_
