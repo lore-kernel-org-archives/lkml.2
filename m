@@ -1,55 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0EQWDx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 18:03:53 -0400
-Received: from gate.crashing.org ([63.228.1.57]:41338 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752801Ab0EQWDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 18:03:51 -0400
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Yinghai <yinghai.lu@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <4BF17A50.1050905@oracle.com>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>
-	 <1273804337.21352.396.camel@pasglop> <4BECF158.5070200@oracle.com>
-	 <1273825807.21352.601.camel@pasglop> <4BED7CE3.1020507@oracle.com>
-	 <1273876234.21352.639.camel@pasglop>  <20100515073231.GB9877@elte.hu>
-	 <1274056773.21352.700.camel@pasglop>  <4BF0DE0C.2000905@oracle.com>
-	 <1274081072.21352.718.camel@pasglop>  <4BF17A50.1050905@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 08:01:26 +1000
-Message-ID: <1274133686.21352.755.camel@pasglop>
+	id S1753372Ab0EQWEk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 18:04:40 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46816 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751073Ab0EQWEj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 18:04:39 -0400
+Date: Mon, 17 May 2010 15:01:31 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: "Arce, Abraham" <x0066660@ti.com>, akpm <akpm@linux-foundation.org>
+Cc: "trivial@kernel.org" <trivial@kernel.org>,
+       "randy.dunlap@oracle.com" <randy.dunlap@oracle.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Documentation: SubmittingDrivers: Resources
+Message-Id: <20100517150131.edbe4816.randy.dunlap@oracle.com>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043E114567@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043DEEB8CA@dlee03.ent.ti.com>
+	<27F9C60D11D683428E133F85D2BB4A53043E114567@dlee03.ent.ti.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BF1BD23.0033:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 10:18 -0700, Yinghai wrote:
-> > No. Both will hit 2.6.36. It's way too late to queue up such changes
-> for
-> > the 2.6.35 merge window which has already opened.
+On Fri, 14 May 2010 18:01:26 -0500 Arce, Abraham wrote:
+
+> Hi Jiri,
 > 
-> i have feeling that your new LMB code will hit 2.6.36. and
-> x86 patches that is using to lmb will hit 2.6.37.
+> > Subject: [PATCH] Documentation: SubmittingDrivers: Resources
+> > 
+> > - Add additional location (Git) for the kernel master tree
+> > - Add reference to Git Project
+> > 
+> > Signed-off-by: Abraham Arce <x0066660@ti.com>
+> > Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> > ---
+> >  Documentation/SubmittingDrivers |    6 ++++++
+> >  1 files changed, 6 insertions(+), 0 deletions(-)
 > 
-> otherwise it will make more merge conflicts between tip and lmb.
-> unless put your lmb change to tip?
+> Could you please help me to apply this patch?
 
-There is no reason not to, I'll have them in a separate branch that Ingo
-can pull. I think we can aim for 2.6.36 in one go provided that Peter
-and Thomas are happy with the x86 side of things.
+Hi,
 
-Cheers,
-Ben.
+Andrew Morton has this patch queued in his mmotm patches.
+I would expect it to be merged in the next 2 weeks or so.
+If not, I will merge it.  or Mr. Trivial tree maintainer can merge it.
 
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
