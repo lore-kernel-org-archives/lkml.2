@@ -1,87 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0EQQsa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 12:48:30 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52031 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754098Ab0EQQs3 convert rfc822-to-8bit (ORCPT
+	id S1754755Ab0EQQtR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 12:49:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64786 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754608Ab0EQQtP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 12:48:29 -0400
-Subject: Re: [RFC] perf: perf record sets inherit by default
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       =?ISO-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>, mingo@elte.hu,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>, perfmon2-devel@lists.sf.net
-In-Reply-To: <AANLkTimZrFv7YWOdy6dvtbzFmwB85FyPntZULmN0f6VN@mail.gmail.com>
-References: <AANLkTinsEANHEicdjOaE6jwUa0bVqH5PBwuGQ3_L59hT@mail.gmail.com>
-	 <1273589282.1810.10.camel@laptop>
-	 <AANLkTimZrFv7YWOdy6dvtbzFmwB85FyPntZULmN0f6VN@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 17 May 2010 18:48:00 +0200
-Message-ID: <1274114880.5605.5236.camel@twins>
+	Mon, 17 May 2010 12:49:15 -0400
+Date: Mon, 17 May 2010 09:47:24 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Will Drewry <wad@chromium.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org, agk@redhat.com,
+       snitzer@redhat.com
+Subject: Re: [RFC PATCH v2 2/2] init: boot to device-mapper targets without
+ an initr*
+Message-Id: <20100517094724.48632380.randy.dunlap@oracle.com>
+In-Reply-To: <1273887701-2152-2-git-send-email-wad@chromium.org>
+References: <20100514035347.GA20636@redhat.com>
+	<1273887701-2152-2-git-send-email-wad@chromium.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090202.4BF17380.00C6:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 16:25 +0200, Stephane Eranian wrote:
-> > Right, but I think the default of inherit is right, and once you do that
-> > you basically have to do the per-task-per-cpu thing, otherwise your
-> > fancy 16-way will start spending most of its time in cacheline bounces.
-> >
-> In that case, don't you think you should also ensure that the buffer is
-> allocated on the NUMA node of the designated per-thread-per-cpu?
-> I don't think it is the case today.
+On Fri, 14 May 2010 20:41:41 -0500 Will Drewry wrote:
 
-Yeah, something like the below ought to do I guess..
+> Add a dm= kernel parameter modeled after the md= parameter from
+> do_mounts_md.  It allows for device-mapper targets to be configured at
+> boot time for use early in the boot process (as the root device or
+> otherwise).
 
-Almost-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+dm=<blah>
+documentation needs to be added to Documentation/kernel-parameters.txt and/or
+Documentation/md.txt.
+
+
+> The format is dm="name uuid ro,table line 1,table line 2,...".  The
+> parser expects the comma to be safe to use as a newline substitute but,
+> otherwise, uses the normal separator of space.  Some attempt has been
+> made to make it forgiving of additional spaces (using skip_spaces()).
+
+This "space in the arg string" has been tested, right?
+It seems a bit odd to me.  Most kernel parameter strings that I am familiar with
+use punctuation for separating parameter parts.
+
+
+> A mapped device created during boot will be assigned a minor of 0 and
+> may be access via /dev/dm-0.
+> 
+> An example dm-linear root with no uuid may look like:
+> 
+>   root=/dev/dm-0  dm="lroot none 0, 0 4096 linear 98:16 0, 4096 4096 linear 98:32 0"
+> 
+> Once udev is started, /dev/dm-0 will become /dev/mapper/lroot.
+> 
+> Signed-off-by: Will Drewry <wad@chromium.org>
+> ---
+>  init/Makefile       |    1 +
+>  init/do_mounts.c    |    1 +
+>  init/do_mounts.h    |   10 ++
+>  init/do_mounts_dm.c |  353 +++++++++++++++++++++++++++++++++++++++++++++++++++
+>  4 files changed, 365 insertions(+), 0 deletions(-)
+>  create mode 100644 init/do_mounts_dm.c
+
+
+
 ---
- kernel/perf_event.c |   17 +++++++++++++++--
- 1 files changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 9dbe8cd..85e2d32 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2288,6 +2288,19 @@ perf_mmap_to_page(struct perf_mmap_data *data, unsigned long pgoff)
- 	return virt_to_page(data->data_pages[pgoff - 1]);
- }
- 
-+static void *perf_mmap_alloc_page(int cpu)
-+{
-+	struct page *page;
-+	int node;
-+
-+	node = (cpu == -1) ? cpu : cpu_to_node(cpu);
-+	page = alloc_pages_node(node, GFP_KERNEL | __GFP_ZERO, 0);
-+	if (!page)
-+		return NULL;
-+
-+	return page_address(page);
-+}
-+
- static struct perf_mmap_data *
- perf_mmap_data_alloc(struct perf_event *event, int nr_pages)
- {
-@@ -2304,12 +2317,12 @@ perf_mmap_data_alloc(struct perf_event *event, int nr_pages)
- 	if (!data)
- 		goto fail;
- 
--	data->user_page = (void *)get_zeroed_page(GFP_KERNEL);
-+	data->user_page = perf_mmap_alloc_page(event->cpu);
- 	if (!data->user_page)
- 		goto fail_user_page;
- 
- 	for (i = 0; i < nr_pages; i++) {
--		data->data_pages[i] = (void *)get_zeroed_page(GFP_KERNEL);
-+		data->data_pages[i] = perf_mmap_alloc_page(event->cpu);
- 		if (!data->data_pages[i])
- 			goto fail_data_pages;
- 	}
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
