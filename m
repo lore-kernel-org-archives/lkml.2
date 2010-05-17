@@ -1,88 +1,125 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752261Ab0EQPqw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:46:52 -0400
-Received: from az33egw02.freescale.net ([192.88.158.103]:37912 "EHLO
-	az33egw02.freescale.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751312Ab0EQPqv (ORCPT
+	id S1753435Ab0EQPsK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:48:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35158 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751781Ab0EQPsI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:46:51 -0400
-From: Dinh.Nguyen@freescale.com
-To: linux-kernel@vger.kernel.org
-Cc: linux-arm-kernel@lists.infradead.org, s.hauer@pengutronix.de,
-       valentin.longchamp@epfl.ch, daniel@caiaq.de, grant.likely@secretlab.ca,
-       Dinh Nguyen <Dinh.Nguyen@freescale.com>
-Subject: [PATCH 2.6.34] mx5: bring usb phy out of reset on freescale mx51 babbage hw
-Date: Mon, 17 May 2010 10:46:01 -0500
-Message-Id: <1274111161-12580-1-git-send-email-Dinh.Nguyen@freescale.com>
-X-Mailer: git-send-email 1.6.0.4
+	Mon, 17 May 2010 11:48:08 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Lin Ming <ming.m.lin@intel.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 3/3] perf tui: Add workaround for slang < 2.1.4
+Date: Mon, 17 May 2010 12:47:58 -0300
+Message-Id: <1274111278-2838-4-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274111278-2838-1-git-send-email-acme@infradead.org>
+References: <1274111278-2838-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This patch de-asserts the reset line that is connected to the USB
-ULPI PHY on USB Host1.
+Older versions of the slang library didn't used the 'const' specifier,
+causing problems with modern compilers of this kind:
 
-This patch should be included with the original USB host enablement
-set of patches of mx51 babbage hw, but was accidentily left out.
+util/newt.c:252: error: passing argument 1 of ‘SLsmg_printf’ discards
+qualifiers from pointer target type
 
-Signed-off-by: Dinh Nguyen <Dinh.Nguyen@freescale.com>
+Fix it by using some wrappers that when needed const the affected
+parameters back to plain (char *).
+
+Reported-by: Lin Ming <ming.m.lin@intel.com>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Lin Ming <ming.m.lin@intel.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <20100517145421.GD29052@ghostprotocols.net>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- arch/arm/mach-mx5/board-mx51_babbage.c      |   12 ++++++++++++
- arch/arm/plat-mxc/include/mach/iomux-mx51.h |    1 +
- 2 files changed, 13 insertions(+), 0 deletions(-)
+ tools/perf/util/newt.c |   31 +++++++++++++++++++++----------
+ 1 files changed, 21 insertions(+), 10 deletions(-)
 
-diff --git a/arch/arm/mach-mx5/board-mx51_babbage.c b/arch/arm/mach-mx5/board-mx51_babbage.c
-index dacf506..ed885f9 100644
---- a/arch/arm/mach-mx5/board-mx51_babbage.c
-+++ b/arch/arm/mach-mx5/board-mx51_babbage.c
-@@ -33,6 +33,7 @@
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 2001d26..ccb7c5b 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -14,6 +14,17 @@
+ #include "sort.h"
+ #include "symbol.h"
  
- #define BABBAGE_USB_HUB_RESET	(0*32 + 7)	/* GPIO_1_7 */
- #define BABBAGE_USBH1_STP	(0*32 + 27)	/* GPIO_1_27 */
-+#define BABBAGE_PHY_RESET (1*32 +5)	/* GPIO_2_5 */
- 
- /* USB_CTRL_1 */
- #define MX51_USB_CTRL_1_OFFSET			0x10
-@@ -101,6 +102,7 @@ static inline void mxc_init_imx_uart(void)
- static int gpio_usbh1_active(void)
- {
- 	struct pad_desc usbh1stp_gpio = MX51_PAD_USBH1_STP__GPIO_1_27;
-+	struct pad_desc phyreset_gpio = MX51_PAD_EIM_D21__GPIO_2_5;
- 	int ret;
- 
- 	/* Set USBH1_STP to GPIO and toggle it */
-@@ -115,6 +117,16 @@ static int gpio_usbh1_active(void)
- 	gpio_set_value(BABBAGE_USBH1_STP, 1);
- 	msleep(100);
- 	gpio_free(BABBAGE_USBH1_STP);
++#if SLANG_VERSION < 20104
++#define slsmg_printf(msg, args...) SLsmg_printf((char *)msg, ##args)
++#define slsmg_write_nstring(msg, len) SLsmg_write_nstring((char *)msg, len)
++#define sltt_set_color(obj, name, fg, bg) SLtt_set_color(obj,(char *)name,\
++							 (char *)fg, (char *)bg)
++#else
++#define slsmg_printf SLsmg_printf
++#define slsmg_write_nstring SLsmg_write_nstring
++#define sltt_set_color SLtt_set_color
++#endif
 +
-+	/* De-assert USB PHY RESETB */
-+	mxc_iomux_v3_setup_pad(&phyreset_gpio);
-+	ret = gpio_request(BABBAGE_PHY_RESET, "phy_reset");
-+
-+	if (ret) {
-+		pr_debug("failed to get MX51_PAD_EIM_D21__GPIO_2_5: %d\n", ret);
-+		return ret;
-+	}
-+	gpio_direction_output(BABBAGE_PHY_RESET, 1);
+ struct ui_progress {
+ 	newtComponent form, scale;
+ };
+@@ -292,21 +303,21 @@ static int objdump_line__show(struct objdump_line *self, struct list_head *head,
+ 
+ 		color = ui_browser__percent_color(percent, current_entry);
+ 		SLsmg_set_color(color);
+-		SLsmg_printf(" %7.2f ", percent);
++		slsmg_printf(" %7.2f ", percent);
+ 		if (!current_entry)
+ 			SLsmg_set_color(HE_COLORSET_CODE);
+ 	} else {
+ 		int color = ui_browser__percent_color(0, current_entry);
+ 		SLsmg_set_color(color);
+-		SLsmg_write_nstring(" ", 9);
++		slsmg_write_nstring(" ", 9);
+ 	}
+ 
+ 	SLsmg_write_char(':');
+-	SLsmg_write_nstring(" ", 8);
++	slsmg_write_nstring(" ", 8);
+ 	if (!*self->line)
+-		SLsmg_write_nstring(" ", width - 18);
++		slsmg_write_nstring(" ", width - 18);
+ 	else
+-		SLsmg_write_nstring(self->line, width - 18);
++		slsmg_write_nstring(self->line, width - 18);
+ 
  	return 0;
  }
+@@ -1054,11 +1065,11 @@ void setup_browser(void)
+ 	newtInit();
+ 	newtCls();
+ 	ui_helpline__puts(" ");
+-	SLtt_set_color(HE_COLORSET_TOP, NULL, c->topColorFg, c->topColorBg);
+-	SLtt_set_color(HE_COLORSET_MEDIUM, NULL, c->mediumColorFg, c->mediumColorBg);
+-	SLtt_set_color(HE_COLORSET_NORMAL, NULL, c->normalColorFg, c->normalColorBg);
+-	SLtt_set_color(HE_COLORSET_SELECTED, NULL, c->selColorFg, c->selColorBg);
+-	SLtt_set_color(HE_COLORSET_CODE, NULL, c->codeColorFg, c->codeColorBg);
++	sltt_set_color(HE_COLORSET_TOP, NULL, c->topColorFg, c->topColorBg);
++	sltt_set_color(HE_COLORSET_MEDIUM, NULL, c->mediumColorFg, c->mediumColorBg);
++	sltt_set_color(HE_COLORSET_NORMAL, NULL, c->normalColorFg, c->normalColorBg);
++	sltt_set_color(HE_COLORSET_SELECTED, NULL, c->selColorFg, c->selColorBg);
++	sltt_set_color(HE_COLORSET_CODE, NULL, c->codeColorFg, c->codeColorBg);
+ }
  
-diff --git a/arch/arm/plat-mxc/include/mach/iomux-mx51.h b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-index 80528cc..ab0f95d 100644
---- a/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-+++ b/arch/arm/plat-mxc/include/mach/iomux-mx51.h
-@@ -63,6 +63,7 @@ typedef enum iomux_config {
- #define MX51_PAD_GPIO_2_3__EIM_D19	IOMUX_PAD(0x3fc, 0x068, 1, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_2_4__EIM_D20	IOMUX_PAD(0x400, 0x06c, 1, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_2_5__EIM_D21	IOMUX_PAD(0x404, 0x070, 1, 0x0,   0, NO_PAD_CTRL)
-+#define MX51_PAD_EIM_D21__GPIO_2_5	IOMUX_PAD(0x404, 0x070, IOMUX_CONFIG_ALT1, 0x0,   0, MX51_GPIO_PAD_CTRL)
- #define MX51_PAD_GPIO_2_6__EIM_D22	IOMUX_PAD(0x408, 0x074, 1, 0x0,   0, NO_PAD_CTRL)
- #define MX51_PAD_GPIO_2_7__EIM_D23	IOMUX_PAD(0x40c, 0x078, 1, 0x0,   0, NO_PAD_CTRL)
- 
+ void exit_browser(bool wait_for_ok)
 -- 
-1.6.0.4
+1.6.2.5
 
