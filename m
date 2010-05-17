@@ -1,46 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753567Ab0EQQIO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 12:08:14 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50492 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753099Ab0EQQIL (ORCPT
+	id S1753872Ab0EQQJQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 12:09:16 -0400
+Received: from nlpi129.sbcis.sbc.com ([207.115.36.143]:54405 "EHLO
+	nlpi129.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752649Ab0EQQJO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 12:08:11 -0400
-Date: Mon, 17 May 2010 09:08:15 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R Iyer <sundar.iyer@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
- requested
-Message-ID: <20100517160813.GA6547@opensource.wolfsonmicro.com>
-References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
- <20100517144411.GD5257@opensource.wolfsonmicro.com>
- <1274108214.20589.28.camel@bnru01>
- <1274109402.20589.39.camel@bnru01>
- <20100517153431.GA6218@opensource.wolfsonmicro.com>
- <1274111688.20589.54.camel@bnru01>
+	Mon, 17 May 2010 12:09:14 -0400
+Date: Mon, 17 May 2010 11:04:30 -0500 (CDT)
+From: Christoph Lameter <cl@linux.com>
+X-X-Sender: cl@router.home
+To: Haicheng Li <haicheng.li@linux.intel.com>
+cc: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>,
+       Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/3] mem-hotplug: separate setup_per_cpu_pageset() into
+ separate functions
+In-Reply-To: <4BF0FBDB.3090202@linux.intel.com>
+Message-ID: <alpine.DEB.2.00.1005171104200.20764@router.home>
+References: <4BF0FBDB.3090202@linux.intel.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274111688.20589.54.camel@bnru01>
-X-Cookie: Big book, big bore.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 09:24:48PM +0530, Sundar R Iyer wrote:
 
-> >From bad0d5eb51ef84be5b100e3dd0f5a590ea0529b6 Mon Sep 17 00:00:00 2001
-> From: Sundar R Iyer <sundar.iyer@stericsson.com>
-> Date: Fri, 14 May 2010 15:14:17 +0530
-> Subject: [PATCH 1/1] regulator: return set_mode when same mode is requested
-> 
-> save I/O costs by returning when the same mode is
-> requested for the regulator
+Reviewed-by: Christoph Lameter <cl@linux-foundation.org>
 
-Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+
