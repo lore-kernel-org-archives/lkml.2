@@ -1,106 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755535Ab0EQRrH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:47:07 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:60014 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754169Ab0EQRrF (ORCPT
+	id S1754579Ab0EQRwz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:52:55 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:42593 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752892Ab0EQRwy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:47:05 -0400
-Date: Mon, 17 May 2010 20:47:31 +0300
-From: Felipe Balbi <me@felipebalbi.com>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-omap@vger.kernel.org,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100517174647.GA11512@gandalf>
-Reply-To: me@felipebalbi.com
-References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
- <87hbm6cz90.fsf@deeprootsystems.com>
- <1274115885.4418.59.camel@mulgrave.site>
+	Mon, 17 May 2010 13:52:54 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=dwfpJ0O8vHrLBNQ22tW0nPqRYEZ+z0iGMBluXQs/OF5fTBmG3378/eatTknLiaiAb
+	FnnkRcVmY6LjC+NCdVjRQ==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274115885.4418.59.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+In-Reply-To: <1274117717.1674.1539.camel@laptop>
+References: <1273886490-15627-1-git-send-email-venki@google.com>
+	 <1274084399.5605.3655.camel@twins>
+	 <AANLkTikWWEYpwmqhQ0oYz30SUFY-y2erqStw2T6h0WXg@mail.gmail.com>
+	 <1274117717.1674.1539.camel@laptop>
+Date: Mon, 17 May 2010 10:52:50 -0700
+Message-ID: <AANLkTik4EvvSwz9rD3zemuaSN3FMAIqsncZ5AKYOdaEn@mail.gmail.com>
+Subject: Re: [PATCH] sched: Avoid side-effect of tickless idle on 
+	update_cpu_load (v2)
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       Ken Chen <kenchen@google.com>, Paul Turner <pjt@google.com>,
+       Nikhil Rao <ncrao@google.com>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 01:04:45PM -0400, James Bottomley wrote:
-> > For userspace, apps that have polling behavior or are ill-behaved must
-> > be found and fixed.  Thanks to tools like powertop, this is a farily
-> > easy task.
-> 
-> That's a bit glib ... powertop can detect power consumption stats on a
-> running system ... if you have a polling app preventing your system from
-> suspending, powertop isn't necessarily going to find it ... especially
-> if the polling interval is of the order of powertop's.  Powertop can
-> find the bad tens of wakeups per second, but it only takes one wakup
-> every few seconds or so to drain the battery significantly when
-> operating on suspend from idle.
+On Mon, May 17, 2010 at 10:35 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-05-17 at 09:52 -0700, Venkatesh Pallipadi wrote:
+>
+>> >  load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * load_(i-1)
+>
+>> > So because we're in no_hz, current load == 0 and we could approximate
+>> > the thing by:
+>> >
+>> >  load_i = ((2^i)-1)/(2^i) * load_i
+>> >
+>> > Because for i ~ 1, there is no new input, and for i >> 1 the fraction is
+>> > small.
+>>
+>> Something like that. But, with total_updates = n and missed_updates = n - 1
+>> We do this for (n - 1)
+>> load_i = ((2^i)-1)/(2^i) * load_i
+>> And do this once.
+>> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * cur_load
+>
+>> That way we do not differentiate between whether we are in tickless or
+>> not and we use the same code path.
+>
+> But by the above, that's not the same as without, because that does
+>
+> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * load_(i-1)
+>
+> not
+>
+> load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * cur_load
 
-you can always increase powertop's interval through command line and
-once you went down to 1 wakeup every two seconds, you increase
-powertop's interval and try to cut down 10 more ill-behaved apps. And
-you keep going until you have e.g. 1 wakeup per minute or whatever your
-target is.
+Hmm. I assumed you meant
+load_(i-1) is same as cur_load when you said
+>> >Where load_-1 == current load.
 
-> > But really, I don't consider the "ill-behaved app" problem to be a
-> > real-world problem.  Both in maemo/meego and Android, if someone
-> > writes an app that kills battery life, it will get reported as a bug,
-> > or get bad ratings etc.  On these kinds of devices, there is a *stong*
-> > developer incentive to not write battery sucking apps.
-> 
-> I'm not sure this is real world, either.  Developers can fire up
-> powertop from the command line when their phone isn't idling for as long
-> as it should.  But a phone is a consumer device: the average smart phone
-> user just wants to browse the web, get email, go to facebook and play
-> with some cool apps.  If one of those cool apps is rogue, they're not
-> really going to know which one or how to find it (and firing up powertop
-> from the command line isn't something which will occur to them as a
-> matter of routine).
+No? Or did I miss something?
 
-Agree with you here.
+For the updates done every tick, it is
+load = degrade * load + (1-degrade) * cur_load
+For updates done with missed ticks
+load = degrade^(missed-1) * load
+load = degrade * load + (1-degrade) * cur_load
 
-> One of the nice things that suspend blockers actually does is to give
-> the kernel a clear name for the process blocking suspend (and thus
-> consuming power).  This allows a nice way to assign power budget to the
-> application and present who's using what in a nice visible form, which
-> does facilitate the reporting of bad apps, even for the non-developer
-> user.
+So, cur_load is only accounted for the last tick, and zero load
+assumed for all the missed ticks.
 
-if that's the only thing we want suspend_blockers for, there are other
-simpler ways to do it. Just add a kernel debugging option for anyone
-doing poll() or keeping a device open() or whatever and you have the
-name the of the processes consuming power and preventing system from
-going into sleep.
+>> > But why then do we precalculate these factors? It seems to me
+>> > ((2^i)-1)/(2^i) is something that is trivial to compute and doesn't
+>> > warrant a lookup table?
+>> >
+>>
+>> Yes. Initially I had a for loop running for missed_updates to calculate
+>>  ((2^i)-1)/(2^i) * load_i
+>> in a loop.
+>
+> Ah, right! So you want to calculate:
+>
+>  (((2^i)-1)/(2^i))^n
+>
+> Which ends up being a nasty binomial sum: 1/(2^ni) * \Sum_k^n (n choose
+> k) * 2^k, so yeah, I don't see a fancy way to quickly compute that.
+>
+>
+> OK, could you summarize our discussion into that comment?
+>
 
-IMO, suspend_blocker is trying to fix application problems in kernel
-space by unconditionaly (well sort of) freezing userspace if there are
-no suspen_blockers held. So even if application is doing
-poll(pfds, ARRAY_SIZE(pfds), 2); that won't be noticed because as long as
-the suspend_blocker is released, that poll() will be frozen, no ?
+OK. Will do.
 
-IMO the real fix would be on that particular poll(), changing the
-timeout e.g. based on cpufreq notifications or even relying completely
-on IRQs with poll(pdfs, ARRAY_SIZE(pfds), -1); Of course, this is only a
-crude example trying to show that the real issue lies on the application
-rather than on kernel.
-
--- 
-balbi
+Thanks,
+Venki
