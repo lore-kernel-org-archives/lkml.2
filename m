@@ -1,53 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755002Ab0EQRGF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:06:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:55777 "EHLO mail.zytor.com"
+	id S1755361Ab0EQRHM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:07:12 -0400
+Received: from hera.kernel.org ([140.211.167.34]:49194 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab0EQRGD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:06:03 -0400
-Message-ID: <4BF17769.4050906@zytor.com>
-Date: Mon, 17 May 2010 10:05:45 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1754645Ab0EQRHK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 13:07:10 -0400
+Date: Mon, 17 May 2010 17:06:52 GMT
+From: tip-bot for Andreas Herrmann <andreas.herrmann3@amd.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       andreas.herrmann3@amd.com, tglx@linutronix.de
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       andreas.herrmann3@amd.com, tglx@linutronix.de
+In-Reply-To: <20100517164324.GB10254@alberich.amd.com>
+References: <20100517164324.GB10254@alberich.amd.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/timers] x86, hpet: Add reference to chipset erratum documentation for disable-hpet-msi-quirk
+Message-ID: <tip-fec84e330719c20d2146c8dbdc9ff50b3a1d7039@git.kernel.org>
+Git-Commit-ID: fec84e330719c20d2146c8dbdc9ff50b3a1d7039
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andreas Herrmann <herrmann.der.user@googlemail.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86, hpet: Add reference to chipset erratum documentation
- for disable-hpet-msi-quirk
-References: <20100517164324.GB10254@alberich.amd.com> <alpine.LFD.2.00.1005170952080.4195@i5.linux-foundation.org> <4BF175FE.2010904@zytor.com>
-In-Reply-To: <4BF175FE.2010904@zytor.com>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 17 May 2010 17:06:52 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2010 09:59 AM, H. Peter Anvin wrote:
-> On 05/17/2010 09:52 AM, Linus Torvalds wrote:
->>
->>
->> On Mon, 17 May 2010, Andreas Herrmann wrote:
->>>
->>> (At the moment the "SB700 Family Product Errata" document is available
->>> at http://support.amd.com/us/Embedded_TechDocs/46837.pdf)
->>
->> Ok, this is against x86 -tip, right? It doesn't apply for me, so I'll just 
->> assume I will get it through the normal x86 merge requests.
->>
-> 
-> It conflicts with a related change in -tip, but I'll fix it up and
-> you'll get it with the usual merge window flood.
-> 
+Commit-ID:  fec84e330719c20d2146c8dbdc9ff50b3a1d7039
+Gitweb:     http://git.kernel.org/tip/fec84e330719c20d2146c8dbdc9ff50b3a1d7039
+Author:     Andreas Herrmann <andreas.herrmann3@amd.com>
+AuthorDate: Mon, 17 May 2010 18:43:24 +0200
+Committer:  H. Peter Anvin <hpa@zytor.com>
+CommitDate: Mon, 17 May 2010 10:04:43 -0700
 
-Slight correction: it didn't conflict, it was based upon.  Anyway, it's
-queued up in -tip now.
+x86, hpet: Add reference to chipset erratum documentation for disable-hpet-msi-quirk
 
-	-hpa
+(At the moment the "SB700 Family Product Errata" document is available
+at http://support.amd.com/us/Embedded_TechDocs/46837.pdf)
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100517164324.GB10254@alberich.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/quirks.c |    3 +++
+ 1 files changed, 3 insertions(+), 0 deletions(-)
 
+diff --git a/arch/x86/kernel/quirks.c b/arch/x86/kernel/quirks.c
+index cd2c336..e72d3fc 100644
+--- a/arch/x86/kernel/quirks.c
++++ b/arch/x86/kernel/quirks.c
+@@ -495,6 +495,9 @@ void force_hpet_resume(void)
+ /*
+  * HPET MSI on some boards (ATI SB700/SB800) has side effect on
+  * floppy DMA. Disable HPET MSI on such platforms.
++ * See erratum #27 (Misinterpreted MSI Requests May Result in
++ * Corrupted LPC DMA Data) in AMD Publication #46837,
++ * "SB700 Family Product Errata", Rev. 1.0, March 2010.
+  *
+  * Also force the read back of the CMP register in hpet_next_event()
+  * to work around the problem that the CMP register write seems to be
