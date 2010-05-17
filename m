@@ -1,58 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755309Ab0EQSyt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:54:49 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:60141 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752266Ab0EQSyr (ORCPT
+	id S1755357Ab0EQSzw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 14:55:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:56273 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753391Ab0EQSzu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:54:47 -0400
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: me@felipebalbi.com, Alan Stern <stern@rowland.harvard.edu>,
-       linux-omap@vger.kernel.org, "Theodore Ts'o" <tytso@mit.edu>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
-	<87hbm6cz90.fsf@deeprootsystems.com>
-	<1274115885.4418.59.camel@mulgrave.site>
-	<20100517174647.GA11512@gandalf>
-	<1274119179.4418.68.camel@mulgrave.site>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Mon, 17 May 2010 11:54:40 -0700
-In-Reply-To: <1274119179.4418.68.camel@mulgrave.site> (James Bottomley's message of "Mon\, 17 May 2010 13\:59\:39 -0400")
-Message-ID: <87k4r24avj.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	Mon, 17 May 2010 14:55:50 -0400
+Date: Mon, 17 May 2010 19:55:28 +0100 (BST)
+From: David Woodhouse <dwmw2@infradead.org>
+X-X-Sender: dwmw2@dwoodhou-mobl2.ger.corp.intel.com
+To: Randy Dunlap <randy.dunlap@oracle.com>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, linux-mtd@lists.infradead.org,
+       linux-pcmcia@lists.infradead.org
+Subject: Re: [PATCH -next] pcmciamtd: fix printk format warnings
+In-Reply-To: <20100517091632.59c2696c.randy.dunlap@oracle.com>
+Message-ID: <alpine.LFD.2.00.1005171954080.8170@dwoodhou-mobl2.ger.corp.intel.com>
+References: <20100517163521.649526d0.sfr@canb.auug.org.au> <20100517091632.59c2696c.randy.dunlap@oracle.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-James Bottomley <James.Bottomley@suse.de> writes:
+On Mon, 17 May 2010, Randy Dunlap wrote:
 
-> The technical reason for wanting suspend blockers (as has been stated
-> more times than I can be bothered to go back and count) is that no-one
-> can currently produce a working model for race free kernel to user work
-> handoff
+> From: Randy Dunlap <randy.dunlap@oracle.com>
+>
+> Fix printk format warnings in pcmciamtd debug code:
+>
+> drivers/mtd/maps/pcmciamtd.c:163: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
+> drivers/mtd/maps/pcmciamtd.c:212: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
+> drivers/mtd/maps/pcmciamtd.c:274: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
+> drivers/mtd/maps/pcmciamtd.c:312: warning: format '%u' expects type 'unsigned int', but argument 5 has type 'ssize_t'
 
-At least I've never heard this technial reason stated so succinctly.  It's
-not in the changelogs or in the Documentation file included.
+I pushed something identical to that earlier today, but thanks.
 
-The way I undertand things, today's mainline kernel has a race-free
-kernel-to-user work handoff already.
 
-The possibility of races is introduced by the opportunistic suspend
-feature itself (patch 1.)  The use of suspend blockers later in the
-series is needed to avoid the potential races introduced by
-opportunistic suspend.
+-- 
+dwmw2
 
-Kevin
