@@ -1,199 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755935Ab0EQTfl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:35:41 -0400
-Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:52239 "EHLO
-	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754606Ab0EQTfk (ORCPT
+	id S1755999Ab0EQTfw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:35:52 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:4749 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755963Ab0EQTft (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:35:40 -0400
-Message-ID: <4BF19A03.1060506@lougher.demon.co.uk>
-Date: Mon, 17 May 2010 20:33:23 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	Mon, 17 May 2010 15:35:49 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=RRLc4HB6KlECwVLSFh9QyL2KnwnO3uvQ/j6gEJP6WKuCAs4T8xKmQ074EkJ3/UcD/
+	y8jif4CFUcWTm3FdpoD0Q==
 MIME-Version: 1.0
-To: linux-fsdevel@vger.kernel.org
-CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH 4/4] squashfs: add xattr support configure option
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTikvu85a6Ckl-iJaF_iHlCCsK9tMRYoT21EeZ_CV@mail.gmail.com>
+References: <1274074364-8838-1-git-send-email-ngupta@vflare.org>
+	 <1274074364-8838-2-git-send-email-ngupta@vflare.org>
+	 <AANLkTikvu85a6Ckl-iJaF_iHlCCsK9tMRYoT21EeZ_CV@mail.gmail.com>
+Date: Mon, 17 May 2010 12:35:20 -0700
+Message-ID: <AANLkTilt8st_RJryMPJ7aqqi5T04xOjBH8_mZbanSprs@mail.gmail.com>
+Subject: Re: [PATCH 1/3] Add flag to identify block swap devices
+From: Hugh Dickins <hughd@google.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Nitin Gupta <ngupta@vflare.org>, Greg KH <greg@kroah.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Andrew Morton <akpm@linux-foundation.org>, Cyp <cyp561@gmail.com>,
+       driverdev <devel@driverdev.osuosl.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 17, 2010 at 4:50 AM, Minchan Kim <minchan.kim@gmail.com> wrote:
+> On Mon, May 17, 2010 at 2:32 PM, Nitin Gupta <ngupta@vflare.org> wrote:
+>> Added SWP_BLKDEV flag to distinguish block and regular file backed
+>> swap devices. We could also check if a swap is entire block device,
+>> rather than a file, by:
+>> S_ISBLK(swap_info_struct->swap_file->f_mapping->host->i_mode)
+>> but, I think, simply checking this flag is more convenient.
+>>
+>> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
+> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
+>
+> We can enhance swap_show by the flag as further patch.
 
-Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
----
-  fs/squashfs/Kconfig    |   11 +++++++++++
-  fs/squashfs/Makefile   |    2 +-
-  fs/squashfs/inode.c    |    1 +
-  fs/squashfs/namei.c    |    1 +
-  fs/squashfs/squashfs.h |    6 ------
-  fs/squashfs/super.c    |    4 +++-
-  fs/squashfs/symlink.c  |    1 +
-  fs/squashfs/xattr.h    |   45 +++++++++++++++++++++++++++++++++++++++++++++
-  8 files changed, 63 insertions(+), 8 deletions(-)
-  create mode 100644 fs/squashfs/xattr.h
+You mean, make swap_show() decide partition or file by SWP_BLKDEV
+instead of its own test?
 
-diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
-index 25a00d1..cc6ce8a 100644
---- a/fs/squashfs/Kconfig
-+++ b/fs/squashfs/Kconfig
-@@ -26,6 +26,17 @@ config SQUASHFS
+Actually, I'd prefer we don't embed SWP_BLKDEV further, because it's
+a bit of a hack and not really necessary.  What ought to happen (though
+perhaps it's silly to be expending code over an imaginary case) is a
+map_swap_entry() call to convert the swap offset to physical page
+within partition - no-op in the partition case, but correcting the file case.
 
-  	  If unsure, say N.
+But I wouldn't want to write that patch without testing it,
+which I won't be doing for a while.
 
-+config SQUASHFS_XATTRS
-+	bool "Squashfs XATTR support"
-+	depends on SQUASHFS
-+	default n
-+	help
-+	  Saying Y here includes support for extended attributes (xattrs).
-+	  Xattrs are name:value pairs associated with inodes by
-+	  the kernel or by users (see the attr(5) manual page).
-+
-+	  If unsure, say N.
-+
-  config SQUASHFS_EMBEDDED
-
-  	bool "Additional option for memory-constrained systems"
-diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
-index 56684d4..2cee3e9 100644
---- a/fs/squashfs/Makefile
-+++ b/fs/squashfs/Makefile
-@@ -5,5 +5,5 @@
-  obj-$(CONFIG_SQUASHFS) += squashfs.o
-  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
-  squashfs-y += namei.o super.o symlink.o zlib_wrapper.o decompressor.o
--squashfs-y += xattr.o xattr_id.o
-+squashfs-$(CONFIG_SQUASHFS_XATTRS) += xattr.o xattr_id.o
-
-diff --git a/fs/squashfs/inode.c b/fs/squashfs/inode.c
-index 2507011..62e63ad 100644
---- a/fs/squashfs/inode.c
-+++ b/fs/squashfs/inode.c
-@@ -46,6 +46,7 @@
-  #include "squashfs_fs_sb.h"
-  #include "squashfs_fs_i.h"
-  #include "squashfs.h"
-+#include "xattr.h"
-
-  /*
-   * Initialise VFS inode with the base inode information common to all
-diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
-index 32f5b54..7a9464d 100644
---- a/fs/squashfs/namei.c
-+++ b/fs/squashfs/namei.c
-@@ -63,6 +63,7 @@
-  #include "squashfs_fs_sb.h"
-  #include "squashfs_fs_i.h"
-  #include "squashfs.h"
-+#include "xattr.h"
-
-  /*
-   * Lookup name in the directory index, returning the location of the metadata
-diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
-index 7d23810..305ce15 100644
---- a/fs/squashfs/squashfs.h
-+++ b/fs/squashfs/squashfs.h
-@@ -76,12 +76,6 @@ extern int squashfs_read_inode(struct inode *, long long);
-  /* xattr.c */
-  extern ssize_t squashfs_listxattr(struct dentry *, char *, size_t);
-
--/* xattr_id.c */
--extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
--				int *, long long *);
--extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
--				u64 *, int *);
--
-  /*
-   * Inodes, files,  decompressor and xattr operations
-   */
-diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index b6425ac..88b4f86 100644
---- a/fs/squashfs/super.c
-+++ b/fs/squashfs/super.c
-@@ -43,6 +43,7 @@
-  #include "squashfs_fs_i.h"
-  #include "squashfs.h"
-  #include "decompressor.h"
-+#include "xattr.h"
-
-  static struct file_system_type squashfs_fs_type;
-  static const struct super_operations squashfs_super_ops;
-@@ -272,7 +273,8 @@ allocate_xattr_table:
-  	if (IS_ERR(msblk->xattr_id_table)) {
-  		err = PTR_ERR(msblk->xattr_id_table);
-  		msblk->xattr_id_table = NULL;
--		goto failed_mount;
-+		if (err != -ENOTSUPP)
-+			goto failed_mount;
-  	}
-  allocate_root:
-  	root = new_inode(sb);
-diff --git a/fs/squashfs/symlink.c b/fs/squashfs/symlink.c
-index a7ee68a..ec86434 100644
---- a/fs/squashfs/symlink.c
-+++ b/fs/squashfs/symlink.c
-@@ -41,6 +41,7 @@
-  #include "squashfs_fs_sb.h"
-  #include "squashfs_fs_i.h"
-  #include "squashfs.h"
-+#include "xattr.h"
-
-  static int squashfs_symlink_readpage(struct file *file, struct page *page)
-  {
-diff --git a/fs/squashfs/xattr.h b/fs/squashfs/xattr.h
-new file mode 100644
-index 0000000..4a96366
---- /dev/null
-+++ b/fs/squashfs/xattr.h
-@@ -0,0 +1,45 @@
-+/*
-+ * Squashfs - a compressed read only filesystem for Linux
-+ *
-+ * Copyright (c) 2010
-+ * Phillip Lougher <phillip@lougher.demon.co.uk>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; either version 2,
-+ * or (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
-+ *
-+ * xattr.h
-+ */
-+
-+#ifdef CONFIG_SQUASHFS_XATTRS
-+extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
-+		u64 *, int *);
-+extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
-+		int *, long long *);
-+#else
-+static inline __le64 *squashfs_read_xattr_id_table(struct super_block *sb,
-+		u64 start, u64 *xattr_table_start, int *xattr_ids)
-+{
-+	ERROR("Xattrs in filesystem, these will be ignored\n");
-+	return ERR_PTR(-ENOTSUPP);
-+}
-+
-+static inline int squashfs_xattr_lookup(struct super_block *sb,
-+		unsigned int index, int *count, int *size, long long *xattr)
-+{
-+	return 0;
-+}
-+#define squashfs_listxattr NULL
-+#define generic_getxattr NULL
-+#define squashfs_xattr_handlers NULL
-+#endif
--- 
-1.6.3.3
-
+Hugh
