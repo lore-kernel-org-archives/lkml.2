@@ -1,73 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab0EQFbZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:31:25 -0400
-Received: from hera.kernel.org ([140.211.167.34]:52260 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753108Ab0EQFbY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:31:24 -0400
-Message-ID: <4BF0D491.7090802@kernel.org>
-Date: Mon, 17 May 2010 07:30:57 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Ben Hutchings <ben@decadent.org.uk>, jeff@garzik.org,
-       linux-ide@vger.kernel.org, jens.axboe@oracle.com,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       davem@davemloft.net, bzolnier@gmail.com
-Subject: Re: [PATCH 6/8] SCSI: implement sd_unlock_native_capacity()
-References: <1273946974-29131-1-git-send-email-tj@kernel.org>	 <1273946974-29131-7-git-send-email-tj@kernel.org>	 <1274017175.14187.9.camel@mulgrave.site>	 <1274022457.2564.105.camel@localhost>	 <1274025636.14187.24.camel@mulgrave.site>  <4BF024A2.4090804@kernel.org> <1274037797.14187.50.camel@mulgrave.site>
-In-Reply-To: <1274037797.14187.50.camel@mulgrave.site>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 17 May 2010 05:31:00 +0000 (UTC)
+	id S1753560Ab0EQFeL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:34:11 -0400
+Received: from e28smtp06.in.ibm.com ([122.248.162.6]:59274 "EHLO
+	e28smtp06.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753108Ab0EQFeI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 01:34:08 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V8 4/9] vfs: Allow handle based open on symlinks
+Date: Mon, 17 May 2010 11:03:47 +0530
+Message-Id: <1274074432-29695-5-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1.78.g212f0
+In-Reply-To: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+The patch update may_open to allow handle based open on symlinks.
+The file handle based API use file descritor returned from open_by_handle_at
+to do different file system operations. To find the link target name we
+need to get a file descriptor on symlinks.
 
-On 05/16/2010 09:23 PM, James Bottomley wrote:
->> request_queue is (or at least supposed to be) oblivious about genhd
->> and its attributes including capacity.  After all, request_queue can
->> exist w/o genhd associated, so it would be quite odd to have capacity
->> related method living in request_queue.
-> 
-> Yes, I'll sort of buy this ... although it's not quite that clean:
-> barrier methods, which are only used for filesystem above block devices
-> also live in the queue.
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+---
+ fs/namei.c |   17 ++++++++++++++---
+ 1 files changed, 14 insertions(+), 3 deletions(-)
 
-You mean prepare_flush_fn()?  Hmmm...
-
->> Another thing is that there is no generic way to reach the associated
->> genhd from request_queue and I can't think of a clean way to map
->> request_queue to the associated ata device w/o in-flight requests (can
->> you even do that from SCSI?).
-> 
-> No ... that's by design ... but you don't need it if all you're doing is
-> unlocking the native capacity (whether on behalf of block dev ops or
-> queue ops).
-
-libata defers all those managements stuff to EH and the ata device
-needs to be accessible to invoke EH.  It can be worked around by
-issuing a pseudo command which is trapped and deferred to EH during
-command processing but it's much better to be able to access the
-device directly.
-
->> Unfortunately, libata is still properly layered below SCSI, so I'm
->> afraid threading through sd is clumsy yet the cleanest way to do it.
-> 
-> s/properly/im\&/
-
-Heh, yeah.  :-)
-
-> but yes,
-> 
-> Reluctantly-Acked-by: James Bottomley <James.Bottomley@suse.de>
-
-Thanks.  Much appreciated.
-
+diff --git a/fs/namei.c b/fs/namei.c
+index 1fe4ee9..6edb9af 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1421,7 +1421,7 @@ int vfs_create(struct inode *dir, struct dentry *dentry, int mode,
+ 	return error;
+ }
+ 
+-int may_open(struct path *path, int acc_mode, int flag)
++static int __may_open(struct path *path, int acc_mode, int flag, int handle)
+ {
+ 	struct dentry *dentry = path->dentry;
+ 	struct inode *inode = dentry->d_inode;
+@@ -1432,7 +1432,13 @@ int may_open(struct path *path, int acc_mode, int flag)
+ 
+ 	switch (inode->i_mode & S_IFMT) {
+ 	case S_IFLNK:
+-		return -ELOOP;
++		/*
++		 * For file handle based open we should allow
++		 * open of symlink.
++		 */
++		if (!handle)
++			return -ELOOP;
++		break;
+ 	case S_IFDIR:
+ 		if (acc_mode & MAY_WRITE)
+ 			return -EISDIR;
+@@ -1472,6 +1478,11 @@ int may_open(struct path *path, int acc_mode, int flag)
+ 	return break_lease(inode, flag);
+ }
+ 
++int may_open(struct path *path, int acc_mode, int flag)
++{
++	return __may_open(path, acc_mode, flag, 0);
++}
++
+ static int handle_truncate(struct path *path)
+ {
+ 	struct inode *inode = path->dentry->d_inode;
+@@ -1569,7 +1580,7 @@ struct file *finish_open_handle(struct path *path,
+ 		if (error)
+ 			goto exit;
+ 	}
+-	error = may_open(path, acc_mode, open_flag);
++	error = __may_open(path, acc_mode, open_flag, 1);
+ 	if (error) {
+ 		if (will_truncate)
+ 			mnt_drop_write(path->mnt);
 -- 
-tejun
+1.7.1.78.g212f0
+
