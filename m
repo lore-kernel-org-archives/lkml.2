@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755102Ab0EQUN7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:13:59 -0400
-Received: from mail2.shareable.org ([80.68.89.115]:35599 "EHLO
-	mail2.shareable.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753883Ab0EQUN6 (ORCPT
+	id S1755185Ab0EQUQe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:16:34 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:45294 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752656Ab0EQUQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 16:13:58 -0400
-Date: Mon, 17 May 2010 21:13:39 +0100
-From: Jamie Lokier <jamie@shareable.org>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
-       willy@linux.intel.com, benh@kernel.crashing.org, paulus@samba.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t definition
-Message-ID: <20100517201339.GJ20356@shareable.org>
-References: <20100517043353.GA22127@kryten> <20100517043457.GA22416@kryten> <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	Mon, 17 May 2010 16:16:32 -0400
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Jean Delvare <khali@linux-fr.org>, Ben Dooks <ben-linux@fluff.org>
+Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] i2c-nforce2: Remove redundant error messages on ACPI conflict
+Date: Mon, 17 May 2010 16:16:19 -0400
+Message-Id: <1274127379-5433-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus Torvalds wrote:
-> 
-> 
-> On Mon, 17 May 2010, Anton Blanchard wrote:
-> > 
-> > It turns out this bad code is a result of us defining atomic_t as a
-> > volatile int.
-> 
-> Heh. Ok, as you point out in the commit message, I obviously agree with 
-> this patch. "volatile" on data is evil, with the possible exception of 
-> "jiffies" type things.
+The ACPI subsystem strictly checks for resource conflicts. When there's
+a conflict, it outputs a warning message with all the details needed to
+properly diagnose the underlying issue. However, the i2c-nforce2 driver
+also prints its own message. Not only is the message redundant, it is at
+the KERN_ERR level, which overrides some bootsplash screens for no good
+reason. This change removes the two lines that print out the error
+messages.
 
-I wonder if
+Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+---
+ drivers/i2c/busses/i2c-nforce2.c |    2 --
+ 1 files changed, 0 insertions(+), 2 deletions(-)
 
-   extern unsigned long __nv_jiffies;
-   #define jiffies (*(volatile unsigned long *)*__nv_jiffies)
+diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+index 4a48dd4..2da9a23 100644
+--- a/drivers/i2c/busses/i2c-nforce2.c
++++ b/drivers/i2c/busses/i2c-nforce2.c
+@@ -405,7 +405,6 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
+ 	/* SMBus adapter 1 */
+ 	res1 = nforce2_probe_smb(dev, 4, NFORCE_PCI_SMB1, &smbuses[0], "SMB1");
+ 	if (res1 < 0) {
+-		dev_err(&dev->dev, "Error probing SMB1.\n");
+ 		smbuses[0].base = 0;	/* to have a check value */
+ 	}
+ 	/* SMBus adapter 2 */
+@@ -417,7 +416,6 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
+ 		res2 = nforce2_probe_smb(dev, 5, NFORCE_PCI_SMB2, &smbuses[1],
+ 					 "SMB2");
+ 		if (res2 < 0) {
+-			dev_err(&dev->dev, "Error probing SMB2.\n");
+ 			smbuses[1].base = 0;	/* to have a check value */
+ 		}
+ 	}
+-- 
+1.7.0.4
 
-would improve any code in the same way as this atomic_t change.
-
--- Jamie
