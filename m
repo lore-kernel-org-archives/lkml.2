@@ -1,63 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751611Ab0EQAAm (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 20:00:42 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:44820 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751301Ab0EQAAl (ORCPT
+	id S1751727Ab0EQAKq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 20:10:46 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58436 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751301Ab0EQAKp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 20:00:41 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Greg Thelen <gthelen@google.com>
-Subject: Re: [PATCH v2] mm: Consider the entire user address space during node migration
-Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
-       Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       kamezawa.hiroyu@jp.fujitsu.com, nishimura@mxp.nes.nec.co.jp,
-       balbir@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org
-In-Reply-To: <1273962913-8950-1-git-send-email-gthelen@google.com>
-References: <AANLkTil4zgqBtBAp--P8VdynpbohxVosQ-qFiQQ_c5Bb@mail.gmail.com> <1273962913-8950-1-git-send-email-gthelen@google.com>
-Message-Id: <20100517085953.21A2.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 17 May 2010 09:00:37 +0900 (JST)
+	Sun, 16 May 2010 20:10:45 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Subject: [GIT PULL 0/2] perf tui improvements
+Date: Sun, 16 May 2010 21:10:32 -0300
+Message-Id: <1274055034-25634-1-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Changes since v1:
-> - Use mm->task_size rather than TASK_SIZE_MAX to support all platforms.
-> 
-> Signed-off-by: Greg Thelen <gthelen@google.com>
+Hi Ingo,
 
-Looks good. Thanks Greg!
-	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+        Please pull from:
 
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-> ---
->  mm/mempolicy.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-> index 9f11728..2fd17e7 100644
-> --- a/mm/mempolicy.c
-> +++ b/mm/mempolicy.c
-> @@ -928,7 +928,7 @@ static int migrate_to_node(struct mm_struct *mm, int source, int dest,
->  	nodes_clear(nmask);
->  	node_set(source, nmask);
->  
-> -	check_range(mm, mm->mmap->vm_start, TASK_SIZE, &nmask,
-> +	check_range(mm, mm->mmap->vm_start, mm->task_size, &nmask,
->  			flags | MPOL_MF_DISCONTIG_OK, &pagelist);
->  
->  	if (!list_empty(&pagelist))
-> -- 
-> 1.7.0.1
-> 
+Regards,
 
+- Arnaldo
 
+Arnaldo Carvalho de Melo (2):
+  perf tui: Make <- exit menus too
+  perf tui: Add help window to show key associations
+
+ tools/perf/util/newt.c |   63 ++++++++++++++++++++++++++++++++++++++++++++++-
+ 1 files changed, 61 insertions(+), 2 deletions(-)
 
