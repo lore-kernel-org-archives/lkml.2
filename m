@@ -1,119 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754869Ab0EQJCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:02:35 -0400
-Received: from serv2.oss.ntt.co.jp ([222.151.198.100]:53779 "EHLO
-	serv2.oss.ntt.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab0EQJCd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:02:33 -0400
-Message-ID: <4BF1070B.4000507@oss.ntt.co.jp>
-Date: Mon, 17 May 2010 18:06:19 +0900
-From: Takuya Yoshikawa <yoshikawa.takuya@oss.ntt.co.jp>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754848Ab0EQJEV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:04:21 -0400
+Received: from submit1.sa.ew.hu ([212.108.200.71]:43815 "EHLO submit1.sa.ew.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754197Ab0EQJEU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:04:20 -0400
+X-Greylist: delayed 621 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 05:04:20 EDT
+Message-ID: <4BF10420.5040707@dunaweb.hu>
+Date: Mon, 17 May 2010 10:53:52 +0200
+From: Zoltan Boszormenyi <zboszor@dunaweb.hu>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Takuya Yoshikawa <takuya.yoshikawa@gmail.com>, mtosatti@redhat.com,
-       agraf@suse.de, fernando@oss.ntt.co.jp, kvm@vger.kernel.org,
-       kvm-ppc@vger.kernel.org, kvm-ia64@vger.kernel.org,
-       linuxppc-dev@ozlabs.org, arnd@arndb.de, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC][PATCH 0/12] KVM, x86, ppc, asm-generic: moving dirty bitmaps
- to user space
-References: <20100504215645.6448af8f.takuya.yoshikawa@gmail.com> <4BE7F6D7.3060005@redhat.com> <4BE7FB7B.5010600@oss.ntt.co.jp> <4BEBE6D0.8020000@redhat.com>
-In-Reply-To: <4BEBE6D0.8020000@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+To: linux-kernel <linux-kernel@vger.kernel.org>
+CC: Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: [PATCHSET] libata: implement ->set_capacity()
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi,
 
-> User allocated bitmaps have the advantage of reducing pinned memory.
-> However we have plenty more pinned memory allocated in memory slots, so
-> by itself, user allocated bitmaps don't justify this change.
-
-In that sense, what do you think about the question I sent last week?
-
-=== REPOST 1 ===
- >>
- >> mark_page_dirty is called with the mmu_lock spinlock held in set_spte.
- >> Must find a way to move it outside of the spinlock section.
- >>
- >
- > Oh, it's a serious problem. I have to consider it.
-
-Avi, Marcelo,
-
-Sorry but I have to say that mmu_lock spin_lock problem was completely out of
-my mind. Although I looked through the code, it seems not easy to move the
-set_bit_user to outside of spinlock section without breaking the semantics of
-its protection.
-
-So this may take some time to solve.
-
-But personally, I want to do something for x86's "vmallc() every time" problem
-even though moving dirty bitmaps to user space cannot be achieved soon.
-
-In that sense, do you mind if we do double buffering without moving dirty bitmaps to
-user space?
-
-I know that the resource for vmalloc() is precious for x86 but even now, at the timing
-of get_dirty_log, we use the same amount of memory as double buffering.
-=== 1 END ===
-
-
+> On Thu, May 13 2010, Tejun Heo wrote:
+> > Hello,
+> > 
+> > On 05/13/2010 06:06 PM, James Bottomley wrote:
+> > > I'm not sure this is such a good interface ... it sounds very error
+> > > prone for what is effectively a binary lock/unlock.
+> > 
+> > Well, the original block interface was like that.  It has been used as
+> > binary switch tho.  The requested capacity is always ~0ULL and return
+> > value smaller than the current capacity is ignored.  I'm all for
+> > dropping the capacity parameter and the return value from
+> > ->set_capacity() so that it just unlocks native capacity and directly
+> > sets the new capacity.  Jens?
 >
-> Perhaps if we optimize memory slot write protection (I have some ideas
-> about this) we can make the performance improvement more pronounced.
+> Is there a valid case for setting the capacity less than the unlocked
+> capacity? I would think the unlock/lock bool api is saner.
 >
+> -- 
+> Jens Axboe
+>   
 
-It's really nice!
+I heard about a so called "short stroking", that limits a larger capacity
+harddisk to say one third or one fourth of the capacity but the gains are
+increased average throughput and decreased seek time. Is it possible
+under Linux ATM, or do we need the patch series to correctly do it?
 
-Even now we can measure the performance improvement by introducing switch ioctl
-when guest is relatively idle, so the combination will be really effective!
+I know I can partition the harddisk to only use the beginning of it
+to have the same gains, but I still have a question: as I read on e.g.
+tomshardware.com, this is done by instructing the harddisk, not via
+partitioning. Does this "short stroking" change the amount of spare
+sectors available internally to SATA disks? I suppose it would and
+so the harddisk would only lose some speed not actual data when
+the disk starts aging. I would have more time to discover the
+problem and replace the disk, no? I am only asking...
 
-=== REPOST 2 ===
- >>
- >> Can you post such a test, for an idle large guest?
- >
- > OK, I'll do!
+Best regards,
+Zoltán Böszörményi
 
-
-Result of "low workload test" (running top during migration) first,
-
-4GB guest
-picked up slots[1](len=3757047808) only
-*****************************************
-     get.org     get.opt    switch.opt
-
-     1060875     310292     190335
-     1076754     301295     188600
-      655504     318284     196029
-      529769     301471        325
-      694796      70216     221172
-      651868     353073     196184
-      543339     312865     213236
-     1061938      72785     203090
-      689527     323901     249519
-      621364     323881        473
-     1063671      70703     192958
-      915903     336318     174008
-     1046462     332384        782
-     1037942      72783     190655
-      680122     318305     243544
-      688156     314935     193526
-      558658     265934     190550
-      652454     372135     196270
-      660140      68613        352
-     1101947     378642     186575
-         ...        ...        ...
-*****************************************
-
-As expected we've got the difference more clearly.
-
-In this case, switch.opt reduced 1/3 (.1 msec) compared to get.opt
-for each iteration.
-
-And when the slot is cleaner, the ratio is bigger.
-=== 2 END ===
