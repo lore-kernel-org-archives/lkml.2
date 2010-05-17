@@ -1,51 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755637Ab0EQU33 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:29:29 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:21849 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754559Ab0EQU32 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 16:29:28 -0400
-Message-ID: <4BF1A6FA.4090801@oracle.com>
-Date: Mon, 17 May 2010 13:28:42 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	id S1755263Ab0EQUei (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:34:38 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:38522 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753348Ab0EQUeh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 16:34:37 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Nigel Cunningham <ncunningham@crca.org.au>
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while userspace is frozen?
+Date: Mon, 17 May 2010 22:35:37 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       "linux-kernel" <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-pm" <linux-pm@lists.linux-foundation.org>,
+       Matt Reimer <mattjreimer@gmail.com>
+References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org> <4BF0F3FF.2010603@crca.org.au>
+In-Reply-To: <4BF0F3FF.2010603@crca.org.au>
 MIME-Version: 1.0
-To: jacob pan <jacob.jun.pan@linux.intel.com>
-CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 2/2] x86/mrst: add more timer config options
-References: <1274124183-23431-1-git-send-email-jacob.jun.pan@linux.intel.com>	<1274124183-23431-3-git-send-email-jacob.jun.pan@linux.intel.com>	<20100517125619.a0e123cd.randy.dunlap@oracle.com> <20100517132642.000073d4@unknown>
-In-Reply-To: <20100517132642.000073d4@unknown>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
-X-CT-RefId: str=0001.0A090201.4BF1A716.0129:SCFMA4539811,ss=1,fgs=0
+Message-Id: <201005172235.37824.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/10 13:26, jacob pan wrote:
-> Randy Dunlap Mon, 17 May 2010 12:56:19 -0700
+On Monday 17 May 2010, Nigel Cunningham wrote:
+> Hi.
 > 
->>> Manual override is possible via cmdline option x86_mrst_timer.
->>
->> which is documented where??
-> It is documented in Documentation/kernel-parameters.txt, the option has not changed but the impact has been extended to the new Medfield platforms.
+> On 17/05/10 12:22, Alan Stern wrote:
+> > On Mon, 17 May 2010, Nigel Cunningham wrote:
+> >
+> >>>> I object to the patch.
+> >>>>
+> >>>> Tell the patch it ought to exit once thawed, by all means.
+> >>>
+> >>> I'm not sure what you mean.  Care to explain?
+> >>
+> >> I mean "Set up some sort of flag that it can look at once thawed at
+> >> resume time, and use that to tell it to exit at that point."
+> >
+> > Doesn't the patch do exactly that?  The "flag" is set by virtue of the
+> > fact that this is part of del_gendisk -- which means the disk is being
+> > unregistered and hence the writeback thread will exit shortly.
+> >
+> >>>> Make the patch unfreezeable to begin with, by all means.
+> >>>
+> >>> That wouldn't work.
+> >>
+> >> Why not?
+> >
+> > It would be nice to know exactly why.  Perhaps the underlying problem
+> > can be fixed.
+> >
+> >>>> If you know a disk is going to be unregistered during resume,
+> >>>
+> >>> How do we check that, exactly?
+> >>
+> >> Well, if you can figure out that you need to go down this path at this
+> >> point in the process, you must be able to apply the same logic to come
+> >> to the same conclusion earlier in the process.
+> >
+> > That's not true.  You don't know that a device is going to be unplugged
+> > until it actually _is_ unplugged.
 > 
->         x86_mrst_timer= [X86-32,APBT]
->                         Choose timer option for x86 Moorestown MID platform.
->                         Two valid options are apbt timer only and lapic timer
->                         plus one apbt timer for broadcast timer.
->                         x86_mrst_timer=apbt_only | lapic_and_apbt
+> Sorry - I got unregistered during suspend (instead of resume) in my 
+> head. That said, I'd argue that we should be...
+> 
+> 1) Syncing all the data at the start of the suspend/hibernate, so 
+> there's nothing for the workthread to do if we do del_gendisk.
+> 2) Telling things to exit if we do find the device is gone away at 
+> resume time, but not relying on the going-away happening until post 
+> process thaw, for a couple of reasons:
+> - Potential for races/confusion/mess etc in having $random process 
+> thawing other processes. Only the thread doing the suspend/hibernate 
+> should be freezing/thawing.
 
+I don't see a problem here, as far as kernel threads are concerned.  In this
+particular case this is a subsystem thawing a thread that belongs to it.  No
+problem.
 
-Thanks.  I missed seeing that somehow.  Sorry about that.
+> - We're dealing with the symptom, not the cause. Almost always a bad idea.
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+I very much prefer to have a fix for a symptom than no fix at all, which is the
+realistic alternative in this case.
+
+So, I think we should merge the patch and if someone finds the root cause
+at one point in future, then we can just use the *right* approach instead of
+the present one.
+
+The problem is real and people in the field are affected by it, so if you don't
+have a working alternative patch, please just let go.
+
+Thanks,
+Rafael
