@@ -1,118 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754559Ab0EQIOp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:14:45 -0400
-Received: from nwd2mail10.analog.com ([137.71.25.55]:31422 "EHLO
-	nwd2mail10.analog.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab0EQIOn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:14:43 -0400
-X-IronPort-AV: E=Sophos;i="4.53,246,1272859200"; 
-   d="scan'208";a="16062724"
-From: "Hennerich, Michael" <Michael.Hennerich@analog.com>
-To: Oskar Schirmer <os@emlix.com>, Mike Frysinger <vapier.adi@gmail.com>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       =?utf-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Oliver Schneidewind <osw@emlix.com>
-Date: Mon, 17 May 2010 09:14:39 +0100
-Subject: RE: [PATCH] ad7877: fix spi word size to 16 bit
-Thread-Topic: [PATCH] ad7877: fix spi word size to 16 bit
-Thread-Index: Acr1krlPr936+TFYTVaaPw81DYILQAABX4eg
-Message-ID: <544AC56F16B56944AEC3BD4E3D5917712E568FC181@LIMKCMBX1.ad.analog.com>
-References: <1273142265-11929-1-git-send-email-os@emlix.com>
- <n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
- <4BE3E02E.1090500@emlix.com>
- <h2l8bd0f97a1005071123u782bab2doee5c122dbd4c8642@mail.gmail.com>
- <20100513075335.GD30110@core.coreip.homeip.net>
- <20100515181523.GA3081@emlix.com>
- <AANLkTinn6VgvujPP3gGsteBGckIFgljn7B35DV6n8kwL@mail.gmail.com>
- <20100517072935.GA14891@emlix.com>
-In-Reply-To: <20100517072935.GA14891@emlix.com>
-Accept-Language: de-DE, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: de-DE, en-US
-Content-Type: text/plain; charset="utf-8"
+	id S1753923Ab0EQIRH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 04:17:07 -0400
+Received: from www.tglx.de ([62.245.132.106]:58996 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752686Ab0EQIRD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 04:17:03 -0400
+Date: Mon, 17 May 2010 10:16:40 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Feng Tang <feng.tang@intel.com>
+cc: Ingo Molnar <mingo@elte.hu>, "H.Peter Anvin" <hpa@zytor.com>,
+       "Brown, Len" <len.brown@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+       "Pan, Jacob jun" <jacob.jun.pan@intel.com>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: Re: [PATCH] x86: unify current 3 similar ways of saving IRQ info
+In-Reply-To: <20100517162521.6fc93552@feng-i7>
+Message-ID: <alpine.LFD.2.00.1005171016150.3368@localhost.localdomain>
+References: <20100517153156.4439d62b@feng-i7> <alpine.LFD.2.00.1005171004500.3368@localhost.localdomain> <20100517162521.6fc93552@feng-i7>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4H8EoaS018158
 
-Oskar Schirmer wrote on 2010-05-17:
-> On Sun, May 16, 2010 at 15:25:34 -0400, Mike Frysinger wrote:
->> On Sat, May 15, 2010 at 14:15, Oskar Schirmer wrote:
->>> On Thu, May 13, 2010 at 00:53:35 -0700, Dmitry Torokhov wrote:
->>>> On Fri, May 07, 2010 at 02:23:07PM -0400, Mike Frysinger wrote:
->>>>> On Fri, May 7, 2010 at 05:41, Daniel GlÃ¶ckner wrote:
->>>>>> On 05/06/2010 08:26 PM, Mike Frysinger wrote:
->>>>>>> i think it'd be a better idea to do something like:
->>>>>>>   if (spi->bits_per_word != 16) {
->>>>>>>     if (spi->bits_per_word) {
->>>>>>>       dev_err(&spi->dev, "Invalid SPI settings;
->>>>>>> bits_per_word must be 16\n");
->>>>>>>       return -EINVAL;
->>>>>>>     }
->>>>>>>     spi->bits_per_word = 16;
->>>>>>>     spi_setup(spi);
->>>>>>>   }
->>>>>>
->>>>>> There is no way to set bits_per_word using struct spi_board_info.
->>>>>> The description of that structure in spi.h explicitly lists the
->>>>>> wordsize as one of the parameters drivers should set themself in
->>>>>> probe().
->>>>>>
->>>>>> Only struct bfin5xx_spi_chip allows to set this value in the
-> board code.
->>>>>
->>>>> an obvious shortcoming in the SPI framework that should be fixed,
->>>>> but that doesnt make any difference to the above code now does it ?
->>>>>  it'll operate correctly regardless of the SPI bus master.
->>>>
->>>> So is the updated patch coming?
->>>
->>> The basic question I see is, whether it is in the responsibility
->>> of
->>> ad7877 to check a wrong setting possibly caused in board specific
->>> code. If so, then the proposal by Mike should be used, but if not
->>> so, it would introduce unneeded code.
->>>
->>> Remember: both versions end up in correctly setting bits_per_word,
->>> with the difference merely in feedback level.
->>
->> imo, unsupported board settings should always be detected & rejected.
->> all SPI master drivers do this (detect & reject unsupported SPI
->> slave settings).
->
-> please note, that bits_per_word is not a board setting, it's a demand
-> of the device. consequently, there is no one to set unsupported values
-> and thus none to be detected.
->
-> the only architecture setting bits_per_word thru spi_chip is blackfin,
-> but I cannot see a good reason, why the board settings should engage
-> with a fixed demand of the device?
->
->   Oskar
+On Mon, 17 May 2010, Feng Tang wrote:
 
-100% agreed.
+> On Mon, 17 May 2010 16:07:05 +0800
+> Thomas Gleixner <tglx@linutronix.de> wrote:
+> 
+> > On Mon, 17 May 2010, Feng Tang wrote:
+> > 
+> > >  {
+> > >  	if (mp_irq->dstapic != m->dstapic)
+> > > @@ -211,7 +211,8 @@ static int __init mp_irq_mpc_intsrc_cmp(struct
+> > > mpc_intsrc *mp_irq, return 0;
+> > >  }
+> > >  
+> > > -static void __init MP_intsrc_info(struct mpc_intsrc *m)
+> > > +/* Will also be called in acpi/sfi related code */
+> > > +void mp_save_irq(struct mpc_intsrc *m)
+> > 
+> >   Again, this code is called from __init context only and should stay
+> >   __init.
+> 
+> Hi Thomas,
+> 
+> The reason I removed the __init is it will be called by non __init functions
+> from acpi/boot.c and mrst.c
 
-Two ways to address the issue:
-1) Forcing spi->bits_per_word = 16 like this patch does.
-2) Or going with the default 8-bit transfers and using be16_to_cpu().
+Why should that happen ?
 
-Personally I prefer 1) unless someone tells me that not all SPI bus drivers
-support 16-bit transfers.
+Thanks,
 
-Greetings,
-Michael
-
-Analog Devices GmbH      Wilhelm-Wagenfeld-Str. 6      80807 Muenchen
-Sitz der Gesellschaft Muenchen, Registergericht Muenchen HRB 4036 Geschaeftsfuehrer Thomas Wessel, William A. Martin, Margaret Seif
-
-
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+	tglx
