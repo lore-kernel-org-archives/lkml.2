@@ -1,44 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753454Ab0EQPe3 (ORCPT <rfc822;w@1wt.eu>);
+	id S1753719Ab0EQPec (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:34:32 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37457 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753514Ab0EQPe3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 May 2010 11:34:29 -0400
-Received: from opensource.wolfsonmicro.com ([80.75.67.52]:38175 "EHLO
-	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753196Ab0EQPeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:34:25 -0400
-Date: Mon, 17 May 2010 08:34:32 -0700
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Sundar R Iyer <sundar.iyer@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>
-Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
- requested
-Message-ID: <20100517153431.GA6218@opensource.wolfsonmicro.com>
-References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
- <20100517144411.GD5257@opensource.wolfsonmicro.com>
- <1274108214.20589.28.camel@bnru01>
- <1274109402.20589.39.camel@bnru01>
+Date: Mon, 17 May 2010 17:34:28 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Christoph Egger <siccegge@cs.fau.de>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Alexey Dobriyan <adobriyan@gmail.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       Anirban Sinha <asinha@zeugmasystems.com>, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH] Tidy REMOTE_DEBUG
+In-Reply-To: <20100517152554.GB3686@faui49.informatik.uni-erlangen.de>
+Message-ID: <alpine.LNX.2.00.1005171733430.28092@pobox.suse.cz>
+References: <20100517152554.GB3686@faui49.informatik.uni-erlangen.de>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274109402.20589.39.camel@bnru01>
-X-Cookie: A is for Apple.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 08:45:45PM +0530, Sundar R Iyer wrote:
+On Mon, 17 May 2010, Christoph Egger wrote:
 
-> +	/* sanity check */
-> +	if (!rdev->desc->ops->get_mode) {
-> +		ret = -EINVAL;
-> +		goto out;
-> +	}
+> >From 7cc3dbcc665505816368268dee33f6f54d97fc84 Mon Sep 17 00:00:00 2001
+> From: Christoph Egger <siccegge@cs.fau.de>
+> Date: Mon, 17 May 2010 17:21:02 +0200
+> Subject: [PATCH 2/2] Remove CONFIG_REMOTE_DEBUG
+> 
+> REMOTE_DEBUG does already appear in 2.2 kernel sources but didn't
+> appear as a config Option in the initial git import 2.6.12-rc. It's
+> currently just used in one single place of the linux kernel and should
+> probably be dropped totally
+> 
+> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+> ---
+>  drivers/char/serial167.c |  223 +---------------------------------------------
+>  1 files changed, 1 insertions(+), 222 deletions(-)
 
-This doesn't seem like the right error handling - if the driver has a
-set_mode() you'd *expect* it to have a get_mode() but there's no need
-for it to be a strict requirement.
+While you are at it, you could probably nuke the references in 
+arch/frv/kernel/gdb-stub.c and arch/mn10300/kernel/gdb-stub.c as well ...
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
