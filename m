@@ -1,117 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755533Ab0EQU2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:28:21 -0400
-Received: from www.tglx.de ([62.245.132.106]:42989 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755263Ab0EQU2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 16:28:19 -0400
-Date: Mon, 17 May 2010 22:27:43 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@linux.intel.com>
-Subject: Re: [PATCH 2/2] x86/mrst: add more timer config options
-In-Reply-To: <1274124183-23431-3-git-send-email-jacob.jun.pan@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1005172138170.3368@localhost.localdomain>
-References: <1274124183-23431-1-git-send-email-jacob.jun.pan@linux.intel.com> <1274124183-23431-3-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755637Ab0EQU33 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:29:29 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21849 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754559Ab0EQU32 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 16:29:28 -0400
+Message-ID: <4BF1A6FA.4090801@oracle.com>
+Date: Mon, 17 May 2010 13:28:42 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: jacob pan <jacob.jun.pan@linux.intel.com>
+CC: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 2/2] x86/mrst: add more timer config options
+References: <1274124183-23431-1-git-send-email-jacob.jun.pan@linux.intel.com>	<1274124183-23431-3-git-send-email-jacob.jun.pan@linux.intel.com>	<20100517125619.a0e123cd.randy.dunlap@oracle.com> <20100517132642.000073d4@unknown>
+In-Reply-To: <20100517132642.000073d4@unknown>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090201.4BF1A716.0129:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010, Jacob Pan wrote:
+On 05/17/10 13:26, jacob pan wrote:
+> Randy Dunlap Mon, 17 May 2010 12:56:19 -0700
+> 
+>>> Manual override is possible via cmdline option x86_mrst_timer.
+>>
+>> which is documented where??
+> It is documented in Documentation/kernel-parameters.txt, the option has not changed but the impact has been extended to the new Medfield platforms.
+> 
+>         x86_mrst_timer= [X86-32,APBT]
+>                         Choose timer option for x86 Moorestown MID platform.
+>                         Two valid options are apbt timer only and lapic timer
+>                         plus one apbt timer for broadcast timer.
+>                         x86_mrst_timer=apbt_only | lapic_and_apbt
 
-> diff --git a/arch/x86/include/asm/apb_timer.h b/arch/x86/include/asm/apb_timer.h
-> index c74a2ee..4127fd1 100644
-> --- a/arch/x86/include/asm/apb_timer.h
-> +++ b/arch/x86/include/asm/apb_timer.h
-> @@ -55,7 +55,7 @@ extern unsigned long apbt_quick_calibrate(void);
->  extern int arch_setup_apbt_irqs(int irq, int trigger, int mask, int cpu);
->  extern void apbt_setup_secondary_clock(void);
->  extern unsigned int boot_cpu_id;
-> -extern int disable_apbt_percpu;
-> +extern int mrst_timer_options;
 
-  Please remove this, it belongs to and is in mrst.h
+Thanks.  I missed seeing that somehow.  Sorry about that.
 
->  #ifdef CONFIG_SMP
-> @@ -204,9 +203,9 @@ static inline int __init setup_x86_mrst_timer(char *arg)
->  		return -EINVAL;
->  
->  	if (strcmp("apbt_only", arg) == 0)
-> -		disable_apbt_percpu = 0;
-> +		mrst_timer_options = MRST_TIMER_APBT_ONLY;
->  	else if (strcmp("lapic_and_apbt", arg) == 0)
-> -		disable_apbt_percpu = 1;
-> +		mrst_timer_options = MRST_TIMER_LAPIC_APBT;
->  	else {
->  		pr_warning("X86 MRST timer option %s not recognised"
->  			   " use x86_mrst_timer=apbt_only or lapic_and_apbt\n",
-
-  Please move that to msrt.c It's not apbt specific. We parse the
-  options where we have the variable.
-
->  static void __init mrst_setup_boot_clock(void)
->  {
-> -	pr_info("%s: per cpu apbt flag %d \n", __func__, disable_apbt_percpu);
-> -	if (disable_apbt_percpu)
-> +	switch (mrst_timer_options) {
-> +	case MRST_TIMER_APBT_ONLY:
-> +		break;
-> +	case MRST_TIMER_LAPIC_APBT:
->  		setup_boot_APIC_clock();
-> +		break;
-> +	default:
-> +		/* check if this is Penwell */
-> +		if (cpu_has(&boot_cpu_data, X86_FEATURE_ARAT))
-> +			setup_boot_APIC_clock();
-> +		break;
-> +	}
->  };
-
-Did you notice that you are copying these checks all over the place ?
-
-The first call into that code is mrst_time_init(), right ? So why not
-check there and setup the function pointers once ?
-
-void __init mrst_time_init(void)
-{
-	switch (mrst_timer_options) {
-	case MRST_TIMER_APBT_ONLY:
-		break;
-
-	default:
-		if (!cpu_has(&boot_cpu_data, X86_FEATURE_ARAT))
-		   	break;
-
-		x86_init.timers.timer_init = x86_init_noop;
-
-	case MRST_TIMER_LAPIC_APBT:
-		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
-		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
-		return;
-	}
-
-        sfi_table_parse(SFI_SIG_MTMR, NULL, NULL, sfi_parse_mtmr);
-	....
-
-and change the code in x86_mrst_early_setup()
-
--   	 x86_init.timers.setup_percpu_clockev = mrst_setup_boot_clock;
-+   	 x86_init.timers.setup_percpu_clockev = x86_init_noop;
-
--        x86_cpuinit.setup_percpu_clockev = mrst_setup_secondary_clock;
-+        x86_cpuinit.setup_percpu_clockev = apbt_setup_secondary_clock;
-
-So this makes everything default to apbt and in case of lapic selected
-by command line or cpu type you switch everything over in one place.
-
-That removes mrst_setup_boot_clock and mrst_setup_secondary_clock
-along with all the duplicated code.
-
-Thanks,
-
-	tglx
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
