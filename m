@@ -1,44 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755022Ab0EQSU0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:20:26 -0400
-Received: from kroah.org ([198.145.64.141]:34173 "EHLO coco.kroah.org"
+	id S1755248Ab0EQSUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 14:20:33 -0400
+Received: from kroah.org ([198.145.64.141]:34189 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754901Ab0EQSUX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:20:23 -0400
-Date: Mon, 17 May 2010 11:01:30 -0700
+	id S1755050Ab0EQSU2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 14:20:28 -0400
+Date: Mon, 17 May 2010 11:11:33 -0700
 From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Henk de Groot <henk.de.groot@hetnet.nl>,
-       Dominik Brodowski <linux@dominikbrodowski.net>
-Subject: Re: linux-next: manual merge of the staging-next tree with the
- pcmcia tree
-Message-ID: <20100517180130.GC16419@kroah.com>
-References: <20100517154919.535f12a1.sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>
+Cc: ebiederm@xmission.com, gregkh@suse.de, kay.sievers@vrfy.org,
+       linux-kernel@vger.kernel.org, tj@kernel.org, cornelia.huck@de.ibm.com,
+       eric.dumazet@gmail.com, bcrl@lhnet.ca, serue@us.ibm.com,
+       netdev@vger.kernel.org
+Subject: Re: [PATCH 0/6] netns support in the kobject layer
+Message-ID: <20100517181133.GB18721@kroah.com>
+References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
+ <m1d3xb4239.fsf@fess.ebiederm.org>
+ <20100506200404.GA21805@kroah.com>
+ <20100515.232643.212422307.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100517154919.535f12a1.sfr@canb.auug.org.au>
+In-Reply-To: <20100515.232643.212422307.davem@davemloft.net>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 03:49:19PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Sat, May 15, 2010 at 11:26:43PM -0700, David Miller wrote:
+> From: Greg KH <greg@kroah.com>
+> Date: Thu, 6 May 2010 13:04:04 -0700
 > 
-> Today's linux-next merge of the staging-next tree got a conflict in
-> drivers/staging/wlags49_h2/wl_cs.c between commit
-> eb14120f743d29744d9475bffec56ff4ad43a749 ("pcmcia: re-work
-> pcmcia_request_irq()") from the pcmcia tree and commit
-> 93822ad193f1b1d92422dc3d539456acbe1a85ef ("Staging: wlags49_hs2: Fix
-> wlags49_hs2 driver after build fixes broke it") from the staging-next
-> tree.
+> > On Tue, May 04, 2010 at 05:35:54PM -0700, Eric W. Biederman wrote:
+> >> 
+> >> With the tagged sysfs support finally merged into Greg's tree,
+> >> it is time for the last little bits of work to get the kobject
+> >> layer and network namespaces to play together properly.
+> >> 
+> >> These patches are roughly evenly divided between network layer work
+> >> and sysfs layer work.  Last time this conundrum came up I believe
+> >> we decided that the easiest way to handle this was for Greg to carry
+> >> all of the patches.  David, Greg does that still make sense?
+> > 
+> > That's fine, if I get David's ack on these.
 > 
-> I fixed it up (see below - basically the staging-next version) and can
-> carry the fix as necessary.
+> Looks good to me:
+> 
+> Acked-by: David S. Miller <davem@davemloft.net>
 
-Looks good to me, thanks.
+Ok.  Eric, can you resend these to me when .35-rc1 is out so I can queue
+them up then to get some testing in linux-next so that they can make it
+into .36?
+
+thanks,
 
 greg k-h
