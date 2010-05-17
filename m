@@ -1,68 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754529Ab0EQI5n (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:57:43 -0400
-Received: from mtagate2.uk.ibm.com ([194.196.100.162]:46833 "EHLO
-	mtagate2.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751830Ab0EQI5l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:57:41 -0400
-Date: Mon, 17 May 2010 10:58:34 +0200
-From: Heiko Carstens <heiko.carstens@de.ibm.com>
-To: Anton Blanchard <anton@samba.org>
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       willy@linux.intel.com, benh@kernel.crashing.org, paulus@samba.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t definition
-Message-ID: <20100517085833.GA2404@osiris.boeblingen.de.ibm.com>
-References: <20100517043353.GA22127@kryten>
- <20100517043457.GA22416@kryten>
+	id S1754750Ab0EQJAG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:00:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53159 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754420Ab0EQJAE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:00:04 -0400
+Date: Mon, 17 May 2010 14:31:40 +0530
+From: Amit Shah <amit.shah@redhat.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org, Rusty Russell <rusty@rustcorp.com.au>
+Subject: Re: [PATCH 1/4] drivers/char: Eliminate use after free
+Message-ID: <20100517072337.GC3313@amit-laptop.redhat.com>
+References: <Pine.LNX.4.64.1005151145340.15566@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100517043457.GA22416@kryten>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1005151145340.15566@ask.diku.dk>
+User-Agent: Mutt/1.5.20 (2009-12-10)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 02:34:57PM +1000, Anton Blanchard wrote:
+On (Sat) May 15 2010 [11:45:53], Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> When looking at a performance problem on PowerPC, I noticed some awful code
-> generation:
+> In each case, the first argument to send_control_msg or __send_control_msg,
+> respectively, has either not been successfully allocated or has been freed
+> at the point of the call.  In the first case, the first argument, port, is
+> only used to access the portdev and id fields, in order to call
+> __send_control_msg.  Thus it seems possible instead to call
+> __send_control_msg directly.  In the second case, the call to
+> __send_control_msg is moved up to a place where it seems like the first
+> argument, portdev, has been initialized sufficiently to make the call to
+> __send_control_msg meaningful.
 > 
-> c00000000051fc98:       3b 60 00 01     li      r27,1
-> ...
-> c00000000051fca0:       3b 80 00 00     li      r28,0
-> ...
-> c00000000051fcdc:       93 61 00 70     stw     r27,112(r1)
-> c00000000051fce0:       93 81 00 74     stw     r28,116(r1)
-> c00000000051fce4:       81 21 00 70     lwz     r9,112(r1)
-> c00000000051fce8:       80 01 00 74     lwz     r0,116(r1)
-> c00000000051fcec:       7d 29 07 b4     extsw   r9,r9
-> c00000000051fcf0:       7c 00 07 b4     extsw   r0,r0
+> This has only been compile tested.
 > 
-> c00000000051fcf4:       7c 20 04 ac     lwsync
-> c00000000051fcf8:       7d 60 f8 28     lwarx   r11,0,r31
-> c00000000051fcfc:       7c 0b 48 00     cmpw    r11,r9
-> c00000000051fd00:       40 c2 00 10     bne-    c00000000051fd10
-> c00000000051fd04:       7c 00 f9 2d     stwcx.  r0,0,r31
-> c00000000051fd08:       40 c2 ff f0     bne+    c00000000051fcf8
-> c00000000051fd0c:       4c 00 01 2c     isync
+> A simplified version of the semantic match that finds this problem is as
+> follows: (http://coccinelle.lip6.fr/)
 > 
-> We create two constants, write them out to the stack, read them straight back
-> in and sign extend them. What a mess.
+> // <smpl>
+> @free@
+> expression E;
+> position p;
+> @@
+> kfree@p(E)
 > 
-> It turns out this bad code is a result of us defining atomic_t as a
-> volatile int.
+> @@
+> expression free.E, subE<=free.E, E1;
+> position free.p;
+> @@
 > 
-> We removed the volatile attribute from the powerpc atomic_t definition years
-> ago, but commit ea435467500612636f8f4fb639ff6e76b2496e4b (atomic_t: unify all
-> arch definitions) added it back in. 
+>   kfree@p(E)
+>   ...
+> (
+>   subE = E1
+> |
+> * E
+> )
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-With your patches we can also revert 39475179d40996b4efa662e3825735a84d2526d1
-"[S390] Improve code generated by atomic operations." which was created for
-the very same reason.
+Acked-by: Amit Shah <amit.shah@redhat.com>
 
-Thanks!
+Thanks, Julia.
+
+Rusty, please pick this patch. Thanks.
+
+> 
+> ---
+>  drivers/char/virtio_console.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
+> index 458d907..8c99bf1 100644
+> --- a/drivers/char/virtio_console.c
+> +++ b/drivers/char/virtio_console.c
+> @@ -1090,7 +1090,7 @@ free_port:
+>  	kfree(port);
+>  fail:
+>  	/* The host might want to notify management sw about port add failure */
+> -	send_control_msg(port, VIRTIO_CONSOLE_PORT_READY, 0);
+> +	__send_control_msg(portdev, id, VIRTIO_CONSOLE_PORT_READY, 0);
+>  	return err;
+>  }
+>  
+> @@ -1559,6 +1559,9 @@ static int __devinit virtcons_probe(struct virtio_device *vdev)
+>  	return 0;
+>  
+>  free_vqs:
+> +	/* The host might want to notify mgmt sw about device add failure */
+> +	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
+> +			   VIRTIO_CONSOLE_DEVICE_READY, 0);
+>  	vdev->config->del_vqs(vdev);
+>  	kfree(portdev->in_vqs);
+>  	kfree(portdev->out_vqs);
+> @@ -1567,9 +1570,6 @@ free_chrdev:
+>  free:
+>  	kfree(portdev);
+>  fail:
+> -	/* The host might want to notify mgmt sw about device add failure */
+> -	__send_control_msg(portdev, VIRTIO_CONSOLE_BAD_ID,
+> -			   VIRTIO_CONSOLE_DEVICE_READY, 0);
+>  	return err;
+>  }
+>  
+
+		Amit
