@@ -1,86 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752216Ab0EQPeL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:34:11 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38073 "EHLO mx1.suse.de"
+	id S1752958Ab0EQPeR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:34:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:37440 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751381Ab0EQPeJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:34:09 -0400
-Date: Mon, 17 May 2010 08:24:26 -0700
+	id S1752247Ab0EQPeL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 11:34:11 -0400
+Date: Mon, 17 May 2010 08:30:55 -0700
 From: Greg KH <gregkh@suse.de>
-To: Christoph Egger <siccegge@cs.fau.de>, Mark McLoughlin <markmc@redhat.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Jan Blunck <jblunck@suse.de>,
-       Emese Revfy <re.emese@gmail.com>,
-       "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-       linux-kernel@vger.kernel.org, vamos@i4.informatik.uni-erlangen.de
-Subject: Re: [PATCH] Typo in drivers/base/core.c
-Message-ID: <20100517152426.GA27847@suse.de>
-References: <20100517145757.GA3686@faui49.informatik.uni-erlangen.de>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH v3 00/10] BKL conversion in tty layer
+Message-ID: <20100517153055.GA28137@suse.de>
+References: <1273957196-13768-1-git-send-email-arnd@arndb.de>
+ <20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100517145757.GA3686@faui49.informatik.uni-erlangen.de>
+In-Reply-To: <20100517144130.1d8aa313@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 04:57:58PM +0200, Christoph Egger wrote:
-> Hi all!
+On Mon, May 17, 2010 at 02:41:30PM +0100, Alan Cox wrote:
+> On Sat, 15 May 2010 22:59:46 +0200
+> Arnd Bergmann <arnd@arndb.de> wrote:
 > 
-> 	As part of the VAMOS[0] research project at the University of
-> Erlangen we are looking at multiple integrity errors in linux'
-> configuration system.
+> > This is the third attempt to get the BKL out of the
+> > TTY code. This version goes much further than the
+> > previous one, and eliminates most of the code I
+> > had introduced there.
 > 
-> 	There's a typo in linux' source (CONFIG_MODULE -- missing the
-> final S) making the whole codeblock unselectable. The included patch
-> should address this issue.
+> At this point I think the only way to make further progress is to
+> actually push this stuff into the kernel on top of the BKL removal
+> patches for the drivers and see what happens. Something will no doubt
+> break but we can try and nail them in time or if not revert the series
+> and try again next kernel.
+> 
+> The big nasty remaining after this is drivers/serial, which probably
+> wants some serious reconstructive surgery to use kfifo etc. Either way
+> its an independent problem to the stuff this lot tackles.
+> 
+> So this series
+> 
+> Acked-by: Alan Cox <alan@linux.intel.com>
 
-Heh, this has been there since the code went into the tree, way back in
-2.6.29 (1 1/2 years ago).  Nice fine, I'll queue it up later this week.
-
-Mark, how did you ever test this?
+I'd prefer to do this for .36, not for .35.  Arnd, I'll be glad to queue
+these patches up to the tty development tree after .35-rc1 is out, so it
+gets lots of testing in the linux-next tree, is that ok?  If so, can you
+resend them to me at that time?
 
 thanks,
 
 greg k-h
-
-> >From d5fe80140757fedfe19c293cd7af4c1030b92353 Mon Sep 17 00:00:00 2001
-> From: Christoph Egger <siccegge@cs.fau.de>
-> Date: Mon, 17 May 2010 16:48:59 +0200
-> Subject: [PATCH] CONFIG_MODULES misstyped as _MODULE
-> 
-> In this code section the final S of CONFIG_MODULES was missed making
-> the whole check useless
-> 
-> Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
-> ---
->  drivers/base/core.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/base/core.c b/drivers/base/core.c
-> index b56a0ba..f801c36 100644
-> --- a/drivers/base/core.c
-> +++ b/drivers/base/core.c
-> @@ -1372,7 +1372,7 @@ struct device *__root_device_register(const char *name, struct module *owner)
->  		return ERR_PTR(err);
->  	}
->  
-> -#ifdef CONFIG_MODULE	/* gotta find a "cleaner" way to do this */
-> +#ifdef CONFIG_MODULES	/* gotta find a "cleaner" way to do this */
->  	if (owner) {
->  		struct module_kobject *mk = &owner->mkobj;
->  
-> -- 
-> 1.6.3.3
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
-> 
