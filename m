@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755521Ab0EQTd4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:33:56 -0400
-Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:33180 "EHLO
-	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752565Ab0EQTdy (ORCPT
+	id S1755935Ab0EQTfl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:35:41 -0400
+Received: from anchor-post-2.mail.demon.net ([195.173.77.133]:52239 "EHLO
+	anchor-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754606Ab0EQTfk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:33:54 -0400
-Message-ID: <4BF1999A.5040707@lougher.demon.co.uk>
-Date: Mon, 17 May 2010 20:31:38 +0100
+	Mon, 17 May 2010 15:35:40 -0400
+Message-ID: <4BF19A03.1060506@lougher.demon.co.uk>
+Date: Mon, 17 May 2010 20:33:23 +0100
 From: Phillip Lougher <phillip@lougher.demon.co.uk>
 User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
 To: linux-fsdevel@vger.kernel.org
 CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
-Subject: [PATCH 3/4] squashfs: add new extended inode types
+Subject: [PATCH 4/4] squashfs: add xattr support configure option
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,355 +22,178 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-Add new extended inode types that store the xattr_id field.
-Also add the necessary code changes to make xattrs visibile.
-
 Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
 ---
-  fs/squashfs/inode.c       |   91 +++++++++++++++++++++++++++++++++++++++++---
-  fs/squashfs/namei.c       |    5 ++-
-  fs/squashfs/squashfs.h    |   12 +++++-
-  fs/squashfs/squashfs_fs.h |   25 ++++++++++++
-  fs/squashfs/super.c       |    8 +---
-  fs/squashfs/symlink.c     |   10 +++++
-  6 files changed, 135 insertions(+), 16 deletions(-)
+  fs/squashfs/Kconfig    |   11 +++++++++++
+  fs/squashfs/Makefile   |    2 +-
+  fs/squashfs/inode.c    |    1 +
+  fs/squashfs/namei.c    |    1 +
+  fs/squashfs/squashfs.h |    6 ------
+  fs/squashfs/super.c    |    4 +++-
+  fs/squashfs/symlink.c  |    1 +
+  fs/squashfs/xattr.h    |   45 +++++++++++++++++++++++++++++++++++++++++++++
+  8 files changed, 63 insertions(+), 8 deletions(-)
+  create mode 100644 fs/squashfs/xattr.h
+
+diff --git a/fs/squashfs/Kconfig b/fs/squashfs/Kconfig
+index 25a00d1..cc6ce8a 100644
+--- a/fs/squashfs/Kconfig
++++ b/fs/squashfs/Kconfig
+@@ -26,6 +26,17 @@ config SQUASHFS
+
+  	  If unsure, say N.
+
++config SQUASHFS_XATTRS
++	bool "Squashfs XATTR support"
++	depends on SQUASHFS
++	default n
++	help
++	  Saying Y here includes support for extended attributes (xattrs).
++	  Xattrs are name:value pairs associated with inodes by
++	  the kernel or by users (see the attr(5) manual page).
++
++	  If unsure, say N.
++
+  config SQUASHFS_EMBEDDED
+
+  	bool "Additional option for memory-constrained systems"
+diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
+index 56684d4..2cee3e9 100644
+--- a/fs/squashfs/Makefile
++++ b/fs/squashfs/Makefile
+@@ -5,5 +5,5 @@
+  obj-$(CONFIG_SQUASHFS) += squashfs.o
+  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
+  squashfs-y += namei.o super.o symlink.o zlib_wrapper.o decompressor.o
+-squashfs-y += xattr.o xattr_id.o
++squashfs-$(CONFIG_SQUASHFS_XATTRS) += xattr.o xattr_id.o
 
 diff --git a/fs/squashfs/inode.c b/fs/squashfs/inode.c
-index 49daaf6..2507011 100644
+index 2507011..62e63ad 100644
 --- a/fs/squashfs/inode.c
 +++ b/fs/squashfs/inode.c
-@@ -40,6 +40,7 @@
-
-  #include <linux/fs.h>
-  #include <linux/vfs.h>
-+#include <linux/xattr.h>
-
-  #include "squashfs_fs.h"
+@@ -46,6 +46,7 @@
   #include "squashfs_fs_sb.h"
-@@ -111,6 +112,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-  	int err, type, offset = SQUASHFS_INODE_OFFSET(ino);
-  	union squashfs_inode squashfs_ino;
-  	struct squashfs_base_inode *sqshb_ino = &squashfs_ino.base;
-+	int xattr_id = SQUASHFS_INVALID_XATTR;
-
-  	TRACE("Entered squashfs_read_inode\n");
-
-@@ -199,8 +201,10 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-  			frag_offset = 0;
-  		}
-
-+		xattr_id = le32_to_cpu(sqsh_ino->xattr);
-  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-  		inode->i_size = le64_to_cpu(sqsh_ino->file_size);
-+		inode->i_op = &squashfs_inode_ops;
-  		inode->i_fop = &generic_ro_fops;
-  		inode->i_mode |= S_IFREG;
-  		inode->i_blocks = ((inode->i_size -
-@@ -251,6 +255,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-  		if (err < 0)
-  			goto failed_read;
-
-+		xattr_id = le32_to_cpu(sqsh_ino->xattr);
-  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-  		inode->i_size = le32_to_cpu(sqsh_ino->file_size);
-  		inode->i_op = &squashfs_dir_inode_ops;
-@@ -280,21 +285,33 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-
-  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-  		inode->i_size = le32_to_cpu(sqsh_ino->symlink_size);
--		inode->i_op = &page_symlink_inode_operations;
-+		inode->i_op = &squashfs_symlink_inode_ops;
-  		inode->i_data.a_ops = &squashfs_symlink_aops;
-  		inode->i_mode |= S_IFLNK;
-  		squashfs_i(inode)->start = block;
-  		squashfs_i(inode)->offset = offset;
-
-+		if (type == SQUASHFS_LSYMLINK_TYPE) {
-+			__le32 xattr;
-+
-+			err = squashfs_read_metadata(sb, NULL, &block,
-+						&offset, inode->i_size);
-+			if (err < 0)
-+				goto failed_read;
-+			err = squashfs_read_metadata(sb, &xattr, &block,
-+						&offset, sizeof(xattr));
-+			if (err < 0)
-+				goto failed_read;
-+			xattr_id = le32_to_cpu(xattr);
-+		}
-+
-  		TRACE("Symbolic link inode %x:%x, start_block %llx, offset "
-  				"%x\n", SQUASHFS_INODE_BLK(ino), offset,
-  				block, offset);
-  		break;
-  	}
-  	case SQUASHFS_BLKDEV_TYPE:
--	case SQUASHFS_CHRDEV_TYPE:
--	case SQUASHFS_LBLKDEV_TYPE:
--	case SQUASHFS_LCHRDEV_TYPE: {
-+	case SQUASHFS_CHRDEV_TYPE: {
-  		struct squashfs_dev_inode *sqsh_ino = &squashfs_ino.dev;
-  		unsigned int rdev;
-
-@@ -315,10 +332,32 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-  				SQUASHFS_INODE_BLK(ino), offset, rdev);
-  		break;
-  	}
-+	case SQUASHFS_LBLKDEV_TYPE:
-+	case SQUASHFS_LCHRDEV_TYPE: {
-+		struct squashfs_ldev_inode *sqsh_ino = &squashfs_ino.ldev;
-+		unsigned int rdev;
-+
-+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
-+				sizeof(*sqsh_ino));
-+		if (err < 0)
-+			goto failed_read;
-+
-+		if (type == SQUASHFS_LCHRDEV_TYPE)
-+			inode->i_mode |= S_IFCHR;
-+		else
-+			inode->i_mode |= S_IFBLK;
-+		xattr_id = le32_to_cpu(sqsh_ino->xattr);
-+		inode->i_op = &squashfs_inode_ops;
-+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-+		rdev = le32_to_cpu(sqsh_ino->rdev);
-+		init_special_inode(inode, inode->i_mode, new_decode_dev(rdev));
-+
-+		TRACE("Device inode %x:%x, rdev %x\n",
-+				SQUASHFS_INODE_BLK(ino), offset, rdev);
-+		break;
-+	}
-  	case SQUASHFS_FIFO_TYPE:
--	case SQUASHFS_SOCKET_TYPE:
--	case SQUASHFS_LFIFO_TYPE:
--	case SQUASHFS_LSOCKET_TYPE: {
-+	case SQUASHFS_SOCKET_TYPE: {
-  		struct squashfs_ipc_inode *sqsh_ino = &squashfs_ino.ipc;
-
-  		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
-@@ -334,14 +373,52 @@ int squashfs_read_inode(struct inode *inode, long long ino)
-  		init_special_inode(inode, inode->i_mode, 0);
-  		break;
-  	}
-+	case SQUASHFS_LFIFO_TYPE:
-+	case SQUASHFS_LSOCKET_TYPE: {
-+		struct squashfs_lipc_inode *sqsh_ino = &squashfs_ino.lipc;
-+
-+		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
-+				sizeof(*sqsh_ino));
-+		if (err < 0)
-+			goto failed_read;
-+
-+		if (type == SQUASHFS_LFIFO_TYPE)
-+			inode->i_mode |= S_IFIFO;
-+		else
-+			inode->i_mode |= S_IFSOCK;
-+		xattr_id = le32_to_cpu(sqsh_ino->xattr);
-+		inode->i_op = &squashfs_inode_ops;
-+		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
-+		init_special_inode(inode, inode->i_mode, 0);
-+		break;
-+	}
-  	default:
-  		ERROR("Unknown inode type %d in squashfs_iget!\n", type);
-  		return -EINVAL;
-  	}
-
-+	if (xattr_id != SQUASHFS_INVALID_XATTR && msblk->xattr_id_table) {
-+		err = squashfs_xattr_lookup(sb, xattr_id,
-+					&squashfs_i(inode)->xattr_count,
-+					&squashfs_i(inode)->xattr_size,
-+					&squashfs_i(inode)->xattr);
-+		if (err < 0)
-+			goto failed_read;
-+		inode->i_blocks += ((squashfs_i(inode)->xattr_size - 1) >> 9)
-+				+ 1;
-+	} else
-+		squashfs_i(inode)->xattr_count = 0;
-+
-  	return 0;
-
-  failed_read:
-  	ERROR("Unable to read inode 0x%llx\n", ino);
-  	return err;
-  }
-+
-+
-+const struct inode_operations squashfs_inode_ops = {
-+	.getxattr = generic_getxattr,
-+	.listxattr = squashfs_listxattr
-+};
-+
-diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
-index 5266bd8..32f5b54 100644
---- a/fs/squashfs/namei.c
-+++ b/fs/squashfs/namei.c
-@@ -57,6 +57,7 @@
-  #include <linux/slab.h>
-  #include <linux/string.h>
-  #include <linux/dcache.h>
-+#include <linux/xattr.h>
-
-  #include "squashfs_fs.h"
-  #include "squashfs_fs_sb.h"
-@@ -237,5 +238,7 @@ failed:
-
-
-  const struct inode_operations squashfs_dir_inode_ops = {
--	.lookup = squashfs_lookup
-+	.lookup = squashfs_lookup,
-+	.getxattr = generic_getxattr,
-+	.listxattr = squashfs_listxattr
-  };
-diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
-index 133befe..7d23810 100644
---- a/fs/squashfs/squashfs.h
-+++ b/fs/squashfs/squashfs.h
-@@ -73,6 +73,9 @@ extern struct inode *squashfs_iget(struct super_block *, long long,
-  				unsigned int);
-  extern int squashfs_read_inode(struct inode *, long long);
-
-+/* xattr.c */
-+extern ssize_t squashfs_listxattr(struct dentry *, char *, size_t);
-+
-  /* xattr_id.c */
-  extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
-  				int *, long long *);
-@@ -80,7 +83,7 @@ extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
-  				u64 *, int *);
+  #include "squashfs_fs_i.h"
+  #include "squashfs.h"
++#include "xattr.h"
 
   /*
-- * Inodes, files and decompressor operations
-+ * Inodes, files,  decompressor and xattr operations
+   * Initialise VFS inode with the base inode information common to all
+diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
+index 32f5b54..7a9464d 100644
+--- a/fs/squashfs/namei.c
++++ b/fs/squashfs/namei.c
+@@ -63,6 +63,7 @@
+  #include "squashfs_fs_sb.h"
+  #include "squashfs_fs_i.h"
+  #include "squashfs.h"
++#include "xattr.h"
+
+  /*
+   * Lookup name in the directory index, returning the location of the metadata
+diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
+index 7d23810..305ce15 100644
+--- a/fs/squashfs/squashfs.h
++++ b/fs/squashfs/squashfs.h
+@@ -76,12 +76,6 @@ extern int squashfs_read_inode(struct inode *, long long);
+  /* xattr.c */
+  extern ssize_t squashfs_listxattr(struct dentry *, char *, size_t);
+
+-/* xattr_id.c */
+-extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
+-				int *, long long *);
+-extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
+-				u64 *, int *);
+-
+  /*
+   * Inodes, files,  decompressor and xattr operations
    */
-
-  /* dir.c */
-@@ -92,11 +95,18 @@ extern const struct export_operations squashfs_export_ops;
-  /* file.c */
-  extern const struct address_space_operations squashfs_aops;
-
-+/* inode.c */
-+extern const struct inode_operations squashfs_inode_ops;
-+
-  /* namei.c */
-  extern const struct inode_operations squashfs_dir_inode_ops;
-
-  /* symlink.c */
-  extern const struct address_space_operations squashfs_symlink_aops;
-+extern const struct inode_operations squashfs_symlink_inode_ops;
-+
-+/* xattr.c */
-+extern struct xattr_handler *squashfs_xattr_handlers[];
-
-  /* zlib_wrapper.c */
-  extern const struct squashfs_decompressor squashfs_zlib_comp_ops;
-diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
-index 6fe940c..8eabb80 100644
---- a/fs/squashfs/squashfs_fs.h
-+++ b/fs/squashfs/squashfs_fs.h
-@@ -287,6 +287,17 @@ struct squashfs_ipc_inode {
-  	__le32			nlink;
-  };
-
-+struct squashfs_lipc_inode {
-+	__le16			inode_type;
-+	__le16			mode;
-+	__le16			uid;
-+	__le16			guid;
-+	__le32			mtime;
-+	__le32	 		inode_number;
-+	__le32			nlink;
-+	__le32			xattr;
-+};
-+
-  struct squashfs_dev_inode {
-  	__le16			inode_type;
-  	__le16			mode;
-@@ -298,6 +309,18 @@ struct squashfs_dev_inode {
-  	__le32			rdev;
-  };
-
-+struct squashfs_ldev_inode {
-+	__le16			inode_type;
-+	__le16			mode;
-+	__le16			uid;
-+	__le16			guid;
-+	__le32			mtime;
-+	__le32	 		inode_number;
-+	__le32			nlink;
-+	__le32			rdev;
-+	__le32			xattr;
-+};
-+
-  struct squashfs_symlink_inode {
-  	__le16			inode_type;
-  	__le16			mode;
-@@ -375,12 +398,14 @@ struct squashfs_ldir_inode {
-  union squashfs_inode {
-  	struct squashfs_base_inode		base;
-  	struct squashfs_dev_inode		dev;
-+	struct squashfs_ldev_inode		ldev;
-  	struct squashfs_symlink_inode		symlink;
-  	struct squashfs_reg_inode		reg;
-  	struct squashfs_lreg_inode		lreg;
-  	struct squashfs_dir_inode		dir;
-  	struct squashfs_ldir_inode		ldir;
-  	struct squashfs_ipc_inode		ipc;
-+	struct squashfs_lipc_inode		lipc;
-  };
-
-  struct squashfs_dir_entry {
 diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
-index c4dfc39..b6425ac 100644
+index b6425ac..88b4f86 100644
 --- a/fs/squashfs/super.c
 +++ b/fs/squashfs/super.c
-@@ -140,13 +140,6 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
-  	if (msblk->decompressor == NULL)
-  		goto failed_mount;
+@@ -43,6 +43,7 @@
+  #include "squashfs_fs_i.h"
+  #include "squashfs.h"
+  #include "decompressor.h"
++#include "xattr.h"
 
--	/*
--	 * Check if there's xattrs in the filesystem.  These are not
--	 * supported in this version, so warn that they will be ignored.
--	 */
--	if (le64_to_cpu(sblk->xattr_id_table_start) != SQUASHFS_INVALID_BLK)
--		ERROR("Xattrs in filesystem, these will be ignored\n");
--
-  	/* Check the filesystem does not extend beyond the end of the
-  	   block device */
-  	msblk->bytes_used = le64_to_cpu(sblk->bytes_used);
-@@ -268,6 +261,7 @@ allocate_lookup_table:
-  	sb->s_export_op = &squashfs_export_ops;
-
-  allocate_xattr_table:
-+	sb->s_xattr = squashfs_xattr_handlers;
-  	xattr_id_table_start = le64_to_cpu(sblk->xattr_id_table_start);
-  	if (xattr_id_table_start == SQUASHFS_INVALID_BLK)
-  		goto allocate_root;
+  static struct file_system_type squashfs_fs_type;
+  static const struct super_operations squashfs_super_ops;
+@@ -272,7 +273,8 @@ allocate_xattr_table:
+  	if (IS_ERR(msblk->xattr_id_table)) {
+  		err = PTR_ERR(msblk->xattr_id_table);
+  		msblk->xattr_id_table = NULL;
+-		goto failed_mount;
++		if (err != -ENOTSUPP)
++			goto failed_mount;
+  	}
+  allocate_root:
+  	root = new_inode(sb);
 diff --git a/fs/squashfs/symlink.c b/fs/squashfs/symlink.c
-index 32b911f..a7ee68a 100644
+index a7ee68a..ec86434 100644
 --- a/fs/squashfs/symlink.c
 +++ b/fs/squashfs/symlink.c
-@@ -35,6 +35,7 @@
-  #include <linux/kernel.h>
-  #include <linux/string.h>
-  #include <linux/pagemap.h>
-+#include <linux/xattr.h>
-
-  #include "squashfs_fs.h"
+@@ -41,6 +41,7 @@
   #include "squashfs_fs_sb.h"
-@@ -114,3 +115,12 @@ error_out:
-  const struct address_space_operations squashfs_symlink_aops = {
-  	.readpage = squashfs_symlink_readpage
-  };
+  #include "squashfs_fs_i.h"
+  #include "squashfs.h"
++#include "xattr.h"
+
+  static int squashfs_symlink_readpage(struct file *file, struct page *page)
+  {
+diff --git a/fs/squashfs/xattr.h b/fs/squashfs/xattr.h
+new file mode 100644
+index 0000000..4a96366
+--- /dev/null
++++ b/fs/squashfs/xattr.h
+@@ -0,0 +1,45 @@
++/*
++ * Squashfs - a compressed read only filesystem for Linux
++ *
++ * Copyright (c) 2010
++ * Phillip Lougher <phillip@lougher.demon.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2,
++ * or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * xattr.h
++ */
 +
-+const struct inode_operations squashfs_symlink_inode_ops = {
-+	.readlink = generic_readlink,
-+	.follow_link = page_follow_link_light,
-+	.put_link = page_put_link,
-+	.getxattr = generic_getxattr,
-+	.listxattr = squashfs_listxattr
-+};
++#ifdef CONFIG_SQUASHFS_XATTRS
++extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
++		u64 *, int *);
++extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
++		int *, long long *);
++#else
++static inline __le64 *squashfs_read_xattr_id_table(struct super_block *sb,
++		u64 start, u64 *xattr_table_start, int *xattr_ids)
++{
++	ERROR("Xattrs in filesystem, these will be ignored\n");
++	return ERR_PTR(-ENOTSUPP);
++}
 +
++static inline int squashfs_xattr_lookup(struct super_block *sb,
++		unsigned int index, int *count, int *size, long long *xattr)
++{
++	return 0;
++}
++#define squashfs_listxattr NULL
++#define generic_getxattr NULL
++#define squashfs_xattr_handlers NULL
++#endif
 -- 
 1.6.3.3
 
