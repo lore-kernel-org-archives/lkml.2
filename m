@@ -1,56 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752762Ab0EQUAZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:00:25 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:43039 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751090Ab0EQUAX (ORCPT
+	id S1754353Ab0EQUCN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:02:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:46337 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751560Ab0EQUCK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 16:00:23 -0400
-Date: Mon, 17 May 2010 21:00:18 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>
-Cc: Philippe R?tornaz <philippe.retornaz@epfl.ch>,
-       linux-arm-kernel@lists.infradead.org, maramaopercheseimorto@gmail.com,
-       sameo@linux.intel.com, s.hauer@pengutronix.de,
-       linux-kernel@vger.kernel.org, rpurdie@linux.intel.com,
-       valentin.longchamp@epfl.ch
-Subject: Re: [PATCH 1/2] mc13783: add LED support
-Message-ID: <20100517200017.GA25262@sirena.org.uk>
-References: <1274114423-30020-1-git-send-email-philippe.retornaz@epfl.ch> <1274114423-30020-2-git-send-email-philippe.retornaz@epfl.ch> <20100517190242.GA17604@pengutronix.de>
+	Mon, 17 May 2010 16:02:10 -0400
+To: Jiaying Zhang <jiayingz@google.com>
+Cc: "Martin K. Petersen" <martin.petersen@oracle.com>, hch@infradead.org,
+       jens.axboe@oracle.com, linux-kernel@vger.kernel.org, mrubin@google.com
+Subject: Re: [PATCH, RFC] addjust discard request to be aligned with hwsect  size to support SSDs with larger sector size
+From: "Martin K. Petersen" <martin.petersen@oracle.com>
+Organization: Oracle
+References: <20100513051953.532821BC316@ruihe.smo.corp.google.com>
+	<yq1pr0u8igd.fsf@sermon.lab.mkp.net>
+	<AANLkTikjfv2DHshXhxwPpyvpCvvGLiK-IOcucXJX3jBQ@mail.gmail.com>
+Date: Mon, 17 May 2010 16:00:49 -0400
+In-Reply-To: <AANLkTikjfv2DHshXhxwPpyvpCvvGLiK-IOcucXJX3jBQ@mail.gmail.com>
+	(Jiaying Zhang's message of "Mon, 17 May 2010 12:44:24 -0700")
+Message-ID: <yq1pr0uxpqm.fsf@sermon.lab.mkp.net>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100517190242.GA17604@pengutronix.de>
-X-Cookie: I had pancake makeup for brunch!
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090203.4BF1A0BB.00A9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 09:02:42PM +0200, Uwe Kleine-K?nig wrote:
-> On Mon, May 17, 2010 at 06:40:22PM +0200, Philippe R?tornaz wrote:
+>>>>> "Jiaying" == Jiaying Zhang <jiayingz@google.com> writes:
 
-> > +static void mc13783_led_set(struct led_classdev *led_cdev,
-> > +			   enum led_brightness value)
-> > +{
-> > +	struct mc13783_led *led;
-> > +
-> > +	led = container_of(led_cdev, struct mc13783_led, cdev);
-> > +	led->new_brightness = value;
-> > +	schedule_work(&led->work);
-> > +}
+Jiaying> It is true that all of the block layer works on 512-byte sector
+Jiaying> size, but I think it is good to check for address alignment for
+Jiaying> discard request so we don't insert unnecessary discard requests
+Jiaying> into the request queue.
 
-> I wonder why you don't set the registers directly here, but use a work
-> struct instead.
+Well, then what happens when you stripe or use DM on devices with
+different discard granularity?  Or what about a mirror?  Or multiple
+levels of stacking of heterogeneous devices.
 
-The LED API allows clients to configure the LEDs from interrupt context
-so for devices on blocking buses (like this) the driver needs to defer
-the actual implementation of the change.
+There are good reasons why we postpone the logical block scaling until
+we're preparing the request for the actual physical device.
 
-It'd be nice to add helpers for this to the LED core, there's quite a
-few drivers implementing this idiom now - a flag that does the deferring
-of the set() for example.
+
+Jiaying> There are also certain disk drivers that assume a discard
+Jiaying> request passed from the block layer is already properly
+Jiaying> aligned. We could argue that those disk drivers need to fix
+Jiaying> that
+
+Which is what I'm arguing :)
+
+
+Jiaying> 512 bytes and 4KB seem to be the most common sizes but I
+Jiaying> wouldn't be surprised to see other logical block size.
+
+That's the reason I'm asking.  If you have a different lbs then let's by
+all means add support for it.  Or make the ULD scaling generic.
+
+I'm open to aligning to the reported discard granularity in the ULD, for
+instance.
+
+-- 
+Martin K. Petersen	Oracle Linux Engineering
