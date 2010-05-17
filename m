@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0EQDWg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 23:22:36 -0400
-Received: from mga11.intel.com ([192.55.52.93]:38349 "EHLO mga11.intel.com"
+	id S1752900Ab0EQDWr (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 23:22:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40095 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752314Ab0EQDWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 23:22:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,244,1272870000"; 
-   d="scan'208";a="798995095"
-Subject: perf tool build error
-From: Lin Ming <ming.m.lin@intel.com>
-To: mingo@elte.hu, acme@redhat.com
-Cc: lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 May 2010 11:21:44 +0800
-Message-Id: <1274066504.10439.3.camel@minggr.sh.intel.com>
+	id S1752806Ab0EQDWm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 23:22:42 -0400
+Date: Mon, 17 May 2010 13:22:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Alexander Kurz <linux@blala.de>, David Woodhouse <dwmw2@infradead.org>
+Subject: linux-next: manual merge of the pcmcia tree with the mtd tree
+Message-Id: <20100517132239.5cb9eb5d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Build perf tool in latest tip tree(17efbf4) fails,
+Hi Dominik,
 
-$ gcc --version
-gcc (GCC) 4.3.2 20081105 (Red Hat 4.3.2-7)
+Today's linux-next merge of the pcmcia tree got a conflict in
+drivers/mtd/maps/pcmciamtd.c between commit
+9bdde162ebcc0237e722e8c3d0d376e35188a98f ("pcmciamtd: coding style
+cleanups") from the mtd tree and commit
+317b6d63000b3cc48c43d582d76063500e531a6c ("pcmcia: dev_node removal
+(write-only drivers)") from the pcmcia tree.
 
-cc1: warnings being treated as errors
-util/newt.c: In function ‘objdump_line__show’:
-util/newt.c:252: error: passing argument 1 of ‘SLsmg_printf’ discards qualifiers from pointer target type
-util/newt.c:258: error: passing argument 1 of ‘SLsmg_write_nstring’ discards qualifiers from pointer target type
-util/newt.c:262: error: passing argument 1 of ‘SLsmg_write_nstring’ discards qualifiers from pointer target type
-util/newt.c:264: error: passing argument 1 of ‘SLsmg_write_nstring’ discards qualifiers from pointer target type
-util/newt.c: In function ‘setup_browser’:
-util/newt.c:998: error: passing argument 3 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:998: error: passing argument 4 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:999: error: passing argument 3 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:999: error: passing argument 4 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1000: error: passing argument 3 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1000: error: passing argument 4 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1001: error: passing argument 3 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1001: error: passing argument 4 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1002: error: passing argument 3 of ‘SLtt_set_color’ discards qualifiers from pointer target type
-util/newt.c:1002: error: passing argument 4 of ‘SLtt_set_color’ discards qualifiers from pointer target type
+I fixed it up (see below) and can carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc drivers/mtd/maps/pcmciamtd.c
+index c4aacbf,87b2b8f..0000000
+--- a/drivers/mtd/maps/pcmciamtd.c
++++ b/drivers/mtd/maps/pcmciamtd.c
+@@@ -656,12 -646,11 +655,10 @@@ static int pcmciamtd_config(struct pcmc
+  		pcmciamtd_release(link);
+  		return -ENODEV;
+  	}
+- 	snprintf(dev->node.dev_name, sizeof(dev->node.dev_name), "mtd%d", mtd->index);
+ -	info("mtd%d: %s", mtd->index, mtd->name);
+ +	dev_info(&dev->p_dev->dev, "mtd%d: %s\n", mtd->index, mtd->name);
+- 	link->dev_node = &dev->node;
+  	return 0;
+  
+ - failed:
+ -	err("CS Error, exiting");
+ +	dev_err(&dev->p_dev->dev, "CS Error, exiting\n");
+  	pcmciamtd_release(link);
+  	return -ENODEV;
+  }
