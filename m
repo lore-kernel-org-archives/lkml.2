@@ -1,66 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754072Ab0EQGLH (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 02:11:07 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:63363 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab0EQGLC (ORCPT
+	id S1753741Ab0EQGMZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 02:12:25 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:56342 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab0EQGMX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 02:11:02 -0400
-Message-ID: <4BF0DD98.1090904@oracle.com>
-Date: Sun, 16 May 2010 23:09:28 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Mon, 17 May 2010 02:12:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
+         :in-reply-to:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=RBBvoSdBfDOREYkKEue8Z4CYY831VzNND5dzQsSYfWd8iI22XidDMK2Z2GxC+RFpJw
+         KX371FDzQNW1vcV/hmyixdLfcPSE+BSu0uq1zeCRrv8MK2+f9IB1VcqdZvOkfcV0al3S
+         rwCIQBNRYUKvR0BwqllMDnQoylShNO2FHOL5s=
+From: Florian Fainelli <florian@openwrt.org>
+Reply-To: Florian Fainelli <florian@openwrt.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH] x86: CPU detection for RDC System-on-Chip
+Date: Mon, 17 May 2010 08:12:11 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.33-2-686; KDE/4.3.4; i686; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
+       "linux-kernel" <linux-kernel@vger.kernel.org>, andi@firstfloor.org
+References: <201005161455.34100.florian@openwrt.org> <201005161521.47097.florian@openwrt.org> <4BF06CB4.5000909@zytor.com>
+In-Reply-To: <4BF06CB4.5000909@zytor.com>
 MIME-Version: 1.0
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 07/37] lmb: Add lmb_find_area()
-References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>	 <1273866363-14249-8-git-send-email-yinghai@kernel.org>	 <1273876749.21352.645.camel@pasglop>  <4BEDD7D4.90002@oracle.com> <1274057329.21352.709.camel@pasglop>
-In-Reply-To: <1274057329.21352.709.camel@pasglop>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090207.4BF0DDDF.0193:SCFMA922111,ss=1,fgs=0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005170812.12776.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/16/2010 05:48 PM, Benjamin Herrenschmidt wrote:
-> On Fri, 2010-05-14 at 16:08 -0700, Yinghai wrote:
->> how about
->> lmb_reserve_area  ==> lmb_reserve_range
->> lmb_free_area  ==> lmb_free_range
-> 
-> I completely fail to see why you still need those two. They are exactly
-> the same thing as lmb_reserve() and lmb_free(), just with a slightly
-> different prototype.
-> 
->> or leave them that way, later replace them lmb_reserve and lmb_free
->> one by one?
-> 
-> Nah, if you have some use of the wrappers to ease the transition from
-> the existing x86 code, then just make up a couple of inline wrappers
-> somewhere inside the x86 code. You may not even want to call it
-> lmb_* at all... 
+Hi,
 
-can you move asm/lmb.h down in linux/lmb.h ?
+Le lundi 17 mai 2010 00:07:48, H. Peter Anvin a écrit :
+> On 05/16/2010 06:21 AM, Florian Fainelli wrote:
+> > diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
+> > new file mode 100644
+> > index 0000000..909c2b5
+> > --- /dev/null
+> > +++ b/arch/x86/kernel/cpu/rdc.c
+> > @@ -0,0 +1,71 @@
+> > +/*
+> > + * See Documentation/x86/rdc.txt
+> > + *
+> > + * mark@bifferos.com
+> > + */
+> > +
+> > +#include <linux/pci.h>
+> > +#include <asm/pci-direct.h>
+> > +#include "cpu.h"
+> > +
+> > +
+> > +static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
+> > +{
+> > +	u16 vendor, device;
+> > +	u32 customer_id;
+> > +
+> > +	if (!early_pci_allowed())
+> > +		return;
+> > +
+> > +	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
+> > +	vendor = read_pci_config_16(0, 0, 0, PCI_VENDOR_ID);
+> > +	device = read_pci_config_16(0, 0, 0, PCI_DEVICE_ID);
+> > +
+> > +	if (vendor != PCI_VENDOR_ID_RDC || device != PCI_DEVICE_ID_RDC_R6020)
+> > +		return;  /* not RDC */
+> > +	/*
+> > +	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
+> > +	 * that's probably overkill
+> > +	 */
+> > +
+> > +	customer_id = read_pci_config(0, 0, 0, 0x90);
+> > +
+> > +	switch (customer_id) {
+> > +		/* id names are from RDC */
+> > +	case 0x00321000:
+> > +		strcpy(c->x86_model_id, "R3210/R3211");
+> > +		break;
+> > +	case 0x00321001:
+> > +		strcpy(c->x86_model_id, "AMITRISC20000/20010");
+> > +		break;
+> > +	case 0x00321002:
+> > +		strcpy(c->x86_model_id, "R3210X/Edimax");
+> > +		break;
+> > +	case 0x00321003:
+> > +		strcpy(c->x86_model_id, "R3210/Kcodes");
+> > +		break;
+> > +	case 0x00321004:  /* tested */
+> > +		strcpy(c->x86_model_id, "S3282/CodeTek");
+> > +		break;
+> > +	case 0x00321007:
+> > +		strcpy(c->x86_model_id, "R8610");
+> > +		break;
+> > +	default:
+> > +		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
+> > +			"report to: linux-kernel@vger.kernel.org\n",
+> > +			customer_id);
+> > +		break;
+> 
+> This pr_info() is completely useless... reporting things to LKML is very
+> likely to get lost in the din.  If someone (like yourself) wants to be
+> the maintainer for it that's one thing, otherwise it's probably better
+> to tell them to file a bugzilla... or just report it as "unknown" like
+> we do for all other CPU vendors.
 
-so I can put the inline wrapper in arch/x86/include/asm/lmb.h.
+Allright, filling a bugzilla entry sounds okay with me.
 
 > 
-> But here, I'll let Thomas and Peter decide what to do, it's really
-> x86 stuff at this stage. I don't want to see two subtlely different
-> APIs at the LMB level doing the same thing.
+> > +	}
+> > +
+> > +	strcpy(c->x86_vendor_id, "RDC");
+> > +	c->x86_vendor = X86_VENDOR_RDC;
+> > +}
+> > +
+> > +static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
+> > +	.c_vendor	= "RDC",
+> > +	.c_ident	= { "RDC" },
+> > +	.c_identify	= rdc_identify,
+> > +	.c_x86_vendor	= X86_VENDOR_RDC,
+> > +};
+> > +
+> > +cpu_dev_register(rdc_cpu_dev);
 > 
-> Cheers,
-> Ben.
+> .c_ident here is bogus: c_ident is supposed to represent the CPUID
+> string, but this device apparently doesn't have CPUID.
 > 
-> 
+> This adds at least one PCI reference to every boot on every device.  As
+> such, at least please read vendor and device as a single 32-bit
+> reference.  Since this identification isn't actually used for any real
+> purpose (like workarounds) we could also set it up as a PCI quirk... but
+> it's probably better to just keep the same code flow.
 
+More precisely, every device that has X86_RDC321X set in its kernel. I want to
+get this merged first before actually using it, but the real purpose is to have 
+different board flavors which register platform devices for the various models 
+of RDC-based devices. Having this detection logic based on the RDC model is 
+imho much cleaner than poking at the first bytes of the NOR flash and check the 
+vendor firmware header.
+
+As where to put those board files, this is another topic.
+--
+Florian
