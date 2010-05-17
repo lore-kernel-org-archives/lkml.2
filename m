@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753196Ab0EQPiO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:38:14 -0400
-Received: from kroah.org ([198.145.64.141]:47865 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751841Ab0EQPiN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:38:13 -0400
-Date: Mon, 17 May 2010 08:35:38 -0700
-From: Greg KH <greg@kroah.com>
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: Matthias Urlichs <smurf@smurf.noris.de>, linux-kernel@vger.kernel.org,
-       linux-usb@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>,
-       stable@kernel.org
-Subject: Re: [2.6.34 PATCH] USB: option.c: OLIVETTI OLICARD100 support
-Message-ID: <20100517153537.GA28358@kroah.com>
-References: <20100517121411.GA21483@localhost>
+	id S1753585Ab0EQPjX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:39:23 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:27478 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751900Ab0EQPjW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 11:39:22 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=uD0KhUKayBbabE11ivYSBM8rfQYWqpVVnVsyce1GJyPwvHhAbnOYTvhpK3JzxZaD0
+	7W0oP9HBjIuZ1jDjLGV2g==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100517121411.GA21483@localhost>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100517141910.GA14367@ghostprotocols.net>
+References: <4bf11ae9.e88cd80a.06b0.ffffa8e3@mx.google.com>
+	 <20100517141910.GA14367@ghostprotocols.net>
+Date: Mon, 17 May 2010 17:39:19 +0200
+Message-ID: <AANLkTimk2CO5OlG_inE1pAnmv2-eB7jNxXb18uT4ipxt@mail.gmail.com>
+Subject: Re: [PATCH] perf: fix bug mismatch with -c option definition
+From: Stephane Eranian <eranian@google.com>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 02:14:11PM +0200, Nils Radtke wrote:
-> From: Nils Radtke <lkml@Think-Future.de>
-> 
-> This patch adds support for an olivetti olicard100 HЅDPA usb-stick.
-> 
-> This device is a zeroCD one with ID 0b3c:c700 that needs switching via 
-> eject or usb-modeswitch with 
-> MessageContent="5553424312345678000000000000061b000000030000000000000000000000".
-> After switching it has ID 0b3c:c000 and provides 5 serial ports ttyUSB[0-4].
-> Port 0 (modem) and 4 are interrupt ports.
-> 
-> Signed-off-by: Nils Radtke <lkml@Think-Future.de>
-> 
-> ---
-> 
-> I guess the previous patch for .33.4 came to late for inclusion. Am I missing
-> something else to get the IDs merged into .35 or maybe .34.1?
+On Mon, May 17, 2010 at 4:19 PM, Arnaldo Carvalho de Melo
+<acme@infradead.org> wrote:
+> Em Mon, May 17, 2010 at 12:04:01PM +0200, Stephane Eranian escreveu:
+>>   The -c option defines the user requested sampling period. It was implemented
+>>   using an unsigned int variable but the type of the option was OPT_LONG. Thus,
+>>   the option parser was overwriting memory belonging to other variables, namely
+>>   the mmap_pages leading to a zero page sampling buffer. The bug was exposed
+>>   only when compiling at -O0, probably because the compiler was padding
+>>   variables at higher optimization levels.
+>
+> Well spotted!
 
-No, just that you need to be a bit more patient, you only send your
-first patch on Saturday, give me a chance to get to it...
+As you can imagine, it was not so trivial to find ;->
 
-thanks,
-
-greg k-h
+>
+>>   This patch fixes this problem by declaring user_interval as u64. This also
+>>   avoids wrap-around issues for large period on 32-bit systems.
+>>
+>>   Signed-off-by: Stephane Eranian <eranian@google.com>
+>> --
+>>  tools/perf/builtin-record.c |    8 ++++----
+>>  1 file changed, 4 insertions(+), 4 deletions(-)
+>>
+>> diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+>> index 0f467cf..78f64cc 100644
+>> --- a/tools/perf/builtin-record.c
+>> +++ b/tools/perf/builtin-record.c
+>> @@ -33,8 +33,8 @@ enum write_mode_t {
+>>
+>>  static int                   *fd[MAX_NR_CPUS][MAX_COUNTERS];
+>>
+>> -static unsigned int          user_interval                   = UINT_MAX;
+>> -static long                  default_interval                =      0;
+>> +static u64                   user_interval                   = ULLONG_MAX;
+>> +static u64                   default_interval                =      0;
+>
+> The parsing code uses this for OPT_LONG:
+>
+>        case OPTION_LONG:
+>                if (unset) {
+>                        *(long *)opt->value = 0;
+>                        return 0;
+>                }
+>                if (opt->flags & PARSE_OPT_OPTARG && !p->opt) {
+>                        *(long *)opt->value = opt->defval;
+>                        return 0;
+>                }
+>                if (get_arg(p, opt, flags, &arg))
+>                        return -1;
+>                *(long *)opt->value = strtol(arg, (char **)&s, 10);
+>
+> So I think we should augment the parsing code to have OPTION_ULONG, and,
+> for handling u64, OPTION_ULLONG.
+>
+> I'll add that and then modify your patch to use it.
+>
+That's fine too.
+Thanks.
