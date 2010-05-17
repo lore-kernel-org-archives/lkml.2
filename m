@@ -1,53 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752811Ab0EQCbQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:31:16 -0400
-Received: from 68.mail-out.ovh.net ([91.121.185.69]:42836 "HELO
-	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752289Ab0EQCbN (ORCPT
+	id S1752563Ab0EQCfH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:35:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:47844 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0EQCfG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:31:13 -0400
-Message-ID: <4BF0AA6C.1050102@example.com>
-Date: Mon, 17 May 2010 04:31:08 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	Sun, 16 May 2010 22:35:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=HpN4UFNaTh2qW/o/ihmXaRA5cMpUJYkKew6pmOWhmXiuLsOVUK0KzK+PRreLgNOKjf
+         rHnFPv+8YEafMMZTJyggw/iP+aGi5JapgPTdcck9tTV8heJ1yx9kAb+IrngTwNgzHCcJ
+         qr1ARduBRCEdLPkvxlzR+cc8eAHZgzq6t60pg=
+Date: Mon, 17 May 2010 04:35:09 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: John Kacur <jkacur@redhat.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 5/6] smbfs: BKL ioctl pushdown
+Message-ID: <20100517023508.GG22299@nowhere>
+References: <1273065339-21669-1-git-send-email-jkacur@redhat.com> <1273065339-21669-6-git-send-email-jkacur@redhat.com>
 MIME-Version: 1.0
-To: sboyce@blueyonder.co.uk
-CC: LKML Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: General questiin about SYSFS
-References: <4BF05EC9.6070102@blueyonder.co.uk>
-In-Reply-To: <4BF05EC9.6070102@blueyonder.co.uk>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 12280753234180076013
-X-Ovh-Remote: 83.6.195.181 (abbf181.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
-X-Ovh-Tracer-Id: 12369699327170277656
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273065339-21669-6-git-send-email-jkacur@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 16.05.2010 23:08, Sid Boyce wrote:
-> As the message says, you have to change all instances of SSYSFS to ATTR
->   in the rules files in /etc/udev/rules.d to stop those messages
-> appearing on boot up.
+On Wed, May 05, 2010 at 03:15:38PM +0200, John Kacur wrote:
+> Convert smb_ioctl to an unlocked ioctl and push down the bkl into it.
+> 
+> Signed-off-by: John Kacur <jkacur@redhat.com>
 
-Ok, forget my next question - I risked breaking things and made a plain 
-search and replace, reboot, things seem to work, no errors. I also had 
-to change BUS to SUBSYSTEM.
 
-Regards,
+In fact this one doesn't apply, not a single hunk.
 
-Piotr Hosowicz
+Against which tree have you made this patch?
 
--- 
-"Bardzo fajna firma, tylko czasami nie p³aci. Do jej g³ównych
-zalet nale¿±: ekspres ci¶nieniowy (ale tylko na jednym z piê-
-ter) oraz fajne widoki z salki konferencyjnej. No i jakie¶
-pó³ roku temu odesz³o 90% pracowników dzia³u IT, ale mo¿e nie
-mieli racji ;)"
-NP: Slash - Ghost (Feat. Ian Astbury)
-NB: 2.6.34
