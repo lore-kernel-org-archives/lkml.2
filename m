@@ -1,68 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754564Ab0EQTzg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:55:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37319 "EHLO mx1.redhat.com"
+	id S1753115Ab0EQT5M (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:57:12 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36606 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751693Ab0EQTze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:55:34 -0400
-Date: Mon, 17 May 2010 15:55:07 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org
-Subject: Re: [PATCH 16/35] union-mount: Writable overlays/union mounts documentation
-Message-ID: <20100517195506.GC18568@shell>
-References: <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <1271372682-21225-15-git-send-email-vaurora@redhat.com> <1271372682-21225-16-git-send-email-vaurora@redhat.com> <1271372682-21225-17-git-send-email-vaurora@redhat.com> <E1O4GKw-000257-Hh@pomaz-ex.szeredi.hu> <20100428201908.GC16691@shell> <E1O7Q7n-0002KC-Tm@pomaz-ex.szeredi.hu> <20100429202012.GA6539@shell> <E1OBSYC-0004oQ-U4@pomaz-ex.szeredi.hu>
-Mime-Version: 1.0
+	id S1751560Ab0EQT5L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:57:11 -0400
+Date: Mon, 17 May 2010 21:54:14 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Andrew Tridgell <tridge@samba.org>, David Howells <dhowells@redhat.com>,
+       Eric Paris <eparis@parisplace.org>, Jakub Jelinek <jakub@redhat.com>,
+       James Morris <jmorris@namei.org>, Roland McGrath <roland@redhat.com>,
+       Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org
+Subject: [PATCH] signals: check_kill_permission: don't check creds if
+	same_thread_group()
+Message-ID: <20100517195414.GA21504@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <E1OBSYC-0004oQ-U4@pomaz-ex.szeredi.hu>
-User-Agent: Mutt/1.4.2.2i
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 02:57:36PM +0200, Miklos Szeredi wrote:
-> On Thu, 29 Apr 2010, Valerie Aurora wrote:
-> > On Thu, Apr 29, 2010 at 11:33:39AM +0200, Miklos Szeredi wrote:
-> > > On Wed, 28 Apr 2010, Valerie Aurora wrote:
-> > > > I went down this road initially (do most of the unioning in a file
-> > > > system) and spent a couple of months on it.  But I always ended up
-> > > > having to do some level of copy-around and redirection similar to that
-> > > > in unionfs.
-> > > 
-> > > I haven't looked at unionfs in a long time.  Can you say something
-> > > more specific about what these problems were?
-> > 
-> > Sure.  The short version is that unionfs has to allocate another copy
-> > of each file system structure - inode, etc. - and then keep an array
-> > of the matching structures from each of the file system layers.
-> 
-> Let's not over-generalize the problem.  Current implementation has the
-> following properties:
-> 
->  a) one read-only layer and one read-write layer
->  b) for each non-directory only one of the layers is relevant
->  c) for directories both layers may be relevant
->  d) no need to go from a lower dentry or inode to an upper dentry/inode
-> 
-> >  Each
-> > unionfs file system op copies data up and down between the unionfs
-> > structures and the underlying structures, and then calls the lower
-> > file system op as necessary.  Often it has to duplicate code from the
-> > VFS before calling the lower file system ops.
-> 
-> Yep, and that can be fixed by adding better helpers to the VFS which
-> do all the locking magic, etc, and are supplied with a "struct path"
-> instead of a "char *".
+Andrew Tridgell reports that aio_read(SIGEV_SIGNAL) can fail if the
+the notification from the helper thread races with setresuid(), see
+http://samba.org/~tridge/junkcode/aio_uid.c
 
-Hm, I am thinking about your ideas.  Al did a code review a couple of
-weeks ago and pointed out ways to eliminate about a third of the code
-and push another good chunk down into the file system implementation.
-Let me get the new version out and then we can look at pushing what's
-left into VFS helper functions.
+This happens because check_kill_permission() doesn't allow to send
+a signal to the task with the different cred->xids. But there is no
+any security reason to check ->cred's when the task sends a signal
+(private or group-wide) to its sub-thread. Whatever we do, any thread
+can bypass all security checks and send SIGKILL to all threads, or
+it can block a signal SIG and do kill(gettid(), SIG) to deliver this
+signal to another sub-thread. Not to mention that CLONE_THREAD implies
+CLONE_VM.
 
-Thanks,
+Change check_kill_permission() to avoid the credentials check when
+the sender and the target are from the same thread group.
 
--VAL
+Also, move "cred = current_cred()" down to avoid calling get_current()
+twice.
+
+Note: David Howells pointed out we could relax this even more, the
+CLONE_SIGHAND (without CLONE_THREAD) case probably does not need
+these checks too.
+
+Reported-by: Andrew Tridgell <tridge@samba.org>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ kernel/signal.c |    6 ++++--
+ 1 file changed, 4 insertions(+), 2 deletions(-)
+
+--- 34-rc1/kernel/signal.c~CKP_CK_STG	2010-05-09 21:09:31.000000000 +0200
++++ 34-rc1/kernel/signal.c	2010-05-17 17:02:09.000000000 +0200
+@@ -642,7 +642,7 @@ static inline bool si_fromuser(const str
+ static int check_kill_permission(int sig, struct siginfo *info,
+ 				 struct task_struct *t)
+ {
+-	const struct cred *cred = current_cred(), *tcred;
++	const struct cred *cred, *tcred;
+ 	struct pid *sid;
+ 	int error;
+ 
+@@ -656,8 +656,10 @@ static int check_kill_permission(int sig
+ 	if (error)
+ 		return error;
+ 
++	cred = current_cred();
+ 	tcred = __task_cred(t);
+-	if ((cred->euid ^ tcred->suid) &&
++	if (!same_thread_group(current, t) &&
++	    (cred->euid ^ tcred->suid) &&
+ 	    (cred->euid ^ tcred->uid) &&
+ 	    (cred->uid  ^ tcred->suid) &&
+ 	    (cred->uid  ^ tcred->uid) &&
+
