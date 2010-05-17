@@ -1,135 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753232Ab0EQFAF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:00:05 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:54097 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751742Ab0EQFAA (ORCPT
+	id S1753265Ab0EQFEQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:04:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:55094 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751742Ab0EQFEP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:00:00 -0400
-To: "Serge E. Hallyn" <serue@us.ibm.com>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, Kay Sievers <kay.sievers@vrfy.org>,
-       linux-kernel@vger.kernel.org, Tejun Heo <tj@kernel.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Eric Dumazet <eric.dumazet@gmail.com>, Benjamin LaHaise <bcrl@lhnet.ca>,
-       netdev@vger.kernel.org, David Miller <davem@davemloft.net>
-References: <m1fx3hk6gw.fsf@fess.ebiederm.org>
-	<1273019809-16472-2-git-send-email-ebiederm@xmission.com>
-	<20100505151746.GA15654@us.ibm.com> <m14oim2kcm.fsf@fess.ebiederm.org>
-	<20100505220150.GA11595@us.ibm.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Sun, 16 May 2010 21:59:45 -0700
-In-Reply-To: <20100505220150.GA11595@us.ibm.com> (Serge E. Hallyn's message of "Wed\, 5 May 2010 17\:01\:50 -0500")
-Message-ID: <m1y6fj3yym.fsf_-_@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: serue@us.ibm.com, davem@davemloft.net, netdev@vger.kernel.org, bcrl@lhnet.ca, eric.dumazet@gmail.com, cornelia.huck@de.ibm.com, tj@kernel.org, linux-kernel@vger.kernel.org, kay.sievers@vrfy.org, gregkh@suse.de
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;"Serge E. Hallyn" <serue@us.ibm.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  1.5 XMNoVowels Alpha-numberic number with no vowels
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: [PATCH 7/6] net/sysfs: Fix the bitrot in network device kobject namespace support
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+	Mon, 17 May 2010 01:04:15 -0400
+Date: Sun, 16 May 2010 22:06:38 -0700
+From: Arjan van de Ven <arjan@infradead.org>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100516220638.2baf315d@infradead.org>
+In-Reply-To: <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>
+References: <1273887635-27610-1-git-send-email-venki@google.com>
+	<87tyq9mqrz.fsf@basil.nowhere.org>
+	<35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+	<20100515121424.38f5b389@infradead.org>
+	<e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
+	<20100515224305.17a04022@infradead.org>
+	<alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>
+	<b7b4f345-944c-4cbc-b98a-700f915183b9@default
+ alpine.LFD.2.00.1005161925480.3368@localhost.localdomain>
+	<5adf3fee-0f7b-4039-b13f-619640cc4b88@default>
+Organization: Intel
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sun, 16 May 2010 18:31:30 -0700 (PDT)
+Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-I had a couple of stupid bugs in:
-netns: Teach network device kobjects which namespace they are in.
+> 
+> It seems like the only advantages the kernel has here over
+> a reasonably intelligent app is that: 1) the kernel can run
+> a warp test and the app can't, and 2) the kernel can
+> estimate the frequency of the TSC and the app can't.
 
-- I duplicated the Kconfig for the NET_NS
-- The build was broken when sysfs was not compiled in
+and 3) the kernel gets thermal interrupts and the app does not
+and 4) the kernel decides which power management to use when
+and 5) the kernel can find out if SMI's happened, and the app cannot.
+and 6) the kernel can access tsc and a per cpu offset/frequency
+data atomically, without being scheduled to another CPU. The app cannot
+[well it can ask the kernel to be pinned, and that's a 99.99% thing,
+but still]
 
-The sysfs breakage is because after I moved the operations
-for the sysfs to the kobject layer, to make things cleaner
-I forgot to move the ifdefs.  Opps.
+[snipped a bunch of twists of my argument that are not correct]
 
-I'm not quite certain how I got introduced a second NET_NS Kconfig,
-but it was probably a 3 way merge somewhere along the way that
-did not notice that the NET_NS Kconfig option had mvoed and thout
-that was a bug.  It probably slipped in because it used to be the
-sysfs patches were the first patches in my network namespace patches.
-Some things just don't go like you would expect.
 
-Neither of these bugs actually affect anything in the common case
-but they should be fixed.
+look we're not disabling ring 3 tsc. We could, but we don't.
+we're just telling you that WE as kernel cannot tell you, in 
+an architectural and long term (multiple kernel versions and
+hardware generations) stable way, when the tsc is "usable".
+Because WE know it is barely if any so. We continuously add
+workarounds, calibrations and tweaks for this, and stop using it
+at runtime when something smells funny and defeats our logic.
 
-Thanks to Serge for noticing they were present.
+If you want to find out yourself if the tsc is good enough for you
+that is one thing.... but if you want the kernel to have an official
+interface for it.... the kernel has to live by that commitment.
+We cannot put in that interface "oh and you need to implement the same
+workarounds, scaling and offsets as the kernel does", because that's
+in a huge flux, and will change from kernel version to kernel version.
+The only shot you could get is some vsyscall/vdso function that gives
+you a unit (but that is not easy given per cpu offset/frequency/etc..
+but at least the kernel can try)
 
-Reported-by: Serge E. Hallyn <serue@us.ibm.com>
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
----
- net/Kconfig          |    8 --------
- net/core/net-sysfs.c |    8 +++-----
- 2 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/net/Kconfig b/net/Kconfig
-index 265e33b..041c35e 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -45,14 +45,6 @@ config COMPAT_NETLINK_MESSAGES
- 
- menu "Networking options"
- 
--config NET_NS
--	bool "Network namespace support"
--	default n
--	depends on EXPERIMENTAL && NAMESPACES
--	help
--	  Allow user space to create what appear to be multiple instances
--	  of the network stack.
--
- source "net/packet/Kconfig"
- source "net/unix/Kconfig"
- source "net/xfrm/Kconfig"
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index 0727c57..c4c5157 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -467,6 +467,7 @@ static struct attribute_group wireless_group = {
- 	.attrs = wireless_attrs,
- };
- #endif
-+#endif /* CONFIG_SYSFS */
- 
- static const void *net_current_ns(void)
- {
-@@ -495,11 +496,10 @@ static void net_kobj_ns_exit(struct net *net)
- 	kobj_ns_exit(KOBJ_NS_TYPE_NET, net);
- }
- 
--static struct pernet_operations sysfs_net_ops = {
-+static struct pernet_operations kobj_net_ops = {
- 	.exit = net_kobj_ns_exit,
- };
- 
--#endif /* CONFIG_SYSFS */
- 
- #ifdef CONFIG_HOTPLUG
- static int netdev_uevent(struct device *d, struct kobj_uevent_env *env)
-@@ -616,8 +616,6 @@ EXPORT_SYMBOL(netdev_class_remove_file);
- int netdev_kobject_init(void)
- {
- 	kobj_ns_type_register(&net_ns_type_operations);
--#ifdef CONFIG_SYSFS
--	register_pernet_subsys(&sysfs_net_ops);
--#endif
-+	register_pernet_subsys(&kobj_net_ops);
- 	return class_register(&net_class);
- }
+
 -- 
-1.6.6.1
-
+Arjan van de Ven 	Intel Open Source Technology Centre
+For development, discussion and tips for power savings, 
+visit http://www.lesswatts.org
