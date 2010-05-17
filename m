@@ -1,74 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755500Ab0EQS71 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:59:27 -0400
-Received: from moutng.kundenserver.de ([212.227.17.10]:51578 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754606Ab0EQS70 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:59:26 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: cpumask: fix compat getaffinity
-Date: Mon, 17 May 2010 20:58:50 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Milton Miller <miltonm@bga.com>,
-       Greg KH <greg@kroah.com>, linux-kernel@vger.kernel.org,
-       stable@vger.kernel.org, anton@samba.org
-References: <1273653045_3386@mail4.comsite.net> <201005142209.14473.rusty@rustcorp.com.au> <20100517134320.A190.A69D9226@jp.fujitsu.com>
-In-Reply-To: <20100517134320.A190.A69D9226@jp.fujitsu.com>
+	id S1755531Ab0EQTAq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:00:46 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:44818 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754606Ab0EQTAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:00:45 -0400
+Message-ID: <4BF190B4.70705@zytor.com>
+Date: Mon, 17 May 2010 11:53:40 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Yinghai <yinghai.lu@oracle.com>
+CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>	 <1273804337.21352.396.camel@pasglop> <4BECF158.5070200@oracle.com>	 <1273825807.21352.601.camel@pasglop> <4BED7CE3.1020507@oracle.com>	 <1273876234.21352.639.camel@pasglop>  <20100515073231.GB9877@elte.hu>	 <1274056773.21352.700.camel@pasglop>  <4BF0DE0C.2000905@oracle.com> <1274081072.21352.718.camel@pasglop> <4BF17A50.1050905@oracle.com>
+In-Reply-To: <4BF17A50.1050905@oracle.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005172058.50642.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1/K4rgNSHPkEGNdMqi7csOLsXHVrGHISoIg43k
- KAGVH3Oz1EMrhVl0GXrrpWW5aWJz01vshaINugfto0vIWjaGQW
- G5eiuW2fKqx0vGmo6mrNw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 17 May 2010, KOSAKI Motohiro wrote:
-> From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> Subject: [PATCH] cpumask: fix compat getaffinity
+On 05/17/2010 10:18 AM, Yinghai wrote:
+>>
+>> No. Both will hit 2.6.36. It's way too late to queue up such changes for
+>> the 2.6.35 merge window which has already opened.
 > 
-> Commit a45185d2d "cpumask: convert kernel/compat.c" broke
-> libnuma, which abuses sched_getaffinity to find out NR_CPUS
-> in order to parse /sys/devices/system/node/node*/cpumap.
+> i have feeling that your new LMB code will hit 2.6.36. and
+> x86 patches that is using to lmb will hit 2.6.37.
 > 
-> On NUMA systems with less than 32 possibly CPUs, the
-> current compat_sys_sched_getaffinity now returns '4'
-> instead of the actual NR_CPUS/8, which makes libnuma
-> bail out when parsing the cpumap.
+> otherwise it will make more merge conflicts between tip and lmb.
+> unless put your lmb change to tip?
 > 
-> The libnuma call sched_getaffinity(0, bitmap, 4096)
-> at first. It mean the libnuma expect the return value of
-> sched_getaffinity() is either len argument or NR_CPUS.
-> But it doesn't expect to return nr_cpu_ids.
-> 
-> Strictly speaking, userland requirement are
-> 
-> 1) Glibc assume the return value mean the lengh of initialized
->    of mask argument. E.g. if sched_getaffinity(1024) return 128,
->    glibc make zero fill rest 896 byte.
-> 2) Libnuma assume the return value can be used to guess NR_CPUS
->    in kernel. It assume len-arg<NR_CPUS makes -EINVAL. But
->    it try len=4096 at first and 4096 is always bigger than
->    NR_CPUS. Then, if we remove strange min_length normalization,
->    we never hit -EINVAL case.
-> 
-> sched_getaffinity() already solved this issue. This patch
-> adapt compat_sys_sched_getaffinity() as it.
-> 
-> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-Looks good to me,
+We can arrange for some way of dealing with this problem... this is not
+an issue.
 
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+>> Why would it be "too long" ? I keep asking what the heck is going on
+>> with having a time bomb on those patches and yet have to get a
+>> satisfactory answer.
+> 
+> why are you thinking that there is time bomb in the patches?
 
-You should also add a Cc:stable@vger.kernel.org line to the
-description so Greg's scripts catch it when it gets merged
-upstream.
+You're the one that keeps saying "that is too long", but without
+motivating the hurry.
 
-	Arnd
+	-hpa
