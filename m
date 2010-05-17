@@ -1,71 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab0EQVqu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 17:46:50 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:60122 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753271Ab0EQVqs (ORCPT
+	id S1755664Ab0EQVtJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 17:49:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49262 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754035Ab0EQVtH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 17:46:48 -0400
-From: Linus WALLEIJ <linus.walleij@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Sundar R IYER <sundar.iyer@stericsson.com>,
-       Deepak Sikri <deepak.sikri79@gmail.com>,
-       Viresh KUMAR <viresh.kumar@st.com>,
-       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-       Armando VISCONTI <armando.visconti@st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-Date: Mon, 17 May 2010 23:46:38 +0200
-Subject: RE: [linux-pm] Power Domain Framework
-Thread-Topic: [linux-pm] Power Domain Framework
-Thread-Index: Acr2BnrEuI3u4ibORk+1kDgZ5+rCiwAA4RoQ
-Message-ID: <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local>
-References: <AANLkTinZU1D1rMOBQDi47tRhXrOXwduQIdni7bCXdce0@mail.gmail.com>
-	 <20100510140527.GG5199@sirena.org.uk>
-	 <AANLkTikyqnKDNz7FIUvLDAvBReHskHvRCrEz2qBBqseH@mail.gmail.com>
-	 <20100517031613.GA3130@opensource.wolfsonmicro.com>
-	 <AANLkTimDdBCnRFMDiUkuNKanOzuPNwCpfRv9Gsi03Lsy@mail.gmail.com>
-	 <AANLkTinZRhUpFTOOUCdH5dEl3QaXn10USL_hPPQX8cie@mail.gmail.com>
-	 <20100517143319.GC5257@opensource.wolfsonmicro.com>
-	 <AANLkTiniwUDg8rQzwgm_X7EbkQJ9tHzBfVtaJRiNE9az@mail.gmail.com>
-	 <1274114107.20589.64.camel@bnru01>	 (sfid-20100517_173524_963855_B42F2966)
- <1274115886.2698.22.camel@finisterre.wolfsonmicro.main>
-	 <1274118332.17303.17.camel@bnru01>
-	 <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
-	 (sfid-20100517_213915_202336_5BFAA478)
- <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
-In-Reply-To: <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="utf-8"
+	Mon, 17 May 2010 17:49:07 -0400
+Date: Mon, 17 May 2010 14:46:05 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+       Borislav Petkov <petkovbb@googlemail.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] core/hweight changes for v2.6.35
+In-Reply-To: <20100517212138.GA21629@elte.hu>
+Message-ID: <alpine.LFD.2.00.1005171443060.4195@i5.linux-foundation.org>
+References: <20100517212138.GA21629@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4HLkwaS023727
 
-[Mark]
 
-> I do agree that separating out the common bits of power
-> domain implementation would be good, my concerns here are around the
-> level of integration with the regulator API.
 
-The plenty talk about power domains in
-Documentation/power/regulators/overview.txt
-was what got us started in this regulator direction from the
-beginning.
+On Mon, 17 May 2010, Ingo Molnar wrote:
+>
+> +#ifdef CONFIG_64BIT
+> +/* popcnt %rdi, %rax */
+> +#define POPCNT ".byte 0xf3,0x48,0x0f,0xb8,0xc7"
+> +#define REG_IN "D"
+> +#define REG_OUT "a"
+...
+> +/*
+> + * __sw_hweightXX are called from within the alternatives below
+> + * and callee-clobbered registers need to be taken care of. See
+> + * ARCH_HWEIGHT_CFLAGS in <arch/x86/Kconfig> for the respective
+> + * compiler switches.
+> + */
+> +static inline unsigned int __arch_hweight32(unsigned int w)
+> +{
+> +	unsigned int res = 0;
+> +
+> +	asm (ALTERNATIVE("call __sw_hweight32", POPCNT, X86_FEATURE_POPCNT)
+> +		     : "="REG_OUT (res)
+> +		     : REG_IN (w));
+> +
+> +	return res;
+> +}
 
-Anyhow: it will certainly be closely related even if we come
-up with some different API for power domains so we're in the
-right forum.
+I do not believe this is correct.
 
-Linus
-ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On x86-64, you are using a 64-bit instruction, but
+
+	REG_IN (w)
+
+does _not_ guarantee that the register is zero in the high bits.
+
+Yes, yes, in practice it _probably_ is, because the register almost 
+certainly got loaded with some kind of zero-extending mov instruction. But 
+as far as I can tell, the code is buggy. You're telling gcc that you are 
+using a 32-bit register, but you're actually counting bits in the full 64 
+bits.
+
+Am I missing something?
+
+		Linus
