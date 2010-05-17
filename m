@@ -1,138 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751841Ab0EQAMq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 20:12:46 -0400
-Received: from p3plsmtpa01-05.prod.phx3.secureserver.net ([72.167.82.85]:53058
-	"HELO p3plsmtpa01-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1751227Ab0EQAMo (ORCPT
+	id S1751826Ab0EQATg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 20:19:36 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:34935 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751032Ab0EQATf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 20:12:44 -0400
-Date: Sun, 16 May 2010 17:12:41 -0700
-From: mgross <markgross@thegnar.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: markgross@thegnar.org, Valdis.Kletnieks@vt.eu, mgross@linux.intel.com,
-       akpm@linux-foundation.org, davem@davemloft.net,
-       linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
-       netdev@vger.kernel.org, linux-pm@lists.linux-foundation.org
-Subject: Re: [patch] pm_qos update fixing mmotm 2010-05-11 -dies in
- pm_qos_update_request()
-Message-ID: <20100517001241.GA2962@thegnar.org>
-Reply-To: markgross@thegnar.org
-References: <20100515021922.GA5041@thegnar.org>
- <201005152138.47178.rjw@sisk.pl>
- <20100515214256.GA3506@thegnar.org>
- <201005170021.25427.rjw@sisk.pl>
+	Sun, 16 May 2010 20:19:35 -0400
+Date: Mon, 17 May 2010 10:19:26 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org
+Subject: Re: [PATCH 0/5] Per-superblock shrinkers
+Message-ID: <20100517001926.GI8120@dastard>
+References: <1273821863-29524-1-git-send-email-david@fromorbit.com>
+ <20100515013005.GA31073@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005170021.25427.rjw@sisk.pl>
+In-Reply-To: <20100515013005.GA31073@ZenIV.linux.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 12:21:25AM +0200, Rafael J. Wysocki wrote:
-> On Saturday 15 May 2010, mgross wrote:
-> > On Sat, May 15, 2010 at 09:38:47PM +0200, Rafael J. Wysocki wrote:
-> > > On Saturday 15 May 2010, mgross wrote:
-> > > > I apologize for the goofy email address.  
-> > > > 
-> > > > The following is a fix for the crash reported by Valdis.
-> > > > 
-> > > > The problem was that the original pm_qos silently fails when a request
-> > > > update is passed to a parameter that has not been added to the list
-> > > > yet.  It seems that the e1000e is doing this.  This update restores this
-> > > > behavior.
-> > > > 
-> > > > I need to think about how to better handle such abuse, but for now this
-> > > > restores the original behavior.
-> > > 
-> > > Can you please post a signed-off incremental patch against
-> > > 
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-llinus
-> > > 
-> > > that contains your original PM QOS update?
+On Sat, May 15, 2010 at 02:30:05AM +0100, Al Viro wrote:
+> On Fri, May 14, 2010 at 05:24:18PM +1000, Dave Chinner wrote:
 > > 
-> > No problem:
-> >
-> > Signed-off-by: markgross <markgross@thegnar.org>
+> > This series reworks the filesystem shrinkers. We currently have a
+> > set of issues with the current filesystem shrinkers:
+> > 
+> > 	1. There is an dependency between dentry and inode cache
+> > 	   shrinking that is only implicitly defined by the order of
+> > 	   shrinker registration.
+> > 	2. The shrinkers need to walk the superblock list and pin
+> > 	   the superblock to avoid unmount races with the sb going
+> > 	   away.
+> > 	3. The dentry cache uses per-superblock LRUs and proportions
+> > 	   reclaim between all the superblocks which means we are
+> > 	   doing breadth based reclaim. This means we touch every
+> > 	   superblock for every shrinker call, and may only reclaim
+> > 	   a single dentry at a time from a given superblock.
+> > 	4. The inode cache has a global LRU, so it has different
+> > 	   reclaim patterns to the dentry cache, despite the fact
+> > 	   that the dentry cache is generally the only thing that
+> > 	   pins inodes in memory.
+> > 	5. Filesystems need to register their own shrinkers for
+> > 	   caches and can't co-ordinate them with the dentry and
+> > 	   inode cache shrinkers.
 > 
-> Thanks!  Do you want to use this address for the sign-off or the Intel one?
+> NAK in that form; sb refcounting and iterators had been reworked for .34,
+> so at least it needs rediff on top of that.
 
-I guess so.  Ever since switching groups within intel last summer my
-mgross@linux.intel.com address isn't checked as often as this one. 
+The tree I based this on was 2.6.34-rc7 - is there new code in a
+-next branch somewhere?
 
-The other option is to use my outlook email (mark.gross@intel.com), but
-I really hate posting from outlook.  Besides, doing upstream kernel
-stuff isn't my day job any more so using markgross@thegnar.org  makes
-sense to me.
+> What's more, it's very
+> obviously broken wrt locking - you are unregistering a shrinker
+> from __put_super().  I.e. grab rwsem exclusively under a spinlock.
+> Essentially, you've turned dropping a _passive_ reference to superblock
+> (currently an operation safe in any context) into an operation allowed
+> only when no fs or vm locks are held by caller.  Not going to work...
 
-thanks,
+Yeah, I picked that up after I posted it. My bad - I'll look into how
+I can rework that for the next iteration.
 
---mgross
+Cheers,
 
-
-
-> 
-> Rafael
-> 
->  
-> > From 487b8dcaeb66d3c226d4c06c1bd99689f93024be Mon Sep 17 00:00:00 2001
-> > From: mgross <mgross@mgross-desktop.(none)>
-> > Date: Sat, 15 May 2010 14:30:15 -0700
-> > Subject: [PATCH] Gard against pm_qos users calling API before registering a proper
-> >  request.
-> > 
-> > This update handles a use case where pm_qos update requests need to
-> > silently fail if the update is being sent to a handle that is null.
-> > 
-> > The problem was that the original pm_qos silently fails when a request
-> > update is passed to a parameter that has not been added to the list yet.
-> > This update restores that behavior.
-> > 
-> > Signed-off-by: markgross <markgross@thegnar.org>
-> > 
-> > ---
-> >  kernel/pm_qos_params.c |   26 ++++++++++++++------------
-> >  1 files changed, 14 insertions(+), 12 deletions(-)
-> > 
-> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
-> > index a1aea04..f42d3f7 100644
-> > --- a/kernel/pm_qos_params.c
-> > +++ b/kernel/pm_qos_params.c
-> > @@ -252,19 +252,21 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
-> >  	int pending_update = 0;
-> >  	s32 temp;
-> >  
-> > -	spin_lock_irqsave(&pm_qos_lock, flags);
-> > -	if (new_value == PM_QOS_DEFAULT_VALUE)
-> > -		temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
-> > -	else
-> > -		temp = new_value;
-> > -
-> > -	if (temp != pm_qos_req->value) {
-> > -		pending_update = 1;
-> > -		pm_qos_req->value = temp;
-> > +	if (pm_qos_req) { /*guard against callers passing in null */
-> > +		spin_lock_irqsave(&pm_qos_lock, flags);
-> > +		if (new_value == PM_QOS_DEFAULT_VALUE)
-> > +			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
-> > +		else
-> > +			temp = new_value;
-> > +
-> > +		if (temp != pm_qos_req->value) {
-> > +			pending_update = 1;
-> > +			pm_qos_req->value = temp;
-> > +		}
-> > +		spin_unlock_irqrestore(&pm_qos_lock, flags);
-> > +		if (pending_update)
-> > +			update_target(pm_qos_req->pm_qos_class);
-> >  	}
-> > -	spin_unlock_irqrestore(&pm_qos_lock, flags);
-> > -	if (pending_update)
-> > -		update_target(pm_qos_req->pm_qos_class);
-> >  }
-> >  EXPORT_SYMBOL_GPL(pm_qos_update_request);
-> >  
-> > 
-> 
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
