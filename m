@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753085Ab0EQPSR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 11:18:17 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:47626 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751482Ab0EQPSQ (ORCPT
+	id S1753923Ab0EQPS3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 11:18:29 -0400
+Received: from eu1sys200aog118.obsmtp.com ([207.126.144.145]:55433 "EHLO
+	eu1sys200aog118.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753833Ab0EQPS1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 11:18:16 -0400
+	Mon, 17 May 2010 11:18:27 -0400
 Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
  requested
 From: Sundar R Iyer <sundar.iyer@stericsson.com>
@@ -22,8 +22,8 @@ References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
 	 <1274108214.20589.28.camel@bnru01>
 Content-Type: text/plain
 Organization: STEricsson
-Date: Mon, 17 May 2010 20:48:03 +0530
-Message-ID: <1274109483.20589.41.camel@bnru01>
+Date: Mon, 17 May 2010 20:45:45 +0530
+Message-ID: <1274109402.20589.39.camel@bnru01>
 MIME-Version: 1.0
 X-Mailer: Evolution 2.24.1 
 Content-Transfer-Encoding: 7bit
