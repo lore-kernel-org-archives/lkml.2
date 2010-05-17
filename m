@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755569Ab0EQSIi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 14:08:38 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:59532 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754197Ab0EQSIg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 14:08:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=k80ECPFzNXnVE0nIkUcl6iJ/7T6Msibo9fiLTpFnuYsaBrlizpXIVZqyymZoBW/fEG
-         iOv86s5VfsRQgmMNmf+NdXvlBBwrJKT9l8XLdyr46F6pHxiJly7L3dI2p+c+URrysnJi
-         Jv90tJaaijcHiLMebE3B5Q+17x3c1dAzUTN9M=
-Subject: Patch: ni_tio.c
-From: Samuel Richardson <sam.j.richardson@googlemail.com>
-To: gregkh@suse.de
-Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 May 2010 19:08:18 +0100
-Message-ID: <1274119698.5638.46.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12)
+	id S1755619Ab0EQSKa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 14:10:30 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:46160 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752374Ab0EQSK1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 14:10:27 -0400
+Message-ID: <4BF18500.60105@zytor.com>
+Date: Mon, 17 May 2010 11:03:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 01/35] lmb: prepare x86 to use lmb to replace early_res
+References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-2-git-send-email-yinghai@kernel.org>	 <1273803143.21352.353.camel@pasglop>  <4BECEB8D.8070600@oracle.com> <1273824578.21352.579.camel@pasglop>
+In-Reply-To: <1273824578.21352.579.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From bfe4b5738e2f9cc6d7f5e4fee6d65c66889e18a8 Mon Sep 17 00:00:00 2001
-From: Samuel Richardson <sam.j.richardson@gmail.com>
-Date: Mon, 17 May 2010 18:09:48 +0100
-Subject: [PATCH] Staging: comedi: fixed brace coding style issue in ni_tio.c
- This is a patch to the ni_tio.c file that fixes a brace warning found by the checkpatch.pl tool
- Signed-off-by: Samuel Richardson <sam.j.richardson@gmail.com>
+On 05/14/2010 01:09 AM, Benjamin Herrenschmidt wrote:
+> 
+> No. That is not the point. Read the rest of my email !
+> 
+> We need to -sanitize- those errors. _Maybe_ exposing LMB_ERROR is the
+> right way to do so, but in that case, we need to make -all- function use
+> the same error code. Right now, some fail with 0 and some with
+> LMB_ERROR.
+> 
 
----
- drivers/staging/comedi/drivers/ni_tio.c |    5 ++---
- 1 files changed, 2 insertions(+), 3 deletions(-)
+Using errnos like the rest of the kernel seems like the right thing to
+do, IMO.
 
-diff --git a/drivers/staging/comedi/drivers/ni_tio.c b/drivers/staging/comedi/drivers/ni_tio.c
-index 13e5b26..6621e94 100644
---- a/drivers/staging/comedi/drivers/ni_tio.c
-+++ b/drivers/staging/comedi/drivers/ni_tio.c
-@@ -1688,11 +1688,10 @@ static unsigned ni_tio_next_load_register(struct ni_gpct *counter)
- 					    NITIO_Gxx_Status_Reg(counter->
- 								 counter_index));
- 
--	if (bits & Gi_Next_Load_Source_Bit(counter->counter_index)) {
-+	if (bits & Gi_Next_Load_Source_Bit(counter->counter_index))
- 		return NITIO_Gi_LoadB_Reg(counter->counter_index);
--	} else {
-+	else
- 		return NITIO_Gi_LoadA_Reg(counter->counter_index);
--	}
- }
- 
- int ni_tio_winsn(struct ni_gpct *counter, struct comedi_insn *insn,
--- 
-1.6.6.1
-
-
-
+	-hpa
