@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756646Ab0EQXLV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:11:21 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:52289 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753802Ab0EQXLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:11:20 -0400
-Date: Tue, 18 May 2010 01:11:13 +0200
-From: Ingo Molnar <mingo@elte.hu>
+	id S1756199Ab0EQXNl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:13:41 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:39186 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753113Ab0EQXNj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:13:39 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:to:cc:subject:message-id:references:
+	mime-version:content-type:content-disposition:in-reply-to:user-agent:x-system-of-record;
+	b=EcPup6DS/N52GBI5dBdw5oEtFvm5af0X9xJwqyskaQRIbDsLp65idI3cvBa07Jimn
+	yNjoWY9xf6fw7ukPP+8dA==
+Date: Mon, 17 May 2010 16:13:31 -0700
+From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+Cc: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
        Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/mrst changes for v2.6.35
-Message-ID: <20100517231113.GA8232@elte.hu>
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 07/10] generic rwsem: implement down_read_critical() /
+	up_read_critical()
+Message-ID: <20100517231331.GA30847@google.com>
+References: <1274135154-24082-1-git-send-email-walken@google.com> <1274135154-24082-8-git-send-email-walken@google.com> <alpine.LFD.2.00.1005171532430.4195@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <alpine.LFD.2.00.1005171532430.4195@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Mon, May 17, 2010 at 03:44:24PM -0700, Linus Torvalds wrote:
+> You didn't update the comment for the new name here...
+> 
+> > - when the rwsem is write owned, down_read_unfair() callers get queued in
+> >   front of threads trying to acquire the rwsem by other means.
+> 
+> .. or here. In this case, it really is more about "unfairness", but I'm 
+> not convinced it should be so in the naming anyway, even if internally it 
+> might be __down_read_unfair. "critical" I think covers both.
 
-Please pull the latest Intel Moorestown git tree 
-from:
+Gah! Sorry for missing the comment updates. I agree with you on the naming,
+I just didn't remember about the comment.
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-mrst-for-linus
+Will send identical patch with the correct comment as reply to this.
 
- Thanks,
+> Anyway, the series looks mostly acceptable to me in this form. I think it 
+> conceptually works out, and I think that the non-preemption guarantee 
+> should mean that starvation of writers is not likely an issue. However, 
+> I'd definitely like some second opinions on it. I'm not going to apply 
+> this series without acks from people. So you should try to convince DavidH 
+> too that this actually really does matter and makes sense.
 
-	Ingo
+I'll see what I can do here. Thanks !
 
------------------->
-Jacob Pan (3):
-      x86: Avoid check hlt for newer cpus
-      x86, mrst, pci: return 0 for non-present pci bars
-      x86, mrst: add nop functions to x86_init mpparse functions
-
-
- arch/x86/kernel/cpu/bugs.c |    2 +-
- arch/x86/kernel/mrst.c     |    5 +++++
- arch/x86/pci/mrst.c        |    2 +-
- 3 files changed, 7 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
-index 01a2652..c39576c 100644
---- a/arch/x86/kernel/cpu/bugs.c
-+++ b/arch/x86/kernel/cpu/bugs.c
-@@ -86,7 +86,7 @@ static void __init check_fpu(void)
- 
- static void __init check_hlt(void)
- {
--	if (paravirt_enabled())
-+	if (boot_cpu_data.x86 >= 5 || paravirt_enabled())
- 		return;
- 
- 	printk(KERN_INFO "Checking 'hlt' instruction... ");
-diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
-index 0aad867..e796448 100644
---- a/arch/x86/kernel/mrst.c
-+++ b/arch/x86/kernel/mrst.c
-@@ -237,4 +237,9 @@ void __init x86_mrst_early_setup(void)
- 	x86_init.pci.fixup_irqs = x86_init_noop;
- 
- 	legacy_pic = &null_legacy_pic;
-+
-+	/* Avoid searching for BIOS MP tables */
-+	x86_init.mpparse.find_smp_config = x86_init_noop;
-+	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
-+
- }
-diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
-index 8bf2fcb..d5c7aef 100644
---- a/arch/x86/pci/mrst.c
-+++ b/arch/x86/pci/mrst.c
-@@ -109,7 +109,7 @@ static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
- 			decode++;
- 			decode = ~(decode - 1);
- 		} else {
--			decode = ~0;
-+			decode = 0;
- 		}
- 
- 		/*
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
