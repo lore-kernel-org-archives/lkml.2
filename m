@@ -1,42 +1,432 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754456Ab0EQTcS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:32:18 -0400
-Received: from lazybastard.de ([212.112.238.170]:43511 "EHLO
-	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755242Ab0EQTcN (ORCPT
+	id S1755946Ab0EQTc0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:32:26 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:32867 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755521Ab0EQTcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:32:13 -0400
-Date: Mon, 17 May 2010 21:31:59 +0200
-From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephen Rothwell <sfr@canb.auug.org.au>,
-       linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       logfs@logfs.org
-Subject: Re: linux-next -> 2.6.34: Tree for April 28 (logfs)
-Message-ID: <20100517193159.GE28003@logfs.org>
-References: <20100428164341.cee2911a.sfr@canb.auug.org.au> <20100428085604.0566092a.randy.dunlap@oracle.com> <20100505092020.66a461fa.randy.dunlap@oracle.com> <20100505203548.GI25129@logfs.org> <20100509062010.GA9485@elte.hu> <20100516204826.2625eed2.randy.dunlap@oracle.com>
+	Mon, 17 May 2010 15:32:22 -0400
+Message-ID: <4BF1993D.2070000@lougher.demon.co.uk>
+Date: Mon, 17 May 2010 20:30:05 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100516204826.2625eed2.randy.dunlap@oracle.com>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+To: linux-fsdevel@vger.kernel.org
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/4] squashfs: add support for xattr reading
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 May 2010 20:48:26 -0700, Randy Dunlap wrote:
-> 
-> This fix is now needed in 2.6.34....
 
-I didn't send Linus a pull request, as I was on vacation last week.  Bad
-timing, given the 2.6.34 release date. :(
+Add support for listxattr and getxattr.  Also add xattr definitions.
 
-Jörn
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
+---
+  fs/squashfs/Makefile        |    2 +-
+  fs/squashfs/squashfs_fs.h   |   19 +++
+  fs/squashfs/squashfs_fs_i.h |    3 +
+  fs/squashfs/xattr.c         |  319 +++++++++++++++++++++++++++++++++++++++++++
+  4 files changed, 342 insertions(+), 1 deletions(-)
+  create mode 100644 fs/squashfs/xattr.c
 
+diff --git a/fs/squashfs/Makefile b/fs/squashfs/Makefile
+index c0da4a1..56684d4 100644
+--- a/fs/squashfs/Makefile
++++ b/fs/squashfs/Makefile
+@@ -5,5 +5,5 @@
+  obj-$(CONFIG_SQUASHFS) += squashfs.o
+  squashfs-y += block.o cache.o dir.o export.o file.o fragment.o id.o inode.o
+  squashfs-y += namei.o super.o symlink.o zlib_wrapper.o decompressor.o
+-squashfs-y += xattr_id.o
++squashfs-y += xattr.o xattr_id.o
+
+diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
+index c654e86..6fe940c 100644
+--- a/fs/squashfs/squashfs_fs.h
++++ b/fs/squashfs/squashfs_fs.h
+@@ -46,6 +46,7 @@
+  #define SQUASHFS_NAME_LEN		256
+
+  #define SQUASHFS_INVALID_FRAG		(0xffffffffU)
++#define SQUASHFS_INVALID_XATTR		(0xffffffffU)
+  #define SQUASHFS_INVALID_BLK		(-1LL)
+
+  /* Filesystem flags */
+@@ -96,6 +97,13 @@
+  #define SQUASHFS_LFIFO_TYPE		13
+  #define SQUASHFS_LSOCKET_TYPE		14
+
++/* Xattr types */
++#define SQUASHFS_XATTR_USER             0
++#define SQUASHFS_XATTR_TRUSTED          1
++#define SQUASHFS_XATTR_SECURITY         2
++#define SQUASHFS_XATTR_VALUE_OOL        256
++#define SQUASHFS_XATTR_PREFIX_MASK      0xff
++
+  /* Flag whether block is compressed or uncompressed, bit is set if block is
+   * uncompressed */
+  #define SQUASHFS_COMPRESSED_BIT		(1 << 15)
+@@ -395,6 +403,17 @@ struct squashfs_fragment_entry {
+  	unsigned int		unused;
+  };
+
++struct squashfs_xattr_entry {
++	__le16			type;
++	__le16			size;
++	char			data[0];
++};
++
++struct squashfs_xattr_val {
++	__le32			vsize;
++	char			value[0];
++};
++
+  struct squashfs_xattr_id {
+  	__le64			xattr;
+  	__le32			count;
+diff --git a/fs/squashfs/squashfs_fs_i.h b/fs/squashfs/squashfs_fs_i.h
+index fbfca30..d3e3a37 100644
+--- a/fs/squashfs/squashfs_fs_i.h
++++ b/fs/squashfs/squashfs_fs_i.h
+@@ -26,6 +26,9 @@
+  struct squashfs_inode_info {
+  	u64		start;
+  	int		offset;
++	u64		xattr;
++	unsigned int	xattr_size;
++	int		xattr_count;
+  	union {
+  		struct {
+  			u64		fragment_block;
+diff --git a/fs/squashfs/xattr.c b/fs/squashfs/xattr.c
+new file mode 100644
+index 0000000..147ecc3
+--- /dev/null
++++ b/fs/squashfs/xattr.c
+@@ -0,0 +1,319 @@
++/*
++ * Squashfs - a compressed read only filesystem for Linux
++ *
++ * Copyright (c) 2010
++ * Phillip Lougher <phillip@lougher.demon.co.uk>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; either version 2,
++ * or (at your option) any later version.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301, USA.
++ *
++ * xattr_id.c
++ */
++
++#include <linux/init.h>
++#include <linux/module.h>
++#include <linux/string.h>
++#include <linux/fs.h>
++#include <linux/vfs.h>
++#include <linux/xattr.h>
++#include <linux/slab.h>
++
++#include "squashfs_fs.h"
++#include "squashfs_fs_sb.h"
++#include "squashfs_fs_i.h"
++#include "squashfs.h"
++
++static inline struct xattr_handler *squashfs_xattr_handler(int);
++
++ssize_t squashfs_listxattr(struct dentry *d, char *buffer,
++	size_t buffer_size)
++{
++	struct inode *inode = d->d_inode;
++	struct super_block *sb = inode->i_sb;
++	struct squashfs_sb_info *msblk = sb->s_fs_info;
++	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
++						 + msblk->xattr_table;
++	int offset = SQUASHFS_XATTR_OFFSET(squashfs_i(inode)->xattr);
++	int count = squashfs_i(inode)->xattr_count;
++	size_t rest = buffer_size;
++	int err;
++
++	/* check that the file system has xattrs */
++	if (msblk->xattr_id_table == NULL)
++		return -EOPNOTSUPP;
++
++	/* loop reading each xattr name */
++	while (count--) {
++		struct squashfs_xattr_entry entry;
++		struct squashfs_xattr_val val;
++		struct xattr_handler *handler;
++		int name_size, prefix_size = 0;
++
++		err = squashfs_read_metadata(sb, &entry, &start, &offset,
++							sizeof(entry));
++		if (err < 0)
++			goto failed;
++
++		name_size = le16_to_cpu(entry.size);
++		handler = squashfs_xattr_handler(le16_to_cpu(entry.type));
++		if (handler)
++			prefix_size = handler->list(d, buffer, rest, NULL,
++				name_size, handler->flags);
++		if (prefix_size) {
++			if (buffer) {
++				if (prefix_size + name_size + 1 > rest) {
++					err = -ERANGE;
++					goto failed;
++				}
++				buffer += prefix_size;
++			}
++			err = squashfs_read_metadata(sb, buffer, &start,
++				&offset, name_size);
++			if (err < 0)
++				goto failed;
++			if (buffer) {
++				buffer[name_size] = '\0';
++				buffer += name_size + 1;
++			}
++			rest -= prefix_size + name_size + 1;
++		} else  {
++			/* no handler or insuffficient privileges, so skip */
++			err = squashfs_read_metadata(sb, NULL, &start,
++				&offset, name_size);
++			if (err < 0)
++				goto failed;
++		}
++
++
++		/* skip remaining xattr entry */
++		err = squashfs_read_metadata(sb, &val, &start, &offset,
++						sizeof(val));
++		if (err < 0)
++			goto failed;
++
++		err = squashfs_read_metadata(sb, NULL, &start, &offset,
++						le32_to_cpu(val.vsize));
++		if (err < 0)
++			goto failed;
++	}
++	err = buffer_size - rest;
++
++failed:
++	return err;
++}
++
++
++static int squashfs_xattr_get(struct inode *inode, int name_index,
++	const char *name, void *buffer, size_t buffer_size)
++{
++	struct super_block *sb = inode->i_sb;
++	struct squashfs_sb_info *msblk = sb->s_fs_info;
++	u64 start = SQUASHFS_XATTR_BLK(squashfs_i(inode)->xattr)
++						 + msblk->xattr_table;
++	int offset = SQUASHFS_XATTR_OFFSET(squashfs_i(inode)->xattr);
++	int count = squashfs_i(inode)->xattr_count;
++	int name_len = strlen(name);
++	int err, vsize;
++	char *target = kmalloc(name_len, GFP_KERNEL);
++
++	if (target == NULL)
++		return  -ENOMEM;
++
++	/* loop reading each xattr name */
++	for (; count; count--) {
++		struct squashfs_xattr_entry entry;
++		struct squashfs_xattr_val val;
++		int type, prefix, name_size;
++
++		err = squashfs_read_metadata(sb, &entry, &start, &offset,
++							sizeof(entry));
++		if (err < 0)
++			goto failed;
++
++		name_size = le16_to_cpu(entry.size);
++		type = le16_to_cpu(entry.type);
++		prefix = type & SQUASHFS_XATTR_PREFIX_MASK;
++
++		err = squashfs_read_metadata(sb, target, &start, &offset,
++							name_size);
++		if (err < 0)
++			goto failed;
++
++		if (prefix == name_index && name_size == name_len &&
++					strncmp(target, name, name_size) == 0) {
++			/* found xattr */
++			if (type & SQUASHFS_XATTR_VALUE_OOL) {
++				__le64 xattr;
++				/* val is a reference to the real location */
++				err = squashfs_read_metadata(sb, &val, &start,
++						&offset, sizeof(val));
++				if (err < 0)
++					goto failed;
++				err = squashfs_read_metadata(sb, &xattr, &start,
++					 &offset, sizeof(xattr));
++				if (err < 0)
++					goto failed;
++				xattr = le64_to_cpu(xattr);
++				start = SQUASHFS_XATTR_BLK(xattr) +
++							msblk->xattr_table;
++				offset = SQUASHFS_XATTR_OFFSET(xattr);
++			}
++			/* read xattr value */
++			err = squashfs_read_metadata(sb, &val, &start, &offset,
++							sizeof(val));
++			if (err < 0)
++				goto failed;
++
++			vsize = le32_to_cpu(val.vsize);
++			if (buffer) {
++				if (vsize > buffer_size) {
++					err = -ERANGE;
++					goto failed;
++				}
++				err = squashfs_read_metadata(sb, buffer, &start,
++					 &offset, vsize);
++				if (err < 0)
++					goto failed;
++			}
++			break;
++		}
++
++		/* no match, skip remaining xattr entry */
++		err = squashfs_read_metadata(sb, &val, &start, &offset,
++							sizeof(val));
++		if (err < 0)
++			goto failed;
++		err = squashfs_read_metadata(sb, NULL, &start, &offset,
++						le32_to_cpu(val.vsize));
++		if (err < 0)
++			goto failed;
++	}
++	err = count ? vsize : -ENODATA;
++
++failed:
++	kfree(target);
++	return err;
++}
++
++
++/*
++ * User namespace support
++ */
++static size_t squashfs_user_list(struct dentry *d, char *list, size_t list_size,
++	const char *name, size_t name_len, int type)
++{
++	if (list && XATTR_USER_PREFIX_LEN <= list_size)
++		memcpy(list, XATTR_USER_PREFIX, XATTR_USER_PREFIX_LEN);
++	return XATTR_USER_PREFIX_LEN;
++}
++
++static int squashfs_user_get(struct dentry *d, const char *name, void *buffer,
++	size_t size, int type)
++{
++	if (name[0] == '\0')
++		return  -EINVAL;
++
++	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_USER, name,
++		buffer, size);
++}
++
++struct xattr_handler squashfs_xattr_user_handler = {
++	.prefix	= XATTR_USER_PREFIX,
++	.list	= squashfs_user_list,
++	.get	= squashfs_user_get
++};
++
++/*
++ * Trusted namespace support
++ */
++static size_t squashfs_trusted_list(struct dentry *d, char *list,
++	size_t list_size, const char *name, size_t name_len, int type)
++{
++	if (!capable(CAP_SYS_ADMIN))
++		return 0;
++
++	if (list && XATTR_TRUSTED_PREFIX_LEN <= list_size)
++		memcpy(list, XATTR_TRUSTED_PREFIX, XATTR_TRUSTED_PREFIX_LEN);
++	return XATTR_TRUSTED_PREFIX_LEN;
++}
++
++static int squashfs_trusted_get(struct dentry *d, const char *name,
++	void *buffer, size_t size, int type)
++{
++	if (name[0] == '\0')
++		return  -EINVAL;
++
++	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_TRUSTED, name,
++		buffer, size);
++}
++
++struct xattr_handler squashfs_xattr_trusted_handler = {
++	.prefix	= XATTR_TRUSTED_PREFIX,
++	.list	= squashfs_trusted_list,
++	.get	= squashfs_trusted_get
++};
++
++/*
++ * Security namespace support
++ */
++static size_t squashfs_security_list(struct dentry *d, char *list,
++	size_t list_size, const char *name, size_t name_len, int type)
++{
++	if (list && XATTR_SECURITY_PREFIX_LEN <= list_size)
++		memcpy(list, XATTR_SECURITY_PREFIX, XATTR_SECURITY_PREFIX_LEN);
++	return XATTR_SECURITY_PREFIX_LEN;
++}
++
++static int squashfs_security_get(struct dentry *d, const char *name,
++	void *buffer, size_t size, int type)
++{
++	if (name[0] == '\0')
++		return  -EINVAL;
++
++	return squashfs_xattr_get(d->d_inode, SQUASHFS_XATTR_SECURITY, name,
++		buffer, size);
++}
++
++struct xattr_handler squashfs_xattr_security_handler = {
++	.prefix	= XATTR_SECURITY_PREFIX,
++	.list	= squashfs_security_list,
++	.get	= squashfs_security_get
++};
++
++static inline struct xattr_handler *squashfs_xattr_handler(int type)
++{
++	if (type & ~(SQUASHFS_XATTR_PREFIX_MASK | SQUASHFS_XATTR_VALUE_OOL))
++		/* ignore unrecognised type */
++		return NULL;
++
++	switch (type & SQUASHFS_XATTR_PREFIX_MASK) {
++	case SQUASHFS_XATTR_USER:
++		return &squashfs_xattr_user_handler;
++	case SQUASHFS_XATTR_TRUSTED:
++		return &squashfs_xattr_trusted_handler;
++	case SQUASHFS_XATTR_SECURITY:
++		return &squashfs_xattr_security_handler;
++	default:
++		/* ignore unrecognised type */
++		return NULL;
++	}
++}
++
++struct xattr_handler *squashfs_xattr_handlers[] = {
++	&squashfs_xattr_user_handler,
++	&squashfs_xattr_trusted_handler,
++	&squashfs_xattr_security_handler,
++	NULL
++};
++
 -- 
-You cannot suppose that Moliere ever troubled himself to be original in the
-matter of ideas. You cannot suppose that the stories he tells in his plays
-have never been told before. They were culled, as you very well know.
--- Andre-Louis Moreau in Scarabouche
+1.6.3.3
+
