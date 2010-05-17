@@ -1,124 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752300Ab0EQEiq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 00:38:46 -0400
-Received: from mail.gmx.net ([213.165.64.20]:40333 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750947Ab0EQEio (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 00:38:44 -0400
-X-Authenticated: #14349625
-X-Provags-ID: V01U2FsdGVkX19oD6g/2QFo+ysW3Bb3c7tAS6diQrfR7sZV/tnItw
-	FXL9OaWqv4nb6+
-Subject: Re: commit e9e9250b: sync wakeup bustage when waker is an RT task
-From: Mike Galbraith <efault@gmx.de>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <1273994510.7873.10.camel@marge.simson.net>
-References: <1273924628.10630.24.camel@marge.simson.net>
-	 <1273925052.1674.138.camel@laptop>
-	 <1273943222.8752.7.camel@marge.simson.net>
-	 <1273994510.7873.10.camel@marge.simson.net>
-Content-Type: text/plain
-Date: Mon, 17 May 2010 06:38:40 +0200
-Message-Id: <1274071120.15000.10.camel@marge.simson.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1.1 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1752103Ab0EQEuE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 00:50:04 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:38233 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751328Ab0EQEuC convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 00:50:02 -0400
+MIME-Version: 1.0
+In-Reply-To: <201005142308.48386.rjw@sisk.pl>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	 <201005142308.48386.rjw@sisk.pl>
+Date: Sun, 16 May 2010 21:50:00 -0700
+Message-ID: <AANLkTilX0uhqrJtUSOC4smdH1M8V-h14J7YtRG4PPxOQ@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-16 at 09:21 +0200, Mike Galbraith wrote: 
-> On Sat, 2010-05-15 at 19:07 +0200, Mike Galbraith wrote:
-> > On Sat, 2010-05-15 at 14:04 +0200, Peter Zijlstra wrote:
-> > > On Sat, 2010-05-15 at 13:57 +0200, Mike Galbraith wrote:
-> > > > Hi Peter,
-> > > > 
-> > > > This commit excluded RT tasks from rq->load, was that intentional?  The
-> > > > comment in struct rq states that load reflects *all* tasks, but since
-> > > > this commit, that's no longer true.
-> > > 
-> > > Right, because a static load value does not accurately reflect a RT task
-> > > which can run as long as it pretty well pleases. So instead we measure
-> > > the time spend running !fair tasks and scale down the cpu_power
-> > > proportionally.
-> > > 
-> > > > Looking at lmbench lat_udp in a PREEMPT_RT kernel, I noticed that
-> > > > wake_affine() is failing for sync wakeups when it should not.  It's
-> > > > doing so because the waker in this case is an RT kernel thread
-> > > > (sirq-net-rx) - we subtract the sync waker's weight, when it was never
-> > > > added in the first place, resulting in this_load going gaga.  End result
-> > > > is quite high latency numbers due to tasks jabbering cross-cache.
-> > > > 
-> > > > If the exclusion was intentional, I suppose I can do a waker class check
-> > > > in wake_affine() to fix it.
-> > > 
-> > > So basically make all RT wakeups sync?
-> > 
-> > I was going to just skip subtracting waker's weight ala
-> > 
-> >         /*
-> >          * If sync wakeup then subtract the (maximum possible)
-> >          * effect of the currently running task from the load
-> >          * of the current CPU:
-> >          */
-> > 	if (sync && !task_has_rt_policy(curr))
-> 
-> One-liner doesn't work.  We have one task on the cfs_rq, the one who is
-> the waker in !PREEMPT_RT, which is a fail case for wake_affine() if you
-> don't do the weight subtraction.  I did the below instead.
+2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Friday 14 May 2010, Arve Hjønnevåg wrote:
+>> This patch series adds a suspend-block api that provides the same
+>> functionality as the android wakelock api. This version has some
+>> changes from, or requested by, Rafael. The most notable changes are:
+>> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
+>>   for statically allocated suspend blockers.
+>> - suspend_blocker_destroy is now called suspend_blocker_unregister
+>> - The user space mandatory _INIT ioctl has been replaced with an
+>>   optional _SET_NAME ioctl.
+>>
+>> I kept the ack and reviewed by tags on two of the patches even though
+>> there were a few cosmetic changes.
+>
+> Thanks for the patches, I think they are in a pretty good shape now.
+>
+> That said, I'd like the changelogs to be a bit more descriptive, at least for
+> patch [1/8].  I think it should explain (in a few words) what the purpose of
+> the feature is and what problems it solves that generally a combination of
+> runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
+> think we need that feature.
+>
 
-(Which is kinda fugly, only redeeming factor is it works;).
+How about:
 
-What would be the harm/consequence of restoring RT tasks to rq->load so
-the wake_affine()::sync logic just worked as before without hackery?
-The weight is a more or less random number, but looking around, with
-them excluded, avg_load_per_task is lowered when RT tasks enter the
-system, and rq->load[] misses their weight.  (Dunno what effect it has
-on tg shares).
+PM: Add opportunistic suspend support.
 
-	-Mike
+Adds a suspend block api that drivers can use to block opportunistic
+suspend. This is needed to avoid losing wakeup events that occur
+right after suspend is initiated.
 
-> sched: RT waker sync wakeup bugfix
-> 
-> An RT waker's weight is not on the runqueue, but we try to subrtact it anyway
-> in the sync wakeup case,  sending this_load negative.  This leads to affine
-> wakeup failure in cases where it should succeed.  This was found while testing
-> an PREEMPT_RT kernel with lmbench's lat_udp.  In a PREEMPT_RT kernel, softirq
-> threads act as a ~proxy for the !RT buddy.  Approximate !PREEMPT_RT sync wakeup
-> behavior by looking at the buddy instead, and subtracting the maximum task weight
-> that will not send this_load negative.
-> 
-> Signed-off-by: Mike Galbraith <efault@gmx.de>
-> Cc: Ingo Molnar <mingo@elte.hu> 
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> LKML-Reference: <new-submission>
-> 
->  kernel/sched_fair.c |    9 +++++++++
->  1 files changed, 9 insertions(+), 0 deletions(-)
-> 
-> diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-> index 5240469..cc40849 100644
-> --- a/kernel/sched_fair.c
-> +++ b/kernel/sched_fair.c
-> @@ -1280,6 +1280,15 @@ static int wake_affine(struct sched_domain *sd, struct task_struct *p, int sync)
->  		tg = task_group(current);
->  		weight = current->se.load.weight;
->  
-> +		/*
-> +		 * An RT waker's weight is not on the runqueue.  Subtract the
-> +		 * maximum task weight that will not send this_load negative.
-> +		 */
-> +		if (task_has_rt_policy(current)) {
-> +			weight = max_t(unsigned long, NICE_0_LOAD, p->se.load.weight);
-> +			weight = min(weight, this_load);
-> +		}
-> +
->  		this_load += effective_load(tg, this_cpu, -weight, -weight);
->  		load += effective_load(tg, prev_cpu, 0, -weight);
->  	}
-> 
+Adds /sys/power/policy that selects the behaviour of /sys/power/state.
+After setting the policy to opportunistic, writes to /sys/power/state
+become non-blocking requests that specify which suspend state to enter
+when no suspend blockers are active. A special state, "on", stops the
+process by activating the "main" suspend blocker.
 
+Opportunistic suspend is most useful on systems that cannot enter their
+lowest power state from idle, but it is also useful on systems that enter
+the same power state from idle and suspend. Periodic timers can cause
+a significant power drain on these systems, and suspend will stop most
+of this. Opportunistic suspend can also reduce the harm caused by apps
+that never go idle.
+
+> The changelog of patch [2/8] appears to be outdated, that needs to be fixed.
+> Also, it would be nice to explain in the changelog what the interface is needed
+> for (in terms of the problems that it helps to handle).
+>
+
+How about:
+
+PM: suspend_block: Add driver to access suspend blockers from user-space
+
+Add a misc device, "suspend_blocker", that allows user-space processes
+to block auto suspend. Opening this device creates a suspend_blocker.
+ioctls are provided to name this suspend_blocker, and to block and unblock
+suspend. To delete the suspend_blocker, close the device.
+
+For example, when select or poll indicates that input event are available, this
+interface can be used to block suspend before reading those event. This allows
+the input driver to release its suspend blocker as soon as the event queue is
+empty.
+
+-- 
+Arve Hjønnevåg
