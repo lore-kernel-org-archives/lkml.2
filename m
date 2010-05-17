@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754885Ab0EQJxb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:53:31 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:49336 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752053Ab0EQJx3 (ORCPT
+	id S1754596Ab0EQJza (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:55:30 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:63698 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752077Ab0EQJz3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:53:29 -0400
-Date: Mon, 17 May 2010 11:53:28 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Axel Lin <axel.lin@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Antonio Ospite <ospite@studenti.unina.it>,
-       Richard Purdie <rpurdie@linux.intel.com>
-Subject: Re: [PATCH v2] leds-lp3944: properly handle lp3944_configure fail
-	in lp3944_probe
-Message-ID: <20100517095328.GF22781@pengutronix.de>
-References: <1274089668.28623.3.camel@mola>
+	Mon, 17 May 2010 05:55:29 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=F7c43AqG0Oy5dQFspymN55VsdiR3uP9zHFZy1G8MS6R3xnFxKNv7b2sdwP0Y4jJChH
+         JWf0epetbppNXqF99IhlLOxQVtZ/8cbKPsEaEvVLzYTbDyg44FOFlM8/XJwCL6LWQGZr
+         uoykt7VUZkAYCoFGT/XFbrPgDx2LwiFyX9oaM=
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="w3uUfsyyY1Pqa/ej"
-Content-Disposition: inline
-In-Reply-To: <1274089668.28623.3.camel@mola>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <1273641798-26579-1-git-send-email-jassi.brar@samsung.com>
+References: <1273641798-26579-1-git-send-email-jassi.brar@samsung.com>
+Date: Mon, 17 May 2010 02:55:28 -0700
+X-Google-Sender-Auth: sJ53lrJgZju79hmmu3CZ360WCls
+Message-ID: <AANLkTinAmHkVBii9nTZ5tNYU21whHy8awP55nGEc-8Tp@mail.gmail.com>
+Subject: Re: [PATCH] DMA: PL330: Add dma api driver
+From: Dan Williams <dan.j.williams@intel.com>
+To: Jassi Brar <jassi.brar@samsung.com>
+Cc: linux-kernel@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
+       jy0922.shim@samsung.com, linus.ml.walleij@gmail.com,
+       maciej.sosnowski@intel.com, ben-linux@fluff.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jassi,
 
---w3uUfsyyY1Pqa/ej
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Looks good, one comment:
 
-On Mon, May 17, 2010 at 05:47:48PM +0800, Axel Lin wrote:
-> In current implementation, lp3944_probe return 0 even if lp3944_configure=
- fail.
-> Therefore, led_classdev_unregister will be executed twice
-> ( in error handling of lp3944_configure and lp3944_remove ).
-> This patch properly handles lp3944_configure fail in lp3944_probe.
->=20
-> Signed-off-by: Axel Lin <axel.lin@gmail.com>
+On Tue, May 11, 2010 at 10:23 PM, Jassi Brar <jassi.brar@samsung.com> wrote:
+> Add DMA Engine API driver for the PL330 DMAC.
+> This driver is supposed to be reusable by various
+> platforms that have one or more PL330 DMACs.
+> Atm, DMA_SLAVE and DMA_MEMCPY capabilities have been
+> implemented.
+>
+> Signed-off-by: Jassi Brar <jassi.brar@samsung.com>
+[..]
+> +static void dma_pl330_rqcb(void *token, enum pl330_op_err err)
+> +{
+> +       struct dma_pl330_desc *desc = token;
+> +       struct dma_pl330_chan *pch = desc->pchan;
+> +       unsigned long flags;
+> +
+> +       /* If desc aborted */
+> +       if (!pch)
+> +               return;
+> +
+> +       spin_lock_irqsave(&pch->lock, flags);
+> +
+> +       desc->status = DONE;
+> +
+> +       spin_unlock_irqrestore(&pch->lock, flags);
 
-Looks good to me.
+I don't think you need the lock here.  Assigning an integer is atomic,
+and you reschedule the tasklet.
 
-Acked-by: Wolfram Sang <w.sang@pengutronix.de>
+Since this patch depends on the generic bits in Russell's tree I need
+to wait until after the ARM tree is pulled to take it through the dma
+tree.  So, for now...
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---w3uUfsyyY1Pqa/ej
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkvxEhgACgkQD27XaX1/VRssCwCffRsfthPK1hE62Zt1rpLL/EeV
-zCAAoI55JnNWN5+LcBsJJKtTGr0Rgux0
-=RQp5
------END PGP SIGNATURE-----
-
---w3uUfsyyY1Pqa/ej--
+Acked-by: Dan Williams <dan.j.williams@intel.com>
