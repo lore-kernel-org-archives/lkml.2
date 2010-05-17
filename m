@@ -1,85 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754102Ab0EQIUY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:20:24 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42153 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751446Ab0EQIUX convert rfc822-to-8bit (ORCPT
+	id S1754752Ab0EQIUd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 04:20:33 -0400
+Received: from mga10.intel.com ([192.55.52.92]:26535 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754669Ab0EQIUb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:20:23 -0400
-Subject: Re: [PATCH] sched: Avoid side-effect of tickless idle on
- update_cpu_load (v2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Venkatesh Pallipadi <venki@google.com>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       Ken Chen <kenchen@google.com>, Paul Turner <pjt@google.com>,
-       Nikhil Rao <ncrao@google.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-In-Reply-To: <1273886490-15627-1-git-send-email-venki@google.com>
-References: <1273886490-15627-1-git-send-email-venki@google.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Mon, 17 May 2010 10:19:59 +0200
-Message-ID: <1274084399.5605.3655.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 17 May 2010 04:20:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
+   d="scan'208";a="799052996"
+Message-ID: <4BF0FC4C.4060306@linux.intel.com>
+Date: Mon, 17 May 2010 16:20:28 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
+MIME-Version: 1.0
+To: "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Wu, Fengguang" <fengguang.wu@intel.com>,
+       Andi Kleen <andi@firstfloor.org>, Mel Gorman <mel@csn.ul.ie>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>
+Subject: [PATCH 3/3] mem-hotplug: fix potential race while building zonelist
+ for new populated zone
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-14 at 18:21 -0700, Venkatesh Pallipadi wrote:
+Make "zone->present_pages gets increased" and "building zonelist" an
+atomic operation to prevent possible race.
 
+It is merely a theoretical race: after new zone gets populated,
+its pages might be allocated by others before itself building zonelist.
 
->  /*
-> + * The exact cpu_load decay at various idx values would be
-> + * [0] new = 0 * old + 1 * new
-> + * [1] new = 1/2 * old + 1/2 * new
-> + * [2] new = 3/4 * old + 1/4 * new
-> + * [3] new = 7/8 * old + 1/8 * new
-> + * [4] new = 15/16 * old + 1/16 * new
+Besides, atomic operation ensures alloc_percpu() will never fail since
+there is a new fresh memory block added.
 
-Would that be something like?
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+Signed-off-by: Wu Fengguang <fengguang.wu@intel.com>
+Reviewed-by: Andi Kleen <andi.kleen@intel.com>
+---
+  include/linux/memory_hotplug.h |    8 ++++++++
+  mm/memory_hotplug.c            |   15 +++++++++------
+  mm/page_alloc.c                |   20 ++++++++++++++++----
+  3 files changed, 33 insertions(+), 10 deletions(-)
 
- load_i = ((2^i)-1)/(2^i) * load_i + 1/(2^i) * load_(i-1)
+diff --git a/include/linux/memory_hotplug.h b/include/linux/memory_hotplug.h
+index 35b07b7..42b1416 100644
+--- a/include/linux/memory_hotplug.h
++++ b/include/linux/memory_hotplug.h
+@@ -157,6 +157,14 @@ extern void register_page_bootmem_info_node(struct pglist_data *pgdat);
+  extern void put_page_bootmem(struct page *page);
+  #endif
 
-Where load_-1 == current load.
++/* online_pages() will pass such zone info to build_all_zonelists()
++ * when it needs to initialize a new zone.
++ */
++struct zone_online_info {
++	struct zone *zone;
++	unsigned long onlined_pages;
++};
++
+  #else /* ! CONFIG_MEMORY_HOTPLUG */
+  /*
+   * Stub functions for when hotplug is off
+diff --git a/mm/memory_hotplug.c b/mm/memory_hotplug.c
+index b564b6a..06738b2 100644
+--- a/mm/memory_hotplug.c
++++ b/mm/memory_hotplug.c
+@@ -389,6 +389,7 @@ int online_pages(unsigned long pfn, unsigned long nr_pages)
+  	int nid;
+  	int ret;
+  	struct memory_notify arg;
++	struct zone_online_info zone_online_info;
+  	/*
+  	 * mutex to protect zone->pageset when it's still shared
+  	 * in onlined_pages()
+@@ -434,13 +435,15 @@ int online_pages(unsigned long pfn, unsigned long nr_pages)
+  		return ret;
+  	}
 
-> + * Load degrade calculations below are approximated on a 128 point scale.
-> + * degrade_zero_ticks is the number of ticks after which old_load at any
-> + * particular idx is approximated to be zero.
-> + * degrade_factor is a precomputed table, a row for each load idx.
-> + * Each column corresponds to degradation factor for a power of two ticks,
-> + * based on 128 point scale.
-> + * Example:
-> + * row 2, col 3 (=12) says that the degradation at load idx 2 after
-> + * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
+-	zone->present_pages += onlined_pages;
+-	zone->zone_pgdat->node_present_pages += onlined_pages;
+-	if (need_zonelists_rebuild)
+-		build_all_zonelists(zone);
+-	else
++	if (need_zonelists_rebuild) {
++		zone_online_info.zone = zone;
++		zone_online_info.onlined_pages = onlined_pages;
++		build_all_zonelists(&zone_online_info);
++	} else {
++		zone->present_pages += onlined_pages;
++		zone->zone_pgdat->node_present_pages += onlined_pages;
+  		zone_pcp_update(zone);
+-
++	}
+  	mutex_unlock(&zone_pageset_mutex);
+  	setup_per_zone_wmarks();
+  	calculate_zone_inactive_ratio(zone);
+diff --git a/mm/page_alloc.c b/mm/page_alloc.c
+index 72c1211..0729a82 100644
+--- a/mm/page_alloc.c
++++ b/mm/page_alloc.c
+@@ -2783,6 +2783,20 @@ static __init_refok int __build_all_zonelists(void *data)
+  {
+  	int nid;
+  	int cpu;
++#ifdef CONFIG_MEMORY_HOTPLUG
++	struct zone_online_info *new = (struct zone_online_info *)data;
++
++	/*
++	 * Populate the new zone before build zonelists, which could
++	 * happen only when onlining a new node after system is booted.
++	 */
++	if (new) {
++		/* We are expecting a new memory block here. */
++		WARN_ON(!new->onlined_pages);
++		new->zone->present_pages += new->onlined_pages;
++		new->zone->zone_pgdat->node_present_pages += new->onlined_pages;
++	}
++#endif
 
-So because we're in no_hz, current load == 0 and we could approximate
-the thing by:
+  #ifdef CONFIG_NUMA
+  	memset(node_load, 0, sizeof(node_load));
+@@ -2796,10 +2810,8 @@ static __init_refok int __build_all_zonelists(void *data)
 
- load_i = ((2^i)-1)/(2^i) * load_i
+  #ifdef CONFIG_MEMORY_HOTPLUG
+  	/* Setup real pagesets for the new zone */
+-	if (data) {
+-		struct zone *zone = data;
+-		setup_zone_pageset(zone);
+-	}
++	if (new)
++		setup_zone_pageset(new->zone);
+  #endif
 
-Because for i ~ 1, there is no new input, and for i >> 1 the fraction is
-small.
-
-But why then do we precalculate these factors? It seems to me
-((2^i)-1)/(2^i) is something that is trivial to compute and doesn't
-warrant a lookup table?
-
-> + * With this power of 2 load factors, we can degrade the load n times
-> + * by looking at 1 bits in n and doing as many mult/shift instead of
-> + * n mult/shifts needed by the exact degradation.
-> + */
-> +#define DEGRADE_SHIFT		7
-> +static const unsigned char
-> +		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
-> +static const unsigned char
-> +		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
-> +					{0, 0, 0, 0, 0, 0, 0, 0},
-> +					{64, 32, 8, 0, 0, 0, 0, 0},
-> +					{96, 72, 40, 12, 1, 0, 0},
-> +					{112, 98, 75, 43, 15, 1, 0},
-> +					{120, 112, 98, 76, 45, 16, 2} };
-
+  	/*
+-- 
+1.6.0.rc1
 
 
