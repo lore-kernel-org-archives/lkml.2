@@ -1,84 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754362Ab0EQHpS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 03:45:18 -0400
-Received: from crca.org.au ([74.207.252.120]:39180 "EHLO crca.org.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754273Ab0EQHpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 03:45:16 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BF0F3FF.2010603@crca.org.au>
-Date: Mon, 17 May 2010 17:45:03 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1754447Ab0EQHqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 03:46:36 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:51603 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754339Ab0EQHqf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 03:46:35 -0400
+Date: Mon, 17 May 2010 09:46:21 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] Simple fan question
+Message-ID: <20100517074621.GA14520@ucw.cz>
+References: <1272518506.24542.163.camel@pasglop>
+ <20100429105740.6e3b7716@hyperion.delvare>
+ <1272581806.24542.185.camel@pasglop>
 MIME-Version: 1.0
-To: Alan Stern <stern@rowland.harvard.edu>
-CC: linux-kernel <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       Matt Reimer <mattjreimer@gmail.com>
-Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
- userspace is frozen?
-References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1272581806.24542.185.camel@pasglop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+Hi!
 
-On 17/05/10 12:22, Alan Stern wrote:
-> On Mon, 17 May 2010, Nigel Cunningham wrote:
->
->>>> I object to the patch.
->>>>
->>>> Tell the patch it ought to exit once thawed, by all means.
->>>
->>> I'm not sure what you mean.  Care to explain?
->>
->> I mean "Set up some sort of flag that it can look at once thawed at
->> resume time, and use that to tell it to exit at that point."
->
-> Doesn't the patch do exactly that?  The "flag" is set by virtue of the
-> fact that this is part of del_gendisk -- which means the disk is being
-> unregistered and hence the writeback thread will exit shortly.
->
->>>> Make the patch unfreezeable to begin with, by all means.
->>>
->>> That wouldn't work.
->>
->> Why not?
->
-> It would be nice to know exactly why.  Perhaps the underlying problem
-> can be fixed.
->
->>>> If you know a disk is going to be unregistered during resume,
->>>
->>> How do we check that, exactly?
->>
->> Well, if you can figure out that you need to go down this path at this
->> point in the process, you must be able to apply the same logic to come
->> to the same conclusion earlier in the process.
->
-> That's not true.  You don't know that a device is going to be unplugged
-> until it actually _is_ unplugged.
+> Right.
+> 
+> Now, maybe the best option is to have instead:
+> 
+> 	fan[1-*]_discrete_value
+> 		Discrete value
+>                 RW
+> 
+> 	fan[1-*]_supported values
+>                 List of supported discrete values
+>                 RO
 
-Sorry - I got unregistered during suspend (instead of resume) in my 
-head. That said, I'd argue that we should be...
+Hmm, for 100 different values, that will get ugly. What about simple
+fan_max file with values 0..fan_max being valid?
 
-1) Syncing all the data at the start of the suspend/hibernate, so 
-there's nothing for the workthread to do if we do del_gendisk.
-2) Telling things to exit if we do find the device is gone away at 
-resume time, but not relying on the going-away happening until post 
-process thaw, for a couple of reasons:
-- Potential for races/confusion/mess etc in having $random process 
-thawing other processes. Only the thread doing the suspend/hibernate 
-should be freezing/thawing.
-- We're dealing with the symptom, not the cause. Almost always a bad idea.
+IIRC thinkpads have 8-or-so possible discrete cases...
 
-Regards,
-
-Nigel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
