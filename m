@@ -1,127 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753681Ab0EQWFf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 18:05:35 -0400
-Received: from tomts22-srv.bellnexxia.net ([209.226.175.184]:33754 "EHLO
-	tomts22-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751441Ab0EQWFd (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 18:05:33 -0400
-X-IronPort-Anti-Spam-Filtered: true
-X-IronPort-Anti-Spam-Result: AvsEAF9X8UtGGOJc/2dsb2JhbACdd3K9DoUQBA
-Date: Mon, 17 May 2010 18:00:25 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: "Michael S. Tsirkin" <mst@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100517220025.GA1366@Krystal>
-References: <20100512213317.GA15085@linux.vnet.ibm.com> <1273700022-16523-23-git-send-email-paulmck@linux.vnet.ibm.com> <20100512214847.GD22930@redhat.com> <20100512230057.GH2303@linux.vnet.ibm.com> <1273756043.5605.3542.camel@twins> <20100513152340.GA2879@linux.vnet.ibm.com> <20100517203349.GA14994@redhat.com> <20100517210606.GW2320@linux.vnet.ibm.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline
-In-Reply-To: <20100517210606.GW2320@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://krystal.dyndns.org:8080
-X-Operating-System: Linux/2.6.27.31-grsec (i686)
-X-Uptime: 17:39:30 up 40 days,  7:33,  4 users,  load average: 0.32, 0.19,
-	0.17
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754689Ab0EQWGa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 18:06:30 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40866 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752470Ab0EQWG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 18:06:29 -0400
+From: Don Zickus <dzickus@redhat.com>
+To: fweisbec@gmail.com, mingo@elte.hu
+Cc: a.p.zijlstra@chello.nl, gorcunov@gmail.com, linux-kernel@vger.kernel.org,
+       Don Zickus <dzickus@redhat.com>
+Subject: [PATCH 1/3] lockup_detector: convert per_cpu to __get_cpu_var for readability
+Date: Mon, 17 May 2010 18:06:04 -0400
+Message-Id: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1274133966-18415-1-git-send-email-dzickus@redhat.com>
+References: <1274133966-18415-1-git-send-email-dzickus@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> On Mon, May 17, 2010 at 11:33:49PM +0300, Michael S. Tsirkin wrote:
-> > On Thu, May 13, 2010 at 08:23:40AM -0700, Paul E. McKenney wrote:
-> > > On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
-> > > > On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
-> > > > > Any thoughts?  One approach would be to create a separate lockdep class
-> > > > > for vhost workqueue state, similar to the approach used in instrument
-> > > > > rcu_read_lock() and friends. 
-> > > > 
-> > > > workqueue_struct::lockdep_map, its held while executing worklets.
-> > > > 
-> > > > lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
-> > > 
-> > > Thank you, Peter!!!
-> > > 
-> > > 							Thanx, Paul
-> > 
-> > vhost in fact does flush_work rather than
-> > flush_workqueue, so while for now everything runs
-> > from vhost_workqueue in theory nothing would break
-> > if we use some other workqueue or even a combination
-> > thereof.
-> > 
-> > I guess when/if this happens, we could start by converting
-> > to _raw and then devise a solution.
-> 
-> If there are a small finite number of work queues involved, we can
-> easily do something like:
-> 
-> 	#ifdef CONFIG_PROVE_RCU
-> 	int in_vhost_workqueue(void)
-> 	{
-> 		return in_workqueue_context(vhost_workqueue) ||
-> 		       in_workqueue_context(vhost_other_workqueue) ||
-> 		       in_workqueue_context(yet_another_vhost_workqueue);
-> 	}
-> 	#endif /* #ifdef CONFIG_PROVE_RCU */
-> 
-> Seem reasonable?
-> 
-> > By the way what would be really nice is if we had a way
-> > to trap when rcu protected pointer is freed without a flush
-> > while some reader is running. Current annotation does not
-> > allow this, does it?
-> 
-> Right now, it does not, but I wonder if something like Thomas's and
-> Mathieu's debugobjects work could be brought to bear on this problem?
-> This would need to be implemented in vhost, as synchronize_rcu() has
-> no way to know what memory it is flushing, nor does flush_work().
+Just a bunch of conversions as suggested by Frederic W.
 
-We can think of my recent debugobjects addition as a small state machine
-that is described by the code that owns the objects. At each state
-transition, the code passes the expected state as well as the next
-state.
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+---
+ kernel/watchdog.c |   35 +++++++++++++++++------------------
+ 1 files changed, 17 insertions(+), 18 deletions(-)
 
-The current implementation can only keep track of a single "state" per
-object at once. This should be extended to be able to count the number
-RCU read side C.S. in flight that are accessing to an object.
-
-We could use a hook in rcu_dereference (which knows about the object)
-and a hook in rcu_read_unlock (which determines the end of valid object
-use).
-
-We should hook into rcu_assign_pointer() to detect RCU structure
-privatization. It should put these objects in a "privatized" hash table.
-
-We should also hook into synchronize_rcu/sched() to remove the
-privatized structures from the privatized hash.
-
-A hook in "kfree" (maybe a new rcu_free(void (fctptr*)(void *)) wrapper ?)
-would call a debugobject hook that would lookup the "privatized" hash.
-If it contains the object to free, we check if there are RCU read-side
-C.S. in flight using this object at the same time, and show an error if
-both are true.
-
-Thoughts ?
-
-Mathieu
-
-
-> 
-> 						Thanx, Paul
-
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e53622c..91b0b26 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -115,7 +115,7 @@ static unsigned long get_sample_period(void)
+ /* Commands for resetting the watchdog */
+ static void __touch_watchdog(void)
+ {
+-	int this_cpu = raw_smp_processor_id();
++	int this_cpu = smp_processor_id();
+ 
+ 	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+ }
+@@ -157,21 +157,21 @@ void touch_softlockup_watchdog_sync(void)
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ /* watchdog detector functions */
+-static int is_hardlockup(int cpu)
++static int is_hardlockup(void)
+ {
+-	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
++	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
+ 
+-	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
++	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
+ 		return 1;
+ 
+-	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
++	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
+ 	return 0;
+ }
+ #endif
+ 
+-static int is_softlockup(unsigned long touch_ts, int cpu)
++static int is_softlockup(unsigned long touch_ts)
+ {
+-	unsigned long now = get_timestamp(cpu);
++	unsigned long now = get_timestamp(smp_processor_id());
+ 
+ 	/* Warn about unreasonable delays: */
+ 	if (time_after(now, touch_ts + softlockup_thresh))
+@@ -206,8 +206,6 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct perf_sample_data *data,
+ 		 struct pt_regs *regs)
+ {
+-	int this_cpu = smp_processor_id();
+-
+ 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+ 		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
+@@ -219,7 +217,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 	 * fired multiple times before we overflow'd.  If it hasn't
+ 	 * then this is a good indication the cpu is stuck
+ 	 */
+-	if (is_hardlockup(this_cpu)) {
++	if (is_hardlockup()) {
++		int this_cpu = smp_processor_id();
++
+ 		/* only print hardlockups once */
+ 		if (__get_cpu_var(hard_watchdog_warn) == true)
+ 			return;
+@@ -247,7 +247,6 @@ static inline void watchdog_interrupt_count(void) { return; }
+ /* watchdog kicker functions */
+ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ {
+-	int this_cpu = smp_processor_id();
+ 	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
+ 	struct pt_regs *regs = get_irq_regs();
+ 	int duration;
+@@ -262,12 +261,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+ 
+ 	if (touch_ts == 0) {
+-		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
++		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
+ 			/*
+ 			 * If the time stamp was touched atomically
+ 			 * make sure the scheduler tick is up to date.
+ 			 */
+-			per_cpu(softlockup_touch_sync, this_cpu) = false;
++			__get_cpu_var(softlockup_touch_sync) = false;
+ 			sched_clock_tick();
+ 		}
+ 		__touch_watchdog();
+@@ -280,14 +279,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	 * indicate it is getting cpu time.  If it hasn't then
+ 	 * this is a good indication some task is hogging the cpu
+ 	 */
+-	duration = is_softlockup(touch_ts, this_cpu);
++	duration = is_softlockup(touch_ts);
+ 	if (unlikely(duration)) {
+ 		/* only warn once */
+ 		if (__get_cpu_var(soft_watchdog_warn) == true)
+ 			return HRTIMER_RESTART;
+ 
+ 		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+-			this_cpu, duration,
++			smp_processor_id(), duration,
+ 			current->comm, task_pid_nr(current));
+ 		print_modules();
+ 		print_irqtrace_events(current);
+@@ -309,10 +308,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ /*
+  * The watchdog thread - touches the timestamp.
+  */
+-static int watchdog(void *__bind_cpu)
++static int watchdog(void *unused)
+ {
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+-	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
++	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+@@ -328,7 +327,7 @@ static int watchdog(void *__bind_cpu)
+ 	/*
+ 	 * Run briefly once per second to reset the softlockup timestamp.
+ 	 * If this gets delayed for more than 60 seconds then the
+-	 * debug-printout triggers in softlockup_tick().
++	 * debug-printout triggers in watchdog_timer_fn().
+ 	 */
+ 	while (!kthread_should_stop()) {
+ 		__touch_watchdog();
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+1.7.0.1
+
