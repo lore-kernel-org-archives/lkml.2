@@ -1,46 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752731Ab0EQQH6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 12:07:58 -0400
-Received: from mga07.intel.com ([143.182.124.22]:63974 "EHLO
-	azsmga101.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752298Ab0EQQH5 (ORCPT
+	id S1753567Ab0EQQIO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 12:08:14 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:50492 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753099Ab0EQQIL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 12:07:57 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,248,1272870000"; 
-   d="scan'208";a="278010271"
-Date: Mon, 17 May 2010 09:07:55 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alan Cox <alan@linux.intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>
-Subject: Re: [PATCH 2/8] x86/mrst: add cpu type detection for Medfield
-Message-ID: <20100517090755.000026d4@unknown>
-In-Reply-To: <alpine.LFD.2.00.1005170032240.3368@localhost.localdomain>
-References: <1273873281-17489-1-git-send-email-jacob.jun.pan@linux.intel.com>
-	<1273873281-17489-3-git-send-email-jacob.jun.pan@linux.intel.com>
-	<alpine.LFD.2.00.1005170032240.3368@localhost.localdomain>
-Organization: Intel OTC
-X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Mon, 17 May 2010 12:08:11 -0400
+Date: Mon, 17 May 2010 09:08:15 -0700
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Sundar R Iyer <sundar.iyer@stericsson.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>,
+       Linus WALLEIJ <linus.walleij@stericsson.com>
+Subject: Re: [PATCH 1/1] regulator: return set_mode is same mode is
+ requested
+Message-ID: <20100517160813.GA6547@opensource.wolfsonmicro.com>
+References: <1274105393-32197-1-git-send-email-sundar.iyer@stericsson.com>
+ <20100517144411.GD5257@opensource.wolfsonmicro.com>
+ <1274108214.20589.28.camel@bnru01>
+ <1274109402.20589.39.camel@bnru01>
+ <20100517153431.GA6218@opensource.wolfsonmicro.com>
+ <1274111688.20589.54.camel@bnru01>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274111688.20589.54.camel@bnru01>
+X-Cookie: Big book, big bore.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 17, 2010 at 09:24:48PM +0530, Sundar R Iyer wrote:
 
->
->Why are you having mrst_cpu_chip as a caching variable if you expose
->the identify function ? Either you evaluate boot_cpu_data everytime or
->you do it once and expose a function which lets you access the cached
->data. IIRC Alan mentioned that drivers need this info, so the access
->function will need an EXPORT_SYMBOL_GPL to work.
->
+> >From bad0d5eb51ef84be5b100e3dd0f5a590ea0529b6 Mon Sep 17 00:00:00 2001
+> From: Sundar R Iyer <sundar.iyer@stericsson.com>
+> Date: Fri, 14 May 2010 15:14:17 +0530
+> Subject: [PATCH 1/1] regulator: return set_mode when same mode is requested
+> 
+> save I/O costs by returning when the same mode is
+> requested for the regulator
 
-I cached value because mrst_cpu_chip is used a few times in mrst.c, I should
-fix that to have a unified interface. will also do the EXPORT_SYMBOL_GPL.
-
-thanks.
+Acked-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
