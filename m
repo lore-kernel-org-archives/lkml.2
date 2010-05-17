@@ -1,75 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756552Ab0EQWh5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 18:37:57 -0400
-Received: from waste.org ([173.11.57.241]:37388 "EHLO waste.org"
+	id S1756476Ab0EQWj1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 18:39:27 -0400
+Received: from crca.org.au ([74.207.252.120]:58335 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756536Ab0EQWhz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 18:37:55 -0400
-Subject: Re: [BUG] SLOB breaks Crypto
-From: Matt Mackall <mpm@selenic.com>
-To: Adrian-Ken Rueegsegger <ken@codelabs.ch>
-Cc: Geert Uytterhoeven <geert@linux-m68k.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, michael-dev@fami-braun.de,
-       Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-In-Reply-To: <4BF1BA0E.4010402@codelabs.ch>
-References: <4B9E38AF.70309@fami-braun.de>
-	 <84144f021003180930s44e239dfmb38183096f07c8a8@mail.gmail.com>
-	 <4BA29A19.2050307@fami-braun.de>
-	 <20100319003351.GC20227@gondor.apana.org.au>
-	 <AANLkTilPEnh3ewTb-KDsReBpjcszh1wkbfZohIaPXBKe@mail.gmail.com>
-	 <4BF1BA0E.4010402@codelabs.ch>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 May 2010 17:37:49 -0500
-Message-ID: <1274135869.11603.473.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1751441Ab0EQWj0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 18:39:26 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BF1C595.3070707@crca.org.au>
+Date: Tue, 18 May 2010 08:39:17 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+       LKML <linux-kernel@vger.kernel.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to push
+ model
+References: <20100517182726.089700767@sbs-t61.sc.intel.com>
+In-Reply-To: <20100517182726.089700767@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 23:50 +0200, Adrian-Ken Rueegsegger wrote:
-> Geert Uytterhoeven wrote:
-> > On Fri, Mar 19, 2010 at 02:33, Herbert Xu <herbert@gondor.apana.org.au> wrote:
-> >> On Thu, Mar 18, 2010 at 10:24:41PM +0100, michael-dev@fami-braun.de wrote:
-> >>> Pekka Enberg schrieb:
-> >>>> Even with CONFIG_DEBUG_SLAB enabled or with CONFIG_SLUB and
-> >>>> CONFIG_SLUB_DEBUG_ON?
-> >>> no, these options have not been / are not enabled.
-> >> Can you please try it with those options enabled? That will tell
-> >> us if there is some latent bug in the crypto layer that only shows
-> >> up right away under SLOB.
-> > 
-> > After seeing a posting from Nemoto-san on the linux-mips list (should
-> > show up soon on
-> > http://www.linux-mips.org/archives/linux-mips/2010-05/threads.html),
-> > I'm wondering if these defaults are the culprit;
-> > 
-> > mm/slab.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
-> > mm/slob.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long)
-> > mm/slub.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
+Hi Suresh.
 
-Seems the target here is x86, which has no DMA or other alignment
-constraints.
+On 18/05/10 04:27, Suresh Siddha wrote:
+> This is an updated version of patchset which is posted earlier at
+> http://lkml.org/lkml/2009/12/10/470
+>
+> Description:
+> Existing nohz idle load balance logic uses the pull model, with one
+> idle load balancer CPU nominated on any partially idle system and that
+> balancer CPU not going into nohz mode. With the periodic tick, the
+> balancer does the idle balancing on behalf of all the CPUs in nohz mode.
+>
+> This is not very optimal and has few issues:
+> * the balancer will continue to have periodic ticks and wakeup
+>    frequently (HZ rate), even though it may not have any rebalancing to do on
+>    behalf of any of the idle CPUs.
+> * On x86 and CPUs that have APIC timer stoppage on idle CPUs, this periodic
+>    wakeup can result in an additional interrupt on a CPU doing the timer
+>    broadcast.
+>
+> The alternative is to have a push model, where all idle CPUs can enter nohz
+> mode and any busy CPU kicks one of the idle CPUs to take care of idle
+> balancing on behalf of a group of idle CPUs.
+>
+> Following patches switches idle load balancer to this push approach.
+>
+> Updates from the previous version:
+>
+> * Busy CPU uses send_remote_softirq() for invoking SCHED_SOFTIRQ on the
+>    idle load balancing cpu, which does the load balancing on behalf of
+>    all the idle CPUs.
+>
+> * Dropped the per NUMA node nohz load balancing as it doesn't detect
+>    certain imbalance scenarios. This will be addressed later.
+>
+> Signed-off-by: Suresh Siddha<suresh.b.siddha@intel.com>
+> Signed-off-by: Venkatesh Pallipadi<venki@google.com>
 
-> Just a quick note: I changed this line in mm/slob.c to (unsigned long
-> long) and was able to load tcrypt without the kernel oopsing or
-> panic'ing. When running all test via
-> 
-> modprobe tcrypt
+Sounds great.
 
-Hmmm, sounds like something in crypto has a bogus alignment/padding
-expectation. Surprised it wasn't caught by SLAB redzoning though.
-Perhaps we can 'bisect' the test suite to narrow it down to a particular
-test. Alternately, we can tweak SLAB to offset buffers by two bytes and
-see what breaks.
+I'm in the middle of packing at the moment, but will try to find time to 
+test the patches.
 
-Ages ago, I had a simple redzoning patch for SLOB, but I never submitted
-it: I wrote it to catch bugs in SLOB, not bugs in SLOB users.
+It might help to show the difference that the patch series makes 
+(powertop output?)
 
--- 
-Mathematics is the supreme nostalgia of our time.
+Regards,
 
-
+Nigel
