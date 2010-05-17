@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752181Ab0EQBej (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 21:34:39 -0400
-Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:49302 "EHLO
-	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751763Ab0EQBeg (ORCPT
+	id S1752171Ab0EQBwN (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 21:52:13 -0400
+Received: from 68.mail-out.ovh.net ([91.121.185.69]:58347 "HELO
+	68.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1751945Ab0EQBwM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 21:34:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Subject: Re: [PATCH 1/9] mm: add generic adaptive large memory allocationAPIs
-Cc: kosaki.motohiro@jp.fujitsu.com, peterz@infradead.org, xiaosuo@gmail.com,
-       akpm@linux-foundation.org, hnguyen@de.ibm.com, raisch@de.ibm.com,
-       rolandd@cisco.com, sean.hefty@intel.com, hal.rosenstock@gmail.com,
-       divy@chelsio.com, James.Bottomley@suse.de, tytso@mit.edu,
-       adilger@sun.com, viro@zeniv.linux.org.uk, menage@google.com,
-       lizf@cn.fujitsu.com, linux-rdma@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-       linux-scsi@vger.kernel.org, linux-ext4@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       containers@lists.linux-foundation.org, eric.dumazet@gmail.com
-In-Reply-To: <201005132236.ADJ57893.FLFFMtOVJHOOSQ@I-love.SAKURA.ne.jp>
-References: <1273756816.5605.3547.camel@twins> <201005132236.ADJ57893.FLFFMtOVJHOOSQ@I-love.SAKURA.ne.jp>
-Message-Id: <20100517103050.21B6.A69D9226@jp.fujitsu.com>
+	Sun, 16 May 2010 21:52:12 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 16 May 2010 21:52:11 EDT
+Message-ID: <4BF09FB6.7030704@example.com>
+Date: Mon, 17 May 2010 03:45:26 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 17 May 2010 10:34:30 +0900 (JST)
+To: sboyce@blueyonder.co.uk
+CC: LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: General questiin about SYSFS
+References: <4BF05EC9.6070102@blueyonder.co.uk>
+In-Reply-To: <4BF05EC9.6070102@blueyonder.co.uk>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 11508948849420235245
+X-Ovh-Remote: 83.6.195.181 (abbf181.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
+X-Ovh-Tracer-Id: 11597613467184623896
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Peter Zijlstra wrote:
-> > NAK, I really utterly dislike that inatomic argument. The alloc side
-> > doesn't function in atomic context either. Please keep the thing
-> > symmetric in that regards.
-> 
-> Excuse me. kmalloc(GFP_KERNEL) may sleep (and therefore cannot be used in
-> atomic context). However, kfree() for memory allocated with kmalloc(GFP_KERNEL)
-> never sleep (and therefore can be used in atomic context).
-> Why kmalloc() and kfree() are NOT kept symmetric?
+On 16.05.2010 23:08, Sid Boyce wrote:
+> As the message says, you have to change all instances of SSYSFS to ATTR
+>   in the rules files in /etc/udev/rules.d to stop those messages
+> appearing on boot up.
 
-In kmalloc case, we need to consider both kmalloc(GFP_KERNEL)/kfree() pair and
-kmalloc(GFP_ATOMIC)/kfree() pair. latter is mainly used on atomic context.
-To make kfree() atomic help to keep the implementation simple.
+Just plain search and replace ATTR for SYSFS?
 
-But kvmalloc don't have GFP_ATOMIC feautre. that's big difference.
+Thanks, regards,
 
+Piotr Hosowicz
 
-
+-- 
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Któr± postaæ ubran± tylko w przepaskê na biodrach i hu¶taj±c± siê na 
+lianach gra³ Johnny Weissmuller?
+- Jezusa.
+NP: Patrick O'Hearn - Approaching Summit
+NB: 2.6.34-rc7-git9
