@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756046Ab0EQTwE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:52:04 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12002 "EHLO mx1.redhat.com"
+	id S1755333Ab0EQTyW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:54:22 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:45270 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755333Ab0EQTwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:52:00 -0400
-Date: Mon, 17 May 2010 15:51:45 -0400
-From: Valerie Aurora <vaurora@redhat.com>
-To: Neil Brown <neilb@suse.de>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       Jan Blunck <jblunck@suse.de>, David Woodhouse <dwmw2@infradead.org>,
-       linux-nfs@vger.kernel.org, "J. Bruce Fields" <bfields@fieldses.org>
-Subject: Re: [PATCH 05/39] whiteout/NFSD: Don't return information about whiteouts to userspace
-Message-ID: <20100517195145.GB18568@shell>
-References: <1272928358-20854-1-git-send-email-vaurora@redhat.com> <1272928358-20854-6-git-send-email-vaurora@redhat.com> <20100504093731.3a45ff5f@notabene.brown> <20100506180151.GA21062@shell> <20100507071808.20028458@notabene.brown>
+	id S1753126Ab0EQTyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:54:20 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+From: James Bottomley <James.Bottomley@suse.de>
+To: me@felipebalbi.com
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>, linux-omap@vger.kernel.org,
+       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
+In-Reply-To: <20100517193952.GC14047@gandalf>
+References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
+	 <87hbm6cz90.fsf@deeprootsystems.com>
+	 <1274115885.4418.59.camel@mulgrave.site> <20100517174647.GA11512@gandalf>
+	 <1274119179.4418.68.camel@mulgrave.site> <20100517181252.GA14260@gandalf>
+	 <1274124267.4418.149.camel@mulgrave.site> <20100517193840.GB14047@gandalf>
+	 <20100517193952.GC14047@gandalf>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 17 May 2010 15:49:35 -0400
+Message-ID: <1274125775.4418.182.camel@mulgrave.site>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100507071808.20028458@notabene.brown>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 07:18:08AM +1000, Neil Brown wrote:
-> On Thu, 6 May 2010 14:01:51 -0400
-> Valerie Aurora <vaurora@redhat.com> wrote:
+On Mon, 2010-05-17 at 22:39 +0300, Felipe Balbi wrote:
+> hi,
 > 
-> > On Tue, May 04, 2010 at 09:37:31AM +1000, Neil Brown wrote:
-> > > On Mon,  3 May 2010 16:12:04 -0700
-> > > Valerie Aurora <vaurora@redhat.com> wrote:
-> > > 
-> > > > From: Jan Blunck <jblunck@suse.de>
-> > > > 
-> > > > Userspace isn't ready for handling another file type, so silently drop
-> > > > whiteout directory entries before they leave the kernel.
-> > > 
-> > > Feels very intrusive doesn't it....
-> > > 
-> > > Have you considered something like the following?
+> On Mon, May 17, 2010 at 10:38:40PM +0300, Felipe Balbi wrote:
+> > that's a whole other story. Hardware issues are things which in 99.999%
+> > of the cases we can't change. We have to work around them. Software
+> > bugs, on the other hand, can be fixed much more easily. I'm sure you
+> > agree with that, don't you ?
 > > 
-> > Hrm, I see how that could be more elegant, but I'd rather avoid yet
-> > another layer of function pointer passing around.  This code is
-> > already hard enough to review...
+> > Trying to make a comparisson between hardware bug and software bug is
+> > simply non-sense in this case.
 > 
->  Yes, the extra indirection is a bit of a negative, but I don't think this
->  patch is harder to review than the alternate.
->  From a numerical perspective, with this patch you only need to look at the
->  various places that ->readdir is called to be sure it is always correct.
->  There are about 3.  With the original you need to look at ever filldir
->  function.  Jan has found 9.  
-> 
->  And from a maintainability perspective, I think my approach is safer.  Given
->  that there are 9 filldir functions already, the chance that a need will be
->  found for another seems good, and the chance that the coder will know to
->  check for DT_WHT is a best even.  Conversely if another call to ->readdir
->  were added it is likely that nothing would need to be done.
-> 
->  Of course just counting things doesn't give a completely picture but I think
->  it can be indicative.
+> before you reply saying that most of the problems are firmware bugs, try
+> to file a bug to any of the usb storage manufacturers and wait for them
+> to fix. It's virtualy impossible, so let's consider it a problem that
+> has to be worked around.
 
-Okay, good points.  Let me try it out after getting this next rewrite done.
+Right, because Firmware writers are from the rugged unresponsive uplands
+of planet
+ignore-user-complaints-and-eat-them-for-breakfast-if-they-file-bugs and
+Software writers are from the emollient responsive groves of planet
+harmony.  Obviously what would work for one wouldn't work for the other.
 
-Thanks,
+As a software writer, I fully buy into that world view.  The trouble is
+that when I go to dinner with hardware people, they seem to be awfully
+nice chaps ... almost exactly like me, in fact ...
 
--VAL
+James
+
+
+
