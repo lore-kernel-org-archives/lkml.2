@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755274Ab0EQMD7 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 08:03:59 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49902 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752311Ab0EQMD5 convert rfc822-to-8bit (ORCPT
+	id S1755188Ab0EQMEt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 08:04:49 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:12408 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751731Ab0EQMEs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 08:03:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Z+fj7U8wxhnTGe4PFb9XBM9Wz5MqjsHCKXcNp5Tpj/jd9x3qQITpIU3Y/60DQvD5c/
-         IO2DeDQPXs+VaZrWHWw62pKjLY4DYpZiziswwf/DEHgcL7hAj50275MZizO3ouplum21
-         CxA3PP5F9mnvVwjdnBfDdwTiUveMuU4Je/E/c=
+	Mon, 17 May 2010 08:04:48 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=OSYbBKpe1VYURWwRBp+68Z2k6e2KIa1v4K1dOMO82M6ArHXS7SX/qee7+FXSHphGV
+	Ad0TjdJOdhRJpQJmHW2Lg==
 MIME-Version: 1.0
-In-Reply-To: <1274074364-8838-4-git-send-email-ngupta@vflare.org>
-References: <1274074364-8838-1-git-send-email-ngupta@vflare.org>
-	 <1274074364-8838-4-git-send-email-ngupta@vflare.org>
-Date: Mon, 17 May 2010 21:03:57 +0900
-Message-ID: <AANLkTim3XjWbIRDSFMhiowQjELM8VL547vW0ZU-LyYJb@mail.gmail.com>
-Subject: Re: [PATCH 3/3] ramzswap: Handler for swap slot free callback
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1274097780.5605.4642.camel@twins>
+References: <4bf11ea4.dd29e30a.026d.4627@mx.google.com>
+	 <20100517114605.GB5291@nowhere>
+	 <AANLkTil2QBjH2qvnH7VKrg6s7RcKvHC1m0HZkDVDPzv5@mail.gmail.com>
+	 <1274097780.5605.4642.camel@twins>
+Date: Mon, 17 May 2010 14:04:43 +0200
+Message-ID: <AANLkTilJH8RnWjBIY7vrOnXi7w1_z8j9_abD-8tuwL-u@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix errors path in perf_output_begin()
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       acme@infradead.org, perfmon2-devel@lists.sf.net, eranian@gmail.com
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 2:32 PM, Nitin Gupta <ngupta@vflare.org> wrote:
-> Install handler for swap_slot_free_notify callback which is called
-> when a swap slot is no longer used. This handler immediately frees
-> memory allocated corresponding to the given swap slot.
+On Mon, May 17, 2010 at 2:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Mon, 2010-05-17 at 13:56 +0200, Stephane Eranian wrote:
+>> >> +     if (!data->nr_pages) {
+>> >> +             atomic_inc(&data->lost);
+>> >> +             goto out;
+>> >> +     }
 >
-> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> ---
->  drivers/staging/ramzswap/TODO           |    5 -----
->  drivers/staging/ramzswap/ramzswap_drv.c |   22 +++++++++++++---------
->  2 files changed, 13 insertions(+), 14 deletions(-)
->  delete mode 100644 drivers/staging/ramzswap/TODO
 >
-> diff --git a/drivers/staging/ramzswap/TODO b/drivers/staging/ramzswap/TODO
-> deleted file mode 100644
-> index 8d64e28..0000000
-> --- a/drivers/staging/ramzswap/TODO
-> +++ /dev/null
-> @@ -1,5 +0,0 @@
-> -TODO:
-> -       - Add support for swap notifiers
-> -
-> -Please send patches to Greg Kroah-Hartman <greg@kroah.com> and
-> -Nitin Gupta <ngupta@vflare.org>
-> diff --git a/drivers/staging/ramzswap/ramzswap_drv.c b/drivers/staging/ramzswap/ramzswap_drv.c
-> index ee5eb12..ab15276 100644
-> --- a/drivers/staging/ramzswap/ramzswap_drv.c
-> +++ b/drivers/staging/ramzswap/ramzswap_drv.c
-> @@ -795,14 +795,6 @@ static int ramzswap_write(struct ramzswap *rzs, struct bio *bio)
+>> Well, nr_pages = 0 means all you have is the sampling buffer
+>> header page. You cannot save any sample, so you  actually
+>> loose everything. Perf reports a dozen samples but those
+>> are synthetic. The kernel cannot reject an mmap() for
+>> just one page because of the remapped counters, thus it
+>> has to handle this gracefully and at least report the lost
+>> samples.
 >
->        src = rzs->compress_buffer;
->
-> -       /*
-> -        * System swaps to same sector again when the stored page
-> -        * is no longer referenced by any process. So, its now safe
-> -        * to free the memory that was allocated for this page.
-> -        */
-> -       if (rzs->table[index].page || rzs_test_flag(rzs, index, RZS_ZERO))
-> -               ramzswap_free_page(rzs, index);
-> -
->        mutex_lock(&rzs->lock);
->
->        user_mem = kmap_atomic(page, KM_USER0);
-> @@ -1295,9 +1287,21 @@ out:
->        return ret;
->  }
->
-> +void ramzswap_slot_free_notify(struct block_device *bdev, unsigned long index)
-> +{
-> +       struct ramzswap *rzs;
-> +
-> +       rzs = bdev->bd_disk->private_data;
-> +       ramzswap_free_page(rzs, index);
-> +       rzs_stat64_inc(rzs, &rzs->stats.notify_free);
-> +
-> +       return;
-> +}
+> So you want to preserve this state for when you munmap() and mmap()
+> again? The only user of data->lost is writing the PERF_RECORD_LOST
+> event, which only ever happens when you have pages, so counting it when
+> there's no pages seems futile.
 
-Mistake. Let's remove _return_ in void function.
-Otherwise, looks good to me.
-
-Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-
-
--- 
-Kind regards,
-Minchan Kim
+You're right. But couldn't you report lost samples in the buffer header as well?
