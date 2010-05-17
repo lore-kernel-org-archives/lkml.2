@@ -1,50 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755249Ab0EQUXq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 16:23:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38248 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751782Ab0EQUXm (ORCPT
+	id S1755230Ab0EQU0o (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 16:26:44 -0400
+Received: from mga10.intel.com ([192.55.52.92]:4987 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754422Ab0EQU0n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 16:23:42 -0400
-Date: Mon, 17 May 2010 13:20:51 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jamie Lokier <jamie@shareable.org>
-cc: Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
-       willy@linux.intel.com, benh@kernel.crashing.org, paulus@samba.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t
- definition
-In-Reply-To: <20100517201339.GJ20356@shareable.org>
-Message-ID: <alpine.LFD.2.00.1005171314590.4195@i5.linux-foundation.org>
-References: <20100517043353.GA22127@kryten> <20100517043457.GA22416@kryten> <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org> <20100517201339.GJ20356@shareable.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Mon, 17 May 2010 16:26:43 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,249,1272870000"; 
+   d="scan'208";a="567984425"
+Date: Mon, 17 May 2010 13:26:42 -0700
+From: jacob pan <jacob.jun.pan@linux.intel.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Alan Cox <alan@linux.intel.com>
+Subject: Re: [PATCH 2/2] x86/mrst: add more timer config options
+Message-ID: <20100517132642.000073d4@unknown>
+In-Reply-To: <20100517125619.a0e123cd.randy.dunlap@oracle.com>
+References: <1274124183-23431-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	<1274124183-23431-3-git-send-email-jacob.jun.pan@linux.intel.com>
+	<20100517125619.a0e123cd.randy.dunlap@oracle.com>
+Organization: Intel OTC
+X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Randy Dunlap Mon, 17 May 2010 12:56:19 -0700
+
+>> Manual override is possible via cmdline option x86_mrst_timer.
+>
+>which is documented where??
+It is documented in Documentation/kernel-parameters.txt, the option has not changed but the impact has been extended to the new Medfield platforms.
+
+        x86_mrst_timer= [X86-32,APBT]
+                        Choose timer option for x86 Moorestown MID platform.
+                        Two valid options are apbt timer only and lapic timer
+                        plus one apbt timer for broadcast timer.
+                        x86_mrst_timer=apbt_only | lapic_and_apbt
 
 
-On Mon, 17 May 2010, Jamie Lokier wrote:
-> 
-> I wonder if
-> 
->    extern unsigned long __nv_jiffies;
->    #define jiffies (*(volatile unsigned long *)*__nv_jiffies)
-> 
-> would improve any code in the same way as this atomic_t change.
+Thanks,
 
-We effectively already do that. The full 64-bit jiffies isn't volatile. 
-But for legacy reasons, we have that "word-sized subpart" of the full 
-counter that is volatile - and we're using linker tricks rather the the C 
-preprocessor to do the above thing.
-
-So no, there's no room for improvement for jiffies - the only people who 
-ever use the volatile jiffies are things that read it. There are no 
-initializers that matter, and the updates (which also tend to suck with 
-"volatile" because gcc just doesn't do even the obvious optimizations) are 
-all done locked and to the non-volatile jiffies_64.
-
-		Linus
+Jacob
