@@ -1,59 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755104Ab0EQL3j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 07:29:39 -0400
-Received: from mail-fx0-f52.google.com ([209.85.161.52]:38148 "EHLO
-	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754352Ab0EQL3h (ORCPT
+	id S1755155Ab0EQLck (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 07:32:40 -0400
+Received: from mx4-phx2.redhat.com ([209.132.183.25]:55356 "EHLO
+	mx02.colomx.prod.int.phx2.redhat.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754360Ab0EQLcj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 07:29:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=BRIkotXaWiEUfyJo4/zTA4quv9BZUUsHKbpDWNBxL3cIxgKMV1gnhIxgiRpIFwkPqG
-         5beKNmpb5cIjpvT4TxrBIhPK2nOdBiomqcMeqiECeeCGjwWwH+vFEBuTBB0HTUaRpT39
-         lpM08XYbjic23JVTO7IINlYOXyySsBxRl8YJc=
-Date: Mon, 17 May 2010 13:29:40 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, acme@infradead.org,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Subject: Re: [PATCH] perf: fix bug mismatch with -c option definition
-Message-ID: <20100517112937.GA5291@nowhere>
-References: <4bf11ae9.e88cd80a.06b0.ffffa8e3@mx.google.com>
+	Mon, 17 May 2010 07:32:39 -0400
+Date: Mon, 17 May 2010 07:31:42 -0400 (EDT)
+From: John Kacur <jkacur@redhat.com>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Jeff Dike <jdike@addtoit.com>
+Message-ID: <1333713281.977451274095902288.JavaMail.root@zmail07.collab.prod.int.phx2.redhat.com>
+In-Reply-To: <20100516223054.GA5276@nowhere>
+Subject: Re: [PATCH] uml: Convert to unlocked_ioctls to remove implicit BKL
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4bf11ae9.e88cd80a.06b0.ffffa8e3@mx.google.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: [10.5.5.72]
+X-Mailer: Zimbra 5.0.21_GA_3150.RHEL4_64 (ZimbraWebClient - FF3.0 (Linux)/5.0.21_GA_3150.RHEL4_64)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 12:04:01PM +0200, Stephane Eranian wrote:
->   The -c option defines the user requested sampling period. It was implemented
->   using an unsigned int variable but the type of the option was OPT_LONG. Thus,
->   the option parser was overwriting memory belonging to other variables, namely
->   the mmap_pages leading to a zero page sampling buffer. The bug was exposed
->   only when compiling at -O0, probably because the compiler was padding
->   variables at higher optimization levels.
+
+----- "Frederic Weisbecker" <fweisbec@gmail.com> wrote:
+
+> On Fri, May 07, 2010 at 05:34:28PM +0200, John Kacur wrote:
+> > Convert to hostaudio_ioctl and hostmixer_ioctl_mixdev to
+> unlocked_ioctl
+> > 
+> > Signed-off-by: John Kacur <jkacur@redhat.com>
+> > ---
 > 
->   This patch fixes this problem by declaring user_interval as u64. This also
->   avoids wrap-around issues for large period on 32-bit systems.
->  
->   Signed-off-by: Stephane Eranian <eranian@google.com>
+> 
+> 
+> Hi John,
+> 
+> The patch looks good and I'm about to queue it, however it lacks
+> a changelog that properly explains the safety of the conversion.
+> 
+> Are you fine with this?
+> 
+> "We don't do anything except relying the ioctl to the host which
 
+s/relying/relaying
 
+Other than that, fine with me, thanks!
+John
 
-Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-
-Small detail: could you avoid the spaces in the beginning of
-your changelog lines?
-
-May be that's because you use git-show to dump your patches?
-In which case I suggest you to use git-format-patch instead.
-
-Thanks.
-
+> should then take care of the synchronization."
+> 
+> Thanks.
+> 
+> 
+> 
+> 
+> >  arch/um/drivers/hostaudio_kern.c |    8 ++++----
+> >  1 files changed, 4 insertions(+), 4 deletions(-)
+> > 
+> > diff --git a/arch/um/drivers/hostaudio_kern.c
+> b/arch/um/drivers/hostaudio_kern.c
+> > index 368219c..ae42695 100644
+> > --- a/arch/um/drivers/hostaudio_kern.c
+> > +++ b/arch/um/drivers/hostaudio_kern.c
+> > @@ -136,7 +136,7 @@ static unsigned int hostaudio_poll(struct file
+> *file,
+> >  	return mask;
+> >  }
+> >  
+> > -static int hostaudio_ioctl(struct inode *inode, struct file *file,
+> > +static long hostaudio_ioctl(struct file *file,
+> >  			   unsigned int cmd, unsigned long arg)
+> >  {
+> >  	struct hostaudio_state *state = file->private_data;
+> > @@ -223,7 +223,7 @@ static int hostaudio_release(struct inode
+> *inode, struct file *file)
+> >  
+> >  /* /dev/mixer file operations */
+> >  
+> > -static int hostmixer_ioctl_mixdev(struct inode *inode, struct file
+> *file,
+> > +static long hostmixer_ioctl_mixdev(struct file *file,
+> >  				  unsigned int cmd, unsigned long arg)
+> >  {
+> >  	struct hostmixer_state *state = file->private_data;
+> > @@ -289,7 +289,7 @@ static const struct file_operations
+> hostaudio_fops = {
+> >  	.read           = hostaudio_read,
+> >  	.write          = hostaudio_write,
+> >  	.poll           = hostaudio_poll,
+> > -	.ioctl          = hostaudio_ioctl,
+> > +	.unlocked_ioctl	= hostaudio_ioctl,
+> >  	.mmap           = NULL,
+> >  	.open           = hostaudio_open,
+> >  	.release        = hostaudio_release,
+> > @@ -298,7 +298,7 @@ static const struct file_operations
+> hostaudio_fops = {
+> >  static const struct file_operations hostmixer_fops = {
+> >  	.owner          = THIS_MODULE,
+> >  	.llseek         = no_llseek,
+> > -	.ioctl          = hostmixer_ioctl_mixdev,
+> > +	.unlocked_ioctl	= hostmixer_ioctl_mixdev,
+> >  	.open           = hostmixer_open_mixdev,
+> >  	.release        = hostmixer_release,
+> >  };
+> > -- 
+> > 1.6.6.1
+> >
