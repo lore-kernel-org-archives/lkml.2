@@ -1,101 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753281Ab0EQIN4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:13:56 -0400
-Received: from mga09.intel.com ([134.134.136.24]:64443 "EHLO mga09.intel.com"
+	id S1754185Ab0EQION (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 04:14:13 -0400
+Received: from poutre.nerim.net ([62.4.16.124]:51501 "EHLO poutre.nerim.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751830Ab0EQINz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:13:55 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,246,1272870000"; 
-   d="scan'208";a="518494826"
-Subject: [PATCH] x86,perf: P4 PMU -- handle unflagged events
-From: Lin Ming <ming.m.lin@intel.com>
-To: Ingo Molnar <mingo@elte.hu>, Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, fweisbec@gmail.com,
-       lkml <linux-kernel@vger.kernel.org>
-Content-Type: text/plain
-Date: Mon, 17 May 2010 16:13:04 +0800
-Message-Id: <1274083984.6540.15.camel@minggr.sh.intel.com>
+	id S1753483Ab0EQIOK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 04:14:10 -0400
+Date: Mon, 17 May 2010 10:14:07 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       lm-sensors@lm-sensors.org,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] Simple fan question
+Message-ID: <20100517101407.193b93f2@hyperion.delvare>
+In-Reply-To: <20100517074621.GA14520@ucw.cz>
+References: <1272518506.24542.163.camel@pasglop>
+	<20100429105740.6e3b7716@hyperion.delvare>
+	<1272581806.24542.185.camel@pasglop>
+	<20100517074621.GA14520@ucw.cz>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Cyrill Gorcunov <gorcunov@openvz.org>
-Subject: [PATCH] x86,perf: P4 PMU -- handle unflagged events
+Hi Pavel,
 
-It might happen that event if being overflowed without
-proper bit set. Check the sign bit in counter.
+On Mon, 17 May 2010 09:46:21 +0200, Pavel Machek wrote:
+> Hi!
+> 
+> > Right.
+> > 
+> > Now, maybe the best option is to have instead:
+> > 
+> > 	fan[1-*]_discrete_value
+> > 		Discrete value
+> >                 RW
+> > 
+> > 	fan[1-*]_supported values
+> >                 List of supported discrete values
+> >                 RO
+> 
+> Hmm, for 100 different values, that will get ugly. What about simple
+> fan_max file with values 0..fan_max being valid?
 
-Tested-by: Lin Ming <ming.m.lin@intel.com>
-Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>
-CC: Frederic Weisbecker <fweisbec@gmail.com>
----
- arch/x86/kernel/cpu/perf_event_p4.c |   32 ++++++++++++++++----------------
- 1 files changed, 16 insertions(+), 16 deletions(-)
+If you have 100 different values, you can map them to the standard
+0..255 range of pwm[1-*] files.
 
-diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
-index 424fc8d..02f0728 100644
---- a/arch/x86/kernel/cpu/perf_event_p4.c
-+++ b/arch/x86/kernel/cpu/perf_event_p4.c
-@@ -465,15 +465,21 @@ out:
- 	return rc;
- }
- 
--static inline void p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
-+static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
- {
--	unsigned long dummy;
-+	int overflow = 0;
-+	u32 low, high;
- 
--	rdmsrl(hwc->config_base + hwc->idx, dummy);
--	if (dummy & P4_CCCR_OVF) {
-+	rdmsr(hwc->config_base + hwc->idx, low, high);
-+
-+	/* we need to check high bit for unflagged overflows */
-+	if ((low & P4_CCCR_OVF) || (high & (1 << 31))) {
-+		overflow = 1;
- 		(void)checking_wrmsrl(hwc->config_base + hwc->idx,
--			((u64)dummy) & ~P4_CCCR_OVF);
-+			((u64)low) & ~P4_CCCR_OVF);
- 	}
-+
-+	return overflow;
- }
- 
- static inline void p4_pmu_disable_event(struct perf_event *event)
-@@ -584,21 +590,15 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
- 
- 		WARN_ON_ONCE(hwc->idx != idx);
- 
--		/*
--		 * FIXME: Redundant call, actually not needed
--		 * but just to check if we're screwed
--		 */
--		p4_pmu_clear_cccr_ovf(hwc);
-+		/* it might be unflagged overflow */
-+		handled = p4_pmu_clear_cccr_ovf(hwc);
- 
- 		val = x86_perf_event_update(event);
--		if (val & (1ULL << (x86_pmu.cntval_bits - 1)))
-+		if (!handled && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
- 			continue;
- 
--		/*
--		 * event overflow
--		 */
--		handled		= 1;
--		data.period	= event->hw.last_period;
-+		/* event overflow for sure */
-+		data.period = event->hw.last_period;
- 
- 		if (!x86_perf_event_set_period(event))
- 			continue;
+> IIRC thinkpads have 8-or-so possible discrete cases...
 
+Correct. And even these would map nicely to the 0..255 range IMHO.
 
+-- 
+Jean Delvare
