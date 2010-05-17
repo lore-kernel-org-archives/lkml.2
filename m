@@ -1,50 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754447Ab0EQHqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 03:46:36 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:51603 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754339Ab0EQHqf (ORCPT
+	id S1754574Ab0EQHrW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 03:47:22 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:42107 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab0EQHrU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 03:46:35 -0400
-Date: Mon, 17 May 2010 09:46:21 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Jean Delvare <khali@linux-fr.org>, lm-sensors@lm-sensors.org,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [lm-sensors] Simple fan question
-Message-ID: <20100517074621.GA14520@ucw.cz>
-References: <1272518506.24542.163.camel@pasglop>
- <20100429105740.6e3b7716@hyperion.delvare>
- <1272581806.24542.185.camel@pasglop>
+	Mon, 17 May 2010 03:47:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=tUBy36+KX32mKYYxe7aO9w3ln3Vp38l1WhWE4uBQA6s/EAjvDaL2E0DIOKI9AyopwP
+         ssIhabBG8etKUeLZc5R6jGt/YPhFePOBC76G8fZ7LQ5SCoTig37rjnS5XWrgAEZFS/gP
+         YOePOV8rD1IDgvzOu+ybqdJg1Q/FpaTbwfRJs=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1272581806.24542.185.camel@pasglop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.64.1005152314540.21345@ask.diku.dk>
+References: <Pine.LNX.4.64.1005152314540.21345@ask.diku.dk>
+Date: Mon, 17 May 2010 10:47:17 +0300
+X-Google-Sender-Auth: RUmCQ5X7c2M1F7SrG1VL2mJlv0w
+Message-ID: <AANLkTimPDHCFcMruCqNUZKsbvKuszh5gWA052SgaPTkD@mail.gmail.com>
+Subject: Re: [PATCH 7/37] drivers/net/wireless/wl12xx: Use kmemdup
+From: Kalle Valo <kvalo@adurom.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On 16 May 2010 00:15, Julia Lawall <julia@diku.dk> wrote:
+> From: Julia Lawall <julia@diku.dk>
+>
+> Use kmemdup when some other buffer is immediately copied into the
+> allocated region.
 
-> Right.
-> 
-> Now, maybe the best option is to have instead:
-> 
-> 	fan[1-*]_discrete_value
-> 		Discrete value
->                 RW
-> 
-> 	fan[1-*]_supported values
->                 List of supported discrete values
->                 RO
+Thanks, looks good to me.
 
-Hmm, for 100 different values, that will get ugly. What about simple
-fan_max file with values 0..fan_max being valid?
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-IIRC thinkpads have 8-or-so possible discrete cases...
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Acked-by: Kalle Valo <kvalo@adurom.com>
