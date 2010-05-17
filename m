@@ -1,41 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754468Ab0EQIkT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 04:40:19 -0400
-Received: from cantor.suse.de ([195.135.220.2]:51268 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753534Ab0EQIkS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 04:40:18 -0400
-Date: Mon, 17 May 2010 10:40:16 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Don Prince <dhprince.devel@yahoo.co.uk>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.34-rc5 v2] HID: Zydacron Remote Control HID Driver
-In-Reply-To: <4BED7AC3.8090808@yahoo.co.uk>
-Message-ID: <alpine.LNX.2.00.1005171039480.28092@pobox.suse.cz>
-References: <4BED7AC3.8090808@yahoo.co.uk>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754498Ab0EQIlx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 04:41:53 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44271 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754197Ab0EQIlw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 04:41:52 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+Message-ID: <4BF1011E.6010808@jp.fujitsu.com>
+Date: Mon, 17 May 2010 17:41:02 +0900
+From: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; ja; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Huang Ying <ying.huang@intel.com>
+CC: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Andi Kleen <ak@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC 2/2] Use HW_ERR in MCE handler
+References: <1274083325.3564.654.camel@yhuang-dev.sh.intel.com>
+In-Reply-To: <1274083325.3564.654.camel@yhuang-dev.sh.intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 14 May 2010, Don Prince wrote:
+(2010/05/17 17:02), Huang Ying wrote:
+> Use HW_ERR printk prefix in MCE handler. To make it more explicit that
+> this is hardware error instead of software error.
+> 
+> Signed-off-by: Huang Ying <ying.huang@intel.com>
+> ---
 
-> diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-core.c b/drivers/hid/hid-core.c
-> --- a/drivers/hid/hid-core.c	2010-04-22 18:52:46.445384754 +0100
-> +++ b/drivers/hid/hid-core.c	2010-05-12 11:38:12.770567799 +0100
-> @@ -1365,6 +1365,7 @@ static const struct hid_device_id hid_bl
->  	{ HID_BLUETOOTH_DEVICE(USB_VENDOR_ID_WACOM, USB_DEVICE_ID_WACOM_GRAPHIRE_BLUETOOTH) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0005) },
->  	{ HID_USB_DEVICE(USB_VENDOR_ID_ZEROPLUS, 0x0030) },
-> +	{ HID_USB_DEVICE(USB_VENDOR_ID_ZYDACRON, USB_DEVICE_ID_ZYDACRON_REMOTE_CONTROL) },
+I like this.
+At least it is useful to gather/filter error log by "grep".
 
-[ ... snip ... ]
+For both of this series:
+Reviewed-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
 
-Applied, thank you.
 
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+Thanks,
+H.Seto
+
