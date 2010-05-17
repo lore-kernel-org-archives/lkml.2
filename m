@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753365Ab0EQKFJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 06:05:09 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:48758 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752502Ab0EQKFH (ORCPT
+	id S1754608Ab0EQKFP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:05:15 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:50177 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752502Ab0EQKFL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 06:05:07 -0400
+	Mon, 17 May 2010 06:05:11 -0400
 From: felipe.balbi@nokia.com
 To: Linux OMAP Mailing List <linux-omap@vger.kernel.org>
 Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
@@ -14,13 +14,13 @@ Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Mark Brown <broonie@opensource.wolfsonmicro.com>,
        Felipe Balbi <felipe.balbi@nokia.com>
-Subject: [PATCH 1/5] gpiolib: introduce set_debounce method
-Date: Mon, 17 May 2010 13:02:30 +0300
-Message-Id: <1274090554-19420-2-git-send-email-felipe.balbi@nokia.com>
+Subject: [PATCH 2/5] arm: omap: gpio: implement set_debounce method
+Date: Mon, 17 May 2010 13:02:31 +0300
+Message-Id: <1274090554-19420-3-git-send-email-felipe.balbi@nokia.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
 References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
-X-OriginalArrivalTime: 17 May 2010 10:04:31.0443 (UTC) FILETIME=[5812FA30:01CAF5A8]
+X-OriginalArrivalTime: 17 May 2010 10:04:33.0052 (UTC) FILETIME=[59087DC0:01CAF5A8]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,110 +28,107 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Felipe Balbi <felipe.balbi@nokia.com>
 
-Few architectures, like OMAP, allow you to set
-a debouncing time for the gpio before generating
-the IRQ. Teach gpiolib about that.
+OMAP support debouncing of gpio lines, implement
+the method using gpiolib.
 
 Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
 ---
- drivers/gpio/gpiolib.c     |   43 +++++++++++++++++++++++++++++++++++++++++++
- include/asm-generic/gpio.h |    5 +++++
- include/linux/gpio.h       |    5 +++++
- 3 files changed, 53 insertions(+), 0 deletions(-)
+ arch/arm/plat-omap/gpio.c |   68 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 68 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index eb0c3fe..cd85fd1 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1447,6 +1447,49 @@ fail:
- }
- EXPORT_SYMBOL_GPL(gpio_direction_output);
+diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+index 45a225d..4a17dc4 100644
+--- a/arch/arm/plat-omap/gpio.c
++++ b/arch/arm/plat-omap/gpio.c
+@@ -612,6 +612,59 @@ do {	\
+ 	__raw_writel(l, base + reg); \
+ } while(0)
  
 +/**
-+ * gpio_set_debounce - sets @debounce time for a @gpio
-+ * @gpio: the gpio to set debounce time
-+ * @debounce: debounce time is microseconds
++ * _set_gpio_debounce - low level gpio debounce time
++ * @bank: the gpio bank we're acting upon
++ * @gpio: the gpio number on this @gpio
++ * @debounce: debounce time to use
++ *
++ * OMAP's debounce time is in 31us steps so we need
++ * to convert and round up to the closest unit.
 + */
-+int gpio_set_debounce(unsigned gpio, unsigned debounce)
++static void _set_gpio_debounce(struct gpio_bank *bank, unsigned gpio,
++		unsigned debounce)
 +{
-+	unsigned long		flags;
-+	struct gpio_chip	*chip;
-+	struct gpio_desc	*desc = &gpio_desc[gpio];
-+	int			status = -EINVAL;
++	void __iomem		*reg = bank->base;
++	u32			val;
++	u32			l;
 +
-+	spin_lock_irqsave(&gpio_lock, flags);
++	if (debounce < 32)
++		debounce = 0x01;
++	else if (debounce > 7936)
++		debounce = 0xff;
++	else
++		debounce = (debounce / 0x1f) - 1;
 +
-+	if (!gpio_is_valid(gpio))
-+		goto fail;
-+	chip = desc->chip;
-+	if (!chip || !chip->set || !chip->set_debounce)
-+		goto fail;
-+	gpio -= chip->base;
-+	if (gpio >= chip->ngpio)
-+		goto fail;
-+	status = gpio_ensure_requested(desc, gpio);
-+	if (status < 0)
-+		goto fail;
++	l = 1 << get_gpio_index(gpio);
 +
-+	/* now we know the gpio is valid and chip won't vanish */
++	if (cpu_is_omap44xx())
++		reg += OMAP4_GPIO_DEBOUNCINGTIME;
++	else
++		reg += OMAP24XX_GPIO_DEBOUNCE_VAL;
 +
-+	spin_unlock_irqrestore(&gpio_lock, flags);
++	__raw_writel(debounce, reg);
 +
-+	might_sleep_if(extra_checks && chip->can_sleep);
++	reg = bank->base;
++	if (cpu_is_omap44xx())
++		reg += OMAP4_GPIO_DEBOUNCENABLE;
++	else
++		reg += OMAP24XX_GPIO_DEBOUNCE_EN;
 +
-+	return chip->set_debounce(chip, gpio, debounce);
++	val = __raw_readl(reg);
 +
-+fail:
-+	spin_unlock_irqrestore(&gpio_lock, flags);
-+	if (status)
-+		pr_debug("%s: gpio-%d status %d\n",
-+			__func__, gpio, status);
++	if (debounce) {
++		val |= l;
++		if (cpu_is_omap34xx() || cpu_is_omap44xx())
++			clk_enable(bank->dbck);
++	} else {
++		val &= ~l;
++		if (cpu_is_omap34xx() || cpu_is_omap44xx())
++			clk_disable(bank->dbck);
++	}
 +
-+	return status;
++	__raw_writel(val, reg);
 +}
-+EXPORT_SYMBOL_GPL(gpio_set_debounce);
- 
- /* I/O calls are only valid after configuration completed; the relevant
-  * "is this a valid GPIO" error checks should already have been done.
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index 979c6a5..ce3eb87 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -88,6 +88,9 @@ struct gpio_chip {
- 						unsigned offset);
- 	int			(*direction_output)(struct gpio_chip *chip,
- 						unsigned offset, int value);
-+	int			(*set_debounce)(struct gpio_chip *chip,
-+						unsigned offset, unsigned debounce);
 +
- 	void			(*set)(struct gpio_chip *chip,
- 						unsigned offset, int value);
- 
-@@ -121,6 +124,8 @@ extern void gpio_free(unsigned gpio);
- extern int gpio_direction_input(unsigned gpio);
- extern int gpio_direction_output(unsigned gpio, int value);
- 
-+extern int gpio_set_debounce(unsigned gpio, unsigned debounce);
-+
- extern int gpio_get_value_cansleep(unsigned gpio);
- extern void gpio_set_value_cansleep(unsigned gpio, int value);
- 
-diff --git a/include/linux/gpio.h b/include/linux/gpio.h
-index 4e949a5..03f616b 100644
---- a/include/linux/gpio.h
-+++ b/include/linux/gpio.h
-@@ -51,6 +51,11 @@ static inline int gpio_direction_output(unsigned gpio, int value)
- 	return -ENOSYS;
+ void omap_set_gpio_debounce(int gpio, int enable)
+ {
+ 	struct gpio_bank *bank;
+@@ -1608,6 +1661,20 @@ static int gpio_output(struct gpio_chip *chip, unsigned offset, int value)
+ 	return 0;
  }
  
-+static inline int gpio_set_debounce(unsigned gpio, unsigned debounce)
++static int gpio_debounce(struct gpio_chip *chip, unsigned offset,
++		unsigned debounce)
 +{
-+	return -ENOSYS;
++	struct gpio_bank *bank;
++	unsigned long flags;
++
++	bank = container_of(chip, struct gpio_bank, chip);
++	spin_lock_irqsave(&bank->lock, flags);
++	_set_gpio_debounce(bank, offset, debounce);
++	spin_unlock_irqrestore(&bank->lock, flags);
++
++	return 0;
 +}
 +
- static inline int gpio_get_value(unsigned gpio)
+ static void gpio_set(struct gpio_chip *chip, unsigned offset, int value)
  {
- 	/* GPIO can never have been requested or set as {in,out}put */
+ 	struct gpio_bank *bank;
+@@ -1860,6 +1927,7 @@ static int __init _omap_gpio_init(void)
+ 		bank->chip.direction_input = gpio_input;
+ 		bank->chip.get = gpio_get;
+ 		bank->chip.direction_output = gpio_output;
++		bank->chip.set_debounce = gpio_debounce;
+ 		bank->chip.set = gpio_set;
+ 		bank->chip.to_irq = gpio_2irq;
+ 		if (bank_is_mpuio(bank)) {
 -- 
 1.7.1
 
