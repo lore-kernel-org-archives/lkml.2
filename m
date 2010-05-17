@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab0EQFo4 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 01:44:56 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51500 "EHLO smtps.tip.net.au"
+	id S1753556Ab0EQFtW (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 01:49:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:44286 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751553Ab0EQFoy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 01:44:54 -0400
-Date: Mon, 17 May 2010 15:44:52 +1000
+	id S1753068Ab0EQFtV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 01:49:21 -0400
+Date: Mon, 17 May 2010 15:49:19 +1000
 From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: Greg KH <greg@kroah.com>
 Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Prashant P. Shah" <pshah.mumbai@gmail.com>,
-       Rusty Russell <rusty@rustcorp.com.au>
-Subject: linux-next: manual merge of the staging-next tree with the rr tree
-Message-Id: <20100517154452.93fbac66.sfr@canb.auug.org.au>
+       Henk de Groot <henk.de.groot@hetnet.nl>,
+       Dominik Brodowski <linux@dominikbrodowski.net>
+Subject: linux-next: manual merge of the staging-next tree with the pcmcia
+ tree
+Message-Id: <20100517154919.535f12a1.sfr@canb.auug.org.au>
 X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
@@ -25,64 +26,48 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 Hi Greg,
 
 Today's linux-next merge of the staging-next tree got a conflict in
-drivers/staging/rtl8187se/r8180_core.c between commit
-9080984577cb3e04226d94c8f733534b60541f01
-("param:remove-useless-writable-charp") from the rr tree and commit
-bbfb56520c8da666383c08220985495ff918d4ad ("") from the staging-next tree.
+drivers/staging/wlags49_h2/wl_cs.c between commit
+eb14120f743d29744d9475bffec56ff4ad43a749 ("pcmcia: re-work
+pcmcia_request_irq()") from the pcmcia tree and commit
+93822ad193f1b1d92422dc3d539456acbe1a85ef ("Staging: wlags49_hs2: Fix
+wlags49_hs2 driver after build fixes broke it") from the staging-next
+tree.
 
-I fixed it up (see below) and can carry the fix as necessary.
+I fixed it up (see below - basically the staging-next version) and can
+carry the fix as necessary.
 -- 
 Cheers,
 Stephen Rothwell                    sfr@canb.auug.org.au
 
-diff --cc drivers/staging/rtl8187se/r8180_core.c
-index b09ce4b,dacefea..0000000
---- a/drivers/staging/rtl8187se/r8180_core.c
-+++ b/drivers/staging/rtl8187se/r8180_core.c
-@@@ -74,15 -74,15 +74,15 @@@ MODULE_AUTHOR("Andrea Merello <andreamr
-  MODULE_DESCRIPTION("Linux driver for Realtek RTL8180 / RTL8185 WiFi cards");
+diff --cc drivers/staging/wlags49_h2/wl_cs.c
+index c9d99d8,568993f..0000000
+--- a/drivers/staging/wlags49_h2/wl_cs.c
++++ b/drivers/staging/wlags49_h2/wl_cs.c
+@@@ -314,15 -310,22 +307,22 @@@ void wl_adapter_insert( struct pcmcia_d
+      /* Do we need to allocate an interrupt? */
+      link->conf.Attributes |= CONF_ENABLE_IRQ;
   
+-     CS_CHECK(RequestIO, pcmcia_request_io(link, &link->io));
+-     CS_CHECK(RequestIRQ, pcmcia_request_irq(link, wl_isr));
+-     CS_CHECK(RequestConfiguration, pcmcia_request_configuration(link, &link->conf));
++     ret = pcmcia_request_io(link, &link->io);
++     if (ret != 0)
++         goto failed;
++ 
++     ret = pcmcia_request_irq(link, (void *) wl_isr);
++     if (ret != 0)
++         goto failed;
   
- -module_param(ifname, charp, S_IRUGO|S_IWUSR);
- +module_param_string(ifname, ifname, sizeof(ifname), S_IRUGO|S_IWUSR);
-- module_param(hwseqnum,int, S_IRUGO|S_IWUSR);
-- module_param(hwwep,int, S_IRUGO|S_IWUSR);
-- module_param(channels,int, S_IRUGO|S_IWUSR);
-+ module_param(hwseqnum, int, S_IRUGO|S_IWUSR);
-+ module_param(hwwep, int, S_IRUGO|S_IWUSR);
-+ module_param(channels, int, S_IRUGO|S_IWUSR);
++     ret = pcmcia_request_configuration(link, &link->conf);
++     if (ret != 0)
++         goto failed;
   
-- MODULE_PARM_DESC(devname," Net interface name, wlan%d=default");
-- MODULE_PARM_DESC(hwseqnum," Try to use hardware 802.11 header sequence numbers. Zero=default");
-- MODULE_PARM_DESC(hwwep," Try to use hardware WEP support. Still broken and not available on all cards");
-- MODULE_PARM_DESC(channels," Channel bitmask for specific locales. NYI");
-+ MODULE_PARM_DESC(devname, " Net interface name, wlan%d=default");
-+ MODULE_PARM_DESC(hwseqnum, " Try to use hardware 802.11 header sequence numbers. Zero=default");
-+ MODULE_PARM_DESC(hwwep, " Try to use hardware WEP support. Still broken and not available on all cards");
-+ MODULE_PARM_DESC(channels, " Channel bitmask for specific locales. NYI");
+ -    dev->irq        = link->irq.AssignedIRQ;
+ +    dev->irq        = link->irq;
+      dev->base_addr  = link->io.BasePort1;
   
-  
-  static int __devinit rtl8180_pci_probe(struct pci_dev *pdev,
-@@@ -3608,16 -3606,16 +3606,16 @@@ static int __devinit rtl8180_pci_probe(
-  	dev->netdev_ops = &rtl8180_netdev_ops;
-  	dev->wireless_handlers = &r8180_wx_handlers_def;
-  
-- 	dev->type=ARPHRD_ETHER;
-+ 	dev->type = ARPHRD_ETHER;
-  	dev->watchdog_timeo = HZ*3;
-  
-- 	if (dev_alloc_name(dev, ifname) < 0){
--                 DMESG("Oops: devname already taken! Trying wlan%%d...\n");
-+ 	if (dev_alloc_name(dev, ifname) < 0) {
-+ 		DMESG("Oops: devname already taken! Trying wlan%%d...\n");
- -		ifname = "wlan%d";
- +		strcpy(ifname, "wlan%d");
-  		dev_alloc_name(dev, ifname);
--         }
-+ 	}
-  
-- 	if(rtl8180_init(dev)!=0){
-+ 	if (rtl8180_init(dev) != 0) {
-  		DMESG("Initialization failed");
-  		goto fail1;
-  	}
+-     SET_NETDEV_DEV(dev, &handle_to_dev(link));
++     SET_NETDEV_DEV(dev, &link->dev);
+      if (register_netdev(dev) != 0) {
+  	printk("%s: register_netdev() failed\n", MODULE_NAME);
+  	goto failed;
