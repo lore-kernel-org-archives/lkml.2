@@ -1,80 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753372Ab0EQJsA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 05:48:00 -0400
-Received: from mailout3.w1.samsung.com ([210.118.77.13]:31852 "EHLO
-	mailout3.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752242Ab0EQJr6 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 05:47:58 -0400
-MIME-version: 1.0
-Content-transfer-encoding: 7BIT
-Content-type: TEXT/PLAIN
-Date: Mon, 17 May 2010 11:48:26 +0200
-From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH] USB: gadget: g_mass_storage: static data instead of dynamic
- allocation
-In-reply-to: <e3abf3898ffa038852e8b3307d37927f886fb72c.1273772850.git.mina86@mina86.com>
-To: Greg KH <greg@kroah.com>, linux-usb@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       Linux Kernel <linux-kernel@vger.kernel.org>
-Message-id: <6fef14ee3d854a995817fe6fde39f14b1d853905.1274088911.git.mina86@mina86.com>
-X-Mailer: git-send-email 1.7.1
-References: <e3abf3898ffa038852e8b3307d37927f886fb72c.1273772850.git.mina86@mina86.com>
+	id S1753541Ab0EQJt1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 05:49:27 -0400
+Received: from sh.osrg.net ([192.16.179.4]:60740 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752793Ab0EQJt0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 05:49:26 -0400
+Date: Mon, 17 May 2010 18:48:35 +0900
+To: konrad.wilk@oracle.com
+Cc: fujita.tomonori@lab.ntt.co.jp, linux-kernel@vger.kernel.org,
+       iommu@lists.linux-foundation.org, albert_herranz@yahoo.es,
+       chrisw@sous-sol.org, Ian.Campbell@eu.citrix.com, jeremy@goop.org,
+       dwmw2@infradead.org
+Subject: Re: [PATCH] swiotlb v0.8: seperation of physical/virtual address
+ translation
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1273592353-23224-1-git-send-email-konrad.wilk@oracle.com>
+References: <1273592353-23224-1-git-send-email-konrad.wilk@oracle.com>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100517185011X.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Mon, 17 May 2010 18:48:41 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Michal Nazarewicz <mina86@mina86.com>
+On Tue, 11 May 2010 11:39:07 -0400
+Konrad Rzeszutek Wilk <konrad.wilk@oracle.com> wrote:
 
-This patch changes msg_do_config() function so that it uses
-a static object for a fsg_common structure instead of dynamically
-allocated.  This is a micro-optimisation.
+> git://git.kernel.org/pub/scm/linux/kernel/git/konrad/swiotlb-2.6.git swiotlb-0.8
+> 
+>  include/linux/swiotlb.h |   27 ++++++++-
+>  lib/swiotlb.c           |  140 ++++++++++++++++++++++++++++-------------------
+>  2 files changed, 108 insertions(+), 59 deletions(-)
 
-Signed-off-by: Michal Nazarewicz <mina86@mina86.com>
-Cc: Kyungmin Park <kyungmin.park@samsung.com>
----
-Greg KH wrote:
-> This patch doesn't apply.  Care to redo it against the linux-next tree?
-
-Hope this works.
-
- drivers/usb/gadget/mass_storage.c |   13 +++++++------
- 1 files changed, 7 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
-index 705cc1f..a3349f2 100644
---- a/drivers/usb/gadget/mass_storage.c
-+++ b/drivers/usb/gadget/mass_storage.c
-@@ -143,7 +143,7 @@ static int msg_thread_exits(struct fsg_common *common)
- 
- static int __init msg_do_config(struct usb_configuration *c)
- {
--	struct fsg_common *common;
-+	static struct fsg_common common, *retp;
- 	struct fsg_config config;
- 	int ret;
- 
-@@ -154,12 +154,13 @@ static int __init msg_do_config(struct usb_configuration *c)
- 
- 	fsg_config_from_params(&config, &mod_data);
- 	config.thread_exits = msg_thread_exits;
--	common = fsg_common_init(0, c->cdev, &config);
--	if (IS_ERR(common))
--		return PTR_ERR(common);
- 
--	ret = fsg_add(c->cdev, c, common);
--	fsg_common_put(common);
-+	retp = fsg_common_init(&common, c->cdev, &config);
-+	if (IS_ERR(retp))
-+		return PTR_ERR(retp);
-+
-+	ret = fsg_add(c->cdev, c, &common);
-+	fsg_common_put(&common);
- 	return ret;
- }
- 
--- 
-1.7.1
-
+I think that the 5th and 6th should be fold. But the rest (with the
+following fixes) looks fine to me. I'm not sure how you send this to
+upstream, however, seems that the patchset conflicts with the swiotlb
+changes in -mm.
