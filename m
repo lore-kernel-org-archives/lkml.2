@@ -1,204 +1,376 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755958Ab0EQTcn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:32:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:32902 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753126Ab0EQTbe (ORCPT
+	id S1755521Ab0EQTd4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:33:56 -0400
+Received: from anchor-post-3.mail.demon.net ([195.173.77.134]:33180 "EHLO
+	anchor-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752565Ab0EQTdy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:31:34 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/4] perf options: Check v type in OPT_U?INTEGER
-Date: Mon, 17 May 2010 16:31:16 -0300
-Message-Id: <1274124678-24781-3-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1274124678-24781-1-git-send-email-acme@infradead.org>
-References: <1274124678-24781-1-git-send-email-acme@infradead.org>
+	Mon, 17 May 2010 15:33:54 -0400
+Message-ID: <4BF1999A.5040707@lougher.demon.co.uk>
+Date: Mon, 17 May 2010 20:31:38 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+To: linux-fsdevel@vger.kernel.org
+CC: Linux Kernel Development <linux-kernel@vger.kernel.org>
+Subject: [PATCH 3/4] squashfs: add new extended inode types
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-To avoid problems like the one fixed by Stephane Eranian in 3de29ca, now
-we'll got this instead:
+Add new extended inode types that store the xattr_id field.
+Also add the necessary code changes to make xattrs visibile.
 
-	bench/sched-messaging.c:259: error: negative width in bit-field ‘<anonymous>’
-	bench/sched-messaging.c:261: error: negative width in bit-field ‘<anonymous>’
-
-Which is rather cryptic, but is how BUILD_BUG_ON_ZERO works, so kernel
-hackers should be already used to this.
-
-With it in place found some problems, fixed by changing the affected
-variables to sensible types or changed some OPT_INTEGER to OPT_UINTEGER.
-
-Next csets will go thru converting each of the remaining OPT_ so that
-review can be made easier by grouping changes per type per patch.
-
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Phillip Lougher <phillip@lougher.demon.co.uk>
 ---
- tools/perf/bench/sched-messaging.c     |    6 ++----
- tools/perf/builtin-record.c            |    8 +++-----
- tools/perf/builtin-sched.c             |    6 +++---
- tools/perf/builtin-top.c               |    5 ++---
- tools/perf/util/include/linux/kernel.h |    2 ++
- tools/perf/util/parse-options.h        |    8 ++++++--
- 6 files changed, 18 insertions(+), 17 deletions(-)
+  fs/squashfs/inode.c       |   91 +++++++++++++++++++++++++++++++++++++++++---
+  fs/squashfs/namei.c       |    5 ++-
+  fs/squashfs/squashfs.h    |   12 +++++-
+  fs/squashfs/squashfs_fs.h |   25 ++++++++++++
+  fs/squashfs/super.c       |    8 +---
+  fs/squashfs/symlink.c     |   10 +++++
+  6 files changed, 135 insertions(+), 16 deletions(-)
 
-diff --git a/tools/perf/bench/sched-messaging.c b/tools/perf/bench/sched-messaging.c
-index da1b2e9..d1d1b30 100644
---- a/tools/perf/bench/sched-messaging.c
-+++ b/tools/perf/bench/sched-messaging.c
-@@ -256,10 +256,8 @@ static const struct option options[] = {
- 		    "Use pipe() instead of socketpair()"),
- 	OPT_BOOLEAN('t', "thread", &thread_mode,
- 		    "Be multi thread instead of multi process"),
--	OPT_INTEGER('g', "group", &num_groups,
--		    "Specify number of groups"),
--	OPT_INTEGER('l', "loop", &loops,
--		    "Specify number of loops"),
-+	OPT_UINTEGER('g', "group", &num_groups, "Specify number of groups"),
-+	OPT_UINTEGER('l', "loop", &loops, "Specify number of loops"),
- 	OPT_END()
- };
- 
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index b93573c..cb46c7d 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -45,7 +45,7 @@ static int			output;
- static int			pipe_output			=      0;
- static const char		*output_name			= "perf.data";
- static int			group				=      0;
--static unsigned int		realtime_prio			=      0;
-+static int			realtime_prio			=      0;
- static bool			raw_samples			=  false;
- static bool			system_wide			=  false;
- static int			profile_cpu			=     -1;
-@@ -822,10 +822,8 @@ static const struct option options[] = {
- 		    "output file name"),
- 	OPT_BOOLEAN('i', "no-inherit", &no_inherit,
- 		    "child tasks do not inherit counters"),
--	OPT_INTEGER('F', "freq", &user_freq,
--		    "profile at this frequency"),
--	OPT_INTEGER('m', "mmap-pages", &mmap_pages,
--		    "number of mmap data pages"),
-+	OPT_UINTEGER('F', "freq", &user_freq, "profile at this frequency"),
-+	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
- 	OPT_BOOLEAN('g', "call-graph", &call_graph,
- 		    "do call-graph (stack chain/backtrace) recording"),
- 	OPT_INCR('v', "verbose", &verbose,
-diff --git a/tools/perf/builtin-sched.c b/tools/perf/builtin-sched.c
-index be7bc92..c80acdf 100644
---- a/tools/perf/builtin-sched.c
-+++ b/tools/perf/builtin-sched.c
-@@ -105,7 +105,7 @@ static u64			sum_runtime;
- static u64			sum_fluct;
- static u64			run_avg;
- 
--static unsigned long		replay_repeat = 10;
-+static unsigned int		replay_repeat = 10;
- static unsigned long		nr_timestamps;
- static unsigned long		nr_unordered_timestamps;
- static unsigned long		nr_state_machine_bugs;
-@@ -1816,8 +1816,8 @@ static const char * const replay_usage[] = {
- };
- 
- static const struct option replay_options[] = {
--	OPT_INTEGER('r', "repeat", &replay_repeat,
--		    "repeat the workload replay N times (-1: infinite)"),
-+	OPT_UINTEGER('r', "repeat", &replay_repeat,
-+		     "repeat the workload replay N times (-1: infinite)"),
- 	OPT_INCR('v', "verbose", &verbose,
- 		    "be more verbose (show symbol address, etc)"),
- 	OPT_BOOLEAN('D', "dump-raw-trace", &dump_trace,
-diff --git a/tools/perf/builtin-top.c b/tools/perf/builtin-top.c
-index ed9b5b6..9f0cfa0 100644
---- a/tools/perf/builtin-top.c
-+++ b/tools/perf/builtin-top.c
-@@ -71,7 +71,7 @@ static int			thread_num			=      0;
- static bool			inherit				=  false;
- static int			profile_cpu			=     -1;
- static int			nr_cpus				=      0;
--static unsigned int		realtime_prio			=      0;
-+static int			realtime_prio			=      0;
- static bool			group				=  false;
- static unsigned int		page_size;
- static unsigned int		mmap_pages			=     16;
-@@ -1357,8 +1357,7 @@ static const struct option options[] = {
- 		   "file", "vmlinux pathname"),
- 	OPT_BOOLEAN('K', "hide_kernel_symbols", &hide_kernel_symbols,
- 		    "hide kernel symbols"),
--	OPT_INTEGER('m', "mmap-pages", &mmap_pages,
--		    "number of mmap data pages"),
-+	OPT_UINTEGER('m', "mmap-pages", &mmap_pages, "number of mmap data pages"),
- 	OPT_INTEGER('r', "realtime", &realtime_prio,
- 		    "collect data with this RT SCHED_FIFO priority"),
- 	OPT_INTEGER('d', "delay", &delay_secs,
-diff --git a/tools/perf/util/include/linux/kernel.h b/tools/perf/util/include/linux/kernel.h
-index 388ab1b..1eb804f 100644
---- a/tools/perf/util/include/linux/kernel.h
-+++ b/tools/perf/util/include/linux/kernel.h
-@@ -28,6 +28,8 @@
- 	(type *)((char *)__mptr - offsetof(type, member)); })
- #endif
- 
-+#define BUILD_BUG_ON_ZERO(e) (sizeof(struct { int:-!!(e); }))
+diff --git a/fs/squashfs/inode.c b/fs/squashfs/inode.c
+index 49daaf6..2507011 100644
+--- a/fs/squashfs/inode.c
++++ b/fs/squashfs/inode.c
+@@ -40,6 +40,7 @@
+
+  #include <linux/fs.h>
+  #include <linux/vfs.h>
++#include <linux/xattr.h>
+
+  #include "squashfs_fs.h"
+  #include "squashfs_fs_sb.h"
+@@ -111,6 +112,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+  	int err, type, offset = SQUASHFS_INODE_OFFSET(ino);
+  	union squashfs_inode squashfs_ino;
+  	struct squashfs_base_inode *sqshb_ino = &squashfs_ino.base;
++	int xattr_id = SQUASHFS_INVALID_XATTR;
+
+  	TRACE("Entered squashfs_read_inode\n");
+
+@@ -199,8 +201,10 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+  			frag_offset = 0;
+  		}
+
++		xattr_id = le32_to_cpu(sqsh_ino->xattr);
+  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+  		inode->i_size = le64_to_cpu(sqsh_ino->file_size);
++		inode->i_op = &squashfs_inode_ops;
+  		inode->i_fop = &generic_ro_fops;
+  		inode->i_mode |= S_IFREG;
+  		inode->i_blocks = ((inode->i_size -
+@@ -251,6 +255,7 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+  		if (err < 0)
+  			goto failed_read;
+
++		xattr_id = le32_to_cpu(sqsh_ino->xattr);
+  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+  		inode->i_size = le32_to_cpu(sqsh_ino->file_size);
+  		inode->i_op = &squashfs_dir_inode_ops;
+@@ -280,21 +285,33 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+
+  		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
+  		inode->i_size = le32_to_cpu(sqsh_ino->symlink_size);
+-		inode->i_op = &page_symlink_inode_operations;
++		inode->i_op = &squashfs_symlink_inode_ops;
+  		inode->i_data.a_ops = &squashfs_symlink_aops;
+  		inode->i_mode |= S_IFLNK;
+  		squashfs_i(inode)->start = block;
+  		squashfs_i(inode)->offset = offset;
+
++		if (type == SQUASHFS_LSYMLINK_TYPE) {
++			__le32 xattr;
 +
- #ifndef max
- #define max(x, y) ({				\
- 	typeof(x) _max1 = (x);			\
-diff --git a/tools/perf/util/parse-options.h b/tools/perf/util/parse-options.h
-index c6aa4ee..9ca348e 100644
---- a/tools/perf/util/parse-options.h
-+++ b/tools/perf/util/parse-options.h
-@@ -1,6 +1,8 @@
- #ifndef __PERF_PARSE_OPTIONS_H
- #define __PERF_PARSE_OPTIONS_H
- 
-+#include <linux/kernel.h>
++			err = squashfs_read_metadata(sb, NULL, &block,
++						&offset, inode->i_size);
++			if (err < 0)
++				goto failed_read;
++			err = squashfs_read_metadata(sb, &xattr, &block,
++						&offset, sizeof(xattr));
++			if (err < 0)
++				goto failed_read;
++			xattr_id = le32_to_cpu(xattr);
++		}
 +
- enum parse_opt_type {
- 	/* special types */
- 	OPTION_END,
-@@ -93,6 +95,8 @@ struct option {
- 	intptr_t defval;
- };
- 
-+#define check_vtype(v, type) ( BUILD_BUG_ON_ZERO(!__builtin_types_compatible_p(typeof(v), type)) + v )
+  		TRACE("Symbolic link inode %x:%x, start_block %llx, offset "
+  				"%x\n", SQUASHFS_INODE_BLK(ino), offset,
+  				block, offset);
+  		break;
+  	}
+  	case SQUASHFS_BLKDEV_TYPE:
+-	case SQUASHFS_CHRDEV_TYPE:
+-	case SQUASHFS_LBLKDEV_TYPE:
+-	case SQUASHFS_LCHRDEV_TYPE: {
++	case SQUASHFS_CHRDEV_TYPE: {
+  		struct squashfs_dev_inode *sqsh_ino = &squashfs_ino.dev;
+  		unsigned int rdev;
+
+@@ -315,10 +332,32 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+  				SQUASHFS_INODE_BLK(ino), offset, rdev);
+  		break;
+  	}
++	case SQUASHFS_LBLKDEV_TYPE:
++	case SQUASHFS_LCHRDEV_TYPE: {
++		struct squashfs_ldev_inode *sqsh_ino = &squashfs_ino.ldev;
++		unsigned int rdev;
 +
- #define OPT_END()                   { .type = OPTION_END }
- #define OPT_ARGUMENT(l, h)          { .type = OPTION_ARGUMENT, .long_name = (l), .help = (h) }
- #define OPT_GROUP(h)                { .type = OPTION_GROUP, .help = (h) }
-@@ -101,8 +105,8 @@ struct option {
- #define OPT_INCR(s, l, v, h)        { .type = OPTION_INCR, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
- #define OPT_SET_INT(s, l, v, h, i)  { .type = OPTION_SET_INT, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (i) }
- #define OPT_SET_PTR(s, l, v, h, p)  { .type = OPTION_SET_PTR, .short_name = (s), .long_name = (l), .value = (v), .help = (h), .defval = (p) }
--#define OPT_INTEGER(s, l, v, h)     { .type = OPTION_INTEGER, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
--#define OPT_UINTEGER(s, l, v, h)    { .type = OPTION_UINTEGER, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
-+#define OPT_INTEGER(s, l, v, h)     { .type = OPTION_INTEGER, .short_name = (s), .long_name = (l), .value = check_vtype(v, int *), .help = (h) }
-+#define OPT_UINTEGER(s, l, v, h)    { .type = OPTION_UINTEGER, .short_name = (s), .long_name = (l), .value = check_vtype(v, unsigned int *), .help = (h) }
- #define OPT_LONG(s, l, v, h)        { .type = OPTION_LONG, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
- #define OPT_U64(s, l, v, h)         { .type = OPTION_U64, .short_name = (s), .long_name = (l), .value = (v), .help = (h) }
- #define OPT_STRING(s, l, v, a, h)   { .type = OPTION_STRING,  .short_name = (s), .long_name = (l), .value = (v), (a), .help = (h) }
++		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
++				sizeof(*sqsh_ino));
++		if (err < 0)
++			goto failed_read;
++
++		if (type == SQUASHFS_LCHRDEV_TYPE)
++			inode->i_mode |= S_IFCHR;
++		else
++			inode->i_mode |= S_IFBLK;
++		xattr_id = le32_to_cpu(sqsh_ino->xattr);
++		inode->i_op = &squashfs_inode_ops;
++		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
++		rdev = le32_to_cpu(sqsh_ino->rdev);
++		init_special_inode(inode, inode->i_mode, new_decode_dev(rdev));
++
++		TRACE("Device inode %x:%x, rdev %x\n",
++				SQUASHFS_INODE_BLK(ino), offset, rdev);
++		break;
++	}
+  	case SQUASHFS_FIFO_TYPE:
+-	case SQUASHFS_SOCKET_TYPE:
+-	case SQUASHFS_LFIFO_TYPE:
+-	case SQUASHFS_LSOCKET_TYPE: {
++	case SQUASHFS_SOCKET_TYPE: {
+  		struct squashfs_ipc_inode *sqsh_ino = &squashfs_ino.ipc;
+
+  		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
+@@ -334,14 +373,52 @@ int squashfs_read_inode(struct inode *inode, long long ino)
+  		init_special_inode(inode, inode->i_mode, 0);
+  		break;
+  	}
++	case SQUASHFS_LFIFO_TYPE:
++	case SQUASHFS_LSOCKET_TYPE: {
++		struct squashfs_lipc_inode *sqsh_ino = &squashfs_ino.lipc;
++
++		err = squashfs_read_metadata(sb, sqsh_ino, &block, &offset,
++				sizeof(*sqsh_ino));
++		if (err < 0)
++			goto failed_read;
++
++		if (type == SQUASHFS_LFIFO_TYPE)
++			inode->i_mode |= S_IFIFO;
++		else
++			inode->i_mode |= S_IFSOCK;
++		xattr_id = le32_to_cpu(sqsh_ino->xattr);
++		inode->i_op = &squashfs_inode_ops;
++		inode->i_nlink = le32_to_cpu(sqsh_ino->nlink);
++		init_special_inode(inode, inode->i_mode, 0);
++		break;
++	}
+  	default:
+  		ERROR("Unknown inode type %d in squashfs_iget!\n", type);
+  		return -EINVAL;
+  	}
+
++	if (xattr_id != SQUASHFS_INVALID_XATTR && msblk->xattr_id_table) {
++		err = squashfs_xattr_lookup(sb, xattr_id,
++					&squashfs_i(inode)->xattr_count,
++					&squashfs_i(inode)->xattr_size,
++					&squashfs_i(inode)->xattr);
++		if (err < 0)
++			goto failed_read;
++		inode->i_blocks += ((squashfs_i(inode)->xattr_size - 1) >> 9)
++				+ 1;
++	} else
++		squashfs_i(inode)->xattr_count = 0;
++
+  	return 0;
+
+  failed_read:
+  	ERROR("Unable to read inode 0x%llx\n", ino);
+  	return err;
+  }
++
++
++const struct inode_operations squashfs_inode_ops = {
++	.getxattr = generic_getxattr,
++	.listxattr = squashfs_listxattr
++};
++
+diff --git a/fs/squashfs/namei.c b/fs/squashfs/namei.c
+index 5266bd8..32f5b54 100644
+--- a/fs/squashfs/namei.c
++++ b/fs/squashfs/namei.c
+@@ -57,6 +57,7 @@
+  #include <linux/slab.h>
+  #include <linux/string.h>
+  #include <linux/dcache.h>
++#include <linux/xattr.h>
+
+  #include "squashfs_fs.h"
+  #include "squashfs_fs_sb.h"
+@@ -237,5 +238,7 @@ failed:
+
+
+  const struct inode_operations squashfs_dir_inode_ops = {
+-	.lookup = squashfs_lookup
++	.lookup = squashfs_lookup,
++	.getxattr = generic_getxattr,
++	.listxattr = squashfs_listxattr
+  };
+diff --git a/fs/squashfs/squashfs.h b/fs/squashfs/squashfs.h
+index 133befe..7d23810 100644
+--- a/fs/squashfs/squashfs.h
++++ b/fs/squashfs/squashfs.h
+@@ -73,6 +73,9 @@ extern struct inode *squashfs_iget(struct super_block *, long long,
+  				unsigned int);
+  extern int squashfs_read_inode(struct inode *, long long);
+
++/* xattr.c */
++extern ssize_t squashfs_listxattr(struct dentry *, char *, size_t);
++
+  /* xattr_id.c */
+  extern int squashfs_xattr_lookup(struct super_block *, unsigned int, int *,
+  				int *, long long *);
+@@ -80,7 +83,7 @@ extern __le64 *squashfs_read_xattr_id_table(struct super_block *, u64,
+  				u64 *, int *);
+
+  /*
+- * Inodes, files and decompressor operations
++ * Inodes, files,  decompressor and xattr operations
+   */
+
+  /* dir.c */
+@@ -92,11 +95,18 @@ extern const struct export_operations squashfs_export_ops;
+  /* file.c */
+  extern const struct address_space_operations squashfs_aops;
+
++/* inode.c */
++extern const struct inode_operations squashfs_inode_ops;
++
+  /* namei.c */
+  extern const struct inode_operations squashfs_dir_inode_ops;
+
+  /* symlink.c */
+  extern const struct address_space_operations squashfs_symlink_aops;
++extern const struct inode_operations squashfs_symlink_inode_ops;
++
++/* xattr.c */
++extern struct xattr_handler *squashfs_xattr_handlers[];
+
+  /* zlib_wrapper.c */
+  extern const struct squashfs_decompressor squashfs_zlib_comp_ops;
+diff --git a/fs/squashfs/squashfs_fs.h b/fs/squashfs/squashfs_fs.h
+index 6fe940c..8eabb80 100644
+--- a/fs/squashfs/squashfs_fs.h
++++ b/fs/squashfs/squashfs_fs.h
+@@ -287,6 +287,17 @@ struct squashfs_ipc_inode {
+  	__le32			nlink;
+  };
+
++struct squashfs_lipc_inode {
++	__le16			inode_type;
++	__le16			mode;
++	__le16			uid;
++	__le16			guid;
++	__le32			mtime;
++	__le32	 		inode_number;
++	__le32			nlink;
++	__le32			xattr;
++};
++
+  struct squashfs_dev_inode {
+  	__le16			inode_type;
+  	__le16			mode;
+@@ -298,6 +309,18 @@ struct squashfs_dev_inode {
+  	__le32			rdev;
+  };
+
++struct squashfs_ldev_inode {
++	__le16			inode_type;
++	__le16			mode;
++	__le16			uid;
++	__le16			guid;
++	__le32			mtime;
++	__le32	 		inode_number;
++	__le32			nlink;
++	__le32			rdev;
++	__le32			xattr;
++};
++
+  struct squashfs_symlink_inode {
+  	__le16			inode_type;
+  	__le16			mode;
+@@ -375,12 +398,14 @@ struct squashfs_ldir_inode {
+  union squashfs_inode {
+  	struct squashfs_base_inode		base;
+  	struct squashfs_dev_inode		dev;
++	struct squashfs_ldev_inode		ldev;
+  	struct squashfs_symlink_inode		symlink;
+  	struct squashfs_reg_inode		reg;
+  	struct squashfs_lreg_inode		lreg;
+  	struct squashfs_dir_inode		dir;
+  	struct squashfs_ldir_inode		ldir;
+  	struct squashfs_ipc_inode		ipc;
++	struct squashfs_lipc_inode		lipc;
+  };
+
+  struct squashfs_dir_entry {
+diff --git a/fs/squashfs/super.c b/fs/squashfs/super.c
+index c4dfc39..b6425ac 100644
+--- a/fs/squashfs/super.c
++++ b/fs/squashfs/super.c
+@@ -140,13 +140,6 @@ static int squashfs_fill_super(struct super_block *sb, void *data, int silent)
+  	if (msblk->decompressor == NULL)
+  		goto failed_mount;
+
+-	/*
+-	 * Check if there's xattrs in the filesystem.  These are not
+-	 * supported in this version, so warn that they will be ignored.
+-	 */
+-	if (le64_to_cpu(sblk->xattr_id_table_start) != SQUASHFS_INVALID_BLK)
+-		ERROR("Xattrs in filesystem, these will be ignored\n");
+-
+  	/* Check the filesystem does not extend beyond the end of the
+  	   block device */
+  	msblk->bytes_used = le64_to_cpu(sblk->bytes_used);
+@@ -268,6 +261,7 @@ allocate_lookup_table:
+  	sb->s_export_op = &squashfs_export_ops;
+
+  allocate_xattr_table:
++	sb->s_xattr = squashfs_xattr_handlers;
+  	xattr_id_table_start = le64_to_cpu(sblk->xattr_id_table_start);
+  	if (xattr_id_table_start == SQUASHFS_INVALID_BLK)
+  		goto allocate_root;
+diff --git a/fs/squashfs/symlink.c b/fs/squashfs/symlink.c
+index 32b911f..a7ee68a 100644
+--- a/fs/squashfs/symlink.c
++++ b/fs/squashfs/symlink.c
+@@ -35,6 +35,7 @@
+  #include <linux/kernel.h>
+  #include <linux/string.h>
+  #include <linux/pagemap.h>
++#include <linux/xattr.h>
+
+  #include "squashfs_fs.h"
+  #include "squashfs_fs_sb.h"
+@@ -114,3 +115,12 @@ error_out:
+  const struct address_space_operations squashfs_symlink_aops = {
+  	.readpage = squashfs_symlink_readpage
+  };
++
++const struct inode_operations squashfs_symlink_inode_ops = {
++	.readlink = generic_readlink,
++	.follow_link = page_follow_link_light,
++	.put_link = page_put_link,
++	.getxattr = generic_getxattr,
++	.listxattr = squashfs_listxattr
++};
++
 -- 
-1.6.2.5
+1.6.3.3
 
