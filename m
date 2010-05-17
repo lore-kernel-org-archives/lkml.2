@@ -1,52 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751865Ab0EQAlW (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 20:41:22 -0400
-Received: from gate.crashing.org ([63.228.1.57]:57449 "EHLO gate.crashing.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750785Ab0EQAlT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 20:41:19 -0400
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Yinghai Lu <yinghai.lu@oracle.com>, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-In-Reply-To: <20100515073231.GB9877@elte.hu>
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>
-	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>
-	 <1273804337.21352.396.camel@pasglop> <4BECF158.5070200@oracle.com>
-	 <1273825807.21352.601.camel@pasglop> <4BED7CE3.1020507@oracle.com>
-	 <1273876234.21352.639.camel@pasglop>  <20100515073231.GB9877@elte.hu>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 May 2010 10:39:33 +1000
-Message-ID: <1274056773.21352.700.camel@pasglop>
+	id S1751833Ab0EQArf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 20:47:35 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:45434 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750785Ab0EQArd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 20:47:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:content-type:date:message-id:mime-version
+         :x-mailer:content-transfer-encoding;
+        b=sq0hBzDub3n+qWulkE5O8ddMtGK9jgFqcDfMRs6Mq9129ci5bjb9CRLUtUzQEFh/MZ
+         KNuVa4+sARh49CY9/NHo70FqcyngfG91MfVo/VjThEOjCtCIddHMmh29AaDi+9iAeakS
+         ZHYdhZkVsrL/gvsezAeQLY6eFiz1uXb4+LhoY=
+Subject: [PATCH] led-class: set permissions on max_brightness file to 0444
+From: Axel Lin <axel.lin@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>
+Cc: Richard Purdie <rpurdie@linux.intel.com>, John Lenz <lenz@cs.wisc.edu>
+Content-Type: text/plain
+Date: Mon, 17 May 2010 08:48:28 +0800
+Message-Id: <1274057308.9060.3.camel@mola>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-15 at 09:32 +0200, Ingo Molnar wrote:
-> 
-> Btw., it would be nice to ready the LMB core bits for 
-> upstream for 2.6.35 if there's agreement about them - 
-> that will make the subsequent x86 patches much easier 
-> to merge.
+max_brightness is not writable, thus set permissions to 0444.
 
-Well, 2.6.34 was released already. I think it's a bit premature. We need
-to fix a few more things (the result codes for example) and do more
-testing to ensure we didn't break other archs.
+Signed-off-by: Axel Lin <axel.lin@gmail.com>
+---
+ drivers/leds/led-class.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Also, Yinghai wants some more changes to the core that I need to discuss
-with him to understand exactly what he wants and why :-)
+diff --git a/drivers/leds/led-class.c b/drivers/leds/led-class.c
+index 69e7d86..2606600 100644
+--- a/drivers/leds/led-class.c
++++ b/drivers/leds/led-class.c
+@@ -74,7 +74,7 @@ static ssize_t led_max_brightness_show(struct device *dev,
+ 
+ static struct device_attribute led_class_attrs[] = {
+ 	__ATTR(brightness, 0644, led_brightness_show, led_brightness_store),
+-	__ATTR(max_brightness, 0644, led_max_brightness_show, NULL),
++	__ATTR(max_brightness, 0444, led_max_brightness_show, NULL),
+ #ifdef CONFIG_LEDS_TRIGGERS
+ 	__ATTR(trigger, 0644, led_trigger_show, led_trigger_store),
+ #endif
+-- 
+1.5.4.3
 
-Cheers,
-Ben.
 
 
