@@ -1,100 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756721Ab0EQXaO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:30:14 -0400
-Received: from xenotime.net ([72.52.115.56]:58177 "HELO xenotime.net"
+	id S1756497Ab0EQXar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:30:47 -0400
+Received: from xenotime.net ([72.52.115.56]:52056 "HELO xenotime.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1756249Ab0EQX3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1756222Ab0EQX3K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 17 May 2010 19:29:10 -0400
 Date: Mon, 17 May 2010 16:21:11 -0700
 From: Randy Dunlap <rdunlap@xenotime.net>
-To: linux-kernel@vger.kernel.org, linux-scsi@vger.kernel.org
-Cc: James.Bottomley@suse.de
-Subject: [PATCH 8/10] scsi_scan.c: fix/convert functions to use kernel-doc
-Message-ID: <12741384712698@xenotime.net>
+To: linux-kernel@vger.kernel.org
+Cc: Andrea Gelmini <andrea.gelmini@gelma.net>
+Subject: [PATCH 5/10] Documentation/timers/hpet_example: drop duplicate header files
+Message-ID: <1274138471583@xenotime.net>
 In-Reply-To: <12741384711166@xenotime.net>
 X-Mailer: gregkh_patchbomb
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+From: Andrea Gelmini <andrea.gelmini@gelma.net>
 
-scsi_scan.c: fix incorrectly formatted kernel-doc notation
-& convert documentation of 2 functions into kernel-doc.
+Documentation/timers/hpet_example.c: fcntl.h is included more than once.
+Documentation/timers/hpet_example.c: signal.h is included more than once.
 
+Signed-off-by: Andrea Gelmini <andrea.gelmini@gelma.net>
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 ---
- drivers/scsi/scsi_scan.c |   26 +++++++++-----------------
- 1 file changed, 9 insertions(+), 17 deletions(-)
+ Documentation/timers/hpet_example.c |    2 --
+ 1 file changed, 2 deletions(-)
 
---- lnx-2634-docs.orig/drivers/scsi/scsi_scan.c
-+++ lnx-2634-docs/drivers/scsi/scsi_scan.c
-@@ -1221,7 +1221,7 @@ static void scsi_sequential_lun_scan(str
- }
+--- lnx-2634-docs.orig/Documentation/timers/hpet_example.c
++++ lnx-2634-docs/Documentation/timers/hpet_example.c
+@@ -10,7 +10,6 @@
+ #include <sys/types.h>
+ #include <sys/wait.h>
+ #include <signal.h>
+-#include <fcntl.h>
+ #include <errno.h>
+ #include <sys/time.h>
+ #include <linux/hpet.h>
+@@ -24,7 +23,6 @@ extern void hpet_read(int, const char **
  
- /**
-- * scsilun_to_int: convert a scsi_lun to an int
-+ * scsilun_to_int - convert a scsi_lun to an int
-  * @scsilun:	struct scsi_lun to be converted.
-  *
-  * Description:
-@@ -1253,7 +1253,7 @@ int scsilun_to_int(struct scsi_lun *scsi
- EXPORT_SYMBOL(scsilun_to_int);
+ #include <sys/poll.h>
+ #include <sys/ioctl.h>
+-#include <signal.h>
  
- /**
-- * int_to_scsilun: reverts an int into a scsi_lun
-+ * int_to_scsilun - reverts an int into a scsi_lun
-  * @lun:        integer to be reverted
-  * @scsilun:	struct scsi_lun to be set.
-  *
-@@ -1877,12 +1877,9 @@ void scsi_forget_host(struct Scsi_Host *
- 	spin_unlock_irqrestore(shost->host_lock, flags);
- }
- 
--/*
-- * Function:    scsi_get_host_dev()
-- *
-- * Purpose:     Create a scsi_device that points to the host adapter itself.
-- *
-- * Arguments:   SHpnt   - Host that needs a scsi_device
-+/**
-+ * scsi_get_host_dev - Create a scsi_device that points to the host adapter itself
-+ * @shost: Host that needs a scsi_device
-  *
-  * Lock status: None assumed.
-  *
-@@ -1895,7 +1892,7 @@ void scsi_forget_host(struct Scsi_Host *
-  *
-  *	Note - this device is not accessible from any high-level
-  *	drivers (including generics), which is probably not
-- *	optimal.  We can add hooks later to attach 
-+ *	optimal.  We can add hooks later to attach.
-  */
- struct scsi_device *scsi_get_host_dev(struct Scsi_Host *shost)
- {
-@@ -1921,18 +1918,13 @@ struct scsi_device *scsi_get_host_dev(st
- }
- EXPORT_SYMBOL(scsi_get_host_dev);
- 
--/*
-- * Function:    scsi_free_host_dev()
-- *
-- * Purpose:     Free a scsi_device that points to the host adapter itself.
-- *
-- * Arguments:   SHpnt   - Host that needs a scsi_device
-+/**
-+ * scsi_free_host_dev - Free a scsi_device that points to the host adapter itself
-+ * @sdev: Host device to be freed
-  *
-  * Lock status: None assumed.
-  *
-  * Returns:     Nothing
-- *
-- * Notes:
-  */
- void scsi_free_host_dev(struct scsi_device *sdev)
- {
+ struct hpet_command {
+ 	char		*command;
 
 
 -- 
