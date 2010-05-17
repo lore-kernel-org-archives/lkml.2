@@ -1,44 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755000Ab0EQLYB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 07:24:01 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60362 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752730Ab0EQLYA (ORCPT
+	id S1755104Ab0EQL3j (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 07:29:39 -0400
+Received: from mail-fx0-f52.google.com ([209.85.161.52]:38148 "EHLO
+	mail-fx0-f52.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754352Ab0EQL3h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 07:24:00 -0400
-Date: Mon, 17 May 2010 13:23:58 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Florian Fainelli <florian@openwrt.org>
-Cc: mingo@elte.hu, linux-kernel <linux-kernel@vger.kernel.org>,
-       andi@firstfloor.org
-Subject: Re: [PATCH] x86: CPU detection for RDC System-on-Chip
-Message-ID: <20100517112358.GD20761@basil.fritz.box>
-References: <201005161455.34100.florian@openwrt.org>
+	Mon, 17 May 2010 07:29:37 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BRIkotXaWiEUfyJo4/zTA4quv9BZUUsHKbpDWNBxL3cIxgKMV1gnhIxgiRpIFwkPqG
+         5beKNmpb5cIjpvT4TxrBIhPK2nOdBiomqcMeqiECeeCGjwWwH+vFEBuTBB0HTUaRpT39
+         lpM08XYbjic23JVTO7IINlYOXyySsBxRl8YJc=
+Date: Mon, 17 May 2010 13:29:40 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Stephane Eranian <eranian@google.com>
+Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, acme@infradead.org,
+       perfmon2-devel@lists.sf.net, eranian@gmail.com
+Subject: Re: [PATCH] perf: fix bug mismatch with -c option definition
+Message-ID: <20100517112937.GA5291@nowhere>
+References: <4bf11ae9.e88cd80a.06b0.ffffa8e3@mx.google.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005161455.34100.florian@openwrt.org>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4bf11ae9.e88cd80a.06b0.ffffa8e3@mx.google.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-> index 39e8e10..21b02f2 100644
-> --- a/arch/x86/Kconfig
-> +++ b/arch/x86/Kconfig
-> @@ -419,6 +419,7 @@ config X86_RDC321X
->  	bool "RDC R-321x SoC"
->  	depends on X86_32
->  	depends on X86_EXTENDED_PLATFORM
-> +	select PCI
+On Mon, May 17, 2010 at 12:04:01PM +0200, Stephane Eranian wrote:
+>   The -c option defines the user requested sampling period. It was implemented
+>   using an unsigned int variable but the type of the option was OPT_LONG. Thus,
+>   the option parser was overwriting memory belonging to other variables, namely
+>   the mmap_pages leading to a zero page sampling buffer. The bug was exposed
+>   only when compiling at -O0, probably because the compiler was padding
+>   variables at higher optimization levels.
+> 
+>   This patch fixes this problem by declaring user_interval as u64. This also
+>   avoids wrap-around issues for large period on 32-bit systems.
+>  
+>   Signed-off-by: Stephane Eranian <eranian@google.com>
 
-If you don't actually need PCI in your SOC then you could easily
-remove that dependency with some minor work. Early PCI really is quite 
-independent from the other code and can be just used on its own. 
 
-The only thing that would need sorting out is the command line 
-interface for early_pci_enabled()
 
--Andi
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+Small detail: could you avoid the spaces in the beginning of
+your changelog lines?
+
+May be that's because you use git-show to dump your patches?
+In which case I suggest you to use git-format-patch instead.
+
+Thanks.
+
