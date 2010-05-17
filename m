@@ -1,82 +1,138 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751996Ab0EQAK7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 20:10:59 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:59667 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751810Ab0EQAKr (ORCPT
+	id S1751841Ab0EQAMq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 20:12:46 -0400
+Received: from p3plsmtpa01-05.prod.phx3.secureserver.net ([72.167.82.85]:53058
+	"HELO p3plsmtpa01-05.prod.phx3.secureserver.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751227Ab0EQAMo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 20:10:47 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/2] perf tui: Make <- exit menus too
-Date: Sun, 16 May 2010 21:10:33 -0300
-Message-Id: <1274055034-25634-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1274055034-25634-1-git-send-email-acme@infradead.org>
-References: <1274055034-25634-1-git-send-email-acme@infradead.org>
+	Sun, 16 May 2010 20:12:44 -0400
+Date: Sun, 16 May 2010 17:12:41 -0700
+From: mgross <markgross@thegnar.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: markgross@thegnar.org, Valdis.Kletnieks@vt.eu, mgross@linux.intel.com,
+       akpm@linux-foundation.org, davem@davemloft.net,
+       linux-kernel@vger.kernel.org, e1000-devel@lists.sourceforge.net,
+       netdev@vger.kernel.org, linux-pm@lists.linux-foundation.org
+Subject: Re: [patch] pm_qos update fixing mmotm 2010-05-11 -dies in
+ pm_qos_update_request()
+Message-ID: <20100517001241.GA2962@thegnar.org>
+Reply-To: markgross@thegnar.org
+References: <20100515021922.GA5041@thegnar.org>
+ <201005152138.47178.rjw@sisk.pl>
+ <20100515214256.GA3506@thegnar.org>
+ <201005170021.25427.rjw@sisk.pl>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <201005170021.25427.rjw@sisk.pl>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+On Mon, May 17, 2010 at 12:21:25AM +0200, Rafael J. Wysocki wrote:
+> On Saturday 15 May 2010, mgross wrote:
+> > On Sat, May 15, 2010 at 09:38:47PM +0200, Rafael J. Wysocki wrote:
+> > > On Saturday 15 May 2010, mgross wrote:
+> > > > I apologize for the goofy email address.  
+> > > > 
+> > > > The following is a fix for the crash reported by Valdis.
+> > > > 
+> > > > The problem was that the original pm_qos silently fails when a request
+> > > > update is passed to a parameter that has not been added to the list
+> > > > yet.  It seems that the e1000e is doing this.  This update restores this
+> > > > behavior.
+> > > > 
+> > > > I need to think about how to better handle such abuse, but for now this
+> > > > restores the original behavior.
+> > > 
+> > > Can you please post a signed-off incremental patch against
+> > > 
+> > > git://git.kernel.org/pub/scm/linux/kernel/git/rafael/suspend-2.6.git for-llinus
+> > > 
+> > > that contains your original PM QOS update?
+> > 
+> > No problem:
+> >
+> > Signed-off-by: markgross <markgross@thegnar.org>
+> 
+> Thanks!  Do you want to use this address for the sign-off or the Intel one?
 
-In fact it is now added to the hot key list when newt_form__new is used,
-allowing us to remove the explicit assignment in all its users.
+I guess so.  Ever since switching groups within intel last summer my
+mgross@linux.intel.com address isn't checked as often as this one. 
 
-The visible change is that <- will exit the menu that pops up when -> is
-pressed (and Enter when callchains are not being used).
+The other option is to use my outlook email (mark.gross@intel.com), but
+I really hate posting from outlook.  Besides, doing upstream kernel
+stuff isn't my day job any more so using markgross@thegnar.org  makes
+sense to me.
 
-Suggested-by: Ingo Molnar <mingo@elte.hu>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
- tools/perf/util/newt.c |    3 +--
- 1 files changed, 1 insertions(+), 2 deletions(-)
+thanks,
 
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 6974431..59a63e4 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -118,6 +118,7 @@ int browser__show_help(const char *format, va_list ap)
- 
- static void newt_form__set_exit_keys(newtComponent self)
- {
-+	newtFormAddHotKey(self, NEWT_KEY_LEFT);
- 	newtFormAddHotKey(self, NEWT_KEY_ESCAPE);
- 	newtFormAddHotKey(self, 'Q');
- 	newtFormAddHotKey(self, 'q');
-@@ -323,7 +324,6 @@ static int ui_browser__run(struct ui_browser *self, const char *title,
- 	newtFormAddHotKey(self->form, NEWT_KEY_PGDN);
- 	newtFormAddHotKey(self->form, NEWT_KEY_HOME);
- 	newtFormAddHotKey(self->form, NEWT_KEY_END);
--	newtFormAddHotKey(self->form, NEWT_KEY_LEFT);
- 
- 	if (ui_browser__refresh_entries(self) < 0)
- 		return -1;
-@@ -757,7 +757,6 @@ static int hist_browser__populate(struct hist_browser *self, struct hists *hists
- 	newtFormAddHotKey(self->form, 'T');
- 	newtFormAddHotKey(self->form, 't');
- 	newtFormAddHotKey(self->form, NEWT_KEY_RIGHT);
--	newtFormAddHotKey(self->form, NEWT_KEY_LEFT);
- 	newtFormAddComponents(self->form, self->tree, NULL);
- 	self->selection = newt__symbol_tree_get_current(self->tree);
- 
--- 
-1.6.2.5
+--mgross
 
+
+
+> 
+> Rafael
+> 
+>  
+> > From 487b8dcaeb66d3c226d4c06c1bd99689f93024be Mon Sep 17 00:00:00 2001
+> > From: mgross <mgross@mgross-desktop.(none)>
+> > Date: Sat, 15 May 2010 14:30:15 -0700
+> > Subject: [PATCH] Gard against pm_qos users calling API before registering a proper
+> >  request.
+> > 
+> > This update handles a use case where pm_qos update requests need to
+> > silently fail if the update is being sent to a handle that is null.
+> > 
+> > The problem was that the original pm_qos silently fails when a request
+> > update is passed to a parameter that has not been added to the list yet.
+> > This update restores that behavior.
+> > 
+> > Signed-off-by: markgross <markgross@thegnar.org>
+> > 
+> > ---
+> >  kernel/pm_qos_params.c |   26 ++++++++++++++------------
+> >  1 files changed, 14 insertions(+), 12 deletions(-)
+> > 
+> > diff --git a/kernel/pm_qos_params.c b/kernel/pm_qos_params.c
+> > index a1aea04..f42d3f7 100644
+> > --- a/kernel/pm_qos_params.c
+> > +++ b/kernel/pm_qos_params.c
+> > @@ -252,19 +252,21 @@ void pm_qos_update_request(struct pm_qos_request_list *pm_qos_req,
+> >  	int pending_update = 0;
+> >  	s32 temp;
+> >  
+> > -	spin_lock_irqsave(&pm_qos_lock, flags);
+> > -	if (new_value == PM_QOS_DEFAULT_VALUE)
+> > -		temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+> > -	else
+> > -		temp = new_value;
+> > -
+> > -	if (temp != pm_qos_req->value) {
+> > -		pending_update = 1;
+> > -		pm_qos_req->value = temp;
+> > +	if (pm_qos_req) { /*guard against callers passing in null */
+> > +		spin_lock_irqsave(&pm_qos_lock, flags);
+> > +		if (new_value == PM_QOS_DEFAULT_VALUE)
+> > +			temp = pm_qos_array[pm_qos_req->pm_qos_class]->default_value;
+> > +		else
+> > +			temp = new_value;
+> > +
+> > +		if (temp != pm_qos_req->value) {
+> > +			pending_update = 1;
+> > +			pm_qos_req->value = temp;
+> > +		}
+> > +		spin_unlock_irqrestore(&pm_qos_lock, flags);
+> > +		if (pending_update)
+> > +			update_target(pm_qos_req->pm_qos_class);
+> >  	}
+> > -	spin_unlock_irqrestore(&pm_qos_lock, flags);
+> > -	if (pending_update)
+> > -		update_target(pm_qos_req->pm_qos_class);
+> >  }
+> >  EXPORT_SYMBOL_GPL(pm_qos_update_request);
+> >  
+> > 
+> 
