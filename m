@@ -1,106 +1,188 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755327Ab0EQM6J (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 08:58:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52522 "EHLO mx1.redhat.com"
+	id S1755441Ab0EQM6e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 08:58:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:49825 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755298Ab0EQM6F (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 08:58:05 -0400
+	id S1755335Ab0EQM6L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 08:58:11 -0400
 From: Steven Whitehouse <swhiteho@redhat.com>
 To: linux-kernel@vger.kernel.org, cluster-devel@redhat.com
-Cc: Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 03/11] GFS2: Clean up stuffed file copying
-Date: Mon, 17 May 2010 13:40:17 +0100
-Message-Id: <1274100025-26629-4-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1274100025-26629-3-git-send-email-swhiteho@redhat.com>
+Cc: Abhijith Das <adas@redhat.com>, Steven Whitehouse <swhiteho@redhat.com>
+Subject: [PATCH 08/11] GFS2: Fix writing to non-page aligned gfs2_quota structures
+Date: Mon, 17 May 2010 13:40:22 +0100
+Message-Id: <1274100025-26629-9-git-send-email-swhiteho@redhat.com>
+In-Reply-To: <1274100025-26629-8-git-send-email-swhiteho@redhat.com>
 References: <1274100025-26629-1-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-2-git-send-email-swhiteho@redhat.com>
  <1274100025-26629-3-git-send-email-swhiteho@redhat.com>
+ <1274100025-26629-4-git-send-email-swhiteho@redhat.com>
+ <1274100025-26629-5-git-send-email-swhiteho@redhat.com>
+ <1274100025-26629-6-git-send-email-swhiteho@redhat.com>
+ <1274100025-26629-7-git-send-email-swhiteho@redhat.com>
+ <1274100025-26629-8-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-If the inode size was corrupt for stuffed files, it was possible
-for the copying of data to overrun the block and/or page. This patch
-checks for that condition so that this is no longer possible.
+From: Abhijith Das <adas@redhat.com>
 
-This is also preparation for the new truncate sequence patch which
-requires the ability to have stuffed files with larger sizes than
-(disk block size - sizeof(on disk inode)) with the restriction that
-only the initial part of the file may be non-zero.
+This is the upstream fix for this bug. This patch differs
+from the RHEL5 fix (Red Hat bz #555754) which simply writes to the 8-byte
+value field of the quota. In upstream quota code, we're
+required to write the entire quota (88 bytes) which can be split
+across a page boundary. We check for such quotas, and read/write
+the two parts from/to the corresponding pages holding these parts.
 
+With this patch, I don't see the bug anymore using the reproducer
+in Red Hat bz 555754. I successfully ran a couple of simple tests/mounts/
+umounts and it doesn't seem like this patch breaks anything else.
+
+Signed-off-by: Abhi Das <adas@redhat.com>
 Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
 ---
- fs/gfs2/aops.c |    8 +++++---
- fs/gfs2/bmap.c |   17 ++++++++++-------
- 2 files changed, 15 insertions(+), 10 deletions(-)
+ fs/gfs2/quota.c |   86 +++++++++++++++++++++++++++++++++++++++----------------
+ 1 files changed, 61 insertions(+), 25 deletions(-)
 
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 0c1d0b8..a739a0a 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -418,6 +418,7 @@ static int gfs2_jdata_writepages(struct address_space *mapping,
- static int stuffed_readpage(struct gfs2_inode *ip, struct page *page)
- {
- 	struct buffer_head *dibh;
-+	u64 dsize = i_size_read(&ip->i_inode);
- 	void *kaddr;
- 	int error;
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index 6ca0967..d5f4661 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -637,15 +637,40 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
+ 	unsigned blocksize, iblock, pos;
+ 	struct buffer_head *bh, *dibh;
+ 	struct page *page;
+-	void *kaddr;
+-	struct gfs2_quota *qp;
+-	s64 value;
+-	int err = -EIO;
++	void *kaddr, *ptr;
++	struct gfs2_quota q, *qp;
++	int err, nbytes;
+ 	u64 size;
  
-@@ -437,9 +438,10 @@ static int stuffed_readpage(struct gfs2_inode *ip, struct page *page)
- 		return error;
+ 	if (gfs2_is_stuffed(ip))
+ 		gfs2_unstuff_dinode(ip, NULL);
+-	
++
++	memset(&q, 0, sizeof(struct gfs2_quota));
++	err = gfs2_internal_read(ip, NULL, (char *)&q, &loc, sizeof(q));
++	if (err < 0)
++		return err;
++
++	err = -EIO;
++	qp = &q;
++	qp->qu_value = be64_to_cpu(qp->qu_value);
++	qp->qu_value += change;
++	qp->qu_value = cpu_to_be64(qp->qu_value);
++	qd->qd_qb.qb_value = qp->qu_value;
++	if (fdq) {
++		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
++			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
++			qd->qd_qb.qb_warn = qp->qu_warn;
++		}
++		if (fdq->d_fieldmask & FS_DQ_BHARD) {
++			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
++			qd->qd_qb.qb_limit = qp->qu_limit;
++		}
++	}
++
++	/* Write the quota into the quota file on disk */
++	ptr = qp;
++	nbytes = sizeof(struct gfs2_quota);
++get_a_page:
+ 	page = grab_cache_page(mapping, index);
+ 	if (!page)
+ 		return -ENOMEM;
+@@ -667,7 +692,12 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
+ 	if (!buffer_mapped(bh)) {
+ 		gfs2_block_map(inode, iblock, bh, 1);
+ 		if (!buffer_mapped(bh))
+-			goto unlock;
++			goto unlock_out;
++		/* If it's a newly allocated disk block for quota, zero it */
++		if (buffer_new(bh)) {
++			memset(bh->b_data, 0, bh->b_size);
++			set_buffer_uptodate(bh);
++		}
+ 	}
+ 
+ 	if (PageUptodate(page))
+@@ -677,32 +707,34 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
+ 		ll_rw_block(READ_META, 1, &bh);
+ 		wait_on_buffer(bh);
+ 		if (!buffer_uptodate(bh))
+-			goto unlock;
++			goto unlock_out;
+ 	}
+ 
+ 	gfs2_trans_add_bh(ip->i_gl, bh, 0);
  
  	kaddr = kmap_atomic(page, KM_USER0);
--	memcpy(kaddr, dibh->b_data + sizeof(struct gfs2_dinode),
--	       ip->i_disksize);
--	memset(kaddr + ip->i_disksize, 0, PAGE_CACHE_SIZE - ip->i_disksize);
-+	if (dsize > (dibh->b_size - sizeof(struct gfs2_dinode)))
-+		dsize = (dibh->b_size - sizeof(struct gfs2_dinode));
-+	memcpy(kaddr, dibh->b_data + sizeof(struct gfs2_dinode), dsize);
-+	memset(kaddr + dsize, 0, PAGE_CACHE_SIZE - dsize);
- 	kunmap_atomic(kaddr, KM_USER0);
+-	qp = kaddr + offset;
+-	value = (s64)be64_to_cpu(qp->qu_value) + change;
+-	qp->qu_value = cpu_to_be64(value);
+-	qd->qd_qb.qb_value = qp->qu_value;
+-	if (fdq) {
+-		if (fdq->d_fieldmask & FS_DQ_BSOFT) {
+-			qp->qu_warn = cpu_to_be64(fdq->d_blk_softlimit);
+-			qd->qd_qb.qb_warn = qp->qu_warn;
+-		}
+-		if (fdq->d_fieldmask & FS_DQ_BHARD) {
+-			qp->qu_limit = cpu_to_be64(fdq->d_blk_hardlimit);
+-			qd->qd_qb.qb_limit = qp->qu_limit;
+-		}
+-	}
++	if (offset + sizeof(struct gfs2_quota) > PAGE_CACHE_SIZE)
++		nbytes = PAGE_CACHE_SIZE - offset;
++	memcpy(kaddr + offset, ptr, nbytes);
  	flush_dcache_page(page);
+ 	kunmap_atomic(kaddr, KM_USER0);
++	unlock_page(page);
++	page_cache_release(page);
++
++	/* If quota straddles page boundary, we need to update the rest of the
++	 * quota at the beginning of the next page */
++	if (offset != 0) { /* first page, offset is closer to PAGE_CACHE_SIZE */
++		ptr = ptr + nbytes;
++		nbytes = sizeof(struct gfs2_quota) - nbytes;
++		offset = 0;
++		index++;
++		goto get_a_page;
++	}
+ 
++	/* Update the disk inode timestamp and size (if extended) */
+ 	err = gfs2_meta_inode_buffer(ip, &dibh);
+ 	if (err)
+-		goto unlock;
++		goto out;
+ 
+ 	size = loc + sizeof(struct gfs2_quota);
+ 	if (size > inode->i_size) {
+@@ -715,7 +747,9 @@ static int gfs2_adjust_quota(struct gfs2_inode *ip, loff_t loc,
  	brelse(dibh);
-diff --git a/fs/gfs2/bmap.c b/fs/gfs2/bmap.c
-index 583e823..0db0cd9 100644
---- a/fs/gfs2/bmap.c
-+++ b/fs/gfs2/bmap.c
-@@ -72,11 +72,13 @@ static int gfs2_unstuffer_page(struct gfs2_inode *ip, struct buffer_head *dibh,
+ 	mark_inode_dirty(inode);
  
- 	if (!PageUptodate(page)) {
- 		void *kaddr = kmap(page);
-+		u64 dsize = i_size_read(inode);
-+ 
-+		if (dsize > (dibh->b_size - sizeof(struct gfs2_dinode)))
-+			dsize = dibh->b_size - sizeof(struct gfs2_dinode);
+-unlock:
++out:
++	return err;
++unlock_out:
+ 	unlock_page(page);
+ 	page_cache_release(page);
+ 	return err;
+@@ -779,8 +813,10 @@ static int do_sync(unsigned int num_qd, struct gfs2_quota_data **qda)
+ 	 * rgrp since it won't be allocated during the transaction
+ 	 */
+ 	al->al_requested = 1;
+-	/* +1 in the end for block requested above for unstuffing */
+-	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 1;
++	/* +3 in the end for unstuffing block, inode size update block
++	 * and another block in case quota straddles page boundary and 
++	 * two blocks need to be updated instead of 1 */
++	blocks = num_qd * data_blocks + RES_DINODE + num_qd + 3;
  
--		memcpy(kaddr, dibh->b_data + sizeof(struct gfs2_dinode),
--		       ip->i_disksize);
--		memset(kaddr + ip->i_disksize, 0,
--		       PAGE_CACHE_SIZE - ip->i_disksize);
-+		memcpy(kaddr, dibh->b_data + sizeof(struct gfs2_dinode), dsize);
-+		memset(kaddr + dsize, 0, PAGE_CACHE_SIZE - dsize);
- 		kunmap(page);
- 
- 		SetPageUptodate(page);
-@@ -1039,13 +1041,14 @@ static int trunc_start(struct gfs2_inode *ip, u64 size)
- 		goto out;
- 
- 	if (gfs2_is_stuffed(ip)) {
--		ip->i_disksize = size;
-+		u64 dsize = size + sizeof(struct gfs2_inode);
- 		ip->i_inode.i_mtime = ip->i_inode.i_ctime = CURRENT_TIME;
- 		gfs2_trans_add_bh(ip->i_gl, dibh, 1);
- 		gfs2_dinode_out(ip, dibh->b_data);
--		gfs2_buffer_clear_tail(dibh, sizeof(struct gfs2_dinode) + size);
-+		if (dsize > dibh->b_size)
-+			dsize = dibh->b_size;
-+		gfs2_buffer_clear_tail(dibh, dsize);
- 		error = 1;
--
- 	} else {
- 		if (size & (u64)(sdp->sd_sb.sb_bsize - 1))
- 			error = gfs2_block_truncate_page(ip->i_inode.i_mapping);
+ 	if (nalloc)
+ 		al->al_requested += nalloc * (data_blocks + ind_blocks);		
 -- 
 1.6.2.5
 
