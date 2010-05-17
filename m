@@ -1,86 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752171Ab0EQX3F (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:29:05 -0400
-Received: from xenotime.net ([72.52.115.56]:43550 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1753780Ab0EQX3B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:29:01 -0400
-Date: Mon, 17 May 2010 16:21:11 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: linux-kernel@vger.kernel.org
-Cc: Jonathan Corbet <corbet@lwn.net>
-Subject: [PATCH 2/10] Documentation/development-process: add maintainers and git info
-Message-ID: <12741384712268@xenotime.net>
-In-Reply-To: <12741384711166@xenotime.net>
-X-Mailer: gregkh_patchbomb
+	id S1756116Ab0EQXcv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:32:51 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:40155 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754162Ab0EQXct convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:32:49 -0400
+MIME-Version: 1.0
+In-Reply-To: <201005172344.46222.rjw@sisk.pl>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	 <201005172240.35742.rjw@sisk.pl>
+	 <AANLkTim2b8cKnzPgN7m5zImb0hVDfqVjRidKNVoYi1yO@mail.gmail.com>
+	 <201005172344.46222.rjw@sisk.pl>
+Date: Mon, 17 May 2010 16:32:48 -0700
+Message-ID: <AANLkTikENyp0UOKP2NzwjKye1EiZitdE0o4k1Z4ygCsT@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Brian Swetland <swetland@google.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, May 17, 2010 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> On Monday 17 May 2010, Brian Swetland wrote:
+>> On Mon, May 17, 2010 at 1:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+>> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
+>> >>
+>> >> It should get out of that loop as soon as someone blocks suspend. If
+>> >> someone is constantly aborting suspend without using a suspend blocker
+>> >> it will be very inefficient, but it should still work.
+>> >
+>> > Well, the scenario I have in mind is the following.  Someone wants to check
+>> > the feature and simply writes "opportunistic" to /sys/power/policy and "mem" to
+>> > /sys/power/state without any drivers or apps that use suspend blockers.
+>> >
+>> > How in that case is the system supposed to break out of the suspend-resume loop
+>> > resulting from this?  I don't see right now, because the main blocker is
+>> > inactive, there are no other blockers that can be activated and it is next to
+>> > impossible to write to /sys/power/state again.
+>>
+>> I guess we could set a flag when a suspend blocker is registered and
+>> refuse to enter opportunistic mode if no blockers have ever been
+>> registered.
+>>
+>> It does seem like extra effort to go through to handle a "don't do
+>> that" type scenario (entering into opportunistic suspend without
+>> anything that will prevent it).
+>
+> I agree, but I think it's necessary.  We shouldn't add interfaces that hurt
+> users if not used with care.
+>
 
-Add info on maintainers and persistent posting.
-Update git home page.
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-by: Jonathan Corbet <corbet@lwn.net>
----
- Documentation/development-process/2.Process        |   15 ++++++++---
- Documentation/development-process/7.AdvancedTopics |    2 -
- 2 files changed, 13 insertions(+), 4 deletions(-)
-
---- lnx-2634-docs.orig/Documentation/development-process/2.Process
-+++ lnx-2634-docs/Documentation/development-process/2.Process
-@@ -151,7 +151,7 @@ The stages that a patch goes through are
-    well.
- 
-  - Wider review.  When the patch is getting close to ready for mainline
--   inclusion, it will be accepted by a relevant subsystem maintainer -
-+   inclusion, it should be accepted by a relevant subsystem maintainer -
-    though this acceptance is not a guarantee that the patch will make it
-    all the way to the mainline.  The patch will show up in the maintainer's
-    subsystem tree and into the staging trees (described below).  When the
-@@ -159,6 +159,15 @@ The stages that a patch goes through are
-    the discovery of any problems resulting from the integration of this
-    patch with work being done by others.
- 
-+-  Please note that most maintainers also have day jobs, so merging
-+   your patch may not be their highest priority.  If your patch is
-+   getting feedback about changes that are needed, you should either
-+   make those changes or justify why they should not be made.  If your
-+   patch has no review complaints but is not being merged by its
-+   appropriate subsystem or driver maintainer, you should be persistent
-+   in updating the patch to the current kernel so that it applies cleanly
-+   and keep sending it for review and merging.
-+
-  - Merging into the mainline.  Eventually, a successful patch will be
-    merged into the mainline repository managed by Linus Torvalds.  More
-    comments and/or problems may surface at this time; it is important that
-@@ -319,9 +328,9 @@ developers; even if they do not use it f
- to keep up with what other developers (and the mainline) are doing.
- 
- Git is now packaged by almost all Linux distributions.  There is a home
--page at 
-+page at:
- 
--	http://git.or.cz/
-+	http://git-scm.com/
- 
- That page has pointers to documentation and tutorials.  One should be
- aware, in particular, of the Kernel Hacker's Guide to git, which has
---- lnx-2634-docs.orig/Documentation/development-process/7.AdvancedTopics
-+++ lnx-2634-docs/Documentation/development-process/7.AdvancedTopics
-@@ -25,7 +25,7 @@ long document in its own right.  Instead
- fits into the kernel development process in particular.  Developers who
- wish to come up to speed with git will find more information at:
- 
--	http://git.or.cz/
-+	http://git-scm.com/
- 
- 	http://www.kernel.org/pub/software/scm/git/docs/user-manual.html
- 
-
+I'm not sure this can be "fixed". The user asked that the system to
+suspend whenever possible, which is what it is doing. I don't think
+disabling opportunistic suspend if no suspend blockers have been
+registered will work. As soon as we register a suspend blocker we are
+back in the same situation.
 
 -- 
-
+Arve Hjønnevåg
