@@ -1,60 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754907Ab0EQKIZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 06:08:25 -0400
-Received: from mo-p05-ob.rzone.de ([81.169.146.181]:18945 "EHLO
-	mo-p05-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751096Ab0EQKIX (ORCPT
+	id S1753671Ab0EQKMx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 06:12:53 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:51081 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751482Ab0EQKMv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 06:08:23 -0400
-X-RZG-AUTH: :IW0NeWC7b/q2i6W/qstXb1SBUuFnrGohavlCkce+Ub5QXMSOpHp3LrAPgFm1SZs=
-X-RZG-CLASS-ID: mo05
-From: Stefan Roese <sr@denx.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]460EX on-chip SATA driver <Kernel 2.6.33> < resubmission >
-Date: Mon, 17 May 2010 12:06:47 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.32.11-sr; KDE/4.4.2; i686; ; )
-Cc: Sergei Shtylyov <sshtylyov@mvista.com>, Rupjyoti Sarmah <rsarmah@amcc.com>,
-       linux-ide@vger.kernel.org, linuxppc-dev@ozlabs.org
-References: <201005051757.o45HvPmY005954@amcc.com> <4BED8BF1.5080800@ru.mvista.com> <1273966828.21352.670.camel@pasglop>
-In-Reply-To: <1273966828.21352.670.camel@pasglop>
+	Mon, 17 May 2010 06:12:51 -0400
+Date: Mon, 17 May 2010 13:08:46 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>
+Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 5/5] arm: omap: move all gpio defines to plat/gpio.h
+Message-ID: <20100517100846.GC20314@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
+ <1274090554-19420-6-git-send-email-felipe.balbi@nokia.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005171206.47566.sr@denx.de>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Disposition: inline
+In-Reply-To: <1274090554-19420-6-git-send-email-felipe.balbi@nokia.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 17 May 2010 10:10:35.0246 (UTC) FILETIME=[30EAE8E0:01CAF5A9]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ben,
+On Mon, May 17, 2010 at 12:02:34PM +0200, Balbi Felipe (Nokia-D/Helsinki) wrote:
+>From: Felipe Balbi <felipe.balbi@nokia.com>
+>
+>move everything to a common location. No functional
+>changes.
+>
+>Signed-off-by: Felipe Balbi <felipe.balbi@nokia.com>
 
-On Sunday 16 May 2010 01:40:28 Benjamin Herrenschmidt wrote:
-> > > +		SATA0: sata@bffd1000 {
-> > > +                        compatible = "amcc,sata-460ex";
-> > > +			reg = <4 0xbffd1000 0x800 4 0xbffd0800 0x400>;
-> > > +                        interrupt-parent = <&UIC3>;
-> > > +                        interrupts = <0x0 0x4       /* SATA */
-> > > +                                      0x5 0x4>;     /* AHBDMA */
-> > > +                };
-> > > +
-> > > 
-> > >  		POB0: opb {
-> > >  		
-> > >  			compatible = "ibm,opb-460ex", "ibm,opb";
-> > >  			#address-cells = <1>;
-> >    
-> >    Please put the device tree update in a separate patch to go thru the
-> > 
-> > PowerPC tree.
-> 
-> Additionally, the boot wrapper should probably either remove the node or
-> at least use a status property "ok" / "disabled" to represent whether
-> the board is configured for SATA or PCIe x1...
+sorry, this patch shouldn't be here... it was a broken cherry-pick from 
+myself. Please ignore this one.
 
-U-Boot already sets the "status" property of the PCIe or SATA node 
-accordingly. Just let me know if this doesn't work for you.
+-- 
+balbi
 
-Cheers,
-Stefan
+DefectiveByDesign.org
