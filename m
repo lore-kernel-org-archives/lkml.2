@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752923Ab0EQCsq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:48:46 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:64503 "EHLO
+	id S1752863Ab0EQCve (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:51:34 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:32802 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752900Ab0EQCso (ORCPT
+	with ESMTP id S1752097Ab0EQCvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:48:44 -0400
+	Sun, 16 May 2010 22:51:33 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=VP8Vp73A5qvva5rcrubpgeRuJq13985Adj0C+bnWf8awUQJC52AhiKdcTIwtwHu5T6
-         BeCjPx0P1dkBXYE55kEumU7hS2GHL33ZE2Z7u2iWywdLQAbkd2g8t6X1JkhvkMLufJRK
-         t77ps/CnigPL4gyJGfOVraMccgC/chETbGdZ4=
-Date: Mon, 17 May 2010 04:48:48 +0200
+        b=NmBNQ3/mQ+CfLhTzdsEmGd92LQXy6RVPm2eC2SeqrssJ7jDi66iAZDpP4JT87p5ZDG
+         tg9pDBce9X/Vn/QULPCwxwR/hzjQRIrxvpCI74tBVC8mPYFqMqWrjncJ04nr6gkNIQkl
+         YHyAiTAiDq9VLQAduChuLTfdoGtZGivSC+7k8=
+Date: Mon, 17 May 2010 04:51:36 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Jeff Dike <jdike@addtoit.com>
-Subject: Re: [PATCH] uml: Convert to unlocked_ioctls to remove implicit BKL
-Message-ID: <20100517024846.GH22299@nowhere>
-References: <1273246468-11048-1-git-send-email-jkacur@redhat.com>
+To: Jesper Nilsson <jesper.nilsson@axis.com>
+Cc: Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
+       lkml <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH 3/7] cris: push down BKL into some device drivers
+Message-ID: <20100517025135.GI22299@nowhere>
+References: <alpine.LFD.2.00.1004271359180.3318@localhost> <1272378265-10909-4-git-send-email-arnd@arndb.de> <20100430075320.GZ29275@axis.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1273246468-11048-1-git-send-email-jkacur@redhat.com>
+In-Reply-To: <20100430075320.GZ29275@axis.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 07, 2010 at 05:34:28PM +0200, John Kacur wrote:
-> Convert to hostaudio_ioctl and hostmixer_ioctl_mixdev to unlocked_ioctl
+On Fri, Apr 30, 2010 at 09:53:21AM +0200, Jesper Nilsson wrote:
+> On Tue, Apr 27, 2010 at 04:24:21PM +0200, Arnd Bergmann wrote:
+> > A number of cris specific device drivers still use the
+> > locked ->ioctl operation. Convert them to unlocked_ioctl
+> > with explicit lock_kernel calls.
 > 
-> Signed-off-by: John Kacur <jkacur@redhat.com>
+> Looks good, I've added this to the cris tree.
 
 
-Applied, thanks John.
+Ok, zapped it from mine then.
 
---
-commit ced2a589711bb345278440521cba180fced01511
-Author: John Kacur <jkacur@redhat.com>
-Date:   Fri May 7 17:34:28 2010 +0200
+Thanks.
 
-    uml: Convert to unlocked_ioctls to remove implicit BKL
-    
-    Convert hostaudio_ioctl and hostmixer_ioctl_mixdev to
-    unlocked_ioctl without pushdown.
-    
-    There is nothing to protect inside, the synchronization
-    is made from the host already.
-    
-    Signed-off-by: John Kacur <jkacur@redhat.com>
-    Cc: Arnd Bergmann <arnd@arndb.de>
-    Cc: Thomas Gleixner <tglx@linutronix.de>
-    Cc: Ingo Molnar <mingo@elte.hu>
-    Cc: Jeff Dike <jdike@addtoit.com>
-    Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 
-diff --git a/arch/um/drivers/hostaudio_kern.c b/arch/um/drivers/hostaudio_kern.c
-index 368219c..ae42695 100644
---- a/arch/um/drivers/hostaudio_kern.c
-+++ b/arch/um/drivers/hostaudio_kern.c
-@@ -136,7 +136,7 @@ static unsigned int hostaudio_poll(struct file *file,
- 	return mask;
- }
- 
--static int hostaudio_ioctl(struct inode *inode, struct file *file,
-+static long hostaudio_ioctl(struct file *file,
- 			   unsigned int cmd, unsigned long arg)
- {
- 	struct hostaudio_state *state = file->private_data;
-@@ -223,7 +223,7 @@ static int hostaudio_release(struct inode *inode, struct file *file)
- 
- /* /dev/mixer file operations */
- 
--static int hostmixer_ioctl_mixdev(struct inode *inode, struct file *file,
-+static long hostmixer_ioctl_mixdev(struct file *file,
- 				  unsigned int cmd, unsigned long arg)
- {
- 	struct hostmixer_state *state = file->private_data;
-@@ -289,7 +289,7 @@ static const struct file_operations hostaudio_fops = {
- 	.read           = hostaudio_read,
- 	.write          = hostaudio_write,
- 	.poll           = hostaudio_poll,
--	.ioctl          = hostaudio_ioctl,
-+	.unlocked_ioctl	= hostaudio_ioctl,
- 	.mmap           = NULL,
- 	.open           = hostaudio_open,
- 	.release        = hostaudio_release,
-@@ -298,7 +298,7 @@ static const struct file_operations hostaudio_fops = {
- static const struct file_operations hostmixer_fops = {
- 	.owner          = THIS_MODULE,
- 	.llseek         = no_llseek,
--	.ioctl          = hostmixer_ioctl_mixdev,
-+	.unlocked_ioctl	= hostmixer_ioctl_mixdev,
- 	.open           = hostmixer_open_mixdev,
- 	.release        = hostmixer_release,
- };
 
+> 
+> > Signed-off-by: Arnd Bergmann <arnd@arndb.de>
+> 
+> /^JN - Jesper Nilsson
+> -- 
+>                Jesper Nilsson -- jesper.nilsson@axis.com
 
