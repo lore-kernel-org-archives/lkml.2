@@ -1,41 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752381Ab0EQCM7 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:12:59 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:63535 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752141Ab0EQCM5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:12:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=bvGpoLZ+b2TOl0JTWtpvbF621SdLB3CpEq3w3VwDOv754vL5arq3UaTKW3dIVk56G9
-         OXCrFIbsrEtiKh+/qgmEKIrj8j78fPAdSoFdmB9Fh9qS+XPVmRqYLFa9CqL/YaNV1oFa
-         /Mq6V+fY/DkSQ8jT2RARqWmKlCnslBY4yyzrc=
-Date: Mon, 17 May 2010 04:13:00 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: John Kacur <jkacur@redhat.com>
-Cc: lkml <linux-kernel@vger.kernel.org>, Arnd Bergmann <arnd@arndb.de>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Jan Harkes <jaharkes@cs.cmu.edu>, coda@cs.cmu.edu
-Subject: Re: [PATCH 2/6] coda: Clean-up whitespace problems in pioctl.c
-Message-ID: <20100517021258.GE22299@nowhere>
-References: <1273065339-21669-1-git-send-email-jkacur@redhat.com> <1273065339-21669-3-git-send-email-jkacur@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273065339-21669-3-git-send-email-jkacur@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1752623Ab0EQCOl (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:14:41 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:39748 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752141Ab0EQCOk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 22:14:40 -0400
+Date: Mon, 17 May 2010 12:14:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       David Woodhouse <dwmw2@infradead.org>,
+       Ben Hutchings <ben@decadent.org.uk>
+Subject: linux-next: manual merge of the net tree with the m68k tree
+Message-Id: <20100517121438.63772f56.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 03:15:35PM +0200, John Kacur wrote:
-> Signed-off-by: John Kacur <jkacur@redhat.com>
-> ---
+Hi all,
 
+Today's linux-next merge of the net tree got a conflict in
+scripts/mod/file2alias.c between commit
+52498c252690651f915aecbcd10e26bcbafbe2a3 ("m68k: amiga - Zorro bus
+modalias support") from the m68k tree and commit
+8626d3b4328061f5b82b11ae1d6918a0c3602f42 ("phylib: Support phy module
+autoloading") from the net tree.
 
-Applied too, thanks.
+Again, just overlapping additions.  I fixed it up (see below) and can
+carry the fix as necessary.
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
+diff --cc scripts/mod/file2alias.c
+index df90f31,36a60a8..0000000
+--- a/scripts/mod/file2alias.c
++++ b/scripts/mod/file2alias.c
+@@@ -796,16 -796,28 +796,38 @@@ static int do_platform_entry(const cha
+  	return 1;
+  }
+  
+ +/* Looks like: zorro:iN. */
+ +static int do_zorro_entry(const char *filename, struct zorro_device_id *id,
+ +			  char *alias)
+ +{
+ +	id->id = TO_NATIVE(id->id);
+ +	strcpy(alias, "zorro:");
+ +	ADD(alias, "i", id->id != ZORRO_WILDCARD, id->id);
+ +	return 1;
+ +}
+ +
++ static int do_mdio_entry(const char *filename,
++ 			 struct mdio_device_id *id, char *alias)
++ {
++ 	int i;
++ 
++ 	alias += sprintf(alias, MDIO_MODULE_PREFIX);
++ 
++ 	for (i = 0; i < 32; i++) {
++ 		if (!((id->phy_id_mask >> (31-i)) & 1))
++ 			*(alias++) = '?';
++ 		else if ((id->phy_id >> (31-i)) & 1)
++ 			*(alias++) = '1';
++ 		else
++ 			*(alias++) = '0';
++ 	}
++ 
++ 	/* Terminate the string */
++ 	*alias = 0;
++ 
++ 	return 1;
++ }
++ 
+  /* Ignore any prefix, eg. some architectures prepend _ */
+  static inline int sym_is(const char *symbol, const char *name)
+  {
+@@@ -953,10 -965,10 +975,14 @@@ void handle_moddevtable(struct module *
+  		do_table(symval, sym->st_size,
+  			 sizeof(struct platform_device_id), "platform",
+  			 do_platform_entry, mod);
+ +	else if (sym_is(symname, "__mod_zorro_device_table"))
+ +		do_table(symval, sym->st_size,
+ +			 sizeof(struct zorro_device_id), "zorro",
+ +			 do_zorro_entry, mod);
++ 	else if (sym_is(symname, "__mod_mdio_device_table"))
++ 		do_table(symval, sym->st_size,
++ 			 sizeof(struct mdio_device_id), "mdio",
++ 			 do_mdio_entry, mod);
+  	free(zeros);
+  }
+  
