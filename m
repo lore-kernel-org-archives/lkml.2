@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756681Ab0EQXKS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:10:18 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:59032 "EHLO mx2.mail.elte.hu"
+	id S1756646Ab0EQXLV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 19:11:21 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:52289 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756620Ab0EQXKQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:10:16 -0400
-Date: Tue, 18 May 2010 01:09:43 +0200
+	id S1753802Ab0EQXLU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 19:11:20 -0400
+Date: Tue, 18 May 2010 01:11:13 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
-       "H. Peter Anvin" <hpa@zytor.com>,
+Cc: linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] x86/mm change for v2.6.35
-Message-ID: <20100517230943.GA7541@elte.hu>
+Subject: [GIT PULL] x86/mrst changes for v2.6.35
+Message-ID: <20100517231113.GA8232@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -31,78 +31,64 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest x86-mm-for-linus git tree from:
+Please pull the latest Intel Moorestown git tree 
+from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-mm-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-mrst-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Jan Beulich (1):
-      x86-64: Combine SRAT regions when possible
+Jacob Pan (3):
+      x86: Avoid check hlt for newer cpus
+      x86, mrst, pci: return 0 for non-present pci bars
+      x86, mrst: add nop functions to x86_init mpparse functions
 
 
- arch/x86/mm/srat_64.c |   48 ++++++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 48 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/bugs.c |    2 +-
+ arch/x86/kernel/mrst.c     |    5 +++++
+ arch/x86/pci/mrst.c        |    2 +-
+ 3 files changed, 7 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/mm/srat_64.c b/arch/x86/mm/srat_64.c
-index 28c6876..3ebe651 100644
---- a/arch/x86/mm/srat_64.c
-+++ b/arch/x86/mm/srat_64.c
-@@ -363,6 +363,54 @@ int __init acpi_scan_nodes(unsigned long start, unsigned long end)
- 	for (i = 0; i < MAX_NUMNODES; i++)
- 		cutoff_node(i, start, end);
+diff --git a/arch/x86/kernel/cpu/bugs.c b/arch/x86/kernel/cpu/bugs.c
+index 01a2652..c39576c 100644
+--- a/arch/x86/kernel/cpu/bugs.c
++++ b/arch/x86/kernel/cpu/bugs.c
+@@ -86,7 +86,7 @@ static void __init check_fpu(void)
  
-+	/*
-+	 * Join together blocks on the same node, holes between
-+	 * which don't overlap with memory on other nodes.
-+	 */
-+	for (i = 0; i < num_node_memblks; ++i) {
-+		int j, k;
+ static void __init check_hlt(void)
+ {
+-	if (paravirt_enabled())
++	if (boot_cpu_data.x86 >= 5 || paravirt_enabled())
+ 		return;
+ 
+ 	printk(KERN_INFO "Checking 'hlt' instruction... ");
+diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
+index 0aad867..e796448 100644
+--- a/arch/x86/kernel/mrst.c
++++ b/arch/x86/kernel/mrst.c
+@@ -237,4 +237,9 @@ void __init x86_mrst_early_setup(void)
+ 	x86_init.pci.fixup_irqs = x86_init_noop;
+ 
+ 	legacy_pic = &null_legacy_pic;
 +
-+		for (j = i + 1; j < num_node_memblks; ++j) {
-+			unsigned long start, end;
++	/* Avoid searching for BIOS MP tables */
++	x86_init.mpparse.find_smp_config = x86_init_noop;
++	x86_init.mpparse.get_smp_config = x86_init_uint_noop;
 +
-+			if (memblk_nodeid[i] != memblk_nodeid[j])
-+				continue;
-+			start = min(node_memblk_range[i].end,
-+			            node_memblk_range[j].end);
-+			end = max(node_memblk_range[i].start,
-+			          node_memblk_range[j].start);
-+			for (k = 0; k < num_node_memblks; ++k) {
-+				if (memblk_nodeid[i] == memblk_nodeid[k])
-+					continue;
-+				if (start < node_memblk_range[k].end &&
-+				    end > node_memblk_range[k].start)
-+					break;
-+			}
-+			if (k < num_node_memblks)
-+				continue;
-+			start = min(node_memblk_range[i].start,
-+			            node_memblk_range[j].start);
-+			end = max(node_memblk_range[i].end,
-+			          node_memblk_range[j].end);
-+			printk(KERN_INFO "SRAT: Node %d "
-+			       "[%Lx,%Lx) + [%Lx,%Lx) -> [%lx,%lx)\n",
-+			       memblk_nodeid[i],
-+			       node_memblk_range[i].start,
-+			       node_memblk_range[i].end,
-+			       node_memblk_range[j].start,
-+			       node_memblk_range[j].end,
-+			       start, end);
-+			node_memblk_range[i].start = start;
-+			node_memblk_range[i].end = end;
-+			k = --num_node_memblks - j;
-+			memmove(memblk_nodeid + j, memblk_nodeid + j+1,
-+				k * sizeof(*memblk_nodeid));
-+			memmove(node_memblk_range + j, node_memblk_range + j+1,
-+				k * sizeof(*node_memblk_range));
-+			--j;
-+		}
-+	}
-+
- 	memnode_shift = compute_hash_shift(node_memblk_range, num_node_memblks,
- 					   memblk_nodeid);
- 	if (memnode_shift < 0) {
+ }
+diff --git a/arch/x86/pci/mrst.c b/arch/x86/pci/mrst.c
+index 8bf2fcb..d5c7aef 100644
+--- a/arch/x86/pci/mrst.c
++++ b/arch/x86/pci/mrst.c
+@@ -109,7 +109,7 @@ static int pci_device_update_fixed(struct pci_bus *bus, unsigned int devfn,
+ 			decode++;
+ 			decode = ~(decode - 1);
+ 		} else {
+-			decode = ~0;
++			decode = 0;
+ 		}
+ 
+ 		/*
