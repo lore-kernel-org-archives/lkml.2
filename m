@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754229Ab0EQHdR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 03:33:17 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:62115 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753862Ab0EQHdP convert rfc822-to-8bit (ORCPT
+	id S1754314Ab0EQHlp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 03:41:45 -0400
+Received: from smtp-out3.blueyonder.co.uk ([195.188.213.6]:55208 "EHLO
+	smtp-out3.blueyonder.co.uk" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753773Ab0EQHlo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 03:33:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=C35hc7gJGLq7ZxhyQHlwQiB9FCfWINV3RHsL2D7DVryQ798T+MFcEdOFxH5iMyQ3Ui
-         6FlsLnxfe3bONCNB10bFPOrjN55TVMVqU5LlmAJHAvqeqBwUzpdQ6kOhxURYbexfaV2u
-         LIGwt+BAXiWYUHYnOwF023olN/XTeFRXmMqho=
+	Mon, 17 May 2010 03:41:44 -0400
+Message-ID: <4BF0F334.8090108@blueyonder.co.uk>
+Date: Mon, 17 May 2010 08:41:40 +0100
+From: Sid Boyce <sboyce@blueyonder.co.uk>
+Reply-To: sboyce@blueyonder.co.uk
+Organization: blueyonder.co.uk
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-GB; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.15 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
 MIME-Version: 1.0
-In-Reply-To: <20100517160319.A195.A69D9226@jp.fujitsu.com>
-References: <AANLkTikD7M_PKH3YgOWIvrcD6aW6X-gYIo2iw52QRRq_@mail.gmail.com>
-	 <20100517160319.A195.A69D9226@jp.fujitsu.com>
-Date: Mon, 17 May 2010 13:03:14 +0530
-Message-ID: <AANLkTik2OcSBGdkRQKFl6xh06PEr7Al6xaUsmMGGC6jo@mail.gmail.com>
-Subject: Re: Which function returns LWP in Linux.
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Srinivas Nayak <sinu.nayak2001@gmail.com>, linux-kernel@vger.kernel.org
+CC: piotr@hosowicz.com, LKML Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: General questiin about SYSFS
+References: <4BF05EC9.6070102@blueyonder.co.uk> <4BF0AA6C.1050102@example.com>
+In-Reply-To: <4BF0AA6C.1050102@example.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Transfer-Encoding: 7bit
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello KOSAKI-san,
+On 17/05/10 03:31, Piotr Hosowicz wrote:
+> On 16.05.2010 23:08, Sid Boyce wrote:
+>> As the message says, you have to change all instances of SSYSFS to ATTR
+>>   in the rules files in /etc/udev/rules.d to stop those messages
+>> appearing on boot up.
+> 
+> Ok, forget my next question - I risked breaking things and made a plain
+> search and replace, reboot, things seem to work, no errors. I also had
+> to change BUS to SUBSYSTEM.
+> 
+> Regards,
+> 
+> Piotr Hosowicz
+> 
 
-On Mon, May 17, 2010 at 12:33 PM, KOSAKI Motohiro
-<kosaki.motohiro@jp.fujitsu.com> wrote:
->> Hi,
->>
->> For a process, we have different PIDs. For threads under a single
->> processes, we have different LWP id, but same PID in Linux.
->> ex.
->>
->> root@pc:/home/srinivas# ps -eLf
->> UID        PID  PPID     LWP  C STIME       TIME     CMD
->> root       100     1     100  0 May13       00:00:02 ./a.out
->> root       100     1     102  0 May13       00:00:00 ./a.out
->>
->> getpid() function returns PID of a process.
->> Which function retuns LWP id for thread?
->
-> gettid()
->
+I forgot to mention the BUS to SUBSYSTEM  change, but it was obvious
+when looking at the messages. One other I've seen (on openSUSE 11.3),
+/etc/modprobe.conf deprecated, so I've moved it out of /etc and also
+changed files in /etc/modprobe.d from xxxxxxx to xxxxxxx.conf. It all
+helps keep the noise down.
+No problems, I have been running with the modified files for some months.
+Regards
+Sid.
+-- 
+Sid Boyce ... Hamradio License G3VBV, Licensed Private Pilot
+Emeritus IBM/Amdahl Mainframes and Sun/Fujitsu Servers Tech Support
+Specialist, Cricket Coach
+Microsoft Windows Free Zone - Linux used for all Computing Tasks
 
-gettid() is linux specific and not supported in glibc. Normally
-application do not use gettid(), even procps is not using it, that why
-I suggested Srinivas to check procps source to find the best solution
-for it.
-
-Thanks,
---
-Jaswinder Singh.
