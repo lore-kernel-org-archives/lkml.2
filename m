@@ -1,47 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755375Ab0EQNXz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 09:23:55 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49736 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751533Ab0EQNXx (ORCPT
+	id S1755427Ab0EQNYa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 09:24:30 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:56498 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751533Ab0EQNY2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 09:23:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=s5gG408znfft++8hYuRtTtPgqESBhGp2h6jwkARcR9eBsJp5KFo7h79JjYCeDKiahN
-         1VS/w/LLTUfsg83mY9+1W7mwpntwPLcIUjShXih1n/jLo2vU/pemud49WhLaIne1oquN
-         PpSADvBoa8d/GcRpFYEnTW9RgvZWg1zLC9wls=
+	Mon, 17 May 2010 09:24:28 -0400
 MIME-Version: 1.0
-Date: Mon, 17 May 2010 14:23:52 +0100
-Message-ID: <AANLkTimb489PFFsC96b00jeuqv0OOEk8NbwpTHu9K3Cl@mail.gmail.com>
-Subject: [2.6.34, patch] i915: fix lock imbalance on error path...
-From: Daniel J Blueman <daniel.blueman@gmail.com>
-To: dri-devel@lists.sf.net, linux-kernel@vger.kernel.org,
-       intel-gfx@lists.freedesktop.org
-Cc: Dave Airlie <airlied@linux.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+In-Reply-To: <1273363872-8031-1-git-send-email-kirill@shutemov.name>
+References: <1273363872-8031-1-git-send-email-kirill@shutemov.name>
+Date: Mon, 17 May 2010 16:24:27 +0300
+Message-ID: <AANLkTilf7lSsoURcchVSpON1y0innKzveGB5AYA3WAVg@mail.gmail.com>
+Subject: Re: [RFC] [PATCH] memcg: cleanup memory thresholds
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: linux-mm@kvack.org, containers@lists.linux-foundation.org
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Phil Carmody <ext-phil.2.carmody@nokia.com>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Paul Menage <menage@google.com>, Li Zefan <lizf@cn.fujitsu.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4HDOZaS020001
 
-While investigating Intel i5 Arrandale GPU lockups with -rc4, I
-noticed a lock imbalance.
-
-Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
-
-diff --git a/drivers/gpu/drm/i915/i915_drv.c b/drivers/gpu/drm/i915/i915_drv.c
-index cc03537..f5fee1b 100644
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -341,6 +341,7 @@ int i965_reset(struct drm_device *dev, u8 flags)
- 		}
- 	} else {
- 		DRM_ERROR("Error occurred. Don't know how to reset this chip.\n");
-+		mutex_unlock(&dev->struct_mutex);
- 		return -ENODEV;
- 	}
-
--- 
-Daniel J Blueman
+Any comments?
+On Sun, May 9, 2010 at 3:11 AM, Kirill A. Shutemov <kirill@shutemov.name> wrote:> Introduce struct mem_cgroup_thresholds. It helps to reduce number of> checks of thresholds type (memory or mem+swap).>> Signed-off-by: Kirill A. Shutemov <kirill@shutemov.name>> --->  mm/memcontrol.c |  151 ++++++++++++++++++++++++------------------------------->  1 files changed, 66 insertions(+), 85 deletions(-)>> diff --git a/mm/memcontrol.c b/mm/memcontrol.c> index a6d2a4c..a6c6268 100644> --- a/mm/memcontrol.c> +++ b/mm/memcontrol.c> @@ -158,6 +158,18 @@ struct mem_cgroup_threshold_ary {>        /* Array of thresholds */>        struct mem_cgroup_threshold entries[0];>  };> +> +struct mem_cgroup_thresholds {> +       /* Primary thresholds array */> +       struct mem_cgroup_threshold_ary *primary;> +       /*> +        * Spare threshold array.> +        * It needed to make mem_cgroup_unregister_event() "never fail".> +        * It must be able to store at least primary->size - 1 entires.> +        */> +       struct mem_cgroup_threshold_ary *spare;> +};> +>  /* for OOM */>  struct mem_cgroup_eventfd_list {>        struct list_head list;> @@ -224,20 +236,10 @@ struct mem_cgroup {>        struct mutex thresholds_lock;>>        /* thresholds for memory usage. RCU-protected */> -       struct mem_cgroup_threshold_ary *thresholds;> -> -       /*> -        * Preallocated buffer to be used in mem_cgroup_unregister_event()> -        * to make it "never fail".> -        * It must be able to store at least thresholds->size - 1 entries.> -        */> -       struct mem_cgroup_threshold_ary *__thresholds;> +       struct mem_cgroup_thresholds thresholds;>>        /* thresholds for mem+swap usage. RCU-protected */> -       struct mem_cgroup_threshold_ary *memsw_thresholds;> -> -       /* the same as __thresholds, but for memsw_thresholds */> -       struct mem_cgroup_threshold_ary *__memsw_thresholds;> +       struct mem_cgroup_thresholds memsw_thresholds;>>        /* For oom notifier event fd */>        struct list_head oom_notify;> @@ -3438,9 +3440,9 @@ static void __mem_cgroup_threshold(struct mem_cgroup *memcg, bool swap)>>        rcu_read_lock();>        if (!swap)> -               t = rcu_dereference(memcg->thresholds);> +               t = rcu_dereference(memcg->thresholds.primary);>        else> -               t = rcu_dereference(memcg->memsw_thresholds);> +               t = rcu_dereference(memcg->memsw_thresholds.primary);>>        if (!t)>                goto unlock;> @@ -3514,91 +3516,78 @@ static int mem_cgroup_usage_register_event(struct cgroup *cgrp,>        struct cftype *cft, struct eventfd_ctx *eventfd, const char *args)>  {>        struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);> -       struct mem_cgroup_threshold_ary *thresholds, *thresholds_new;> +       struct mem_cgroup_thresholds *thresholds;> +       struct mem_cgroup_threshold_ary *new;>        int type = MEMFILE_TYPE(cft->private);>        u64 threshold, usage;> -       int size;> -       int i, ret;> +       int i, size, ret;>>        ret = res_counter_memparse_write_strategy(args, &threshold);>        if (ret)>                return ret;>>        mutex_lock(&memcg->thresholds_lock);> +>        if (type == _MEM)> -               thresholds = memcg->thresholds;> +               thresholds = &memcg->thresholds;>        else if (type == _MEMSWAP)> -               thresholds = memcg->memsw_thresholds;> +               thresholds = &memcg->memsw_thresholds;>        else>                BUG();>>        usage = mem_cgroup_usage(memcg, type == _MEMSWAP);>>        /* Check if a threshold crossed before adding a new one */> -       if (thresholds)> +       if (thresholds->primary)>                __mem_cgroup_threshold(memcg, type == _MEMSWAP);>> -       if (thresholds)> -               size = thresholds->size + 1;> -       else> -               size = 1;> +       size = thresholds->primary ? thresholds->primary->size + 1 : 1;>>        /* Allocate memory for new array of thresholds */> -       thresholds_new = kmalloc(sizeof(*thresholds_new) +> -                       size * sizeof(struct mem_cgroup_threshold),> +       new = kmalloc(sizeof(*new) + size * sizeof(struct mem_cgroup_threshold),>                        GFP_KERNEL);> -       if (!thresholds_new) {> +       if (!new) {>                ret = -ENOMEM;>                goto unlock;>        }> -       thresholds_new->size = size;> +       new->size = size;>>        /* Copy thresholds (if any) to new array */> -       if (thresholds)> -               memcpy(thresholds_new->entries, thresholds->entries,> -                               thresholds->size *> +       if (thresholds->primary) {> +               memcpy(new->entries, thresholds->primary->entries, (size - 1) *>                                sizeof(struct mem_cgroup_threshold));> +       }> +>        /* Add new threshold */> -       thresholds_new->entries[size - 1].eventfd = eventfd;> -       thresholds_new->entries[size - 1].threshold = threshold;> +       new->entries[size - 1].eventfd = eventfd;> +       new->entries[size - 1].threshold = threshold;>>        /* Sort thresholds. Registering of new threshold isn't time-critical */> -       sort(thresholds_new->entries, size,> -                       sizeof(struct mem_cgroup_threshold),> +       sort(new->entries, size, sizeof(struct mem_cgroup_threshold),>                        compare_thresholds, NULL);>>        /* Find current threshold */> -       thresholds_new->current_threshold = -1;> +       new->current_threshold = -1;>        for (i = 0; i < size; i++) {> -               if (thresholds_new->entries[i].threshold < usage) {> +               if (new->entries[i].threshold < usage) {>                        /*> -                        * thresholds_new->current_threshold will not be used> -                        * until rcu_assign_pointer(), so it's safe to increment> +                        * new->current_threshold will not be used until> +                        * rcu_assign_pointer(), so it's safe to increment>                         * it here.>                         */> -                       ++thresholds_new->current_threshold;> +                       ++new->current_threshold;>                }>        }>> -       if (type == _MEM)> -               rcu_assign_pointer(memcg->thresholds, thresholds_new);> -       else> -               rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);> +       /* Free old spare buffer and save old primary buffer as spare */> +       kfree(thresholds->spare);> +       thresholds->spare = thresholds->primary;> +> +       rcu_assign_pointer(thresholds->primary, new);>>        /* To be sure that nobody uses thresholds */>        synchronize_rcu();>> -       /*> -        * Free old preallocated buffer and use thresholds as new> -        * preallocated buffer.> -        */> -       if (type == _MEM) {> -               kfree(memcg->__thresholds);> -               memcg->__thresholds = thresholds;> -       } else {> -               kfree(memcg->__memsw_thresholds);> -               memcg->__memsw_thresholds = thresholds;> -       }>  unlock:>        mutex_unlock(&memcg->thresholds_lock);>> @@ -3609,17 +3598,17 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,>        struct cftype *cft, struct eventfd_ctx *eventfd)>  {>        struct mem_cgroup *memcg = mem_cgroup_from_cont(cgrp);> -       struct mem_cgroup_threshold_ary *thresholds, *thresholds_new;> +       struct mem_cgroup_thresholds *thresholds;> +       struct mem_cgroup_threshold_ary *new;>        int type = MEMFILE_TYPE(cft->private);>        u64 usage;> -       int size = 0;> -       int i, j;> +       int i, j, size;>>        mutex_lock(&memcg->thresholds_lock);>        if (type == _MEM)> -               thresholds = memcg->thresholds;> +               thresholds = &memcg->thresholds;>        else if (type == _MEMSWAP)> -               thresholds = memcg->memsw_thresholds;> +               thresholds = &memcg->memsw_thresholds;>        else>                BUG();>> @@ -3635,53 +3624,45 @@ static void mem_cgroup_usage_unregister_event(struct cgroup *cgrp,>        __mem_cgroup_threshold(memcg, type == _MEMSWAP);>>        /* Calculate new number of threshold */> -       for (i = 0; i < thresholds->size; i++) {> -               if (thresholds->entries[i].eventfd != eventfd)> +       size = 0;> +       for (i = 0; i < thresholds->primary->size; i++) {> +               if (thresholds->primary->entries[i].eventfd != eventfd)>                        size++;>        }>> -       /* Use preallocated buffer for new array of thresholds */> -       if (type == _MEM)> -               thresholds_new = memcg->__thresholds;> -       else> -               thresholds_new = memcg->__memsw_thresholds;> +       new = thresholds->spare;>>        /* Set thresholds array to NULL if we don't have thresholds */>        if (!size) {> -               kfree(thresholds_new);> -               thresholds_new = NULL;> +               kfree(new);> +               new = NULL;>                goto swap_buffers;>        }>> -       thresholds_new->size = size;> +       new->size = size;>>        /* Copy thresholds and find current threshold */> -       thresholds_new->current_threshold = -1;> -       for (i = 0, j = 0; i < thresholds->size; i++) {> -               if (thresholds->entries[i].eventfd == eventfd)> +       new->current_threshold = -1;> +       for (i = 0, j = 0; i < thresholds->primary->size; i++) {> +               if (thresholds->primary->entries[i].eventfd == eventfd)>                        continue;>> -               thresholds_new->entries[j] = thresholds->entries[i];> -               if (thresholds_new->entries[j].threshold < usage) {> +               new->entries[j] = thresholds->primary->entries[i];> +               if (new->entries[j].threshold < usage) {>                        /*> -                        * thresholds_new->current_threshold will not be used> +                        * new->current_threshold will not be used>                         * until rcu_assign_pointer(), so it's safe to increment>                         * it here.>                         */> -                       ++thresholds_new->current_threshold;> +                       ++new->current_threshold;>                }>                j++;>        }>>  swap_buffers:> -       /* Swap thresholds array and preallocated buffer */> -       if (type == _MEM) {> -               memcg->__thresholds = thresholds;> -               rcu_assign_pointer(memcg->thresholds, thresholds_new);> -       } else {> -               memcg->__memsw_thresholds = thresholds;> -               rcu_assign_pointer(memcg->memsw_thresholds, thresholds_new);> -       }> +       /* Swap primary and spare array */> +       thresholds->spare = thresholds->primary;> +       rcu_assign_pointer(thresholds->primary, new);>>        /* To be sure that nobody uses thresholds */>        synchronize_rcu();> --> 1.7.0.4>>���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
