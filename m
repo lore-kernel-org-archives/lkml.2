@@ -1,50 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0EQCTg (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 22:19:36 -0400
-Received: from cantor.suse.de ([195.135.220.2]:43217 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752431Ab0EQCTe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 22:19:34 -0400
-Subject: Re: SCSI: Support HW reset for EH and polling scheme for scsi
- device
-From: James Bottomley <James.Bottomley@suse.de>
-To: nick.cheng@areca.com.tw
-Cc: linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org
-In-Reply-To: <526DD6EFED664E3099CBA023DA71B89E@areca4e4f859d4>
-References: <526DD6EFED664E3099CBA023DA71B89E@areca4e4f859d4>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 16 May 2010 18:14:31 -0400
-Message-ID: <1274048071.14187.127.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 8bit
+	id S1752595Ab0EQCWs (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 22:22:48 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:46840 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752141Ab0EQCWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 22:22:47 -0400
+Date: Sun, 16 May 2010 22:22:46 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: Nigel Cunningham <ncunningham@crca.org.au>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       Matt Reimer <mattjreimer@gmail.com>
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
+ userspace is frozen?
+In-Reply-To: <4BF06489.1050200@crca.org.au>
+Message-ID: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-04 at 11:13 +0800, Nick Cheng wrote:
-> 1. To support instantaneous report for SCSI device existing by periodic
-> polling
-> 2. In arcmsr_iop_xfer(), inform AP of F/W's deadlock state to prevent
-> endless waiting
-> 3. To block the coming SCSI command while the driver is handling bus reset
-> 4. To support HW reset in bus reset error handler
-> Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
+On Mon, 17 May 2010, Nigel Cunningham wrote:
 
-This still fails to compile with SCSI_ARCMSR_AER:
+> >> I object to the patch.
+> >>
+> >> Tell the patch it ought to exit once thawed, by all means.
+> >
+> > I'm not sure what you mean.  Care to explain?
+> 
+> I mean "Set up some sort of flag that it can look at once thawed at 
+> resume time, and use that to tell it to exit at that point."
 
-  CC [M]  drivers/scsi/arcmsr/arcmsr_hba.o
-drivers/scsi/arcmsr/arcmsr_hba.c:175: error: ‘arcmsr_pci_error_handlers’
-undeclared here (not in a function)
-make[1]: *** [drivers/scsi/arcmsr/arcmsr_hba.o] Error 1
-make: *** [drivers/scsi/arcmsr/arcmsr.ko] Error 2
+Doesn't the patch do exactly that?  The "flag" is set by virtue of the 
+fact that this is part of del_gendisk -- which means the disk is being 
+unregistered and hence the writeback thread will exit shortly.
 
-Making the patch set bisectable means that ordered patches must compile
-in the order sent in with all possible configurations.  So patch 1/4
-needs to compile on its own ... patch 2/4 needs to compile with patch
-1/4 applied and so on.
+> >> Make the patch unfreezeable to begin with, by all means.
+> >
+> > That wouldn't work.
+> 
+> Why not?
 
-James
+It would be nice to know exactly why.  Perhaps the underlying problem 
+can be fixed.
 
+> >> If you know a disk is going to be unregistered during resume,
+> >
+> > How do we check that, exactly?
+> 
+> Well, if you can figure out that you need to go down this path at this 
+> point in the process, you must be able to apply the same logic to come 
+> to the same conclusion earlier in the process.
+
+That's not true.  You don't know that a device is going to be unplugged 
+until it actually _is_ unplugged.
+
+Alan Stern
 
