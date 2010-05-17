@@ -1,92 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab0EQDZb (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 16 May 2010 23:25:31 -0400
-Received: from mail-pz0-f204.google.com ([209.85.222.204]:47250 "EHLO
-	mail-pz0-f204.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753208Ab0EQDZ0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 16 May 2010 23:25:26 -0400
-Reply-To: <nick.cheng@areca.com.tw>
-From: "Nick Cheng" <nick.cheng@areca.com.tw>
-To: <linux-scsi@vger.kernel.org>
-Cc: <James.Bottomley@HansenPartnership.com>, <linux-kernel@vger.kernel.org>
-References: 
-Subject: [PATCH 4/4 ] SCSI: Remove the AER section in kconfig file
-Date: Mon, 17 May 2010 11:25:14 +0800
-Organization: Areca Technology
-Message-ID: <73CF625FE7264E698A105A7914FC0396@areca4e4f859d4>
-MIME-Version: 1.0
-Content-Type: multipart/mixed;
-	boundary="----=_NextPart_000_001E_01CAF5B3.A2B9FF10"
-X-Mailer: Microsoft Office Outlook 11
-thread-index: Acowc/JWqUJly33gTDCpllU+Tsu/7SPlji1QBeB6xMAE6weakA==
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.5931
-In-Reply-To: 
+	id S1752860Ab0EQDcu (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 16 May 2010 23:32:50 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36061 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752343Ab0EQDct (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 16 May 2010 23:32:49 -0400
+Date: Mon, 17 May 2010 13:32:39 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>
+Subject: Re: linux-next: build failure after merge of the backlight tree
+Message-Id: <20100517133239.8a30df8e.sfr@canb.auug.org.au>
+In-Reply-To: <20100510124304.2249532c.sfr@canb.auug.org.au>
+References: <20100510124304.2249532c.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
-
-------=_NextPart_000_001E_01CAF5B3.A2B9FF10
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-
-1. Remove the AER section of Areca driver in kconfig file of scsi folder
-Signed-off-by: Nick Cheng< nick.cheng@areca.com.tw >
----
-
-------=_NextPart_000_001E_01CAF5B3.A2B9FF10
-Content-Type: application/octet-stream;
-	name="patch_kconfig"
+--Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
 Content-Transfer-Encoding: quoted-printable
-Content-Disposition: attachment;
-	filename="patch_kconfig"
 
---- linux-2.6/drivers/scsi/Kconfig	2010-02-25 02:52:17.000000000 +0800=0A=
-+++ linux-2.6/drivers/scsi/Kconfig.new	2010-05-05 10:55:26.000000000 =
-+0800=0A=
-@@ -579,32 +579,18 @@ config SCSI_IN2000=0A=
- 	  module will be called in2000.=0A=
- =0A=
- config SCSI_ARCMSR=0A=
--	tristate "ARECA (ARC11xx/12xx/13xx/16xx) SATA/SAS RAID Host Adapter"=0A=
-+	tristate "ARECA (ARC11xx/12xx/13xx/16xx/18XX) SATA/SAS RAID Host =
-Adapter"=0A=
- 	depends on PCI && SCSI=0A=
- 	help=0A=
- 	  This driver supports all of ARECA's SATA/SAS RAID controller cards.=0A=
--	  This is an ARECA-maintained driver by Erich Chen.=0A=
--	  If you have any problems, please mail to: <erich@areca.com.tw>.=0A=
-+	  This is an ARECA-maintained driver by Nick Cheng.=0A=
-+	  If you have any problems, please mail to: <nick.cheng@areca.com.tw>.=0A=
- 	  Areca supports Linux RAID config tools.=0A=
- 	  Please link <http://www.areca.com.tw>=0A=
- =0A=
- 	  To compile this driver as a module, choose M here: the=0A=
- 	  module will be called arcmsr (modprobe arcmsr).=0A=
- =0A=
--config SCSI_ARCMSR_AER=0A=
--	bool "Enable PCI Error Recovery Capability in Areca Driver(ARCMSR)"=0A=
--	depends on SCSI_ARCMSR && PCIEAER=0A=
--	default n=0A=
--	help=0A=
--	  The advanced error reporting(AER) capability is "NOT" provided by=0A=
--	  ARC1200/1201/1202 SATA RAID controllers cards.=0A=
--	  If your card is one of ARC1200/1201/1202, please use the default =
-setting, n.=0A=
--	  If your card is other models, you could pick it=0A=
--	  on condition that the kernel version is greater than 2.6.19.=0A=
--	  This function is maintained driver by Nick Cheng. If you have any=0A=
--	  problems or suggestion, you are welcome to contact with =
-<nick.cheng@areca.com.tw>.=0A=
--	  To enable this function, choose Y here.=0A=
--=0A=
- source "drivers/scsi/megaraid/Kconfig.megaraid"=0A=
- source "drivers/scsi/mpt2sas/Kconfig"=0A=
- =0A=
+Hi Richard,
 
-------=_NextPart_000_001E_01CAF5B3.A2B9FF10--
+On Mon, 10 May 2010 12:43:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> After merging the backlight tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+>=20
+> drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
+> drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of =
+function 'kzalloc'
+> drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes point=
+er from integer without a cast
+> drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of =
+function 'kfree'
+> drivers/video/backlight/adp8860_bl.c: In function 'adp8860_probe':
+> drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes point=
+er from integer without a cast
+> drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to fun=
+ction 'backlight_device_register'
+>=20
+> Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
+> new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
+> requires including linux/slab.h (see Rule 1 in
+> Documentation/SubmitChecklist) and the prototype of
+> backlight_device_register changed before v2.6.34-rc2.
 
+I am still getting these build failures ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvwuNcACgkQjjKRsyhoI8xxhQCfbDXhOp/R078FVfaLUYmqaFUc
+JosAoLZMlNpAW0LtW/nA8EYdCgkkuR5w
+=/pVg
+-----END PGP SIGNATURE-----
+
+--Signature=_Mon__17_May_2010_13_32_39_+1000_L0PtpMCrg.seHt/f--
