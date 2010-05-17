@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755235Ab0EQVfj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 17:35:39 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:53829 "EHLO mx3.mail.elte.hu"
+	id S1755428Ab0EQVit (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 17:38:49 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:44038 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751782Ab0EQVfg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 17:35:36 -0400
-Date: Mon, 17 May 2010 23:34:56 +0200
+	id S1754559Ab0EQVir (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 17:38:47 -0400
+Date: Mon, 17 May 2010 23:38:10 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, "Paul E. McKenney" <paulmck@us.ibm.com>,
+Cc: linux-kernel@vger.kernel.org, Robert Richter <robert.richter@amd.com>,
        Thomas Gleixner <tglx@linutronix.de>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Andrew Morton <akpm@linux-foundation.org>
-Subject: [GIT PULL] RCU changes for v2.6.35
-Message-ID: <20100517213455.GA2114@elte.hu>
+Subject: [GIT PULL] OProfile changes for v2.6.35
+Message-ID: <20100517213810.GA6126@elte.hu>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -32,1456 +32,2002 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Linus,
 
-Please pull the latest core-rcu-for-linus git tree from:
+Please pull the latest oprofile-for-linus git tree from:
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git core-rcu-for-linus
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git oprofile-for-linus
 
  Thanks,
 
 	Ingo
 
 ------------------>
-Lai Jiangshan (4):
-      rcu: optionally leave lockdep enabled after RCU lockdep splat
-      rcu: make dead code really dead
-      rcu: move some code from macro to function
-      rcu: ignore offline CPUs in last non-dyntick-idle CPU check
+Andi Kleen (1):
+      oprofile: remove double ring buffering
 
-Mathieu Desnoyers (2):
-      Debugobjects transition check
-      rcu head introduce rcu head init on stack
+Li Zefan (3):
+      tracing: Convert some signal events to DEFINE_TRACE
+      tracing: Update comments
+      tracing: Remove side effect from module tracepoints that caused a GPF
 
-Paul E. McKenney (18):
-      rcu: substitute set_need_resched for sending resched IPIs
-      rcu: Fix bogus CONFIG_PROVE_LOCKING in comments to reflect reality.
-      rcu: fix now-bogus rcu_scheduler_active comments.
-      rcu: shrink rcutiny by making synchronize_rcu_bh() be inline
-      rcu: rename rcutiny rcu_ctrlblk to rcu_sched_ctrlblk
-      rcu: refactor RCU's context-switch handling
-      rcu: slim down rcutiny by removing rcu_scheduler_active and friends
-      rcu: enable CPU_STALL_VERBOSE by default
-      rcu: disable CPU stall warnings upon panic
-      rcu: print boot-time console messages if RCU configs out of ordinary
-      rcu: improve RCU CPU stall-warning messages
-      rcu: permit discontiguous cpu_possible_mask CPU numbering
-      rcu: reduce the number of spurious RCU_SOFTIRQ invocations
-      rcu: improve the RCU CPU-stall warning documentation
-      rcu: make SRCU usable in modules
-      rcu: RCU_FAST_NO_HZ must check RCU dyntick state
-      rcu: fix build bug in RCU_FAST_NO_HZ builds
-      rcu: remove all rcu head initializations, except on_stack initializations
+Martin Schwidefsky (1):
+      oprofile: convert oprofile from timer_hook to hrtimer
+
+Phil Carmody (1):
+      oprofile: protect from not being in an IRQ context
+
+Robert Richter (14):
+      oprofile: update file list in MAINTAINERS file
+      oprofile/x86: rework error handler in nmi_setup()
+      oprofile/x86: reserve counter msrs pairwise
+      oprofile/x86: moving shutdown functions
+      oprofile/x86: return -EBUSY if counters are already reserved
+      oprofile/x86: move IBS code
+      oprofile/x86: remove duplicate IBS capability check
+      oprofile/x86: fix uninitialized counter usage during cpu hotplug
+      oprofile/x86: remove CONFIG_SMP macros
+      oprofile/x86: protect cpu hotplug sections
+      oprofile/x86: stop disabled counters in nmi handler
+      oprofile/x86: reordering some functions
+      oprofile/x86: notify cpus only when daemon is running
+      oprofile/x86: make AMD IBS hotplug capable
+
+Steven Rostedt (4):
+      tracing: Fix compile error in module tracepoints when MODULE_UNLOAD not set
+      ring-buffer: Add place holder recording of dropped events
+      tracing: Show the lost events in the trace_pipe output
+      ring-buffer: Add lost event count to end of sub buffer
 
 
- Documentation/RCU/stallwarn.txt |   94 +++++++++++++++++++++-------
- Documentation/RCU/trace.txt     |   35 ++++++-----
- include/linux/debugobjects.h    |   11 +++
- include/linux/init_task.h       |    1 -
- include/linux/rcupdate.h        |   50 ++++++++++-----
- include/linux/rcutiny.h         |   29 ++++++++-
- include/linux/rcutree.h         |    6 ++
- include/linux/srcu.h            |    6 +-
- kernel/lockdep.c                |    3 +
- kernel/rcupdate.c               |   19 ------
- kernel/rcutiny.c                |   35 +++++++----
- kernel/rcutiny_plugin.h         |   39 ++++++++++++
- kernel/rcutorture.c             |    2 +
- kernel/rcutree.c                |  131 ++++++++++++++++++++++++++++----------
- kernel/rcutree.h                |    2 +
- kernel/rcutree_plugin.h         |   69 ++++++++++++++++++---
- kernel/rcutree_trace.c          |    4 +-
- kernel/sched.c                  |    2 +-
- kernel/softirq.c                |    2 +-
- lib/Kconfig.debug               |   14 ++++-
- lib/debugobjects.c              |   59 +++++++++++++++++-
- 21 files changed, 470 insertions(+), 143 deletions(-)
- create mode 100644 kernel/rcutiny_plugin.h
+ MAINTAINERS                          |    1 +
+ arch/x86/oprofile/nmi_int.c          |  199 +++++++++++++++---------
+ arch/x86/oprofile/op_model_amd.c     |  280 +++++++++++++++------------------
+ arch/x86/oprofile/op_model_p4.c      |   52 ++++---
+ arch/x86/oprofile/op_model_ppro.c    |   77 +++++-----
+ arch/x86/oprofile/op_x86_model.h     |    4 +-
+ drivers/oprofile/cpu_buffer.c        |   75 +++-------
+ drivers/oprofile/oprof.c             |   12 +-
+ drivers/oprofile/oprof.h             |    3 +-
+ drivers/oprofile/timer_int.c         |   78 +++++++++-
+ include/linux/ftrace_event.h         |    1 +
+ include/linux/module.h               |    6 +-
+ include/linux/ring_buffer.h          |    6 +-
+ include/trace/events/module.h        |   18 ++-
+ include/trace/events/signal.h        |   52 +++----
+ include/trace/ftrace.h               |   33 +++--
+ kernel/module.c                      |    8 +-
+ kernel/trace/ring_buffer.c           |  101 ++++++++++++-
+ kernel/trace/ring_buffer_benchmark.c |    2 +-
+ kernel/trace/trace.c                 |   30 +++-
+ kernel/trace/trace_functions_graph.c |    5 +-
+ kernel/trace/trace_selftest.c        |    2 +-
+ 22 files changed, 609 insertions(+), 436 deletions(-)
 
-diff --git a/Documentation/RCU/stallwarn.txt b/Documentation/RCU/stallwarn.txt
-index 1423d25..44c6dcc 100644
---- a/Documentation/RCU/stallwarn.txt
-+++ b/Documentation/RCU/stallwarn.txt
-@@ -3,35 +3,79 @@ Using RCU's CPU Stall Detector
- The CONFIG_RCU_CPU_STALL_DETECTOR kernel config parameter enables
- RCU's CPU stall detector, which detects conditions that unduly delay
- RCU grace periods.  The stall detector's idea of what constitutes
--"unduly delayed" is controlled by a pair of C preprocessor macros:
-+"unduly delayed" is controlled by a set of C preprocessor macros:
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d5b0b1b..a4035d7 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -4165,6 +4165,7 @@ OPROFILE
+ M:	Robert Richter <robert.richter@amd.com>
+ L:	oprofile-list@lists.sf.net
+ S:	Maintained
++F:	arch/*/include/asm/oprofile*.h
+ F:	arch/*/oprofile/
+ F:	drivers/oprofile/
+ F:	include/linux/oprofile.h
+diff --git a/arch/x86/oprofile/nmi_int.c b/arch/x86/oprofile/nmi_int.c
+index 2c505ee..b28d2f1 100644
+--- a/arch/x86/oprofile/nmi_int.c
++++ b/arch/x86/oprofile/nmi_int.c
+@@ -31,8 +31,9 @@ static struct op_x86_model_spec *model;
+ static DEFINE_PER_CPU(struct op_msrs, cpu_msrs);
+ static DEFINE_PER_CPU(unsigned long, saved_lvtpc);
  
- RCU_SECONDS_TILL_STALL_CHECK
+-/* 0 == registered but off, 1 == registered and on */
+-static int nmi_enabled = 0;
++/* must be protected with get_online_cpus()/put_online_cpus(): */
++static int nmi_enabled;
++static int ctr_running;
  
- 	This macro defines the period of time that RCU will wait from
- 	the beginning of a grace period until it issues an RCU CPU
--	stall warning.	It is normally ten seconds.
-+	stall warning.	This time period is normally ten seconds.
+ struct op_counter_config counter_config[OP_MAX_COUNTER];
  
- RCU_SECONDS_TILL_STALL_RECHECK
- 
- 	This macro defines the period of time that RCU will wait after
--	issuing a stall warning until it issues another stall warning.
--	It is normally set to thirty seconds.
-+	issuing a stall warning until it issues another stall warning
-+	for the same stall.  This time period is normally set to thirty
-+	seconds.
- 
- RCU_STALL_RAT_DELAY
- 
--	The CPU stall detector tries to make the offending CPU rat on itself,
--	as this often gives better-quality stack traces.  However, if
--	the offending CPU does not detect its own stall in the number
--	of jiffies specified by RCU_STALL_RAT_DELAY, then other CPUs will
--	complain.  This is normally set to two jiffies.
-+	The CPU stall detector tries to make the offending CPU print its
-+	own warnings, as this often gives better-quality stack traces.
-+	However, if the offending CPU does not detect its own stall in
-+	the number of jiffies specified by RCU_STALL_RAT_DELAY, then
-+	some other CPU will complain.  This delay is normally set to
-+	two jiffies.
- 
--The following problems can result in an RCU CPU stall warning:
-+When a CPU detects that it is stalling, it will print a message similar
-+to the following:
-+
-+INFO: rcu_sched_state detected stall on CPU 5 (t=2500 jiffies)
-+
-+This message indicates that CPU 5 detected that it was causing a stall,
-+and that the stall was affecting RCU-sched.  This message will normally be
-+followed by a stack dump of the offending CPU.  On TREE_RCU kernel builds,
-+RCU and RCU-sched are implemented by the same underlying mechanism,
-+while on TREE_PREEMPT_RCU kernel builds, RCU is instead implemented
-+by rcu_preempt_state.
-+
-+On the other hand, if the offending CPU fails to print out a stall-warning
-+message quickly enough, some other CPU will print a message similar to
-+the following:
-+
-+INFO: rcu_bh_state detected stalls on CPUs/tasks: { 3 5 } (detected by 2, 2502 jiffies)
-+
-+This message indicates that CPU 2 detected that CPUs 3 and 5 were both
-+causing stalls, and that the stall was affecting RCU-bh.  This message
-+will normally be followed by stack dumps for each CPU.  Please note that
-+TREE_PREEMPT_RCU builds can be stalled by tasks as well as by CPUs,
-+and that the tasks will be indicated by PID, for example, "P3421".
-+It is even possible for a rcu_preempt_state stall to be caused by both
-+CPUs -and- tasks, in which case the offending CPUs and tasks will all
-+be called out in the list.
-+
-+Finally, if the grace period ends just as the stall warning starts
-+printing, there will be a spurious stall-warning message:
-+
-+INFO: rcu_bh_state detected stalls on CPUs/tasks: { } (detected by 4, 2502 jiffies)
-+
-+This is rare, but does happen from time to time in real life.
-+
-+So your kernel printed an RCU CPU stall warning.  The next question is
-+"What caused it?"  The following problems can result in RCU CPU stall
-+warnings:
- 
- o	A CPU looping in an RCU read-side critical section.
- 	
--o	A CPU looping with interrupts disabled.
-+o	A CPU looping with interrupts disabled.  This condition can
-+	result in RCU-sched and RCU-bh stalls.
- 
--o	A CPU looping with preemption disabled.
-+o	A CPU looping with preemption disabled.  This condition can
-+	result in RCU-sched stalls and, if ksoftirqd is in use, RCU-bh
-+	stalls.
-+
-+o	A CPU looping with bottom halves disabled.  This condition can
-+	result in RCU-sched and RCU-bh stalls.
- 
- o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
- 	without invoking schedule().
-@@ -39,20 +83,24 @@ o	For !CONFIG_PREEMPT kernels, a CPU looping anywhere in the kernel
- o	A bug in the RCU implementation.
- 
- o	A hardware failure.  This is quite unlikely, but has occurred
--	at least once in a former life.  A CPU failed in a running system,
-+	at least once in real life.  A CPU failed in a running system,
- 	becoming unresponsive, but not causing an immediate crash.
- 	This resulted in a series of RCU CPU stall warnings, eventually
- 	leading the realization that the CPU had failed.
- 
--The RCU, RCU-sched, and RCU-bh implementations have CPU stall warning.
--SRCU does not do so directly, but its calls to synchronize_sched() will
--result in RCU-sched detecting any CPU stalls that might be occurring.
--
--To diagnose the cause of the stall, inspect the stack traces.  The offending
--function will usually be near the top of the stack.  If you have a series
--of stall warnings from a single extended stall, comparing the stack traces
--can often help determine where the stall is occurring, which will usually
--be in the function nearest the top of the stack that stays the same from
--trace to trace.
-+The RCU, RCU-sched, and RCU-bh implementations have CPU stall
-+warning.  SRCU does not have its own CPU stall warnings, but its
-+calls to synchronize_sched() will result in RCU-sched detecting
-+RCU-sched-related CPU stalls.  Please note that RCU only detects
-+CPU stalls when there is a grace period in progress.  No grace period,
-+no CPU stall warnings.
-+
-+To diagnose the cause of the stall, inspect the stack traces.
-+The offending function will usually be near the top of the stack.
-+If you have a series of stall warnings from a single extended stall,
-+comparing the stack traces can often help determine where the stall
-+is occurring, which will usually be in the function nearest the top of
-+that portion of the stack which remains the same from trace to trace.
-+If you can reliably trigger the stall, ftrace can be quite helpful.
- 
- RCU bugs can often be debugged with the help of CONFIG_RCU_TRACE.
-diff --git a/Documentation/RCU/trace.txt b/Documentation/RCU/trace.txt
-index 8608fd8..efd8cc9 100644
---- a/Documentation/RCU/trace.txt
-+++ b/Documentation/RCU/trace.txt
-@@ -256,23 +256,23 @@ o	Each element of the form "1/1 0:127 ^0" represents one struct
- The output of "cat rcu/rcu_pending" looks as follows:
- 
- rcu_sched:
--  0 np=255892 qsp=53936 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
--  1 np=261224 qsp=54638 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
--  2 np=237496 qsp=49664 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
--  3 np=236249 qsp=48766 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
--  4 np=221310 qsp=46850 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
--  5 np=237332 qsp=48449 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
--  6 np=219995 qsp=46718 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
--  7 np=249893 qsp=49390 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
-+  0 np=255892 qsp=53936 rpq=85 cbr=0 cng=14417 gpc=10033 gps=24320 nf=6445 nn=146741
-+  1 np=261224 qsp=54638 rpq=33 cbr=0 cng=25723 gpc=16310 gps=2849 nf=5912 nn=155792
-+  2 np=237496 qsp=49664 rpq=23 cbr=0 cng=2762 gpc=45478 gps=1762 nf=1201 nn=136629
-+  3 np=236249 qsp=48766 rpq=98 cbr=0 cng=286 gpc=48049 gps=1218 nf=207 nn=137723
-+  4 np=221310 qsp=46850 rpq=7 cbr=0 cng=26 gpc=43161 gps=4634 nf=3529 nn=123110
-+  5 np=237332 qsp=48449 rpq=9 cbr=0 cng=54 gpc=47920 gps=3252 nf=201 nn=137456
-+  6 np=219995 qsp=46718 rpq=12 cbr=0 cng=50 gpc=42098 gps=6093 nf=4202 nn=120834
-+  7 np=249893 qsp=49390 rpq=42 cbr=0 cng=72 gpc=38400 gps=17102 nf=41 nn=144888
- rcu_bh:
--  0 np=146741 qsp=1419 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
--  1 np=155792 qsp=12597 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
--  2 np=136629 qsp=18680 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
--  3 np=137723 qsp=2843 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
--  4 np=123110 qsp=12433 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
--  5 np=137456 qsp=4210 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
--  6 np=120834 qsp=9902 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
--  7 np=144888 qsp=26336 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
-+  0 np=146741 qsp=1419 rpq=6 cbr=0 cng=6 gpc=0 gps=0 nf=2 nn=145314
-+  1 np=155792 qsp=12597 rpq=3 cbr=0 cng=0 gpc=4 gps=8 nf=3 nn=143180
-+  2 np=136629 qsp=18680 rpq=1 cbr=0 cng=0 gpc=7 gps=6 nf=0 nn=117936
-+  3 np=137723 qsp=2843 rpq=0 cbr=0 cng=0 gpc=10 gps=7 nf=0 nn=134863
-+  4 np=123110 qsp=12433 rpq=0 cbr=0 cng=0 gpc=4 gps=2 nf=0 nn=110671
-+  5 np=137456 qsp=4210 rpq=1 cbr=0 cng=0 gpc=6 gps=5 nf=0 nn=133235
-+  6 np=120834 qsp=9902 rpq=2 cbr=0 cng=0 gpc=6 gps=3 nf=2 nn=110921
-+  7 np=144888 qsp=26336 rpq=0 cbr=0 cng=0 gpc=8 gps=2 nf=0 nn=118542
- 
- As always, this is once again split into "rcu_sched" and "rcu_bh"
- portions, with CONFIG_TREE_PREEMPT_RCU kernels having an additional
-@@ -284,6 +284,9 @@ o	"np" is the number of times that __rcu_pending() has been invoked
- o	"qsp" is the number of times that the RCU was waiting for a
- 	quiescent state from this CPU.
- 
-+o	"rpq" is the number of times that the CPU had passed through
-+	a quiescent state, but not yet reported it to RCU.
-+
- o	"cbr" is the number of times that this CPU had RCU callbacks
- 	that had passed through a grace period, and were thus ready
- 	to be invoked.
-diff --git a/include/linux/debugobjects.h b/include/linux/debugobjects.h
-index 8c243aa..597692f 100644
---- a/include/linux/debugobjects.h
-+++ b/include/linux/debugobjects.h
-@@ -20,12 +20,14 @@ struct debug_obj_descr;
-  * struct debug_obj - representaion of an tracked object
-  * @node:	hlist node to link the object into the tracker list
-  * @state:	tracked object state
-+ * @astate:	current active state
-  * @object:	pointer to the real object
-  * @descr:	pointer to an object type specific debug description structure
-  */
- struct debug_obj {
- 	struct hlist_node	node;
- 	enum debug_obj_state	state;
-+	unsigned int		astate;
- 	void			*object;
- 	struct debug_obj_descr	*descr;
- };
-@@ -60,6 +62,15 @@ extern void debug_object_deactivate(void *addr, struct debug_obj_descr *descr);
- extern void debug_object_destroy   (void *addr, struct debug_obj_descr *descr);
- extern void debug_object_free      (void *addr, struct debug_obj_descr *descr);
- 
-+/*
-+ * Active state:
-+ * - Set at 0 upon initialization.
-+ * - Must return to 0 before deactivation.
-+ */
-+extern void
-+debug_object_active_state(void *addr, struct debug_obj_descr *descr,
-+			  unsigned int expect, unsigned int next);
-+
- extern void debug_objects_early_init(void);
- extern void debug_objects_mem_init(void);
- #else
-diff --git a/include/linux/init_task.h b/include/linux/init_task.h
-index b1ed1cd..7996fc2 100644
---- a/include/linux/init_task.h
-+++ b/include/linux/init_task.h
-@@ -49,7 +49,6 @@ extern struct group_info init_groups;
- 		{ .first = &init_task.pids[PIDTYPE_PGID].node },	\
- 		{ .first = &init_task.pids[PIDTYPE_SID].node },		\
- 	},								\
--	.rcu		= RCU_HEAD_INIT,				\
- 	.level		= 0,						\
- 	.numbers	= { {						\
- 		.nr		= 0,					\
-diff --git a/include/linux/rcupdate.h b/include/linux/rcupdate.h
-index db266bb..b653b4a 100644
---- a/include/linux/rcupdate.h
-+++ b/include/linux/rcupdate.h
-@@ -56,8 +56,6 @@ struct rcu_head {
- };
- 
- /* Exported common interfaces */
--extern void synchronize_rcu_bh(void);
--extern void synchronize_sched(void);
- extern void rcu_barrier(void);
- extern void rcu_barrier_bh(void);
- extern void rcu_barrier_sched(void);
-@@ -66,8 +64,6 @@ extern int sched_expedited_torture_stats(char *page);
- 
- /* Internal to kernel */
- extern void rcu_init(void);
--extern int rcu_scheduler_active;
--extern void rcu_scheduler_starting(void);
- 
- #if defined(CONFIG_TREE_RCU) || defined(CONFIG_TREE_PREEMPT_RCU)
- #include <linux/rcutree.h>
-@@ -83,6 +79,14 @@ extern void rcu_scheduler_starting(void);
-        (ptr)->next = NULL; (ptr)->func = NULL; \
- } while (0)
- 
-+static inline void init_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+
-+static inline void destroy_rcu_head_on_stack(struct rcu_head *head)
-+{
-+}
-+
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- extern struct lockdep_map rcu_lock_map;
-@@ -106,12 +110,13 @@ extern int debug_lockdep_rcu_enabled(void);
- /**
-  * rcu_read_lock_held - might we be in RCU read-side critical section?
-  *
-- * If CONFIG_PROVE_LOCKING is selected and enabled, returns nonzero iff in
-- * an RCU read-side critical section.  In absence of CONFIG_PROVE_LOCKING,
-+ * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an RCU
-+ * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
-  * this assumes we are in an RCU read-side critical section unless it can
-  * prove otherwise.
-  *
-- * Check rcu_scheduler_active to prevent false positives during boot.
-+ * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-  */
- static inline int rcu_read_lock_held(void)
+@@ -61,12 +62,16 @@ static int profile_exceptions_notify(struct notifier_block *self,
  {
-@@ -129,13 +134,15 @@ extern int rcu_read_lock_bh_held(void);
- /**
-  * rcu_read_lock_sched_held - might we be in RCU-sched read-side critical section?
-  *
-- * If CONFIG_PROVE_LOCKING is selected and enabled, returns nonzero iff in an
-- * RCU-sched read-side critical section.  In absence of CONFIG_PROVE_LOCKING,
-- * this assumes we are in an RCU-sched read-side critical section unless it
-- * can prove otherwise.  Note that disabling of preemption (including
-- * disabling irqs) counts as an RCU-sched read-side critical section.
-+ * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an
-+ * RCU-sched read-side critical section.  In absence of
-+ * CONFIG_DEBUG_LOCK_ALLOC, this assumes we are in an RCU-sched read-side
-+ * critical section unless it can prove otherwise.  Note that disabling
-+ * of preemption (including disabling irqs) counts as an RCU-sched
-+ * read-side critical section.
-  *
-- * Check rcu_scheduler_active to prevent false positives during boot.
-+ * Check debug_lockdep_rcu_enabled() to prevent false positives during boot
-+ * and while lockdep is disabled.
-  */
- #ifdef CONFIG_PREEMPT
- static inline int rcu_read_lock_sched_held(void)
-@@ -177,7 +184,7 @@ static inline int rcu_read_lock_bh_held(void)
- #ifdef CONFIG_PREEMPT
- static inline int rcu_read_lock_sched_held(void)
+ 	struct die_args *args = (struct die_args *)data;
+ 	int ret = NOTIFY_DONE;
+-	int cpu = smp_processor_id();
+ 
+ 	switch (val) {
+ 	case DIE_NMI:
+ 	case DIE_NMI_IPI:
+-		model->check_ctrs(args->regs, &per_cpu(cpu_msrs, cpu));
++		if (ctr_running)
++			model->check_ctrs(args->regs, &__get_cpu_var(cpu_msrs));
++		else if (!nmi_enabled)
++			break;
++		else
++			model->stop(&__get_cpu_var(cpu_msrs));
+ 		ret = NOTIFY_STOP;
+ 		break;
+ 	default:
+@@ -95,24 +100,36 @@ static void nmi_cpu_save_registers(struct op_msrs *msrs)
+ static void nmi_cpu_start(void *dummy)
  {
--	return !rcu_scheduler_active || preempt_count() != 0 || irqs_disabled();
-+	return preempt_count() != 0 || irqs_disabled();
- }
- #else /* #ifdef CONFIG_PREEMPT */
- static inline int rcu_read_lock_sched_held(void)
-@@ -192,6 +199,15 @@ static inline int rcu_read_lock_sched_held(void)
- 
- extern int rcu_my_thread_group_empty(void);
- 
-+#define __do_rcu_dereference_check(c)					\
-+	do {								\
-+		static bool __warned;					\
-+		if (debug_lockdep_rcu_enabled() && !__warned && !(c)) {	\
-+			__warned = true;				\
-+			lockdep_rcu_dereference(__FILE__, __LINE__);	\
-+		}							\
-+	} while (0)
-+
- /**
-  * rcu_dereference_check - rcu_dereference with debug checking
-  * @p: The pointer to read, prior to dereferencing
-@@ -221,8 +237,7 @@ extern int rcu_my_thread_group_empty(void);
-  */
- #define rcu_dereference_check(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		rcu_dereference_raw(p); \
- 	})
- 
-@@ -239,8 +254,7 @@ extern int rcu_my_thread_group_empty(void);
-  */
- #define rcu_dereference_protected(p, c) \
- 	({ \
--		if (debug_lockdep_rcu_enabled() && !(c)) \
--			lockdep_rcu_dereference(__FILE__, __LINE__); \
-+		__do_rcu_dereference_check(c); \
- 		(p); \
- 	})
- 
-diff --git a/include/linux/rcutiny.h b/include/linux/rcutiny.h
-index a519587..14e5a76 100644
---- a/include/linux/rcutiny.h
-+++ b/include/linux/rcutiny.h
-@@ -29,6 +29,10 @@
- 
- void rcu_sched_qs(int cpu);
- void rcu_bh_qs(int cpu);
-+static inline void rcu_note_context_switch(int cpu)
-+{
-+	rcu_sched_qs(cpu);
-+}
- 
- #define __rcu_read_lock()	preempt_disable()
- #define __rcu_read_unlock()	preempt_enable()
-@@ -74,7 +78,17 @@ static inline void rcu_sched_force_quiescent_state(void)
- {
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->start(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->start(msrs);
  }
  
--#define synchronize_rcu synchronize_sched
-+extern void synchronize_sched(void);
-+
-+static inline void synchronize_rcu(void)
-+{
-+	synchronize_sched();
-+}
-+
-+static inline void synchronize_rcu_bh(void)
-+{
-+	synchronize_sched();
-+}
- 
- static inline void synchronize_rcu_expedited(void)
+ static int nmi_start(void)
  {
-@@ -114,4 +128,17 @@ static inline int rcu_preempt_depth(void)
++	get_online_cpus();
+ 	on_each_cpu(nmi_cpu_start, NULL, 1);
++	ctr_running = 1;
++	put_online_cpus();
  	return 0;
  }
  
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+extern int rcu_scheduler_active __read_mostly;
-+extern void rcu_scheduler_starting(void);
-+
-+#else /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
-+static inline void rcu_scheduler_starting(void)
-+{
-+}
-+
-+#endif /* #else #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
- #endif /* __LINUX_RCUTINY_H */
-diff --git a/include/linux/rcutree.h b/include/linux/rcutree.h
-index 42cc3a0..4828205 100644
---- a/include/linux/rcutree.h
-+++ b/include/linux/rcutree.h
-@@ -34,6 +34,7 @@ struct notifier_block;
- 
- extern void rcu_sched_qs(int cpu);
- extern void rcu_bh_qs(int cpu);
-+extern void rcu_note_context_switch(int cpu);
- extern int rcu_needs_cpu(int cpu);
- extern int rcu_expedited_torture_stats(char *page);
- 
-@@ -86,6 +87,8 @@ static inline void __rcu_read_unlock_bh(void)
- 
- extern void call_rcu_sched(struct rcu_head *head,
- 			   void (*func)(struct rcu_head *rcu));
-+extern void synchronize_rcu_bh(void);
-+extern void synchronize_sched(void);
- extern void synchronize_rcu_expedited(void);
- 
- static inline void synchronize_rcu_bh_expedited(void)
-@@ -120,4 +123,7 @@ static inline int rcu_blocking_is_gp(void)
- 	return num_online_cpus() == 1;
+ static void nmi_cpu_stop(void *dummy)
+ {
+ 	struct op_msrs const *msrs = &__get_cpu_var(cpu_msrs);
+-	model->stop(msrs);
++	if (!msrs->controls)
++		WARN_ON_ONCE(1);
++	else
++		model->stop(msrs);
  }
  
-+extern void rcu_scheduler_starting(void);
-+extern int rcu_scheduler_active __read_mostly;
-+
- #endif /* __LINUX_RCUTREE_H */
-diff --git a/include/linux/srcu.h b/include/linux/srcu.h
-index 4d5ecb2..4d5d2f5 100644
---- a/include/linux/srcu.h
-+++ b/include/linux/srcu.h
-@@ -27,6 +27,8 @@
- #ifndef _LINUX_SRCU_H
- #define _LINUX_SRCU_H
- 
-+#include <linux/mutex.h>
-+
- struct srcu_struct_array {
- 	int c[2];
- };
-@@ -84,8 +86,8 @@ long srcu_batches_completed(struct srcu_struct *sp);
- /**
-  * srcu_read_lock_held - might we be in SRCU read-side critical section?
-  *
-- * If CONFIG_PROVE_LOCKING is selected and enabled, returns nonzero iff in
-- * an SRCU read-side critical section.  In absence of CONFIG_PROVE_LOCKING,
-+ * If CONFIG_DEBUG_LOCK_ALLOC is selected, returns nonzero iff in an SRCU
-+ * read-side critical section.  In absence of CONFIG_DEBUG_LOCK_ALLOC,
-  * this assumes we are in an SRCU read-side critical section unless it can
-  * prove otherwise.
-  */
-diff --git a/kernel/lockdep.c b/kernel/lockdep.c
-index 2594e1c..3a756ba 100644
---- a/kernel/lockdep.c
-+++ b/kernel/lockdep.c
-@@ -3801,8 +3801,11 @@ void lockdep_rcu_dereference(const char *file, const int line)
+ static void nmi_stop(void)
  {
- 	struct task_struct *curr = current;
++	get_online_cpus();
+ 	on_each_cpu(nmi_cpu_stop, NULL, 1);
++	ctr_running = 0;
++	put_online_cpus();
+ }
  
-+#ifndef CONFIG_PROVE_RCU_REPEATEDLY
- 	if (!debug_locks_off())
- 		return;
-+#endif /* #ifdef CONFIG_PROVE_RCU_REPEATEDLY */
-+	/* Note: the following can be executed concurrently, so be careful. */
- 	printk("\n===================================================\n");
- 	printk(  "[ INFO: suspicious rcu_dereference_check() usage. ]\n");
- 	printk(  "---------------------------------------------------\n");
-diff --git a/kernel/rcupdate.c b/kernel/rcupdate.c
-index 49d808e..72a8dc9 100644
---- a/kernel/rcupdate.c
-+++ b/kernel/rcupdate.c
-@@ -44,7 +44,6 @@
- #include <linux/cpu.h>
- #include <linux/mutex.h>
- #include <linux/module.h>
--#include <linux/kernel_stat.h>
- #include <linux/hardirq.h>
+ #ifdef CONFIG_OPROFILE_EVENT_MULTIPLEX
+@@ -252,7 +269,10 @@ static int nmi_switch_event(void)
+ 	if (nmi_multiplex_on() < 0)
+ 		return -EINVAL;		/* not necessary */
  
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
-@@ -64,9 +63,6 @@ struct lockdep_map rcu_sched_lock_map =
- EXPORT_SYMBOL_GPL(rcu_sched_lock_map);
+-	on_each_cpu(nmi_cpu_switch, NULL, 1);
++	get_online_cpus();
++	if (ctr_running)
++		on_each_cpu(nmi_cpu_switch, NULL, 1);
++	put_online_cpus();
+ 
+ 	return 0;
+ }
+@@ -295,6 +315,7 @@ static void free_msrs(void)
+ 		kfree(per_cpu(cpu_msrs, i).controls);
+ 		per_cpu(cpu_msrs, i).controls = NULL;
+ 	}
++	nmi_shutdown_mux();
+ }
+ 
+ static int allocate_msrs(void)
+@@ -307,14 +328,21 @@ static int allocate_msrs(void)
+ 		per_cpu(cpu_msrs, i).counters = kzalloc(counters_size,
+ 							GFP_KERNEL);
+ 		if (!per_cpu(cpu_msrs, i).counters)
+-			return 0;
++			goto fail;
+ 		per_cpu(cpu_msrs, i).controls = kzalloc(controls_size,
+ 							GFP_KERNEL);
+ 		if (!per_cpu(cpu_msrs, i).controls)
+-			return 0;
++			goto fail;
+ 	}
+ 
++	if (!nmi_setup_mux())
++		goto fail;
++
+ 	return 1;
++
++fail:
++	free_msrs();
++	return 0;
+ }
+ 
+ static void nmi_cpu_setup(void *dummy)
+@@ -336,49 +364,6 @@ static struct notifier_block profile_exceptions_nb = {
+ 	.priority = 2
+ };
+ 
+-static int nmi_setup(void)
+-{
+-	int err = 0;
+-	int cpu;
+-
+-	if (!allocate_msrs())
+-		err = -ENOMEM;
+-	else if (!nmi_setup_mux())
+-		err = -ENOMEM;
+-	else
+-		err = register_die_notifier(&profile_exceptions_nb);
+-
+-	if (err) {
+-		free_msrs();
+-		nmi_shutdown_mux();
+-		return err;
+-	}
+-
+-	/* We need to serialize save and setup for HT because the subset
+-	 * of msrs are distinct for save and setup operations
+-	 */
+-
+-	/* Assume saved/restored counters are the same on all CPUs */
+-	model->fill_in_addresses(&per_cpu(cpu_msrs, 0));
+-	for_each_possible_cpu(cpu) {
+-		if (!cpu)
+-			continue;
+-
+-		memcpy(per_cpu(cpu_msrs, cpu).counters,
+-		       per_cpu(cpu_msrs, 0).counters,
+-		       sizeof(struct op_msr) * model->num_counters);
+-
+-		memcpy(per_cpu(cpu_msrs, cpu).controls,
+-		       per_cpu(cpu_msrs, 0).controls,
+-		       sizeof(struct op_msr) * model->num_controls);
+-
+-		mux_clone(cpu);
+-	}
+-	on_each_cpu(nmi_cpu_setup, NULL, 1);
+-	nmi_enabled = 1;
+-	return 0;
+-}
+-
+ static void nmi_cpu_restore_registers(struct op_msrs *msrs)
+ {
+ 	struct op_msr *counters = msrs->counters;
+@@ -412,20 +397,24 @@ static void nmi_cpu_shutdown(void *dummy)
+ 	apic_write(APIC_LVTPC, per_cpu(saved_lvtpc, cpu));
+ 	apic_write(APIC_LVTERR, v);
+ 	nmi_cpu_restore_registers(msrs);
++	if (model->cpu_down)
++		model->cpu_down();
+ }
+ 
+-static void nmi_shutdown(void)
++static void nmi_cpu_up(void *dummy)
+ {
+-	struct op_msrs *msrs;
++	if (nmi_enabled)
++		nmi_cpu_setup(dummy);
++	if (ctr_running)
++		nmi_cpu_start(dummy);
++}
+ 
+-	nmi_enabled = 0;
+-	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
+-	unregister_die_notifier(&profile_exceptions_nb);
+-	nmi_shutdown_mux();
+-	msrs = &get_cpu_var(cpu_msrs);
+-	model->shutdown(msrs);
+-	free_msrs();
+-	put_cpu_var(cpu_msrs);
++static void nmi_cpu_down(void *dummy)
++{
++	if (ctr_running)
++		nmi_cpu_stop(dummy);
++	if (nmi_enabled)
++		nmi_cpu_shutdown(dummy);
+ }
+ 
+ static int nmi_create_files(struct super_block *sb, struct dentry *root)
+@@ -457,7 +446,6 @@ static int nmi_create_files(struct super_block *sb, struct dentry *root)
+ 	return 0;
+ }
+ 
+-#ifdef CONFIG_SMP
+ static int oprofile_cpu_notifier(struct notifier_block *b, unsigned long action,
+ 				 void *data)
+ {
+@@ -465,10 +453,10 @@ static int oprofile_cpu_notifier(struct notifier_block *b, unsigned long action,
+ 	switch (action) {
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_ONLINE:
+-		smp_call_function_single(cpu, nmi_cpu_start, NULL, 0);
++		smp_call_function_single(cpu, nmi_cpu_up, NULL, 0);
+ 		break;
+ 	case CPU_DOWN_PREPARE:
+-		smp_call_function_single(cpu, nmi_cpu_stop, NULL, 1);
++		smp_call_function_single(cpu, nmi_cpu_down, NULL, 1);
+ 		break;
+ 	}
+ 	return NOTIFY_DONE;
+@@ -477,7 +465,75 @@ static int oprofile_cpu_notifier(struct notifier_block *b, unsigned long action,
+ static struct notifier_block oprofile_cpu_nb = {
+ 	.notifier_call = oprofile_cpu_notifier
+ };
+-#endif
++
++static int nmi_setup(void)
++{
++	int err = 0;
++	int cpu;
++
++	if (!allocate_msrs())
++		return -ENOMEM;
++
++	/* We need to serialize save and setup for HT because the subset
++	 * of msrs are distinct for save and setup operations
++	 */
++
++	/* Assume saved/restored counters are the same on all CPUs */
++	err = model->fill_in_addresses(&per_cpu(cpu_msrs, 0));
++	if (err)
++		goto fail;
++
++	for_each_possible_cpu(cpu) {
++		if (!cpu)
++			continue;
++
++		memcpy(per_cpu(cpu_msrs, cpu).counters,
++		       per_cpu(cpu_msrs, 0).counters,
++		       sizeof(struct op_msr) * model->num_counters);
++
++		memcpy(per_cpu(cpu_msrs, cpu).controls,
++		       per_cpu(cpu_msrs, 0).controls,
++		       sizeof(struct op_msr) * model->num_controls);
++
++		mux_clone(cpu);
++	}
++
++	nmi_enabled = 0;
++	ctr_running = 0;
++	barrier();
++	err = register_die_notifier(&profile_exceptions_nb);
++	if (err)
++		goto fail;
++
++	get_online_cpus();
++	register_cpu_notifier(&oprofile_cpu_nb);
++	on_each_cpu(nmi_cpu_setup, NULL, 1);
++	nmi_enabled = 1;
++	put_online_cpus();
++
++	return 0;
++fail:
++	free_msrs();
++	return err;
++}
++
++static void nmi_shutdown(void)
++{
++	struct op_msrs *msrs;
++
++	get_online_cpus();
++	unregister_cpu_notifier(&oprofile_cpu_nb);
++	on_each_cpu(nmi_cpu_shutdown, NULL, 1);
++	nmi_enabled = 0;
++	ctr_running = 0;
++	put_online_cpus();
++	barrier();
++	unregister_die_notifier(&profile_exceptions_nb);
++	msrs = &get_cpu_var(cpu_msrs);
++	model->shutdown(msrs);
++	free_msrs();
++	put_cpu_var(cpu_msrs);
++}
+ 
+ #ifdef CONFIG_PM
+ 
+@@ -687,9 +743,6 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 		return -ENODEV;
+ 	}
+ 
+-#ifdef CONFIG_SMP
+-	register_cpu_notifier(&oprofile_cpu_nb);
+-#endif
+ 	/* default values, can be overwritten by model */
+ 	ops->create_files	= nmi_create_files;
+ 	ops->setup		= nmi_setup;
+@@ -716,12 +769,6 @@ int __init op_nmi_init(struct oprofile_operations *ops)
+ 
+ void op_nmi_exit(void)
+ {
+-	if (using_nmi) {
++	if (using_nmi)
+ 		exit_sysfs();
+-#ifdef CONFIG_SMP
+-		unregister_cpu_notifier(&oprofile_cpu_nb);
+-#endif
+-	}
+-	if (model->exit)
+-		model->exit();
+ }
+diff --git a/arch/x86/oprofile/op_model_amd.c b/arch/x86/oprofile/op_model_amd.c
+index 090cbbe..b67a6b5 100644
+--- a/arch/x86/oprofile/op_model_amd.c
++++ b/arch/x86/oprofile/op_model_amd.c
+@@ -30,13 +30,10 @@
+ #include "op_counter.h"
+ 
+ #define NUM_COUNTERS 4
+-#define NUM_CONTROLS 4
+ #ifdef CONFIG_OPROFILE_EVENT_MULTIPLEX
+ #define NUM_VIRT_COUNTERS 32
+-#define NUM_VIRT_CONTROLS 32
+ #else
+ #define NUM_VIRT_COUNTERS NUM_COUNTERS
+-#define NUM_VIRT_CONTROLS NUM_CONTROLS
  #endif
  
--int rcu_scheduler_active __read_mostly;
--EXPORT_SYMBOL_GPL(rcu_scheduler_active);
+ #define OP_EVENT_MASK			0x0FFF
+@@ -105,102 +102,6 @@ static u32 get_ibs_caps(void)
+ 	return ibs_caps;
+ }
+ 
+-#ifdef CONFIG_OPROFILE_EVENT_MULTIPLEX
 -
- #ifdef CONFIG_DEBUG_LOCK_ALLOC
- 
- int debug_lockdep_rcu_enabled(void)
-@@ -97,21 +93,6 @@ EXPORT_SYMBOL_GPL(rcu_read_lock_bh_held);
- #endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
- 
- /*
-- * This function is invoked towards the end of the scheduler's initialization
-- * process.  Before this is called, the idle task might contain
-- * RCU read-side critical sections (during which time, this idle
-- * task is booting the system).  After this function is called, the
-- * idle tasks are prohibited from containing RCU read-side critical
-- * sections.
-- */
--void rcu_scheduler_starting(void)
+-static void op_mux_switch_ctrl(struct op_x86_model_spec const *model,
+-			       struct op_msrs const * const msrs)
 -{
--	WARN_ON(num_online_cpus() != 1);
--	WARN_ON(nr_context_switches() > 0);
--	rcu_scheduler_active = 1;
+-	u64 val;
+-	int i;
+-
+-	/* enable active counters */
+-	for (i = 0; i < NUM_COUNTERS; ++i) {
+-		int virt = op_x86_phys_to_virt(i);
+-		if (!reset_value[virt])
+-			continue;
+-		rdmsrl(msrs->controls[i].addr, val);
+-		val &= model->reserved;
+-		val |= op_x86_get_ctrl(model, &counter_config[virt]);
+-		wrmsrl(msrs->controls[i].addr, val);
+-	}
 -}
 -
--/*
-  * Awaken the corresponding synchronize_rcu() instance now that a
-  * grace period has elapsed.
-  */
-diff --git a/kernel/rcutiny.c b/kernel/rcutiny.c
-index 9f6d9ff..38729d3 100644
---- a/kernel/rcutiny.c
-+++ b/kernel/rcutiny.c
-@@ -44,9 +44,9 @@ struct rcu_ctrlblk {
- };
- 
- /* Definition for rcupdate control block. */
--static struct rcu_ctrlblk rcu_ctrlblk = {
--	.donetail	= &rcu_ctrlblk.rcucblist,
--	.curtail	= &rcu_ctrlblk.rcucblist,
-+static struct rcu_ctrlblk rcu_sched_ctrlblk = {
-+	.donetail	= &rcu_sched_ctrlblk.rcucblist,
-+	.curtail	= &rcu_sched_ctrlblk.rcucblist,
- };
- 
- static struct rcu_ctrlblk rcu_bh_ctrlblk = {
-@@ -54,6 +54,11 @@ static struct rcu_ctrlblk rcu_bh_ctrlblk = {
- 	.curtail	= &rcu_bh_ctrlblk.rcucblist,
- };
- 
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+int rcu_scheduler_active __read_mostly;
-+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
-+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-+
- #ifdef CONFIG_NO_HZ
- 
- static long rcu_dynticks_nesting = 1;
-@@ -108,7 +113,8 @@ static int rcu_qsctr_help(struct rcu_ctrlblk *rcp)
-  */
- void rcu_sched_qs(int cpu)
- {
--	if (rcu_qsctr_help(&rcu_ctrlblk) + rcu_qsctr_help(&rcu_bh_ctrlblk))
-+	if (rcu_qsctr_help(&rcu_sched_ctrlblk) +
-+	    rcu_qsctr_help(&rcu_bh_ctrlblk))
- 		raise_softirq(RCU_SOFTIRQ);
- }
- 
-@@ -173,7 +179,7 @@ static void __rcu_process_callbacks(struct rcu_ctrlblk *rcp)
-  */
- static void rcu_process_callbacks(struct softirq_action *unused)
- {
--	__rcu_process_callbacks(&rcu_ctrlblk);
-+	__rcu_process_callbacks(&rcu_sched_ctrlblk);
- 	__rcu_process_callbacks(&rcu_bh_ctrlblk);
- }
- 
-@@ -187,7 +193,8 @@ static void rcu_process_callbacks(struct softirq_action *unused)
-  *
-  * Cool, huh?  (Due to Josh Triplett.)
-  *
-- * But we want to make this a static inline later.
-+ * But we want to make this a static inline later.  The cond_resched()
-+ * currently makes this problematic.
-  */
- void synchronize_sched(void)
- {
-@@ -195,12 +202,6 @@ void synchronize_sched(void)
- }
- EXPORT_SYMBOL_GPL(synchronize_sched);
- 
--void synchronize_rcu_bh(void)
+-#endif
+-
+-/* functions for op_amd_spec */
+-
+-static void op_amd_fill_in_addresses(struct op_msrs * const msrs)
 -{
--	synchronize_sched();
+-	int i;
+-
+-	for (i = 0; i < NUM_COUNTERS; i++) {
+-		if (reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i))
+-			msrs->counters[i].addr = MSR_K7_PERFCTR0 + i;
+-	}
+-
+-	for (i = 0; i < NUM_CONTROLS; i++) {
+-		if (reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i))
+-			msrs->controls[i].addr = MSR_K7_EVNTSEL0 + i;
+-	}
 -}
--EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
+-
+-static void op_amd_setup_ctrs(struct op_x86_model_spec const *model,
+-			      struct op_msrs const * const msrs)
+-{
+-	u64 val;
+-	int i;
+-
+-	/* setup reset_value */
+-	for (i = 0; i < NUM_VIRT_COUNTERS; ++i) {
+-		if (counter_config[i].enabled
+-		    && msrs->counters[op_x86_virt_to_phys(i)].addr)
+-			reset_value[i] = counter_config[i].count;
+-		else
+-			reset_value[i] = 0;
+-	}
+-
+-	/* clear all counters */
+-	for (i = 0; i < NUM_CONTROLS; ++i) {
+-		if (unlikely(!msrs->controls[i].addr)) {
+-			if (counter_config[i].enabled && !smp_processor_id())
+-				/*
+-				 * counter is reserved, this is on all
+-				 * cpus, so report only for cpu #0
+-				 */
+-				op_x86_warn_reserved(i);
+-			continue;
+-		}
+-		rdmsrl(msrs->controls[i].addr, val);
+-		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+-			op_x86_warn_in_use(i);
+-		val &= model->reserved;
+-		wrmsrl(msrs->controls[i].addr, val);
+-	}
+-
+-	/* avoid a false detection of ctr overflows in NMI handler */
+-	for (i = 0; i < NUM_COUNTERS; ++i) {
+-		if (unlikely(!msrs->counters[i].addr))
+-			continue;
+-		wrmsrl(msrs->counters[i].addr, -1LL);
+-	}
+-
+-	/* enable active counters */
+-	for (i = 0; i < NUM_COUNTERS; ++i) {
+-		int virt = op_x86_phys_to_virt(i);
+-		if (!reset_value[virt])
+-			continue;
+-
+-		/* setup counter registers */
+-		wrmsrl(msrs->counters[i].addr, -(u64)reset_value[virt]);
+-
+-		/* setup control registers */
+-		rdmsrl(msrs->controls[i].addr, val);
+-		val &= model->reserved;
+-		val |= op_x86_get_ctrl(model, &counter_config[virt]);
+-		wrmsrl(msrs->controls[i].addr, val);
+-	}
+-}
 -
  /*
-  * Helper function for call_rcu() and call_rcu_bh().
-  */
-@@ -226,7 +227,7 @@ static void __call_rcu(struct rcu_head *head,
-  */
- void call_rcu(struct rcu_head *head, void (*func)(struct rcu_head *rcu))
- {
--	__call_rcu(head, func, &rcu_ctrlblk);
-+	__call_rcu(head, func, &rcu_sched_ctrlblk);
+  * 16-bit Linear Feedback Shift Register (LFSR)
+  *
+@@ -365,6 +266,125 @@ static void op_amd_stop_ibs(void)
+ 		wrmsrl(MSR_AMD64_IBSOPCTL, 0);
  }
- EXPORT_SYMBOL_GPL(call_rcu);
  
-@@ -244,11 +245,13 @@ void rcu_barrier(void)
- {
- 	struct rcu_synchronize rcu;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier);
- 
-@@ -256,11 +259,13 @@ void rcu_barrier_bh(void)
- {
- 	struct rcu_synchronize rcu;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu_bh(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier_bh);
- 
-@@ -268,11 +273,13 @@ void rcu_barrier_sched(void)
- {
- 	struct rcu_synchronize rcu;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu_sched(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- EXPORT_SYMBOL_GPL(rcu_barrier_sched);
- 
-@@ -280,3 +287,5 @@ void __init rcu_init(void)
- {
- 	open_softirq(RCU_SOFTIRQ, rcu_process_callbacks);
- }
++#ifdef CONFIG_OPROFILE_EVENT_MULTIPLEX
 +
-+#include "rcutiny_plugin.h"
-diff --git a/kernel/rcutiny_plugin.h b/kernel/rcutiny_plugin.h
-new file mode 100644
-index 0000000..d223a92
---- /dev/null
-+++ b/kernel/rcutiny_plugin.h
-@@ -0,0 +1,39 @@
-+/*
-+ * Read-Copy Update mechanism for mutual exclusion (tree-based version)
-+ * Internal non-public definitions that provide either classic
-+ * or preemptable semantics.
-+ *
-+ * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
-+ *
-+ * Copyright IBM Corporation, 2009
-+ *
-+ * Author: Paul E. McKenney <paulmck@linux.vnet.ibm.com>
-+ */
-+
-+#ifdef CONFIG_DEBUG_LOCK_ALLOC
-+
-+#include <linux/kernel_stat.h>
-+
-+/*
-+ * During boot, we forgive RCU lockdep issues.  After this function is
-+ * invoked, we start taking RCU lockdep issues seriously.
-+ */
-+void rcu_scheduler_starting(void)
++static void op_mux_switch_ctrl(struct op_x86_model_spec const *model,
++			       struct op_msrs const * const msrs)
 +{
-+	WARN_ON(nr_context_switches() > 0);
-+	rcu_scheduler_active = 1;
++	u64 val;
++	int i;
++
++	/* enable active counters */
++	for (i = 0; i < NUM_COUNTERS; ++i) {
++		int virt = op_x86_phys_to_virt(i);
++		if (!reset_value[virt])
++			continue;
++		rdmsrl(msrs->controls[i].addr, val);
++		val &= model->reserved;
++		val |= op_x86_get_ctrl(model, &counter_config[virt]);
++		wrmsrl(msrs->controls[i].addr, val);
++	}
 +}
 +
-+#endif /* #ifdef CONFIG_DEBUG_LOCK_ALLOC */
-diff --git a/kernel/rcutorture.c b/kernel/rcutorture.c
-index 58df55b..077defb 100644
---- a/kernel/rcutorture.c
-+++ b/kernel/rcutorture.c
-@@ -464,9 +464,11 @@ static void rcu_bh_torture_synchronize(void)
- {
- 	struct rcu_bh_torture_synchronize rcu;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	call_rcu_bh(&rcu.head, rcu_bh_torture_wakeme_after_cb);
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- 
- static struct rcu_torture_ops rcu_bh_ops = {
-diff --git a/kernel/rcutree.c b/kernel/rcutree.c
-index 3ec8160..d443734 100644
---- a/kernel/rcutree.c
-+++ b/kernel/rcutree.c
-@@ -46,6 +46,7 @@
- #include <linux/cpu.h>
- #include <linux/mutex.h>
- #include <linux/time.h>
-+#include <linux/kernel_stat.h>
- 
- #include "rcutree.h"
- 
-@@ -53,8 +54,8 @@
- 
- static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
- 
--#define RCU_STATE_INITIALIZER(name) { \
--	.level = { &name.node[0] }, \
-+#define RCU_STATE_INITIALIZER(structname) { \
-+	.level = { &structname.node[0] }, \
- 	.levelcnt = { \
- 		NUM_RCU_LVL_0,  /* root of hierarchy. */ \
- 		NUM_RCU_LVL_1, \
-@@ -65,13 +66,14 @@ static struct lock_class_key rcu_node_class[NUM_RCU_LVLS];
- 	.signaled = RCU_GP_IDLE, \
- 	.gpnum = -300, \
- 	.completed = -300, \
--	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&name.onofflock), \
-+	.onofflock = __RAW_SPIN_LOCK_UNLOCKED(&structname.onofflock), \
- 	.orphan_cbs_list = NULL, \
--	.orphan_cbs_tail = &name.orphan_cbs_list, \
-+	.orphan_cbs_tail = &structname.orphan_cbs_list, \
- 	.orphan_qlen = 0, \
--	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&name.fqslock), \
-+	.fqslock = __RAW_SPIN_LOCK_UNLOCKED(&structname.fqslock), \
- 	.n_force_qs = 0, \
- 	.n_force_qs_ngp = 0, \
-+	.name = #structname, \
- }
- 
- struct rcu_state rcu_sched_state = RCU_STATE_INITIALIZER(rcu_sched_state);
-@@ -80,6 +82,9 @@ DEFINE_PER_CPU(struct rcu_data, rcu_sched_data);
- struct rcu_state rcu_bh_state = RCU_STATE_INITIALIZER(rcu_bh_state);
- DEFINE_PER_CPU(struct rcu_data, rcu_bh_data);
- 
-+int rcu_scheduler_active __read_mostly;
-+EXPORT_SYMBOL_GPL(rcu_scheduler_active);
++#endif
 +
- /*
-  * Return true if an RCU grace period is in progress.  The ACCESS_ONCE()s
-  * permit this function to be invoked without holding the root rcu_node
-@@ -97,25 +102,32 @@ static int rcu_gp_in_progress(struct rcu_state *rsp)
-  */
- void rcu_sched_qs(int cpu)
- {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_sched_data, cpu);
- 
--	rdp = &per_cpu(rcu_sched_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
--	rcu_preempt_note_context_switch(cpu);
- }
- 
- void rcu_bh_qs(int cpu)
- {
--	struct rcu_data *rdp;
-+	struct rcu_data *rdp = &per_cpu(rcu_bh_data, cpu);
- 
--	rdp = &per_cpu(rcu_bh_data, cpu);
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
- }
- 
-+/*
-+ * Note a context switch.  This is a quiescent state for RCU-sched,
-+ * and requires special handling for preemptible RCU.
-+ */
-+void rcu_note_context_switch(int cpu)
++/* functions for op_amd_spec */
++
++static void op_amd_shutdown(struct op_msrs const * const msrs)
 +{
-+	rcu_sched_qs(cpu);
-+	rcu_preempt_note_context_switch(cpu);
++	int i;
++
++	for (i = 0; i < NUM_COUNTERS; ++i) {
++		if (!msrs->counters[i].addr)
++			continue;
++		release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
++		release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
++	}
 +}
 +
- #ifdef CONFIG_NO_HZ
- DEFINE_PER_CPU(struct rcu_dynticks, rcu_dynticks) = {
- 	.dynticks_nesting = 1,
-@@ -438,6 +450,8 @@ static int rcu_implicit_dynticks_qs(struct rcu_data *rdp)
- 
- #ifdef CONFIG_RCU_CPU_STALL_DETECTOR
- 
-+int rcu_cpu_stall_panicking __read_mostly;
++static int op_amd_fill_in_addresses(struct op_msrs * const msrs)
++{
++	int i;
 +
- static void record_gp_stall_check_time(struct rcu_state *rsp)
++	for (i = 0; i < NUM_COUNTERS; i++) {
++		if (!reserve_perfctr_nmi(MSR_K7_PERFCTR0 + i))
++			goto fail;
++		if (!reserve_evntsel_nmi(MSR_K7_EVNTSEL0 + i)) {
++			release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
++			goto fail;
++		}
++		/* both registers must be reserved */
++		msrs->counters[i].addr = MSR_K7_PERFCTR0 + i;
++		msrs->controls[i].addr = MSR_K7_EVNTSEL0 + i;
++		continue;
++	fail:
++		if (!counter_config[i].enabled)
++			continue;
++		op_x86_warn_reserved(i);
++		op_amd_shutdown(msrs);
++		return -EBUSY;
++	}
++
++	return 0;
++}
++
++static void op_amd_setup_ctrs(struct op_x86_model_spec const *model,
++			      struct op_msrs const * const msrs)
++{
++	u64 val;
++	int i;
++
++	/* setup reset_value */
++	for (i = 0; i < NUM_VIRT_COUNTERS; ++i) {
++		if (counter_config[i].enabled
++		    && msrs->counters[op_x86_virt_to_phys(i)].addr)
++			reset_value[i] = counter_config[i].count;
++		else
++			reset_value[i] = 0;
++	}
++
++	/* clear all counters */
++	for (i = 0; i < NUM_COUNTERS; ++i) {
++		if (!msrs->controls[i].addr)
++			continue;
++		rdmsrl(msrs->controls[i].addr, val);
++		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
++			op_x86_warn_in_use(i);
++		val &= model->reserved;
++		wrmsrl(msrs->controls[i].addr, val);
++		/*
++		 * avoid a false detection of ctr overflows in NMI
++		 * handler
++		 */
++		wrmsrl(msrs->counters[i].addr, -1LL);
++	}
++
++	/* enable active counters */
++	for (i = 0; i < NUM_COUNTERS; ++i) {
++		int virt = op_x86_phys_to_virt(i);
++		if (!reset_value[virt])
++			continue;
++
++		/* setup counter registers */
++		wrmsrl(msrs->counters[i].addr, -(u64)reset_value[virt]);
++
++		/* setup control registers */
++		rdmsrl(msrs->controls[i].addr, val);
++		val &= model->reserved;
++		val |= op_x86_get_ctrl(model, &counter_config[virt]);
++		wrmsrl(msrs->controls[i].addr, val);
++	}
++
++	if (ibs_caps)
++		setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_NMI, 0);
++}
++
++static void op_amd_cpu_shutdown(void)
++{
++	if (ibs_caps)
++		setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_FIX, 1);
++}
++
+ static int op_amd_check_ctrs(struct pt_regs * const regs,
+ 			     struct op_msrs const * const msrs)
  {
- 	rsp->gp_start = jiffies;
-@@ -470,7 +484,8 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
+@@ -425,42 +445,16 @@ static void op_amd_stop(struct op_msrs const * const msrs)
+ 	op_amd_stop_ibs();
+ }
  
- 	/* OK, time to rat on our buddy... */
+-static void op_amd_shutdown(struct op_msrs const * const msrs)
+-{
+-	int i;
+-
+-	for (i = 0; i < NUM_COUNTERS; ++i) {
+-		if (msrs->counters[i].addr)
+-			release_perfctr_nmi(MSR_K7_PERFCTR0 + i);
+-	}
+-	for (i = 0; i < NUM_CONTROLS; ++i) {
+-		if (msrs->controls[i].addr)
+-			release_evntsel_nmi(MSR_K7_EVNTSEL0 + i);
+-	}
+-}
+-
+-static u8 ibs_eilvt_off;
+-
+-static inline void apic_init_ibs_nmi_per_cpu(void *arg)
+-{
+-	ibs_eilvt_off = setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_NMI, 0);
+-}
+-
+-static inline void apic_clear_ibs_nmi_per_cpu(void *arg)
+-{
+-	setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_FIX, 1);
+-}
+-
+-static int init_ibs_nmi(void)
++static int __init_ibs_nmi(void)
+ {
+ #define IBSCTL_LVTOFFSETVAL		(1 << 8)
+ #define IBSCTL				0x1cc
+ 	struct pci_dev *cpu_cfg;
+ 	int nodes;
+ 	u32 value = 0;
++	u8 ibs_eilvt_off;
  
--	printk(KERN_ERR "INFO: RCU detected CPU stalls:");
-+	printk(KERN_ERR "INFO: %s detected stalls on CPUs/tasks: {",
-+	       rsp->name);
- 	rcu_for_each_leaf_node(rsp, rnp) {
- 		raw_spin_lock_irqsave(&rnp->lock, flags);
- 		rcu_print_task_stall(rnp);
-@@ -481,7 +496,7 @@ static void print_other_cpu_stall(struct rcu_state *rsp)
- 			if (rnp->qsmask & (1UL << cpu))
- 				printk(" %d", rnp->grplo + cpu);
+-	/* per CPU setup */
+-	on_each_cpu(apic_init_ibs_nmi_per_cpu, NULL, 1);
++	ibs_eilvt_off = setup_APIC_eilvt_ibs(0, APIC_EILVT_MSG_FIX, 1);
+ 
+ 	nodes = 0;
+ 	cpu_cfg = NULL;
+@@ -490,22 +484,15 @@ static int init_ibs_nmi(void)
+ 	return 0;
+ }
+ 
+-/* uninitialize the APIC for the IBS interrupts if needed */
+-static void clear_ibs_nmi(void)
+-{
+-	if (ibs_caps)
+-		on_each_cpu(apic_clear_ibs_nmi_per_cpu, NULL, 1);
+-}
+-
+ /* initialize the APIC for the IBS interrupts if available */
+-static void ibs_init(void)
++static void init_ibs(void)
+ {
+ 	ibs_caps = get_ibs_caps();
+ 
+ 	if (!ibs_caps)
+ 		return;
+ 
+-	if (init_ibs_nmi()) {
++	if (__init_ibs_nmi()) {
+ 		ibs_caps = 0;
+ 		return;
  	}
--	printk(" (detected by %d, t=%ld jiffies)\n",
-+	printk("} (detected by %d, t=%ld jiffies)\n",
- 	       smp_processor_id(), (long)(jiffies - rsp->gp_start));
- 	trigger_all_cpu_backtrace();
+@@ -514,14 +501,6 @@ static void ibs_init(void)
+ 	       (unsigned)ibs_caps);
+ }
  
-@@ -497,8 +512,8 @@ static void print_cpu_stall(struct rcu_state *rsp)
- 	unsigned long flags;
- 	struct rcu_node *rnp = rcu_get_root(rsp);
+-static void ibs_exit(void)
+-{
+-	if (!ibs_caps)
+-		return;
+-
+-	clear_ibs_nmi();
+-}
+-
+ static int (*create_arch_files)(struct super_block *sb, struct dentry *root);
  
--	printk(KERN_ERR "INFO: RCU detected CPU %d stall (t=%lu jiffies)\n",
--			smp_processor_id(), jiffies - rsp->gp_start);
-+	printk(KERN_ERR "INFO: %s detected stall on CPU %d (t=%lu jiffies)\n",
-+	       rsp->name, smp_processor_id(), jiffies - rsp->gp_start);
- 	trigger_all_cpu_backtrace();
+ static int setup_ibs_files(struct super_block *sb, struct dentry *root)
+@@ -570,27 +549,22 @@ static int setup_ibs_files(struct super_block *sb, struct dentry *root)
  
- 	raw_spin_lock_irqsave(&rnp->lock, flags);
-@@ -515,6 +530,8 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
- 	long delta;
- 	struct rcu_node *rnp;
+ static int op_amd_init(struct oprofile_operations *ops)
+ {
+-	ibs_init();
++	init_ibs();
+ 	create_arch_files = ops->create_files;
+ 	ops->create_files = setup_ibs_files;
+ 	return 0;
+ }
  
-+	if (rcu_cpu_stall_panicking)
-+		return;
- 	delta = jiffies - rsp->jiffies_stall;
- 	rnp = rdp->mynode;
- 	if ((rnp->qsmask & rdp->grpmask) && delta >= 0) {
-@@ -529,6 +546,21 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
+-static void op_amd_exit(void)
+-{
+-	ibs_exit();
+-}
+-
+ struct op_x86_model_spec op_amd_spec = {
+ 	.num_counters		= NUM_COUNTERS,
+-	.num_controls		= NUM_CONTROLS,
++	.num_controls		= NUM_COUNTERS,
+ 	.num_virt_counters	= NUM_VIRT_COUNTERS,
+ 	.reserved		= MSR_AMD_EVENTSEL_RESERVED,
+ 	.event_mask		= OP_EVENT_MASK,
+ 	.init			= op_amd_init,
+-	.exit			= op_amd_exit,
+ 	.fill_in_addresses	= &op_amd_fill_in_addresses,
+ 	.setup_ctrs		= &op_amd_setup_ctrs,
++	.cpu_down		= &op_amd_cpu_shutdown,
+ 	.check_ctrs		= &op_amd_check_ctrs,
+ 	.start			= &op_amd_start,
+ 	.stop			= &op_amd_stop,
+diff --git a/arch/x86/oprofile/op_model_p4.c b/arch/x86/oprofile/op_model_p4.c
+index e6a160a..182558d 100644
+--- a/arch/x86/oprofile/op_model_p4.c
++++ b/arch/x86/oprofile/op_model_p4.c
+@@ -385,8 +385,26 @@ static unsigned int get_stagger(void)
+ 
+ static unsigned long reset_value[NUM_COUNTERS_NON_HT];
+ 
++static void p4_shutdown(struct op_msrs const * const msrs)
++{
++	int i;
+ 
+-static void p4_fill_in_addresses(struct op_msrs * const msrs)
++	for (i = 0; i < num_counters; ++i) {
++		if (msrs->counters[i].addr)
++			release_perfctr_nmi(msrs->counters[i].addr);
++	}
++	/*
++	 * some of the control registers are specially reserved in
++	 * conjunction with the counter registers (hence the starting offset).
++	 * This saves a few bits.
++	 */
++	for (i = num_counters; i < num_controls; ++i) {
++		if (msrs->controls[i].addr)
++			release_evntsel_nmi(msrs->controls[i].addr);
++	}
++}
++
++static int p4_fill_in_addresses(struct op_msrs * const msrs)
+ {
+ 	unsigned int i;
+ 	unsigned int addr, cccraddr, stag;
+@@ -468,6 +486,18 @@ static void p4_fill_in_addresses(struct op_msrs * const msrs)
+ 			msrs->controls[i++].addr = MSR_P4_CRU_ESCR5;
+ 		}
+ 	}
++
++	for (i = 0; i < num_counters; ++i) {
++		if (!counter_config[i].enabled)
++			continue;
++		if (msrs->controls[i].addr)
++			continue;
++		op_x86_warn_reserved(i);
++		p4_shutdown(msrs);
++		return -EBUSY;
++	}
++
++	return 0;
+ }
+ 
+ 
+@@ -668,26 +698,6 @@ static void p4_stop(struct op_msrs const * const msrs)
  	}
  }
  
-+static int rcu_panic(struct notifier_block *this, unsigned long ev, void *ptr)
-+{
-+	rcu_cpu_stall_panicking = 1;
-+	return NOTIFY_DONE;
-+}
-+
-+static struct notifier_block rcu_panic_block = {
-+	.notifier_call = rcu_panic,
-+};
-+
-+static void __init check_cpu_stall_init(void)
-+{
-+	atomic_notifier_chain_register(&panic_notifier_list, &rcu_panic_block);
-+}
-+
- #else /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
- 
- static void record_gp_stall_check_time(struct rcu_state *rsp)
-@@ -539,6 +571,10 @@ static void check_cpu_stall(struct rcu_state *rsp, struct rcu_data *rdp)
- {
- }
- 
-+static void __init check_cpu_stall_init(void)
-+{
-+}
-+
- #endif /* #else #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
- 
- /*
-@@ -1125,8 +1161,6 @@ static void rcu_do_batch(struct rcu_state *rsp, struct rcu_data *rdp)
-  */
- void rcu_check_callbacks(int cpu, int user)
- {
--	if (!rcu_pending(cpu))
--		return; /* if nothing for RCU to do. */
- 	if (user ||
- 	    (idle_cpu(cpu) && rcu_scheduler_active &&
- 	     !in_softirq() && hardirq_count() <= (1 << HARDIRQ_SHIFT))) {
-@@ -1158,7 +1192,8 @@ void rcu_check_callbacks(int cpu, int user)
- 		rcu_bh_qs(cpu);
- 	}
- 	rcu_preempt_check_callbacks(cpu);
--	raise_softirq(RCU_SOFTIRQ);
-+	if (rcu_pending(cpu))
-+		raise_softirq(RCU_SOFTIRQ);
- }
- 
+-static void p4_shutdown(struct op_msrs const * const msrs)
+-{
+-	int i;
+-
+-	for (i = 0; i < num_counters; ++i) {
+-		if (msrs->counters[i].addr)
+-			release_perfctr_nmi(msrs->counters[i].addr);
+-	}
+-	/*
+-	 * some of the control registers are specially reserved in
+-	 * conjunction with the counter registers (hence the starting offset).
+-	 * This saves a few bits.
+-	 */
+-	for (i = num_counters; i < num_controls; ++i) {
+-		if (msrs->controls[i].addr)
+-			release_evntsel_nmi(msrs->controls[i].addr);
+-	}
+-}
+-
+-
  #ifdef CONFIG_SMP
-@@ -1236,11 +1271,11 @@ static void force_quiescent_state(struct rcu_state *rsp, int relaxed)
- 		break; /* grace period idle or initializing, ignore. */
+ struct op_x86_model_spec op_p4_ht2_spec = {
+ 	.num_counters		= NUM_COUNTERS_HT2,
+diff --git a/arch/x86/oprofile/op_model_ppro.c b/arch/x86/oprofile/op_model_ppro.c
+index 2bf90fa..1fd17cf 100644
+--- a/arch/x86/oprofile/op_model_ppro.c
++++ b/arch/x86/oprofile/op_model_ppro.c
+@@ -30,19 +30,46 @@ static int counter_width = 32;
  
- 	case RCU_SAVE_DYNTICK:
--
--		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
- 		if (RCU_SIGNAL_INIT != RCU_SAVE_DYNTICK)
- 			break; /* So gcc recognizes the dead code. */
+ static u64 *reset_value;
  
-+		raw_spin_unlock(&rnp->lock);  /* irqs remain disabled */
+-static void ppro_fill_in_addresses(struct op_msrs * const msrs)
++static void ppro_shutdown(struct op_msrs const * const msrs)
+ {
+ 	int i;
+ 
+-	for (i = 0; i < num_counters; i++) {
+-		if (reserve_perfctr_nmi(MSR_P6_PERFCTR0 + i))
+-			msrs->counters[i].addr = MSR_P6_PERFCTR0 + i;
++	for (i = 0; i < num_counters; ++i) {
++		if (!msrs->counters[i].addr)
++			continue;
++		release_perfctr_nmi(MSR_P6_PERFCTR0 + i);
++		release_evntsel_nmi(MSR_P6_EVNTSEL0 + i);
++	}
++	if (reset_value) {
++		kfree(reset_value);
++		reset_value = NULL;
+ 	}
++}
 +
- 		/* Record dyntick-idle state. */
- 		force_qs_rnp(rsp, dyntick_save_progress_counter);
- 		raw_spin_lock(&rnp->lock);  /* irqs already disabled */
-@@ -1449,11 +1484,13 @@ void synchronize_sched(void)
- 	if (rcu_blocking_is_gp())
- 		return;
++static int ppro_fill_in_addresses(struct op_msrs * const msrs)
++{
++	int i;
  
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu_sched(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
+ 	for (i = 0; i < num_counters; i++) {
+-		if (reserve_evntsel_nmi(MSR_P6_EVNTSEL0 + i))
+-			msrs->controls[i].addr = MSR_P6_EVNTSEL0 + i;
++		if (!reserve_perfctr_nmi(MSR_P6_PERFCTR0 + i))
++			goto fail;
++		if (!reserve_evntsel_nmi(MSR_P6_EVNTSEL0 + i)) {
++			release_perfctr_nmi(MSR_P6_PERFCTR0 + i);
++			goto fail;
++		}
++		/* both registers must be reserved */
++		msrs->counters[i].addr = MSR_P6_PERFCTR0 + i;
++		msrs->controls[i].addr = MSR_P6_EVNTSEL0 + i;
++		continue;
++	fail:
++		if (!counter_config[i].enabled)
++			continue;
++		op_x86_warn_reserved(i);
++		ppro_shutdown(msrs);
++		return -EBUSY;
+ 	}
++
++	return 0;
  }
- EXPORT_SYMBOL_GPL(synchronize_sched);
  
-@@ -1473,11 +1510,13 @@ void synchronize_rcu_bh(void)
- 	if (rcu_blocking_is_gp())
- 		return;
  
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu_bh(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
+@@ -78,26 +105,17 @@ static void ppro_setup_ctrs(struct op_x86_model_spec const *model,
+ 
+ 	/* clear all counters */
+ 	for (i = 0; i < num_counters; ++i) {
+-		if (unlikely(!msrs->controls[i].addr)) {
+-			if (counter_config[i].enabled && !smp_processor_id())
+-				/*
+-				 * counter is reserved, this is on all
+-				 * cpus, so report only for cpu #0
+-				 */
+-				op_x86_warn_reserved(i);
++		if (!msrs->controls[i].addr)
+ 			continue;
+-		}
+ 		rdmsrl(msrs->controls[i].addr, val);
+ 		if (val & ARCH_PERFMON_EVENTSEL_ENABLE)
+ 			op_x86_warn_in_use(i);
+ 		val &= model->reserved;
+ 		wrmsrl(msrs->controls[i].addr, val);
+-	}
+-
+-	/* avoid a false detection of ctr overflows in NMI handler */
+-	for (i = 0; i < num_counters; ++i) {
+-		if (unlikely(!msrs->counters[i].addr))
+-			continue;
++		/*
++		 * avoid a false detection of ctr overflows in NMI *
++		 * handler
++		 */
+ 		wrmsrl(msrs->counters[i].addr, -1LL);
+ 	}
+ 
+@@ -189,25 +207,6 @@ static void ppro_stop(struct op_msrs const * const msrs)
+ 	}
  }
- EXPORT_SYMBOL_GPL(synchronize_rcu_bh);
  
-@@ -1498,8 +1537,20 @@ static int __rcu_pending(struct rcu_state *rsp, struct rcu_data *rdp)
- 	check_cpu_stall(rsp, rdp);
+-static void ppro_shutdown(struct op_msrs const * const msrs)
+-{
+-	int i;
+-
+-	for (i = 0; i < num_counters; ++i) {
+-		if (msrs->counters[i].addr)
+-			release_perfctr_nmi(MSR_P6_PERFCTR0 + i);
+-	}
+-	for (i = 0; i < num_counters; ++i) {
+-		if (msrs->controls[i].addr)
+-			release_evntsel_nmi(MSR_P6_EVNTSEL0 + i);
+-	}
+-	if (reset_value) {
+-		kfree(reset_value);
+-		reset_value = NULL;
+-	}
+-}
+-
+-
+ struct op_x86_model_spec op_ppro_spec = {
+ 	.num_counters		= 2,
+ 	.num_controls		= 2,
+diff --git a/arch/x86/oprofile/op_x86_model.h b/arch/x86/oprofile/op_x86_model.h
+index ff82a75..89017fa 100644
+--- a/arch/x86/oprofile/op_x86_model.h
++++ b/arch/x86/oprofile/op_x86_model.h
+@@ -40,10 +40,10 @@ struct op_x86_model_spec {
+ 	u64		reserved;
+ 	u16		event_mask;
+ 	int		(*init)(struct oprofile_operations *ops);
+-	void		(*exit)(void);
+-	void		(*fill_in_addresses)(struct op_msrs * const msrs);
++	int		(*fill_in_addresses)(struct op_msrs * const msrs);
+ 	void		(*setup_ctrs)(struct op_x86_model_spec const *model,
+ 				      struct op_msrs const * const msrs);
++	void		(*cpu_down)(void);
+ 	int		(*check_ctrs)(struct pt_regs * const regs,
+ 				      struct op_msrs const * const msrs);
+ 	void		(*start)(struct op_msrs const * const msrs);
+diff --git a/drivers/oprofile/cpu_buffer.c b/drivers/oprofile/cpu_buffer.c
+index 166b67e..219f79e 100644
+--- a/drivers/oprofile/cpu_buffer.c
++++ b/drivers/oprofile/cpu_buffer.c
+@@ -30,23 +30,7 @@
  
- 	/* Is the RCU core waiting for a quiescent state from this CPU? */
--	if (rdp->qs_pending) {
-+	if (rdp->qs_pending && !rdp->passed_quiesc) {
+ #define OP_BUFFER_FLAGS	0
+ 
+-/*
+- * Read and write access is using spin locking. Thus, writing to the
+- * buffer by NMI handler (x86) could occur also during critical
+- * sections when reading the buffer. To avoid this, there are 2
+- * buffers for independent read and write access. Read access is in
+- * process context only, write access only in the NMI handler. If the
+- * read buffer runs empty, both buffers are swapped atomically. There
+- * is potentially a small window during swapping where the buffers are
+- * disabled and samples could be lost.
+- *
+- * Using 2 buffers is a little bit overhead, but the solution is clear
+- * and does not require changes in the ring buffer implementation. It
+- * can be changed to a single buffer solution when the ring buffer
+- * access is implemented as non-locking atomic code.
+- */
+-static struct ring_buffer *op_ring_buffer_read;
+-static struct ring_buffer *op_ring_buffer_write;
++static struct ring_buffer *op_ring_buffer;
+ DEFINE_PER_CPU(struct oprofile_cpu_buffer, op_cpu_buffer);
+ 
+ static void wq_sync_buffer(struct work_struct *work);
+@@ -68,12 +52,9 @@ void oprofile_cpu_buffer_inc_smpl_lost(void)
+ 
+ void free_cpu_buffers(void)
+ {
+-	if (op_ring_buffer_read)
+-		ring_buffer_free(op_ring_buffer_read);
+-	op_ring_buffer_read = NULL;
+-	if (op_ring_buffer_write)
+-		ring_buffer_free(op_ring_buffer_write);
+-	op_ring_buffer_write = NULL;
++	if (op_ring_buffer)
++		ring_buffer_free(op_ring_buffer);
++	op_ring_buffer = NULL;
+ }
+ 
+ #define RB_EVENT_HDR_SIZE 4
+@@ -86,11 +67,8 @@ int alloc_cpu_buffers(void)
+ 	unsigned long byte_size = buffer_size * (sizeof(struct op_sample) +
+ 						 RB_EVENT_HDR_SIZE);
+ 
+-	op_ring_buffer_read = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_read)
+-		goto fail;
+-	op_ring_buffer_write = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
+-	if (!op_ring_buffer_write)
++	op_ring_buffer = ring_buffer_alloc(byte_size, OP_BUFFER_FLAGS);
++	if (!op_ring_buffer)
+ 		goto fail;
+ 
+ 	for_each_possible_cpu(i) {
+@@ -162,16 +140,11 @@ struct op_sample
+ *op_cpu_buffer_write_reserve(struct op_entry *entry, unsigned long size)
+ {
+ 	entry->event = ring_buffer_lock_reserve
+-		(op_ring_buffer_write, sizeof(struct op_sample) +
++		(op_ring_buffer, sizeof(struct op_sample) +
+ 		 size * sizeof(entry->sample->data[0]));
+-	if (entry->event)
+-		entry->sample = ring_buffer_event_data(entry->event);
+-	else
+-		entry->sample = NULL;
+-
+-	if (!entry->sample)
++	if (!entry->event)
+ 		return NULL;
+-
++	entry->sample = ring_buffer_event_data(entry->event);
+ 	entry->size = size;
+ 	entry->data = entry->sample->data;
+ 
+@@ -180,25 +153,16 @@ struct op_sample
+ 
+ int op_cpu_buffer_write_commit(struct op_entry *entry)
+ {
+-	return ring_buffer_unlock_commit(op_ring_buffer_write, entry->event);
++	return ring_buffer_unlock_commit(op_ring_buffer, entry->event);
+ }
+ 
+ struct op_sample *op_cpu_buffer_read_entry(struct op_entry *entry, int cpu)
+ {
+ 	struct ring_buffer_event *e;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	if (ring_buffer_swap_cpu(op_ring_buffer_read,
+-				 op_ring_buffer_write,
+-				 cpu))
++	e = ring_buffer_consume(op_ring_buffer, cpu, NULL, NULL);
++	if (!e)
+ 		return NULL;
+-	e = ring_buffer_consume(op_ring_buffer_read, cpu, NULL);
+-	if (e)
+-		goto event;
+-	return NULL;
+ 
+-event:
+ 	entry->event = e;
+ 	entry->sample = ring_buffer_event_data(e);
+ 	entry->size = (ring_buffer_event_length(e) - sizeof(struct op_sample))
+@@ -209,8 +173,7 @@ event:
+ 
+ unsigned long op_cpu_buffer_entries(int cpu)
+ {
+-	return ring_buffer_entries_cpu(op_ring_buffer_read, cpu)
+-		+ ring_buffer_entries_cpu(op_ring_buffer_write, cpu);
++	return ring_buffer_entries_cpu(op_ring_buffer, cpu);
+ }
+ 
+ static int
+@@ -356,8 +319,16 @@ void oprofile_add_ext_sample(unsigned long pc, struct pt_regs * const regs,
+ 
+ void oprofile_add_sample(struct pt_regs * const regs, unsigned long event)
+ {
+-	int is_kernel = !user_mode(regs);
+-	unsigned long pc = profile_pc(regs);
++	int is_kernel;
++	unsigned long pc;
++
++	if (likely(regs)) {
++		is_kernel = !user_mode(regs);
++		pc = profile_pc(regs);
++	} else {
++		is_kernel = 0;    /* This value will not be used */
++		pc = ESCAPE_CODE; /* as this causes an early return. */
++	}
+ 
+ 	__oprofile_add_ext_sample(pc, regs, event, is_kernel);
+ }
+diff --git a/drivers/oprofile/oprof.c b/drivers/oprofile/oprof.c
+index dc8a042..b336cd9 100644
+--- a/drivers/oprofile/oprof.c
++++ b/drivers/oprofile/oprof.c
+@@ -253,22 +253,26 @@ static int __init oprofile_init(void)
+ 	int err;
+ 
+ 	err = oprofile_arch_init(&oprofile_ops);
+-
+ 	if (err < 0 || timer) {
+ 		printk(KERN_INFO "oprofile: using timer interrupt.\n");
+-		oprofile_timer_init(&oprofile_ops);
++		err = oprofile_timer_init(&oprofile_ops);
++		if (err)
++			goto out_arch;
+ 	}
+-
+ 	err = oprofilefs_register();
+ 	if (err)
+-		oprofile_arch_exit();
++		goto out_arch;
++	return 0;
+ 
++out_arch:
++	oprofile_arch_exit();
+ 	return err;
+ }
+ 
+ 
+ static void __exit oprofile_exit(void)
+ {
++	oprofile_timer_exit();
+ 	oprofilefs_unregister();
+ 	oprofile_arch_exit();
+ }
+diff --git a/drivers/oprofile/oprof.h b/drivers/oprofile/oprof.h
+index cb92f5c..47e12cb 100644
+--- a/drivers/oprofile/oprof.h
++++ b/drivers/oprofile/oprof.h
+@@ -34,7 +34,8 @@ struct super_block;
+ struct dentry;
+ 
+ void oprofile_create_files(struct super_block *sb, struct dentry *root);
+-void oprofile_timer_init(struct oprofile_operations *ops);
++int oprofile_timer_init(struct oprofile_operations *ops);
++void oprofile_timer_exit(void);
+ 
+ int oprofile_set_backtrace(unsigned long depth);
+ int oprofile_set_timeout(unsigned long time);
+diff --git a/drivers/oprofile/timer_int.c b/drivers/oprofile/timer_int.c
+index 333f915..dc0ae4d 100644
+--- a/drivers/oprofile/timer_int.c
++++ b/drivers/oprofile/timer_int.c
+@@ -13,34 +13,94 @@
+ #include <linux/oprofile.h>
+ #include <linux/profile.h>
+ #include <linux/init.h>
++#include <linux/cpu.h>
++#include <linux/hrtimer.h>
++#include <asm/irq_regs.h>
+ #include <asm/ptrace.h>
+ 
+ #include "oprof.h"
+ 
+-static int timer_notify(struct pt_regs *regs)
++static DEFINE_PER_CPU(struct hrtimer, oprofile_hrtimer);
++
++static enum hrtimer_restart oprofile_hrtimer_notify(struct hrtimer *hrtimer)
++{
++	oprofile_add_sample(get_irq_regs(), 0);
++	hrtimer_forward_now(hrtimer, ns_to_ktime(TICK_NSEC));
++	return HRTIMER_RESTART;
++}
++
++static void __oprofile_hrtimer_start(void *unused)
++{
++	struct hrtimer *hrtimer = &__get_cpu_var(oprofile_hrtimer);
++
++	hrtimer_init(hrtimer, CLOCK_MONOTONIC, HRTIMER_MODE_REL);
++	hrtimer->function = oprofile_hrtimer_notify;
++
++	hrtimer_start(hrtimer, ns_to_ktime(TICK_NSEC),
++		      HRTIMER_MODE_REL_PINNED);
++}
++
++static int oprofile_hrtimer_start(void)
+ {
+-	oprofile_add_sample(regs, 0);
++	on_each_cpu(__oprofile_hrtimer_start, NULL, 1);
+ 	return 0;
+ }
+ 
+-static int timer_start(void)
++static void __oprofile_hrtimer_stop(int cpu)
+ {
+-	return register_timer_hook(timer_notify);
++	struct hrtimer *hrtimer = &per_cpu(oprofile_hrtimer, cpu);
++
++	hrtimer_cancel(hrtimer);
+ }
+ 
++static void oprofile_hrtimer_stop(void)
++{
++	int cpu;
++
++	for_each_online_cpu(cpu)
++		__oprofile_hrtimer_stop(cpu);
++}
+ 
+-static void timer_stop(void)
++static int __cpuinit oprofile_cpu_notify(struct notifier_block *self,
++					 unsigned long action, void *hcpu)
+ {
+-	unregister_timer_hook(timer_notify);
++	long cpu = (long) hcpu;
++
++	switch (action) {
++	case CPU_ONLINE:
++	case CPU_ONLINE_FROZEN:
++		smp_call_function_single(cpu, __oprofile_hrtimer_start,
++					 NULL, 1);
++		break;
++	case CPU_DEAD:
++	case CPU_DEAD_FROZEN:
++		__oprofile_hrtimer_stop(cpu);
++		break;
++	}
++	return NOTIFY_OK;
+ }
+ 
++static struct notifier_block __refdata oprofile_cpu_notifier = {
++	.notifier_call = oprofile_cpu_notify,
++};
+ 
+-void __init oprofile_timer_init(struct oprofile_operations *ops)
++int __init oprofile_timer_init(struct oprofile_operations *ops)
+ {
++	int rc;
++
++	rc = register_hotcpu_notifier(&oprofile_cpu_notifier);
++	if (rc)
++		return rc;
+ 	ops->create_files = NULL;
+ 	ops->setup = NULL;
+ 	ops->shutdown = NULL;
+-	ops->start = timer_start;
+-	ops->stop = timer_stop;
++	ops->start = oprofile_hrtimer_start;
++	ops->stop = oprofile_hrtimer_stop;
+ 	ops->cpu_type = "timer";
++	return 0;
++}
++
++void __exit oprofile_timer_exit(void)
++{
++	unregister_hotcpu_notifier(&oprofile_cpu_notifier);
+ }
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index c0f4b36..39e71b0 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -58,6 +58,7 @@ struct trace_iterator {
+ 	/* The below is zeroed out in pipe_read */
+ 	struct trace_seq	seq;
+ 	struct trace_entry	*ent;
++	unsigned long		lost_events;
+ 	int			leftover;
+ 	int			cpu;
+ 	u64			ts;
+diff --git a/include/linux/module.h b/include/linux/module.h
+index 515d53a..6914fca 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -465,8 +465,7 @@ static inline void __module_get(struct module *module)
+ 	if (module) {
+ 		preempt_disable();
+ 		__this_cpu_inc(module->refptr->incs);
+-		trace_module_get(module, _THIS_IP_,
+-				 __this_cpu_read(module->refptr->incs));
++		trace_module_get(module, _THIS_IP_);
+ 		preempt_enable();
+ 	}
+ }
+@@ -480,8 +479,7 @@ static inline int try_module_get(struct module *module)
+ 
+ 		if (likely(module_is_live(module))) {
+ 			__this_cpu_inc(module->refptr->incs);
+-			trace_module_get(module, _THIS_IP_,
+-				__this_cpu_read(module->refptr->incs));
++			trace_module_get(module, _THIS_IP_);
+ 		} else
+ 			ret = 0;
+ 
+diff --git a/include/linux/ring_buffer.h b/include/linux/ring_buffer.h
+index 5fcc31e..c829776 100644
+--- a/include/linux/ring_buffer.h
++++ b/include/linux/ring_buffer.h
+@@ -120,9 +120,11 @@ int ring_buffer_write(struct ring_buffer *buffer,
+ 		      unsigned long length, void *data);
+ 
+ struct ring_buffer_event *
+-ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts);
++ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts,
++		 unsigned long *lost_events);
+ struct ring_buffer_event *
+-ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts);
++ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
++		    unsigned long *lost_events);
+ 
+ struct ring_buffer_iter *
+ ring_buffer_read_start(struct ring_buffer *buffer, int cpu);
+diff --git a/include/trace/events/module.h b/include/trace/events/module.h
+index 4b0f48b..c7bb2f0 100644
+--- a/include/trace/events/module.h
++++ b/include/trace/events/module.h
+@@ -51,11 +51,14 @@ TRACE_EVENT(module_free,
+ 	TP_printk("%s", __get_str(name))
+ );
+ 
++#ifdef CONFIG_MODULE_UNLOAD
++/* trace_module_get/put are only used if CONFIG_MODULE_UNLOAD is defined */
++
+ DECLARE_EVENT_CLASS(module_refcnt,
+ 
+-	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
++	TP_PROTO(struct module *mod, unsigned long ip),
+ 
+-	TP_ARGS(mod, ip, refcnt),
++	TP_ARGS(mod, ip),
+ 
+ 	TP_STRUCT__entry(
+ 		__field(	unsigned long,	ip		)
+@@ -65,7 +68,7 @@ DECLARE_EVENT_CLASS(module_refcnt,
+ 
+ 	TP_fast_assign(
+ 		__entry->ip	= ip;
+-		__entry->refcnt	= refcnt;
++		__entry->refcnt	= __this_cpu_read(mod->refptr->incs) + __this_cpu_read(mod->refptr->decs);
+ 		__assign_str(name, mod->name);
+ 	),
+ 
+@@ -75,17 +78,18 @@ DECLARE_EVENT_CLASS(module_refcnt,
+ 
+ DEFINE_EVENT(module_refcnt, module_get,
+ 
+-	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
++	TP_PROTO(struct module *mod, unsigned long ip),
+ 
+-	TP_ARGS(mod, ip, refcnt)
++	TP_ARGS(mod, ip)
+ );
+ 
+ DEFINE_EVENT(module_refcnt, module_put,
+ 
+-	TP_PROTO(struct module *mod, unsigned long ip, int refcnt),
++	TP_PROTO(struct module *mod, unsigned long ip),
+ 
+-	TP_ARGS(mod, ip, refcnt)
++	TP_ARGS(mod, ip)
+ );
++#endif /* CONFIG_MODULE_UNLOAD */
+ 
+ TRACE_EVENT(module_request,
+ 
+diff --git a/include/trace/events/signal.h b/include/trace/events/signal.h
+index a510b75..814566c 100644
+--- a/include/trace/events/signal.h
++++ b/include/trace/events/signal.h
+@@ -100,18 +100,7 @@ TRACE_EVENT(signal_deliver,
+ 		  __entry->sa_handler, __entry->sa_flags)
+ );
+ 
+-/**
+- * signal_overflow_fail - called when signal queue is overflow
+- * @sig: signal number
+- * @group: signal to process group or not (bool)
+- * @info: pointer to struct siginfo
+- *
+- * Kernel fails to generate 'sig' signal with 'info' siginfo, because
+- * siginfo queue is overflow, and the signal is dropped.
+- * 'group' is not 0 if the signal will be sent to a process group.
+- * 'sig' is always one of RT signals.
+- */
+-TRACE_EVENT(signal_overflow_fail,
++DECLARE_EVENT_CLASS(signal_queue_overflow,
+ 
+ 	TP_PROTO(int sig, int group, struct siginfo *info),
+ 
+@@ -135,6 +124,24 @@ TRACE_EVENT(signal_overflow_fail,
+ );
+ 
+ /**
++ * signal_overflow_fail - called when signal queue is overflow
++ * @sig: signal number
++ * @group: signal to process group or not (bool)
++ * @info: pointer to struct siginfo
++ *
++ * Kernel fails to generate 'sig' signal with 'info' siginfo, because
++ * siginfo queue is overflow, and the signal is dropped.
++ * 'group' is not 0 if the signal will be sent to a process group.
++ * 'sig' is always one of RT signals.
++ */
++DEFINE_EVENT(signal_queue_overflow, signal_overflow_fail,
++
++	TP_PROTO(int sig, int group, struct siginfo *info),
++
++	TP_ARGS(sig, group, info)
++);
++
++/**
+  * signal_lose_info - called when siginfo is lost
+  * @sig: signal number
+  * @group: signal to process group or not (bool)
+@@ -145,28 +152,13 @@ TRACE_EVENT(signal_overflow_fail,
+  * 'group' is not 0 if the signal will be sent to a process group.
+  * 'sig' is always one of non-RT signals.
+  */
+-TRACE_EVENT(signal_lose_info,
++DEFINE_EVENT(signal_queue_overflow, signal_lose_info,
+ 
+ 	TP_PROTO(int sig, int group, struct siginfo *info),
+ 
+-	TP_ARGS(sig, group, info),
+-
+-	TP_STRUCT__entry(
+-		__field(	int,	sig	)
+-		__field(	int,	group	)
+-		__field(	int,	errno	)
+-		__field(	int,	code	)
+-	),
+-
+-	TP_fast_assign(
+-		__entry->sig	= sig;
+-		__entry->group	= group;
+-		TP_STORE_SIGINFO(__entry, info);
+-	),
+-
+-	TP_printk("sig=%d group=%d errno=%d code=%d",
+-		  __entry->sig, __entry->group, __entry->errno, __entry->code)
++	TP_ARGS(sig, group, info)
+ );
++
+ #endif /* _TRACE_SIGNAL_H */
+ 
+ /* This part must be outside protection */
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index ea6f9d4..75dd778 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -154,9 +154,11 @@
+  *
+  *	field = (typeof(field))entry;
+  *
+- *	p = get_cpu_var(ftrace_event_seq);
++ *	p = &get_cpu_var(ftrace_event_seq);
+  *	trace_seq_init(p);
+- *	ret = trace_seq_printf(s, <TP_printk> "\n");
++ *	ret = trace_seq_printf(s, "%s: ", <call>);
++ *	if (ret)
++ *		ret = trace_seq_printf(s, <TP_printk> "\n");
+  *	put_cpu();
+  *	if (!ret)
+  *		return TRACE_TYPE_PARTIAL_LINE;
+@@ -450,38 +452,38 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
+  *
+  * static void ftrace_raw_event_<call>(proto)
+  * {
++ *	struct ftrace_data_offsets_<call> __maybe_unused __data_offsets;
+  *	struct ring_buffer_event *event;
+  *	struct ftrace_raw_<call> *entry; <-- defined in stage 1
+  *	struct ring_buffer *buffer;
+  *	unsigned long irq_flags;
++ *	int __data_size;
+  *	int pc;
+  *
+  *	local_save_flags(irq_flags);
+  *	pc = preempt_count();
+  *
++ *	__data_size = ftrace_get_offsets_<call>(&__data_offsets, args);
++ *
+  *	event = trace_current_buffer_lock_reserve(&buffer,
+  *				  event_<call>.id,
+- *				  sizeof(struct ftrace_raw_<call>),
++ *				  sizeof(*entry) + __data_size,
+  *				  irq_flags, pc);
+  *	if (!event)
+  *		return;
+  *	entry	= ring_buffer_event_data(event);
+  *
+- *	<assign>;  <-- Here we assign the entries by the __field and
+- *			__array macros.
++ *	{ <assign>; }  <-- Here we assign the entries by the __field and
++ *			   __array macros.
+  *
+- *	trace_current_buffer_unlock_commit(buffer, event, irq_flags, pc);
++ *	if (!filter_current_check_discard(buffer, event_call, entry, event))
++ *		trace_current_buffer_unlock_commit(buffer,
++ *						   event, irq_flags, pc);
+  * }
+  *
+  * static int ftrace_raw_reg_event_<call>(struct ftrace_event_call *unused)
+  * {
+- *	int ret;
+- *
+- *	ret = register_trace_<call>(ftrace_raw_event_<call>);
+- *	if (!ret)
+- *		pr_info("event trace: Could not activate trace point "
+- *			"probe to <call>");
+- *	return ret;
++ *	return register_trace_<call>(ftrace_raw_event_<call>);
+  * }
+  *
+  * static void ftrace_unreg_event_<call>(struct ftrace_event_call *unused)
+@@ -493,6 +495,8 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
+  *	.trace			= ftrace_raw_output_<call>, <-- stage 2
+  * };
+  *
++ * static const char print_fmt_<call>[] = <TP_printk>;
++ *
+  * static struct ftrace_event_call __used
+  * __attribute__((__aligned__(4)))
+  * __attribute__((section("_ftrace_events"))) event_<call> = {
+@@ -501,6 +505,8 @@ perf_trace_disable_##name(struct ftrace_event_call *unused)		\
+  *	.raw_init		= trace_event_raw_init,
+  *	.regfunc		= ftrace_reg_event_<call>,
+  *	.unregfunc		= ftrace_unreg_event_<call>,
++ *	.print_fmt		= print_fmt_<call>,
++ *	.define_fields		= ftrace_define_fields_<call>,
+  * }
+  *
+  */
+@@ -569,7 +575,6 @@ ftrace_raw_event_id_##call(struct ftrace_event_call *event_call,	\
+ 		return;							\
+ 	entry	= ring_buffer_event_data(event);			\
+ 									\
+-									\
+ 	tstruct								\
+ 									\
+ 	{ assign; }							\
+diff --git a/kernel/module.c b/kernel/module.c
+index 1016b75..b8a1e31 100644
+--- a/kernel/module.c
++++ b/kernel/module.c
+@@ -59,8 +59,6 @@
+ #define CREATE_TRACE_POINTS
+ #include <trace/events/module.h>
+ 
+-EXPORT_TRACEPOINT_SYMBOL(module_get);
+-
+ #if 0
+ #define DEBUGP printk
+ #else
+@@ -515,6 +513,9 @@ MODINFO_ATTR(srcversion);
+ static char last_unloaded_module[MODULE_NAME_LEN+1];
+ 
+ #ifdef CONFIG_MODULE_UNLOAD
++
++EXPORT_TRACEPOINT_SYMBOL(module_get);
++
+ /* Init the unload section of the module. */
+ static void module_unload_init(struct module *mod)
+ {
+@@ -867,8 +868,7 @@ void module_put(struct module *module)
+ 		smp_wmb(); /* see comment in module_refcount */
+ 		__this_cpu_inc(module->refptr->decs);
+ 
+-		trace_module_put(module, _RET_IP_,
+-				 __this_cpu_read(module->refptr->decs));
++		trace_module_put(module, _RET_IP_);
+ 		/* Maybe they're waiting for us to drop reference? */
+ 		if (unlikely(!module_is_live(module)))
+ 			wake_up_process(module->waiter);
+diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
+index 41ca394..5885cdf 100644
+--- a/kernel/trace/ring_buffer.c
++++ b/kernel/trace/ring_buffer.c
+@@ -319,6 +319,11 @@ EXPORT_SYMBOL_GPL(ring_buffer_event_data);
+ #define TS_MASK		((1ULL << TS_SHIFT) - 1)
+ #define TS_DELTA_TEST	(~TS_MASK)
+ 
++/* Flag when events were overwritten */
++#define RB_MISSED_EVENTS	(1 << 31)
++/* Missed count stored at end */
++#define RB_MISSED_STORED	(1 << 30)
++
+ struct buffer_data_page {
+ 	u64		 time_stamp;	/* page time stamp */
+ 	local_t		 commit;	/* write committed index */
+@@ -338,6 +343,7 @@ struct buffer_page {
+ 	local_t		 write;		/* index for next write */
+ 	unsigned	 read;		/* index for next read */
+ 	local_t		 entries;	/* entries on this page */
++	unsigned long	 real_end;	/* real end of data */
+ 	struct buffer_data_page *page;	/* Actual data page */
+ };
+ 
+@@ -417,6 +423,12 @@ int ring_buffer_print_page_header(struct trace_seq *s)
+ 			       (unsigned int)sizeof(field.commit),
+ 			       (unsigned int)is_signed_type(long));
+ 
++	ret = trace_seq_printf(s, "\tfield: int overwrite;\t"
++			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
++			       (unsigned int)offsetof(typeof(field), commit),
++			       1,
++			       (unsigned int)is_signed_type(long));
++
+ 	ret = trace_seq_printf(s, "\tfield: char data;\t"
+ 			       "offset:%u;\tsize:%u;\tsigned:%u;\n",
+ 			       (unsigned int)offsetof(typeof(field), data),
+@@ -440,6 +452,8 @@ struct ring_buffer_per_cpu {
+ 	struct buffer_page		*tail_page;	/* write to tail */
+ 	struct buffer_page		*commit_page;	/* committed pages */
+ 	struct buffer_page		*reader_page;
++	unsigned long			lost_events;
++	unsigned long			last_overrun;
+ 	local_t				commit_overrun;
+ 	local_t				overrun;
+ 	local_t				entries;
+@@ -1762,6 +1776,13 @@ rb_reset_tail(struct ring_buffer_per_cpu *cpu_buffer,
+ 	kmemcheck_annotate_bitfield(event, bitfield);
+ 
+ 	/*
++	 * Save the original length to the meta data.
++	 * This will be used by the reader to add lost event
++	 * counter.
++	 */
++	tail_page->real_end = tail;
++
++	/*
+ 	 * If this event is bigger than the minimum size, then
+ 	 * we need to be careful that we don't subtract the
+ 	 * write counter enough to allow another writer to slip
+@@ -2838,6 +2859,7 @@ static struct buffer_page *
+ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ {
+ 	struct buffer_page *reader = NULL;
++	unsigned long overwrite;
+ 	unsigned long flags;
+ 	int nr_loops = 0;
+ 	int ret;
+@@ -2879,6 +2901,7 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	local_set(&cpu_buffer->reader_page->write, 0);
+ 	local_set(&cpu_buffer->reader_page->entries, 0);
+ 	local_set(&cpu_buffer->reader_page->page->commit, 0);
++	cpu_buffer->reader_page->real_end = 0;
+ 
+  spin:
+ 	/*
+@@ -2899,6 +2922,18 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	rb_set_list_to_head(cpu_buffer, &cpu_buffer->reader_page->list);
+ 
+ 	/*
++	 * We want to make sure we read the overruns after we set up our
++	 * pointers to the next object. The writer side does a
++	 * cmpxchg to cross pages which acts as the mb on the writer
++	 * side. Note, the reader will constantly fail the swap
++	 * while the writer is updating the pointers, so this
++	 * guarantees that the overwrite recorded here is the one we
++	 * want to compare with the last_overrun.
++	 */
++	smp_mb();
++	overwrite = local_read(&(cpu_buffer->overrun));
++
++	/*
+ 	 * Here's the tricky part.
+ 	 *
+ 	 * We need to move the pointer past the header page.
+@@ -2929,6 +2964,11 @@ rb_get_reader_page(struct ring_buffer_per_cpu *cpu_buffer)
+ 	cpu_buffer->reader_page = reader;
+ 	rb_reset_reader_page(cpu_buffer);
+ 
++	if (overwrite != cpu_buffer->last_overrun) {
++		cpu_buffer->lost_events = overwrite - cpu_buffer->last_overrun;
++		cpu_buffer->last_overrun = overwrite;
++	}
++
+ 	goto again;
+ 
+  out:
+@@ -3005,8 +3045,14 @@ static void rb_advance_iter(struct ring_buffer_iter *iter)
+ 		rb_advance_iter(iter);
+ }
+ 
++static int rb_lost_events(struct ring_buffer_per_cpu *cpu_buffer)
++{
++	return cpu_buffer->lost_events;
++}
++
+ static struct ring_buffer_event *
+-rb_buffer_peek(struct ring_buffer_per_cpu *cpu_buffer, u64 *ts)
++rb_buffer_peek(struct ring_buffer_per_cpu *cpu_buffer, u64 *ts,
++	       unsigned long *lost_events)
+ {
+ 	struct ring_buffer_event *event;
+ 	struct buffer_page *reader;
+@@ -3058,6 +3104,8 @@ rb_buffer_peek(struct ring_buffer_per_cpu *cpu_buffer, u64 *ts)
+ 			ring_buffer_normalize_time_stamp(cpu_buffer->buffer,
+ 							 cpu_buffer->cpu, ts);
+ 		}
++		if (lost_events)
++			*lost_events = rb_lost_events(cpu_buffer);
+ 		return event;
+ 
+ 	default:
+@@ -3168,12 +3216,14 @@ static inline int rb_ok_to_lock(void)
+  * @buffer: The ring buffer to read
+  * @cpu: The cpu to peak at
+  * @ts: The timestamp counter of this event.
++ * @lost_events: a variable to store if events were lost (may be NULL)
+  *
+  * This will return the event that will be read next, but does
+  * not consume the data.
+  */
+ struct ring_buffer_event *
+-ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts)
++ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts,
++		 unsigned long *lost_events)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer = buffer->buffers[cpu];
+ 	struct ring_buffer_event *event;
+@@ -3188,7 +3238,7 @@ ring_buffer_peek(struct ring_buffer *buffer, int cpu, u64 *ts)
+ 	local_irq_save(flags);
+ 	if (dolock)
+ 		spin_lock(&cpu_buffer->reader_lock);
+-	event = rb_buffer_peek(cpu_buffer, ts);
++	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
+ 	if (event && event->type_len == RINGBUF_TYPE_PADDING)
+ 		rb_advance_reader(cpu_buffer);
+ 	if (dolock)
+@@ -3230,13 +3280,17 @@ ring_buffer_iter_peek(struct ring_buffer_iter *iter, u64 *ts)
+ /**
+  * ring_buffer_consume - return an event and consume it
+  * @buffer: The ring buffer to get the next event from
++ * @cpu: the cpu to read the buffer from
++ * @ts: a variable to store the timestamp (may be NULL)
++ * @lost_events: a variable to store if events were lost (may be NULL)
+  *
+  * Returns the next event in the ring buffer, and that event is consumed.
+  * Meaning, that sequential reads will keep returning a different event,
+  * and eventually empty the ring buffer if the producer is slower.
+  */
+ struct ring_buffer_event *
+-ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts)
++ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts,
++		    unsigned long *lost_events)
+ {
+ 	struct ring_buffer_per_cpu *cpu_buffer;
+ 	struct ring_buffer_event *event = NULL;
+@@ -3257,9 +3311,11 @@ ring_buffer_consume(struct ring_buffer *buffer, int cpu, u64 *ts)
+ 	if (dolock)
+ 		spin_lock(&cpu_buffer->reader_lock);
+ 
+-	event = rb_buffer_peek(cpu_buffer, ts);
+-	if (event)
++	event = rb_buffer_peek(cpu_buffer, ts, lost_events);
++	if (event) {
++		cpu_buffer->lost_events = 0;
+ 		rb_advance_reader(cpu_buffer);
++	}
+ 
+ 	if (dolock)
+ 		spin_unlock(&cpu_buffer->reader_lock);
+@@ -3408,6 +3464,9 @@ rb_reset_cpu(struct ring_buffer_per_cpu *cpu_buffer)
+ 	cpu_buffer->write_stamp = 0;
+ 	cpu_buffer->read_stamp = 0;
+ 
++	cpu_buffer->lost_events = 0;
++	cpu_buffer->last_overrun = 0;
++
+ 	rb_head_page_activate(cpu_buffer);
+ }
+ 
+@@ -3683,6 +3742,7 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 	struct ring_buffer_event *event;
+ 	struct buffer_data_page *bpage;
+ 	struct buffer_page *reader;
++	unsigned long missed_events;
+ 	unsigned long flags;
+ 	unsigned int commit;
+ 	unsigned int read;
+@@ -3719,6 +3779,9 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 	read = reader->read;
+ 	commit = rb_page_commit(reader);
+ 
++	/* Check if any events were dropped */
++	missed_events = cpu_buffer->lost_events;
++
+ 	/*
+ 	 * If this page has been partially read or
+ 	 * if len is not big enough to read the rest of the page or
+@@ -3779,9 +3842,35 @@ int ring_buffer_read_page(struct ring_buffer *buffer,
+ 		local_set(&reader->entries, 0);
+ 		reader->read = 0;
+ 		*data_page = bpage;
 +
 +		/*
-+		 * If force_quiescent_state() coming soon and this CPU
-+		 * needs a quiescent state, and this is either RCU-sched
-+		 * or RCU-bh, force a local reschedule.
++		 * Use the real_end for the data size,
++		 * This gives us a chance to store the lost events
++		 * on the page.
 +		 */
- 		rdp->n_rp_qs_pending++;
-+		if (!rdp->preemptable &&
-+		    ULONG_CMP_LT(ACCESS_ONCE(rsp->jiffies_force_qs) - 1,
-+				 jiffies))
-+			set_need_resched();
-+	} else if (rdp->qs_pending && rdp->passed_quiesc) {
-+		rdp->n_rp_report_qs++;
- 		return 1;
++		if (reader->real_end)
++			local_set(&bpage->commit, reader->real_end);
  	}
+ 	ret = read;
  
-@@ -1767,6 +1818,21 @@ static int __cpuinit rcu_cpu_notify(struct notifier_block *self,
- }
- 
- /*
-+ * This function is invoked towards the end of the scheduler's initialization
-+ * process.  Before this is called, the idle task might contain
-+ * RCU read-side critical sections (during which time, this idle
-+ * task is booting the system).  After this function is called, the
-+ * idle tasks are prohibited from containing RCU read-side critical
-+ * sections.  This function also enables RCU lockdep checking.
-+ */
-+void rcu_scheduler_starting(void)
-+{
-+	WARN_ON(num_online_cpus() != 1);
-+	WARN_ON(nr_context_switches() > 0);
-+	rcu_scheduler_active = 1;
-+}
++	cpu_buffer->lost_events = 0;
++	/*
++	 * Set a flag in the commit field if we lost events
++	 */
++	if (missed_events) {
++		commit = local_read(&bpage->commit);
 +
-+/*
-  * Compute the per-level fanout, either using the exact fanout specified
-  * or balancing the tree, depending on CONFIG_RCU_FANOUT_EXACT.
-  */
-@@ -1849,6 +1915,14 @@ static void __init rcu_init_one(struct rcu_state *rsp)
- 			INIT_LIST_HEAD(&rnp->blocked_tasks[3]);
- 		}
- 	}
-+
-+	rnp = rsp->level[NUM_RCU_LVLS - 1];
-+	for_each_possible_cpu(i) {
-+		while (i > rnp->grphi)
-+			rnp++;
-+		rsp->rda[i]->mynode = rnp;
-+		rcu_boot_init_percpu_data(i, rsp);
-+	}
- }
- 
- /*
-@@ -1859,19 +1933,11 @@ static void __init rcu_init_one(struct rcu_state *rsp)
- #define RCU_INIT_FLAVOR(rsp, rcu_data) \
- do { \
- 	int i; \
--	int j; \
--	struct rcu_node *rnp; \
- 	\
--	rcu_init_one(rsp); \
--	rnp = (rsp)->level[NUM_RCU_LVLS - 1]; \
--	j = 0; \
- 	for_each_possible_cpu(i) { \
--		if (i > rnp[j].grphi) \
--			j++; \
--		per_cpu(rcu_data, i).mynode = &rnp[j]; \
- 		(rsp)->rda[i] = &per_cpu(rcu_data, i); \
--		rcu_boot_init_percpu_data(i, rsp); \
- 	} \
-+	rcu_init_one(rsp); \
- } while (0)
- 
- void __init rcu_init(void)
-@@ -1879,12 +1945,6 @@ void __init rcu_init(void)
- 	int cpu;
- 
- 	rcu_bootup_announce();
--#ifdef CONFIG_RCU_CPU_STALL_DETECTOR
--	printk(KERN_INFO "RCU-based detection of stalled CPUs is enabled.\n");
--#endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
--#if NUM_RCU_LVL_4 != 0
--	printk(KERN_INFO "Experimental four-level hierarchy is enabled.\n");
--#endif /* #if NUM_RCU_LVL_4 != 0 */
- 	RCU_INIT_FLAVOR(&rcu_sched_state, rcu_sched_data);
- 	RCU_INIT_FLAVOR(&rcu_bh_state, rcu_bh_data);
- 	__rcu_init_preempt();
-@@ -1898,6 +1958,7 @@ void __init rcu_init(void)
- 	cpu_notifier(rcu_cpu_notify, 0);
- 	for_each_online_cpu(cpu)
- 		rcu_cpu_notify(NULL, CPU_UP_PREPARE, (void *)(long)cpu);
-+	check_cpu_stall_init();
- }
- 
- #include "rcutree_plugin.h"
-diff --git a/kernel/rcutree.h b/kernel/rcutree.h
-index 4a525a3..14c040b 100644
---- a/kernel/rcutree.h
-+++ b/kernel/rcutree.h
-@@ -223,6 +223,7 @@ struct rcu_data {
- 	/* 5) __rcu_pending() statistics. */
- 	unsigned long n_rcu_pending;	/* rcu_pending() calls since boot. */
- 	unsigned long n_rp_qs_pending;
-+	unsigned long n_rp_report_qs;
- 	unsigned long n_rp_cb_ready;
- 	unsigned long n_rp_cpu_needs_gp;
- 	unsigned long n_rp_gp_completed;
-@@ -326,6 +327,7 @@ struct rcu_state {
- 	unsigned long jiffies_stall;		/* Time at which to check */
- 						/*  for CPU stalls. */
- #endif /* #ifdef CONFIG_RCU_CPU_STALL_DETECTOR */
-+	char *name;				/* Name of structure. */
- };
- 
- /* Return values for rcu_preempt_offline_tasks(). */
-diff --git a/kernel/rcutree_plugin.h b/kernel/rcutree_plugin.h
-index 79b53bd..0e4f420 100644
---- a/kernel/rcutree_plugin.h
-+++ b/kernel/rcutree_plugin.h
-@@ -26,6 +26,45 @@
- 
- #include <linux/delay.h>
- 
-+/*
-+ * Check the RCU kernel configuration parameters and print informative
-+ * messages about anything out of the ordinary.  If you like #ifdef, you
-+ * will love this function.
-+ */
-+static void __init rcu_bootup_announce_oddness(void)
-+{
-+#ifdef CONFIG_RCU_TRACE
-+	printk(KERN_INFO "\tRCU debugfs-based tracing is enabled.\n");
-+#endif
-+#if (defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 64) || (!defined(CONFIG_64BIT) && CONFIG_RCU_FANOUT != 32)
-+	printk(KERN_INFO "\tCONFIG_RCU_FANOUT set to non-default value of %d\n",
-+	       CONFIG_RCU_FANOUT);
-+#endif
-+#ifdef CONFIG_RCU_FANOUT_EXACT
-+	printk(KERN_INFO "\tHierarchical RCU autobalancing is disabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_FAST_NO_HZ
-+	printk(KERN_INFO
-+	       "\tRCU dyntick-idle grace-period acceleration is enabled.\n");
-+#endif
-+#ifdef CONFIG_PROVE_RCU
-+	printk(KERN_INFO "\tRCU lockdep checking is enabled.\n");
-+#endif
-+#ifdef CONFIG_RCU_TORTURE_TEST_RUNNABLE
-+	printk(KERN_INFO "\tRCU torture testing starts during boot.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_DETECTOR
-+	printk(KERN_INFO
-+	       "\tRCU-based detection of stalled CPUs is disabled.\n");
-+#endif
-+#ifndef CONFIG_RCU_CPU_STALL_VERBOSE
-+	printk(KERN_INFO "\tVerbose stalled-CPUs detection is disabled.\n");
-+#endif
-+#if NUM_RCU_LVL_4 != 0
-+	printk(KERN_INFO "\tExperimental four-level hierarchy is enabled.\n");
-+#endif
-+}
-+
- #ifdef CONFIG_TREE_PREEMPT_RCU
- 
- struct rcu_state rcu_preempt_state = RCU_STATE_INITIALIZER(rcu_preempt_state);
-@@ -38,8 +77,8 @@ static int rcu_preempted_readers_exp(struct rcu_node *rnp);
-  */
- static void __init rcu_bootup_announce(void)
- {
--	printk(KERN_INFO
--	       "Experimental preemptable hierarchical RCU implementation.\n");
-+	printk(KERN_INFO "Preemptable hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
- }
- 
- /*
-@@ -75,13 +114,19 @@ EXPORT_SYMBOL_GPL(rcu_force_quiescent_state);
-  * that this just means that the task currently running on the CPU is
-  * not in a quiescent state.  There might be any number of tasks blocked
-  * while in an RCU read-side critical section.
-+ *
-+ * Unlike the other rcu_*_qs() functions, callers to this function
-+ * must disable irqs in order to protect the assignment to
-+ * ->rcu_read_unlock_special.
-  */
- static void rcu_preempt_qs(int cpu)
- {
- 	struct rcu_data *rdp = &per_cpu(rcu_preempt_data, cpu);
-+
- 	rdp->passed_quiesc_completed = rdp->gpnum - 1;
- 	barrier();
- 	rdp->passed_quiesc = 1;
-+	current->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- }
- 
- /*
-@@ -144,9 +189,8 @@ static void rcu_preempt_note_context_switch(int cpu)
- 	 * grace period, then the fact that the task has been enqueued
- 	 * means that we continue to block the current grace period.
- 	 */
--	rcu_preempt_qs(cpu);
- 	local_irq_save(flags);
--	t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
-+	rcu_preempt_qs(cpu);
- 	local_irq_restore(flags);
- }
- 
-@@ -236,7 +280,6 @@ static void rcu_read_unlock_special(struct task_struct *t)
- 	 */
- 	special = t->rcu_read_unlock_special;
- 	if (special & RCU_READ_UNLOCK_NEED_QS) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(smp_processor_id());
- 	}
- 
-@@ -473,7 +516,6 @@ static void rcu_preempt_check_callbacks(int cpu)
- 	struct task_struct *t = current;
- 
- 	if (t->rcu_read_lock_nesting == 0) {
--		t->rcu_read_unlock_special &= ~RCU_READ_UNLOCK_NEED_QS;
- 		rcu_preempt_qs(cpu);
- 		return;
- 	}
-@@ -515,11 +557,13 @@ void synchronize_rcu(void)
- 	if (!rcu_scheduler_active)
- 		return;
- 
-+	init_rcu_head_on_stack(&rcu.head);
- 	init_completion(&rcu.completion);
- 	/* Will wake me after RCU finished. */
- 	call_rcu(&rcu.head, wakeme_after_rcu);
- 	/* Wait for it. */
- 	wait_for_completion(&rcu.completion);
-+	destroy_rcu_head_on_stack(&rcu.head);
- }
- EXPORT_SYMBOL_GPL(synchronize_rcu);
- 
-@@ -754,6 +798,7 @@ void exit_rcu(void)
- static void __init rcu_bootup_announce(void)
- {
- 	printk(KERN_INFO "Hierarchical RCU implementation.\n");
-+	rcu_bootup_announce_oddness();
- }
- 
- /*
-@@ -1008,6 +1053,8 @@ static DEFINE_PER_CPU(unsigned long, rcu_dyntick_holdoff);
- int rcu_needs_cpu(int cpu)
- {
- 	int c = 0;
-+	int snap;
-+	int snap_nmi;
- 	int thatcpu;
- 
- 	/* Check for being in the holdoff period. */
-@@ -1015,12 +1062,18 @@ int rcu_needs_cpu(int cpu)
- 		return rcu_needs_cpu_quick_check(cpu);
- 
- 	/* Don't bother unless we are the last non-dyntick-idle CPU. */
--	for_each_cpu_not(thatcpu, nohz_cpu_mask)
--		if (thatcpu != cpu) {
-+	for_each_online_cpu(thatcpu) {
-+		if (thatcpu == cpu)
-+			continue;
-+		snap = per_cpu(rcu_dynticks, thatcpu).dynticks;
-+		snap_nmi = per_cpu(rcu_dynticks, thatcpu).dynticks_nmi;
-+		smp_mb(); /* Order sampling of snap with end of grace period. */
-+		if (((snap & 0x1) != 0) || ((snap_nmi & 0x1) != 0)) {
- 			per_cpu(rcu_dyntick_drain, cpu) = 0;
- 			per_cpu(rcu_dyntick_holdoff, cpu) = jiffies - 1;
- 			return rcu_needs_cpu_quick_check(cpu);
- 		}
-+	}
- 
- 	/* Check and update the rcu_dyntick_drain sequencing. */
- 	if (per_cpu(rcu_dyntick_drain, cpu) <= 0) {
-diff --git a/kernel/rcutree_trace.c b/kernel/rcutree_trace.c
-index d45db2e..36c95b4 100644
---- a/kernel/rcutree_trace.c
-+++ b/kernel/rcutree_trace.c
-@@ -241,11 +241,13 @@ static const struct file_operations rcugp_fops = {
- static void print_one_rcu_pending(struct seq_file *m, struct rcu_data *rdp)
- {
- 	seq_printf(m, "%3d%cnp=%ld "
--		   "qsp=%ld cbr=%ld cng=%ld gpc=%ld gps=%ld nf=%ld nn=%ld\n",
-+		   "qsp=%ld rpq=%ld cbr=%ld cng=%ld "
-+		   "gpc=%ld gps=%ld nf=%ld nn=%ld\n",
- 		   rdp->cpu,
- 		   cpu_is_offline(rdp->cpu) ? '!' : ' ',
- 		   rdp->n_rcu_pending,
- 		   rdp->n_rp_qs_pending,
-+		   rdp->n_rp_report_qs,
- 		   rdp->n_rp_cb_ready,
- 		   rdp->n_rp_cpu_needs_gp,
- 		   rdp->n_rp_gp_completed,
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 3c2a54f..d8a213c 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -3706,7 +3706,7 @@ need_resched:
- 	preempt_disable();
- 	cpu = smp_processor_id();
- 	rq = cpu_rq(cpu);
--	rcu_sched_qs(cpu);
-+	rcu_note_context_switch(cpu);
- 	prev = rq->curr;
- 	switch_count = &prev->nivcsw;
- 
-diff --git a/kernel/softirq.c b/kernel/softirq.c
-index 7c1a67e..0db913a 100644
---- a/kernel/softirq.c
-+++ b/kernel/softirq.c
-@@ -716,7 +716,7 @@ static int run_ksoftirqd(void * __bind_cpu)
- 			preempt_enable_no_resched();
- 			cond_resched();
- 			preempt_disable();
--			rcu_sched_qs((long)__bind_cpu);
-+			rcu_note_context_switch((long)__bind_cpu);
- 		}
- 		preempt_enable();
- 		set_current_state(TASK_INTERRUPTIBLE);
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index 935248b..930a9e5 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -512,6 +512,18 @@ config PROVE_RCU
- 
- 	 Say N if you are unsure.
- 
-+config PROVE_RCU_REPEATEDLY
-+	bool "RCU debugging: don't disable PROVE_RCU on first splat"
-+	depends on PROVE_RCU
-+	default n
-+	help
-+	 By itself, PROVE_RCU will disable checking upon issuing the
-+	 first warning (or "splat").  This feature prevents such
-+	 disabling, allowing multiple RCU-lockdep warnings to be printed
-+	 on a single reboot.
-+
-+	 Say N if you are unsure.
-+
- config LOCKDEP
- 	bool
- 	depends on DEBUG_KERNEL && TRACE_IRQFLAGS_SUPPORT && STACKTRACE_SUPPORT && LOCKDEP_SUPPORT
-@@ -793,7 +805,7 @@ config RCU_CPU_STALL_DETECTOR
- config RCU_CPU_STALL_VERBOSE
- 	bool "Print additional per-task information for RCU_CPU_STALL_DETECTOR"
- 	depends on RCU_CPU_STALL_DETECTOR && TREE_PREEMPT_RCU
--	default n
-+	default y
- 	help
- 	  This option causes RCU to printk detailed per-task information
- 	  for any tasks that are stalling the current RCU grace period.
-diff --git a/lib/debugobjects.c b/lib/debugobjects.c
-index b862b30..076464f 100644
---- a/lib/debugobjects.c
-+++ b/lib/debugobjects.c
-@@ -141,6 +141,7 @@ alloc_object(void *addr, struct debug_bucket *b, struct debug_obj_descr *descr)
- 		obj->object = addr;
- 		obj->descr  = descr;
- 		obj->state  = ODEBUG_STATE_NONE;
-+		obj->astate = 0;
- 		hlist_del(&obj->node);
- 
- 		hlist_add_head(&obj->node, &b->list);
-@@ -252,8 +253,10 @@ static void debug_print_object(struct debug_obj *obj, char *msg)
- 
- 	if (limit < 5 && obj->descr != descr_test) {
- 		limit++;
--		WARN(1, KERN_ERR "ODEBUG: %s %s object type: %s\n", msg,
--		       obj_states[obj->state], obj->descr->name);
-+		WARN(1, KERN_ERR "ODEBUG: %s %s (active state %u) "
-+				 "object type: %s\n",
-+			msg, obj_states[obj->state], obj->astate,
-+			obj->descr->name);
- 	}
- 	debug_objects_warnings++;
- }
-@@ -447,7 +450,10 @@ void debug_object_deactivate(void *addr, struct debug_obj_descr *descr)
- 		case ODEBUG_STATE_INIT:
- 		case ODEBUG_STATE_INACTIVE:
- 		case ODEBUG_STATE_ACTIVE:
--			obj->state = ODEBUG_STATE_INACTIVE;
-+			if (!obj->astate)
-+				obj->state = ODEBUG_STATE_INACTIVE;
-+			else
-+				debug_print_object(obj, "deactivate");
- 			break;
- 
- 		case ODEBUG_STATE_DESTROYED:
-@@ -553,6 +559,53 @@ out_unlock:
- 	raw_spin_unlock_irqrestore(&db->lock, flags);
- }
- 
-+/**
-+ * debug_object_active_state - debug checks object usage state machine
-+ * @addr:	address of the object
-+ * @descr:	pointer to an object specific debug description structure
-+ * @expect:	expected state
-+ * @next:	state to move to if expected state is found
-+ */
-+void
-+debug_object_active_state(void *addr, struct debug_obj_descr *descr,
-+			  unsigned int expect, unsigned int next)
-+{
-+	struct debug_bucket *db;
-+	struct debug_obj *obj;
-+	unsigned long flags;
-+
-+	if (!debug_objects_enabled)
-+		return;
-+
-+	db = get_bucket((unsigned long) addr);
-+
-+	raw_spin_lock_irqsave(&db->lock, flags);
-+
-+	obj = lookup_object(addr, db);
-+	if (obj) {
-+		switch (obj->state) {
-+		case ODEBUG_STATE_ACTIVE:
-+			if (obj->astate == expect)
-+				obj->astate = next;
-+			else
-+				debug_print_object(obj, "active_state");
-+			break;
-+
-+		default:
-+			debug_print_object(obj, "active_state");
-+			break;
++		/* If there is room at the end of the page to save the
++		 * missed events, then record it there.
++		 */
++		if (BUF_PAGE_SIZE - commit >= sizeof(missed_events)) {
++			memcpy(&bpage->data[commit], &missed_events,
++			       sizeof(missed_events));
++			local_add(RB_MISSED_STORED, &bpage->commit);
 +		}
-+	} else {
-+		struct debug_obj o = { .object = addr,
-+				       .state = ODEBUG_STATE_NOTAVAILABLE,
-+				       .descr = descr };
-+
-+		debug_print_object(&o, "active_state");
++		local_add(RB_MISSED_EVENTS, &bpage->commit);
 +	}
 +
-+	raw_spin_unlock_irqrestore(&db->lock, flags);
-+}
-+
- #ifdef CONFIG_DEBUG_OBJECTS_FREE
- static void __debug_check_no_obj_freed(const void *address, unsigned long size)
+  out_unlock:
+ 	spin_unlock_irqrestore(&cpu_buffer->reader_lock, flags);
+ 
+diff --git a/kernel/trace/ring_buffer_benchmark.c b/kernel/trace/ring_buffer_benchmark.c
+index df74c79..dc56556 100644
+--- a/kernel/trace/ring_buffer_benchmark.c
++++ b/kernel/trace/ring_buffer_benchmark.c
+@@ -81,7 +81,7 @@ static enum event_status read_event(int cpu)
+ 	int *entry;
+ 	u64 ts;
+ 
+-	event = ring_buffer_consume(buffer, cpu, &ts);
++	event = ring_buffer_consume(buffer, cpu, &ts, NULL);
+ 	if (!event)
+ 		return EVENT_DROPPED;
+ 
+diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
+index 44f916a..60f3b62 100644
+--- a/kernel/trace/trace.c
++++ b/kernel/trace/trace.c
+@@ -1545,7 +1545,8 @@ static void trace_iterator_increment(struct trace_iterator *iter)
+ }
+ 
+ static struct trace_entry *
+-peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts)
++peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts,
++		unsigned long *lost_events)
  {
-
+ 	struct ring_buffer_event *event;
+ 	struct ring_buffer_iter *buf_iter = iter->buffer_iter[cpu];
+@@ -1556,7 +1557,8 @@ peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts)
+ 	if (buf_iter)
+ 		event = ring_buffer_iter_peek(buf_iter, ts);
+ 	else
+-		event = ring_buffer_peek(iter->tr->buffer, cpu, ts);
++		event = ring_buffer_peek(iter->tr->buffer, cpu, ts,
++					 lost_events);
+ 
+ 	ftrace_enable_cpu();
+ 
+@@ -1564,10 +1566,12 @@ peek_next_entry(struct trace_iterator *iter, int cpu, u64 *ts)
+ }
+ 
+ static struct trace_entry *
+-__find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
++__find_next_entry(struct trace_iterator *iter, int *ent_cpu,
++		  unsigned long *missing_events, u64 *ent_ts)
+ {
+ 	struct ring_buffer *buffer = iter->tr->buffer;
+ 	struct trace_entry *ent, *next = NULL;
++	unsigned long lost_events, next_lost = 0;
+ 	int cpu_file = iter->cpu_file;
+ 	u64 next_ts = 0, ts;
+ 	int next_cpu = -1;
+@@ -1580,7 +1584,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
+ 	if (cpu_file > TRACE_PIPE_ALL_CPU) {
+ 		if (ring_buffer_empty_cpu(buffer, cpu_file))
+ 			return NULL;
+-		ent = peek_next_entry(iter, cpu_file, ent_ts);
++		ent = peek_next_entry(iter, cpu_file, ent_ts, missing_events);
+ 		if (ent_cpu)
+ 			*ent_cpu = cpu_file;
+ 
+@@ -1592,7 +1596,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
+ 		if (ring_buffer_empty_cpu(buffer, cpu))
+ 			continue;
+ 
+-		ent = peek_next_entry(iter, cpu, &ts);
++		ent = peek_next_entry(iter, cpu, &ts, &lost_events);
+ 
+ 		/*
+ 		 * Pick the entry with the smallest timestamp:
+@@ -1601,6 +1605,7 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
+ 			next = ent;
+ 			next_cpu = cpu;
+ 			next_ts = ts;
++			next_lost = lost_events;
+ 		}
+ 	}
+ 
+@@ -1610,6 +1615,9 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
+ 	if (ent_ts)
+ 		*ent_ts = next_ts;
+ 
++	if (missing_events)
++		*missing_events = next_lost;
++
+ 	return next;
+ }
+ 
+@@ -1617,13 +1625,14 @@ __find_next_entry(struct trace_iterator *iter, int *ent_cpu, u64 *ent_ts)
+ struct trace_entry *trace_find_next_entry(struct trace_iterator *iter,
+ 					  int *ent_cpu, u64 *ent_ts)
+ {
+-	return __find_next_entry(iter, ent_cpu, ent_ts);
++	return __find_next_entry(iter, ent_cpu, NULL, ent_ts);
+ }
+ 
+ /* Find the next real entry, and increment the iterator to the next entry */
+ static void *find_next_entry_inc(struct trace_iterator *iter)
+ {
+-	iter->ent = __find_next_entry(iter, &iter->cpu, &iter->ts);
++	iter->ent = __find_next_entry(iter, &iter->cpu,
++				      &iter->lost_events, &iter->ts);
+ 
+ 	if (iter->ent)
+ 		trace_iterator_increment(iter);
+@@ -1635,7 +1644,8 @@ static void trace_consume(struct trace_iterator *iter)
+ {
+ 	/* Don't allow ftrace to trace into the ring buffers */
+ 	ftrace_disable_cpu();
+-	ring_buffer_consume(iter->tr->buffer, iter->cpu, &iter->ts);
++	ring_buffer_consume(iter->tr->buffer, iter->cpu, &iter->ts,
++			    &iter->lost_events);
+ 	ftrace_enable_cpu();
+ }
+ 
+@@ -2030,6 +2040,10 @@ static enum print_line_t print_trace_line(struct trace_iterator *iter)
+ {
+ 	enum print_line_t ret;
+ 
++	if (iter->lost_events)
++		trace_seq_printf(&iter->seq, "CPU:%d [LOST %lu EVENTS]\n",
++				 iter->cpu, iter->lost_events);
++
+ 	if (iter->trace && iter->trace->print_line) {
+ 		ret = iter->trace->print_line(iter);
+ 		if (ret != TRACE_TYPE_UNHANDLED)
+diff --git a/kernel/trace/trace_functions_graph.c b/kernel/trace/trace_functions_graph.c
+index 9aed1a5..669b9c3 100644
+--- a/kernel/trace/trace_functions_graph.c
++++ b/kernel/trace/trace_functions_graph.c
+@@ -490,9 +490,10 @@ get_return_for_leaf(struct trace_iterator *iter,
+ 			 * We need to consume the current entry to see
+ 			 * the next one.
+ 			 */
+-			ring_buffer_consume(iter->tr->buffer, iter->cpu, NULL);
++			ring_buffer_consume(iter->tr->buffer, iter->cpu,
++					    NULL, NULL);
+ 			event = ring_buffer_peek(iter->tr->buffer, iter->cpu,
+-						 NULL);
++						 NULL, NULL);
+ 		}
+ 
+ 		if (!event)
+diff --git a/kernel/trace/trace_selftest.c b/kernel/trace/trace_selftest.c
+index 81003b4..9398034 100644
+--- a/kernel/trace/trace_selftest.c
++++ b/kernel/trace/trace_selftest.c
+@@ -30,7 +30,7 @@ static int trace_test_buffer_cpu(struct trace_array *tr, int cpu)
+ 	struct trace_entry *entry;
+ 	unsigned int loops = 0;
+ 
+-	while ((event = ring_buffer_consume(tr->buffer, cpu, NULL))) {
++	while ((event = ring_buffer_consume(tr->buffer, cpu, NULL, NULL))) {
+ 		entry = ring_buffer_event_data(event);
+ 
+ 		/*
