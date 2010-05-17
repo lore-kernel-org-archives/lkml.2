@@ -1,55 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755531Ab0EQTAq (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:00:46 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:44818 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754606Ab0EQTAp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:00:45 -0400
-Message-ID: <4BF190B4.70705@zytor.com>
-Date: Mon, 17 May 2010 11:53:40 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755564Ab0EQTBX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:01:23 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:60622 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753506Ab0EQTBV convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:01:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kX2RFG9ELR81sD0d594SNwn4gkZql73Bo9hAc+QqRQcYaZrILXpy+oZE8Kk8kUZX74
+         dAJEWhfkxWJrANIfhallGKNdFwWppfF4KIwfjrGIDrcd4/W+4z5B6b6N0neKtJVR2GwJ
+         ksfBC46VC2KaJf9Hgkdpp1iRUtvrLgxy9vMiQ=
 MIME-Version: 1.0
-To: Yinghai <yinghai.lu@oracle.com>
-CC: Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Miller <davem@davemloft.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH 15/35] x86, lmb: Add lmb_reserve_area_overlap_ok()
-References: <1273796396-29649-1-git-send-email-yinghai@kernel.org>	 <1273796396-29649-16-git-send-email-yinghai@kernel.org>	 <1273804337.21352.396.camel@pasglop> <4BECF158.5070200@oracle.com>	 <1273825807.21352.601.camel@pasglop> <4BED7CE3.1020507@oracle.com>	 <1273876234.21352.639.camel@pasglop>  <20100515073231.GB9877@elte.hu>	 <1274056773.21352.700.camel@pasglop>  <4BF0DE0C.2000905@oracle.com> <1274081072.21352.718.camel@pasglop> <4BF17A50.1050905@oracle.com>
-In-Reply-To: <4BF17A50.1050905@oracle.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <AANLkTilX0uhqrJtUSOC4smdH1M8V-h14J7YtRG4PPxOQ@mail.gmail.com>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	 <201005142308.48386.rjw@sisk.pl>
+	 <AANLkTilX0uhqrJtUSOC4smdH1M8V-h14J7YtRG4PPxOQ@mail.gmail.com>
+Date: Mon, 17 May 2010 15:01:19 -0400
+Message-ID: <AANLkTilE4bLZql7W0manAfJUp-S03jK-hUjLfNFxVFcx@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+From: Mike Snitzer <snitzer@gmail.com>
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2010 10:18 AM, Yinghai wrote:
+2010/5/17 Arve Hjønnevåg <arve@android.com>:
+> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
+>> On Friday 14 May 2010, Arve Hjønnevåg wrote:
+>>> This patch series adds a suspend-block api that provides the same
+>>> functionality as the android wakelock api. This version has some
+>>> changes from, or requested by, Rafael. The most notable changes are:
+>>> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
+>>>   for statically allocated suspend blockers.
+>>> - suspend_blocker_destroy is now called suspend_blocker_unregister
+>>> - The user space mandatory _INIT ioctl has been replaced with an
+>>>   optional _SET_NAME ioctl.
+>>>
+>>> I kept the ack and reviewed by tags on two of the patches even though
+>>> there were a few cosmetic changes.
 >>
->> No. Both will hit 2.6.36. It's way too late to queue up such changes for
->> the 2.6.35 merge window which has already opened.
-> 
-> i have feeling that your new LMB code will hit 2.6.36. and
-> x86 patches that is using to lmb will hit 2.6.37.
-> 
-> otherwise it will make more merge conflicts between tip and lmb.
-> unless put your lmb change to tip?
-> 
+>> Thanks for the patches, I think they are in a pretty good shape now.
+>>
+>> That said, I'd like the changelogs to be a bit more descriptive, at least for
+>> patch [1/8].  I think it should explain (in a few words) what the purpose of
+>> the feature is and what problems it solves that generally a combination of
+>> runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
+>> think we need that feature.
+>>
+>
+> How about:
+>
+> PM: Add opportunistic suspend support.
+>
+> Adds a suspend block api
 
-We can arrange for some way of dealing with this problem... this is not
-an issue.
+In the future I think it'd be ideal if you were to always use "suspend
+blocker" (rather than "suspend block").
 
->> Why would it be "too long" ? I keep asking what the heck is going on
->> with having a time bomb on those patches and yet have to get a
->> satisfactory answer.
-> 
-> why are you thinking that there is time bomb in the patches?
-
-You're the one that keeps saying "that is too long", but without
-motivating the hurry.
-
-	-hpa
+This work has nothing to do with the block layer yet by the subject I
+thought it somehow did.
