@@ -1,70 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755333Ab0EQTyW (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 15:54:22 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45270 "EHLO mx2.suse.de"
+	id S1754564Ab0EQTzg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 15:55:36 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37319 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753126Ab0EQTyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 15:54:20 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-From: James Bottomley <James.Bottomley@suse.de>
-To: me@felipebalbi.com
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>, linux-omap@vger.kernel.org,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
-In-Reply-To: <20100517193952.GC14047@gandalf>
-References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
-	 <87hbm6cz90.fsf@deeprootsystems.com>
-	 <1274115885.4418.59.camel@mulgrave.site> <20100517174647.GA11512@gandalf>
-	 <1274119179.4418.68.camel@mulgrave.site> <20100517181252.GA14260@gandalf>
-	 <1274124267.4418.149.camel@mulgrave.site> <20100517193840.GB14047@gandalf>
-	 <20100517193952.GC14047@gandalf>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 17 May 2010 15:49:35 -0400
-Message-ID: <1274125775.4418.182.camel@mulgrave.site>
+	id S1751693Ab0EQTze (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 15:55:34 -0400
+Date: Mon, 17 May 2010 15:55:07 -0400
+From: Valerie Aurora <vaurora@redhat.com>
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org
+Subject: Re: [PATCH 16/35] union-mount: Writable overlays/union mounts documentation
+Message-ID: <20100517195506.GC18568@shell>
+References: <1271372682-21225-13-git-send-email-vaurora@redhat.com> <1271372682-21225-14-git-send-email-vaurora@redhat.com> <1271372682-21225-15-git-send-email-vaurora@redhat.com> <1271372682-21225-16-git-send-email-vaurora@redhat.com> <1271372682-21225-17-git-send-email-vaurora@redhat.com> <E1O4GKw-000257-Hh@pomaz-ex.szeredi.hu> <20100428201908.GC16691@shell> <E1O7Q7n-0002KC-Tm@pomaz-ex.szeredi.hu> <20100429202012.GA6539@shell> <E1OBSYC-0004oQ-U4@pomaz-ex.szeredi.hu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <E1OBSYC-0004oQ-U4@pomaz-ex.szeredi.hu>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 22:39 +0300, Felipe Balbi wrote:
-> hi,
-> 
-> On Mon, May 17, 2010 at 10:38:40PM +0300, Felipe Balbi wrote:
-> > that's a whole other story. Hardware issues are things which in 99.999%
-> > of the cases we can't change. We have to work around them. Software
-> > bugs, on the other hand, can be fixed much more easily. I'm sure you
-> > agree with that, don't you ?
+On Mon, May 10, 2010 at 02:57:36PM +0200, Miklos Szeredi wrote:
+> On Thu, 29 Apr 2010, Valerie Aurora wrote:
+> > On Thu, Apr 29, 2010 at 11:33:39AM +0200, Miklos Szeredi wrote:
+> > > On Wed, 28 Apr 2010, Valerie Aurora wrote:
+> > > > I went down this road initially (do most of the unioning in a file
+> > > > system) and spent a couple of months on it.  But I always ended up
+> > > > having to do some level of copy-around and redirection similar to that
+> > > > in unionfs.
+> > > 
+> > > I haven't looked at unionfs in a long time.  Can you say something
+> > > more specific about what these problems were?
 > > 
-> > Trying to make a comparisson between hardware bug and software bug is
-> > simply non-sense in this case.
+> > Sure.  The short version is that unionfs has to allocate another copy
+> > of each file system structure - inode, etc. - and then keep an array
+> > of the matching structures from each of the file system layers.
 > 
-> before you reply saying that most of the problems are firmware bugs, try
-> to file a bug to any of the usb storage manufacturers and wait for them
-> to fix. It's virtualy impossible, so let's consider it a problem that
-> has to be worked around.
+> Let's not over-generalize the problem.  Current implementation has the
+> following properties:
+> 
+>  a) one read-only layer and one read-write layer
+>  b) for each non-directory only one of the layers is relevant
+>  c) for directories both layers may be relevant
+>  d) no need to go from a lower dentry or inode to an upper dentry/inode
+> 
+> >  Each
+> > unionfs file system op copies data up and down between the unionfs
+> > structures and the underlying structures, and then calls the lower
+> > file system op as necessary.  Often it has to duplicate code from the
+> > VFS before calling the lower file system ops.
+> 
+> Yep, and that can be fixed by adding better helpers to the VFS which
+> do all the locking magic, etc, and are supplied with a "struct path"
+> instead of a "char *".
 
-Right, because Firmware writers are from the rugged unresponsive uplands
-of planet
-ignore-user-complaints-and-eat-them-for-breakfast-if-they-file-bugs and
-Software writers are from the emollient responsive groves of planet
-harmony.  Obviously what would work for one wouldn't work for the other.
+Hm, I am thinking about your ideas.  Al did a code review a couple of
+weeks ago and pointed out ways to eliminate about a third of the code
+and push another good chunk down into the file system implementation.
+Let me get the new version out and then we can look at pushing what's
+left into VFS helper functions.
 
-As a software writer, I fully buy into that world view.  The trouble is
-that when I go to dinner with hardware people, they seem to be awfully
-nice chaps ... almost exactly like me, in fact ...
+Thanks,
 
-James
-
-
-
+-VAL
