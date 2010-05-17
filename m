@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755367Ab0EQRSV (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 13:18:21 -0400
-Received: from mailhub.sw.ru ([195.214.232.25]:16476 "EHLO relay.sw.ru"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754142Ab0EQRST (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 13:18:19 -0400
-From: Andrey Vagin <avagin@openvz.org>
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-       Oleg Nesterov <oleg@tv-sign.ru>, Pavel Emelyanov <xemul@openvz.org>,
-       Stanislaw Gruszka <sgruszka@redhat.com>,
-       Andrey Vagin <avagin@openvz.org>
-Subject: [PATCH 2/3] posix_timer: fix error path in timer_create
-Date: Mon, 17 May 2010 21:18:07 +0400
-Message-Id: <1274116688-4037-2-git-send-email-avagin@openvz.org>
-X-Mailer: git-send-email 1.6.6
-In-Reply-To: <1274116688-4037-1-git-send-email-avagin@openvz.org>
-References: <1274116688-4037-1-git-send-email-avagin@openvz.org>
+	id S1754555Ab0EQRTt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 13:19:49 -0400
+Received: from lazybastard.de ([212.112.238.170]:57760 "EHLO
+	longford.logfs.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753067Ab0EQRTs (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 13:19:48 -0400
+Date: Mon, 17 May 2010 19:19:29 +0200
+From: =?utf-8?B?SsO2cm4=?= Engel <joern@logfs.org>
+To: Linus <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>
+Subject: Please pull logfs tree for fixes
+Message-ID: <20100517171929.GC28003@logfs.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-move CLOCK_DISPATCH(which_clock, timer_create, (new_timer)) after all
-posible EFAULT erros.
+Linus,
 
-*_timer_create may allocate/get resources.
-(for example posix_cpu_timer_create does get_task_struct)
+this should have made it into 2.6.34 - except that I was on vacation
+last week and decided not to send a pull request right before hanging
+out the "gone fishing" sign.  Whether that was a wise decision, I'm no
+longer so sure.
 
-Signed-off-by: Andrey Vagin <avagin@openvz.org>
----
- kernel/posix-timers.c |    7 ++++---
- 1 files changed, 4 insertions(+), 3 deletions(-)
+If such a situation reappears in the future, would you rather have the
+fixes and mindlessly revert them in case of any trouble or wait until
+the respective maintainer reappers?
 
-diff --git a/kernel/posix-timers.c b/kernel/posix-timers.c
-index 5555e7c..ad72342 100644
---- a/kernel/posix-timers.c
-+++ b/kernel/posix-timers.c
-@@ -559,9 +559,6 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->it_id = (timer_t) new_timer_id;
- 	new_timer->it_clock = which_clock;
- 	new_timer->it_overrun = -1;
--	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
--	if (error)
--		goto out;
- 
- 	if (copy_to_user(created_timer_id,
- 			 &new_timer_id, sizeof (new_timer_id))) {
-@@ -593,6 +590,10 @@ SYSCALL_DEFINE3(timer_create, const clockid_t, which_clock,
- 	new_timer->sigq->info.si_tid   = new_timer->it_id;
- 	new_timer->sigq->info.si_code  = SI_TIMER;
- 
-+	error = CLOCK_DISPATCH(which_clock, timer_create, (new_timer));
-+	if (error)
-+		goto out;
-+
- 	spin_lock_irq(&current->sighand->siglock);
- 	new_timer->it_signal = current->signal;
- 	list_add(&new_timer->list, &current->signal->posix_timers);
+Jörn
+
 -- 
-1.6.6
+Debugging is twice as hard as writing the code in the first place.
+Therefore, if you write the code as cleverly as possible, you are,
+by definition, not smart enough to debug it.
+-- Brian W. Kernighan
 
+
+The following changes since commit 79dba2eaa771c3173957eccfd288e0e0d12e4d3f:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../jbarnes/pci-2.6
+
+are available in the git repository at:
+
+  git://git.kernel.org/pub/scm/linux/kernel/git/joern/logfs.git master
+
+Dan Carpenter (2):
+      logfs: testing the wrong variable
+      logfs: handle errors from get_mtd_device()
+
+Joern Engel (10):
+      LogFS: Fix typo in b6349ac8
+      logfs: Return -EINVAL if filesystem image doesn't match
+      logfs: fix logfs_seek_hole()
+      logfs: Close i_ino reuse race
+      logfs: survive logfs_buf_recover read errors
+      logfs: commit reservations under space pressure
+      logfs: fix compile failure
+      logfs: fix sync
+      logfs: remove unused variable
+      logfs: handle powerfail on NAND flash
+
+Prasad Joshi (1):
+      logfs: initialize li->li_refcount
+
+ fs/logfs/dev_bdev.c  |    6 ++++++
+ fs/logfs/dev_mtd.c   |   26 +++++++++++++++++++++++++-
+ fs/logfs/file.c      |   16 ++++++++++++----
+ fs/logfs/gc.c        |   49 +++++++++++++++++++++----------------------------
+ fs/logfs/inode.c     |    6 +++---
+ fs/logfs/journal.c   |    7 +++----
+ fs/logfs/logfs.h     |   13 ++++++++-----
+ fs/logfs/readwrite.c |   19 +++++++++++++++----
+ fs/logfs/segment.c   |    7 +++++--
+ fs/logfs/super.c     |    8 ++++++--
+ 10 files changed, 104 insertions(+), 53 deletions(-)
