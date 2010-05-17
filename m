@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753920Ab0EQGKo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 02:10:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37187 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753068Ab0EQGKn convert rfc822-to-8bit (ORCPT
+	id S1754072Ab0EQGLH (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 02:11:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:63363 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753068Ab0EQGLC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 02:10:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=O9/INm5ox08k4LFwG76FJxLSdXgDhKy4tb2z4+YsX5dRNu32igUrPAAsZloi3cQ85d
-         Ct03UMkpMWYHLitHOQ9y5ZVBCKmvzpDfGyjvAbtiZ6qP/8C4A2uPV7TyflMYlwb8DlvD
-         LkXnTOkF9o8AKitiFzs7IfgwBTP474IgzrYCw=
+	Mon, 17 May 2010 02:11:02 -0400
+Message-ID: <4BF0DD98.1090904@oracle.com>
+Date: Sun, 16 May 2010 23:09:28 -0700
+From: Yinghai <yinghai.lu@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1274074364-8838-1-git-send-email-ngupta@vflare.org>
-References: <1274074364-8838-1-git-send-email-ngupta@vflare.org>
-Date: Mon, 17 May 2010 09:10:41 +0300
-X-Google-Sender-Auth: RCFKShR0ExyjB0rMDxLV9j345tg
-Message-ID: <AANLkTinopOldGl3K648tnwmtMT3KhERIW8grokd45O3C@mail.gmail.com>
-Subject: Re: [PATCH 0/3] ramzswap: Eliminate stale data from compressed memory 
-	(v2 resend)
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+CC: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>, hughd@google.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       David Miller <davem@davemloft.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Johannes Weiner <hannes@cmpxchg.org>, linux-kernel@vger.kernel.org,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH 07/37] lmb: Add lmb_find_area()
+References: <1273866363-14249-1-git-send-email-yinghai@kernel.org>	 <1273866363-14249-8-git-send-email-yinghai@kernel.org>	 <1273876749.21352.645.camel@pasglop>  <4BEDD7D4.90002@oracle.com> <1274057329.21352.709.camel@pasglop>
+In-Reply-To: <1274057329.21352.709.camel@pasglop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090207.4BF0DDDF.0193:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 8:32 AM, Nitin Gupta <ngupta@vflare.org> wrote:
-> Resending as Greg wanted.
->
-> (tested on mainline but should apply to linux-next cleanly)
->
->
->  * Changelog: v2 vs initial patches
->   - directly add swap free callback to block_device_operations
->     instead of using 'notifiers' for various swap events.
->
-> ramzswap driver creates RAM based block devices which can be
-> used (only) as swap disks. Pages swapped to these disks are
-> compressed and stored in memory itself.
->
-> However, these devices do not get any notification when a swap
-> slot is freed (swap_map[i] reaches 0). So, we cannot free memory
-> allocated corresponding to this swap slot. Such stale data can
-> quickly accumulate in (compressed) memory defeating the whole
-> purpose of such devices.
->
-> To overcome this problem, we now add a callback in struct
-> block_device_operations which is called as soon as a swap
-> slot is freed.
->
-> Nitin Gupta (3):
->  Add flag to identify block swap devices
->  Add swap slot free callback to block_device_operations
->  ramzswap: Handler for swap slot free callback
->
->  drivers/staging/ramzswap/TODO           |    5 -----
->  drivers/staging/ramzswap/ramzswap_drv.c |   22 +++++++++++++---------
->  include/linux/blkdev.h                  |    2 ++
->  include/linux/swap.h                    |    1 +
->  mm/swapfile.c                           |    5 +++++
->  5 files changed, 21 insertions(+), 14 deletions(-)
->  delete mode 100644 drivers/staging/ramzswap/TODO
+On 05/16/2010 05:48 PM, Benjamin Herrenschmidt wrote:
+> On Fri, 2010-05-14 at 16:08 -0700, Yinghai wrote:
+>> how about
+>> lmb_reserve_area  ==> lmb_reserve_range
+>> lmb_free_area  ==> lmb_free_range
+> 
+> I completely fail to see why you still need those two. They are exactly
+> the same thing as lmb_reserve() and lmb_free(), just with a slightly
+> different prototype.
+> 
+>> or leave them that way, later replace them lmb_reserve and lmb_free
+>> one by one?
+> 
+> Nah, if you have some use of the wrappers to ease the transition from
+> the existing x86 code, then just make up a couple of inline wrappers
+> somewhere inside the x86 code. You may not even want to call it
+> lmb_* at all... 
 
-Nitin, please retain ACKs when resending patches.
+can you move asm/lmb.h down in linux/lmb.h ?
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+so I can put the inline wrapper in arch/x86/include/asm/lmb.h.
 
-for the whole series.
+> 
+> But here, I'll let Thomas and Peter decide what to do, it's really
+> x86 stuff at this stage. I don't want to see two subtlely different
+> APIs at the LMB level doing the same thing.
+> 
+> Cheers,
+> Ben.
+> 
+> 
+
