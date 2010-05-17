@@ -1,60 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755793Ab0EQVuQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 17:50:16 -0400
-Received: from mail.codelabs.ch ([217.150.249.120]:53602 "EHLO
-	fenrir.codelabs.ch" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754905Ab0EQVuN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 17:50:13 -0400
-Message-ID: <4BF1BA0E.4010402@codelabs.ch>
-Date: Mon, 17 May 2010 23:50:06 +0200
-From: Adrian-Ken Rueegsegger <ken@codelabs.ch>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
+	id S1755924Ab0EQV4k (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 17:56:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:49281 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751090Ab0EQV4i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 17:56:38 -0400
+Date: Mon, 17 May 2010 23:56:30 +0200
+From: Jan Kara <jack@suse.cz>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: "Kirill A. Shutemov" <kirill@shutemov.name>, Jan Kara <jack@suse.cz>,
+       Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, stable@kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v4] mtd: Do not corrupt backing device of device node
+ inode
+Message-ID: <20100517215630.GF3364@quack.suse.cz>
+References: <1273074054-11849-1-git-send-email-kirill@shutemov.name>
+ <1273799074.9999.653.camel@macbook.infradead.org>
 MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>, michael-dev@fami-braun.de,
-       Pekka Enberg <penberg@cs.helsinki.fi>, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, Matt Mackall <mpm@selenic.com>,
-       Atsushi Nemoto <anemo@mba.ocn.ne.jp>
-Subject: Re: [BUG] SLOB breaks Crypto
-References: <4B9E38AF.70309@fami-braun.de>	 <84144f021003180930s44e239dfmb38183096f07c8a8@mail.gmail.com>	 <4BA29A19.2050307@fami-braun.de>	 <20100319003351.GC20227@gondor.apana.org.au> <AANLkTilPEnh3ewTb-KDsReBpjcszh1wkbfZohIaPXBKe@mail.gmail.com>
-In-Reply-To: <AANLkTilPEnh3ewTb-KDsReBpjcszh1wkbfZohIaPXBKe@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273799074.9999.653.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Geert Uytterhoeven wrote:
-> On Fri, Mar 19, 2010 at 02:33, Herbert Xu <herbert@gondor.apana.org.au> wrote:
->> On Thu, Mar 18, 2010 at 10:24:41PM +0100, michael-dev@fami-braun.de wrote:
->>> Pekka Enberg schrieb:
->>>> Even with CONFIG_DEBUG_SLAB enabled or with CONFIG_SLUB and
->>>> CONFIG_SLUB_DEBUG_ON?
->>> no, these options have not been / are not enabled.
->> Can you please try it with those options enabled? That will tell
->> us if there is some latent bug in the crypto layer that only shows
->> up right away under SLOB.
+On Fri 14-05-10 02:04:34, David Woodhouse wrote:
+> On Wed, 2010-05-05 at 18:40 +0300, Kirill A. Shutemov wrote:
+> > We cannot modify file->f_mapping->backing_dev_info, because it will corrupt
+> > backing device of device node inode, since file->f_mapping is equal to
+> > inode->i_mapping (see __dentry_open() in fs/open.c).
+> > 
+> > Let's introduce separate inode for MTD device with appropriate backing
+> > device.
 > 
-> After seeing a posting from Nemoto-san on the linux-mips list (should
-> show up soon on
-> http://www.linux-mips.org/archives/linux-mips/2010-05/threads.html),
-> I'm wondering if these defaults are the culprit;
+> I hate the fact that we have to do this -- is it really the only option?
 > 
-> mm/slab.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
-> mm/slob.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long)
-> mm/slub.c:#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
+> Is it _just_ for the backing_device_info? Can't that be done
+> differently?
+  Well, if I understand the problem MTD tries to solve, what you really need
+is that file->f_mapping->backing_dev_info points to your structure so that
+you can specify the capability of backing device to support mmap and
+whatever else. What I'm not sure about is, why you cannot have this
+backing_dev_info directly in the original device inode but since this is
+the problem you are originally trying to solve, I guess you have some good
+reason for that.
+  So with this requirement, you have to at least setup complete struct
+address_space to which f_mapping can point. This address_space has to be
+linked (via mapping->host) to some inode. So you could point i_mapping
+to your address_space structure if that would work for you. But this only
+has a reasonable chance to work if you would somehow tie the lifetime
+of your address_space with the lifetime of your device inode (code in
+block_dev.c does something like this because all inodes which represent
+the same block block device share one address_space). Moreover you would
+have to do all the address_space initialization inode_init_always does (or
+probably split out the mapping initialization from inode_init_always and
+call it from MTD code). So I'm not sure it's really better.
+  When you decide you don't want to take care about proper setup of
+address_space and refcounting and whatever, you have to create a full
+inode. But this inode has to live in some filesystem -> what Kirill did is
+unavoidable in this case...
 
-Just a quick note: I changed this line in mm/slob.c to (unsigned long
-long) and was able to load tcrypt without the kernel oopsing or
-panic'ing. When running all test via
-
-modprobe tcrypt
-
-the tests seem to pass fine judging by /proc/crypto. Nevertheless module
-insertion fails (as expected) but does not return EAGAIN but EMULTIHOP
-instead...
-
-Regards,
-Adrian
+									Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
