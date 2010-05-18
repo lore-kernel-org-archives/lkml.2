@@ -1,83 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754502Ab0ERCjc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 22:39:32 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42607 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753157Ab0ERCjb (ORCPT
+	id S1754807Ab0ERCkL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 22:40:11 -0400
+Received: from mtoichi11.ns.itscom.net ([219.110.2.181]:45564 "EHLO
+	mtoichi11.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754062Ab0ERCkJ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 22:39:31 -0400
-Message-ID: <4BF1FD33.4040305@ct.jp.nec.com>
-Date: Tue, 18 May 2010 11:36:35 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: Will Drewry <wad@chromium.org>
-CC: device-mapper development <dm-devel@redhat.com>,
-       linux-kernel@vger.kernel.org, snitzer@redhat.com, agk@redhat.com
-Subject: Re: [dm-devel] [RFC PATCH v2 1/2] dm: allow a dm-fs-style device
- to be	shared via dm-ioctl
-References: <20100514035347.GA20636@redhat.com> <1273887701-2152-1-git-send-email-wad@chromium.org>
-In-Reply-To: <1273887701-2152-1-git-send-email-wad@chromium.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Mon, 17 May 2010 22:40:09 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH -V8 2/9] vfs: Add name to file handle conversion support
+To: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+In-Reply-To: <1274074432-29695-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274074432-29695-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Date: Tue, 18 May 2010 11:33:50 +0900
+Message-ID: <7252.1274150030@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Will,
 
-n 05/15/2010 10:41 AM +0900, Will Drewry wrote:
-> In addition, it ensures that public functions are available that
-> allow mapped devices and tables to be created and associated
-> with the shared code paths with dm-ioctl:
-> - suspend flags are available
-snip 
-> diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-> index bad1724..782d867 100644
-> --- a/drivers/md/dm.h
-> +++ b/drivers/md/dm.h
-> @@ -17,12 +17,6 @@
->  #include <linux/hdreg.h>
->  
->  /*
-> - * Suspend feature flags
-> - */
-> -#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
-> -#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
-> -
-> -/*
->   * Type of table and mapped_device's mempool
->   */
->  #define DM_TYPE_NONE		0
-> diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
-> index 1381cd9..6c1c230 100644
-> --- a/include/linux/device-mapper.h
-> +++ b/include/linux/device-mapper.h
-> @@ -215,6 +215,18 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
->  void *dm_get_mdptr(struct mapped_device *md);
->  
->  /*
-> + * Export the device via the ioctl interface (uses mdptr).
-> + */
-> +int dm_ioctl_export(struct mapped_device *md, const char *name,
-> +		    const char *uuid);
-> +
-> +/*
-> + * Suspend feature flags
-> + */
-> +#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
-> +#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
-> +
-> +/*
->   * A device can still be used while suspended, but I/O is deferred.
->   */
->  int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
+"Aneesh Kumar K.V":
+> This patch add a new superblock operations get_fsid that returns the
+> UUID mapping for the file system. The UUID returned is used to
+> identify the file system apart of file_handle
 
-Why do you need suspend feature flags?
-I think no feature is needed (specifying '0' is enough) to make/suspend
-a dm device at boot time (although I have looked at only this flag part).
-Am I missing something?
+I am afraid get_fsid in s_op may conflict with "fsid=" option in /etc/exports.
+Generally all FSs have UUID or device number and they can return "fsid"
+correctly. But some of them may not have such id, or users may assign
+different fsid for them.
+Is "fsid=" value passed to superblock and can FS return it? Otherwise
+they cannot implement ->get_fsid().
 
-Thanks,
-Kiyoshi Ueda
+
+J. R. Okajima
