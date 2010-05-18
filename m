@@ -1,106 +1,212 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758610Ab0ERSP1 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:15:27 -0400
-Received: from mail-out.m-online.net ([212.18.0.9]:46363 "EHLO
-	mail-out.m-online.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754149Ab0ERSPZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:15:25 -0400
-From: Andreas Schwab <schwab@linux-m68k.org>
-To: linuxppc-dev@ozlabs.org
-Subject: [PATCH] powerpc: Fix string library functions
-CC: linux-kernel@vger.kernel.org
-X-Yow: While I'm in LEVITTOWN I thought I'd like to see the NUCLEAR FAMILY!!
-Date: Tue, 18 May 2010 20:15:21 +0200
-Message-ID: <m2bpcdjcue.fsf@igel.home>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.2 (gnu/linux)
+	id S1758690Ab0ERSPc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:15:32 -0400
+Received: from claw.goop.org ([74.207.240.146]:59807 "EHLO claw.goop.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758616Ab0ERSPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 14:15:30 -0400
+Message-ID: <4BF2D941.5070401@goop.org>
+Date: Tue, 18 May 2010 11:15:29 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [PATCH 08/12] Allow xen platform pci device to be compiled as
+ a module
+References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The powerpc strncmp implementation does not correctly handle a zero
-length, despite the claim in 0119536cd314ef95553604208c25bc35581f7f0a
-(Add hand-coded assembly strcmp).
+On 05/18/2010 03:23 AM, Stefano Stabellini wrote:
 
-Additionally, all the length arguments are size_t, not int, so use
-PPC_LCMPI and eq instead of cmpwi and le throughout.
+All the _hook stuff looks wrong. (below)
 
-Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
----
- arch/powerpc/lib/string.S |   18 ++++++++++--------
- 1 files changed, 10 insertions(+), 8 deletions(-)
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/enlighten.c          |    3 +++
+>  drivers/xen/events.c              |    1 +
+>  drivers/xen/grant-table.c         |    6 +++++-
+>  drivers/xen/manage.c              |   14 +++++++++++---
+>  drivers/xen/xenbus/xenbus_probe.c |    1 +
+>  include/xen/platform_pci.h        |   18 ++++--------------
+>  6 files changed, 25 insertions(+), 18 deletions(-)
+>
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index 23b8200..77ba321 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -85,7 +85,9 @@ struct shared_info xen_dummy_shared_info;
+>  void *xen_initial_gdt;
+>  
+>  int xen_have_vector_callback;
+> +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
+>  int xen_platform_pci;
+> +EXPORT_SYMBOL_GPL(xen_platform_pci);
+>  static int unplug;
+>  
+>  /*
+> @@ -1297,6 +1299,7 @@ int xen_set_callback_via(uint64_t via)
+>  	a.value = via;
+>  	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
+>  }
+> +EXPORT_SYMBOL_GPL(xen_set_callback_via);
+>  
+>  void do_hvm_pv_evtchn_intr(void)
+>  {
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index cfc6d96..4840a03 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -695,6 +695,7 @@ void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
+>  {
+>  	__xen_evtchn_do_upcall(regs);
+>  }
+> +EXPORT_SYMBOL_GPL(xen_hvm_evtchn_do_upcall);
+>  
+>  /* Rebind a new event channel to an existing irq. */
+>  void rebind_evtchn_irq(int evtchn, int irq)
+> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> index 6f5f3ba..f936d30 100644
+> --- a/drivers/xen/grant-table.c
+> +++ b/drivers/xen/grant-table.c
+> @@ -56,6 +56,9 @@
+>  #define GNTTAB_LIST_END 0xffffffff
+>  #define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry))
+>  
+> +unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
+> +EXPORT_SYMBOL_GPL(alloc_xen_mmio_hook);
+> +
+>  static grant_ref_t **gnttab_list;
+>  static unsigned int nr_grant_frames;
+>  static unsigned int boot_max_nr_grant_frames;
+> @@ -514,7 +517,7 @@ int gnttab_resume(void)
+>  		return gnttab_map(0, nr_grant_frames - 1);
+>  
+>  	if (!hvm_pv_resume_frames) {
+> -		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+> +		hvm_pv_resume_frames = alloc_xen_mmio_hook(PAGE_SIZE * max_nr_gframes);
+>   
 
-diff --git a/arch/powerpc/lib/string.S b/arch/powerpc/lib/string.S
-index 64e2e49..455881a 100644
---- a/arch/powerpc/lib/string.S
-+++ b/arch/powerpc/lib/string.S
-@@ -28,7 +28,7 @@ _GLOBAL(strcpy)
- /* This clears out any unused part of the destination buffer,
-    just as the libc version does.  -- paulus */
- _GLOBAL(strncpy)
--	cmpwi	0,r5,0
-+	PPC_LCMPI 0,r5,0
- 	beqlr
- 	mtctr	r5
- 	addi	r6,r3,-1
-@@ -39,7 +39,7 @@ _GLOBAL(strncpy)
- 	bdnzf	2,1b		/* dec ctr, branch if ctr != 0 && !cr0.eq */
- 	bnelr			/* if we didn't hit a null char, we're done */
- 	mfctr	r5
--	cmpwi	0,r5,0		/* any space left in destination buffer? */
-+	PPC_LCMPI 0,r5,0	/* any space left in destination buffer? */
- 	beqlr			/* we know r0 == 0 here */
- 2:	stbu	r0,1(r6)	/* clear it out if so */
- 	bdnz	2b
-@@ -70,8 +70,8 @@ _GLOBAL(strcmp)
- 	blr
- 
- _GLOBAL(strncmp)
--	PPC_LCMPI r5,0
--	beqlr
-+	PPC_LCMPI 0,r5,0
-+	beq-	2f
- 	mtctr	r5
- 	addi	r5,r3,-1
- 	addi	r4,r4,-1
-@@ -82,6 +82,8 @@ _GLOBAL(strncmp)
- 	beqlr	1
- 	bdnzt	eq,1b
- 	blr
-+2:	li	r3,0
-+	blr
- 
- _GLOBAL(strlen)
- 	addi	r4,r3,-1
-@@ -92,8 +94,8 @@ _GLOBAL(strlen)
- 	blr
- 
- _GLOBAL(memcmp)
--	cmpwi	0,r5,0
--	ble-	2f
-+	PPC_LCMPI 0,r5,0
-+	beq-	2f
- 	mtctr	r5
- 	addi	r6,r3,-1
- 	addi	r4,r4,-1
-@@ -106,8 +108,8 @@ _GLOBAL(memcmp)
- 	blr
- 
- _GLOBAL(memchr)
--	cmpwi	0,r5,0
--	ble-	2f
-+	PPC_LCMPI 0,r5,0
-+	beq-	2f
- 	mtctr	r5
- 	addi	r3,r3,-1
- 1:	lbzu	r0,1(r3)
--- 
-1.7.1
+This looks like it should be restructured so the pci device driver
+itself is doing this mapping, then calling into the grant subsystem to
+tell it where the mapping is.
 
--- 
-Andreas Schwab, schwab@linux-m68k.org
-GPG Key fingerprint = 58CA 54C7 6D53 942B 1756  01D3 44D5 214B 8276 4ED5
-"And now for something completely different."
+>  		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
+>  		if (shared == NULL) {
+>  			printk(KERN_WARNING
+> @@ -600,6 +603,7 @@ int gnttab_init(void)
+>  	kfree(gnttab_list);
+>  	return -ENOMEM;
+>  }
+> +EXPORT_SYMBOL_GPL(gnttab_init);
+>  
+>  static int __devinit __gnttab_init(void)
+>  {
+> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> index a73edd8..49ee52d 100644
+> --- a/drivers/xen/manage.c
+> +++ b/drivers/xen/manage.c
+> @@ -34,6 +34,13 @@ enum shutdown_state {
+>  	 SHUTDOWN_HALT = 4,
+>  };
+>  
+> +void (*platform_pci_resume_hook)(void);
+> +EXPORT_SYMBOL_GPL(platform_pci_resume_hook);
+> +void (*platform_pci_disable_irq_hook)(void);
+> +EXPORT_SYMBOL_GPL(platform_pci_disable_irq_hook);
+> +void (*platform_pci_enable_irq_hook)(void);
+> +EXPORT_SYMBOL_GPL(platform_pci_enable_irq_hook);
+>   
+
+If all this _hook stuff is here to support a modular xen platform pci
+device, then something has gone wrong.  The device should be doing this
+via its own suspend/resume handlers.
+
+> +
+>  /* Ignore multiple shutdown requests. */
+>  static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
+>  
+> @@ -52,7 +59,7 @@ static int xen_hvm_suspend(void *data)
+>  
+>  	if (!*cancelled) {
+>  		xen_irq_resume();
+> -		platform_pci_resume();
+> +		platform_pci_resume_hook();
+>  	}
+>  
+>  	return 0;
+> @@ -119,7 +126,7 @@ static void do_hvm_suspend(void)
+>  	printk(KERN_DEBUG "suspending xenstore... ");
+>  	xenbus_suspend();
+>  	printk(KERN_DEBUG "xenstore suspended\n");
+> -	platform_pci_disable_irq();
+> +	platform_pci_disable_irq_hook();
+>  	
+>  	err = stop_machine(xen_hvm_suspend, &cancelled, cpumask_of(0));
+>  	if (err) {
+> @@ -127,7 +134,7 @@ static void do_hvm_suspend(void)
+>  		cancelled = 1;
+>  	}
+>  
+> -	platform_pci_enable_irq();
+> +	platform_pci_enable_irq_hook();
+>  
+>  	if (!cancelled) {
+>  		xen_arch_resume();
+> @@ -357,5 +364,6 @@ int xen_setup_shutdown_event(void)
+>  
+>  	return 0;
+>  }
+> +EXPORT_SYMBOL_GPL(xen_setup_shutdown_event);
+>  
+>  subsys_initcall(__setup_shutdown_event);
+> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+> index a679205..f83e083 100644
+> --- a/drivers/xen/xenbus/xenbus_probe.c
+> +++ b/drivers/xen/xenbus/xenbus_probe.c
+> @@ -892,6 +892,7 @@ int xenbus_probe_init(void)
+>    out_error:
+>  	return err;
+>  }
+> +EXPORT_SYMBOL_GPL(xenbus_probe_init);
+>  
+>  postcore_initcall(__xenbus_probe_init);
+>  
+> diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
+> index ced434d..c3c2527 100644
+> --- a/include/xen/platform_pci.h
+> +++ b/include/xen/platform_pci.h
+> @@ -29,19 +29,9 @@
+>  #define XEN_IOPORT_LINUX_PRODNUM 0xffff
+>  #define XEN_IOPORT_LINUX_DRVVER  ((LINUX_VERSION_CODE << 8) + 0x0)
+>  
+> -#ifdef CONFIG_XEN_PLATFORM_PCI
+> -unsigned long alloc_xen_mmio(unsigned long len);
+> -void platform_pci_resume(void);
+> -void platform_pci_disable_irq(void);
+> -void platform_pci_enable_irq(void);
+> -#else
+> -static inline unsigned long alloc_xen_mmio(unsigned long len)
+> -{
+> -	return ~0UL;
+> -}
+> -static inline void platform_pci_resume(void) {}
+> -static inline void platform_pci_disable_irq(void) {}
+> -static inline void platform_pci_enable_irq(void) {}
+> -#endif
+> +extern unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
+> +extern void (*platform_pci_resume_hook)(void);
+> +extern void (*platform_pci_disable_irq_hook)(void);
+> +extern void (*platform_pci_enable_irq_hook)(void);
+>  
+>  #endif /* _XEN_PLATFORM_PCI_H */
+>   
+
