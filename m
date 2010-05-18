@@ -1,68 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757087Ab0ERKaL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:30:11 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14866 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757152Ab0ERKaB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:30:01 -0400
-Date: Tue, 18 May 2010 13:25:45 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Jes Sorensen <Jes.Sorensen@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       Shirley Ma <xma@us.ibm.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, quintela@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [PATCH] virtio: put last seen used index into ring itself
-Message-ID: <20100518102545.GA26338@redhat.com>
-References: <20100518004744.GA21359@redhat.com> <4BF26B87.3080902@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF26B87.3080902@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1757128Ab0ERK3x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:29:53 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:64753 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757027Ab0ERK3o (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 06:29:44 -0400
+X-IronPort-AV: E=Sophos;i="4.53,254,1272859200"; 
+   d="scan'208";a="97477210"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 09/12] Fix possible NULL pointer dereference in print_IO_APIC
+Date: Tue, 18 May 2010 11:23:04 +0100
+Message-Id: <1274178187-20602-9-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.5.4.3
+In-Reply-To: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
+References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
+X-OriginalArrivalTime: 18 May 2010 10:20:09.0950 (UTC) FILETIME=[B1E187E0:01CAF673]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 12:27:19PM +0200, Jes Sorensen wrote:
-> On 05/18/10 02:47, Michael S. Tsirkin wrote:
-> > Generally, the Host end of the virtio ring doesn't need to see where
-> > Guest is up to in consuming the ring.  However, to completely understand
-> > what's going on from the outside, this information must be exposed.
-> > For example, host can reduce the number of interrupts by detecting
-> > that the guest is currently handling previous buffers.
-> > 
-> > Fortunately, we have room to expand: the ring is always a whole number
-> > of pages and there's hundreds of bytes of padding after the avail ring
-> > and the used ring, whatever the number of descriptors (which must be a
-> > power of 2).
-> 
-> Hi Michael,
-> 
-> Small build fix for this against Linus upstream.
-> 
-> Jes
-> 
-> 
-> Fix build of virtio_net.c
-> 
-> Signed-off-by: Jes.Sorensen@redhat.com
+Make sure chip_data is not NULL before accessing it.
 
-Thanks, this is already fixed in v2 that I sent.
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/kernel/apic/io_apic.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-> ---
-> diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-> index d37e5be..679e2df 100644
-> --- a/drivers/net/virtio_net.c
-> +++ b/drivers/net/virtio_net.c
-> @@ -23,6 +23,7 @@
->  #include <linux/module.h>
->  #include <linux/virtio.h>
->  #include <linux/virtio_net.h>
-> +#include <linux/virtio_ring.h>
->  #include <linux/scatterlist.h>
->  #include <linux/if_vlan.h>
->  #include <linux/slab.h>
-> 
+diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+index eb2789c..c64499c 100644
+--- a/arch/x86/kernel/apic/io_apic.c
++++ b/arch/x86/kernel/apic/io_apic.c
+@@ -1732,6 +1732,8 @@ __apicdebuginit(void) print_IO_APIC(void)
+ 		struct irq_pin_list *entry;
+ 
+ 		cfg = desc->chip_data;
++		if (!cfg)
++			continue;
+ 		entry = cfg->irq_2_pin;
+ 		if (!entry)
+ 			continue;
+-- 
+1.5.4.3
+
