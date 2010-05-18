@@ -1,189 +1,214 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756161Ab0ERUrP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:47:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41262 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750895Ab0ERUrO convert rfc822-to-8bit (ORCPT
+	id S1755304Ab0ERUtv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:49:51 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37083 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752565Ab0ERUtt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:47:14 -0400
+	Tue, 18 May 2010 16:49:49 -0400
+Date: Tue, 18 May 2010 16:49:44 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 0/13] Uprobes v4
+Message-ID: <20100518204944.GA6959@Krystal>
+References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
 MIME-Version: 1.0
-In-Reply-To: <201005182113.10448.rjw@sisk.pl>
-References: <1273810273-3039-1-git-send-email-arve@android.com>
-	 <201005172342.52660.rjw@sisk.pl>
-	 <AANLkTilQ5wZ_7fMyDMpUBCtu9oD1Wh22JGllyS1EPlxB@mail.gmail.com>
-	 <201005182113.10448.rjw@sisk.pl>
-Date: Tue, 18 May 2010 13:47:12 -0700
-Message-ID: <AANLkTinPC94F1wj-CEb3vvSo7__u625DsZxErlmTymEw@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 16:49:09 up 115 days, 23:26,  9 users,  load average: 0.20, 0.26,
+	0.20
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
->> 2010/5/17 Rafael J. Wysocki <rjw@sisk.pl>:
->> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
->> >> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
->> >> > On Friday 14 May 2010, Arve Hjønnevåg wrote:
->> >> >> This patch series adds a suspend-block api that provides the same
->> >> >> functionality as the android wakelock api. This version has some
->> >> >> changes from, or requested by, Rafael. The most notable changes are:
->> >> >> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
->> >> >>   for statically allocated suspend blockers.
->> >> >> - suspend_blocker_destroy is now called suspend_blocker_unregister
->> >> >> - The user space mandatory _INIT ioctl has been replaced with an
->> >> >>   optional _SET_NAME ioctl.
->> >> >>
->> >> >> I kept the ack and reviewed by tags on two of the patches even though
->> >> >> there were a few cosmetic changes.
->> >> >
->> >> > Thanks for the patches, I think they are in a pretty good shape now.
->> >> >
->> >> > That said, I'd like the changelogs to be a bit more descriptive, at least for
->> >> > patch [1/8].  I think it should explain (in a few words) what the purpose of
->> >> > the feature is and what problems it solves that generally a combination of
->> >> > runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
->> >> > think we need that feature.
->> >> >
->> >>
->> >> How about:
->> >>
->> >> PM: Add opportunistic suspend support.
->> >
->> > "PM: Opportunistic suspend support" would be sufficient IMO.
->> >
->> > Now, I'd start with the motivation.  Like "Power management features present
->> > in the current mainline kernel are insufficient to get maximum possible energy
->> > savings on some platforms, such as Android, because ..." (here go explanations
->> > why this is the case in your opinion).
->> >
->> > Next, "To allow Android and similar platforms to save more energy than they
->> > currently can save using the mainline kernel, introduce a mechanism by which
->> > the system is automatically suspended (i.e. put into a system-wide sleep state)
->> > whenever it's not doing useful work, called opportunistic suspend".
->> >
->> > "For this purpose introduce the suspend blockers framework allowing the
->> > kernel's power management subsystem to decide when it is desirable to suspend
->> > the system (i.e. when useful work is not being done).  Add an API that ..."
->> >
->>
->> PM: Opportunistic suspend support.
->>
->> Power management features present in the current mainline kernel are
->> insufficient to get maximum possible energy savings on some platforms,
->> such as Android, because low power states can only safely be entered
->> from idle.
->
-> Do you mean CPU low-power states or system low-power states here?
->
-I think either.
+* Srikar Dronamraju (srikar@linux.vnet.ibm.com) wrote:
+> Uprobes Patches
+> 
+> Changelog from v3:
+>   - Reverted to background page replacement as suggested by Peter Zijlstra.
 
-> I'd add more details here, because it may not be completely clear to the
-> (interested) reader why entering these states only from idle affects the
-> possibility to achieve maximum energy savings.  I _guess_ you mean that
-> using idle is not sufficient, because there are so many wakeups on the
-> systems in question that more savings are still possible.  Is that correct?
->
-Yes, is this not what the next paragraph explains?
+Why ?
 
->> Suspend, in its current form, cannot be used, since wakeup
->> events that occur right after initiating suspend will not be processed
->> until another possibly unrelated event wake up the system again.
->
-> I think the word "cannot" is too strong here.  I'd say "not suitable" instead
+I'm not sure we reached any concensus about the need for a background page
+replacement.
 
-I don't think it is too strong, but I can change it.
+Thanks,
 
-> and I'd say what kind of wakeup events I meant more precisely (there are
-> events that wake up a CPU from idle and events that wake up the system from
-> suspend).
+Mathieu
 
-When I say wakeup events I mean events that do both. Is there another
-term for this, or should I just add: "since wakeup events (events that
-wake the CPU from idle and the system from suspend)..."
-
->
->> On some systems idle combined with runtime PM can enter the same power
->> state as suspend, but periodic wakeups increase the average power
->> consumption. Suspending the system also reduces the harm caused by
->> apps that never go idle. On other systems suspend can enter a much
->> lower power state than idle.
->>
->> To allow Android and similar platforms to save more energy than they
->> currently can save using the mainline kernel, we introduce a mechanism
->
-> Just "introduce" without "we" works too.
->
->> by which the system is automatically suspended (i.e. put into a
->> system-wide sleep state) whenever it's not doing useful work, called
->> opportunistic suspend.
->
-> I think we can address the Kevin's comment about "useful" and say "whenever
-> it's only doing work that can be done later without noticeable effect on
-> functionality".
->
->> For this purpose introduce the suspend blockers framework allowing the
->> kernel's power management subsystem to decide when it is desirable to
->> suspend the system (i.e. when useful work is not being done). Add an
->
-> Perhaps remove the part in parens entirely.
->
->> API that that drivers can use to block opportunistic suspend. This is
->> needed to avoid losing wakeup events that occur right after suspend is
->> initiated.
->>
->> Adds /sys/power/policy that selects the behavior of /sys/power/state.
->> After setting the policy to opportunistic, writes to /sys/power/state
->> become non-blocking requests that specify which suspend state to enter
->> when no suspend blockers are active. A special state, "on", stops the
->> process by activating the "main" suspend blocker.
->
-> ...
->
->> PM: suspend_block: Add driver to access suspend blockers from user-space
->>
->> Add a misc device, "suspend_blocker", that allows user-space processes
->> to block automatic suspend.
->>
->> Opening this device creates a suspend blocker that can be used by the
->> opener to prevent automatic suspend from occurring.  There are ioctls
->> provided for blocking and unblocking suspend and for giving the
->> suspend blocker a meaningful name.  Closing the device special file
->> causes the suspend blocker to be destroyed.
->>
->> For example, when select or poll indicates that input event are
->> available, this interface can be used by user space to block suspend
->> before it reads those events. This allows the input driver to release
->> its suspend blocker as soon as the event queue is empty. If user space
->> could not use a suspend blocker here the input driver would need to
->> delay the release of its suspend blocker until it knows (or assumes)
->> that user space has finished processing the events.
->>
->> By careful use of suspend blockers in drivers and user space system
->> code, one can arrange for the system to stay awake for extremely short
->> periods of time in reaction to events, rapidly returning to a fully
->> suspended state.
->
-> That's fine by me.
->
-> Thanks,
-> Rafael
->
-
-
+>   - Dso in 'perf probe' can be either be a short name or a absolute path.
+>   - Addressed comments from Masami, Frederic, Steven on traceevents and perf
+> 
+> Changelog from v2:
+>   - Addressed comments from Oleg, including removal of interrupt context
+>     handlers, reverting background page replacement in favour of
+>     access_process_vm().
+> 
+>   - Provides perf interface for uprobes.
+> 
+> Changelog from v1:
+>  - Added trace_event interface for uprobes.
+>  - Addressed comments from Andrew Morton and Randy Dunlap.
+> 
+> For previous postings: please refer: http://lkml.org/lkml/2010/5/6/273
+> and http://lkml.org/lkml/2010/3/20/107
+> 
+> This patchset implements Uprobes which enables you to dynamically break
+> into any routine in a user space application and collect information
+> non-disruptively.
+> 
+> This patchset is a rework based on suggestions from discussions on lkml
+> in January and March this year (http://lkml.org/lkml/2010/1/11/92,
+> http://lkml.org/lkml/2010/1/27/19, http://lkml.org/lkml/2010/3/20/107
+> and http://lkml.org/lkml/2010/3/31/199 ). This implementation of
+> uprobes doesnt depend on utrace.
+> 
+> When a uprobe is registered, Uprobes makes a copy of the probed
+> instruction, replaces the first byte(s) of the probed instruction with a
+> breakpoint instruction. (Uprobes uses background page replacement
+> mechanism and ensures that the breakpoint affects only that process.)
+> 
+> When a CPU hits the breakpoint instruction, Uprobes gets notified of
+> trap and finds the associated uprobe. It then executes the associated
+> handler. Uprobes single-steps its copy of the probed instruction and
+> resumes execution of the probed process at the instruction following the
+> probepoint. Instruction copies to be single-stepped are stored in a
+> per-process "execution out of line (XOL) area". Currently XOL area is
+> allocated as one page vma.
+> 
+> Advantages of uprobes over conventional debugging include:
+> 
+> 1. Non-disruptive.
+> Unlike current ptrace based mechanisms, uprobes tracing wouldnt
+> involve signals, stopping threads and context switching between the
+> tracer and tracee.
+> 
+> 2. Much better handling of multithreaded programs because of XOL.
+> Current ptrace based mechanisms use single stepping inline, i.e they
+> copy back the original instruction on hitting a breakpoint.  In such
+> mechanisms tracers have to stop all the threads on a breakpoint hit or
+> tracers will not be able to handle all hits to the location of
+> interest. Uprobes uses execution out of line, where the instruction to
+> be traced is analysed at the time of breakpoint insertion and a copy
+> of instruction is stored at a different location.  On breakpoint hit,
+> uprobes jumps to that copied location and singlesteps the same
+> instruction and does the necessary fixups post singlestepping.
+> 
+> 3. Multiple tracers for an application.
+> Multiple uprobes based tracer could work in unison to trace an
+> application. There could one tracer that could be interested in
+> generic events for a particular set of process. While there could be
+> another tracer that is just interested in one specific event of a
+> particular process thats part of the previous set of process.
+> 
+> 4. Corelating events from kernels and userspace.
+> Uprobes could be used with other tools like kprobes, tracepoints or as
+> part of higher level tools like perf to give a consolidated set of
+> events from kernel and userspace.  In future we could look at a single
+> backtrace showing application, library and kernel calls.
+> 
+> Here is the list of TODO Items.
+> 
+> - Rebase to -tip tree. (targeted for v5)
+> - Allowing probes across fork.
+> - Allowing probes per-executable/per dso.
+> - Allow multiple probes to share a probepoint.
+> - Return probes.
+> - Support for other architectures.
+> - Uprobes booster.
+> - Merge uprobes and kprobes trace_event.
+> - replace macro with bits in inat table.
+> 
+> The current patchset is based on 2.6.34.
+> 
+> Please do provide your valuable comments.
+> 
+> Thanks in advance.
+> Srikar
+> 
+> Srikar Dronamraju (10):
+>  1.  X86 instruction analysis: Move Macro W to insn.h
+>  2.  mm: Move replace_page() to mm/memory.c
+>  3.  user_bkpt: User Space Breakpoint Assistance Layer
+>  4.  user_bkpt: X86 details for User space breakpoint assistance
+>  5.  user_bkpt: Slot allocation for Execution out of line
+>  6.  uprobes: Uprobes Implementation
+>  7.  uprobes: X86 details for Uprobes
+>  8.  samples: Uprobes samples
+>  9.  uprobes: Uprobes Documentation patch
+>  10. trace: Share common code for uprobes/kprobes traceevents
+>  11. trace: uprobes trace_event interface
+>  12. perf: Dont adjust symbols if lookup is by name.
+>  13. perf: perf interface for uprobes.
+> 
+>  Documentation/uprobes.txt          |  236 ++++++++++
+>  arch/Kconfig                       |   31 ++
+>  arch/x86/Kconfig                   |    2 +
+>  arch/x86/include/asm/insn.h        |    7 +
+>  arch/x86/include/asm/thread_info.h |    2 +
+>  arch/x86/include/asm/user_bkpt.h   |   43 ++
+>  arch/x86/kernel/Makefile           |    3 +
+>  arch/x86/kernel/kprobes.c          |    7 -
+>  arch/x86/kernel/signal.c           |   17 +
+>  arch/x86/kernel/uprobes.c          |   77 ++++
+>  arch/x86/kernel/user_bkpt.c        |  572 ++++++++++++++++++++++++
+>  fs/exec.c                          |    4 +
+>  include/linux/mm.h                 |    4 +
+>  include/linux/mm_types.h           |    4 +
+>  include/linux/sched.h              |    4 +
+>  include/linux/uprobes.h            |  169 ++++++++
+>  include/linux/user_bkpt.h          |  305 +++++++++++++
+>  include/linux/user_bkpt_xol.h      |   40 ++
+>  kernel/Makefile                    |    3 +
+>  kernel/fork.c                      |   20 +
+>  kernel/trace/Kconfig               |   13 +
+>  kernel/trace/Makefile              |    1 +
+>  kernel/trace/trace.h               |   11 +
+>  kernel/trace/trace_kprobe.c        |   76 +----
+>  kernel/trace/trace_probe.h         |  111 +++++
+>  kernel/trace/trace_uprobe.c        |  839 ++++++++++++++++++++++++++++++++++++
+>  kernel/uprobes.c                   |  681 +++++++++++++++++++++++++++++
+>  kernel/user_bkpt.c                 |  589 +++++++++++++++++++++++++
+>  kernel/user_bkpt_xol.c             |  302 +++++++++++++
+>  mm/ksm.c                           |  112 -----
+>  mm/memory.c                        |  120 +++++
+>  samples/Kconfig                    |    7 +
+>  samples/Makefile                   |    2 +-
+>  samples/uprobes/Makefile           |   17 +
+>  samples/uprobes/uprobe_example.c   |   83 ++++
+>  tools/perf/builtin-probe.c         |   38 ++-
+>  tools/perf/builtin-top.c           |   20 -
+>  tools/perf/util/event.c            |   20 +
+>  tools/perf/util/event.h            |    1 +
+>  tools/perf/util/probe-event.c      |  237 +++++++++--
+>  tools/perf/util/probe-event.h      |    9 +-
+>  tools/perf/util/probe-finder.h     |    1 +
+>  tools/perf/util/symbol.c           |    6 +-
+>  43 files changed, 4576 insertions(+), 270 deletions(-)
 
 -- 
-Arve Hjønnevåg
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
