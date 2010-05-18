@@ -1,72 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756573Ab0ERGEB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:04:01 -0400
-Received: from mail.lang.hm ([64.81.33.126]:35149 "EHLO bifrost.lang.hm"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755309Ab0ERGEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:04:00 -0400
-Date: Mon, 17 May 2010 23:03:10 -0700 (PDT)
-From: david@lang.hm
-X-X-Sender: dlang@asgard.lang.hm
-To: James Bottomley <James.Bottomley@HansenPartnership.com>
-cc: Vegard Nossum <vegard.nossum@gmail.com>, Andi Kleen <andi@firstfloor.org>,
-       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
-       Bart Massey <bart@cs.pdx.edu>, Michal Marek <mmarek@suse.cz>,
-       Greg Kroah-Hartman <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>
-Subject: Re: [ANNOUNCE] GSoC project: Improving kconfig using a SAT solver
-In-Reply-To: <1274106526.4418.40.camel@mulgrave.site>
-Message-ID: <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
-References: <AANLkTil73ArhX2w6b_v1bmWjP1FA5zUTfPzK2N4waOu1@mail.gmail.com>  <87tyq63eux.fsf@basil.nowhere.org>  <AANLkTiktV26Xu_qXFPdTRMLe5UwWnjpqvEKitjRElF6R@mail.gmail.com>  <1274102511.4418.18.camel@mulgrave.site>  <AANLkTil9lmdG5LY2SFk3cMsPOK-gUm2diMFL_o5bT08u@mail.gmail.com>
- <1274106526.4418.40.camel@mulgrave.site>
-User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
+	id S1755736Ab0ERGGn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:06:43 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49949 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1754961Ab0ERGGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:06:42 -0400
+Message-ID: <4BF22EF0.8010202@cn.fujitsu.com>
+Date: Tue, 18 May 2010 14:08:48 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Steven Liu <lingjiujianke@gmail.com>
+CC: mike.miller@hp.com, linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
+       liuqi@thunderst.com
+Subject: Re: [PATCH] cciss: fix code style in drivers/block/cciss_scsi.c
+References: <AANLkTilN3PuzIweiocSMOsYkYtcOHeQbh_KrOkLiAigk@mail.gmail.com>
+In-Reply-To: <AANLkTilN3PuzIweiocSMOsYkYtcOHeQbh_KrOkLiAigk@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010, James Bottomley wrote:
+Steven Liu wrote:
+> Hi, Mike Miller,
+> 
+> if kmalloc memory for ld_buff failed,it will free currentsd  and
+> ld_buff once more
 
-> On Mon, 2010-05-17 at 16:21 +0200, Vegard Nossum wrote:
->> On 17 May 2010 15:21, James Bottomley
->>
->> Even if the problem is different from zypper's, it is also here
->> possible to get an unsatisfiable instance. You are right that, yes,
->> the kconfig files on their own should always be satisfiable. But
->> that's before the user has made any choices at all. An example of an
->> unsatisfiable instance would be one where the user demands that 1.
->> some USB driver is enabled, while 2. USB support in general is
->> disabled.
->
-> Actually, these are two separate problems.  The first is basic
-> consistency within the Kconfig subsytstem (something that select
-> currently damages for us).  The second is what to present to the user,
-> which is where the inception of the select problem came from.  A user
-> doesn't really want to know that USB device X depends on usb storage,
-> SCSI and a raft of other things ... they just want it to configure a
-> kernel that supports their device.  In particular, we don't want to
-> present every possible option to users and then try to work out a
-> solution, we really need guided configuration (which, in some measure,
-> is what we have today: if you don't select general USB, you won't see
-> any USB drivers.  Or more importantly, if you select an Adaptec SCSI
-> card, we just enable whichever transport library it needs).
+No, it won't.
 
-There are two modes people can be in when configuring a kernel.
+> so i think this patch may be better
+> 
+> fix code style in drivers/block/cciss_scsi.c
+> 
 
-1. I want to configure a kernel to support my hardware, enable anything 
-else needed to make it work.
+There is no bug or coding style issue, so just leave the code as it is.
 
-2. I really care about having a small kernel, don't enable anything I have 
-disabled (but help me figure out why something I want isn't available)
 
-I don't think that hiding hardware from the user is ever the best thing to 
-do. for approach #1 you obviously don't want to hide anything, but even 
-for approach #2, someone may not realize that by disabling one option they 
-are making it impossible to support something, and as someone who spent a 
-bunch of time hunting through config to find options that I ended up 
-finding were not available without enabling something else, I much prefer 
-to see the option, but see it disabled rather than not being sure if it 
-should be there, or somewhere else in the config.
-
-David Lang
