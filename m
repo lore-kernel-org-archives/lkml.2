@@ -1,50 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab0ERSP4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:15:56 -0400
-Received: from ferdi.naasa.net ([87.106.227.76]:49901 "EHLO ferdi.naasa.net"
+	id S1758744Ab0ERSQH (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:16:07 -0400
+Received: from claw.goop.org ([74.207.240.146]:59817 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758705Ab0ERSPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:15:54 -0400
-X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 May 2010 14:15:53 EDT
-From: Joerg Platte <lists@naasa.net>
-Reply-To: jplatte@naasa.net
-To: =?utf-8?q?C=C3=A9dric_Godin?= <cedric@belbone.be>
-Subject: Re: drm regression on resume with -rc7 (bisected to 797fd5b9dad12a100c81b5782573a41259728cb1)
-Date: Tue, 18 May 2010 20:06:45 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33.4; KDE/4.4.3; i686; ; )
-Cc: Marek =?utf-8?q?Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>,
-       dri-devel@lists.sourceforge.net,
-       Linux Kernel <linux-kernel@vger.kernel.org>,
-       Dave Airlie <airlied@redhat.com>
-References: <4BEB0EE6.1060002@belbone.be>
-In-Reply-To: <4BEB0EE6.1060002@belbone.be>
+	id S1758718Ab0ERSPz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 14:15:55 -0400
+Message-ID: <4BF2D95B.2040007@goop.org>
+Date: Tue, 18 May 2010 11:15:55 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8bit
-Message-Id: <201005182006.45798.lists@naasa.net>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [PATCH 09/12] Fix possible NULL pointer dereference in print_IO_APIC
+References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-9-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1274178187-20602-9-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Am Wednesday, 12. May 2010 schrieb Cédric Godin:
-Hi,
+On 05/18/2010 03:23 AM, Stefano Stabellini wrote:
+> Make sure chip_data is not NULL before accessing it.
+>   
 
-> When resuming my laptop from a -rc7, my X session reacted 
-weirdly.
-> Reading the dmesg log, I had :
-> 
-> May 12 21:58:03 enea kernel: [  122.627332] 
-[drm:radeon_ib_schedule]
-> *ERROR* radeon: couldn't schedule IB(0).
-> May 12 21:58:03 enea kernel: [  122.627342] 
-[drm:radeon_cs_ioctl]
+You should clarify under what circumstances it can be legitimately NULL.
 
-same problem here with 2.6.34 and Thinkpad T40 (Radeon Mobility 
-7500). The problem appeared after my upgrade to 2.6.34. 
-2.6.33.X does not have this problem. Is there any patch 
-available that I can test?
+    J
 
-regards,
-Jörg
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/kernel/apic/io_apic.c |    2 ++
+>  1 files changed, 2 insertions(+), 0 deletions(-)
+>
+> diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> index eb2789c..c64499c 100644
+> --- a/arch/x86/kernel/apic/io_apic.c
+> +++ b/arch/x86/kernel/apic/io_apic.c
+> @@ -1732,6 +1732,8 @@ __apicdebuginit(void) print_IO_APIC(void)
+>  		struct irq_pin_list *entry;
+>  
+>  		cfg = desc->chip_data;
+> +		if (!cfg)
+> +			continue;
+>  		entry = cfg->irq_2_pin;
+>  		if (!entry)
+>  			continue;
+>   
+
