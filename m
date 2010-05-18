@@ -1,64 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757290Ab0ERMDI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 08:03:08 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39308 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757059Ab0ERMDF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 08:03:05 -0400
-Date: Tue, 18 May 2010 14:03:03 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Stephane Chatty <chatty@enac.fr>,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
-       Jerome Vidal <jerom3@free.fr>, Tejun Heo <tj@kernel.org>,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] HID: Added further information for Roccat Kone
-In-Reply-To: <1273679039.2927.5.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1005181402350.28092@pobox.suse.cz>
-References: <1273679039.2927.5.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1757333Ab0ERMDw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 08:03:52 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:43996 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757059Ab0ERMDu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 08:03:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=eJ9u0qYAJd8b9mz8G2a3v67+5U5vzokMnTAEP+xK0orL4eV4LwgJ5ejcVUdkUS+0vZ
+         tqynS07CiivRhOIMmkDW986GzNfzbnl4I7RrtJ7pm030K63mYD86L6DxwFTKXnPa8oko
+         91c8FpJZ296sYUNW/vQ5O25Xl7kz4wwM4KEfI=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4BF23B36.7030809@osadl.org>
+References: <20100510035031.GD9181@owl> <20100514065808.GA11598@owl> 
+	<20100517094136.094800562@osadl.org> <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com> 
+	<4BF23B36.7030809@osadl.org>
+From: Dmitry Gromov <gromovd@gmail.com>
+Date: Tue, 18 May 2010 08:03:29 -0400
+Message-ID: <AANLkTim9yxegoi5H5R5BCxXVdQazo59kYKv0eZPcOC2T@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current Intel 
+	processors
+To: Carsten Emde <C.Emde@osadl.org>
+Cc: Huaxu Wan <huaxu.wan@intel.com>, Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       LM Sensors <lm-sensors@lm-sensors.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 12 May 2010, Stefan Achatz wrote:
+Hi!
 
-> 
-> >From 0875b1fdc784c60d28d3c5bc02ffcf0f30ccea2c Mon Sep 17 00:00:00 2001
-> From: Stefan Achatz <erazor_de@users.sourceforge.net>
-> Date: Sat, 8 May 2010 16:53:31 +0200
-> Subject: [PATCH 2/5] HID: Added further information for Roccat Kone
-> 
-> Added new data and changed workaround for abnormal button behaviour
-> according to new gained knowledge about Roccat Kone device.
-> 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-kone.c |   11 ++++++-----
->  drivers/hid/hid-roccat-kone.h |   19 ++++++++++++++++---
->  2 files changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-kone.c
-> b/drivers/hid/hid-roccat-kone.c
-> index d23d309..9d68442 100644
-> --- a/drivers/hid/hid-roccat-kone.c
-> +++ b/drivers/hid/hid-roccat-kone.c
-> @@ -928,14 +928,15 @@ static int kone_raw_event(struct hid_device *hdev,
-> struct hid_report *report,
->  		return 0;
->  
->  	/*
-> -	 * Firmware 1.38 introduced new behaviour for tilt buttons.
-> -	 * Pressed tilt button is reported in each movement event.
-> +	 * Firmware 1.38 introduced new behaviour for tilt and special
-> buttons.
+On Tue, May 18, 2010 at 03:01, Carsten Emde <C.Emde@osadl.org> wrote:
+> Dmitry,
+>
+>>> Here comes the current version of the coretemp patches. Huaxu did the
+>>> initial work; Jean suggested to submit them directly to Andrew.
+>>>
+>>> I made some style changes as advised by checkpatch.
+>>>
+>>> The patches have been tested successfully on Core 2 Duo and Quad, and on
+>>> Nehalem and Nehalem/Westmere where temperature readings were plausible
+>>> and
+>>> changed with load as expected. When tested on an Atom processor (N270),
+>>> the
+>>> temperature values were identical to previous versions of the coretemp
+>>> module and also changed with load. However, the readings should be higher
+>>> by 10 to 15C as compared to the outside temperature of the processor.
+>>> Huaxu, could you check? I would guess TjMax to be 105 instead of 90C in
+>>> these
+>>> processors.
+>>
+>> I apologize, if I ask a stupid question, but are you saying that TjMax in
+>> coretemp.c should be set to higher value than Tcase-max value specified in
+>> Intel documents?
+>
+> Hmm, no. I am saying that I would like the reading to be correct. I have
+> measured the outside temperature of the case with an infrared thermometer
+> [1] and found it to be higher than the readings returned by the coretemp
+> module. In all other CPUs I have, the coretemp readings are higher than the
+> case temperature.
+>
 
-Your mailer line-wraps the patches. Could you please fix that up and 
-resend?
+Thank you very much for an explanation, Carsten.
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+DG
+NJ
