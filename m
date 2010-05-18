@@ -1,61 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab0ERFJJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:09:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33516 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754188Ab0ERFJH (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:09:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=MfpLmGj1I8kW8NcRqg/LK6OW3DD8/p5840Z/QXRrv+UChEygQWm4cPZvD+isS1g4bu
-         AOEwicMtcgyIKS3GYS7ZA/bHHTsxiA5V4jl98pE3plHtl1QPyxgZJiYYDHuXzYNg2Q3b
-         nUS4/VVr92zLe5IqQ+Pr1Pmj9imp6t7FRTW1M=
-Message-ID: <4BF220EB.1020300@gmail.com>
-Date: Mon, 17 May 2010 22:08:59 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: senthilkumaar2021 <senthilkumaar2021@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: kernel panic
-References: <4BF21646.60008@gmail.com> <4BF21BD3.60901@gmail.com> <4BF21DAD.6050609@gmail.com>
-In-Reply-To: <4BF21DAD.6050609@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1755619Ab0ERFKp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:10:45 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37989 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755540Ab0ERFKo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:10:44 -0400
+Date: Tue, 18 May 2010 15:10:37 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: linux-next: manual merge of the fsnotify tree with the vfs tree
+Message-Id: <20100518151037.69226b52.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__18_May_2010_15_10_37_+1000_sFPI=kA=aOR6ZLRk"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2010 09:55 PM, senthilkumaar2021 wrote:
-> Hi
->
-> Thanks for the reply
->
-> Initially i was using kernel 2.6.28.5 and kernel panic occurred in that
-> version too
->
-> tproxy is not supported in linux 2.6.32
->
-> http://wiki.squid-cache.org/Features/Tproxy4
->
-> kindly guide me how to proceed
->
-> Regards
-> senthil
->
+--Signature=_Tue__18_May_2010_15_10_37_+1000_sFPI=kA=aOR6ZLRk
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
+Hi Eric,
 
-hmm.. I'm wondering if this should be discussed here then.
-In any case do you receive this error with 2.6.30
-(even though 2.6.28 gives you this)
+Today's linux-next merge of the fsnotify tree got a conflict in
+fs/notify/inotify/inotify.c between commits
+f3ffc7acb6a6ebec0a9e660d9211ed048d7e90f5 ("get rid of S_BIAS") and
+73b38e074b51e5d8d2801691dff6e403631e927f ("Saner locking around
+deactivate_super()") from the vfs tree and commit
+b6bacae18f2f7722df9e8e516ed77b2815bd1ac7 ("inotify: remove inotify in
+kernel interface") from the fsnotify tree.
 
-if so then doing a bisect might be a bit hard todo.
-(unless 2.6.30 is good, then a bisect can at-least
-point you in the right direction with what might be happening).
+The latter just removed the file, so I did that as well.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
 
-Justin P. Mattock
+--Signature=_Tue__18_May_2010_15_10_37_+1000_sFPI=kA=aOR6ZLRk
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvyIU0ACgkQjjKRsyhoI8zhGwCfY7+cjmAz9FbXt/MIWvb+i7V+
+m74AoJOnehT3Fb/C6pJBqw14cTzV2ie2
+=Qasd
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_May_2010_15_10_37_+1000_sFPI=kA=aOR6ZLRk--
