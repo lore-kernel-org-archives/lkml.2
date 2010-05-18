@@ -1,68 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756894Ab0ERLFs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:05:48 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:40742 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752497Ab0ERLFp (ORCPT
+	id S1756690Ab0ERLNB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:13:01 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:60285 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752141Ab0ERLM5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:05:45 -0400
+	Tue, 18 May 2010 07:12:57 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=k2t509FbzVeMuYIRcLKCNySFOLs6yDi4nYBXSwlqwxb8TA6iOteiIjBdP/QnZDSKc3
-         o7iygxU8BVImyvhtGp+qRZPVUxIzFRSR6K3DsVOgs3dWYHjVDIORTS9K40sOyICisVJm
-         QzIcSX+JpIvZbvNaOn2L+wHxb26yygez/MArs=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTinIVjwrQ9gza2FIvZN5w4nm8ZjSUe836oRmWYG7@mail.gmail.com>
-References: <20100518092532.GA3050@linux-sh.org>
-	 <AANLkTim6t8oG-vdLKE918Sd2TFKJpSf5Bw2PTtSsD_Fh@mail.gmail.com>
-	 <20100518101500.GA3156@linux-sh.org>
-	 <AANLkTinIVjwrQ9gza2FIvZN5w4nm8ZjSUe836oRmWYG7@mail.gmail.com>
-Date: Tue, 18 May 2010 20:05:44 +0900
-Message-ID: <AANLkTindMQ3Clk_qVnwUNYbbWcXjsUyyy4fQsjdDflFt@mail.gmail.com>
-Subject: Re: [GIT PULL] sh updates for 2.6.35-rc1
-From: Magnus Damm <magnus.damm@gmail.com>
-To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+        h=sender:from:to:cc:subject:date:message-id:x-mailer:in-reply-to
+         :references;
+        b=CoZdXezqbxYCOkT0+XUhPMaTFgEGTme+2yYFtSO56UAmYQgjmqYdtzn33H2imQgOOm
+         DZbr6qfvD+Md5TaDU7ecwoNfAV5+1LLHlNjl1zWFhuD2DtPbA5CcXnn4eI2Ib+Hn7l9X
+         2aOdYMVSgawo2t/RUaVNZDD4K20IMA0N5ay78=
+From: Alessio Igor Bogani <abogani@texware.it>
+To: Greg Kroah-Hartman <gregkh@suse.de>, Oliver Neukum <oliver@neukum.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Bill Pemberton <wfp5p@virginia.edu>, Jiri Kosina <jkosina@suse.cz>,
+       Javier Martinez Canillas <martinez.javier@gmail.com>,
+       Alexander Kurz <linux@kbdbabel.org>
+Cc: linux-kernel@vger.kernel.org, Alessio Igor Bogani <abogani@texware.it>
+Subject: [PATCH] Staging: comedi: quatech_daqp_cs.c Replace eos semaphore with a completion.
+Date: Tue, 18 May 2010 13:12:32 +0200
+Message-Id: <1274181152-25508-1-git-send-email-abogani@texware.it>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <20100516134540.7dd69473@infradead.org>
+References: <20100516134540.7dd69473@infradead.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jaswinder,
+Build tested only.
 
-On Tue, May 18, 2010 at 7:51 PM, Jaswinder Singh Rajput
-<jaswinderlinux@gmail.com> wrote:
-> Hmm, so still it is between ARM and SH, so better option will be :
->
-> include/linux/sh_clk.h -> include/sh/clk.h
-> include/linux/sh_dma.h -> include/sh/dma.h
-> include/linux/sh_intc.h -> include/sh/intc.h
->
-> So when arm files will come then, then we can make it like this :
->
-> include/arm/clk.h
-> include/arm/dma.h
-> include/arm/intc.h
->
-> So user will program like this :
->
-> #include <arm/dma.h>
-> #include <sh/dma.h>
+Signed-off-by: Alessio Igor Bogani <abogani@texware.it>
+---
+ drivers/staging/comedi/drivers/quatech_daqp_cs.c |   15 ++++++++-------
+ 1 files changed, 8 insertions(+), 7 deletions(-)
 
-Right now the SH code does
+diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
+index 197c302..a91db6c 100644
+--- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
++++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
+@@ -56,6 +56,8 @@ Devices: [Quatech] DAQP-208 (daqp), DAQP-308
+ #include <pcmcia/cisreg.h>
+ #include <pcmcia/ds.h>
+ 
++#include <linux/completion.h>
++
+ /* Maximum number of separate DAQP devices we'll allow */
+ #define MAX_DEV         4
+ 
+@@ -67,7 +69,7 @@ struct local_info_t {
+ 
+ 	enum { semaphore, buffer } interrupt_mode;
+ 
+-	struct semaphore eos;
++	struct completion eos;
+ 
+ 	struct comedi_device *dev;
+ 	struct comedi_subdevice *s;
+@@ -238,7 +240,7 @@ static int daqp_ai_cancel(struct comedi_device *dev, struct comedi_subdevice *s)
+ /* Interrupt handler
+  *
+  * Operates in one of two modes.  If local->interrupt_mode is
+- * 'semaphore', just signal the local->eos semaphore and return
++ * 'semaphore', just signal the local->eos completion and return
+  * (one-shot mode).  Otherwise (continuous mode), read data in from
+  * the card, transfer it to the buffer provided by the higher-level
+  * comedi kernel module, and signal various comedi callback routines,
+@@ -287,7 +289,7 @@ static enum irqreturn daqp_interrupt(int irq, void *dev_id)
+ 
+ 	case semaphore:
+ 
+-		up(&local->eos);
++		complete(&local->eos);
+ 		break;
+ 
+ 	case buffer:
+@@ -401,8 +403,7 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
+ 		return -1;
+ 	}
+ 
+-	/* Make sure semaphore is blocked */
+-	sema_init(&local->eos, 0);
++	init_completion(&local->eos);
+ 	local->interrupt_mode = semaphore;
+ 	local->dev = dev;
+ 	local->s = s;
+@@ -413,9 +414,9 @@ static int daqp_ai_insn_read(struct comedi_device *dev,
+ 		outb(DAQP_COMMAND_ARM | DAQP_COMMAND_FIFO_DATA,
+ 		     dev->iobase + DAQP_COMMAND);
+ 
+-		/* Wait for interrupt service routine to unblock semaphore */
++		/* Wait for interrupt service routine to unblock completion */
+ 		/* Maybe could use a timeout here, but it's interruptible */
+-		if (down_interruptible(&local->eos))
++		if (wait_for_completion_interruptible(&local->eos))
+ 			return -EINTR;
+ 
+ 		data[i] = inb(dev->iobase + DAQP_FIFO);
+-- 
+1.7.0.4
 
-#include <linux/sh_intc.h>
-
-and the ARM code does
-
-#include <linux/sh_intc.h>
-
-Hope this clarifies!
-
-/ magnus
