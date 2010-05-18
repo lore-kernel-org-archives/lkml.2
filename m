@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756307Ab0ERQpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:45:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52420 "EHLO mail.zytor.com"
+	id S1756648Ab0ERQvc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:51:32 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40771 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab0ERQpD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:45:03 -0400
-Message-ID: <4BF2C30F.6030502@zytor.com>
-Date: Tue, 18 May 2010 09:40:47 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1754213Ab0ERQv3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:51:29 -0400
+Message-ID: <4BF2C55C.9060200@redhat.com>
+Date: Tue, 18 May 2010 13:50:36 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Andi Kleen <andi@firstfloor.org>, Arjan van de Ven <arjan@infradead.org>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       chris.mason@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <1273887635-27610-1-git-send-email-venki@google.com>	 <87tyq9mqrz.fsf@basil.nowhere.org>	 <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>	 <20100515121424.38f5b389@infradead.org>	 <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>	 <20100515224305.17a04022@infradead.org>	 <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>	 <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>	 <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>	 <20100518112509.GD22675@basil.fritz.box> <1274183935.5605.7726.camel@twins>
-In-Reply-To: <1274183935.5605.7726.camel@twins>
-Content-Type: text/plain; charset=UTF-8
+To: Andi Kleen <andi@firstfloor.org>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bluesmoke-devel@lists.sourceforge.net,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
+       Brent Young <brent.young@intel.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+References: <4BF18995.6070008@redhat.com> <87r5laxiap.fsf@basil.nowhere.org>
+In-Reply-To: <87r5laxiap.fsf@basil.nowhere.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 04:58 AM, Peter Zijlstra wrote:
-> On Tue, 2010-05-18 at 13:25 +0200, Andi Kleen wrote:
->> On Tue, May 18, 2010 at 11:58:18AM +0200, Peter Zijlstra wrote:
->>> On Sun, 2010-05-16 at 22:06 -0700, Arjan van de Ven wrote:
->>>> look we're not disabling ring 3 tsc. We could, but we don't.
->>>
->>> Maybe we should.
->>
->> That would kill the vsyscall too. Remember it's running in ring 3.
->>
->> That is in theory you could disable it on systems where the vsyscall
->> doesn't use it, but then you would likely break huge amounts of software, 
->> unless you emulate it.
+Andi Kleen wrote:
+> Mauro Carvalho Chehab <mchehab@redhat.com> writes:
+>> There is an immediate need for error reporting on NHM-EP class
+>> systems.
 > 
-> Well, software shouldn't use it, so breaking it sounds like a fine
-> idea ;-)
+> Just for the innocent readers who might be mislead by this:
 > 
-> Also, a slow emulation is an incentive to actually do the right thing.
+> Nehalem-EP DIMM error accounting already works fine today using
+> mcelog for most cases, including RHEL5.5 (with some limits) 
+> and RHEL6beta with no additional changes needed.
+> 
+> In RHEL6 the daemon does the accounting and the client reports the errors
+> separated for each DIMM and separated in uc and ce.  In RHEL5
+> the information is in a log file and can be gotten from there.
+> 
+> In addition the daemon supports various advanced RAS features including
+> predictive bad page offlining and various threshold triggers.
 
-The problem is that you throw the baby (vsyscall) out with the bathwater
-(user rdtsc).
-
-	-hpa
+Ok. It should be clear that the main target of the mini-summit is to define
+how the several subsystems will integrate into a hardware-abstracted way
+to report errors from kernel. So, we're looking on the next steps to improve
+what we currently have, and avoid to have more than one different subsystem
+trying to get the same info, eventually using the same registers, but providing
+different interfaces to userspace.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
 
+Cheers,
+Mauro
