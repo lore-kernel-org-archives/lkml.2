@@ -1,400 +1,249 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757065Ab0ERK3q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:29:46 -0400
+	id S1757203Ab0ERKbE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:31:04 -0400
 Received: from smtp02.citrix.com ([66.165.176.63]:64753 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756643Ab0ERK3f (ORCPT
+	with ESMTP id S1756989Ab0ERK3l (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:29:35 -0400
+	Tue, 18 May 2010 06:29:41 -0400
 X-IronPort-AV: E=Sophos;i="4.53,254,1272859200"; 
-   d="scan'208";a="97477205"
+   d="scan'208";a="97477198"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
        Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 07/12] Add suspend\resume support for PV on HVM guests.
-Date: Tue, 18 May 2010 11:23:02 +0100
-Message-Id: <1274178187-20602-7-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 05/12] unplug emulated disks and nics
+Date: Tue, 18 May 2010 11:23:00 +0100
+Message-Id: <1274178187-20602-5-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.5.4.3
 In-Reply-To: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
 References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
-X-OriginalArrivalTime: 18 May 2010 10:20:05.0575 (UTC) FILETIME=[AF45F570:01CAF673]
+X-OriginalArrivalTime: 18 May 2010 10:20:02.0013 (UTC) FILETIME=[AD2670D0:01CAF673]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+add a xen_unplug command line option to the kernel to unplug
+xen emulated disks and nics.
+
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/xen/enlighten.c          |    9 ++--
- arch/x86/xen/suspend.c            |    6 ++
- arch/x86/xen/xen-ops.h            |    3 +
- drivers/xen/manage.c              |   95 +++++++++++++++++++++++++++++++++++--
- drivers/xen/platform-pci.c        |   29 +++++++++++-
- drivers/xen/xenbus/xenbus_probe.c |   28 +++++++++++
- include/xen/platform_pci.h        |    6 ++
- include/xen/xen-ops.h             |    3 +
- 8 files changed, 170 insertions(+), 9 deletions(-)
+ arch/x86/xen/enlighten.c             |   66 ++++++++++++++++++++++++++++++++++
+ include/xen/hvm.h                    |    2 +
+ include/xen/interface/platform_pci.h |   46 +++++++++++++++++++++++
+ include/xen/platform_pci.h           |   32 ++++++++++++++++
+ 4 files changed, 146 insertions(+), 0 deletions(-)
+ create mode 100644 include/xen/interface/platform_pci.h
+ create mode 100644 include/xen/platform_pci.h
 
 diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index aac47b0..23b8200 100644
+index 502c4f8..aac47b0 100644
 --- a/arch/x86/xen/enlighten.c
 +++ b/arch/x86/xen/enlighten.c
-@@ -1268,12 +1268,13 @@ static int init_hvm_pv_info(int *major, int *minor)
- 	return 0;
- }
+@@ -31,6 +31,7 @@
+ #include <linux/gfp.h>
  
--static void __init init_shared_info(void)
-+void init_shared_info(void)
- {
- 	struct xen_add_to_physmap xatp;
--	struct shared_info *shared_info_page;
-+	static struct shared_info *shared_info_page = 0;
- 
--	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
-+	if (!shared_info_page)
-+		shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
- 	xatp.domid = DOMID_SELF;
- 	xatp.idx = 0;
- 	xatp.space = XENMAPSPACE_shared_info;
-@@ -1302,7 +1303,7 @@ void do_hvm_pv_evtchn_intr(void)
- 	xen_hvm_evtchn_do_upcall(get_irq_regs());
- }
- 
--static void xen_callback_vector(void)
-+void xen_callback_vector(void)
- {
- 	uint64_t callback_via;
- 	if (xen_feature(XENFEAT_hvm_callback_vector)) {
-diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
-index 987267f..86f3b45 100644
---- a/arch/x86/xen/suspend.c
-+++ b/arch/x86/xen/suspend.c
-@@ -26,6 +26,12 @@ void xen_pre_suspend(void)
- 		BUG();
- }
- 
-+void xen_hvm_post_suspend(int suspend_cancelled)
-+{
-+		init_shared_info();
-+		xen_callback_vector();
-+}
-+
- void xen_post_suspend(int suspend_cancelled)
- {
- 	xen_build_mfn_list_list();
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index f9153a3..caf89ee 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -38,6 +38,9 @@ void xen_enable_sysenter(void);
- void xen_enable_syscall(void);
- void xen_vcpu_restore(void);
- 
-+void xen_callback_vector(void);
-+void init_shared_info(void);
-+
- void __init xen_build_dynamic_phys_to_machine(void);
- 
- void xen_init_irq_ops(void);
-diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-index 2ac4440..a73edd8 100644
---- a/drivers/xen/manage.c
-+++ b/drivers/xen/manage.c
-@@ -8,15 +8,20 @@
- #include <linux/sysrq.h>
- #include <linux/stop_machine.h>
- #include <linux/freezer.h>
-+#include <linux/pci.h>
-+#include <linux/cpumask.h>
- 
-+#include <xen/xen.h>
- #include <xen/xenbus.h>
- #include <xen/grant_table.h>
- #include <xen/events.h>
- #include <xen/hvc-console.h>
- #include <xen/xen-ops.h>
+ #include <xen/xen.h>
 +#include <xen/platform_pci.h>
+ #include <xen/interface/xen.h>
+ #include <xen/interface/version.h>
+ #include <xen/interface/physdev.h>
+@@ -38,6 +39,7 @@
+ #include <xen/interface/memory.h>
+ #include <xen/interface/hvm/hvm_op.h>
+ #include <xen/interface/hvm/params.h>
++#include <xen/interface/platform_pci.h>
+ #include <xen/features.h>
+ #include <xen/page.h>
+ #include <xen/hvm.h>
+@@ -83,6 +85,8 @@ struct shared_info xen_dummy_shared_info;
+ void *xen_initial_gdt;
  
- #include <asm/xen/hypercall.h>
- #include <asm/xen/page.h>
-+#include <asm/xen/hypervisor.h>
+ int xen_have_vector_callback;
++int xen_platform_pci;
++static int unplug;
  
- enum shutdown_state {
- 	SHUTDOWN_INVALID = -1,
-@@ -33,10 +38,30 @@ enum shutdown_state {
- static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
+ /*
+  * Point at some empty memory to start with. We map the real shared_info
+@@ -1309,6 +1313,39 @@ static void xen_callback_vector(void)
+ 	}
+ }
  
- #ifdef CONFIG_PM_SLEEP
--static int xen_suspend(void *data)
-+static int xen_hvm_suspend(void *data)
- {
-+	struct sched_shutdown r = { .reason = SHUTDOWN_suspend };
- 	int *cancelled = data;
++static int __init check_platform_magic(void)
++{
++	short magic;
++	char protocol;
 +
-+	BUG_ON(!irqs_disabled());
++	magic = inw(XEN_IOPORT_MAGIC);
++	if (magic != XEN_IOPORT_MAGIC_VAL) {
++		printk(KERN_ERR "Xen Platform Pci: unrecognised magic value\n");
++		return -1;
++	}
 +
-+	*cancelled = HYPERVISOR_sched_op(SCHEDOP_shutdown, &r);
++	protocol = inb(XEN_IOPORT_PROTOVER);
 +
-+	xen_hvm_post_suspend(*cancelled);
-+	gnttab_resume();
++	printk(KERN_DEBUG "Xen Platform Pci: I/O protocol version %d\n",
++			protocol);
 +
-+	if (!*cancelled) {
-+		xen_irq_resume();
-+		platform_pci_resume();
++	switch (protocol) {
++	case 1:
++		outw(XEN_IOPORT_LINUX_PRODNUM, XEN_IOPORT_PRODNUM);
++		outl(XEN_IOPORT_LINUX_DRVVER, XEN_IOPORT_DRVVER);
++		if (inw(XEN_IOPORT_MAGIC) != XEN_IOPORT_MAGIC_VAL) {
++			printk(KERN_ERR "Xen Platform: blacklisted by host\n");
++			return -3;
++		}
++		break;
++	default:
++		printk(KERN_WARNING "Xen Platform Pci: unknown I/O protocol version");
++		return -2;
 +	}
 +
 +	return 0;
 +}
 +
-+static int xen_suspend(void *data)
-+{
- 	int err;
-+	int *cancelled = data;
- 
- 	BUG_ON(!irqs_disabled());
- 
-@@ -73,6 +98,53 @@ static int xen_suspend(void *data)
- 	return 0;
- }
- 
-+static void do_hvm_suspend(void)
-+{
-+	int err;
-+	int cancelled = 1;
-+
-+	shutting_down = SHUTDOWN_SUSPEND;
-+
-+#ifdef CONFIG_PREEMPT
-+	/* If the kernel is preemptible, we need to freeze all the processes
-+	   to prevent them from being in the middle of a pagetable update
-+	   during suspend. */
-+	err = freeze_processes();
-+	if (err) {
-+		printk(KERN_ERR "xen suspend: freeze failed %d\n", err);
-+		goto out;
-+	}
-+#endif
-+
-+	printk(KERN_DEBUG "suspending xenstore... ");
-+	xenbus_suspend();
-+	printk(KERN_DEBUG "xenstore suspended\n");
-+	platform_pci_disable_irq();
-+	
-+	err = stop_machine(xen_hvm_suspend, &cancelled, cpumask_of(0));
-+	if (err) {
-+		printk(KERN_ERR "failed to start xen_suspend: %d\n", err);
-+		cancelled = 1;
-+	}
-+
-+	platform_pci_enable_irq();
-+
-+	if (!cancelled) {
-+		xen_arch_resume();
-+		xenbus_resume();
-+	} else
-+		xs_suspend_cancel();
-+
-+	/* Make sure timer events get retriggered on all CPUs */
-+	clock_was_set();
-+
-+#ifdef CONFIG_PREEMPT
-+	thaw_processes();
-+out:
-+#endif
-+	shutting_down = SHUTDOWN_INVALID;
-+}
-+
- static void do_suspend(void)
+ void __init xen_guest_init(void)
  {
- 	int err;
-@@ -185,7 +257,10 @@ static void shutdown_handler(struct xenbus_watch *watch,
- 		ctrl_alt_del();
- #ifdef CONFIG_PM_SLEEP
- 	} else if (strcmp(str, "suspend") == 0) {
--		do_suspend();
-+		if (xen_hvm_domain())
-+			do_hvm_suspend();
+ 	int r;
+@@ -1325,6 +1362,35 @@ void __init xen_guest_init(void)
+ 
+ 	xen_callback_vector();
+ 
++	r = check_platform_magic();
++	if (!r || (r == -1 && (unplug & UNPLUG_IGNORE)))
++		xen_platform_pci = 1;
++	if (xen_platform_pci && !(unplug & UNPLUG_IGNORE))
++		outw(unplug, XEN_IOPORT_UNPLUG);
+ 	have_vcpu_info_placement = 0;
+ 	x86_init.irqs.intr_init = xen_init_IRQ;
+ }
++
++static int __init parse_unplug(char *arg)
++{
++	char *p, *q;
++
++	for (p = arg; p; p = q) {
++		q = strchr(arg, ',');
++		if (q)
++			*q++ = '\0';
++		if (!strcmp(p, "all"))
++			unplug |= UNPLUG_ALL;
++		else if (!strcmp(p, "ide-disks"))
++			unplug |= UNPLUG_ALL_IDE_DISKS;
++		else if (!strcmp(p, "aux-ide-disks"))
++			unplug |= UNPLUG_AUX_IDE_DISKS;
++		else if (!strcmp(p, "nics"))
++			unplug |= UNPLUG_ALL_NICS;
 +		else
-+			do_suspend();
- #endif
- 	} else {
- 		printk(KERN_INFO "Ignoring shutdown request: %s\n", str);
-@@ -261,7 +336,19 @@ static int shutdown_event(struct notifier_block *notifier,
- 	return NOTIFY_DONE;
- }
- 
--static int __init setup_shutdown_event(void)
-+static int __init __setup_shutdown_event(void)
-+{
-+	/* Delay initialization in the PV on HVM case */
-+	if (xen_hvm_domain())
-+		return 0;
-+
-+	if (!xen_pv_domain())
-+		return -ENODEV;
-+
-+	return xen_setup_shutdown_event();
-+}
-+
-+int xen_setup_shutdown_event(void)
- {
- 	static struct notifier_block xenstore_notifier = {
- 		.notifier_call = shutdown_event
-@@ -271,4 +358,4 @@ static int __init setup_shutdown_event(void)
- 	return 0;
- }
- 
--subsys_initcall(setup_shutdown_event);
-+subsys_initcall(__setup_shutdown_event);
-diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
-index 7a8da66..b15f809 100644
---- a/drivers/xen/platform-pci.c
-+++ b/drivers/xen/platform-pci.c
-@@ -33,6 +33,7 @@
- #include <xen/xenbus.h>
- #include <xen/events.h>
- #include <xen/hvm.h>
-+#include <xen/xen-ops.h>
- 
- #define DRV_NAME    "xen-platform-pci"
- 
-@@ -43,6 +44,8 @@ MODULE_LICENSE("GPL");
- static unsigned long platform_mmio;
- static unsigned long platform_mmio_alloc;
- static unsigned long platform_mmiolen;
-+static uint64_t callback_via;
-+struct pci_dev *xen_platform_pdev;
- 
- unsigned long alloc_xen_mmio(unsigned long len)
- {
-@@ -87,13 +90,33 @@ static int xen_allocate_irq(struct pci_dev *pdev)
- 			"xen-platform-pci", pdev);
- }
- 
-+void platform_pci_disable_irq(void)
-+{
-+	printk(KERN_DEBUG "platform_pci_disable_irq\n");
-+	disable_irq(xen_platform_pdev->irq);
-+}
-+
-+void platform_pci_enable_irq(void)
-+{
-+	printk(KERN_DEBUG "platform_pci_enable_irq\n");
-+	enable_irq(xen_platform_pdev->irq);
-+}
-+
-+void platform_pci_resume(void)
-+{
-+	if (!xen_have_vector_callback && xen_set_callback_via(callback_via)) {
-+		printk("platform_pci_resume failure!\n");
-+		return;
++			printk(KERN_WARNING "unrecognised option '%s' "
++				 "in module parameter 'dev_unplug'\n", p);
 +	}
++	return 0;
 +}
-+
- static int __devinit platform_pci_init(struct pci_dev *pdev,
- 				       const struct pci_device_id *ent)
- {
- 	int i, ret;
- 	long ioaddr, iolen;
- 	long mmio_addr, mmio_len;
--	uint64_t callback_via;
-+	xen_platform_pdev = pdev;
++early_param("xen_unplug", parse_unplug);
+diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+index 5940ee5..777d2ce 100644
+--- a/include/xen/hvm.h
++++ b/include/xen/hvm.h
+@@ -30,4 +30,6 @@ extern int xen_have_vector_callback;
+ #define HVM_CALLBACK_VECTOR(x) (((uint64_t)HVM_CALLBACK_VIA_TYPE_VECTOR)<<\
+                                HVM_CALLBACK_VIA_TYPE_SHIFT | (x))
  
- 	i = pci_enable_device(pdev);
- 	if (i)
-@@ -152,6 +175,10 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
- 	ret = xenbus_probe_init();
- 	if (ret)
- 		goto out;
-+	ret = xen_setup_shutdown_event();
-+	if (ret)
-+		goto out;
++extern int xen_platform_pci;
 +
- 
- out:
- 	if (ret) {
-diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index dc6ed06..a679205 100644
---- a/drivers/xen/xenbus/xenbus_probe.c
-+++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -746,6 +746,34 @@ static int xenbus_dev_resume(struct device *dev)
- 	return 0;
- }
- 
-+static int dev_suspend(struct device *dev, void *data)
-+{
-+	return xenbus_dev_suspend(dev, PMSG_SUSPEND);
-+}
+ #endif /* XEN_HVM_H__ */
+diff --git a/include/xen/interface/platform_pci.h b/include/xen/interface/platform_pci.h
+new file mode 100644
+index 0000000..720eaf5
+--- /dev/null
++++ b/include/xen/interface/platform_pci.h
+@@ -0,0 +1,46 @@
++/******************************************************************************
++ * platform_pci.h
++ *
++ * Interface for granting foreign access to page frames, and receiving
++ * page-ownership transfers.
++ *
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
 +
-+void xenbus_suspend(void)
-+{
-+	DPRINTK("");
++#ifndef __XEN_PUBLIC_PLATFORM_PCI_H__
++#define __XEN_PUBLIC_PLATFORM_PCI_H__
 +
-+	bus_for_each_dev(&xenbus_frontend.bus, NULL, NULL, dev_suspend);
-+	xs_suspend();
-+}
-+EXPORT_SYMBOL_GPL(xenbus_suspend);
++#define XEN_IOPORT_BASE 0x10
 +
-+static int dev_resume(struct device *dev, void *data)
-+{
-+	return xenbus_dev_resume(dev);
-+}
++#define XEN_IOPORT_PLATFLAGS	(XEN_IOPORT_BASE + 0) /* 1 byte access (R/W) */
++#define XEN_IOPORT_MAGIC	(XEN_IOPORT_BASE + 0) /* 2 byte access (R) */
++#define XEN_IOPORT_UNPLUG	(XEN_IOPORT_BASE + 0) /* 2 byte access (W) */
++#define XEN_IOPORT_DRVVER	(XEN_IOPORT_BASE + 0) /* 4 byte access (W) */
 +
-+void xenbus_resume(void)
-+{
-+	DPRINTK("");
++#define XEN_IOPORT_SYSLOG	(XEN_IOPORT_BASE + 2) /* 1 byte access (W) */
++#define XEN_IOPORT_PROTOVER	(XEN_IOPORT_BASE + 2) /* 1 byte access (R) */
++#define XEN_IOPORT_PRODNUM	(XEN_IOPORT_BASE + 2) /* 2 byte access (W) */
 +
-+	xs_resume();
-+	bus_for_each_dev(&xenbus_frontend.bus, NULL, NULL, dev_resume);
-+}
-+EXPORT_SYMBOL_GPL(xenbus_resume);
++#define UNPLUG_ALL_IDE_DISKS 1
++#define UNPLUG_ALL_NICS 2
++#define UNPLUG_AUX_IDE_DISKS 4
++#define UNPLUG_ALL 7
++#define UNPLUG_IGNORE 8
 +
- /* A flag to determine if xenstored is 'ready' (i.e. has started) */
- int xenstored_ready = 0;
- 
++#endif /* __XEN_PUBLIC_PLATFORM_PCI_H__ */
 diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
-index 59a120c..ced434d 100644
---- a/include/xen/platform_pci.h
+new file mode 100644
+index 0000000..f39f4d3
+--- /dev/null
 +++ b/include/xen/platform_pci.h
-@@ -31,11 +31,17 @@
- 
- #ifdef CONFIG_XEN_PLATFORM_PCI
- unsigned long alloc_xen_mmio(unsigned long len);
-+void platform_pci_resume(void);
-+void platform_pci_disable_irq(void);
-+void platform_pci_enable_irq(void);
- #else
- static inline unsigned long alloc_xen_mmio(unsigned long len)
- {
- 	return ~0UL;
- }
-+static inline void platform_pci_resume(void) {}
-+static inline void platform_pci_disable_irq(void) {}
-+static inline void platform_pci_enable_irq(void) {}
- #endif
- 
- #endif /* _XEN_PLATFORM_PCI_H */
-diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
-index 883a21b..46bc81e 100644
---- a/include/xen/xen-ops.h
-+++ b/include/xen/xen-ops.h
-@@ -7,6 +7,7 @@ DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
- 
- void xen_pre_suspend(void);
- void xen_post_suspend(int suspend_cancelled);
-+void xen_hvm_post_suspend(int suspend_cancelled);
- 
- void xen_mm_pin_all(void);
- void xen_mm_unpin_all(void);
-@@ -14,4 +15,6 @@ void xen_mm_unpin_all(void);
- void xen_timer_resume(void);
- void xen_arch_resume(void);
- 
-+int xen_setup_shutdown_event(void);
+@@ -0,0 +1,32 @@
++/******************************************************************************
++ * platform-pci.h
++ *
++ * Xen platform PCI device driver
++ * Copyright (c) 2004, Intel Corporation. <xiaofeng.ling@intel.com>
++ * Copyright (c) 2007, XenSource Inc.
++ * Copyright (c) 2010, Citrix
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms and conditions of the GNU General Public License,
++ * version 2, as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program; if not, write to the Free Software Foundation, Inc., 59 Temple
++ * Place - Suite 330, Boston, MA 02111-1307 USA.
++ */
 +
- #endif /* INCLUDE_XEN_OPS_H */
++#ifndef _XEN_PLATFORM_PCI_H
++#define _XEN_PLATFORM_PCI_H
++
++#include <linux/version.h>
++
++#define XEN_IOPORT_MAGIC_VAL 0x49d2
++#define XEN_IOPORT_LINUX_PRODNUM 0xffff
++#define XEN_IOPORT_LINUX_DRVVER  ((LINUX_VERSION_CODE << 8) + 0x0)
++
++#endif /* _XEN_PLATFORM_PCI_H */
 -- 
 1.5.4.3
 
