@@ -1,62 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756253Ab0ERFaf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:30:35 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:57095 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756066Ab0ERFad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:30:33 -0400
-Date: Tue, 18 May 2010 15:30:20 +1000
-From: Neil Brown <neilb@suse.de>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Benjamin Thery <benjamin.thery@bull.net>
-Subject: Re: linux-next: build failure after merge of the staging-next tree
-Message-ID: <20100518153020.06d5a602@notabene.brown>
-In-Reply-To: <20100430144340.GD1824@kroah.com>
-References: <20100430155205.a4171034.sfr@canb.auug.org.au>
-	<20100430144340.GD1824@kroah.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+	id S1756403Ab0ERFca (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:32:30 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41926
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755876Ab0ERFc2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:32:28 -0400
+Date: Mon, 17 May 2010 22:32:37 -0700 (PDT)
+Message-Id: <20100517.223237.55871633.davem@davemloft.net>
+To: randy.dunlap@oracle.com
+Cc: shemminger@vyatta.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
+Subject: Re: [PATCH -next] bridge: fix build for CONFIG_SYSFS disabled
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <4BF18468.5010005@oracle.com>
+References: <20100517091756.e232bdc2.randy.dunlap@oracle.com>
+	<20100517105654.2451e61f@nehalam>
+	<4BF18468.5010005@oracle.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 07:43:40 -0700
-Greg KH <greg@kroah.com> wrote:
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Date: Mon, 17 May 2010 11:01:12 -0700
 
-> On Fri, Apr 30, 2010 at 03:52:05PM +1000, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > After merging the staging-next tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > drivers/md/md.c: In function 'level_store':
-> > drivers/md/md.c:3029: error: too few arguments to function 'sysfs_get_dirent'
-> > 
-> > Caused by commit 262f8e4937e7b4a587923ca3c039a184668f49ec ("sysfs:
-> > Implement sysfs tagged directory support") from the driver-core tree
-> > interacting with commit fecc531e3cc0de60514d326c7d82f1075ed55888 ("md:
-> > manage redundancy group in sysfs when changing level") from the md.
-> > 
-> > I have applied this fixup patch for today and can carry it as necessary.
-> > 
-> > [This could have been avoided, of course, by creating a new API (maybe
-> > sysfs_get_dirent_tagged) and implementing the old API in terms of that].
+> On 05/17/10 10:56, Stephen Hemminger wrote:
+>> On Mon, 17 May 2010 09:17:56 -0700
+>> Randy Dunlap <randy.dunlap@oracle.com> wrote:
+>> 
+>>> From: Randy Dunlap <randy.dunlap@oracle.com>
+>>>
+>>> Fix build when CONFIG_SYSFS is not enabled:
+>>>
+>>> net/bridge/br_if.c:136: error: 'struct net_bridge_port' has no member named 'sysfs_name'
+>>>
+>>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+...
+>> I don't like peppering code with #ifdef like this.
 > 
-> Thanks for the fixup.
+> Thanks.  I didn't like it either.
+> 
+>> Turns out that in this place sysfs_name is always the same
+>> as the device name so instead:
 
-hi Greg,
- I'm assuming that you will submit you patch queue to Linus first, then I
- will create a merge which fixes this issue and ask Linus to pull that - so
- everything is all still bisectable without me rebasing.
+Stephen, please give me a formal submission of this fix with proper
+signoff and credit to Randy.
 
- If you are OK with that, please let me know when you have submitted your
- queue..  I'll try to keep and eye open, but I might miss it...
-
-Thanks,
-NeilBrown
+Thanks!
