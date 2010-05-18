@@ -1,55 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab0ERV7U (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:59:20 -0400
-Received: from out01.mta.xmission.com ([166.70.13.231]:45443 "EHLO
-	out01.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab0ERV7S (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:59:18 -0400
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
-	<m1hbm5f0d2.fsf@fess.ebiederm.org> <20100518212502.GB31331@kroah.com>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 18 May 2010 14:59:09 -0700
-In-Reply-To: <20100518212502.GB31331@kroah.com> (Greg KH's message of "Tue\, 18 May 2010 14\:25\:02 -0700")
-Message-ID: <m1zkzwdg7m.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1757144Ab0ERWAd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:00:33 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:38301 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752633Ab0ERWAa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 18:00:30 -0400
+Date: Wed, 19 May 2010 00:00:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Joe Perches <joe@perches.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Borislav Petkov <bp@amd64.org>, "Young, Brent" <brent.young@intel.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100518220002.GA23739@elte.hu>
+References: <4BF18995.6070008@redhat.com>
+ <4BF2392A.9040409@jp.fujitsu.com>
+ <4BF2C3D1.10009@redhat.com>
+ <1274204560.17703.82.camel@Joe-Laptop.home>
+ <20100518185305.GA23921@elte.hu>
+ <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com>
+ <20100518193022.GB30936@elte.hu>
+ <20100518204204.GA23204@elte.hu>
+ <AANLkTimPRvuoW5-OcPlPx5cvnCTJa7xhAQDSLrYziB4j@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: greg@kroah.com, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, sfr@canb.auug.org.au
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa02 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Greg KH <greg@kroah.com>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa02 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Disposition: inline
+In-Reply-To: <AANLkTimPRvuoW5-OcPlPx5cvnCTJa7xhAQDSLrYziB4j@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: 0.5
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
+	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
+	[score: 0.2463]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <greg@kroah.com> writes:
 
-> On Tue, May 18, 2010 at 12:58:33PM -0700, Eric W. Biederman wrote:
->> 
->> Greg this fixes the conflict with the vfs tree we see in linux-next.
->
-> Thanks, I can apply this to my tree right now, right?
+* Tony Luck <tony.luck@intel.com> wrote:
 
-Yes it is safe to apply to your tree right now.  Apologies if that
-wasn't clear.
+> > This gives us a broad platform to add various RAS 
+> > events as well, beyond raw hardware events: we could 
+> > for example events for various system anomalies such 
+> > as lockup messages, kernel warnings/oopses, IOMMU 
+> > exceptions - maybe even pure software concepts such as 
+> > fatal segmentation fault events, etc. etc.
+> 
+> This looks like sticky ground.  I can see the event 
+> mechanism passing data to a user daemon working well for 
+> all kinds of corrected and minor errors. But when you 
+> start talking about lockups and fatal errors things get 
+> a lot trickier. Often the main concern at this point is 
+> error containment. Making sure that the flaky data 
+> doesn't become visible (saved to storage, transmitted to 
+> the network, etc.). [...]
 
-Eric
+I was pointing beyond the narrow hardware (memory) error 
+point of view, towards a more generic 'system health' 
+thinking.
+
+In the broader view it may makes sense to for example 
+define policy over excessive number of segfaults on a 
+server system (where excessive segfaults are an anomaly), 
+or a suspiciously large number of soft IO errors, etc.
+
+But yes, of course, when it comes to hard memory errors, 
+those take precedence, and handling them (and 
+saving/propagating information about them while we still 
+can) is a priority.
+
+> [...] Getting from a machine check handler through some 
+> context switches (and page faults etc.) to a user level 
+> daemon before the error gets recorded looks to be really 
+> hard.
+
+As Boris mentioned it too, critical policy action can and 
+will be done straight in the kernel.
+
+	Ingo
