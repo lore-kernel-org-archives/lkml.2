@@ -1,38 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757245Ab0ERPxT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 11:53:19 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63444 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751491Ab0ERPxS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 11:53:18 -0400
-X-Authority-Analysis: v=1.1 cv=XlIRUSWzFvHiorqRgyN8fup7OiOLcGcwhtEWqPJTlSs= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=uB51Yq4vNIEX0SBci-4A:9 a=KYDUYj5AgdIIjgFjRt8A:7 a=SojiUwRDDj98dCSJ_KHmE5em4TcA:4 a=PUjeQqilurYA:10 a=xNuefaKZfxuTjvek:21 a=rNHTCq4KgKSdzzvO:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Unexpected splice "always copy" behavior observed
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <20100518153440.GB7748@Krystal>
-References: <20100518153440.GB7748@Krystal>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 18 May 2010 11:53:13 -0400
-Message-ID: <1274197993.26328.755.camel@gandalf.stny.rr.com>
+	id S1757513Ab0ERPzy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 11:55:54 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:50136 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754493Ab0ERPzw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 11:55:52 -0400
+Subject: Re: linux-next: build failure after merge of the backlight tree
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>
+In-Reply-To: <20100517133239.8a30df8e.sfr@canb.auug.org.au>
+References: <20100510124304.2249532c.sfr@canb.auug.org.au>
+	 <20100517133239.8a30df8e.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 May 2010 08:54:24 -0700
+Message-ID: <1274198064.24454.252.camel@rex>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -40,92 +26,30 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hehe, I just notice this this morning too, while investigating.
+On Mon, 2010-05-17 at 13:32 +1000, Stephen Rothwell wrote:
+> On Mon, 10 May 2010 12:43:04 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+> >
+> > After merging the backlight tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/video/backlight/adp8860_bl.c: In function 'adp8860_led_probe':
+> > drivers/video/backlight/adp8860_bl.c:215: error: implicit declaration of function 'kzalloc'
+> > drivers/video/backlight/adp8860_bl.c:215: warning: assignment makes pointer from integer without a cast
+> > drivers/video/backlight/adp8860_bl.c:285: error: implicit declaration of function 'kfree'
+> > drivers/video/backlight/adp8860_bl.c: In function 'adp8860_probe':
+> > drivers/video/backlight/adp8860_bl.c:673: warning: assignment makes pointer from integer without a cast
+> > drivers/video/backlight/adp8860_bl.c:689: error: too few arguments to function 'backlight_device_register'
+> > 
+> > Caused by commit 6f1a02240dba279a389fd4a4138445bd3f13f67f ("backlight:
+> > new driver for the ADP8860 backlight parts").  Use of kzalloc or kfree
+> > requires including linux/slab.h (see Rule 1 in
+> > Documentation/SubmitChecklist) and the prototype of
+> > backlight_device_register changed before v2.6.34-rc2.
+> 
+> I am still getting these build failures ...
 
+Sorry about that. A bad combination of travel with limited internet
+access followed by illness. I've pushed a fix, thanks.
 
-On Tue, 2010-05-18 at 11:34 -0400, Mathieu Desnoyers wrote:
-> Hi,
-> 
-> I'm currently digging into the splice code to figure out why it's always in copy
-> mode even though I specified the SPLICE_F_MOVE flag and released the page
-> references from the LTTng ring buffer. I'm splicing to a pipe and then from the
-> pipe to an ext3 filesystem (2.6.33.4 kernel). I've got the feeling I'm missing
-> something and I don't like that.
-> 
-> My simple test case is to add a printk around the splice copy:
-> 
-> fs/splice.c: pipe_to_file()
->        if (buf->page != page) {
->                 /*
->                  * Careful, ->map() uses KM_USER0!
->                  */
->                 char *src = buf->ops->map(pipe, buf, 1);
->                 char *dst = kmap_atomic(page, KM_USER1);
-> 
->                 printk(KERN_WARNING "SPLICE COPY!!!\n");
->                 memcpy(dst + offset, src + buf->offset, this_len);
->                 flush_dcache_page(page);
->                 kunmap_atomic(dst, KM_USER1);
->                 buf->ops->unmap(pipe, buf, src);
-
-I used trace_printk() since it is not as invasive.
-
->         }
-> 
-> I'll start with a disclaimer that I only recently improved my splice
-> understanding, so AFAIU:
-
-Same here ;-)
-
-> 
-> * pipe_to_file() allocates a struct page *page on its stack.
-> 
-> * It is passed, uninitialized, to
-> 
->         ret = pagecache_write_begin(file, mapping, sd->pos, this_len,
->                                 AOP_FLAG_UNINTERRUPTIBLE, &page, &fsdata);
-> 
->     that looks already odd to me, as I would expect pipe_to_file to populate
->     this page pointer with buf->page initially if the proper conditions are met.
-> 
-> * Looking at the ext2 and ext3 write_begin code, neither are using the pagep
->   parameter:
-> 
->   ext2:
-> 
-> static int
-> ext2_write_begin(struct file *file, struct address_space *mapping,
->                 loff_t pos, unsigned len, unsigned flags,
->                 struct page **pagep, void **fsdata)
-> {
->         *pagep = NULL;
->         return __ext2_write_begin(file, mapping, pos, len, flags, pagep,fsdata);
-> }
-> 
-> 
->   ext3:
-> 
-> static int ext3_write_begin(struct file *file, struct address_space *mapping,
->                                 loff_t pos, unsigned len, unsigned flags,
->                                 struct page **pagep, void **fsdata)
-> {
->         struct page *page;
->         ....
-> 
-> retry:
->         page = grab_cache_page_write_begin(mapping, index, flags);
->         if (!page)
->                 return -ENOMEM;
->         *pagep = page;
-> 
-> * So, considering the test to check if the page content must be copied:
-> 
->        if (buf->page != page) {
-> 
->   how is it ever possible that buf->page == page ?
-
-I'm currently looking at the network code to see if it is better.
-
--- Steve
-
+Richard
 
