@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab0ERMLd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 08:11:33 -0400
-Received: from mga06.intel.com ([134.134.136.21]:63561 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756625Ab0ERMLb (ORCPT
+	id S1757253Ab0ERMS1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 08:18:27 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:61764 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752655Ab0ERMSZ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 08:11:31 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,255,1272870000"; 
-   d="scan'208";a="518927503"
-Date: Tue, 18 May 2010 05:11:29 -0700
-From: jacob pan <jacob.jun.pan@linux.intel.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Alek Du <alek.du@intel.com>, Alan Cox <alan@linux.intel.com>,
-       Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH 0/2] v3 Moorestown clock related patches
-Message-ID: <20100518051129.00006ca1@unknown>
-In-Reply-To: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com>
-Organization: Intel OTC
-X-Mailer: Claws Mail 3.7.4cvs1 (GTK+ 2.16.0; i586-pc-mingw32msvc)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 18 May 2010 08:18:25 -0400
+MIME-Version: 1.0
+In-Reply-To: <1274182023.6930.7023.camel@macbook.infradead.org>
+References: <AANLkTimB1DsCd8HuMDc9jgVOnOAE_PVd2ktssp3TIwxc@mail.gmail.com>
+	 <1274105441.6930.6920.camel@macbook.infradead.org>
+	 <1274182023.6930.7023.camel@macbook.infradead.org>
+Date: Tue, 18 May 2010 15:18:25 +0300
+Message-ID: <AANLkTikvuNiLD-n9Qvf10NmMU2KFQ25YPfM1oYfXtHE9@mail.gmail.com>
+Subject: Re: [PATCH v5] mtd: Do not corrupt backing device of device node 
+	inode
+From: "Kirill A. Shutemov" <kirill@shutemov.name>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, stable@kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is should be the v4 cover letter instead of v3 shown in the subject line. sorry about that.
+On Tue, May 18, 2010 at 2:27 PM, David Woodhouse <dwmw2@infradead.org> wrote:
+> On Mon, 2010-05-17 at 15:10 +0100, David Woodhouse wrote:
+>> Now you're just reimplementing iget().
+>>
+>> Can we just use iget_locked() to get the appropriate inode (using the
+>> mtd device number as the inode number)? Then we don't need to bother
+>> storing it in mtd->inode at all, and we can iput() the last refcount on
+>> it when the chardevice is closed -- we don't need it to stick around
+>> until the MTD device is destroyed.
+>
+> ... and we don't _want_ it to stick around until the MTD device is
+> destroyed, either. We may actually unload the mtdchar module and its
+> inodes will be destroyed when we unregister the fs type; we don't want
+> stale pointers to them hanging around to be reused if/when we reload the
+> mtdchar module later.
+>
+> I've committed a version which keeps it entirely within the mtdchar
+> code: http://git.infradead.org/mtd-2.6.git/commitdiff/cd874237
 
-Jacob Pan Tue, 18 May 2010 05:02:44 -0700
->Hi,
->Please review the two patches related Moorestown/Medfield clock selection
->logic. tglx has suggested a much cleaner logic in
->http://lkml.org/lkml/2010/5/17/406
->So patch #2 is the implementation of new logic plus small tweaks based on
->testing results.
->I also dropped x86_mask check for Penwell CPU check. It is not needed, CPU
->family and model should be sufficient/accurate to identify Lincroft vs
->Penwell.
+Looks ok. Thank you.
+
+What about stable@?
+
 >
->*** BLURB HERE ***
+> Thanks.
 >
->Jacob Pan (2):
->  x86/mrst: add cpu type detection
->  x86/mrst: add more timer config options
+> --
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
 >
-> arch/x86/include/asm/apb_timer.h |    1 -
-> arch/x86/include/asm/mrst.h      |   20 +++++++
-> arch/x86/kernel/apb_timer.c      |   37 +++----------
-> arch/x86/kernel/mrst.c           |  109 ++++++++++++++++++++++++++++++--------
-> 4 files changed, 114 insertions(+), 53 deletions(-)
 >
