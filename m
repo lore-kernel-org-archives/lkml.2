@@ -1,122 +1,149 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754197Ab0ERASL (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 20:18:11 -0400
-Received: from tex.lwn.net ([70.33.254.29]:43085 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab0ERASI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 20:18:08 -0400
-Date: Mon, 17 May 2010 18:18:04 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fbdev@vger.kernel.org
-Subject: [PULL] viafb
-Message-ID: <20100517181804.7a4c1517@bike.lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+	id S1754806Ab0ERATR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 20:19:17 -0400
+Received: from p01c12o147.mxlogic.net ([208.65.145.70]:57124 "EHLO
+	p01c12o147.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752559Ab0ERATQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 20:19:16 -0400
+X-MXL-Hash: 4bf1dd042d41a738-b0ac1a862432c9007ff7323b56f70c0a4f7097e7
+X-MXL-Hash: 4bf1dcf536e15f89-b639b68b4840240860f1a87aa9561706b32beaf4
+From: H Hartley Sweeten <hartleys@visionengravers.com>
+To: Mike Frysinger <vapier.adi@gmail.com>, Oskar Schirmer <os@emlix.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       =?utf-8?B?RGFuaWVsIEdsw7Zja25lcg==?= <dg@emlix.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Oliver Schneidewind <osw@emlix.com>,
+       Michael Hennerich <michael.hennerich@analog.com>
+Date: Mon, 17 May 2010 19:18:28 -0500
+Subject: RE: [PATCH] ad7877: fix spi word size to 16 bit
+Thread-Topic: [PATCH] ad7877: fix spi word size to 16 bit
+Thread-Index: Acr2G7Nsy0RSdnHBQFqMSyH2ZEz7YQAAP5ng
+Message-ID: <0D753D10438DA54287A00B0270842697636F0E1458@AUSP01VMBX24.collaborationhost.net>
+References: <1273142265-11929-1-git-send-email-os@emlix.com>
+ 	<n2j8bd0f97a1005061126h7fecc32btad9986c0e38246f2@mail.gmail.com>
+ 	<4BE3E02E.1090500@emlix.com>
+ <h2l8bd0f97a1005071123u782bab2doee5c122dbd4c8642@mail.gmail.com>
+ 	<20100513075335.GD30110@core.coreip.homeip.net>
+ <20100515181523.GA3081@emlix.com>
+ 	<AANLkTinn6VgvujPP3gGsteBGckIFgljn7B35DV6n8kwL@mail.gmail.com>
+ 	<20100517072935.GA14891@emlix.com>
+ <AANLkTimeAn9ALs4KxBNwwk-B419OwZ0BUwoKcoEfUbGw@mail.gmail.com>
+In-Reply-To: <AANLkTimeAn9ALs4KxBNwwk-B419OwZ0BUwoKcoEfUbGw@mail.gmail.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="utf-8"
+MIME-Version: 1.0
+X-Spam: [F=0.2288846189; CM=0.500; S=0.228(2010050402)]
+X-MAIL-FROM: <hartleys@visionengravers.com>
+X-SOURCE-IP: [216.166.12.72]
+X-AnalysisOut: [v=1.0 c=1 a=B-1wmBd5vvoA:10 a=0qYQvVkOOIcA:10 a=VphdPIyG4k]
+X-AnalysisOut: [EA:10 a=IkcTkHD0fZMA:10 a=jM3uHZP82BWpxjlUuN2t4A==:17 a=XO]
+X-AnalysisOut: [z3PDFBkUSvFmGLoiIA:9 a=gvVWoxAfJT6qqOMFW6gA:7 a=aCoytqtZQ8]
+X-AnalysisOut: [7wkN_FXNdVubITrQIA:4 a=QEXdDO2ut3YA:10 a=9X4zYPs0J0jg8jLU:]
+X-AnalysisOut: [21 a=RvHC5ijErnWmIA_U:21 a=rMIKJmVGj0KuOKtO:21]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4I0JRaS024778
 
-Hi, Linus,
+On Monday, May 17, 2010 4:50 PM, Mike Frysinger wrote:
+> 2010/5/17 Oskar Schirmer:
+>> On Sun, May 16, 2010 at 15:25:34 -0400, Mike Frysinger wrote:
+>>> On Sat, May 15, 2010 at 14:15, Oskar Schirmer wrote:
+>>>> On Thu, May 13, 2010 at 00:53:35 -0700, Dmitry Torokhov wrote:
+>>>>> On Fri, May 07, 2010 at 02:23:07PM -0400, Mike Frysinger wrote:
+>>>>>> On Fri, May 7, 2010 at 05:41, Daniel GlÃ¶ckner wrote:
+>>>>>>> On 05/06/2010 08:26 PM, Mike Frysinger wrote:
+>>>>>>>> i think it'd be a better idea to do something like:
+>>>>>>>> Â  if (spi->bits_per_word != 16) {
+>>>>>>>> Â  Â  if (spi->bits_per_word) {
+>>>>>>>> Â  Â  Â  dev_err(&spi->dev, "Invalid SPI settings; bits_per_word must be 16\n");
+>>>>>>>> Â  Â  Â  return -EINVAL;
+>>>>>>>> Â  Â  }
+>>>>>>>> Â  Â  spi->bits_per_word = 16;
+>>>>>>>> Â  Â  spi_setup(spi);
+>>>>>>>> Â  }
+>>>>>>>
+>>>>>>> There is no way to set bits_per_word using struct spi_board_info. The
+>>>>>>> description of that structure in spi.h explicitly lists the wordsize as
+>>>>>>> one of the parameters drivers should set themself in probe().
+>>>>>> >
+>>>>>>> Only struct bfin5xx_spi_chip allows to set this value in the board code.
+>>>>>>
+>>>>>> an obvious shortcoming in the SPI framework that should be fixed, but
+>>>>>> that doesnt make any difference to the above code now does it ? Â it'll
+>>>>>> operate correctly regardless of the SPI bus master.
+>>>>>
+>>>>> So is the updated patch coming?
+>>>>
+>>>> The basic question I see is, whether it is in the
+>>>> responsibility of ad7877 to check a wrong setting
+>>>> possibly caused in board specific code. If so,
+>>>> then the proposal by Mike should be used, but if not
+>>>> so, it would introduce unneeded code.
+>>>>
+>>>> Remember: both versions end up in correctly setting
+>>>> bits_per_word, with the difference merely in feedback
+>>>> level.
+>>>
+>>> imo, unsupported board settings should always be detected & rejected.
+>>> all SPI master drivers do this (detect & reject unsupported SPI slave
+>>> settings).
+>>
+>> please note, that bits_per_word is not a board setting,
+>> it's a demand of the device. consequently, there is no one
+>> to set unsupported values and thus none to be detected.
+>>
+>> the only architecture setting bits_per_word thru spi_chip
+>> is blackfin, but I cannot see a good reason, why the board
+>> settings should engage with a fixed demand of the device?
+>
+> you're telling me that every single SPI device out there can only ever
+> operate in one specific bit length or lacks optional settings ?  i
+> find that hard to believe which means it does make sense to let the
+> boards pick a length when appropriate.
+>
+> the board settings also function as default setup values so when using
+> generic things like the spidev driver, there is no kernel driver to
+> request the desired bitmode.
+>
+> the simple code i posted addresses your concerns as well as reject
+> invalid settings (wherever they may originate).  if you're not going
+> to post an updated patch, i'll take the simple one Michael committed
+> and post that.
 
-Here's a big set of changes to the viafb framebuffer code.  The end
-goal of this work - besides massively cleaning up the code - is to
-support the video capture driver as used by the OLPC XO 1.5 machine.
-The actual capture driver isn't here - the V4L2 folks haven't had a
-chance to review it yet - but everything leading up to that point is.
+Just my 0.02, I haven't been following this thread very closely...
 
-These patches have been through a few rounds of review and have been in
-linux-next for a couple weeks now.
+I believe it's the spi "device", i.e. the protocol, drivers responsibility
+to supply the bits_per_word that it will operate with.  The spi master
+driver simply validates it if can support the requested size.  If the
+bits_per_word is left at the default (0) it indicates that the protocol
+words are eight bit bytes.
 
-It's all at:
+If a protocol driver can support multiple word sizes it should probably
+also support a "setup" callback during the driver probe so that the
+underlying board support can provide the desired word size.  This is what
+the libertas_spi driver does (drivers/net/wireless/libertas/if_spi.c).
+That driver does nothing with the bits_per_word value but the callbacks in
+arch/arm/mach-pxa/cm-x270.c and em-x270.c do.  They both set the bits_per_word
+to 16 and then call spi_setup.  They also probably should be checking the
+return value of spi_setup to make sure that the requested mode is supported
+by the master driver, but they probably don't since it is already known...
 
-  git://git.lwn.net/linux-2.6.git viafb-next
+If the ad7877 "only" supports 16-bit word sizes it should be setting the
+bits_per_word to indicate this.  If the underlying master driver does not
+support that word size it will return an error when spi_setup is called.
 
-Thanks,
+Just my 0.02... 
 
-jon
-
-Chris Ball (1):
-      viafb: Add 1200x900 DCON/LCD panel modes for OLPC XO-1.5
-
-Florian Tobias Schandinat (7):
-      viafb: package often used basic io functions
-      viafb: unify modesetting functions
-      viafb: move some modesetting functions to a seperate file
-      viafb: replace inb/outb
-      viafb: improve misc register handling
-      viafb: fix proc entry removal
-      viafb: make procfs entries optional
-
-Harald Welte (4):
-      viafb: Fix various resource leaks during module_init()
-      viafb: use proper pci config API
-      viafb: Determine type of 2D engine and store it in chip_info
-      viafb: rework the I2C support in the VIA framebuffer driver
-
-Jonathan Corbet (22):
-      viafb: Unmap the frame buffer on initialization error
-      viafb: Retain GEMODE reserved bits
-      viafb: Unify duplicated set_bpp() code
-      viafb: complete support for VX800/VX855 accelerated framebuffer
-      viafb: Only establish i2c busses on ports that always had them
-      viafb: Move core stuff into via-core.c
-      viafb: Separate global and fb-specific data
-      viafb: add a driver for GPIO lines
-      viafb: Convert GPIO and i2c to the new indexed port ops
-      viafb: Turn GPIO and i2c into proper platform devices
-      via: Do not attempt I/O on inactive I2C adapters
-      viafb: Introduce viafb_find_i2c_adapter()
-      via: Rationalize vt1636 detection
-      viafb: Add a simple interrupt management infrastructure
-      viafb: Add a simple VX855 DMA engine driver
-      viafb: Reserve framebuffer memory for the upcoming camera driver
-      viafb: Do not remove gpiochip under spinlock
-      viafb: Fix initialization error paths
-      viafb: fold via_io.h into via-core.h
-      viafb: get rid of i2c debug cruft
-      viafb: Eliminate some global.h references
-      viafb: move some include files to include/linux
-
-Paul Fox (1):
-      suppress verbose debug messages: change printk() to DEBUG_MSG()
-
- drivers/video/Kconfig                              |   16 +
- drivers/video/via/Makefile                         |    4 +-
- drivers/video/via/accel.c                          |  137 +++--
- drivers/video/via/accel.h                          |   40 ++
- drivers/video/via/chip.h                           |    8 +
- drivers/video/via/dvi.c                            |   37 +-
- drivers/video/via/global.h                         |    1 -
- drivers/video/via/hw.c                             |  307 ++--------
- drivers/video/via/hw.h                             |   20 +-
- drivers/video/via/ioctl.h                          |    2 +-
- drivers/video/via/lcd.c                            |   31 +-
- drivers/video/via/lcd.h                            |    2 +
- drivers/video/via/share.h                          |   20 +-
- drivers/video/via/via-core.c                       |  668 ++++++++++++++++++++
- drivers/video/via/via-gpio.c                       |  285 +++++++++
- drivers/video/via/via_i2c.c                        |  232 +++++--
- drivers/video/via/via_modesetting.c                |  126 ++++
- drivers/video/via/{via_i2c.h => via_modesetting.h} |   42 +-
- drivers/video/via/via_utility.c                    |    1 +
- drivers/video/via/viafbdev.c                       |  181 +++---
- drivers/video/via/viafbdev.h                       |   14 +-
- drivers/video/via/viamode.c                        |   15 +
- drivers/video/via/vt1636.c                         |   34 +-
- drivers/video/via/vt1636.h                         |    2 +-
- include/linux/via-core.h                           |  219 +++++++
- include/linux/via-gpio.h                           |   14 +
- {drivers/video/via => include/linux}/via_i2c.h     |   24 +-
- 27 files changed, 1884 insertions(+), 598 deletions(-)
- create mode 100644 drivers/video/via/via-core.c
- create mode 100644 drivers/video/via/via-gpio.c
- create mode 100644 drivers/video/via/via_modesetting.c
- copy drivers/video/via/{via_i2c.h => via_modesetting.h} (53%)
- create mode 100644 include/linux/via-core.h
- create mode 100644 include/linux/via-gpio.h
- rename {drivers/video/via => include/linux}/via_i2c.h (65%)
+Regards,
+Hartley
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
