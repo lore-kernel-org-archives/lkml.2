@@ -1,97 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756653Ab0ERFir (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:38:47 -0400
-Received: from waste.org ([173.11.57.241]:51036 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755653Ab0ERFiq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:38:46 -0400
-Subject: Re: [PATCH] random: Check kmalloc return value and give the failed
-  message
-From: Matt Mackall <mpm@selenic.com>
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTikYvtfMgpXW5mGHmMDSoj9O0QKOMzspoDQHURxF@mail.gmail.com>
-References: <AANLkTikYvtfMgpXW5mGHmMDSoj9O0QKOMzspoDQHURxF@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 00:38:43 -0500
-Message-ID: <1274161123.11603.507.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
-Content-Transfer-Encoding: 7bit
+	id S1754923Ab0ERFkt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:40:49 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:34064 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751568Ab0ERFks (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:40:48 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V8 2/9] vfs: Add name to file handle conversion support
+In-Reply-To: <7252.1274150030@jrobl>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274074432-29695-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <7252.1274150030@jrobl>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Tue, 18 May 2010 11:10:38 +0530
+Message-ID: <87fx1ppy21.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 13:23 +0800, Steven Liu wrote:
-> Hi, Matt Mackall,
+On Tue, 18 May 2010 11:33:50 +0900, "J. R. Okajima" <hooanon05@yahoo.co.jp> wrote:
 > 
-> Check kmalloc return value and give the failed message
+> "Aneesh Kumar K.V":
+> > This patch add a new superblock operations get_fsid that returns the
+> > UUID mapping for the file system. The UUID returned is used to
+> > identify the file system apart of file_handle
 > 
-> Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
-> ---
->  drivers/char/random.c |    5 ++++-
->  1 files changed, 4 insertions(+), 1 deletions(-)
-> 
-> diff --git a/drivers/char/random.c b/drivers/char/random.c
-> index 2fd3d39..d1bedeb 100644
-> --- a/drivers/char/random.c
-> +++ b/drivers/char/random.c
-> @@ -952,8 +952,11 @@ static void init_std_data(struct entropy_store *r)
->     mix_pool_bytes(r, &now, sizeof(now));
->     mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
->     /* Enable continuous test in fips mode */
-> -   if (fips_enabled)
-> +   if (fips_enabled){
->         r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
-> +       if(r->last_data == NULL)
-> +           printk(KERN_ERR "kmalloc memory failed in %s \n", __func__);
-> +   }
+> I am afraid get_fsid in s_op may conflict with "fsid=" option in /etc/exports.
+> Generally all FSs have UUID or device number and they can return "fsid"
+> correctly. But some of them may not have such id, or users may assign
+> different fsid for them.
+> Is "fsid=" value passed to superblock and can FS return it? Otherwise
+> they cannot implement ->get_fsid().
 
-This is the wrong fix. I'm not sure how this kmalloc got in; I'm sure I
-objected to it the first time around. The right answer is: use a static
-buffer because a) it can't fail so no error-checking is needed and b)
-EXTRACT_SIZE is only 10 bytes! That means that allocating it dynamically
-as above takes more code space than you'd be saving by not allocating
-it, even without the printk. Here's a better patch:
+The file_handle I mentioned above is the file handle returned by
+sys_name_to_handle_at syscall. NFS kernel server won't be using the
+interface.
 
-diff -r a12387bbcc93 drivers/char/random.c
---- a/drivers/char/random.c	Thu Apr 08 10:02:02 2010 -0700
-+++ b/drivers/char/random.c	Tue May 18 00:38:04 2010 -0500
-@@ -414,7 +414,7 @@
- 	unsigned add_ptr;
- 	int entropy_count;
- 	int input_rotate;
--	__u8 *last_data;
-+	__u8 last_data[EXTRACT_SIZE];
- };
- 
- static __u32 input_pool_data[INPUT_POOL_WORDS];
-@@ -862,7 +862,7 @@
- 	while (nbytes) {
- 		extract_buf(r, tmp);
- 
--		if (r->last_data) {
-+		if (fips_enabled) {
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -951,9 +951,6 @@
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
--	/* Enable continuous test in fips mode */
--	if (fips_enabled)
--		r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
- }
- 
- static int rand_initialize(void)
+If file system doesn't support a unique identifier then they can leave
+->get_fsid callback NULL. The UUID part of the file_handle will be zero
+filled. For a NFS userspace server, the server can update handle.fsid with
+what ever value is configured for fsid. The only requirement is later
+when provided with the same handle NFS server should be able to map the
+handle.fsid to a mountdirfd which can be used with sys_open_by_handle_at.
 
-
-> 
-
-
--- 
-Mathematics is the supreme nostalgia of our time.
-
-
+-aneesh
