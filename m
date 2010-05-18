@@ -1,78 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755478Ab0ERGef (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:34:35 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49394 "EHLO mx2.mail.elte.hu"
+	id S1755838Ab0ERGeq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:34:46 -0400
+Received: from hera.kernel.org ([140.211.167.34]:44198 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755526Ab0ERGee (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:34:34 -0400
-Date: Tue, 18 May 2010 08:33:50 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Borislav Petkov <bp@alien8.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [GIT PULL, v2] x86/cpu changes for v2.6.35
-Message-ID: <20100518063350.GB26223@elte.hu>
-References: <20100517225225.GA32562@elte.hu>
- <20100517225426.GA1720@elte.hu>
- <20100518061512.GA17740@liondog.tnic>
+	id S1755752Ab0ERGen (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:34:43 -0400
+Date: Tue, 18 May 2010 06:33:40 GMT
+From: tip-bot for Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, hpa@zytor.com,
+       mingo@redhat.com, gorcunov@openvz.org, a.p.zijlstra@chello.nl,
+       gorcunov@gmail.com, ming.m.lin@intel.com, tglx@linutronix.de,
+       mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com,
+       linux-kernel@vger.kernel.org, gorcunov@openvz.org,
+       a.p.zijlstra@chello.nl, ming.m.lin@intel.com, tglx@linutronix.de,
+       gorcunov@gmail.com, mingo@elte.hu
+In-Reply-To: <1274083984.6540.15.camel@minggr.sh.intel.com>
+References: <1274083984.6540.15.camel@minggr.sh.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf, x86: P4 PMU -- handle unflagged events
+Message-ID: <tip-0db1a7bc00216a981d0b7056627ad8682f4f0636@git.kernel.org>
+Git-Commit-ID: 0db1a7bc00216a981d0b7056627ad8682f4f0636
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-In-Reply-To: <20100518061512.GA17740@liondog.tnic>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 May 2010 06:33:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Commit-ID:  0db1a7bc00216a981d0b7056627ad8682f4f0636
+Gitweb:     http://git.kernel.org/tip/0db1a7bc00216a981d0b7056627ad8682f4f0636
+Author:     Cyrill Gorcunov <gorcunov@openvz.org>
+AuthorDate: Mon, 17 May 2010 16:13:04 +0800
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 18 May 2010 08:25:34 +0200
 
-* Borislav Petkov <bp@alien8.de> wrote:
+perf, x86: P4 PMU -- handle unflagged events
 
-> From: Ingo Molnar <mingo@elte.hu>
-> Date: Tue, May 18, 2010 at 12:54:26AM +0200
-> 
-> Hi Ingo,
-> 
-> > * Ingo Molnar <mingo@elte.hu> wrote:
-> 
-> [..]
-> 
-> >       x86, k8: Fix build error when K8_NB is disabled
-> 
-> [..]
-> 
-> >       x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
-> 
-> [..]
-> 
-> >       powernow-k8: Fix frequency reporting
-> 
-> those three are already in Linus' tree since they were 
-> urgent fixes and had to be sent ASAP. [...]
+It might happen that an event can overflow without
+the proper overflow flag set. Check the sign bit in
+the raw counter value to solve this problem.
 
-Yeah, hpa mentioned it last week in his pull request that 
-those fixes were picked out of the stream of pending 
-development commits.
+Tested-by: Lin Ming <ming.m.lin@intel.com>
+Signed-off-by: Cyrill Gorcunov <gorcunov@openvz.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: fweisbec@gmail.com
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+LKML-Reference: <1274083984.6540.15.camel@minggr.sh.intel.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ arch/x86/kernel/cpu/perf_event_p4.c |   32 ++++++++++++++++----------------
+ 1 files changed, 16 insertions(+), 16 deletions(-)
 
-> [...] Now I don't know whether git will skip them when 
-> merging or will cause unneeded merge conflicts (a small 
-> superficial test I did here caused merge conflicts) ... 
-> anyways, just a heads-up.
-
-In this particular case there will be a conflict in 
-arch/x86/kernel/cpu/intel_cacheinfo.c when Linus pulls, 
-and the correct resolution is to pick the version from 
-x86/cpu.
-
-Thanks for mentioning this!
-
-	Ingo
+diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+index 424fc8d..02f0728 100644
+--- a/arch/x86/kernel/cpu/perf_event_p4.c
++++ b/arch/x86/kernel/cpu/perf_event_p4.c
+@@ -465,15 +465,21 @@ out:
+ 	return rc;
+ }
+ 
+-static inline void p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
++static inline int p4_pmu_clear_cccr_ovf(struct hw_perf_event *hwc)
+ {
+-	unsigned long dummy;
++	int overflow = 0;
++	u32 low, high;
+ 
+-	rdmsrl(hwc->config_base + hwc->idx, dummy);
+-	if (dummy & P4_CCCR_OVF) {
++	rdmsr(hwc->config_base + hwc->idx, low, high);
++
++	/* we need to check high bit for unflagged overflows */
++	if ((low & P4_CCCR_OVF) || (high & (1 << 31))) {
++		overflow = 1;
+ 		(void)checking_wrmsrl(hwc->config_base + hwc->idx,
+-			((u64)dummy) & ~P4_CCCR_OVF);
++			((u64)low) & ~P4_CCCR_OVF);
+ 	}
++
++	return overflow;
+ }
+ 
+ static inline void p4_pmu_disable_event(struct perf_event *event)
+@@ -584,21 +590,15 @@ static int p4_pmu_handle_irq(struct pt_regs *regs)
+ 
+ 		WARN_ON_ONCE(hwc->idx != idx);
+ 
+-		/*
+-		 * FIXME: Redundant call, actually not needed
+-		 * but just to check if we're screwed
+-		 */
+-		p4_pmu_clear_cccr_ovf(hwc);
++		/* it might be unflagged overflow */
++		handled = p4_pmu_clear_cccr_ovf(hwc);
+ 
+ 		val = x86_perf_event_update(event);
+-		if (val & (1ULL << (x86_pmu.cntval_bits - 1)))
++		if (!handled && (val & (1ULL << (x86_pmu.cntval_bits - 1))))
+ 			continue;
+ 
+-		/*
+-		 * event overflow
+-		 */
+-		handled		= 1;
+-		data.period	= event->hw.last_period;
++		/* event overflow for sure */
++		data.period = event->hw.last_period;
+ 
+ 		if (!x86_perf_event_set_period(event))
+ 			continue;
