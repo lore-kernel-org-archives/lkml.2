@@ -1,53 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab0ERLpF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:45:05 -0400
-Received: from nessie.weebeastie.net ([220.233.7.36]:45214 "EHLO
-	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756380Ab0ERLpD (ORCPT
+	id S1757149Ab0ERLp3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:45:29 -0400
+Received: from mail09.linbit.com ([212.69.161.110]:35148 "EHLO
+	mail09.linbit.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756380Ab0ERLp0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:45:03 -0400
-Date: Tue, 18 May 2010 21:44:26 +1000
-From: CaT <cat@zip.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>, bzolnier@gmail.com,
-       stable@kernel.org, greg@kroah.com, ben@decadent.org.uk
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.34 (rt2860 regression)
-Message-ID: <20100518114426.GY2657@zip.com.au>
-References: <alpine.LFD.2.00.1005161430100.4195@i5.linux-foundation.org>
+	Tue, 18 May 2010 07:45:26 -0400
+From: Philipp Reisner <philipp.reisner@linbit.com>
+Organization: LINBIT
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Subject: Re: linux-next: manual merge of the drbd tree with the block tree
+Date: Tue, 18 May 2010 13:45:21 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.31-19-generic; KDE/4.3.5; i686; ; )
+Cc: drbd-dev@lists.linbit.com, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+References: <20100518152031.9a244971.sfr@canb.auug.org.au>
+In-Reply-To: <20100518152031.9a244971.sfr@canb.auug.org.au>
+X-OTRS-FollowUp-SenderType: agent
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005161430100.4195@i5.linux-foundation.org>
-Organisation: Furball Inc.
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-15"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005181345.22986.philipp.reisner@linbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 16, 2010 at 02:39:36PM -0700, Linus Torvalds wrote:
-> So 2.6.34 is out, and the merge window is thus officially open. As usual, 
-> I probably won't do any real pulls for a day or two, in the (probably 
-> futile) hope that we'll have more people running plain 2.6.34 for a while. 
-> But you can certainly start sending me pull requests.
+Hi Stephen,
+
+FYI:
+I use 
+git://git.drbd.org/linux-2.6-drbd.git for-jens
+as path of my patches to Jens.
+
+I switched that tree to Jens' 
+git://git.kernel.dk/linux-2.6-block.git for-2.6.35
+and provided the DRBD patches on top of that.
+
+Not that I am not willing to help, I have the feeling that this
+merge conflict has nothing to do with DRBD.
+
+Best,
+ Phil
+
+> Hi all,
 > 
-> Go forth and test,
-
-Whilst I realise this is for a staging driver... On 2010/3/4 the firmware
-for the rt2860 driver (amongst others) was removed as part of a patch
-to get the driver to use request_firmware(). See:
-
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c22202faade08b6b45f14fd86bfb57f79d73464c
-
-The firmware is in the linux-firmware.git repository and has been for a
-while (at least I think that's the right firmware):
-
-http://git.kernel.org/?p=linux/kernel/git/airlied/linux-firmware.git;a=history;f=rt2860.bin;h=778a771716aff389c79fec3b245ed00beba23a67;hb=HEAD
-
-Is there any chance of this making it into 2.6.34.1/35 so that the driver
-works again as it once did?
-
+> Today's linux-next merge of the drbd tree got a conflict in
+> mm/page-writeback.c between commit
+> 42bd225c0ba7c95af39293d39a950c48e7e5cb23 (""laptop-mode: Make flushes
+> per-device" fix") from the block tree and commit
+> e913fc825dc685a444cb4c1d0f9d32f372f59861 ("writeback: fix WB_SYNC_NONE
+> writeback from umount") from the drbd tree (via its merge of the block
+> tree).
+> 
+> I used the next-20100517 version of the block tree today (because the
+> above conflict was not resolved correctly in the block tree and caused a
+> build failure), so I will also use the next-20100517 version of the drbd
+> tree for today.
+> 
 -- 
-  "A search of his car uncovered pornography, a homemade sex aid, women's 
-  stockings and a Jack Russell terrier."
-    - http://www.news.com.au/story/0%2C27574%2C24675808-421%2C00.html
+: Dipl-Ing Philipp Reisner
+: LINBIT | Your Way to High Availability
+: Tel: +43-1-8178292-50, Fax: +43-1-8178292-82
+: http://www.linbit.com
+
+DRBD(R) and LINBIT(R) are registered trademarks of LINBIT, Austria.
