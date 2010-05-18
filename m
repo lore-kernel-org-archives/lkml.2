@@ -1,82 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758121Ab0ERUuw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:50:52 -0400
-Received: from www.tglx.de ([62.245.132.106]:40200 "EHLO www.tglx.de"
+	id S1756070Ab0ERUwd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:52:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40479 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753557Ab0ERUuu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:50:50 -0400
-Date: Tue, 18 May 2010 22:50:37 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
-       Alan Cox <alan@linux.intel.com>, Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH 2/2] v4 x86/mrst: add more timer config options
-In-Reply-To: <1274184166-17242-3-git-send-email-jacob.jun.pan@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1005182240480.3368@localhost.localdomain>
-References: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com> <1274184166-17242-3-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752708Ab0ERUwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:52:31 -0400
+Date: Tue, 18 May 2010 16:52:27 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: [PATCH 1/4] cfq-iosched: Keep track of average think time for
+	the sync-noidle workload.
+Message-ID: <20100518205227.GC12330@redhat.com>
+References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com> <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Jacob Pan wrote:
-> Always-on local APIC timer (ARAT) has been introduced to Medfield, along
-> with the platform APB timers we have more timer configuration options
-> between Moorestown and Medfield.
+On Tue, May 18, 2010 at 02:20:17PM -0400, Jeff Moyer wrote:
+> This patch uses an average think time for the entirety of the sync-noidle
+> workload to determine whether or not to idle on said workload.  This brings
+> it more in line with the policy for the sync queues in the sync workload.
+> 
+> Testing shows that this provided an overall increase in throughput for
+> a mixed workload on my hardware RAID array.
+> 
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>  block/cfq-iosched.c |   44 +++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 39 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 838834b..46a7fe5 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -83,9 +83,14 @@ struct cfq_rb_root {
+>  	unsigned total_weight;
+>  	u64 min_vdisktime;
+>  	struct rb_node *active;
+> +	unsigned long last_end_request;
+> +	unsigned long ttime_total;
+> +	unsigned long ttime_samples;
+> +	unsigned long ttime_mean;
+>  };
+>  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+> -			.count = 0, .min_vdisktime = 0, }
+> +			.count = 0, .min_vdisktime = 0, .last_end_request = 0, \
+> +			.ttime_total = 0, .ttime_samples = 0, .ttime_mean = 0 }
 >  
-> +/**
+>  /*
+>   * Per process-grouping structure
+> @@ -962,8 +967,10 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>  		goto done;
+>  
+>  	cfqg->weight = blkcg->weight;
+> -	for_each_cfqg_st(cfqg, i, j, st)
+> +	for_each_cfqg_st(cfqg, i, j, st) {
+>  		*st = CFQ_RB_ROOT;
+> +		st->last_end_request = jiffies;
+> +	}
+>  	RB_CLEAR_NODE(&cfqg->rb_node);
+>  
+>  	/*
+> @@ -1795,9 +1802,12 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  
+>  	/*
+>  	 * Otherwise, we do only if they are the last ones
+> -	 * in their service tree.
+> +	 * in their service tree and the average think time is
+> +	 * less than the slice length.
+>  	 */
+> -	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
+> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
+> +	    (!sample_valid(service_tree->ttime_samples || 
+						     ^^^
+Jeff, 
 
-  Do not use kerneldoc /** opener from plain comments. Randy
-  complained about that yesterday already
+Are we closing sample_valid() bracket at right place here?
 
->  void __init mrst_time_init(void)
->  {
-> +	switch (mrst_timer_options) {
-> +	case MRST_TIMER_APBT_ONLY:
-> +		pr_info("Use APB timer option on Moorestown\n");
+I am wondering where it is helping you. If it is to bring in line with
+with sync tree (old implementation), then we should have also compared
+the think time with slice_idle?
 
-  Do we really need all this pr_info spew ? /proc/timer_list will tell
-  you if you're interested
-
-> +		break;
-> +	case MRST_TIMER_LAPIC_APBT:
-> +		pr_info("Use LAPIC and APB timer option on Moorestown\n");
-> +		x86_init.timers.setup_percpu_clockev = setup_boot_APIC_clock;
-> +		x86_cpuinit.setup_percpu_clockev = setup_secondary_APIC_clock;
-> +		break;
-> +	default:
-> +		pr_info("Use default timer option on Moorestown\n");
-
-  And this printk is completely useless. It'd be way more interesting
-  to see which timer gets selected as a default. but see above
-
-> +		if (mrst_identify_cpu() == MRST_CPU_CHIP_PENWELL) {
-
-  Why do you want to pin that on PENWELL and not on ARAT ? If you
-  check ARAT, you have coverd all next gen cpus as well.
-
-> +			x86_init.timers.setup_percpu_clockev =
-> +				setup_boot_APIC_clock;
-> +			x86_cpuinit.setup_percpu_clockev =
-> +				setup_secondary_APIC_clock;
-> +			return;
-> +		}
-
-  You can avoid that line splits by doing:
-
-      	    	if (!has(ARAT))
-			break:
-
-		x86_init.timers. ...
-		...
-		return;
-
-  Way easier to read.
-
-Thanks,
-
-	tglx
+But comparing that here might not be the best thing as cfq_should_idle()
+is used in many contexts.
+ 
+Vivek
