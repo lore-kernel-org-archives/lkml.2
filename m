@@ -1,54 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757428Ab0ERM3A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 08:29:00 -0400
-Received: from p3plsmtpout003.prod.phx3.secureserver.net ([208.109.80.53]:41263
-	"HELO p3plsmtpout003-01.prod.phx3.secureserver.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1751964Ab0ERM24 convert rfc822-to-8bit (ORCPT
+	id S1757285Ab0ERMpU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 08:45:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:58431 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757177Ab0ERMpQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 08:28:56 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 May 2010 08:28:56 EDT
-Message-ID: <20100518070439.aha1d75c04kw04k0@webmail.communigraphics.com>
-Date: Tue, 18 May 2010 07:04:39 -0400
-From: Universitetet i Oslo <webm@uio.no>
-Reply-to: webmaster2010@sogomail.com
-To: undisclosed-recipients:;
-Subject: =?iso-8859-1?b?S2rmcmU=?= Student / Medarbeidere
-MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=ISO-8859-1;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 8BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.6)
+	Tue, 18 May 2010 08:45:16 -0400
+Subject: Re: [PATCH v5] mtd: Do not corrupt backing device of device node 
+ inode
+From: David Woodhouse <dwmw2@infradead.org>
+To: "Kirill A. Shutemov" <kirill@shutemov.name>
+Cc: Jan Kara <jack@suse.cz>, Alexander Viro <viro@zeniv.linux.org.uk>,
+       David Howells <dhowells@redhat.com>,
+       Alexander Shishkin <virtuoso@slind.org>,
+       Artem Bityutskiy <dedekind1@gmail.com>, linux-mtd@lists.infradead.org,
+       linux-fsdevel@vger.kernel.org, stable@kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTikvuNiLD-n9Qvf10NmMU2KFQ25YPfM1oYfXtHE9@mail.gmail.com>
+References: <AANLkTimB1DsCd8HuMDc9jgVOnOAE_PVd2ktssp3TIwxc@mail.gmail.com>
+	 <1274105441.6930.6920.camel@macbook.infradead.org>
+	 <1274182023.6930.7023.camel@macbook.infradead.org>
+	 <AANLkTikvuNiLD-n9Qvf10NmMU2KFQ25YPfM1oYfXtHE9@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 May 2010 13:45:06 +0100
+Message-ID: <1274186706.6930.7213.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Kjære Student / Medarbeidere
+On Tue, 2010-05-18 at 15:18 +0300, Kirill A. Shutemov wrote:
+> > http://git.infradead.org/mtd-2.6.git/commitdiff/cd874237
+>
+> Looks ok. Thank you.
+> 
+> What about stable@? 
 
-  Vi ønsker å informere deg om at på grunn av den høye frekvensen av spam
-arrestere vårt nettsted, vil vi alle Student / medarbeidere til å
-Send inn det passordet (******************) å aktivere
-opprette en mappe full og løs opp spam.
+Ah, yes. For future reference, we should have included an explicit
+'Cc: stable@kernel.org' in the commit itself, rather than just in the
+email thread. As it is, we'll probably need to wait for it to hit Linus'
+tree and then submit a backport to -stable. It'll need a slight massage
+to apply to older kernels anyway.
 
-Hvis du ikke gjør dette vil tiltrekke seg høyt spam og vi vil ikke
-kunne bruke på Webmail igjen.
-Webmaster
-UiO (Universitetet i Oslo)
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
-Kjære Student / Medarbeidere
-
-  Vi ønsker å informere deg om at på grunn av den høye frekvensen av spam
-arrestere vårt nettsted, vil vi alle Student / medarbeidere til å
-Send inn det passordet (******************) å aktivere
-opprette en mappe full og løs opp spam.
-
-Hvis du ikke gjør dette vil tiltrekke seg høyt spam og vi vil ikke
-kunne bruke på Webmail igjen.
-
-
-Webmaster
-UiO (Universitetet i Oslo)
