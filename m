@@ -1,48 +1,235 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757239Ab0ERKbm (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:31:42 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:41982 "EHLO
+	id S1757259Ab0ERKbq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:31:46 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:37784 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756894Ab0ERK3g (ORCPT
+	with ESMTP id S1756881Ab0ERK3g (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 May 2010 06:29:36 -0400
 X-IronPort-AV: E=Sophos;i="4.53,254,1272859200"; 
-   d="scan'208";a="97477212"
+   d="scan'208";a="97477172"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
        Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 10/12] __setup_vector_irq: handle NULL chip_data
-Date: Tue, 18 May 2010 11:23:05 +0100
-Message-Id: <1274178187-20602-10-git-send-email-stefano.stabellini@eu.citrix.com>
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
+       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Subject: [PATCH 01/12] Add support for hvm_op
+Date: Tue, 18 May 2010 11:22:56 +0100
+Message-Id: <1274178187-20602-1-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.5.4.3
 In-Reply-To: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
 References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
-X-OriginalArrivalTime: 18 May 2010 10:20:11.0544 (UTC) FILETIME=[B2D4C180:01CAF673]
+X-OriginalArrivalTime: 18 May 2010 10:19:55.0122 (UTC) FILETIME=[A90AF520:01CAF673]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 ---
- arch/x86/kernel/apic/io_apic.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/xen/hypercall.h |    6 ++
+ include/xen/hvm.h                    |   24 +++++++++
+ include/xen/interface/hvm/hvm_op.h   |   35 ++++++++++++
+ include/xen/interface/hvm/params.h   |   95 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 160 insertions(+), 0 deletions(-)
+ create mode 100644 include/xen/hvm.h
+ create mode 100644 include/xen/interface/hvm/hvm_op.h
+ create mode 100644 include/xen/interface/hvm/params.h
 
-diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-index c64499c..4d3d391 100644
---- a/arch/x86/kernel/apic/io_apic.c
-+++ b/arch/x86/kernel/apic/io_apic.c
-@@ -1269,6 +1269,8 @@ void __setup_vector_irq(int cpu)
- 	/* Mark the inuse vectors */
- 	for_each_irq_desc(irq, desc) {
- 		cfg = desc->chip_data;
-+		if (!cfg)
-+			continue;
+diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+index 9c371e4..7fda040 100644
+--- a/arch/x86/include/asm/xen/hypercall.h
++++ b/arch/x86/include/asm/xen/hypercall.h
+@@ -417,6 +417,12 @@ HYPERVISOR_nmi_op(unsigned long op, unsigned long arg)
+ 	return _hypercall2(int, nmi_op, op, arg);
+ }
  
- 		/*
- 		 * If it is a legacy IRQ handled by the legacy PIC, this cpu
++static inline unsigned long __must_check
++HYPERVISOR_hvm_op(int op, void *arg)
++{
++       return _hypercall2(unsigned long, hvm_op, op, arg);
++}
++
+ static inline void
+ MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
+ {
+diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+new file mode 100644
+index 0000000..6b0d418
+--- /dev/null
++++ b/include/xen/hvm.h
+@@ -0,0 +1,24 @@
++/* Simple wrappers around HVM functions */
++#ifndef XEN_HVM_H__
++#define XEN_HVM_H__
++
++#include <xen/interface/hvm/params.h>
++
++static inline int hvm_get_parameter(int idx, uint64_t *value)
++{
++       struct xen_hvm_param xhv;
++       int r;
++
++       xhv.domid = DOMID_SELF;
++       xhv.index = idx;
++       r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
++       if (r < 0) {
++               printk(KERN_ERR "cannot get hvm parameter %d: %d.\n",
++                      idx, r);
++               return r;
++       }
++       *value = xhv.value;
++       return r;
++}
++
++#endif /* XEN_HVM_H__ */
+diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
+new file mode 100644
+index 0000000..73c8c7e
+--- /dev/null
++++ b/include/xen/interface/hvm/hvm_op.h
+@@ -0,0 +1,35 @@
++/*
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
++#define __XEN_PUBLIC_HVM_HVM_OP_H__
++
++/* Get/set subcommands: the second argument of the hypercall is a
++ * pointer to a xen_hvm_param struct. */
++#define HVMOP_set_param           0
++#define HVMOP_get_param           1
++struct xen_hvm_param {
++    domid_t  domid;    /* IN */
++    uint32_t index;    /* IN */
++    uint64_t value;    /* IN/OUT */
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
++
++#endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
+diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
+new file mode 100644
+index 0000000..1888d8c
+--- /dev/null
++++ b/include/xen/interface/hvm/params.h
+@@ -0,0 +1,95 @@
++/*
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef __XEN_PUBLIC_HVM_PARAMS_H__
++#define __XEN_PUBLIC_HVM_PARAMS_H__
++
++#include "hvm_op.h"
++
++/*
++ * Parameter space for HVMOP_{set,get}_param.
++ */
++
++/*
++ * How should CPU0 event-channel notifications be delivered?
++ * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
++ * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
++ *                  Domain = val[47:32], Bus  = val[31:16],
++ *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
++ * val[63:56] == 2: val[7:0] is a vector number.
++ * If val == 0 then CPU0 event-channel notifications are not delivered.
++ */
++#define HVM_PARAM_CALLBACK_IRQ 0
++
++#define HVM_PARAM_STORE_PFN    1
++#define HVM_PARAM_STORE_EVTCHN 2
++
++#define HVM_PARAM_PAE_ENABLED  4
++
++#define HVM_PARAM_IOREQ_PFN    5
++
++#define HVM_PARAM_BUFIOREQ_PFN 6
++
++/*
++ * Set mode for virtual timers (currently x86 only):
++ *  delay_for_missed_ticks (default):
++ *   Do not advance a vcpu's time beyond the correct delivery time for
++ *   interrupts that have been missed due to preemption. Deliver missed
++ *   interrupts when the vcpu is rescheduled and advance the vcpu's virtual
++ *   time stepwise for each one.
++ *  no_delay_for_missed_ticks:
++ *   As above, missed interrupts are delivered, but guest time always tracks
++ *   wallclock (i.e., real) time while doing so.
++ *  no_missed_ticks_pending:
++ *   No missed interrupts are held pending. Instead, to ensure ticks are
++ *   delivered at some non-zero rate, if we detect missed ticks then the
++ *   internal tick alarm is not disabled if the VCPU is preempted during the
++ *   next tick period.
++ *  one_missed_tick_pending:
++ *   Missed interrupts are collapsed together and delivered as one 'late tick'.
++ *   Guest time always tracks wallclock (i.e., real) time.
++ */
++#define HVM_PARAM_TIMER_MODE   10
++#define HVMPTM_delay_for_missed_ticks    0
++#define HVMPTM_no_delay_for_missed_ticks 1
++#define HVMPTM_no_missed_ticks_pending   2
++#define HVMPTM_one_missed_tick_pending   3
++
++/* Boolean: Enable virtual HPET (high-precision event timer)? (x86-only) */
++#define HVM_PARAM_HPET_ENABLED 11
++
++/* Identity-map page directory used by Intel EPT when CR0.PG=0. */
++#define HVM_PARAM_IDENT_PT     12
++
++/* Device Model domain, defaults to 0. */
++#define HVM_PARAM_DM_DOMAIN    13
++
++/* ACPI S state: currently support S0 and S3 on x86. */
++#define HVM_PARAM_ACPI_S_STATE 14
++
++/* TSS used on Intel when CR0.PE=0. */
++#define HVM_PARAM_VM86_TSS     15
++
++/* Boolean: Enable aligning all periodic vpts to reduce interrupts */
++#define HVM_PARAM_VPT_ALIGN    16
++
++#define HVM_NR_PARAMS          17
++
++#endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
 -- 
 1.5.4.3
 
