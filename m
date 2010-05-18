@@ -1,47 +1,165 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757342Ab0ERM7b (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 08:59:31 -0400
-Received: from smtp2.ustc.edu.cn ([202.38.64.46]:40409 "HELO ustc.edu.cn"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with SMTP
-	id S1756284Ab0ERM7a (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 08:59:30 -0400
-Date: Tue, 18 May 2010 20:59:02 +0800
-From: "backyes" <backyes@mail.ustc.edu.cn>
-To: "linux-kernel" <linux-kernel@vger.kernel.org>,
-       "torvalds" <torvalds@linux-foundation.org>,
-       "linux-kbuild" <linux-kbuild@vger.kernel.org>,
-       "mmarek" <mmarek@suse.cz>
-Subject: About Schedule &&  Request Materials 
-Message-ID: <201005182059013905571@mail.ustc.edu.cn>
-X-mailer: Foxmail 6, 15, 201, 23 [cn]
-Mime-Version: 1.0
-Content-Type: text/plain;
-	charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-X-CM-TRANSID: yia_0ZD7hxYVj_JLQBrIBQ--.57514S2
-X-Coremail-Antispam: 1Uf129KBjvdXoWrZFWDCF47tFyrXry8Cr18AFb_yoWfCFgE9w
-	4Ykw4vv3yjqrsFyF4SgF429rs3ua13Ca45XayaqFyxK34rZFyUXF1fGr95ZFyxt3Z7JanI
-	yr13AryYqFWa9jkaLaAFLSUrUUUUUbIjqfuFe4nvWSU5nxnvy29KBjDU0xBIdaVrnRJUUU
-	3Ib7IF0VCFI7km07C26c804VAKzcIF0wAYjxAI6xZILanIXVAFwwAYjsxI4VWxJwAYFVCj
-	jxCrM7AC8VAFwI0_Jr0_Gr1l1I0E4x80FVCIwcAKzIAtM7C26IkvcIIF6IxKo4kEV4yl1I
-	IY67AEw4v_Jr0_Jr4l84ACjcxK6xIIjxv20xvE14v26w1j6s0DM28EF7xvwVC0I7IYx2IY
-	6xkF7I0E14v26r4UJVWxJr1l84ACjcxK6I8E87Iv67AKxVW0oVCq3wA2z4x0Y4vEx4A2js
-	IEc7CjxVAFwI0_GcCE3s1ln4vEbcI7uVAqrcv_JFW8Xr15Mc804VCqF7xvr2I5Mc02F40E
-	FcxC0VAKzVAqx4xG6I80ewAv7VC0I7IYx2IY67AKxVWUJVWUGwAv7VC2z280aVAFwI0_Jr
-	0_Gr1lF7xvr2IYc2Ij64vIr41l42xK82IYc2Ij64vIr41l4IxY624lx4CE17CEb7AF67AK
-	xVWUAVWUtwCqF7xvr2IY62kE34x0Y4UvcSsGvfC2KfnxnUUI43ZEXa7IU8XVy3UUUUU==
-X-CM-SenderInfo: 5edfy51hv6zt1loo32lwfovvfxof0/
+	id S1757244Ab0ERNCo (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 09:02:44 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:3263 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753281Ab0ERNCl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 09:02:41 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
+	b=j26/ScW2XOZDJHqYO+/D7AbDzXqp9V78xenl/fjDPD7skqXGouPOQQi3VvjC1C7qM
+	IykGvxxi8wXCkuCKd4cdA==
+Message-ID: <4bf28fe8.914ed80a.01ca.fffff5f5@mx.google.com>
+From: Stephane Eranian <eranian@google.com>
+Date: Tue, 18 May 2010 15:00:01 +0200
+To: linux-kernel@vger.kernel.org
+Reply-to: eranian@google.com
+Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
+       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
+       eranian@gmail.com, eranian@google.com
+Subject: [PATCH] perf: add perf stat -B to pretty print large numbers
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear every Prof. ,
-I am a student from  university of science and technology of china .  I am very interested in the kernel of linux operating system.  I have studied the kernel for several years. I have some problem about the kernel. Would you like to give me some help. Thanks a lot.
-Recently I mainly focus my total energy on the real-time schedule policy of linux. I want to use the SCHED_FIFO  policy to make the processes more predictable on the Multi-core Platfom of Server. I donot know whether the kernel can make sure that the number of logical processors which has a high priority and SCHED_FIFO schedule policy is limited  in reality ,since My program went to dead or given any reply for the user sometimes.
-If the number above said is not limited for SCHED_FIFO policy, I want to know that whether any people have proved it in theroy? If so ,would you give me some material about it ? 
-Thanks a lot !
+It is hard to read very large numbers so provide an option to perf stat
+to separate thousands using a separator. The patch leverages the locale
+support of stdio. You need to set your LC_NUMERIC appropriately, for
+instance LC_NUMERIC=en_US.UTF8. You need to pass -B to activate this
+feature. This way existing scripts parsing the output do not need to be
+changed. Here is an example.
 
-Regards Peter Wang
+$ perf stat noploop 2
+noploop for 2 seconds
+
+ Performance counter stats for 'noploop 2':
+
+        1998.347031  task-clock-msecs         #      0.998 CPUs 
+                 61  context-switches         #      0.000 M/sec
+                  0  CPU-migrations           #      0.000 M/sec
+                118  page-faults              #      0.000 M/sec
+      4,138,410,900  cycles                   #   2070.917 M/sec  (scaled from 70.01%)
+      2,062,650,268  instructions             #      0.498 IPC    (scaled from 70.01%)
+      2,057,653,466  branches                 #   1029.678 M/sec  (scaled from 70.01%)
+             40,267  branch-misses            #      0.002 %      (scaled from 30.04%)
+      2,055,961,348  cache-references         #   1028.831 M/sec  (scaled from 30.03%)
+             53,725  cache-misses             #      0.027 M/sec  (scaled from 30.02%)
+
+        2.001393933  seconds time elapsed
+
+$ perf stat -B  noploop 2
+noploop for 2 seconds
+
+ Performance counter stats for 'noploop 2':
+
+        1998.297883  task-clock-msecs         #      0.998 CPUs 
+                 59  context-switches         #      0.000 M/sec
+                  0  CPU-migrations           #      0.000 M/sec
+                119  page-faults              #      0.000 M/sec
+      4,131,380,160  cycles                   #   2067.450 M/sec  (scaled from 70.01%)
+      2,059,096,507  instructions             #      0.498 IPC    (scaled from 70.01%)
+      2,054,681,303  branches                 #   1028.216 M/sec  (scaled from 70.01%)
+             25,650  branch-misses            #      0.001 %      (scaled from 30.05%)
+      2,056,283,014  cache-references         #   1029.017 M/sec  (scaled from 30.03%)
+             47,097  cache-misses             #      0.024 M/sec  (scaled from 30.02%)
+
+        2.001391016  seconds time elapsed
+
+Signed-off-by: Stephane Eranian <eranian@google.com>
 
 
+diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
+index 2cab8e8..909fa76 100644
+--- a/tools/perf/Documentation/perf-stat.txt
++++ b/tools/perf/Documentation/perf-stat.txt
+@@ -43,6 +43,9 @@ OPTIONS
+ -c::
+         scale counter values
+ 
++-B::
++        print large numbers with thousands' separators according to locale
++
+ EXAMPLES
+ --------
+ 
+diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
+index ff8c413..9a39ca3 100644
+--- a/tools/perf/builtin-stat.c
++++ b/tools/perf/builtin-stat.c
+@@ -50,6 +50,7 @@
+ 
+ #include <sys/prctl.h>
+ #include <math.h>
++#include <locale.h>
+ 
+ static struct perf_event_attr default_attrs[] = {
+ 
+@@ -80,6 +81,8 @@ static pid_t			*all_tids			=  NULL;
+ static int			thread_num			=  0;
+ static pid_t			child_pid			= -1;
+ static bool			null_run			=  false;
++static bool			big_num				=  false;
++
+ 
+ static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
+ 
+@@ -377,7 +380,7 @@ static void nsec_printout(int counter, double avg)
+ {
+ 	double msecs = avg / 1e6;
+ 
+-	fprintf(stderr, " %14.6f  %-24s", msecs, event_name(counter));
++	fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
+ 
+ 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
+ 		fprintf(stderr, " # %10.3f CPUs ",
+@@ -389,7 +392,10 @@ static void abs_printout(int counter, double avg)
+ {
+ 	double total, ratio = 0.0;
+ 
+-	fprintf(stderr, " %14.0f  %-24s", avg, event_name(counter));
++	if (big_num)
++		fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));
++	else
++		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
+ 
+ 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
+ 		total = avg_stats(&runtime_cycles_stats);
+@@ -426,7 +432,7 @@ static void print_counter(int counter)
+ 	int scaled = event_scaled[counter];
+ 
+ 	if (scaled == -1) {
+-		fprintf(stderr, " %14s  %-24s\n",
++		fprintf(stderr, " %18s  %-24s\n",
+ 			"<not counted>", event_name(counter));
+ 		return;
+ 	}
+@@ -477,7 +483,7 @@ static void print_stat(int argc, const char **argv)
+ 		print_counter(counter);
+ 
+ 	fprintf(stderr, "\n");
+-	fprintf(stderr, " %14.9f  seconds time elapsed",
++	fprintf(stderr, " %18.9f  seconds time elapsed",
+ 			avg_stats(&walltime_nsecs_stats)/1e9);
+ 	if (run_count > 1) {
+ 		fprintf(stderr, "   ( +- %7.3f%% )",
+@@ -534,6 +540,8 @@ static const struct option options[] = {
+ 		    "repeat command and print average + stddev (max: 100)"),
+ 	OPT_BOOLEAN('n', "null", &null_run,
+ 		    "null run - dont start any counters"),
++	OPT_BOOLEAN('B', "big-num", &big_num,
++		    "print large numbers with thousands\' separators"),
+ 	OPT_END()
+ };
+ 
+@@ -542,6 +550,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
+ 	int status;
+ 	int i,j;
+ 
++	setlocale(LC_ALL, "");
++
+ 	argc = parse_options(argc, argv, options, stat_usage,
+ 		PARSE_OPT_STOP_AT_NON_OPTION);
+ 	if (!argc && target_pid == -1 && target_tid == -1)
