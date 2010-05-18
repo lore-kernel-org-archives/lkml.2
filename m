@@ -1,36 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756893Ab0ERIHN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 04:07:13 -0400
-Received: from mtagate1.de.ibm.com ([195.212.17.161]:49618 "EHLO
-	mtagate1.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754226Ab0ERIHI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 04:07:08 -0400
-Date: Tue, 18 May 2010 09:07:06 +0100
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: Brian Jackson <iggy@theiggy.com>
-Cc: virtualization@lists.linux-foundation.org,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org, qemu-devel@nongnu.org
-Subject: Re: [PATCH RFC] virtio_blk: Use blk-iopoll for host->guest notify
-Message-ID: <20100518080705.GA2467@stefan-thinkpad.transitives.com>
-References: <1273870057-4287-1-git-send-email-stefanha@linux.vnet.ibm.com>
- <201005141730.57158.iggy@theiggy.com>
+	id S1756836Ab0ERIRE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 04:17:04 -0400
+Received: from mga01.intel.com ([192.55.52.88]:14279 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752490Ab0ERIQ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 04:16:57 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,254,1272870000"; 
+   d="scan'208";a="799435657"
+Date: Tue, 18 May 2010 16:08:43 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <gregkh@suse.de>,
+       akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+Message-ID: <20100518080843.GB26105@shaohui>
+Mail-Followup-To: Paul Mundt <lethal@linux-sh.org>,
+	Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <gregkh@suse.de>,
+	akpm@linux-foundation.org, linux-mm@kvack.org,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Heiko Carstens <heiko.carstens@de.ibm.com>,
+	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
+References: <20100513120016.GG2169@shaohui>
+ <20100513165603.GC25212@suse.de>
+ <1273773737.13285.7771.camel@nimitz>
+ <20100513181539.GA26597@suse.de>
+ <1273776578.13285.7820.camel@nimitz>
+ <20100518054121.GA25298@shaohui>
+ <20100518074432.GB30313@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <201005141730.57158.iggy@theiggy.com>
+In-Reply-To: <20100518074432.GB30313@linux-sh.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 14, 2010 at 05:30:56PM -0500, Brian Jackson wrote:
-> Any preliminary numbers? latency, throughput, cpu use? What about comparing 
-> different "weights"?
+On Tue, May 18, 2010 at 04:44:32PM +0900, Paul Mundt wrote:
+> On Tue, May 18, 2010 at 01:41:21PM +0800, Shaohui Zheng wrote:
+> > On Thu, May 13, 2010 at 11:49:38AM -0700, Dave Hansen wrote:
+> > > On Thu, 2010-05-13 at 11:15 -0700, Greg KH wrote:
+> > > > >       echo "physical_address=0x40000000 numa_node=3" > memory/probe
+> > > > > 
+> > > > > I'd *GREATLY* prefer that over this new syntax.  The existing mechanism
+> > > > > is obtuse enough, and the ',3' makes it more so.
+> > > > > 
+> > > > > We should have the code around to parse arguments like that, too, since
+> > > > > we use it for the boot command-line.
+> > > > 
+> > > > If you are going to be doing something like this, please use configfs,
+> > > > that is what it is designed for, not sysfs.
+> > > 
+> > > That's probably a really good point, especially since configfs didn't
+> > > even exist when we made this 'probe' file thingy.  It never was a great
+> > > fit for sysfs anyway.
+> > > 
+> > > -- Dave
+> > 
+> > the configfs was introduced in 2005, you can refer to http://lwn.net/Articles/148973/.
+> > 
+> > I enabled the configfs, and I see that the configfs is not so popular as we expected,
+> > I mount configfs to /sys/kernel/config, I get an empty directory. It means that nobody is 
+> > using this file system, it is an interesting thing, is it means that configfs is deprecated?
+> > If so, it might not be nessarry to develop a configfs interface for hotplug.
+> > 
+> configfs is certainly not deprecated, but there are also not that many
+> users of it at present. dlm/ocfs2 were the first users as far as I
+> recall, and netconsole as well. The fact you have an empty directory just
+> indicates that you don't have support for any of these enabled.
+> 
+> Note that there are also a lot of present-day sysfs and debugfs users
+> that could/should be converted to configfs but haven't quite gotten there
+> yet. In the sysfs case abuses are hard to rollback once they've made
+> become part of the ABI, but that's not grounds for continuing sysfs abuse
+> once cleaner methods become available. Many of the sysfs abuses were
+> implemented before configfs existed.
+> 
+> You can also find usage guidelines and example implementations in
+> Documentation/filesystems/configfs, which should give you a pretty good
+> idea of whether it's a good interface fit for your particular problem or
+> not.
+> 
+> These days sysfs seems to be the new procfs. It certainly helps to put a
+> bit of planning in to the interface before you're invariably stuck with
+> an ABI that's barely limping along.
 
-I am running benchmarks and will report results when they are in.
+Paul,
+	Thanks for the clear explanation for configfs, and I kown the importance of the configfs now.
+the cpu/memory probe is just an interface, we care more about whether the feature works, but the
+interface implemented by sysfs or configfs, it is not important. Different paths, the same objective.
+Both are for us.
 
-Stefan
+we follow up the style of the majority, we also accept the feedbacks from the community. I did not 
+how many efforts costs, but I am trying.
+
+-- 
+Thanks & Regards,
+Shaohui
+
