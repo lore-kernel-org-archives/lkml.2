@@ -1,65 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756779Ab0ERHzB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 03:55:01 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53656 "EHLO smtps.tip.net.au"
+	id S1756788Ab0ERIFI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 04:05:08 -0400
+Received: from mga14.intel.com ([143.182.124.37]:63392 "EHLO mga14.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab0ERHy6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 03:54:58 -0400
-Date: Tue, 18 May 2010 17:54:51 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: ebiederm@xmission.com (Eric W. Biederman)
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-Id: <20100518175451.a01e314b.sfr@canb.auug.org.au>
-In-Reply-To: <m1wrv13dam.fsf@fess.ebiederm.org>
-References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
-	<m1wrv13dam.fsf@fess.ebiederm.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__18_May_2010_17_54_51_+1000_F8RrUVjRw0N5MMX6"
+	id S1752654Ab0ERIFB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 04:05:01 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,254,1272870000"; 
+   d="scan'208";a="278348772"
+Date: Tue, 18 May 2010 15:56:48 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Dave Hansen <dave@linux.vnet.ibm.com>
+Cc: Greg KH <gregkh@suse.de>, akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+Message-ID: <20100518075648.GA26105@shaohui>
+Mail-Followup-To: Dave Hansen <dave@linux.vnet.ibm.com>,
+	Greg KH <gregkh@suse.de>, akpm@linux-foundation.org,
+	linux-mm@kvack.org, Thomas Gleixner <tglx@linutronix.de>,
+	Ingo Molnar <mingo@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+	x86@kernel.org, Andi Kleen <ak@linux.intel.com>,
+	Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+	Wu Fengguang <fengguang.wu@intel.com>,
+	Heiko Carstens <heiko.carstens@de.ibm.com>,
+	linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
+References: <20100513120016.GG2169@shaohui>
+ <20100513165603.GC25212@suse.de>
+ <1273773737.13285.7771.camel@nimitz>
+ <20100513181539.GA26597@suse.de>
+ <1273776578.13285.7820.camel@nimitz>
+ <20100518054121.GA25298@shaohui>
+ <1274167625.17463.17.camel@nimitz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274167625.17463.17.camel@nimitz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__18_May_2010_17_54_51_+1000_F8RrUVjRw0N5MMX6
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 18, 2010 at 12:27:05AM -0700, Dave Hansen wrote:
+> On Tue, 2010-05-18 at 13:41 +0800, Shaohui Zheng wrote:
+> > On Thu, May 13, 2010 at 11:49:38AM -0700, Dave Hansen wrote:
+> > the configfs was introduced in 2005, you can refer to http://lwn.net/Articles/148973/.
+> > 
+> > I enabled the configfs, and I see that the configfs is not so popular as we expected,
+> > I mount configfs to /sys/kernel/config, I get an empty directory. It means that nobody is 
+> > using this file system, it is an interesting thing, is it means that configfs is deprecated?
+> > If so, it might not be nessarry to develop a configfs interface for hotplug.
+> 
+> Uh, deprecated?  What would make you think that?  It does look like the
+> users are a we bit obscure, but that's a bit far from deprecated.
+> 
+> > Dave & Greg,
+> > 	Can you provide an exmample to use configfs as interface in Linux kernel, I want to get
+> > a live demo, thanks.
+> 
+> Heh.  There are some great tools out there called cscope and grep.  I
+> have them on my system and I bet you can get them on yours too.
+> 
+> That said, you're right.  There don't seem to be a ton of users of it
+> these days.  But, the LWN article you referenced also pointed to at
+> least one user.  So, please try and put a wee bit of effort into it.
 
-Hi Eric,
+I am trying to put a few efforts on it, and we hope to support both sysfs and configfs.
 
-On Tue, 18 May 2010 00:00:01 -0700 ebiederm@xmission.com (Eric W. Biederman=
-) wrote:
->
-> Stephen what is the easiest way to get a copy of Al's tree so I can take
-> a look to see what needs to happen?
+because of the history reason, sysfs is more popular. I bet that only vew few users know
+ configfs, so sysfs is still the prefered way.
 
-It is here:
+> 
+> Maybe configfs isn't the way to go.  I just think extending the 'probe'
+> file is a bad idea, especially in the way your patch did it.  I'm open
+> to other alternatives.  Since this is only for testing, perhaps debugfs
+> applies better.  What other alternatives have you explored?  How about a
+> Systemtap set to do it? :)
+> 
+> -- Dave
 
-git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
+Did not try other alternatives until now. Thanks for Dave's suggestions, Systemtap and debugfs
+ seems to be good methods, too.
 
-[The latest list of trees included in linux-next can always be found here:
-http://git.kernel.org/?p=3Dlinux/kernel/git/next/linux-next.git;a=3Dblob;f=
-=3DNext/Trees]
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+-- 
+Thanks & Regards,
+Shaohui
 
---Signature=_Tue__18_May_2010_17_54_51_+1000_F8RrUVjRw0N5MMX6
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvyR8sACgkQjjKRsyhoI8yWpQCgu9PMSzawtRcouXj2XnfP923d
-6gYAnjahpH+do0IM4N8uV2nq1lEysOHD
-=EdHF
------END PGP SIGNATURE-----
-
---Signature=_Tue__18_May_2010_17_54_51_+1000_F8RrUVjRw0N5MMX6--
