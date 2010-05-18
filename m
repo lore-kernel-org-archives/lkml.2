@@ -1,56 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0ERFaT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:30:19 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53906 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755469Ab0ERFaR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:30:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=gR9EByFze0eziPZeIs84CHEOk6KmLVM2nQBCAbDXLs3xfnYbGqfR6rMJSWs3d6yxdk
-         F+WlZpdxPPe7I2wSMG+X/txCmDPm9fzXSAbvQvlQITlDgJVCi/pvXvESD9uiSnlqaDv0
-         hIG5S6RO1qtjr04oQLbdZLZdjcpOCx79uRdd0=
-MIME-Version: 1.0
-Date: Tue, 18 May 2010 13:30:16 +0800
-Message-ID: <AANLkTinX8Ax9ZJFdLk3Zjzc0CBh-gIIN0wg8YjQ-7PQP@mail.gmail.com>
-Subject: [PATCH] drbd: Check-kmalloc-return-value before use it
-From: Steven Liu <lingjiujianke@gmail.com>
-To: drbd-dev@lists.linbit.com, drbd-user@lists.linbit.com,
-       linux-kernel@vger.kernel.org, liuqi@thunderst.com
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756253Ab0ERFaf (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:30:35 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:57095 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756066Ab0ERFad (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:30:33 -0400
+Date: Tue, 18 May 2010 15:30:20 +1000
+From: Neil Brown <neilb@suse.de>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Benjamin Thery <benjamin.thery@bull.net>
+Subject: Re: linux-next: build failure after merge of the staging-next tree
+Message-ID: <20100518153020.06d5a602@notabene.brown>
+In-Reply-To: <20100430144340.GD1824@kroah.com>
+References: <20100430155205.a4171034.sfr@canb.auug.org.au>
+	<20100430144340.GD1824@kroah.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Check-kmalloc-return-value before use it
+On Fri, 30 Apr 2010 07:43:40 -0700
+Greg KH <greg@kroah.com> wrote:
 
-Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
----
- drivers/block/drbd/drbd_receiver.c |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+> On Fri, Apr 30, 2010 at 03:52:05PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the staging-next tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > drivers/md/md.c: In function 'level_store':
+> > drivers/md/md.c:3029: error: too few arguments to function 'sysfs_get_dirent'
+> > 
+> > Caused by commit 262f8e4937e7b4a587923ca3c039a184668f49ec ("sysfs:
+> > Implement sysfs tagged directory support") from the driver-core tree
+> > interacting with commit fecc531e3cc0de60514d326c7d82f1075ed55888 ("md:
+> > manage redundancy group in sysfs when changing level") from the md.
+> > 
+> > I have applied this fixup patch for today and can carry it as necessary.
+> > 
+> > [This could have been avoided, of course, by creating a new API (maybe
+> > sysfs_get_dirent_tagged) and implementing the old API in terms of that].
+> 
+> Thanks for the fixup.
 
-diff --git a/drivers/block/drbd/drbd_receiver.c
-b/drivers/block/drbd/drbd_receiver.c
-index 3f096e7..533df04 100644
---- a/drivers/block/drbd/drbd_receiver.c
-+++ b/drivers/block/drbd/drbd_receiver.c
-@@ -2977,6 +2977,10 @@ static int receive_uuids(struct drbd_conf
-*mdev, struct p_header *h)
-        return FALSE;
+hi Greg,
+ I'm assuming that you will submit you patch queue to Linus first, then I
+ will create a merge which fixes this issue and ask Linus to pull that - so
+ everything is all still bisectable without me rebasing.
 
-    p_uuid = kmalloc(sizeof(u64)*UI_EXTENDED_SIZE, GFP_NOIO);
-+   if(p_uuid == NULL){
-+       printk(KERN_ERR "Kmalloc p_uuid failed in %s \n", __func__);
-+       return FALSE;
-+   }
+ If you are OK with that, please let me know when you have submitted your
+ queue..  I'll try to keep and eye open, but I might miss it...
 
-    for (i = UI_CURRENT; i < UI_EXTENDED_SIZE; i++)
-        p_uuid[i] = be64_to_cpu(p->uuid[i]);
---
-1.7.1
-
-
-Best regards
+Thanks,
+NeilBrown
