@@ -1,92 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757537Ab0ERUfs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:35:48 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:42457 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab0ERUfr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:35:47 -0400
+	id S1755976Ab0ERUig (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:38:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:41091 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754516Ab0ERUif (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:38:35 -0400
+Message-ID: <4BF2F9E4.8020808@zytor.com>
+Date: Tue, 18 May 2010 13:34:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <201005182138.04610.rjw@sisk.pl>
-References: <1273810273-3039-1-git-send-email-arve@android.com>
-	 <201005172344.46222.rjw@sisk.pl>
-	 <AANLkTikENyp0UOKP2NzwjKye1EiZitdE0o4k1Z4ygCsT@mail.gmail.com>
-	 <201005182138.04610.rjw@sisk.pl>
-Date: Tue, 18 May 2010 13:35:45 -0700
-Message-ID: <AANLkTileYiu6pL4eX3lpvpYLuu76A8auZp4xrcDX94BQ@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Brian Swetland <swetland@google.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+References: <1273887635-27610-1-git-send-email-venki@google.com>> <87tyq9mqrz.fsf@basil.nowhere.org>> <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>> <20100515121424.38f5b389@infradead.org>> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>> <20100515224305.17a04022@infradead.org>> <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>> <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>> <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>> <20100518112509.GD22675@basil.fritz.box> <1274183935.5605.7726.camel@twins>> <4BF2C30F.6030502@zytor.com> <1274201536.5605.8347.camel@twins> <4BF2C881.60807@zytor.com> <1dc4abc2-6455-4b95-90f6-c86bf56ff39a@default> <4BF2E0A2.6030209@zytor.com> <dd1c0508-5570-4e65-89c0-4037eb210646@default> <3479976f-5c91-4bcb-8542-3de93bee268a@default 4BF2E9DB.3000202@zytor.com> <61e3a205-b578-4972-a65a-b96f779aeeb1@default>
+In-Reply-To: <61e3a205-b578-4972-a65a-b96f779aeeb1@default>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
->> On Mon, May 17, 2010 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> > On Monday 17 May 2010, Brian Swetland wrote:
->> >> On Mon, May 17, 2010 at 1:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
->> >> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
->> >> >>
->> >> >> It should get out of that loop as soon as someone blocks suspend. If
->> >> >> someone is constantly aborting suspend without using a suspend blocker
->> >> >> it will be very inefficient, but it should still work.
->> >> >
->> >> > Well, the scenario I have in mind is the following.  Someone wants to check
->> >> > the feature and simply writes "opportunistic" to /sys/power/policy and "mem" to
->> >> > /sys/power/state without any drivers or apps that use suspend blockers.
->> >> >
->> >> > How in that case is the system supposed to break out of the suspend-resume loop
->> >> > resulting from this?  I don't see right now, because the main blocker is
->> >> > inactive, there are no other blockers that can be activated and it is next to
->> >> > impossible to write to /sys/power/state again.
->> >>
->> >> I guess we could set a flag when a suspend blocker is registered and
->> >> refuse to enter opportunistic mode if no blockers have ever been
->> >> registered.
->> >>
->> >> It does seem like extra effort to go through to handle a "don't do
->> >> that" type scenario (entering into opportunistic suspend without
->> >> anything that will prevent it).
->> >
->> > I agree, but I think it's necessary.  We shouldn't add interfaces that hurt
->> > users if not used with care.
->> >
->>
->> I'm not sure this can be "fixed".
->
-> Yes, it can, but perhaps a workaround would be sufficient (see below).
->
->> The user asked that the system to suspend whenever possible, which is what it
->> is doing. I don't think disabling opportunistic suspend if no suspend
->> blockers have been registered will work. As soon as we register a suspend
->> blocker we are back in the same situation.
->
-> Not really, because the new suspend blocker is not added by the _framework_ _itself_.
->
+On 05/18/2010 01:29 PM, Dan Magenheimer wrote:
+> 
+> Yes, understood, a minor semantic issue.  From a kernel perspective
+> vsyscalls are kernelspace, so IIUC this is OK with tglx/etc.
+> 
+> Since vsyscall shouldn't be using rdtsc when the kernel
+> doesn't trust TSC, it doesn't matter if CR4.TSD is enabled when
+> the kernel doesn't trust TSC.
+> 
 
-I'm not sure what you mean by this. If we add a workaround that is
-disabled when the first suspend blocker is registered, then we cannot
-add any suspend blockers without disabling the workaround (for
-instance the power supply framework patch later in this patch set).
+That is correct.
 
-> Now, to make it more "user-friendly", we can simply use
-> queue_delayed_work() with a reasonable delay instead of queue_work() to queue
-> the suspend work (the delay may be configurable via sysfs).
->
+> I'm still not sure if you are in favor of optionally emulating
+> PL3 rdtsc instructions or not?  I thought my proposal was
+> just filling out some details of your proposal and suggesting
+> a default.
 
-I can add a delay (and the timeout support code does add a delay as an
-optimization) to the unknown wakeup case, but this does not fix the
-problem of a user turning on opportunistic suspend with a user space
-framework that does not use suspend blockers. If the kernel uses
-suspend blockers to make sure the wakeup event makes it to user space,
-but user space does not block suspend, then the system will suspend
-before the event is processed.
+I'm not in favor of emulating rdtsc instructions.  I would consider
+letting them SIGILL (actually SIGSEGV since RDTSC #GP in userspace) when
+the TSC is unavailable, though.
 
--- 
-Arve Hjønnevåg
+It's not clear to me that it's possible, though, since that also affects
+RDTSCP.
+
+	-hpa
+
+
