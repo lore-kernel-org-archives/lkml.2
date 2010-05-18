@@ -1,112 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab0ERWZF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:25:05 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:19140 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751534Ab0ERWZB (ORCPT
+	id S1755378Ab0ERW2A (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:28:00 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:43750 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752804Ab0ERW15 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:25:01 -0400
-From: imre.deak@nokia.com
-To: Tejun Heo <tj@kernel.org>
-Cc: Imre Deak <imre.deak@nokia.com>, Tejun Heo <tj@kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric Paris <eparis@redhat.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Subject: [PATCH v2] idr: fix backtrack logic in idr_remove_all
-Date: Wed, 19 May 2010 01:23:24 +0300
-Message-Id: <30085ac65a8087d98d8a6683c4f1f909d362ca46.1274217927.git.imre.deak@nokia.com>
-X-Mailer: git-send-email 1.7.0.2
-In-Reply-To: <20100518205914.GA11667@localhost>
-References: <20100518205914.GA11667@localhost>
-X-OriginalArrivalTime: 18 May 2010 22:24:03.0822 (UTC) FILETIME=[D27C70E0:01CAF6D8]
-X-Nokia-AV: Clean
+	Tue, 18 May 2010 18:27:57 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+Date: Wed, 19 May 2010 00:29:04 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+References: <1273810273-3039-1-git-send-email-arve@android.com> <201005182052.28778.rjw@sisk.pl> <87y6fgn9y1.fsf@deeprootsystems.com>
+In-Reply-To: <87y6fgn9y1.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005190029.05056.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Imre Deak <imre.deak@nokia.com>
+On Wednesday 19 May 2010, Kevin Hilman wrote:
+> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
+> 
+> > On Tuesday 18 May 2010, Kevin Hilman wrote:
+> >> Arve Hjønnevåg <arve@android.com> writes:
+> >> 
+> >> >
+> >> > PM: Opportunistic suspend support.
+> >> >
+> >> > Power management features present in the current mainline kernel are
+> >> > insufficient to get maximum possible energy savings on some platforms,
+> >> > such as Android, because low power states can only safely be entered
+> >> > from idle.  Suspend, in its current form, cannot be used, since wakeup
+> >> > events that occur right after initiating suspend will not be processed
+> >> > until another possibly unrelated event wake up the system again.
+> >> 
+> >> I think the problems with wakeups in the current suspend path need to
+> >> be described in more detail.  In particular, why check_wakeup_irqs()
+> >> is not enough etc.
+> >
+> > That one is really easy.: because some (the majority of?) architectures
+> > don't even implement it.
+> 
+> OK, then this problem will still in traditional suspend even after
+> this series, so calling it out as a the problem to be solved but not
+> fixing it doesn't seem right.
+> 
+> This problem needs an independent fix, namely implementing
+> check_wakeup_irqs().
 
-Currently idr_remove_all will fail with a use after free error if
-idr::layers is bigger than 2, which on 32 bit systems corresponds to
-items more than 1024. This is due to stepping back too many levels
-during backtracking. For simplicity let's assume that IDR_BITS=1 -> we
-have 2 nodes at each level below the root node and each leaf node stores
-two IDs. (In reality for 32 bit systems IDR_BITS=5, with 32 nodes at
-each sub-root level and 32 IDs in each leaf node). The sequence of
-freeing the nodes at the moment is as follows:
-
-layer
-1 ->                       a(7)
-2 ->            b(3)                  c(5)
-3 ->        d(1)   e(2)           f(4)    g(6)
-
-Until step 4 things go fine, but then node c is freed, whereas node g
-should be freed first. Since node c contains the pointer to node g we'll
-have a use after free error at step 6.
-
-How many levels we step back after visiting the leaf nodes is currently
-determined by the msb of the id we are currently visiting:
-
-Step
-1.          node d with IDs 0,1 is freed, current ID is advanced to 2.
-            msb of the current ID bit 1. This means we need to step back
-            1 level to node b and take the next sibling, node e.
-2-3.        node e with IDs 2,3 is freed, current ID is 4, msb is bit 2.
-            This means we need to step back 2 levels to node a, freeing
-            node b on the way.
-4-5.        node f with IDs 4,5 is freed, current ID is 6, msb is still
-            bit 2. This means we again need to step back 2 levels to node
-            a and free c on the way.
-6.          We should visit node g, but its pointer is not available as
-            node c was freed.
-
-The fix changes how we determine the number of levels to step back.
-Instead of deducting this merely from the msb of the current ID, we
-should really check if advancing the ID causes an overflow to a bit
-position corresponding to a given layer. In the above example overflow
-from bit 0 to bit 1 should mean stepping back 1 level. Overflow from
-bit 1 to bit 2 should mean stepping back 2 levels and so on.
-
-The fix was tested with IDs up to 1 << 20, which corresponds to 4
-layers on 32 bit systems.
-
-Signed-off-by: Imre Deak <imre.deak@nokia.com>
-Reviewed-by: Tejun Heo <tj@kernel.org>
-
----
- lib/idr.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-Changes since v1:
-- changed nand to xor to save an instruction
-- add note on how we calculate the backtrack level
-
-diff --git a/lib/idr.c b/lib/idr.c
-index 2eb1dca..dc847c5 100644
---- a/lib/idr.c
-+++ b/lib/idr.c
-@@ -445,6 +445,7 @@ EXPORT_SYMBOL(idr_remove);
- void idr_remove_all(struct idr *idp)
- {
- 	int n, id, max;
-+	int bt_mask;
- 	struct idr_layer *p;
- 	struct idr_layer *pa[MAX_LEVEL];
- 	struct idr_layer **paa = &pa[0];
-@@ -462,8 +463,10 @@ void idr_remove_all(struct idr *idp)
- 			p = p->ary[(id >> n) & IDR_MASK];
- 		}
+No, it is not.  There's nothing like wake-up interrupts on (ACPI-based) x86 PCs.
  
-+		bt_mask = id;
- 		id += 1 << n;
--		while (n < fls(id)) {
-+		/* Get the highest bit that the above add changed from 0->1. */
-+		while (n < fls(id ^ bt_mask)) {
- 			if (p)
- 				free_layer(p);
- 			n += IDR_BITS;
--- 
-1.7.0.2
+> That being said, what exactly is there for architectures to implement
+> for check_wakeup_irqs()?  IIUC, this all handled by genirq as long as
+> deferred disable (now the default) is used?
 
+No.  Wakeup IRQs cause the system to wake up from sleep states.  On a PC
+the only interrupts that can do that are PCIe root port PME interrupts, but
+they are not really "device" interrupts (ie. they come from a source that is
+different from a device signaling wakeup).
+
+> I suspect the platforms that Android currently cares about already
+> have this functionality.  At least OMAP does already.
+
+ISTR there is an x86 Android port, so not all of them.  Although that really
+doesn't matter.
+
+> >> > On some systems idle combined with runtime PM can enter the same power
+> >> > state as suspend, but periodic wakeups increase the average power
+> >> > consumption. Suspending the system also reduces the harm caused by
+> >> > apps that never go idle. On other systems suspend can enter a much
+> >> > lower power state than idle.
+> >> >
+> >> > To allow Android and similar platforms to save more energy than they
+> >> > currently can save using the mainline kernel, we introduce a mechanism
+> >> > by which the system is automatically suspended (i.e. put into a
+> >> > system-wide sleep state) whenever it's not doing useful work, called
+> >> > opportunistic suspend.
+> >> 
+> >> A definition of "useful work" here would provide clarity and would
+> >> also help clarify by what criteria other on-going work is determined
+> >> to be not useful.
+> >
+> > Probably "useful" is not the right word here.  I guess it's more like
+> > "work that can be deferred without visible impact on functionality".
+> 
+> OK, then a definition of "visible impact on functionality" should be
+> provided and the critera for determining that.
+> 
+> I know this sounds like splitting hairs,
+
+Yes, it does.
+
+> but what I'm getting at is that this series implements a brand new method
+> for making decisions about when the system is idle.
+
+Since we are splitting hairs, I'd be rather cautious about the word "idle".
+It would be safer to say "when the system is not doing anything the user
+really cares about at the moment and therefore it may be suspended".
+
+That actually is the whole point of the patch series.
+
+> That fact should be clearly stated and the criteria for making this decision
+> should be clearly described.
+
+Well, suspend blockers are the tool to define the criteria.
+
+Thanks,
+Rafael
