@@ -1,965 +1,227 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0ERGgy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:36:54 -0400
-Received: from mga09.intel.com ([134.134.136.24]:12036 "EHLO mga09.intel.com"
+	id S1756847Ab0ERGhE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:37:04 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:58355 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753398Ab0ERGfs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:35:48 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,253,1272870000"; 
-   d="scan'208";a="622545435"
-From: Huang Ying <ying.huang@intel.com>
-To: lenb@kernel.org
-Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Jin Dongming <jin.dongming@np.css.fujitsu.com>
-Subject: [PATCH -v5 11/14] ACPI, APEI, Error Record Serialization Table (ERST) support
-Date: Tue, 18 May 2010 14:35:21 +0800
-Message-Id: <1274164524-6092-12-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
-References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
+	id S1756873Ab0ERGgy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:36:54 -0400
+Date: Tue, 18 May 2010 16:36:47 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100518063647.GD2516@laptop>
+References: <20100512212403.GE3597@localhost.localdomain>
+ <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
+ <20100514010042.GI13617@dastard>
+ <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514083821.GL13617@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-ERST is a way provided by APEI to save and retrieve hardware error
-record to and from some simple persistent storage (such as flash).
+On Fri, May 14, 2010 at 06:38:21PM +1000, Dave Chinner wrote:
+> On Fri, May 14, 2010 at 05:22:19PM +1000, Nick Piggin wrote:
+> > On Fri, May 14, 2010 at 04:41:45PM +1000, Dave Chinner wrote:
+> > > On Thu, May 13, 2010 at 11:30:57PM -0400, Josef Bacik wrote:
+> > > > So this is what I had envisioned, we make write_begin take a nr_pages pointer
+> > > > and tell it how much data we have to write, then in the filesystem we allocate
+> > > > as many pages as we feel like, idealy something like
+> > > > 
+> > > > min(number of pages we need for the write, some arbitrary limit for security)
+> > > 
+> > > Actually, i was thinking that the RESERVE call determines the size
+> > > of the chunk (in the order of 1-4MB maximum). IOWs, we pass in the
+> > > start offset of the write, the entire length remaining, and the
+> > > RESERVE call determines how much it will allow in one loop.
+> > > 
+> > > 	written = 0;
+> > > 	while (bytes_remaining > 0) {
+> > > 		chunklen = ->allocate(off, bytes_remaining, RESERVE);
+> > > 		write_begin(&pages, off, chunklen);
+> > > 		copied = copy_pages(&pages, iov_iter, chunklen);
+> > > 		.....
+> > > 		bytes_remaining -= copied;
+> > > 		off += copied;
+> > > 		written += copied;
+> > > 	}
+> > 
+> > How much benefit are you expecting to get?
+> 
+> If the max chunk size is 4MB, then three orders of magnitudes fewer
+> allocation calls for x86_64 (i.e. one instead of 1024).  For
+> filesystems with significant allocation overhead (like gaining
+> cluster locks in gfs2), this will be a *massive* win.
+> 
+> > I have no problems with
+> > non-pagecache block allocation/freeing APIs to get the most out of
+> > amortising expensive locking or tree manipulations, but I don't
+> > know if it is a good idea to pin a big chunk of pagecache like that.
+> > I'd say just do the per-page manipulations like we currently do.
+> 
+> Can you expand on this?
 
-The Linux kernel support implementation is quite simple and workable
-in NMI context. So it can be used to save hardware error record into
-flash in hardware error exception or NMI handler, where other more
-complex persistent storage such as disk is not usable. After saving
-hardware error records via ERST in hardware error exception or NMI
-handler, the error records can be retrieved and logged into disk or
-network after a clean reboot.
+Well you could do a large span block allocation at the beginning,
+and then dirty the pagecache one by one like we do right now.
 
-For more information about ERST, please refer to ACPI Specification
-version 4.0, section 17.4.
+The only reason to do operations on multiple pages at once is if
+we need to lock them all. Now the fs might well have that requirement
+(if it is not using i_mutex for block (de)allocation serialisation),
+but I don't think generic code needs to be doing that.
 
-This patch incorporate fixes from Jin Dongming.
 
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
-CC: Jin Dongming <jin.dongming@np.css.fujitsu.com>
----
- Documentation/kernel-parameters.txt |    4 
- drivers/acpi/apei/Makefile          |    2 
- drivers/acpi/apei/erst.c            |  855 ++++++++++++++++++++++++++++++++++++
- include/acpi/apei.h                 |   21 
- 4 files changed, 881 insertions(+), 1 deletion(-)
- create mode 100644 drivers/acpi/apei/erst.c
+> > > > and then we allocate all those pages.  Then you can pass them into
+> > > > block_write_begin, which will walk the pages, allocating buffer heads and
+> > > > allocating the space as needed.
+> > > 
+> > > Close - except that I'd like like to move the block allocation out of
+> > > ->write_begin until after the copy into the pages has completed.
+> > > Hence write_begin only deals with populating the page cache and
+> > > anything filesystem specific like locking or allocating/populating
+> > > per-page structures like bufferheads.  i.e. ->write_begin does not
+> > > do anything that cannot be undone easily if the copy fails.
+> > 
+> > Hmm, not so sure. You run into other problems.
+> > 
+> > Write to a hole? Then you have to clear page uptodate and unmap
+> > any potential mmaps on it before the copy to pagecache, in case
+> > the allocation fails (otherwise you have exposed inconsistent
+> > state to userspace).
+> 
+> Good call. I think that checking page_mapped() on each page as they
+> are grabbed and locked, and if any are mapped call
+> unmap_mapping_range() on them will work. New faults will serialise
+> on the page locks and because we hold the page lock across the
+> entire operation,
 
---- a/Documentation/kernel-parameters.txt
-+++ b/Documentation/kernel-parameters.txt
-@@ -750,6 +750,10 @@ and is between 256 and 4096 characters.
- 			Default value is 0.
- 			Value can be changed at runtime via /selinux/enforce.
+That is supposed to be enough to prevent concurrent faults setting
+up the mapping again (which is how the fault vs truncate race was
+fixed). So yes that would be fine (so long as the fs DTRT in its
+fault API of course).
+
+
+> I don't think we need to clear the uptodate flag
+> unless we fail the write.
+
+read(2) is performed without page lock though, so it could equally
+expose transient data that way.
+
  
-+	erst_disable	[ACPI]
-+			Disable Error Record Serialization Table (ERST)
-+			support.
-+
- 	ether=		[HW,NET] Ethernet cards parameters
- 			This option is obsoleted by the "netdev=" option, which
- 			has equivalent usage. See its documentation for details.
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -2,4 +2,4 @@ obj-$(CONFIG_ACPI_APEI)		+= apei.o
- obj-$(CONFIG_ACPI_APEI_GHES)	+= ghes.o
- obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
+> > Write to a hole, then to a non-hole? Then your write to the non
+> > hole pagecache cannot be recovered in case the block allocation
+> > for the hole fails and we need to return a short write.
+> 
+> The pages covering non-holes are locked, so nobody else can access
+> them. We could simply invalidate them so the next access would force
+> a re-read from disk.  The problem I see with this, though, is
+> multiple partial overwrites of the allocated block - we could lose
+> changes invalidating it.
+> 
+> I think the simplest way to deal with it is to ensure that
+> ->allocate(RESERVE) is not allowed to return ranges that span
+> allocated and unallocated regions. i.e. it can return an allocated
+> region or a hole, but not a region that combines both. The worst
+> case is that we fall back to current behaviour (an allocation call
+> per block), but for the case we're trying to optimise (large writes
+> into large holes) we'd still see the benefit of fewer allocation
+> calls.  FWIW, I think this simplifies error handling as well (see
+> below).
+
+Possibly is the right way to go. But why is error handling of block
+allocation the hard part? Probably I look at it from the other side
+of the equation, but publishing modifications to the pagecache seems
+much harder to recover from than block allocations.
+
+I don't see what changes when you go to multi-page allocation spans.
+Can you explain?
+
+
+> > > > Now since we're coming into write_begin with "we want to write X bytes" we can
+> > > > go ahead and do the enospc checks for X bytes, and then if we are good to go,
+> > > > chances are we won't fail.
+> > > 
+> > > Well, the "RESERVE" callout I proposed should mean that the
+> > > allocation that follows the copy should never fail with ENOSPC. i.e.
+> > > if there isn't space, the RESERVE call will fail with ENOSPC, not
+> > > the actual ALLOCATE call that occurs after the data is copied.
+> > > 
+> > > Basically I was thinking that in the XFS case, RESERVE would scan the
+> > > range for holes, and reserve all blocks needed to fill all the holes
+> > > in the range. Then the ALLOCATE call would mark them all delalloc.
+> > > The space reservation and delalloc is done in a single call right
+> > > now, but splitting them is not hard...
+> > > 
+> > > > Except if we're overwriting a holey section of the file, we're going to be
+> > > > screwed in both your way and my way.  My way probably would be the most likely
+> > > > to fail, since we could fail to do the copy_from_user, but hopefully the segment
+> > > > checks and doing the fault_in_readable before all of this would keep those
+> > > > problems to a minimum.
+> > > 
+> > > fault_in_readable() only faults the first page of the first iov
+> > > passed in. It can still fail on any other page the iov points to.
+> > > And even then, fault_in_readable() does not pin the page it faulted
+> > > in memory, so even that can get recycled before we start the copy
+> > > and we'd still get EFAULT.
+> > > 
+> > > > In your case the only failure point is in the allocate step.  If we fail on down
+> > > > the line after we've done some hole filling, we'll be hard pressed to go back
+> > > > and free up those blocks.  Is that what you are talking about, having the
+> > > > allocate(UNRESERVE) thing being able to go back and figure out what should have
+> > > > been holes needs to be holes again?
+> > > 
+> > > Yeah, that's kind of what I was thinking of. After a bit more
+> > > thought, if the allocation only covers part of the range (for
+> > > whatever reason), we can still allow that allocated part of the
+> > > write to complete succesfully, and the UNRESERVE call simply returns
+> > > the unused part of the space reservation. This would be a partial
+> > > write and be much simpler to deal with than punching out the
+> > > allocations that succeeded.
+> > 
+> > Do we really need to restore holes inside i_size in error cases?
+> 
+> No, we don't. That's what I was trying to say - holes that were
+
+OK good.
+
+> allocated are full of good data, so we only need to deal with the
+> holes that didn't get allocated. The range of the write that failed
+> is only stale in memory now, so we can just invalidate pages in the
+> range that is considered failed.
+
+Well invalidate isn't a good way to do this IMO. It is very hairy to
+put data tentatively into PageUptodate pagecache and then try to recover
+afterwards.
+
+Basically, once pagecache is marked uptodate, I don't think we should
+ever put maybe-invalid data into it -- the way to do it is to invalidate
+that page and put a *new* page in there.
+
+Why? Because user mappings are just one problem, but once you had a
+user mapping, you can have been subject to get_user_pages, so it could
+be in the middle of a DMA operation or something.
+
  
--apei-y := apei-base.o hest.o cper.o
-+apei-y := apei-base.o hest.o cper.o erst.o
---- /dev/null
-+++ b/drivers/acpi/apei/erst.c
-@@ -0,0 +1,855 @@
-+/*
-+ * APEI Error Record Serialization Table support
-+ *
-+ * ERST is a way provided by APEI to save and retrieve hardware error
-+ * infomation to and from a persistent store.
-+ *
-+ * For more information about ERST, please refer to ACPI Specification
-+ * version 4.0, section 17.4.
-+ *
-+ * Copyright 2010 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/delay.h>
-+#include <linux/io.h>
-+#include <linux/acpi.h>
-+#include <linux/uaccess.h>
-+#include <linux/cper.h>
-+#include <linux/nmi.h>
-+#include <acpi/apei.h>
-+
-+#include "apei-internal.h"
-+
-+#define ERST_PFX "ERST: "
-+
-+/* ERST command status */
-+#define ERST_STATUS_SUCCESS			0x0
-+#define ERST_STATUS_NOT_ENOUGH_SPACE		0x1
-+#define ERST_STATUS_HARDWARE_NOT_AVAILABLE	0x2
-+#define ERST_STATUS_FAILED			0x3
-+#define ERST_STATUS_RECORD_STORE_EMPTY		0x4
-+#define ERST_STATUS_RECORD_NOT_FOUND		0x5
-+
-+#define ERST_TAB_ENTRY(tab)						\
-+	((struct acpi_whea_header *)((char *)(tab) +			\
-+				     sizeof(struct acpi_table_erst)))
-+
-+#define SPIN_UNIT		100			/* 100ns */
-+/* Firmware should respond within 1 miliseconds */
-+#define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
-+#define FIRMWARE_MAX_STALL	50			/* 50us */
-+
-+int erst_disable;
-+EXPORT_SYMBOL_GPL(erst_disable);
-+
-+static struct acpi_table_erst *erst_tab;
-+
-+/* ERST Error Log Address Range atrributes */
-+#define ERST_RANGE_RESERVED	0x0001
-+#define ERST_RANGE_NVRAM	0x0002
-+#define ERST_RANGE_SLOW		0x0004
-+
-+/*
-+ * ERST Error Log Address Range, used as buffer for reading/writing
-+ * error records.
-+ */
-+static struct erst_erange {
-+	u64 base;
-+	u64 size;
-+	void __iomem *vaddr;
-+	u32 attr;
-+} erst_erange;
-+
-+/*
-+ * Prevent ERST interpreter to run simultaneously, because the
-+ * corresponding firmware implementation may not work properly when
-+ * invoked simultaneously.
-+ *
-+ * It is used to provide exclusive accessing for ERST Error Log
-+ * Address Range too.
-+ */
-+static DEFINE_SPINLOCK(erst_lock);
-+
-+static inline int erst_errno(int command_status)
-+{
-+	switch (command_status) {
-+	case ERST_STATUS_SUCCESS:
-+		return 0;
-+	case ERST_STATUS_HARDWARE_NOT_AVAILABLE:
-+		return -ENODEV;
-+	case ERST_STATUS_NOT_ENOUGH_SPACE:
-+		return -ENOSPC;
-+	case ERST_STATUS_RECORD_STORE_EMPTY:
-+	case ERST_STATUS_RECORD_NOT_FOUND:
-+		return -ENOENT;
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+static int erst_timedout(u64 *t, u64 spin_unit)
-+{
-+	if ((s64)*t < spin_unit) {
-+		pr_warning(FW_WARN ERST_PFX
-+			   "Firmware does not respond in time\n");
-+		return 1;
-+	}
-+	*t -= spin_unit;
-+	ndelay(spin_unit);
-+	touch_nmi_watchdog();
-+	return 0;
-+}
-+
-+static int erst_exec_load_var1(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->var1);
-+}
-+
-+static int erst_exec_load_var2(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->var2);
-+}
-+
-+static int erst_exec_store_var1(struct apei_exec_context *ctx,
-+				struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_write_register(entry, ctx->var1);
-+}
-+
-+static int erst_exec_add(struct apei_exec_context *ctx,
-+			 struct acpi_whea_header *entry)
-+{
-+	ctx->var1 += ctx->var2;
-+	return 0;
-+}
-+
-+static int erst_exec_subtract(struct apei_exec_context *ctx,
-+			      struct acpi_whea_header *entry)
-+{
-+	ctx->var1 -= ctx->var2;
-+	return 0;
-+}
-+
-+static int erst_exec_add_value(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	val += ctx->value;
-+	rc = __apei_exec_write_register(entry, val);
-+	return rc;
-+}
-+
-+static int erst_exec_subtract_value(struct apei_exec_context *ctx,
-+				    struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	val -= ctx->value;
-+	rc = __apei_exec_write_register(entry, val);
-+	return rc;
-+}
-+
-+static int erst_exec_stall(struct apei_exec_context *ctx,
-+			   struct acpi_whea_header *entry)
-+{
-+	u64 stall_time;
-+
-+	if (ctx->value > FIRMWARE_MAX_STALL) {
-+		if (!in_nmi())
-+			pr_warning(FW_WARN ERST_PFX
-+			"Too long stall time for stall instruction: %llx.\n",
-+				   ctx->value);
-+		stall_time = FIRMWARE_MAX_STALL;
-+	} else
-+		stall_time = ctx->value;
-+	udelay(stall_time);
-+	return 0;
-+}
-+
-+static int erst_exec_stall_while_true(struct apei_exec_context *ctx,
-+				      struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 stall_time;
-+
-+	if (ctx->var1 > FIRMWARE_MAX_STALL) {
-+		if (!in_nmi())
-+			pr_warning(FW_WARN ERST_PFX
-+		"Too long stall time for stall while true instruction: %llx.\n",
-+				   ctx->var1);
-+		stall_time = FIRMWARE_MAX_STALL;
-+	} else
-+		stall_time = ctx->var1;
-+
-+	for (;;) {
-+		rc = __apei_exec_read_register(entry, &val);
-+		if (rc)
-+			return rc;
-+		if (val != ctx->value)
-+			break;
-+		if (erst_timedout(&timeout, stall_time * NSEC_PER_USEC))
-+			return -EIO;
-+	}
-+	return 0;
-+}
-+
-+static int erst_exec_skip_next_instruction_if_true(
-+	struct apei_exec_context *ctx,
-+	struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	if (val == ctx->value) {
-+		ctx->ip += 2;
-+		return APEI_EXEC_SET_IP;
-+	}
-+
-+	return 0;
-+}
-+
-+static int erst_exec_goto(struct apei_exec_context *ctx,
-+			  struct acpi_whea_header *entry)
-+{
-+	ctx->ip = ctx->value;
-+	return APEI_EXEC_SET_IP;
-+}
-+
-+static int erst_exec_set_src_address_base(struct apei_exec_context *ctx,
-+					  struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->src_base);
-+}
-+
-+static int erst_exec_set_dst_address_base(struct apei_exec_context *ctx,
-+					  struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_read_register(entry, &ctx->dst_base);
-+}
-+
-+static int erst_exec_move_data(struct apei_exec_context *ctx,
-+			       struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 offset;
-+
-+	rc = __apei_exec_read_register(entry, &offset);
-+	if (rc)
-+		return rc;
-+	memmove((void *)ctx->dst_base + offset,
-+		(void *)ctx->src_base + offset,
-+		ctx->var2);
-+
-+	return 0;
-+}
-+
-+static struct apei_exec_ins_type erst_ins_type[] = {
-+	[ACPI_ERST_READ_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_read_register,
-+	},
-+	[ACPI_ERST_READ_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_read_register_value,
-+	},
-+	[ACPI_ERST_WRITE_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_write_register,
-+	},
-+	[ACPI_ERST_WRITE_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = apei_exec_write_register_value,
-+	},
-+	[ACPI_ERST_NOOP] = {
-+		.flags = 0,
-+		.run = apei_exec_noop,
-+	},
-+	[ACPI_ERST_LOAD_VAR1] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_load_var1,
-+	},
-+	[ACPI_ERST_LOAD_VAR2] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_load_var2,
-+	},
-+	[ACPI_ERST_STORE_VAR1] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_store_var1,
-+	},
-+	[ACPI_ERST_ADD] = {
-+		.flags = 0,
-+		.run = erst_exec_add,
-+	},
-+	[ACPI_ERST_SUBTRACT] = {
-+		.flags = 0,
-+		.run = erst_exec_subtract,
-+	},
-+	[ACPI_ERST_ADD_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_add_value,
-+	},
-+	[ACPI_ERST_SUBTRACT_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_subtract_value,
-+	},
-+	[ACPI_ERST_STALL] = {
-+		.flags = 0,
-+		.run = erst_exec_stall,
-+	},
-+	[ACPI_ERST_STALL_WHILE_TRUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_stall_while_true,
-+	},
-+	[ACPI_ERST_SKIP_NEXT_IF_TRUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_skip_next_instruction_if_true,
-+	},
-+	[ACPI_ERST_GOTO] = {
-+		.flags = 0,
-+		.run = erst_exec_goto,
-+	},
-+	[ACPI_ERST_SET_SRC_ADDRESS_BASE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_set_src_address_base,
-+	},
-+	[ACPI_ERST_SET_DST_ADDRESS_BASE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_set_dst_address_base,
-+	},
-+	[ACPI_ERST_MOVE_DATA] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run = erst_exec_move_data,
-+	},
-+};
-+
-+static inline void erst_exec_ctx_init(struct apei_exec_context *ctx)
-+{
-+	apei_exec_ctx_init(ctx, erst_ins_type, ARRAY_SIZE(erst_ins_type),
-+			   ERST_TAB_ENTRY(erst_tab), erst_tab->entries);
-+}
-+
-+static int erst_get_erange(struct erst_erange *range)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_RANGE);
-+	if (rc)
-+		return rc;
-+	range->base = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_LENGTH);
-+	if (rc)
-+		return rc;
-+	range->size = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_ERROR_ATTRIBUTES);
-+	if (rc)
-+		return rc;
-+	range->attr = apei_exec_ctx_get_output(&ctx);
-+
-+	return 0;
-+}
-+
-+static ssize_t __erst_get_record_count(void)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_COUNT);
-+	if (rc)
-+		return rc;
-+	return apei_exec_ctx_get_output(&ctx);
-+}
-+
-+ssize_t erst_get_record_count(void)
-+{
-+	ssize_t count;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	count = __erst_get_record_count();
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return count;
-+}
-+EXPORT_SYMBOL_GPL(erst_get_record_count);
-+
-+static int __erst_get_next_record_id(u64 *record_id)
-+{
-+	struct apei_exec_context ctx;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	*record_id = apei_exec_ctx_get_output(&ctx);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Get the record ID of an existing error record on the persistent
-+ * storage. If there is no error record on the persistent storage, the
-+ * returned record_id is APEI_ERST_INVALID_RECORD_ID.
-+ */
-+int erst_get_next_record_id(u64 *record_id)
-+{
-+	int rc;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	rc = __erst_get_next_record_id(record_id);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(erst_get_next_record_id);
-+
-+static int __erst_write_to_storage(u64 offset)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_WRITE);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, offset);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	}
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+static int __erst_read_from_storage(u64 record_id, u64 offset)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_READ);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, offset);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_OFFSET);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, record_id);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	};
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+static int __erst_clear_from_storage(u64 record_id)
-+{
-+	struct apei_exec_context ctx;
-+	u64 timeout = FIRMWARE_TIMEOUT;
-+	u64 val;
-+	int rc;
-+
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_BEGIN_CLEAR);
-+	if (rc)
-+		return rc;
-+	apei_exec_ctx_set_input(&ctx, record_id);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_SET_RECORD_ID);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_ERST_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_ERST_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!val)
-+			break;
-+		if (erst_timedout(&timeout, SPIN_UNIT))
-+			return -EIO;
-+	}
-+	rc = apei_exec_run(&ctx, ACPI_ERST_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_ERST_END);
-+	if (rc)
-+		return rc;
-+
-+	return erst_errno(val);
-+}
-+
-+/* NVRAM ERST Error Log Address Range is not supported yet */
-+static void pr_unimpl_nvram(void)
-+{
-+	if (printk_ratelimit())
-+		pr_warning(ERST_PFX
-+		"NVRAM ERST Log Address Range is not implemented yet\n");
-+}
-+
-+static int __erst_write_to_nvram(const struct cper_record_header *record)
-+{
-+	/* do not print message, because printk is not safe for NMI */
-+	return -ENOSYS;
-+}
-+
-+static int __erst_read_to_erange_from_nvram(u64 record_id, u64 *offset)
-+{
-+	pr_unimpl_nvram();
-+	return -ENOSYS;
-+}
-+
-+static int __erst_clear_from_nvram(u64 record_id)
-+{
-+	pr_unimpl_nvram();
-+	return -ENOSYS;
-+}
-+
-+int erst_write(const struct cper_record_header *record)
-+{
-+	int rc;
-+	unsigned long flags;
-+	struct cper_record_header *rcd_erange;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	if (memcmp(record->signature, CPER_SIG_RECORD, CPER_SIG_SIZE))
-+		return -EINVAL;
-+
-+	if (erst_erange.attr & ERST_RANGE_NVRAM) {
-+		if (!spin_trylock_irqsave(&erst_lock, flags))
-+			return -EBUSY;
-+		rc = __erst_write_to_nvram(record);
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return rc;
-+	}
-+
-+	if (record->record_length > erst_erange.size)
-+		return -EINVAL;
-+
-+	if (!spin_trylock_irqsave(&erst_lock, flags))
-+		return -EBUSY;
-+	memcpy(erst_erange.vaddr, record, record->record_length);
-+	rcd_erange = erst_erange.vaddr;
-+	/* signature for serialization system */
-+	memcpy(&rcd_erange->persistence_information, "ER", 2);
-+
-+	rc = __erst_write_to_storage(0);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(erst_write);
-+
-+static int __erst_read_to_erange(u64 record_id, u64 *offset)
-+{
-+	int rc;
-+
-+	if (erst_erange.attr & ERST_RANGE_NVRAM)
-+		return __erst_read_to_erange_from_nvram(
-+			record_id, offset);
-+
-+	rc = __erst_read_from_storage(record_id, 0);
-+	if (rc)
-+		return rc;
-+	*offset = 0;
-+
-+	return 0;
-+}
-+
-+static ssize_t __erst_read(u64 record_id, struct cper_record_header *record,
-+			   size_t buflen)
-+{
-+	int rc;
-+	u64 offset, len = 0;
-+	struct cper_record_header *rcd_tmp;
-+
-+	rc = __erst_read_to_erange(record_id, &offset);
-+	if (rc)
-+		return rc;
-+	rcd_tmp = erst_erange.vaddr + offset;
-+	len = rcd_tmp->record_length;
-+	if (len <= buflen)
-+		memcpy(record, rcd_tmp, len);
-+
-+	return len;
-+}
-+
-+/*
-+ * If return value > buflen, the buffer size is not big enough,
-+ * else if return value < 0, something goes wrong,
-+ * else everything is OK, and return value is record length
-+ */
-+ssize_t erst_read(u64 record_id, struct cper_record_header *record,
-+		  size_t buflen)
-+{
-+	ssize_t len;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	len = __erst_read(record_id, record, buflen);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+	return len;
-+}
-+EXPORT_SYMBOL_GPL(erst_read);
-+
-+/*
-+ * If return value > buflen, the buffer size is not big enough,
-+ * else if return value = 0, there is no more record to read,
-+ * else if return value < 0, something goes wrong,
-+ * else everything is OK, and return value is record length
-+ */
-+ssize_t erst_read_next(struct cper_record_header *record, size_t buflen)
-+{
-+	int rc;
-+	ssize_t len;
-+	unsigned long flags;
-+	u64 record_id;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	rc = __erst_get_next_record_id(&record_id);
-+	if (rc) {
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return rc;
-+	}
-+	/* no more record */
-+	if (record_id == APEI_ERST_INVALID_RECORD_ID) {
-+		spin_unlock_irqrestore(&erst_lock, flags);
-+		return 0;
-+	}
-+
-+	len = __erst_read(record_id, record, buflen);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return len;
-+}
-+EXPORT_SYMBOL_GPL(erst_read_next);
-+
-+int erst_clear(u64 record_id)
-+{
-+	int rc;
-+	unsigned long flags;
-+
-+	if (erst_disable)
-+		return -ENODEV;
-+
-+	spin_lock_irqsave(&erst_lock, flags);
-+	if (erst_erange.attr & ERST_RANGE_NVRAM)
-+		rc = __erst_clear_from_nvram(record_id);
-+	else
-+		rc = __erst_clear_from_storage(record_id);
-+	spin_unlock_irqrestore(&erst_lock, flags);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(erst_clear);
-+
-+static int __init setup_erst_disable(char *str)
-+{
-+	erst_disable = 1;
-+	return 0;
-+}
-+
-+__setup("erst_disable", setup_erst_disable);
-+
-+static int erst_check_table(struct acpi_table_erst *erst_tab)
-+{
-+	if (erst_tab->header_length != sizeof(struct acpi_table_erst))
-+		return -EINVAL;
-+	if (erst_tab->header.length < sizeof(struct acpi_table_erst))
-+		return -EINVAL;
-+	if (erst_tab->entries !=
-+	    (erst_tab->header.length - sizeof(struct acpi_table_erst)) /
-+	    sizeof(struct acpi_erst_entry))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int __init erst_init(void)
-+{
-+	int rc = 0;
-+	acpi_status status;
-+	struct apei_exec_context ctx;
-+	struct apei_resources erst_resources;
-+	struct resource *r;
-+
-+	if (acpi_disabled)
-+		goto err;
-+
-+	if (erst_disable) {
-+		pr_info(ERST_PFX
-+	"Error Record Serialization Table (ERST) support is disabled.\n");
-+		goto err;
-+	}
-+
-+	status = acpi_get_table(ACPI_SIG_ERST, 0,
-+				(struct acpi_table_header **)&erst_tab);
-+	if (status == AE_NOT_FOUND) {
-+		pr_err(ERST_PFX "Table is not found!\n");
-+		goto err;
-+	} else if (ACPI_FAILURE(status)) {
-+		const char *msg = acpi_format_exception(status);
-+		pr_err(ERST_PFX "Failed to get table, %s\n", msg);
-+		rc = -EINVAL;
-+		goto err;
-+	}
-+
-+	rc = erst_check_table(erst_tab);
-+	if (rc) {
-+		pr_err(FW_BUG ERST_PFX "ERST table is invalid\n");
-+		goto err;
-+	}
-+
-+	apei_resources_init(&erst_resources);
-+	erst_exec_ctx_init(&ctx);
-+	rc = apei_exec_collect_resources(&ctx, &erst_resources);
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_resources_request(&erst_resources, "APEI ERST");
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_exec_pre_map_gars(&ctx);
-+	if (rc)
-+		goto err_release;
-+	rc = erst_get_erange(&erst_erange);
-+	if (rc) {
-+		if (rc == -ENODEV)
-+			pr_info(ERST_PFX
-+	"The corresponding hardware device or firmware implementation "
-+	"is not available.\n");
-+		else
-+			pr_err(ERST_PFX
-+			       "Failed to get Error Log Address Range.\n");
-+		goto err_unmap_reg;
-+	}
-+
-+	r = request_mem_region(erst_erange.base, erst_erange.size, "APEI ERST");
-+	if (!r) {
-+		pr_err(ERST_PFX
-+		"Can not request iomem region <0x%16llx-0x%16llx> for ERST.\n",
-+		(unsigned long long)erst_erange.base,
-+		(unsigned long long)erst_erange.base + erst_erange.size);
-+		rc = -EIO;
-+		goto err_unmap_reg;
-+	}
-+	rc = -ENOMEM;
-+	erst_erange.vaddr = ioremap_cache(erst_erange.base,
-+					  erst_erange.size);
-+	if (!erst_erange.vaddr)
-+		goto err_release_erange;
-+
-+	pr_info(ERST_PFX
-+	"Error Record Serialization Table (ERST) support is initialized.\n");
-+
-+	return 0;
-+
-+err_release_erange:
-+	release_mem_region(erst_erange.base, erst_erange.size);
-+err_unmap_reg:
-+	apei_exec_post_unmap_gars(&ctx);
-+err_release:
-+	apei_resources_release(&erst_resources);
-+err_fini:
-+	apei_resources_fini(&erst_resources);
-+err:
-+	erst_disable = 1;
-+	return rc;
-+}
-+
-+device_initcall(erst_init);
---- a/include/acpi/apei.h
-+++ b/include/acpi/apei.h
-@@ -5,9 +5,30 @@
- #ifndef ACPI_APEI_H
- #define ACPI_APEI_H
- 
-+#include <linux/acpi.h>
-+#include <linux/cper.h>
-+#include <asm/ioctls.h>
-+
-+#define APEI_ERST_INVALID_RECORD_ID	0xffffffffffffffffULL
-+
-+#define APEI_ERST_CLEAR_RECORD		_IOW('E', 1, u64)
-+#define APEI_ERST_GET_RECORD_COUNT	_IOR('E', 2, u32)
-+
-+#ifdef __KERNEL__
-+
- extern int hest_disable;
-+extern int erst_disable;
- 
- typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
- int apei_hest_parse(apei_hest_func_t func, void *data);
- 
-+int erst_write(const struct cper_record_header *record);
-+ssize_t erst_get_record_count(void);
-+int erst_get_next_record_id(u64 *record_id);
-+ssize_t erst_read(u64 record_id, struct cper_record_header *record,
-+		  size_t buflen);
-+ssize_t erst_read_next(struct cper_record_header *record, size_t buflen);
-+int erst_clear(u64 record_id);
-+
-+#endif
- #endif
+> If we limit RESERVE to return ranges of a single type of block, then
+> this whole cleanup problem will also go away - it's back to a simple
+> succeed or fail-and-rollback state per execution of the loop, and
+> partial writes are those that have made at least one successful pass
+> of the loop.
+> 
+> > Current code does not. It just leaves the blocks allocated and
+> > zeroes them.
+> 
+> Yup, error handling is easy when you're only dealing with one page
+> at a time. ;)
+
+Humour me; why? :)
+
