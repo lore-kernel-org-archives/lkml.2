@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab0ERRAl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:00:41 -0400
-Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45395 "EHLO
-	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757815Ab0ERRAK (ORCPT
+	id S1758044Ab0ERRBA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:01:00 -0400
+Received: from e28smtp07.in.ibm.com ([122.248.162.7]:33558 "EHLO
+	e28smtp07.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757963Ab0ERRAi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:00:10 -0400
+	Tue, 18 May 2010 13:00:38 -0400
 From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
@@ -25,118 +25,156 @@ Cc: Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
        "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Tue, 18 May 2010 22:29:59 +0530
-Message-Id: <20100518165959.20070.74297.sendpatchset@localhost6.localdomain6>
+Date: Tue, 18 May 2010 22:30:24 +0530
+Message-Id: <20100518170024.20070.25438.sendpatchset@localhost6.localdomain6>
 In-Reply-To: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
 References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
-Subject: [PATCH v4 8/13] samples: Uprobes samples
+Subject: [PATCH v4 10/13] trace: Common code for kprobes/uprobes traceevents
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Uprobes Samples
 
-This provides an example uprobes module in the samples directory.
-
-To run this module run (as root)
- insmod uprobe_example.ko vaddr=<vaddr> pid=<pid>
-	 Where <vaddr> is the address where we want to place the probe.
-		<pid> is the pid of the process we are interested to probe.
-
- example: -
-# cd samples/uprobes
-
-[get the virtual address to place the probe.]
-# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ {print $1}')
-
-[Run a bash shell in the background; have it echo 4 lines.]
-# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
-[Probe calls echo_builtin() in the background bash process.]
-
-# insmod uprobe_example.ko vaddr=$vaddr pid=$!
-# sleep 10
-# rmmod uprobe_example
-# dmesg | tail -n 3
-Registering uprobe on pid 10875, vaddr 0x45aa30
-Unregistering uprobe on pid 10875, vaddr 0x45aa30
-Probepoint was hit 4 times
-#
-[ Output shows that echo_builtin function was hit 4 times. ]
+Move common parts of trace_kprobe.c and adjust
+kernel/trace/trace_kprobe.c after moving common code to
+kernel/trace/trace_probe.h
 
 Signed-off-by: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
 ---
 
- samples/Kconfig                  |    7 +++
- samples/Makefile                 |    2 -
- samples/uprobes/Makefile         |   17 ++++++++
- samples/uprobes/uprobe_example.c |   83 ++++++++++++++++++++++++++++++++++++++
- 4 files changed, 108 insertions(+), 1 deletions(-)
- create mode 100644 samples/uprobes/Makefile
- create mode 100644 samples/uprobes/uprobe_example.c
+ kernel/trace/trace_kprobe.c |   76 +----------------------------
+ kernel/trace/trace_probe.h  |  111 +++++++++++++++++++++++++++++++++++++++++++
+ 2 files changed, 113 insertions(+), 74 deletions(-)
+ create mode 100644 kernel/trace/trace_probe.h
 
 
-diff --git a/samples/Kconfig b/samples/Kconfig
-index 8924f72..50b8b1c 100644
---- a/samples/Kconfig
-+++ b/samples/Kconfig
-@@ -44,4 +44,11 @@ config SAMPLE_HW_BREAKPOINT
- 	help
- 	  This builds kernel hardware breakpoint example modules.
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 1251e36..dc1840a 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -20,42 +20,8 @@
+ #include <linux/module.h>
+ #include <linux/uaccess.h>
+ #include <linux/kprobes.h>
+-#include <linux/seq_file.h>
+-#include <linux/slab.h>
+-#include <linux/smp.h>
+-#include <linux/debugfs.h>
+-#include <linux/types.h>
+-#include <linux/string.h>
+-#include <linux/ctype.h>
+-#include <linux/ptrace.h>
+-#include <linux/perf_event.h>
+-
+-#include "trace.h"
+-#include "trace_output.h"
+-
+-#define MAX_TRACE_ARGS 128
+-#define MAX_ARGSTR_LEN 63
+-#define MAX_EVENT_NAME_LEN 64
+-#define KPROBE_EVENT_SYSTEM "kprobes"
+-
+-/* Reserved field names */
+-#define FIELD_STRING_IP "__probe_ip"
+-#define FIELD_STRING_NARGS "__probe_nargs"
+-#define FIELD_STRING_RETIP "__probe_ret_ip"
+-#define FIELD_STRING_FUNC "__probe_func"
+-
+-const char *reserved_field_names[] = {
+-	"common_type",
+-	"common_flags",
+-	"common_preempt_count",
+-	"common_pid",
+-	"common_tgid",
+-	"common_lock_depth",
+-	FIELD_STRING_IP,
+-	FIELD_STRING_NARGS,
+-	FIELD_STRING_RETIP,
+-	FIELD_STRING_FUNC,
+-};
++
++#include "trace_probe.h"
  
-+config SAMPLE_UPROBES
-+	tristate "Build uprobes example -- loadable module only"
-+	depends on UPROBES && m
-+	help
-+	  This builds uprobes example module.
-+
-+
- endif # SAMPLES
-diff --git a/samples/Makefile b/samples/Makefile
-index 0f15e6d..c8fe6f9 100644
---- a/samples/Makefile
-+++ b/samples/Makefile
-@@ -1,4 +1,4 @@
- # Makefile for Linux samples code
+ struct fetch_func {
+ 	unsigned long (*func)(struct pt_regs *, void *);
+@@ -192,10 +158,6 @@ struct probe_arg {
+ 	const char		*name;
+ };
  
- obj-$(CONFIG_SAMPLES)	+= kobject/ kprobes/ tracepoints/ trace_events/ \
--			   hw_breakpoint/
-+			   hw_breakpoint/ uprobes/
-diff --git a/samples/uprobes/Makefile b/samples/uprobes/Makefile
+-/* Flags for trace_probe */
+-#define TP_FLAG_TRACE	1
+-#define TP_FLAG_PROFILE	2
+-
+ struct trace_probe {
+ 	struct list_head	list;
+ 	struct kretprobe	rp;	/* Use rp.kp for kprobe use */
+@@ -274,19 +236,6 @@ static LIST_HEAD(probe_list);
+ static int kprobe_dispatcher(struct kprobe *kp, struct pt_regs *regs);
+ static int kretprobe_dispatcher(struct kretprobe_instance *ri,
+ 				struct pt_regs *regs);
+-
+-/* Check the name is good for event/group */
+-static int check_event_name(const char *name)
+-{
+-	if (!isalpha(*name) && *name != '_')
+-		return 0;
+-	while (*++name != '\0') {
+-		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
+-			return 0;
+-	}
+-	return 1;
+-}
+-
+ /*
+  * Allocate new trace_probe and initialize it (including kprobes).
+  */
+@@ -454,9 +403,6 @@ static int split_symbol_offset(char *symbol, unsigned long *offset)
+ 	return 0;
+ }
+ 
+-#define PARAM_MAX_ARGS 16
+-#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
+-
+ static int parse_probe_vars(char *arg, struct fetch_func *ff, int is_return)
+ {
+ 	int ret = 0;
+@@ -835,24 +781,6 @@ static int probes_open(struct inode *inode, struct file *file)
+ 	return seq_open(file, &probes_seq_op);
+ }
+ 
+-static int command_trace_probe(const char *buf)
+-{
+-	char **argv;
+-	int argc = 0, ret = 0;
+-
+-	argv = argv_split(GFP_KERNEL, buf, &argc);
+-	if (!argv)
+-		return -ENOMEM;
+-
+-	if (argc)
+-		ret = create_trace_probe(argc, argv);
+-
+-	argv_free(argv);
+-	return ret;
+-}
+-
+-#define WRITE_BUFSIZE 128
+-
+ static ssize_t probes_write(struct file *file, const char __user *buffer,
+ 			    size_t count, loff_t *ppos)
+ {
+diff --git a/kernel/trace/trace_probe.h b/kernel/trace/trace_probe.h
 new file mode 100644
-index 0000000..f535f6f
+index 0000000..66a4498
 --- /dev/null
-+++ b/samples/uprobes/Makefile
-@@ -0,0 +1,17 @@
-+# builds the uprobes example kernel modules;
-+# then to use one (as root):
-+# insmod <module_name.ko> vaddr=<vaddr> pid=<pid>
-+#
-+#
-+# example: -
-+# vaddr=0x$(objdump -T /bin/bash |awk '/echo_builtin/ print $1}')
-+# (sleep 10; echo 1; echo 2; echo 3; echo 4) &
-+# insmod uprobe_example.ko vaddr=$vaddr pid=$!
-+# sleep 10
-+# rmmod uprobe_example
-+# dmesg | tail -n 3
-+#	Registering uprobe on pid 3920, vaddr 0x45aa30
-+#	Unregistering uprobe on pid 3920, vaddr 0x45aa30
-+#	Probepoint was hit 4 times
-+
-+obj-$(CONFIG_SAMPLE_UPROBES) += uprobe_example.o
-diff --git a/samples/uprobes/uprobe_example.c b/samples/uprobes/uprobe_example.c
-new file mode 100644
-index 0000000..f625bae
---- /dev/null
-+++ b/samples/uprobes/uprobe_example.c
-@@ -0,0 +1,83 @@
++++ b/kernel/trace/trace_probe.h
+@@ -0,0 +1,111 @@
 +/*
-+ * Uprobes Example
++ * Uprobes-based tracing events
 + *
 + * This program is free software; you can redistribute it and/or modify
-+ * it under the terms of the GNU General Public License as published by
-+ * the Free Software Foundation; either version 2 of the License, or
-+ * (at your option) any later version.
++ * it under the terms of the GNU General Public License version 2 as
++ * published by the Free Software Foundation.
 + *
 + * This program is distributed in the hope that it will be useful,
 + * but WITHOUT ANY WARRANTY; without even the implied warranty of
@@ -145,71 +183,100 @@ index 0000000..f625bae
 + *
 + * You should have received a copy of the GNU General Public License
 + * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA 02111-1307, USA.
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + *
-+ * Copyright (C) IBM Corporation, 2008-2010
-+ * Authors:
-+ *	Srikar Dronamraju
-+ *	Jim Keniston
++ * Copyright (C) IBM Corporation, 2010
++ * Author:	Srikar Dronamraju
 + */
 +
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/uprobes.h>
++#include <linux/seq_file.h>
++#include <linux/slab.h>
++#include <linux/smp.h>
++#include <linux/debugfs.h>
++#include <linux/types.h>
++#include <linux/string.h>
++#include <linux/ctype.h>
++#include <linux/ptrace.h>
++#include <linux/perf_event.h>
 +
-+/*
-+ * Usage: insmod uprobe_example.ko pid=<pid> vaddr=<address> [verbose=0]
-+ * where <pid> identifies the probed process and <address> is the virtual
-+ * address of the probed instruction.
-+ */
++#include "trace.h"
++#include "trace_output.h"
 +
-+static int pid;
-+module_param(pid, int, 0);
-+MODULE_PARM_DESC(pid, "pid");
++#define MAX_TRACE_ARGS 128
++#define MAX_ARGSTR_LEN 63
++#define MAX_EVENT_NAME_LEN 64
++#define UPROBE_EVENT_SYSTEM "uprobes"
++#define KPROBE_EVENT_SYSTEM "kprobes"
 +
-+static int verbose;
-+module_param(verbose, int, 0);
-+MODULE_PARM_DESC(verbose, "verbose");
++/* Reserved field names */
++#define FIELD_STRING_IP "__probe_ip"
++#define FIELD_STRING_NARGS "__probe_nargs"
++#define FIELD_STRING_RETIP "__probe_ret_ip"
++#define FIELD_STRING_FUNC "__probe_func"
++#define FIELD_STRING_PID "__probe_pid"
 +
-+static long vaddr;
-+module_param(vaddr, long, 0);
-+MODULE_PARM_DESC(vaddr, "vaddr");
++static const char *reserved_field_names[] = {
++	"common_type",
++	"common_flags",
++	"common_preempt_count",
++	"common_pid",
++	"common_tgid",
++	"common_lock_depth",
++	FIELD_STRING_IP,
++	FIELD_STRING_NARGS,
++	FIELD_STRING_RETIP,
++	FIELD_STRING_FUNC,
++	FIELD_STRING_PID,
++};
 +
-+static int nhits;
-+static struct uprobe usp;
++/* Flags for trace_probe */
++#define TP_FLAG_TRACE	1
++#define TP_FLAG_PROFILE	2
++#define UPROBE_ENABLED	4
 +
-+static void uprobe_handler(struct uprobe *u, struct pt_regs *regs)
++
++/* Check the name is good for event/group */
++static inline int check_event_name(const char *name)
 +{
-+	nhits++;
-+	if (verbose)
-+		printk(KERN_INFO "Hit #%d on probepoint at %#lx\n",
-+			nhits, u->vaddr);
-+}
-+
-+int __init init_module(void)
-+{
-+	int ret;
-+	usp.pid = pid;
-+	usp.vaddr = vaddr;
-+	usp.handler = uprobe_handler;
-+	printk(KERN_INFO "Registering uprobe on pid %d, vaddr %#lx\n",
-+		usp.pid, usp.vaddr);
-+	ret = register_uprobe(&usp);
-+	if (ret != 0) {
-+		printk(KERN_ERR "register_uprobe() failed, returned %d\n", ret);
-+		printk(KERN_ERR "Usage: insmod uprobe_example.ko pid=<pid> "
-+						"vaddr=<address>\n");
-+		return ret;
++	if (!isalpha(*name) && *name != '_')
++		return 0;
++	while (*++name != '\0') {
++		if (!isalpha(*name) && !isdigit(*name) && *name != '_')
++			return 0;
 +	}
-+	return 0;
++	return 1;
 +}
 +
-+void __exit cleanup_module(void)
++#define PARAM_MAX_ARGS 16
++#define PARAM_MAX_STACK (THREAD_SIZE / sizeof(unsigned long))
++
++static int create_trace_probe(int argc, char **argv);
++static inline int command_trace_probe(const char *buf)
 +{
-+	printk(KERN_INFO "Unregistering uprobe on pid %d, vaddr %#lx\n",
-+		usp.pid, usp.vaddr);
-+	printk(KERN_INFO "Probepoint was hit %d times\n", nhits);
-+	unregister_uprobe(&usp);
++	char **argv;
++	int argc = 0, ret = 0;
++
++	argv = argv_split(GFP_KERNEL, buf, &argc);
++	if (!argv)
++		return -ENOMEM;
++
++	if (argc)
++		ret = create_trace_probe(argc, argv);
++
++	argv_free(argv);
++	return ret;
 +}
-+MODULE_LICENSE("GPL");
++
++#define WRITE_BUFSIZE 128
++
++#undef DEFINE_FIELD
++#define DEFINE_FIELD(type, item, name, is_signed)			\
++	do {								\
++		ret = trace_define_field(event_call, #type, name,	\
++					 offsetof(typeof(field), item),	\
++					 sizeof(field.item), is_signed, \
++					 FILTER_OTHER);			\
++		if (ret)						\
++			return ret;					\
++	} while (0)
++
