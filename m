@@ -1,240 +1,277 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758483Ab0ERRRb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:17:31 -0400
-Received: from claw.goop.org ([74.207.240.146]:47076 "EHLO claw.goop.org"
+	id S1758518Ab0ERRRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:17:41 -0400
+Received: from hera.kernel.org ([140.211.167.34]:60745 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758475Ab0ERRR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:17:26 -0400
-Message-ID: <4BF2CBA5.3020205@goop.org>
-Date: Tue, 18 May 2010 10:17:25 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1758494Ab0ERRRh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 13:17:37 -0400
+Date: Tue, 18 May 2010 17:16:55 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, acme@redhat.com, paulus@samba.org,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, tglx@linutronix.de, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, fweisbec@gmail.com,
+       a.p.zijlstra@chello.nl, efault@gmx.de, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <new-submission>
+References: <new-submission>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/core] perf: Optimize the perf_output() path by removing IRQ-disables
+Message-ID: <tip-ef60777c9abd999db5eb4e338aae3eb593ae8e10@git.kernel.org>
+Git-Commit-ID: ef60777c9abd999db5eb4e338aae3eb593ae8e10
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 03/12] evtchn delivery on HVM
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-3-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1274178187-20602-3-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 May 2010 17:16:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 03:22 AM, Stefano Stabellini wrote:
-> From: Sheng Yang <sheng@linux.intel.com>
->
-> Set the callback to receive evtchns from Xen, using the
-> callback vector delivery mechanism.
->   
+Commit-ID:  ef60777c9abd999db5eb4e338aae3eb593ae8e10
+Gitweb:     http://git.kernel.org/tip/ef60777c9abd999db5eb4e338aae3eb593ae8e10
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Tue, 18 May 2010 10:50:41 +0200
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Tue, 18 May 2010 18:35:48 +0200
 
-Could you expand on this a little?  Like, why is this desireable?  What
-functional difference does it make?  Is this patch useful in its own
-right, or is it just laying the groundwork for something else?
+perf: Optimize the perf_output() path by removing IRQ-disables
 
-Thanks,
-    J
+Since we can now assume there is only a single writer
+to each buffer, we can remove per-cpu lock thingy and
+use a simply nest-count to the same effect.
 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-> ---
->  arch/x86/xen/enlighten.c         |   35 +++++++++++++++++++++++++++++++++++
->  drivers/xen/events.c             |   31 ++++++++++++++++++++++++-------
->  include/xen/events.h             |    3 +++
->  include/xen/hvm.h                |    9 +++++++++
->  include/xen/interface/features.h |    3 +++
->  5 files changed, 74 insertions(+), 7 deletions(-)
->
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 87a3b10..502c4f8 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -37,8 +37,11 @@
->  #include <xen/interface/vcpu.h>
->  #include <xen/interface/memory.h>
->  #include <xen/interface/hvm/hvm_op.h>
-> +#include <xen/interface/hvm/params.h>
->  #include <xen/features.h>
->  #include <xen/page.h>
-> +#include <xen/hvm.h>
-> +#include <xen/events.h>
->  #include <xen/hvc-console.h>
->  
->  #include <asm/paravirt.h>
-> @@ -79,6 +82,8 @@ struct shared_info xen_dummy_shared_info;
->  
->  void *xen_initial_gdt;
->  
-> +int xen_have_vector_callback;
-> +
->  /*
->   * Point at some empty memory to start with. We map the real shared_info
->   * page as soon as fixmap is up and running.
-> @@ -1279,6 +1284,31 @@ static void __init init_shared_info(void)
->  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
->  }
->  
-> +int xen_set_callback_via(uint64_t via)
-> +{
-> +	struct xen_hvm_param a;
-> +	a.domid = DOMID_SELF;
-> +	a.index = HVM_PARAM_CALLBACK_IRQ;
-> +	a.value = via;
-> +	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
-> +}
-> +
-> +void do_hvm_pv_evtchn_intr(void)
-> +{
-> +	xen_hvm_evtchn_do_upcall(get_irq_regs());
-> +}
-> +
-> +static void xen_callback_vector(void)
-> +{
-> +	uint64_t callback_via;
-> +	if (xen_feature(XENFEAT_hvm_callback_vector)) {
-> +		callback_via = HVM_CALLBACK_VECTOR(X86_PLATFORM_IPI_VECTOR);
-> +		xen_set_callback_via(callback_via);
-> +		x86_platform_ipi_callback = do_hvm_pv_evtchn_intr;
-> +		xen_have_vector_callback = 1;
-> +	}
-> +}
-> +
->  void __init xen_guest_init(void)
->  {
->  	int r;
-> @@ -1292,4 +1322,9 @@ void __init xen_guest_init(void)
->  		return;
->  
->  	init_shared_info();
-> +
-> +	xen_callback_vector();
-> +
-> +	have_vcpu_info_placement = 0;
-> +	x86_init.irqs.intr_init = xen_init_IRQ;
->  }
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index db8f506..3523dbb 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -36,6 +36,8 @@
->  #include <asm/xen/hypercall.h>
->  #include <asm/xen/hypervisor.h>
->  
-> +#include <xen/xen.h>
-> +#include <xen/hvm.h>
->  #include <xen/xen-ops.h>
->  #include <xen/events.h>
->  #include <xen/interface/xen.h>
-> @@ -617,17 +619,13 @@ static DEFINE_PER_CPU(unsigned, xed_nesting_count);
->   * a bitset of words which contain pending event bits.  The second
->   * level is a bitset of pending events themselves.
->   */
-> -void xen_evtchn_do_upcall(struct pt_regs *regs)
-> +void __xen_evtchn_do_upcall(struct pt_regs *regs)
->  {
->  	int cpu = get_cpu();
-> -	struct pt_regs *old_regs = set_irq_regs(regs);
->  	struct shared_info *s = HYPERVISOR_shared_info;
->  	struct vcpu_info *vcpu_info = __get_cpu_var(xen_vcpu);
->   	unsigned count;
->  
-> -	exit_idle();
-> -	irq_enter();
-> -
->  	do {
->  		unsigned long pending_words;
->  
-> @@ -667,10 +665,26 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
->  	} while(count != 1);
->  
->  out:
-> +
-> +	put_cpu();
-> +}
-> +
-> +void xen_evtchn_do_upcall(struct pt_regs *regs)
-> +{
-> +	struct pt_regs *old_regs = set_irq_regs(regs);
-> +
-> +	exit_idle();
-> +	irq_enter();
-> +
-> +	__xen_evtchn_do_upcall(regs);
-> +
->  	irq_exit();
->  	set_irq_regs(old_regs);
-> +}
->  
-> -	put_cpu();
-> +void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
-> +{
-> +	__xen_evtchn_do_upcall(regs);
->  }
->  
->  /* Rebind a new event channel to an existing irq. */
-> @@ -947,5 +961,8 @@ void __init xen_init_IRQ(void)
->  	for (i = 0; i < NR_EVENT_CHANNELS; i++)
->  		mask_evtchn(i);
->  
-> -	irq_ctx_init(smp_processor_id());
-> +	if (xen_hvm_domain())
-> +		native_init_IRQ();
-> +	else
-> +		irq_ctx_init(smp_processor_id());
->  }
-> diff --git a/include/xen/events.h b/include/xen/events.h
-> index e68d59a..868e5d6 100644
-> --- a/include/xen/events.h
-> +++ b/include/xen/events.h
-> @@ -56,4 +56,7 @@ void xen_poll_irq(int irq);
->  /* Determine the IRQ which is bound to an event channel */
->  unsigned irq_from_evtchn(unsigned int evtchn);
->  
-> +void xen_evtchn_do_upcall(struct pt_regs *regs);
-> +void xen_hvm_evtchn_do_upcall(struct pt_regs *regs);
-> +
->  #endif	/* _XEN_EVENTS_H */
-> diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-> index 6b0d418..5940ee5 100644
-> --- a/include/xen/hvm.h
-> +++ b/include/xen/hvm.h
-> @@ -3,6 +3,7 @@
->  #define XEN_HVM_H__
->  
->  #include <xen/interface/hvm/params.h>
-> +#include <asm/xen/hypercall.h>
->  
->  static inline int hvm_get_parameter(int idx, uint64_t *value)
->  {
-> @@ -21,4 +22,12 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
->         return r;
->  }
->  
-> +int xen_set_callback_via(uint64_t via);
-> +extern int xen_have_vector_callback;
-> +
-> +#define HVM_CALLBACK_VIA_TYPE_VECTOR 0x2
-> +#define HVM_CALLBACK_VIA_TYPE_SHIFT 56
-> +#define HVM_CALLBACK_VECTOR(x) (((uint64_t)HVM_CALLBACK_VIA_TYPE_VECTOR)<<\
-> +                               HVM_CALLBACK_VIA_TYPE_SHIFT | (x))
-> +
->  #endif /* XEN_HVM_H__ */
-> diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-> index f51b641..8ab08b9 100644
-> --- a/include/xen/interface/features.h
-> +++ b/include/xen/interface/features.h
-> @@ -41,6 +41,9 @@
->  /* x86: Does this Xen host support the MMU_PT_UPDATE_PRESERVE_AD hypercall? */
->  #define XENFEAT_mmu_pt_update_preserve_ad  5
->  
-> +/* x86: Does this Xen host support the HVM callback vector type? */
-> +#define XENFEAT_hvm_callback_vector        8
-> +
->  #define XENFEAT_NR_SUBMAPS 1
->  
->  #endif /* __XEN_PUBLIC_FEATURES_H__ */
->   
+This removes the need to disable IRQs.
 
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ include/linux/perf_event.h |    5 +-
+ kernel/perf_event.c        |   94 +++++++++++++-------------------------------
+ 2 files changed, 30 insertions(+), 69 deletions(-)
+
+diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+index 0b521fc..f1f853a 100644
+--- a/include/linux/perf_event.h
++++ b/include/linux/perf_event.h
+@@ -597,12 +597,12 @@ struct perf_mmap_data {
+ 	atomic_t			events;		/* event_id limit       */
+ 
+ 	atomic_long_t			head;		/* write position    */
+-	atomic_long_t			done_head;	/* completed head    */
+ 
+-	atomic_t			lock;		/* concurrent writes */
+ 	atomic_t			wakeup;		/* needs a wakeup    */
+ 	atomic_t			lost;		/* nr records lost   */
+ 
++	atomic_t			nest;		/* nested writers    */
++
+ 	long				watermark;	/* wakeup watermark  */
+ 
+ 	struct perf_event_mmap_page	*user_page;
+@@ -807,7 +807,6 @@ struct perf_output_handle {
+ 	unsigned long			offset;
+ 	int				nmi;
+ 	int				sample;
+-	int				locked;
+ };
+ 
+ #ifdef CONFIG_PERF_EVENTS
+diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+index ff5d430..8cf737d 100644
+--- a/kernel/perf_event.c
++++ b/kernel/perf_event.c
+@@ -2519,8 +2519,6 @@ perf_mmap_data_init(struct perf_event *event, struct perf_mmap_data *data)
+ {
+ 	long max_size = perf_data_size(data);
+ 
+-	atomic_set(&data->lock, -1);
+-
+ 	if (event->attr.watermark) {
+ 		data->watermark = min_t(long, max_size,
+ 					event->attr.wakeup_watermark);
+@@ -2906,82 +2904,56 @@ static void perf_output_wakeup(struct perf_output_handle *handle)
+ }
+ 
+ /*
+- * Curious locking construct.
+- *
+  * We need to ensure a later event_id doesn't publish a head when a former
+- * event_id isn't done writing. However since we need to deal with NMIs we
++ * event isn't done writing. However since we need to deal with NMIs we
+  * cannot fully serialize things.
+  *
+- * What we do is serialize between CPUs so we only have to deal with NMI
+- * nesting on a single CPU.
+- *
+  * We only publish the head (and generate a wakeup) when the outer-most
+- * event_id completes.
++ * event completes.
+  */
+-static void perf_output_lock(struct perf_output_handle *handle)
++static void perf_output_get_handle(struct perf_output_handle *handle)
+ {
+ 	struct perf_mmap_data *data = handle->data;
+-	int cur, cpu = get_cpu();
+ 
+-	handle->locked = 0;
+-
+-	for (;;) {
+-		cur = atomic_cmpxchg(&data->lock, -1, cpu);
+-		if (cur == -1) {
+-			handle->locked = 1;
+-			break;
+-		}
+-		if (cur == cpu)
+-			break;
+-
+-		cpu_relax();
+-	}
++	preempt_disable();
++	atomic_inc(&data->nest);
+ }
+ 
+-static void perf_output_unlock(struct perf_output_handle *handle)
++static void perf_output_put_handle(struct perf_output_handle *handle)
+ {
+ 	struct perf_mmap_data *data = handle->data;
+ 	unsigned long head;
+-	int cpu;
+-
+-	data->done_head = data->head;
+-
+-	if (!handle->locked)
+-		goto out;
+ 
+ again:
+-	/*
+-	 * The xchg implies a full barrier that ensures all writes are done
+-	 * before we publish the new head, matched by a rmb() in userspace when
+-	 * reading this position.
+-	 */
+-	while ((head = atomic_long_xchg(&data->done_head, 0)))
+-		data->user_page->data_head = head;
++	head = atomic_long_read(&data->head);
+ 
+ 	/*
+-	 * NMI can happen here, which means we can miss a done_head update.
++	 * IRQ/NMI can happen here, which means we can miss a head update.
+ 	 */
+ 
+-	cpu = atomic_xchg(&data->lock, -1);
+-	WARN_ON_ONCE(cpu != smp_processor_id());
++	if (!atomic_dec_and_test(&data->nest))
++		return;
+ 
+ 	/*
+-	 * Therefore we have to validate we did not indeed do so.
++	 * Publish the known good head. Rely on the full barrier implied
++	 * by atomic_dec_and_test() order the data->head read and this
++	 * write.
+ 	 */
+-	if (unlikely(atomic_long_read(&data->done_head))) {
+-		/*
+-		 * Since we had it locked, we can lock it again.
+-		 */
+-		while (atomic_cmpxchg(&data->lock, -1, cpu) != -1)
+-			cpu_relax();
++	data->user_page->data_head = head;
+ 
++	/*
++	 * Now check if we missed an update, rely on the (compiler)
++	 * barrier in atomic_dec_and_test() to re-read data->head.
++	 */
++	if (unlikely(head != atomic_long_read(&data->head))) {
++		atomic_inc(&data->nest);
+ 		goto again;
+ 	}
+ 
+ 	if (atomic_xchg(&data->wakeup, 0))
+ 		perf_output_wakeup(handle);
+-out:
+-	put_cpu();
++
++	preempt_enable();
+ }
+ 
+ void perf_output_copy(struct perf_output_handle *handle,
+@@ -3063,7 +3035,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	if (have_lost)
+ 		size += sizeof(lost_event);
+ 
+-	perf_output_lock(handle);
++	perf_output_get_handle(handle);
+ 
+ 	do {
+ 		/*
+@@ -3083,7 +3055,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 	handle->head	= head;
+ 
+ 	if (head - tail > data->watermark)
+-		atomic_set(&data->wakeup, 1);
++		atomic_inc(&data->wakeup);
+ 
+ 	if (have_lost) {
+ 		lost_event.header.type = PERF_RECORD_LOST;
+@@ -3099,7 +3071,7 @@ int perf_output_begin(struct perf_output_handle *handle,
+ 
+ fail:
+ 	atomic_inc(&data->lost);
+-	perf_output_unlock(handle);
++	perf_output_put_handle(handle);
+ out:
+ 	rcu_read_unlock();
+ 
+@@ -3117,11 +3089,11 @@ void perf_output_end(struct perf_output_handle *handle)
+ 		int events = atomic_inc_return(&data->events);
+ 		if (events >= wakeup_events) {
+ 			atomic_sub(wakeup_events, &data->events);
+-			atomic_set(&data->wakeup, 1);
++			atomic_inc(&data->wakeup);
+ 		}
+ 	}
+ 
+-	perf_output_unlock(handle);
++	perf_output_put_handle(handle);
+ 	rcu_read_unlock();
+ }
+ 
+@@ -3457,22 +3429,13 @@ static void perf_event_task_output(struct perf_event *event,
+ {
+ 	struct perf_output_handle handle;
+ 	struct task_struct *task = task_event->task;
+-	unsigned long flags;
+ 	int size, ret;
+ 
+-	/*
+-	 * If this CPU attempts to acquire an rq lock held by a CPU spinning
+-	 * in perf_output_lock() from interrupt context, it's game over.
+-	 */
+-	local_irq_save(flags);
+-
+ 	size  = task_event->event_id.header.size;
+ 	ret = perf_output_begin(&handle, event, size, 0, 0);
+ 
+-	if (ret) {
+-		local_irq_restore(flags);
++	if (ret)
+ 		return;
+-	}
+ 
+ 	task_event->event_id.pid = perf_event_pid(event, task);
+ 	task_event->event_id.ppid = perf_event_pid(event, current);
+@@ -3483,7 +3446,6 @@ static void perf_event_task_output(struct perf_event *event,
+ 	perf_output_put(&handle, task_event->event_id);
+ 
+ 	perf_output_end(&handle);
+-	local_irq_restore(flags);
+ }
+ 
+ static int perf_event_task_match(struct perf_event *event)
