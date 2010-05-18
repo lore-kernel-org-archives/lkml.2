@@ -1,59 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757590Ab0ERNys (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 09:54:48 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:56399 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1757542Ab0ERNyr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 09:54:47 -0400
-Date: Tue, 18 May 2010 09:54:45 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Greg KH <greg@kroah.com>, Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org,
-       Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: build failure after merge of the usb tree
-In-Reply-To: <20100518174253.37e38d66.sfr@canb.auug.org.au>
-Message-ID: <Pine.LNX.4.44L0.1005180949560.1795-100000@iolanthe.rowland.org>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757620Ab0ERNzd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 09:55:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:40451 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757542Ab0ERNzb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 09:55:31 -0400
+Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <1274100132.3158.27.camel@localhost.localdomain>
+References: <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+	 <1271350270.2013.29.camel@barrios-desktop>
+	 <1271427056.7196.163.camel@localhost.localdomain>
+	 <1271603649.2100.122.camel@barrios-desktop>
+	 <1271681929.7196.175.camel@localhost.localdomain>
+	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+	 <1272548602.7196.371.camel@localhost.localdomain>
+	 <1272821394.2100.224.camel@barrios-desktop>
+	 <1273063728.7196.385.camel@localhost.localdomain>
+	 <20100505161632.GB5378@laptop>
+	 <1274100132.3158.27.camel@localhost.localdomain>
+Content-Type: text/plain
+Organization: Red Hat (UK) Ltd (Registered in England and Wales, No.
+ 3798903) Registered office: Red Hat UK Ltd, Amberley Place, 107-111 Peascod
+ Street, Windsor, Berkshire, SL4 ITE
+Date: Tue, 18 May 2010 14:44:27 +0100
+Message-Id: <1274190267.3158.40.camel@localhost.localdomain>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Stephen Rothwell wrote:
+Hi,
 
-> Hi Greg,
+On Mon, 2010-05-17 at 13:42 +0100, Steven Whitehouse wrote:
+> Hi,
 > 
-> After merging the usb tree, today's linux-next build (powerpc
-> ppc6xx_defconfig) failed like this:
+> On Thu, 2010-05-06 at 02:16 +1000, Nick Piggin wrote:
+> > On Wed, May 05, 2010 at 01:48:48PM +0100, Steven Whitehouse wrote:
+> > > Hi,
+> > > 
+> > > On Mon, 2010-05-03 at 02:29 +0900, Minchan Kim wrote:
+> > > > Hi, Steven. 
+> > > > 
+> > > > Sorry for lazy response.
+> > > > I wanted to submit the patch which implement Nick's request whole.
+> > > > And unfortunately, I am so busy now. 
+> > > > But if it's urgent, I want to submit this one firstly and 
+> > > > at next version, maybe I will submit remained TODO things 
+> > > > after middle of May.
+> > > > 
+> > > > I think this patch can't make regression other usages.
+> > > > Nick. What do you think about?
+> > > > 
+> > > I guess the question is whether the remaining items are essential for
+> > > correct functioning of this patch, or whether they are "it would be nice
+> > > if" items. I suspect that they are the latter (I'm not a VM expert, but
+> > > from the brief descriptions it looks like that to me) in which case I'd
+> > > suggest send the currently existing patch first and the following up
+> > > with the remaining changes later.
+> > > 
+> > > We have got a nice speed up with your current patch and so far as I'm
+> > > aware not introduced any new bugs or regressions with it.
+> > > 
+> > > Nick, does that sound ok?
+> > 
+> > Just got around to looking at it again. I definitely agree we need to
+> > fix the regression, however I'm concerned about introducing other
+> > possible problems while doing that.
+> > 
+> > The following patch should (modulo bugs, but it's somewhat tested) give
+> > no difference in the allocation patterns, so won't introduce virtual
+> > memory layout changes.
+> > 
+> > Any chance you could test it?
+> > 
 > 
-> drivers/usb/host/ehci-fsl.c:316: error: 'ehci' undeclared (first use in this function)
+> Apologies for the delay. I tried the patch on my test box and it worked
+> perfectly ok. When the original test was tried which triggered the
+> investigation in the first place, it failed to boot. Since that box is
+> remote and with limited remote console access, all I've been able to
+> find out is "it didn't work" which isn't very helpful.
 > 
-> Caused by commit d19f8cd047971b43844d61d995be736dacb4826a ("USB: EHCI:
-> fix controller wakeup flag settings during suspend").
+> I'm currently trying to figure out how we can work out whats wrong. It
+> isn't at all certain that it is an issue with this patch - it could be
+> almost anything :(
+> 
+> Steve.
+> 
+> 
 
-Here's a fix for the problem.  It's awfully easy to mess things up when 
-changing code for architectures you don't have.
+Further tests show that exactly the same kernel, without that single
+patch works ok, and but that with the patch we get the crash on boot. We
+are trying to arrange for better console access to the test box (which
+is remote) and will report back if we manage that and capture any
+output,
 
-Greg, can you merge this in with the original patch?
+Steve.
 
-Alan Stern
-
-
-
-Index: usb-2.6/drivers/usb/host/ehci-fsl.c
-===================================================================
---- usb-2.6.orig/drivers/usb/host/ehci-fsl.c
-+++ usb-2.6/drivers/usb/host/ehci-fsl.c
-@@ -313,7 +313,7 @@ static int ehci_fsl_drv_suspend(struct d
- 	struct ehci_fsl *ehci_fsl = hcd_to_ehci_fsl(hcd);
- 	void __iomem *non_ehci = hcd->regs;
- 
--	ehci_prepare_ports_for_controller_suspend(ehci);
-+	ehci_prepare_ports_for_controller_suspend(hcd_to_ehci(hcd));
- 	if (!fsl_deep_sleep())
- 		return 0;
- 
 
