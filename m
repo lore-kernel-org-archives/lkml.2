@@ -1,87 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756236Ab0ERF57 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:57:59 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:51704 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754579Ab0ERF56 (ORCPT
+	id S1756218Ab0ERGBP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:01:15 -0400
+Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:38892 "EHLO
+	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755432Ab0ERGBO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:57:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=FU/7MGHJPV2Rdb/Ehti4LjtVYBQDL4VcE3omk2U5zD3BuVp/HfnQSCQgQ0ANF2aiNC
-         SqU01MhGKEtg4PZu38A7lWGGVohkBkQUBfoj8do4E0WIi0mEnGwiP9WtUtp8ZdiZRADs
-         I3AUtxgWWjZbC/UAk2OnTnlTKPs862CXi0PUY=
+	Tue, 18 May 2010 02:01:14 -0400
+Subject: RE: [linux-pm] Power Domain Framework
+From: Sundar R Iyer <sundar.iyer@stericsson.com>
+Reply-To: <sundar.iyer@stericsson.com>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
+       Deepak Sikri <deepak.sikri79@gmail.com>,
+       Viresh KUMAR <viresh.kumar@st.com>,
+       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
+       Armando VISCONTI <armando.visconti@st.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
+       "linux-pm@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
+In-Reply-To: <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
+References: <AANLkTinZU1D1rMOBQDi47tRhXrOXwduQIdni7bCXdce0@mail.gmail.com>
+	 <20100510140527.GG5199@sirena.org.uk>
+	 <AANLkTikyqnKDNz7FIUvLDAvBReHskHvRCrEz2qBBqseH@mail.gmail.com>
+	 <20100517031613.GA3130@opensource.wolfsonmicro.com>
+	 <AANLkTimDdBCnRFMDiUkuNKanOzuPNwCpfRv9Gsi03Lsy@mail.gmail.com>
+	 <AANLkTinZRhUpFTOOUCdH5dEl3QaXn10USL_hPPQX8cie@mail.gmail.com>
+	 <20100517143319.GC5257@opensource.wolfsonmicro.com>
+	 <AANLkTiniwUDg8rQzwgm_X7EbkQJ9tHzBfVtaJRiNE9az@mail.gmail.com>
+	 <1274114107.20589.64.camel@bnru01>
+	 (sfid-20100517_173524_963855_B42F2966) <1274115886.2698.22.camel@finisterre.wolfsonmicro.main>
+	 <1274118332.17303.17.camel@bnru01>
+	 <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
+	 (sfid-20100517_213915_202336_5BFAA478) <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
+	 <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local>
+	 (sfid-20100517_224652_794912_8E56D9D6)  <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
+Content-Type: text/plain
+Organization: STEricsson
+Date: Tue, 18 May 2010 11:30:50 +0530
+Message-ID: <1274162450.17303.35.camel@bnru01>
 MIME-Version: 1.0
-Date: Tue, 18 May 2010 13:57:57 +0800
-Message-ID: <AANLkTilN3PuzIweiocSMOsYkYtcOHeQbh_KrOkLiAigk@mail.gmail.com>
-Subject: [PATCH] cciss: fix code style in drivers/block/cciss_scsi.c
-From: Steven Liu <lingjiujianke@gmail.com>
-To: mike.miller@hp.com, linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
-       liuqi@thunderst.com
-Content-Type: text/plain; charset=ISO-8859-1
+X-Mailer: Evolution 2.24.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Mike Miller,
+Hi,
 
-if kmalloc memory for ld_buff failed,it will free currentsd  and
-ld_buff once more
-so i think this patch may be better
+> Yeah, sure - obviously, the generic concept of power domains is
+> something that does exist within the off-SoC hardware, but on-SoC the
+> end implementation is a bit different.
 
-fix code style in drivers/block/cciss_scsi.c
+Exactly. This is what I can see if we can bridge this "a bit different".
 
-Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
----
- drivers/block/cciss_scsi.c |   20 +++++++++++++++++---
- 1 files changed, 17 insertions(+), 3 deletions(-)
+True, I am dumb to miss out some points, but I think with more inputs,
+more thinking, we can definitely make it generic!
 
-diff --git a/drivers/block/cciss_scsi.c b/drivers/block/cciss_scsi.c
-index e1d0e2c..ad2417f 100644
---- a/drivers/block/cciss_scsi.c
-+++ b/drivers/block/cciss_scsi.c
-@@ -1198,13 +1198,24 @@ cciss_update_non_disk_devices(int cntl_num, int hostno)
+Thinking out loud ( excuse me if this is dumb), At the end of the day,
+how I see this benefiting a lay driver developer is : use the regulator
+API for the appropriate power sources - your SoC domain, your external
+regulator domain..etc..etc and ensure a very efficient (probably) run
+time PM for your device. All that the Platform guy will do is iterate 
+a list of domains on the platform, provide hookups, ensure constraints 
+etc and the job is done. Even if the same IP is used on a different SoC,
+you still ensure efficient savings in your driver itself.
 
-        c = (ctlr_info_t *) hba[cntl_num];
-        ld_buff = kzalloc(reportlunsize, GFP_KERNEL);
-+       if(ld_buff == NULL){
-+               printk(KERN_ERR "cciss: out of memory\n");
-+               goto out1;
-+       }
-+
-        inq_buff = kmalloc(OBDR_TAPE_INQ_SIZE, GFP_KERNEL);
-+       if(inq_buff == NULL){
-+               printk(KERN_ERR "cciss: out of memory\n");
-+               goto out2;
-+       }
-+
-        currentsd = kzalloc(sizeof(*currentsd) *
-                        (CCISS_MAX_SCSI_DEVS_PER_HBA+1), GFP_KERNEL);
--       if (ld_buff == NULL || inq_buff == NULL || currentsd == NULL) {
-+       if(currentsd == NULL){
-                printk(KERN_ERR "cciss: out of memory\n");
--               goto out;
-+               goto out3;
-        }
-+
-        this_device = &currentsd[CCISS_MAX_SCSI_DEVS_PER_HBA];
-        if (cciss_scsi_do_report_phys_luns(c, ld_buff, reportlunsize) == 0) {
-                ch = &ld_buff->LUNListLength[0];
-@@ -1289,9 +1300,12 @@ cciss_update_non_disk_devices(int cntl_num, int hostno)
+> As I said in reply to the patch I am concerned that this may be an
+> oversimplification relative to what general hardware needs.
+Ohh. for the patch set, as I said, its only a primitive implementation.
+With your inputs, we can definitely make it more efficient!
 
-        adjust_cciss_scsi_table(cntl_num, hostno, currentsd, ncurrent);
- out:
-+       kfree(currentsd);
-+out3:
-        kfree(inq_buff);
-+out2:
-        kfree(ld_buff);
--       kfree(currentsd);
-+out1:
-        return;
- }
+Regards,
+Sundar
 
---
-1.7.1
