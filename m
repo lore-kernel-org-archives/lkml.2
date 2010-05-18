@@ -1,120 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753434Ab0ERVCb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:02:31 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62089 "EHLO mx1.redhat.com"
+	id S1754420Ab0ERVDR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:03:17 -0400
+Received: from www.tglx.de ([62.245.132.106]:50905 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751441Ab0ERVCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:02:30 -0400
-Date: Tue, 18 May 2010 17:02:26 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       jens.axboe@oracle.com
-Subject: Re: [PATCH 1/4] cfq-iosched: Keep track of average think time for
-	the sync-noidle workload.
-Message-ID: <20100518210226.GD12330@redhat.com>
-References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com> <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
+	id S1752881Ab0ERVDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:03:15 -0400
+Date: Tue, 18 May 2010 23:02:56 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: john stultz <johnstul@us.ibm.com>
+cc: Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       "Du, Alek" <alek.du@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
+ clock device
+In-Reply-To: <1274215434.1699.12.camel@localhost>
+Message-ID: <alpine.LFD.2.00.1005182257030.3368@localhost.localdomain>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>  <1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>  <alpine.LFD.2.00.1005111643380.3401@localhost.localdomain>  <20100512103422.1d59cc85@feng-i7> 
+ <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain> <1274215434.1699.12.camel@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 02:20:17PM -0400, Jeff Moyer wrote:
-> This patch uses an average think time for the entirety of the sync-noidle
-> workload to determine whether or not to idle on said workload.  This brings
-> it more in line with the policy for the sync queues in the sync workload.
+On Tue, 18 May 2010, john stultz wrote:
+
+> On Mon, 2010-05-17 at 11:15 +0200, Thomas Gleixner wrote:
+> > 
+> > 
+> > There is no particular reason why we need to read it in
+> > timekeeping_init(). Nothing in the kernel needs the correct wall time
+> > at that point. So we can safely move the setting of xtime to rtc wall
+> > clock time to a separate timekeeping_late_init() function.
+> > 
+> > John ???
 > 
-> Testing shows that this provided an overall increase in throughput for
-> a mixed workload on my hardware RAID array.
-> 
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->  block/cfq-iosched.c |   44 +++++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 39 insertions(+), 5 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 838834b..46a7fe5 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -83,9 +83,14 @@ struct cfq_rb_root {
->  	unsigned total_weight;
->  	u64 min_vdisktime;
->  	struct rb_node *active;
-> +	unsigned long last_end_request;
-> +	unsigned long ttime_total;
-> +	unsigned long ttime_samples;
-> +	unsigned long ttime_mean;
->  };
->  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
-> -			.count = 0, .min_vdisktime = 0, }
-> +			.count = 0, .min_vdisktime = 0, .last_end_request = 0, \
-> +			.ttime_total = 0, .ttime_samples = 0, .ttime_mean = 0 }
->  
->  /*
->   * Per process-grouping structure
-> @@ -962,8 +967,10 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->  		goto done;
->  
->  	cfqg->weight = blkcg->weight;
-> -	for_each_cfqg_st(cfqg, i, j, st)
-> +	for_each_cfqg_st(cfqg, i, j, st) {
->  		*st = CFQ_RB_ROOT;
-> +		st->last_end_request = jiffies;
-> +	}
->  	RB_CLEAR_NODE(&cfqg->rb_node);
->  
->  	/*
-> @@ -1795,9 +1802,12 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  
->  	/*
->  	 * Otherwise, we do only if they are the last ones
-> -	 * in their service tree.
-> +	 * in their service tree and the average think time is
-> +	 * less than the slice length.
->  	 */
-> -	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
-> +	    (!sample_valid(service_tree->ttime_samples || 
-> +	     cfqq->slice_end - jiffies < service_tree->ttime_mean)))
->  		return 1;
+> No big objections here. Still would like to keep the amount of time that
+> the kernel is up without xtime being initialized to a minimum. However
 
-This comparision will also might break some logic in select_queue() where
-we wait for a queue/group to get busy even if queue's time slice has
-expired.
+Why? Nothing _IS_ depending on xtime at this point. We just should
+have it ready when we mount the first file system, but even that is
+not a big issue aside of some stupid warnings.
 
-********************************************************************
-if (cfq_slice_used(cfqq) && !cfq_cfqq_must_dispatch(cfqq)) {
-                /*
-                 * If slice had not expired at the completion of last
-                 * request
-                 * we might not have turned on wait_busy flag. Don't
-                 * expire
-                 * the queue yet. Allow the group to get backlogged.
-                 *
-                 * The very fact that we have used the slice, that means
-                 * we
-                 * have been idling all along on this queue and it should
-                 * be
-                 * ok to wait for this request to complete.
-                 */
-                if (cfqq->cfqg->nr_cfqq == 1 && RB_EMPTY_ROOT(&cfqq->sort_list)
-                    && cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
-                        cfqq = NULL;
-                        goto keep_queue;
-		}
+> the generic RTC code already have this issue since some of them require
+> interrupts to be enabled to do a read, so pushing it off into a
+> _late_init() function is probably just a short term fix until we figure
+> out how to get the generic RTC code working better with the timekeeping
+> code.
 
-*************************************************************************
+Well, you need to wait until the driver is loaded and the hardware
+accessible which might take some time when I2C, SPI or similar stuff
+is involved. No way to get this stuff accesible early.
 
-With this change, now above condition will never be true as
-cfq_should_idle() will always return false as slice has already expired.
-And that will affect group loosing its fair share.
+So really the question is, why do we want wall time initialized early?
+All we care about until we hit user space is clock monotonic and
+working timekeeping in general. NTP is not an issue either before we
+hit user space. So what's your concern ?
 
-So I guess we can define new functions to check more conditions instead of
-putting it in cfq_should_idle()
+> Does the delayed init required by vrtc cause any trouble with
+> suspend/resume?
 
-Vivek
+No, suspend/resume does not go through that early code. It has
+everything setup (mappings, etc)
+
+Thanks,
+
+	tglx
+
+
