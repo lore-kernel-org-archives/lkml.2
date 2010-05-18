@@ -1,246 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756886Ab0ERGi6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:38:58 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14864 "EHLO mga02.intel.com"
+	id S1756845Ab0ERGjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:39:23 -0400
+Received: from mail.sysgo.com ([195.145.229.155]:42413 "EHLO mail.sysgo.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755935Ab0ERGfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:35:39 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,253,1272870000"; 
-   d="scan'208";a="622545385"
-From: Huang Ying <ying.huang@intel.com>
-To: lenb@kernel.org
-Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH -v5 03/14] ACPI, APEI, HEST table parsing
-Date: Tue, 18 May 2010 14:35:13 +0800
-Message-Id: <1274164524-6092-4-git-send-email-ying.huang@intel.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
-References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
+	id S1755807Ab0ERGjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:39:21 -0400
+Date: Tue, 18 May 2010 08:28:16 +0200
+From: Thomas Moll <thomas.moll@sysgo.com>
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       alexandre.bounine@idt.com, mporter@kernel.crashing.org,
+       leoli@freescale.com, galak@kernel.crashing.org
+Subject: [PATCH 0/1] RapidIO: Fix maintenance access to higher memory areas
+Message-Id: <20100518082816.900554d5.thomas.moll@sysgo.com>
+In-Reply-To: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com>
+References: <1272901558-9292-1-git-send-email-alexandre.bounine@idt.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-HEST describes error sources in detail; communicating operational
-parameters (i.e. severity levels, masking bits, and threshold values)
-to OS as necessary. It also allows the platform to report error
-sources for which OS would typically not implement support (for
-example, chipset-specific error registers).
-
-HEST information may be needed by other subsystems. For example, HEST
-PCIE AER error source information describes whether a PCIE root port
-works in "firmware first" mode, this is needed by general PCIE AER
-error subsystem. So a public HEST tabling parsing interface is
-provided.
-
-Signed-off-by: Huang Ying <ying.huang@intel.com>
-Signed-off-by: Andi Kleen <ak@linux.intel.com>
----
- drivers/acpi/apei/Makefile |    2 
- drivers/acpi/apei/hest.c   |  173 +++++++++++++++++++++++++++++++++++++++++++++
- include/acpi/apei.h        |   13 +++
- 3 files changed, 187 insertions(+), 1 deletion(-)
- create mode 100644 drivers/acpi/apei/hest.c
- create mode 100644 include/acpi/apei.h
-
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -1,3 +1,3 @@
- obj-$(CONFIG_ACPI_APEI)		+= apei.o
- 
--apei-y := apei-base.o
-+apei-y := apei-base.o hest.o
---- /dev/null
-+++ b/drivers/acpi/apei/hest.c
-@@ -0,0 +1,173 @@
-+/*
-+ * APEI Hardware Error Souce Table support
-+ *
-+ * HEST describes error sources in detail; communicates operational
-+ * parameters (i.e. severity levels, masking bits, and threshold
-+ * values) to Linux as necessary. It also allows the BIOS to report
-+ * non-standard error sources to Linux (for example, chipset-specific
-+ * error registers).
-+ *
-+ * For more information about HEST, please refer to ACPI Specification
-+ * version 4.0, section 17.3.2.
-+ *
-+ * Copyright 2009 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License version
-+ * 2 as published by the Free Software Foundation;
-+ *
-+ * This program is distributed in the hope that it will be useful,
-+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
-+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-+ * GNU General Public License for more details.
-+ *
-+ * You should have received a copy of the GNU General Public License
-+ * along with this program; if not, write to the Free Software
-+ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/acpi.h>
-+#include <linux/kdebug.h>
-+#include <linux/highmem.h>
-+#include <linux/io.h>
-+#include <acpi/apei.h>
-+
-+#include "apei-internal.h"
-+
-+#define HEST_PFX "HEST: "
-+
-+int hest_disable;
-+EXPORT_SYMBOL_GPL(hest_disable);
-+
-+/* HEST table parsing */
-+
-+static struct acpi_table_hest *hest_tab;
-+
-+static int hest_void_parse(struct acpi_hest_header *hest_hdr, void *data)
-+{
-+	return 0;
-+}
-+
-+static int hest_esrc_len_tab[ACPI_HEST_TYPE_RESERVED] = {
-+	[ACPI_HEST_TYPE_IA32_CHECK] = -1,	/* need further calculation */
-+	[ACPI_HEST_TYPE_IA32_CORRECTED_CHECK] = -1,
-+	[ACPI_HEST_TYPE_IA32_NMI] = sizeof(struct acpi_hest_ia_nmi),
-+	[ACPI_HEST_TYPE_AER_ROOT_PORT] = sizeof(struct acpi_hest_aer_root),
-+	[ACPI_HEST_TYPE_AER_ENDPOINT] = sizeof(struct acpi_hest_aer),
-+	[ACPI_HEST_TYPE_AER_BRIDGE] = sizeof(struct acpi_hest_aer_bridge),
-+	[ACPI_HEST_TYPE_GENERIC_ERROR] = sizeof(struct acpi_hest_generic),
-+};
-+
-+static int hest_esrc_len(struct acpi_hest_header *hest_hdr)
-+{
-+	u16 hest_type = hest_hdr->type;
-+	int len;
-+
-+	if (hest_type >= ACPI_HEST_TYPE_RESERVED)
-+		return 0;
-+
-+	len = hest_esrc_len_tab[hest_type];
-+
-+	if (hest_type == ACPI_HEST_TYPE_IA32_CORRECTED_CHECK) {
-+		struct acpi_hest_ia_corrected *cmc;
-+		cmc = (struct acpi_hest_ia_corrected *)hest_hdr;
-+		len = sizeof(*cmc) + cmc->num_hardware_banks *
-+			sizeof(struct acpi_hest_ia_error_bank);
-+	} else if (hest_type == ACPI_HEST_TYPE_IA32_CHECK) {
-+		struct acpi_hest_ia_machine_check *mc;
-+		mc = (struct acpi_hest_ia_machine_check *)hest_hdr;
-+		len = sizeof(*mc) + mc->num_hardware_banks *
-+			sizeof(struct acpi_hest_ia_error_bank);
-+	}
-+	BUG_ON(len == -1);
-+
-+	return len;
-+};
-+
-+int apei_hest_parse(apei_hest_func_t func, void *data)
-+{
-+	struct acpi_hest_header *hest_hdr;
-+	int i, rc, len;
-+
-+	if (hest_disable)
-+		return -EINVAL;
-+
-+	hest_hdr = (struct acpi_hest_header *)(hest_tab + 1);
-+	for (i = 0; i < hest_tab->error_source_count; i++) {
-+		len = hest_esrc_len(hest_hdr);
-+		if (!len) {
-+			pr_warning(FW_WARN HEST_PFX
-+				   "Unknown or unused hardware error source "
-+				   "type: %d for hardware error source: %d.\n",
-+				   hest_hdr->type, hest_hdr->source_id);
-+			return -EINVAL;
-+		}
-+		if ((void *)hest_hdr + len >
-+		    (void *)hest_tab + hest_tab->header.length) {
-+			pr_warning(FW_BUG HEST_PFX
-+		"Table contents overflow for hardware error source: %d.\n",
-+				hest_hdr->source_id);
-+			return -EINVAL;
-+		}
-+
-+		rc = func(hest_hdr, data);
-+		if (rc)
-+			return rc;
-+
-+		hest_hdr = (void *)hest_hdr + len;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_hest_parse);
-+
-+static int __init setup_hest_disable(char *str)
-+{
-+	hest_disable = 1;
-+	return 0;
-+}
-+
-+__setup("hest_disable", setup_hest_disable);
-+
-+static int __init hest_init(void)
-+{
-+	acpi_status status;
-+	int rc = -ENODEV;
-+
-+	if (acpi_disabled)
-+		goto err;
-+
-+	if (hest_disable) {
-+		pr_info(HEST_PFX "HEST tabling parsing is disabled.\n");
-+		goto err;
-+	}
-+
-+	status = acpi_get_table(ACPI_SIG_HEST, 0,
-+				(struct acpi_table_header **)&hest_tab);
-+	if (status == AE_NOT_FOUND) {
-+		pr_info(HEST_PFX "Table is not found!\n");
-+		goto err;
-+	} else if (ACPI_FAILURE(status)) {
-+		const char *msg = acpi_format_exception(status);
-+		pr_err(HEST_PFX "Failed to get table, %s\n", msg);
-+		rc = -EINVAL;
-+		goto err;
-+	}
-+
-+	rc = apei_hest_parse(hest_void_parse, NULL);
-+	if (rc)
-+		goto err;
-+
-+	pr_info(HEST_PFX "HEST table parsing is initialized.\n");
-+
-+	return 0;
-+err:
-+	hest_disable = 1;
-+	return rc;
-+}
-+
-+subsys_initcall(hest_init);
---- /dev/null
-+++ b/include/acpi/apei.h
-@@ -0,0 +1,13 @@
-+/*
-+ * apei.h - ACPI Platform Error Interface
-+ */
-+
-+#ifndef ACPI_APEI_H
-+#define ACPI_APEI_H
-+
-+extern int hest_disable;
-+
-+typedef int (*apei_hest_func_t)(struct acpi_hest_header *hest_hdr, void *data);
-+int apei_hest_parse(apei_hest_func_t func, void *data);
-+
-+#endif
+The following RapidIO patch is applicable to the latest kernel tree with applied RapidIO patches from Alexandre Bounine. The modification is required for IDT CPS switch devices which will access these memory areas, to setup 16bit routing.
