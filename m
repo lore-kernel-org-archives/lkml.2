@@ -1,56 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755730Ab0ERDEI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 23:04:08 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:54674 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab0ERDEF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 23:04:05 -0400
-Date: Tue, 18 May 2010 13:04:01 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       H Hartley Sweeten <hartleys@visionengravers.com>,
-       Al Viro <viro@ZenIV.linux.org.uk>
-Subject: linux-next: manual merge of the block tree with the vfs tree
-Message-Id: <20100518130401.f6286112.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753691Ab0ERDMB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 23:12:01 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:42221 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752256Ab0ERDL7 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 23:11:59 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:sender:in-reply-to:references:date:
+	x-google-sender-auth:message-id:subject:from:to:cc:content-type:
+	content-transfer-encoding:x-system-of-record;
+	b=lUGcGZllzaVFEyfEQQCSJKDzgrnWQgr32AUsDUnMPhCiosIbR+VJnHtr40q/8Pw3Y
+	MOzkd7FAgZ+jA4E8v4p/Q==
+MIME-Version: 1.0
+In-Reply-To: <4BF1FD33.4040305@ct.jp.nec.com>
+References: <20100514035347.GA20636@redhat.com>
+	 <1273887701-2152-1-git-send-email-wad@chromium.org>
+	 <4BF1FD33.4040305@ct.jp.nec.com>
+Date: Mon, 17 May 2010 22:11:55 -0500
+X-Google-Sender-Auth: 0vVskpp4iWtVYgeTTI4lpU3Yew0
+Message-ID: <AANLkTimHUPh0UHEU-5YckhwppX8AhFBYBxc4BZiIpmfZ@mail.gmail.com>
+Subject: Re: [dm-devel] [RFC PATCH v2 1/2] dm: allow a dm-fs-style device to 
+	be shared via dm-ioctl
+From: Will Drewry <wad@chromium.org>
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Cc: device-mapper development <dm-devel@redhat.com>,
+       linux-kernel@vger.kernel.org, snitzer@redhat.com, agk@redhat.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jens,
+On Mon, May 17, 2010 at 9:36 PM, Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+> Hi Will,
+>
+> n 05/15/2010 10:41 AM +0900, Will Drewry wrote:
+>> In addition, it ensures that public functions are available that
+>> allow mapped devices and tables to be created and associated
+>> with the shared code paths with dm-ioctl:
+>> - suspend flags are available
+> snip
+>> diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+>> index bad1724..782d867 100644
+>> --- a/drivers/md/dm.h
+>> +++ b/drivers/md/dm.h
+>> @@ -17,12 +17,6 @@
+>>  #include <linux/hdreg.h>
+>>
+>>  /*
+>> - * Suspend feature flags
+>> - */
+>> -#define DM_SUSPEND_LOCKFS_FLAG               (1 << 0)
+>> -#define DM_SUSPEND_NOFLUSH_FLAG              (1 << 1)
+>> -
+>> -/*
+>>   * Type of table and mapped_device's mempool
+>>   */
+>>  #define DM_TYPE_NONE         0
+>> diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
+>> index 1381cd9..6c1c230 100644
+>> --- a/include/linux/device-mapper.h
+>> +++ b/include/linux/device-mapper.h
+>> @@ -215,6 +215,18 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
+>>  void *dm_get_mdptr(struct mapped_device *md);
+>>
+>>  /*
+>> + * Export the device via the ioctl interface (uses mdptr).
+>> + */
+>> +int dm_ioctl_export(struct mapped_device *md, const char *name,
+>> +                 const char *uuid);
+>> +
+>> +/*
+>> + * Suspend feature flags
+>> + */
+>> +#define DM_SUSPEND_LOCKFS_FLAG               (1 << 0)
+>> +#define DM_SUSPEND_NOFLUSH_FLAG              (1 << 1)
+>> +
+>> +/*
+>>   * A device can still be used while suspended, but I/O is deferred.
+>>   */
+>>  int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
+>
+> Why do you need suspend feature flags?
+> I think no feature is needed (specifying '0' is enough) to make/suspend
+> a dm device at boot time (although I have looked at only this flag part).
+> Am I missing something?
 
-Today's linux-next merge of the block tree got a conflict in
-fs/fs-writeback.c between commit 1c9539ad0dd1c3c3964ea35d5a355a0ed19c39c7
-("fs-writeback.c: bitfields should be unsigned") from the vfs tree and
-commit e913fc825dc685a444cb4c1d0f9d32f372f59861 ("writeback: fix
-WB_SYNC_NONE writeback from umount") from the block tree.
+Not at all! I hadn't thoroughly reviewed the code path for flush/noflush
+and was hoping to avoid additional code paths.  However, looking at
+effect, I don't see any tangible benefit to doing so with a brand new
+device.
 
-I fixed it up (see below) and can carry the fix as necessary.
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
+I'll switch it over to 0, and I can take exposing the flags out of this
+patch.
 
-diff --cc fs/fs-writeback.c
-index 24e85ce,0f62957..0000000
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@@ -42,9 -42,10 +42,10 @@@ struct wb_writeback_args 
-  	long nr_pages;
-  	struct super_block *sb;
-  	enum writeback_sync_modes sync_mode;
- -	int for_kupdate:1;
- -	int range_cyclic:1;
- -	int for_background:1;
- -	int sb_pinned:1;
- +	unsigned int for_kupdate:1;
- +	unsigned int range_cyclic:1;
- +	unsigned int for_background:1;
-++	unsigned int sb_pinned:1;
-  };
-  
-  /*
+Any additional comments are appreciated -  thanks!
+will
