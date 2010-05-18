@@ -1,82 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0ERFRZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:17:25 -0400
-Received: from mail-pz0-f194.google.com ([209.85.222.194]:60339 "EHLO
-	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754633Ab0ERFRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:17:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type;
-        b=XUvwLOocUdpqn41ji6p7H85EdFZuRmDJWEXaKvmn2Txn944FZevlEiMwLhPo+18j7B
-         6eF9azsgZ16siEqD30IPcKjkSbY/Tf/PEOfZISwxZBvWSPHmEIP5fVyg9PdTyDd234yN
-         F0puyAZeKJGa0aZRbk9uIX0cjkwCgf1GUb4jk=
-MIME-Version: 1.0
-Date: Tue, 18 May 2010 13:17:22 +0800
-Message-ID: <AANLkTilW8zZxCOrdiefZ4ZtixprI58LzDZ6Cz03z4lFk@mail.gmail.com>
-Subject: [PATCH] fix a code style in drivers/char/virtio_console.c
-From: Steven Liu <lingjiujianke@gmail.com>
-To: amit.shah@redhat.com, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755766Ab0ERFUk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:20:40 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:37128 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754558Ab0ERFUi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:20:38 -0400
+Date: Tue, 18 May 2010 15:20:31 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Philipp Reisner <philipp.reisner@linbit.com>, <drbd-dev@linbit.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: manual merge of the drbd tree with the block tree
+Message-Id: <20100518152031.9a244971.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__18_May_2010_15_20_31_+1000_NelEjYw54Z3ygQJ7"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-fix a code style in drivers/char/virtio_console.c
+--Signature=_Tue__18_May_2010_15_20_31_+1000_NelEjYw54Z3ygQJ7
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
----
- drivers/char/virtio_console.c |    7 +------
- 1 files changed, 1 insertions(+), 6 deletions(-)
+Hi all,
 
-diff --git a/drivers/char/virtio_console.c b/drivers/char/virtio_console.c
-index 196428c..61dad7e 100644
---- a/drivers/char/virtio_console.c
-+++ b/drivers/char/virtio_console.c
-@@ -1299,36 +1299,31 @@ static int init_vqs(struct ports_device *portdev)
-        char **io_names;
-        struct virtqueue **vqs;
-        u32 i, j, nr_ports, nr_queues;
--       int err;
-+       int err = -ENOMEM;
+Today's linux-next merge of the drbd tree got a conflict in
+mm/page-writeback.c between commit
+42bd225c0ba7c95af39293d39a950c48e7e5cb23 (""laptop-mode: Make flushes
+per-device" fix") from the block tree and commit
+e913fc825dc685a444cb4c1d0f9d32f372f59861 ("writeback: fix WB_SYNC_NONE
+writeback from umount") from the drbd tree (via its merge of the block
+tree).
 
-        nr_ports = portdev->config.max_nr_ports;
-        nr_queues = use_multiport(portdev) ? (nr_ports + 1) * 2 : 2;
+I used the next-20100517 version of the block tree today (because the
+above conflict was not resolved correctly in the block tree and caused a
+build failure), so I will also use the next-20100517 version of the drbd
+tree for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
-        vqs = kmalloc(nr_queues * sizeof(struct virtqueue *), GFP_KERNEL);
-        if (!vqs) {
--               err = -ENOMEM;
-                goto fail;
-        }
-        io_callbacks = kmalloc(nr_queues * sizeof(vq_callback_t *), GFP_KERNEL);
-        if (!io_callbacks) {
--               err = -ENOMEM;
-                goto free_vqs;
-        }
-        io_names = kmalloc(nr_queues * sizeof(char *), GFP_KERNEL);
-        if (!io_names) {
--               err = -ENOMEM;
-                goto free_callbacks;
-        }
-        portdev->in_vqs = kmalloc(nr_ports * sizeof(struct virtqueue *),
-                                  GFP_KERNEL);
-        if (!portdev->in_vqs) {
--               err = -ENOMEM;
-                goto free_names;
-        }
-        portdev->out_vqs = kmalloc(nr_ports * sizeof(struct virtqueue *),
-                                   GFP_KERNEL);
-        if (!portdev->out_vqs) {
--               err = -ENOMEM;
-                goto free_invqs;
-        }
+--Signature=_Tue__18_May_2010_15_20_31_+1000_NelEjYw54Z3ygQJ7
+Content-Type: application/pgp-signature
 
---
-1.7.1
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
+iEYEARECAAYFAkvyI58ACgkQjjKRsyhoI8wzaQCcC7BjrS41+6/VunWH2k22rV9I
+5q8AnAzKvtDlvBqH2ypu67DzeLvaU2KU
+=GaEt
+-----END PGP SIGNATURE-----
 
-
-Best regards
+--Signature=_Tue__18_May_2010_15_20_31_+1000_NelEjYw54Z3ygQJ7--
