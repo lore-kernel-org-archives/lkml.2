@@ -1,71 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756178Ab0ERBVd (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 21:21:33 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:42709 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754422Ab0ERBVa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 21:21:30 -0400
-Date: Tue, 18 May 2010 11:21:19 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
-       npiggin@suse.de, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100518012119.GB2150@dastard>
-References: <20100512212403.GE3597@localhost.localdomain>
- <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
- <20100514010042.GI13617@dastard>
- <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
- <20100514064145.GJ13617@dastard>
- <20100517233540.GM3364@quack.suse.cz>
+	id S1756190Ab0ERBX6 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 21:23:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43241 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753913Ab0ERBX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 21:23:57 -0400
+Date: Tue, 18 May 2010 04:19:31 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: davem@davemloft.net, Juan Quintela <quintela@redhat.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
+       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
+       virtualization@lists.osdl.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
+       amit.shah@redhat.com
+Subject: [PATCH] vhost-net: utilize PUBLISH_USED_IDX feature
+Message-ID: <20100518011931.GA21918@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100517233540.GM3364@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 01:35:41AM +0200, Jan Kara wrote:
-> On Fri 14-05-10 16:41:45, Dave Chinner wrote:
-> ...
-> > Well, the "RESERVE" callout I proposed should mean that the
-> > allocation that follows the copy should never fail with ENOSPC. i.e.
-> > if there isn't space, the RESERVE call will fail with ENOSPC, not
-> > the actual ALLOCATE call that occurs after the data is copied.
-> > 
-> > Basically I was thinking that in the XFS case, RESERVE would scan the
-> > range for holes, and reserve all blocks needed to fill all the holes
-> > in the range. Then the ALLOCATE call would mark them all delalloc.
-> > The space reservation and delalloc is done in a single call right
-> > now, but splitting them is not hard...
->   But this would mean that you would have to implement at least a basic
-> delayed allocation support for filesystems like ext2, ext3, udf, vfat, etc.
-> They currently do not have a way to provide a functionality you require
-> from RESERVE call...
+With PUBLISH_USED_IDX, guest tells us which used entries
+it has consumed. This can be used to reduce the number
+of interrupts: after we write a used entry, if the guest has not yet
+consumed the previous entry, or if the guest has already consumed the
+new entry, we do not need to interrupt.
+This imporves bandwidth by 30% under some workflows.
 
-I don't think that's necessary. For filesytems that don't do
-multipage writes (i.e. continue to operate as they do now) then
-RSERVE/UNRESERVE can effectively be a no-op as there is nothing
-extra to reserve or undo if the single page allocation fails.  Hence
-filesystems that can't easily be converted or we don't want to put
-the effort into converting to multi-page writes do not need any new
-functionality....
+Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
+---
 
->   Not that it would be so hard to do - I actually have some patches for
-> ext2/3 doing that because of problems with ENOSPC during mmaped writes but
-> it's not completely trivial either.
+Rusty, Dave, this patch depends on the patch
+"virtio: put last seen used index into ring itself"
+which is currently destined at Rusty's tree.
+Rusty, if you are taking that one for 2.6.35, please
+take this one as well.
+Dave, any objections?
 
-Yup, and a good reason for not trying to retrofit delayed allocation to
-all those old filesystems.
+ drivers/vhost/vhost.c |   27 +++++++++++++++++++++------
+ drivers/vhost/vhost.h |    2 ++
+ 2 files changed, 23 insertions(+), 6 deletions(-)
 
-Cheers,
-
-Dave.
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 750effe..2a66cf3 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -278,14 +278,15 @@ static int memory_access_ok(struct vhost_dev *d, struct vhost_memory *mem,
+ 	return 1;
+ }
+ 
+-static int vq_access_ok(unsigned int num,
++static int vq_access_ok(struct vhost_dev *d, unsigned int num,
+ 			struct vring_desc __user *desc,
+ 			struct vring_avail __user *avail,
+ 			struct vring_used __user *used)
+ {
++	size_t s = vhost_has_feature(d, VIRTIO_RING_F_PUBLISH_USED) ? 2 : 0;
+ 	return access_ok(VERIFY_READ, desc, num * sizeof *desc) &&
+ 	       access_ok(VERIFY_READ, avail,
+-			 sizeof *avail + num * sizeof *avail->ring) &&
++			 sizeof *avail + num * sizeof *avail->ring + s) &&
+ 	       access_ok(VERIFY_WRITE, used,
+ 			sizeof *used + num * sizeof *used->ring);
+ }
+@@ -312,7 +313,7 @@ static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
+ /* Caller should have vq mutex and device mutex */
+ int vhost_vq_access_ok(struct vhost_virtqueue *vq)
+ {
+-	return vq_access_ok(vq->num, vq->desc, vq->avail, vq->used) &&
++	return vq_access_ok(vq->dev, vq->num, vq->desc, vq->avail, vq->used,) &&
+ 		vq_log_access_ok(vq, vq->log_base);
+ }
+ 
+@@ -448,7 +449,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 		 * If it is not, we don't as size might not have been setup.
+ 		 * We will verify when backend is configured. */
+ 		if (vq->private_data) {
+-			if (!vq_access_ok(vq->num,
++			if (!vq_access_ok(d, vq->num,
+ 				(void __user *)(unsigned long)a.desc_user_addr,
+ 				(void __user *)(unsigned long)a.avail_user_addr,
+ 				(void __user *)(unsigned long)a.used_user_addr)) {
+@@ -473,6 +474,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
+ 		vq->log_used = !!(a.flags & (0x1 << VHOST_VRING_F_LOG));
+ 		vq->desc = (void __user *)(unsigned long)a.desc_user_addr;
+ 		vq->avail = (void __user *)(unsigned long)a.avail_user_addr;
++		vq->last_used = (u16 __user *)&vq->avail->ring[vq->num];
+ 		vq->log_addr = a.log_guest_addr;
+ 		vq->used = (void __user *)(unsigned long)a.used_user_addr;
+ 		break;
+@@ -993,7 +995,8 @@ void vhost_discard_vq_desc(struct vhost_virtqueue *vq)
+ 
+ /* After we've used one of their buffers, we tell them about it.  We'll then
+  * want to notify the guest, using eventfd. */
+-int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
++static int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head,
++			  int len)
+ {
+ 	struct vring_used_elem __user *used;
+ 
+@@ -1034,9 +1037,10 @@ int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
+ }
+ 
+ /* This actually signals the guest, using eventfd. */
+-void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
++static void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ {
+ 	__u16 flags;
++	__u16 used;
+ 	/* Flush out used index updates. This is paired
+ 	 * with the barrier that the Guest executes when enabling
+ 	 * interrupts. */
+@@ -1053,6 +1057,17 @@ void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
+ 	     !vhost_has_feature(dev, VIRTIO_F_NOTIFY_ON_EMPTY)))
+ 		return;
+ 
++	if (vhost_has_feature(d, VIRTIO_RING_F_PUBLISH_USED)) {
++		__u16 used;
++		if (get_user(used, vq->last_used)) {
++			vq_err(vq, "Failed to get last used idx");
++			return;
++		}
++
++		if (used != (u16)(vq->last_used_idx - 1))
++			return;
++	}
++
+ 	/* Signal the Guest tell them we used something up. */
+ 	if (vq->call_ctx)
+ 		eventfd_signal(vq->call_ctx, 1);
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 44591ba..00e9784 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -52,6 +52,7 @@ struct vhost_virtqueue {
+ 	unsigned int num;
+ 	struct vring_desc __user *desc;
+ 	struct vring_avail __user *avail;
++	u16 __user *last_used;
+ 	struct vring_used __user *used;
+ 	struct file *kick;
+ 	struct file *call;
+@@ -148,6 +149,7 @@ void vhost_cleanup(void);
+ enum {
+ 	VHOST_FEATURES = (1 << VIRTIO_F_NOTIFY_ON_EMPTY) |
+ 			 (1 << VIRTIO_RING_F_INDIRECT_DESC) |
++			 (1 << VIRTIO_RING_F_PUBLISH_USED) |
+ 			 (1 << VHOST_F_LOG_ALL) |
+ 			 (1 << VHOST_NET_F_VIRTIO_NET_HDR),
+ };
 -- 
-Dave Chinner
-david@fromorbit.com
+1.7.1.12.g42b7f
