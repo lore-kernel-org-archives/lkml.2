@@ -1,167 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754065Ab0ERCZ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 22:25:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:50564 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752877Ab0ERCZ1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 22:25:27 -0400
-Date: Tue, 18 May 2010 05:21:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: davem@davemloft.net, Juan Quintela <quintela@redhat.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-       amit.shah@redhat.com
-Subject: [PATCHv2] vhost-net: utilize PUBLISH_USED_IDX feature
-Message-ID: <20100518022105.GA23129@redhat.com>
+	id S1754458Ab0ERC2K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 22:28:10 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:59859 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754272Ab0ERC2H (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 22:28:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=nrfagL+r9Ia9C7NPXUljbgMfPeYO8MU1ZDUO859NOLyOzPdhkaQSkp0n1abldPAtsR
+         CcX6oKXlEcBLm+3BT6BMq6L/Ep74/vqIfsl7dgbnNbUK+FrUmg1NJ0QI80HpT4yeNLbU
+         ekmLF0FSFlJqXTWBRnNFDdk4tcZwGGKemVZbk=
+Date: Tue, 18 May 2010 04:28:12 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: Conflict between tip/tracing/core and tip/perf/core
+Message-ID: <20100518022809.GC5359@nowhere>
+References: <1274122242.26328.375.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Mutt-Fcc: =sent
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <1274122242.26328.375.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PUBLISH_USED_IDX, guest tells us which used entries
-it has consumed. This can be used to reduce the number
-of interrupts: after we write a used entry, if the guest has not yet
-consumed the previous entry, or if the guest has already consumed the
-new entry, we do not need to interrupt.
-This imporves bandwidth by 30% under some workflows.
+On Mon, May 17, 2010 at 02:50:42PM -0400, Steven Rostedt wrote:
+> Hi,
+> 
+> Ingo asked me to resolve a conflict between tip/tracing/core and
+> perf/core, and I came up with the below solution.
+> 
+> The conflict stems from the shrinking of TRACE_EVENT(), which affects
+> both ftrace and perf (saves size on both too). It conflicts with:
+> 
+> 6cc8a7c1d8560c042f486b23318a6291569ab96b
+> Author: Frederic Weisbecker <fweisbec@gmail.com>
+> Date:   Fri Mar 19 01:23:53 2010 +0100
+> perf: Fetch hot regs from the template caller
+> 
+> 
+> The shrinking code removed the per event caller to the template
+> (TRACE_CLASS). This was done because the shrinking code allows the trace
+> event to be passed to the tracepoint probe, and removed the need to have
+> a separate function for every event because the class can now have the
+> event passed to it.
+> 
+> The conflicting code added the regs to the per event probe, which no
+> longer exists.
+> 
+> Masami,
+> 
+> It also conflicted with the kprobe code, which is also in the fix up.
+> 
+> 
+> Here's my conflict resolution:
+> 
+> is everyone fine with it?
+> 
+> -- Steve
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-This is on top of Rusty's tree and depends on the virtio patch.
-
-Changes from v1:
-fix build
 
 
- drivers/vhost/vhost.c |   27 +++++++++++++++++++++------
- drivers/vhost/vhost.h |    4 ++--
- 2 files changed, 23 insertions(+), 8 deletions(-)
+Yep, no problem with it,
 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 750effe..18c4f6e 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -278,14 +278,15 @@ static int memory_access_ok(struct vhost_dev *d, struct vhost_memory *mem,
- 	return 1;
- }
- 
--static int vq_access_ok(unsigned int num,
-+static int vq_access_ok(struct vhost_dev *d, unsigned int num,
- 			struct vring_desc __user *desc,
- 			struct vring_avail __user *avail,
- 			struct vring_used __user *used)
- {
-+	size_t s = vhost_has_feature(d, VIRTIO_RING_F_PUBLISH_USED) ? 2 : 0;
- 	return access_ok(VERIFY_READ, desc, num * sizeof *desc) &&
- 	       access_ok(VERIFY_READ, avail,
--			 sizeof *avail + num * sizeof *avail->ring) &&
-+			 sizeof *avail + num * sizeof *avail->ring + s) &&
- 	       access_ok(VERIFY_WRITE, used,
- 			sizeof *used + num * sizeof *used->ring);
- }
-@@ -312,7 +313,7 @@ static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
- /* Caller should have vq mutex and device mutex */
- int vhost_vq_access_ok(struct vhost_virtqueue *vq)
- {
--	return vq_access_ok(vq->num, vq->desc, vq->avail, vq->used) &&
-+	return vq_access_ok(vq->dev, vq->num, vq->desc, vq->avail, vq->used) &&
- 		vq_log_access_ok(vq, vq->log_base);
- }
- 
-@@ -448,7 +449,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 		 * If it is not, we don't as size might not have been setup.
- 		 * We will verify when backend is configured. */
- 		if (vq->private_data) {
--			if (!vq_access_ok(vq->num,
-+			if (!vq_access_ok(d, vq->num,
- 				(void __user *)(unsigned long)a.desc_user_addr,
- 				(void __user *)(unsigned long)a.avail_user_addr,
- 				(void __user *)(unsigned long)a.used_user_addr)) {
-@@ -473,6 +474,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 		vq->log_used = !!(a.flags & (0x1 << VHOST_VRING_F_LOG));
- 		vq->desc = (void __user *)(unsigned long)a.desc_user_addr;
- 		vq->avail = (void __user *)(unsigned long)a.avail_user_addr;
-+		vq->last_used = (u16 __user *)&vq->avail->ring[vq->num];
- 		vq->log_addr = a.log_guest_addr;
- 		vq->used = (void __user *)(unsigned long)a.used_user_addr;
- 		break;
-@@ -993,7 +995,8 @@ void vhost_discard_vq_desc(struct vhost_virtqueue *vq)
- 
- /* After we've used one of their buffers, we tell them about it.  We'll then
-  * want to notify the guest, using eventfd. */
--int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
-+static int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head,
-+			  int len)
- {
- 	struct vring_used_elem __user *used;
- 
-@@ -1034,9 +1037,10 @@ int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
- }
- 
- /* This actually signals the guest, using eventfd. */
--void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
-+static void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- {
- 	__u16 flags;
-+	__u16 used;
- 	/* Flush out used index updates. This is paired
- 	 * with the barrier that the Guest executes when enabling
- 	 * interrupts. */
-@@ -1053,6 +1057,17 @@ void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- 	     !vhost_has_feature(dev, VIRTIO_F_NOTIFY_ON_EMPTY)))
- 		return;
- 
-+	if (vhost_has_feature(dev, VIRTIO_RING_F_PUBLISH_USED)) {
-+		__u16 used;
-+		if (get_user(used, vq->last_used)) {
-+			vq_err(vq, "Failed to get last used idx");
-+			return;
-+		}
-+
-+		if (used != (u16)(vq->last_used_idx - 1))
-+			return;
-+	}
-+
- 	/* Signal the Guest tell them we used something up. */
- 	if (vq->call_ctx)
- 		eventfd_signal(vq->call_ctx, 1);
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 44591ba..bd01aca 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -52,6 +52,7 @@ struct vhost_virtqueue {
- 	unsigned int num;
- 	struct vring_desc __user *desc;
- 	struct vring_avail __user *avail;
-+	u16 __user *last_used;
- 	struct vring_used __user *used;
- 	struct file *kick;
- 	struct file *call;
-@@ -126,8 +127,6 @@ unsigned vhost_get_vq_desc(struct vhost_dev *, struct vhost_virtqueue *,
- 			   struct vhost_log *log, unsigned int *log_num);
- void vhost_discard_vq_desc(struct vhost_virtqueue *);
- 
--int vhost_add_used(struct vhost_virtqueue *, unsigned int head, int len);
--void vhost_signal(struct vhost_dev *, struct vhost_virtqueue *);
- void vhost_add_used_and_signal(struct vhost_dev *, struct vhost_virtqueue *,
- 			       unsigned int head, int len);
- void vhost_disable_notify(struct vhost_virtqueue *);
-@@ -148,6 +147,7 @@ void vhost_cleanup(void);
- enum {
- 	VHOST_FEATURES = (1 << VIRTIO_F_NOTIFY_ON_EMPTY) |
- 			 (1 << VIRTIO_RING_F_INDIRECT_DESC) |
-+			 (1 << VIRTIO_RING_F_PUBLISH_USED) |
- 			 (1 << VHOST_F_LOG_ALL) |
- 			 (1 << VHOST_NET_F_VIRTIO_NET_HDR),
- };
--- 
-1.7.1.12.g42b7f
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
+
+
+Nothing related to this conflict resolution, but we have these
+per cpu regs that are racy against NMI, I'll need to solve that
+soon.
+
+Thanks.
+
