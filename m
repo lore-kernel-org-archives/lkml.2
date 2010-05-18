@@ -1,45 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0ERGTS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:19:18 -0400
-Received: from server5a.woolnet.net ([209.59.181.202]:42217 "EHLO
-	server5a.woolnet.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1750914Ab0ERGTQ (ORCPT
+	id S1756751Ab0ERGTn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:19:43 -0400
+Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:37346 "EHLO
+	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754364Ab0ERGTm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:19:16 -0400
-Message-ID: <9996a242457c086d4cd315fb8527ac69.squirrel@woolnet.net>
-Date: Tue, 18 May 2010 02:01:33 -0400
-Subject: HIGHLY CONFIDENTIAL
-From: "Ming Yang" <mingyang27@yahoo.com>
-Reply-To: yang.ming89@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.20
-MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - server5a.woolnet.net
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - yahoo.com
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 18 May 2010 02:19:42 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: Re: [PATCH -V8 2/9] vfs: Add name to file handle conversion support
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+In-Reply-To: <87fx1ppy21.fsf@linux.vnet.ibm.com>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274074432-29695-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <7252.1274150030@jrobl> <87fx1ppy21.fsf@linux.vnet.ibm.com>
+Date: Tue, 18 May 2010 15:18:28 +0900
+Message-ID: <10947.1274163508@jrobl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
-HIGHLY CONFIDENTIAL
+"Aneesh Kumar K. V":
+> The file_handle I mentioned above is the file handle returned by
+> sys_name_to_handle_at syscall. NFS kernel server won't be using the
+> interface.
 
-Dear Friend, this is Mr. Ming Yang from Hong Kong. I am sending you this
-message concerning a Business Proposal of 24.5MUSD and I want you to
-partner with me in this project. This business with benefit you a lot.
+Thanx clarifying.
+I think I should read the notes in the first description (0/9) before
+posting.
+It says UUID is just for userspace.
 
-Please contact me back with the below address for details.
-yang.ming89@yahoo.com.hk
+Reading all 9 patches, I noticed handle_to_path() calls
+exportfs_decode_fh() inconditionally.
+Since exportfs_decode_fh() calls s_export_op->fh_to_dentry()
+inconditionally too, handle_to_path() will crash when the target FS
+doesn't support NFS-exporting, won't it?
 
-Thanks. I await your prompt response.
 
-Mr. Ming Yang
-
-
+J. R. Okajima
