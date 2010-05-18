@@ -1,157 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758533Ab0ERUJH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:09:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:10498 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758230Ab0ERUIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:08:06 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip v2 3/5] x86: Introduce text_poke_smp_batch() for
-	batch-code modifying
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
-       Jason Baron <jbaron@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Tue, 18 May 2010 16:13:06 -0400
-Message-ID: <20100518201306.6058.91902.stgit@localhost6.localdomain6>
-In-Reply-To: <20100518201244.6058.73083.stgit@localhost6.localdomain6>
-References: <20100518201244.6058.73083.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
-MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 7bit
+	id S1758204Ab0ERUK4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:10:56 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43477 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752906Ab0ERUKy (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:10:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eLW3TX049Nf+jOwePlE/J9JEt13/x/4KyR/4qMn37IMbfuNU7vyb12mba2NY0s4FcO
+         VRyh11wB7l3XGR09TE7dRYkmrQafUwWnFMLzuqOHIcMqnXAM1nXBxS/wwLv8cLR5vVZU
+         YdcPb9wglbOPJ8EQySjpFKMeu0tiQ09g+1WoY=
+Subject: Re: [tip:x86/fpu] x86: Add new static_cpu_has() function using
+ alternatives
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, avi@redhat.com
+Cc: linux-tip-commits@vger.kernel.org
+In-Reply-To: <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>
+References: <1273135546-29690-2-git-send-email-avi@redhat.com>
+	 <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 May 2010 22:10:43 +0200
+Message-ID: <1274213443.2485.3.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Introduce text_poke_smp_batch(). This function modifies several
-text areas with one stop_machine() on SMPr. Because calling
-stop_machine() is heavy task, it is better to aggregate text_poke
-requests.
+Le mercredi 12 mai 2010 à 01:06 +0000, tip-bot for H. Peter Anvin a
+écrit :
+> Commit-ID:  a3c8acd04376d604370dcb6cd2143c9c14078a50
+> Gitweb:     http://git.kernel.org/tip/a3c8acd04376d604370dcb6cd2143c9c14078a50
+> Author:     H. Peter Anvin <hpa@zytor.com>
+> AuthorDate: Tue, 11 May 2010 17:47:07 -0700
+> Committer:  H. Peter Anvin <hpa@zytor.com>
+> CommitDate: Tue, 11 May 2010 17:47:07 -0700
+> 
+> x86: Add new static_cpu_has() function using alternatives
+> 
+> For CPU-feature-specific code that touches performance-critical paths,
+> introduce a static patching version of [boot_]cpu_has().  This is run
+> at alternatives time and is therefore not appropriate for most
+> initialization code, but on the other hand initialization code is
+> generally not performance critical.
+> 
+> On gcc 4.5+ this uses the new "asm goto" feature.
 
-Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Jim Keniston <jkenisto@us.ibm.com>
-Cc: Jason Baron <jbaron@redhat.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
----
+Might be time to change Documentation/Changes about gcc requirements ...
 
- arch/x86/include/asm/alternative.h |    7 +++++
- arch/x86/kernel/alternative.c      |   49 +++++++++++++++++++++++++++++-------
- 2 files changed, 47 insertions(+), 9 deletions(-)
-
-diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
-index 03b6bb5..9a08773 100644
---- a/arch/x86/include/asm/alternative.h
-+++ b/arch/x86/include/asm/alternative.h
-@@ -176,7 +176,14 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
-  * On the local CPU you need to be protected again NMI or MCE handlers seeing an
-  * inconsistent instruction while you patch.
-  */
-+struct text_poke_param {
-+	void *addr;
-+	const void *opcode;
-+	size_t len;
-+};
-+
- extern void *text_poke(void *addr, const void *opcode, size_t len);
- extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
-+extern void text_poke_smp_batch(struct text_poke_param *params, int n);
- 
- #endif /* _ASM_X86_ALTERNATIVE_H */
-diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
-index 7023773..7256800 100644
---- a/arch/x86/kernel/alternative.c
-+++ b/arch/x86/kernel/alternative.c
-@@ -590,17 +590,21 @@ static atomic_t stop_machine_first;
- static int wrote_text;
- 
- struct text_poke_params {
--	void *addr;
--	const void *opcode;
--	size_t len;
-+	struct text_poke_param *params;
-+	int nparams;
- };
- 
- static int __kprobes stop_machine_text_poke(void *data)
- {
- 	struct text_poke_params *tpp = data;
-+	struct text_poke_param *p;
-+	int i;
- 
- 	if (atomic_dec_and_test(&stop_machine_first)) {
--		text_poke(tpp->addr, tpp->opcode, tpp->len);
-+		for (i = 0; i < tpp->nparams; i++) {
-+			p = &tpp->params[i];
-+			text_poke(p->addr, p->opcode, p->len);
-+		}
- 		smp_wmb();	/* Make sure other cpus see that this has run */
- 		wrote_text = 1;
- 	} else {
-@@ -609,8 +613,12 @@ static int __kprobes stop_machine_text_poke(void *data)
- 		smp_mb();	/* Load wrote_text before following execution */
- 	}
- 
--	flush_icache_range((unsigned long)tpp->addr,
--			   (unsigned long)tpp->addr + tpp->len);
-+	for (i = 0; i < tpp->nparams; i++) {
-+		p = &tpp->params[i];
-+		flush_icache_range((unsigned long)p->addr,
-+				   (unsigned long)p->addr + p->len);
-+	}
-+
- 	return 0;
- }
- 
-@@ -630,13 +638,36 @@ static int __kprobes stop_machine_text_poke(void *data)
- void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
- {
- 	struct text_poke_params tpp;
-+	struct text_poke_param p;
- 
--	tpp.addr = addr;
--	tpp.opcode = opcode;
--	tpp.len = len;
-+	p.addr = addr;
-+	p.opcode = opcode;
-+	p.len = len;
-+	tpp.params = &p;
-+	tpp.nparams = 1;
- 	atomic_set(&stop_machine_first, 1);
- 	wrote_text = 0;
- 	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
- 	return addr;
- }
- 
-+/**
-+ * text_poke_smp_batch - Update instructions on a live kernel on SMP
-+ * @params: an array of text_poke parameters
-+ * @n: the number of elements in params.
-+ *
-+ * Modify multi-byte instruction by using stop_machine() on SMP. Since the
-+ * stop_machine() is heavy task, it is better to aggregate text_poke requests
-+ * and do it once if possible.
-+ *
-+ * Note: Must be called under get_online_cpus() and text_mutex.
-+ */
-+void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
-+{
-+	struct text_poke_params tpp = {.params = params, .nparams = n};
-+
-+	atomic_set(&stop_machine_first, 1);
-+	wrote_text = 0;
-+	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
-+}
-+
+# make
+  CHK     include/linux/version.h
+  CHK     include/generated/utsrelease.h
+  CALL    scripts/checksyscalls.sh
+  CHK     include/generated/compile.h
+  CC      arch/x86/kernel/process_32.o
+/usr/src/linux-2.6/arch/x86/include/asm/cpufeature.h: In function
+`prepare_to_copy':
+/usr/src/linux-2.6/arch/x86/include/asm/cpufeature.h:315: warning: asm
+operand 1 probably doesn't match constraints
+/usr/src/linux-2.6/arch/x86/include/asm/cpufeature.h:315: error:
+impossible constraint in `asm'
+/usr/src/linux-2.6/arch/x86/include/asm/cpufeature.h:313: warning:
+'flag' might be used uninitialized in this function
+make[2]: *** [arch/x86/kernel/process_32.o] Error 1
+make[1]: *** [arch/x86/kernel] Error 2
+make: *** [arch/x86] Error 2
+# gcc -v
+Reading specs from /usr/lib/gcc/i386-redhat-linux/3.4.6/specs
+Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+--infodir=/usr/share/info --enable-shared --enable-threads=posix
+--disable-checking --with-system-zlib --enable-__cxa_atexit
+--disable-libunwind-exceptions --enable-java-awt=gtk
+--host=i386-redhat-linux
+Thread model: posix
+gcc version 3.4.6 20060404 (Red Hat 3.4.6-10)
 
 
--- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+
