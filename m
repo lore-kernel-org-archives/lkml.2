@@ -1,39 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753766Ab0ERGun (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:50:43 -0400
-Received: from fg-out-1718.google.com ([72.14.220.155]:8114 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab0ERGuk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:50:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=qtwLHcnSaUMCMcizzdUlt1h7FSDLHxkh6TEBrv7qgtbd5bcpLkKXypdTBmk8fgi39I
-         QzTdQV7LQfElm27aPyDgTmmxiNfem5I7ZKENmgZMVfdf6NWhNu1GJXevlQ6K5o6wtabU
-         yn2w57kL8/KHRNI4ptF0q957hM+InqP8SMvvw=
-Subject: (tsc) clock too slow on Core-i7/ASRock X58
-From: "=?gb2312?Q?=B1=F6=CE=F7=C3=C9?=" <binximeng@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: BinXimeng@gmail.com
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 08:56:57 +0200
-Message-ID: <1274165817.7859.16.camel@eee51>
+	id S1754400Ab0ERGvY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:51:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:65470 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751021Ab0ERGvW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:51:22 -0400
+Date: Tue, 18 May 2010 08:53:14 +0200
+From: Stanislaw Gruszka <sgruszka@redhat.com>
+To: Andrey Vagin <avagin@openvz.org>, Oleg Nesterov <oleg@tv-sign.ru>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, Pavel Emelyanov <xemul@openvz.org>,
+       Andrey Vagin <avagin@openvz.org>
+Subject: Re: [PATCH 3/3] posix_timer: move copy_to_user(created_timer_id)
+ down in timer_create
+Message-ID: <20100518085314.1817d64a@dhcp-lab-109.englab.brq.redhat.com>
+In-Reply-To: <1274116688-4037-3-git-send-email-avagin@openvz.org>
+References: <1274116688-4037-1-git-send-email-avagin@openvz.org>
+	<1274116688-4037-2-git-send-email-avagin@openvz.org>
+	<1274116688-4037-3-git-send-email-avagin@openvz.org>
+Organization: RedHat
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have a problem with the system clock being off roughly 10 minutes a 2
-hours on a Xeon W3250 (like Core-i7 920) using the 2.6.34 Linux and tsc
-clocksource. Switching to hpet seems to improve the situation
-momentarily, however, are there any other thoughts on this matter?
+On Mon, 17 May 2010 21:18:08 +0400
+Andrey Vagin <avagin@openvz.org> wrote:
 
-What I find odd is that the processor speed in dmesg (after TSC
-calibration message) is 2.8 GHz, whereas BIOS says @2.67GHz, might that
-be related?
+> According to Oleg Nesterov:
+> We can move copy_to_user(created_timer_id) down after
+> "if (timer_event_spec)" block too. (but before CLOCK_DISPATCH(),
+> of course).
 
+I'm not sure what for Oleg want that change, I'm not seeing any value of
+it. I think patch should be dropped.
+
+Thanks
+Stanislaw
