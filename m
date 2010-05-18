@@ -1,74 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754062Ab0ERDfS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 23:35:18 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:48734 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752338Ab0ERDfP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 23:35:15 -0400
-Message-ID: <4BF20A1C.6030507@vflare.org>
-Date: Tue, 18 May 2010 09:01:40 +0530
-From: Nitin Gupta <ngupta@vflare.org>
-Reply-To: ngupta@vflare.org
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc11 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/3] Add swap slot free callback to block_device_operations
-References: <1274074364-8838-1-git-send-email-ngupta@vflare.org>	 <1274074364-8838-3-git-send-email-ngupta@vflare.org> <AANLkTilc3XVXFgNHf3gBTwjamO7cR6bO6ZBTw_j8DECq@mail.gmail.com>
-In-Reply-To: <AANLkTilc3XVXFgNHf3gBTwjamO7cR6bO6ZBTw_j8DECq@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1754434Ab0ERDhX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 23:37:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54839 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469Ab0ERDhU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 23:37:20 -0400
+Date: Tue, 18 May 2010 13:37:10 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: linux-next: build failure after merge of the block tree
+Message-Id: <20100518133710.8b1545dd.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__18_May_2010_13_37_10_+1000_WyGs035oBlbgt_AN"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2010 05:31 PM, Minchan Kim wrote:
-> On Mon, May 17, 2010 at 2:32 PM, Nitin Gupta <ngupta@vflare.org> wrote:
->> This callback is required when RAM based devices are used as swap disks.
->> One such device is ramzswap which is used as compressed in-memory swap
->> disk.  For such devices, we need a callback as soon as a swap slot is no
->> longer used to allow freeing memory allocated for this slot.  Without this
->> callback, stale data can quickly accumulate in memory defeating the whole
->> purpose of such devices.
->>
->> Signed-off-by: Nitin Gupta <ngupta@vflare.org>
-> Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
-> 
-> Looks good to me about code. so I added my review sign.
-> But I have some comments.
-> 
-> last time I said, I don't like there is a swap specific function in
-> block_device_operations.
-> It doesn't need many memory but it's not good about design sine
-> block_device_operations have common functions about block device.
-> 
-> But I don't have any good idea now where I put swap specific function.
-> And Linus already acked this idea. Hmm.
-> 
-> If there isn't any objection, I don't insist on my thought.
-> 
-> Nitpick :
-> AFAIR, Nitin introduced SWP_BLKDEV since he think access of long
-> pointers isn't good.  ex)
-> S_ISBLK(swap_info_struct->swap_file->f_mapping->host->i_mode)
-> 
-> But now, we have to access  p->bdev->bd_disk->fops->swap_slot_free_notify.
-> Isn't it all right?
-> 
+--Signature=_Tue__18_May_2010_13_37_10_+1000_WyGs035oBlbgt_AN
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-I'm also not sure about this point but accessing yet another very long
-pointer chain just to check if its a block device seems weird.
+Hi Jens,
 
-Anyways, its trivial to remove this swap flag if its later decided that
-its not really needed.
+After merging the block tree, today's linux-next build (powerpc
+ppc64_defconfig) failed like this:
 
-Thanks,
-Nitin
+block/blk-core.c: In function 'laptop_mode_timer_fn':
+block/blk-core.c:503: error: too few arguments to function 'bdi_start_write=
+back'
+
+Caused by commit e913fc825dc685a444cb4c1d0f9d32f372f59861 ("writeback:
+fix WB_SYNC_NONE writeback from umount") from the block tree interacting
+with commit 42bd225c0ba7c95af39293d39a950c48e7e5cb23 (""laptop-mode: Make
+flushes per-device" fix") also from the block tree.  The merge
+6205ed4658a0df8c2879519977bbed6853014016 should have changed the code in
+block/blk-core.c that moved from mm/page-writeback.c.
+
+Mind you, I think that the change to laptop_mode_timer_fn in commit
+e913fc825dc685a444cb4c1d0f9d32f372f59861 was wrong anyway (the 0 should
+have been added at the end, surely).
+
+I have used the block tree from next-20100517 for today.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__18_May_2010_13_37_10_+1000_WyGs035oBlbgt_AN
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvyC2YACgkQjjKRsyhoI8zOZACgm+SatbD3aZxkIHqg5RCJ2kSK
+/RsAn1Y/QtFB5B2AJSGTNBJ2H0BdlUD0
+=sU3c
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_May_2010_13_37_10_+1000_WyGs035oBlbgt_AN--
