@@ -1,65 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932127Ab0ERUoF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:44:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6771 "EHLO mx1.redhat.com"
+	id S1757559Ab0ERUoD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:44:03 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:48293 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932087Ab0ERUoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:44:01 -0400
-Date: Tue, 18 May 2010 16:43:30 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: eranian@googlemail.com
-Cc: linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, mingo@elte.hu,
-       paulus@samba.org, perfmon2-devel@lists.sf.net
-Subject: [PATCH] perf: fix cmpxchg warning in perf_event_amd.c
-Message-ID: <20100518204330.GA30624@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754115Ab0ERUn7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:43:59 -0400
+Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
+ clock device
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       "Du, Alek" <alek.du@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain>
+References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>
+	 <alpine.LFD.2.00.1005111643380.3401@localhost.localdomain>
+	 <20100512103422.1d59cc85@feng-i7>
+	 <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain>
+Content-Type: text/plain; charset="ISO-8859-1"
+Date: Tue, 18 May 2010 13:43:54 -0700
+Message-ID: <1274215434.1699.12.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 2010-05-17 at 11:15 +0200, Thomas Gleixner wrote:
+> 
+> 
+> There is no particular reason why we need to read it in
+> timekeeping_init(). Nothing in the kernel needs the correct wall time
+> at that point. So we can safely move the setting of xtime to rtc wall
+> clock time to a separate timekeeping_late_init() function.
+> 
+> John ???
 
-I'm getting the following warnings:
+No big objections here. Still would like to keep the amount of time that
+the kernel is up without xtime being initialized to a minimum. However
+the generic RTC code already have this issue since some of them require
+interrupts to be enabled to do a read, so pushing it off into a
+_late_init() function is probably just a short term fix until we figure
+out how to get the generic RTC code working better with the timekeeping
+code.
 
-In file included from arch/x86/kernel/cpu/perf_event.c:1343:
-arch/x86/kernel/cpu/perf_event_amd.c: In function
-‘amd_put_event_constraints’:
-arch/x86/kernel/cpu/perf_event_amd.c:167: warning: value computed is not
-used
+Does the delayed init required by vrtc cause any trouble with
+suspend/resume?
 
-Since cmpxchg returns a value, we need to use it. We can use it to test if its
-equal to "event".
-
-thanks,
-
--Jason
-
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- arch/x86/kernel/cpu/perf_event_amd.c |    4 +---
- 1 files changed, 1 insertions(+), 3 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 611df11..e13ce4a 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -163,10 +163,8 @@ static void amd_put_event_constraints(struct cpu_hw_events *cpuc,
- 	 * when we come here
- 	 */
- 	for (i = 0; i < x86_pmu.num_counters; i++) {
--		if (nb->owners[i] == event) {
--			cmpxchg(nb->owners+i, event, NULL);
-+		if (cmpxchg(nb->owners+i, event, NULL) == event)
- 			break;
--		}
- 	}
- }
- 
--- 
-1.7.0.1
+thanks
+-john 
 
