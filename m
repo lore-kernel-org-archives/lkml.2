@@ -1,158 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756190Ab0ERBX6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 21:23:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43241 "EHLO mx1.redhat.com"
+	id S1756161Ab0ERB0E (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 21:26:04 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:39104 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753913Ab0ERBX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 21:23:57 -0400
-Date: Tue, 18 May 2010 04:19:31 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: davem@davemloft.net, Juan Quintela <quintela@redhat.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-       amit.shah@redhat.com
-Subject: [PATCH] vhost-net: utilize PUBLISH_USED_IDX feature
-Message-ID: <20100518011931.GA21918@redhat.com>
+	id S1753348Ab0ERB0B (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 21:26:01 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Andrew Tridgell <tridge@samba.org>, David Howells <dhowells@redhat.com>,
+       Eric Paris <eparis@parisplace.org>, Jakub Jelinek <jakub@redhat.com>,
+       James Morris <jmorris@namei.org>, Stephen Smalley <sds@tycho.nsa.gov>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] signals: check_kill_permission: don't check creds if
+	same_thread_group()
+In-Reply-To: Oleg Nesterov's message of  Monday, 17 May 2010 21:54:14 +0200 <20100517195414.GA21504@redhat.com>
+References: <20100517195414.GA21504@redhat.com>
+X-Windows: you'd better sit down.
+Message-Id: <20100518012547.0BE09402C2@magilla.sf.frob.com>
+Date: Mon, 17 May 2010 18:25:46 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With PUBLISH_USED_IDX, guest tells us which used entries
-it has consumed. This can be used to reduce the number
-of interrupts: after we write a used entry, if the guest has not yet
-consumed the previous entry, or if the guest has already consumed the
-new entry, we do not need to interrupt.
-This imporves bandwidth by 30% under some workflows.
+Acked-by: Roland McGrath <roland@redhat.com>
 
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
+I concur that there is no real security benefit from checking uids for any
+CLONE_VM case.  But there is also no reason to change the old behavior in
+this corner for any case but CLONE_THREAD.
 
-Rusty, Dave, this patch depends on the patch
-"virtio: put last seen used index into ring itself"
-which is currently destined at Rusty's tree.
-Rusty, if you are taking that one for 2.6.35, please
-take this one as well.
-Dave, any objections?
 
- drivers/vhost/vhost.c |   27 +++++++++++++++++++++------
- drivers/vhost/vhost.h |    2 ++
- 2 files changed, 23 insertions(+), 6 deletions(-)
-
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 750effe..2a66cf3 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -278,14 +278,15 @@ static int memory_access_ok(struct vhost_dev *d, struct vhost_memory *mem,
- 	return 1;
- }
- 
--static int vq_access_ok(unsigned int num,
-+static int vq_access_ok(struct vhost_dev *d, unsigned int num,
- 			struct vring_desc __user *desc,
- 			struct vring_avail __user *avail,
- 			struct vring_used __user *used)
- {
-+	size_t s = vhost_has_feature(d, VIRTIO_RING_F_PUBLISH_USED) ? 2 : 0;
- 	return access_ok(VERIFY_READ, desc, num * sizeof *desc) &&
- 	       access_ok(VERIFY_READ, avail,
--			 sizeof *avail + num * sizeof *avail->ring) &&
-+			 sizeof *avail + num * sizeof *avail->ring + s) &&
- 	       access_ok(VERIFY_WRITE, used,
- 			sizeof *used + num * sizeof *used->ring);
- }
-@@ -312,7 +313,7 @@ static int vq_log_access_ok(struct vhost_virtqueue *vq, void __user *log_base)
- /* Caller should have vq mutex and device mutex */
- int vhost_vq_access_ok(struct vhost_virtqueue *vq)
- {
--	return vq_access_ok(vq->num, vq->desc, vq->avail, vq->used) &&
-+	return vq_access_ok(vq->dev, vq->num, vq->desc, vq->avail, vq->used,) &&
- 		vq_log_access_ok(vq, vq->log_base);
- }
- 
-@@ -448,7 +449,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 		 * If it is not, we don't as size might not have been setup.
- 		 * We will verify when backend is configured. */
- 		if (vq->private_data) {
--			if (!vq_access_ok(vq->num,
-+			if (!vq_access_ok(d, vq->num,
- 				(void __user *)(unsigned long)a.desc_user_addr,
- 				(void __user *)(unsigned long)a.avail_user_addr,
- 				(void __user *)(unsigned long)a.used_user_addr)) {
-@@ -473,6 +474,7 @@ static long vhost_set_vring(struct vhost_dev *d, int ioctl, void __user *argp)
- 		vq->log_used = !!(a.flags & (0x1 << VHOST_VRING_F_LOG));
- 		vq->desc = (void __user *)(unsigned long)a.desc_user_addr;
- 		vq->avail = (void __user *)(unsigned long)a.avail_user_addr;
-+		vq->last_used = (u16 __user *)&vq->avail->ring[vq->num];
- 		vq->log_addr = a.log_guest_addr;
- 		vq->used = (void __user *)(unsigned long)a.used_user_addr;
- 		break;
-@@ -993,7 +995,8 @@ void vhost_discard_vq_desc(struct vhost_virtqueue *vq)
- 
- /* After we've used one of their buffers, we tell them about it.  We'll then
-  * want to notify the guest, using eventfd. */
--int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
-+static int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head,
-+			  int len)
- {
- 	struct vring_used_elem __user *used;
- 
-@@ -1034,9 +1037,10 @@ int vhost_add_used(struct vhost_virtqueue *vq, unsigned int head, int len)
- }
- 
- /* This actually signals the guest, using eventfd. */
--void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
-+static void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- {
- 	__u16 flags;
-+	__u16 used;
- 	/* Flush out used index updates. This is paired
- 	 * with the barrier that the Guest executes when enabling
- 	 * interrupts. */
-@@ -1053,6 +1057,17 @@ void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
- 	     !vhost_has_feature(dev, VIRTIO_F_NOTIFY_ON_EMPTY)))
- 		return;
- 
-+	if (vhost_has_feature(d, VIRTIO_RING_F_PUBLISH_USED)) {
-+		__u16 used;
-+		if (get_user(used, vq->last_used)) {
-+			vq_err(vq, "Failed to get last used idx");
-+			return;
-+		}
-+
-+		if (used != (u16)(vq->last_used_idx - 1))
-+			return;
-+	}
-+
- 	/* Signal the Guest tell them we used something up. */
- 	if (vq->call_ctx)
- 		eventfd_signal(vq->call_ctx, 1);
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 44591ba..00e9784 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -52,6 +52,7 @@ struct vhost_virtqueue {
- 	unsigned int num;
- 	struct vring_desc __user *desc;
- 	struct vring_avail __user *avail;
-+	u16 __user *last_used;
- 	struct vring_used __user *used;
- 	struct file *kick;
- 	struct file *call;
-@@ -148,6 +149,7 @@ void vhost_cleanup(void);
- enum {
- 	VHOST_FEATURES = (1 << VIRTIO_F_NOTIFY_ON_EMPTY) |
- 			 (1 << VIRTIO_RING_F_INDIRECT_DESC) |
-+			 (1 << VIRTIO_RING_F_PUBLISH_USED) |
- 			 (1 << VHOST_F_LOG_ALL) |
- 			 (1 << VHOST_NET_F_VIRTIO_NET_HDR),
- };
--- 
-1.7.1.12.g42b7f
+Thanks,
+Roland
