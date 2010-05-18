@@ -1,87 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757125Ab0ERLbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:31:50 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13125 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755250Ab0ERLbr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:31:47 -0400
-From: Juan Quintela <quintela@redhat.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Cc: davem@davemloft.net, Rusty Russell <rusty@rustcorp.com.au>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-       amit.shah@redhat.com
-Subject: Re: [PATCHv2] vhost-net: utilize PUBLISH_USED_IDX feature
-In-Reply-To: <20100518022105.GA23129@redhat.com> (Michael S. Tsirkin's message
-	of "Tue, 18 May 2010 05:21:05 +0300")
-References: <20100518022105.GA23129@redhat.com>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
-Date: Tue, 18 May 2010 13:31:29 +0200
-Message-ID: <m31vd95tv2.fsf@trasno.mitica>
+	id S1756956Ab0ERLpF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:45:05 -0400
+Received: from nessie.weebeastie.net ([220.233.7.36]:45214 "EHLO
+	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1756380Ab0ERLpD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 07:45:03 -0400
+Date: Tue, 18 May 2010 21:44:26 +1000
+From: CaT <cat@zip.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>, bzolnier@gmail.com,
+       stable@kernel.org, greg@kroah.com, ben@decadent.org.uk
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: Linux 2.6.34 (rt2860 regression)
+Message-ID: <20100518114426.GY2657@zip.com.au>
+References: <alpine.LFD.2.00.1005161430100.4195@i5.linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005161430100.4195@i5.linux-foundation.org>
+Organisation: Furball Inc.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Michael S. Tsirkin" <mst@redhat.com> wrote:
-> With PUBLISH_USED_IDX, guest tells us which used entries
-> it has consumed. This can be used to reduce the number
-> of interrupts: after we write a used entry, if the guest has not yet
-> consumed the previous entry, or if the guest has already consumed the
-> new entry, we do not need to interrupt.
-> This imporves bandwidth by 30% under some workflows.
->
-> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
-> ---
->
-> This is on top of Rusty's tree and depends on the virtio patch.
->
-> Changes from v1:
-> fix build
+On Sun, May 16, 2010 at 02:39:36PM -0700, Linus Torvalds wrote:
+> So 2.6.34 is out, and the merge window is thus officially open. As usual, 
+> I probably won't do any real pulls for a day or two, in the (probably 
+> futile) hope that we'll have more people running plain 2.6.34 for a while. 
+> But you can certainly start sending me pull requests.
+> 
+> Go forth and test,
 
-Minor nit if you have to respin it:
+Whilst I realise this is for a staging driver... On 2010/3/4 the firmware
+for the rt2860 driver (amongst others) was removed as part of a patch
+to get the driver to use request_firmware(). See:
 
->  /* This actually signals the guest, using eventfd. */
-> -void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
-> +static void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
->  {
->  	__u16 flags;
-> +	__u16 used;
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=c22202faade08b6b45f14fd86bfb57f79d73464c
 
-local var named "used" here
+The firmware is in the linux-firmware.git repository and has been for a
+while (at least I think that's the right firmware):
 
->  	/* Flush out used index updates. This is paired
->  	 * with the barrier that the Guest executes when enabling
->  	 * interrupts. */
-> @@ -1053,6 +1057,17 @@ void vhost_signal(struct vhost_dev *dev, struct vhost_virtqueue *vq)
->  	     !vhost_has_feature(dev, VIRTIO_F_NOTIFY_ON_EMPTY)))
->  		return;
->  
-> +	if (vhost_has_feature(dev, VIRTIO_RING_F_PUBLISH_USED)) {
-> +		__u16 used;
+http://git.kernel.org/?p=linux/kernel/git/airlied/linux-firmware.git;a=history;f=rt2860.bin;h=778a771716aff389c79fec3b245ed00beba23a67;hb=HEAD
 
-and a "more" local one also named "used" :)
+Is there any chance of this making it into 2.6.34.1/35 so that the driver
+works again as it once did?
 
-I guess you want to remove the previous declaration, as var is only used
-in this block.
-
-> +		if (get_user(used, vq->last_used)) {
-> +			vq_err(vq, "Failed to get last used idx");
-> +			return;
-> +		}
-> +
-> +		if (used != (u16)(vq->last_used_idx - 1))
-> +			return;
-> +	}
-> +
->  	/* Signal the Guest tell them we used something up. */
->  	if (vq->call_ctx)
->  		eventfd_signal(vq->call_ctx, 1);
-
-Rest of patch looks ok, and as a bonus un-export two functions.
-
-Later, Juan.
+-- 
+  "A search of his car uncovered pornography, a homemade sex aid, women's 
+  stockings and a Jack Russell terrier."
+    - http://www.news.com.au/story/0%2C27574%2C24675808-421%2C00.html
