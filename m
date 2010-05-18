@@ -1,124 +1,196 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757317Ab0ERM03 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 08:26:29 -0400
-Received: from mail-qy0-f171.google.com ([209.85.221.171]:34312 "EHLO
-	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752633Ab0ERM0Z convert rfc822-to-8bit (ORCPT
+	id S1757420Ab0ERM1V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 08:27:21 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:55480 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752633Ab0ERM1T (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 08:26:25 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=Awn0RUb2WC/IbDldIAWI3/BGNASxlJxwZRXDid1tUyRKmQqWpVO045UNFDu0jTpxOT
-         gqRmpyPGBwYB1ce1daTt7VahHx5IjfJdrvKHCuO/NlzLvJ68uP0vKv0waiJ/ZLV0FWD3
-         nAnu9tBdMfhNmwgNc10r1RaS0QX8UpRi79bN8=
+	Tue, 18 May 2010 08:27:19 -0400
+Date: Tue, 18 May 2010 22:27:14 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100518122714.GG2150@dastard>
+References: <20100512212403.GE3597@localhost.localdomain>
+ <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
+ <20100514010042.GI13617@dastard>
+ <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+ <20100518063647.GD2516@laptop>
+ <20100518080503.GF2150@dastard>
+ <20100518104351.GF2516@laptop>
 MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
-References: <AANLkTil73ArhX2w6b_v1bmWjP1FA5zUTfPzK2N4waOu1@mail.gmail.com>
-	 <87tyq63eux.fsf@basil.nowhere.org>
-	 <AANLkTiktV26Xu_qXFPdTRMLe5UwWnjpqvEKitjRElF6R@mail.gmail.com>
-	 <1274102511.4418.18.camel@mulgrave.site>
-	 <AANLkTil9lmdG5LY2SFk3cMsPOK-gUm2diMFL_o5bT08u@mail.gmail.com>
-	 <1274106526.4418.40.camel@mulgrave.site>
-	 <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
-Date: Tue, 18 May 2010 08:26:24 -0400
-Message-ID: <AANLkTiltKYV6_usOnIhjg699vsnXVJ3vJlt63RfIfBJY@mail.gmail.com>
-Subject: Re: [ANNOUNCE] GSoC project: Improving kconfig using a SAT solver
-From: Jon Smirl <jonsmirl@gmail.com>
-To: david@lang.hm
-Cc: James Bottomley <James.Bottomley@hansenpartnership.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Andi Kleen <andi@firstfloor.org>, linux-kernel@vger.kernel.org,
-       linux-kbuild@vger.kernel.org, Bart Massey <bart@cs.pdx.edu>,
-       Michal Marek <mmarek@suse.cz>, Greg Kroah-Hartman <greg@kroah.com>,
-       Ingo Molnar <mingo@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100518104351.GF2516@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 2:03 AM,  <david@lang.hm> wrote:
-> On Mon, 17 May 2010, James Bottomley wrote:
->
->> On Mon, 2010-05-17 at 16:21 +0200, Vegard Nossum wrote:
->>>
->>> On 17 May 2010 15:21, James Bottomley
->>>
->>> Even if the problem is different from zypper's, it is also here
->>> possible to get an unsatisfiable instance. You are right that, yes,
->>> the kconfig files on their own should always be satisfiable. But
->>> that's before the user has made any choices at all. An example of an
->>> unsatisfiable instance would be one where the user demands that 1.
->>> some USB driver is enabled, while 2. USB support in general is
->>> disabled.
->>
->> Actually, these are two separate problems.  The first is basic
->> consistency within the Kconfig subsytstem (something that select
->> currently damages for us).  The second is what to present to the user,
->> which is where the inception of the select problem came from.  A user
->> doesn't really want to know that USB device X depends on usb storage,
->> SCSI and a raft of other things ... they just want it to configure a
->> kernel that supports their device.  In particular, we don't want to
->> present every possible option to users and then try to work out a
->> solution, we really need guided configuration (which, in some measure,
->> is what we have today: if you don't select general USB, you won't see
->> any USB drivers.  Or more importantly, if you select an Adaptec SCSI
->> card, we just enable whichever transport library it needs).
->
-> There are two modes people can be in when configuring a kernel.
->
-> 1. I want to configure a kernel to support my hardware, enable anything else
-> needed to make it work.
->
-> 2. I really care about having a small kernel, don't enable anything I have
-> disabled (but help me figure out why something I want isn't available)
->
-> I don't think that hiding hardware from the user is ever the best thing to
-> do. for approach #1 you obviously don't want to hide anything, but even for
-> approach #2, someone may not realize that by disabling one option they are
-> making it impossible to support something, and as someone who spent a bunch
-> of time hunting through config to find options that I ended up finding were
-> not available without enabling something else, I much prefer to see the
-> option, but see it disabled rather than not being sure if it should be
-> there, or somewhere else in the config.
+On Tue, May 18, 2010 at 08:43:51PM +1000, Nick Piggin wrote:
+> On Tue, May 18, 2010 at 06:05:03PM +1000, Dave Chinner wrote:
+> > On Tue, May 18, 2010 at 04:36:47PM +1000, Nick Piggin wrote:
+> > > Well you could do a large span block allocation at the beginning,
+> > > and then dirty the pagecache one by one like we do right now.
+> > 
+> > The problem is that if we fail to allocate a page (e.g.  ENOMEM) or
+> > fail the copy (EFAULT) after the block allocation, we have to undo
+> > the allocation we have already completed. If we don't, we leave
+> > uninitialisaed allocations on disk that will expose stale data.
+> > 
+> > In the second case (EFAULT) we might be able to zero the pages to
+> > avoid punching out blocks, but the first case where pages can't be
+> > allocated to cover the block allocated range makes it very
+> > difficult without being able to punch holes in allocated block
+> > ranges.
+> > 
+> > AFAIK, only XFS and OCFS2 currently support punching out arbitrary
+> > ranges of allocated blocks from an inode - there is not VFS method
+> > for it, just an ioctl (XFS_IOC_UNRESVSP).
+> > 
+> > Hence the way to avoid needing hole punching is to allocate and lock
+> > down all the pages into the page cache fÑ–rst, then do the copy so
+> > they fail before the allocation is done if they are going to fail.
+> > That makes it much, much easier to handle failures....
+> 
+> So it is just a matter of what is exposed as a vfs interface?
 
-I have to agree with this. An example is audio drivers that disappear
-because something like SPI is turned off. Sometimes I have to read the
-Kconfig files to figure out what subsystems I need enabled in order to
-make the driver appear as a choice.
+More a matter of utilising the functionality most filesystems
+already have and minimising the amount of churn in critical areas of
+filesytsem code. Hole punching is not simple, anÑ• bugs will likely
+result in a corrupted filesystem.  And the hole punching will only
+occur in a hard to trigger corner case, so it's likely that bugs
+will go undetected and filesystems will suffer from random,
+impossible to track down corruptions as a result.
 
-Another way this could work...
-Enable the platform
-this causes all subsystems on the platform (usb, spi, pci, etc) to be
-soft enabled
-user selects device drivers or hard enables the subsystem
-on save, if the subsystem wasn't hard enabled for some reason or
-dependency, disable it.
+In comparison, adding reserve/unreserve functionality might cause
+block accounting issues if there is a bug, but it won't cause
+on-disk corruption that results in data loss.  Hole punching is not
+simple or easy - it's a damn complex way to handle errors and if
+that's all it's required for then we've failed already.
 
----------------
+> I would much prefer to make it a requirement to support hole
+> punching in the block allocator if the filesystem wishes to do
+> such writes.
 
-I'd also find it useful if Kconfig had an option that analyzed the
-system it is running on and then generated the minimal set of drivers
-needed to support it. Assume that the system is running something like
-the Ubuntu kernel with every driver enabled. Then figure out the
-minimal build footprint for a custom kernel to support the same
-hardware.  I do this by hand, but a button for doing it would be a lot
-easier.
+I think that's an unrealistic requirement simply because it can be
+avoided.  With a reserve/alloc/unreserve interface, btrfs will work
+almost unmodified, XFS will require some new wrappers and bufferhead
+mapping code, and ext4 and gfs2 look to be pretty much in the same
+boat. All relatively simple on the filesystem side.
 
->
-> David Lang
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+If we have to add hole punching, XFS will require an extra wrapper
+but btrfs, gfs2 and ext4 will have to implement hole punching from
+the ground up.  Personally, I think that requiring hole punching is
+asking far too much for multipage writes, esp. given that btrfs
+already implements them without needing such functionality...
 
+> > > The only reason to do operations on multiple pages at once is if
+> > > we need to lock them all. 
+> > 
+> > Well, to avoid the refaulting of pages we just unmapped we'd need to
+> > do that...
+> 
+> Well, the lock/unmap/copy/unlock could be done on a per-page
+> basis.
 
+The moment we unmap the old page we cannot unlock it until the new
+page is in the page cache. If we do unlock it, we risk having it
+faulted again before we insert the new copy. Yes, that can be done
+page by page, but shoul donly be done after all the pages are
+allocated and copied into.
+
+FWIW, I don't think we can unmap the old page until after the entire
+copy is done because the old page(s) might be where we are copying
+from....
+
+> > > Now the fs might well have that requirement
+> > > (if it is not using i_mutex for block (de)allocation
+> > > serialisation), but I don't think generic code needs to be doing
+> > > that.
+> > 
+> > XFS already falls into the category of a filesystem using the
+> > generic code that does not use i_mutex for allocation serialisation.
+> > I'm sure it isn't the only filesystem that this is true for, so it
+> > seems sensible for the generic code to handle this case.
+> 
+> Well, does it need page lock? All pages locked concurrently in
+> a range under which block allocation is happening?
+
+No, allocation doesn't require page locks either - XFS has it's own
+inode locks for serialisation of allocation, truncation and hole
+punching.
+
+> I would much
+> prefer an allocation API that supports allocation/freeing
+> without requiring any pagecache at all.
+
+Allocation doesn't require any pagecache at all. It's the fact that
+the allocation needs to be sycnhronised with the page cache state
+change that requires page locks to be taken as part of the write
+process.
+
+> > > Basically, once pagecache is marked uptodate, I don't think we should
+> > > ever put maybe-invalid data into it -- the way to do it is to invalidate
+> > > that page and put a *new* page in there.
+> > 
+> > Ok, so lets do that...
+> > 
+> > > Why? Because user mappings are just one problem, but once you had a
+> > > user mapping, you can have been subject to get_user_pages, so it could
+> > > be in the middle of a DMA operation or something.
+> > 
+> > ... because we already know this behaviour causes problems for
+> > high end enterprise level features like hardware checksumming IO
+> > paths.
+> > 
+> > Hence it seems that a multipage write needs to:
+> > 
+> > 	1. allocate new pages
+> > 	2. attach bufferheads/mapping structures to pages (if required)
+> > 	3. copy data into pages
+> > 	4. allocate space
+> > 	5. for each old page in the range:
+> > 		lock page
+> > 		invalidate mappings
+> > 		clear page uptodate flag
+> > 		remove page from page cache
+> > 	6. for each new page:
+> > 		map new page to allocated space
+> > 		lock new page
+> > 		insert new page into pagecache
+> > 		update new page state (write_end equivalent)
+> > 		unlock new page
+> > 	7. free old pages
+> > 
+> > Steps 1-4 can all fail, and can all be backed out from without
+> > changing the current state. Steps 5-7 can't fail AFAICT, so we
+> > should be able to run this safely after the allocation without
+> > needing significant error unwinding...
+> > 
+> > Thoughts?
+> 
+> Possibly. The importance of hot cache is reduced, because we are
+> doing full-page copies, and bulk copies, by definition. But it
+> could still be an issue. The allocations and deallocations could
+> cost a little as well.
+
+They will cost far less than the reduction in allocation overhead
+saves us, and there are potential optimisations there for reuse of
+old pages....
+
+Cheers,
+
+Dave.
 
 -- 
-Jon Smirl
-jonsmirl@gmail.com
+Dave Chinner
+david@fromorbit.com
