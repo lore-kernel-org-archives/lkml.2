@@ -1,64 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab0ERVGQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:06:16 -0400
-Received: from sous-sol.org ([216.99.217.87]:38213 "EHLO sequoia.sous-sol.org"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1752380Ab0ERVGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:06:15 -0400
-Date: Tue, 18 May 2010 14:06:07 -0700
-From: Chris Wright <chrisw@sous-sol.org>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
-       Chris Wright <chrisw@sous-sol.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20100518210607.GI8301@sequoia.sous-sol.org>
-References: <20100518164409.8b19c786.sfr@canb.auug.org.au>
- <20100518140226.GB24113@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100518140226.GB24113@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1754943Ab0ERVHq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:07:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53739 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753659Ab0ERVHo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:07:44 -0400
+From: Josef Bacik <josef@redhat.com>
+To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       hch@infradead.org
+Subject: [PATCH 1/5] fs: allow short direct-io reads to be completed via buffered IO V2
+Date: Tue, 18 May 2010 17:05:43 -0400
+Message-Id: <1274216747-9450-1-git-send-email-josef@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Greg KH (greg@kroah.com) wrote:
-> On Tue, May 18, 2010 at 04:44:09PM +1000, Stephen Rothwell wrote:
-> > Hi Greg,
-> > 
-> > After merging the driver-core tree, today's linux-next build (powerpc
-> > ppc64_defconfig) failed like this:
-> > 
-> > cc1: warnings being treated as errors
-> > In file included from include/linux/kobject.h:21,
-> >                  from include/linux/device.h:17,
-> >                  from arch/powerpc/lib/devres.c:10:
-> > include/linux/sysfs.h:97: error: 'struct file' declared inside parameter list
-> > include/linux/sysfs.h:97: error: its scope is only this definition or declaration, which is probably not what you want
-> > include/linux/sysfs.h:99: error: 'struct file' declared inside parameter list
-> > include/linux/sysfs.h:101: error: 'struct file' declared inside parameter list
-> > 
-> > and many more (arch/powerpc is built with -Werror (as do some other
-> > architectures)) and lots of similar warnings ...
-> > 
-> > Caused by commit f8e898186196a22756b50b908ecd92123265f8a2 ("sysfs: add
-> > struct file* to bin_attr callbacks").   See Rule 1 in
-> > Documentation/SubmitChecklist.  The header file probably just needs
-> > "struct file;" added in the right place.
-> > 
-> > I have reverted that commit for today (and commit
-> > 44e425ab9f887ec6d3a7a4481f3b0c99f120de19 ("pci: check caps from sysfs
-> > file open to read device dependent config space") that depends on it).
-> 
-> Ick.
-> 
-> Chris, care to send a patch to resolve this?
+V1->V2: Check to see if our current ppos is >= i_size after a short DIO read,
+just in case it was actually a short read and we need to just return.
 
-Would you prefer incremental to fold in, or respin?  It's just this
-one-liner fwd declaration as Stephen mentioned.
+This is similar to what already happens in the write case.  If we have a short
+read while doing O_DIRECT, instead of just returning, fallthrough and try to
+read the rest via buffered IO.  BTRFS needs this because if we encounter a
+compressed or inline extent during DIO, we need to fallback on buffered.  If the
+extent is compressed we need to read the entire thing into memory and
+de-compress it into the users pages.  I have tested this with fsx and everything
+works great.  Thanks,
 
-thanks,
--chris
+Signed-off-by: Josef Bacik <josef@redhat.com>
+---
+ mm/filemap.c |   36 +++++++++++++++++++++++++++++++-----
+ 1 files changed, 31 insertions(+), 5 deletions(-)
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 140ebda..829ac9c 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -1263,7 +1263,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ {
+ 	struct file *filp = iocb->ki_filp;
+ 	ssize_t retval;
+-	unsigned long seg;
++	unsigned long seg = 0;
+ 	size_t count;
+ 	loff_t *ppos = &iocb->ki_pos;
+ 
+@@ -1290,21 +1290,47 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
+ 				retval = mapping->a_ops->direct_IO(READ, iocb,
+ 							iov, pos, nr_segs);
+ 			}
+-			if (retval > 0)
++			if (retval > 0) {
+ 				*ppos = pos + retval;
+-			if (retval) {
++				count -= retval;
++			}
++
++			/*
++			 * Btrfs can have a short DIO read if we encounter
++			 * compressed extents, so if there was an error, or if
++			 * we've already read everything we wanted to, or if
++			 * there was a short read because we hit EOF, go ahead
++			 * and return.  Otherwise fallthrough to buffered io for
++			 * the rest of the read.
++			 */
++			if (retval < 0 || !count || *ppos >= size) {
+ 				file_accessed(filp);
+ 				goto out;
+ 			}
+ 		}
+ 	}
+ 
++	count = retval;
+ 	for (seg = 0; seg < nr_segs; seg++) {
+ 		read_descriptor_t desc;
++		loff_t offset = 0;
++
++		/*
++		 * If we did a short DIO read we need to skip the section of the
++		 * iov that we've already read data into.
++		 */
++		if (count) {
++			if (count > iov[seg].iov_len) {
++				count -= iov[seg].iov_len;
++				continue;
++			}
++			offset = count;
++			count = 0;
++		}
+ 
+ 		desc.written = 0;
+-		desc.arg.buf = iov[seg].iov_base;
+-		desc.count = iov[seg].iov_len;
++		desc.arg.buf = iov[seg].iov_base + offset;
++		desc.count = iov[seg].iov_len - offset;
+ 		if (desc.count == 0)
+ 			continue;
+ 		desc.error = 0;
+-- 
+1.6.6.1
+
