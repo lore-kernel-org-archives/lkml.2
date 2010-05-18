@@ -1,192 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755919Ab0ERBAE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 21:00:04 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52843 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753255Ab0ERBAA convert rfc822-to-8bit (ORCPT
+	id S1755857Ab0ERBEs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 21:04:48 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41089 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753255Ab0ERBEr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 21:00:00 -0400
+	Mon, 17 May 2010 21:04:47 -0400
+Date: Mon, 17 May 2010 18:02:10 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Yuhong Bao <yuhongbao_386@hotmail.com>, venkatesh.pallipadi@intel.com,
+       markh@compro.net, dmarkh@cfl.rr.com, andi@firstfloor.org,
+       alain@knaff.lu, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Disable HPET MSI on ATI SB700/SB800
+In-Reply-To: <4BF1E5BE.9010000@gmail.com>
+Message-ID: <alpine.LFD.2.00.1005171800050.4195@i5.linux-foundation.org>
+References: <87bphpd4rt.fsf@basil.nowhere.org> <4B32565E.6000501@compro.net> <20091223191806.GA3336@linux-os.sc.intel.com> <4B3270FE.5090607@compro.net> <1261600243.16916.56.camel@localhost.localdomain> <4B476E8D.1030308@compro.net> <20100121190952.GA32523@linux-os.sc.intel.com>
+ <SNT125-W12BC46C506A5BB777A06B5C3610@phx.gbl> <20100125171059.GB5041@alberich.amd.com> <20100517145943.GV5888@alberich.amd.com> <4BF1E5BE.9010000@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <201005172342.52660.rjw@sisk.pl>
-References: <1273810273-3039-1-git-send-email-arve@android.com>
-	 <201005142308.48386.rjw@sisk.pl>
-	 <AANLkTilX0uhqrJtUSOC4smdH1M8V-h14J7YtRG4PPxOQ@mail.gmail.com>
-	 <201005172342.52660.rjw@sisk.pl>
-Date: Mon, 17 May 2010 17:52:46 -0700
-Message-ID: <AANLkTilQ5wZ_7fMyDMpUBCtu9oD1Wh22JGllyS1EPlxB@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/17 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Monday 17 May 2010, Arve Hjønnevåg wrote:
->> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
->> > On Friday 14 May 2010, Arve Hjønnevåg wrote:
->> >> This patch series adds a suspend-block api that provides the same
->> >> functionality as the android wakelock api. This version has some
->> >> changes from, or requested by, Rafael. The most notable changes are:
->> >> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
->> >>   for statically allocated suspend blockers.
->> >> - suspend_blocker_destroy is now called suspend_blocker_unregister
->> >> - The user space mandatory _INIT ioctl has been replaced with an
->> >>   optional _SET_NAME ioctl.
->> >>
->> >> I kept the ack and reviewed by tags on two of the patches even though
->> >> there were a few cosmetic changes.
->> >
->> > Thanks for the patches, I think they are in a pretty good shape now.
->> >
->> > That said, I'd like the changelogs to be a bit more descriptive, at least for
->> > patch [1/8].  I think it should explain (in a few words) what the purpose of
->> > the feature is and what problems it solves that generally a combination of
->> > runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
->> > think we need that feature.
->> >
->>
->> How about:
->>
->> PM: Add opportunistic suspend support.
->
-> "PM: Opportunistic suspend support" would be sufficient IMO.
->
-> Now, I'd start with the motivation.  Like "Power management features present
-> in the current mainline kernel are insufficient to get maximum possible energy
-> savings on some platforms, such as Android, because ..." (here go explanations
-> why this is the case in your opinion).
->
-> Next, "To allow Android and similar platforms to save more energy than they
-> currently can save using the mainline kernel, introduce a mechanism by which
-> the system is automatically suspended (i.e. put into a system-wide sleep state)
-> whenever it's not doing useful work, called opportunistic suspend".
->
-> "For this purpose introduce the suspend blockers framework allowing the
-> kernel's power management subsystem to decide when it is desirable to suspend
-> the system (i.e. when useful work is not being done).  Add an API that ..."
->
-
-PM: Opportunistic suspend support.
-
-Power management features present in the current mainline kernel are
-insufficient to get maximum possible energy savings on some platforms,
-such as Android, because low power states can only safely be entered
-from idle. Suspend, in its current form, cannot be used, since wakeup
-events that occur right after initiating suspend will not be processed
-until another possibly unrelated event wake up the system again.
-
-On some systems idle combined with runtime PM can enter the same power
-state as suspend, but periodic wakeups increase the average power
-consumption. Suspending the system also reduces the harm caused by
-apps that never go idle. On other systems suspend can enter a much
-lower power state than idle.
-
-To allow Android and similar platforms to save more energy than they
-currently can save using the mainline kernel, we introduce a mechanism
-by which the system is automatically suspended (i.e. put into a
-system-wide sleep state) whenever it's not doing useful work, called
-opportunistic suspend.
-
-For this purpose introduce the suspend blockers framework allowing the
-kernel's power management subsystem to decide when it is desirable to
-suspend the system (i.e. when useful work is not being done). Add an
-API that that drivers can use to block opportunistic suspend. This is
-needed to avoid losing wakeup events that occur right after suspend is
-initiated.
-
-Adds /sys/power/policy that selects the behavior of /sys/power/state.
-After setting the policy to opportunistic, writes to /sys/power/state
-become non-blocking requests that specify which suspend state to enter
-when no suspend blockers are active. A special state, "on", stops the
-process by activating the "main" suspend blocker.
 
 
->> Adds a suspend block api that drivers can use to block opportunistic
->> suspend. This is needed to avoid losing wakeup events that occur
->> right after suspend is initiated.
->>
->> Adds /sys/power/policy that selects the behaviour of /sys/power/state.
->> After setting the policy to opportunistic, writes to /sys/power/state
->> become non-blocking requests that specify which suspend state to enter
->> when no suspend blockers are active. A special state, "on", stops the
->> process by activating the "main" suspend blocker.
->>
->> Opportunistic suspend is most useful on systems that cannot enter their
->> lowest power state from idle, but it is also useful on systems that enter
->> the same power state from idle and suspend. Periodic timers can cause
->> a significant power drain on these systems, and suspend will stop most
->> of this. Opportunistic suspend can also reduce the harm caused by apps
->> that never go idle.
->>
->> > The changelog of patch [2/8] appears to be outdated, that needs to be fixed.
->> > Also, it would be nice to explain in the changelog what the interface is needed
->> > for (in terms of the problems that it helps to handle).
->> >
->>
->> How about:
->>
->> PM: suspend_block: Add driver to access suspend blockers from user-space
->>
->> Add a misc device, "suspend_blocker", that allows user-space processes
->> to block auto suspend.
->
-> "automatic suspend" would be better IMO.
->
->> Opening this device creates a suspend_blocker.
->
-> "suspend blocker that can be used by the opener to prevent automatic suspend
-> from occuring.  There are ioctls provided for blocking and unblocking suspend
-> and for giving the suspend blocker a meaningful name.  Closing the device
-> special file causes the suspend blocker to be destroyed."
->
->> ioctls are provided to name this suspend_blocker, and to block and unblock
->> suspend. To delete the suspend_blocker, close the device.
->>
->> For example, when select or poll indicates that input event are available, this
->> interface can be used to block suspend before reading those event. This allows
->> the input driver to release its suspend blocker as soon as the event queue is
->> empty.
->
-> I think you should explain in more detail how suspend blockers used by user
-> space make that possible.
->
+On Mon, 17 May 2010, Robert Hancock wrote:
+> 
+> If one wanted, you could disable HPET MSI on this chipset only when a driver
+> requests an ISA DMA channel. Then if there's no floppy or other LPC DMA device
+> present, it can stay enabled. I don't know if it's worth the trouble, though.
 
+Nope, that wouldn't work.
 
-PM: suspend_block: Add driver to access suspend blockers from user-space
+Imagine a driver that already loaded, and is already using MSI (say, 
+network device). What happens now if you want to access the floppy and 
+load the floppy module? Oh, you can't? Need to bring down the network 
+interface, unload that module first? Not practical.
 
-Add a misc device, "suspend_blocker", that allows user-space processes
-to block automatic suspend.
+Sure, in theory we can do some crazy callback for "you now need to re-do 
+your interrupt registration" for all devices. In practice, I can onyl say 
+"not going to happen".
 
-Opening this device creates a suspend blocker that can be used by the
-opener to prevent automatic suspend from occurring.  There are ioctls
-provided for blocking and unblocking suspend and for giving the
-suspend blocker a meaningful name.  Closing the device special file
-causes the suspend blocker to be destroyed.
-
-For example, when select or poll indicates that input event are
-available, this interface can be used by user space to block suspend
-before it reads those events. This allows the input driver to release
-its suspend blocker as soon as the event queue is empty. If user space
-could not use a suspend blocker here the input driver would need to
-delay the release of its suspend blocker until it knows (or assumes)
-that user space has finished processing the events.
-
-By careful use of suspend blockers in drivers and user space system
-code, one can arrange for the system to stay awake for extremely short
-periods of time in reaction to events, rapidly returning to a fully
-suspended state.
-
--- 
-Arve Hjønnevåg
+		Linus
