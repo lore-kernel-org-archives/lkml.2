@@ -1,20 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab0ERIlp (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 04:41:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:34291 "EHLO mx1.suse.de"
+	id S1757015Ab0ERIoR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 04:44:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:33290 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab0ERIlm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 04:41:42 -0400
-Date: Tue, 18 May 2010 10:41:39 +0200 (CEST)
+	id S1752654Ab0ERIoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 04:44:14 -0400
+Date: Tue, 18 May 2010 10:44:10 +0200 (CEST)
 From: Jiri Kosina <jkosina@suse.cz>
-To: Don Prince <dhprince.devel@yahoo.co.uk>
-Cc: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2.6.34-rc7] HID: remove redundant key mappings from
- Desktop Wireless 6000
-In-Reply-To: <4BF1967D.3060404@yahoo.co.uk>
-Message-ID: <alpine.LNX.2.00.1005181041240.28092@pobox.suse.cz>
-References: <4BF1967D.3060404@yahoo.co.uk>
+To: Alan Ott <alan@signal11.us>
+Cc: Marcel Holtmann <marcel@holtmann.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       H Hartley Sweeten <hsweeten@visionengravers.com>,
+       David Fries <david@fries.net>, linux-usb@vger.kernel.org,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/1] hidraw: Use Interrupt Endpoint for OUT Transfers if
+ Available
+In-Reply-To: <4BF06C8D.6060308@signal11.us>
+Message-ID: <alpine.LNX.2.00.1005181043390.28092@pobox.suse.cz>
+References: <4BF06C8D.6060308@signal11.us>
 User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
@@ -22,34 +26,34 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 17 May 2010, Don Prince wrote:
+On Sun, 16 May 2010, Alan Ott wrote:
 
-> Remove 7 redundant key mappings from Desktop Wireless 6000 that are
-> already handled by the default hid code.
+> From: Alan Ott <alan@signal11.us>
 > 
-> Signed-off-by: Don Prince <dhprince-devel@yahoo.co.uk>
+> This patch makes the hidraw driver use the first Interrupt OUT endpoint for
+> HID transfers to the device if such an endpoint exists. This is consistent
+> with the behavior of the hiddev driver, and the logic is similar.
 > 
+> Signed-off-by: Alan Ott <alan@signal11.us>
 > ---
+> I believe this to be consistent with the section 4.4 of the HID 1.11
+> specification located at:
+>     http://www.usb.org/developers/devclass_docs/HID1_11.pdf
 > 
-> Spotted by by Robert Schedel <r.schedel@yahoo.de>
+> >From the specification (page numbered 10, the 20th page of the document
+> (xpdf page 20)):
 > 
+>    The Interrupt Out pipe is optional. If a device declares an Interrupt Out
+>    endpoint then Output reports are transmitted by the host to the device
+>    through the Interrupt Out endpoint. If no Interrupt Out endpoint is
+>    declared then Output reports are transmitted to a device through the
+>    Control endpoint, using Set_Report(Output) requests.
 > 
-> diff -X /opt/scripts/diff-exclude.txt -Npaur a/drivers/hid/hid-samsung.c b/drivers/hid/hid-samsung.c
-> --- a/drivers/hid/hid-samsung.c	2010-05-17 11:01:26.772377750 +0100
-> +++ b/drivers/hid/hid-samsung.c	2010-05-17 20:04:36.988502775 +0100
-> @@ -112,13 +112,6 @@ static int samsung_kbd_mouse_input_mappi
->  
->  	switch (usage->hid & HID_USAGE) {
->  	/* report 2 */
-> -	case 0x0b5: samsung_kbd_mouse_map_key_clear(KEY_NEXTSONG); break;
-> -	case 0x0b6: samsung_kbd_mouse_map_key_clear(KEY_PREVIOUSSONG); break;
-> -	case 0x0b7: samsung_kbd_mouse_map_key_clear(KEY_STOPCD); break;
-> -	case 0x0cd: samsung_kbd_mouse_map_key_clear(KEY_PLAYPAUSE); break;
-> -	case 0x0e2: samsung_kbd_mouse_map_key_clear(KEY_MUTE); break;
-> -	case 0x0e9: samsung_kbd_mouse_map_key_clear(KEY_VOLUMEUP); break;
-> -	case 0x0ea: samsung_kbd_mouse_map_key_clear(KEY_VOLUMEDOWN); break;
+> This is also consistent with the way the Windows HID library (hid.dll)
+> works.
 
-Applied, thanks for spotting it Robert.
+Yes, this definitely is a proper improvement. Thanks Alan, I have queued 
+the patch.
 
 -- 
 Jiri Kosina
