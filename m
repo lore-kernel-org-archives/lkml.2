@@ -1,90 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754791Ab0ERW36 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:29:58 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:35021 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751491Ab0ERW34 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:29:56 -0400
-Date: Wed, 19 May 2010 00:29:24 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       "Young, Brent" <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Andi Kleen <andi@firstfloor.org>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100518222924.GA3151@elte.hu>
-References: <4BF18995.6070008@redhat.com>
- <4BF2392A.9040409@jp.fujitsu.com>
- <4BF2C3D1.10009@redhat.com>
- <1274204560.17703.82.camel@Joe-Laptop.home>
- <20100518185305.GA23921@elte.hu>
- <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com>
- <20100518191802.GG25224@aftab>
- <m1k4r0c0y7.fsf@fess.ebiederm.org>
+	id S1755465Ab0ERWc2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:32:28 -0400
+Received: from sous-sol.org ([216.99.217.87]:56086 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751742Ab0ERWc0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 18:32:26 -0400
+Date: Tue, 18 May 2010 15:32:19 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Greg KH <greg@kroah.com>
+Cc: Chris Wright <chrisw@sous-sol.org>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] sysfs: compile fix, struct file forward declaration
+Message-ID: <20100518223219.GJ8301@sequoia.sous-sol.org>
+References: <20100518164409.8b19c786.sfr@canb.auug.org.au>
+ <20100518140226.GB24113@kroah.com>
+ <20100518210607.GI8301@sequoia.sous-sol.org>
+ <20100518212448.GA31331@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1k4r0c0y7.fsf@fess.ebiederm.org>
+In-Reply-To: <20100518212448.GA31331@kroah.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Eric W. Biederman <ebiederm@xmission.com> wrote:
-
-> > [...]
-> >
-> > Concerning critical errors, there we bypass the perf 
-> > subsystem and execute the smallest amount of code 
-> > possible while trying to shutdown gracefully if the 
-> > error type allows that.
-> >
-> > These are the rough ideas at least...
+On Tue, May 18, 2010 at 04:44:09PM +1000, Stephen Rothwell wrote:
+> After merging the driver-core tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
 > 
-> Can someone please tell me why everyone is eager to 
-> squirrel correctable error reports away and not report 
-> them in dmesg? aka syslog.
+> cc1: warnings being treated as errors
+> In file included from include/linux/kobject.h:21,
+>                  from include/linux/device.h:17,
+>                  from arch/powerpc/lib/devres.c:10:
+> include/linux/sysfs.h:97: error: 'struct file' declared inside parameter list
+> include/linux/sysfs.h:97: error: its scope is only this definition or
+> declaration, which is probably not what you want
+> include/linux/sysfs.h:99: error: 'struct file' declared inside parameter list
+> include/linux/sysfs.h:101: error: 'struct file' declared inside parameter list
 > 
-> I have had on several occasions a machine with memory 
-> errors that mcelog or the BIOS was eating the error 
-> reports and not putting them anywhere a normal human 
-> being would look.
+> and many more (arch/powerpc is built with -Werror (as do some other
+> architectures)) and lots of similar warnings ...
 
-That's possible too - the TRACE_EVENT() of MCE events, 
-beyond the record format, also includes a human-readable 
-ASCII output format string:
+Add missing forward declaration
 
- # tail -1 /debug/tracing/events/mce/mce_record/format
+Signed-off-by: Chris Wright <chrisw@sous-sol.org>
+---
+ include/linux/sysfs.h |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
- print fmt: "CPU: %d, MCGc/s: %llx/%llx, MC%d: %016Lx, 
- ADDR/MISC: %016Lx/%016Lx, RIP: %02x:<%016Lx>, TSC: %llx, 
- PROCESSOR: %u:%x, TIME: %llu, SOCKET: %u, APIC: %x", 
- REC->cpu, REC->mcgcap, REC->mcgstatus, REC->bank, 
- REC->status, REC->addr, REC->misc, REC->cs, REC->ip, 
- REC->tsc, REC->cpuvendor, REC->cpuid, REC->walltime, 
- REC->socketid, REC->apicid
-
-Which could be used to printk events.
-
-Cheers,
-
-	Ingo
+diff --git a/include/linux/sysfs.h b/include/linux/sysfs.h
+index 2a0d278..f06b1f1 100644
+--- a/include/linux/sysfs.h
++++ b/include/linux/sysfs.h
+@@ -86,6 +86,7 @@ struct attribute_group {
+ 
+ #define attr_name(_attr) (_attr).attr.name
+ 
++struct file;
+ struct vm_area_struct;
+ 
+ struct bin_attribute {
