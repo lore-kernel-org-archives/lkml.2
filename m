@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757033Ab0ERLZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:25:21 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:58916 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752708Ab0ERLZT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:25:19 -0400
-Date: Tue, 18 May 2010 13:25:10 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-Message-ID: <20100518112509.GD22675@basil.fritz.box>
-References: <1273887635-27610-1-git-send-email-venki@google.com> <87tyq9mqrz.fsf@basil.nowhere.org> <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default> <20100515121424.38f5b389@infradead.org> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default> <20100515224305.17a04022@infradead.org> <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain> <5adf3fee-0f7b-4039-b13f-619640cc4b88@default> <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>
+	id S1757091Ab0ERL1B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:27:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1250 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752271Ab0ERL07 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 07:26:59 -0400
+From: Juan Quintela <quintela@redhat.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
+       Shirley Ma <xma@us.ibm.com>, Amit Shah <amit.shah@redhat.com>,
+       Mark McLoughlin <markmc@redhat.com>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, alex.williamson@redhat.com
+Subject: Re: [PATCHv2] virtio: put last seen used index into ring itself
+In-Reply-To: <20100518021315.GA22852@redhat.com> (Michael S. Tsirkin's message
+	of "Tue, 18 May 2010 05:13:15 +0300")
+References: <20100518021315.GA22852@redhat.com>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1 (gnu/linux)
+Date: Tue, 18 May 2010 13:26:36 +0200
+Message-ID: <m3632l5u37.fsf@trasno.mitica>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274176698.5605.7358.camel@twins>
-User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 11:58:18AM +0200, Peter Zijlstra wrote:
-> On Sun, 2010-05-16 at 22:06 -0700, Arjan van de Ven wrote:
-> > look we're not disabling ring 3 tsc. We could, but we don't.
-> 
-> Maybe we should.
+"Michael S. Tsirkin" <mst@redhat.com> wrote:
+> Generally, the Host end of the virtio ring doesn't need to see where
+> Guest is up to in consuming the ring.  However, to completely understand
+> what's going on from the outside, this information must be exposed.
+> For example, host can reduce the number of interrupts by detecting
+> that the guest is currently handling previous buffers.
+>
+> Fortunately, we have room to expand: the ring is always a whole number
+> of pages and there's hundreds of bytes of padding after the avail ring
+> and the used ring, whatever the number of descriptors (which must be a
+> power of 2).
+>
+> We add a feature bit so the guest can tell the host that it's writing
+> out the current value there, if it wants to use that.
+>
+> This is based on a patch by Rusty Russell, with the main difference
+> being that we dedicate a feature bit to guest to tell the host it is
+> writing the used index.  This way we don't need to force host to publish
+> the last available index until we have a use for it.
+>
+> Another difference is that while the feature helps virtio-net,
+> there have been conflicting reports wrt virtio-blk.
+> The reason is unknown, it could be due to the fact that
+> virtio-blk does not bother to disable interrupts at all.
+> So for now, this patch only acks this feature for -net.
+>
+> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
+> Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
 
-That would kill the vsyscall too. Remember it's running in ring 3.
+It looks good.
 
-That is in theory you could disable it on systems where the vsyscall
-doesn't use it, but then you would likely break huge amounts of software, 
-unless you emulate it.
-
-Emulation would be a possibility, but I'm not sure it would
-make anyone really happy. It would be certainly slow.
-
--Andi
--- 
-ak@linux.intel.com -- Speaking for myself only.
+Later, Juan.
