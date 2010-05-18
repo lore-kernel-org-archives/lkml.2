@@ -1,57 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab0ERQKq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:10:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55274 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754105Ab0ERQKn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:10:43 -0400
-X-Authority-Analysis: v=1.1 cv=ThiPuEJrAfM5PTlEgIT3cJp8+3pkHBIG3CaogqDGxqo= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=wNM0KSR54ppBKsNzgvwA:9 a=NkknEO9UKuWKQbML3x_Q6hUbHJYA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Unexpected splice "always copy" behavior observed
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Nick Piggin <npiggin@suse.de>
-In-Reply-To: <1274197993.26328.755.camel@gandalf.stny.rr.com>
-References: <20100518153440.GB7748@Krystal>
-	 <1274197993.26328.755.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Tue, 18 May 2010 12:10:39 -0400
-Message-ID: <1274199039.26328.758.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755926Ab0ERQLT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:11:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56853 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754105Ab0ERQLP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:11:15 -0400
+Message-ID: <4BF2BBEC.7010506@kernel.org>
+Date: Tue, 18 May 2010 18:10:20 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+CC: David Howells <dhowells@redhat.com>, graff yang <graff.yang@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       Sonic Zhang <sonic.adi@gmail.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Subject: [GIT PULL] percpu for v2.6.35-rc1
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 May 2010 16:10:22 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 11:53 -0400, Steven Rostedt wrote:
+Hello, Linus.
 
-> I'm currently looking at the network code to see if it is better.
+Please pull from the following branch to receive percpu changes for
+2.6.35-rc1.
 
-The network code seems to do the right thing. It sends the actual page
-directly to the network.
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/percpu.git for-linus
 
-Hopefully we can find a way to avoid the copy to file. But the splice
-code was created to avoid the copy to and from userspace, it did not
-guarantee no copy within the kernel itself.
+There are six commits.  One is to add sparse annotation to ia64.  All
+the others are to implement nommu percpu support.  blackfin does SMP
+w/o mmu and thus requires percpu allocator which doesn't make use of
+remapping in the vmalloc area.  Percpu chunk [de]allocation and
+[de]population code paths are factored out and nommu simply allocates
+contiguous kernel memory for each unit.
 
--- Steve
+Thanks.
 
+Tejun Heo (6):
+      percpu: factor out pcpu_addr_in_first/reserved_chunk() and update per_cpu_ptr_to_phys()
+      percpu: reorganize chunk creation and destruction
+      percpu: misc preparations for nommu support
+      percpu: move vmalloc based chunk management into percpu-vm.c
+      percpu: implement kernel memory based chunk allocation
+      ia64: add sparse annotation to __ia64_per_cpu_var()
 
+ arch/ia64/include/asm/percpu.h |    5 +-
+ mm/percpu-km.c                 |  104 +++++++
+ mm/percpu-vm.c                 |  451 +++++++++++++++++++++++++++++++
+ mm/percpu.c                    |  585 ++++++++--------------------------------
+ 4 files changed, 671 insertions(+), 474 deletions(-)
+ create mode 100644 mm/percpu-km.c
+ create mode 100644 mm/percpu-vm.c
+
+--
+tejun
