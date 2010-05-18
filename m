@@ -1,53 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758552Ab0ERR2q (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:28:46 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:57728 "EHLO mail.vyatta.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754619Ab0ERR2o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:28:44 -0400
-Date: Tue, 18 May 2010 10:28:37 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: David Miller <davem@davemloft.net>
-Cc: randy.dunlap@oracle.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: [PATCH -next] bridge: fix build for CONFIG_SYSFS disabled
-Message-ID: <20100518102837.2622c3b1@nehalam>
-In-Reply-To: <20100517.223237.55871633.davem@davemloft.net>
-References: <20100517091756.e232bdc2.randy.dunlap@oracle.com>
-	<20100517105654.2451e61f@nehalam>
-	<4BF18468.5010005@oracle.com>
-	<20100517.223237.55871633.davem@davemloft.net>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758563Ab0ERRf0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:35:26 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:50532 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758532Ab0ERRfW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 13:35:22 -0400
+Date: Tue, 18 May 2010 19:35:01 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Anton Vorontsov <cbouatmailru@gmail.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
+       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
+       Alexey Starikovskiy <astarikovskiy@suse.de>,
+       Len Brown <len.brown@intel.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH] power_supply: Use attribute groups
+Message-ID: <20100518173501.GI30801@buzzloop.caiaq.de>
+References: <20100511175812.GH30801@buzzloop.caiaq.de>
+ <20100511182347.GA31831@oksana.dev.rtsoft.ru>
+ <20100511222825.GJ30801@buzzloop.caiaq.de>
+ <20100512181546.GA4804@oksana.dev.rtsoft.ru>
+ <20100512183806.GA28658@suse.de>
+ <20100512190814.GA9674@oksana.dev.rtsoft.ru>
+ <AANLkTimQq30DklQUDBokPXsLiXKsuiaCUFg_5ddkJbXa@mail.gmail.com>
+ <20100512193050.GA14221@oksana.dev.rtsoft.ru>
+ <20100513093304.GE30801@buzzloop.caiaq.de>
+ <20100517194016.GA12147@oksana.dev.rtsoft.ru>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100517194016.GA12147@oksana.dev.rtsoft.ru>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Anton,
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon, May 17, 2010 at 11:40:16PM +0400, Anton Vorontsov wrote:
+> This fixes a race between power supply device and initial
+> attributes creation, plus makes it possible to implement
+> writable properties.
 
-Fix build when CONFIG_SYSFS is not enabled:
-net/bridge/br_if.c:136: error: 'struct net_bridge_port' has no member named 'sysfs_name'
+Thanks a lot. This works for me, but I have two minor comments below ...
 
-Note: dev->name == sysfs_name except when change name is in
-progress, and we are protected from that by RTNL mutex.
+[...]
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Acked-off-by: Stephen Hemminger <shemminger@vyatta.com>
+> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
+> index 5b6e352..f95d934 100644
+> --- a/drivers/power/power_supply_sysfs.c
+> +++ b/drivers/power/power_supply_sysfs.c
+> @@ -41,6 +41,9 @@ static struct device_attribute power_supply_attrs[];
+>  static ssize_t power_supply_show_property(struct device *dev,
+>  					  struct device_attribute *attr,
+>  					  char *buf) {
+> +	static char *type_text[] = {
+> +		"Battery", "UPS", "Mains", "USB"
+> +	};
+>  	static char *status_text[] = {
+>  		"Unknown", "Charging", "Discharging", "Not charging", "Full"
+>  	};
+> @@ -58,12 +61,15 @@ static ssize_t power_supply_show_property(struct device *dev,
+>  	static char *capacity_level_text[] = {
+>  		"Unknown", "Critical", "Low", "Normal", "High", "Full"
+>  	};
+> -	ssize_t ret;
+> +	ssize_t ret = 0;
+>  	struct power_supply *psy = dev_get_drvdata(dev);
+>  	const ptrdiff_t off = attr - power_supply_attrs;
+>  	union power_supply_propval value;
+>  
+> -	ret = psy->get_property(psy, off, &value);
+> +	if (off == POWER_SUPPLY_PROP_TYPE)
+> +		value.intval = psy->type;
+> +	else
+> +		ret = psy->get_property(psy, off, &value);
+>  
+>  	if (ret < 0) {
+>  		if (ret == -ENODATA)
+> @@ -85,10 +91,13 @@ static ssize_t power_supply_show_property(struct device *dev,
+>  		return sprintf(buf, "%s\n", technology_text[value.intval]);
+>  	else if (off == POWER_SUPPLY_PROP_CAPACITY_LEVEL)
+>  		return sprintf(buf, "%s\n", capacity_level_text[value.intval]);
+> +	else if (off == POWER_SUPPLY_PROP_TYPE)
+> +		return sprintf(buf, "%s\n", type_text[value.intval]);
+>  	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
+>  		return sprintf(buf, "%s\n", value.strval);
+>  
+>  	return sprintf(buf, "%d\n", value.intval);
+> +return 0;
 
+This return is superflous :)
 
---- a/net/bridge/br_if.c	2010-05-17 10:51:48.638634187 -0700
-+++ b/net/bridge/br_if.c	2010-05-18 10:22:28.892111158 -0700
-@@ -133,7 +133,7 @@ static void del_nbp(struct net_bridge_po
- 	struct net_bridge *br = p->br;
- 	struct net_device *dev = p->dev;
- 
--	sysfs_remove_link(br->ifobj, p->sysfs_name);
-+	sysfs_remove_link(br->ifobj, p->dev->name);
- 
- 	dev_set_promiscuity(dev, -1);
- 
+And with this approach, we don't need to initialize the .mode field in
+the POWER_SUPPLY_ATTR anmore.
+
+I'll then rebase my patches for writeable properties and resend them.
+
+Thanks,
+Daniel
