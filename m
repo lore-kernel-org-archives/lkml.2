@@ -1,50 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab0ERVbu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:31:50 -0400
-Received: from kroah.org ([198.145.64.141]:56858 "EHLO coco.kroah.org"
+	id S1757359Ab0ERVb4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:31:56 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:53382 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754825Ab0ERVbs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:31:48 -0400
-Date: Tue, 18 May 2010 14:28:59 -0700
-From: Greg KH <greg@kroah.com>
-To: Alexander Kurz <linux@blala.de>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Frank Mori Hess <fmhess@users.sourceforge.net>,
-       Ian Abbott <abbotti@mev.co.uk>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging/comedi: Kconfig dependancy fixes
-Message-ID: <20100518212859.GA26944@kroah.com>
-References: <alpine.DEB.1.10.1005081218220.5727@blala.de>
- <20100514190142.GA2505@kroah.com>
- <alpine.DEB.1.10.1005151604320.26254@blala.de>
+	id S1756633Ab0ERVbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:31:53 -0400
+Message-ID: <4BF30732.3080906@zytor.com>
+Date: Tue, 18 May 2010 14:31:30 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.1.10.1005151604320.26254@blala.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
+       tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/fpu] x86: Add new static_cpu_has() function using alternatives
+References: <1273135546-29690-2-git-send-email-avi@redhat.com>	 <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>	 <1274213443.2485.3.camel@edumazet-laptop>  <4BF2FF26.9050701@zytor.com> <1274217067.2485.9.camel@edumazet-laptop>
+In-Reply-To: <1274217067.2485.9.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 15, 2010 at 04:09:01PM +0400, Alexander Kurz wrote:
-> There are tree minor changes I would like to do on my last patch:
-> > Subject: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers grouped by bustype.
+On 05/18/2010 02:11 PM, Eric Dumazet wrote:
 > 
-> * Comedi is formally not dependant on any hardware, e.g. it is possible
->  to use comedi_test without (PCI || PCMCIA || PCCARD || USB || ISA)
-> * comedi_parport is not dependant on PARPORT_PC.
-> * indirect ni_mio_cs (16-bit PCMCIA) dependancy on mite PCI-chip may 
->  confuse users, thus changing COMEDI_NI_TIO depends on COMEDI_MITE
->  to select COMEDI_MITE.
+> I use many different machines to compile kernels, and found this one
+> using gcc-3.4.6, but still running original 2.6.9.something RHEL
+> kernel ;)
+> 
 
-I'll go apply this, but I still get a build error, and need to include
-the 8255.o module when building some PCI drivers and not the ISA ones.
+OK, so this is "testing only, not actually using."
 
-Care to fix that up?
+I guess I'm trying to figure out if *anyone* would actually care if gcc
+3.x support is discontinued.
 
-thanks,
-
-greg k-h
+	-hpa
