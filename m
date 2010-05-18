@@ -1,65 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756810Ab0ERK1r (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:27:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53999 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756355Ab0ERK1n (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:27:43 -0400
-Message-ID: <4BF26B87.3080902@redhat.com>
-Date: Tue, 18 May 2010 12:27:19 +0200
-From: Jes Sorensen <Jes.Sorensen@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1756646Ab0ERK1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:27:41 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:36735 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756416Ab0ERK1i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 06:27:38 -0400
+Date: Tue, 18 May 2010 20:27:01 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Adrian-Ken Rueegsegger <ken@codelabs.ch>
+Cc: Matt Mackall <mpm@selenic.com>, Geert Uytterhoeven <geert@linux-m68k.org>,
+       michael-dev@fami-braun.de, Pekka Enberg <penberg@cs.helsinki.fi>,
+       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       Atsushi Nemoto <anemo@mba.ocn.ne.jp>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [BUG] SLOB breaks Crypto
+Message-ID: <20100518102701.GA7293@gondor.apana.org.au>
+References: <4B9E38AF.70309@fami-braun.de> <84144f021003180930s44e239dfmb38183096f07c8a8@mail.gmail.com> <4BA29A19.2050307@fami-braun.de> <20100319003351.GC20227@gondor.apana.org.au> <AANLkTilPEnh3ewTb-KDsReBpjcszh1wkbfZohIaPXBKe@mail.gmail.com> <4BF1BA0E.4010402@codelabs.ch> <1274135869.11603.473.camel@calx> <4BF24D1F.6010005@codelabs.ch>
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       Shirley Ma <xma@us.ibm.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, quintela@redhat.com,
-       alex.williamson@redhat.com
-Subject: Re: [PATCH] virtio: put last seen used index into ring itself
-References: <20100518004744.GA21359@redhat.com>
-In-Reply-To: <20100518004744.GA21359@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF24D1F.6010005@codelabs.ch>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/10 02:47, Michael S. Tsirkin wrote:
-> Generally, the Host end of the virtio ring doesn't need to see where
-> Guest is up to in consuming the ring.  However, to completely understand
-> what's going on from the outside, this information must be exposed.
-> For example, host can reduce the number of interrupts by detecting
-> that the guest is currently handling previous buffers.
+On Tue, May 18, 2010 at 10:17:35AM +0200, Adrian-Ken Rueegsegger wrote:
 > 
-> Fortunately, we have room to expand: the ring is always a whole number
-> of pages and there's hundreds of bytes of padding after the avail ring
-> and the used ring, whatever the number of descriptors (which must be a
-> power of 2).
+> As noted in my other mail [1] it seems like the HMAC tests trigger these
+> errors.
 
-Hi Michael,
+Thanks for all the detective work!
 
-Small build fix for this against Linus upstream.
+I think the problem is this changeset:
 
-Jes
+commit 6eb7228421c01ba48a6a88a7a5b3e71cfb70d4a9
+Author: Herbert Xu <herbert@gondor.apana.org.au>
+Date:   Tue Jan 8 17:16:44 2008 +1100
 
+    [CRYPTO] api: Set default CRYPTO_MINALIGN to unsigned long long
+    
+    Thanks to David Miller for pointing out that the SLAB (or SLOB/SLUB)
+    cache uses the alignment of unsigned long long if the architecture
+    kmalloc/slab alignment macros are not defined.
+    
+    This patch changes the CRYPTO_MINALIGN so that it uses the same default
+    value.
+    
+    Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
 
-Fix build of virtio_net.c
+diff --git a/include/linux/crypto.h b/include/linux/crypto.h
+index 0aba104..5e02d1b 100644
+--- a/include/linux/crypto.h
++++ b/include/linux/crypto.h
+@@ -90,13 +90,11 @@
+ #define CRYPTO_MINALIGN ARCH_KMALLOC_MINALIGN
+ #elif defined(ARCH_SLAB_MINALIGN)
+ #define CRYPTO_MINALIGN ARCH_SLAB_MINALIGN
++#else
++#define CRYPTO_MINALIGN __alignof__(unsigned long long)
+ #endif
+ 
+-#ifdef CRYPTO_MINALIGN
+ #define CRYPTO_MINALIGN_ATTR __attribute__ ((__aligned__(CRYPTO_MINALIGN)))
+-#else
+-#define CRYPTO_MINALIGN_ATTR
+-#endif
+ 
+ struct scatterlist;
+ struct crypto_ablkcipher;
 
-Signed-off-by: Jes.Sorensen@redhat.com
----
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index d37e5be..679e2df 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -23,6 +23,7 @@
- #include <linux/module.h>
- #include <linux/virtio.h>
- #include <linux/virtio_net.h>
-+#include <linux/virtio_ring.h>
- #include <linux/scatterlist.h>
- #include <linux/if_vlan.h>
- #include <linux/slab.h>
+So evidently the assumption made in this change does not work on
+SLOB since it only guarantees __alignof__(unsigned long).
 
+I think the simplest fix is to revert this changeset.
 
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
