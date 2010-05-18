@@ -1,62 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756536Ab0ERUzG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:55:06 -0400
-Received: from www.tglx.de ([62.245.132.106]:40252 "EHLO www.tglx.de"
+	id S1756401Ab0ERU5d (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:57:33 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48467 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753225Ab0ERUzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:55:04 -0400
-Date: Tue, 18 May 2010 22:54:47 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
-       Alan Cox <alan@linux.intel.com>, Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH 1/2] v4 x86/mrst: add cpu type detection
-In-Reply-To: <1274184166-17242-2-git-send-email-jacob.jun.pan@linux.intel.com>
-Message-ID: <alpine.LFD.2.00.1005182250460.3368@localhost.localdomain>
-References: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com> <1274184166-17242-2-git-send-email-jacob.jun.pan@linux.intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752982Ab0ERU5c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:57:32 -0400
+Message-ID: <4BF2FF26.9050701@zytor.com>
+Date: Tue, 18 May 2010 13:57:10 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Eric Dumazet <eric.dumazet@gmail.com>
+CC: mingo@redhat.com, linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
+       tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:x86/fpu] x86: Add new static_cpu_has() function using alternatives
+References: <1273135546-29690-2-git-send-email-avi@redhat.com>	 <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org> <1274213443.2485.3.camel@edumazet-laptop>
+In-Reply-To: <1274213443.2485.3.camel@edumazet-laptop>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Jacob Pan wrote:
->  
-> +int mrst_identify_cpu(void)
-> +{
-> +	u32 mrst_cpu_chip;
-> +
-> +	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
-> +		mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
-> +	else if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x26)
-> +		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-> +	else {
-> +		pr_err("Unknown Moorestown CPU (%d:%d), default to Lincroft\n",
-> +			boot_cpu_data.x86, boot_cpu_data.x86_model);
-> +		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-> +	}
-> +	pr_debug("Moorestown CPU %s identified\n",
-> +		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
-> +		"Lincroft" : "Penwell");
+On 05/18/2010 01:10 PM, Eric Dumazet wrote:
+> # gcc -v
+> Reading specs from /usr/lib/gcc/i386-redhat-linux/3.4.6/specs
+> Configured with: ../configure --prefix=/usr --mandir=/usr/share/man
+> --infodir=/usr/share/info --enable-shared --enable-threads=posix
+> --disable-checking --with-system-zlib --enable-__cxa_atexit
+> --disable-libunwind-exceptions --enable-java-awt=gtk
+> --host=i386-redhat-linux
+> Thread model: posix
+> gcc version 3.4.6 20060404 (Red Hat 3.4.6-10)
 
-  Do you really want a printk for each call ?
+I just implemented a fallback for gcc 3, but the real question is to
+which degree we still care about gcc 3 support for x86 specifically
+(other architectures might have other needs, but this is x86-specific code.)
 
-  Aside of that wouldn't it make more sense to do the chip
-  identification only once from mrst_init() and cache the result and
-  change mrst_identify_cpu()
+Lately the number of issues with gcc 3 support seems to have gone way
+up, and at some point we're going to have to cut it loose -- when would
+depend largely on what the usage case is; e.g. why are you, yourself,
+using gcc 3.4 to compile a state of the art kernel?
 
-int mrst_indetify_cpu(void)
-{
-	return mrst_cpu_chip;
-}
-EXPORT_SYMBOL_GPL(mrst_identify_cpu);
-
-I think one of your earlier versions did that, but was not consistent
-in it's behaviour.
-
-Thanks,
-
-	tglx
+	-hpa
