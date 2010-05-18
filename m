@@ -1,74 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754420Ab0ERVDR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:03:17 -0400
-Received: from www.tglx.de ([62.245.132.106]:50905 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752881Ab0ERVDP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:03:15 -0400
-Date: Tue, 18 May 2010 23:02:56 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: john stultz <johnstul@us.ibm.com>
-cc: Feng Tang <feng.tang@intel.com>, Jacob Pan <jacob.jun.pan@linux.intel.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       "Du, Alek" <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 7/8] x86/mrst: add vrtc driver which serves as a wall
- clock device
-In-Reply-To: <1274215434.1699.12.camel@localhost>
-Message-ID: <alpine.LFD.2.00.1005182257030.3368@localhost.localdomain>
-References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>  <1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>  <alpine.LFD.2.00.1005111643380.3401@localhost.localdomain>  <20100512103422.1d59cc85@feng-i7> 
- <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain> <1274215434.1699.12.camel@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754830Ab0ERVDW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:03:22 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:48424 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753119Ab0ERVDT convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:03:19 -0400
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Message-ID: <0b1351a7-e9bc-4c28-87dc-2a70fc64bbca@default>
+Date: Tue, 18 May 2010 14:02:41 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       chris.mason@oracle.com, linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+References: <1273887635-27610-1-git-send-email-venki@google.com>>
+ <87tyq9mqrz.fsf@basil.nowhere.org>>
+ <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>>
+ <20100515121424.38f5b389@infradead.org>>
+ <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>>
+ <20100515224305.17a04022@infradead.org>>
+ <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>>
+ <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>>
+ <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>>
+ <20100518112509.GD22675@basil.fritz.box> <1274183935.5605.7726.camel@twins>>
+ <4BF2C30F.6030502@zytor.com> <1274201536.5605.8347.camel@twins>
+ <4BF2C881.60807@zytor.com> <1dc4abc2-6455-4b95-90f6-c86bf56ff39a@default>
+ <4BF2E0A2.6030209@zytor.com> <dd1c0508-5570-4e65-89c0-4037eb210646@default>
+ <3479976f-5c91-4bcb-8542-3de93bee268a@default> <4BF2E9DB.3000202@zytor.com>
+ <61e3a205-b578-4972-a65a-b96f779aeeb1@default 4BF2F9E4.8020808@zytor.com>
+In-Reply-To: <4BF2F9E4.8020808@zytor.com>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090204.4BF30081.002A:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, john stultz wrote:
-
-> On Mon, 2010-05-17 at 11:15 +0200, Thomas Gleixner wrote:
-> > 
-> > 
-> > There is no particular reason why we need to read it in
-> > timekeeping_init(). Nothing in the kernel needs the correct wall time
-> > at that point. So we can safely move the setting of xtime to rtc wall
-> > clock time to a separate timekeeping_late_init() function.
-> > 
-> > John ???
+> > I'm still not sure if you are in favor of optionally emulating
+> > PL3 rdtsc instructions or not?  I thought my proposal was
+> > just filling out some details of your proposal and suggesting
+> > a default.
 > 
-> No big objections here. Still would like to keep the amount of time that
-> the kernel is up without xtime being initialized to a minimum. However
+> I'm not in favor of emulating rdtsc instructions.  I would consider
+> letting them SIGILL (actually SIGSEGV since RDTSC #GP in userspace)
+> 
+> It's not clear to me that it's possible, though, since that also
+> affects RDTSCP.
 
-Why? Nothing _IS_ depending on xtime at this point. We just should
-have it ready when we mount the first file system, but even that is
-not a big issue aside of some stupid warnings.
+(All the variations are boggling so hard to discuss in
+a linear email thread.)
 
-> the generic RTC code already have this issue since some of them require
-> interrupts to be enabled to do a read, so pushing it off into a
-> _late_init() function is probably just a short term fix until we figure
-> out how to get the generic RTC code working better with the timekeeping
-> code.
+IIUC, tglx/arjan consider RDTSC and RDTSCP to be in the same
+category.  RDTSCP simply eliminates one large class of TSC
+problems, but not all the possible system TSC problems that
+the kernel can (or can't) detect.  So userspace (non-vsyscall)
+shouldn't use either one
 
-Well, you need to wait until the driver is loaded and the hardware
-accessible which might take some time when I2C, SPI or similar stuff
-is involved. No way to get this stuff accesible early.
+Further, this one redeeming feature of RDTSCP can be useless
+and/or misleading in a virtual machine the way the kernel
+sets up TSC_AUX.
 
-So really the question is, why do we want wall time initialized early?
-All we care about until we hit user space is clock monotonic and
-working timekeeping in general. NTP is not an issue either before we
-hit user space. So what's your concern ?
+> when the TSC is unavailable, though.
 
-> Does the delayed init required by vrtc cause any trouble with
-> suspend/resume?
-
-No, suspend/resume does not go through that early code. It has
-everything setup (mappings, etc)
-
-Thanks,
-
-	tglx
-
-
+Do you mean "when the processor doesn't support a TSC instruction"
+(very rare nowadays AFAIK) or "when the kernel determines that
+TSC is not safe to use as a clocksource"?
