@@ -1,78 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab0ERGBP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:01:15 -0400
-Received: from eu1sys200aog110.obsmtp.com ([207.126.144.129]:38892 "EHLO
-	eu1sys200aog110.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755432Ab0ERGBO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:01:14 -0400
-Subject: RE: [linux-pm] Power Domain Framework
-From: Sundar R Iyer <sundar.iyer@stericsson.com>
-Reply-To: <sundar.iyer@stericsson.com>
-To: Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linus WALLEIJ <linus.walleij@stericsson.com>,
-       Deepak Sikri <deepak.sikri79@gmail.com>,
-       Viresh KUMAR <viresh.kumar@st.com>,
-       Rajeev KUMAR <rajeev-dlh.kumar@st.com>,
-       Armando VISCONTI <armando.visconti@st.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Vipin KUMAR <vipin.kumar@st.com>, Shiraz HASHIM <shiraz.hashim@st.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>
-In-Reply-To: <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
-References: <AANLkTinZU1D1rMOBQDi47tRhXrOXwduQIdni7bCXdce0@mail.gmail.com>
-	 <20100510140527.GG5199@sirena.org.uk>
-	 <AANLkTikyqnKDNz7FIUvLDAvBReHskHvRCrEz2qBBqseH@mail.gmail.com>
-	 <20100517031613.GA3130@opensource.wolfsonmicro.com>
-	 <AANLkTimDdBCnRFMDiUkuNKanOzuPNwCpfRv9Gsi03Lsy@mail.gmail.com>
-	 <AANLkTinZRhUpFTOOUCdH5dEl3QaXn10USL_hPPQX8cie@mail.gmail.com>
-	 <20100517143319.GC5257@opensource.wolfsonmicro.com>
-	 <AANLkTiniwUDg8rQzwgm_X7EbkQJ9tHzBfVtaJRiNE9az@mail.gmail.com>
-	 <1274114107.20589.64.camel@bnru01>
-	 (sfid-20100517_173524_963855_B42F2966) <1274115886.2698.22.camel@finisterre.wolfsonmicro.main>
-	 <1274118332.17303.17.camel@bnru01>
-	 <CEE6BB42CAD6E947908279175AF8470A025A726240@EXDCVYMBSTM006.EQ1STM.local>
-	 (sfid-20100517_213915_202336_5BFAA478) <1274131108.2698.161.camel@finisterre.wolfsonmicro.main>
-	 <CEE6BB42CAD6E947908279175AF8470A025A72624A@EXDCVYMBSTM006.EQ1STM.local>
-	 (sfid-20100517_224652_794912_8E56D9D6)  <1274134636.2698.170.camel@finisterre.wolfsonmicro.main>
-Content-Type: text/plain
-Organization: STEricsson
-Date: Tue, 18 May 2010 11:30:50 +0530
-Message-ID: <1274162450.17303.35.camel@bnru01>
+	id S1756573Ab0ERGEB (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:04:01 -0400
+Received: from mail.lang.hm ([64.81.33.126]:35149 "EHLO bifrost.lang.hm"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755309Ab0ERGEA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:04:00 -0400
+Date: Mon, 17 May 2010 23:03:10 -0700 (PDT)
+From: david@lang.hm
+X-X-Sender: dlang@asgard.lang.hm
+To: James Bottomley <James.Bottomley@HansenPartnership.com>
+cc: Vegard Nossum <vegard.nossum@gmail.com>, Andi Kleen <andi@firstfloor.org>,
+       linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org,
+       Bart Massey <bart@cs.pdx.edu>, Michal Marek <mmarek@suse.cz>,
+       Greg Kroah-Hartman <greg@kroah.com>, Ingo Molnar <mingo@elte.hu>
+Subject: Re: [ANNOUNCE] GSoC project: Improving kconfig using a SAT solver
+In-Reply-To: <1274106526.4418.40.camel@mulgrave.site>
+Message-ID: <alpine.DEB.2.01.1005172258360.27232@asgard.lang.hm>
+References: <AANLkTil73ArhX2w6b_v1bmWjP1FA5zUTfPzK2N4waOu1@mail.gmail.com>  <87tyq63eux.fsf@basil.nowhere.org>  <AANLkTiktV26Xu_qXFPdTRMLe5UwWnjpqvEKitjRElF6R@mail.gmail.com>  <1274102511.4418.18.camel@mulgrave.site>  <AANLkTil9lmdG5LY2SFk3cMsPOK-gUm2diMFL_o5bT08u@mail.gmail.com>
+ <1274106526.4418.40.camel@mulgrave.site>
+User-Agent: Alpine 2.01 (DEB 1266 2009-07-14)
 MIME-Version: 1.0
-X-Mailer: Evolution 2.24.1 
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Mon, 17 May 2010, James Bottomley wrote:
 
-> Yeah, sure - obviously, the generic concept of power domains is
-> something that does exist within the off-SoC hardware, but on-SoC the
-> end implementation is a bit different.
+> On Mon, 2010-05-17 at 16:21 +0200, Vegard Nossum wrote:
+>> On 17 May 2010 15:21, James Bottomley
+>>
+>> Even if the problem is different from zypper's, it is also here
+>> possible to get an unsatisfiable instance. You are right that, yes,
+>> the kconfig files on their own should always be satisfiable. But
+>> that's before the user has made any choices at all. An example of an
+>> unsatisfiable instance would be one where the user demands that 1.
+>> some USB driver is enabled, while 2. USB support in general is
+>> disabled.
+>
+> Actually, these are two separate problems.  The first is basic
+> consistency within the Kconfig subsytstem (something that select
+> currently damages for us).  The second is what to present to the user,
+> which is where the inception of the select problem came from.  A user
+> doesn't really want to know that USB device X depends on usb storage,
+> SCSI and a raft of other things ... they just want it to configure a
+> kernel that supports their device.  In particular, we don't want to
+> present every possible option to users and then try to work out a
+> solution, we really need guided configuration (which, in some measure,
+> is what we have today: if you don't select general USB, you won't see
+> any USB drivers.  Or more importantly, if you select an Adaptec SCSI
+> card, we just enable whichever transport library it needs).
 
-Exactly. This is what I can see if we can bridge this "a bit different".
+There are two modes people can be in when configuring a kernel.
 
-True, I am dumb to miss out some points, but I think with more inputs,
-more thinking, we can definitely make it generic!
+1. I want to configure a kernel to support my hardware, enable anything 
+else needed to make it work.
 
-Thinking out loud ( excuse me if this is dumb), At the end of the day,
-how I see this benefiting a lay driver developer is : use the regulator
-API for the appropriate power sources - your SoC domain, your external
-regulator domain..etc..etc and ensure a very efficient (probably) run
-time PM for your device. All that the Platform guy will do is iterate 
-a list of domains on the platform, provide hookups, ensure constraints 
-etc and the job is done. Even if the same IP is used on a different SoC,
-you still ensure efficient savings in your driver itself.
+2. I really care about having a small kernel, don't enable anything I have 
+disabled (but help me figure out why something I want isn't available)
 
-> As I said in reply to the patch I am concerned that this may be an
-> oversimplification relative to what general hardware needs.
-Ohh. for the patch set, as I said, its only a primitive implementation.
-With your inputs, we can definitely make it more efficient!
+I don't think that hiding hardware from the user is ever the best thing to 
+do. for approach #1 you obviously don't want to hide anything, but even 
+for approach #2, someone may not realize that by disabling one option they 
+are making it impossible to support something, and as someone who spent a 
+bunch of time hunting through config to find options that I ended up 
+finding were not available without enabling something else, I much prefer 
+to see the option, but see it disabled rather than not being sure if it 
+should be there, or somewhere else in the config.
 
-Regards,
-Sundar
-
+David Lang
