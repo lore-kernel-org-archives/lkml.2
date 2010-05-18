@@ -1,235 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757259Ab0ERKbq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:31:46 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:37784 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756881Ab0ERK3g (ORCPT
+	id S1756693Ab0ERKfU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:35:20 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:48615 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755785Ab0ERKfR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:29:36 -0400
-X-IronPort-AV: E=Sophos;i="4.53,254,1272859200"; 
-   d="scan'208";a="97477172"
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-To: linux-kernel@vger.kernel.org
-Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Subject: [PATCH 01/12] Add support for hvm_op
-Date: Tue, 18 May 2010 11:22:56 +0100
-Message-Id: <1274178187-20602-1-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Mailer: git-send-email 1.5.4.3
-In-Reply-To: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
-X-OriginalArrivalTime: 18 May 2010 10:19:55.0122 (UTC) FILETIME=[A90AF520:01CAF673]
+	Tue, 18 May 2010 06:35:17 -0400
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
+References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
+	<m1wrv13dam.fsf@fess.ebiederm.org>
+	<20100518175451.a01e314b.sfr@canb.auug.org.au>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 18 May 2010 03:35:10 -0700
+In-Reply-To: <20100518175451.a01e314b.sfr@canb.auug.org.au> (Stephen Rothwell's message of "Tue\, 18 May 2010 17\:54\:51 +1000")
+Message-ID: <m1iq6lh50h.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: sfr@canb.auug.org.au, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, greg@kroah.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
----
- arch/x86/include/asm/xen/hypercall.h |    6 ++
- include/xen/hvm.h                    |   24 +++++++++
- include/xen/interface/hvm/hvm_op.h   |   35 ++++++++++++
- include/xen/interface/hvm/params.h   |   95 ++++++++++++++++++++++++++++++++++
- 4 files changed, 160 insertions(+), 0 deletions(-)
- create mode 100644 include/xen/hvm.h
- create mode 100644 include/xen/interface/hvm/hvm_op.h
- create mode 100644 include/xen/interface/hvm/params.h
+> Hi Eric,
+>
+> On Tue, 18 May 2010 00:00:01 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
+>>
+>> Stephen what is the easiest way to get a copy of Al's tree so I can take
+>> a look to see what needs to happen?
+>
+> It is here:
+>
+> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
+>
+> [The latest list of trees included in linux-next can always be found here:
+> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees]
 
-diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
-index 9c371e4..7fda040 100644
---- a/arch/x86/include/asm/xen/hypercall.h
-+++ b/arch/x86/include/asm/xen/hypercall.h
-@@ -417,6 +417,12 @@ HYPERVISOR_nmi_op(unsigned long op, unsigned long arg)
- 	return _hypercall2(int, nmi_op, op, arg);
- }
- 
-+static inline unsigned long __must_check
-+HYPERVISOR_hvm_op(int op, void *arg)
-+{
-+       return _hypercall2(unsigned long, hvm_op, op, arg);
-+}
-+
- static inline void
- MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
- {
-diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-new file mode 100644
-index 0000000..6b0d418
---- /dev/null
-+++ b/include/xen/hvm.h
-@@ -0,0 +1,24 @@
-+/* Simple wrappers around HVM functions */
-+#ifndef XEN_HVM_H__
-+#define XEN_HVM_H__
-+
-+#include <xen/interface/hvm/params.h>
-+
-+static inline int hvm_get_parameter(int idx, uint64_t *value)
-+{
-+       struct xen_hvm_param xhv;
-+       int r;
-+
-+       xhv.domid = DOMID_SELF;
-+       xhv.index = idx;
-+       r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
-+       if (r < 0) {
-+               printk(KERN_ERR "cannot get hvm parameter %d: %d.\n",
-+                      idx, r);
-+               return r;
-+       }
-+       *value = xhv.value;
-+       return r;
-+}
-+
-+#endif /* XEN_HVM_H__ */
-diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
-new file mode 100644
-index 0000000..73c8c7e
---- /dev/null
-+++ b/include/xen/interface/hvm/hvm_op.h
-@@ -0,0 +1,35 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
-+#define __XEN_PUBLIC_HVM_HVM_OP_H__
-+
-+/* Get/set subcommands: the second argument of the hypercall is a
-+ * pointer to a xen_hvm_param struct. */
-+#define HVMOP_set_param           0
-+#define HVMOP_get_param           1
-+struct xen_hvm_param {
-+    domid_t  domid;    /* IN */
-+    uint32_t index;    /* IN */
-+    uint64_t value;    /* IN/OUT */
-+};
-+DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
-+
-+#endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
-diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
-new file mode 100644
-index 0000000..1888d8c
---- /dev/null
-+++ b/include/xen/interface/hvm/params.h
-@@ -0,0 +1,95 @@
-+/*
-+ * Permission is hereby granted, free of charge, to any person obtaining a copy
-+ * of this software and associated documentation files (the "Software"), to
-+ * deal in the Software without restriction, including without limitation the
-+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
-+ * sell copies of the Software, and to permit persons to whom the Software is
-+ * furnished to do so, subject to the following conditions:
-+ *
-+ * The above copyright notice and this permission notice shall be included in
-+ * all copies or substantial portions of the Software.
-+ *
-+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
-+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
-+ * DEALINGS IN THE SOFTWARE.
-+ */
-+
-+#ifndef __XEN_PUBLIC_HVM_PARAMS_H__
-+#define __XEN_PUBLIC_HVM_PARAMS_H__
-+
-+#include "hvm_op.h"
-+
-+/*
-+ * Parameter space for HVMOP_{set,get}_param.
-+ */
-+
-+/*
-+ * How should CPU0 event-channel notifications be delivered?
-+ * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
-+ * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
-+ *                  Domain = val[47:32], Bus  = val[31:16],
-+ *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
-+ * val[63:56] == 2: val[7:0] is a vector number.
-+ * If val == 0 then CPU0 event-channel notifications are not delivered.
-+ */
-+#define HVM_PARAM_CALLBACK_IRQ 0
-+
-+#define HVM_PARAM_STORE_PFN    1
-+#define HVM_PARAM_STORE_EVTCHN 2
-+
-+#define HVM_PARAM_PAE_ENABLED  4
-+
-+#define HVM_PARAM_IOREQ_PFN    5
-+
-+#define HVM_PARAM_BUFIOREQ_PFN 6
-+
-+/*
-+ * Set mode for virtual timers (currently x86 only):
-+ *  delay_for_missed_ticks (default):
-+ *   Do not advance a vcpu's time beyond the correct delivery time for
-+ *   interrupts that have been missed due to preemption. Deliver missed
-+ *   interrupts when the vcpu is rescheduled and advance the vcpu's virtual
-+ *   time stepwise for each one.
-+ *  no_delay_for_missed_ticks:
-+ *   As above, missed interrupts are delivered, but guest time always tracks
-+ *   wallclock (i.e., real) time while doing so.
-+ *  no_missed_ticks_pending:
-+ *   No missed interrupts are held pending. Instead, to ensure ticks are
-+ *   delivered at some non-zero rate, if we detect missed ticks then the
-+ *   internal tick alarm is not disabled if the VCPU is preempted during the
-+ *   next tick period.
-+ *  one_missed_tick_pending:
-+ *   Missed interrupts are collapsed together and delivered as one 'late tick'.
-+ *   Guest time always tracks wallclock (i.e., real) time.
-+ */
-+#define HVM_PARAM_TIMER_MODE   10
-+#define HVMPTM_delay_for_missed_ticks    0
-+#define HVMPTM_no_delay_for_missed_ticks 1
-+#define HVMPTM_no_missed_ticks_pending   2
-+#define HVMPTM_one_missed_tick_pending   3
-+
-+/* Boolean: Enable virtual HPET (high-precision event timer)? (x86-only) */
-+#define HVM_PARAM_HPET_ENABLED 11
-+
-+/* Identity-map page directory used by Intel EPT when CR0.PG=0. */
-+#define HVM_PARAM_IDENT_PT     12
-+
-+/* Device Model domain, defaults to 0. */
-+#define HVM_PARAM_DM_DOMAIN    13
-+
-+/* ACPI S state: currently support S0 and S3 on x86. */
-+#define HVM_PARAM_ACPI_S_STATE 14
-+
-+/* TSS used on Intel when CR0.PE=0. */
-+#define HVM_PARAM_VM86_TSS     15
-+
-+/* Boolean: Enable aligning all periodic vpts to reduce interrupts */
-+#define HVM_PARAM_VPT_ALIGN    16
-+
-+#define HVM_NR_PARAMS          17
-+
-+#endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
--- 
-1.5.4.3
+Thanks.
 
+I will cook up a proper incremental patch after I get some sleep.  Stephen
+it appears those two lines you have commented out are actually unnecessary.
+
+We have
+deactivate_super
+  kill_sb aka sysfs_kill_sb
+    kill_anon_super
+      generic_shutdown_super
+         sb_lock
+         list_del(sb->s_instances)
+         sb_unlock
+  kfree(info)
+
+Nothing generic stomps on s_fs_info.
+
+Which means that if I find a superblock on sb->s_instances sb->s_fs_info
+still points to a valid sysfs_super_info.
+
+
+
+
+
+As as for the race Al mentions between sysfs_exit_ns and
+sysfs_readdir, I looked and a small race has crept in.  The primary
+prevention of problems is that all matching sysfs_dirents for that
+namespace are required to be removed before sysfs_exit_ns is called.
+
+What remains is the tiniest of races where a namespace structure is
+freed and a new namespace structure of the same type is allocated at
+the same address and sysfs_dirents for it are created, all during the
+a single kernel readdir operation.  Possible with slabs, and
+copy_to_user triggering a page fault.  Still the worst case is that we
+tell userspace some name that it wasn't supposed to see on that mount
+point.  From a userspace point of view this seems to fall under a
+readdir implementations license to return some odd things if the
+directory is changing during the readdir call.  Overall we do preserve
+the property of returning everything that is in the directory between
+opendir and the time readdir his the end of file.
+
+Eric
