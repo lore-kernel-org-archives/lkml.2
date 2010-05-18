@@ -1,75 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755690Ab0ERUyP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:54:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48399 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751400Ab0ERUyN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:54:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=O6Y93HGSA5bUa0n+kpQYNR+BEnkodgiEW+DV+74F9HzplGiKKqguly9kMaUjiHOJg2
-         cWjlLHADwsPl8B8gub72ZEbGtHAS/tDFYfOn4V1daHfekZ7pWxjxrmDJyct3AeMRTyU5
-         zOhF9f3WJBkMeQWB7KJrRjzPfOOu5m68BioL8=
+	id S1756536Ab0ERUzG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:55:06 -0400
+Received: from www.tglx.de ([62.245.132.106]:40252 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753225Ab0ERUzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:55:04 -0400
+Date: Tue, 18 May 2010 22:54:47 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Jacob Pan <jacob.jun.pan@linux.intel.com>
+cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
+       Alan Cox <alan@linux.intel.com>, Feng Tang <feng.tang@intel.com>
+Subject: Re: [PATCH 1/2] v4 x86/mrst: add cpu type detection
+In-Reply-To: <1274184166-17242-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Message-ID: <alpine.LFD.2.00.1005182250460.3368@localhost.localdomain>
+References: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com> <1274184166-17242-2-git-send-email-jacob.jun.pan@linux.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-In-Reply-To: <4BF2C3BE.7060804@intel.com>
-References: <1270125903-6004-1-git-send-email-suokkos@gmail.com>
-	 <1270125903-6004-5-git-send-email-suokkos@gmail.com>
-	 <AANLkTilyGz86DlwOvtVolthE66VzkSwj9jDv0s138Egi@mail.gmail.com>
-	 <4BF2C3BE.7060804@intel.com>
-Date: Tue, 18 May 2010 13:54:12 -0700
-Message-ID: <AANLkTil-PxC3C8cuPsZG6hKNzzq9MmKNtcY1IhnDy0OU@mail.gmail.com>
-Subject: Re: [PATCH 5/7] arch/x86: Add array variants for setting memory to wc 
-	caching.
-From: Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>
-To: "H. Peter Anvin" <h.peter.anvin@intel.com>
-Cc: Dave Airlie <airlied@gmail.com>, Pauli Nieminen <suokkos@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 9:43 AM, H. Peter Anvin <h.peter.anvin@intel.com> wrote:
-> On 05/18/2010 02:34 AM, Dave Airlie wrote:
->> On Thu, Apr 1, 2010 at 10:45 PM, Pauli Nieminen <suokkos@gmail.com> wrote:
->>> Setting single memory pages at a time to wc takes a lot time in cache flush. To
->>> reduce number of cache flush set_pages_array_wc and set_memory_array_wc can be
->>> used to set multiple pages to WC with single cache flush.
->>>
->>> This improves allocation performance for wc cached pages in drm/ttm.
->>>
->>
->> I've got this in drm-next for quite a while and almost forgot about
->> it, I'm meant to be on holidays and I'd really like to just have Linus
->> pull my tree,
->>
->> I had only one issue with this as we had some problems with doing it
->> before but it looks like they've since been fixed in the x86 pat code
->> a kernel or two ago so this patch should be fine now.
->>
->> its been well tested in drm-next on AGP machines by the author,
->>
->> any objections to this?
->>
->> Dave.
->
-> Acked-by: H. Peter Anvin <hpa@zytor.com>
->
-> Go ahead and push it; the patch is straightforward, and the author
-> (Venki) is reliable.
->
->        -hpa
->
-> P.S. Please Cc: all the x86 maintainers, not just Ingo.
->
+On Tue, 18 May 2010, Jacob Pan wrote:
+>  
+> +int mrst_identify_cpu(void)
+> +{
+> +	u32 mrst_cpu_chip;
+> +
+> +	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
+> +		mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
+> +	else if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x26)
+> +		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
+> +	else {
+> +		pr_err("Unknown Moorestown CPU (%d:%d), default to Lincroft\n",
+> +			boot_cpu_data.x86, boot_cpu_data.x86_model);
+> +		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
+> +	}
+> +	pr_debug("Moorestown CPU %s identified\n",
+> +		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
+> +		"Lincroft" : "Penwell");
 
-Patch actually from Pauli.
-Looks good.
+  Do you really want a printk for each call ?
 
-Acked-by: Venkatesh Pallipadi <venki@google.com>
+  Aside of that wouldn't it make more sense to do the chip
+  identification only once from mrst_init() and cache the result and
+  change mrst_identify_cpu()
+
+int mrst_indetify_cpu(void)
+{
+	return mrst_cpu_chip;
+}
+EXPORT_SYMBOL_GPL(mrst_identify_cpu);
+
+I think one of your earlier versions did that, but was not consistent
+in it's behaviour.
+
+Thanks,
+
+	tglx
