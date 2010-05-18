@@ -1,127 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757635Ab0ERVZg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:25:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56616 "EHLO mx1.redhat.com"
+	id S1757577Ab0ERVZO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:25:14 -0400
+Received: from kroah.org ([198.145.64.141]:52261 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757242Ab0ERVZb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:25:31 -0400
-Date: Tue, 18 May 2010 23:22:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Yong Zhang <yong.zhang0@gmail.com>
-Cc: linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: schedule() && prev/current (Was: [PATCH 3/3] Make get_current()
-	__attribute__((const)))
-Message-ID: <20100518212220.GA5092@redhat.com>
-References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk> <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
+	id S1757302Ab0ERVZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:25:07 -0400
+Date: Tue, 18 May 2010 14:24:48 -0700
+From: Greg KH <greg@kroah.com>
+To: Chris Wright <chrisw@sous-sol.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20100518212448.GA31331@kroah.com>
+References: <20100518164409.8b19c786.sfr@canb.auug.org.au>
+ <20100518140226.GB24113@kroah.com>
+ <20100518210607.GI8301@sequoia.sous-sol.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100518210607.GI8301@sequoia.sous-sol.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18, David Howells wrote:
->
-> This doesn't break cached copies of current, whether they're cached by gcc in
-> registers or on the stack.  switch_to() will save all registers on the stack
-> before actually switching, then when it switches current, it will also switch
-> the stack and then pop back what was stored in the 'unclobbered' registers for
-> the now active task and stack.  Thus the copies of current that were cached
-> just work.
->
-> [...snip...]
->
-> --- a/include/asm-generic/current.h
-> +++ b/include/asm-generic/current.h
-> @@ -3,7 +3,14 @@
->
->  #include <linux/thread_info.h>
->
-> -#define get_current() (current_thread_info()->task)
-> +struct task_struct;
-> +
-> +static inline __attribute_const__
-> +struct task_struct *get_current(void)
-> +{
-> +	return current_thread_info()->task;
-> +}
+On Tue, May 18, 2010 at 02:06:07PM -0700, Chris Wright wrote:
+> * Greg KH (greg@kroah.com) wrote:
+> > On Tue, May 18, 2010 at 04:44:09PM +1000, Stephen Rothwell wrote:
+> > > Hi Greg,
+> > > 
+> > > After merging the driver-core tree, today's linux-next build (powerpc
+> > > ppc64_defconfig) failed like this:
+> > > 
+> > > cc1: warnings being treated as errors
+> > > In file included from include/linux/kobject.h:21,
+> > >                  from include/linux/device.h:17,
+> > >                  from arch/powerpc/lib/devres.c:10:
+> > > include/linux/sysfs.h:97: error: 'struct file' declared inside parameter list
+> > > include/linux/sysfs.h:97: error: its scope is only this definition or declaration, which is probably not what you want
+> > > include/linux/sysfs.h:99: error: 'struct file' declared inside parameter list
+> > > include/linux/sysfs.h:101: error: 'struct file' declared inside parameter list
+> > > 
+> > > and many more (arch/powerpc is built with -Werror (as do some other
+> > > architectures)) and lots of similar warnings ...
+> > > 
+> > > Caused by commit f8e898186196a22756b50b908ecd92123265f8a2 ("sysfs: add
+> > > struct file* to bin_attr callbacks").   See Rule 1 in
+> > > Documentation/SubmitChecklist.  The header file probably just needs
+> > > "struct file;" added in the right place.
+> > > 
+> > > I have reverted that commit for today (and commit
+> > > 44e425ab9f887ec6d3a7a4481f3b0c99f120de19 ("pci: check caps from sysfs
+> > > file open to read device dependent config space") that depends on it).
+> > 
+> > Ick.
+> > 
+> > Chris, care to send a patch to resolve this?
+> 
+> Would you prefer incremental to fold in, or respin?  It's just this
+> one-liner fwd declaration as Stephen mentioned.
 
-Can't ack this patch, but it looks correct to me.
+Incremental to fold in is easier.  That way there's no build error in
+the tree.
 
+thanks,
 
-And, looking at this patch I think that schedule() can be simplified
-a little bit.
-
-"sched: Reassign prev and switch_count when reacquire_kernel_lock() fail"
-commit 6d558c3ac9b6508d26fd5cadccce51fc9d726b1c says:
-
-	Assume A->B schedule is processing,
-	...
-	Then on B's context,
-	...
-	prev and switch_count are related to A
-
-How so? switch_count - yes, we should change it. But prev must be
-equal to B, and it must be equal to current. When we return from
-switch_to() registers/stack should be restored correctly, so we
-can do
-
-	--- x/kernel/sched.c
-	+++ x/kernel/sched.c
-	@@ -3729,8 +3729,7 @@ need_resched_nonpreemptible:
-	 
-		post_schedule(rq);
-	 
-	-	if (unlikely(reacquire_kernel_lock(current) < 0)) {
-	-		prev = rq->curr;
-	+	if (unlikely(reacquire_kernel_lock(prev) < 0)) {
-			switch_count = &prev->nivcsw;
-			goto need_resched_nonpreemptible;
-		}
-
-and in fact we can simplify this even more, no need to reassign
-switch_count, we can just move the initial assignment down, under
-"need_resched_nonpreemptible" label.
-
-switch_to(prev, next, prev) changes "prev" inside context_switch()
-but it should be stable inside of schedule().
-
-Oleg.
-
---- x/kernel/sched.c
-+++ x/kernel/sched.c
-@@ -3708,7 +3708,6 @@ need_resched:
- 	rq = cpu_rq(cpu);
- 	rcu_sched_qs(cpu);
- 	prev = rq->curr;
--	switch_count = &prev->nivcsw;
- 
- 	release_kernel_lock(prev);
- need_resched_nonpreemptible:
-@@ -3722,6 +3721,7 @@ need_resched_nonpreemptible:
- 	update_rq_clock(rq);
- 	clear_tsk_need_resched(prev);
- 
-+	switch_count = &prev->nivcsw;
- 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
- 		if (unlikely(signal_pending_state(prev->state, prev)))
- 			prev->state = TASK_RUNNING;
-@@ -3758,11 +3758,8 @@ need_resched_nonpreemptible:
- 
- 	post_schedule(rq);
- 
--	if (unlikely(reacquire_kernel_lock(current) < 0)) {
--		prev = rq->curr;
--		switch_count = &prev->nivcsw;
-+	if (unlikely(reacquire_kernel_lock(prev))
- 		goto need_resched_nonpreemptible;
--	}
- 
- 	preempt_enable_no_resched();
- 	if (need_resched())
-
+greg k-h
