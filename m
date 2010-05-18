@@ -1,77 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755610Ab0ERXXb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 19:23:31 -0400
-Received: from mga09.intel.com ([134.134.136.24]:33006 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755009Ab0ERXXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 19:23:30 -0400
+	id S1754516Ab0ERXgJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 19:36:09 -0400
+Received: from mga05.intel.com ([192.55.52.89]:50292 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752708Ab0ERXgG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 19:36:06 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,258,1272870000"; 
-   d="scan'208";a="622813627"
-Date: Wed, 19 May 2010 01:23:53 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Rabin VINCENT <rabin.vincent@stericsson.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH] mfd: new AB8500 driver
-Message-ID: <20100518232352.GB9658@sortiz.org>
-References: <1273553131-9312-1-git-send-email-rabin.vincent@stericsson.com>
- <20100516225355.GF3236@sortiz.org>
- <20100517160005.GA32741@bnru02.bnr.st.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100517160005.GA32741@bnru02.bnr.st.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+   d="scan'208";a="799692257"
+Subject: [PATCH 0/2] tmpfs: Improve tmpfs scalability
+From: tim <tim.c.chen@linux.intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: Andi Kleen <ak@linux.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 18 May 2010 16:34:26 -0700
+Message-ID: <1274225666.31973.8949.camel@mudge.jf.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Rabin,
 
-On Mon, May 17, 2010 at 09:30:06PM +0530, Rabin VINCENT wrote:
-> Hi Samuel,
-> 
-> On Mon, May 17, 2010 at 00:53:55 +0200, Samuel Ortiz wrote:
-> > On Tue, May 11, 2010 at 10:15:31AM +0530, Rabin Vincent wrote:
-> > > Add a new driver to support the AB8500 Power Management chip, replacing
-> > > the current AB4500.  The new driver replaces the old one, instead of an
-> > > incremental modification, because this is a substantial overhaul
-> > > including:
-> > > 
-> > >  - Split of the driver into -core and -spi portions, to allow another
-> > >    interface layer to be added
-> > > 
-> > >  - Addition of interrupt support
-> > > 
-> > >  - Switch to MFD core API for handling subdevices
-> > > 
-> > >  - Simplification of the APIs to remove a redundant block parameter
-> > > 
-> > >  - Rename of the APIs and macros from ab4500_* to ab8500_*
-> > > 
-> > >  - Rename of the files from ab4500* to ab8500*
-> > > 
-> > > The driver still identifes itself as "ab4500" 
-> > The patch looks good, but why not changing that to "ab8500" and integrating
-> > the relevant board file changes to this patch ?
-> 
-> I originally didn't do this because I thought that this would create
-> merge conflicts with some code movement in the arm tree, but looks like
-> I was wrong -- there won't be conflicts for this change.
-> 
-> So, the updated patch below also includes the board file change to
-> change the driver name from ab4500 to ab8500.  (It also includes a small
-> fix to the interrupt handling, found after the previous version was
-> sent.)
-Thanks, patch applied to my for-next branch.
+We created a token jar library implementing
+per cpu cache of tokens to avoid lock contentions whenever
+we retrieve or return a token to a token jar.  Using this library
+with tmpfs, we find Aim7 fserver throughput improved 270% 
+on a 4 socket, 32 cores NHM-EX system.
 
-Cheers,
-Samuel.
+In current implementation of tmpfs, whenever we
+get a new page, stat_lock in shmem_sb_info needs to be acquired.  
+This causes a lot of lock contentions when multiple
+threads are using tmpfs simultaneously, which makes
+system with large number of cpus scale poorly.
+Almost 75% of cpu time was spent contending on
+stat_lock when we ran Aim7 fserver load with 128 threads
+on a 4 socket, 32 cores NHM-EX system.
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+The first patch in the series implements the quick token jar. 
+The second patch update the shmem code of tmpfs to use this
+library to improve tmpfs performance.
+
+Regards,
+Tim Chen 
+
