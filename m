@@ -1,47 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754198Ab0ERCdK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 22:33:10 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:35262 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753041Ab0ERCdJ (ORCPT
+	id S1754502Ab0ERCjc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 22:39:32 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:42607 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753157Ab0ERCjb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 22:33:09 -0400
-X-Authority-Analysis: v=1.1 cv=DB4JU8ZWelvwd5d0x20oybKyR86uyiSly0XbcMdosrc= c=1 sm=0 a=MIo7TErJhbYA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pGLkceISAAAA:8 a=u-L7As-XBq202WwG-_YA:9 a=qICshYxHPrjGSTwWgxrNR96qSPsA:4 a=PUjeQqilurYA:10 a=MSl-tDqOz04A:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Conflict between tip/tracing/core and tip/perf/core
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, Peter Zijlstra <peterz@infradead.org>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Ingo Molnar <mingo@elte.hu>
-In-Reply-To: <20100518022809.GC5359@nowhere>
-References: <1274122242.26328.375.camel@gandalf.stny.rr.com>
-	 <20100518022809.GC5359@nowhere>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 17 May 2010 22:33:05 -0400
-Message-ID: <1274149985.26328.724.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Mon, 17 May 2010 22:39:31 -0400
+Message-ID: <4BF1FD33.4040305@ct.jp.nec.com>
+Date: Tue, 18 May 2010 11:36:35 +0900
+From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+MIME-Version: 1.0
+To: Will Drewry <wad@chromium.org>
+CC: device-mapper development <dm-devel@redhat.com>,
+       linux-kernel@vger.kernel.org, snitzer@redhat.com, agk@redhat.com
+Subject: Re: [dm-devel] [RFC PATCH v2 1/2] dm: allow a dm-fs-style device
+ to be	shared via dm-ioctl
+References: <20100514035347.GA20636@redhat.com> <1273887701-2152-1-git-send-email-wad@chromium.org>
+In-Reply-To: <1273887701-2152-1-git-send-email-wad@chromium.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 04:28 +0200, Frederic Weisbecker wrote:
-> On Mon, May 17, 2010 at 02:50:42PM -0400, Steven Rostedt wrote:
+Hi Will,
 
-> 
-> Yep, no problem with it,
-> 
-> Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
-> 
+n 05/15/2010 10:41 AM +0900, Will Drewry wrote:
+> In addition, it ensures that public functions are available that
+> allow mapped devices and tables to be created and associated
+> with the shared code paths with dm-ioctl:
+> - suspend flags are available
+snip 
+> diff --git a/drivers/md/dm.h b/drivers/md/dm.h
+> index bad1724..782d867 100644
+> --- a/drivers/md/dm.h
+> +++ b/drivers/md/dm.h
+> @@ -17,12 +17,6 @@
+>  #include <linux/hdreg.h>
+>  
+>  /*
+> - * Suspend feature flags
+> - */
+> -#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
+> -#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
+> -
+> -/*
+>   * Type of table and mapped_device's mempool
+>   */
+>  #define DM_TYPE_NONE		0
+> diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
+> index 1381cd9..6c1c230 100644
+> --- a/include/linux/device-mapper.h
+> +++ b/include/linux/device-mapper.h
+> @@ -215,6 +215,18 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
+>  void *dm_get_mdptr(struct mapped_device *md);
+>  
+>  /*
+> + * Export the device via the ioctl interface (uses mdptr).
+> + */
+> +int dm_ioctl_export(struct mapped_device *md, const char *name,
+> +		    const char *uuid);
+> +
+> +/*
+> + * Suspend feature flags
+> + */
+> +#define DM_SUSPEND_LOCKFS_FLAG		(1 << 0)
+> +#define DM_SUSPEND_NOFLUSH_FLAG		(1 << 1)
+> +
+> +/*
+>   * A device can still be used while suspended, but I/O is deferred.
+>   */
+>  int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
 
-Thanks guys! I'll get it ready to push out soon.
+Why do you need suspend feature flags?
+I think no feature is needed (specifying '0' is enough) to make/suspend
+a dm device at boot time (although I have looked at only this flag part).
+Am I missing something?
 
--- Steve
-
-
+Thanks,
+Kiyoshi Ueda
