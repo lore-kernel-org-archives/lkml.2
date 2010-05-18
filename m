@@ -1,50 +1,295 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758799Ab0ERUO7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:14:59 -0400
-Received: from kroah.org ([198.145.64.141]:52570 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758073Ab0ERUOR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:14:17 -0400
-Date: Tue, 18 May 2010 13:07:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
-Message-ID: <20100518200730.GB20223@kroah.com>
-References: <1274233602.3036.84.camel@localhost>
+	id S1755783Ab0ERUS6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:18:58 -0400
+Received: from e37.co.us.ibm.com ([32.97.110.158]:53750 "EHLO
+	e37.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab0ERUS5 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:18:57 -0400
+Date: Tue, 18 May 2010 13:18:38 -0700
+From: Vernon Mauery <vernux@us.ibm.com>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] Add support for Westmere to i7core_edac driver
+Message-ID: <20100518201838.GB6511@lucy>
+References: <20100518184653.GA6511@lucy>
+ <4BF2E3BE.4020101@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Disposition: inline
-In-Reply-To: <1274233602.3036.84.camel@localhost>
+In-Reply-To: <4BF2E3BE.4020101@redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 01:46:42AM +0000, Lin Ming wrote:
-> +struct kobj_type event_ktype = {
-> +	.sysfs_ops	= &event_sysfs_ops,
-> +};
+On 18-May-2010 04:00 PM, Mauro Carvalho Chehab wrote:
+>Vernon Mauery wrote:
+>> Add support for Westmere to i7core_edac driver
+>>
+>> This adds new PCI IDs for the Westmere's memory controller
+>> devices and modifies the i7core_edac driver to be able to
+>> probe both Nehalem and Westmere processors.
+>>
+>> This applies to
+>> git://git.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git linux_next
+>>
+>> Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
+>>
+>> @@ -1170,7 +1213,7 @@ static void i7core_put_all_devices(void)
+>>           i7core_put_devices(i7core_dev);
+>>   }
+>>
+>> -static void __init i7core_xeon_pci_fixup(int dev_id)
+>> +static void i7core_xeon_pci_fixup(struct pci_id_table *table)
+>>   {
+>>       struct pci_dev *pdev = NULL;
+>>       int i;
+>
+>
+>Hmm... this hunk seems wrong to me. It ir just reverting this patch:
+>
+>http://git.kernel.org/?p=linux/kernel/git/mchehab/i7core.git;a=commit;h=71753e0141a220ecbf9c71a66e0a8acce9705fb5
+>
+>The other changes seem OK on my eyes.
 
-No release function?  Hm, are you setting yourself up to be publically
-made fun of?  You have read the kobject documentation about this, right?
-Have you looked at the kernel logs for when you try to free this object?
+Oops.  It looks like my merge was not quite correct.  It was not 
+intended to revert that patch, but rather change the parameters to the 
+function to use a struct pci_id_table instead of an int dev_id.
 
-thanks,
+Here is a correct patch.
 
-greg k-h
+--Vernon
+
+Add support for Westmere to i7core_edac driver
+
+This adds new PCI IDs for the Westmere's memory controller
+devices and modifies the i7core_edac driver to be able to
+probe both Nehalem and Westmere processors.
+
+Signed-off-by: Vernon Mauery <vernux@us.ibm.com>
+
+diff --git a/drivers/edac/i7core_edac.c b/drivers/edac/i7core_edac.c
+index 3e2b537..583145f 100644
+--- a/drivers/edac/i7core_edac.c
++++ b/drivers/edac/i7core_edac.c
+@@ -206,6 +206,11 @@ struct pci_id_descr {
+  	int			optional;
+  };
+  
++struct pci_id_table {
++	struct pci_id_descr *descr;
++	int                  n_devs;
++};
++
+  struct i7core_dev {
+  	struct list_head	list;
+  	u8			socket;
+@@ -262,7 +267,7 @@ static DEFINE_MUTEX(i7core_edac_lock);
+  	.func = (function),			\
+  	.dev_id = (device_id)
+  
+-struct pci_id_descr pci_dev_descr_i7core[] = {
++struct pci_id_descr pci_dev_descr_i7core_nehalem[] = {
+  		/* Memory controller */
+  	{ PCI_DESCR(3, 0, PCI_DEVICE_ID_INTEL_I7_MCR)     },
+  	{ PCI_DESCR(3, 1, PCI_DEVICE_ID_INTEL_I7_MC_TAD)  },
+@@ -321,6 +326,44 @@ struct pci_id_descr pci_dev_descr_lynnfield[] = {
+  	{ PCI_DESCR( 0, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE)     },
+  };
+  
++struct pci_id_descr pci_dev_descr_i7core_westmere[] = {
++		/* Memory controller */
++	{ PCI_DESCR(3, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_MCR_REV2)     },
++	{ PCI_DESCR(3, 1, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_TAD_REV2)  },
++			/* Exists only for RDIMM */
++	{ PCI_DESCR(3, 2, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_RAS_REV2), .optional = 1  },
++	{ PCI_DESCR(3, 4, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_TEST_REV2) },
++
++		/* Channel 0 */
++	{ PCI_DESCR(4, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_CTRL_REV2) },
++	{ PCI_DESCR(4, 1, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_ADDR_REV2) },
++	{ PCI_DESCR(4, 2, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_RANK_REV2) },
++	{ PCI_DESCR(4, 3, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_TC_REV2)   },
++
++		/* Channel 1 */
++	{ PCI_DESCR(5, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_CTRL_REV2) },
++	{ PCI_DESCR(5, 1, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_ADDR_REV2) },
++	{ PCI_DESCR(5, 2, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_RANK_REV2) },
++	{ PCI_DESCR(5, 3, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_TC_REV2)   },
++
++		/* Channel 2 */
++	{ PCI_DESCR(6, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_CTRL_REV2) },
++	{ PCI_DESCR(6, 1, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_ADDR_REV2) },
++	{ PCI_DESCR(6, 2, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2) },
++	{ PCI_DESCR(6, 3, PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2)   },
++
++		/* Generic Non-core registers */
++	{ PCI_DESCR(0, 0, PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_REV2)  },
++
++};
++
++#define PCI_ID_TABLE_ENTRY(A) { A, ARRAY_SIZE(A) }
++struct pci_id_table pci_dev_table[] = {
++	PCI_ID_TABLE_ENTRY(pci_dev_descr_i7core_nehalem),
++	PCI_ID_TABLE_ENTRY(pci_dev_descr_lynnfield),
++	PCI_ID_TABLE_ENTRY(pci_dev_descr_i7core_westmere),
++};
++
+  /*
+   *	pci_device_id	table for which devices we are looking for
+   */
+@@ -1170,7 +1213,7 @@ static void i7core_put_all_devices(void)
+  		i7core_put_devices(i7core_dev);
+  }
+  
+-static void __init i7core_xeon_pci_fixup(int dev_id)
++static void __init i7core_xeon_pci_fixup(struct pci_id_table *table)
+  {
+  	struct pci_dev *pdev = NULL;
+  	int i;
+@@ -1179,10 +1222,13 @@ static void __init i7core_xeon_pci_fixup(int dev_id)
+  	 * aren't announced by acpi. So, we need to use a legacy scan probing
+  	 * to detect them
+  	 */
+-	pdev = pci_get_device(PCI_VENDOR_ID_INTEL, dev_id, NULL);
+-	if (unlikely(!pdev)) {
+-		for (i = 0; i < MAX_SOCKET_BUSES; i++)
+-			pcibios_scan_specific_bus(255-i);
++	while (table && table->descr) {
++		pdev = pci_get_device(PCI_VENDOR_ID_INTEL, table->descr[0].dev_id, NULL);
++		if (unlikely(!pdev)) {
++			for (i = 0; i < MAX_SOCKET_BUSES; i++)
++				pcibios_scan_specific_bus(255-i);
++		}
++		table++;
+  	}
+  }
+  
+@@ -1213,15 +1259,10 @@ int i7core_get_onedevice(struct pci_dev **prev, int devno,
+  		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+  				      PCI_DEVICE_ID_INTEL_I7_NONCORE_ALT, *prev);
+  
+-	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev) {
++	if (dev_descr->dev_id == PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE && !pdev)
+  		pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+  				      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_ALT,
+  				      *prev);
+-		if (!pdev)
+-			pdev = pci_get_device(PCI_VENDOR_ID_INTEL,
+-					      PCI_DEVICE_ID_INTEL_LYNNFIELD_NONCORE_REV2,
+-					      *prev);
+-	}
+  
+  	if (!pdev) {
+  		if (*prev) {
+@@ -1232,6 +1273,9 @@ int i7core_get_onedevice(struct pci_dev **prev, int devno,
+  		if (dev_descr->optional)
+  			return 0;
+  
++		if (devno == 0)
++			return -ENODEV;
++
+  		i7core_printk(KERN_ERR,
+  			"Device not found: dev %02x.%d PCI ID %04x:%04x\n",
+  			dev_descr->dev, dev_descr->func,
+@@ -1307,21 +1351,30 @@ int i7core_get_onedevice(struct pci_dev **prev, int devno,
+  	return 0;
+  }
+  
+-static int i7core_get_devices(struct pci_id_descr dev_descr[], unsigned n_devs)
++static int i7core_get_devices(struct pci_id_table *table)
+  {
+  	int i, rc;
+  	struct pci_dev *pdev = NULL;
+-
+-	for (i = 0; i < n_devs; i++) {
+-		pdev = NULL;
+-		do {
+-			rc = i7core_get_onedevice(&pdev, i, &dev_descr[i],
+-						  n_devs);
+-			if (rc < 0) {
+-				i7core_put_all_devices();
+-				return -ENODEV;
+-			}
+-		} while (pdev);
++	struct pci_id_descr *dev_descr;
++
++	while (table && table->descr) {
++		dev_descr = table->descr;
++		for (i = 0; i < table->n_devs; i++) {
++			pdev = NULL;
++			do {
++				rc = i7core_get_onedevice(&pdev, i, &dev_descr[i],
++							  table->n_devs);
++				if (rc < 0) {
++					if (i == 0) {
++						i = table->n_devs;
++						break;
++					}
++					i7core_put_all_devices();
++					return -ENODEV;
++				}
++			} while (pdev);
++		}
++		table++;
+  	}
+  
+  	return 0;
+@@ -1884,18 +1937,7 @@ static int __devinit i7core_probe(struct pci_dev *pdev,
+  	/* get the pci devices we want to reserve for our use */
+  	mutex_lock(&i7core_edac_lock);
+  
+-	if (pdev->device == PCI_DEVICE_ID_INTEL_LYNNFIELD_QPI_LINK0) {
+-		printk(KERN_INFO "i7core_edac: detected a "
+-				 "Lynnfield processor\n");
+-		rc = i7core_get_devices(pci_dev_descr_lynnfield,
+-					ARRAY_SIZE(pci_dev_descr_lynnfield));
+-	} else {
+-		printk(KERN_INFO "i7core_edac: detected a "
+-				 "Nehalem/Nehalem-EP processor\n");
+-		rc = i7core_get_devices(pci_dev_descr_i7core,
+-					ARRAY_SIZE(pci_dev_descr_i7core));
+-	}
+-
++	rc = i7core_get_devices(pci_dev_table);
+  	if (unlikely(rc < 0))
+  		goto fail0;
+  
+@@ -1994,7 +2036,7 @@ static int __init i7core_init(void)
+  	/* Ensure that the OPSTATE is set correctly for POLL or NMI */
+  	opstate_init();
+  
+-	i7core_xeon_pci_fixup(pci_dev_descr_i7core[0].dev_id);
++	i7core_xeon_pci_fixup(pci_dev_table);
+  
+  	pci_rc = pci_register_driver(&i7core_driver);
+  
+diff --git a/include/linux/pci_ids.h b/include/linux/pci_ids.h
+index 46d76e9..413fab7 100644
+--- a/include/linux/pci_ids.h
++++ b/include/linux/pci_ids.h
+@@ -2567,6 +2567,22 @@
+  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_ADDR 0x2ca9
+  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_RANK 0x2caa
+  #define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_TC   0x2cab
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MCR_REV2          0x2d98
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_TAD_REV2       0x2d99
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_RAS_REV2       0x2d9a
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_TEST_REV2      0x2d9c
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_CTRL_REV2  0x2da0
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_ADDR_REV2  0x2da1
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_RANK_REV2  0x2da2
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH0_TC_REV2    0x2da3
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_CTRL_REV2  0x2da8
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_ADDR_REV2  0x2da9
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_RANK_REV2  0x2daa
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH1_TC_REV2    0x2dab
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_CTRL_REV2  0x2db0
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_ADDR_REV2  0x2db1
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_RANK_REV2  0x2db2
++#define PCI_DEVICE_ID_INTEL_LYNNFIELD_MC_CH2_TC_REV2    0x2db3
+  #define PCI_DEVICE_ID_INTEL_82855PM_HB	0x3340
+  #define PCI_DEVICE_ID_INTEL_IOAT_TBG4	0x3429
+  #define PCI_DEVICE_ID_INTEL_IOAT_TBG5	0x342a
