@@ -1,95 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756070Ab0ERUwd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:52:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:40479 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab0ERUwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:52:31 -0400
-Date: Tue, 18 May 2010 16:52:27 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Jeff Moyer <jmoyer@redhat.com>
-Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       jens.axboe@oracle.com
-Subject: Re: [PATCH 1/4] cfq-iosched: Keep track of average think time for
-	the sync-noidle workload.
-Message-ID: <20100518205227.GC12330@redhat.com>
-References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com> <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
+	id S1755690Ab0ERUyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:54:15 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48399 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751400Ab0ERUyN convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:54:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=O6Y93HGSA5bUa0n+kpQYNR+BEnkodgiEW+DV+74F9HzplGiKKqguly9kMaUjiHOJg2
+         cWjlLHADwsPl8B8gub72ZEbGtHAS/tDFYfOn4V1daHfekZ7pWxjxrmDJyct3AeMRTyU5
+         zOhF9f3WJBkMeQWB7KJrRjzPfOOu5m68BioL8=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4BF2C3BE.7060804@intel.com>
+References: <1270125903-6004-1-git-send-email-suokkos@gmail.com>
+	 <1270125903-6004-5-git-send-email-suokkos@gmail.com>
+	 <AANLkTilyGz86DlwOvtVolthE66VzkSwj9jDv0s138Egi@mail.gmail.com>
+	 <4BF2C3BE.7060804@intel.com>
+Date: Tue, 18 May 2010 13:54:12 -0700
+Message-ID: <AANLkTil-PxC3C8cuPsZG6hKNzzq9MmKNtcY1IhnDy0OU@mail.gmail.com>
+Subject: Re: [PATCH 5/7] arch/x86: Add array variants for setting memory to wc 
+	caching.
+From: Venkatesh Pallipadi <venkatesh.pallipadi@gmail.com>
+To: "H. Peter Anvin" <h.peter.anvin@intel.com>
+Cc: Dave Airlie <airlied@gmail.com>, Pauli Nieminen <suokkos@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Suresh Siddha <suresh.b.siddha@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 02:20:17PM -0400, Jeff Moyer wrote:
-> This patch uses an average think time for the entirety of the sync-noidle
-> workload to determine whether or not to idle on said workload.  This brings
-> it more in line with the policy for the sync queues in the sync workload.
-> 
-> Testing shows that this provided an overall increase in throughput for
-> a mixed workload on my hardware RAID array.
-> 
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->  block/cfq-iosched.c |   44 +++++++++++++++++++++++++++++++++++++++-----
->  1 files changed, 39 insertions(+), 5 deletions(-)
-> 
-> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-> index 838834b..46a7fe5 100644
-> --- a/block/cfq-iosched.c
-> +++ b/block/cfq-iosched.c
-> @@ -83,9 +83,14 @@ struct cfq_rb_root {
->  	unsigned total_weight;
->  	u64 min_vdisktime;
->  	struct rb_node *active;
-> +	unsigned long last_end_request;
-> +	unsigned long ttime_total;
-> +	unsigned long ttime_samples;
-> +	unsigned long ttime_mean;
->  };
->  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
-> -			.count = 0, .min_vdisktime = 0, }
-> +			.count = 0, .min_vdisktime = 0, .last_end_request = 0, \
-> +			.ttime_total = 0, .ttime_samples = 0, .ttime_mean = 0 }
->  
->  /*
->   * Per process-grouping structure
-> @@ -962,8 +967,10 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
->  		goto done;
->  
->  	cfqg->weight = blkcg->weight;
-> -	for_each_cfqg_st(cfqg, i, j, st)
-> +	for_each_cfqg_st(cfqg, i, j, st) {
->  		*st = CFQ_RB_ROOT;
-> +		st->last_end_request = jiffies;
-> +	}
->  	RB_CLEAR_NODE(&cfqg->rb_node);
->  
->  	/*
-> @@ -1795,9 +1802,12 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
->  
->  	/*
->  	 * Otherwise, we do only if they are the last ones
-> -	 * in their service tree.
-> +	 * in their service tree and the average think time is
-> +	 * less than the slice length.
->  	 */
-> -	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
-> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
-> +	    (!sample_valid(service_tree->ttime_samples || 
-						     ^^^
-Jeff, 
+On Tue, May 18, 2010 at 9:43 AM, H. Peter Anvin <h.peter.anvin@intel.com> wrote:
+> On 05/18/2010 02:34 AM, Dave Airlie wrote:
+>> On Thu, Apr 1, 2010 at 10:45 PM, Pauli Nieminen <suokkos@gmail.com> wrote:
+>>> Setting single memory pages at a time to wc takes a lot time in cache flush. To
+>>> reduce number of cache flush set_pages_array_wc and set_memory_array_wc can be
+>>> used to set multiple pages to WC with single cache flush.
+>>>
+>>> This improves allocation performance for wc cached pages in drm/ttm.
+>>>
+>>
+>> I've got this in drm-next for quite a while and almost forgot about
+>> it, I'm meant to be on holidays and I'd really like to just have Linus
+>> pull my tree,
+>>
+>> I had only one issue with this as we had some problems with doing it
+>> before but it looks like they've since been fixed in the x86 pat code
+>> a kernel or two ago so this patch should be fine now.
+>>
+>> its been well tested in drm-next on AGP machines by the author,
+>>
+>> any objections to this?
+>>
+>> Dave.
+>
+> Acked-by: H. Peter Anvin <hpa@zytor.com>
+>
+> Go ahead and push it; the patch is straightforward, and the author
+> (Venki) is reliable.
+>
+>        -hpa
+>
+> P.S. Please Cc: all the x86 maintainers, not just Ingo.
+>
 
-Are we closing sample_valid() bracket at right place here?
+Patch actually from Pauli.
+Looks good.
 
-I am wondering where it is helping you. If it is to bring in line with
-with sync tree (old implementation), then we should have also compared
-the think time with slice_idle?
-
-But comparing that here might not be the best thing as cfq_should_idle()
-is used in many contexts.
- 
-Vivek
+Acked-by: Venkatesh Pallipadi <venki@google.com>
