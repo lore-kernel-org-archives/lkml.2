@@ -1,165 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757244Ab0ERNCo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 09:02:44 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:3263 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753281Ab0ERNCl (ORCPT
+	id S1757201Ab0ERNFV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 09:05:21 -0400
+Received: from s15228384.onlinehome-server.info ([87.106.30.177]:55023 "EHLO
+	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754550Ab0ERNFT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 09:02:41 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=j26/ScW2XOZDJHqYO+/D7AbDzXqp9V78xenl/fjDPD7skqXGouPOQQi3VvjC1C7qM
-	IykGvxxi8wXCkuCKd4cdA==
-Message-ID: <4bf28fe8.914ed80a.01ca.fffff5f5@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Tue, 18 May 2010 15:00:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, acme@infradead.org, perfmon2-devel@lists.sf.net,
-       eranian@gmail.com, eranian@google.com
-Subject: [PATCH] perf: add perf stat -B to pretty print large numbers
-X-System-Of-Record: true
+	Tue, 18 May 2010 09:05:19 -0400
+Date: Tue, 18 May 2010 15:06:04 +0200
+From: Borislav Petkov <bp@amd64.org>
+To: Mauro Carvalho Chehab <mchehab@redhat.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Tony Luck <tony.luck@intel.com>, Brent Young <brent.young@intel.com>,
+       Ingo Molnar <mingo@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100518130604.GA25224@aftab>
+References: <4BF18995.6070008@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF18995.6070008@redhat.com>
+Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
+	=?iso-8859-1?Q?=2C_Einsteinring_24=2C_85609_Dornach_bei_M=FCnchen=2C_Gesc?=
+	=?iso-8859-1?Q?h=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuliano_Meroni=2C?=
+	=?iso-8859-1?Q?_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_Aschheim=2C_La?=
+	=?iso-8859-1?Q?ndkreis_M=FCnchen=2C_Registergericht_M=FCnchen?=
+	=?iso-8859-1?Q?=2C?= HRB Nr. 43632
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It is hard to read very large numbers so provide an option to perf stat
-to separate thousands using a separator. The patch leverages the locale
-support of stdio. You need to set your LC_NUMERIC appropriately, for
-instance LC_NUMERIC=en_US.UTF8. You need to pass -B to activate this
-feature. This way existing scripts parsing the output do not need to be
-changed. Here is an example.
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+Date: Mon, May 17, 2010 at 02:23:17PM -0400
 
-$ perf stat noploop 2
-noploop for 2 seconds
+> Btw, during the meeting, it were decided that EDAC ML could better work
+> if moved to vger, so I'm copying here both the old and the new edac
+> mailing lists.
 
- Performance counter stats for 'noploop 2':
+Have the old list subscribers been moved to the new list or do they
+need to re-subscribe?
 
-        1998.347031  task-clock-msecs         #      0.998 CPUs 
-                 61  context-switches         #      0.000 M/sec
-                  0  CPU-migrations           #      0.000 M/sec
-                118  page-faults              #      0.000 M/sec
-      4,138,410,900  cycles                   #   2070.917 M/sec  (scaled from 70.01%)
-      2,062,650,268  instructions             #      0.498 IPC    (scaled from 70.01%)
-      2,057,653,466  branches                 #   1029.678 M/sec  (scaled from 70.01%)
-             40,267  branch-misses            #      0.002 %      (scaled from 30.04%)
-      2,055,961,348  cache-references         #   1028.831 M/sec  (scaled from 30.03%)
-             53,725  cache-misses             #      0.027 M/sec  (scaled from 30.02%)
+Thanks.
 
-        2.001393933  seconds time elapsed
+-- 
+Regards/Gruss,
+Boris.
 
-$ perf stat -B  noploop 2
-noploop for 2 seconds
-
- Performance counter stats for 'noploop 2':
-
-        1998.297883  task-clock-msecs         #      0.998 CPUs 
-                 59  context-switches         #      0.000 M/sec
-                  0  CPU-migrations           #      0.000 M/sec
-                119  page-faults              #      0.000 M/sec
-      4,131,380,160  cycles                   #   2067.450 M/sec  (scaled from 70.01%)
-      2,059,096,507  instructions             #      0.498 IPC    (scaled from 70.01%)
-      2,054,681,303  branches                 #   1028.216 M/sec  (scaled from 70.01%)
-             25,650  branch-misses            #      0.001 %      (scaled from 30.05%)
-      2,056,283,014  cache-references         #   1029.017 M/sec  (scaled from 30.03%)
-             47,097  cache-misses             #      0.024 M/sec  (scaled from 30.02%)
-
-        2.001391016  seconds time elapsed
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-
-
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 2cab8e8..909fa76 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -43,6 +43,9 @@ OPTIONS
- -c::
-         scale counter values
- 
-+-B::
-+        print large numbers with thousands' separators according to locale
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ff8c413..9a39ca3 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -50,6 +50,7 @@
- 
- #include <sys/prctl.h>
- #include <math.h>
-+#include <locale.h>
- 
- static struct perf_event_attr default_attrs[] = {
- 
-@@ -80,6 +81,8 @@ static pid_t			*all_tids			=  NULL;
- static int			thread_num			=  0;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
-+static bool			big_num				=  false;
-+
- 
- static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
- 
-@@ -377,7 +380,7 @@ static void nsec_printout(int counter, double avg)
- {
- 	double msecs = avg / 1e6;
- 
--	fprintf(stderr, " %14.6f  %-24s", msecs, event_name(counter));
-+	fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
- 
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
- 		fprintf(stderr, " # %10.3f CPUs ",
-@@ -389,7 +392,10 @@ static void abs_printout(int counter, double avg)
- {
- 	double total, ratio = 0.0;
- 
--	fprintf(stderr, " %14.0f  %-24s", avg, event_name(counter));
-+	if (big_num)
-+		fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));
-+	else
-+		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
- 
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
- 		total = avg_stats(&runtime_cycles_stats);
-@@ -426,7 +432,7 @@ static void print_counter(int counter)
- 	int scaled = event_scaled[counter];
- 
- 	if (scaled == -1) {
--		fprintf(stderr, " %14s  %-24s\n",
-+		fprintf(stderr, " %18s  %-24s\n",
- 			"<not counted>", event_name(counter));
- 		return;
- 	}
-@@ -477,7 +483,7 @@ static void print_stat(int argc, const char **argv)
- 		print_counter(counter);
- 
- 	fprintf(stderr, "\n");
--	fprintf(stderr, " %14.9f  seconds time elapsed",
-+	fprintf(stderr, " %18.9f  seconds time elapsed",
- 			avg_stats(&walltime_nsecs_stats)/1e9);
- 	if (run_count > 1) {
- 		fprintf(stderr, "   ( +- %7.3f%% )",
-@@ -534,6 +540,8 @@ static const struct option options[] = {
- 		    "repeat command and print average + stddev (max: 100)"),
- 	OPT_BOOLEAN('n', "null", &null_run,
- 		    "null run - dont start any counters"),
-+	OPT_BOOLEAN('B', "big-num", &big_num,
-+		    "print large numbers with thousands\' separators"),
- 	OPT_END()
- };
- 
-@@ -542,6 +550,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	int status;
- 	int i,j;
- 
-+	setlocale(LC_ALL, "");
-+
- 	argc = parse_options(argc, argv, options, stat_usage,
- 		PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc && target_pid == -1 && target_tid == -1)
+Operating Systems Research Center
+Advanced Micro Devices, Inc.
