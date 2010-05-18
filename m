@@ -1,104 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758563Ab0ERRf0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:35:26 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:50532 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758532Ab0ERRfW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:35:22 -0400
-Date: Tue, 18 May 2010 19:35:01 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Anton Vorontsov <cbouatmailru@gmail.com>
-Cc: Kay Sievers <kay.sievers@vrfy.org>, Greg KH <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>,
-       Alexey Starikovskiy <astarikovskiy@suse.de>,
-       Len Brown <len.brown@intel.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Matt Reimer <mreimer@vpop.net>, Evgeniy Polyakov <zbr@ioremap.net>,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH] power_supply: Use attribute groups
-Message-ID: <20100518173501.GI30801@buzzloop.caiaq.de>
-References: <20100511175812.GH30801@buzzloop.caiaq.de>
- <20100511182347.GA31831@oksana.dev.rtsoft.ru>
- <20100511222825.GJ30801@buzzloop.caiaq.de>
- <20100512181546.GA4804@oksana.dev.rtsoft.ru>
- <20100512183806.GA28658@suse.de>
- <20100512190814.GA9674@oksana.dev.rtsoft.ru>
- <AANLkTimQq30DklQUDBokPXsLiXKsuiaCUFg_5ddkJbXa@mail.gmail.com>
- <20100512193050.GA14221@oksana.dev.rtsoft.ru>
- <20100513093304.GE30801@buzzloop.caiaq.de>
- <20100517194016.GA12147@oksana.dev.rtsoft.ru>
+	id S1758586Ab0ERRff (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:35:35 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:1035 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758532Ab0ERRfb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 13:35:31 -0400
+Message-ID: <4BF2C3D1.10009@redhat.com>
+Date: Tue, 18 May 2010 13:44:01 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100517194016.GA12147@oksana.dev.rtsoft.ru>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bluesmoke-devel@lists.sourceforge.net,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
+       Brent Young <brent.young@intel.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+References: <4BF18995.6070008@redhat.com> <4BF2392A.9040409@jp.fujitsu.com>
+In-Reply-To: <4BF2392A.9040409@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Anton,
+Hidetoshi Seto wrote:
+> (2010/05/18 3:23), Mauro Carvalho Chehab wrote:
+>> During the last LF Collaboration Summit, we've done a mini-summit [1],
+>> intended to improve the hardware error detection in kernel, currently
+>> provided by MCE and EDAC subsystems.
+>>
+>> The idea of this mini-summit came up after Thomas Gleixner and Ingo
+>> Molnar suggestions that edac and mce should converge into an error
+>> subsystem.
+>>
+>> I'm enclosing the minutes of the meeting, in order to allow it to be
+>> reviewed by other kernel hackers that are interested on the theme but
+>> unfortunately couldn't come to the meeting.
+>>
+>> Btw, during the meeting, it were decided that EDAC ML could better work
+>> if moved to vger, so I'm copying here both the old and the new edac
+>> mailing lists.
+>>
+>> [1] http://events.linuxfoundation.org/lfcs2010/edac
+>>
+>> ---
+> 
+> Thank you very much for providing this report.
+> 
+> I agree that we should have a well organized error subsystem that
+> covers all error sources in the system and that provides enough
+> simple and powerful API for users. As one of interested absentee,
+> I think I could be of some help to you (e.g. x86 low level).
 
-On Mon, May 17, 2010 at 11:40:16PM +0400, Anton Vorontsov wrote:
-> This fixes a race between power supply device and initial
-> attributes creation, plus makes it possible to implement
-> writable properties.
+Thank you for your offer. Any help is welcome.
+>
+> It might be off-topic here, but I'd like to point that you missed
+> the presence of PCIe AER subsystem that handle hardware errors on
+> PCIe devices nowadays (It works well on ppc, x86 and so on).
+> Given that APEI also covers PCIe errors and that some system can
+> map MC registers to PCI configuration space, I think there is no
+> way for the new error subsystem to ignore I/O device errors while
+> it care errors on CPU/memory and cooperate with APEI.
 
-Thanks a lot. This works for me, but I have two minor comments below ...
+Yes, it makes sense to integrate also PCIe AER subystem. IMO, the first
+step is to provide an error core integrated to perf, and then start
+integrating the several error systems around it.
 
-[...]
+-- 
 
-> diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-> index 5b6e352..f95d934 100644
-> --- a/drivers/power/power_supply_sysfs.c
-> +++ b/drivers/power/power_supply_sysfs.c
-> @@ -41,6 +41,9 @@ static struct device_attribute power_supply_attrs[];
->  static ssize_t power_supply_show_property(struct device *dev,
->  					  struct device_attribute *attr,
->  					  char *buf) {
-> +	static char *type_text[] = {
-> +		"Battery", "UPS", "Mains", "USB"
-> +	};
->  	static char *status_text[] = {
->  		"Unknown", "Charging", "Discharging", "Not charging", "Full"
->  	};
-> @@ -58,12 +61,15 @@ static ssize_t power_supply_show_property(struct device *dev,
->  	static char *capacity_level_text[] = {
->  		"Unknown", "Critical", "Low", "Normal", "High", "Full"
->  	};
-> -	ssize_t ret;
-> +	ssize_t ret = 0;
->  	struct power_supply *psy = dev_get_drvdata(dev);
->  	const ptrdiff_t off = attr - power_supply_attrs;
->  	union power_supply_propval value;
->  
-> -	ret = psy->get_property(psy, off, &value);
-> +	if (off == POWER_SUPPLY_PROP_TYPE)
-> +		value.intval = psy->type;
-> +	else
-> +		ret = psy->get_property(psy, off, &value);
->  
->  	if (ret < 0) {
->  		if (ret == -ENODATA)
-> @@ -85,10 +91,13 @@ static ssize_t power_supply_show_property(struct device *dev,
->  		return sprintf(buf, "%s\n", technology_text[value.intval]);
->  	else if (off == POWER_SUPPLY_PROP_CAPACITY_LEVEL)
->  		return sprintf(buf, "%s\n", capacity_level_text[value.intval]);
-> +	else if (off == POWER_SUPPLY_PROP_TYPE)
-> +		return sprintf(buf, "%s\n", type_text[value.intval]);
->  	else if (off >= POWER_SUPPLY_PROP_MODEL_NAME)
->  		return sprintf(buf, "%s\n", value.strval);
->  
->  	return sprintf(buf, "%d\n", value.intval);
-> +return 0;
-
-This return is superflous :)
-
-And with this approach, we don't need to initialize the .mode field in
-the POWER_SUPPLY_ATTR anmore.
-
-I'll then rebase my patches for writeable properties and resend them.
-
-Thanks,
-Daniel
+Cheers,
+Mauro
