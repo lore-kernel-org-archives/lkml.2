@@ -1,52 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757678Ab0EROC2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 10:02:28 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:48016 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757265Ab0EROC0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 10:02:26 -0400
-From: Sebastien Jan <s-jan@ti.com>
-Organization: Texas Instruments
-To: Carlos Chinea <carlos.chinea@nokia.com>
-Subject: Re: [RFC PATCHv2 2/7] OMAP SSI: Introducing OMAP SSI driver
-Date: Tue, 18 May 2010 16:05:55 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; i686; ; )
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com> <201005141641.59244.s-jan@ti.com> <1274173640.7755.22703.camel@localhost>
-In-Reply-To: <1274173640.7755.22703.camel@localhost>
+	id S1757770Ab0EROCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 10:02:39 -0400
+Received: from kroah.org ([198.145.64.141]:38480 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757733Ab0EROCb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 10:02:31 -0400
+Date: Tue, 18 May 2010 07:02:26 -0700
+From: Greg KH <greg@kroah.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Chris Wright <chrisw@sous-sol.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20100518140226.GB24113@kroah.com>
+References: <20100518164409.8b19c786.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005181605.55809.s-jan@ti.com>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518164409.8b19c786.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 18 May 2010 11:07:20 Carlos Chinea wrote:
-[cut]
-> > > +       val |= __raw_readl(omap_ssi->sys +
-> > > SSI_MPU_ENABLE_REG(port->num, 0)); +       __raw_writel(val,
-> > > omap_ssi->sys +
-> > >  SSI_MPU_ENABLE_REG(port->num, 0)); +
-> > > +       msg->status = HSI_STATUS_COMPLETED;
-> > > +       msg->actual_len = sg_dma_len(msg->sgt.sgl);
-> > > +       spin_unlock(&omap_ssi->lock);
-> > > +}
-> >
-> > Don't you need to check the queue related to this transfer at this point,
-> > to start the potentially next queued transfer on the same channel?
-> > (calling ssi_start_transfer(), like in ssi_pio_complete()?)
+On Tue, May 18, 2010 at 04:44:09PM +1000, Stephen Rothwell wrote:
+> Hi Greg,
 > 
-> No this is done in ssi_pio_complete(). Notice that we do not call the
-> complete callback at any point here. We just arm the pio interrupt for
-> that channel and transfer direction. AFAIK, this is the SW logic
-> expected by the OMAP SSI HW.
+> After merging the driver-core tree, today's linux-next build (powerpc
+> ppc64_defconfig) failed like this:
+> 
+> cc1: warnings being treated as errors
+> In file included from include/linux/kobject.h:21,
+>                  from include/linux/device.h:17,
+>                  from arch/powerpc/lib/devres.c:10:
+> include/linux/sysfs.h:97: error: 'struct file' declared inside parameter list
+> include/linux/sysfs.h:97: error: its scope is only this definition or declaration, which is probably not what you want
+> include/linux/sysfs.h:99: error: 'struct file' declared inside parameter list
+> include/linux/sysfs.h:101: error: 'struct file' declared inside parameter list
+> 
+> and many more (arch/powerpc is built with -Werror (as do some other
+> architectures)) and lots of similar warnings ...
+> 
+> Caused by commit f8e898186196a22756b50b908ecd92123265f8a2 ("sysfs: add
+> struct file* to bin_attr callbacks").   See Rule 1 in
+> Documentation/SubmitChecklist.  The header file probably just needs
+> "struct file;" added in the right place.
+> 
+> I have reverted that commit for today (and commit
+> 44e425ab9f887ec6d3a7a4481f3b0c99f120de19 ("pci: check caps from sysfs
+> file open to read device dependent config space") that depends on it).
 
-Ok, though I would not expect the interrupt to fire in an Rx scenario as the 
-fifo would have already been emptied by the DMA for this transfer (unless you 
-rely on the next transfer initiated by the peer to make the Rx interrupt fire 
-on this channel?)?
+Ick.
+
+Chris, care to send a patch to resolve this?
+
+thanks,
+
+greg k-h
