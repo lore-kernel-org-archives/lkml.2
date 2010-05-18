@@ -1,54 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756403Ab0ERFca (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:32:30 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:41926
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755876Ab0ERFc2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:32:28 -0400
-Date: Mon, 17 May 2010 22:32:37 -0700 (PDT)
-Message-Id: <20100517.223237.55871633.davem@davemloft.net>
-To: randy.dunlap@oracle.com
-Cc: shemminger@vyatta.com, sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, netdev@vger.kernel.org
-Subject: Re: [PATCH -next] bridge: fix build for CONFIG_SYSFS disabled
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <4BF18468.5010005@oracle.com>
-References: <20100517091756.e232bdc2.randy.dunlap@oracle.com>
-	<20100517105654.2451e61f@nehalam>
-	<4BF18468.5010005@oracle.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1756366Ab0ERFgj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:36:39 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19669 "EHLO mga01.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755606Ab0ERFgh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:36:37 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,252,1272870000"; 
+   d="scan'208";a="568117351"
+From: Huang Ying <ying.huang@intel.com>
+To: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+Subject: [PATCH -v3 0/2] x86, MCE, FIX MSR_IA32_MCI_CTL2_CMCI threshold setup
+Date: Tue, 18 May 2010 13:36:29 +0800
+Message-Id: <1274160991-21887-1-git-send-email-ying.huang@intel.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Date: Mon, 17 May 2010 11:01:12 -0700
 
-> On 05/17/10 10:56, Stephen Hemminger wrote:
->> On Mon, 17 May 2010 09:17:56 -0700
->> Randy Dunlap <randy.dunlap@oracle.com> wrote:
->> 
->>> From: Randy Dunlap <randy.dunlap@oracle.com>
->>>
->>> Fix build when CONFIG_SYSFS is not enabled:
->>>
->>> net/bridge/br_if.c:136: error: 'struct net_bridge_port' has no member named 'sysfs_name'
->>>
->>> Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-...
->> I don't like peppering code with #ifdef like this.
-> 
-> Thanks.  I didn't like it either.
-> 
->> Turns out that in this place sysfs_name is always the same
->> as the device name so instead:
+Changelog:
 
-Stephen, please give me a formal submission of this fix with proper
-signoff and credit to Randy.
+v3:
 
-Thanks!
+- Separate patch into 2 patches, one for renaming, the other for threshold
+  setup fixing.
+
+v2:
+
+- Rename CMCI_EN to MCI_CTL2_CMCI_EN and CMCI_THRESHOLD_MASK to
+  MCI_CTL2_CMCI_THRESHOLD_MASK to make naming consistent.
