@@ -1,122 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755378Ab0ERW2A (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:28:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:43750 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752804Ab0ERW15 convert rfc822-to-8bit (ORCPT
+	id S1755525Ab0ERW2j (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:28:39 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:40806 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab0ERW2i (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:27:57 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-Date: Wed, 19 May 2010 00:29:04 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Matthew Garrett <mjg@redhat.com>
-References: <1273810273-3039-1-git-send-email-arve@android.com> <201005182052.28778.rjw@sisk.pl> <87y6fgn9y1.fsf@deeprootsystems.com>
-In-Reply-To: <87y6fgn9y1.fsf@deeprootsystems.com>
+	Tue, 18 May 2010 18:28:38 -0400
+Date: Wed, 19 May 2010 00:28:33 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       "Young, Brent" <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Andi Kleen <andi@firstfloor.org>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100518222832.GJ22675@basil.fritz.box>
+References: <4BF18995.6070008@redhat.com> <4BF2392A.9040409@jp.fujitsu.com> <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005190029.05056.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m1k4r0c0y7.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 May 2010, Kevin Hilman wrote:
-> "Rafael J. Wysocki" <rjw@sisk.pl> writes:
-> 
-> > On Tuesday 18 May 2010, Kevin Hilman wrote:
-> >> Arve Hjønnevåg <arve@android.com> writes:
-> >> 
-> >> >
-> >> > PM: Opportunistic suspend support.
-> >> >
-> >> > Power management features present in the current mainline kernel are
-> >> > insufficient to get maximum possible energy savings on some platforms,
-> >> > such as Android, because low power states can only safely be entered
-> >> > from idle.  Suspend, in its current form, cannot be used, since wakeup
-> >> > events that occur right after initiating suspend will not be processed
-> >> > until another possibly unrelated event wake up the system again.
-> >> 
-> >> I think the problems with wakeups in the current suspend path need to
-> >> be described in more detail.  In particular, why check_wakeup_irqs()
-> >> is not enough etc.
-> >
-> > That one is really easy.: because some (the majority of?) architectures
-> > don't even implement it.
-> 
-> OK, then this problem will still in traditional suspend even after
-> this series, so calling it out as a the problem to be solved but not
-> fixing it doesn't seem right.
-> 
-> This problem needs an independent fix, namely implementing
-> check_wakeup_irqs().
 
-No, it is not.  There's nothing like wake-up interrupts on (ACPI-based) x86 PCs.
- 
-> That being said, what exactly is there for architectures to implement
-> for check_wakeup_irqs()?  IIUC, this all handled by genirq as long as
-> deferred disable (now the default) is used?
+The original motivation to put them somewhere else
+because I was sick of people reporting them as kernel bugs.
 
-No.  Wakeup IRQs cause the system to wake up from sleep states.  On a PC
-the only interrupts that can do that are PCIe root port PME interrupts, but
-they are not really "device" interrupts (ie. they come from a source that is
-different from a device signaling wakeup).
+But there's more to it now:
 
-> I suspect the platforms that Android currently cares about already
-> have this functionality.  At least OMAP does already.
+> If your system isn't broken correctable errors are rare.  People look
 
-ISTR there is an x86 Android port, so not all of them.  Although that really
-doesn't matter.
+Actually the more memory you have the more common they are.
+And the trend is to more and more memory.
 
-> >> > On some systems idle combined with runtime PM can enter the same power
-> >> > state as suspend, but periodic wakeups increase the average power
-> >> > consumption. Suspending the system also reduces the harm caused by
-> >> > apps that never go idle. On other systems suspend can enter a much
-> >> > lower power state than idle.
-> >> >
-> >> > To allow Android and similar platforms to save more energy than they
-> >> > currently can save using the mainline kernel, we introduce a mechanism
-> >> > by which the system is automatically suspended (i.e. put into a
-> >> > system-wide sleep state) whenever it's not doing useful work, called
-> >> > opportunistic suspend.
-> >> 
-> >> A definition of "useful work" here would provide clarity and would
-> >> also help clarify by what criteria other on-going work is determined
-> >> to be not useful.
-> >
-> > Probably "useful" is not the right word here.  I guess it's more like
-> > "work that can be deferred without visible impact on functionality".
-> 
-> OK, then a definition of "visible impact on functionality" should be
-> provided and the critera for determining that.
-> 
-> I know this sounds like splitting hairs,
+Really to do anything useful with them you need trends
+and automatic actions (like predictive page offlining)
 
-Yes, it does.
+A log isn't really a good format for that.
 
-> but what I'm getting at is that this series implements a brand new method
-> for making decisions about when the system is idle.
-
-Since we are splitting hairs, I'd be rather cautious about the word "idle".
-It would be safer to say "when the system is not doing anything the user
-really cares about at the moment and therefore it may be suspended".
-
-That actually is the whole point of the patch series.
-
-> That fact should be clearly stated and the criteria for making this decision
-> should be clearly described.
-
-Well, suspend blockers are the tool to define the criteria.
-
-Thanks,
-Rafael
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
