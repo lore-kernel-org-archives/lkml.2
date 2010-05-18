@@ -1,42 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755896Ab0ERJGu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 05:06:50 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:62122 "EHLO bamako.nerim.net"
+	id S1756001Ab0ERJLW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 05:11:22 -0400
+Received: from mga01.intel.com ([192.55.52.88]:19120 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754842Ab0ERJGt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 05:06:49 -0400
-Date: Tue, 18 May 2010 11:06:45 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: linux-kernel@vger.kernel.org, lm-sensors@lm-sensors.org
-Subject: Re: [lm-sensors] [PATCH] hwmon: Add driver for intel PCI thermal 
- subsystem
-Message-ID: <20100518110645.242c7f6d@hyperion.delvare>
-In-Reply-To: <20100411132437.554cee22@hyperion.delvare>
-References: <1260546750-6206-1-git-send-email-mjg@redhat.com>
-	<20100411132437.554cee22@hyperion.delvare>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1750914Ab0ERJLV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 05:11:21 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,254,1272870000"; 
+   d="scan'208";a="568168573"
+Date: Tue, 18 May 2010 17:03:00 +0800
+From: Shaohui Zheng <shaohui.zheng@intel.com>
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: akpm@linux-foundation.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, ak@linux.intel.com,
+       fengguang.wu@intel.com, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+Subject: Re: [RFC,5/7] NUMA hotplug emulator
+Message-ID: <20100518090300.GA26178@shaohui>
+Mail-Followup-To: Paul Mundt <lethal@linux-sh.org>,
+	akpm@linux-foundation.org, linux-mm@kvack.org,
+	linux-kernel@vger.kernel.org, ak@linux.intel.com,
+	fengguang.wu@intel.com, haicheng.li@linux.intel.com,
+	shaohui.zheng@linux.intel.com
+References: <20100513121457.GJ2169@shaohui>
+ <20100514054928.GC12002@linux-sh.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100514054928.GC12002@linux-sh.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Matthew,
+On Fri, May 14, 2010 at 02:49:28PM +0900, Paul Mundt wrote:
+> On Thu, May 13, 2010 at 08:14:57PM +0800, Shaohui Zheng wrote:
+> > hotplug emulator: support cpu probe/release in x86
+> > 
+> > Add cpu interface probe/release under sysfs for x86. User can use this
+> > interface to emulate the cpu hot-add process, it is for cpu hotplug 
+> > test purpose. Add a kernel option CONFIG_ARCH_CPU_PROBE_RELEASE for this
+> > feature.
+> > 
+> > This interface provides a mechanism to emulate cpu hotplug with software
+> >  methods, it becomes possible to do cpu hotplug automation and stress
+> > testing.
+> > 
+> At a quick glance, is this really necessary? It seems like you could
+> easily replace most of this with a CPU notifier chain that takes care of
+> the node handling. See for example how ppc64 manages the CPU hotplug/numa
+> emulation case in arch/powerpc/mm/numa.c. arch_register_cpu() just looks
+> like some topology hack for ACPI, it would be nice not to perpetuate that
+> too much.
 
-On Sun, 11 Apr 2010 13:24:37 +0200, Jean Delvare wrote:
-> On Fri, 11 Dec 2009 10:52:30 -0500, Matthew Garrett wrote:
-> > (...)
-> > +MODULE_AUTHOR("Matthew Garrett <mjg@redhat.com>");
-> > +MODULE_DESCRIPTION("Intel thermal subsystem hwmon driver");
-> > +MODULE_LICENSE("GPL");
-> 
-> Update wanted, if you want this upstream, obviously...
+Paul,
+	When we reivew the possible solutions for the emulator, we already do some researching
+for ppc hotplug interface, I did not has ppc background, so it is hard for me to understand
+all the details, but we get clues indeed, so you see the emulator today.
 
-Any news on this? I need an update soon if you want this driver in
-kernel 2.6.35.
+	We are *NOT* expecting to find simple way to probe a CPU, we are trying to emulate the
+ behavior with software methods, we expect the same result when we do same operation on real
+  hardware and emualtor. That is the reason why we did not selelct CPU notifier chain, you can
+   see the CPU probe process is almost the same with CPU physical hot-add, the only difference
+is that some functions are replaced with a '_emu' suffix, these '_emu' function has the same
+ function with the old one, but it does not refer to any acpi_handle data since the hot-add
+event is fake.
+
+ for exmaple:
+	 register_cpu & register_cpu_emu
+	 arch_register_cpu & arch_register_cpu_emu
+	 acpi_map_lsapic & acpi_map_lsapic_emu
+
+	the nid and apic_id are parsed from the acpi_handle, but for a fake hot-add, we does not 
+has such data, so we delete the parser code and replace them with a parameter.
+
+	I believe you method can success probe a CPU, but it is obvious different with the CPU hot-add
+process, it has the different behavior with the real hardware, it is not expect. that is the failure
+ of the emulation.
+
+	ppc does not care about the ACPI data, that is the reason why it seems to be simple.
 
 -- 
-Jean Delvare
+Thanks & Regards,
+Shaohui
+
