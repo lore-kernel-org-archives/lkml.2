@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756915Ab0ERGiZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:38:25 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14864 "EHLO mga02.intel.com"
+	id S1756889Ab0ERGi3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:38:29 -0400
+Received: from mga02.intel.com ([134.134.136.20]:20428 "EHLO mga02.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755581Ab0ERGfk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:35:40 -0400
+	id S1755958Ab0ERGfj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:35:39 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,253,1272870000"; 
-   d="scan'208";a="622545387"
+   d="scan'208";a="622545381"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH -v5 04/14] ACPI, APEI, EINJ support
-Date: Tue, 18 May 2010 14:35:14 +0800
-Message-Id: <1274164524-6092-5-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v5 01/14] ACPI, IO memory pre-mapping and atomic accessing
+Date: Tue, 18 May 2010 14:35:11 +0800
+Message-Id: <1274164524-6092-2-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
 References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
@@ -23,52 +23,51 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-EINJ provides a hardware error injection mechanism, this is useful for
-debugging and testing of other APEI and RAS features.
+Some ACPI IO accessing need to be done in atomic context. For example,
+APEI ERST operations may be used for permanent storage in hardware
+error handler. That is, it may be called in atomic contexts such as
+IRQ or NMI, etc. And, ERST/EINJ implement their operations via IO
+memory/port accessing.  But the IO memory accessing method provided by
+ACPI (acpi_read/acpi_write) maps the IO memory during it is accessed,
+so it can not be used in atomic context. To solve the issue, the IO
+memory should be pre-mapped during EINJ/ERST initializing. A linked
+list is used to record which memory area has been mapped, when memory
+is accessed in hardware error handler, search the linked list for the
+mapped virtual address from the given physical address.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/acpi/apei/Kconfig  |    7 
- drivers/acpi/apei/Makefile |    1 
- drivers/acpi/apei/einj.c   |  486 +++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 494 insertions(+)
- create mode 100644 drivers/acpi/apei/einj.c
+ drivers/acpi/Makefile   |    1 
+ drivers/acpi/atomicio.c |  360 ++++++++++++++++++++++++++++++++++++++++++++++++
+ include/acpi/atomicio.h |   10 +
+ 3 files changed, 371 insertions(+)
+ create mode 100644 drivers/acpi/atomicio.c
+ create mode 100644 include/acpi/atomicio.h
 
---- a/drivers/acpi/apei/Kconfig
-+++ b/drivers/acpi/apei/Kconfig
-@@ -7,3 +7,10 @@ config ACPI_APEI
- 	  especially. In addition it supports error serialization and
- 	  error injection.
+--- a/drivers/acpi/Makefile
++++ b/drivers/acpi/Makefile
+@@ -19,6 +19,7 @@ obj-y				+= acpi.o \
  
-+config ACPI_APEI_EINJ
-+	tristate "APEI Error INJection (EINJ)"
-+	depends on ACPI_APEI && DEBUG_FS
-+	help
-+	  EINJ provides a hardware error injection mechanism, it is
-+	  mainly used for debugging and testing the other parts of
-+	  APEI and some other RAS features.
---- a/drivers/acpi/apei/Makefile
-+++ b/drivers/acpi/apei/Makefile
-@@ -1,3 +1,4 @@
- obj-$(CONFIG_ACPI_APEI)		+= apei.o
-+obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
+ # All the builtin files are in the "acpi." module_param namespace.
+ acpi-y				+= osl.o utils.o reboot.o
++acpi-y				+= atomicio.o
+ acpi-y				+= hest.o
  
- apei-y := apei-base.o hest.o
+ # sleep related files
 --- /dev/null
-+++ b/drivers/acpi/apei/einj.c
-@@ -0,0 +1,486 @@
++++ b/drivers/acpi/atomicio.c
+@@ -0,0 +1,360 @@
 +/*
-+ * APEI Error INJection support
++ * atomicio.c - ACPI IO memory pre-mapping/post-unmapping, then
++ * accessing in atomic context.
 + *
-+ * EINJ provides a hardware error injection mechanism, this is useful
-+ * for debugging and testing of other APEI and RAS features.
++ * This is used for NMI handler to access IO memory area, because
++ * ioremap/iounmap can not be used in NMI handler. The IO memory area
++ * is pre-mapped in process context and accessed in NMI handler.
 + *
-+ * For more information about EINJ, please refer to ACPI Specification
-+ * version 4.0, section 17.5.
-+ *
-+ * Copyright 2009 Intel Corp.
-+ *   Author: Huang Ying <ying.huang@intel.com>
++ * Copyright (C) 2009-2010, Intel Corp.
++ *	Author: Huang Ying <ying.huang@intel.com>
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version
@@ -87,460 +86,348 @@ Signed-off-by: Andi Kleen <ak@linux.intel.com>
 +#include <linux/kernel.h>
 +#include <linux/module.h>
 +#include <linux/init.h>
++#include <linux/acpi.h>
 +#include <linux/io.h>
-+#include <linux/debugfs.h>
-+#include <linux/seq_file.h>
-+#include <linux/nmi.h>
-+#include <linux/delay.h>
-+#include <acpi/acpi.h>
++#include <linux/kref.h>
++#include <linux/rculist.h>
++#include <linux/interrupt.h>
++#include <acpi/atomicio.h>
 +
-+#include "apei-internal.h"
++#define ACPI_PFX "ACPI: "
 +
-+#define EINJ_PFX "EINJ: "
++static LIST_HEAD(acpi_iomaps);
++/*
++ * Used for mutual exclusion between writers of acpi_iomaps list, for
++ * synchronization between readers and writer, RCU is used.
++ */
++static DEFINE_SPINLOCK(acpi_iomaps_lock);
 +
-+#define SPIN_UNIT		100			/* 100ns */
-+/* Firmware should respond within 1 miliseconds */
-+#define FIRMWARE_TIMEOUT	(1 * NSEC_PER_MSEC)
-+
-+#define EINJ_OP_BUSY			0x1
-+#define EINJ_STATUS_SUCCESS		0x0
-+#define EINJ_STATUS_FAIL		0x1
-+#define EINJ_STATUS_INVAL		0x2
-+
-+#define EINJ_TAB_ENTRY(tab)						\
-+	((struct acpi_whea_header *)((char *)(tab) +			\
-+				    sizeof(struct acpi_table_einj)))
-+
-+static struct acpi_table_einj *einj_tab;
-+
-+static struct apei_resources einj_resources;
-+
-+static struct apei_exec_ins_type einj_ins_type[] = {
-+	[ACPI_EINJ_READ_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run   = apei_exec_read_register,
-+	},
-+	[ACPI_EINJ_READ_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run   = apei_exec_read_register_value,
-+	},
-+	[ACPI_EINJ_WRITE_REGISTER] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run   = apei_exec_write_register,
-+	},
-+	[ACPI_EINJ_WRITE_REGISTER_VALUE] = {
-+		.flags = APEI_EXEC_INS_ACCESS_REGISTER,
-+		.run   = apei_exec_write_register_value,
-+	},
-+	[ACPI_EINJ_NOOP] = {
-+		.flags = 0,
-+		.run   = apei_exec_noop,
-+	},
++struct acpi_iomap {
++	struct list_head list;
++	void __iomem *vaddr;
++	unsigned long size;
++	phys_addr_t paddr;
++	struct kref ref;
 +};
++
++/* acpi_iomaps_lock or RCU read lock must be held before calling */
++static struct acpi_iomap *__acpi_find_iomap(phys_addr_t paddr,
++					    unsigned long size)
++{
++	struct acpi_iomap *map;
++
++	list_for_each_entry_rcu(map, &acpi_iomaps, list) {
++		if (map->paddr + map->size >= paddr + size &&
++		    map->paddr <= paddr)
++			return map;
++	}
++	return NULL;
++}
 +
 +/*
-+ * Prevent EINJ interpreter to run simultaneously, because the
-+ * corresponding firmware implementation may not work properly when
-+ * invoked simultaneously.
++ * Atomic "ioremap" used by NMI handler, if the specified IO memory
++ * area is not pre-mapped, NULL will be returned.
++ *
++ * acpi_iomaps_lock or RCU read lock must be held before calling
 + */
-+static DEFINE_MUTEX(einj_mutex);
-+
-+static void einj_exec_ctx_init(struct apei_exec_context *ctx)
++static void __iomem *__acpi_ioremap_fast(phys_addr_t paddr,
++					 unsigned long size)
 +{
-+	apei_exec_ctx_init(ctx, einj_ins_type, ARRAY_SIZE(einj_ins_type),
-+			   EINJ_TAB_ENTRY(einj_tab), einj_tab->entries);
++	struct acpi_iomap *map;
++
++	map = __acpi_find_iomap(paddr, size);
++	if (map)
++		return map->vaddr + (paddr - map->paddr);
++	else
++		return NULL;
 +}
 +
-+static int __einj_get_available_error_type(u32 *type)
++/* acpi_iomaps_lock must be held before calling */
++static void __iomem *__acpi_try_ioremap(phys_addr_t paddr,
++					unsigned long size)
 +{
-+	struct apei_exec_context ctx;
++	struct acpi_iomap *map;
++
++	map = __acpi_find_iomap(paddr, size);
++	if (map) {
++		kref_get(&map->ref);
++		return map->vaddr + (paddr - map->paddr);
++	} else
++		return NULL;
++}
++
++/*
++ * Used to pre-map the specified IO memory area. First try to find
++ * whether the area is already pre-mapped, if it is, increase the
++ * reference count (in __acpi_try_ioremap) and return; otherwise, do
++ * the real ioremap, and add the mapping into acpi_iomaps list.
++ */
++static void __iomem *acpi_pre_map(phys_addr_t paddr,
++				  unsigned long size)
++{
++	void __iomem *vaddr;
++	struct acpi_iomap *map;
++	unsigned long pg_sz, flags;
++	phys_addr_t pg_off;
++
++	spin_lock_irqsave(&acpi_iomaps_lock, flags);
++	vaddr = __acpi_try_ioremap(paddr, size);
++	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
++	if (vaddr)
++		return vaddr;
++
++	pg_off = paddr & PAGE_MASK;
++	pg_sz = ((paddr + size + PAGE_SIZE - 1) & PAGE_MASK) - pg_off;
++	vaddr = ioremap(pg_off, pg_sz);
++	if (!vaddr)
++		return NULL;
++	map = kmalloc(sizeof(*map), GFP_KERNEL);
++	if (!map)
++		goto err_unmap;
++	INIT_LIST_HEAD(&map->list);
++	map->paddr = pg_off;
++	map->size = pg_sz;
++	map->vaddr = vaddr;
++	kref_init(&map->ref);
++
++	spin_lock_irqsave(&acpi_iomaps_lock, flags);
++	vaddr = __acpi_try_ioremap(paddr, size);
++	if (vaddr) {
++		spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
++		iounmap(map->vaddr);
++		kfree(map);
++		return vaddr;
++	}
++	list_add_tail_rcu(&map->list, &acpi_iomaps);
++	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
++
++	return vaddr + (paddr - pg_off);
++err_unmap:
++	iounmap(vaddr);
++	return NULL;
++}
++
++/* acpi_iomaps_lock must be held before calling */
++static void __acpi_kref_del_iomap(struct kref *ref)
++{
++	struct acpi_iomap *map;
++
++	map = container_of(ref, struct acpi_iomap, ref);
++	list_del_rcu(&map->list);
++}
++
++/*
++ * Used to post-unmap the specified IO memory area. The iounmap is
++ * done only if the reference count goes zero.
++ */
++static void acpi_post_unmap(phys_addr_t paddr, unsigned long size)
++{
++	struct acpi_iomap *map;
++	unsigned long flags;
++	int del;
++
++	spin_lock_irqsave(&acpi_iomaps_lock, flags);
++	map = __acpi_find_iomap(paddr, size);
++	BUG_ON(!map);
++	del = kref_put(&map->ref, __acpi_kref_del_iomap);
++	spin_unlock_irqrestore(&acpi_iomaps_lock, flags);
++
++	if (!del)
++		return;
++
++	synchronize_rcu();
++	iounmap(map->vaddr);
++	kfree(map);
++}
++
++/* In NMI handler, should set silent = 1 */
++static int acpi_check_gar(struct acpi_generic_address *reg,
++			  u64 *paddr, int silent)
++{
++	u32 width, space_id;
++
++	width = reg->bit_width;
++	space_id = reg->space_id;
++	/* Handle possible alignment issues */
++	memcpy(paddr, &reg->address, sizeof(*paddr));
++	if (!*paddr) {
++		if (!silent)
++			pr_warning(FW_BUG ACPI_PFX
++			"Invalid physical address in GAR [0x%llx/%u/%u]\n",
++				   *paddr, width, space_id);
++		return -EINVAL;
++	}
++
++	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
++		if (!silent)
++			pr_warning(FW_BUG ACPI_PFX
++				   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
++				   *paddr, width, space_id);
++		return -EINVAL;
++	}
++
++	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
++	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
++		if (!silent)
++			pr_warning(FW_BUG ACPI_PFX
++			"Invalid address space type in GAR [0x%llx/%u/%u]\n",
++				   *paddr, width, space_id);
++		return -EINVAL;
++	}
++
++	return 0;
++}
++
++/* Pre-map, working on GAR */
++int acpi_pre_map_gar(struct acpi_generic_address *reg)
++{
++	u64 paddr;
++	void __iomem *vaddr;
 +	int rc;
 +
-+	einj_exec_ctx_init(&ctx);
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_ERROR_TYPE);
++	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
++		return 0;
++
++	rc = acpi_check_gar(reg, &paddr, 0);
 +	if (rc)
 +		return rc;
-+	*type = apei_exec_ctx_get_output(&ctx);
++
++	vaddr = acpi_pre_map(paddr, reg->bit_width / 8);
++	if (!vaddr)
++		return -EIO;
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(acpi_pre_map_gar);
 +
-+/* Get error injection capabilities of the platform */
-+static int einj_get_available_error_type(u32 *type)
++/* Post-unmap, working on GAR */
++int acpi_post_unmap_gar(struct acpi_generic_address *reg)
 +{
++	u64 paddr;
 +	int rc;
 +
-+	mutex_lock(&einj_mutex);
-+	rc = __einj_get_available_error_type(type);
-+	mutex_unlock(&einj_mutex);
++	if (reg->space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY)
++		return 0;
 +
-+	return rc;
-+}
++	rc = acpi_check_gar(reg, &paddr, 0);
++	if (rc)
++		return rc;
 +
-+static int einj_timedout(u64 *t)
-+{
-+	if ((s64)*t < SPIN_UNIT) {
-+		pr_warning(FW_WARN EINJ_PFX
-+			   "Firmware does not respond in time\n");
-+		return 1;
-+	}
-+	*t -= SPIN_UNIT;
-+	ndelay(SPIN_UNIT);
-+	touch_nmi_watchdog();
-+	return 0;
-+}
-+
-+/* do sanity check to trigger table */
-+static int einj_check_trigger_header(struct acpi_einj_trigger *trigger_tab)
-+{
-+	if (trigger_tab->header_size != sizeof(struct acpi_einj_trigger))
-+		return -EINVAL;
-+	if (trigger_tab->table_size > PAGE_SIZE ||
-+	    trigger_tab->table_size <= trigger_tab->header_size)
-+		return -EINVAL;
-+	if (trigger_tab->entry_count !=
-+	    (trigger_tab->table_size - trigger_tab->header_size) /
-+	    sizeof(struct acpi_einj_entry))
-+		return -EINVAL;
++	acpi_post_unmap(paddr, reg->bit_width / 8);
 +
 +	return 0;
 +}
++EXPORT_SYMBOL_GPL(acpi_post_unmap_gar);
 +
-+/* Execute instructions in trigger error action table */
-+static int __einj_error_trigger(u64 trigger_paddr)
++/*
++ * Can be used in atomic (including NMI) or process context. RCU read
++ * lock can only be released after the IO memory area accessing.
++ */
++static int acpi_atomic_read_mem(u64 paddr, u64 *val, u32 width)
 +{
-+	struct acpi_einj_trigger *trigger_tab = NULL;
-+	struct apei_exec_context trigger_ctx;
-+	struct apei_resources trigger_resources;
-+	struct acpi_whea_header *trigger_entry;
-+	struct resource *r;
-+	u32 table_size;
-+	int rc = -EIO;
++	void __iomem *addr;
 +
-+	r = request_mem_region(trigger_paddr, sizeof(*trigger_tab),
-+			       "APEI EINJ Trigger Table");
-+	if (!r) {
-+		pr_err(EINJ_PFX
-+	"Can not request iomem region <%016llx-%016llx> for Trigger table.\n",
-+		       (unsigned long long)trigger_paddr,
-+		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab));
-+		goto out;
++	rcu_read_lock();
++	addr = __acpi_ioremap_fast(paddr, width);
++	switch (width) {
++	case 8:
++		*val = readb(addr);
++		break;
++	case 16:
++		*val = readw(addr);
++		break;
++	case 32:
++		*val = readl(addr);
++		break;
++	case 64:
++		*val = readq(addr);
++		break;
++	default:
++		return -EINVAL;
 +	}
-+	trigger_tab = ioremap_cache(trigger_paddr, sizeof(*trigger_tab));
-+	if (!trigger_tab) {
-+		pr_err(EINJ_PFX "Failed to map trigger table!\n");
-+		goto out_rel_header;
-+	}
-+	rc = einj_check_trigger_header(trigger_tab);
-+	if (rc) {
-+		pr_warning(FW_BUG EINJ_PFX
-+			   "The trigger error action table is invalid\n");
-+		goto out_rel_header;
-+	}
-+	rc = -EIO;
-+	table_size = trigger_tab->table_size;
-+	r = request_mem_region(trigger_paddr + sizeof(*trigger_tab),
-+			       table_size - sizeof(*trigger_tab),
-+			       "APEI EINJ Trigger Table");
-+	if (!r) {
-+		pr_err(EINJ_PFX
-+"Can not request iomem region <%016llx-%016llx> for Trigger Table Entry.\n",
-+		       (unsigned long long)trigger_paddr+sizeof(*trigger_tab),
-+		       (unsigned long long)trigger_paddr + table_size);
-+		goto out_rel_header;
-+	}
-+	iounmap(trigger_tab);
-+	trigger_tab = ioremap_cache(trigger_paddr, table_size);
-+	if (!trigger_tab) {
-+		pr_err(EINJ_PFX "Failed to map trigger table!\n");
-+		goto out_rel_entry;
-+	}
-+	trigger_entry = (struct acpi_whea_header *)
-+		((char *)trigger_tab + sizeof(struct acpi_einj_trigger));
-+	apei_resources_init(&trigger_resources);
-+	apei_exec_ctx_init(&trigger_ctx, einj_ins_type,
-+			   ARRAY_SIZE(einj_ins_type),
-+			   trigger_entry, trigger_tab->entry_count);
-+	rc = apei_exec_collect_resources(&trigger_ctx, &trigger_resources);
-+	if (rc)
-+		goto out_fini;
-+	rc = apei_resources_sub(&trigger_resources, &einj_resources);
-+	if (rc)
-+		goto out_fini;
-+	rc = apei_resources_request(&trigger_resources, "APEI EINJ Trigger");
-+	if (rc)
-+		goto out_fini;
-+	rc = apei_exec_pre_map_gars(&trigger_ctx);
-+	if (rc)
-+		goto out_release;
++	rcu_read_unlock();
 +
-+	rc = apei_exec_run(&trigger_ctx, ACPI_EINJ_TRIGGER_ERROR);
-+
-+	apei_exec_post_unmap_gars(&trigger_ctx);
-+out_release:
-+	apei_resources_release(&trigger_resources);
-+out_fini:
-+	apei_resources_fini(&trigger_resources);
-+out_rel_entry:
-+	release_mem_region(trigger_paddr + sizeof(*trigger_tab),
-+			   table_size - sizeof(*trigger_tab));
-+out_rel_header:
-+	release_mem_region(trigger_paddr, sizeof(*trigger_tab));
-+out:
-+	if (trigger_tab)
-+		iounmap(trigger_tab);
-+
-+	return rc;
++	return 0;
 +}
 +
-+static int __einj_error_inject(u32 type)
++static int acpi_atomic_write_mem(u64 paddr, u64 val, u32 width)
 +{
-+	struct apei_exec_context ctx;
-+	u64 val, trigger_paddr, timeout = FIRMWARE_TIMEOUT;
++	void __iomem *addr;
++
++	rcu_read_lock();
++	addr = __acpi_ioremap_fast(paddr, width);
++	switch (width) {
++	case 8:
++		writeb(val, addr);
++		break;
++	case 16:
++		writew(val, addr);
++		break;
++	case 32:
++		writel(val, addr);
++		break;
++	case 64:
++		writeq(val, addr);
++		break;
++	default:
++		return -EINVAL;
++	}
++	rcu_read_unlock();
++
++	return 0;
++}
++
++/* GAR accessing in atomic (including NMI) or process context */
++int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg)
++{
++	u64 paddr;
 +	int rc;
 +
-+	einj_exec_ctx_init(&ctx);
-+
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_BEGIN_OPERATION);
++	rc = acpi_check_gar(reg, &paddr, 1);
 +	if (rc)
 +		return rc;
-+	apei_exec_ctx_set_input(&ctx, type);
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_SET_ERROR_TYPE);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_EXECUTE_OPERATION);
-+	if (rc)
-+		return rc;
-+	for (;;) {
-+		rc = apei_exec_run(&ctx, ACPI_EINJ_CHECK_BUSY_STATUS);
-+		if (rc)
-+			return rc;
-+		val = apei_exec_ctx_get_output(&ctx);
-+		if (!(val & EINJ_OP_BUSY))
-+			break;
-+		if (einj_timedout(&timeout))
-+			return -EIO;
-+	}
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_COMMAND_STATUS);
-+	if (rc)
-+		return rc;
-+	val = apei_exec_ctx_get_output(&ctx);
-+	if (val != EINJ_STATUS_SUCCESS)
-+		return -EBUSY;
 +
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_GET_TRIGGER_TABLE);
-+	if (rc)
-+		return rc;
-+	trigger_paddr = apei_exec_ctx_get_output(&ctx);
-+	rc = __einj_error_trigger(trigger_paddr);
-+	if (rc)
-+		return rc;
-+	rc = apei_exec_run(&ctx, ACPI_EINJ_END_OPERATION);
-+
-+	return rc;
-+}
-+
-+/* Inject the specified hardware error */
-+static int einj_error_inject(u32 type)
-+{
-+	int rc;
-+
-+	mutex_lock(&einj_mutex);
-+	rc = __einj_error_inject(type);
-+	mutex_unlock(&einj_mutex);
-+
-+	return rc;
-+}
-+
-+static u32 error_type;
-+static struct dentry *einj_debug_dir;
-+
-+static int available_error_type_show(struct seq_file *m, void *v)
-+{
-+	int rc;
-+	u32 available_error_type = 0;
-+
-+	rc = einj_get_available_error_type(&available_error_type);
-+	if (rc)
-+		return rc;
-+	if (available_error_type & 0x0001)
-+		seq_printf(m, "0x00000001\tProcessor Correctable\n");
-+	if (available_error_type & 0x0002)
-+		seq_printf(m, "0x00000002\tProcessor Uncorrectable non-fatal\n");
-+	if (available_error_type & 0x0004)
-+		seq_printf(m, "0x00000004\tProcessor Uncorrectable fatal\n");
-+	if (available_error_type & 0x0008)
-+		seq_printf(m, "0x00000008\tMemory Correctable\n");
-+	if (available_error_type & 0x0010)
-+		seq_printf(m, "0x00000010\tMemory Uncorrectable non-fatal\n");
-+	if (available_error_type & 0x0020)
-+		seq_printf(m, "0x00000020\tMemory Uncorrectable fatal\n");
-+	if (available_error_type & 0x0040)
-+		seq_printf(m, "0x00000040\tPCI Express Correctable\n");
-+	if (available_error_type & 0x0080)
-+		seq_printf(m, "0x00000080\tPCI Express Uncorrectable non-fatal\n");
-+	if (available_error_type & 0x0100)
-+		seq_printf(m, "0x00000100\tPCI Express Uncorrectable fatal\n");
-+	if (available_error_type & 0x0200)
-+		seq_printf(m, "0x00000200\tPlatform Correctable\n");
-+	if (available_error_type & 0x0400)
-+		seq_printf(m, "0x00000400\tPlatform Uncorrectable non-fatal\n");
-+	if (available_error_type & 0x0800)
-+		seq_printf(m, "0x00000800\tPlatform Uncorrectable fatal\n");
-+
-+	return 0;
-+}
-+
-+static int available_error_type_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, available_error_type_show, NULL);
-+}
-+
-+static const struct file_operations available_error_type_fops = {
-+	.open		= available_error_type_open,
-+	.read		= seq_read,
-+	.llseek		= seq_lseek,
-+	.release	= single_release,
-+};
-+
-+static int error_type_get(void *data, u64 *val)
-+{
-+	*val = error_type;
-+
-+	return 0;
-+}
-+
-+static int error_type_set(void *data, u64 val)
-+{
-+	int rc;
-+	u32 available_error_type = 0;
-+
-+	/* Only one error type can be specified */
-+	if (val & (val - 1))
-+		return -EINVAL;
-+	rc = einj_get_available_error_type(&available_error_type);
-+	if (rc)
-+		return rc;
-+	if (!(val & available_error_type))
-+		return -EINVAL;
-+	error_type = val;
-+
-+	return 0;
-+}
-+
-+DEFINE_SIMPLE_ATTRIBUTE(error_type_fops, error_type_get,
-+			error_type_set, "0x%llx\n");
-+
-+static int error_inject_set(void *data, u64 val)
-+{
-+	if (!error_type)
-+		return -EINVAL;
-+
-+	return einj_error_inject(error_type);
-+}
-+
-+DEFINE_SIMPLE_ATTRIBUTE(error_inject_fops, NULL,
-+			error_inject_set, "%llu\n");
-+
-+static int einj_check_table(struct acpi_table_einj *einj_tab)
-+{
-+	if (einj_tab->header_length != sizeof(struct acpi_table_einj))
-+		return -EINVAL;
-+	if (einj_tab->header.length < sizeof(struct acpi_table_einj))
-+		return -EINVAL;
-+	if (einj_tab->entries !=
-+	    (einj_tab->header.length - sizeof(struct acpi_table_einj)) /
-+	    sizeof(struct acpi_einj_entry))
-+		return -EINVAL;
-+
-+	return 0;
-+}
-+
-+static int __init einj_init(void)
-+{
-+	int rc;
-+	acpi_status status;
-+	struct dentry *fentry;
-+	struct apei_exec_context ctx;
-+
-+	if (acpi_disabled)
-+		return -ENODEV;
-+
-+	status = acpi_get_table(ACPI_SIG_EINJ, 0,
-+				(struct acpi_table_header **)&einj_tab);
-+	if (status == AE_NOT_FOUND) {
-+		pr_info(EINJ_PFX "Table is not found!\n");
-+		return -ENODEV;
-+	} else if (ACPI_FAILURE(status)) {
-+		const char *msg = acpi_format_exception(status);
-+		pr_err(EINJ_PFX "Failed to get table, %s\n", msg);
++	*val = 0;
++	switch (reg->space_id) {
++	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
++		return acpi_atomic_read_mem(paddr, val, reg->bit_width);
++	case ACPI_ADR_SPACE_SYSTEM_IO:
++		return acpi_os_read_port(paddr, (u32 *)val, reg->bit_width);
++	default:
 +		return -EINVAL;
 +	}
++}
++EXPORT_SYMBOL_GPL(acpi_atomic_read);
 +
-+	rc = einj_check_table(einj_tab);
-+	if (rc) {
-+		pr_warning(FW_BUG EINJ_PFX "EINJ table is invalid\n");
++int acpi_atomic_write(u64 val, struct acpi_generic_address *reg)
++{
++	u64 paddr;
++	int rc;
++
++	rc = acpi_check_gar(reg, &paddr, 1);
++	if (rc)
++		return rc;
++
++	switch (reg->space_id) {
++	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
++		return acpi_atomic_write_mem(paddr, val, reg->bit_width);
++	case ACPI_ADR_SPACE_SYSTEM_IO:
++		return acpi_os_write_port(paddr, val, reg->bit_width);
++	default:
 +		return -EINVAL;
 +	}
-+
-+	rc = -ENOMEM;
-+	einj_debug_dir = debugfs_create_dir("einj", apei_get_debugfs_dir());
-+	if (!einj_debug_dir)
-+		goto err_cleanup;
-+	fentry = debugfs_create_file("available_error_type", S_IRUSR,
-+				     einj_debug_dir, NULL,
-+				     &available_error_type_fops);
-+	if (!fentry)
-+		goto err_cleanup;
-+	fentry = debugfs_create_file("error_type", S_IRUSR | S_IWUSR,
-+				     einj_debug_dir, NULL, &error_type_fops);
-+	if (!fentry)
-+		goto err_cleanup;
-+	fentry = debugfs_create_file("error_inject", S_IWUSR,
-+				     einj_debug_dir, NULL, &error_inject_fops);
-+	if (!fentry)
-+		goto err_cleanup;
-+
-+	apei_resources_init(&einj_resources);
-+	einj_exec_ctx_init(&ctx);
-+	rc = apei_exec_collect_resources(&ctx, &einj_resources);
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_resources_request(&einj_resources, "APEI EINJ");
-+	if (rc)
-+		goto err_fini;
-+	rc = apei_exec_pre_map_gars(&ctx);
-+	if (rc)
-+		goto err_release;
-+
-+	pr_info(EINJ_PFX "Error INJection is initialized.\n");
-+
-+	return 0;
-+
-+err_release:
-+	apei_resources_release(&einj_resources);
-+err_fini:
-+	apei_resources_fini(&einj_resources);
-+err_cleanup:
-+	debugfs_remove_recursive(einj_debug_dir);
-+
-+	return rc;
 +}
++EXPORT_SYMBOL_GPL(acpi_atomic_write);
+--- /dev/null
++++ b/include/acpi/atomicio.h
+@@ -0,0 +1,10 @@
++#ifndef ACPI_ATOMIC_IO_H
++#define ACPI_ATOMIC_IO_H
 +
-+static void __exit einj_exit(void)
-+{
-+	struct apei_exec_context ctx;
++int acpi_pre_map_gar(struct acpi_generic_address *reg);
++int acpi_post_unmap_gar(struct acpi_generic_address *reg);
 +
-+	einj_exec_ctx_init(&ctx);
-+	apei_exec_post_unmap_gars(&ctx);
-+	apei_resources_release(&einj_resources);
-+	apei_resources_fini(&einj_resources);
-+	debugfs_remove_recursive(einj_debug_dir);
-+}
++int acpi_atomic_read(u64 *val, struct acpi_generic_address *reg);
++int acpi_atomic_write(u64 val, struct acpi_generic_address *reg);
 +
-+module_init(einj_init);
-+module_exit(einj_exit);
-+
-+MODULE_AUTHOR("Huang Ying");
-+MODULE_DESCRIPTION("APEI Error INJection support");
-+MODULE_LICENSE("GPL");
++#endif
