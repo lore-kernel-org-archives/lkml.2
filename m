@@ -1,22 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0ERUHy (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:07:54 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17071 "EHLO mx1.redhat.com"
+	id S1758268Ab0ERUIK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 16:08:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:48819 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752425Ab0ERUHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:07:52 -0400
+	id S1756538Ab0ERUIF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 16:08:05 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip v2 0/5] kprobes: batch (un)optimization support
+Subject: [PATCH -tip v2 2/5] [CLEANUP] kprobes: Remove redundant text_mutex
+	lock in optimize
 To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
        Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
        Jason Baron <jbaron@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Date: Tue, 18 May 2010 16:12:44 -0400
-Message-ID: <20100518201244.6058.73083.stgit@localhost6.localdomain6>
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Tue, 18 May 2010 16:12:59 -0400
+Message-ID: <20100518201259.6058.23226.stgit@localhost6.localdomain6>
+In-Reply-To: <20100518201244.6058.73083.stgit@localhost6.localdomain6>
+References: <20100518201244.6058.73083.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
 Content-Type: text/plain; charset="utf-8"
@@ -25,53 +29,68 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-Here is the 2nd version of batch optimizing patch series.
-
-Since current kprobes jump optimization calls stop_machine() for each
-probe, it can make a lot latency noise when (un)registering a lot of
-probes (~1000) at once. For example, on 4 core Xeon, 256 probes
-optimization takes 770us in average (max 3.3ms).
-This patch series introduces batch (un)optimization which modifies
-code with just one stop_machine(), and it improves optimization time
-to 90us in average (max 330us).
-
-- Introduce text_poke_smp_batch() which modifies multiple
-  codes with one stop_machine().
-- Limit how many probes can be (un)optimized at once.
-- Introduce delayed unoptimization for batch processing.
-
-text_poke_smp_batch() also helps Jason's Jump label to reduce
-its overhead coming from text_poke_smp().
+Remove text_mutex locking in optimize_all_kprobes, because
+this function doesn't modify text. It simply queues probes on
+optimization list for kprobe_optimizer worker thread.
 
 Changes in v2:
-- Add kprobes selftest bugfix patch.
-- Add some comments about locks according to Mathieu's comment.
-- Allocate working buffers when initializing kprobes, instead of
-  using static arraies.
-- Merge max optimization limit patch into batch optimizing patch.
+ - Update changelog.
+ - Add comments for (un)optimize_all_kprobes.
+ - Update kprobe_mutex comment.
 
-Thank you,
-
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jim Keniston <jkenisto@us.ibm.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
 
-Masami Hiramatsu (5):
-      kprobes: Support delayed unoptimization
-      kprobes/x86: Use text_poke_smp_batch
-      x86: Introduce text_poke_smp_batch() for batch-code modifying
-      [CLEANUP] kprobes: Remove redundant text_mutex lock in optimize
-      [BUGFIX] kprobes: Fix selftest to clear flags field for reusing probes
+ kernel/kprobes.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 282035f..f1351f2 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -73,7 +73,8 @@ static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
+ /* NOTE: change this value only with kprobe_mutex held */
+ static bool kprobes_all_disarmed;
+ 
+-static DEFINE_MUTEX(kprobe_mutex);	/* Protects kprobe_table */
++/* This protects kprobe_table and optimizing_list */
++static DEFINE_MUTEX(kprobe_mutex);
+ static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
+ static struct {
+ 	spinlock_t lock ____cacheline_aligned_in_smp;
+@@ -594,6 +595,7 @@ static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
+ }
+ 
+ #ifdef CONFIG_SYSCTL
++/* This should be called with kprobe_mutex locked */
+ static void __kprobes optimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+@@ -606,17 +608,16 @@ static void __kprobes optimize_all_kprobes(void)
+ 		return;
+ 
+ 	kprobes_allow_optimization = true;
+-	mutex_lock(&text_mutex);
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+ 		hlist_for_each_entry_rcu(p, node, head, hlist)
+ 			if (!kprobe_disabled(p))
+ 				optimize_kprobe(p);
+ 	}
+-	mutex_unlock(&text_mutex);
+ 	printk(KERN_INFO "Kprobes globally optimized\n");
+ }
+ 
++/* This should be called with kprobe_mutex locked */
+ static void __kprobes unoptimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
 
- arch/x86/include/asm/alternative.h |    7 +
- arch/x86/include/asm/kprobes.h     |    4 
- arch/x86/kernel/alternative.c      |   49 +++-
- arch/x86/kernel/kprobes.c          |  114 +++++++++
- include/linux/kprobes.h            |    4 
- kernel/kprobes.c                   |  442 ++++++++++++++++++++++++------------
- kernel/test_kprobes.c              |   12 +
- 7 files changed, 464 insertions(+), 168 deletions(-)
 
 -- 
 Masami Hiramatsu
