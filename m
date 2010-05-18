@@ -1,199 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756220Ab0ERAwS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 20:52:18 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753085Ab0ERAwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 20:52:04 -0400
-Date: Tue, 18 May 2010 03:47:44 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>, Jiri Pirko <jpirko@redhat.com>,
-       Shirley Ma <xma@us.ibm.com>, Amit Shah <amit.shah@redhat.com>,
-       Mark McLoughlin <markmc@redhat.com>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, quintela@redhat.com,
-       alex.williamson@redhat.com
-Subject: [PATCH] virtio: put last seen used index into ring itself
-Message-ID: <20100518004744.GA21359@redhat.com>
+	id S1755304Ab0ERA4g (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 20:56:36 -0400
+Received: from mail-gx0-f227.google.com ([209.85.217.227]:64342 "EHLO
+	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753152Ab0ERA4e (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 20:56:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=kQY7ia5pfIoAWQvUouJjGdFkua+blsp0dJijgQhlra4cP/KtCeS14NamK81f62iYA7
+         L+dOjeQmhHAziWuBJnnCdX65h8ZoUzbfT5rco/Lyck096Snz+IEC2yrDx6+wh0ctPWqW
+         yQqZKKdX1rsJkeOThFBYP1yAnEiaEJjN7ySTg=
+Message-ID: <4BF1E5BE.9010000@gmail.com>
+Date: Mon, 17 May 2010 18:56:30 -0600
+From: Robert Hancock <hancockrwd@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Andreas Herrmann <andreas.herrmann3@amd.com>
+CC: Yuhong Bao <yuhongbao_386@hotmail.com>, venkatesh.pallipadi@intel.com,
+       markh@compro.net, dmarkh@cfl.rr.com, andi@firstfloor.org,
+       Linus Torvalds <torvalds@linux-foundation.org>, alain@knaff.lu,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Disable HPET MSI on ATI SB700/SB800
+References: <87bphpd4rt.fsf@basil.nowhere.org> <4B32565E.6000501@compro.net> <20091223191806.GA3336@linux-os.sc.intel.com> <4B3270FE.5090607@compro.net> <1261600243.16916.56.camel@localhost.localdomain> <4B476E8D.1030308@compro.net> <20100121190952.GA32523@linux-os.sc.intel.com> <SNT125-W12BC46C506A5BB777A06B5C3610@phx.gbl> <20100125171059.GB5041@alberich.amd.com> <20100517145943.GV5888@alberich.amd.com>
+In-Reply-To: <20100517145943.GV5888@alberich.amd.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generally, the Host end of the virtio ring doesn't need to see where
-Guest is up to in consuming the ring.  However, to completely understand
-what's going on from the outside, this information must be exposed.
-For example, host can reduce the number of interrupts by detecting
-that the guest is currently handling previous buffers.
+On 05/17/2010 08:59 AM, Andreas Herrmann wrote:
+> On Mon, Jan 25, 2010 at 06:10:59PM +0100, Andreas Herrmann wrote:
+>> On Fri, Jan 22, 2010 at 11:21:06PM -0800, Yuhong Bao wrote:
+>>>
+>>>> HPET MSI on platforms with ATI SB700/SB800 as they seem to have some
+>>>> side-effects on floppy DMA. Do not use HPET MSI on such platforms.
+>>
+>> Argh, will see what information I can find about this problem ...
+>
+> FYI. I've tried to trigger the publication of errata information for that
+> chipset. Finally this has happened.
+>
+> The discussed problem is indeed due to an erratum. See erratum #27 in
+> http://support.amd.com/us/Embedded_TechDocs/46837.pdf
+>
+> The suggested workaround for this is to disable HPET MSI if LPC
+> devices are used. I doubt that there is a convenient way for Linux to
+> find out whether LPC devices are used. Thus I think the only solution
+> to safely avoid the problem is the currently implemented quirk to
+> disable HPET MSI on this chipset.
 
-Fortunately, we have room to expand: the ring is always a whole number
-of pages and there's hundreds of bytes of padding after the avail ring
-and the used ring, whatever the number of descriptors (which must be a
-power of 2).
-
-We add a feature bit so the guest can tell the host that it's writing
-out the current value there, if it wants to use that.
-
-This is based on a patch by Rusty Russell, with the main difference
-being that we dedicate a feature bit to guest to tell the host it is
-writing the used index.  This way we don't need to force host to publish
-the last available index until we have a use for it.
-
-Another difference is that while the feature helps virtio-net,
-there have been conflicting reports wrt virtio-blk.
-The reason is unknown, it could be due to the fact that
-virtio-blk does not bother to disable interrupts at all.
-So for now, this patch only acks this feature for -net.
-
-Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-Signed-off-by: Michael S. Tsirkin <mst@redhat.com>
----
-
-Rusty, this is on top of your tree. Works well for me,
-I hope it can get in, in time for 2.6.35.
-
- drivers/net/virtio_net.c     |    1 +
- drivers/virtio/virtio_ring.c |   21 ++++++++++++---------
- include/linux/virtio_ring.h  |   12 ++++++++++++
- 3 files changed, 25 insertions(+), 9 deletions(-)
-
-diff --git a/drivers/net/virtio_net.c b/drivers/net/virtio_net.c
-index c0cab7a..f567751 100644
---- a/drivers/net/virtio_net.c
-+++ b/drivers/net/virtio_net.c
-@@ -1056,6 +1056,7 @@ static unsigned int features[] = {
- 	VIRTIO_NET_F_GUEST_ECN, VIRTIO_NET_F_GUEST_UFO,
- 	VIRTIO_NET_F_MRG_RXBUF, VIRTIO_NET_F_STATUS, VIRTIO_NET_F_CTRL_VQ,
- 	VIRTIO_NET_F_CTRL_RX, VIRTIO_NET_F_CTRL_VLAN,
-+	VIRTIO_RING_F_PUBLISH_USED,
- };
- 
- static struct virtio_driver virtio_net_driver = {
-diff --git a/drivers/virtio/virtio_ring.c b/drivers/virtio/virtio_ring.c
-index 1ca8890..fb06570 100644
---- a/drivers/virtio/virtio_ring.c
-+++ b/drivers/virtio/virtio_ring.c
-@@ -89,9 +89,6 @@ struct vring_virtqueue
- 	/* Number we've added since last sync. */
- 	unsigned int num_added;
- 
--	/* Last used index we've seen. */
--	u16 last_used_idx;
--
- 	/* How to notify other side. FIXME: commonalize hcalls! */
- 	void (*notify)(struct virtqueue *vq);
- 
-@@ -285,12 +282,13 @@ static void detach_buf(struct vring_virtqueue *vq, unsigned int head)
- 
- static inline bool more_used(const struct vring_virtqueue *vq)
- {
--	return vq->last_used_idx != vq->vring.used->idx;
-+	return *vq->vring.last_used_idx != vq->vring.used->idx;
- }
- 
- void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
- {
- 	struct vring_virtqueue *vq = to_vvq(_vq);
-+	struct vring_used_elem *u;
- 	void *ret;
- 	unsigned int i;
- 
-@@ -310,9 +308,9 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
- 	/* Only get used array entries after they have been exposed by host. */
- 	virtio_rmb();
- 
--	i = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].id;
--	*len = vq->vring.used->ring[vq->last_used_idx%vq->vring.num].len;
--
-+	u = &vq->vring.used->ring[*vq->vring.last_used_idx % vq->vring.num];
-+	i = u->id;
-+	*len = u->len;
- 	if (unlikely(i >= vq->vring.num)) {
- 		BAD_RING(vq, "id %u out of range\n", i);
- 		return NULL;
-@@ -325,7 +323,8 @@ void *virtqueue_get_buf(struct virtqueue *_vq, unsigned int *len)
- 	/* detach_buf clears data, so grab it now. */
- 	ret = vq->data[i];
- 	detach_buf(vq, i);
--	vq->last_used_idx++;
-+	(*vq->vring.last_used_idx)++;
-+
- 	END_USE(vq);
- 	return ret;
- }
-@@ -348,6 +347,8 @@ bool virtqueue_enable_cb(struct virtqueue *_vq)
- 	/* We optimistically turn back on interrupts, then check if there was
- 	 * more to do. */
- 	vq->vring.avail->flags &= ~VRING_AVAIL_F_NO_INTERRUPT;
-+	/* Besides flags write, this barrier also flushes out
-+	 * last available index write. */
- 	virtio_mb();
- 	if (unlikely(more_used(vq))) {
- 		END_USE(vq);
-@@ -431,7 +432,7 @@ struct virtqueue *vring_new_virtqueue(unsigned int num,
- 	vq->vq.name = name;
- 	vq->notify = notify;
- 	vq->broken = false;
--	vq->last_used_idx = 0;
-+	*vq->vring.last_used_idx = 0;
- 	vq->num_added = 0;
- 	list_add_tail(&vq->vq.list, &vdev->vqs);
- #ifdef DEBUG
-@@ -473,6 +474,8 @@ void vring_transport_features(struct virtio_device *vdev)
- 		switch (i) {
- 		case VIRTIO_RING_F_INDIRECT_DESC:
- 			break;
-+		case VIRTIO_RING_F_PUBLISH_USED:
-+			break;
- 		default:
- 			/* We don't understand this bit. */
- 			clear_bit(i, vdev->features);
-diff --git a/include/linux/virtio_ring.h b/include/linux/virtio_ring.h
-index e4d144b..0968702 100644
---- a/include/linux/virtio_ring.h
-+++ b/include/linux/virtio_ring.h
-@@ -29,6 +29,9 @@
- /* We support indirect buffer descriptors */
- #define VIRTIO_RING_F_INDIRECT_DESC	28
- 
-+/* The Guest publishes last-seen used index at the end of the avail ring. */
-+#define VIRTIO_RING_F_PUBLISH_USED	29
-+
- /* Virtio ring descriptors: 16 bytes.  These can chain together via "next". */
- struct vring_desc {
- 	/* Address (guest-physical). */
-@@ -69,6 +72,8 @@ struct vring {
- 	struct vring_avail *avail;
- 
- 	struct vring_used *used;
-+	/* Last used index seen by the Guest. */
-+	__u16 *last_used_idx;
- };
- 
- /* The standard layout for the ring is a continuous chunk of memory which looks
-@@ -83,6 +88,7 @@ struct vring {
-  *	__u16 avail_flags;
-  *	__u16 avail_idx;
-  *	__u16 available[num];
-+ *	__u16 last_used_idx;
-  *
-  *	// Padding to the next align boundary.
-  *	char pad[];
-@@ -101,6 +107,12 @@ static inline void vring_init(struct vring *vr, unsigned int num, void *p,
- 	vr->avail = p + num*sizeof(struct vring_desc);
- 	vr->used = (void *)(((unsigned long)&vr->avail->ring[num] + align-1)
- 			    & ~(align - 1));
-+	/* We publish the last-seen used index at the end of the available ring.
-+	 * It is at the end for backwards compatibility. */
-+	vr->last_used_idx = &(vr)->avail->ring[num];
-+	/* Verify that last used index does not spill over the used ring. */
-+	BUG_ON((void *)vr->last_used_idx +
-+	       sizeof *vr->last_used_idx > (void *)vr->used);
- }
- 
- static inline unsigned vring_size(unsigned int num, unsigned long align)
--- 
-1.7.1.12.g42b7f
+If one wanted, you could disable HPET MSI on this chipset only when a 
+driver requests an ISA DMA channel. Then if there's no floppy or other 
+LPC DMA device present, it can stay enabled. I don't know if it's worth 
+the trouble, though.
