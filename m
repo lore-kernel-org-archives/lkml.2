@@ -1,60 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755880Ab0ERQXe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:23:34 -0400
-Received: from [82.152.35.87] ([82.152.35.87]:39610 "EHLO emil.homelinux.net"
-	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1755092Ab0ERQXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:23:32 -0400
-X-Greylist: delayed 616 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 May 2010 12:23:32 EDT
-Date: Tue, 18 May 2010 17:13:13 +0100
-From: Emil <emil@la.mine.nu>
-To: linux-kernel@vger.kernel.org
-Subject: Linux telephony - IXJ
-Message-ID: <20100518161313.GA5338@emil.homelinux.net>
-Reply-To: emil@la.mine.nu
+	id S1756101Ab0ERQZD (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:25:03 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:48621 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754543Ab0ERQZA convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:25:00 -0400
+To: Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	<201005142308.48386.rjw@sisk.pl>
+	<AANLkTilX0uhqrJtUSOC4smdH1M8V-h14J7YtRG4PPxOQ@mail.gmail.com>
+	<201005172342.52660.rjw@sisk.pl>
+	<AANLkTilQ5wZ_7fMyDMpUBCtu9oD1Wh22JGllyS1EPlxB@mail.gmail.com>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Tue, 18 May 2010 09:18:12 -0700
+In-Reply-To: <AANLkTilQ5wZ_7fMyDMpUBCtu9oD1Wh22JGllyS1EPlxB@mail.gmail.com>
+ ("Arve =?iso-8859-1?Q?Hj=F8nnev=E5g=22's?= message of "Mon\, 17 May 2010
+ 17\:52\:46 -0700")
+Message-ID: <87tyq5qj3v.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I have half a dozen Quicknet cards in various countries which I use 
-to keep in touch with friends and family. I also have a Quicknet
-PhoneJack which is an ISA card allowing me to place remote calls via
-the net. All these cards worked flawlessly for almost a decade paying
-for themselves many times over.
+Arve Hjønnevåg <arve@android.com> writes:
 
-The current kernel support for these cards is broken. They are not
-produced anymore so probably nobody will care about this message. 
-It is surprinsing though that while there is no other alternative
-telephony driver in the kernel the only one present is broken.
+>
+> PM: Opportunistic suspend support.
+>
+> Power management features present in the current mainline kernel are
+> insufficient to get maximum possible energy savings on some platforms,
+> such as Android, because low power states can only safely be entered
+> from idle.  Suspend, in its current form, cannot be used, since wakeup
+> events that occur right after initiating suspend will not be processed
+> until another possibly unrelated event wake up the system again.
 
-As I stated before I have various versions of Quichnet cards. The
-two listed bellow are PCI (1 port FXO) with the following chipsets
-- 1999: AM79R7OJC + Oxford Semiconductor OX16PCI954 + Xilinx FPGA + 
-        DSP CT8022A11AQC
-- 2003: MC145483 + Tiger 320 + DSP CT8022A11AQC
+I think the problems with wakeups in the current suspend path need to
+be described in more detail.  In particular, why check_wakeup_irqs()
+is not enough etc.
 
-Neither of them is working with the ixj kernel driver. The kernel driver
-compiles, the card is detected but the phone hook status is never changes
-and you cannot produce a dial tone (even if you try to force it).
+> On some systems idle combined with runtime PM can enter the same power
+> state as suspend, but periodic wakeups increase the average power
+> consumption. Suspending the system also reduces the harm caused by
+> apps that never go idle. On other systems suspend can enter a much
+> lower power state than idle.
+>
+> To allow Android and similar platforms to save more energy than they
+> currently can save using the mainline kernel, we introduce a mechanism
+> by which the system is automatically suspended (i.e. put into a
+> system-wide sleep state) whenever it's not doing useful work, called
+> opportunistic suspend.
 
-The driver that _does_ work with all my cards is this one:
-http://uglyduck.ath.cx/ixj-1.2.2.tar.gz
-http://nic.ath.cx/ixj-1.2.2.tar.gz
+A definition of "useful work" here would provide clarity and would
+also help clarify by what criteria other on-going work is determined
+to be not useful.
 
-Unfortunatelly this only compiles for kernel 2.4; you'll have to
-enable telephony support but disable the kernel IXJ driver and 
-then this older driver compiles and works like a charm. 
-
-I have tried on the same hardware kernel 2.4 + ixj version 1.2.2 works
-while kernel 2.6 + version 3.1.0 doesn't.
-
-While I know how to program in C, porting the old version to the 2.6 kernel
-is a to long learning curve for me so I guess this means back to linux 2.4 
-
--- 
-								Regards,
-								Emil
+Kevin
