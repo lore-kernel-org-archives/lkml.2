@@ -1,56 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757134Ab0ERL7W (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:59:22 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45610 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756229Ab0ERL7T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:59:19 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Arjan van de Ven <arjan@infradead.org>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100518112509.GD22675@basil.fritz.box>
-References: <1273887635-27610-1-git-send-email-venki@google.com>
-	 <87tyq9mqrz.fsf@basil.nowhere.org>
-	 <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-	 <20100515121424.38f5b389@infradead.org>
-	 <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
-	 <20100515224305.17a04022@infradead.org>
-	 <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>
-	 <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>
-	 <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>
-	 <20100518112509.GD22675@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 18 May 2010 13:58:54 +0200
-Message-ID: <1274183935.5605.7726.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757200Ab0ERL7i (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:59:38 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:38696 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757178Ab0ERL7e (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 07:59:34 -0400
+Date: Tue, 18 May 2010 13:59:32 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Stephane Chatty <chatty@enac.fr>,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, wylda@volny.cz,
+       Jerome Vidal <jerom3@free.fr>, Tejun Heo <tj@kernel.org>,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] HID: Removing/Renaming preprocessor macros for Roccat
+ Kone
+In-Reply-To: <1273679014.2927.4.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1005181359041.28092@pobox.suse.cz>
+References: <1273679014.2927.4.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 13:25 +0200, Andi Kleen wrote:
-> On Tue, May 18, 2010 at 11:58:18AM +0200, Peter Zijlstra wrote:
-> > On Sun, 2010-05-16 at 22:06 -0700, Arjan van de Ven wrote:
-> > > look we're not disabling ring 3 tsc. We could, but we don't.
-> > 
-> > Maybe we should.
-> 
-> That would kill the vsyscall too. Remember it's running in ring 3.
-> 
-> That is in theory you could disable it on systems where the vsyscall
-> doesn't use it, but then you would likely break huge amounts of software, 
-> unless you emulate it.
+On Wed, 12 May 2010, Stefan Achatz wrote:
 
-Well, software shouldn't use it, so breaking it sounds like a fine
-idea ;-)
+> >From a50a004999d4bd2b9ae08f1298b1fc89ce9e1e12 Mon Sep 17 00:00:00 2001
+> From: Stefan Achatz <erazor_de@users.sourceforge.net>
+> Date: Sat, 8 May 2010 16:34:05 +0200
+> Subject: [PATCH 1/5] HID: Removing/Renaming preprocessor macros for Roccat Kone
+> 
+> Removed useless preprocessor macros and renamed remaining one to be
+> more qualified.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-roccat-kone.c |    8 ++++----
+>  drivers/hid/hid-roccat-kone.h |    5 +----
+>  2 files changed, 5 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
+> index 7b11784..d23d309 100644
+> --- a/drivers/hid/hid-roccat-kone.c
+> +++ b/drivers/hid/hid-roccat-kone.c
+> @@ -630,7 +630,7 @@ static ssize_t kone_sysfs_set_startup_profile(struct device *dev,
+>  static ssize_t kone_sysfs_show_driver_version(struct device *dev,
+>  		struct device_attribute *attr, char *buf)
+>  {
+> -	return snprintf(buf, PAGE_SIZE, DRIVER_VERSION "\n");
+> +	return snprintf(buf, PAGE_SIZE, ROCCAT_KONE_DRIVER_VERSION "\n");
+>  }
+>  
+>  /*
+> @@ -1002,6 +1002,6 @@ static void kone_exit(void)
+>  module_init(kone_init);
+>  module_exit(kone_exit);
+>  
+> -MODULE_AUTHOR(DRIVER_AUTHOR);
+> -MODULE_DESCRIPTION(DRIVER_DESC);
+> -MODULE_LICENSE(DRIVER_LICENSE);
+> +MODULE_AUTHOR("Stefan Achatz");
+> +MODULE_DESCRIPTION("USB Roccat Kone driver");
+> +MODULE_LICENSE("GPL v2");
+> diff --git a/drivers/hid/hid-roccat-kone.h b/drivers/hid/hid-roccat-kone.h
+> index ee6898c..99290ad 100644
+> --- a/drivers/hid/hid-roccat-kone.h
+> +++ b/drivers/hid/hid-roccat-kone.h
+> @@ -14,10 +14,7 @@
+>  
+>  #include <linux/types.h>
+>  
+> -#define DRIVER_VERSION "v0.3.0"
+> -#define DRIVER_AUTHOR "Stefan Achatz"
+> -#define DRIVER_DESC "USB Roccat Kone driver"
+> -#define DRIVER_LICENSE "GPL v2"
+> +#define ROCCAT_KONE_DRIVER_VERSION "v0.3.1"
 
-Also, a slow emulation is an incentive to actually do the right thing.
+Why do we need this? git is much better tracking revisions than humans, 
+who usually forget to update the defines anyway ...
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
