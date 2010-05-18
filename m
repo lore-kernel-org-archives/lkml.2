@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756551Ab0ERFzk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:55:40 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56006
+	id S1756612Ab0ERFzv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:55:51 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:56012
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752881Ab0ERFzg (ORCPT
+	by vger.kernel.org with ESMTP id S1755736Ab0ERFzr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:55:36 -0400
-Date: Mon, 17 May 2010 22:55:44 -0700 (PDT)
-Message-Id: <20100517.225544.85428189.davem@davemloft.net>
+	Tue, 18 May 2010 01:55:47 -0400
+Date: Mon, 17 May 2010 22:55:55 -0700 (PDT)
+Message-Id: <20100517.225555.267953461.davem@davemloft.net>
 To: julia@diku.dk
-Cc: sbhatewara@vmware.com, pv-drivers@vmware.com, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 14/20] drivers/net/vmxnet3: Use kzalloc
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 15/20] drivers/net: Use kcalloc or kzalloc
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <Pine.LNX.4.64.1005132204040.6282@ask.diku.dk>
-References: <Pine.LNX.4.64.1005132204040.6282@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005132205420.6282@ask.diku.dk>
+References: <Pine.LNX.4.64.1005132205420.6282@ask.diku.dk>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -25,27 +25,15 @@ List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
-Date: Thu, 13 May 2010 22:05:40 +0200 (CEST)
+Date: Thu, 13 May 2010 22:06:01 +0200 (CEST)
 
 > From: Julia Lawall <julia@diku.dk>
 > 
-> Use kzalloc rather than the combination of kmalloc and memset.
+> Use kcalloc or kzalloc rather than the combination of kmalloc and memset.
 > 
 > The semantic patch that makes this change is as follows:
 > (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression x,size,flags;
-> statement S;
-> @@
-> 
-> -x = kmalloc(size,flags);
-> +x = kzalloc(size,flags);
->  if (x == NULL) S
-> -memset(x, 0, size);
-> // </smpl>
-> 
+ ...
 > Signed-off-by: Julia Lawall <julia@diku.dk>
 
 Applied.
