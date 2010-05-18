@@ -1,59 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753892Ab0ERVFt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:05:49 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:37238 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752256Ab0ERVFs (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:05:48 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX1+3nrc/cpy33tpddLtK7wMlV1TyaXn2XiXO7Xtei4
-	N6wnLRDuAEwFe9
-Subject: Re: What is 2.6.34-git1 and how to it it? And whether to eat it?
-From: Ivan Bulatovic <combuster@gmx.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org
-In-Reply-To: <201005182156.44518.rjw@sisk.pl>
-References: <4BF2AE0A.6010406@example.com>
-	 <1274196123.5720.158.camel@localhost.localdomain>
-	 <201005182156.44518.rjw@sisk.pl>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 23:07:12 +0200
-Message-ID: <1274216832.2206.106.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
-X-Y-GMX-Trusted: 0
+	id S1754645Ab0ERVGQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:06:16 -0400
+Received: from sous-sol.org ([216.99.217.87]:38213 "EHLO sequoia.sous-sol.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1752380Ab0ERVGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:06:15 -0400
+Date: Tue, 18 May 2010 14:06:07 -0700
+From: Chris Wright <chrisw@sous-sol.org>
+To: Greg KH <greg@kroah.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Chris Wright <chrisw@sous-sol.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the driver-core tree
+Message-ID: <20100518210607.GI8301@sequoia.sous-sol.org>
+References: <20100518164409.8b19c786.sfr@canb.auug.org.au>
+ <20100518140226.GB24113@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518140226.GB24113@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Rafael for clearing that up, Piotr - sorry for the mixup, I was
-100% certain that 2.6.34-git1 were patches for the stable tree. I have
-to read the docs more carefully instead of jumping to conclusions :)
-I've just checked, there were no patches in the stable tree since the
-release of 2.6.34 but there are some merges in the mainline. Got it
-now :)
+* Greg KH (greg@kroah.com) wrote:
+> On Tue, May 18, 2010 at 04:44:09PM +1000, Stephen Rothwell wrote:
+> > Hi Greg,
+> > 
+> > After merging the driver-core tree, today's linux-next build (powerpc
+> > ppc64_defconfig) failed like this:
+> > 
+> > cc1: warnings being treated as errors
+> > In file included from include/linux/kobject.h:21,
+> >                  from include/linux/device.h:17,
+> >                  from arch/powerpc/lib/devres.c:10:
+> > include/linux/sysfs.h:97: error: 'struct file' declared inside parameter list
+> > include/linux/sysfs.h:97: error: its scope is only this definition or declaration, which is probably not what you want
+> > include/linux/sysfs.h:99: error: 'struct file' declared inside parameter list
+> > include/linux/sysfs.h:101: error: 'struct file' declared inside parameter list
+> > 
+> > and many more (arch/powerpc is built with -Werror (as do some other
+> > architectures)) and lots of similar warnings ...
+> > 
+> > Caused by commit f8e898186196a22756b50b908ecd92123265f8a2 ("sysfs: add
+> > struct file* to bin_attr callbacks").   See Rule 1 in
+> > Documentation/SubmitChecklist.  The header file probably just needs
+> > "struct file;" added in the right place.
+> > 
+> > I have reverted that commit for today (and commit
+> > 44e425ab9f887ec6d3a7a4481f3b0c99f120de19 ("pci: check caps from sysfs
+> > file open to read device dependent config space") that depends on it).
+> 
+> Ick.
+> 
+> Chris, care to send a patch to resolve this?
 
-On Tue, 2010-05-18 at 21:56 +0200, Rafael J. Wysocki wrote: 
-> On Tuesday 18 May 2010, Ivan Bulatovic wrote:
-> > No, 2.6.34-git1 is set of patches that eventually will become 2.6.34.1
-> 
-> Not quite.
-> 
-> 2.6.34-git1 contains changes that will appear in 2.6.35 (if they are not
-> reverted in the meantime), but not necessarily in 2.6.34.1.
-> 
-> The only changes from 2.6.34-git1 that will go into 2.6.34.1 are important bug
-> fixes.
-> 
-> Thanks,
-> Rafael
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Would you prefer incremental to fold in, or respin?  It's just this
+one-liner fwd declaration as Stephen mentioned.
 
-
+thanks,
+-chris
