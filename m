@@ -1,147 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756017Ab0ERVH5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:07:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28698 "EHLO mx1.redhat.com"
+	id S1756274Ab0ERVIV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:08:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7174 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755047Ab0ERVHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:07:49 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       hch@infradead.org
-Subject: [PATCH 3/5] fs: kill blockdev_direct_IO_no_locking
-Date: Tue, 18 May 2010 17:05:45 -0400
-Message-Id: <1274216747-9450-3-git-send-email-josef@redhat.com>
-In-Reply-To: <1274216747-9450-1-git-send-email-josef@redhat.com>
-References: <1274216747-9450-1-git-send-email-josef@redhat.com>
+	id S1755774Ab0ERVH4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:07:56 -0400
+Date: Tue, 18 May 2010 17:07:52 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: [PATCH 2/4] block: Implement a blk_yield function to
+	voluntarily give up the I/O scheduler.
+Message-ID: <20100518210752.GE12330@redhat.com>
+References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com> <1274206820-17071-3-git-send-email-jmoyer@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274206820-17071-3-git-send-email-jmoyer@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph said he'd rather everybody use __blockdev_direct_IO directly instead
-of having a bunch of random helper functions, so thats what this patch does.
-It's a basic change, I've tested it with xfstests on ext4 and xfs.  Thanks,
+On Tue, May 18, 2010 at 02:20:18PM -0400, Jeff Moyer wrote:
+> This patch implements a blk_yield to allow a process to voluntarily
+> give up its I/O scheduler time slice.  This is desirable for those processes
+> which know that they will be blocked on I/O from another process, such as
+> the file system journal thread.  Following patches will put calls to blk_yield
+> into jbd and jbd2.
+> 
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>  block/blk-core.c         |   13 +++++
+>  block/blk-settings.c     |    6 +++
+>  block/cfq-iosched.c      |  112 +++++++++++++++++++++++++++++++++++++++++++++-
+>  block/elevator.c         |    8 +++
+>  include/linux/blkdev.h   |    4 ++
+>  include/linux/elevator.h |    3 +
+>  6 files changed, 144 insertions(+), 2 deletions(-)
+> 
+> diff --git a/block/blk-core.c b/block/blk-core.c
+> index 9fe174d..b8be6c8 100644
+> --- a/block/blk-core.c
+> +++ b/block/blk-core.c
+> @@ -323,6 +323,18 @@ void blk_unplug(struct request_queue *q)
+>  }
+>  EXPORT_SYMBOL(blk_unplug);
+>  
+> +void generic_yield_iosched(struct request_queue *q, struct task_struct *tsk)
+> +{
+> +	elv_yield(q, tsk);
+> +}
+> +
+> +void blk_yield(struct request_queue *q, struct task_struct *tsk)
+> +{
+> +	if (q->yield_fn)
+> +		q->yield_fn(q, tsk);
+> +}
+> +EXPORT_SYMBOL(blk_yield);
+> +
+>  /**
+>   * blk_start_queue - restart a previously stopped queue
+>   * @q:    The &struct request_queue in question
+> @@ -580,6 +592,7 @@ blk_init_queue_node(request_fn_proc *rfn, spinlock_t *lock, int node_id)
+>  	q->request_fn		= rfn;
+>  	q->prep_rq_fn		= NULL;
+>  	q->unplug_fn		= generic_unplug_device;
+> +	q->yield_fn		= generic_yield_iosched;
+>  	q->queue_flags		= QUEUE_FLAG_DEFAULT;
+>  	q->queue_lock		= lock;
+>  
+> diff --git a/block/blk-settings.c b/block/blk-settings.c
+> index f5ed5a1..fe548c9 100644
+> --- a/block/blk-settings.c
+> +++ b/block/blk-settings.c
+> @@ -171,6 +171,12 @@ void blk_queue_make_request(struct request_queue *q, make_request_fn *mfn)
+>  }
+>  EXPORT_SYMBOL(blk_queue_make_request);
+>  
+> +void blk_queue_yield(struct request_queue *q, yield_fn *yield)
+> +{
+> +	q->yield_fn = yield;
+> +}
+> +EXPORT_SYMBOL_GPL(blk_queue_yield);
+> +
+>  /**
+>   * blk_queue_bounce_limit - set bounce buffer limit for queue
+>   * @q: the request queue for the device
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 46a7fe5..9aab701 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -148,6 +148,7 @@ struct cfq_queue {
+>  	struct cfq_queue *new_cfqq;
+>  	struct cfq_group *cfqg;
+>  	struct cfq_group *orig_cfqg;
+> +	struct cfq_io_context *yield_to;
+>  	/* Sectors dispatched in current dispatch round */
+>  	unsigned long nr_sectors;
+>  };
+> @@ -320,6 +321,7 @@ enum cfqq_state_flags {
+>  	CFQ_CFQQ_FLAG_split_coop,	/* shared cfqq will be splitted */
+>  	CFQ_CFQQ_FLAG_deep,		/* sync cfqq experienced large depth */
+>  	CFQ_CFQQ_FLAG_wait_busy,	/* Waiting for next request */
+> +	CFQ_CFQQ_FLAG_yield,		/* Allow another cfqq to run */
+>  };
+>  
+>  #define CFQ_CFQQ_FNS(name)						\
+> @@ -349,6 +351,7 @@ CFQ_CFQQ_FNS(coop);
+>  CFQ_CFQQ_FNS(split_coop);
+>  CFQ_CFQQ_FNS(deep);
+>  CFQ_CFQQ_FNS(wait_busy);
+> +CFQ_CFQQ_FNS(yield);
+>  #undef CFQ_CFQQ_FNS
+>  
+>  #ifdef CONFIG_DEBUG_CFQ_IOSCHED
+> @@ -1566,6 +1569,7 @@ __cfq_slice_expired(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>  
+>  	cfq_clear_cfqq_wait_request(cfqq);
+>  	cfq_clear_cfqq_wait_busy(cfqq);
+> +	cfq_clear_cfqq_yield(cfqq);
+>  
+>  	/*
+>  	 * If this cfqq is shared between multiple processes, check to
+> @@ -2068,7 +2072,7 @@ static void choose_service_tree(struct cfq_data *cfqd, struct cfq_group *cfqg)
+>  		slice = max(slice, 2 * cfqd->cfq_slice_idle);
+>  
+>  	slice = max_t(unsigned, slice, CFQ_MIN_TT);
+> -	cfq_log(cfqd, "workload slice:%d", slice);
+> +	cfq_log(cfqd, "workload:%d slice:%d", cfqd->serving_type, slice);
+>  	cfqd->workload_expires = jiffies + slice;
+>  	cfqd->noidle_tree_requires_idle = false;
+>  }
+> @@ -2138,7 +2142,8 @@ static struct cfq_queue *cfq_select_queue(struct cfq_data *cfqd)
+>  		 * ok to wait for this request to complete.
+>  		 */
+>  		if (cfqq->cfqg->nr_cfqq == 1 && RB_EMPTY_ROOT(&cfqq->sort_list)
+> -		    && cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
+> +		    && cfqq->dispatched && !cfq_cfqq_yield(cfqq) &&
+> +		    cfq_should_idle(cfqd, cfqq)) {
+>  			cfqq = NULL;
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
- fs/block_dev.c              |    5 +++--
- fs/ext4/inode.c             |    8 ++++----
- fs/gfs2/aops.c              |    6 +++---
- fs/ocfs2/aops.c             |    8 +++-----
- fs/xfs/linux-2.6/xfs_aops.c |    7 +++----
- include/linux/fs.h          |    9 ---------
- 6 files changed, 16 insertions(+), 27 deletions(-)
+I think if we just place cfq_cfqq_yield(cfqq), check above it, we don't
+need above code modification?
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 6dcee88..0f42cbc 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -172,8 +172,9 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
- 
--	return blockdev_direct_IO_no_locking(rw, iocb, inode, I_BDEV(inode),
--				iov, offset, nr_segs, blkdev_get_blocks, NULL);
-+	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov,
-+				    offset, nr_segs, blkdev_get_blocks, NULL,
-+				    NULL, 0);
- }
- 
- int __sync_blockdev(struct block_device *bdev, int wait)
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 81d6054..8f37762 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3494,10 +3494,10 @@ static ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- 
- retry:
- 	if (rw == READ && ext4_should_dioread_nolock(inode))
--		ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
--				 inode->i_sb->s_bdev, iov,
--				 offset, nr_segs,
--				 ext4_get_block, NULL);
-+		ret = __blockdev_direct_IO(rw, iocb, inode,
-+					   inode->i_sb->s_bdev, iov, offset,
-+					   nr_segs, ext4_get_block, NULL, NULL,
-+					   0);
- 	else
- 		ret = blockdev_direct_IO(rw, iocb, inode,
- 				 inode->i_sb->s_bdev, iov,
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 0c1d0b8..45b23b0 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -1039,9 +1039,9 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
- 	if (rv != 1)
- 		goto out; /* dio not valid, fall back to buffered i/o */
- 
--	rv = blockdev_direct_IO_no_locking(rw, iocb, inode, inode->i_sb->s_bdev,
--					   iov, offset, nr_segs,
--					   gfs2_get_block_direct, NULL);
-+	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
-+				  iov, offset, nr_segs, gfs2_get_block_direct,
-+				  NULL, NULL, 0);
- out:
- 	gfs2_glock_dq_m(1, &gh);
- 	gfs2_holder_uninit(&gh);
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 21441dd..f2e53a9 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -669,11 +669,9 @@ static ssize_t ocfs2_direct_IO(int rw,
- 	if (i_size_read(inode) <= offset)
- 		return 0;
- 
--	ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
--					    inode->i_sb->s_bdev, iov, offset,
--					    nr_segs,
--					    ocfs2_direct_IO_get_blocks,
--					    ocfs2_dio_end_io);
-+	ret = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
-+				   offset, nr_segs, ocfs2_direct_IO_get_blocks,
-+				   ocfs2_dio_end_io, NULL, 0);
- 
- 	mlog_exit(ret);
- 	return ret;
-diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
-index 0f8b996..fcc14d8 100644
---- a/fs/xfs/linux-2.6/xfs_aops.c
-+++ b/fs/xfs/linux-2.6/xfs_aops.c
-@@ -1617,10 +1617,9 @@ xfs_vm_direct_IO(
- 	iocb->private = xfs_alloc_ioend(inode, rw == WRITE ?
- 					IOMAP_UNWRITTEN : IOMAP_READ);
- 
--	ret = blockdev_direct_IO_no_locking(rw, iocb, inode, bdev, iov,
--					    offset, nr_segs,
--					    xfs_get_blocks_direct,
--					    xfs_end_io_direct);
-+	ret = __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset, nr_segs,
-+				   xfs_get_blocks_direct, xfs_end_io_direct,
-+				   NULL, 0);
- 
- 	if (unlikely(ret != -EIOCBQUEUED && iocb->private))
- 		xfs_destroy_ioend(iocb->private);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 10704f0..d841e7d 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2277,15 +2277,6 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- 				    nr_segs, get_block, end_io, NULL,
- 				    DIO_LOCKING | DIO_SKIP_HOLES);
- }
--
--static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
--	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
--	loff_t offset, unsigned long nr_segs, get_block_t get_block,
--	dio_iodone_t end_io)
--{
--	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				    nr_segs, get_block, end_io, NULL, 0);
--}
- #endif
- 
- extern const struct file_operations generic_ro_fops;
--- 
-1.6.6.1
+This might result in some group losing fairness in certain scenarios, but
+I guess we will tackle it once we face it. For the time being if fsync
+thread is giving up cpu, journald commits will come in root group and
+there might not be a point in wasting time idling on this group.
 
+Vivek
