@@ -1,48 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0ERKDn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:03:43 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:34548 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752602Ab0ERKDm convert rfc822-to-8bit (ORCPT
+	id S1756149Ab0ERKP7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:15:59 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:52267 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752602Ab0ERKP5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:03:42 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Arjan van de Ven <arjan@infradead.org>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
+	Tue, 18 May 2010 06:15:57 -0400
+Date: Tue, 18 May 2010 19:15:00 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-sh@vger.kernel.org,
        linux-kernel@vger.kernel.org
-In-Reply-To: <1274176698.5605.7358.camel@twins>
-References: <1273887635-27610-1-git-send-email-venki@google.com>
-	 <87tyq9mqrz.fsf@basil.nowhere.org>
-	 <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
-	 <20100515121424.38f5b389@infradead.org>
-	 <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>
-	 <20100515224305.17a04022@infradead.org>
-	 <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>
-	 <b7b4f345-944c-4cbc-b98a-700f915183b9@default alpine.LFD.2.00.1005161925480.3368@localhost.localdomain>
-	 <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>
-	 <20100516220638.2baf315d@infradead.org>  <1274176698.5605.7358.camel@twins>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 18 May 2010 12:03:01 +0200
-Message-ID: <1274176981.5605.7376.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Subject: Re: [GIT PULL] sh updates for 2.6.35-rc1
+Message-ID: <20100518101500.GA3156@linux-sh.org>
+References: <20100518092532.GA3050@linux-sh.org> <AANLkTim6t8oG-vdLKE918Sd2TFKJpSf5Bw2PTtSsD_Fh@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim6t8oG-vdLKE918Sd2TFKJpSf5Bw2PTtSsD_Fh@mail.gmail.com>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 11:58 +0200, Peter Zijlstra wrote:
-> On Sun, 2010-05-16 at 22:06 -0700, Arjan van de Ven wrote:
-> > look we're not disabling ring 3 tsc. We could, but we don't.
+On Tue, May 18, 2010 at 03:15:31PM +0530, Jaswinder Singh Rajput wrote:
+> I have few doubts :
 > 
-> Maybe we should.
+> 1. Which other architectures are using :
+> include/linux/sh_clk.h, include/linux/sh_dma.h and include/linux/sh_intc.h
+> 
+ARM for starters, and there are likely to be others in the future, too.
+Grepping would have made this pretty apparent.
 
-We could then trap and emulate it with something sensible like clock
-monotonic.
+> 2. If you think, in future some architecture will going to use these
+> files, then do you think sh_*.h name is appropriate.
+> 
+Yes, given that they're all SH IP blocks. Although if there's many more
+of them then of course putting them in their own subdirectory is an
+option, too.
 
-/me runs :-)
+> 3. Can we move :
+> include/linux/sh_clk.h -> drivers/sh/sh_clk.h
+> include/linux/sh_dma.h -> drivers/dma/sh_dma.h
+> include/linux/sh_intc.h -> drivers/sh/sh_intc.h
+> So that if someone want to use these file they can use it from here.
+> 
+No.
+
+The alternative is creating a shared architecture directory, which
+doesn't really scale well given how these blocks can be arbitrarily
+reused across different architectures -- but it's still something we
+might have to look at depending on what else pops up that can't be
+cleanly shared through the current scheme. You're of course welcome to
+dig up the discussions in the archives when the ARM SH-Mobile code was
+introduced in the first place.
