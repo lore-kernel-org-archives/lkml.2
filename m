@@ -1,33 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757456Ab0ERVZL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:25:11 -0400
-Received: from kroah.org ([198.145.64.141]:52266 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754699Ab0ERVZH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:25:07 -0400
-Date: Tue, 18 May 2010 14:25:02 -0700
-From: Greg KH <greg@kroah.com>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20100518212502.GB31331@kroah.com>
-References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
- <m1hbm5f0d2.fsf@fess.ebiederm.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <m1hbm5f0d2.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756612Ab0ERVYu (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:24:50 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:52924 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753225Ab0ERVYo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:24:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:message-id:user-agent:date:from:to:cc:subject;
+        b=EUuSsT4eN3Bx/e8EWNZK2QBeE/i2829w4zG8ZapxhRYOd3+xZbn9OdGpy7fRykvKvN
+         LUyCzjRdzcXiIdS1KEzCPXBNi0fdIBY42M4BrPjVsUDbFzv2Bj8YzxsGKAMijaGRjD01
+         I3ZXiFqPZaRVeeYgSSQO9vVS9WvZWNr8upUJo=
+Message-Id: <20100518211916.407689068@openvz.org>
+User-Agent: quilt/0.47-1
+Date: Wed, 19 May 2010 01:19:16 +0400
+From: Cyrill Gorcunov <gorcunov@openvz.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       =?UTF-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>
+Subject: [patch 0/4] [perf -tip/master] p4 pmu updates
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 12:58:33PM -0700, Eric W. Biederman wrote:
-> 
-> Greg this fixes the conflict with the vfs tree we see in linux-next.
+Hi, please pick up the following patches. Nothing serious --
+a few nitfix and preparation the header for future export into
+user space (in a sake of RAW events), though not exported in
+real yet. Need to estimate the convenience of its usage.
 
-Thanks, I can apply this to my tree right now, right?
+Comments and complains and etc are highly appreciated!
 
-greg k-h
+	-- Cyrill
