@@ -1,54 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757414Ab0ERQdj (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:33:39 -0400
-Received: from hera.kernel.org ([140.211.167.34]:36953 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751539Ab0ERQdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:33:37 -0400
-Message-ID: <4BF2C136.4020104@kernel.org>
-Date: Tue, 18 May 2010 18:32:54 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1757361Ab0ERQex (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:34:53 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:60897 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753209Ab0ERQev (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:34:51 -0400
+To: Matt Fleming <matt@console-pimps.org>
+Cc: linux-omap@vger.kernel.org, Madhusudhan Chikkature <madhu.cr@ti.com>,
+       Adrian Hunter <adrian.hunter@nokia.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Tony Lindgren <tony@atomide.com>,
+       Denis Karpov <ext-denis.2.karpov@nokia.com>,
+       linux-kernel@vger.kernel.org, linux-mmc@vger.kernel.org
+Subject: Re: [PATCH] MMC: OMAP HS-MMC: convert to dev_pm_ops
+References: <1273615036-4516-1-git-send-email-khilman@deeprootsystems.com>
+	<87k4r74p01.fsf@linux-g6p1.site> <87ljbmmnp2.fsf@deeprootsystems.com>
+	<20100514225720.GA13046@console-pimps.org>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+In-Reply-To: <20100514225720.GA13046@console-pimps.org> (Matt Fleming's message of "Fri\, 14 May 2010 23\:57\:20 +0100")
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+Date: Tue, 18 May 2010 09:34:47 -0700
+Message-ID: <87ocgdqic8.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-CC: Alan Stern <stern@rowland.harvard.edu>, Oleg Nesterov <oleg@redhat.com>
-Subject: [GIT PULL] workqueue for v2.6.35-rc1
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 May 2010 16:32:55 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Linus.
+Matt Fleming <matt@console-pimps.org> writes:
 
-Please pull from the following branch to receive wq changes for
-v2.6.35-rc1.
+> On Fri, May 14, 2010 at 09:51:21AM -0700, Kevin Hilman wrote:
+>> 
+>> I don't see a reason either, but it requires patching the MMC core as
+>> well as all the users.  As I'm not an MMC core person, I thought this
+>> best left to someone in that domain.
+>> 
+>> Fixing the core and callers could easily be done on top of this patch.
+>
+> I've sent a patch that fixes up all the callers now and Andrew has taken
+> it into -mm.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-linus
+Very nice,  Thanks.
 
-Bulk of cmwq still waiting for scheduler hooks to be resolved, there
-are only two commits for v2.6.35-rc1.
-
-One adds comment to flush_scheduled_work() mostly warning about the
-possibility of deadlock.  The other makes cancel_work_sync() clear
-work->data which speeds up further cancel/flush requests on it and
-also makes it safe to call cancel/flush on already canceled works even
-if the previous workqueue is destroyed.
-
-Thanks.
-
-Alan Stern (1):
-      workqueue: warn about flush_scheduled_work()
-
-Oleg Nesterov (1):
-      workqueue: change cancel_work_sync() to clear work->data
-
- kernel/workqueue.c |   36 +++++++++++++++++++++++++++++++++++-
- 1 files changed, 35 insertions(+), 1 deletions(-)
-
---
-tejun
+Kevin
