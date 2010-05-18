@@ -1,88 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756701Ab0ERLXH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 07:23:07 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:46389 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752271Ab0ERLXC (ORCPT
+	id S1757033Ab0ERLZV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 07:25:21 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58916 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752708Ab0ERLZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 07:23:02 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=TYcTGYKeFA0LKHBMLo/bi+vwtP7gNXmjorwsYE2oZ08m+zlYEMg7t/7CZAcG28/2io
-         J6tWLMK5JgkoNyOn+X44QlFzRTWvkhqGSUAesCMJ2oXNMynT2jnXBboDp1Fq6fCcL7SZ
-         NV7CK4xAci/sfhdG13CnAyVCZDJig9ssX41D8=
+	Tue, 18 May 2010 07:25:19 -0400
+Date: Tue, 18 May 2010 13:25:10 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Arjan van de Ven <arjan@infradead.org>,
+       Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100518112509.GD22675@basil.fritz.box>
+References: <1273887635-27610-1-git-send-email-venki@google.com> <87tyq9mqrz.fsf@basil.nowhere.org> <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default> <20100515121424.38f5b389@infradead.org> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default> <20100515224305.17a04022@infradead.org> <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain> <5adf3fee-0f7b-4039-b13f-619640cc4b88@default> <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>
 MIME-Version: 1.0
-In-Reply-To: <AANLkTindMQ3Clk_qVnwUNYbbWcXjsUyyy4fQsjdDflFt@mail.gmail.com>
-References: <20100518092532.GA3050@linux-sh.org>
-	 <AANLkTim6t8oG-vdLKE918Sd2TFKJpSf5Bw2PTtSsD_Fh@mail.gmail.com>
-	 <20100518101500.GA3156@linux-sh.org>
-	 <AANLkTinIVjwrQ9gza2FIvZN5w4nm8ZjSUe836oRmWYG7@mail.gmail.com>
-	 <AANLkTindMQ3Clk_qVnwUNYbbWcXjsUyyy4fQsjdDflFt@mail.gmail.com>
-Date: Tue, 18 May 2010 16:46:12 +0530
-Message-ID: <AANLkTilNQwo1YYT2pNJN5X0ae98iMKCdsBkcogjKZm-f@mail.gmail.com>
-Subject: Re: [GIT PULL] sh updates for 2.6.35-rc1
-From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
-To: Magnus Damm <magnus.damm@gmail.com>
-Cc: Paul Mundt <lethal@linux-sh.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Russell King - ARM Linux <linux@arm.linux.org.uk>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274176698.5605.7358.camel@twins>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello magnus,
+On Tue, May 18, 2010 at 11:58:18AM +0200, Peter Zijlstra wrote:
+> On Sun, 2010-05-16 at 22:06 -0700, Arjan van de Ven wrote:
+> > look we're not disabling ring 3 tsc. We could, but we don't.
+> 
+> Maybe we should.
 
-On Tue, May 18, 2010 at 4:35 PM, Magnus Damm <magnus.damm@gmail.com> wrote:
-> Hi Jaswinder,
->
-> On Tue, May 18, 2010 at 7:51 PM, Jaswinder Singh Rajput
-> <jaswinderlinux@gmail.com> wrote:
->> Hmm, so still it is between ARM and SH, so better option will be :
->>
->> include/linux/sh_clk.h -> include/sh/clk.h
->> include/linux/sh_dma.h -> include/sh/dma.h
->> include/linux/sh_intc.h -> include/sh/intc.h
->>
->> So when arm files will come then, then we can make it like this :
->>
->> include/arm/clk.h
->> include/arm/dma.h
->> include/arm/intc.h
->>
->> So user will program like this :
->>
->> #include <arm/dma.h>
->> #include <sh/dma.h>
->
-> Right now the SH code does
->
-> #include <linux/sh_intc.h>
->
-> and the ARM code does
->
-> #include <linux/sh_intc.h>
->
-> Hope this clarifies!
->
+That would kill the vsyscall too. Remember it's running in ring 3.
 
-I am looking at the future, where multiple architecture will use each
-other files.
+That is in theory you could disable it on systems where the vsyscall
+doesn't use it, but then you would likely break huge amounts of software, 
+unless you emulate it.
 
-I am just worried about the file count. Currently :
+Emulation would be a possibility, but I'm not sure it would
+make anyone really happy. It would be certainly slow.
 
-$ ls include/linux/ | wc -l
-1029
-
-If other architecture will also start adding the files in
-include/linux like you did then ?
-
-So better make another directory in include.
-
-Thanks,
---
-Jaswinder Singh.
+-Andi
+-- 
+ak@linux.intel.com -- Speaking for myself only.
