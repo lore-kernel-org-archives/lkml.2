@@ -1,74 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754785Ab0EREtn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 00:49:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:55713 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1752068Ab0EREtm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 00:49:42 -0400
-Message-ID: <4BF21CEE.9080801@cn.fujitsu.com>
-Date: Tue, 18 May 2010 12:51:58 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+	id S1754302Ab0ERE6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 00:58:07 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53617 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752068Ab0ERE6E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 00:58:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=jt/ZP4lwtD+r/LkHTrNTIvgTw7bqFESFs0fiaGsi1HjZw1vjZ8TLWkB72faRx9OptD
+         fHkUUktj+EKnGp2mBfvgg6e0yIO7nPVvSQMj5M5VrvOSMYEt/VnpGbRl7n1rATJ6Kq2w
+         Pmu5qDO5hQld3Pcxte2QyMn8RFweg8jcg1OLQ=
+Message-ID: <4BF21DAD.6050609@gmail.com>
+Date: Tue, 18 May 2010 10:25:09 +0530
+From: senthilkumaar2021 <senthilkumaar2021@gmail.com>
+User-Agent: Thunderbird 2.0.0.21 (X11/20090320)
 MIME-Version: 1.0
-To: Steven Rostedt <rostedt@goodmis.org>
-CC: linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Mathieu Desnoyers <compudj@krystal.dyndns.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 05/13 v3] tracing: Move fields from event to class structure
-References: <20100514192246.079025623@goodmis.org> <20100514192914.920593596@goodmis.org>
-In-Reply-To: <20100514192914.920593596@goodmis.org>
-Content-Type: text/plain; charset=UTF-8
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: kernel panic
+References: <4BF21646.60008@gmail.com> <4BF21BD3.60901@gmail.com>
+In-Reply-To: <4BF21BD3.60901@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Rostedt wrote:
-> From: Steven Rostedt <srostedt@redhat.com>
-> 
-> Move the defined fields from the event to the class structure.
-> Since the fields of the event are defined by the class they belong
-> to, it makes sense to have the class hold the information instead
-> of the individual events. The events of the same class would just
-> hold duplicate information.
-> 
-> After this change the size of the kernel dropped another 3K:
-> 
->    text	   data	    bss	    dec	    hex	filename
-> 4913961	1088356	 861512	6863829	 68bbd5	vmlinux.orig
-> 4900252	1057412	 861512	6819176	 680d68	vmlinux.regs
-> 4900375	1053380	 861512	6815267	 67fe23	vmlinux.fields
-> 
+Hi
 
-It also saves memory allocated by trace_define_field(). :)
+Thanks for the reply
 
-> Although the text increased, this was mainly due to the C files
-> having to adapt to the change. This is a constant increase, where
-> new tracepoints will not increase the Text. But the big drop is
-> in the data size (as well as needed allocations to hold the fields).
-> This will give even more savings as more tracepoints are created.
-> 
-> Note, if just TRACE_EVENT()s are used and not DECLARE_EVENT_CLASS()
-> with several DEFINE_EVENT()s, then the savings will be lost. But
-> we are pushing developers to consolidate events with DEFINE_EVENT()
-> so this should not be an issue.
-> 
-> The kprobes define a unique class to every new event, but are dynamic
-> so it should not be a issue.
-> 
-> The syscalls however have a single class but the fields for the individual
-> events are different. The syscalls use a metadata to define the
-> fields. I moved the fields list from the event to the metadata and
-> added a "get_fields()" function to the class. This function is used
-> to find the fields. For normal events and kprobes, get_fields() just
-> returns a pointer to the fields list_head in the class. For syscall
-> events, it returns the fields list_head in the metadata for the event.
-> 
+Initially i was using kernel 2.6.28.5 and kernel panic occurred in that 
+version too
 
-All syscall exit events have the same fields. I'll make a patch for this.
+tproxy is not supported in linux 2.6.32
+
+http://wiki.squid-cache.org/Features/Tproxy4
+
+kindly guide me how to proceed
+
+Regards
+senthil
+
+Justin P. Mattock wrote:
+> On 05/17/2010 09:23 PM, senthilkumaar2021 wrote:
+>> HI
+>>
+>>
+>> I am using iptables version 1.43 and getting the following error in
+>> machine while using squid in tproxy.we are using Linux machine as bridge
+>> too
+>>
+>> i was able to capture part of the error only please help me in solving
+>> the issue
+>>
+>>
+>> [<ffffffffa03933c2>] ? nf_nat_fn+0x138/0x14e [iptable_nat]
+>> [<ffffffffa0393585>] ? nf_nat_in+0x2f/0x6e [iptable_nat]
+>> [<ffffffffa027edaa>] ? br_nf_pre_routing_finish+0x0/
+>> 0x2c4 [bridge]
+>> [<ffffffffa027edfa>] br_nf_pre_routing_finish+0x50/
+>> 0x2c4 [bridge]
+>> [<ffffffffa027edaa>] ? br_nf_pre_routing_finish+0x0/
+>> 0x2c4 [bridge]
+>> [<ffffffff81339a50>] ? nf_hook_slow+0x68/0xc8
+>> [<ffffffffa027edaa>] ? br_nf_pre_routing_finish+0x0/0x2c4 [bridge]
+>> [<ffffffffa027f616>] br_nf_pre_routing+0x5a8/0x5c7 [bridge]
+>> [<ffffffff813399ab>] nf_iterate+0x48/0x85
+>> [<ffffffffa027a931>] ? br_handle_frame_finish+0x0/0x154 [bridge]
+>> [<ffffffff81339a50>] nf_hook_slow+0x68/0xc8
+>> [<ffffffffa027a931>] ? br_handle_frame_finish+0x0/0x154 [bridge]
+>> [<ffffffffa027ac36>] br_handle_frame+0x1b1/0x1db [bridge]
+>> [<ffffffff8131d54b>] netif_receive_skb+0x316/0x434
+>> [<ffffffff8131dbfb>] napi_gro_receive+0x6e/0x83
+>> [<ffffffffa0125bfe>] e1000_receive_skb+0x5c/0x65 [e1000e]
+>> [<ffffffffa0125de8>] e1000_clean_rx_irq+0x1e1/0x28f [e1000e]
+>> [<ffffffffa012730e>] e1000_clean+0x99/0x24a [e1000e]
+>> [<ffffffff813bcfc5>] ? _spin_unlock_irqrestore+0x2c/0x43
+>> [<ffffffff8131ba62>] net_rx_action+0xb8/0x1b4
+>> [<ffffffff8104ed43>] __do_softirq+0x99/0x152
+>> [<ffffffff8101284c>] call_softirq+0x1c/0x30
+>> [<ffffffff81013a02>] do_softirq+0x52/0xb9
+>> [<ffffffff8104e969>] irq_exit+0x53/0x8d
+>> [<ffffffff81013d1a>] do_IRQ+0x135/0x157
+>> [<ffffffff81011f93>] ret_from_intr+0x0/0x2e
+>> <EOI> [<ffffffff81017e20>] ? mwait_idle+0x9e/0xc7
+>> [<ffffffff81017e17>] ? mwait_idle+0x95/0xc7
+>> [<ffffffff813bfd20>] ? atomic_notifier_call_chain+0x13/0x15
+>> [<ffffffff810102f4>] ? enter_idle+0x27/0x2>
+>>
+>> Regards
+>> senthil
+>> -- 
+>> To unsubscribe from this list: send the line "unsubscribe 
+>> linux-kernel" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at http://vger.kernel.org/majordomo-info.html
+>> Please read the FAQ at http://www.tux.org/lkml/
+>>
+>
+>
+> if you can.. find the last good kernel, then
+> do a bisect.
+> (if you need help doing a bisect, there's plenty
+> of people to help you out).
+>
+> Justin P. Mattock
+>
 
