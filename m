@@ -1,102 +1,160 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756693Ab0ERKfU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:35:20 -0400
-Received: from out02.mta.xmission.com ([166.70.13.232]:48615 "EHLO
-	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755785Ab0ERKfR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:35:17 -0400
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>
-References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
-	<m1wrv13dam.fsf@fess.ebiederm.org>
-	<20100518175451.a01e314b.sfr@canb.auug.org.au>
-From: ebiederm@xmission.com (Eric W. Biederman)
-Date: Tue, 18 May 2010 03:35:10 -0700
-In-Reply-To: <20100518175451.a01e314b.sfr@canb.auug.org.au> (Stephen Rothwell's message of "Tue\, 18 May 2010 17\:54\:51 +1000")
-Message-ID: <m1iq6lh50h.fsf@fess.ebiederm.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1756564Ab0ERKoK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:44:10 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:36342 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753736Ab0ERKoH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 06:44:07 -0400
+Date: Tue, 18 May 2010 20:43:51 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100518104351.GF2516@laptop>
+References: <20100512212403.GE3597@localhost.localdomain>
+ <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
+ <20100514010042.GI13617@dastard>
+ <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+ <20100518063647.GD2516@laptop>
+ <20100518080503.GF2150@dastard>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-X-XM-SPF: eid=;;;mid=;;;hst=in01.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
-X-SA-Exim-Connect-IP: 67.188.5.249
-X-SA-Exim-Rcpt-To: sfr@canb.auug.org.au, viro@zeniv.linux.org.uk, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, greg@kroah.com
-X-SA-Exim-Mail-From: ebiederm@xmission.com
-X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
-X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
-X-Spam-Relay-Country: 
-X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
-	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
-	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
-	*      [score: 0.0000]
-	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
-	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
-	*  0.0 XM_SPF_Neutral SPF-Neutral
-	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
-X-SA-Exim-Scanned: Yes (on in01.mta.xmission.com)
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100518080503.GF2150@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell <sfr@canb.auug.org.au> writes:
+On Tue, May 18, 2010 at 06:05:03PM +1000, Dave Chinner wrote:
+> On Tue, May 18, 2010 at 04:36:47PM +1000, Nick Piggin wrote:
+> > Well you could do a large span block allocation at the beginning,
+> > and then dirty the pagecache one by one like we do right now.
+> 
+> The problem is that if we fail to allocate a page (e.g.  ENOMEM) or
+> fail the copy (EFAULT) after the block allocation, we have to undo
+> the allocation we have already completed. If we don't, we leave
+> uninitialisaed allocations on disk that will expose stale data.
+> 
+> In the second case (EFAULT) we might be able to zero the pages to
+> avoid punching out blocks, but the first case where pages can't be
+> allocated to cover the block allocated range makes it very
+> difficult without being able to punch holes in allocated block
+> ranges.
+> 
+> AFAIK, only XFS and OCFS2 currently support punching out arbitrary
+> ranges of allocated blocks from an inode - there is not VFS method
+> for it, just an ioctl (XFS_IOC_UNRESVSP).
+> 
+> Hence the way to avoid needing hole punching is to allocate and lock
+> down all the pages into the page cache fіrst, then do the copy so
+> they fail before the allocation is done if they are going to fail.
+> That makes it much, much easier to handle failures....
 
-> Hi Eric,
->
-> On Tue, 18 May 2010 00:00:01 -0700 ebiederm@xmission.com (Eric W. Biederman) wrote:
->>
->> Stephen what is the easiest way to get a copy of Al's tree so I can take
->> a look to see what needs to happen?
->
-> It is here:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git#for-next
->
-> [The latest list of trees included in linux-next can always be found here:
-> http://git.kernel.org/?p=linux/kernel/git/next/linux-next.git;a=blob;f=Next/Trees]
+So it is just a matter of what is exposed as a vfs interface?
+I would much prefer to make it a requirement to support hole
+punching in the block allocator if the filesystem wishes to do
+such writes.
 
-Thanks.
+If you have an ->allocate(inode, RESERVE/ALLOCATE, interval) API
+then it makes sense to have a DEALLOCATE operation there too.
 
-I will cook up a proper incremental patch after I get some sleep.  Stephen
-it appears those two lines you have commented out are actually unnecessary.
-
-We have
-deactivate_super
-  kill_sb aka sysfs_kill_sb
-    kill_anon_super
-      generic_shutdown_super
-         sb_lock
-         list_del(sb->s_instances)
-         sb_unlock
-  kfree(info)
-
-Nothing generic stomps on s_fs_info.
-
-Which means that if I find a superblock on sb->s_instances sb->s_fs_info
-still points to a valid sysfs_super_info.
-
-
+That seems like it should be cleaner than to work around it if
+we're talking about adding new APIs anyway.
 
 
+> Remember, we still don't do the "truncate blocks past eof on failure"
+> correctly in block_write_begin (still calls vmtruncate, not
+> ->setattr), so we can't claim that the current way of doing things
+> is a model of perfection that we ca't improve on....
 
-As as for the race Al mentions between sysfs_exit_ns and
-sysfs_readdir, I looked and a small race has crept in.  The primary
-prevention of problems is that all matching sysfs_dirents for that
-namespace are required to be removed before sysfs_exit_ns is called.
+Right, but the API (write_begin/write_end) is sufficient now to
+make it work correctly. What should really happen is the
+filesystem detects and handles these error cases.
 
-What remains is the tiniest of races where a namespace structure is
-freed and a new namespace structure of the same type is allocated at
-the same address and sysfs_dirents for it are created, all during the
-a single kernel readdir operation.  Possible with slabs, and
-copy_to_user triggering a page fault.  Still the worst case is that we
-tell userspace some name that it wasn't supposed to see on that mount
-point.  From a userspace point of view this seems to fall under a
-readdir implementations license to return some odd things if the
-directory is changing during the readdir call.  Overall we do preserve
-the property of returning everything that is in the directory between
-opendir and the time readdir his the end of file.
+In the truncate patchset (that deprecates ->truncate and vmtruncate
+entirely), that is exactly what happens.
 
-Eric
+> 
+> > The only reason to do operations on multiple pages at once is if
+> > we need to lock them all. 
+> 
+> Well, to avoid the refaulting of pages we just unmapped we'd need to
+> do that...
+
+Well, the lock/unmap/copy/unlock could be done on a per-page
+basis.
+
+ 
+> > Now the fs might well have that requirement
+> > (if it is not using i_mutex for block (de)allocation
+> > serialisation), but I don't think generic code needs to be doing
+> > that.
+> 
+> XFS already falls into the category of a filesystem using the
+> generic code that does not use i_mutex for allocation serialisation.
+> I'm sure it isn't the only filesystem that this is true for, so it
+> seems sensible for the generic code to handle this case.
+
+Well, does it need page lock? All pages locked concurrently in
+a range under which block allocation is happening? I would much
+prefer an allocation API that supports allocation/freeing
+without requiring any pagecache at all.
+
+ 
+> > Basically, once pagecache is marked uptodate, I don't think we should
+> > ever put maybe-invalid data into it -- the way to do it is to invalidate
+> > that page and put a *new* page in there.
+> 
+> Ok, so lets do that...
+> 
+> > Why? Because user mappings are just one problem, but once you had a
+> > user mapping, you can have been subject to get_user_pages, so it could
+> > be in the middle of a DMA operation or something.
+> 
+> ... because we already know this behaviour causes problems for
+> high end enterprise level features like hardware checksumming IO
+> paths.
+> 
+> Hence it seems that a multipage write needs to:
+> 
+> 	1. allocate new pages
+> 	2. attach bufferheads/mapping structures to pages (if required)
+> 	3. copy data into pages
+> 	4. allocate space
+> 	5. for each old page in the range:
+> 		lock page
+> 		invalidate mappings
+> 		clear page uptodate flag
+> 		remove page from page cache
+> 	6. for each new page:
+> 		map new page to allocated space
+> 		lock new page
+> 		insert new page into pagecache
+> 		update new page state (write_end equivalent)
+> 		unlock new page
+> 	7. free old pages
+> 
+> Steps 1-4 can all fail, and can all be backed out from without
+> changing the current state. Steps 5-7 can't fail AFAICT, so we
+> should be able to run this safely after the allocation without
+> needing significant error unwinding...
+> 
+> Thoughts?
+
+Possibly. The importance of hot cache is reduced, because we are
+doing full-page copies, and bulk copies, by definition. But it
+could still be an issue. The allocations and deallocations could
+cost a little as well.
+
+Compared to having a nice API to just do bulk allocate/free block
+operations and then just doing simple per-page copies, I think it
+doesn't look so nice.
+
