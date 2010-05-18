@@ -1,59 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755797Ab0ERHUl (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 03:20:41 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:59890 "EHLO toro.web-alm.net"
+	id S1755908Ab0ERH1P (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 03:27:15 -0400
+Received: from e8.ny.us.ibm.com ([32.97.182.138]:56218 "EHLO e8.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754999Ab0ERHUj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 03:20:39 -0400
-Message-ID: <4BF23E03.40902@osadl.org>
-Date: Tue, 18 May 2010 09:13:07 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL) eG
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dmitry Gromov <gromovd@gmail.com>
-CC: "Wan, Huaxu" <huaxu.wan@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       LM Sensors <lm-sensors@lm-sensors.org>
-Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current Intel
- 	processors
-References: <20100510035031.GD9181@owl> <20100514065808.GA11598@owl> 	<20100517094136.094800562@osadl.org> <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com> 	<625BA99ED14B2D499DC4E29D8138F150181F574C31@shsmsx502.ccr.corp.intel.com> <AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com>
-In-Reply-To: <AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S1752379Ab0ERH1L (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 03:27:11 -0400
+Subject: Re: [RFC, 6/7] NUMA hotplug emulator
+From: Dave Hansen <dave@linux.vnet.ibm.com>
+To: Shaohui Zheng <shaohui.zheng@intel.com>
+Cc: Greg KH <gregkh@suse.de>, akpm@linux-foundation.org, linux-mm@kvack.org,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andi Kleen <ak@linux.intel.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
+       shaohui.zheng@linux.intel.com
+In-Reply-To: <20100518054121.GA25298@shaohui>
+References: <20100513120016.GG2169@shaohui> <20100513165603.GC25212@suse.de>
+	 <1273773737.13285.7771.camel@nimitz> <20100513181539.GA26597@suse.de>
+	 <1273776578.13285.7820.camel@nimitz>  <20100518054121.GA25298@shaohui>
+Content-Type: text/plain
+Date: Tue, 18 May 2010 00:27:05 -0700
+Message-Id: <1274167625.17463.17.camel@nimitz>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.26.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 08:45 AM, Dmitry Gromov wrote:
-> On Tue, May 18, 2010 at 01:07, Wan, Huaxu<huaxu.wan@intel.com>  wrote:
->> The TjMax of N270 is 90C, according the official documents [1][2].
->> [1] http://ark.intel.com/Product.aspx?id=36331&processor=N270&spec-codes=SLB73
->> [2] http://download.intel.com/design/processor/datashts/319977.pdf
->> Thank you, this is exactly why I'm asking. I think, "guessing" values here
-> can be dangerous - who knows what critical apps they will relied upon.
-Yes, of course. I never wanted to use a guessed and not documented
-value. I only wanted the temperature reading to be plausible.
+On Tue, 2010-05-18 at 13:41 +0800, Shaohui Zheng wrote:
+> On Thu, May 13, 2010 at 11:49:38AM -0700, Dave Hansen wrote:
+> the configfs was introduced in 2005, you can refer to http://lwn.net/Articles/148973/.
+> 
+> I enabled the configfs, and I see that the configfs is not so popular as we expected,
+> I mount configfs to /sys/kernel/config, I get an empty directory. It means that nobody is 
+> using this file system, it is an interesting thing, is it means that configfs is deprecated?
+> If so, it might not be nessarry to develop a configfs interface for hotplug.
 
-> And 90C seems to be good for N200 series of Atom CPUs only - I could not
-> find TjMax value published for N330 Dual Core  (quite popular one). Intel
-> only published Tcase for it:
-> http://ark.intel.com/Product.aspx?id=35641
-> So, if for N270 Tcase = TjMax = 90C, then, I'd suggest to use Tcase = 85.2C
-> for N330 TjMax value.
-They have the same CPU model ID:
+Uh, deprecated?  What would make you think that?  It does look like the
+users are a we bit obscure, but that's a bit far from deprecated.
 
-# grep model /proc/cpuinfo
-model		: 28
-model name	: Intel(R) Atom(TM) CPU N270   @ 1.60GHz
+> Dave & Greg,
+> 	Can you provide an exmample to use configfs as interface in Linux kernel, I want to get
+> a live demo, thanks.
 
-# grep model /proc/cpuinfo
-model		: 28
-model name	: Intel(R) Atom(TM) CPU  330   @ 1.60GHz
+Heh.  There are some great tools out there called cscope and grep.  I
+have them on my system and I bet you can get them on yours too.
 
-I would like to propose to use the patch as it is. It's the best
-version we ever had.
+That said, you're right.  There don't seem to be a ton of users of it
+these days.  But, the LWN article you referenced also pointed to at
+least one user.  So, please try and put a wee bit of effort into it.
 
-	Carsten.
+Maybe configfs isn't the way to go.  I just think extending the 'probe'
+file is a bad idea, especially in the way your patch did it.  I'm open
+to other alternatives.  Since this is only for testing, perhaps debugfs
+applies better.  What other alternatives have you explored?  How about a
+Systemtap set to do it? :)
+
+-- Dave
+
