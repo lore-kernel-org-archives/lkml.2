@@ -1,41 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754764Ab0ERU7j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 16:59:39 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34617
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752881Ab0ERU7h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 16:59:37 -0400
-Date: Tue, 18 May 2010 13:59:45 -0700 (PDT)
-Message-Id: <20100518.135945.180391159.davem@davemloft.net>
-To: mpm@selenic.com
-Cc: herbert@gondor.hengli.com.au, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, penberg@cs.helsinki.fi,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1274211235.11603.1205.camel@calx>
-References: <20100518102701.GA7293@gondor.apana.org.au>
-	<20100518.122512.73694279.davem@davemloft.net>
-	<1274211235.11603.1205.camel@calx>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1753434Ab0ERVCb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:02:31 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62089 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751441Ab0ERVCa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:02:30 -0400
+Date: Tue, 18 May 2010 17:02:26 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Cc: linux-kernel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: [PATCH 1/4] cfq-iosched: Keep track of average think time for
+	the sync-noidle workload.
+Message-ID: <20100518210226.GD12330@redhat.com>
+References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com> <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274206820-17071-2-git-send-email-jmoyer@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Mackall <mpm@selenic.com>
-Date: Tue, 18 May 2010 14:33:55 -0500
+On Tue, May 18, 2010 at 02:20:17PM -0400, Jeff Moyer wrote:
+> This patch uses an average think time for the entirety of the sync-noidle
+> workload to determine whether or not to idle on said workload.  This brings
+> it more in line with the policy for the sync queues in the sync workload.
+> 
+> Testing shows that this provided an overall increase in throughput for
+> a mixed workload on my hardware RAID array.
+> 
+> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
+> ---
+>  block/cfq-iosched.c |   44 +++++++++++++++++++++++++++++++++++++++-----
+>  1 files changed, 39 insertions(+), 5 deletions(-)
+> 
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 838834b..46a7fe5 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -83,9 +83,14 @@ struct cfq_rb_root {
+>  	unsigned total_weight;
+>  	u64 min_vdisktime;
+>  	struct rb_node *active;
+> +	unsigned long last_end_request;
+> +	unsigned long ttime_total;
+> +	unsigned long ttime_samples;
+> +	unsigned long ttime_mean;
+>  };
+>  #define CFQ_RB_ROOT	(struct cfq_rb_root) { .rb = RB_ROOT, .left = NULL, \
+> -			.count = 0, .min_vdisktime = 0, }
+> +			.count = 0, .min_vdisktime = 0, .last_end_request = 0, \
+> +			.ttime_total = 0, .ttime_samples = 0, .ttime_mean = 0 }
+>  
+>  /*
+>   * Per process-grouping structure
+> @@ -962,8 +967,10 @@ cfq_find_alloc_cfqg(struct cfq_data *cfqd, struct cgroup *cgroup, int create)
+>  		goto done;
+>  
+>  	cfqg->weight = blkcg->weight;
+> -	for_each_cfqg_st(cfqg, i, j, st)
+> +	for_each_cfqg_st(cfqg, i, j, st) {
+>  		*st = CFQ_RB_ROOT;
+> +		st->last_end_request = jiffies;
+> +	}
+>  	RB_CLEAR_NODE(&cfqg->rb_node);
+>  
+>  	/*
+> @@ -1795,9 +1802,12 @@ static bool cfq_should_idle(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+>  
+>  	/*
+>  	 * Otherwise, we do only if they are the last ones
+> -	 * in their service tree.
+> +	 * in their service tree and the average think time is
+> +	 * less than the slice length.
+>  	 */
+> -	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq))
+> +	if (service_tree->count == 1 && cfq_cfqq_sync(cfqq) &&
+> +	    (!sample_valid(service_tree->ttime_samples || 
+> +	     cfqq->slice_end - jiffies < service_tree->ttime_mean)))
+>  		return 1;
 
-> SLOB honors ARCH_KMALLOC_MINALIGN. If your arch has alignment
-> requirements, I recommend you set it.
+This comparision will also might break some logic in select_queue() where
+we wait for a queue/group to get busy even if queue's time slice has
+expired.
 
-I recommend that the alignment provided by the allocator is not
-determined by which allocator I happen to have enabled.
+********************************************************************
+if (cfq_slice_used(cfqq) && !cfq_cfqq_must_dispatch(cfqq)) {
+                /*
+                 * If slice had not expired at the completion of last
+                 * request
+                 * we might not have turned on wait_busy flag. Don't
+                 * expire
+                 * the queue yet. Allow the group to get backlogged.
+                 *
+                 * The very fact that we have used the slice, that means
+                 * we
+                 * have been idling all along on this queue and it should
+                 * be
+                 * ok to wait for this request to complete.
+                 */
+                if (cfqq->cfqg->nr_cfqq == 1 && RB_EMPTY_ROOT(&cfqq->sort_list)
+                    && cfqq->dispatched && cfq_should_idle(cfqd, cfqq)) {
+                        cfqq = NULL;
+                        goto keep_queue;
+		}
 
-The values and ifdef'ery should be identical in all of our
-allocators.
+*************************************************************************
+
+With this change, now above condition will never be true as
+cfq_should_idle() will always return false as slice has already expired.
+And that will affect group loosing its fair share.
+
+So I guess we can define new functions to check more conditions instead of
+putting it in cfq_should_idle()
+
+Vivek
