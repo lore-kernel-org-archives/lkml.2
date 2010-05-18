@@ -1,66 +1,136 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755526Ab0ERHDK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 03:03:10 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:60309 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752159Ab0ERHDG (ORCPT
+	id S1754579Ab0ERHHV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 03:07:21 -0400
+Received: from mtagate6.de.ibm.com ([195.212.17.166]:41969 "EHLO
+	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752189Ab0ERHHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 03:03:06 -0400
-Date: Tue, 18 May 2010 09:40:22 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext James Bottomley <James.Bottomley@suse.de>
-Cc: "me@felipebalbi.com" <me@felipebalbi.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100518064022.GA6522@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <Pine.LNX.4.44L0.1005151716180.24645-100000@netrider.rowland.org>
- <87hbm6cz90.fsf@deeprootsystems.com>
- <1274115885.4418.59.camel@mulgrave.site>
- <20100517174647.GA11512@gandalf>
- <1274119179.4418.68.camel@mulgrave.site>
- <20100517181252.GA14260@gandalf>
- <1274124267.4418.149.camel@mulgrave.site>
- <20100517193840.GB14047@gandalf>
- <20100517193952.GC14047@gandalf>
- <1274125775.4418.182.camel@mulgrave.site>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <1274125775.4418.182.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 18 May 2010 06:42:25.0275 (UTC) FILETIME=[46BA54B0:01CAF655]
-X-Nokia-AV: Clean
+	Tue, 18 May 2010 03:07:18 -0400
+Date: Tue, 18 May 2010 09:07:16 +0200
+From: Martin Schwidefsky <schwidefsky@de.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-s390 <linux-s390@vger.kernel.org>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>
+Subject: [GIT PULL] s390 patches for the 2.6.35 merge window
+Message-ID: <20100518090716.78a9884b@mschwide.boeblingen.de.ibm.com>
+Organization: IBM Corporation
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 09:49:35PM +0200, ext James Bottomley wrote:
->Right, because Firmware writers are from the rugged unresponsive uplands
->of planet
->ignore-user-complaints-and-eat-them-for-breakfast-if-they-file-bugs and
->Software writers are from the emollient responsive groves of planet
->harmony.  Obviously what would work for one wouldn't work for the other.
->
->As a software writer, I fully buy into that world view.  The trouble is
->that when I go to dinner with hardware people, they seem to be awfully
->nice chaps ... almost exactly like me, in fact ...
+Hi Linus,
 
-what does this add to suspend_blockers discussion ?
+please pull from 'for-linus' branch of
 
--- 
-balbi
+	git://git390.marist.edu/pub/scm/linux-2.6.git for-linus
 
-DefectiveByDesign.org
+to receive the following updates:
+
+Carsten Otte (1):
+      [S390] virtualization aware cpu measurement
+
+Christoph Egger (1):
+      [S390] vdso: remove redundant check for CONFIG_64BIT
+
+Heiko Carstens (4):
+      [S390] vmcp: disallow modular build
+      [S390] topology: expose core identifier
+      [S390] user space fault: report fault before calling do_exit
+      [S390] debug: enable exception-trace debug facility
+
+Hendrik Brueckner (1):
+      [S390] vdso: add missing vdso_install target
+
+Jan Glauber (6):
+      [S390] qdio: count number of qdio interrupts
+      [S390] qdio: prevent starvation on PCI devices
+      [S390] qdio: remove memset hack
+      [S390] qdio: dont convert timestamps to microseconds
+      [S390] qdio: set correct bit in dsci
+      [S390] qdio: remove API wrappers
+
+Julia Lawall (2):
+      [S390] drivers/s390/char: Use kstrdup
+      [S390] drivers/s390/char: Use kmemdup
+
+Martin Schwidefsky (6):
+      [S390] More cleanup for struct _lowcore
+      [S390] cleanup sysc_work and io_work code
+      [S390] improve irq tracing code in entry[64].S
+      [S390] idle time accounting vs. machine checks
+      [S390] add breaking event address for user space
+      [S390] avoid default_llseek in s390 drivers
+
+Michael Holzheu (1):
+      [S390] s390_hypfs: Add new attributes
+
+Stefan Haberland (2):
+      [S390] dasd: add dynamic pav toleration
+      [S390] dasd: remove uid from devmap
+
+ arch/s390/Kconfig                   |    7 -
+ arch/s390/Makefile                  |    6 +
+ arch/s390/hypfs/hypfs.h             |    4 +
+ arch/s390/hypfs/hypfs_diag.c        |  123 +++++++-
+ arch/s390/hypfs/hypfs_vm.c          |   87 +++++-
+ arch/s390/hypfs/inode.c             |   42 ++-
+ arch/s390/include/asm/cputime.h     |    9 +-
+ arch/s390/include/asm/lowcore.h     |   89 +++---
+ arch/s390/include/asm/ptrace.h      |    3 +-
+ arch/s390/include/asm/qdio.h        |    2 -
+ arch/s390/include/asm/setup.h       |    5 +-
+ arch/s390/include/asm/system.h      |    5 -
+ arch/s390/include/asm/thread_info.h |    1 +
+ arch/s390/include/asm/timex.h       |    8 +-
+ arch/s390/include/asm/topology.h    |    2 +
+ arch/s390/kernel/asm-offsets.c      |    6 +-
+ arch/s390/kernel/debug.c            |    1 +
+ arch/s390/kernel/early.c            |    4 +
+ arch/s390/kernel/entry.S            |  324 ++++++++-----------
+ arch/s390/kernel/entry64.S          |  617 +++++++++++++++++------------------
+ arch/s390/kernel/head.S             |    4 +-
+ arch/s390/kernel/nmi.c              |    3 +-
+ arch/s390/kernel/processor.c        |   37 ++-
+ arch/s390/kernel/ptrace.c           |   68 ++++
+ arch/s390/kernel/s390_ext.c         |    3 +-
+ arch/s390/kernel/setup.c            |   27 +--
+ arch/s390/kernel/signal.c           |    2 +
+ arch/s390/kernel/topology.c         |    7 +-
+ arch/s390/kernel/traps.c            |   31 +-
+ arch/s390/kernel/vdso.c             |    4 -
+ arch/s390/kernel/vtime.c            |   15 +-
+ arch/s390/kvm/Kconfig               |   11 +
+ arch/s390/kvm/sie64a.S              |   77 ++++-
+ arch/s390/mm/fault.c                |   32 +-
+ drivers/s390/block/dasd.c           |   22 ++
+ drivers/s390/block/dasd_3990_erp.c  |   20 ++
+ drivers/s390/block/dasd_alias.c     |  125 +++++---
+ drivers/s390/block/dasd_devmap.c    |  174 ++++------
+ drivers/s390/block/dasd_eckd.c      |  116 ++++++-
+ drivers/s390/block/dasd_eckd.h      |    2 +-
+ drivers/s390/block/dasd_int.h       |   49 ++--
+ drivers/s390/char/Kconfig           |    3 +-
+ drivers/s390/char/fs3270.c          |    1 +
+ drivers/s390/char/keyboard.c        |   21 +-
+ drivers/s390/char/vmcp.c            |   38 +--
+ drivers/s390/char/zcore.c           |    4 +-
+ drivers/s390/cio/chsc_sch.c         |    1 +
+ drivers/s390/cio/cio.c              |    3 +-
+ drivers/s390/cio/css.c              |    8 +-
+ drivers/s390/cio/qdio.h             |   15 +-
+ drivers/s390/cio/qdio_main.c        |   67 +---
+ drivers/s390/cio/qdio_setup.c       |    8 +-
+ drivers/s390/cio/qdio_thinint.c     |    4 +-
+ drivers/s390/crypto/zcrypt_api.c    |    2 +-
+ drivers/s390/net/qeth_core_main.c   |   17 +-
+ drivers/s390/scsi/zfcp_cfdc.c       |    1 +
+ include/linux/elf.h                 |    1 +
+ kernel/sysctl.c                     |    5 +-
+ 58 files changed, 1369 insertions(+), 1004 deletions(-)
+
