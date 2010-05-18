@@ -1,60 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757015Ab0ERIoR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 04:44:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33290 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752654Ab0ERIoO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 04:44:14 -0400
-Date: Tue, 18 May 2010 10:44:10 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Alan Ott <alan@signal11.us>
-Cc: Marcel Holtmann <marcel@holtmann.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       H Hartley Sweeten <hsweeten@visionengravers.com>,
-       David Fries <david@fries.net>, linux-usb@vger.kernel.org,
-       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/1] hidraw: Use Interrupt Endpoint for OUT Transfers if
- Available
-In-Reply-To: <4BF06C8D.6060308@signal11.us>
-Message-ID: <alpine.LNX.2.00.1005181043390.28092@pobox.suse.cz>
-References: <4BF06C8D.6060308@signal11.us>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1756951Ab0ERIp5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 04:45:57 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:54391 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752654Ab0ERIp4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 04:45:56 -0400
+Date: Tue, 18 May 2010 10:45:51 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Robert Hancock <hancockrwd@gmail.com>
+Cc: Andreas Herrmann <andreas.herrmann3@amd.com>,
+       Yuhong Bao <yuhongbao_386@hotmail.com>, venkatesh.pallipadi@intel.com,
+       markh@compro.net, dmarkh@cfl.rr.com, andi@firstfloor.org,
+       Linus Torvalds <torvalds@linux-foundation.org>, alain@knaff.lu,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Disable HPET MSI on ATI SB700/SB800
+Message-ID: <20100518084551.GA22675@basil.fritz.box>
+References: <4B32565E.6000501@compro.net> <20091223191806.GA3336@linux-os.sc.intel.com> <4B3270FE.5090607@compro.net> <1261600243.16916.56.camel@localhost.localdomain> <4B476E8D.1030308@compro.net> <20100121190952.GA32523@linux-os.sc.intel.com> <SNT125-W12BC46C506A5BB777A06B5C3610@phx.gbl> <20100125171059.GB5041@alberich.amd.com> <20100517145943.GV5888@alberich.amd.com> <4BF1E5BE.9010000@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF1E5BE.9010000@gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 16 May 2010, Alan Ott wrote:
+> If one wanted, you could disable HPET MSI on this chipset only when a 
+> driver requests an ISA DMA channel. Then if there's no floppy or other LPC 
+> DMA device present, it can stay enabled. I don't know if it's worth the 
+> trouble, though.
 
-> From: Alan Ott <alan@signal11.us>
-> 
-> This patch makes the hidraw driver use the first Interrupt OUT endpoint for
-> HID transfers to the device if such an endpoint exists. This is consistent
-> with the behavior of the hiddev driver, and the logic is similar.
-> 
-> Signed-off-by: Alan Ott <alan@signal11.us>
-> ---
-> I believe this to be consistent with the section 4.4 of the HID 1.11
-> specification located at:
->     http://www.usb.org/developers/devclass_docs/HID1_11.pdf
-> 
-> >From the specification (page numbered 10, the 20th page of the document
-> (xpdf page 20)):
-> 
->    The Interrupt Out pipe is optional. If a device declares an Interrupt Out
->    endpoint then Output reports are transmitted by the host to the device
->    through the Interrupt Out endpoint. If no Interrupt Out endpoint is
->    declared then Output reports are transmitted to a device through the
->    Control endpoint, using Set_Report(Output) requests.
-> 
-> This is also consistent with the way the Windows HID library (hid.dll)
-> works.
+There can be LPC devices which are not visible to the kernel,
+but only used through ACPI or the BIOS. Think of fancy fan
+controllers and similar.
 
-Yes, this definitely is a proper improvement. Thanks Alan, I have queued 
-the patch.
-
+-Andi
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+ak@linux.intel.com -- Speaking for myself only.
