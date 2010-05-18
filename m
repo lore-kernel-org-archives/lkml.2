@@ -1,95 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758099Ab0ERTa4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 15:30:56 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:49799 "EHLO mx2.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755766Ab0ERTay (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 15:30:54 -0400
-Date: Tue, 18 May 2010 21:30:22 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: "Luck, Tony" <tony.luck@intel.com>
-Cc: Joe Perches <joe@perches.com>, Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Borislav Petkov <bp@amd64.org>, "Young, Brent" <brent.young@intel.com>
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100518193022.GB30936@elte.hu>
-References: <4BF18995.6070008@redhat.com>
- <4BF2392A.9040409@jp.fujitsu.com>
- <4BF2C3D1.10009@redhat.com>
- <1274204560.17703.82.camel@Joe-Laptop.home>
- <20100518185305.GA23921@elte.hu>
- <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com>
+	id S1758092Ab0ERTcq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 15:32:46 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:32197 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757562Ab0ERTco (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 15:32:44 -0400
+Date: Tue, 18 May 2010 12:32:05 -0700
+From: Joel Becker <Joel.Becker@oracle.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 4/5] fs/ocfs2/dlm: Drop memory allocation cast
+Message-ID: <20100518193205.GD3239@mail.oracle.com>
+Mail-Followup-To: Julia Lawall <julia@diku.dk>,
+	Mark Fasheh <mfasheh@suse.com>, ocfs2-devel@oss.oracle.com,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+References: <Pine.LNX.4.64.1005112027000.4330@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: 0.5
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=0.5 required=5.9 tests=BAYES_40 autolearn=no SpamAssassin version=3.2.5
-	0.5 BAYES_40               BODY: Bayesian spam probability is 20 to 40%
-	[score: 0.2260]
+In-Reply-To: <Pine.LNX.4.64.1005112027000.4330@ask.diku.dk>
+X-Burt-Line: Trees are cool.
+X-Red-Smith: Ninety feet between bases is perhaps as close as man has ever
+ come to perfection.
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090202.4BF2EB57.0193:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Luck, Tony <tony.luck@intel.com> wrote:
-
-> > It makes sense to use the kernel's performance events 
-> > logging framework when we are logging events about how the 
-> > system performs.
+On Tue, May 11, 2010 at 08:28:14PM +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Perhaps it makes more sense to say that the Linux 
-> "performance events logging framework" has become more 
-> generic and is really now an "event logging framework".
-
-Yeah, it essentially is.
-
-> > Furthermore it's NMI safe, offers structured logging, 
-> > has various streaming, multiplexing and filtering 
-> > capabilities that come handy for RAS purposes and 
-> > more.
+> Drop cast on the result of kmalloc and similar functions.
 > 
-> Those of us present at the mini-summit were not familiar 
-> with all the features available. One area of concern was 
-> how to be sure that something is in fact listening to 
-> and logging the error events.  My understanding is that 
-> if there is no process attached to an event, the kernel 
-> will just drop it.  This is of particular concern 
-> because the kernel's first scan of the machine check 
-> banks occurs before there are any processes. So errors 
-> found early in boot (which might be saved fatal errors 
-> from before the boot) might be lost.
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> type T;
+> @@
+> 
+> - (T *)
+>   (\(kmalloc\|kzalloc\|kcalloc\|kmem_cache_alloc\|kmem_cache_zalloc\|
+>    kmem_cache_alloc_node\|kmalloc_node\|kzalloc_node\)(...))
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
 
-I proposed a (fairly straightforward) extension to which 
-Boris agreed: we can introduce 'persistent events', which 
-have task-less buffers attached to them, which will hold 
-(a configurable amount of) of events.
+This patch is now in the merge-window branch of ocfs2.git.
 
-Those can then be picked up by a task later on and no 
-event is lost.
+Joel
 
-Would such a feature address your concern?
+-- 
 
-It would be useful not just for reliable error event 
-collection, it could also be used for things like the boot 
-tracer (which too deals with events that occur before 
-there are any user-space tasks to pick up events).
+Viro's Razor:
+	Any race condition, no matter how unlikely, will occur just
+	often enough to bite you.
 
-I.e. it fits into the whole scheme in a pretty natural, 
-multi-purpose way.
-
-Thanks,
-
-	Ingo
+Joel Becker
+Principal Software Developer
+Oracle
+E-mail: joel.becker@oracle.com
+Phone: (650) 506-8127
