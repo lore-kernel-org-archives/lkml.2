@@ -1,257 +1,143 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757013Ab0ERK3m (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 06:29:42 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:37784 "EHLO
-	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756564Ab0ERK3e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 06:29:34 -0400
+	id S1757035Ab0ERKa5 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 06:30:57 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:6931 "EHLO SMTP02.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757016Ab0ERK3o (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 06:29:44 -0400
 X-IronPort-AV: E=Sophos;i="4.53,254,1272859200"; 
-   d="scan'208";a="97477175"
+   d="scan'208";a="97477216"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Jeremy Fitzhardinge <jeremy@goop.org>,
        Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       Stefano Stabellini <stefano.stabellini@eu.citrix.com>,
-       "Yaozu (Eddie) Dong" <eddie.dong@intel.com>
-Subject: [PATCH 02/12] early PV on HVM
-Date: Tue, 18 May 2010 11:22:57 +0100
-Message-Id: <1274178187-20602-2-git-send-email-stefano.stabellini@eu.citrix.com>
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 12/12] Initialize xenbus device structs with ENODEV as default state
+Date: Tue, 18 May 2010 11:23:07 +0100
+Message-Id: <1274178187-20602-12-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.5.4.3
 In-Reply-To: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
 References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop>
-X-OriginalArrivalTime: 18 May 2010 10:19:57.0185 (UTC) FILETIME=[AA45BF10:01CAF673]
+X-OriginalArrivalTime: 18 May 2010 10:20:15.0450 (UTC) FILETIME=[B528C3A0:01CAF673]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sheng Yang <sheng@linux.intel.com>
+From: Don Dutile <ddutile@redhat.com>
 
-Initialize basic pv on hvm features in xen_guest_init.
+this way if xenbus isn't configured in a FV xen guest,
+loading pv drivers (like netfront) won't crash the guest.
 
+Signed-off-by: Don Dutile <ddutile@redhat.com>
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-Signed-off-by: Yaozu (Eddie) Dong <eddie.dong@intel.com>
 ---
- arch/x86/kernel/setup.c           |    2 +
- arch/x86/xen/enlighten.c          |   87 +++++++++++++++++++++++++++++++++++++
- drivers/input/xen-kbdfront.c      |    2 +-
- drivers/video/xen-fbfront.c       |    2 +-
- drivers/xen/xenbus/xenbus_probe.c |   21 ++++++++-
- include/xen/xen.h                 |    2 +
- 6 files changed, 111 insertions(+), 5 deletions(-)
+ drivers/xen/xenbus/xenbus_probe.c |   29 +++++++++++++++++++++++++----
+ drivers/xen/xenbus/xenbus_probe.h |    1 +
+ 2 files changed, 26 insertions(+), 4 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index c4851ef..ae9b6cb 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -69,6 +69,7 @@
- #include <linux/tboot.h>
- 
- #include <video/edid.h>
-+#include <xen/xen.h>
- 
- #include <asm/mtrr.h>
- #include <asm/apic.h>
-@@ -1032,6 +1033,7 @@ void __init setup_arch(char **cmdline_p)
- 	probe_nr_irqs_gsi();
- 
- 	kvm_guest_init();
-+	xen_guest_init();
- 
- 	e820_reserve_resources();
- 	e820_mark_nosave_regions(max_low_pfn);
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index 65d8d79..87a3b10 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -35,6 +35,8 @@
- #include <xen/interface/version.h>
- #include <xen/interface/physdev.h>
- #include <xen/interface/vcpu.h>
-+#include <xen/interface/memory.h>
-+#include <xen/interface/hvm/hvm_op.h>
- #include <xen/features.h>
- #include <xen/page.h>
- #include <xen/hvc-console.h>
-@@ -56,6 +58,7 @@
- #include <asm/tlbflush.h>
- #include <asm/reboot.h>
- #include <asm/stackprotector.h>
-+#include <asm/hypervisor.h>
- 
- #include "xen-ops.h"
- #include "mmu.h"
-@@ -1206,3 +1209,87 @@ asmlinkage void __init xen_start_kernel(void)
- 	x86_64_start_reservations((char *)__pa_symbol(&boot_params));
- #endif
- }
-+
-+static uint32_t xen_cpuid_base(void)
-+{
-+	uint32_t base, eax, ebx, ecx, edx;
-+	char signature[13];
-+
-+	for (base = 0x40000000; base < 0x40010000; base += 0x100) {
-+		cpuid(base, &eax, &ebx, &ecx, &edx);
-+		*(uint32_t*)(signature + 0) = ebx;
-+		*(uint32_t*)(signature + 4) = ecx;
-+		*(uint32_t*)(signature + 8) = edx;
-+		signature[12] = 0;
-+
-+		if (!strcmp("XenVMMXenVMM", signature) && ((eax - base) >= 2))
-+			return base;
-+	}
-+
-+	return 0;
-+}
-+
-+static int init_hvm_pv_info(int *major, int *minor)
-+{
-+	uint32_t eax, ebx, ecx, edx, pages, msr, base;
-+	u64 pfn;
-+
-+	base = xen_cpuid_base();
-+	if (!base)
-+		return -EINVAL;
-+
-+	cpuid(base + 1, &eax, &ebx, &ecx, &edx);
-+
-+	*major = eax >> 16;
-+	*minor = eax & 0xffff;
-+	printk(KERN_INFO "Xen version %d.%d.\n", *major, *minor);
-+
-+	cpuid(base + 2, &pages, &msr, &ecx, &edx);
-+
-+	pfn = __pa(hypercall_page);
-+	wrmsr_safe(msr, (u32)pfn, (u32)(pfn >> 32));
-+
-+	xen_setup_features();
-+
-+	pv_info = xen_info;
-+	pv_info.kernel_rpl = 0;
-+
-+	xen_domain_type = XEN_HVM_DOMAIN;
-+
-+	return 0;
-+}
-+
-+static void __init init_shared_info(void)
-+{
-+	struct xen_add_to_physmap xatp;
-+	struct shared_info *shared_info_page;
-+
-+	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
-+	xatp.domid = DOMID_SELF;
-+	xatp.idx = 0;
-+	xatp.space = XENMAPSPACE_shared_info;
-+	xatp.gpfn = __pa(shared_info_page) >> PAGE_SHIFT;
-+	if (HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp))
-+		BUG();
-+
-+	HYPERVISOR_shared_info = (struct shared_info *)shared_info_page;
-+
-+	/* Don't do the full vcpu_info placement stuff until we have a
-+	   possible map and a non-dummy shared_info. */
-+	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-+}
-+
-+void __init xen_guest_init(void)
-+{
-+	int r;
-+	int major, minor;
-+
-+	if (xen_pv_domain())
-+		return;
-+
-+	r = init_hvm_pv_info(&major, &minor);
-+	if (r < 0)
-+		return;
-+
-+	init_shared_info();
-+}
-diff --git a/drivers/input/xen-kbdfront.c b/drivers/input/xen-kbdfront.c
-index e140816..7451d78 100644
---- a/drivers/input/xen-kbdfront.c
-+++ b/drivers/input/xen-kbdfront.c
-@@ -339,7 +339,7 @@ static struct xenbus_driver xenkbd_driver = {
- 
- static int __init xenkbd_init(void)
- {
--	if (!xen_domain())
-+	if (!xen_domain() || xen_hvm_domain())
- 		return -ENODEV;
- 
- 	/* Nothing to do if running in dom0. */
-diff --git a/drivers/video/xen-fbfront.c b/drivers/video/xen-fbfront.c
-index fa97d3e..a105a19 100644
---- a/drivers/video/xen-fbfront.c
-+++ b/drivers/video/xen-fbfront.c
-@@ -684,7 +684,7 @@ static struct xenbus_driver xenfb_driver = {
- 
- static int __init xenfb_init(void)
- {
--	if (!xen_domain())
-+	if (!xen_domain() || xen_hvm_domain())
- 		return -ENODEV;
- 
- 	/* Nothing to do if running in dom0. */
 diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-index 3479332..0b05b62 100644
+index f83e083..5e8dae6 100644
 --- a/drivers/xen/xenbus/xenbus_probe.c
 +++ b/drivers/xen/xenbus/xenbus_probe.c
-@@ -56,6 +56,8 @@
- #include <xen/events.h>
- #include <xen/page.h>
- 
-+#include <xen/hvm.h>
+@@ -188,6 +188,11 @@ static struct xen_bus_type xenbus_frontend = {
+ 	.levels = 2, 		/* device/type/<id> */
+ 	.get_bus_id = frontend_bus_id,
+ 	.probe = xenbus_probe_frontend,
++	/* 
++	 * to ensure loading pv-on-hvm drivers on FV guest
++	 * doesn't blow up trying to use uninit'd xenbus.
++	 */
++	.error = -ENODEV,
+ 	.bus = {
+ 		.name      = "xen",
+ 		.match     = xenbus_match,
+@@ -352,6 +357,9 @@ int xenbus_register_driver_common(struct xenbus_driver *drv,
+ 				  struct module *owner,
+ 				  const char *mod_name)
+ {
++	if (bus->error)
++		return bus->error;
 +
- #include "xenbus_comms.h"
- #include "xenbus_probe.h"
+ 	drv->driver.name = drv->name;
+ 	drv->driver.bus = &bus->bus;
+ 	drv->driver.owner = owner;
+@@ -484,8 +492,12 @@ int xenbus_probe_node(struct xen_bus_type *bus,
+ 	struct xenbus_device *xendev;
+ 	size_t stringlen;
+ 	char *tmpstring;
++	enum xenbus_state state;
++
++	if (bus->error)
++		return bus->error;
  
-@@ -806,10 +808,23 @@ static int __init xenbus_probe_init(void)
- 		/* dom0 not yet supported */
- 	} else {
- 		xenstored_ready = 1;
--		xen_store_evtchn = xen_start_info->store_evtchn;
--		xen_store_mfn = xen_start_info->store_mfn;
-+		if (xen_hvm_domain()) {
-+			uint64_t v = 0;
-+			err = hvm_get_parameter(HVM_PARAM_STORE_EVTCHN, &v);
-+			if (err)
-+				goto out_error;
-+			xen_store_evtchn = (int)v;
-+			err = hvm_get_parameter(HVM_PARAM_STORE_PFN, &v);
-+			if (err)
-+				goto out_error;
-+			xen_store_mfn = (unsigned long)v;
-+			xen_store_interface = ioremap(xen_store_mfn << PAGE_SHIFT, PAGE_SIZE);
-+		} else {
-+			xen_store_evtchn = xen_start_info->store_evtchn;
-+			xen_store_mfn = xen_start_info->store_mfn;
-+			xen_store_interface = mfn_to_virt(xen_store_mfn);
-+		}
- 	}
--	xen_store_interface = mfn_to_virt(xen_store_mfn);
+-	enum xenbus_state state = xenbus_read_driver_state(nodename);
++	state = xenbus_read_driver_state(nodename);
  
- 	/* Initialize the interface to xenstore. */
- 	err = xs_init();
-diff --git a/include/xen/xen.h b/include/xen/xen.h
-index a164024..cb8c48b 100644
---- a/include/xen/xen.h
-+++ b/include/xen/xen.h
-@@ -9,8 +9,10 @@ enum xen_domain_type {
+ 	if (state != XenbusStateInitialising) {
+ 		/* Device is not new, so ignore it.  This can happen if a
+@@ -593,6 +605,9 @@ int xenbus_probe_devices(struct xen_bus_type *bus)
+ 	char **dir;
+ 	unsigned int i, dir_n;
  
- #ifdef CONFIG_XEN
- extern enum xen_domain_type xen_domain_type;
-+extern void xen_guest_init(void);
- #else
- #define xen_domain_type		XEN_NATIVE
-+#define xen_guest_init() do { } while (0)
- #endif
++	if (bus->error)
++		return bus->error;
++
+ 	dir = xenbus_directory(XBT_NIL, bus->root, "", &dir_n);
+ 	if (IS_ERR(dir))
+ 		return PTR_ERR(dir);
+@@ -636,7 +651,7 @@ void xenbus_dev_changed(const char *node, struct xen_bus_type *bus)
+ 	char type[XEN_BUS_ID_SIZE];
+ 	const char *p, *root;
  
- #define xen_domain()		(xen_domain_type != XEN_NATIVE)
+-	if (char_count(node, '/') < 2)
++	if (bus->error || char_count(node, '/') < 2)
+ 		return;
+ 
+ 	exists = xenbus_exists(XBT_NIL, node, "");
+@@ -829,8 +844,8 @@ int xenbus_probe_init(void)
+ 	DPRINTK("");
+ 
+ 	/* Register ourselves with the kernel bus subsystem */
+-	err = bus_register(&xenbus_frontend.bus);
+-	if (err)
++	xenbus_frontend.error = bus_register(&xenbus_frontend.bus);
++	if (xenbus_frontend.error)
+ 		goto out_error;
+ 
+ 	err = xenbus_backend_bus_register();
+@@ -923,6 +938,9 @@ static int is_device_connecting(struct device *dev, void *data)
+ 
+ static int exists_connecting_device(struct device_driver *drv)
+ {
++	if (xenbus_frontend.error)
++		return xenbus_frontend.error;
++
+ 	return bus_for_each_dev(&xenbus_frontend.bus, NULL, drv,
+ 				is_device_connecting);
+ }
+@@ -1002,6 +1020,9 @@ static void wait_for_devices(struct xenbus_driver *xendrv)
+ #ifndef MODULE
+ static int __init boot_wait_for_devices(void)
+ {
++	if (!xenbus_frontend.error)
++		return xenbus_frontend.error;
++
+ 	ready_to_wait_for_devices = 1;
+ 	wait_for_devices(NULL);
+ 	return 0;
+diff --git a/drivers/xen/xenbus/xenbus_probe.h b/drivers/xen/xenbus/xenbus_probe.h
+index 6c5e318..15febe4 100644
+--- a/drivers/xen/xenbus/xenbus_probe.h
++++ b/drivers/xen/xenbus/xenbus_probe.h
+@@ -53,6 +53,7 @@ static inline void xenbus_backend_bus_unregister(void) {}
+ struct xen_bus_type
+ {
+ 	char *root;
++	int error;
+ 	unsigned int levels;
+ 	int (*get_bus_id)(char bus_id[XEN_BUS_ID_SIZE], const char *nodename);
+ 	int (*probe)(const char *type, const char *dir);
 -- 
 1.5.4.3
 
