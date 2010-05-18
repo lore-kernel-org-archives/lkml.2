@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756290Ab0ERQ0Y (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:26:24 -0400
-Received: from mail-in-16.arcor-online.net ([151.189.21.56]:52995 "EHLO
-	mail-in-16.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754847Ab0ERQ0T (ORCPT
+	id S1756411Ab0ERQ2b (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:28:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:53813 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754213Ab0ERQ2a (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:26:19 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-13.arcor-online.net 8751D212469
-Subject: [PATCH 2/5] HID: Added further information for Roccat Kone
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-       wylda@volny.cz, Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-       Jerome Vidal <jerom3@free.fr>, linux-kernel@vger.kernel.org,
-       Stefan Achatz <erazor_de@users.sourceforge.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 18:26:15 +0200
-Message-ID: <1274199975.2243.0.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Tue, 18 May 2010 12:28:30 -0400
+Date: Tue, 18 May 2010 09:25:05 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
+       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>, Nick Piggin <npiggin@suse.de>
+Subject: Re: Unexpected splice "always copy" behavior observed
+In-Reply-To: <1274199039.26328.758.camel@gandalf.stny.rr.com>
+Message-ID: <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
+References: <20100518153440.GB7748@Krystal>  <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 0875b1fdc784c60d28d3c5bc02ffcf0f30ccea2c Mon Sep 17 00:00:00 2001
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Date: Sat, 8 May 2010 16:53:31 +0200
-Subject: [PATCH 2/5] HID: Added further information for Roccat Kone
-
-Added new data and changed workaround for abnormal button behaviour
-according to new gained knowledge about Roccat Kone device.
-
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- drivers/hid/hid-roccat-kone.c |   11 ++++++-----
- drivers/hid/hid-roccat-kone.h |   19 ++++++++++++++++---
- 2 files changed, 22 insertions(+), 8 deletions(-)
-
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index d23d309..9d68442 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -928,14 +928,15 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
- 		return 0;
- 
- 	/*
--	 * Firmware 1.38 introduced new behaviour for tilt buttons.
--	 * Pressed tilt button is reported in each movement event.
-+	 * Firmware 1.38 introduced new behaviour for tilt and special buttons.
-+	 * Pressed button is reported in each movement event.
- 	 * Workaround sends only one event per press.
- 	 */
--	if (kone->last_tilt_state == event->tilt)
--		event->tilt = 0;
-+	if (memcmp(&kone->last_mouse_event.tilt, &event->tilt, 5))
-+		memcpy(&kone->last_mouse_event, event,
-+				sizeof(struct kone_mouse_event));
- 	else
--		kone->last_tilt_state = event->tilt;
-+		memset(&event->tilt, 0, 5);
- 
- 	/*
- 	 * handle special events and keep actual profile and dpi values
-diff --git a/drivers/hid/hid-roccat-kone.h b/drivers/hid/hid-roccat-kone.h
-index 99290ad..b413b10 100644
---- a/drivers/hid/hid-roccat-kone.h
-+++ b/drivers/hid/hid-roccat-kone.h
-@@ -80,6 +80,17 @@ enum kone_button_info_types {
- 	kone_button_info_type_multimedia_volume_down = 0x27
- };
- 
-+enum kone_button_info_numbers {
-+	kone_button_top = 1,
-+	kone_button_wheel_tilt_left = 2,
-+	kone_button_wheel_tilt_right = 3,
-+	kone_button_forward = 4,
-+	kone_button_backward = 5,
-+	kone_button_middle = 6,
-+	kone_button_plus = 7,
-+	kone_button_minus = 8,
-+};
-+
- struct kone_light_info {
- 	uint8_t number; /* number of light 1-5 */
- 	uint8_t mod;   /* 1 = on, 2 = off */
-@@ -117,6 +128,7 @@ struct kone_profile {
- 	uint8_t light_effect_speed; /* range 0-255 */
- 
- 	struct kone_light_info light_infos[5];
-+	/* offset is kone_button_info_numbers - 1 */
- 	struct kone_button_info button_infos[8];
- 
- 	uint16_t checksum; /* \brief holds checksum of struct */
-@@ -162,7 +174,7 @@ enum kone_mouse_events {
- 	/* TODO clarify meaning and occurence of kone_mouse_event_calibration */
- 	kone_mouse_event_calibration = 0xc0,
- 	kone_mouse_event_call_overlong_macro = 0xe0,
--	/* switch events notify if user changed values wiht mousebutton click */
-+	/* switch events notify if user changed values with mousebutton click */
- 	kone_mouse_event_switch_dpi = 0xf0,
- 	kone_mouse_event_switch_profile = 0xf1
- };
-@@ -185,8 +197,9 @@ struct kone_device {
- 	 * is no way of getting this information from the device on demand
- 	 */
- 	int actual_profile, actual_dpi;
--	/* Used for neutralizing abnormal tilt button behaviour */
--	int last_tilt_state;
-+	/* Used for neutralizing abnormal button behaviour */
-+	struct kone_mouse_event last_mouse_event;
-+
- 	/*
- 	 * It's unlikely that multiple sysfs attributes are accessed at a time,
- 	 * so only one mutex is used to secure hardware access and profiles and
--- 
-1.6.6.1
 
 
+On Tue, 18 May 2010, Steven Rostedt wrote:
+> 
+> Hopefully we can find a way to avoid the copy to file. But the splice
+> code was created to avoid the copy to and from userspace, it did not
+> guarantee no copy within the kernel itself.
 
+Well, we always _wanted_ to splice directly to a file, but it's just not 
+been done properly. It's not entirely trivial, since you need to worry 
+about preexisting pages and generally just do the right thing wrt the 
+filesystem.
+
+And no, it should NOT use migration code. I suspect you could do something 
+fairly simple like:
+
+ - get the inode semaphore.
+ - check if the splice is a pure "extend size" operation for that page
+ - if so, just create the page cache entry and mark it dirty
+ - otherwise, fall back to copying.
+
+because the "extend file" case is the easiest one, and is likely the only 
+one that matters in practice (if you are overwriting an existing file, 
+things get _way_ hairier, and why the hell would anybody expect that to be 
+fast anyway?)
+
+But somebody needs to write the code..
+
+		Linus
