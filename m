@@ -1,39 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756697Ab0ERVpc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 17:45:32 -0400
-Received: from kroah.org ([198.145.64.141]:50295 "EHLO coco.kroah.org"
+	id S1757133Ab0ERVpe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 17:45:34 -0400
+Received: from kroah.org ([198.145.64.141]:50299 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754923Ab0ERVpa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 17:45:30 -0400
-Date: Tue, 18 May 2010 14:38:52 -0700
+	id S1756633Ab0ERVpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 17:45:32 -0400
+Date: Tue, 18 May 2010 14:42:13 -0700
 From: Greg KH <greg@kroah.com>
-To: Morgan Gatti <morgan.gatti@gmail.com>
-Cc: gregkh@suse.de, ak@linux.intel.com, kevin.granade@gmail.com,
+To: Joe Perches <joe@perches.com>
+Cc: Mark Rankilor <reodge@gmail.com>, gregkh@suse.de,
        devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       sjakub@gmail.com
-Subject: Re: [PATCH 2/2] Staging:asus_oled:fix style issue in assus_oled.c
-Message-ID: <20100518213852.GA18525@kroah.com>
-References: <1274017021-2727-1-git-send-email-morgan.gatti@gmail.com>
+       Bernd Porr <berndporr@f2s.com>, Gorskin Ilya <revent82@gmail.com>
+Subject: Re: [PATCH] staging/comedi/comedi.h: cleanups
+Message-ID: <20100518214213.GA6764@kroah.com>
+References: <1273746519-4590-1-git-send-email-reodge@gmail.com>
+ <1273746519-4590-2-git-send-email-reodge@gmail.com>
+ <1273747232.21514.22.camel@Joe-Laptop.home>
+ <20100514205023.GA23779@kroah.com>
+ <20100514205114.GA27844@kroah.com>
+ <1274040918.1705.432.camel@Joe-Laptop.home>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274017021-2727-1-git-send-email-morgan.gatti@gmail.com>
+In-Reply-To: <1274040918.1705.432.camel@Joe-Laptop.home>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 16, 2010 at 03:37:01PM +0200, Morgan Gatti wrote:
-> This is a patch to the assus_oled.c file that fix the space and tabs errors founded
-> by the checkpatch.pl tool
-> Signed-off-by: Morgan Gatti <morgan.gatti@gmail.com>
+On Sun, May 16, 2010 at 01:15:18PM -0700, Joe Perches wrote:
+> Just general neatening, reduces checkpatch plaints
+> from 15 to 3.
+> 
+> Signed-off-by: Joe Perches <joe@perches.com>
 > ---
->  drivers/staging/asus_oled/asus_oled.c |    2 +-
+>  drivers/staging/comedi/comedi.h | 1410 ++++++++++++++++++++-------------------
 
-Sorry, but this patch has already been sent in and applied to the tree.
-Try making patches against the linux-next tree instead of Linus's tree
-to prevent from doing duplicate work.
+What tree did you make this against?
+
+I get the following errors when trying to apply it:
+	patching file drivers/staging/comedi/comedi.h
+	Hunk #6 FAILED at 206.
+	Hunk #7 FAILED at 463.
+	Hunk #8 FAILED at 473.
+	3 out of 8 hunks FAILED -- saving rejects to file drivers/staging/comedi/comedi.h.rej
 
 thanks,
 
