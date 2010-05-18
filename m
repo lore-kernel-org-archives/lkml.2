@@ -1,46 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab0EQXuc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 19:50:32 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:64769 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752425Ab0EQXua (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 19:50:30 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=xfruKRiIYsRuAuyia0BN3AbN4XbY9trb1Uf9jVHuNO2b7o++TlAF0gD+hW4RSCZldl
-         PUup8IsD2hIG3Dn7EhZIamXcjw6IVvvpbG+PbLpY5Cc2Y7HvD8r7eti9wlveovDnzvHH
-         MtCqRG8p9JDHRnD/zMrv8w58YhXpSngtxhEQ4=
+	id S1752906Ab0ERABb (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 20:01:31 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:42266 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751996Ab0ERABa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 20:01:30 -0400
+Date: Tue, 18 May 2010 02:00:52 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+Message-ID: <20100518000052.GC20590@elte.hu>
+References: <87tyq9mqrz.fsf@basil.nowhere.org>
+ <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
+ <20100517102214.GA20761@basil.fritz.box>
+ <a3572531-ca89-4959-b190-bcb9309a0193@defaultalpine.LFD.2.00.1005180022040.3368@localhost.localdomain>
+ <b190a20b-6420-4bd0-a261-f66c520ae983@default>
 MIME-Version: 1.0
-In-Reply-To: <1274136092-12375-1-git-send-email-linus.walleij@stericsson.com>
-References: <1274136092-12375-1-git-send-email-linus.walleij@stericsson.com>
-Date: Mon, 17 May 2010 16:50:30 -0700
-X-Google-Sender-Auth: i7ZiHqsfNsJBze4pa4EAWKSzBAo
-Message-ID: <AANLkTinUgXVhhdWqb0tOCgQC6ai2LoDSkezehIIvX8W9@mail.gmail.com>
-Subject: Re: [PATCH 3/3] DMAENGINE: extend the control command to include an 
-	arg
-From: Dan Williams <dan.j.williams@intel.com>
-To: Linus Walleij <linus.walleij@stericsson.com>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <b190a20b-6420-4bd0-a261-f66c520ae983@default>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 3:41 PM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This adds an argument to the DMAengine control function, so that
-> we can later provide control commands that need some external data
-> passed in through an argument akin to the ioctl() operation
-> prototype.
->
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
 
-This one required some fixups, but I have made those and pushed the
-result out async_tx.git/next along with the other two.
+* Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
+
+> OK, well ignoring the metaphor, it's clear we 
+> disagree on a point that neither one of us can 
+> prove: You think your decision to avoid sharing 
+> kernel information will stop system programmers 
+> from using rdtsc, and I think some are going to use 
+> rdtsc anyway and blame Linux when something 
+> eventually and silently breaks.
+
+Applications can do various unreliable things, the 
+kernel cannot do anything about that.
+
+The point is for the kernel to not be complicit in 
+practices that are technically not reliable.
+
+So the kernel wont 'signal' that something is safe to 
+use if it is not safe to use.
+
+One suggestion in this thread makes sense i think: to 
+signal via sysfs that gettimeofday is slow.
+
+Plus lets hope that we really can figure out a fast, 
+TSC based gettimeofday implementation. If that is 
+possible then user-space will get a fast gettimeofday 
+right out of box.
 
 Thanks,
-Dan
+
+	Ingo
