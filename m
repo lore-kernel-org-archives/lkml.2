@@ -1,52 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757848Ab0ERPCW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 11:02:22 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:38932 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756686Ab0ERPCT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 11:02:19 -0400
-Date: Tue, 18 May 2010 16:02:11 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: "Eric W. Biederman" <ebiederm@xmission.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Greg KH <greg@kroah.com>,
-       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the driver-core tree
-Message-ID: <20100518150211.GG31073@ZenIV.linux.org.uk>
-References: <20100518164520.7e9652b1.sfr@canb.auug.org.au>
- <m1wrv13dam.fsf@fess.ebiederm.org>
- <20100518175451.a01e314b.sfr@canb.auug.org.au>
- <m1iq6lh50h.fsf@fess.ebiederm.org>
+	id S1757882Ab0ERPHy (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 11:07:54 -0400
+Received: from e5.ny.us.ibm.com ([32.97.182.145]:44133 "EHLO e5.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756686Ab0ERPHt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 11:07:49 -0400
+Date: Tue, 18 May 2010 08:07:41 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
+Message-ID: <20100518150741.GF2302@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100513152340.GA2879@linux.vnet.ibm.com>
+ <20100517203349.GA14994@redhat.com>
+ <20100517210606.GW2320@linux.vnet.ibm.com>
+ <20100517220025.GA1366@Krystal>
+ <20100517230533.GX2320@linux.vnet.ibm.com>
+ <20100517234025.GA11700@Krystal>
+ <20100518003429.GA2320@linux.vnet.ibm.com>
+ <20100518013528.GA21866@Krystal>
+ <20100518142008.GD2302@linux.vnet.ibm.com>
+ <20100518142557.GA29457@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <m1iq6lh50h.fsf@fess.ebiederm.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100518142557.GA29457@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 03:35:10AM -0700, Eric W. Biederman wrote:
-> Thanks.
+On Tue, May 18, 2010 at 05:25:57PM +0300, Michael S. Tsirkin wrote:
+> On Tue, May 18, 2010 at 07:20:08AM -0700, Paul E. McKenney wrote:
+> > On Mon, May 17, 2010 at 09:35:28PM -0400, Mathieu Desnoyers wrote:
+> > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > On Mon, May 17, 2010 at 07:40:25PM -0400, Mathieu Desnoyers wrote:
+> > > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > > On Mon, May 17, 2010 at 06:00:25PM -0400, Mathieu Desnoyers wrote:
+> > 
+> > [ . . . ]
+> > 
+> > > > > > But perhaps we should be simply treating this as a use-after-free
+> > > > > > problem, so that RCU is not directly involved. Isn't that the standard
+> > > > > > use of debugobjects anyway?
+> > > > > 
+> > > > > OK so we could tie "rcu_dereference" do debugobjects, and free would be
+> > > > > a standard free. Yes, I think it could be done. It looks a bit like the
+> > > > > memory allocation debugging code. If we know that a certain
+> > > > > rcu_dereference always access dynamically allocated memory, we could
+> > > > > probably add some checks there based on the memory allocator debug
+> > > > > objects.
+> > > > 
+> > > > We probably need vhost to add code at the end of the relevant RCU
+> > > > read-side critical section checking that the pointers returned by
+> > > > any rcu_dereference() calls still point to valid memory.  Don't get
+> > > > me wrong, your approach could find bugs in which someone forgot to
+> > > > remove the RCU-protected structure from a public list, but it could
+> > > > not detect failure to wait a grace period between the time of removal
+> > > > and the time of freeing.
+> > > 
+> > > Good point too. So something like a new rcu_unreference() (or feel free
+> > > to find any better name) ;) that would be compiled out normally, but
+> > > would call into debugobjects might do the trick. We would have to add
+> > > these annotations to match every rcu_dereference() though, might means a
+> > > lot of new lines of code. On the plus side, that looks like a good audit
+> > > of RCU read-side use. ;)
+> > 
+> > My first thought is that we have added quite a bit of RCU consistency
+> > check code in the past few months, so we should see what bugs they find
+> > and what bugs escape.  It is all too easy to create consistency check
+> > code that is more trouble than it is worth.
 > 
-> I will cook up a proper incremental patch after I get some sleep.  Stephen
-> it appears those two lines you have commented out are actually unnecessary.
-> 
-> We have
-> deactivate_super
->   kill_sb aka sysfs_kill_sb
->     kill_anon_super
->       generic_shutdown_super
->          sb_lock
->          list_del(sb->s_instances)
->          sb_unlock
->   kfree(info)
-> 
-> Nothing generic stomps on s_fs_info.
-> 
-> Which means that if I find a superblock on sb->s_instances sb->s_fs_info
-> still points to a valid sysfs_super_info.
+> Right. Do the patches that started this discussion catch anything BTW?
 
-Except that sb_lock is going away next cycle.  There are very few users left
-outside of fs/super.c and I'd much prefer it to become static.
+All three approaches have found some bugs.
+
+> > But in the meantime, let's see what would be required to check for
+> > failures to insert grace-period delays:
+> > 
+> > o	There would need to be something like rcu_unreference(),
+> > 	rcu_no_more_readers() or some such after the grace period.
+> > 	The update side would then become something like the following:
+> > 
+> > 		oldp = rcu_dereference_protected(gp, &mylock);
+> > 		rcu_assign_pointer(gp, newp);
+> > 		synchronize_rcu();
+> > 		rcu_no_more_readers(oldp);
+> > 		kfree(oldp);
+> > 
+> > o	There would need to be something to check all of the pointers
+> > 	traversed in the read-side critical sections:
+> > 
+> > 		rcu_read_lock();
+> > 		...
+> > 		p1 = rcu_dereference(gp1->field1);
+> > 		...
+> > 		p2 = rcu_dereference(gp2->field2);
+> > 		...
+> > 
+> > 		rcu_validate(p1);
+> > 		rcu_validate(p2);
+> > 		rcu_read_unlock();
+> > 
+> 
+> what does rcu_validate do?
+
+It checks to make sure that the pointer still points to something valid.
+
+> > One thing that bothers me about this is that we are forcing the developer
+> > to do a lot of extra typing.  For example, rcu_no_more_readers() is in
+> > a truth-and-beauty sense redundant with kfree() -- why type both?
+> 
+> With kfree, yes. We could stick rcu_no_more_readers in kfree I guess?
+
+But why not just use the existing debugobjects?  You can just use
+something like this:
+
+	debug_check_no_obj_freed(p1, sizeof(*p1));
+
+in place of:
+
+	rcu_validate(p1);
+
+Of course, if you are using your own custom allocator, you will need
+to put the allocation/free checks in, same as slab and the others
+currently do.
+
+							Thanx, Paul
+
+> > The
+> > same could be said about rcu_validate() and rcu_read_unlock(), but nested
+> > RCU read-side critical sections make this difficult.
+> > Or am I misunderstanding what you are suggesting?
+> > 
+> > 							Thanx, Paul
