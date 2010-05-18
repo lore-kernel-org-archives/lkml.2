@@ -1,57 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756880Ab0ERPZV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 11:25:21 -0400
-Received: from mailout-us.gmx.com ([74.208.5.67]:41901 "HELO
-	mailout-us.gmx.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755318Ab0ERPZS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 11:25:18 -0400
-X-Authenticated: #65048216
-X-Provags-ID: V01U2FsdGVkX1/LKLBfgaTLLHFQnC6FBMXo6hb226TtjC2z1ZYymN
-	2ADoywJpNJGail
-Subject: Re: What is 2.6.34-git1 and how to it it? And whether to eat it?
-From: Ivan Bulatovic <combuster@gmx.com>
-To: piotr@hosowicz.com
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <4BF2AE0A.6010406@example.com>
-References: <4BF2AE0A.6010406@example.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 17:22:03 +0200
-Message-ID: <1274196123.5720.158.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1756734Ab0ERP0B (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 11:26:01 -0400
+Received: from www.tglx.de ([62.245.132.106]:54667 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754507Ab0ERP0A (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 11:26:00 -0400
+Date: Tue, 18 May 2010 17:25:09 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT Pull] timer fixes for 2.6.35
+Message-ID: <alpine.LFD.2.00.1005181724280.3368@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-No, 2.6.34-git1 is set of patches that eventually will become 2.6.34.1
-For 2.6.35-rc1 we will have to wait two or three weeks untill merge
-window is closed.
+Linus,
 
-On Tue, 2010-05-18 at 17:11 +0200, Piotr Hosowicz wrote: 
-> Hello,
-> 
-> I have a habit of building each new git version of the kernel. Is 
-> 2.6.34-git1 something like pre-rc1 version? And when will be a rc1 version?
-> 
-> Regards,
-> 
-> Piotr Hosowicz
-> 
-> -- 
-> "Chcemy waszego dobra!" - powiedział lider
-> socjaldemokratów. Zaniepokojeni obywatele
-> zaczeli ukrywać swoje dobra w bezpiecznych
-> miejscach.
-> NP: Mark Knopfler - Border Reiver
-> NB: 2.6.34
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+Please pull the latest timers-fixes-for-linus git tree from:
+
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-fixes-for-linus
+
+Thanks,
+
+	tglx
+
+------------------>
+Jens Rottmann (1):
+      cs5535-clockevt: Free timer in IRQ setup error path
 
 
+ drivers/clocksource/cs5535-clockevt.c |    8 +++++---
+ 1 files changed, 5 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/clocksource/cs5535-clockevt.c b/drivers/clocksource/cs5535-clockevt.c
+index b314a99..d7be69f 100644
+--- a/drivers/clocksource/cs5535-clockevt.c
++++ b/drivers/clocksource/cs5535-clockevt.c
+@@ -154,14 +154,14 @@ static int __init cs5535_mfgpt_init(void)
+ 	if (cs5535_mfgpt_setup_irq(timer, MFGPT_CMP2, &timer_irq)) {
+ 		printk(KERN_ERR DRV_NAME ": Could not set up IRQ %d\n",
+ 				timer_irq);
+-		return -EIO;
++		goto err_timer;
+ 	}
+ 
+ 	/* And register it with the kernel */
+ 	ret = setup_irq(timer_irq, &mfgptirq);
+ 	if (ret) {
+ 		printk(KERN_ERR DRV_NAME ": Unable to set up the interrupt.\n");
+-		goto err;
++		goto err_irq;
+ 	}
+ 
+ 	/* Set the clock scale and enable the event mode for CMP2 */
+@@ -184,8 +184,10 @@ static int __init cs5535_mfgpt_init(void)
+ 
+ 	return 0;
+ 
+-err:
++err_irq:
+ 	cs5535_mfgpt_release_irq(cs5535_event_clock, MFGPT_CMP2, &timer_irq);
++err_timer:
++	cs5535_mfgpt_free_timer(cs5535_event_clock);
+ 	printk(KERN_ERR DRV_NAME ": Unable to set up the MFGPT clock source\n");
+ 	return -EIO;
+ }
