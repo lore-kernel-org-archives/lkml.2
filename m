@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755485Ab0ERWwq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:52:46 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:50609 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab0ERWwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:52:44 -0400
-Date: Tue, 18 May 2010 17:52:40 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-       Russ Anderson <rja@sgi.com>
-Subject: [BUGFIX] perf record: remove unneeded gettimeofday() call
-Message-ID: <20100518225240.GC25589@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.4.2.2i
+	id S1754213Ab0ERWxt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:53:49 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:49705 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752423Ab0ERWxq convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 18:53:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=PnvPVty4Jl39y7dzcZQ1m+n0EEnvxY/2w+nrB6LhsCAHbR60aN+PJK1QdxNPf3dii/
+         2IqbU4UcBmaKDhl6QrAGTG1P0dCtMxecjYLvKksNTO+q+3GvxzWS7gTfOGQE6MKv38dR
+         YDrKzfF4pneN4Kin/hBLAofkgpp+lFTISrNd4=
+MIME-Version: 1.0
+In-Reply-To: <20100518145212.GA21448@elte.hu>
+References: <20100517212848.GA28536@elte.hu>
+	 <alpine.LFD.2.00.1005180729340.4195@i5.linux-foundation.org>
+	 <20100518145212.GA21448@elte.hu>
+Date: Wed, 19 May 2010 04:23:45 +0530
+Message-ID: <AANLkTinjnt-_LnW7Aa75T8S-hM2nffH-EUNnAUUAps-Q@mail.gmail.com>
+Subject: Re: [GIT PULL, v2] core/locking changes for v2.6.35
+From: Jaswinder Singh Rajput <jaswinderlinux@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Perf record repeatedly calls gettimeofday() which adds noise to the performance 
-measurements.  Since gettimeofday() is only used for the error printf,
-delete it.
+Hello Ingo,
 
-Signed-off-by: Russ Anderson <rja@sgi.com>
+On Tue, May 18, 2010 at 8:22 PM, Ingo Molnar <mingo@elte.hu> wrote:
+>
+> * Linus Torvalds <torvalds@linux-foundation.org> wrote:
+>
+>> On Mon, 17 May 2010, Ingo Molnar wrote:
+>> >
+>> > Tony Breeds (1):
+>> >       mutex: Fix optimistic spinning vs. BKL
+>>
+>> Grr. This has the ugly timeout thing, but what's _really_ ugly about it is
+>>
+>>       kernel/mutex.c: In function ‘__mutex_lock_common’:
+>>       kernel/mutex.c:148: warning: unused variable ‘timeout’
+>>
+>> Nasty. It happens when spinning is disabled due to
+>> lockdep or whatever debugging that kills it.
+>
+> Sorry about that.
+>
 
----
- tools/perf/builtin-record.c |   17 +----------------
- 1 file changed, 1 insertion(+), 16 deletions(-)
+Sweet, you do not forgive others, but you expect that others forgive you.
 
-Index: linux/tools/perf/builtin-record.c
-===================================================================
---- linux.orig/tools/perf/builtin-record.c	2010-05-18 16:03:58.000000000 -0500
-+++ linux/tools/perf/builtin-record.c	2010-05-18 17:28:00.765537656 -0500
-@@ -64,9 +64,6 @@ static bool			multiplex			=  false;
- static int			multiplex_fd			=     -1;
- 
- static long			samples				=      0;
--static struct timeval		last_read;
--static struct timeval		this_read;
--
- static u64			bytes_written			=      0;
- 
- static struct pollfd		*event_array;
-@@ -146,8 +143,6 @@ static void mmap_read(struct mmap_data *
- 	void *buf;
- 	int diff;
- 
--	gettimeofday(&this_read, NULL);
--
- 	/*
- 	 * If we're further behind than half the buffer, there's a chance
- 	 * the writer will bite our tail and mess up the samples under us.
-@@ -158,23 +153,13 @@ static void mmap_read(struct mmap_data *
- 	 */
- 	diff = head - old;
- 	if (diff < 0) {
--		struct timeval iv;
--		unsigned long msecs;
--
--		timersub(&this_read, &last_read, &iv);
--		msecs = iv.tv_sec*1000 + iv.tv_usec/1000;
--
--		fprintf(stderr, "WARNING: failed to keep up with mmap data."
--				"  Last read %lu msecs ago.\n", msecs);
--
-+		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
- 		/*
- 		 * head points to a known good entry, start there.
- 		 */
- 		old = head;
- 	}
- 
--	last_read = this_read;
--
- 	if (old != head)
- 		samples++;
- 
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+--
+Jaswinder Singh.
