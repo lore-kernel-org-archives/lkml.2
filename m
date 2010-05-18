@@ -1,55 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757582Ab0ERQA7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:00:59 -0400
-Received: from cantor.suse.de ([195.135.220.2]:48723 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab0ERQA4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:00:56 -0400
-Date: Wed, 19 May 2010 02:00:51 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Christoph Lameter <cl@linux.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Tejun Heo <tj@kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100518160051.GK2516@laptop>
-References: <20100518153440.GB7748@Krystal>
- <20100518155135.GJ2516@laptop>
- <alpine.DEB.2.00.1005181055260.16649@router.home>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.DEB.2.00.1005181055260.16649@router.home>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757644Ab0ERQBS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:01:18 -0400
+Received: from xenotime.net ([72.52.115.56]:44954 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1757587Ab0ERQBR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:01:17 -0400
+Date: Tue, 18 May 2010 09:01:12 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: piotr@hosowicz.com
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: What is 2.6.34-git1 and how to it it? And whether to eat it?
+Message-Id: <20100518090112.75f08768.rdunlap@xenotime.net>
+In-Reply-To: <4BF2AE0A.6010406@example.com>
+References: <4BF2AE0A.6010406@example.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 10:56:24AM -0500, Christoph Lameter wrote:
-> On Wed, 19 May 2010, Nick Piggin wrote:
-> 
-> > What would be needed is to have filesystem maintainers go through and
-> > enable it on a case by case basis. It's trivial for tmpfs/ramfs type
-> > filesystems and I have a patch for those, but I never posted it on.yet.
-> > Even basic buffer head filesystems IIRC get a little more complex --
-> > but we may get some milage just out of invalidating the existing
-> > pagecache rather than getting fancy and trying to move buffers over
-> > to the new page.
-> 
-> There is a "migration" address space operation for moving pages. Page
-> migration requires that in order to be able to move dirty pages. Can
-> splice use that?
+On Tue, 18 May 2010 17:11:06 +0200 Piotr Hosowicz wrote:
 
-Hmm yes I didn't think of that, it probably could.
+> Hello,
+> 
+> I have a habit of building each new git version of the kernel. Is 
+> 2.6.34-git1 something like pre-rc1 version? And when will be a rc1 version?
 
+Hi Piotr,
+Please see Documentation/applying-patches.txt.
+
+HTH.
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
