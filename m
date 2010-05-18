@@ -1,88 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758509Ab0ERSh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:37:28 -0400
-Received: from shadbolt.e.decadent.org.uk ([88.96.1.126]:37233 "EHLO
-	shadbolt.e.decadent.org.uk" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753836Ab0ERSh0 (ORCPT
+	id S1757199Ab0ERSjN (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:39:13 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:15010 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756536Ab0ERSjL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:37:26 -0400
-Date: Tue, 18 May 2010 19:37:14 +0100
-From: Ben Hutchings <ben@decadent.org.uk>
-To: Bill Davidsen <davidsen@tmr.com>
-Cc: Greg KH <greg@kroah.com>, CaT <cat@zip.com.au>,
-       Linus Torvalds <torvalds@linux-foundation.org>, bzolnier@gmail.com,
-       stable@kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: Linux 2.6.34 (rt2860 regression)
-Message-ID: <20100518183713.GS16821@decadent.org.uk>
-References: <alpine.LFD.2.00.1005161430100.4195@i5.linux-foundation.org> <20100518114426.GY2657@zip.com.au> <20100518125539.GA23181@kroah.com> <20100518131706.GZ2657@zip.com.au> <20100518133336.GA23591@kroah.com> <4BF2C78A.7090903@tmr.com>
+	Tue, 18 May 2010 14:39:11 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=iyCOmTvrPPgz9JCHuPqr5TRfaWonnYZjPXnl/RNPsGr75eHoJv8IB/SdnWE4mC+MN1
+         PUJ3XudWyqSh0ADT7Rs8BGDii3AaC8Af/cSeA2b9az8QrWS3RrTrSJ6tEmT+spL/ccUa
+         bSqeSQXvIkcNwMkt3v1749BOCNPaB1CKdLeRQ=
+Date: Tue, 18 May 2010 22:38:58 +0400
+From: Cyrill Gorcunov <gorcunov@gmail.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
+       Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2 02/11] perf: core, add pmu register and lookup
+	functions
+Message-ID: <20100518183858.GE5081@lenovo>
+References: <1274233502.3036.80.camel@localhost>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BF2C78A.7090903@tmr.com>
+In-Reply-To: <1274233502.3036.80.camel@localhost>
 User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@decadent.org.uk
-X-SA-Exim-Scanned: No (on shadbolt.decadent.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 12:59:54PM -0400, Bill Davidsen wrote:
-> Greg KH wrote:
->> On Tue, May 18, 2010 at 11:17:06PM +1000, CaT wrote:
->>> On Tue, May 18, 2010 at 05:55:39AM -0700, Greg KH wrote:
->>>> I do not understand.  The firmware is now part of the linux-firmware
->>>> tree, and if you install that, it is working just fine, right?  We moved
->>>> the firmware out of the kernel tree on purpose.
->>>>
->>>> So what is the problem here?
->>> Well, the driver used to work and appears to be useless without it. I guess
->>> I'm wondering why it was kept out of the firmware directory where all the
->>> other firmware lives (and so allow the driver to simply continue to work
->>> and allow it to be compiled in).
->>
->> Because we are not adding new firmware to the kernel tree wherever
->> possible, but instead, putting it in the separate linux-firmware tree.
->>
-> I don't think that's the case here, he's not asking that new firmware be 
-> put in the kernel, just that existing firmware not be taken out.
+On Wed, May 19, 2010 at 01:45:02AM +0000, Lin Ming wrote:
+...
+> +int perf_event_register_pmu(struct pmu *pmu)
+> +{
+> +	struct pmu *tmp;
+> +	int ret = 1;
+> +
+> +	rcu_read_lock();
+> +	list_for_each_entry_rcu(tmp, &pmus, entry) {
+> +		if (tmp->id == pmu->id) {
+> +			ret = 0;
+> +			goto err;
 
-New firmware should not be added to the kernel.  This rule has been
-documented since v2.6.30.  Now this rule (like many others) is relaxed for
-staging, but you can expect that firmware will be removed as part of the
-cleanup process to make staging drivers follow the rules.
+Hi Ming, is it supposed to get out in locked state?
+I mean imbalanced rcu_read_lock somehow suspicicous ;)
 
->>> At the moment all the change appears to have done is break things that have
->>> been working without issue since before the driver was even in staging.
->>
->> Just update the linux-firmware package and all will be working again.
->> We've been moving the firmware out of the staging drivers for a while
->> now, as they don't belong in the kernel tree.
->>
-> I'm not sure that I see the logic of having a kernel with a driver which 
-> doesn't work without the firmware, and a firmware tree which is equally 
-> useless on it's own.
-[...]
+> +		}
+> +	}
+> +	rcu_read_unlock();
+> +
+> +	spin_lock(&pmus_lock);
+> +	list_add_tail_rcu(&pmu->entry, &pmus);
+> +	spin_unlock(&pmus_lock);
+> +
+> +err:
+> +	return ret;
+> +}
+> +
+...
 
-The firmware and driver are separate works, often written by different
-people and usually released on a separate schedule under different licences.
-
-> At the least I would expect the kernel build system 
-> to refuse to build the driver unless the firmware was present, and then 
-> build the firmware from wherever it's been hidden and put the whole thing 
-> into a bootable kernel.
->
-> Obviously firmware needs to be in the kernel image, or the building of 
-> initram becomes really nasty for NFS root systems.
-
-Modules that load firmware should have modinfo giving the filenames they
-may requested.  Initramfs builders use that to find the files to include.
-
-Ben.
-
--- 
-Ben Hutchings
-We get into the habit of living before acquiring the habit of thinking.
-                                                              - Albert Camus
+	-- Cyrill
