@@ -1,39 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757326Ab0ERSur (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:50:47 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:53478 "EHLO mail.zytor.com"
+	id S1758721Ab0ERSv1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:51:27 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:42996 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753902Ab0ERSuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:50:46 -0400
-Message-ID: <4BF2E0A2.6030209@zytor.com>
-Date: Tue, 18 May 2010 11:46:58 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1757599Ab0ERSvZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 14:51:25 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+Date: Tue, 18 May 2010 20:52:28 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+References: <1273810273-3039-1-git-send-email-arve@android.com> <AANLkTilQ5wZ_7fMyDMpUBCtu9oD1Wh22JGllyS1EPlxB@mail.gmail.com> <87tyq5qj3v.fsf@deeprootsystems.com>
+In-Reply-To: <87tyq5qj3v.fsf@deeprootsystems.com>
 MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       chris.mason@oracle.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <1273887635-27610-1-git-send-email-venki@google.com>> <87tyq9mqrz.fsf@basil.nowhere.org>> <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>> <20100515121424.38f5b389@infradead.org>> <e07ac2f3-4a82-41d9-aa41-49a94435e7b7@default>> <20100515224305.17a04022@infradead.org>> <alpine.LFD.2.00.1005161113450.3199@localhost.localdomain>> <5adf3fee-0f7b-4039-b13f-619640cc4b88@default>> <20100516220638.2baf315d@infradead.org> <1274176698.5605.7358.camel@twins>> <20100518112509.GD22675@basil.fritz.box> <1274183935.5605.7726.camel@twins>> <4BF2C30F.6030502@zytor.com> <1274201536.5605.8347.camel@twins 4BF2C881.60807@zytor.com> <1dc4abc2-6455-4b95-90f6-c86bf56ff39a@default>
-In-Reply-To: <1dc4abc2-6455-4b95-90f6-c86bf56ff39a@default>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005182052.28778.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 10:49 AM, Dan Magenheimer wrote:
+On Tuesday 18 May 2010, Kevin Hilman wrote:
+> Arve Hjønnevåg <arve@android.com> writes:
 > 
-> (Though I expect tglx/arjan/andi/mingo to disagree with this proposal
-> for similar reasons as the original one that started this thread...)
+> >
+> > PM: Opportunistic suspend support.
+> >
+> > Power management features present in the current mainline kernel are
+> > insufficient to get maximum possible energy savings on some platforms,
+> > such as Android, because low power states can only safely be entered
+> > from idle.  Suspend, in its current form, cannot be used, since wakeup
+> > events that occur right after initiating suspend will not be processed
+> > until another possibly unrelated event wake up the system again.
 > 
+> I think the problems with wakeups in the current suspend path need to
+> be described in more detail.  In particular, why check_wakeup_irqs()
+> is not enough etc.
 
-I'll add another reason to disagree: exporting these as sysfs variables
-is non-atomic, but these are really only useful when atomically read as
-a unit.
+That one is really easy.: because some (the majority of?) architectures
+don't even implement it.
+ 
+> > On some systems idle combined with runtime PM can enter the same power
+> > state as suspend, but periodic wakeups increase the average power
+> > consumption. Suspending the system also reduces the harm caused by
+> > apps that never go idle. On other systems suspend can enter a much
+> > lower power state than idle.
+> >
+> > To allow Android and similar platforms to save more energy than they
+> > currently can save using the mainline kernel, we introduce a mechanism
+> > by which the system is automatically suspended (i.e. put into a
+> > system-wide sleep state) whenever it's not doing useful work, called
+> > opportunistic suspend.
+> 
+> A definition of "useful work" here would provide clarity and would
+> also help clarify by what criteria other on-going work is determined
+> to be not useful.
 
-	-hpa
+Probably "useful" is not the right word here.  I guess it's more like
+"work that can be deferred without visible impact on functionality".
+
+Rafael
