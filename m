@@ -1,70 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756250Ab0ERWkx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:40:53 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:38337
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754161Ab0ERWkv (ORCPT
+	id S1754702Ab0ERWwO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:52:14 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:53339 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752384Ab0ERWwM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:40:51 -0400
-Date: Tue, 18 May 2010 15:40:59 -0700 (PDT)
-Message-Id: <20100518.154059.139137292.davem@davemloft.net>
-To: lethal@linux-sh.org
-Cc: penberg@cs.helsinki.fi, mpm@selenic.com, herbert@gondor.hengli.com.au,
-       ken@codelabs.ch, geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100518223507.GB5933@linux-sh.org>
-References: <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	<20100518.142021.135951273.davem@davemloft.net>
-	<20100518223507.GB5933@linux-sh.org>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 18 May 2010 18:52:12 -0400
+MIME-Version: 1.0
+In-Reply-To: <201005190034.26085.rjw@sisk.pl>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	 <201005182348.16026.rjw@sisk.pl>
+	 <AANLkTin-A5eXvxDEo-vi2x2jjXtZbAl2526w62noNMIK@mail.gmail.com>
+	 <201005190034.26085.rjw@sisk.pl>
+Date: Tue, 18 May 2010 15:52:12 -0700
+Message-ID: <AANLkTime0yZ_t32m8WjqJEtSeNlBJYZy15X8HwKzMqOl@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Paul Mundt <lethal@linux-sh.org>
-Date: Wed, 19 May 2010 07:35:10 +0900
+2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
+>> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+>> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
+>> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
+>> >> >> 2010/5/17 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> >> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
+>> >> >> >> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
+>> >> >> >> > On Friday 14 May 2010, Arve Hjønnevåg wrote:
+>> >> >> >> >> This patch series adds a suspend-block api that provides the same
+>> >> >> >> >> functionality as the android wakelock api. This version has some
+>> >> >> >> >> changes from, or requested by, Rafael. The most notable changes are:
+>> >> >> >> >> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
+>> >> >> >> >>   for statically allocated suspend blockers.
+>> >> >> >> >> - suspend_blocker_destroy is now called suspend_blocker_unregister
+>> >> >> >> >> - The user space mandatory _INIT ioctl has been replaced with an
+>> >> >> >> >>   optional _SET_NAME ioctl.
+>> >> >> >> >>
+>> >> >> >> >> I kept the ack and reviewed by tags on two of the patches even though
+>> >> >> >> >> there were a few cosmetic changes.
+>> >> >> >> >
+>> >> >> >> > Thanks for the patches, I think they are in a pretty good shape now.
+>> >> >> >> >
+>> >> >> >> > That said, I'd like the changelogs to be a bit more descriptive, at least for
+>> >> >> >> > patch [1/8].  I think it should explain (in a few words) what the purpose of
+>> >> >> >> > the feature is and what problems it solves that generally a combination of
+>> >> >> >> > runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
+>> >> >> >> > think we need that feature.
+>> >> >> >> >
+>> >> >> >>
+>> >> >> >> How about:
+>> >> >> >>
+>> >> >> >> PM: Add opportunistic suspend support.
+>> >> >> >
+>> >> >> > "PM: Opportunistic suspend support" would be sufficient IMO.
+>> >> >> >
+>> >> >> > Now, I'd start with the motivation.  Like "Power management features present
+>> >> >> > in the current mainline kernel are insufficient to get maximum possible energy
+>> >> >> > savings on some platforms, such as Android, because ..." (here go explanations
+>> >> >> > why this is the case in your opinion).
+>> >> >> >
+>> >> >> > Next, "To allow Android and similar platforms to save more energy than they
+>> >> >> > currently can save using the mainline kernel, introduce a mechanism by which
+>> >> >> > the system is automatically suspended (i.e. put into a system-wide sleep state)
+>> >> >> > whenever it's not doing useful work, called opportunistic suspend".
+>> >> >> >
+>> >> >> > "For this purpose introduce the suspend blockers framework allowing the
+>> >> >> > kernel's power management subsystem to decide when it is desirable to suspend
+>> >> >> > the system (i.e. when useful work is not being done).  Add an API that ..."
+>> >> >> >
+>> >> >>
+>> >> >> PM: Opportunistic suspend support.
+>> >> >>
+>> >> >> Power management features present in the current mainline kernel are
+>> >> >> insufficient to get maximum possible energy savings on some platforms,
+>> >> >> such as Android, because low power states can only safely be entered
+>> >> >> from idle.
+>> >> >
+>> >> > Do you mean CPU low-power states or system low-power states here?
+>> >> >
+>> >> I think either.
+>> >
+>> > The statement is not true for system low-power states (or sleep states),
+>> > because generally (ie. on many platforms) they aren't entered from idle.
+>> > Suspend is for entering them.
+>> >
+>> I don't think that makes my statement false. If you can only safely
+>> enter low power states from idle, but some low power states cannot be
+>> entered from idle, then it follows that you cannot safely enter those
+>> low power states.
+>
+> Define "safely", then.
+>
+OK. Is this clearer:
 
-> On Tue, May 18, 2010 at 02:20:21PM -0700, David Miller wrote:
->> So one of two things should happen:
->> 
->> 1) SLOB conforms to SLAB/SLUB in it's test
->> 
->> 2) SLAB/SLUB conforms to SLOB in it's test
->> 
->> And yes this is an either-or, you can't say they are both valid.
-> 
-> I don't see any reason to punish SLOB for the assumptions that SLAB/SLUB
-> arbitrarily took up, presumably on an architecture that should have
-> specified its own alignment requirements and simply couldn't be bothered.
-> Making SLAB redzoning work with arbitrary alignment is another matter
-> entirely, and something that should probably be revisited.
-> 
-> Anything that assumes more than BYTES_PER_WORD is simply broken and
-> should be reverted.
+Power management features present in the current mainline kernel are
+insufficient to get maximum possible energy savings on some platforms,
+such as Android, because some wakeup events must work at all times
+which means that low power states can only safely be entered from idle.
+Suspend, in its current form, cannot be used, since wakeup events that
+occur right after initiating suspend will not be processed until another
+possibly unrelated event wake up the system again.
 
-You can't make the default different in each allocator, PERIOD.
 
-If you can't know what the default is, how in the world can you know
-if you need to override it?  You can't.  It's a guess, and you can't
-say otherwise.
+>> > So, there is a difference and the explanation can go like this: "... to achieve
+>> > maximum energy savings one has to put all I/O devices and the CPU into
+>> > low-power states, but the CPU can only be put into a low-power state from
+>> > idle.  This, in turn, means that the CPU leaves the low-power state on
+>> > interrupts triggered by periodic timers and user space processes that use
+>> > polling.  It turns out, however, that many of these events causing the CPU to
+>> > leave the low-power state aren't essential for the desired system functionality
+>> > and from the power management point of view it would be better if they didn't
+>> > occur".
+>>
+>> This only explain why we still want to use suspend on systems that can
+>> enter the same power states from idle and suspend.
+>
+> Sorry, I'm confused now.  Isn't that why you do that on Android?
+>
 
-All of the CPP tests like the one used by linux/crypto.h are
-ludicrious.  It should absolutely be not necessary for any code to
-duplicate this kind of calculation.
+Yes, but it is not the only reason to use opportunistic support. It is
+way more important to have opportunistic suspend support if the
+hardware can enter lower power states from suspend than idle.
 
-Instead, this sequence should be in linux/slab.h, and be used
-universally by slab, slub, slob and anything that wants to know the
-allocators alignment guarentees.
+> AFACS, your hardware is capable of doing that, isn't it?
+>
 
-I don't even know of a 32-bit chip outside of x86 that doesn't
-potentially emit alignment requiring 64-bit memory operations for
-64-bit objects.  So what SLOB is doing with a different default is
-even more strange.  And I bet you that even without the requirement,
-x86 runs faster with 64-bit alignment of 64-bit objects.
+The current hardware, yes, the hardware we started with, no.
+
+-- 
+Arve Hjønnevåg
