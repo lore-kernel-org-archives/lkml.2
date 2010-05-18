@@ -1,209 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757267Ab0EROh2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 10:37:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51151 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab0EROhZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 10:37:25 -0400
-Date: Tue, 18 May 2010 09:46:41 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
-       Alasdair Kergon <agk@redhat.com>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for
- request-based device
-Message-ID: <20100518134639.GA27582@redhat.com>
-References: <1273532139-23043-2-git-send-email-snitzer@redhat.com>
- <4BE8DBB0.5060701@ct.jp.nec.com>
- <20100511131502.GA25211@redhat.com>
- <4BEA659F.9050206@ct.jp.nec.com>
- <20100513035750.GA25523@redhat.com>
- <4BED049C.5040409@ct.jp.nec.com>
- <20100514140852.GA10373@redhat.com>
- <4BF10BF1.3040108@ct.jp.nec.com>
- <20100517172737.GA24591@redhat.com>
- <4BF25091.3000507@ct.jp.nec.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF25091.3000507@ct.jp.nec.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1757413Ab0EROln (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 10:41:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:62167 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754344Ab0EROll (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 10:41:41 -0400
+X-Authority-Analysis: v=1.1 cv=MoOeBCR3UCSroT7bBzr0mtJUqJhHyBWzyNa37ex1qNU= c=1 sm=0 a=pjGjkNHRNmAA:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=pCTbaqMk0ZeEHFYGejQA:9 a=rguzO34FQ8Kn7tWAZYQ69Ami8jQA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: collecting static data related to tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <1274191742.31554.10.camel@jlt3.sipsolutions.net>
+References: <1274191742.31554.10.camel@jlt3.sipsolutions.net>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 18 May 2010 10:41:38 -0400
+Message-ID: <1274193698.26328.746.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18 2010 at  4:32am -0400,
-Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+On Tue, 2010-05-18 at 16:09 +0200, Johannes Berg wrote:
 
-> Hi Mike,
+> I'm thinking that we could have per subsystem "detail" files that are
+> provided by the respective subsystem implementation in some way, and can
+> then simply be included in the recorded trace file. However, I have no
+> idea if that is feasible to implement, or if maybe there's another way.
+> FWIW, all my events already contain a pointer, used as a cookie, to
+> identify the hardware instance, but that only allows me to read a trace
+> that contains data about multiple devices, it doesn't give me
+> information about each device. Ideally, the "detail" file would list all
+> the information along with the cookie, so I could connect the dots.
 > 
-> On 05/18/2010 02:27 AM +0900, Mike Snitzer wrote:
-> > Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> >> As far as I understand, the current model of device-mapper is:
-> >>   - a table (precisely, a target) has various attributes,
-> >>     bio-based/request-based is one of such attributes
-> >>   - a table and its attributes are bound to the block device on resume
-> >> If we want to fix a problem, I think we should either work based on
-> >> this model or change the model.
-> >>
-> >> Your patch makes that loading table affects the block device, so you
-> >> are changing the model.
-> >>
-> >> If you change the model, it should be done carefully.
-> >> For example, the current model allows most of the table loading code
-> >> to run without exclusive lock on the device because it doesn't affect
-> >> the device itself.  If you change this model, table loading needs to
-> >> be serialized with appropriate locking.
-> > 
-> > Nice catch, yes md->queue needs protection (see patch below).
-> 
-> Not enough. (See drivers/md/dm-ioctl.c:table_load().)
-> Table load sequence is:
->   1. populate table
->   2. set the table to ->new_map of the hash_cell for the mapped_device
->      in protection by _hash_lock.
-> 
-> Since your fix only serializes the step 1, concurrent table loading
-> could end up with inconsistent status; e.g. request-based table is
-> bound to the mapped_device while the queue is initialized as bio-based.
-> With your new model, those 2 steps above must be atomic.
+> Thoughts?
 
-Ah, yes.. I looked at the possibility of serializing the entirety of
-table_load but determined that would be too excessive (would reduce
-parallelism of table_load).  But I clearly missed the fact that there
-could be a race to the _hash_lock protected critical section in
-table_load() -- leading to queue inconsistency.
+The latest version of trace-cmd has an "options" section. This allows
+you to add options to the file.
 
-I'll post v5 of the overall patch which will revert the mapped_device
-'queue_lock' serialization that I proposed in v4.  v5 will contain
-the following patch to localize all table load related queue
-manipulation to the _hash_lock protected critical section in
-table_load().  So it sets the queue up _after_ the table's type is
-established with dm_table_set_type().
+We could make a plugin that also can be used by trace-cmd record, that
+allows you to add options. The options are written such that if a
+trace-cmd does not know how to deal with them, they will be ignored.
 
-Thanks again for your review; I'll work to be more meticulous in the
-future!
+Hmm, but the options require a unique ID. Well we could register IDs
+with plugins, or add a plugin id, which uses the name of the plugin as
+an identifier too.
 
-diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
-index d7500e1..bfb283c 100644
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1180,6 +1180,14 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
- 		goto out;
- 	}
- 
-+	r = dm_table_setup_md_queue(t);
-+	if (r) {
-+		DMWARN("unable to setup device queue for this table");
-+		dm_table_destroy(t);
-+		up_write(&_hash_lock);
-+		goto out;
-+	}
-+
- 	if (hc->new_map)
- 		dm_table_destroy(hc->new_map);
- 	hc->new_map = t;
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index dec8295..990cf17 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -803,7 +803,6 @@ int dm_table_set_type(struct dm_table *t)
- 	if (bio_based) {
- 		/* We must use this table as bio-based */
- 		t->type = DM_TYPE_BIO_BASED;
--		dm_clear_request_based_queue(t->md);
- 		return 0;
- 	}
- 
-@@ -830,11 +829,6 @@ int dm_table_set_type(struct dm_table *t)
- 		return -EINVAL;
- 	}
- 
--	if (!dm_init_request_based_queue(t->md)) {
--		DMWARN("Cannot initialize queue for Request-based dm");
--		return -EINVAL;
--	}
--
- 	t->type = DM_TYPE_REQUEST_BASED;
- 
- 	return 0;
-@@ -850,6 +844,23 @@ bool dm_table_request_based(struct dm_table *t)
- 	return dm_table_get_type(t) == DM_TYPE_REQUEST_BASED;
- }
- 
-+/*
-+ * Setup the DM device's queue based on table's type.
-+ * Caller must serialize access to table's md.
-+ */
-+int dm_table_setup_md_queue(struct dm_table *t)
-+{
-+	if (dm_table_request_based(t)) {
-+		if (!dm_init_request_based_queue(t->md)) {
-+			DMWARN("Cannot initialize queue for Request-based dm");
-+			return -EINVAL;
-+		}
-+	} else
-+		dm_clear_request_based_queue(t->md);
-+
-+	return 0;
-+}
-+
- int dm_table_alloc_md_mempools(struct dm_table *t)
- {
- 	unsigned type = dm_table_get_type(t);
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index 143082c..76b61ca 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -1856,6 +1856,17 @@ static void dm_rq_barrier_work(struct work_struct *work);
- 
- static void dm_init_md_queue(struct mapped_device *md)
- {
-+	/*
-+	 * Request-based dm devices cannot be stacked on top of bio-based dm
-+	 * devices.  The type of this dm device has not been decided yet.
-+	 * The type is decided at the first table loading time.
-+	 * To prevent problematic device stacking, clear the queue flag
-+	 * for request stacking support until then.
-+	 *
-+	 * This queue is new, so no concurrency on the queue_flags.
-+	 */
-+	queue_flag_clear_unlocked(QUEUE_FLAG_STACKABLE, md->queue);
-+
- 	md->queue->queuedata = md;
- 	md->queue->backing_dev_info.congested_fn = dm_any_congested;
- 	md->queue->backing_dev_info.congested_data = md;
-@@ -1989,17 +2000,6 @@ int dm_init_request_based_queue(struct mapped_device *md)
- 
- 	elv_register_queue(md->queue);
- 
--	/*
--	 * Request-based dm devices cannot be stacked on top of bio-based dm
--	 * devices.  The type of this dm device has not been decided yet.
--	 * The type is decided at the first table loading time.
--	 * To prevent problematic device stacking, clear the queue flag
--	 * for request stacking support until then.
--	 *
--	 * This queue is new, so no concurrency on the queue_flags.
--	 */
--	queue_flag_clear_unlocked(QUEUE_FLAG_STACKABLE, md->queue);
--
- 	blk_queue_softirq_done(md->queue, dm_softirq_done);
- 	blk_queue_prep_rq(md->queue, dm_prep_fn);
- 	blk_queue_lld_busy(md->queue, dm_lld_busy);
-diff --git a/drivers/md/dm.h b/drivers/md/dm.h
-index 95aec64..b4ebb11 100644
---- a/drivers/md/dm.h
-+++ b/drivers/md/dm.h
-@@ -65,6 +65,7 @@ bool dm_table_request_based(struct dm_table *t);
- int dm_table_alloc_md_mempools(struct dm_table *t);
- void dm_table_free_md_mempools(struct dm_table *t);
- struct dm_md_mempools *dm_table_get_md_mempools(struct dm_table *t);
-+int dm_table_setup_md_queue(struct dm_table *t);
- 
- /*
-  * To check the return value from dm_table_find_target().
+But this would allow you to add the details you want about the system
+and then have the reader be able to print it out.
+
+How's that sound?
+
+-- Steve
+
+
