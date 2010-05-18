@@ -1,212 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758690Ab0ERSPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:15:32 -0400
-Received: from claw.goop.org ([74.207.240.146]:59807 "EHLO claw.goop.org"
+	id S1758724Ab0ERSP4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:15:56 -0400
+Received: from ferdi.naasa.net ([87.106.227.76]:49901 "EHLO ferdi.naasa.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758616Ab0ERSPa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:15:30 -0400
-Message-ID: <4BF2D941.5070401@goop.org>
-Date: Tue, 18 May 2010 11:15:29 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1758705Ab0ERSPy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 14:15:54 -0400
+X-Greylist: delayed 544 seconds by postgrey-1.27 at vger.kernel.org; Tue, 18 May 2010 14:15:53 EDT
+From: Joerg Platte <lists@naasa.net>
+Reply-To: jplatte@naasa.net
+To: =?utf-8?q?C=C3=A9dric_Godin?= <cedric@belbone.be>
+Subject: Re: drm regression on resume with -rc7 (bisected to 797fd5b9dad12a100c81b5782573a41259728cb1)
+Date: Tue, 18 May 2010 20:06:45 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.33.4; KDE/4.4.3; i686; ; )
+Cc: Marek =?utf-8?q?Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>,
+       dri-devel@lists.sourceforge.net,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Dave Airlie <airlied@redhat.com>
+References: <4BEB0EE6.1060002@belbone.be>
+In-Reply-To: <4BEB0EE6.1060002@belbone.be>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 08/12] Allow xen platform pci device to be compiled as
- a module
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201005182006.45798.lists@naasa.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 03:23 AM, Stefano Stabellini wrote:
+Am Wednesday, 12. May 2010 schrieb Cédric Godin:
+Hi,
 
-All the _hook stuff looks wrong. (below)
+> When resuming my laptop from a -rc7, my X session reacted 
+weirdly.
+> Reading the dmesg log, I had :
+> 
+> May 12 21:58:03 enea kernel: [  122.627332] 
+[drm:radeon_ib_schedule]
+> *ERROR* radeon: couldn't schedule IB(0).
+> May 12 21:58:03 enea kernel: [  122.627342] 
+[drm:radeon_cs_ioctl]
 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/xen/enlighten.c          |    3 +++
->  drivers/xen/events.c              |    1 +
->  drivers/xen/grant-table.c         |    6 +++++-
->  drivers/xen/manage.c              |   14 +++++++++++---
->  drivers/xen/xenbus/xenbus_probe.c |    1 +
->  include/xen/platform_pci.h        |   18 ++++--------------
->  6 files changed, 25 insertions(+), 18 deletions(-)
->
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index 23b8200..77ba321 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -85,7 +85,9 @@ struct shared_info xen_dummy_shared_info;
->  void *xen_initial_gdt;
->  
->  int xen_have_vector_callback;
-> +EXPORT_SYMBOL_GPL(xen_have_vector_callback);
->  int xen_platform_pci;
-> +EXPORT_SYMBOL_GPL(xen_platform_pci);
->  static int unplug;
->  
->  /*
-> @@ -1297,6 +1299,7 @@ int xen_set_callback_via(uint64_t via)
->  	a.value = via;
->  	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
->  }
-> +EXPORT_SYMBOL_GPL(xen_set_callback_via);
->  
->  void do_hvm_pv_evtchn_intr(void)
->  {
-> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> index cfc6d96..4840a03 100644
-> --- a/drivers/xen/events.c
-> +++ b/drivers/xen/events.c
-> @@ -695,6 +695,7 @@ void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
->  {
->  	__xen_evtchn_do_upcall(regs);
->  }
-> +EXPORT_SYMBOL_GPL(xen_hvm_evtchn_do_upcall);
->  
->  /* Rebind a new event channel to an existing irq. */
->  void rebind_evtchn_irq(int evtchn, int irq)
-> diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> index 6f5f3ba..f936d30 100644
-> --- a/drivers/xen/grant-table.c
-> +++ b/drivers/xen/grant-table.c
-> @@ -56,6 +56,9 @@
->  #define GNTTAB_LIST_END 0xffffffff
->  #define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry))
->  
-> +unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
-> +EXPORT_SYMBOL_GPL(alloc_xen_mmio_hook);
-> +
->  static grant_ref_t **gnttab_list;
->  static unsigned int nr_grant_frames;
->  static unsigned int boot_max_nr_grant_frames;
-> @@ -514,7 +517,7 @@ int gnttab_resume(void)
->  		return gnttab_map(0, nr_grant_frames - 1);
->  
->  	if (!hvm_pv_resume_frames) {
-> -		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-> +		hvm_pv_resume_frames = alloc_xen_mmio_hook(PAGE_SIZE * max_nr_gframes);
->   
+same problem here with 2.6.34 and Thinkpad T40 (Radeon Mobility 
+7500). The problem appeared after my upgrade to 2.6.34. 
+2.6.33.X does not have this problem. Is there any patch 
+available that I can test?
 
-This looks like it should be restructured so the pci device driver
-itself is doing this mapping, then calling into the grant subsystem to
-tell it where the mapping is.
-
->  		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
->  		if (shared == NULL) {
->  			printk(KERN_WARNING
-> @@ -600,6 +603,7 @@ int gnttab_init(void)
->  	kfree(gnttab_list);
->  	return -ENOMEM;
->  }
-> +EXPORT_SYMBOL_GPL(gnttab_init);
->  
->  static int __devinit __gnttab_init(void)
->  {
-> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-> index a73edd8..49ee52d 100644
-> --- a/drivers/xen/manage.c
-> +++ b/drivers/xen/manage.c
-> @@ -34,6 +34,13 @@ enum shutdown_state {
->  	 SHUTDOWN_HALT = 4,
->  };
->  
-> +void (*platform_pci_resume_hook)(void);
-> +EXPORT_SYMBOL_GPL(platform_pci_resume_hook);
-> +void (*platform_pci_disable_irq_hook)(void);
-> +EXPORT_SYMBOL_GPL(platform_pci_disable_irq_hook);
-> +void (*platform_pci_enable_irq_hook)(void);
-> +EXPORT_SYMBOL_GPL(platform_pci_enable_irq_hook);
->   
-
-If all this _hook stuff is here to support a modular xen platform pci
-device, then something has gone wrong.  The device should be doing this
-via its own suspend/resume handlers.
-
-> +
->  /* Ignore multiple shutdown requests. */
->  static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
->  
-> @@ -52,7 +59,7 @@ static int xen_hvm_suspend(void *data)
->  
->  	if (!*cancelled) {
->  		xen_irq_resume();
-> -		platform_pci_resume();
-> +		platform_pci_resume_hook();
->  	}
->  
->  	return 0;
-> @@ -119,7 +126,7 @@ static void do_hvm_suspend(void)
->  	printk(KERN_DEBUG "suspending xenstore... ");
->  	xenbus_suspend();
->  	printk(KERN_DEBUG "xenstore suspended\n");
-> -	platform_pci_disable_irq();
-> +	platform_pci_disable_irq_hook();
->  	
->  	err = stop_machine(xen_hvm_suspend, &cancelled, cpumask_of(0));
->  	if (err) {
-> @@ -127,7 +134,7 @@ static void do_hvm_suspend(void)
->  		cancelled = 1;
->  	}
->  
-> -	platform_pci_enable_irq();
-> +	platform_pci_enable_irq_hook();
->  
->  	if (!cancelled) {
->  		xen_arch_resume();
-> @@ -357,5 +364,6 @@ int xen_setup_shutdown_event(void)
->  
->  	return 0;
->  }
-> +EXPORT_SYMBOL_GPL(xen_setup_shutdown_event);
->  
->  subsys_initcall(__setup_shutdown_event);
-> diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
-> index a679205..f83e083 100644
-> --- a/drivers/xen/xenbus/xenbus_probe.c
-> +++ b/drivers/xen/xenbus/xenbus_probe.c
-> @@ -892,6 +892,7 @@ int xenbus_probe_init(void)
->    out_error:
->  	return err;
->  }
-> +EXPORT_SYMBOL_GPL(xenbus_probe_init);
->  
->  postcore_initcall(__xenbus_probe_init);
->  
-> diff --git a/include/xen/platform_pci.h b/include/xen/platform_pci.h
-> index ced434d..c3c2527 100644
-> --- a/include/xen/platform_pci.h
-> +++ b/include/xen/platform_pci.h
-> @@ -29,19 +29,9 @@
->  #define XEN_IOPORT_LINUX_PRODNUM 0xffff
->  #define XEN_IOPORT_LINUX_DRVVER  ((LINUX_VERSION_CODE << 8) + 0x0)
->  
-> -#ifdef CONFIG_XEN_PLATFORM_PCI
-> -unsigned long alloc_xen_mmio(unsigned long len);
-> -void platform_pci_resume(void);
-> -void platform_pci_disable_irq(void);
-> -void platform_pci_enable_irq(void);
-> -#else
-> -static inline unsigned long alloc_xen_mmio(unsigned long len)
-> -{
-> -	return ~0UL;
-> -}
-> -static inline void platform_pci_resume(void) {}
-> -static inline void platform_pci_disable_irq(void) {}
-> -static inline void platform_pci_enable_irq(void) {}
-> -#endif
-> +extern unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
-> +extern void (*platform_pci_resume_hook)(void);
-> +extern void (*platform_pci_disable_irq_hook)(void);
-> +extern void (*platform_pci_enable_irq_hook)(void);
->  
->  #endif /* _XEN_PLATFORM_PCI_H */
->   
-
+regards,
+Jörg
