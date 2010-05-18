@@ -1,41 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0ERGGn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:06:43 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:49949 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754961Ab0ERGGm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:06:42 -0400
-Message-ID: <4BF22EF0.8010202@cn.fujitsu.com>
-Date: Tue, 18 May 2010 14:08:48 +0800
-From: Li Zefan <lizf@cn.fujitsu.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
-MIME-Version: 1.0
-To: Steven Liu <lingjiujianke@gmail.com>
-CC: mike.miller@hp.com, linux-kernel@vger.kernel.org, iss_storagedev@hp.com,
-       liuqi@thunderst.com
-Subject: Re: [PATCH] cciss: fix code style in drivers/block/cciss_scsi.c
-References: <AANLkTilN3PuzIweiocSMOsYkYtcOHeQbh_KrOkLiAigk@mail.gmail.com>
-In-Reply-To: <AANLkTilN3PuzIweiocSMOsYkYtcOHeQbh_KrOkLiAigk@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1756412Ab0ERGMs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:12:48 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:58819
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755787Ab0ERGMr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:12:47 -0400
+Date: Mon, 17 May 2010 23:12:56 -0700 (PDT)
+Message-Id: <20100517.231256.146340344.davem@davemloft.net>
+To: aeb@debian.org
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [PATCH] ARCNET: Limit com20020 PCI ID matches for SOHARD cards
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100512004852.GA25845@amos.infernal>
+References: <20100512004852.GA25845@amos.infernal>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Liu wrote:
-> Hi, Mike Miller,
+From: Andreas Bombe <aeb@debian.org>
+Date: Wed, 12 May 2010 02:49:06 +0200
+
+> The SH SOHARD ARCNET cards are implemented using generic PLX Technology
+> PCI<->IOBus bridges. Subvendor and subdevice IDs were not specified,
+> causing the driver to attach to any such bridge and likely crash the
+> system by attempting to initialize an unrelated device.
 > 
-> if kmalloc memory for ld_buff failed,it will free currentsd  and
-> ld_buff once more
-
-No, it won't.
-
-> so i think this patch may be better
+> Fix by specifying subvendor and subdevice according to the values found
+> in the PCI-ID Repository at http://pci-ids.ucw.cz/ .
 > 
-> fix code style in drivers/block/cciss_scsi.c
-> 
+> Cc: stable@kernel.org
+> Signed-off-by: Andreas Bombe <aeb@debian.org>
 
-There is no bug or coding style issue, so just leave the code as it is.
-
-
+Applied, thank you.
