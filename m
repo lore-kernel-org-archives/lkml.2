@@ -1,254 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754417Ab0EROa6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 10:30:58 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:53024 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753467Ab0EROa4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 10:30:56 -0400
-From: Eric B Munson <ebmunson@us.ibm.com>
-To: mingo@elte.hu
-Cc: a.p.zijlstra@chello.nl, acme@redhat.com, arjan@linux.intel.com,
-       anton@samba.org, riel@redhat.com, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Eric B Munson <ebmunson@us.ibm.com>
-Subject: [PATCH V3] Split executable and non-executable mmap tracking
-Date: Tue, 18 May 2010 15:30:49 +0100
-Message-Id: <1274193049-25997-1-git-send-email-ebmunson@us.ibm.com>
-X-Mailer: git-send-email 1.7.0.4
+	id S1754495Ab0EROcV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 10:32:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26244 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751096Ab0EROcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 10:32:18 -0400
+Date: Tue, 18 May 2010 17:25:57 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
+Message-ID: <20100518142557.GA29457@redhat.com>
+References: <1273756043.5605.3542.camel@twins> <20100513152340.GA2879@linux.vnet.ibm.com> <20100517203349.GA14994@redhat.com> <20100517210606.GW2320@linux.vnet.ibm.com> <20100517220025.GA1366@Krystal> <20100517230533.GX2320@linux.vnet.ibm.com> <20100517234025.GA11700@Krystal> <20100518003429.GA2320@linux.vnet.ibm.com> <20100518013528.GA21866@Krystal> <20100518142008.GD2302@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518142008.GD2302@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch splits tracking of executable and non-executable mmaps.
-Executable mmaps are tracked normally and non-executable are
-tracked when --data is used.
+On Tue, May 18, 2010 at 07:20:08AM -0700, Paul E. McKenney wrote:
+> On Mon, May 17, 2010 at 09:35:28PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > On Mon, May 17, 2010 at 07:40:25PM -0400, Mathieu Desnoyers wrote:
+> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > On Mon, May 17, 2010 at 06:00:25PM -0400, Mathieu Desnoyers wrote:
+> 
+> [ . . . ]
+> 
+> > > > > But perhaps we should be simply treating this as a use-after-free
+> > > > > problem, so that RCU is not directly involved. Isn't that the standard
+> > > > > use of debugobjects anyway?
+> > > > 
+> > > > OK so we could tie "rcu_dereference" do debugobjects, and free would be
+> > > > a standard free. Yes, I think it could be done. It looks a bit like the
+> > > > memory allocation debugging code. If we know that a certain
+> > > > rcu_dereference always access dynamically allocated memory, we could
+> > > > probably add some checks there based on the memory allocator debug
+> > > > objects.
+> > > 
+> > > We probably need vhost to add code at the end of the relevant RCU
+> > > read-side critical section checking that the pointers returned by
+> > > any rcu_dereference() calls still point to valid memory.  Don't get
+> > > me wrong, your approach could find bugs in which someone forgot to
+> > > remove the RCU-protected structure from a public list, but it could
+> > > not detect failure to wait a grace period between the time of removal
+> > > and the time of freeing.
+> > 
+> > Good point too. So something like a new rcu_unreference() (or feel free
+> > to find any better name) ;) that would be compiled out normally, but
+> > would call into debugobjects might do the trick. We would have to add
+> > these annotations to match every rcu_dereference() though, might means a
+> > lot of new lines of code. On the plus side, that looks like a good audit
+> > of RCU read-side use. ;)
+> 
+> My first thought is that we have added quite a bit of RCU consistency
+> check code in the past few months, so we should see what bugs they find
+> and what bugs escape.  It is all too easy to create consistency check
+> code that is more trouble than it is worth.
 
-Signed-off-by: Anton Blanchard <anton@samba.org>
+Right. Do the patches that started this discussion catch anything BTW?
 
-Updated code for stable perf ABI
-Signed-off-by: Eric B Munson <ebmunson@us.ibm.com>
----
-Changes from V2:
--In free_event and perf_event_mmap, collapse the attr.mmap and attr.mmap_data
- if statements into a single or'd if
--Add perf_mmap_event call in expand_upwards to match call in expand_downwards
+> But in the meantime, let's see what would be required to check for
+> failures to insert grace-period delays:
+> 
+> o	There would need to be something like rcu_unreference(),
+> 	rcu_no_more_readers() or some such after the grace period.
+> 	The update side would then become something like the following:
+> 
+> 		oldp = rcu_dereference_protected(gp, &mylock);
+> 		rcu_assign_pointer(gp, newp);
+> 		synchronize_rcu();
+> 		rcu_no_more_readers(oldp);
+> 		kfree(oldp);
+> 
+> o	There would need to be something to check all of the pointers
+> 	traversed in the read-side critical sections:
+> 
+> 		rcu_read_lock();
+> 		...
+> 		p1 = rcu_dereference(gp1->field1);
+> 		...
+> 		p2 = rcu_dereference(gp2->field2);
+> 		...
+> 
+> 		rcu_validate(p1);
+> 		rcu_validate(p2);
+> 		rcu_read_unlock();
+> 
 
-Changes from V1:
--Changed mmap_exec to mmap_data and left mmap as the executable mmap tracker
- to maintain backwards compatibility
--Insert mmap_data at the end of the attr bit map
----
- fs/exec.c                   |    1 +
- include/linux/perf_event.h  |   12 +++---------
- kernel/perf_event.c         |   34 +++++++++++++++++++++++-----------
- mm/mmap.c                   |    6 +++++-
- tools/perf/builtin-record.c |    4 +++-
- 5 files changed, 35 insertions(+), 22 deletions(-)
+what does rcu_validate do?
 
-diff --git a/fs/exec.c b/fs/exec.c
-index e6e94c6..8204aef 100644
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -648,6 +648,7 @@ int setup_arg_pages(struct linux_binprm *bprm,
- 	else
- 		stack_base = vma->vm_start - stack_expand;
- #endif
-+	current->mm->start_stack = bprm->p;
- 	ret = expand_stack(vma, stack_base);
- 	if (ret)
- 		ret = -EFAULT;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 3fd5c82..e424ee7 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -214,8 +214,9 @@ struct perf_event_attr {
- 				 *  See also PERF_RECORD_MISC_EXACT_IP
- 				 */
- 				precise_ip     :  2, /* skid constraint       */
-+				mmap_data      :  1. /* non-exec mmap data    */
- 
--				__reserved_1   : 47;
-+				__reserved_1   : 46;
- 
- 	union {
- 		__u32		wakeup_events;	  /* wakeup every n events */
-@@ -956,14 +957,7 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- 	}
- }
- 
--extern void __perf_event_mmap(struct vm_area_struct *vma);
--
--static inline void perf_event_mmap(struct vm_area_struct *vma)
--{
--	if (vma->vm_flags & VM_EXEC)
--		__perf_event_mmap(vma);
--}
--
-+extern void perf_event_mmap(struct vm_area_struct *vma);
- extern struct perf_guest_info_callbacks *perf_guest_cbs;
- extern int perf_register_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
- extern int perf_unregister_guest_info_callbacks(struct perf_guest_info_callbacks *callbacks);
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index a4fa381..e7ba170 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -1848,7 +1848,7 @@ static void free_event(struct perf_event *event)
- 
- 	if (!event->parent) {
- 		atomic_dec(&nr_events);
--		if (event->attr.mmap)
-+		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_dec(&nr_mmap_events);
- 		if (event->attr.comm)
- 			atomic_dec(&nr_comm_events);
-@@ -3413,7 +3413,7 @@ perf_event_read_event(struct perf_event *event,
- /*
-  * task tracking -- fork/exit
-  *
-- * enabled by: attr.comm | attr.mmap | attr.task
-+ * enabled by: attr.comm | attr.mmap | attr.mmap_data | attr.task
-  */
- 
- struct perf_task_event {
-@@ -3473,7 +3473,8 @@ static int perf_event_task_match(struct perf_event *event)
- 	if (event->cpu != -1 && event->cpu != smp_processor_id())
- 		return 0;
- 
--	if (event->attr.comm || event->attr.mmap || event->attr.task)
-+	if (event->attr.comm || event->attr.mmap ||
-+	    event->attr.mmap_data || event->attr.task)
- 		return 1;
- 
- 	return 0;
-@@ -3698,7 +3699,8 @@ static void perf_event_mmap_output(struct perf_event *event,
- }
- 
- static int perf_event_mmap_match(struct perf_event *event,
--				   struct perf_mmap_event *mmap_event)
-+				   struct perf_mmap_event *mmap_event,
-+				   int executable)
- {
- 	if (event->state < PERF_EVENT_STATE_INACTIVE)
- 		return 0;
-@@ -3706,19 +3708,21 @@ static int perf_event_mmap_match(struct perf_event *event,
- 	if (event->cpu != -1 && event->cpu != smp_processor_id())
- 		return 0;
- 
--	if (event->attr.mmap)
-+	if ((!executable && event->attr.mmap_data) ||
-+	    (executable && event->attr.mmap))
- 		return 1;
- 
- 	return 0;
- }
- 
- static void perf_event_mmap_ctx(struct perf_event_context *ctx,
--				  struct perf_mmap_event *mmap_event)
-+				  struct perf_mmap_event *mmap_event,
-+				  int executable)
- {
- 	struct perf_event *event;
- 
- 	list_for_each_entry_rcu(event, &ctx->event_list, event_entry) {
--		if (perf_event_mmap_match(event, mmap_event))
-+		if (perf_event_mmap_match(event, mmap_event, executable))
- 			perf_event_mmap_output(event, mmap_event);
- 	}
- }
-@@ -3762,6 +3766,14 @@ static void perf_event_mmap_event(struct perf_mmap_event *mmap_event)
- 		if (!vma->vm_mm) {
- 			name = strncpy(tmp, "[vdso]", sizeof(tmp));
- 			goto got_name;
-+		} else if (vma->vm_start <= vma->vm_mm->start_brk &&
-+				vma->vm_end >= vma->vm_mm->brk) {
-+			name = strncpy(tmp, "[heap]", sizeof(tmp));
-+			goto got_name;
-+		} else if (vma->vm_start <= vma->vm_mm->start_stack &&
-+				vma->vm_end >= vma->vm_mm->start_stack) {
-+			name = strncpy(tmp, "[stack]", sizeof(tmp));
-+			goto got_name;
- 		}
- 
- 		name = strncpy(tmp, "//anon", sizeof(tmp));
-@@ -3778,17 +3790,17 @@ got_name:
- 
- 	rcu_read_lock();
- 	cpuctx = &get_cpu_var(perf_cpu_context);
--	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event);
-+	perf_event_mmap_ctx(&cpuctx->ctx, mmap_event, vma->vm_flags & VM_EXEC);
- 	ctx = rcu_dereference(current->perf_event_ctxp);
- 	if (ctx)
--		perf_event_mmap_ctx(ctx, mmap_event);
-+		perf_event_mmap_ctx(ctx, mmap_event, vma->vm_flags & VM_EXEC);
- 	put_cpu_var(perf_cpu_context);
- 	rcu_read_unlock();
- 
- 	kfree(buf);
- }
- 
--void __perf_event_mmap(struct vm_area_struct *vma)
-+void perf_event_mmap(struct vm_area_struct *vma)
- {
- 	struct perf_mmap_event mmap_event;
- 
-@@ -4795,7 +4807,7 @@ done:
- 
- 	if (!event->parent) {
- 		atomic_inc(&nr_events);
--		if (event->attr.mmap)
-+		if (event->attr.mmap || event->attr.mmap_data)
- 			atomic_inc(&nr_mmap_events);
- 		if (event->attr.comm)
- 			atomic_inc(&nr_comm_events);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 456ec6f..e38e910 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -1734,8 +1734,10 @@ int expand_upwards(struct vm_area_struct *vma, unsigned long address)
- 		grow = (address - vma->vm_end) >> PAGE_SHIFT;
- 
- 		error = acct_stack_growth(vma, size, grow);
--		if (!error)
-+		if (!error) {
- 			vma->vm_end = address;
-+			perf_event_mmap(vma);
-+		}
- 	}
- 	anon_vma_unlock(vma);
- 	return error;
-@@ -1781,6 +1783,7 @@ static int expand_downwards(struct vm_area_struct *vma,
- 		if (!error) {
- 			vma->vm_start = address;
- 			vma->vm_pgoff -= grow;
-+			perf_event_mmap(vma);
- 		}
- 	}
- 	anon_vma_unlock(vma);
-@@ -2208,6 +2211,7 @@ unsigned long do_brk(unsigned long addr, unsigned long len)
- 	vma->vm_page_prot = vm_get_page_prot(flags);
- 	vma_link(mm, vma, prev, rb_link, rb_parent);
- out:
-+	perf_event_mmap(vma);
- 	mm->total_vm += len >> PAGE_SHIFT;
- 	if (flags & VM_LOCKED) {
- 		if (!mlock_vma_pages_range(vma, addr, addr + len))
-diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
-index cb46c7d..d047388 100644
---- a/tools/perf/builtin-record.c
-+++ b/tools/perf/builtin-record.c
-@@ -284,8 +284,10 @@ static void create_counter(int counter, int cpu)
- 	if (inherit_stat)
- 		attr->inherit_stat = 1;
- 
--	if (sample_address)
-+	if (sample_address) {
- 		attr->sample_type	|= PERF_SAMPLE_ADDR;
-+		attr->mmap_data = track;
-+	}
- 
- 	if (call_graph)
- 		attr->sample_type	|= PERF_SAMPLE_CALLCHAIN;
--- 
-1.7.0.4
+> One thing that bothers me about this is that we are forcing the developer
+> to do a lot of extra typing.  For example, rcu_no_more_readers() is in
+> a truth-and-beauty sense redundant with kfree() -- why type both?
 
+With kfree, yes. We could stick rcu_no_more_readers in kfree I guess?
+
+> The
+> same could be said about rcu_validate() and rcu_read_unlock(), but nested
+> RCU read-side critical sections make this difficult.
+> Or am I misunderstanding what you are suggesting?
+> 
+> 							Thanx, Paul
