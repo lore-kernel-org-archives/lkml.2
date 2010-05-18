@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752906Ab0ERABb (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 20:01:31 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:42266 "EHLO mx3.mail.elte.hu"
+	id S1753780Ab0ERACi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 20:02:38 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:56494 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751996Ab0ERABa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 20:01:30 -0400
-Date: Tue, 18 May 2010 02:00:52 +0200
+	id S1751996Ab0ERACf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 20:02:35 -0400
+Date: Tue, 18 May 2010 02:02:21 +0200
 From: Ingo Molnar <mingo@elte.hu>
 To: Dan Magenheimer <dan.magenheimer@oracle.com>
 Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
@@ -15,7 +15,7 @@ Cc: Thomas Gleixner <tglx@linutronix.de>, Andi Kleen <andi@firstfloor.org>,
        "H. Peter Anvin" <hpa@zytor.com>, chris.mason@oracle.com,
        linux-kernel@vger.kernel.org
 Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-Message-ID: <20100518000052.GC20590@elte.hu>
+Message-ID: <20100518000221.GD20590@elte.hu>
 References: <87tyq9mqrz.fsf@basil.nowhere.org>
  <35aa841b-e151-424d-b1c1-0c03dbcae5cc@default>
  <20100517102214.GA20761@basil.fritz.box>
@@ -32,7 +32,7 @@ X-ELTE-SpamCheck: no
 X-ELTE-SpamVersion: ELTE 2.0 
 X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
 	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	[score: 0.0009]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
@@ -40,30 +40,15 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 * Dan Magenheimer <dan.magenheimer@oracle.com> wrote:
 
-> OK, well ignoring the metaphor, it's clear we 
-> disagree on a point that neither one of us can 
-> prove: You think your decision to avoid sharing 
-> kernel information will stop system programmers 
-> from using rdtsc, and I think some are going to use 
-> rdtsc anyway and blame Linux when something 
-> eventually and silently breaks.
+> Given that I'm not going to win this argument even 
+> by pointing to examples, [...]
 
-Applications can do various unreliable things, the 
-kernel cannot do anything about that.
+You could win the argument by coming up with a patch 
+that changes gettimeofday to make use of the TSC in a 
+reliable manner.
 
-The point is for the kernel to not be complicit in 
-practices that are technically not reliable.
-
-So the kernel wont 'signal' that something is safe to 
-use if it is not safe to use.
-
-One suggestion in this thread makes sense i think: to 
-signal via sysfs that gettimeofday is slow.
-
-Plus lets hope that we really can figure out a fast, 
-TSC based gettimeofday implementation. If that is 
-possible then user-space will get a fast gettimeofday 
-right out of box.
+I really mean it - and it might be possible - but we 
+have not found it yet.
 
 Thanks,
 
