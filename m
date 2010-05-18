@@ -1,235 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756286Ab0ERB2V (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 21:28:21 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52047 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754046Ab0ERB2T (ORCPT
+	id S1756070Ab0ERBfe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 21:35:34 -0400
+Received: from tomts10-srv.bellnexxia.net ([209.226.175.54]:44799 "EHLO
+	tomts10-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753913Ab0ERBfc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 21:28:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=KtJYd1x6m5n+cY/8cc1rhKXa77e85A3EmnpCfO7uXPqWqluNV5UCdQNeHpws+/O4Xl
-         xePXP6jUoFQW/JOvGHitPamJynYnP5TyW35RaqHaDhWdRr+Uwo/6U+sf90+ha9h74RR4
-         SQRw8zVL2ZsLp7gWlPhcCJbAmkvpqCceX734M=
-MIME-Version: 1.0
-From: "Luis R. Rodriguez" <mcgrof@gmail.com>
-Date: Mon, 17 May 2010 18:27:57 -0700
-Message-ID: <AANLkTilqhQ0wsZZ_ZRaZJQQqMxsQ5e5yocNWFj_6yoM4@mail.gmail.com>
-Subject: Compat-wireless for 2.6.34 final - 802.11 and bluetooth backported
-To: linux-wireless <linux-wireless@vger.kernel.org>,
-       linux-bluetooth <linux-bluetooth@vger.kernel.org>
-Cc: linux-kernel@vger.kernel.org, Pavel Roskin <proski@gnu.org>,
-       Hauke Mehrtens <hauke@hauke-m.de>
-Content-Type: text/plain; charset=UTF-8
+	Mon, 17 May 2010 21:35:32 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAPuK8UtGGOJc/2dsb2JhbACdeHKvCo4xhRAE
+Date: Mon, 17 May 2010 21:35:28 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
+       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
+       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
+       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
+       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
+Message-ID: <20100518013528.GA21866@Krystal>
+References: <20100512214847.GD22930@redhat.com> <20100512230057.GH2303@linux.vnet.ibm.com> <1273756043.5605.3542.camel@twins> <20100513152340.GA2879@linux.vnet.ibm.com> <20100517203349.GA14994@redhat.com> <20100517210606.GW2320@linux.vnet.ibm.com> <20100517220025.GA1366@Krystal> <20100517230533.GX2320@linux.vnet.ibm.com> <20100517234025.GA11700@Krystal> <20100518003429.GA2320@linux.vnet.ibm.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+In-Reply-To: <20100518003429.GA2320@linux.vnet.ibm.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 21:31:42 up 40 days, 11:25,  3 users,  load average: 0.15, 0.17,
+	0.15
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34 was released today and now we get a respective compat-wireless
-stable [1] tarball based on it [2]. This gives us the 2.6.34 802.11
-subsystem, bluetooth subsystem and new 802.11/bluetooth drivers
-compilable and installable on older kernels. Please report any issues
-ASAP. For details on changes you can refer to the
-ChangeLog-2.6.34-wireless [3].
+* Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> On Mon, May 17, 2010 at 07:40:25PM -0400, Mathieu Desnoyers wrote:
+> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > On Mon, May 17, 2010 at 06:00:25PM -0400, Mathieu Desnoyers wrote:
+> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
+> > > > > On Mon, May 17, 2010 at 11:33:49PM +0300, Michael S. Tsirkin wrote:
+> > > > > > On Thu, May 13, 2010 at 08:23:40AM -0700, Paul E. McKenney wrote:
+> > > > > > > On Thu, May 13, 2010 at 03:07:23PM +0200, Peter Zijlstra wrote:
+> > > > > > > > On Wed, 2010-05-12 at 16:00 -0700, Paul E. McKenney wrote:
+> > > > > > > > > Any thoughts?  One approach would be to create a separate lockdep class
+> > > > > > > > > for vhost workqueue state, similar to the approach used in instrument
+> > > > > > > > > rcu_read_lock() and friends. 
+> > > > > > > > 
+> > > > > > > > workqueue_struct::lockdep_map, its held while executing worklets.
+> > > > > > > > 
+> > > > > > > > lock_is_held(&vhost_workqueue->lockdep_map), should do as you want.
+> > > > > > > 
+> > > > > > > Thank you, Peter!!!
+> > > > > > > 
+> > > > > > > 							Thanx, Paul
+> > > > > > 
+> > > > > > vhost in fact does flush_work rather than
+> > > > > > flush_workqueue, so while for now everything runs
+> > > > > > from vhost_workqueue in theory nothing would break
+> > > > > > if we use some other workqueue or even a combination
+> > > > > > thereof.
+> > > > > > 
+> > > > > > I guess when/if this happens, we could start by converting
+> > > > > > to _raw and then devise a solution.
+> > > > > 
+> > > > > If there are a small finite number of work queues involved, we can
+> > > > > easily do something like:
+> > > > > 
+> > > > > 	#ifdef CONFIG_PROVE_RCU
+> > > > > 	int in_vhost_workqueue(void)
+> > > > > 	{
+> > > > > 		return in_workqueue_context(vhost_workqueue) ||
+> > > > > 		       in_workqueue_context(vhost_other_workqueue) ||
+> > > > > 		       in_workqueue_context(yet_another_vhost_workqueue);
+> > > > > 	}
+> > > > > 	#endif /* #ifdef CONFIG_PROVE_RCU */
+> > > > > 
+> > > > > Seem reasonable?
+> > > > > 
+> > > > > > By the way what would be really nice is if we had a way
+> > > > > > to trap when rcu protected pointer is freed without a flush
+> > > > > > while some reader is running. Current annotation does not
+> > > > > > allow this, does it?
+> > > > > 
+> > > > > Right now, it does not, but I wonder if something like Thomas's and
+> > > > > Mathieu's debugobjects work could be brought to bear on this problem?
+> > > > > This would need to be implemented in vhost, as synchronize_rcu() has
+> > > > > no way to know what memory it is flushing, nor does flush_work().
+> > > > 
+> > > > We can think of my recent debugobjects addition as a small state machine
+> > > > that is described by the code that owns the objects. At each state
+> > > > transition, the code passes the expected state as well as the next
+> > > > state.
+> > > > 
+> > > > The current implementation can only keep track of a single "state" per
+> > > > object at once. This should be extended to be able to count the number
+> > > > RCU read side C.S. in flight that are accessing to an object.
+> > > 
+> > > Not a problem, as vhost doesn't use call_rcu().  So there won't be a
+> > > conflict between different debugobjects views of the same memory.
+> > 
+> > Not quite sure I follow you here.
+> 
+> vhost uses only synchronize_rcu() and flush_work().  The existing
+> debugobjects tagging would therefore be unaware of the actual object,
+> instead tagging the rcu_head that synchronize_rcu() allocated on
+> the stack, and being out of the picture completely in the case of
+> flush_work().
+> 
+> Either way, RCU is completely unaware of exactly which structure is
+> being pushed through a grace period, so RCU's debugobjects tagging cannot
+> possibly conflict with any tagging that vhost does.
 
-Worth mentioning for this release is I've updated the version tagging
-for compat-wireless to allow distributions/users/developers to keep
-better track of what exact revision is being used. This was based on
-Pavel Roskin's suggestion to use read-only module parameters which are
-kept even if you build this tarball into your kernel somehow. Here is
-an example of the new files and example output based on this specific
-new tarball release:
+I see.
 
-$ sudo grep '' /sys/module/compat/parameters/compat_*
-/sys/module/compat/parameters/compat_base_tree:linux-2.6-allstable.git
-/sys/module/compat/parameters/compat_base_tree_version:v2.6.34
-/sys/module/compat/parameters/compat_version:compat-wireless-v2.6.34-6-g0ad438e
+> 
+> > > > We could use a hook in rcu_dereference (which knows about the object)
+> > > > and a hook in rcu_read_unlock (which determines the end of valid object
+> > > > use).
+> > > > 
+> > > > We should hook into rcu_assign_pointer() to detect RCU structure
+> > > > privatization. It should put these objects in a "privatized" hash table.
+> > > > 
+> > > > We should also hook into synchronize_rcu/sched() to remove the
+> > > > privatized structures from the privatized hash.
+> > > > 
+> > > > A hook in "kfree" (maybe a new rcu_free(void (fctptr*)(void *)) wrapper ?)
+> > > > would call a debugobject hook that would lookup the "privatized" hash.
+> > > > If it contains the object to free, we check if there are RCU read-side
+> > > > C.S. in flight using this object at the same time, and show an error if
+> > > > both are true.
+> > > 
+> > > I believe that we can't bury this into the RCU primitives, because
+> > > rcu_read_unlock() doesn't know what objects were referenced in the
+> > > RCU read-side critical section.
+> > 
+> > Well, if we can find a way to match a sequence of rcu_dereference
+> > performed from a thread with the following rcu_read_unlock(), then we
+> > might have the information we need. But we would have to somehow tie the
+> > debugobject context to the thread context. That sounds too complex for
+> > what we are trying to achieve here.
+> 
+> Indeed!  Especially given the fact that RCU read-side critical sections
+> can be nested.  Which rcu_dereference() calls go with which RCU read-side
+> critical section?
 
-Upon loading the compat module you would also see this output:
+Good point.
 
-Compat-wireless backport release: compat-wireless-v2.6.34-6-g0ad438e
-Backport based on linux-2.6-allstable.git v2.6.34
+> 
+> > > But perhaps we should be simply treating this as a use-after-free
+> > > problem, so that RCU is not directly involved. Isn't that the standard
+> > > use of debugobjects anyway?
+> > 
+> > OK so we could tie "rcu_dereference" do debugobjects, and free would be
+> > a standard free. Yes, I think it could be done. It looks a bit like the
+> > memory allocation debugging code. If we know that a certain
+> > rcu_dereference always access dynamically allocated memory, we could
+> > probably add some checks there based on the memory allocator debug
+> > objects.
+> 
+> We probably need vhost to add code at the end of the relevant RCU
+> read-side critical section checking that the pointers returned by
+> any rcu_dereference() calls still point to valid memory.  Don't get
+> me wrong, your approach could find bugs in which someone forgot to
+> remove the RCU-protected structure from a public list, but it could
+> not detect failure to wait a grace period between the time of removal
+> and the time of freeing.
 
-Since git describe is being used to describe both the base tree and
-the compat-wireless release you will be able to tell how many patches
-on top of the base tree have been applied. This should account for any
-deltas you have created and reflect that (hope is the delta is always
-0 with respect to upstream). In the above example output there are 6
-patches on top of the "compat-wireless-v2.6.34" tag I created for the
-first release, I then found some bugs due to the new version scheme
-changes and fixed some of them, so I have applied 6 patches on top of
-the original release.
+Good point too. So something like a new rcu_unreference() (or feel free
+to find any better name) ;) that would be compiled out normally, but
+would call into debugobjects might do the trick. We would have to add
+these annotations to match every rcu_dereference() though, might means a
+lot of new lines of code. On the plus side, that looks like a good audit
+of RCU read-side use. ;)
 
-I should note there are a few modules which *do not* make use of the
-compat module but do make use of a lot of the defines at build time,
-an example of such a module is rndis_wlan so you'd have to load the
-compat module manually to get the above info or run strings on the
-module.
+Thanks,
 
-With bleeding edge releases you will now get:
+Mathieu
 
-$ sudo grep '' /sys/module/compat/parameters/compat_*
-/sys/module/compat/parameters/compat_base_tree:linux-next.git
-/sys/module/compat/parameters/compat_base_tree_version:next-20100517
-/sys/module/compat/parameters/compat_version:compat-wireless-20100517-7-ged07f6b
+> 
+> 							Thanx, Paul
+> 
+> > Thanks,
+> > 
+> > Mathieu
+> > 
+> > 
+> > > 
+> > > 							Thanx, Paul
+> > > 
+> > > > Thoughts ?
+> > > > 
+> > > > Mathieu
+> > > > 
+> > > > 
+> > > > > 
+> > > > > 						Thanx, Paul
+> > > > 
+> > > > -- 
+> > > > Mathieu Desnoyers
+> > > > Operating System Efficiency R&D Consultant
+> > > > EfficiOS Inc.
+> > > > http://www.efficios.com
+> > 
+> > -- 
+> > Mathieu Desnoyers
+> > Operating System Efficiency R&D Consultant
+> > EfficiOS Inc.
+> > http://www.efficios.com
 
-The respective output upon load is:
-
-Compat-wireless backport release: compat-wireless-20100517-7-ged07f6b
-Backport based on linux-next.git next-20100517
-
-If there are any questions please let me know.
-
-On a final note thanks to all those who have contributed to this
-2.6.34 release of both the generic kernel compatibility module and
-compat-wireless, specially to Haukes and Pavel.
-
-Below is the shortlog linux-2.6.33.y.. of compat-wireless:
-
-Bala Shanmugam (1):
-      compat-2.6: New targets to compile bluetooth alone
-
-Hauke Mehrtens (17):
-      compat-wireless: Add more functions into netdev oops backport
-      compat-wireless: backport kfifo for libertas
-      compat-wireless: Backport net_device_ops set_mac_address
-      compat-wireless: activate usbnet for kernel > 2.6.28
-      compat-wireless: Activate ssb and libertas
-      compat-wireless: Add missing file
-      This adds a refresh option to admin-update.sh using quilt.
-      compat-wireless: Refresh patches
-      compat-wireless: small fixes to admin-update.sh
-      compat-wireless: Backport netdev_ops select_queue
-      compat-wireless: remove device_type in usbnet.c
-      compat-wireless: missing ksize export
-      compat-wireless: fix constant name
-      compat-wireless: fix bluetooth capi build
-      compat-wireless: update .gitignore
-      compat-wireless: update config options
-      compat-wireless: Fix refresh script if no patches are available
-
-Luis R. Rodriguez (55):
-      Update patch hunk offsets for next-20091228
-      Intel removed uts header, update patch for that
-      Update patch hunks for next-20100106
-      Remove pointless bt-install-scripts extra target
-      Fix iwlagn patch offset breakage
-      Update patch 01-netdev.patch offsets
-      Update 17-netdev-queue.patch offsets
-      Update hunk offsets for 15-symbol-export-conflicts.patch
-      Update error message on old unsupported kernels
-      Add support for driver-select to enable older kernels
-      Stop carrying around bitops.h header
-      Stop carrying around pm_qos_params.h
-      Stop carrying around the include/linux/unaligned stuff
-      Actually copy over the new headers from compat
-      Move down bluetooth config.mk options
-      Prevent CONFIG_COMPAT_BLUETOOTH_* options from going to compat_autoconf.h
-      Disable bluetooth compat for kernels older than 2.6.27
-      Enable CONFIG_BT_CMTP only if CONFIG_BT_CMTP is enabled
-      Ran ./scripts/admin-update.sh refresh
-      Fix driver-select for ath9k and ath5k
-      Fix a few typos on config.mk and the new enable olde kernel patches
-      Enable 2.6.23 for ath9k and ath5k
-      Backport access to pcidev->is_pcie member for kernels < 2.6.24
-      Add backport for netns for kernels <= 2.6.24 for 802.11
-      Disable 2.6.24 for ath9k and ath5k
-      ./scripts/admin-update.sh refresh
-      Fix typo on 06-header-changes.patch
-      Enable CONFIG_COMPAT_FIRMWARE_CLASS for kernels < 2.6.33
-      Fix driver_select for ar9170
-      Only build compat_firmware_class if CONFIG_FW_LOADER was enabled
-      Copy over the new udev scripts/rules from compat.git
-      ./scripts/admin-update.sh refresh
-      Run admin-update-.sh refresh for 2010-02-01
-      compat-wireless: fix patches/16-bluetooth.patch
-      Run ./scripts/admin-update.sh refresh
-      Fix patches/16-bluetooth.patch
-      Enable CONFIG_BT_ATH3K
-      ./scripts/admin-update.sh refresh for next-20100216
-      Backport multiqueue support for kernels < 2.6.27
-      Add linux-next cherry picked patches directory
-      Skip empty patch directories if one is found.
-      Some updates to make the patches apply to 2.6.34
-      admin-update refresh
-      compat-wireless: add test cherry pick patch
-      Fix drivers usb Makefile for 2.6.34
-      ./scripts/admin-update.sh refresh
-      Change admin-update.sh to use system version files
-      Split up the NOSTDINC_FLAGS into a few lines
-      Use the defines to tag the compat module
-      Document /sys/module/compat/parameters/compat_* on README
-      Fix dependency on on WEXT
-      Fix the CREL compat-wireless release name on top level Makefile
-      Fix gen-compat-autoconf.sh for new version name changes
-      Fix scripts/driver-select due to new version changes
-      Add the compat to the unload of the modules
-
-And the generic kernel compatibility module keeps moving along as
-well, here's that shortlog:
-
-Felix Fietkau (2):
-      compat: fix firmware class compile on linux 2.6.32
-      compat: add rcu_dereference_check
-
-Grazvydas Ignotas (1):
-      compat: fix uevent_suppress on 2.6.29 or older kernels
-
-Hauke Mehrtens (19):
-      compat: fix two return types
-      compat: autoconf.h moved from linux/ to generated/ with kernel 2.6.33
-      compat: build pccard and pcmcia condituinaly
-      compat: fix build with CONFIG_USB=m
-      compat: fix build on arm
-      compat: backport genlmsg_unicast
-      compat: backport some netdevice.h defs
-      compat: backport some more of the netdev debug printk
-      compat: fix some build problems with kernel 2.6.24
-      compat: backport device_{lock,trylock,unlock}
-      compat: update bitops.h
-      compat: backport PCMCIA_DEVICE_PROD_ID3
-      compat: Backport clamp
-      compat: Add definitions needed for libertas sdio driver.
-      compat: Add linux/version.h include before using it.
-      compat: backport convert multicast list to list_head.
-      compat: update compat_firmware_class.c to new version
-      compat: backport sk_sleep
-      compat: backport usb_alloc_coherent() and usb_free_coherent()
-
-Luis R. Rodriguez (17):
-      Add notes about why debugfs_remove_recursive() cannot be backported
-      Update for next-20100113
-      Backport the new firmware_class from > 2.6.33 down to 2.6.23
-      Enable the compat_firmware_class to be built only on < 2.6.32
-      Enable 2.6.33 compatibility
-      Export CONFIG_COMPAT_FIRMWARE_CLASS
-      Fix loading of compat_firmware_class due to class name conflict
-      Only build compat_firmware_class if CONFIG_FW_LOADER was enabled
-      Fix build with CONFIG_PCMCIA disabled
-      Fix build with CONFIG_USB disabled
-      Install udev rules and scripts needed for compat_firmware_class
-      Add a print for v2.6.34-rc4
-      compat: add compat_version read-only module parameter
-      Modify compat main print
-      Add the COMPAT_BASE_TREE and COMPAT_BASE_TREE_VERSION
-      Add a COMPAT_PROJECT tag
-      Fix the syntax for the defines passed for compat
-
-Pavel Roskin (9):
-      compat: backport for ARM dma_sync_single_range_*() helpers
-      compat: backport debugfs_remove_recursive()
-      compat: move debugfs_remove_recursive() to compat-2.6.27
-      compat: define KEY_RFKILL, which appeared in Linux 2.6.33
-      compat: add compat-2.6.35.h and IW_HANDLER
-      compat: add qdisc_all_tx_empty for Linux 2.6.26 and older
-      compat: add device_create() implementation for Linux 2.6.26 and older
-      compat: add stub headers linux/tracepoint.h and trace/define_trace.h
-      compat: add net/net_namespace.h stub for Linux 2.6.23 and older
-
-[1] http://wireless.kernel.org/en/users/Download/stable
-[2] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.34/compat-wireless-2.6.34.tar.bz2
-[3] http://www.orbit-lab.org/kernel/compat-wireless-2.6-stable/v2.6.34/ChangeLog-2.6.34-wireless
-
-  Luis
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
