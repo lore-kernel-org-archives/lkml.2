@@ -1,73 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758711Ab0ERSoD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:44:03 -0400
-Received: from fg-out-1718.google.com ([72.14.220.159]:40301 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756799Ab0ERSoA (ORCPT
+	id S1758733Ab0ERSpd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:45:33 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:57590 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756799Ab0ERSpb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:44:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YIjN4NAdYwrOKePULQd+LXPIEM9kLwGrv/c/G+1R5FWWDPjDvMieoKPp7QGMN3zFRK
-         aAX0J59HfYKbvLyeOMsP2CYubrHgdyNvLq1CQxvOvOiY0NEPvLS7HNPxygyD6dGUdgzA
-         jd1OxXpO37xUjAlZKets+4XE+XzNx7q2GENSI=
-Date: Tue, 18 May 2010 22:43:52 +0400
-From: Cyrill Gorcunov <gorcunov@gmail.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
-       Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2 07/11] perf: x86, implements
-	pmu::register_events
-Message-ID: <20100518184352.GF5081@lenovo>
-References: <1274233707.3036.86.camel@localhost>
+	Tue, 18 May 2010 14:45:31 -0400
+To: Joe Perches <joe@perches.com>
+Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       bluesmoke-devel@lists.sourceforge.net,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
+       Brent Young <brent.young@intel.com>
+Subject: Re: Hardware Error Kernel Mini-Summit
+From: Andi Kleen <andi@firstfloor.org>
+References: <4BF18995.6070008@redhat.com> <4BF2392A.9040409@jp.fujitsu.com>
+	<4BF2C3D1.10009@redhat.com>
+	<1274204560.17703.82.camel@Joe-Laptop.home>
+Date: Tue, 18 May 2010 20:45:29 +0200
+In-Reply-To: <1274204560.17703.82.camel@Joe-Laptop.home> (Joe Perches's message of "Tue\, 18 May 2010 10\:42\:40 -0700")
+Message-ID: <87eih9xd4m.fsf@basil.nowhere.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274233707.3036.86.camel@localhost>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 01:48:27AM +0000, Lin Ming wrote:
-...
-> +static int register_event(struct pmu *pmu,
-> +		struct kobject *parent_kobj, char *name, u64 id)
-> +{
-> +	struct perf_event_kobject *event_kobj;
-> +	struct attribute *attr;
-> +	int err;
-> +
-> +	event_kobj = kzalloc(sizeof(*event_kobj), GFP_KERNEL);
-> +	if (!event_kobj) {
-> +		err = -ENOMEM;
-> +		goto exit;
-> +	}
-> +	event_kobj->id = id;
-> +
-> +	err = kobject_init_and_add(&event_kobj->kobj,
-> +		&event_ktype, parent_kobj, name);
-> +	if (err)
-> +		goto exit;
-> +
-...
+Joe Perches <joe@perches.com> writes:
 
-event_kobj seems to be not freed, right?
- 
-	-- Cyrill
+> On Tue, 2010-05-18 at 13:44 -0300, Mauro Carvalho Chehab wrote:
+>> IMO, the first
+>> step is to provide an error core integrated to perf, and then start
+>> integrating the several error systems around it.
+>
+> Why integrated to perf?
+
+For a different perspective on this see also
+
+http://permalink.gmane.org/gmane.linux.kernel/952061
+
+AFAIK all the issues mentioned there are still open.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
