@@ -1,55 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758751Ab0ERS5e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 14:57:34 -0400
-Received: from mail.perches.com ([173.55.12.10]:2341 "EHLO mail.perches.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757686Ab0ERS5d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 14:57:33 -0400
-Subject: Re: Hardware Error Kernel Mini-Summit
-From: Joe Perches <joe@perches.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Mauro Carvalho Chehab <mchehab@redhat.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       bluesmoke-devel@lists.sourceforge.net,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       Ben Woodard <woodard@redhat.com>, Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Borislav Petkov <bp@amd64.org>, Tony Luck <tony.luck@intel.com>,
-       Brent Young <brent.young@intel.com>
-In-Reply-To: <87eih9xd4m.fsf@basil.nowhere.org>
-References: <4BF18995.6070008@redhat.com> <4BF2392A.9040409@jp.fujitsu.com>
-	 <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home>
-	 <87eih9xd4m.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 11:57:31 -0700
-Message-ID: <1274209051.17703.110.camel@Joe-Laptop.home>
+	id S1758742Ab0ERS7g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 14:59:36 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:58673 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756747Ab0ERS7f (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 14:59:35 -0400
+Date: Tue, 18 May 2010 20:06:24 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: emil@la.mine.nu
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: Linux telephony - IXJ
+Message-ID: <20100518200624.4ad2a6cc@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100518161313.GA5338@emil.homelinux.net>
+References: <20100518161313.GA5338@emil.homelinux.net>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 20:45 +0200, Andi Kleen wrote:
-> Joe Perches <joe@perches.com> writes:
-> > On Tue, 2010-05-18 at 13:44 -0300, Mauro Carvalho Chehab wrote:
-> >> IMO, the first
-> >> step is to provide an error core integrated to perf, and then start
-> >> integrating the several error systems around it.
-> > Why integrated to perf?
-> For a different perspective on this see also
-> http://permalink.gmane.org/gmane.linux.kernel/952061
-> 
-> AFAIK all the issues mentioned there are still open.
+> The current kernel support for these cards is broken. They are not
+> produced anymore so probably nobody will care about this message. 
+> It is surprinsing though that while there is no other alternative
+> telephony driver in the kernel the only one present is broken.
 
-Yup, that's why I asked for explanation.
+Most people moved to using winmodems and userspace driver stuff with
+applications like asterisk I think
 
-What was offered lacks useful goal and design detail.
+> I have tried on the same hardware kernel 2.4 + ixj version 1.2.2 works
+> while kernel 2.6 + version 3.1.0 doesn't.
 
-perf is a cool tool, but probably not necessary for
-for a HW error reporting system.
+Do you know roughly what the last in kernel one that worked was - that
+should make it rather easier to pin down where/when it broke.
 
-
+Alan
