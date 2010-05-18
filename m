@@ -1,120 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0ERQbL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 12:31:11 -0400
-Received: from mail-in-09.arcor-online.net ([151.189.21.49]:46722 "EHLO
-	mail-in-09.arcor-online.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755216Ab0ERQbJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 12:31:09 -0400
-X-DKIM: Sendmail DKIM Filter v2.8.2 mail-in-13.arcor-online.net 7CB12212470
-Subject: [PATCH 4/5] HID: refactored special event handling in Roccat Kone
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Reply-To: erazor_de@users.sourceforge.net
-To: Jiri Kosina <jkosina@suse.cz>, Stephane Chatty <chatty@enac.fr>,
-       wylda@volny.cz, Jussi Kivilinna <jussi.kivilinna@mbnet.fi>,
-       Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-       Jerome Vidal <jerom3@free.fr>, linux-kernel@vger.kernel.org,
-       Stefan Achatz <erazor_de@users.sourceforge.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 18 May 2010 18:31:04 +0200
-Message-ID: <1274200264.2243.4.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+	id S1757414Ab0ERQdj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 12:33:39 -0400
+Received: from hera.kernel.org ([140.211.167.34]:36953 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751539Ab0ERQdh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 12:33:37 -0400
+Message-ID: <4BF2C136.4020104@kernel.org>
+Date: Tue, 18 May 2010 18:32:54 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+CC: Alan Stern <stern@rowland.harvard.edu>, Oleg Nesterov <oleg@redhat.com>
+Subject: [GIT PULL] workqueue for v2.6.35-rc1
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 18 May 2010 16:32:55 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From e550163af2c39c4e7490cd5bf02e44c5dec72d2b Mon Sep 17 00:00:00 2001
-From: Stefan Achatz <erazor_de@users.sourceforge.net>
-Date: Sat, 8 May 2010 17:30:27 +0200
-Subject: [PATCH 4/5] HID: refactored special event handling in Roccat Kone
+Hello, Linus.
 
-As special events are reported along with hid event information all
-events are now processed further by standard handler.
-Also cleaned up this code.
+Please pull from the following branch to receive wq changes for
+v2.6.35-rc1.
 
-Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
----
- drivers/hid/hid-roccat-kone.c |   54 +++++++++++++++-------------------------
- 1 files changed, 20 insertions(+), 34 deletions(-)
+  git://git.kernel.org/pub/scm/linux/kernel/git/tj/wq.git for-linus
 
-diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-index 0b1db24..66e6940 100644
---- a/drivers/hid/hid-roccat-kone.c
-+++ b/drivers/hid/hid-roccat-kone.c
-@@ -912,6 +912,24 @@ static void kone_remove(struct hid_device *hdev)
- 	hid_hw_stop(hdev);
- }
- 
-+/* handle special events and keep actual profile and dpi values up to date */
-+static void kone_keep_values_up_to_date(struct kone_device *kone,
-+		struct kone_mouse_event const *event)
-+{
-+	switch (event->event) {
-+	case kone_mouse_event_switch_profile:
-+	case kone_mouse_event_osd_profile:
-+		kone->actual_profile = event->value;
-+		kone->actual_dpi = kone->profiles[kone->actual_profile - 1].
-+				startup_dpi;
-+		break;
-+	case kone_mouse_event_switch_dpi:
-+	case kone_mouse_event_osd_dpi:
-+		kone->actual_dpi = event->value;
-+		break;
-+	}
-+}
-+
- /*
-  * Is called for keyboard- and mousepart.
-  * Only mousepart gets informations about special events in its extended event
-@@ -938,41 +956,9 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
- 	else
- 		memset(&event->tilt, 0, 5);
- 
--	/*
--	 * handle special events and keep actual profile and dpi values
--	 * up to date
--	 */
--	switch (event->event) {
--	case kone_mouse_event_osd_dpi:
--		dev_dbg(&hdev->dev, "osd dpi event. actual dpi %d\n",
--				event->value);
--		return 1; /* return 1 if event was handled */
--	case kone_mouse_event_switch_dpi:
--		kone->actual_dpi = event->value;
--		dev_dbg(&hdev->dev, "switched dpi to %d\n", event->value);
--		return 1;
--	case kone_mouse_event_osd_profile:
--		dev_dbg(&hdev->dev, "osd profile event. actual profile %d\n",
--				event->value);
--		return 1;
--	case kone_mouse_event_switch_profile:
--		kone->actual_profile = event->value;
--		kone->actual_dpi = kone->profiles[kone->actual_profile - 1].
--				startup_dpi;
--		dev_dbg(&hdev->dev, "switched profile to %d\n", event->value);
--		return 1;
--	case kone_mouse_event_call_overlong_macro:
--		dev_dbg(&hdev->dev, "overlong macro called, button %d %s/%s\n",
--				event->macro_key,
--				kone->profiles[kone->actual_profile - 1].
--				button_infos[event->macro_key].macro_set_name,
--				kone->profiles[kone->actual_profile - 1].
--				button_infos[event->macro_key].macro_name
--				);
--		return 1;
--	}
-+	kone_keep_values_up_to_date(kone, event);
- 
--	return 0; /* do further processing */
-+	return 0; /* always do further processing */
- }
- 
- static const struct hid_device_id kone_devices[] = {
--- 
-1.6.6.1
+Bulk of cmwq still waiting for scheduler hooks to be resolved, there
+are only two commits for v2.6.35-rc1.
 
+One adds comment to flush_scheduled_work() mostly warning about the
+possibility of deadlock.  The other makes cancel_work_sync() clear
+work->data which speeds up further cancel/flush requests on it and
+also makes it safe to call cancel/flush on already canceled works even
+if the previous workqueue is destroyed.
 
+Thanks.
 
+Alan Stern (1):
+      workqueue: warn about flush_scheduled_work()
+
+Oleg Nesterov (1):
+      workqueue: change cancel_work_sync() to clear work->data
+
+ kernel/workqueue.c |   36 +++++++++++++++++++++++++++++++++++-
+ 1 files changed, 35 insertions(+), 1 deletions(-)
+
+--
+tejun
