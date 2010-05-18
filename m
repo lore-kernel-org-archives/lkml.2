@@ -1,114 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754495Ab0EROcV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 10:32:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26244 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751096Ab0EROcS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 10:32:18 -0400
-Date: Tue, 18 May 2010 17:25:57 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>,
-       Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
-       mingo@elte.hu, laijs@cn.fujitsu.com, dipankar@in.ibm.com,
-       akpm@linux-foundation.org, josh@joshtriplett.org, dvhltc@us.ibm.com,
-       niv@us.ibm.com, tglx@linutronix.de, rostedt@goodmis.org,
-       Valdis.Kletnieks@vt.edu, dhowells@redhat.com, eric.dumazet@gmail.com,
-       Arnd Bergmann <arnd@relay.de.ibm.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: Re: [PATCH RFC tip/core/rcu 23/23] vhost: add __rcu annotations
-Message-ID: <20100518142557.GA29457@redhat.com>
-References: <1273756043.5605.3542.camel@twins> <20100513152340.GA2879@linux.vnet.ibm.com> <20100517203349.GA14994@redhat.com> <20100517210606.GW2320@linux.vnet.ibm.com> <20100517220025.GA1366@Krystal> <20100517230533.GX2320@linux.vnet.ibm.com> <20100517234025.GA11700@Krystal> <20100518003429.GA2320@linux.vnet.ibm.com> <20100518013528.GA21866@Krystal> <20100518142008.GD2302@linux.vnet.ibm.com>
+	id S1756206Ab0EROeL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 10:34:11 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:32961 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751096Ab0EROeF (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 10:34:05 -0400
+Date: Tue, 18 May 2010 07:30:54 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Ingo Molnar <mingo@elte.hu>
+cc: linux-kernel@vger.kernel.org, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [GIT PULL] core/locking changes for v2.6.35
+In-Reply-To: <20100517212848.GA28536@elte.hu>
+Message-ID: <alpine.LFD.2.00.1005180729340.4195@i5.linux-foundation.org>
+References: <20100517212848.GA28536@elte.hu>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100518142008.GD2302@linux.vnet.ibm.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: TEXT/PLAIN; charset=ISO-8859-7
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 07:20:08AM -0700, Paul E. McKenney wrote:
-> On Mon, May 17, 2010 at 09:35:28PM -0400, Mathieu Desnoyers wrote:
-> > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > On Mon, May 17, 2010 at 07:40:25PM -0400, Mathieu Desnoyers wrote:
-> > > > * Paul E. McKenney (paulmck@linux.vnet.ibm.com) wrote:
-> > > > > On Mon, May 17, 2010 at 06:00:25PM -0400, Mathieu Desnoyers wrote:
-> 
-> [ . . . ]
-> 
-> > > > > But perhaps we should be simply treating this as a use-after-free
-> > > > > problem, so that RCU is not directly involved. Isn't that the standard
-> > > > > use of debugobjects anyway?
-> > > > 
-> > > > OK so we could tie "rcu_dereference" do debugobjects, and free would be
-> > > > a standard free. Yes, I think it could be done. It looks a bit like the
-> > > > memory allocation debugging code. If we know that a certain
-> > > > rcu_dereference always access dynamically allocated memory, we could
-> > > > probably add some checks there based on the memory allocator debug
-> > > > objects.
-> > > 
-> > > We probably need vhost to add code at the end of the relevant RCU
-> > > read-side critical section checking that the pointers returned by
-> > > any rcu_dereference() calls still point to valid memory.  Don't get
-> > > me wrong, your approach could find bugs in which someone forgot to
-> > > remove the RCU-protected structure from a public list, but it could
-> > > not detect failure to wait a grace period between the time of removal
-> > > and the time of freeing.
-> > 
-> > Good point too. So something like a new rcu_unreference() (or feel free
-> > to find any better name) ;) that would be compiled out normally, but
-> > would call into debugobjects might do the trick. We would have to add
-> > these annotations to match every rcu_dereference() though, might means a
-> > lot of new lines of code. On the plus side, that looks like a good audit
-> > of RCU read-side use. ;)
-> 
-> My first thought is that we have added quite a bit of RCU consistency
-> check code in the past few months, so we should see what bugs they find
-> and what bugs escape.  It is all too easy to create consistency check
-> code that is more trouble than it is worth.
 
-Right. Do the patches that started this discussion catch anything BTW?
 
-> But in the meantime, let's see what would be required to check for
-> failures to insert grace-period delays:
+On Mon, 17 May 2010, Ingo Molnar wrote:
 > 
-> o	There would need to be something like rcu_unreference(),
-> 	rcu_no_more_readers() or some such after the grace period.
-> 	The update side would then become something like the following:
-> 
-> 		oldp = rcu_dereference_protected(gp, &mylock);
-> 		rcu_assign_pointer(gp, newp);
-> 		synchronize_rcu();
-> 		rcu_no_more_readers(oldp);
-> 		kfree(oldp);
-> 
-> o	There would need to be something to check all of the pointers
-> 	traversed in the read-side critical sections:
-> 
-> 		rcu_read_lock();
-> 		...
-> 		p1 = rcu_dereference(gp1->field1);
-> 		...
-> 		p2 = rcu_dereference(gp2->field2);
-> 		...
-> 
-> 		rcu_validate(p1);
-> 		rcu_validate(p2);
-> 		rcu_read_unlock();
-> 
+> Tony Breeds (1):
+>       mutex: Fix optimistic spinning vs. BKL
 
-what does rcu_validate do?
+Grr. This has the ugly timeout thing, but what's _really_ ugly about it is
 
-> One thing that bothers me about this is that we are forcing the developer
-> to do a lot of extra typing.  For example, rcu_no_more_readers() is in
-> a truth-and-beauty sense redundant with kfree() -- why type both?
+	kernel/mutex.c: In function ¡__mutex_lock_common¢:
+	kernel/mutex.c:148: warning: unused variable ¡timeout¢
 
-With kfree, yes. We could stick rcu_no_more_readers in kfree I guess?
+Nasty. It happens when spinning is disabled due to lockdep or whatever 
+debugging that kills it.
 
-> The
-> same could be said about rcu_validate() and rcu_read_unlock(), but nested
-> RCU read-side critical sections make this difficult.
-> Or am I misunderstanding what you are suggesting?
-> 
-> 							Thanx, Paul
+		Linus
