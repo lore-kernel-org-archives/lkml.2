@@ -1,16 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757483Ab0ERPvo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 11:51:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47796 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753310Ab0ERPvm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 11:51:42 -0400
-Date: Wed, 19 May 2010 01:51:35 +1000
-From: Nick Piggin <npiggin@suse.de>
+	id S1757245Ab0ERPxT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 11:53:19 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:63444 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751491Ab0ERPxS (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 11:53:18 -0400
+X-Authority-Analysis: v=1.1 cv=XlIRUSWzFvHiorqRgyN8fup7OiOLcGcwhtEWqPJTlSs= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=uB51Yq4vNIEX0SBci-4A:9 a=KYDUYj5AgdIIjgFjRt8A:7 a=SojiUwRDDj98dCSJ_KHmE5em4TcA:4 a=PUjeQqilurYA:10 a=xNuefaKZfxuTjvek:21 a=rNHTCq4KgKSdzzvO:21 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Unexpected splice "always copy" behavior observed
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
 To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 Cc: Peter Zijlstra <peterz@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
        Arnaldo Carvalho de Melo <acme@redhat.com>,
@@ -21,38 +25,25 @@ Cc: Peter Zijlstra <peterz@infradead.org>,
        KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
        Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
        Jens Axboe <jens.axboe@oracle.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100518155135.GJ2516@laptop>
-References: <20100518153440.GB7748@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Nick Piggin <npiggin@suse.de>
 In-Reply-To: <20100518153440.GB7748@Krystal>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+References: <20100518153440.GB7748@Krystal>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 18 May 2010 11:53:13 -0400
+Message-ID: <1274197993.26328.755.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Hehe, I just notice this this morning too, while investigating.
 
-The basic problem is that the filesystem APIs were never designed with
-this usage in mind, so we had to disable the SPLICE_F_MOVE support by
-default.
 
-So short answer is that this is expected.
-
-What would be needed is to have filesystem maintainers go through and
-enable it on a case by case basis. It's trivial for tmpfs/ramfs type
-filesystems and I have a patch for those, but I never posted it on.yet.
-Even basic buffer head filesystems IIRC get a little more complex --
-but we may get some milage just out of invalidating the existing
-pagecache rather than getting fancy and trying to move buffers over
-to the new page.
-
-Nick
-
-On Tue, May 18, 2010 at 11:34:40AM -0400, Mathieu Desnoyers wrote:
+On Tue, 2010-05-18 at 11:34 -0400, Mathieu Desnoyers wrote:
 > Hi,
 > 
 > I'm currently digging into the splice code to figure out why it's always in copy
@@ -76,10 +67,16 @@ On Tue, May 18, 2010 at 11:34:40AM -0400, Mathieu Desnoyers wrote:
 >                 flush_dcache_page(page);
 >                 kunmap_atomic(dst, KM_USER1);
 >                 buf->ops->unmap(pipe, buf, src);
+
+I used trace_printk() since it is not as invasive.
+
 >         }
 > 
 > I'll start with a disclaimer that I only recently improved my splice
 > understanding, so AFAIU:
+
+Same here ;-)
+
 > 
 > * pipe_to_file() allocates a struct page *page on its stack.
 > 
@@ -126,13 +123,9 @@ On Tue, May 18, 2010 at 11:34:40AM -0400, Mathieu Desnoyers wrote:
 >        if (buf->page != page) {
 > 
 >   how is it ever possible that buf->page == page ?
-> 
-> Thanks,
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+
+I'm currently looking at the network code to see if it is better.
+
+-- Steve
+
+
