@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756127Ab0ERFVa (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 01:21:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28329 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754579Ab0ERFV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 01:21:29 -0400
-Date: Tue, 18 May 2010 10:52:30 +0530
-From: Amit Shah <amit.shah@redhat.com>
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: linux-kernel@vger.kernel.org, virtualization@lists.linux-foundation.org
-Subject: Re: [PATCH] fix a code style in drivers/char/virtio_console.c
-Message-ID: <20100518052230.GA1706@amit-laptop.redhat.com>
-References: <AANLkTilW8zZxCOrdiefZ4ZtixprI58LzDZ6Cz03z4lFk@mail.gmail.com>
+	id S1756258Ab0ERFXF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 01:23:05 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:38900 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755575Ab0ERFXD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 01:23:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=OfPhH/pPhhlbpKPHQYZ0yAb3AnqYTIa2ROPbnnUYrW9dDT0TGkZTtqlj6UuQtPCbtX
+         U8t+UGoGLZUkQ/lqold2KF3zu6wRoSoBaeK5yxtkGe3IDwgetMT0YtOhOk75nx8FP83Q
+         uzVr1Bf0+52Xte5wdIv/fdYw+988mI+XGrnnU=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilW8zZxCOrdiefZ4ZtixprI58LzDZ6Cz03z4lFk@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Date: Tue, 18 May 2010 13:23:01 +0800
+Message-ID: <AANLkTikYvtfMgpXW5mGHmMDSoj9O0QKOMzspoDQHURxF@mail.gmail.com>
+Subject: [PATCH] random: Check kmalloc return value and give the failed 
+	message
+From: Steven Liu <lingjiujianke@gmail.com>
+To: mpm@selenic.com, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On (Tue) May 18 2010 [13:17:22], Steven Liu wrote:
-> fix a code style in drivers/char/virtio_console.c
-> 
-> Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
+Hi, Matt Mackall,
 
-NACK.
+Check kmalloc return value and give the failed message
 
-This style is deliberate and follows Rusty's style: if we end up using
-'err' uninitialised in some code path, it can get flagged by source
-checkers.
+Signed-off-by: Liu Qi <lingjiujianke@gmail.com>
+---
+ drivers/char/random.c |    5 ++++-
+ 1 files changed, 4 insertions(+), 1 deletions(-)
 
-		Amit
+diff --git a/drivers/char/random.c b/drivers/char/random.c
+index 2fd3d39..d1bedeb 100644
+--- a/drivers/char/random.c
++++ b/drivers/char/random.c
+@@ -952,8 +952,11 @@ static void init_std_data(struct entropy_store *r)
+    mix_pool_bytes(r, &now, sizeof(now));
+    mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
+    /* Enable continuous test in fips mode */
+-   if (fips_enabled)
++   if (fips_enabled){
+        r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
++       if(r->last_data == NULL)
++           printk(KERN_ERR "kmalloc memory failed in %s \n", __func__);
++   }
+ }
+
+ static int rand_initialize(void)
+--
+1.7.1
+
+
+
+Best regards
