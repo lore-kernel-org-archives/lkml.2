@@ -1,80 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756782Ab0ERHpb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 03:45:31 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:42760 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755740Ab0ERHpa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 03:45:30 -0400
-Date: Tue, 18 May 2010 16:44:32 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Dave Hansen <dave@linux.vnet.ibm.com>, Greg KH <gregkh@suse.de>,
-       akpm@linux-foundation.org, linux-mm@kvack.org,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       linux-kernel@vger.kernel.org, haicheng.li@linux.intel.com,
-       shaohui.zheng@linux.intel.com
-Subject: Re: [RFC, 6/7] NUMA hotplug emulator
-Message-ID: <20100518074432.GB30313@linux-sh.org>
-References: <20100513120016.GG2169@shaohui> <20100513165603.GC25212@suse.de> <1273773737.13285.7771.camel@nimitz> <20100513181539.GA26597@suse.de> <1273776578.13285.7820.camel@nimitz> <20100518054121.GA25298@shaohui>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100518054121.GA25298@shaohui>
-User-Agent: Mutt/1.5.13 (2006-08-11)
+	id S1756841Ab0ERHsC (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 03:48:02 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:46909 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755896Ab0ERHr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 03:47:58 -0400
+Date: Tue, 18 May 2010 17:47:50 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Grant Likely <grant.likely@secretlab.ca>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: linux-next: build failure after merge of the final tree (devicetree
+ tree related)
+Message-Id: <20100518174750.cc965d84.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__18_May_2010_17_47_50_+1000_djFlXtAFhPZ80++h"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 01:41:21PM +0800, Shaohui Zheng wrote:
-> On Thu, May 13, 2010 at 11:49:38AM -0700, Dave Hansen wrote:
-> > On Thu, 2010-05-13 at 11:15 -0700, Greg KH wrote:
-> > > >       echo "physical_address=0x40000000 numa_node=3" > memory/probe
-> > > > 
-> > > > I'd *GREATLY* prefer that over this new syntax.  The existing mechanism
-> > > > is obtuse enough, and the ',3' makes it more so.
-> > > > 
-> > > > We should have the code around to parse arguments like that, too, since
-> > > > we use it for the boot command-line.
-> > > 
-> > > If you are going to be doing something like this, please use configfs,
-> > > that is what it is designed for, not sysfs.
-> > 
-> > That's probably a really good point, especially since configfs didn't
-> > even exist when we made this 'probe' file thingy.  It never was a great
-> > fit for sysfs anyway.
-> > 
-> > -- Dave
-> 
-> the configfs was introduced in 2005, you can refer to http://lwn.net/Articles/148973/.
-> 
-> I enabled the configfs, and I see that the configfs is not so popular as we expected,
-> I mount configfs to /sys/kernel/config, I get an empty directory. It means that nobody is 
-> using this file system, it is an interesting thing, is it means that configfs is deprecated?
-> If so, it might not be nessarry to develop a configfs interface for hotplug.
-> 
-configfs is certainly not deprecated, but there are also not that many
-users of it at present. dlm/ocfs2 were the first users as far as I
-recall, and netconsole as well. The fact you have an empty directory just
-indicates that you don't have support for any of these enabled.
+--Signature=_Tue__18_May_2010_17_47_50_+1000_djFlXtAFhPZ80++h
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Note that there are also a lot of present-day sysfs and debugfs users
-that could/should be converted to configfs but haven't quite gotten there
-yet. In the sysfs case abuses are hard to rollback once they've made
-become part of the ABI, but that's not grounds for continuing sysfs abuse
-once cleaner methods become available. Many of the sysfs abuses were
-implemented before configfs existed.
+Hi Grant,
 
-You can also find usage guidelines and example implementations in
-Documentation/filesystems/configfs, which should give you a pretty good
-idea of whether it's a good interface fit for your particular problem or
-not.
+After merging the final tree, yesterday's linux-next build (powerpc
+mpc85xx_defconfig) failed like this:
 
-These days sysfs seems to be the new procfs. It certainly helps to put a
-bit of planning in to the interface before you're invariably stuck with
-an ABI that's barely limping along.
+http://kisskb.ellerman.id.au/kisskb/buildresult/2615202/
+
+I suspect that is something to do with the devicetree tree.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__18_May_2010_17_47_50_+1000_djFlXtAFhPZ80++h
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvyRiYACgkQjjKRsyhoI8xvkQCghi9gdTh+SDLARj1wIlMp/pHU
+XSAAoIxsE0TH6yXm95ClVR2Nvg5iU/kf
+=qxmX
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__18_May_2010_17_47_50_+1000_djFlXtAFhPZ80++h--
