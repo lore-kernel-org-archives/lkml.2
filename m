@@ -1,146 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754702Ab0ERWwO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 18:52:14 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:53339 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752384Ab0ERWwM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 18:52:12 -0400
-MIME-Version: 1.0
-In-Reply-To: <201005190034.26085.rjw@sisk.pl>
-References: <1273810273-3039-1-git-send-email-arve@android.com>
-	 <201005182348.16026.rjw@sisk.pl>
-	 <AANLkTin-A5eXvxDEo-vi2x2jjXtZbAl2526w62noNMIK@mail.gmail.com>
-	 <201005190034.26085.rjw@sisk.pl>
-Date: Tue, 18 May 2010 15:52:12 -0700
-Message-ID: <AANLkTime0yZ_t32m8WjqJEtSeNlBJYZy15X8HwKzMqOl@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Greg KH <gregkh@suse.de>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Brian Swetland <swetland@google.com>,
-       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
-       Matthew Garrett <mjg@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1755485Ab0ERWwq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 18:52:46 -0400
+Received: from relay1.sgi.com ([192.48.179.29]:50609 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753035Ab0ERWwo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 18:52:44 -0400
+Date: Tue, 18 May 2010 17:52:40 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+       Russ Anderson <rja@sgi.com>
+Subject: [BUGFIX] perf record: remove unneeded gettimeofday() call
+Message-ID: <20100518225240.GC25589@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
->> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
->> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
->> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
->> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
->> >> >> 2010/5/17 Rafael J. Wysocki <rjw@sisk.pl>:
->> >> >> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
->> >> >> >> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
->> >> >> >> > On Friday 14 May 2010, Arve Hjønnevåg wrote:
->> >> >> >> >> This patch series adds a suspend-block api that provides the same
->> >> >> >> >> functionality as the android wakelock api. This version has some
->> >> >> >> >> changes from, or requested by, Rafael. The most notable changes are:
->> >> >> >> >> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
->> >> >> >> >>   for statically allocated suspend blockers.
->> >> >> >> >> - suspend_blocker_destroy is now called suspend_blocker_unregister
->> >> >> >> >> - The user space mandatory _INIT ioctl has been replaced with an
->> >> >> >> >>   optional _SET_NAME ioctl.
->> >> >> >> >>
->> >> >> >> >> I kept the ack and reviewed by tags on two of the patches even though
->> >> >> >> >> there were a few cosmetic changes.
->> >> >> >> >
->> >> >> >> > Thanks for the patches, I think they are in a pretty good shape now.
->> >> >> >> >
->> >> >> >> > That said, I'd like the changelogs to be a bit more descriptive, at least for
->> >> >> >> > patch [1/8].  I think it should explain (in a few words) what the purpose of
->> >> >> >> > the feature is and what problems it solves that generally a combination of
->> >> >> >> > runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
->> >> >> >> > think we need that feature.
->> >> >> >> >
->> >> >> >>
->> >> >> >> How about:
->> >> >> >>
->> >> >> >> PM: Add opportunistic suspend support.
->> >> >> >
->> >> >> > "PM: Opportunistic suspend support" would be sufficient IMO.
->> >> >> >
->> >> >> > Now, I'd start with the motivation.  Like "Power management features present
->> >> >> > in the current mainline kernel are insufficient to get maximum possible energy
->> >> >> > savings on some platforms, such as Android, because ..." (here go explanations
->> >> >> > why this is the case in your opinion).
->> >> >> >
->> >> >> > Next, "To allow Android and similar platforms to save more energy than they
->> >> >> > currently can save using the mainline kernel, introduce a mechanism by which
->> >> >> > the system is automatically suspended (i.e. put into a system-wide sleep state)
->> >> >> > whenever it's not doing useful work, called opportunistic suspend".
->> >> >> >
->> >> >> > "For this purpose introduce the suspend blockers framework allowing the
->> >> >> > kernel's power management subsystem to decide when it is desirable to suspend
->> >> >> > the system (i.e. when useful work is not being done).  Add an API that ..."
->> >> >> >
->> >> >>
->> >> >> PM: Opportunistic suspend support.
->> >> >>
->> >> >> Power management features present in the current mainline kernel are
->> >> >> insufficient to get maximum possible energy savings on some platforms,
->> >> >> such as Android, because low power states can only safely be entered
->> >> >> from idle.
->> >> >
->> >> > Do you mean CPU low-power states or system low-power states here?
->> >> >
->> >> I think either.
->> >
->> > The statement is not true for system low-power states (or sleep states),
->> > because generally (ie. on many platforms) they aren't entered from idle.
->> > Suspend is for entering them.
->> >
->> I don't think that makes my statement false. If you can only safely
->> enter low power states from idle, but some low power states cannot be
->> entered from idle, then it follows that you cannot safely enter those
->> low power states.
->
-> Define "safely", then.
->
-OK. Is this clearer:
+Perf record repeatedly calls gettimeofday() which adds noise to the performance 
+measurements.  Since gettimeofday() is only used for the error printf,
+delete it.
 
-Power management features present in the current mainline kernel are
-insufficient to get maximum possible energy savings on some platforms,
-such as Android, because some wakeup events must work at all times
-which means that low power states can only safely be entered from idle.
-Suspend, in its current form, cannot be used, since wakeup events that
-occur right after initiating suspend will not be processed until another
-possibly unrelated event wake up the system again.
+Signed-off-by: Russ Anderson <rja@sgi.com>
 
+---
+ tools/perf/builtin-record.c |   17 +----------------
+ 1 file changed, 1 insertion(+), 16 deletions(-)
 
->> > So, there is a difference and the explanation can go like this: "... to achieve
->> > maximum energy savings one has to put all I/O devices and the CPU into
->> > low-power states, but the CPU can only be put into a low-power state from
->> > idle.  This, in turn, means that the CPU leaves the low-power state on
->> > interrupts triggered by periodic timers and user space processes that use
->> > polling.  It turns out, however, that many of these events causing the CPU to
->> > leave the low-power state aren't essential for the desired system functionality
->> > and from the power management point of view it would be better if they didn't
->> > occur".
->>
->> This only explain why we still want to use suspend on systems that can
->> enter the same power states from idle and suspend.
->
-> Sorry, I'm confused now.  Isn't that why you do that on Android?
->
-
-Yes, but it is not the only reason to use opportunistic support. It is
-way more important to have opportunistic suspend support if the
-hardware can enter lower power states from suspend than idle.
-
-> AFACS, your hardware is capable of doing that, isn't it?
->
-
-The current hardware, yes, the hardware we started with, no.
-
+Index: linux/tools/perf/builtin-record.c
+===================================================================
+--- linux.orig/tools/perf/builtin-record.c	2010-05-18 16:03:58.000000000 -0500
++++ linux/tools/perf/builtin-record.c	2010-05-18 17:28:00.765537656 -0500
+@@ -64,9 +64,6 @@ static bool			multiplex			=  false;
+ static int			multiplex_fd			=     -1;
+ 
+ static long			samples				=      0;
+-static struct timeval		last_read;
+-static struct timeval		this_read;
+-
+ static u64			bytes_written			=      0;
+ 
+ static struct pollfd		*event_array;
+@@ -146,8 +143,6 @@ static void mmap_read(struct mmap_data *
+ 	void *buf;
+ 	int diff;
+ 
+-	gettimeofday(&this_read, NULL);
+-
+ 	/*
+ 	 * If we're further behind than half the buffer, there's a chance
+ 	 * the writer will bite our tail and mess up the samples under us.
+@@ -158,23 +153,13 @@ static void mmap_read(struct mmap_data *
+ 	 */
+ 	diff = head - old;
+ 	if (diff < 0) {
+-		struct timeval iv;
+-		unsigned long msecs;
+-
+-		timersub(&this_read, &last_read, &iv);
+-		msecs = iv.tv_sec*1000 + iv.tv_usec/1000;
+-
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data."
+-				"  Last read %lu msecs ago.\n", msecs);
+-
++		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
+ 		/*
+ 		 * head points to a known good entry, start there.
+ 		 */
+ 		old = head;
+ 	}
+ 
+-	last_read = this_read;
+-
+ 	if (old != head)
+ 		samples++;
+ 
 -- 
-Arve Hjønnevåg
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
