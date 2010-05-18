@@ -1,77 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756280Ab0ERBiE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 17 May 2010 21:38:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:49302 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753591Ab0ERBiB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 17 May 2010 21:38:01 -0400
-Message-ID: <4BF1EF62.5020101@zytor.com>
-Date: Mon, 17 May 2010 18:37:38 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756349Ab0ERBiq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 17 May 2010 21:38:46 -0400
+Received: from mail135.luxusbox.info ([195.5.179.135]:41937 "EHLO
+	mx135.luxusbox.info" rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org
+	with ESMTP id S1753348Ab0ERBip (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 17 May 2010 21:38:45 -0400
+X-Greylist: delayed 2079 seconds by postgrey-1.27 at vger.kernel.org; Mon, 17 May 2010 21:38:44 EDT
 MIME-Version: 1.0
-To: Huang Ying <ying.huang@intel.com>
-CC: Ingo Molnar <mingo@elte.hu>, Andi Kleen <ak@linux.intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] x86, MCE, fix MSR_IA32_MCI_CTL2 CMCI threshold setup
-References: <1274083710.3564.664.camel@yhuang-dev.sh.intel.com>	 <4BF18419.5030600@zytor.com> <1274143905.3564.1674.camel@yhuang-dev.sh.intel.com>
-In-Reply-To: <1274143905.3564.1674.camel@yhuang-dev.sh.intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+From: "Alexandra" <Alex@Geld-fuer-den-Sommer.eu>
+User-Agent: Microsoft-Entourage/10.1.4.030702.0
+X-BounceID: 708bf6bf7f0f46c495996b838e616a5e
+Subject: Sofort Geld verdienen - nur=?UTF-8?Q?=20f=C3=BCr=20?=Sie
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8bit
+Message-ID: <l2lcau.3bl63b@localhost>
+To: linux-kernel@vger.kernel.org
+Date: Tue, 18 May 2010 03:04:06 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/17/2010 05:51 PM, Huang Ying wrote:
-> Hi, Peter,
-> 
-> Thanks for review.
-> 
-> On Tue, 2010-05-18 at 01:59 +0800, H. Peter Anvin wrote:
->> On 05/17/2010 01:08 AM, Huang Ying wrote:
->>> It is reported that CMCI is not raised when number of corrected error
->>> reaches preset threshold. After inspection, it is found that
->>> MSR_IA32_MCI_CTL2 threshold field is not setup properly. This patch
->>> fixed it.
->>>
->>>
->>> Changelog:
->>>
->>> v2:
->>>
->>> - Rename CMCI_EN to MCI_CTL2_CMCI_EN and CMCI_THRESHOLD_MASK to
->>>   MCI_CTL2_CMCI_THRESHOLD_MASK to make naming consistent.
->>>
->>
->> This looks like a mix of a renaming patch and new functionality.  Please
->> submit the renaming as a one patch and then the new functionality as a
->> second patch on top, otherwise it gets hard to see what is actually
->> going on.
->>
->> If I'm not mistaken, there are at least two functionality changes:
->>
->> +#define MCI_CTL2_CMCI_THRESHOLD_MASK	0x7fffULL
->> -#define CMCI_THRESHOLD_MASK		0xffffULL
->>
->> ... change of mask, and:
->>
->> -		val |= CMCI_EN | CMCI_THRESHOLD;
->> +		val &= ~MCI_CTL2_CMCI_THRESHOLD_MASK;
->> +		val |= MCI_CTL2_CMCI_EN | CMCI_THRESHOLD;
->>
->> bit being cleared which wasn't before.
-> 
-> This means we need 3 patches?
-> 
+Schönen guten Tag,
 
-No, two patches is fine -- one for the rename (no binary changes) and
-one for the functionality changes.
+Sie möchten Geld verdienen und endlich mitspielen? Dort, wo das ganz große Geld gemacht wird?
 
-	-hpa
+Hier zeige ich Ihnen, wie das geht:
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+http://Geld-fuer-den-Sommer.eu/
+
+
+
+Viele Grüße,
+Alexandra Brandson
+
+
 
