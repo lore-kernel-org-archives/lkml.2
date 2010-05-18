@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab0ERGfo (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 02:35:44 -0400
-Received: from mga02.intel.com ([134.134.136.20]:14864 "EHLO mga02.intel.com"
+	id S1756783Ab0ERGhc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 02:37:32 -0400
+Received: from mga09.intel.com ([134.134.136.24]:12036 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755007Ab0ERGfh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 02:35:37 -0400
+	id S1756737Ab0ERGfp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 02:35:45 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,253,1272870000"; 
-   d="scan'208";a="622545383"
+   d="scan'208";a="622545421"
 From: Huang Ying <ying.huang@intel.com>
 To: lenb@kernel.org
 Cc: linux-kernel@vger.kernel.org, ying.huang@intel.com, andi@firstfloor.org,
        linux-acpi@vger.kernel.org, Andi Kleen <ak@linux.intel.com>
-Subject: [PATCH -v5 02/14] ACPI, APEI, APEI supporting infrastructure
-Date: Tue, 18 May 2010 14:35:12 +0800
-Message-Id: <1274164524-6092-3-git-send-email-ying.huang@intel.com>
+Subject: [PATCH -v5 09/14] ACPI, APEI, UEFI Common Platform Error Record (CPER) header
+Date: Tue, 18 May 2010 14:35:19 +0800
+Message-Id: <1274164524-6092-10-git-send-email-ying.huang@intel.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
 References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
@@ -23,92 +23,82 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-APEI stands for ACPI Platform Error Interface, which allows to report
-errors (for example from the chipset) to the operating system. This
-improves NMI handling especially. In addition it supports error
-serialization and error injection.
+CPER stands for Common Platform Error Record, it is the hardware error
+record format used to describe platform hardware error by various APEI
+tables, such as ERST, BERT and HEST etc.
 
-For more information about APEI, please refer to ACPI Specification
-version 4.0, chapter 17.
+For more information about CPER, please refer to Appendix N of UEFI
+Specification version 2.3.
 
-This patch provides some common functions used by more than one APEI
-tables, mainly framework of interpreter for EINJ and ERST.
-
-A machine readable language is defined for EINJ and ERST for OS to
-execute, and so to drive the firmware to fulfill the corresponding
-functions. The machine language for EINJ and ERST is compatible, so a
-common framework is defined for them.
+This patch mainly includes the data structure difinition header file
+used by other files.
 
 Signed-off-by: Huang Ying <ying.huang@intel.com>
 Signed-off-by: Andi Kleen <ak@linux.intel.com>
 ---
- drivers/acpi/Kconfig              |    2 
- drivers/acpi/Makefile             |    2 
- drivers/acpi/apei/Kconfig         |    9 
- drivers/acpi/apei/Makefile        |    3 
- drivers/acpi/apei/apei-base.c     |  593 ++++++++++++++++++++++++++++++++++++++
- drivers/acpi/apei/apei-internal.h |   95 ++++++
- 6 files changed, 704 insertions(+)
- create mode 100644 drivers/acpi/apei/Kconfig
- create mode 100644 drivers/acpi/apei/Makefile
- create mode 100644 drivers/acpi/apei/apei-base.c
- create mode 100644 drivers/acpi/apei/apei-internal.h
+ drivers/acpi/apei/Makefile        |    2 
+ drivers/acpi/apei/apei-internal.h |   19 ++
+ drivers/acpi/apei/cper.c          |   84 ++++++++++
+ include/linux/cper.h              |  314 ++++++++++++++++++++++++++++++++++++++
+ 4 files changed, 418 insertions(+), 1 deletion(-)
+ create mode 100644 drivers/acpi/apei/cper.c
+ create mode 100644 include/linux/cper.h
 
---- a/drivers/acpi/Kconfig
-+++ b/drivers/acpi/Kconfig
-@@ -360,4 +360,6 @@ config ACPI_SBS
- 	  To compile this driver as a module, choose M here:
- 	  the modules will be called sbs and sbshc.
- 
-+source "drivers/acpi/apei/Kconfig"
-+
- endif	# ACPI
---- a/drivers/acpi/Makefile
-+++ b/drivers/acpi/Makefile
-@@ -67,3 +67,5 @@ processor-y			+= processor_idle.o proces
- processor-$(CONFIG_CPU_FREQ)	+= processor_perflib.o
- 
- obj-$(CONFIG_ACPI_PROCESSOR_AGGREGATOR) += acpi_pad.o
-+
-+obj-$(CONFIG_ACPI_APEI)		+= apei/
---- /dev/null
-+++ b/drivers/acpi/apei/Kconfig
-@@ -0,0 +1,9 @@
-+config ACPI_APEI
-+	bool "ACPI Platform Error Interface (APEI)"
-+	depends on X86
-+	help
-+	  APEI allows to report errors (for example from the chipset)
-+	  to the operating system. This improves NMI handling
-+	  especially. In addition it supports error serialization and
-+	  error injection.
-+
---- /dev/null
+--- a/drivers/acpi/apei/Makefile
 +++ b/drivers/acpi/apei/Makefile
-@@ -0,0 +1,3 @@
-+obj-$(CONFIG_ACPI_APEI)		+= apei.o
+@@ -1,4 +1,4 @@
+ obj-$(CONFIG_ACPI_APEI)		+= apei.o
+ obj-$(CONFIG_ACPI_APEI_EINJ)	+= einj.o
+ 
+-apei-y := apei-base.o hest.o
++apei-y := apei-base.o hest.o cper.o
+--- a/drivers/acpi/apei/apei-internal.h
++++ b/drivers/acpi/apei/apei-internal.h
+@@ -6,6 +6,8 @@
+ #ifndef APEI_INTERNAL_H
+ #define APEI_INTERNAL_H
+ 
++#include <linux/cper.h>
 +
-+apei-y := apei-base.o
+ struct apei_exec_context;
+ 
+ typedef int (*apei_exec_ins_func_t)(struct apei_exec_context *ctx,
+@@ -92,4 +94,21 @@ int apei_exec_collect_resources(struct a
+ 
+ struct dentry;
+ struct dentry *apei_get_debugfs_dir(void);
++
++#define apei_estatus_for_each_section(estatus, section)			\
++	for (section = (struct acpi_hest_generic_data *)(estatus + 1);	\
++	     (void *)section - (void *)estatus < estatus->data_length;	\
++	     section = (void *)(section+1) + section->error_data_length)
++
++static inline u32 apei_estatus_len(struct acpi_hest_generic_status *estatus)
++{
++	if (estatus->raw_data_length)
++		return estatus->raw_data_offset + \
++			estatus->raw_data_length;
++	else
++		return sizeof(*estatus) + estatus->data_length;
++}
++
++int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus);
++int apei_estatus_check(const struct acpi_hest_generic_status *estatus);
+ #endif
 --- /dev/null
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -0,0 +1,593 @@
++++ b/drivers/acpi/apei/cper.c
+@@ -0,0 +1,84 @@
 +/*
-+ * apei-base.c - ACPI Platform Error Interface (APEI) supporting
-+ * infrastructure
++ * UEFI Common Platform Error Record (CPER) support
 + *
-+ * APEI allows to report errors (for example from the chipset) to the
-+ * the operating system. This improves NMI handling especially. In
-+ * addition it supports error serialization and error injection.
-+ *
-+ * For more information about APEI, please refer to ACPI Specification
-+ * version 4.0, chapter 17.
-+ *
-+ * This file has Common functions used by more than one APEI table,
-+ * including framework of interpreter for ERST and EINJ; resource
-+ * management for APEI registers.
-+ *
-+ * Copyright (C) 2009, Intel Corp.
++ * Copyright (C) 2010, Intel Corp.
 + *	Author: Huang Ying <ying.huang@intel.com>
++ *
++ * CPER is the format used to describe platform hardware error by
++ * various APEI tables, such as ERST, BERT and HEST etc.
++ *
++ * For more information about CPER, please refer to Appendix N of UEFI
++ * Specification version 2.3.
 + *
 + * This program is free software; you can redistribute it and/or
 + * modify it under the terms of the GNU General Public License version
@@ -126,660 +116,376 @@ Signed-off-by: Andi Kleen <ak@linux.intel.com>
 +
 +#include <linux/kernel.h>
 +#include <linux/module.h>
-+#include <linux/init.h>
++#include <linux/time.h>
++#include <linux/cper.h>
 +#include <linux/acpi.h>
-+#include <linux/io.h>
-+#include <linux/kref.h>
-+#include <linux/rculist.h>
-+#include <linux/interrupt.h>
-+#include <linux/debugfs.h>
-+#include <acpi/atomicio.h>
-+
-+#include "apei-internal.h"
-+
-+#define APEI_PFX "APEI: "
 +
 +/*
-+ * APEI ERST (Error Record Serialization Table) and EINJ (Error
-+ * INJection) interpreter framework.
++ * CPER record ID need to be unique even after reboot, because record
++ * ID is used as index for ERST storage, while CPER records from
++ * multiple boot may co-exist in ERST.
 + */
-+
-+#define APEI_EXEC_PRESERVE_REGISTER	0x1
-+
-+void apei_exec_ctx_init(struct apei_exec_context *ctx,
-+			struct apei_exec_ins_type *ins_table,
-+			u32 instructions,
-+			struct acpi_whea_header *action_table,
-+			u32 entries)
++u64 cper_next_record_id(void)
 +{
-+	ctx->ins_table = ins_table;
-+	ctx->instructions = instructions;
-+	ctx->action_table = action_table;
-+	ctx->entries = entries;
++	static atomic64_t seq;
++
++	if (!atomic64_read(&seq))
++		atomic64_set(&seq, ((u64)get_seconds()) << 32);
++
++	return atomic64_inc_return(&seq);
 +}
-+EXPORT_SYMBOL_GPL(apei_exec_ctx_init);
++EXPORT_SYMBOL_GPL(cper_next_record_id);
 +
-+int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val)
++int apei_estatus_check_header(const struct acpi_hest_generic_status *estatus)
 +{
++	if (estatus->data_length &&
++	    estatus->data_length < sizeof(struct acpi_hest_generic_data))
++		return -EINVAL;
++	if (estatus->raw_data_length &&
++	    estatus->raw_data_offset < sizeof(*estatus) + estatus->data_length)
++		return -EINVAL;
++
++	return 0;
++}
++EXPORT_SYMBOL_GPL(apei_estatus_check_header);
++
++int apei_estatus_check(const struct acpi_hest_generic_status *estatus)
++{
++	struct acpi_hest_generic_data *gdata;
++	unsigned int data_len, gedata_len;
 +	int rc;
 +
-+	rc = acpi_atomic_read(val, &entry->register_region);
++	rc = apei_estatus_check_header(estatus);
 +	if (rc)
 +		return rc;
-+	*val >>= entry->register_region.bit_offset;
-+	*val &= entry->mask;
-+
-+	return 0;
-+}
-+
-+int apei_exec_read_register(struct apei_exec_context *ctx,
-+			    struct acpi_whea_header *entry)
-+{
-+	int rc;
-+	u64 val = 0;
-+
-+	rc = __apei_exec_read_register(entry, &val);
-+	if (rc)
-+		return rc;
-+	ctx->value = val;
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_read_register);
-+
-+int apei_exec_read_register_value(struct apei_exec_context *ctx,
-+				  struct acpi_whea_header *entry)
-+{
-+	int rc;
-+
-+	rc = apei_exec_read_register(ctx, entry);
-+	if (rc)
-+		return rc;
-+	ctx->value = (ctx->value == entry->value);
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_read_register_value);
-+
-+int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val)
-+{
-+	int rc;
-+
-+	val &= entry->mask;
-+	val <<= entry->register_region.bit_offset;
-+	if (entry->flags & APEI_EXEC_PRESERVE_REGISTER) {
-+		u64 valr = 0;
-+		rc = acpi_atomic_read(&valr, &entry->register_region);
-+		if (rc)
-+			return rc;
-+		valr &= ~(entry->mask << entry->register_region.bit_offset);
-+		val |= valr;
-+	}
-+	rc = acpi_atomic_write(val, &entry->register_region);
-+
-+	return rc;
-+}
-+
-+int apei_exec_write_register(struct apei_exec_context *ctx,
-+			     struct acpi_whea_header *entry)
-+{
-+	return __apei_exec_write_register(entry, ctx->value);
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_write_register);
-+
-+int apei_exec_write_register_value(struct apei_exec_context *ctx,
-+				   struct acpi_whea_header *entry)
-+{
-+	int rc;
-+
-+	ctx->value = entry->value;
-+	rc = apei_exec_write_register(ctx, entry);
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_write_register_value);
-+
-+int apei_exec_noop(struct apei_exec_context *ctx,
-+		   struct acpi_whea_header *entry)
-+{
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_noop);
-+
-+/*
-+ * Interpret the specified action. Go through whole action table,
-+ * execute all instructions belong to the action.
-+ */
-+int apei_exec_run(struct apei_exec_context *ctx, u8 action)
-+{
-+	int rc;
-+	u32 i, ip;
-+	struct acpi_whea_header *entry;
-+	apei_exec_ins_func_t run;
-+
-+	ctx->ip = 0;
-+
-+	/*
-+	 * "ip" is the instruction pointer of current instruction,
-+	 * "ctx->ip" specifies the next instruction to executed,
-+	 * instruction "run" function may change the "ctx->ip" to
-+	 * implement "goto" semantics.
-+	 */
-+rewind:
-+	ip = 0;
-+	for (i = 0; i < ctx->entries; i++) {
-+		entry = &ctx->action_table[i];
-+		if (entry->action != action)
-+			continue;
-+		if (ip == ctx->ip) {
-+			if (entry->instruction >= ctx->instructions ||
-+			    !ctx->ins_table[entry->instruction].run) {
-+				pr_warning(FW_WARN APEI_PFX
-+			"Invalid action table, unknown instruction type: %d\n",
-+					   entry->instruction);
-+				return -EINVAL;
-+			}
-+			run = ctx->ins_table[entry->instruction].run;
-+			rc = run(ctx, entry);
-+			if (rc < 0)
-+				return rc;
-+			else if (rc != APEI_EXEC_SET_IP)
-+				ctx->ip++;
-+		}
-+		ip++;
-+		if (ctx->ip < ip)
-+			goto rewind;
-+	}
-+
-+	return 0;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_run);
-+
-+typedef int (*apei_exec_entry_func_t)(struct apei_exec_context *ctx,
-+				      struct acpi_whea_header *entry,
-+				      void *data);
-+
-+static int apei_exec_for_each_entry(struct apei_exec_context *ctx,
-+				    apei_exec_entry_func_t func,
-+				    void *data,
-+				    int *end)
-+{
-+	u8 ins;
-+	int i, rc;
-+	struct acpi_whea_header *entry;
-+	struct apei_exec_ins_type *ins_table = ctx->ins_table;
-+
-+	for (i = 0; i < ctx->entries; i++) {
-+		entry = ctx->action_table + i;
-+		ins = entry->instruction;
-+		if (end)
-+			*end = i;
-+		if (ins >= ctx->instructions || !ins_table[ins].run) {
-+			pr_warning(FW_WARN APEI_PFX
-+			"Invalid action table, unknown instruction type: %d\n",
-+				   ins);
++	data_len = estatus->data_length;
++	gdata = (struct acpi_hest_generic_data *)(estatus + 1);
++	while (data_len > sizeof(*gdata)) {
++		gedata_len = gdata->error_data_length;
++		if (gedata_len > data_len - sizeof(*gdata))
 +			return -EINVAL;
-+		}
-+		rc = func(ctx, entry, data);
-+		if (rc)
-+			return rc;
++		data_len -= gedata_len + sizeof(*gdata);
 +	}
-+
-+	return 0;
-+}
-+
-+static int pre_map_gar_callback(struct apei_exec_context *ctx,
-+				struct acpi_whea_header *entry,
-+				void *data)
-+{
-+	u8 ins = entry->instruction;
-+
-+	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
-+		return acpi_pre_map_gar(&entry->register_region);
-+
-+	return 0;
-+}
-+
-+/*
-+ * Pre-map all GARs in action table to make it possible to access them
-+ * in NMI handler.
-+ */
-+int apei_exec_pre_map_gars(struct apei_exec_context *ctx)
-+{
-+	int rc, end;
-+
-+	rc = apei_exec_for_each_entry(ctx, pre_map_gar_callback,
-+				      NULL, &end);
-+	if (rc) {
-+		struct apei_exec_context ctx_unmap;
-+		memcpy(&ctx_unmap, ctx, sizeof(*ctx));
-+		ctx_unmap.entries = end;
-+		apei_exec_post_unmap_gars(&ctx_unmap);
-+	}
-+
-+	return rc;
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_pre_map_gars);
-+
-+static int post_unmap_gar_callback(struct apei_exec_context *ctx,
-+				   struct acpi_whea_header *entry,
-+				   void *data)
-+{
-+	u8 ins = entry->instruction;
-+
-+	if (ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER)
-+		acpi_post_unmap_gar(&entry->register_region);
-+
-+	return 0;
-+}
-+
-+/* Post-unmap all GAR in action table. */
-+int apei_exec_post_unmap_gars(struct apei_exec_context *ctx)
-+{
-+	return apei_exec_for_each_entry(ctx, post_unmap_gar_callback,
-+					NULL, NULL);
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_post_unmap_gars);
-+
-+/*
-+ * Resource management for GARs in APEI
-+ */
-+struct apei_res {
-+	struct list_head list;
-+	unsigned long start;
-+	unsigned long end;
-+};
-+
-+/* Collect all resources requested, to avoid conflict */
-+struct apei_resources apei_resources_all = {
-+	.iomem = LIST_HEAD_INIT(apei_resources_all.iomem),
-+	.ioport = LIST_HEAD_INIT(apei_resources_all.ioport),
-+};
-+
-+static int apei_res_add(struct list_head *res_list,
-+			unsigned long start, unsigned long size)
-+{
-+	struct apei_res *res, *resn, *res_ins = NULL;
-+	unsigned long end = start + size;
-+
-+	if (end <= start)
-+		return 0;
-+repeat:
-+	list_for_each_entry_safe(res, resn, res_list, list) {
-+		if (res->start > end || res->end < start)
-+			continue;
-+		else if (end <= res->end && start >= res->start) {
-+			kfree(res_ins);
-+			return 0;
-+		}
-+		list_del(&res->list);
-+		res->start = start = min(res->start, start);
-+		res->end = end = max(res->end, end);
-+		kfree(res_ins);
-+		res_ins = res;
-+		goto repeat;
-+	}
-+
-+	if (res_ins)
-+		list_add(&res_ins->list, res_list);
-+	else {
-+		res_ins = kmalloc(sizeof(*res), GFP_KERNEL);
-+		if (!res_ins)
-+			return -ENOMEM;
-+		res_ins->start = start;
-+		res_ins->end = end;
-+		list_add(&res_ins->list, res_list);
-+	}
-+
-+	return 0;
-+}
-+
-+static int apei_res_sub(struct list_head *res_list1,
-+			struct list_head *res_list2)
-+{
-+	struct apei_res *res1, *resn1, *res2, *res;
-+	res1 = list_entry(res_list1->next, struct apei_res, list);
-+	resn1 = list_entry(res1->list.next, struct apei_res, list);
-+	while (&res1->list != res_list1) {
-+		list_for_each_entry(res2, res_list2, list) {
-+			if (res1->start >= res2->end ||
-+			    res1->end <= res2->start)
-+				continue;
-+			else if (res1->end <= res2->end &&
-+				 res1->start >= res2->start) {
-+				list_del(&res1->list);
-+				kfree(res1);
-+				break;
-+			} else if (res1->end > res2->end &&
-+				   res1->start < res2->start) {
-+				res = kmalloc(sizeof(*res), GFP_KERNEL);
-+				if (!res)
-+					return -ENOMEM;
-+				res->start = res2->end;
-+				res->end = res1->end;
-+				res1->end = res2->start;
-+				list_add(&res->list, &res1->list);
-+				resn1 = res;
-+			} else {
-+				if (res1->start < res2->start)
-+					res1->end = res2->start;
-+				else
-+					res1->start = res2->end;
-+			}
-+		}
-+		res1 = resn1;
-+		resn1 = list_entry(resn1->list.next, struct apei_res, list);
-+	}
-+
-+	return 0;
-+}
-+
-+static void apei_res_clean(struct list_head *res_list)
-+{
-+	struct apei_res *res, *resn;
-+
-+	list_for_each_entry_safe(res, resn, res_list, list) {
-+		list_del(&res->list);
-+		kfree(res);
-+	}
-+}
-+
-+void apei_resources_fini(struct apei_resources *resources)
-+{
-+	apei_res_clean(&resources->iomem);
-+	apei_res_clean(&resources->ioport);
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_fini);
-+
-+static int apei_resources_merge(struct apei_resources *resources1,
-+				struct apei_resources *resources2)
-+{
-+	int rc;
-+	struct apei_res *res;
-+
-+	list_for_each_entry(res, &resources2->iomem, list) {
-+		rc = apei_res_add(&resources1->iomem, res->start,
-+				  res->end - res->start);
-+		if (rc)
-+			return rc;
-+	}
-+	list_for_each_entry(res, &resources2->ioport, list) {
-+		rc = apei_res_add(&resources1->ioport, res->start,
-+				  res->end - res->start);
-+		if (rc)
-+			return rc;
-+	}
-+
-+	return 0;
-+}
-+
-+/*
-+ * EINJ has two groups of GARs (EINJ table entry and trigger table
-+ * entry), so common resources are subtracted from the trigger table
-+ * resources before the second requesting.
-+ */
-+int apei_resources_sub(struct apei_resources *resources1,
-+		       struct apei_resources *resources2)
-+{
-+	int rc;
-+
-+	rc = apei_res_sub(&resources1->iomem, &resources2->iomem);
-+	if (rc)
-+		return rc;
-+	return apei_res_sub(&resources1->ioport, &resources2->ioport);
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_sub);
-+
-+/*
-+ * IO memory/port rersource management mechanism is used to check
-+ * whether memory/port area used by GARs conflicts with normal memory
-+ * or IO memory/port of devices.
-+ */
-+int apei_resources_request(struct apei_resources *resources,
-+			   const char *desc)
-+{
-+	struct apei_res *res, *res_bak;
-+	struct resource *r;
-+
-+	apei_resources_sub(resources, &apei_resources_all);
-+
-+	list_for_each_entry(res, &resources->iomem, list) {
-+		r = request_mem_region(res->start, res->end - res->start,
-+				       desc);
-+		if (!r) {
-+			pr_err(APEI_PFX
-+		"Can not request iomem region <%016llx-%016llx> for GARs.\n",
-+			       (unsigned long long)res->start,
-+			       (unsigned long long)res->end);
-+			res_bak = res;
-+			goto err_unmap_iomem;
-+		}
-+	}
-+
-+	list_for_each_entry(res, &resources->ioport, list) {
-+		r = request_region(res->start, res->end - res->start, desc);
-+		if (!r) {
-+			pr_err(APEI_PFX
-+		"Can not request ioport region <%016llx-%016llx> for GARs.\n",
-+			       (unsigned long long)res->start,
-+			       (unsigned long long)res->end);
-+			res_bak = res;
-+			goto err_unmap_ioport;
-+		}
-+	}
-+
-+	apei_resources_merge(&apei_resources_all, resources);
-+
-+	return 0;
-+err_unmap_ioport:
-+	list_for_each_entry(res, &resources->ioport, list) {
-+		if (res == res_bak)
-+			break;
-+		release_mem_region(res->start, res->end - res->start);
-+	}
-+	res_bak = NULL;
-+err_unmap_iomem:
-+	list_for_each_entry(res, &resources->iomem, list) {
-+		if (res == res_bak)
-+			break;
-+		release_region(res->start, res->end - res->start);
-+	}
-+	return -EINVAL;
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_request);
-+
-+void apei_resources_release(struct apei_resources *resources)
-+{
-+	struct apei_res *res;
-+
-+	list_for_each_entry(res, &resources->iomem, list)
-+		release_mem_region(res->start, res->end - res->start);
-+	list_for_each_entry(res, &resources->ioport, list)
-+		release_region(res->start, res->end - res->start);
-+
-+	apei_resources_sub(&apei_resources_all, resources);
-+}
-+EXPORT_SYMBOL_GPL(apei_resources_release);
-+
-+static int apei_check_gar(struct acpi_generic_address *reg, u64 *paddr)
-+{
-+	u32 width, space_id;
-+
-+	width = reg->bit_width;
-+	space_id = reg->space_id;
-+	/* Handle possible alignment issues */
-+	memcpy(paddr, &reg->address, sizeof(*paddr));
-+	if (!*paddr) {
-+		pr_warning(FW_BUG APEI_PFX
-+			   "Invalid physical address in GAR [0x%llx/%u/%u]\n",
-+			   *paddr, width, space_id);
++	if (data_len)
 +		return -EINVAL;
-+	}
-+
-+	if ((width != 8) && (width != 16) && (width != 32) && (width != 64)) {
-+		pr_warning(FW_BUG APEI_PFX
-+			   "Invalid bit width in GAR [0x%llx/%u/%u]\n",
-+			   *paddr, width, space_id);
-+		return -EINVAL;
-+	}
-+
-+	if (space_id != ACPI_ADR_SPACE_SYSTEM_MEMORY &&
-+	    space_id != ACPI_ADR_SPACE_SYSTEM_IO) {
-+		pr_warning(FW_BUG APEI_PFX
-+			   "Invalid address space type in GAR [0x%llx/%u/%u]\n",
-+			   *paddr, width, space_id);
-+		return -EINVAL;
-+	}
 +
 +	return 0;
 +}
-+
-+static int collect_res_callback(struct apei_exec_context *ctx,
-+				struct acpi_whea_header *entry,
-+				void *data)
-+{
-+	struct apei_resources *resources = data;
-+	struct acpi_generic_address *reg = &entry->register_region;
-+	u8 ins = entry->instruction;
-+	u64 paddr;
-+	int rc;
-+
-+	if (!(ctx->ins_table[ins].flags & APEI_EXEC_INS_ACCESS_REGISTER))
-+		return 0;
-+
-+	rc = apei_check_gar(reg, &paddr);
-+	if (rc)
-+		return rc;
-+
-+	switch (reg->space_id) {
-+	case ACPI_ADR_SPACE_SYSTEM_MEMORY:
-+		return apei_res_add(&resources->iomem, paddr,
-+				    reg->bit_width / 8);
-+	case ACPI_ADR_SPACE_SYSTEM_IO:
-+		return apei_res_add(&resources->ioport, paddr,
-+				    reg->bit_width / 8);
-+	default:
-+		return -EINVAL;
-+	}
-+}
-+
-+/*
-+ * Same register may be used by multiple instructions in GARs, so
-+ * resources are collected before requesting.
-+ */
-+int apei_exec_collect_resources(struct apei_exec_context *ctx,
-+				struct apei_resources *resources)
-+{
-+	return apei_exec_for_each_entry(ctx, collect_res_callback,
-+					resources, NULL);
-+}
-+EXPORT_SYMBOL_GPL(apei_exec_collect_resources);
-+
-+struct dentry *apei_get_debugfs_dir(void)
-+{
-+	static struct dentry *dapei;
-+
-+	if (!dapei)
-+		dapei = debugfs_create_dir("apei", NULL);
-+
-+	return dapei;
-+}
-+EXPORT_SYMBOL_GPL(apei_get_debugfs_dir);
++EXPORT_SYMBOL_GPL(apei_estatus_check);
 --- /dev/null
-+++ b/drivers/acpi/apei/apei-internal.h
-@@ -0,0 +1,95 @@
++++ b/include/linux/cper.h
+@@ -0,0 +1,314 @@
 +/*
-+ * apei-internal.h - ACPI Platform Error Interface internal
-+ * definations.
++ * UEFI Common Platform Error Record
++ *
++ * Copyright (C) 2010, Intel Corp.
++ *	Author: Huang Ying <ying.huang@intel.com>
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License version
++ * 2 as published by the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 + */
 +
-+#ifndef APEI_INTERNAL_H
-+#define APEI_INTERNAL_H
++#ifndef LINUX_CPER_H
++#define LINUX_CPER_H
 +
-+struct apei_exec_context;
++#include <linux/uuid.h>
 +
-+typedef int (*apei_exec_ins_func_t)(struct apei_exec_context *ctx,
-+				    struct acpi_whea_header *entry);
++/* CPER record signature and the size */
++#define CPER_SIG_RECORD				"CPER"
++#define CPER_SIG_SIZE				4
++/* Used in signature_end field in struct cper_record_header */
++#define CPER_SIG_END				0xffffffff
 +
-+#define APEI_EXEC_INS_ACCESS_REGISTER	0x0001
++/*
++ * CPER record header revision, used in revision field in struct
++ * cper_record_header
++ */
++#define CPER_RECORD_REV				0x0100
 +
-+struct apei_exec_ins_type {
-+	u32 flags;
-+	apei_exec_ins_func_t run;
++/*
++ * Severity difinition for error_severity in struct cper_record_header
++ * and section_severity in struct cper_section_descriptor
++ */
++#define CPER_SER_RECOVERABLE			0x0
++#define CPER_SER_FATAL				0x1
++#define CPER_SER_CORRECTED			0x2
++#define CPER_SER_INFORMATIONAL			0x3
++
++/*
++ * Validation bits difinition for validation_bits in struct
++ * cper_record_header. If set, corresponding fields in struct
++ * cper_record_header contain valid information.
++ *
++ * corresponds platform_id
++ */
++#define CPER_VALID_PLATFORM_ID			0x0001
++/* corresponds timestamp */
++#define CPER_VALID_TIMESTAMP			0x0002
++/* corresponds partition_id */
++#define CPER_VALID_PARTITION_ID			0x0004
++
++/*
++ * Notification type used to generate error record, used in
++ * notification_type in struct cper_record_header
++ *
++ * Corrected Machine Check
++ */
++#define CPER_NOTIFY_CMC							\
++	UUID_LE(0x2DCE8BB1, 0xBDD7, 0x450e, 0xB9, 0xAD, 0x9C, 0xF4,	\
++		0xEB, 0xD4, 0xF8, 0x90)
++/* Corrected Platform Error */
++#define CPER_NOTIFY_CPE							\
++	UUID_LE(0x4E292F96, 0xD843, 0x4a55, 0xA8, 0xC2, 0xD4, 0x81,	\
++		0xF2, 0x7E, 0xBE, 0xEE)
++/* Machine Check Exception */
++#define CPER_NOTIFY_MCE							\
++	UUID_LE(0xE8F56FFE, 0x919C, 0x4cc5, 0xBA, 0x88, 0x65, 0xAB,	\
++		0xE1, 0x49, 0x13, 0xBB)
++/* PCI Express Error */
++#define CPER_NOTIFY_PCIE						\
++	UUID_LE(0xCF93C01F, 0x1A16, 0x4dfc, 0xB8, 0xBC, 0x9C, 0x4D,	\
++		0xAF, 0x67, 0xC1, 0x04)
++/* INIT Record (for IPF) */
++#define CPER_NOTIFY_INIT						\
++	UUID_LE(0xCC5263E8, 0x9308, 0x454a, 0x89, 0xD0, 0x34, 0x0B,	\
++		0xD3, 0x9B, 0xC9, 0x8E)
++/* Non-Maskable Interrupt */
++#define CPER_NOTIFY_NMI							\
++	UUID_LE(0x5BAD89FF, 0xB7E6, 0x42c9, 0x81, 0x4A, 0xCF, 0x24,	\
++		0x85, 0xD6, 0xE9, 0x8A)
++/* BOOT Error Record */
++#define CPER_NOTIFY_BOOT						\
++	UUID_LE(0x3D61A466, 0xAB40, 0x409a, 0xA6, 0x98, 0xF3, 0x62,	\
++		0xD4, 0x64, 0xB3, 0x8F)
++/* DMA Remapping Error */
++#define CPER_NOTIFY_DMAR						\
++	UUID_LE(0x667DD791, 0xC6B3, 0x4c27, 0x8A, 0x6B, 0x0F, 0x8E,	\
++		0x72, 0x2D, 0xEB, 0x41)
++
++/*
++ * Flags bits definitions for flags in struct cper_record_header
++ * If set, the error has been recovered
++ */
++#define CPER_HW_ERROR_FLAGS_RECOVERED		0x1
++/* If set, the error is for previous boot */
++#define CPER_HW_ERROR_FLAGS_PREVERR		0x2
++/* If set, the error is injected for testing */
++#define CPER_HW_ERROR_FLAGS_SIMULATED		0x4
++
++/*
++ * CPER section header revision, used in revision field in struct
++ * cper_section_descriptor
++ */
++#define CPER_SEC_REV				0x0100
++
++/*
++ * Validation bits difinition for validation_bits in struct
++ * cper_section_descriptor. If set, corresponding fields in struct
++ * cper_section_descriptor contain valid information.
++ *
++ * corresponds fru_id
++ */
++#define CPER_SEC_VALID_FRU_ID			0x1
++/* corresponds fru_text */
++#define CPER_SEC_VALID_FRU_TEXT			0x2
++
++/*
++ * Flags bits definitions for flags in struct cper_section_descriptor
++ *
++ * If set, the section is associated with the error condition
++ * directly, and should be focused on
++ */
++#define CPER_SEC_PRIMARY			0x0001
++/*
++ * If set, the error was not contained within the processor or memory
++ * hierarchy and the error may have propagated to persistent storage
++ * or network
++ */
++#define CPER_SEC_CONTAINMENT_WARNING		0x0002
++/* If set, the component must be re-initialized or re-enabled prior to use */
++#define CPER_SEC_RESET				0x0004
++/* If set, Linux may choose to discontinue use of the resource */
++#define CPER_SEC_ERROR_THRESHOLD_EXCEEDED	0x0008
++/*
++ * If set, resource could not be queried for error information due to
++ * conflicts with other system software or resources. Some fields of
++ * the section will be invalid
++ */
++#define CPER_SEC_RESOURCE_NOT_ACCESSIBLE	0x0010
++/*
++ * If set, action has been taken to ensure error containment (such as
++ * poisoning data), but the error has not been fully corrected and the
++ * data has not been consumed. Linux may choose to take further
++ * corrective action before the data is consumed
++ */
++#define CPER_SEC_LATENT_ERROR			0x0020
++
++/*
++ * Section type definitions, used in section_type field in struct
++ * cper_section_descriptor
++ *
++ * Processor Generic
++ */
++#define CPER_SEC_PROC_GENERIC						\
++	UUID_LE(0x9876CCAD, 0x47B4, 0x4bdb, 0xB6, 0x5E, 0x16, 0xF1,	\
++		0x93, 0xC4, 0xF3, 0xDB)
++/* Processor Specific: X86/X86_64 */
++#define CPER_SEC_PROC_IA						\
++	UUID_LE(0xDC3EA0B0, 0xA144, 0x4797, 0xB9, 0x5B, 0x53, 0xFA,	\
++		0x24, 0x2B, 0x6E, 0x1D)
++/* Processor Specific: IA64 */
++#define CPER_SEC_PROC_IPF						\
++	UUID_LE(0xE429FAF1, 0x3CB7, 0x11D4, 0x0B, 0xCA, 0x07, 0x00,	\
++		0x80, 0xC7, 0x3C, 0x88, 0x81)
++/* Platform Memory */
++#define CPER_SEC_PLATFORM_MEM						\
++	UUID_LE(0xA5BC1114, 0x6F64, 0x4EDE, 0xB8, 0x63, 0x3E, 0x83,	\
++		0xED, 0x7C, 0x83, 0xB1)
++#define CPER_SEC_PCIE							\
++	UUID_LE(0xD995E954, 0xBBC1, 0x430F, 0xAD, 0x91, 0xB4, 0x4D,	\
++		0xCB, 0x3C, 0x6F, 0x35)
++/* Firmware Error Record Reference */
++#define CPER_SEC_FW_ERR_REC_REF						\
++	UUID_LE(0x81212A96, 0x09ED, 0x4996, 0x94, 0x71, 0x8D, 0x72,	\
++		0x9C, 0x8E, 0x69, 0xED)
++/* PCI/PCI-X Bus */
++#define CPER_SEC_PCI_X_BUS						\
++	UUID_LE(0xC5753963, 0x3B84, 0x4095, 0xBF, 0x78, 0xED, 0xDA,	\
++		0xD3, 0xF9, 0xC9, 0xDD)
++/* PCI Component/Device */
++#define CPER_SEC_PCI_DEV						\
++	UUID_LE(0xEB5E4685, 0xCA66, 0x4769, 0xB6, 0xA2, 0x26, 0x06,	\
++		0x8B, 0x00, 0x13, 0x26)
++#define CPER_SEC_DMAR_GENERIC						\
++	UUID_LE(0x5B51FEF7, 0xC79D, 0x4434, 0x8F, 0x1B, 0xAA, 0x62,	\
++		0xDE, 0x3E, 0x2C, 0x64)
++/* Intel VT for Directed I/O specific DMAr */
++#define CPER_SEC_DMAR_VT						\
++	UUID_LE(0x71761D37, 0x32B2, 0x45cd, 0xA7, 0xD0, 0xB0, 0xFE,	\
++		0xDD, 0x93, 0xE8, 0xCF)
++/* IOMMU specific DMAr */
++#define CPER_SEC_DMAR_IOMMU						\
++	UUID_LE(0x036F84E1, 0x7F37, 0x428c, 0xA7, 0x9E, 0x57, 0x5F,	\
++		0xDF, 0xAA, 0x84, 0xEC)
++
++/*
++ * All tables and structs must be byte-packed to match CPER
++ * specification, since the tables are provided by the system BIOS
++ */
++#pragma pack(1)
++
++struct cper_record_header {
++	char	signature[CPER_SIG_SIZE];	/* must be CPER_SIG_RECORD */
++	__u16	revision;			/* must be CPER_RECORD_REV */
++	__u32	signature_end;			/* must be CPER_SIG_END */
++	__u16	section_count;
++	__u32	error_severity;
++	__u32	validation_bits;
++	__u32	record_length;
++	__u64	timestamp;
++	uuid_le	platform_id;
++	uuid_le	partition_id;
++	uuid_le	creator_id;
++	uuid_le	notification_type;
++	__u64	record_id;
++	__u32	flags;
++	__u64	persistence_information;
++	__u8	reserved[12];			/* must be zero */
 +};
 +
-+struct apei_exec_context {
-+	u32 ip;
-+	u64 value;
-+	u64 var1;
-+	u64 var2;
-+	u64 src_base;
-+	u64 dst_base;
-+	struct apei_exec_ins_type *ins_table;
-+	u32 instructions;
-+	struct acpi_whea_header *action_table;
-+	u32 entries;
++struct cper_section_descriptor {
++	__u32	section_offset;		/* Offset in bytes of the
++					 *  section body from the base
++					 *  of the record header */
++	__u32	section_length;
++	__u16	revision;		/* must be CPER_RECORD_REV */
++	__u8	validation_bits;
++	__u8	reserved;		/* must be zero */
++	__u32	flags;
++	uuid_le	section_type;
++	uuid_le	fru_id;
++	__u32	section_severity;
++	__u8	fru_text[20];
 +};
 +
-+void apei_exec_ctx_init(struct apei_exec_context *ctx,
-+			struct apei_exec_ins_type *ins_table,
-+			u32 instructions,
-+			struct acpi_whea_header *action_table,
-+			u32 entries);
-+
-+static inline void apei_exec_ctx_set_input(struct apei_exec_context *ctx,
-+					   u64 input)
-+{
-+	ctx->value = input;
-+}
-+
-+static inline u64 apei_exec_ctx_get_output(struct apei_exec_context *ctx)
-+{
-+	return ctx->value;
-+}
-+
-+int apei_exec_run(struct apei_exec_context *ctx, u8 action);
-+
-+/* Common instruction implementation */
-+
-+/* IP has been set in instruction function */
-+#define APEI_EXEC_SET_IP	1
-+
-+int __apei_exec_read_register(struct acpi_whea_header *entry, u64 *val);
-+int __apei_exec_write_register(struct acpi_whea_header *entry, u64 val);
-+int apei_exec_read_register(struct apei_exec_context *ctx,
-+			    struct acpi_whea_header *entry);
-+int apei_exec_read_register_value(struct apei_exec_context *ctx,
-+				  struct acpi_whea_header *entry);
-+int apei_exec_write_register(struct apei_exec_context *ctx,
-+			     struct acpi_whea_header *entry);
-+int apei_exec_write_register_value(struct apei_exec_context *ctx,
-+				   struct acpi_whea_header *entry);
-+int apei_exec_noop(struct apei_exec_context *ctx,
-+		   struct acpi_whea_header *entry);
-+int apei_exec_pre_map_gars(struct apei_exec_context *ctx);
-+int apei_exec_post_unmap_gars(struct apei_exec_context *ctx);
-+
-+struct apei_resources {
-+	struct list_head iomem;
-+	struct list_head ioport;
++/* Generic Processor Error Section */
++struct cper_sec_proc_generic {
++	__u64	validation_bits;
++	__u8	proc_type;
++	__u8	proc_isa;
++	__u8	proc_error_type;
++	__u8	operation;
++	__u8	flags;
++	__u8	level;
++	__u16	reserved;
++	__u64	cpu_version;
++	char	cpu_brand[128];
++	__u64	proc_id;
++	__u64	target_addr;
++	__u64	requestor_id;
++	__u64	responder_id;
++	__u64	ip;
 +};
 +
-+static inline void apei_resources_init(struct apei_resources *resources)
-+{
-+	INIT_LIST_HEAD(&resources->iomem);
-+	INIT_LIST_HEAD(&resources->ioport);
-+}
++/* IA32/X64 Processor Error Section */
++struct cper_sec_proc_ia {
++	__u64	validation_bits;
++	__u8	lapic_id;
++	__u8	cpuid[48];
++};
 +
-+void apei_resources_fini(struct apei_resources *resources);
-+int apei_resources_sub(struct apei_resources *resources1,
-+		       struct apei_resources *resources2);
-+int apei_resources_request(struct apei_resources *resources,
-+			   const char *desc);
-+void apei_resources_release(struct apei_resources *resources);
-+int apei_exec_collect_resources(struct apei_exec_context *ctx,
-+				struct apei_resources *resources);
++/* IA32/X64 Processor Error Infomation Structure */
++struct cper_ia_err_info {
++	uuid_le	err_type;
++	__u64	validation_bits;
++	__u64	check_info;
++	__u64	target_id;
++	__u64	requestor_id;
++	__u64	responder_id;
++	__u64	ip;
++};
 +
-+struct dentry;
-+struct dentry *apei_get_debugfs_dir(void);
++/* IA32/X64 Processor Context Information Structure */
++struct cper_ia_proc_ctx {
++	__u16	reg_ctx_type;
++	__u16	reg_arr_size;
++	__u32	msr_addr;
++	__u64	mm_reg_addr;
++};
++
++/* Memory Error Section */
++struct cper_sec_mem_err {
++	__u64	validation_bits;
++	__u64	error_status;
++	__u64	physical_addr;
++	__u64	physical_addr_mask;
++	__u16	node;
++	__u16	card;
++	__u16	module;
++	__u16	bank;
++	__u16	device;
++	__u16	row;
++	__u16	column;
++	__u16	bit_pos;
++	__u64	requestor_id;
++	__u64	responder_id;
++	__u64	target_id;
++	__u8	error_type;
++};
++
++/* Reset to default packing */
++#pragma pack()
++
++u64 cper_next_record_id(void);
++
 +#endif
