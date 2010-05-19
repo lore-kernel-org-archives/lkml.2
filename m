@@ -1,74 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753396Ab0ESPoj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:44:39 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59962 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753367Ab0ESPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:44:37 -0400
-Date: Thu, 20 May 2010 01:44:31 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100519154431.GC2516@laptop>
-References: <20100518153440.GB7748@Krystal>
- <1274197993.26328.755.camel@gandalf.stny.rr.com>
- <1274199039.26328.758.camel@gandalf.stny.rr.com>
- <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
- <20100519063116.GR2516@laptop>
- <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
- <20100519151726.GB2516@laptop>
- <alpine.LFD.2.00.1005190828050.23538@i5.linux-foundation.org>
+	id S1753429Ab0ESPpA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:45:00 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:64518 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753367Ab0ESPo6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:44:58 -0400
+X-Greylist: delayed 569 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 May 2010 11:44:58 EDT
+X-IronPort-AV: E=Sophos;i="4.53,264,1272859200"; 
+   d="scan'208";a="97735692"
+Subject: [GIT PULL] xen suspend resume fix.
+From: Ian Campbell <Ian.Campbell@citrix.com>
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: xen-devel <xen-devel@lists.xensource.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>, <stable@kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Citrix Systems, Inc.
+Date: Wed, 19 May 2010 16:35:24 +0100
+Message-ID: <1274283324.14939.209.camel@zakaz.uk.xensource.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005190828050.23538@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 08:30:10AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Thu, 20 May 2010, Nick Piggin wrote:
-> > 
-> > Well I mean a full invalidate -- invalidate_mapping_pages -- so there is
-> > literally no pagecache there at all.
-> 
-> Umm. That won't work. Think mapped pages. You can't handle them 
-> atomically, so somebody will page-fault them in.
-> 
-> So you'd have to have a "invalidate_and_replace()" to do it atomically 
-> while holding the mapping spinlock or something. 
-> 
-> And WHAT IS THE POINT? That will be about a million times slower than 
-> just doing the effing copy in the first place!
-> 
-> Memory copies are _not_ slow. Not compared to taking locks and doing TLB 
-> invalidates.
+The following changes since commit aff67593b7fb2efa1ba17eb07ded96519b6b7cc1:
+  Ian Campbell (1):
+        xenbus: do not hold transaction_mutex when returning to userspace
 
-No I never thought it would be a good idea to try to avoid all races
-or anything. Obviously some cases *cannot* be easily invalidated, if
-there is a ref on the page or whatever, so the fallback code has to
-be there anyway.
+are available in the git repository at:
 
-So you would just invalidate and try to insert your page. 99.something%
-of the time it will work fine. If the insert fails, fall back to
-copying.
+  git://xenbits.xensource.com/people/ianc/linux-2.6.git for-jeremy/saverestore
 
-And hey you *may* even want a heuristic that avoids trying to invalidate
-if the page is mapped, due to cost of TLB flushing and faulting etc.
+Ian Campbell (1):
+      xen: ensure timer tick is resumed even on CPU driving the resume
+
+ arch/x86/xen/suspend.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+(this is based on xen.git#bugfix branch. I didn't base on 2.6.32 since
+the prerequisite patches were only in 2.6.33 and 2.6.32.2. this is not
+an area with a great deal of churn so it should merge around ok)
+
