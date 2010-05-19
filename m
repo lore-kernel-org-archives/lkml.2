@@ -1,76 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756097Ab0ESLqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:46:07 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:38635 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab0ESLqE convert rfc822-to-8bit (ORCPT
+	id S1757371Ab0ESLqo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:46:44 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:46782 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754021Ab0ESLqm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:46:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AZNR829GLVqtAoz31TLXWxRHm5jFwGZX6XX3tTnzuEwlhQ56e1nKeYwtIOSWn8AXwu
-         kGe4oMZQqBhHW7oxVeK/X3tOaWkNlwe/Zr8Ddau+lwmS4BdNu64vv9VZbx8vPthdqpqd
-         KsmeqzzLXIH+fpPygO5uhhJBBlyxW6GmsCoYQ=
+	Wed, 19 May 2010 07:46:42 -0400
+Date: Wed, 19 May 2010 21:46:09 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>, David Miller <davem@davemloft.net>,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+Message-ID: <20100519114609.GA26610@gondor.apana.org.au>
+References: <1274211235.11603.1205.camel@calx> <20100518.135945.180391159.davem@davemloft.net> <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com> <20100518.142021.135951273.davem@davemloft.net> <1274224834.6930.8361.camel@macbook.infradead.org> <20100519010524.GB18813@gondor.apana.org.au> <1274266725.6930.9823.camel@macbook.infradead.org> <AANLkTikLhmQ2oYnYS2KblEayg6x1ZAmUnBvYfNu0yFh9@mail.gmail.com> <1274267805.6930.9877.camel@macbook.infradead.org>
 MIME-Version: 1.0
-In-Reply-To: <20100517224531.GA27400@elte.hu>
-References: <20100517224531.GA27400@elte.hu>
-Date: Wed, 19 May 2010 13:46:01 +0200
-X-Google-Sender-Auth: SssMtGwSPhRcGX5-JcS5WzexG9I
-Message-ID: <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
-Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Ingo Molnar <mingo@elte.hu>, Luca Barbieri <luca@luca-barbieri.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274267805.6930.9877.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 00:45, Ingo Molnar <mingo@elte.hu> wrote:
-> Please pull the latest x86-atomic-for-linus git tree from:
+On Wed, May 19, 2010 at 12:16:45PM +0100, David Woodhouse wrote:
 >
->   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-atomic-for-linus
->
->
-> out-of-topic modifications in x86-atomic-for-linus:
-> ---------------------------------------------------
-> lib/Makefile                       # 86a8938: lib: Add self-test for atomic64_t
-> lib/atomic64.c                     # 9757789: lib: Fix atomic64_add_unless retu
-> lib/atomic64_test.c                # a5c9161: x86, atomic64: In selftest, disti
->                                   # 25a304f: lib: Fix atomic64_inc_not_zero te
->                                   # 9efbcd5: lib: Fix atomic64_add_unless test
->                                   # d7f6de1: x86: Implement atomic[64]_dec_if_
->                                   # 8f4f202: lib: Only test atomic64_dec_if_po
->                                   # 86a8938: lib: Add self-test for atomic64_t
+> I don't mind. Feel free to apply them to slab.git, but be aware that
+> Herbert wanted to see a patch fixing sparc32 ARCH_SLAB_MINALIGN before
+> the crypto one is applied.
+> 
+> Although arguably SLOB was broken on sparc32 even before the crypto
+> patch -- so perhaps that fix shouldn't _have_ to go in first?
 
-Is having atomic64_t mandatory now?
+Well prior to this crypto on sparc32 did work with SLAB/SLUB.  If
+you change it without including the sparc pach, then sparc32 would
+be broken regardless of which allocator you used.
 
-According to the allmodconfig build logs
-(http://kisskb.ellerman.id.au/kisskb/matrix/),
-several architectures (at least m68k and mips) don't have it.
-Furthermore, the test fails to compile on a few architectures that do have it
-(parisc, s390, sh, ...).
-
-<boilerplate>
-It's a pity this wasn't raised/resolved between its detection in linux-next and
-before it entered mainline...
-</boilerplate>
-
-Gr{oetje,eeting}s,
-
-						Geert
-
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
-
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+Cheers,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
