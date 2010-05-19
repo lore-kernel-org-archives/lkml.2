@@ -1,212 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751044Ab0ESNE5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:04:57 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:26575 "EHLO SMTP.CITRIX.COM"
+	id S1751219Ab0ESNHT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:07:19 -0400
+Received: from cantor.suse.de ([195.135.220.2]:55474 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab0ESNEz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:04:55 -0400
-X-IronPort-AV: E=Sophos;i="4.53,263,1272859200"; 
-   d="scan'208";a="8588603"
-Date: Wed, 19 May 2010 14:08:16 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+	id S1750830Ab0ESNHR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:07:17 -0400
+Date: Wed, 19 May 2010 23:07:10 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: Marc Gauthier <marc@tensilica.com>, Mike Frysinger <vapier.adi@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Johannes Weiner <jw@emlix.com>, Christoph Lameter <cl@linux.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
        "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 03/12] evtchn delivery on HVM
-In-Reply-To: <4BF2D828.60602@goop.org>
-Message-ID: <alpine.DEB.2.00.1005191402030.11380@kaball-desktop>
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-3-git-send-email-stefano.stabellini@eu.citrix.com> <4BF2D828.60602@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+       Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>,
+       David Rientjes <rientjes@google.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       Chris Zankel <chris@zankel.net>,
+       Piet Delaney <Piet.Delaney@tensilica.com>
+Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
+ cache lines
+Message-ID: <20100519130710.GX2516@laptop>
+References: <alpine.DEB.2.00.1005111520260.1500@router.home>
+ <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
+ <alpine.DEB.2.00.1005111544330.8388@router.home>
+ <AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com>
+ <20100511214836.GH1726@emlix.com>
+ <20100511215359.GF7396@core.coreip.homeip.net>
+ <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
+ <522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
+ <20100512030350.GJ15903@laptop>
+ <1274273325.6930.10022.camel@macbook.infradead.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274273325.6930.10022.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Jeremy Fitzhardinge wrote:
-> On 05/18/2010 03:22 AM, Stefano Stabellini wrote:
-> > From: Sheng Yang <sheng@linux.intel.com>
-> >
-> > Set the callback to receive evtchns from Xen, using the
-> > callback vector delivery mechanism.
-> >
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > Signed-off-by: Sheng Yang <sheng@linux.intel.com>
-> > ---
-> >  arch/x86/xen/enlighten.c         |   35 +++++++++++++++++++++++++++++++++++
-> >  drivers/xen/events.c             |   31 ++++++++++++++++++++++++-------
-> >  include/xen/events.h             |    3 +++
-> >  include/xen/hvm.h                |    9 +++++++++
-> >  include/xen/interface/features.h |    3 +++
-> >  5 files changed, 74 insertions(+), 7 deletions(-)
-> >
-> > diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> > index 87a3b10..502c4f8 100644
-> > --- a/arch/x86/xen/enlighten.c
-> > +++ b/arch/x86/xen/enlighten.c
-> > @@ -37,8 +37,11 @@
-> >  #include <xen/interface/vcpu.h>
-> >  #include <xen/interface/memory.h>
-> >  #include <xen/interface/hvm/hvm_op.h>
-> > +#include <xen/interface/hvm/params.h>
-> >  #include <xen/features.h>
-> >  #include <xen/page.h>
-> > +#include <xen/hvm.h>
-> > +#include <xen/events.h>
-> >  #include <xen/hvc-console.h>
-> >  
-> >  #include <asm/paravirt.h>
-> > @@ -79,6 +82,8 @@ struct shared_info xen_dummy_shared_info;
-> >  
-> >  void *xen_initial_gdt;
-> >  
-> > +int xen_have_vector_callback;
-> > +
-> >  /*
-> >   * Point at some empty memory to start with. We map the real shared_info
-> >   * page as soon as fixmap is up and running.
-> > @@ -1279,6 +1284,31 @@ static void __init init_shared_info(void)
-> >  	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
-> >  }
-> >  
-> > +int xen_set_callback_via(uint64_t via)
-> > +{
-> > +	struct xen_hvm_param a;
-> > +	a.domid = DOMID_SELF;
-> > +	a.index = HVM_PARAM_CALLBACK_IRQ;
-> > +	a.value = via;
-> > +	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
-> >   
+On Wed, May 19, 2010 at 01:48:45PM +0100, David Woodhouse wrote:
+> On Wed, 2010-05-12 at 13:03 +1000, Nick Piggin wrote:
+> > I don't think it's necessarily a good idea. MINALIGN is an enforced
+> > minimum alignment and the allocator has no leeway in reducing this.
+> > In a UP system, or in a memory constrained system, it might be a better
+> > idea to pack objects more tightly, for example.
+> > 
+> > If we allow drivers to assume kmalloc is cacheline aligned, it will be
+> > (practically) impossible to revert this because it would require driver
+> > audits.
 > 
-> Does this implicitly set the vector delivery on all vcpus, current and
-> future?
+> No, we definitely don't, and shouldn't, allow drivers to assume that
+> kmalloc is cacheline-aligned.
+
+Good.
+
+
+> However, we _do_ allow drivers to assume that kmalloc is DMA-safe. That
+> happens to mean "cacheline-aligned" for cache-incoherent architectures,
+> but drivers should never really have to think about that.
+
+DMA-safe for GFP_DMA, or all kmalloc?
+
+Either way, yes the arch should take care of those details.
+
+ 
+> > So whenever strengthening API guarantees like this, it is better to be
+> > very careful and conservative. Probably even introducing a new API with
+> > the stronger semantics (even if it is just a wrapper in the case where
+> > KMALLOC_MINALIGNED *is* cacheline sized).
 > 
+> We're not talking about strengthening API guarantees. It's _always_ been
+> this way; it's just that some architectures are buggy.
 
-Yes.
+It just appeared, in the post I replied to, that there was a suggestion
+of making it explicitly cacheline aligned. If I misread that, ignore
+me.
 
-> > +}
-> > +
-> > +void do_hvm_pv_evtchn_intr(void)
-> > +{
-> > +	xen_hvm_evtchn_do_upcall(get_irq_regs());
-> > +}
-> > +
-> > +static void xen_callback_vector(void)
-> >   
 > 
-> All this callback vector stuff should be in drivers/xen/events.c.  It
-> would also be good to give it a more descriptive name
-> ("xen_set_callback_vector"?), and make it an init function.
+> But it looks like ARM, PowerPC, SH, MIPS, Microblaze, AVR32 and all
+> unconditionally cache-coherent architectures _do_ get it right already.
 > 
-
-I could move it events.c and call it at the beginning of xen_init_IRQ,
-is that OK?
-
-
-> > +{
-> > +	uint64_t callback_via;
-> > +	if (xen_feature(XENFEAT_hvm_callback_vector)) {
-> > +		callback_via = HVM_CALLBACK_VECTOR(X86_PLATFORM_IPI_VECTOR);
-> > +		xen_set_callback_via(callback_via);
-> >   
+> > I think adding to the DMA API would be a better idea. If the arch knows
+> > that kmalloc is suitable for the job directly, it can be used. Drivers
+> > can use the new interface, and kmalloc doesn't get saddled with
+> > alignment requirements.
 > 
-> Do you need to check the return value here?  Can it possibly fail?
+> No, that would be a change which would require auditing all drivers. The
+> _current_ rule is that buffers returned from kmalloc() are OK for DMA.
 > 
-
-Yes, it can fail. The vector delivery mechanism hasn't been checked in
-Xen yet (I sent the patch right after this patch series).
-
-
-> > +		x86_platform_ipi_callback = do_hvm_pv_evtchn_intr;
-> > +		xen_have_vector_callback = 1;
-> > +	}
-> > +}
-> > +
-> >  void __init xen_guest_init(void)
-> >  {
-> >  	int r;
-> > @@ -1292,4 +1322,9 @@ void __init xen_guest_init(void)
-> >  		return;
-> >  
-> >  	init_shared_info();
-> > +
-> > +	xen_callback_vector();
-> > +
-> > +	have_vcpu_info_placement = 0;
-> > +	x86_init.irqs.intr_init = xen_init_IRQ;
-> >  }
-> > diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-> > index db8f506..3523dbb 100644
-> > --- a/drivers/xen/events.c
-> > +++ b/drivers/xen/events.c
-> > @@ -36,6 +36,8 @@
-> >  #include <asm/xen/hypercall.h>
-> >  #include <asm/xen/hypervisor.h>
-> >  
-> > +#include <xen/xen.h>
-> > +#include <xen/hvm.h>
-> >  #include <xen/xen-ops.h>
-> >  #include <xen/events.h>
-> >  #include <xen/interface/xen.h>
-> > @@ -617,17 +619,13 @@ static DEFINE_PER_CPU(unsigned, xed_nesting_count);
-> >   * a bitset of words which contain pending event bits.  The second
-> >   * level is a bitset of pending events themselves.
-> >   */
-> > -void xen_evtchn_do_upcall(struct pt_regs *regs)
-> > +void __xen_evtchn_do_upcall(struct pt_regs *regs)
-> >   
-> 
-> Given that the regs arg is completely unused, you should drop it.
-> 
-
-OK
-
-> >  {
-> >  	int cpu = get_cpu();
-> > -	struct pt_regs *old_regs = set_irq_regs(regs);
-> >  	struct shared_info *s = HYPERVISOR_shared_info;
-> >  	struct vcpu_info *vcpu_info = __get_cpu_var(xen_vcpu);
-> >   	unsigned count;
-> >  
-> > -	exit_idle();
-> > -	irq_enter();
-> > -
-> >  	do {
-> >  		unsigned long pending_words;
-> >  
-> > @@ -667,10 +665,26 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
-> >  	} while(count != 1);
-> >  
-> >  out:
-> > +
-> > +	put_cpu();
-> > +}
-> > +
-> > +void xen_evtchn_do_upcall(struct pt_regs *regs)
-> > +{
-> > +	struct pt_regs *old_regs = set_irq_regs(regs);
-> > +
-> > +	exit_idle();
-> > +	irq_enter();
-> > +
-> > +	__xen_evtchn_do_upcall(regs);
-> > +
-> >  	irq_exit();
-> >  	set_irq_regs(old_regs);
-> > +}
-> >  
-> > -	put_cpu();
-> > +void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
-> > +{
-> > +	__xen_evtchn_do_upcall(regs);
-> >   
-> 
-> Don't you need to set_irq_regs here?
-
-No, that was done by smp_x86_platform_ipi or do_IRQ.
-
-
+> -- 
+> David Woodhouse                            Open Source Technology Centre
+> David.Woodhouse@intel.com                              Intel Corporation
