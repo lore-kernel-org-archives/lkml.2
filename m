@@ -1,62 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755321Ab0ESIdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:33:36 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:35131 "EHLO trinity.fluff.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751495Ab0ESIde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:33:34 -0400
-Date: Wed, 19 May 2010 09:33:27 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: InKi Dae <inki.dae@samsung.com>, kgene.kim@samsung.com,
-       Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org,
-       Linux Samsung SoC <linux-samsung-soc@vger.kernel.org>,
-       linux-arm-kernel@lists.infradead.org
-Subject: Please pull s3c-fb driver updates
-Message-ID: <20100519083327.GV26401@trinity.fluff.org>
+	id S1755544Ab0ESIea (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:34:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49337 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751518Ab0ESIe2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 04:34:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=tBAMB8rFaEcQY1KR1CBGttvBrHHmPTO60EuWaXtuELml7Np28/XwiWraKi1oHhd+8z
+         KLRnV+v7pXkqCOcEyOAPluCn6oKhMZsVHhnQG7jKdVmjk5aZJD/mRkno+d7Kr/HcP03u
+         IIV2xVb5QBA1BX9BVgfrjBg76blMRWGp/9Ne4=
+Date: Wed, 19 May 2010 12:34:22 +0400
+From: Anton Vorontsov <cbouatmailru@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
+       kay.sievers@vrfy.org, dwmw2@infradead.org,
+       broonie@opensource.wolfsonmicro.com, len.brown@intel.com,
+       astarikovskiy@suse.de, mreimer@vpop.net, zbr@ioremap.net, tj@kernel.org
+Subject: Re: [PATCH] power/ds2760_battery: document ABI change
+Message-ID: <20100519083422.GA31202@oksana.dev.rtsoft.ru>
+References: <20100517194016.GA12147@oksana.dev.rtsoft.ru>
+ <1274212193-16669-2-git-send-email-daniel@caiaq.de>
+ <20100518195624.GA20057@suse.de>
+ <20100518203049.GK30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+In-Reply-To: <20100518203049.GK30801@buzzloop.caiaq.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following patches for the s3c-fb driver for fixes and
-device support updates.
+On Tue, May 18, 2010 at 10:30:49PM +0200, Daniel Mack wrote:
+> >From 7ed6b078c1cb718509a0faf79ac53f768fa5cfc4 Mon Sep 17 00:00:00 2001
+> From: Daniel Mack <daniel@caiaq.de>
+> Date: Tue, 18 May 2010 22:26:40 +0200
+> Subject: [PATCH] power/ds2760_battery: document ABI change
+> 
+> Add some documentation for the newly added writeable properties.
+> 
 
-The following changes since commit 7ebd467551ed6ae200d7835a84bbda0dcadaa511:
-  Linus Torvalds (1):
-        Merge branch 'drm-linus' of git://git.kernel.org/.../airlied/drm-2.6
+I added 'Suggested-by: Greg KH <gregkh@suse.de>' tag here.
 
-are available in the git repository at:
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> ---
+> On Tue, May 18, 2010 at 12:56:24PM -0700, Greg KH wrote:
+> > On Tue, May 18, 2010 at 09:49:52PM +0200, Daniel Mack wrote:
+> > > This patch adds support for writeable power supply properties and
+> > > exposes them as writeable to sysfs.
+> > 
+> > Please properly document this in Documentation/ABI as you are changing
+> > the userspace ABI.
+> > 
+> > thanks,
+> > 
+> > greg k-h
+> 
+> Is something like the following appropriate?
 
-  git://git.fluff.org/bjdooks/linux.git for-2635/s3c-fb
+Looks good to me, as well as patches 1-3 (though in the first patch
+I fixed power_supply_attr_groups to be static, it was a negligence
+from my original patch).
 
-Ben Dooks (5):
-      s3c-fb: Change to depending on CONFIG_S3C_FB_DEV
-      s3c-fb: only init window colour key controls for windows with blending
-      s3c-fb: Initial move to unifying the header files
-      s3c-fb: udpate to support s3c2416/s3c2443 style hardware
-      s3c-fb: Integrate palette setup code into main driver
+I applied all these patches to battery-2.6.git, thanks!
 
-InKi Dae (2):
-      s3c-fb: add default window feature.
-      s3c-fb: fixed distortedness situation for the mode more then 24bpp.
-
- arch/arm/mach-s3c64xx/include/mach/regs-fb.h    |   20 --
- arch/arm/mach-s5pc100/include/mach/regs-fb.h    |   34 --
- arch/arm/plat-samsung/include/plat/fb.h         |    3 +
- arch/arm/plat-samsung/include/plat/regs-fb-v4.h |   78 +-----
- arch/arm/plat-samsung/include/plat/regs-fb.h    |    5 +
- drivers/video/Kconfig                           |    2 +-
- drivers/video/s3c-fb.c                          |  412 +++++++++++++++++++----
- 7 files changed, 362 insertions(+), 192 deletions(-)
+-- 
+Anton Vorontsov
+email: cbouatmailru@gmail.com
+irc://irc.freenode.net/bd2
