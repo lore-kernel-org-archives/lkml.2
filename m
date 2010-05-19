@@ -1,75 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755544Ab0ESIea (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:34:30 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49337 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751518Ab0ESIe2 (ORCPT
+	id S1755701Ab0ESIj3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:39:29 -0400
+Received: from lan.nucleusys.com ([78.83.248.164]:54747 "EHLO
+	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755189Ab0ESIj1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:34:28 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=tBAMB8rFaEcQY1KR1CBGttvBrHHmPTO60EuWaXtuELml7Np28/XwiWraKi1oHhd+8z
-         KLRnV+v7pXkqCOcEyOAPluCn6oKhMZsVHhnQG7jKdVmjk5aZJD/mRkno+d7Kr/HcP03u
-         IIV2xVb5QBA1BX9BVgfrjBg76blMRWGp/9Ne4=
-Date: Wed, 19 May 2010 12:34:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       kay.sievers@vrfy.org, dwmw2@infradead.org,
-       broonie@opensource.wolfsonmicro.com, len.brown@intel.com,
-       astarikovskiy@suse.de, mreimer@vpop.net, zbr@ioremap.net, tj@kernel.org
-Subject: Re: [PATCH] power/ds2760_battery: document ABI change
-Message-ID: <20100519083422.GA31202@oksana.dev.rtsoft.ru>
-References: <20100517194016.GA12147@oksana.dev.rtsoft.ru>
- <1274212193-16669-2-git-send-email-daniel@caiaq.de>
- <20100518195624.GA20057@suse.de>
- <20100518203049.GK30801@buzzloop.caiaq.de>
+	Wed, 19 May 2010 04:39:27 -0400
+X-Greylist: delayed 1883 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 May 2010 04:39:27 EDT
+Date: Wed, 19 May 2010 11:07:50 +0300 (EEST)
+From: Petko Manolov <petkan@nucleusys.com>
+To: Julia Lawall <julia@diku.dk>
+cc: Petko Manolov <petkan@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 19/37] drivers/net/usb: Use kmemdup
+In-Reply-To: <Pine.LNX.4.64.1005152318410.21345@ask.diku.dk>
+Message-ID: <alpine.DEB.2.00.1005191106430.3093@bender.nucleusys.com>
+References: <Pine.LNX.4.64.1005152318410.21345@ask.diku.dk>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100518203049.GK30801@buzzloop.caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 10:30:49PM +0200, Daniel Mack wrote:
-> >From 7ed6b078c1cb718509a0faf79ac53f768fa5cfc4 Mon Sep 17 00:00:00 2001
-> From: Daniel Mack <daniel@caiaq.de>
-> Date: Tue, 18 May 2010 22:26:40 +0200
-> Subject: [PATCH] power/ds2760_battery: document ABI change
-> 
-> Add some documentation for the newly added writeable properties.
-> 
+Looks all right to me.
 
-I added 'Suggested-by: Greg KH <gregkh@suse.de>' tag here.
 
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+ 		Petko
+
+
+On Sat, 15 May 2010, Julia Lawall wrote:
+
+> From: Julia Lawall <julia@diku.dk>
+>
+> Use kmemdup when some other buffer is immediately copied into the
+> allocated region.
+>
+> A simplified version of the semantic patch that makes this change is as
+> follows: (http://coccinelle.lip6.fr/)
+>
+> // <smpl>
+> @@
+> expression from,to,size,flag;
+> statement S;
+> @@
+>
+> -  to = \(kmalloc\|kzalloc\)(size,flag);
+> +  to = kmemdup(from,size,flag);
+>   if (to==NULL || ...) S
+> -  memcpy(to, from, size);
+> // </smpl>
+>
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+>
 > ---
-> On Tue, May 18, 2010 at 12:56:24PM -0700, Greg KH wrote:
-> > On Tue, May 18, 2010 at 09:49:52PM +0200, Daniel Mack wrote:
-> > > This patch adds support for writeable power supply properties and
-> > > exposes them as writeable to sysfs.
-> > 
-> > Please properly document this in Documentation/ABI as you are changing
-> > the userspace ABI.
-> > 
-> > thanks,
-> > 
-> > greg k-h
-> 
-> Is something like the following appropriate?
-
-Looks good to me, as well as patches 1-3 (though in the first patch
-I fixed power_supply_attr_groups to be static, it was a negligence
-from my original patch).
-
-I applied all these patches to battery-2.6.git, thanks!
-
--- 
-Anton Vorontsov
-email: cbouatmailru@gmail.com
-irc://irc.freenode.net/bd2
+> drivers/net/usb/pegasus.c |    6 ++----
+> 1 file changed, 2 insertions(+), 4 deletions(-)
+>
+> diff -u -p a/drivers/net/usb/pegasus.c b/drivers/net/usb/pegasus.c
+> --- a/drivers/net/usb/pegasus.c
+> +++ b/drivers/net/usb/pegasus.c
+> @@ -203,13 +203,12 @@ static int set_registers(pegasus_t * peg
+> 	char *buffer;
+> 	DECLARE_WAITQUEUE(wait, current);
+>
+> -	buffer = kmalloc(size, GFP_KERNEL);
+> +	buffer = kmemdup(data, size, GFP_KERNEL);
+> 	if (!buffer) {
+> 		netif_warn(pegasus, drv, pegasus->net,
+> 			   "out of memory in %s\n", __func__);
+> 		return -ENOMEM;
+> 	}
+> -	memcpy(buffer, data, size);
+>
+> 	add_wait_queue(&pegasus->ctrl_wait, &wait);
+> 	set_current_state(TASK_UNINTERRUPTIBLE);
+> @@ -255,13 +254,12 @@ static int set_register(pegasus_t * pega
+> 	char *tmp;
+> 	DECLARE_WAITQUEUE(wait, current);
+>
+> -	tmp = kmalloc(1, GFP_KERNEL);
+> +	tmp = kmemdup(&data, 1, GFP_KERNEL);
+> 	if (!tmp) {
+> 		netif_warn(pegasus, drv, pegasus->net,
+> 			   "out of memory in %s\n", __func__);
+> 		return -ENOMEM;
+> 	}
+> -	memcpy(tmp, &data, 1);
+> 	add_wait_queue(&pegasus->ctrl_wait, &wait);
+> 	set_current_state(TASK_UNINTERRUPTIBLE);
+> 	while (pegasus->flags & ETH_REGS_CHANGED)
+>
