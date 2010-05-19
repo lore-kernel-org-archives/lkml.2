@@ -1,82 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751843Ab0ESVro (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:47:44 -0400
-Received: from mail.catechsoftworks.biz ([80.123.216.188]:51316 "EHLO
-	mail.catechsoftworks.biz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751085Ab0ESVrm (ORCPT
+	id S1752110Ab0ESVtM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:49:12 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:56294 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751085Ab0ESVtK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:47:42 -0400
-Message-ID: <4BF45C6E.4040507@vmars.tuwien.ac.at>
-Date: Wed, 19 May 2010 23:47:26 +0200
-From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Wed, 19 May 2010 17:49:10 -0400
+Date: Wed, 19 May 2010 17:49:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: Unexpected splice "always copy" behavior observed
+Message-ID: <20100519214905.GA22486@Krystal>
+References: <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal> <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org
-References: <4BE2D05C.1090708@vmars.tuwien.ac.at> <20100519120642.a84ba8b5.akpm@linux-foundation.org>
-In-Reply-To: <20100519120642.a84ba8b5.akpm@linux-foundation.org>
-Content-Type: multipart/mixed;
- boundary="------------000804080906000905070706"
-X-SA-Exim-Connect-IP: 192.168.0.36
-X-SA-Exim-Mail-From: froemel@vmars.tuwien.ac.at
-Subject: Re: btusb patch, add_apple_MacBookPro62
-X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:20:07 +0000)
-X-SA-Exim-Scanned: Yes (on mail.catechsoftworks.biz)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 17:38:40 up 117 days, 15 min,  9 users,  load average: 0.29,
+	0.29, 0.22
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------000804080906000905070706
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
+> 
+> 
+> On Wed, 19 May 2010, Mathieu Desnoyers wrote:
+> > 
+> > Good point. This discard flag might do the trick and let us keep things simple.
+> > The major concern here is to keep the page cache disturbance relatively low.
+> > Which of new page allocation or stealing back the page has the lowest overhead
+> > would have to be determined with benchmarks.
+> 
+> We could probably make it easier somehow to do the writeback and discard 
+> thing, but I have had _very_ good experiences with even a rather trivial 
+> file writer that basically used (iirc) 8MB windows, and the logic was very 
+> trivial:
+> 
+>  - before writing a new 8M window, do "start writeback" 
+>    (SYNC_FILE_RANGE_WRITE) on the previous window, and do 
+>    a wait (SYNC_FILE_RANGE_WAIT_AFTER) on the window before that.
+> 
+> in fact, in its simplest form, you can do it like this (this is from my 
+> "overwrite disk images" program that I use on old disks):
+> 
+> 	for (index = 0; index < max_index ;index++) {
+> 		if (write(fd, buffer, BUFSIZE) != BUFSIZE)
+> 			break;
+> 		/* This won't block, but will start writeout asynchronously */
+> 		sync_file_range(fd, index*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WRITE);
+> 		/* This does a blocking write-and-wait on any old ranges */
+> 		if (index)
+> 			sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> 	}
+> 
+> and even if you don't actually do a discard (maybe we should add a 
+> SYNC_FILE_RANGE_DISCARD bit, right now you'd need to do a separate 
+> fadvise(FADV_DONTNEED) to throw it out) the system behavior is pretty 
+> nice, because the heavy writer gets good IO performance _and_ leaves only 
+> easy-to-free pages around after itself.
 
-On 05/19/2010 09:06 PM, Andrew Morton wrote:
-> [...]
->    
->> Hello Marcel,
->>
->> the Apple MBP model 6.2 (and maybe other recent MBPs) use an Apple
->> branded BCM2046 USB bluetooth device that works well [1] with your
->> generic driver.
->> The attached patch just adds the vendor and device id - please apply.
->>
->> Cheers,
->>    -bf
->>
->> [1] http://ubuntuforums.org/showthread.php?t=1469437
->>
->>      
-> Please send us a Signed-off-by: for this patch, as explained in
-> Documentation/SubmittingPatches, thanks.
->    
-Sorry - there you go:
+Great! I just implemented it in LTTng and it works very well !
 
-Signed-off-by: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+A faced a small counter-intuitive fadvise behavior though.
 
+  posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 
-Attached the patch one more time,
-   -bf
+only seems to affect the parts of a file that already exist. So after each
+splice() that appends to the file, I have to call fadvise again. I would have
+expected the "0" len parameter to tell the kernel to apply the hint to the whole
+file, even parts that will be added in the future. I expect we have this
+behavior because fadvise() was initially made with read behavior in mind rather
+than write.
 
---------------000804080906000905070706
-Content-Type: text/x-patch;
- name="btusb_add_apple_MacBookPro62.patch"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment;
- filename="btusb_add_apple_MacBookPro62.patch"
+For the records, I do a fadvice+async range write after each splice(). Also,
+after each subbuffer write, I do a blocking write-and-wait on all pages that are
+in the subbuffer prior to the one that has just been written, instead of using
+the fixed 8MB window.
 
---- linux/drivers/bluetooth/btusb.c	2010-05-06 15:56:18.228630685 +0200
-+++ linux_p/drivers/bluetooth/btusb.c	2010-05-02 11:03:55.955362854 +0200
-@@ -75,6 +75,9 @@
- 	/* Canyon CN-BTU1 with HID interfaces */
- 	{ USB_DEVICE(0x0c10, 0x0000) },
- 
-+	/* Apple MacBookPro6 BT device */
-+	{ USB_DEVICE(0x05ac, 0x8218) },
-+
- 	{ }	/* Terminating entry */
- };
- 
+Thanks,
 
---------------000804080906000905070706--
+Mathieu
+
+-- 
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
