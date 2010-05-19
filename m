@@ -1,119 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751031Ab0ESEVR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 00:21:17 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:32818 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750754Ab0ESEVQ (ORCPT
+	id S1751182Ab0ESEYH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 00:24:07 -0400
+Received: from eu1sys200aog117.obsmtp.com ([207.126.144.143]:50360 "EHLO
+	eu1sys200aog117.obsmtp.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750702Ab0ESEYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 00:21:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=cGCmwEvL+Mi52LZmMfOJXJx5ONkdATYZqw5qtGMJr1b3QV9PmjAZKWCpYoT8j2pBwa
-         UbOXoe8ZrXZ2WlUuSt/Ys0HCvmYx49B6vsqmHJc7fZj1VS0b0bdRbfVyKI26pyf7gyLo
-         yS675DYHqZ3XxSw8JhtdJYLJrjV7Zwc+p2zt0=
-Subject: Re: [BUG] perf: record does not seem to store buildids anymore
-From: Tom Zanussi <tzanussi@gmail.com>
-To: Stephane Eranian <eranian@google.com>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       acme@infradead.org, perfmon2-devel@lists.sf.net, eranian@gmail.com,
-       Masami Hiramatsu <mhiramat@redhat.com>, acme@ghostprotocols.net
-In-Reply-To: <AANLkTimmScKO8YnPJWfTqFXBXQYwbbdej-gaYnHCgeTc@mail.gmail.com>
-References: <AANLkTimmScKO8YnPJWfTqFXBXQYwbbdej-gaYnHCgeTc@mail.gmail.com>
-Content-Type: text/plain
-Date: Tue, 18 May 2010 23:21:09 -0500
-Message-Id: <1274242869.16737.25.camel@tropicana>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 00:24:05 -0400
+Date: Wed, 19 May 2010 09:53:35 +0530
+From: Rabin VINCENT <rabin.vincent@stericsson.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       "linux-next@vger.kernel.org" <linux-next@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the mfd tree
+Message-ID: <20100519042333.GA8818@bnru02.bnr.st.com>
+References: <20100519140310.e439960d.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <20100519140310.e439960d.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, May 19, 2010 at 06:03:10 +0200, Stephen Rothwell wrote:
+> After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
+> failed like this:
+> 
+> drivers/mfd/ab8500-core.c: In function 'ab8500_irq_remove':
+> drivers/mfd/ab8500-core.c:302: error: implicit declaration of function 'set_irq_flags'
+> 
+> Caused by commit 16548223daf6b3b95b75cb961d772831a754e126 ("mfd: new
+> AB8500 driver").
 
-On Tue, 2010-05-18 at 11:36 +0200, Stephane Eranian wrote:
-> Hi,
-> 
-> I am trying to understand how perf record deals with buildids.
-> I am interested in offline and not live processing. According
-> to http://lkml.org/lkml/2010/5/1/5, the inject patch does not
-> change perf record. It should still save the buildids at the
-> end of the perf.data file. I suspect it does not anymore.
-> 
-> If I do:
-> 
-> $ perf record -o - noploop 2 | perf inject -b | perf report -v -i -
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.063 MB - (~2756 samples) ]
-> build id event received for
-> /lib/modules/2.6.34-tip-default+/build/vmlinux:
-> 0ad6b5dd1295e0177be9d12acafa72daac664ee7
-> Looking at the vmlinux_path (5 entries long)
-> Using /lib/modules/2.6.34-tip-default+/build/vmlinux for symbols
-> build id event received for /usr/local/bin/noploop:
-> e8a36c0c1e36e18522233ff2a4b1fff0f9689b1c
-> 
-> There is indeed a buildid generated for my noploop test program.
-> 
-> But I do the simpler:
-> 
-> $ perf record -o perf.out noploop 2
-> noploop for 2 seconds
-> [ perf record: Woken up 1 times to write data ]
-> [ perf record: Captured and wrote 0.063 MB perf.out (~2739 samples) ]
-> 
-> $ perf buildid-list -i perf.out
-> $
-> 
-> I get nothing.
-> 
-> If I try with perf report -D:
-> 
-> $ perf report -D -i perf.out
->    .....
->      TOTAL events:       2011
->       MMAP events:         21
->       LOST events:          0
->       COMM events:          1
->       EXIT events:          1
->   THROTTLE events:          0
-> UNTHROTTLE events:          0
->       FORK events:          0
->       READ events:          0
->     SAMPLE events:       1988
->       ATTR events:          0
-> EVENT_TYPE events:          0
-> TRACING_DATA events:          0
->   BUILD_ID events:          0
-> 
-> It shows no buildid events found.
-> 
-> So either something is broken or I don't understand the logic here.
+Oops, one of the calls to set_irq_flags() is missing a CONFIG_ARM.  The
+patch below should fix it.  Thanks.
 
-Neither the live-mode nor inject patches should have changed how offline
-processing happens - that case still uses the original perf header write
-path.
+>From 39368228513c8b429daa274362e7bfe80598b366 Mon Sep 17 00:00:00 2001
+From: Rabin Vincent <rabin.vincent@stericsson.com>
+Date: Wed, 19 May 2010 09:41:56 +0530
+Subject: [PATCH] mfd: ab8500: fix build on !ARM
 
-I think the introduction of the 'machines' abstraction may have broken
-build ids - looking for instance at perf_header__adds_write(), the
-HEADER_BUILD_ID feature is set when dsos__read_build_ids() returns true,
-but the session->machines loop that reads the build_ids doesn't seem to
-have the host machine in it, so doesn't find any buildids for the host,
-and therefore doesn't set the feature or later write the buildid table.
+Add a missing CONFIG_ARM around one of the calls to set_irq_flags(), to
+prevent these errors on other archs:
 
-I was able to get the buildids written by adding the host_machine to the
-loop in dsos__read_build_ids() and dsos__write_buildid_table() and was
-able to see them using 'perf buildid-list' by also adding host_machine
-to perf_session__fprintf_dsos_buildid().
+drivers/mfd/ab8500-core.c: In function 'ab8500_irq_remove':
+drivers/mfd/ab8500-core.c:302: error: implicit declaration of function 'set_irq_flags'
 
-I'm guessing this isn't the right way to fix it, as the code that deals
-with the buildids seems to assume that the host_machine is also in the
-session->machines list, so I'll have to look into it some more myself
-before sending a patch, unless someone beats me to it ;-)
+Acked-by: Linus Walleij <linus.walleij@stericsson.com>
+Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
+---
+ drivers/mfd/ab8500-core.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
-Tom
+diff --git a/drivers/mfd/ab8500-core.c b/drivers/mfd/ab8500-core.c
+index e93833f..f3d26fa 100644
+--- a/drivers/mfd/ab8500-core.c
++++ b/drivers/mfd/ab8500-core.c
+@@ -299,7 +299,9 @@ static void ab8500_irq_remove(struct ab8500 *ab8500)
+ 	int irq;
+ 
+ 	for (irq = base; irq < base + AB8500_NR_IRQS; irq++) {
++#ifdef CONFIG_ARM
+ 		set_irq_flags(irq, 0);
++#endif
+ 		set_irq_chip_and_handler(irq, NULL, NULL);
+ 		set_irq_chip_data(irq, NULL);
+ 	}
+-- 
+1.7.0
 
