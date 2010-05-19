@@ -1,50 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754955Ab0ESUA1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:00:27 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:33725 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755152Ab0ESUAW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:00:22 -0400
-To: Steven Liu <lingjiujianke@gmail.com>
-Cc: chris.mason@oracle.com, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, liuqi@thunderst.com
-Subject: Re: [PATCH] btrfs: check alloc return value before use handle and struct
-From: Andi Kleen <andi@firstfloor.org>
-References: <AANLkTimupBIpsY_YtwIw75-ZdilsiFabaaTSs-AJv0Ad@mail.gmail.com>
-Date: Wed, 19 May 2010 22:00:20 +0200
-In-Reply-To: <AANLkTimupBIpsY_YtwIw75-ZdilsiFabaaTSs-AJv0Ad@mail.gmail.com> (Steven Liu's message of "Wed\, 19 May 2010 17\:38\:45 +0800")
-Message-ID: <87r5l7wtkb.fsf@basil.nowhere.org>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.3 (gnu/linux)
+	id S1756029Ab0ESUFf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:05:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:60116 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756002Ab0ESUFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:05:34 -0400
+Message-ID: <4BF4445F.9040104@zytor.com>
+Date: Wed, 19 May 2010 13:04:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Frederic Weisbecker <fweisbec@gmail.com>
+CC: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Autofs <autofs@linux.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       John Kacur <jkacur@redhat.com>, Arnd Bergmann <arnd@arndb.de>,
+       Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH 2/8] autofs: Pushdown the bkl from ioctl
+References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com> <1274289855-10001-3-git-send-regression-fweisbec@gmail.com> <4BF4279C.2000805@zytor.com> <20100519180832.GA9752@nowhere> <4BF42A5E.6060503@zytor.com> <20100519190307.GC9752@nowhere>
+In-Reply-To: <20100519190307.GC9752@nowhere>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Steven Liu <lingjiujianke@gmail.com> writes:
-> diff --git a/fs/btrfs/dir-item.c b/fs/btrfs/dir-item.c
-> index e9103b3..230a131 100644
-> --- a/fs/btrfs/dir-item.c
-> +++ b/fs/btrfs/dir-item.c
-> @@ -142,6 +142,8 @@ int btrfs_insert_dir_item(struct
-> btrfs_trans_handle *trans, struct btrfs_root
->  	key.offset = btrfs_name_hash(name, name_len);
->
->  	path = btrfs_alloc_path();
-> +	if (!path)
-> +		return -ENOMEM;
+On 05/19/2010 12:03 PM, Frederic Weisbecker wrote:
+>>
+>> But it's not ... it is locked at that point.  It's not lock*ing*, but it
+>> is not *unlocked*, either.  Furthermore, it is directly contradicting
+>> the naming scheme of the ops structure.
+>>
+> 
+> Would you prefer me to resend a patch?
+> 
 
+Yes, that would be my preference.
 
-The big problem is handling state unwind in all the callers, not adding
-it to the low level code. I attempted it some time ago but it's hard.
+We really need to set a date to kill off autofs3 completely -- I don't
+care if we rename anything or not -- and add it to feature-removal.txt.
 
-Just spewing BUG_ON() all over on memory allocation failure is not
-helpful imho, that's not better than simply having clean NULL pointer
-faults.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
+	-hpa
