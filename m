@@ -1,76 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757986Ab0ESMGw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:06:52 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38514 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756188Ab0ESMGv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:06:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=YdiIkROP3XPFWpq10gFyZVUgiWu8gRLkSPYl1d0XM5jbTvONZ8PRZK9jJPNB/hokZF
-         JlHKBH6P9UwlWxFXUeyBR9VppesiJZUvl0GCnZwsGdfWNliGdqAAM9AuTHvkv6Vd75Qs
-         8icTHYmZ1i1xxyZEHwTe4m68Ioxfo4JRrEPOI=
-MIME-Version: 1.0
-In-Reply-To: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
-References: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
-Date: Wed, 19 May 2010 14:06:46 +0200
-Message-ID: <AANLkTimTjuQUEulo8g7clpECJVHwwDc29nkWskw6fWF-@mail.gmail.com>
-Subject: Re: [PATCH] drivers/platform/x86/eeepc-wmi.c: fix build warning
-From: Corentin Chary <corentin.chary@gmail.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
-       Yong Wang <yong.y.wang@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
-       Tejun Heo <tj@kernel.org>, platform-driver-x86@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+	id S1758027Ab0ESMHt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:07:49 -0400
+Received: from sh.osrg.net ([192.16.179.4]:48801 "EHLO sh.osrg.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755618Ab0ESMHr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:07:47 -0400
+Date: Wed, 19 May 2010 21:02:49 +0900
+To: dwmw2@infradead.org
+Cc: geert@linux-m68k.org, herbert@gondor.hengli.com.au, davem@davemloft.net,
+       penberg@cs.helsinki.fi, mpm@selenic.com, ken@codelabs.ch,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1274269236.6930.9930.camel@macbook.infradead.org>
+References: <1274253269.6930.9325.camel@macbook.infradead.org>
+	<AANLkTimyUoAsculVFkEPwlRQEI3eLAwX5x7M0Yr9AdOs@mail.gmail.com>
+	<1274269236.6930.9930.camel@macbook.infradead.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100519210506U.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 21:02:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 12:37 PM, Daniel Mack <daniel@caiaq.de> wrote:
-> drivers/platform/x86/eeepc-wmi.c: In function ‘eeepc_wmi_notify’:
-> drivers/platform/x86/eeepc-wmi.c:209: warning: ‘new’ may be used uninitialized in this function
-> drivers/platform/x86/eeepc-wmi.c:209: note: ‘new’ was declared here
->
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> Cc: Matthew Garrett <mjg@redhat.com>
-> Cc: Yong Wang <yong.y.wang@intel.com>
-> Cc: Corentin Chary <corentincj@iksaif.net>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: platform-driver-x86@vger.kernel.org
-> ---
->  drivers/platform/x86/eeepc-wmi.c |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
->
-> diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
-> index b227eb4..9dc50fb 100644
-> --- a/drivers/platform/x86/eeepc-wmi.c
-> +++ b/drivers/platform/x86/eeepc-wmi.c
-> @@ -206,7 +206,7 @@ static int eeepc_wmi_backlight_notify(struct eeepc_wmi *eeepc, int code)
->  {
->        struct backlight_device *bd = eeepc->backlight_device;
->        int old = bd->props.brightness;
-> -       int new;
-> +       int new = old;
->
->        if (code >= NOTIFY_BRNUP_MIN && code <= NOTIFY_BRNUP_MAX)
->                new = code - NOTIFY_BRNUP_MIN + 1;
-> --
-> 1.7.1
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+On Wed, 19 May 2010 12:40:36 +0100
+David Woodhouse <dwmw2@infradead.org> wrote:
 
-Acked-By: Corentin Chary <corentincj@iksaif.net>
+> On Wed, 2010-05-19 at 13:32 +0200, Geert Uytterhoeven wrote:
+> > Instead of having (different) defaults in sl[aou]b, perhaps we should
+> > just remove the defaults completely, to ensure all architectures set
+> > ARCH_SLAB_MINALIGN to the correct value? 
+> 
+> What is 'correct'? The architecture sets it to the minimum value that it
+> can cope with, according to its own alignment constraints (and DMA/cache
+> constraints, in the case of ARCH_KMALLOC_MINALIGN).
 
--- 
-Corentin Chary
-http://xf.iksaif.net
+IIRC, not all the architectures do that; ARCH_KMALLOC_MINALIGN doesn't
+mean "DMA-safe" alignment currently.
