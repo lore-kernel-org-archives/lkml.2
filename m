@@ -1,45 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756044Ab0ESUGR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:06:17 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:60147 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753873Ab0ESUGP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:06:15 -0400
-Message-ID: <4BF444A9.6090709@zytor.com>
-Date: Wed, 19 May 2010 13:06:01 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Ky Srinivasan <ksrinivasan@novell.com>, greg@kroah.com,
-       hjanssen@microsoft.com, mingo@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/2] Hyperv detection - code cleanup
-References: <4BF3C7970200003000085602@sinclair.provo.novell.com> <4BF4252E.6090609@zytor.com> <4BF43256.1090004@redhat.com>
-In-Reply-To: <4BF43256.1090004@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1756014Ab0ESUJd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:09:33 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37975 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752661Ab0ESUJb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:09:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=sGkwcSNUHgU2U7hKVPDz8D3EZeCXC+PwSrX+nXhUJciids3NxHL752r2K8B72U+qRS
+         UCo9pMW5OvUpjbktfUdhBXnhVXOAnpSchakowVS2pR+UF6GOUSqhJFGEIXyAqmO0QhYc
+         v+igsl++NrJGFA+jrktJj8ZTeK7QvfO/Q1Jg8=
+Subject: Re: 2.6.34 + ssh segfault
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: George Spelvin <linux@horizon.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <20100519182027.3412.qmail@science.horizon.com>
+References: <20100519182027.3412.qmail@science.horizon.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 May 2010 22:09:25 +0200
+Message-ID: <1274299765.2658.2.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 11:47 AM, Avi Kivity wrote:
-> On 05/19/2010 08:51 PM, H. Peter Anvin wrote:
->> On 05/19/2010 10:12 AM, Ky Srinivasan wrote:
->>    
->>> From: K. Y. Srinivasan<ksrinivasan@novell.com>
->>> Subject: Code cleanup - consolidate all hyperv related definitions into one
->>> header file.
->>>
->>>      
->> How will this affect KVM?  I was under the impression that this was
->> separated out as a constants-only header file for a reason.
+Le mercredi 19 mai 2010 à 14:20 -0400, George Spelvin a écrit :
+> Trying to scp a file (using a public key cached in ssh-agent) to another machine
+> with my new (up 21:40) 2.6.34 kernel failed twice with the same symptoms.
 > 
-> It's exported, so any types need to be compatible with userspace (i.e. 
-> __u32).
+> Wasn't a problem in 2.6.34-rc5.  (Same machines, same ssh key, etc.)
+> Hopefully someone can figure it out.  Uniprocessor Athlon XP, 2 GB RAM,
+> GCC 4.4.4.
+> 
+> 
+> I have another crash on boot on my laptop that I'm bisecting.  34
+> doesn't seem to be a lucky number for me.
+> 
+> 
+> [77350.698203] general protection fault: 4f80 [#1] 
+> [77350.698210] last sysfs file: /sys/devices/pci0000:00/0000:00:02.2/usb1/1-0:1.0/uevent
+> [77350.698214] Modules linked in: battery deflate zlib_deflate zlib_inflate ctr twofish twofish_common camellia serpent blowfish cast5 des_generic cbc aes_i586 aes_generic xcbc sha512_generic sha256_generic sha1_generic crypto_null af_key loop fan thermal evdev serio_raw processor button thermal_sys
+> [77350.698245] 
+> [77350.698250] Pid: 3697, comm: ssh Not tainted 2.6.34 #14 FN41 / 
+> [77350.698255] EIP: 0060:[<c11ad8f3>] EFLAGS: 00010286 CPU: 0
+> [77350.698268] EIP is at sk_stream_wait_memory+0x134/0x188
+> [77350.698272] EAX: eced4fa9 EBX: f650c000 ECX: 00000001 EDX: 00000000
+> [77350.698277] ESI: fffffff5 EDI: 00000000 EBP: ca450e68 ESP: ca450df4
+> [77350.698281]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> [77350.698287] Process ssh (pid: 3697, ti=ca450000 task=eced4f80 task.ti=ca450000)
+> [77350.698290] Stack:
+> [77350.698292]  b91c6038 eced4f80 00000000 eced4f80 c1028f1e ca19edd0 ca19edd0 f650c000
+> [77350.698300] <0> 00000004 00000000 00000000 c11cd6b8 eced47c0 000032e8 00000040 b91c65e0
+> [77350.698308] <0> 00000d48 000005a8 f6814c3c 000005a8 c39a2df4 00000000 00000000 ca450f60
+> [77350.698317] Call Trace:
+> [77350.698329]  [<c1028f1e>] ? autoremove_wake_function+0x0/0x29
+> [77350.698339]  [<c11cd6b8>] ? tcp_sendmsg+0x5c7/0x6fa
+> [77350.698349]  [<c11a50c4>] ? sock_aio_write+0xe9/0xf2
+> [77350.698359]  [<c1067fae>] ? do_sync_write+0x9d/0xd2
+> [77350.698366]  [<c1067dbe>] ? fsnotify_access+0x4c/0x53
+> [77350.698372]  [<c10684df>] ? vfs_write+0x8b/0xd8
+> [77350.698377]  [<c10685bf>] ? sys_write+0x3c/0x60
+> [77350.698384]  [<c1002510>] ? sysenter_do_call+0x12/0x26
+> [77350.698387] Code: 74 72 89 f1 31 d2 89 d8 89 0c 24 e8 3d a3 ff ff 8b 0c 24 ff 8b 34 01 00 00 85 ff 89 ce 74 17 8b 75 00 81 fe ff ff ff 7f 74 0c 29 <cf> b8 00 00 00 00 29 fe 0f 48 f0 89 75 00 31 ff e9 18 ff ff ff 
+> [77350.698426] EIP: [<c11ad8f3>] sk_stream_wait_memory+0x134/0x188 SS:ESP 0068:ca450df4
+> [77350.698454] ---[ end trace f6ff9dff06070f9c ]---
+> 
+> [77366.937785] general protection fault: 43e0 [#2] 
+> [77366.937793] last sysfs file: /sys/devices/pci0000:00/0000:00:02.2/usb1/1-0:1.0/uevent
+> [77366.937797] Modules linked in: battery deflate zlib_deflate zlib_inflate ctr twofish twofish_common camellia serpent blowfish cast5 des_generic cbc aes_i586 aes_generic xcbc sha512_generic sha256_generic sha1_generic crypto_null af_key loop fan thermal evdev serio_raw processor button thermal_sys
+> [77366.937828] 
+> [77366.937834] Pid: 3702, comm: ssh Tainted: G      D    2.6.34 #14 FN41 / 
+> [77366.937839] EIP: 0060:[<c11ad8f3>] EFLAGS: 00010282 CPU: 0
+> [77366.937851] EIP is at sk_stream_wait_memory+0x134/0x188
+> [77366.937855] EAX: eced43e9 EBX: f6938480 ECX: 00000001 EDX: 00000000
+> [77366.937859] ESI: fffffff5 EDI: 00000000 EBP: da6c4e68 ESP: da6c4df4
+> [77366.937864]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
+> [77366.937870] Process ssh (pid: 3702, ti=da6c4000 task=eced43e0 task.ti=da6c4000)
+> [77366.937873] Stack:
+> [77366.937875]  b896d038 eced43e0 00000000 eced43e0 c1028f1e de29fc70 de29fc70 f6938480
+> [77366.937883] <0> 00000004 00000000 00000000 c11cd6b8 eced4000 000032e8 00000040 b896d5e0
+> [77366.937891] <0> 00000d48 000005a8 d7e88c3c 000005a8 f6a6c5f4 00000000 00000000 da6c4f60
+> [77366.937900] Call Trace:
+> [77366.937912]  [<c1028f1e>] ? autoremove_wake_function+0x0/0x29
+> [77366.937922]  [<c11cd6b8>] ? tcp_sendmsg+0x5c7/0x6fa
+> [77366.937932]  [<c11a50c4>] ? sock_aio_write+0xe9/0xf2
+> [77366.937942]  [<c1067fae>] ? do_sync_write+0x9d/0xd2
+> [77366.937949]  [<c1067dbe>] ? fsnotify_access+0x4c/0x53
+> [77366.937955]  [<c10684df>] ? vfs_write+0x8b/0xd8
+> [77366.937960]  [<c10685bf>] ? sys_write+0x3c/0x60
+> [77366.937967]  [<c1002510>] ? sysenter_do_call+0x12/0x26
+> [77366.937970] Code: 74 72 89 f1 31 d2 89 d8 89 0c 24 e8 3d a3 ff ff 8b 0c 24 ff 8b 34 01 00 00 85 ff 89 ce 74 17 8b 75 00 81 fe ff ff ff 7f 74 0c 29 <cf> b8 00 00 00 00 29 fe 0f 48 f0 89 75 00 31 ff e9 18 ff ff ff 
+> [77366.938009] EIP: [<c11ad8f3>] sk_stream_wait_memory+0x134/0x188 SS:ESP 0068:da6c4df4
+> [77366.938037] ---[ end trace f6ff9dff06070f9d ]---
 > 
 
-... and certainly no prototypes for kernel-only functionality.
-Right, that's what I thought.  So NAK on this patch, too.
+This makes no sense to me, the EIP is in the midle of an instruction.
+(29 <cf>           sub    %ecx,%edi )
 
-	-hpa
+Bad compiler, cosmic ray, bad hardware... I dont know.
+
+Try to rebuild completely the kernel with gcc-4.5, or gcc-4.4.3 ?
+
+
+
