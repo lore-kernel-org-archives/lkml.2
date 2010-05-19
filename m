@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758627Ab0ERRpI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:45:08 -0400
-Received: from mga01.intel.com ([192.55.52.88]:63351 "EHLO mga01.intel.com"
+	id S1758633Ab0ERRpi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:45:38 -0400
+Received: from mga09.intel.com ([134.134.136.24]:15268 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756562Ab0ERRpF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:45:05 -0400
+	id S1754723Ab0ERRph (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 13:45:37 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,256,1272870000"; 
-   d="scan'208";a="799593248"
-Subject: [RFC][PATCH v2 02/11] perf: core, add pmu register and lookup
- functions
+   d="scan'208";a="519031445"
+Subject: [RFC][PATCH v2 03/11] perf: x86, implement pmu::init_event
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -27,8 +26,8 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
        Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
        Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 01:45:02 +0000
-Message-Id: <1274233502.3036.80.camel@localhost>
+Date: Wed, 19 May 2010 01:45:27 +0000
+Message-Id: <1274233527.3036.81.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -36,159 +35,122 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-And add new api pmu::init_event
+Mostly copy hw_perf_event_init to implement it.
+Backup hw_perf_event_init to the end of file and it will be removed later.
 
 Changes log
-v2: Use RCU for synchronization (Peter Zijlstra)
-v1: add pmu register and lookup functions
+v2: Backup hw_perf_event_init for smooth transition(Peter Zijlstra)
+v1: x86, implement api pmu::init_event
 
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- include/linux/perf_event.h |   11 ++++++
- kernel/perf_event.c        |   73 ++++++++++++++++++++++++++++++++++++++++++++
- 2 files changed, 84 insertions(+), 0 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   65 +++++++++++++++++++++++++++++---------
+ 1 files changed, 50 insertions(+), 15 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 6c01c5f..40809f5 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -549,10 +549,16 @@ struct perf_event;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index 5c6a0d9..aad4221 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1362,6 +1362,9 @@ void __init init_hw_perf_events(void)
+ 	pr_info("... event mask:             %016Lx\n", x86_pmu.intel_ctrl);
  
- #define PERF_EVENT_TXN_STARTED 1
- 
-+#define PMU_TYPE_CPU 0
-+#define PMU_TYPE_NODE 1
+ 	perf_cpu_notifier(x86_pmu_notifier);
 +
- /**
-  * struct pmu - generic performance monitoring unit
-  */
- struct pmu {
-+	int				id;
-+	struct list_head		entry;
-+
- 	int (*enable)			(struct perf_event *event);
- 	void (*disable)			(struct perf_event *event);
- 	int (*start)			(struct perf_event *event);
-@@ -569,6 +575,8 @@ struct pmu {
- 	void (*start_txn)	(struct pmu *pmu);
- 	void (*cancel_txn)	(struct pmu *pmu);
- 	int  (*commit_txn)	(struct pmu *pmu);
-+
-+	int  (*init_event)	(struct perf_event *event);
- };
- 
- /**
-@@ -1013,6 +1021,9 @@ extern int perf_swevent_get_recursion_context(void);
- extern void perf_swevent_put_recursion_context(int rctx);
- extern void perf_event_enable(struct perf_event *event);
- extern void perf_event_disable(struct perf_event *event);
-+
-+extern int perf_event_register_pmu(struct pmu *pmu);
-+extern void perf_event_unregister_pmu(int id);
- #else
- static inline void
- perf_event_task_sched_in(struct task_struct *task)			{ }
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index ba7a37a..31b032b 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -40,6 +40,12 @@
-  */
- static DEFINE_PER_CPU(struct perf_cpu_context, perf_cpu_context);
- 
-+/*
-+ * The list of multiple hw pmus
-+ */
-+static struct list_head pmus;
-+static DEFINE_SPINLOCK(pmus_lock);
-+
- int perf_max_events __read_mostly = 1;
- static int perf_reserved_percpu __read_mostly;
- static int perf_overcommit __read_mostly = 1;
-@@ -4678,6 +4684,34 @@ static struct pmu *sw_perf_event_init(struct perf_event *event)
- 	return pmu;
++	if (!perf_event_register_pmu(&pmu))
++		pr_info("Register pmu fails\n");
  }
  
-+static struct pmu *perf_event_lookup_pmu(struct perf_event *event)
-+{
-+	struct pmu *pmu = NULL;
-+	int pmu_id = event->attr.type;
-+
-+	switch (event->attr.type) {
-+		case PERF_TYPE_HARDWARE:
-+		case PERF_TYPE_HW_CACHE:
-+		case PERF_TYPE_RAW:
-+			pmu_id = PMU_TYPE_CPU;
-+			break;
-+
-+		/* TBD: will add other pmu type later */
-+
-+		default:
-+			return NULL;
-+	}
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(pmu, &pmus, entry) {
-+		if (pmu->id == pmu_id)
-+			break;
-+	}
-+	rcu_read_unlock();
-+
-+	return pmu;
-+}
+ static inline void x86_pmu_read(struct perf_event *event)
+@@ -1422,18 +1425,6 @@ static int x86_pmu_commit_txn(struct pmu *pmu)
+ 	return 0;
+ }
+ 
+-static struct pmu pmu = {
+-	.enable		= x86_pmu_enable,
+-	.disable	= x86_pmu_disable,
+-	.start		= x86_pmu_start,
+-	.stop		= x86_pmu_stop,
+-	.read		= x86_pmu_read,
+-	.unthrottle	= x86_pmu_unthrottle,
+-	.start_txn	= x86_pmu_start_txn,
+-	.cancel_txn	= x86_pmu_cancel_txn,
+-	.commit_txn	= x86_pmu_commit_txn,
+-};
+-
+ /*
+  * validate that we can schedule this event
+  */
+@@ -1508,7 +1499,7 @@ out:
+ 	return ret;
+ }
+ 
+-struct pmu *hw_perf_event_init(struct perf_event *event)
++static int x86_pmu_init_event(struct perf_event *event)
+ {
+ 	struct pmu *tmp;
+ 	int err;
+@@ -1533,12 +1524,25 @@ struct pmu *hw_perf_event_init(struct perf_event *event)
+ 	if (err) {
+ 		if (event->destroy)
+ 			event->destroy(event);
+-		return ERR_PTR(err);
+ 	}
+ 
+-	return &pmu;
++	return err;
+ }
+ 
++static struct pmu pmu = {
++	.id		= PMU_TYPE_CPU,
++	.enable		= x86_pmu_enable,
++	.disable	= x86_pmu_disable,
++	.start		= x86_pmu_start,
++	.stop		= x86_pmu_stop,
++	.read		= x86_pmu_read,
++	.unthrottle	= x86_pmu_unthrottle,
++	.start_txn	= x86_pmu_start_txn,
++	.cancel_txn	= x86_pmu_cancel_txn,
++	.commit_txn	= x86_pmu_commit_txn,
++	.init_event	= x86_pmu_init_event,
++};
 +
  /*
-  * Allocate and initialize a event structure
+  * callchain support
   */
-@@ -5635,6 +5669,8 @@ void __init perf_event_init(void)
- 	perf_cpu_notify(&perf_cpu_nb, (unsigned long)CPU_ONLINE,
- 			(void *)(long)smp_processor_id());
- 	register_cpu_notifier(&perf_cpu_nb);
-+
-+	INIT_LIST_HEAD(&pmus);
- }
+@@ -1753,3 +1757,34 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
  
- static ssize_t perf_show_reserve_percpu(struct sysdev_class *class,
-@@ -5734,3 +5770,40 @@ static int __init perf_event_sysfs_init(void)
- 				  &perfclass_attr_group);
+ 	return misc;
  }
- device_initcall(perf_event_sysfs_init);
 +
-+int perf_event_register_pmu(struct pmu *pmu)
++struct pmu *hw_perf_event_init(struct perf_event *event)
 +{
 +	struct pmu *tmp;
-+	int ret = 1;
++	int err;
 +
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(tmp, &pmus, entry) {
-+		if (tmp->id == pmu->id) {
-+			ret = 0;
-+			goto err;
-+		}
++	err = __hw_perf_event_init(event);
++	if (!err) {
++		/*
++		 * we temporarily connect event to its pmu
++		 * such that validate_group() can classify
++		 * it as an x86 event using is_x86_event()
++		 */
++		tmp = event->pmu;
++		event->pmu = &pmu;
++
++		if (event->group_leader != event)
++			err = validate_group(event);
++		else
++			err = validate_event(event);
++
++		event->pmu = tmp;
 +	}
-+	rcu_read_unlock();
-+
-+	spin_lock(&pmus_lock);
-+	list_add_tail_rcu(&pmu->entry, &pmus);
-+	spin_unlock(&pmus_lock);
-+
-+err:
-+	return ret;
-+}
-+
-+void perf_event_unregister_pmu(int id)
-+{
-+	struct pmu *tmp = NULL;
-+
-+	rcu_read_lock();
-+	list_for_each_entry_rcu(tmp, &pmus, entry) {
-+		if (tmp->id == id)
-+			break;
++	if (err) {
++		if (event->destroy)
++			event->destroy(event);
++		return ERR_PTR(err);
 +	}
-+	rcu_read_unlock();
 +
-+	if (tmp)
-+		list_del_rcu(&tmp->entry);
++	return &pmu;
 +}
 
 
