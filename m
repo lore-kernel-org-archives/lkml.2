@@ -1,48 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753645Ab0EST2a (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:28:30 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41157 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752715Ab0EST22 (ORCPT
+	id S1754684Ab0EST2p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:28:45 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52417
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754560Ab0EST2n (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:28:28 -0400
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and
- ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
-From: David Woodhouse <dwmw2@infradead.org>
-To: Christoph Lameter <cl@linux.com>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, manfred@colorfullife.com,
-       David Miller <davem@davemloft.net>, mpm@selenic.com, ken@codelabs.ch,
-       geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-In-Reply-To: <alpine.DEB.2.00.1005191418520.5729@router.home>
-References: <1274266725.6930.9823.camel@macbook.infradead.org>
-	 <1274266902.6930.9834.camel@macbook.infradead.org>
-	 <4BF437EA.9010904@cs.helsinki.fi>
-	 <alpine.DEB.2.00.1005191418520.5729@router.home>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 20:28:03 +0100
-Message-ID: <1274297283.6930.10476.camel@macbook.infradead.org>
+	Wed, 19 May 2010 15:28:43 -0400
+Date: Wed, 19 May 2010 12:28:52 -0700 (PDT)
+Message-Id: <20100519.122852.77359021.davem@davemloft.net>
+To: ben@decadent.org.uk
+Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1274267582.2763.24.camel@localhost>
+References: <20100518.233752.256882583.davem@davemloft.net>
+	<1274267582.2763.24.camel@localhost>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 14:19 -0500, Christoph Lameter wrote:
+From: Ben Hutchings <ben@decadent.org.uk>
+Date: Wed, 19 May 2010 12:13:02 +0100
+
+> On Tue, 2010-05-18 at 23:37 -0700, David Miller wrote:
+> [...]
+>> Some other things that stand out:
+>> 
+>> 1) Allow the administrator to reserve port ranges, such that the
+>>    kernel bind allocation scheme won't use them.  From Amerigo Wang.
+>> 
+>> 2) ipv6 address et al. handling converted to use generic kernel lists.
+>>    From Stephem Hemminger.
+>> 
+>> 3) PHY module autoloading support from David Howells
+> [...]
 > 
-> Maybe we can consolidate that into slab.h so that the alignment is the
-> same for all allocators? 
+> For the record, that was actually David Woodhouse.
 
-Doing so at least for slub and slab would make sense. I wanted to move
-them first though, as a separate step.
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+Indeed, already apologized to him in private email.   My bad :-/
