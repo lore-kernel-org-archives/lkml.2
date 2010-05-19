@@ -1,39 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753874Ab0ESQTe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:19:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19912 "EHLO mx1.redhat.com"
+	id S1753902Ab0ESQWU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:22:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2805 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0ESQTb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:19:31 -0400
-Message-ID: <4BF40F8C.4050608@redhat.com>
-Date: Wed, 19 May 2010 19:19:24 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/3] KVM: MMU: split kvm_sync_page() function
-References: <4BEE7CAC.5020603@cn.fujitsu.com>
-In-Reply-To: <4BEE7CAC.5020603@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1750943Ab0ESQWT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:22:19 -0400
+Date: Wed, 19 May 2010 12:21:47 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: linux-kernel@vger.kernel.org
+Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
+       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
+       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
+       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
+       vgoyal@redhat.com
+Message-Id: <4d60eb9563214fb2923007efb3e55a82bf2d825a.1274283321.git.jbaron@redhat.com>
+In-Reply-To: <cover.1274283321.git.jbaron@redhat.com>
+References: <cover.1274283321.git.jbaron@redhat.com>
+Subject: [PATCH 01/13] jump label v8: notifier atomic call chain notrace
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/15/2010 01:51 PM, Xiao Guangrong wrote:
-> Split kvm_sync_page() into kvm_sync_page() and kvm_sync_page_transient()
-> to clarify the code address Avi's suggestion
->
-> kvm_sync_page_transient() function only update shadow page but not mark
-> it sync and not write protect sp->gfn. it will be used by later patch
->    
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
 
+In LTTng, being able to use the atomic notifier from cpu idle entry to
+ensure the tracer flush the last events in the current subbuffer
+requires the rcu read-side to be marked "notrace", otherwise it can end
+up calling back into lockdep and the tracer.
 
-Applied all three, thanks.
+Also apply to the the die notifier.
 
+Signed-off-by: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+Signed-off-by: Jason Baron <jbaron@redhat.com>
+Reviewed-by: Masami Hiramatsu <mhiramat@redhat.com>
+---
+ kernel/notifier.c |    6 +++---
+ 1 files changed, 3 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/notifier.c b/kernel/notifier.c
+index 2488ba7..88453a7 100644
+--- a/kernel/notifier.c
++++ b/kernel/notifier.c
+@@ -148,7 +148,7 @@ int atomic_notifier_chain_unregister(struct atomic_notifier_head *nh,
+ 	spin_lock_irqsave(&nh->lock, flags);
+ 	ret = notifier_chain_unregister(&nh->head, n);
+ 	spin_unlock_irqrestore(&nh->lock, flags);
+-	synchronize_rcu();
++	synchronize_sched();
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(atomic_notifier_chain_unregister);
+@@ -178,9 +178,9 @@ int __kprobes __atomic_notifier_call_chain(struct atomic_notifier_head *nh,
+ {
+ 	int ret;
+ 
+-	rcu_read_lock();
++	rcu_read_lock_sched_notrace();
+ 	ret = notifier_call_chain(&nh->head, val, v, nr_to_call, nr_calls);
+-	rcu_read_unlock();
++	rcu_read_unlock_sched_notrace();
+ 	return ret;
+ }
+ EXPORT_SYMBOL_GPL(__atomic_notifier_call_chain);
 -- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+1.7.0.1
 
