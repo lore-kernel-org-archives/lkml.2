@@ -1,38 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754972Ab0ESIbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:31:55 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48542 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750961Ab0ESIbx convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:31:53 -0400
-Subject: Re: [tip:perf/core] perf/ftrace: Optimize perf/tracepoint
- interaction for single events
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
-       linux-kernel@vger.kernel.org, efault@gmx.de, rostedt@goodmis.org,
-       tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
-In-Reply-To: <20100519082335.GG5704@nowhere>
-References: <tip-4f41c013f553957765902fb01475972f0af3e8e7@git.kernel.org>
-	 <20100519075804.GF5704@nowhere> <1274257123.5605.10260.camel@twins>
-	 <20100519082335.GG5704@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 May 2010 10:31:25 +0200
-Message-ID: <1274257885.5605.10289.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1755321Ab0ESIdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:33:36 -0400
+Received: from trinity.fluff.org ([89.16.178.74]:35131 "EHLO trinity.fluff.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751495Ab0ESIde (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 04:33:34 -0400
+Date: Wed, 19 May 2010 09:33:27 +0100
+From: Ben Dooks <ben-linux@fluff.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: InKi Dae <inki.dae@samsung.com>, kgene.kim@samsung.com,
+       Kyungmin Park <kyungmin.park@samsung.com>,
+       Marek Szyprowski <m.szyprowski@samsung.com>,
+       linux-kernel@vger.kernel.org,
+       Linux Samsung SoC <linux-samsung-soc@vger.kernel.org>,
+       linux-arm-kernel@lists.infradead.org
+Subject: Please pull s3c-fb driver updates
+Message-ID: <20100519083327.GV26401@trinity.fluff.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+X-Disclaimer: These are my views alone.
+X-URL: http://www.fluff.org/
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: ben@trinity.fluff.org
+X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 10:23 +0200, Frederic Weisbecker wrote:
+Please pull the following patches for the s3c-fb driver for fixes and
+device support updates.
 
-> Yeah, then if you launch perf sched for example, you'll have NR_CPU perf events
-> attached to each lock trace events, since we create one event per cpu.
+The following changes since commit 7ebd467551ed6ae200d7835a84bbda0dcadaa511:
+  Linus Torvalds (1):
+        Merge branch 'drm-linus' of git://git.kernel.org/.../airlied/drm-2.6
 
-Right, but simple per task (non-inherited) would have only 1.
+are available in the git repository at:
 
-But yeah, plenty of room to improve here.
+  git://git.fluff.org/bjdooks/linux.git for-2635/s3c-fb
+
+Ben Dooks (5):
+      s3c-fb: Change to depending on CONFIG_S3C_FB_DEV
+      s3c-fb: only init window colour key controls for windows with blending
+      s3c-fb: Initial move to unifying the header files
+      s3c-fb: udpate to support s3c2416/s3c2443 style hardware
+      s3c-fb: Integrate palette setup code into main driver
+
+InKi Dae (2):
+      s3c-fb: add default window feature.
+      s3c-fb: fixed distortedness situation for the mode more then 24bpp.
+
+ arch/arm/mach-s3c64xx/include/mach/regs-fb.h    |   20 --
+ arch/arm/mach-s5pc100/include/mach/regs-fb.h    |   34 --
+ arch/arm/plat-samsung/include/plat/fb.h         |    3 +
+ arch/arm/plat-samsung/include/plat/regs-fb-v4.h |   78 +-----
+ arch/arm/plat-samsung/include/plat/regs-fb.h    |    5 +
+ drivers/video/Kconfig                           |    2 +-
+ drivers/video/s3c-fb.c                          |  412 +++++++++++++++++++----
+ 7 files changed, 362 insertions(+), 192 deletions(-)
