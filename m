@@ -1,51 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754024Ab0ESSWE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 14:22:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:58523 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752260Ab0ESSWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 14:22:03 -0400
-Message-ID: <4BF42C3D.6030404@zytor.com>
-Date: Wed, 19 May 2010 11:21:49 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753058Ab0ESSYr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 14:24:47 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:54006 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751673Ab0ESSYq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 14:24:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=eoR2B1A+F7KKcXdqPjohtc7NoARBJnw7yazMR2gIjlFbtSb+Y25Bko4I20+nff6lpn
+         V8z6TKdJu/ynGxTRFbg9by7ACs7WhIO+HGQfH/vrxr1H6chdxwGXfGM2xS0ufoE5ZCI6
+         QfnPZdKFJWZNZAZZn/5eyTgRPipRT+N6t3K1o=
+Date: Wed, 19 May 2010 20:22:36 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+       Autofs <autofs@linux.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       John Kacur <jkacur@redhat.com>, Arnd Bergmann <arnd@arndb.de>
+Subject: Re: [PATCH 2/8] autofs: Pushdown the bkl from ioctl
+Message-ID: <20100519182234.GB9752@nowhere>
+References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com> <1274289855-10001-3-git-send-regression-fweisbec@gmail.com> <4BF4279C.2000805@zytor.com> <20100519180832.GA9752@nowhere> <4BF42A5E.6060503@zytor.com>
 MIME-Version: 1.0
-To: Greg KH <greg@kroah.com>
-CC: Ky Srinivasan <ksrinivasan@novell.com>, hjanssen@microsoft.com,
-       mingo@redhat.com, linux-kernel@vger.kernel.org,
-       Avi Kivity <avi@redhat.com>
-Subject: Re: [PATCH 2/2] Hyperv detection - code cleanup
-References: <4BF3C97F020000300008560D@sinclair.provo.novell.com> <4BF424FE.80400@zytor.com> <20100519181926.GA22228@kroah.com>
-In-Reply-To: <20100519181926.GA22228@kroah.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF42A5E.6060503@zytor.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 11:19 AM, Greg KH wrote:
-> On Wed, May 19, 2010 at 10:50:54AM -0700, H. Peter Anvin wrote:
->> On 05/19/2010 10:20 AM, Ky Srinivasan wrote:
->>> From: K. Y. Srinivasan <ksrinivasan@novell.com>
->>> Subject: Code cleanup - get rid of the "ms" prefix in hyperv related files.  
->>>
->>>
->>> Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
->>
->> NAK in the extreme.
->>
->> "hyperv" -- without the capitalization to make it stand out -- is way
->> too easy to read as just an abbreviation for "hypervisor".
+On Wed, May 19, 2010 at 11:13:50AM -0700, H. Peter Anvin wrote:
+> On 05/19/2010 11:08 AM, Frederic Weisbecker wrote:
+> > On Wed, May 19, 2010 at 11:02:04AM -0700, H. Peter Anvin wrote:
+> >> On 05/19/2010 10:24 AM, Frederic Weisbecker wrote:
+> >>>   * generate kernel reactions
+> >>>   */
+> >>> -static int autofs_root_ioctl(struct inode *inode, struct file *filp,
+> >>> +static int autofs_root_ioctl_unlocked(struct inode *inode, struct file *filp,
+> >>>  			     unsigned int cmd, unsigned long arg)
+> >>>  {
+> >>>  	struct autofs_sb_info *sbi = autofs_sbi(inode->i_sb);
+> >>> @@ -579,3 +579,16 @@ static int autofs_root_ioctl(struct inode *inode, struct file *filp,
+> >>>  		return -ENOSYS;
+> >>>  	}
+> >>>  }
+> >>> +
+> >>> +static long autofs_root_ioctl(struct file *filp,
+> >>> +			     unsigned int cmd, unsigned long arg)
+> >>> +{
+> >>
+> >> The choice of naming here seems reverse in my opinion.
+> > 
+> > 
+> > Oh, why?
+> > 
+> > The function that holds the bkl calls its unlocked version.
+> > 
 > 
-> Which is what I confused it with, and hence I wrote the ms_* changes in
-> my patch.  But KY wanted it changed back so I suggested he write a
-> patch.
-> 
-> I personally like the ms_ stuff, it makes it more obvious what is going
-> on here, but that's just me.
-> 
+> But it's not ... it is locked at that point.  It's not lock*ing*, but it
+> is not *unlocked*, either.  Furthermore, it is directly contradicting
+> the naming scheme of the ops structure.
 
-Well, I agree with you.  Sorry, Ky.
 
-	-hpa
+It depends on the point of view. The function itself doesn't lock, it is the
+"naked point", so if you take it, you need to lock before, that's what the
+name wants to tell.
+
+But may be that's the opposite point of view than the common one, for
+which I wouldn't be suprised as my brain tends to be upside down...
+
