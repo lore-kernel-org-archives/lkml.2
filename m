@@ -1,78 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751555Ab0ESPRd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:17:33 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59164 "EHLO mx2.suse.de"
+	id S1751854Ab0ESPVe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:21:34 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:42923 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751353Ab0ESPRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:17:32 -0400
-Date: Thu, 20 May 2010 01:17:26 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100519151726.GB2516@laptop>
-References: <20100518153440.GB7748@Krystal>
- <1274197993.26328.755.camel@gandalf.stny.rr.com>
- <1274199039.26328.758.camel@gandalf.stny.rr.com>
- <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
- <20100519063116.GR2516@laptop>
- <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751412Ab0ESPVb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:21:31 -0400
+Date: Thu, 20 May 2010 01:21:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Ingo Molnar <mingo@elte.hu>,
+       Luca Barbieri <luca@luca-barbieri.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
+Message-Id: <20100520012124.ec269c14.sfr@canb.auug.org.au>
+In-Reply-To: <4BF3FD4F.1060108@zytor.com>
+References: <20100517224531.GA27400@elte.hu>
+	<AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
+	<4BF3F480.3000902@zytor.com>
+	<20100520003641.00618acb.sfr@canb.auug.org.au>
+	<4BF3FD4F.1060108@zytor.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__20_May_2010_01_21_24_+1000_r/.OcK5MWBW3DLxP"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 07:39:11AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Wed, 19 May 2010, Nick Piggin wrote:
-> > 
-> > We can possibly do an attempt to invalidate existing pagecache and
-> > then try to install the new page.
-> 
-> Yes, but that's going to be rather hairier. We need to make sure that the 
-> filesystem doesn't have some kind of dirty pointers to the old page etc. 
-> Although I guess that should always show up in the page counters, so I 
-> guess we can always handle the case of page_count() being 1 (only page 
-> cache) and the page being unlocked.
+--Signature=_Thu__20_May_2010_01_21_24_+1000_r/.OcK5MWBW3DLxP
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Well I mean a full invalidate -- invalidate_mapping_pages -- so there is
-literally no pagecache there at all.
+On Wed, 19 May 2010 08:01:35 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>
+> It was discussed on linux-kernel -- note that there is no breakage for
+> smaller architectures unless you enable the test directly or via randconf=
+ig.
 
-Then we just need to ensure that the filesystem doesn't do anything
-funny with the page in write_begin (I don't know, such as zero out holes
-or something strange). I don't think any do except maybe for something
-obscure like jffs2, but obviously it needs to be looked at.
+or allmodconfig or allyesconfig.
 
-Error handling may need to be looked at too, but shouldn't be much
-issue I'd think.
- 
-Even so, it's all going to add branches and complexity to an important
-fast path, so we'd want to see numbers.
+> The other part is that generic atomic64_t has been available since
+> middle of 2009, and was *also* discussed extensively on linux-kernel --
+> in fact, several of the smaller architectures added support at that
+> time.  That the breakage occurred because of an inconsequential test
+> rather than real code is thus really nothing but fortunate.
 
+I don't disagree with any of that (except that an m68k allmodconfig build
+may well build fine without the test being built so maybe building the
+test needs a dependency).
 
-> So I'd much rather just handle the "append to the end".
-> 
-> The real limitation is likely always going to be the fact that it has to 
-> be page-aligned and a full page. For a lot of splice inputs, that simply 
-> won't be the case, and you'll end up copying for alignment reasons anyway.
+My point was that I keep hearing the "Linus said it is OK to break the
+other architectures" argument brought up where it really is not even
+relevant to the conversation.  If anything, I guess Geert was taking a
+little dig at me because his problem should have been noticed among my
+build results. Unfortunately even I don't check all the build results all
+the time (I guess I hope that maintainers may have time to check them out
+once in a while).
 
-That's true.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
+--Signature=_Thu__20_May_2010_01_21_24_+1000_r/.OcK5MWBW3DLxP
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv0AfQACgkQjjKRsyhoI8xhqgCfYZ37Z6psZjaRpOxaPOEKXFo5
+ov4An3N+Kz/RCQWnz8kD66ismTvchAgK
+=V021
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_May_2010_01_21_24_+1000_r/.OcK5MWBW3DLxP--
