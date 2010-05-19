@@ -1,61 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757529Ab0ESKh5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 06:37:57 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46889 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756809Ab0ESKhc (ORCPT
+	id S1757534Ab0ESKiP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 06:38:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49957 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757369Ab0ESKiJ convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 06:37:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references;
-        b=smb9FT7+HoQhcUxWEN+aBeEwffyTK0KP+Npdb1Yca4nuohdCeb7kq+SIcfYNbOWEDy
-         S/DWevphDEv2foR3nkonj+Bgeh0mCb0YolJ4JZMbeEK0y0PhWRxxSh1HpHXID/fGun/d
-         DlYJaQPKtHnsjDnIqovN1NsTs7q1d4jyGFn38=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Don Zickus <dzickus@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Cyrill Gorcunov <gorcunov@gmail.com>
-Subject: [PATCH 2/2] lockup_detector: Don't enable the lockup detector by default
-Date: Wed, 19 May 2010 12:37:35 +0200
-Message-Id: <1274265455-1948-3-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
-In-Reply-To: <1274265455-1948-1-git-send-regression-fweisbec@gmail.com>
-References: <1274265455-1948-1-git-send-regression-fweisbec@gmail.com>
+	Wed, 19 May 2010 06:38:09 -0400
+Subject: Re: schedule() && prev/current (Was: [PATCH 3/3] Make
+ get_current() __attribute__((const)))
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Yong Zhang <yong.zhang0@gmail.com>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100519102743.GA10040@redhat.com>
+References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk>
+	 <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
+	 <20100518212220.GA5092@redhat.com> <1274250079.5605.9967.camel@twins>
+	 <20100519102743.GA10040@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 May 2010 12:37:45 +0200
+Message-ID: <1274265465.5605.10564.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The lockup detector is a new feature that now involves the
-nmi watchdog. Drop the default y and let the user choose.
+On Wed, 2010-05-19 at 12:27 +0200, Oleg Nesterov wrote:
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Don Zickus <dzickus@redhat.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Cyrill Gorcunov <gorcunov@gmail.com>
----
- lib/Kconfig.debug |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+> Now suppose that A calls schedule() and we switch to B. When switch_to()
+> returns on B's context, this context (register/stack) matches the previous
+> context which was used by B when it in turn called schedule(), correct?
 
-diff --git a/lib/Kconfig.debug b/lib/Kconfig.debug
-index e65e47d..63968a9 100644
---- a/lib/Kconfig.debug
-+++ b/lib/Kconfig.debug
-@@ -155,7 +155,6 @@ config DEBUG_SHIRQ
- config LOCKUP_DETECTOR
- 	bool "Detect Hard and Soft Lockups"
- 	depends on DEBUG_KERNEL && !S390
--	default y
- 	help
- 	  Say Y here to enable the kernel to act as a watchdog to detect
- 	  hard and soft lockups.
--- 
-1.6.2.3
+Ah, right, you always schedule back to where you came from,... I
+shouldn't try and write emails before the morning juice hits ;-)
+
 
