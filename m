@@ -1,14 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754742Ab0ESCsF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 22:48:05 -0400
-Received: from kroah.org ([198.145.64.141]:45548 "EHLO coco.kroah.org"
+	id S1753744Ab0ESC4L (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 22:56:11 -0400
+Received: from mga09.intel.com ([134.134.136.24]:1125 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752379Ab0ESCsB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 22:48:01 -0400
-Date: Tue, 18 May 2010 19:48:23 -0700
-From: Greg KH <greg@kroah.com>
-To: Lin Ming <ming.m.lin@intel.com>
+	id S1751354Ab0ESC4I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 22:56:08 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,259,1272870000"; 
+   d="scan'208";a="519191112"
+Subject: Re: [RFC][PATCH v2 08/11] sysfs: introduce new interface
+ sysfs_get_kobject
+From: Lin Ming <ming.m.lin@intel.com>
+To: Greg KH <greg@kroah.com>
 Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Corey Ashford <cjashfor@linux.vnet.ibm.com>,
        Frederic Weisbecker <fweisbec@gmail.com>,
@@ -24,101 +28,55 @@ Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
        Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
        lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
-Message-ID: <20100519024823.GA25229@kroah.com>
-References: <1274233602.3036.84.camel@localhost> <20100518200524.GA20223@kroah.com> <1274236496.3603.22.camel@minggr.sh.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274236496.3603.22.camel@minggr.sh.intel.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100518200823.GC20223@kroah.com>
+References: <1274233723.3036.87.camel@localhost>
+	 <20100518200823.GC20223@kroah.com>
+Content-Type: text/plain
+Date: Wed, 19 May 2010 10:55:17 +0800
+Message-Id: <1274237717.3603.37.camel@minggr.sh.intel.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 10:34:55AM +0800, Lin Ming wrote:
-> On Wed, 2010-05-19 at 04:05 +0800, Greg KH wrote:
-> > On Wed, May 19, 2010 at 01:46:42AM +0000, Lin Ming wrote:
-> > > Now only exports cpu hardware events.
-> > > 
-> > > For each PMU, there are 2 sysfs dirs: event_source and events.
-> > > 
-> > > For example,
-> > > /sys/devices/system/cpu/event_source/
-> > > /sys/devices/system/cpu/events/
-> > > 
-> > > $ tree /sys/devices/system/cpu/event_source/
-> > > /sys/devices/system/cpu/event_source/
-> > > `-- id
-> > > 
-> > > $ tree /sys/devices/system/cpu/events/
-> > > /sys/devices/system/cpu/events/
-> > > |-- L1-dcache-load-misses
-> > > |   |-- event_source -> ../../event_source
+On Wed, 2010-05-19 at 04:08 +0800, Greg KH wrote:
+> On Wed, May 19, 2010 at 01:48:43AM +0000, Lin Ming wrote:
+> > Need this interface in the later sysfs pmu lookup.
 > > 
-> > What is this symlink for?  Is it needed as they all seem to point to the
-> > same thing.
+> > struct kobject *sysfs_get_kobject(struct file *file);
+> > Return the relative kobject of the sysfs file.
 > 
-> The symlink is used to find the "event_source" of the "event".
+> Ick, no.  Why would you ever have the file, yet not have the kobject
+> already?  Something is really wrong if this is needed.  Or strange.  Or
+> maybe both :)
+
+Let me show you the scenario.
+
+/sys/devices/system/cpu/event_source/
+`-- id
+
+/sys/devices/system/cpu/events/
+|-- L1-dcache-load-misses
+|   |-- event_source -> ../../event_source
+
+$perf top -e L1-dcache-load-misses
+
+Lookup the pmu used to handle L1-dcache-load-misses as below,
+
+1. pmu_sys_fd =
+open("/sys/devices/system/cpu/events/L1-dcache-load-misses/event_source/id", ...)
+
+2. pmu_sys_file = fget_light(pmu_sys_fd, ....)
+
+3. pmu_kobject = sysfs_get_kobject(pmu_sys_file)
+
+4. pmu_kobject is embedded in struct pmu, pmu = container_of(kobj,
+struct pmu, kobj);
+
 > 
-> /sys/devices/system/cpu/event_source/
+> thanks,
 > 
-> /sys/devices/system/cpu/events/
-> |-- L1-dcache-load-misses
-> |   |-- event_source -> ../../event_source
-> 
-> For above example, "event_source" is the cpu pmu and the "event" is
-> L1-dcache-load-misses.
-> 
-> Yes, they point to the same thing, because all the events
-> under /sys/devices/system/cpu/events/* is monitored by the same event
-> source, ie, the cpu pmu(/sys/devices/system/cpu/event_source/).
+> greg k-h
 
-Then, why have a symlink if they are all going to be the same?
-
-> > I'm still not really understanding what exactly you are trying to show
-> > in the sysfs tree here anyway, perhaps the documentation update will
-> > clear that up for me.
-> 
-> To support multiple pmus
-
-What is a "pmu"?
-
-> (or call them event source),
-
-What is an "event source"?
-
-> I want to show all
-> the pmus and events in the sysfs tree.
-
-Why do these things need to be in sysfs?  What benifit is it going to
-have?
-
-> For cpu pmu,
-> /sys/devices/system/cpu/event_source/*
-> /sys/devices/system/cpu/events/*
-
-What is a "cpu pmu"?
-
-> For node pmu,
-> /sys/devices/system/node/event_source/*
-> /sys/devices/system/node/events/*
-
-What is a "node pmu"?
-
-> For mce,
-> /sys/kernel/events/mce/*
-
-What?  No, don't create /sys/kernel/events/.  Is that in this patchset?
-Ick, that's such a "general" name that it is going to get confusing very
-quickly.  Heck, I still don't know what this "event" thing is yet :)
-
-> and so on...the exact placement is not yet final.
-
-Again, why do you need/want anything in sysfs in the first place?
-What problem is it going to solve?  Who is going to benifit?  Why do
-they care?  What is this whole thing about?
-
-thanks,
-
-greg k-h
