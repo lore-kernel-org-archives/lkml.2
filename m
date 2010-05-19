@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754442Ab0ESSDx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 14:03:53 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:18124 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753309Ab0ESSDv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 14:03:51 -0400
-Message-ID: <4BF42786.2080603@oracle.com>
-Date: Wed, 19 May 2010 11:01:42 -0700
-From: Yinghai <yinghai.lu@oracle.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	id S1751657Ab0ESSF5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 14:05:57 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:40114 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750709Ab0ESSF4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 14:05:56 -0400
+Date: Wed, 19 May 2010 20:05:54 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+Message-ID: <20100519180554.GY25951@kernel.dk>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Graham Ramsey <ramsey.graham@ntlworld.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org
-Subject: Re: x86/pci Oops with CONFIG_SND_HDA_INTEL
-References: <4BF40014.30303@ntlworld.com> <201005191044.05072.bjorn.helgaas@hp.com> <4BF41CFD.6040004@ntlworld.com>
-In-Reply-To: <4BF41CFD.6040004@ntlworld.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BF42803.015F:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 10:16 AM, Graham Ramsey wrote:
-> On 19/05/10 17:44, Bjorn Helgaas wrote:
->> On Wednesday, May 19, 2010 09:13:24 am Graham Ramsey wrote:
->>   
->>> I am on x86_64 with latest (v2.6.34) kernel. When i set
->>> CONFIG_SND_HDA_INTEL=Y It hangs at an early stage in boot with kernel
->>> oops.
->>> When i use CONFIG_SND_HDA_INTEL=M the machine will boot, and i get the
->>> dmesg (below).
->>>
->>> I have bisected down to one commit that causes the problem:
->>>
->>>     commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
->>>     x86/pci: AMD one chain system to use pci read out res
->>>     ...
->>>      
->> I CC'd Yinghai, the author of that patch.  That commit went in after
->> 2.6.33, so this is probably a regression between .33 and .34.  Can
->> you open a report at https://bugzilla.kernel.org and respond to this
->> thread with the URL?
->>
->> Please attach the complete dmesg (with SND_HDA_INTEL=m) to the
->> bugzilla.
->>
->> Thanks a lot for your report!
->>
+On Wed, May 19 2010, Linus Torvalds wrote:
+> 
+> 
+> On Wed, 19 May 2010, Miklos Szeredi wrote:
+> > 
+> > One issue I see is that it's possible to grow pipes indefinitely.
+> > Should this be restricted to privileged users?
+> 
+> Yes. But perhaps only if it grows past the default (or perhaps "default*2" 
+> or similar). That way a normal user could shrink the pipe buffers, and 
+> then grow them again if he wants to.
 
-please send out bootlog with pci=earlydump.
+That's still a bit arbitrary, I don't think allowing default*2 only for
+non-root is going to be hugely interesting. But limiting makes sense,
+but lets at least allow a larger max limit for the normal user. I'm
+suspecting that the media application that wants to use this will not be
+running as root, and we don't make the feature properly available to the
+ones that want to use it, then we may as well not do it.
 
-looks like your system have a very sick BIOS, 
+Or we could expose a sysctl for instance that holds the max non-root
+size. And make that default to default*16 or something. How does that
+sound?
 
-system have two HT chains.
+> Oh, and I think you need to also require that there be at least two 
+> buffers. Otherwise we can't guarantee POSIX behavior, I think.
 
-PCI: Probing PCI hardware (bus 00)
-...
-PCI: Discovered primary peer bus 80 [IRQ]
+Good point, and at least that part is easily doable :-)
 
+-- 
+Jens Axboe
 
-rt to non-coherent only set one link:
-node 0 link 0: io port [1000, ffffff]
-TOM: 0000000080000000 aka 2048M
-node 0 link 0: mmio [e0000000, efffffff]
-node 0 link 0: mmio [a0000, bffff]
-node 0 link 0: mmio [80000000, ffffffff]
-bus: [00, ff] on node 0 link 0
-
-YH
