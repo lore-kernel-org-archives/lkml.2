@@ -1,49 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752997Ab0ESSLM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 14:11:12 -0400
-Received: from casper.infradead.org ([85.118.1.10]:43164 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752529Ab0ESSLI (ORCPT
+	id S1753290Ab0ESSPi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 14:15:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:21120 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752058Ab0ESSPh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 14:11:08 -0400
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and
- ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
-From: David Woodhouse <dwmw2@infradead.org>
-To: Manfred Spraul <manfred@colorfullife.com>
-Cc: Johannes Stezenbach <js@sig21.net>,
-       Herbert Xu <herbert@gondor.hengli.com.au>,
-       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-In-Reply-To: <4BF427D4.40600@colorfullife.com>
-References: <1274266725.6930.9823.camel@macbook.infradead.org>
-	 <1274266902.6930.9834.camel@macbook.infradead.org>
-	 <20100519133028.GA26659@sig21.net>  <4BF427D4.40600@colorfullife.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 19:10:38 +0100
-Message-ID: <1274292638.6930.10394.camel@macbook.infradead.org>
+	Wed, 19 May 2010 14:15:37 -0400
+Date: Wed, 19 May 2010 11:13:58 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, David Airlie <airlied@linux.ie>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       dri-devel@lists.freedesktop.org
+Subject: [PATCH -next] fbmem: fix printk format warnings
+Message-Id: <20100519111358.c0c527d4.randy.dunlap@oracle.com>
+In-Reply-To: <20100519163554.80c7fcd3.sfr@canb.auug.org.au>
+References: <20100519163554.80c7fcd3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090205.4BF42AB6.017D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 20:03 +0200, Manfred Spraul wrote:
-> Is this text better?
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Not really...
+Fix printk formats:
 
-> * Unless debug options are enabled, the kernel uses cache_line_size() 
-> automatically.
+drivers/video/fbmem.c: In function 'fb_do_apertures_overlap':
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 5 has type 'resource_size_t'
 
-... that's a lie.
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/video/fbmem.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+--- linux-next-20100519.orig/drivers/video/fbmem.c
++++ linux-next-20100519/drivers/video/fbmem.c
+@@ -1491,7 +1491,10 @@ static bool fb_do_apertures_overlap(stru
+ 		for (j = 0; j < gena->count; ++j) {
+ 			struct aperture *g = &gena->ranges[j];
+ 			printk(KERN_DEBUG "checking generic (%llx %llx) vs hw (%llx %llx)\n",
+-				g->base, g->size, h->base, h->size);
++				(unsigned long long)g->base,
++				(unsigned long long)g->size,
++				(unsigned long long)h->base,
++				(unsigned long long)h->size);
+ 			if (apertures_overlap(g, h))
+ 				return true;
+ 		}
