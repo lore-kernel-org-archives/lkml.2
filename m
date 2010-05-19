@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754108Ab0ESQXQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:23:16 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48384 "EHLO mx1.redhat.com"
+	id S1754035Ab0ESQWw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:22:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59716 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754059Ab0ESQXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:23:11 -0400
-Date: Wed, 19 May 2010 12:22:42 -0400
+	id S1754017Ab0ESQWt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:22:49 -0400
+Date: Wed, 19 May 2010 12:22:17 -0400
 From: Jason Baron <jbaron@redhat.com>
 To: linux-kernel@vger.kernel.org
 Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
@@ -14,295 +14,280 @@ Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
        roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
        fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
        vgoyal@redhat.com
-Message-Id: <ef9018fafcf221090ad6ad00fc11275ba495f023.1274283321.git.jbaron@redhat.com>
+Message-Id: <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com>
 In-Reply-To: <cover.1274283321.git.jbaron@redhat.com>
 References: <cover.1274283321.git.jbaron@redhat.com>
-Subject: [PATCH 12/13] jump label v8: convert dynamic debug to use jump labels.
+Subject: [PATCH 07/13] jump label v8: sort jump table at build-time
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Convert the 'dynamic debug' infrastructure to use jump labels.
+The jump label table is more optimal accessed if the entries are continguous.
+Sorting the table accomplishes this. Do the sort at build-time. Adds a '-j'
+option to 'modpost' which replaces the vmlinux, with a sorted jump label
+section vmlinux. I've tested this on x86 with relocatable and it works fine
+there as well. Note that I have not sorted the jump label table in modules.
+This is b/c the jump label names can be exported by the core kernel, and thus
+I don't have them available at buildtime. This could be solved by either
+finding the correct ones in the vmlinux, or by embedding the name of the jump
+label in the module tables (and not just a pointer), but the module tables
+tend to be smaller, and thus their is less value to this kind of change
+anyway. The kernel continues to do the sort, just in case, but at least for
+the vmlinux, this is just a verfication that the jump label table has
+already been sorted.
 
 Signed-off-by: Jason Baron <jbaron@redhat.com>
 ---
- include/linux/dynamic_debug.h |   42 ++++++++++++++-------------
- lib/dynamic_debug.c           |   42 ++-------------------------
- scripts/Makefile.lib          |   11 +------
- scripts/basic/Makefile        |    2 +-
- scripts/basic/hash.c          |   64 -----------------------------------------
- 5 files changed, 27 insertions(+), 134 deletions(-)
- delete mode 100644 scripts/basic/hash.c
+ Makefile                          |    6 +++-
+ include/asm-generic/vmlinux.lds.h |   18 ++++++++--
+ scripts/mod/Makefile              |    1 +
+ scripts/mod/modpost.c             |   71 +++++++++++++++++++++++++++++++++++--
+ scripts/mod/modpost.h             |    2 +
+ 5 files changed, 91 insertions(+), 7 deletions(-)
 
-diff --git a/include/linux/dynamic_debug.h b/include/linux/dynamic_debug.h
-index f8c2e17..bb5dfaf 100644
---- a/include/linux/dynamic_debug.h
-+++ b/include/linux/dynamic_debug.h
-@@ -1,6 +1,8 @@
- #ifndef _DYNAMIC_DEBUG_H
- #define _DYNAMIC_DEBUG_H
+diff --git a/Makefile b/Makefile
+index 205f280..85edb67 100644
+--- a/Makefile
++++ b/Makefile
+@@ -152,7 +152,7 @@ obj		:= $(objtree)
  
-+#include <linux/jump_label.h>
+ VPATH		:= $(srctree)$(if $(KBUILD_EXTMOD),:$(KBUILD_EXTMOD))
+ 
+-export srctree objtree VPATH
++export srctree objtree VPATH hdr-arch
+ 
+ 
+ # SUBARCH tells the usermode build what the underlying arch is.  That is set
+@@ -845,6 +845,9 @@ define rule_vmlinux-modpost
+ 	$(Q)echo 'cmd_$@ := $(cmd_vmlinux-modpost)' > $(dot-target).cmd
+ endef
+ 
++quiet_cmd_sort-jump-label = SORT    $@
++      cmd_sort-jump-label = $(srctree)/scripts/mod/modpost -j -s $@
 +
- /* dynamic_printk_enabled, and dynamic_printk_enabled2 are bitmasks in which
-  * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
-  * use independent hash functions, to reduce the chance of false positives.
-@@ -22,9 +24,7 @@ struct _ddebug {
- 	const char *function;
- 	const char *filename;
- 	const char *format;
--	char primary_hash;
--	char secondary_hash;
--	unsigned int lineno:24;
-+	unsigned int lineno;
- 	/*
-  	 * The flags field controls the behaviour at the callsite.
-  	 * The bits here are changed dynamically when the user
-@@ -32,7 +32,7 @@ struct _ddebug {
- 	 */
- #define _DPRINTK_FLAGS_PRINT   (1<<0)  /* printk() a message using the format */
- #define _DPRINTK_FLAGS_DEFAULT 0
--	unsigned int flags:8;
-+	char flags;
- } __attribute__((aligned(8)));
+ # vmlinux image - including updated kernel symbols
+ vmlinux: $(vmlinux-lds) $(vmlinux-init) $(vmlinux-main) vmlinux.o $(kallsyms.o) FORCE
+ ifdef CONFIG_HEADERS_CHECK
+@@ -858,6 +861,7 @@ ifdef CONFIG_BUILD_DOCSRC
+ endif
+ 	$(call vmlinux-modpost)
+ 	$(call if_changed_rule,vmlinux__)
++	$(call cmd,sort-jump-label)
+ 	$(Q)rm -f .old_version
  
- 
-@@ -42,33 +42,35 @@ int ddebug_add_module(struct _ddebug *tab, unsigned int n,
- #if defined(CONFIG_DYNAMIC_DEBUG)
- extern int ddebug_remove_module(char *mod_name);
- 
--#define __dynamic_dbg_enabled(dd)  ({	     \
--	int __ret = 0;							     \
--	if (unlikely((dynamic_debug_enabled & (1LL << DEBUG_HASH)) &&	     \
--			(dynamic_debug_enabled2 & (1LL << DEBUG_HASH2))))   \
--				if (unlikely(dd.flags))			     \
--					__ret = 1;			     \
--	__ret; })
--
- #define dynamic_pr_debug(fmt, ...) do {					\
-+	__label__ do_printk;						\
-+	__label__ out;							\
- 	static struct _ddebug descriptor				\
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
--	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
--		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
--	if (__dynamic_dbg_enabled(descriptor))				\
--		printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);		\
-+	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
-+		_DPRINTK_FLAGS_DEFAULT };				\
-+	JUMP_LABEL(&descriptor.flags, do_printk);			\
-+	goto out;							\
-+do_printk:								\
-+	printk(KERN_DEBUG pr_fmt(fmt),	##__VA_ARGS__);			\
-+out:	;								\
- 	} while (0)
- 
- 
- #define dynamic_dev_dbg(dev, fmt, ...) do {				\
-+	__label__ do_printk;						\
-+	__label__ out;							\
- 	static struct _ddebug descriptor				\
- 	__used								\
- 	__attribute__((section("__verbose"), aligned(8))) =		\
--	{ KBUILD_MODNAME, __func__, __FILE__, fmt, DEBUG_HASH,	\
--		DEBUG_HASH2, __LINE__, _DPRINTK_FLAGS_DEFAULT };	\
--	if (__dynamic_dbg_enabled(descriptor))				\
--		dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);	\
-+	{ KBUILD_MODNAME, __func__, __FILE__, fmt, __LINE__,		\
-+		_DPRINTK_FLAGS_DEFAULT };				\
-+	JUMP_LABEL(&descriptor.flags, do_printk);			\
-+	goto out;							\
-+do_printk:								\
-+	dev_printk(KERN_DEBUG, dev, fmt, ##__VA_ARGS__);		\
-+out:	;								\
- 	} while (0)
- 
- #else
-diff --git a/lib/dynamic_debug.c b/lib/dynamic_debug.c
-index d6b8b9b..ed0193a 100644
---- a/lib/dynamic_debug.c
-+++ b/lib/dynamic_debug.c
-@@ -26,19 +26,11 @@
- #include <linux/dynamic_debug.h>
- #include <linux/debugfs.h>
- #include <linux/slab.h>
-+#include <linux/jump_label.h>
- 
- extern struct _ddebug __start___verbose[];
- extern struct _ddebug __stop___verbose[];
- 
--/* dynamic_debug_enabled, and dynamic_debug_enabled2 are bitmasks in which
-- * bit n is set to 1 if any modname hashes into the bucket n, 0 otherwise. They
-- * use independent hash functions, to reduce the chance of false positives.
-- */
--long long dynamic_debug_enabled;
--EXPORT_SYMBOL_GPL(dynamic_debug_enabled);
--long long dynamic_debug_enabled2;
--EXPORT_SYMBOL_GPL(dynamic_debug_enabled2);
--
- struct ddebug_table {
- 	struct list_head link;
- 	char *mod_name;
-@@ -88,26 +80,6 @@ static char *ddebug_describe_flags(struct _ddebug *dp, char *buf,
- }
+ # build vmlinux.o first to catch section mismatch errors early
+diff --git a/include/asm-generic/vmlinux.lds.h b/include/asm-generic/vmlinux.lds.h
+index 83a469d..f9d8188 100644
+--- a/include/asm-generic/vmlinux.lds.h
++++ b/include/asm-generic/vmlinux.lds.h
+@@ -168,7 +168,6 @@
+ 	TRACE_PRINTKS()							\
+ 	FTRACE_EVENTS()							\
+ 	TRACE_SYSCALLS()						\
+-	JUMP_TABLE()							\
  
  /*
-- * must be called with ddebug_lock held
-- */
--
--static int disabled_hash(char hash, bool first_table)
--{
--	struct ddebug_table *dt;
--	char table_hash_value;
--
--	list_for_each_entry(dt, &ddebug_tables, link) {
--		if (first_table)
--			table_hash_value = dt->ddebugs->primary_hash;
--		else
--			table_hash_value = dt->ddebugs->secondary_hash;
--		if (dt->num_enabled && (hash == table_hash_value))
--			return 0;
--	}
--	return 1;
--}
--
--/*
-  * Search the tables for _ddebug's which match the given
-  * `query' and apply the `flags' and `mask' to them.  Tells
-  * the user which ddebug's were changed, or whether none
-@@ -170,17 +142,9 @@ static void ddebug_change(const struct ddebug_query *query,
- 				dt->num_enabled++;
- 			dp->flags = newflags;
- 			if (newflags) {
--				dynamic_debug_enabled |=
--						(1LL << dp->primary_hash);
--				dynamic_debug_enabled2 |=
--						(1LL << dp->secondary_hash);
-+				enable_jump_label((jump_label_t)&dp->flags);
- 			} else {
--				if (disabled_hash(dp->primary_hash, true))
--					dynamic_debug_enabled &=
--						~(1LL << dp->primary_hash);
--				if (disabled_hash(dp->secondary_hash, false))
--					dynamic_debug_enabled2 &=
--						~(1LL << dp->secondary_hash);
-+				disable_jump_label((jump_label_t)&dp->flags);
- 			}
- 			if (verbose)
- 				printk(KERN_INFO
-diff --git a/scripts/Makefile.lib b/scripts/Makefile.lib
-index cbcd654..6a162fc 100644
---- a/scripts/Makefile.lib
-+++ b/scripts/Makefile.lib
-@@ -101,14 +101,6 @@ basename_flags = -D"KBUILD_BASENAME=KBUILD_STR($(call name-fix,$(basetarget)))"
- modname_flags  = $(if $(filter 1,$(words $(modname))),\
-                  -D"KBUILD_MODNAME=KBUILD_STR($(call name-fix,$(modname)))")
+  * Data section helpers
+@@ -207,7 +206,6 @@
+ 		*(__vermagic)		/* Kernel version magic */	\
+ 		*(__markers_strings)	/* Markers: strings */		\
+ 		*(__tracepoints_strings)/* Tracepoints: strings */	\
+-		*(__jump_strings)/* Jump: strings */	\
+ 	}								\
+ 									\
+ 	.rodata1          : AT(ADDR(.rodata1) - LOAD_OFFSET) {		\
+@@ -216,6 +214,10 @@
+ 									\
+ 	BUG_TABLE							\
+ 									\
++	JUMP_TABLE							\
++									\
++	JUMP_STRINGS							\
++									\
+ 	/* PCI quirks */						\
+ 	.pci_fixup        : AT(ADDR(.pci_fixup) - LOAD_OFFSET) {	\
+ 		VMLINUX_SYMBOL(__start_pci_fixups_early) = .;		\
+@@ -559,11 +561,21 @@
+ #define BUG_TABLE
+ #endif
  
--#hash values
--ifdef CONFIG_DYNAMIC_DEBUG
--debug_flags = -D"DEBUG_HASH=$(shell ./scripts/basic/hash djb2 $(@D)$(modname))"\
--              -D"DEBUG_HASH2=$(shell ./scripts/basic/hash r5 $(@D)$(modname))"
--else
--debug_flags =
--endif
--
- orig_c_flags   = $(KBUILD_CPPFLAGS) $(KBUILD_CFLAGS) $(KBUILD_SUBDIR_CCFLAGS) \
-                  $(ccflags-y) $(CFLAGS_$(basetarget).o)
- _c_flags       = $(filter-out $(CFLAGS_REMOVE_$(basetarget).o), $(orig_c_flags))
-@@ -152,8 +144,7 @@ endif
+-#define JUMP_TABLE()							\
++#define JUMP_TABLE							\
+ 	. = ALIGN(64);							\
++	__jump_table : AT(ADDR(__jump_table) - LOAD_OFFSET) {		\
+ 		VMLINUX_SYMBOL(__start___jump_table) = .;		\
+ 		*(__jump_table)						\
+ 		VMLINUX_SYMBOL(__stop___jump_table) = .;		\
++	}
++
++#define JUMP_STRINGS							\
++	. = ALIGN(64);							\
++	__jump_strings : AT(ADDR(__jump_strings) - LOAD_OFFSET) {	\
++		VMLINUX_SYMBOL(__start___jump_strings) = .;		\
++		*(__jump_strings)					\
++		VMLINUX_SYMBOL(__stop___jump_strings) = .;		\
++	}
  
- c_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
- 		 $(__c_flags) $(modkern_cflags)                           \
--		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags) \
--		  $(debug_flags)
-+		 -D"KBUILD_STR(s)=\#s" $(basename_flags) $(modname_flags)
+ #ifdef CONFIG_PM_TRACE
+ #define TRACEDATA							\
+diff --git a/scripts/mod/Makefile b/scripts/mod/Makefile
+index ff954f8..a6dbbe6 100644
+--- a/scripts/mod/Makefile
++++ b/scripts/mod/Makefile
+@@ -1,4 +1,5 @@
+ hostprogs-y	:= modpost mk_elfconfig
++HOST_EXTRACFLAGS += -iquote "$(srctree)/arch/$(hdr-arch)/include/asm"
+ always		:= $(hostprogs-y) empty.o
  
- a_flags        = -Wp,-MD,$(depfile) $(NOSTDINC_FLAGS) $(LINUXINCLUDE)     \
- 		 $(__a_flags) $(modkern_aflags)
-diff --git a/scripts/basic/Makefile b/scripts/basic/Makefile
-index 0955995..4c324a1 100644
---- a/scripts/basic/Makefile
-+++ b/scripts/basic/Makefile
-@@ -9,7 +9,7 @@
- # fixdep: 	 Used to generate dependency information during build process
- # docproc:	 Used in Documentation/DocBook
+ modpost-objs	:= modpost.o file2alias.o sumversion.o
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index 2092361..fe6f8be 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -17,6 +17,8 @@
+ #include "modpost.h"
+ #include "../../include/generated/autoconf.h"
+ #include "../../include/linux/license.h"
++#include <linux/types.h>
++#include "jump_entry.h"
  
--hostprogs-y	:= fixdep docproc hash
-+hostprogs-y	:= fixdep docproc
- always		:= $(hostprogs-y)
+ /* Some toolchains use a `_' prefix for all user symbols. */
+ #ifdef CONFIG_SYMBOL_PREFIX
+@@ -41,6 +43,8 @@ static int warn_unresolved = 0;
+ /* How a symbol is exported */
+ static int sec_mismatch_count = 0;
+ static int sec_mismatch_verbose = 1;
++/* jump label */
++static int enable_jump_label = 0;
  
- # fixdep is needed to compile other host programs
-diff --git a/scripts/basic/hash.c b/scripts/basic/hash.c
-deleted file mode 100644
-index 2ef5d3f..0000000
---- a/scripts/basic/hash.c
-+++ /dev/null
-@@ -1,64 +0,0 @@
--/*
-- * Copyright (C) 2008 Red Hat, Inc., Jason Baron <jbaron@redhat.com>
-- *
-- */
--
--#include <stdio.h>
--#include <stdlib.h>
--#include <string.h>
--
--#define DYNAMIC_DEBUG_HASH_BITS 6
--
--static const char *program;
--
--static void usage(void)
--{
--	printf("Usage: %s <djb2|r5> <modname>\n", program);
--	exit(1);
--}
--
--/* djb2 hashing algorithm by Dan Bernstein. From:
-- * http://www.cse.yorku.ca/~oz/hash.html
-- */
--
--static unsigned int djb2_hash(char *str)
--{
--	unsigned long hash = 5381;
--	int c;
--
--	c = *str;
--	while (c) {
--		hash = ((hash << 5) + hash) + c;
--		c = *++str;
--	}
--	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
--}
--
--static unsigned int r5_hash(char *str)
--{
--	unsigned long hash = 0;
--	int c;
--
--	c = *str;
--	while (c) {
--		hash = (hash + (c << 4) + (c >> 4)) * 11;
--		c = *++str;
--	}
--	return (unsigned int)(hash & ((1 << DYNAMIC_DEBUG_HASH_BITS) - 1));
--}
--
--int main(int argc, char *argv[])
--{
--	program = argv[0];
--
--	if (argc != 3)
--		usage();
--	if (!strcmp(argv[1], "djb2"))
--		printf("%d\n", djb2_hash(argv[2]));
--	else if (!strcmp(argv[1], "r5"))
--		printf("%d\n", r5_hash(argv[2]));
--	else
--		usage();
--	exit(0);
--}
--
+ enum export {
+ 	export_plain,      export_unused,     export_gpl,
+@@ -315,12 +319,18 @@ void *grab_file(const char *filename, unsigned long *size)
+ 	void *map;
+ 	int fd;
+ 
+-	fd = open(filename, O_RDONLY);
++	if (!enable_jump_label)
++		fd = open(filename, O_RDONLY);
++	else
++		fd = open(filename, O_RDWR);
+ 	if (fd < 0 || fstat(fd, &st) != 0)
+ 		return NULL;
+ 
+ 	*size = st.st_size;
+-	map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
++	if (!enable_jump_label)
++		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_PRIVATE, fd, 0);
++	else
++		map = mmap(NULL, *size, PROT_READ|PROT_WRITE, MAP_SHARED, fd, 0);
+ 	close(fd);
+ 
+ 	if (map == MAP_FAILED)
+@@ -367,6 +377,50 @@ void release_file(void *file, unsigned long size)
+ 	munmap(file, size);
+ }
+ 
++static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
++{
++	struct jump_entry tmp;
++
++	tmp = *next;
++	*next = *previous;
++	*previous = tmp;
++}
++
++static void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
++{
++	int swapped = 0;
++	struct jump_entry *iter, *iter_next;
++	char *name, *next_name;
++	Elf_Shdr *sechdrs = info->sechdrs;
++	unsigned long jump_table, jump_table_end;
++	unsigned long jump_strings, jump_strings_addr;
++
++	if ((info->jump_sec == 0) && (info->jump_strings_sec == 0))
++		return;
++
++	jump_table = (unsigned long)hdr + sechdrs[info->jump_sec].sh_offset;
++	jump_table_end = jump_table + sechdrs[info->jump_sec].sh_size;
++	jump_strings = (unsigned long)hdr +
++				sechdrs[info->jump_strings_sec].sh_offset;
++	jump_strings_addr = sechdrs[info->jump_strings_sec].sh_addr;
++
++	do {
++		swapped = 0;
++		iter = iter_next = (struct jump_entry *)jump_table;
++		iter_next++;
++		for (; iter_next < (struct jump_entry *)jump_table_end;
++							iter++, iter_next++) {
++			name = (char *)(jump_strings + (iter->name - jump_strings_addr));
++			next_name = (char *)(jump_strings +
++					(iter_next->name - jump_strings_addr));
++			if (strcmp(name, next_name) > 0) {
++				swap_jump_label_entries(iter, iter_next);
++				swapped = 1;
++			}
++		}
++	} while (swapped == 1);
++}
++
+ static int parse_elf(struct elf_info *info, const char *filename)
+ {
+ 	unsigned int i;
+@@ -460,6 +514,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
+ 			info->export_unused_gpl_sec = i;
+ 		else if (strcmp(secname, "__ksymtab_gpl_future") == 0)
+ 			info->export_gpl_future_sec = i;
++		else if (strcmp(secname, "__jump_table") == 0)
++			info->jump_sec = i;
++		else if (strcmp(secname, "__jump_strings") == 0)
++			info->jump_strings_sec = i;
+ 
+ 		if (sechdrs[i].sh_type != SHT_SYMTAB)
+ 			continue;
+@@ -480,6 +538,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
+ 		sym->st_value = TO_NATIVE(sym->st_value);
+ 		sym->st_size  = TO_NATIVE(sym->st_size);
+ 	}
++
++	if (enable_jump_label)
++		sort_jump_label_table(info, hdr);
++
+ 	return 1;
+ }
+ 
+@@ -1941,7 +2003,7 @@ int main(int argc, char **argv)
+ 	struct ext_sym_list *extsym_iter;
+ 	struct ext_sym_list *extsym_start = NULL;
+ 
+-	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:")) != -1) {
++	while ((opt = getopt(argc, argv, "i:I:e:cmsSo:awM:K:j")) != -1) {
+ 		switch (opt) {
+ 		case 'i':
+ 			kernel_read = optarg;
+@@ -1979,6 +2041,9 @@ int main(int argc, char **argv)
+ 		case 'w':
+ 			warn_unresolved = 1;
+ 			break;
++		case 'j':
++			enable_jump_label = 1;
++			break;
+ 		default:
+ 			exit(1);
+ 		}
+diff --git a/scripts/mod/modpost.h b/scripts/mod/modpost.h
+index be987a4..0875d4b 100644
+--- a/scripts/mod/modpost.h
++++ b/scripts/mod/modpost.h
+@@ -126,6 +126,8 @@ struct elf_info {
+ 	Elf_Section  export_gpl_sec;
+ 	Elf_Section  export_unused_gpl_sec;
+ 	Elf_Section  export_gpl_future_sec;
++	Elf_Section  jump_sec;
++	Elf_Section  jump_strings_sec;
+ 	const char   *strtab;
+ 	char	     *modinfo;
+ 	unsigned int modinfo_len;
 -- 
 1.7.0.1
 
