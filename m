@@ -1,132 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752272Ab0ESNvK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:51:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:35648 "EHLO mx1.redhat.com"
+	id S1752302Ab0ESNwc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:52:32 -0400
+Received: from cantor.suse.de ([195.135.220.2]:56830 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751587Ab0ESNvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:51:07 -0400
-Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Minchan Kim <minchan.kim@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100505161632.GB5378@laptop>
-References: <1271262948.2233.14.camel@barrios-desktop>
-	 <1271320388.2537.30.camel@localhost>
-	 <1271350270.2013.29.camel@barrios-desktop>
-	 <1271427056.7196.163.camel@localhost.localdomain>
-	 <1271603649.2100.122.camel@barrios-desktop>
-	 <1271681929.7196.175.camel@localhost.localdomain>
-	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
-	 <1272548602.7196.371.camel@localhost.localdomain>
-	 <1272821394.2100.224.camel@barrios-desktop>
-	 <1273063728.7196.385.camel@localhost.localdomain>
-	 <20100505161632.GB5378@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Wed, 19 May 2010 14:54:54 +0100
-Message-ID: <1274277294.2532.54.camel@localhost>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1751441Ab0ESNwb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:52:31 -0400
+Date: Wed, 19 May 2010 23:52:26 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Johannes Weiner <jw@emlix.com>
+Cc: David Woodhouse <dwmw2@infradead.org>, Marc Gauthier <marc@tensilica.com>,
+       Mike Frysinger <vapier.adi@gmail.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Christoph Lameter <cl@linux.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
+       Matt Mackall <mpm@selenic.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Oskar Schirmer <os@emlix.com>,
+       Michael Hennerich <Michael.Hennerich@analog.com>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Daniel =?iso-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
+       Oliver Schneidewind <osw@emlix.com>,
+       David Rientjes <rientjes@google.com>,
+       David Brownell <dbrownell@users.sourceforge.net>,
+       Grant Likely <grant.likely@secretlab.ca>,
+       Chris Zankel <chris@zankel.net>,
+       Piet Delaney <Piet.Delaney@tensilica.com>
+Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
+ cache lines
+Message-ID: <20100519135226.GZ2516@laptop>
+References: <20100511214836.GH1726@emlix.com>
+ <20100511215359.GF7396@core.coreip.homeip.net>
+ <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
+ <522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
+ <20100512030350.GJ15903@laptop>
+ <1274273325.6930.10022.camel@macbook.infradead.org>
+ <20100519130710.GX2516@laptop>
+ <1274275067.6930.10073.camel@macbook.infradead.org>
+ <20100519133656.GY2516@laptop>
+ <20100519134429.GH26131@emlix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100519134429.GH26131@emlix.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Thu, 2010-05-06 at 02:16 +1000, Nick Piggin wrote:
-> On Wed, May 05, 2010 at 01:48:48PM +0100, Steven Whitehouse wrote:
-> > Hi,
+On Wed, May 19, 2010 at 03:44:30PM +0200, Johannes Weiner wrote:
+> On Wed, May 19, 2010 at 11:36:56PM +1000, Nick Piggin wrote:
+> > On Wed, May 19, 2010 at 02:17:47PM +0100, David Woodhouse wrote:
+> > >
+> > > The 'cacheline aligned' misconception did manage to get into the ad7877
+> > > driver in commit 3843384a though -- it now uses ____cacheline_aligned
+> > > instead of __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN))) as it
+> > > should.
 > > 
-> > On Mon, 2010-05-03 at 02:29 +0900, Minchan Kim wrote:
-> > > Hi, Steven. 
-> > > 
-> > > Sorry for lazy response.
-> > > I wanted to submit the patch which implement Nick's request whole.
-> > > And unfortunately, I am so busy now. 
-> > > But if it's urgent, I want to submit this one firstly and 
-> > > at next version, maybe I will submit remained TODO things 
-> > > after middle of May.
-> > > 
-> > > I think this patch can't make regression other usages.
-> > > Nick. What do you think about?
-> > > 
-> > I guess the question is whether the remaining items are essential for
-> > correct functioning of this patch, or whether they are "it would be nice
-> > if" items. I suspect that they are the latter (I'm not a VM expert, but
-> > from the brief descriptions it looks like that to me) in which case I'd
-> > suggest send the currently existing patch first and the following up
-> > with the remaining changes later.
-> > 
-> > We have got a nice speed up with your current patch and so far as I'm
-> > aware not introduced any new bugs or regressions with it.
-> > 
-> > Nick, does that sound ok?
+> > OK so long as there is not a "must be cacheline aligned" requirement.
+> > Your proposal for a __dma_aligned attribute in an arch header looks
+> > like a good idea there.
 > 
-> Just got around to looking at it again. I definitely agree we need to
-> fix the regression, however I'm concerned about introducing other
-> possible problems while doing that.
-> 
-> The following patch should (modulo bugs, but it's somewhat tested) give
-> no difference in the allocation patterns, so won't introduce virtual
-> memory layout changes.
-> 
-> Any chance you could test it?
-> 
+> Would you happen to know of other potential users?  At this point I'd
+> much rather just allocate the buffers dynamically and hide the issue
+> nicely behind kmalloc().
 
-At last some further info on the failed boot during testing. The
-messages look like this:
-
-dracut: Starting plymouth daemon
-G------------[ cut here ]------------
-kernel BUG at mm/vmalloc.c:391!
-invalid opcode: 0000 [#1] SMP 
-last sysfs file: /sys/devices/virtual/vtconsole/vtcon0/uevent
-CPU 7 
-Modules linked in:
-Pid: 193, comm: modprobe Tainted: G        W  2.6.32-23.el6.bz583026.patches2.3.7.x86_64 #1 ProLiant DL580 G3
-RIP: 0010:[<ffffffff8113c161>]  [<ffffffff8113c161>] alloc_vmap_area+0x431/0x440
-RSP: 0018:ffff8803dae3bcf8  EFLAGS: 00010287
-RAX: ffffc9001232e000 RBX: 0000000000004000 RCX: 0000000000000000
-RDX: ffffffffa0000000 RSI: ffff8803db66fdc0 RDI: ffffffff81b6d0a0
-RBP: ffff8803dae3bd88 R08: 000000000000000a R09: 00000000000000d0
-R10: ffff8803db6b6e40 R11: 0000000000000040 R12: 0000000000000001
-R13: ffffffffff000000 R14: ffffffffffffffff R15: ffffffffa0000000
-FS:  00007f5872189700(0000) GS:ffff88002c2e0000(0000) knlGS:0000000000000000
-
-and the code around that point is:
-
-static struct vmap_area *alloc_vmap_area(unsigned long size,
-                                unsigned long align,
-                                unsigned long vstart, unsigned long vend,
-                                int node, gfp_t gfp_mask)
-{
-
-...
-
-                if (!first)
-                        goto found;
-
-                if (first->va_start < addr) {
-391>                    BUG_ON(first->va_end < addr);
-                        n = rb_next(&first->rb_node);
-                        addr = ALIGN(first->va_end + PAGE_SIZE, align);
-                        if (n)
-                                first = rb_entry(n, struct vmap_area, rb_node);
-                        else
-                                goto found;
-                }
-
-
-so that seems to pinpoint the line on which the problem occurred. Let us
-know if you'd like us to do some more testing. I think we have the
-console access issue fixed now. Many thanks for all you help in this
-so far,
-
-Steve.
-
-
-
+I don't think we need to hide the fact that some platforms have
+specific alignment restrictions for DMA. So if any drivers make use
+of the alignment, I see no problem with __dma_aligned.
 
