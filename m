@@ -1,43 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755239Ab0ESJTZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 05:19:25 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:24150 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751004Ab0ESJTY convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 05:19:24 -0400
-Date: Wed, 19 May 2010 11:19:53 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 0/8] Several improvements to USB gadgets
-In-reply-to: <cover.1274187425.git.m.nazarewicz@samsung.com>
-To: Michal Nazarewicz <m.nazarewicz@samsung.com>, linux-usb@vger.kernel.org
-Cc: Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vcx37f0i7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <cover.1274187425.git.m.nazarewicz@samsung.com>
+	id S1756380Ab0ESJTj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 05:19:39 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:59094 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1755850Ab0ESJTg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 05:19:36 -0400
+Date: Wed, 19 May 2010 11:19:33 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: Suresh Siddha <suresh.b.siddha@intel.com>,
+       Nigel Cunningham <ncunningham@crca.org.au>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to
+	push model
+Message-ID: <20100519091933.GA30741@isilmar-3.linta.de>
+Mail-Followup-To: Dominik Brodowski <linux@dominikbrodowski.net>,
+	Suresh Siddha <suresh.b.siddha@intel.com>,
+	Nigel Cunningham <ncunningham@crca.org.au>,
+	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	Thomas Gleixner <tglx@linutronix.de>,
+	Arjan van de Ven <arjan@linux.jf.intel.com>,
+	Venkatesh Pallipadi <venki@google.com>,
+	Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+	LKML <linux-kernel@vger.kernel.org>
+References: <20100517182726.089700767@sbs-t61.sc.intel.com> <4BF1C595.3070707@crca.org.au> <20100517182726.089700767@sbs-t61.sc.intel.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF1C595.3070707@crca.org.au> <20100517182726.089700767@sbs-t61.sc.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010 11:04:13 +0200, Michal Nazarewicz <m.nazarewicz@samsung.com> wrote:
-> This patchset introduces several improvements to USB gadget,
-> functions, etc.:
+Hey,
 
-Uh, damn, sorry for posting those twice.  I did a:
+On Mon, May 17, 2010 at 11:27:26AM -0700, Suresh Siddha wrote:
+> This is an updated version of patchset which is posted earlier at
+> http://lkml.org/lkml/2009/12/10/470
+> 
+> Description:
+> Existing nohz idle load balance logic uses the pull model, with one
+> idle load balancer CPU nominated on any partially idle system and that
+> balancer CPU not going into nohz mode. With the periodic tick, the
+> balancer does the idle balancing on behalf of all the CPUs in nohz mode.
+> 
+> This is not very optimal and has few issues:
+> * the balancer will continue to have periodic ticks and wakeup
+>   frequently (HZ rate), even though it may not have any rebalancing to do on
+>   behalf of any of the idle CPUs.
+> * On x86 and CPUs that have APIC timer stoppage on idle CPUs, this periodic
+>   wakeup can result in an additional interrupt on a CPU doing the timer
+>   broadcast.
+> 
+> The alternative is to have a push model, where all idle CPUs can enter nohz
+> mode and any busy CPU kicks one of the idle CPUs to take care of idle
+> balancing on behalf of a group of idle CPUs.
+> 
+> Following patches switches idle load balancer to this push approach.
+> 
+> Updates from the previous version:
+> 
+> * Busy CPU uses send_remote_softirq() for invoking SCHED_SOFTIRQ on the
+>   idle load balancing cpu, which does the load balancing on behalf of
+>   all the idle CPUs.
+> 
+> * Dropped the per NUMA node nohz load balancing as it doesn't detect
+>   certain imbalance scenarios. This will be addressed later.
+> 
+> Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+> Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 
-   git send-email * --to linux-usb@vger.kernel.org 000*
+This patchset works good on my notebook; the number of wakeups decreases
+from ~2.5 to ~1.6 when booting with init=/bin/bash, disabling cursor
+blinking and enabling USB autosuspend.
 
-ie. given all files as arguments twice.
-
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+Thanks and best,
+	Dominik
