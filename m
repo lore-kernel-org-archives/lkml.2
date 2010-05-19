@@ -1,122 +1,164 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757695Ab0ESBou (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 21:44:50 -0400
-Received: from mail.windriver.com ([147.11.1.11]:41197 "EHLO
+	id S1757936Ab0ESBp1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 21:45:27 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41155 "EHLO
 	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756764Ab0ESBkR (ORCPT
+	with ESMTP id S1756550Ab0ESBkL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 21:40:17 -0400
+	Tue, 18 May 2010 21:40:11 -0400
 From: Jason Wessel <jason.wessel@windriver.com>
 To: torvalds@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net
-Subject: [GIT PULL] kdb / early debug (2 of 2) for 2.6.35
-Date: Tue, 18 May 2010 20:39:55 -0500
-Message-Id: <1274233202-3734-1-git-send-email-jason.wessel@windriver.com>
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 19/25] mips,kgdb: kdb low level trap catch and stack trace
+Date: Tue, 18 May 2010 20:39:29 -0500
+Message-Id: <1274233175-3675-20-git-send-email-jason.wessel@windriver.com>
 X-Mailer: git-send-email 1.6.4.rc1
-X-OriginalArrivalTime: 19 May 2010 01:40:05.0407 (UTC) FILETIME=[34EFE2F0:01CAF6F4]
+In-Reply-To: <1274233175-3675-1-git-send-email-jason.wessel@windriver.com>
+References: <1274233175-3675-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 19 May 2010 01:39:57.0610 (UTC) FILETIME=[304A28A0:01CAF6F4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus please pull the dbg-early-merge tree which merges in the
-capability for early debugging for the x86 architecture.
+The only way the debugger can handle a trap in inside rcu_lock,
+notify_die, or atomic_notifier_call_chain without a recursive fault is
+to have a low level "first opportunity handler" do_trap_or_bp() handler.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git dbg-early-merge
+Generally this will be something the vast majority of folks will not
+need, but for those who need it, it is added as a kernel .config
+option called KGDB_LOW_LEVEL_TRAP.
 
---- Notes for Linus ---
+Also added was a die notification for oops such that kdb can catch an
+oops for analysis.
 
-I did not receive acks or feedback from any x86 maintainers at this
-point for the early trap changes.  These changes came from the
-archives from 2+ years back, before the time the mainline kernel I/O
-drivers supported early debugger access.
+There appeared to be no obvious way to pass the struct pt_regs from
+the original exception back to the stack back tracer, so a special
+case was added to show_stack() for when kdb is active because you
+generally desire to generally look at the back trace of the original
+exception.
 
-I did not receive acks or feedback on the changes to
-arch/x86/kernel/cpu/common.c which covers the initial setup of the
-debug registers.  This change is a fix vs a feature.
-
---- End Notes for Linus ---
-
-There have been zero changes to this patch set vs the pull request
-from 2.6.34.
-
-This patch set stacks on top of the kgdb / kdb patches and focuses on
-allowing the kernel debugger to activate at the same time earlyprintk
-becomes available.  Right now early debugging is only available on
-x86, but the API in the debug core is generic.  The only thing lacking
-for other architecture support is appropriate atomic safe polled I/O
-drivers.
-
-The first few patches address the problems in kdb and the architecture
-specific x86 kgdb implementation which rely on services which are not
-available before the kernel memory allocators are setup.
-
-The patch set includes early debug support for vga + non-USB keyboard
-and dbgp devices.  For the vga case, it only works with kdb. For
-example, you could boot your kernel and optionally include kgdbwait as
-follows:
-
-     earlyprintk=vga ekgboc=kbd kgdbwait
-
-That will stop the kernel somewhere inside setup_arch() and you can
-plant breakpoints, modify memory and backtrace.  If you omit the
-kgdbwait, the kgdb shell prompt will appear on the vga console only if
-there is a kernel fault.
-
-The final 2 patches in the series add support for the EHCI usb debug
-port when using a dbgp device.  You have the choice of using
-earlyprintk= or using only the kernel debugger on the debug port.  You
-can also use either kgdb or kdb with this connection.  Here are two
-example kernel boot argument lines:
-
-1) Used in conjunction with earlyprintk on usb debug port 1
-
-   	earlyprintk=dbgp1,keep kgdbdbgp=1 kgdbwait
-
-2) Allow for the capability to break into the kernel with control-c on
-   usb debug port 0
-
-        kgdbdbp=0,1 kgdbwait
-
-A patch to add formal documentation to the kgdb docbook for these new
-features will be available for the 2.6.34 cycle, because there are a
-number of other ways you can make use of these features not described
-here.
-
-Thanks,
-Jason.
-
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Acked-by: Ralf Baechle <ralf@linux-mips.org>
 ---
+ arch/mips/include/asm/kgdb.h |    2 ++
+ arch/mips/kernel/kgdb.c      |   22 +++++++++++++++++++++-
+ arch/mips/kernel/traps.c     |   13 +++++++++++++
+ lib/Kconfig.kgdb             |    2 +-
+ 4 files changed, 37 insertions(+), 2 deletions(-)
 
-The following changes since commit f862c96b15ebc65a94c9c747449ddb07008037ac:
-  Jason Wessel (1):
-        kdb,debug_core: Allow the debug core to receive a panic notification
+diff --git a/arch/mips/include/asm/kgdb.h b/arch/mips/include/asm/kgdb.h
+index 48223b0..19002d6 100644
+--- a/arch/mips/include/asm/kgdb.h
++++ b/arch/mips/include/asm/kgdb.h
+@@ -38,6 +38,8 @@ extern int kgdb_early_setup;
+ extern void *saved_vectors[32];
+ extern void handle_exception(struct pt_regs *regs);
+ extern void breakinst(void);
++extern int kgdb_ll_trap(int cmd, const char *str,
++			struct pt_regs *regs, long err, int trap, int sig);
+ 
+ #endif				/* __KERNEL__ */
+ 
+diff --git a/arch/mips/kernel/kgdb.c b/arch/mips/kernel/kgdb.c
+index 6ed4c83..9b78ff6 100644
+--- a/arch/mips/kernel/kgdb.c
++++ b/arch/mips/kernel/kgdb.c
+@@ -203,7 +203,7 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
+ 	if (atomic_read(&kgdb_active) != -1)
+ 		kgdb_nmicallback(smp_processor_id(), regs);
+ 
+-	if (kgdb_handle_exception(trap, compute_signal(trap), 0, regs))
++	if (kgdb_handle_exception(trap, compute_signal(trap), cmd, regs))
+ 		return NOTIFY_DONE;
+ 
+ 	if (atomic_read(&kgdb_setting_breakpoint))
+@@ -217,6 +217,26 @@ static int kgdb_mips_notify(struct notifier_block *self, unsigned long cmd,
+ 	return NOTIFY_STOP;
+ }
+ 
++#ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
++int kgdb_ll_trap(int cmd, const char *str,
++		 struct pt_regs *regs, long err, int trap, int sig)
++{
++	struct die_args args = {
++		.regs	= regs,
++		.str	= str,
++		.err	= err,
++		.trapnr	= trap,
++		.signr	= sig,
++
++	};
++
++	if (!kgdb_io_module_registered)
++		return NOTIFY_DONE;
++
++	return kgdb_mips_notify(NULL, cmd, &args);
++}
++#endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
++
+ static struct notifier_block kgdb_notifier = {
+ 	.notifier_call = kgdb_mips_notify,
+ };
+diff --git a/arch/mips/kernel/traps.c b/arch/mips/kernel/traps.c
+index d612c6d..950bde8 100644
+--- a/arch/mips/kernel/traps.c
++++ b/arch/mips/kernel/traps.c
+@@ -26,6 +26,7 @@
+ #include <linux/kgdb.h>
+ #include <linux/kdebug.h>
+ #include <linux/notifier.h>
++#include <linux/kdb.h>
+ 
+ #include <asm/bootinfo.h>
+ #include <asm/branch.h>
+@@ -185,6 +186,11 @@ void show_stack(struct task_struct *task, unsigned long *sp)
+ 			regs.regs[29] = task->thread.reg29;
+ 			regs.regs[31] = 0;
+ 			regs.cp0_epc = task->thread.reg31;
++#ifdef CONFIG_KGDB_KDB
++		} else if (atomic_read(&kgdb_active) != -1 &&
++			   kdb_current_regs) {
++			memcpy(&regs, kdb_current_regs, sizeof(regs));
++#endif /* CONFIG_KGDB_KDB */
+ 		} else {
+ 			prepare_frametrace(&regs);
+ 		}
+@@ -360,6 +366,8 @@ void __noreturn die(const char * str, struct pt_regs * regs)
+ 	unsigned long dvpret = dvpe();
+ #endif /* CONFIG_MIPS_MT_SMTC */
+ 
++	notify_die(DIE_OOPS, str, (struct pt_regs *)regs, SIGSEGV, 0, 0);
++
+ 	console_verbose();
+ 	spin_lock_irq(&die_lock);
+ 	bust_spinlocks(1);
+@@ -704,6 +712,11 @@ static void do_trap_or_bp(struct pt_regs *regs, unsigned int code,
+ 	siginfo_t info;
+ 	char b[40];
+ 
++#ifdef CONFIG_KGDB_LOW_LEVEL_TRAP
++	if (kgdb_ll_trap(DIE_TRAP, str, regs, code, 0, 0) == NOTIFY_STOP)
++		return;
++#endif /* CONFIG_KGDB_LOW_LEVEL_TRAP */
++
+ 	if (notify_die(DIE_TRAP, str, regs, code, 0, 0) == NOTIFY_STOP)
+ 		return;
+ 
+diff --git a/lib/Kconfig.kgdb b/lib/Kconfig.kgdb
+index c56ccb4..43cb93f 100644
+--- a/lib/Kconfig.kgdb
++++ b/lib/Kconfig.kgdb
+@@ -59,7 +59,7 @@ config KGDB_TESTS_BOOT_STRING
+ 
+ config KGDB_LOW_LEVEL_TRAP
+        bool "KGDB: Allow debugging with traps in notifiers"
+-       depends on X86
++       depends on X86 || MIPS
+        default n
+        help
+          This will add an extra call back to kgdb for the breakpoint
+-- 
+1.6.3.3
 
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/jwessel/linux-2.6-kgdb.git dbg-early-merge
-
-Jan Kiszka (1):
-      x86, kgdb: early trap init for early debug
-
-Jason Wessel (6):
-      x86, kgdb, init: Add early and late debug states
-      x86,kgdb: Implement early hardware breakpoint debugging
-      x86,early dr regs,kgdb: Allow kernel debugger early dr register access
-      kgdboc: Add ekgdboc for early use of the kernel debugger
-      earlyprintk,vga,kdb: Fix \b and \r for earlyprintk=vga with kdb
-      echi-dbgp: Add kernel debugger support for the usb debug port
-
- Documentation/kernel-parameters.txt |   17 +++++
- arch/x86/include/asm/processor.h    |    2 +
- arch/x86/kernel/cpu/common.c        |   29 +++++----
- arch/x86/kernel/early_printk.c      |    8 +++
- arch/x86/kernel/kgdb.c              |   47 +++++++++++---
- arch/x86/kernel/setup.c             |    1 +
- arch/x86/kernel/traps.c             |   14 +++-
- drivers/serial/kgdboc.c             |   19 ++++++
- drivers/usb/early/ehci-dbgp.c       |  120 ++++++++++++++++++++++++++++++++---
- include/linux/kgdb.h                |   14 ++++
- init/main.c                         |    4 +-
- kernel/debug/debug_core.c           |   16 +++++
- 12 files changed, 255 insertions(+), 36 deletions(-)
