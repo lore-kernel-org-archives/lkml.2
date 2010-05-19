@@ -1,75 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753609Ab0ESPvl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:51:41 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:50080 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753178Ab0ESPvj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:51:39 -0400
-Date: Wed, 19 May 2010 11:51:36 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Nick Piggin <npiggin@suse.de>, Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100519155136.GA2039@Krystal>
-References: <20100518153440.GB7748@Krystal> <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <1274281956.26328.776.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274281956.26328.776.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:50:17 up 116 days, 18:27,  9 users,  load average: 0.47, 0.28,
-	0.27
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1753641Ab0ESPvr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:51:47 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:33279 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753614Ab0ESPvp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:51:45 -0400
+Date: Thu, 20 May 2010 01:51:43 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 11/17] mtd: update gfp/slab.h includes
+Message-Id: <20100520015143.a7593612.sfr@canb.auug.org.au>
+In-Reply-To: <1269885165-18617-12-git-send-email-tj@kernel.org>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-12-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-05-19 at 07:59 -0700, Linus Torvalds wrote:
-> > 
-> 
-> > Btw, since you apparently have a real case - is the "splice to file" 
-> > always just an append? IOW, if I'm not right in assuming that the only 
-> > sane thing people would reasonable care about is "append to a file", then 
-> > holler now.
-> 
-> My use case is just to move the data from the ring buffer into a file
-> (or network) as fast as possible. It creates a new file and all
-> additions are "append to a file".
-> 
-> I believe Mathieu does the same.
-> 
-> With me, you are correct.
+Hi David,
 
-Same here. My ring buffer only ever use splice() to append at the end of a file
-or to the network, and always outputs data in multiples of the page size.
+On Tue, 30 Mar 2010 02:52:39 +0900 Tejun Heo <tj@kernel.org> wrote:
+>
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
 
-Thanks,
+Please apply to the mtd tree (patch reposted below).
 
-Mathieu
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, David Woodhouse <dwmw2@infradead.org>
+Subject: [PATCH 11/17] mtd: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:39 +0900
 
-> 
-> -- Steve
-> 
-> 
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: David Woodhouse <dwmw2@infradead.org>
+---
+ drivers/mtd/mtdcore.c          |    1 +
+ drivers/mtd/nand/mpc5121_nfc.c |    1 +
+ drivers/mtd/nand/r852.c        |    1 +
+ 3 files changed, 3 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/mtd/mtdcore.c b/drivers/mtd/mtdcore.c
+index e8573c9..3c48193 100644
+--- a/drivers/mtd/mtdcore.c
++++ b/drivers/mtd/mtdcore.c
+@@ -18,6 +18,7 @@
+ #include <linux/proc_fs.h>
+ #include <linux/idr.h>
+ #include <linux/backing-dev.h>
++#include <linux/gfp.h>
+ 
+ #include <linux/mtd/mtd.h>
+
+diff --git a/drivers/mtd/nand/mpc5121_nfc.c b/drivers/mtd/nand/mpc5121_nfc.c
+index d7333f4..1a06f78 100644
+--- a/drivers/mtd/nand/mpc5121_nfc.c
++++ b/drivers/mtd/nand/mpc5121_nfc.c
+@@ -27,6 +27,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/clk.h>
++#include <linux/gfp.h>
+ #include <linux/delay.h>
+ #include <linux/init.h>
+ #include <linux/interrupt.h>
+diff --git a/drivers/mtd/nand/r852.c b/drivers/mtd/nand/r852.c
+index 96bfbd8..dd5158c 100644
+--- a/drivers/mtd/nand/r852.c
++++ b/drivers/mtd/nand/r852.c
+@@ -15,6 +15,7 @@
+ #include <linux/pci.h>
+ #include <linux/pci_ids.h>
+ #include <linux/delay.h>
++#include <linux/slab.h>
+ #include <asm/byteorder.h>
+ #include <linux/sched.h>
+ #include "sm_common.h"
+-- 
+1.6.4.2
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
