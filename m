@@ -1,25 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754733Ab0ESTyo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:54:44 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32870
+	id S1754692Ab0EST4X (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:56:23 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:32879
 	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753245Ab0ESTyl (ORCPT
+	by vger.kernel.org with ESMTP id S1753245Ab0EST4V (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:54:41 -0400
-Date: Wed, 19 May 2010 12:54:49 -0700 (PDT)
-Message-Id: <20100519.125449.56392211.davem@davemloft.net>
-To: paulmck@linux.vnet.ibm.com
-Cc: npiggin@suse.de, torvalds@linux-foundation.org, anton@samba.org,
-       akpm@linux-foundation.org, willy@linux.intel.com,
-       benh@kernel.crashing.org, paulus@samba.org, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t definition
+	Wed, 19 May 2010 15:56:21 -0400
+Date: Wed, 19 May 2010 12:56:30 -0700 (PDT)
+Message-Id: <20100519.125630.121263182.davem@davemloft.net>
+To: cl@linux.com
+Cc: lethal@linux-sh.org, penberg@cs.helsinki.fi, mpm@selenic.com,
+       herbert@gondor.hengli.com.au, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp, dwmw2@infradead.org
+Subject: Re: [BUG] SLOB breaks Crypto
 From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100519150132.GJ2237@linux.vnet.ibm.com>
-References: <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org>
-	<20100519130327.GW2516@laptop>
-	<20100519150132.GJ2237@linux.vnet.ibm.com>
+In-Reply-To: <alpine.DEB.2.00.1005191017290.4592@router.home>
+References: <20100518223507.GB5933@linux-sh.org>
+	<20100518223739.GC5933@linux-sh.org>
+	<alpine.DEB.2.00.1005191017290.4592@router.home>
 X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
 Mime-Version: 1.0
 Content-Type: Text/Plain; charset=us-ascii
@@ -28,21 +28,18 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Date: Wed, 19 May 2010 08:01:32 -0700
+From: Christoph Lameter <cl@linux.com>
+Date: Wed, 19 May 2010 10:19:33 -0500 (CDT)
 
-> On Wed, May 19, 2010 at 11:03:27PM +1000, Nick Piggin wrote:
->> For atomic_read it shouldn't matter unless gcc is *really* bad at it.
->> Ah, for atomic_read, the required semantic is surely ACCESS_ONCE, so
->> that's where the volatile is needed? (maybe it would be clearer to
->> explicitly use ACCESS_ONCE?)
-> 
-> Explicit use of ACCESS_ONCE() where needed makes a lot of sense to me,
-> and allows better code to be generated for initialization and cleanup
-> code where no other task has access to the atomic_t.
+> The assumptions are not arbitrary. It is reasonable to assume that
+> structures managed by the slab allocators may contain long long variables
+> and that therefore a unsigned long long alignment is required by the
+> allocator. It is the *compiler* who tells us that long long needs to be
+> aligned at double word boundaries. If an arch does not require long long
+> alignment on double word boundaries then the *compiler* should tell us
+> that and then the allocators will align on word boundaries.
 
-I agree and I want to see this too, but I think with the tree the size
-that it is we have to work backwards at this point.
+That is a good point.
 
-Existing behavior by default, and optimized cases get tagged by using
-a new interface (atomic_read_light(), test_bit{,s}_light(), etc.)
+So really, __alignof__(unsigned long long) is technically always right.
+Because it should evaluate to "4" on x86-32, for example.
