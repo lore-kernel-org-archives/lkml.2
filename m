@@ -1,106 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751492Ab0ESNLQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:11:16 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:41074 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750943Ab0ESNLO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:11:14 -0400
-Message-ID: <4BF3E367.5080906@ti.com>
-Date: Wed, 19 May 2010 08:11:03 -0500
-From: Nishanth Menon <nm@ti.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1751626Ab0ESNMQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:12:16 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:54125 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751293Ab0ESNMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:12:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:reply-to:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=p8HMKiTYIZ8tEdKlsSffocSnqwOp0A2JZKcK1LlmePXVODZIcK2gSO/cx3OKVbKvpE
+         HUKUKJCCjkkUDiERTx8yJGk1eauDqAay7iGtA6Wb5J2GftY+AxbCpxz0YPTmKs5PB+MM
+         DrXAi8sOb21R9xZ2q4rntIJn1SaTgo/d9CYnc=
+Date: Wed, 19 May 2010 21:11:55 +0800
+From: Yong Zhang <yong.zhang0@gmail.com>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, David Howells <dhowells@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] schedule: simplify the reacquire_kernel_lock() logic
+Message-ID: <20100519131155.GB2216@zhy>
+Reply-To: Yong Zhang <yong.zhang0@gmail.com>
+References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk>
+ <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
+ <20100518212220.GA5092@redhat.com>
+ <1274250079.5605.9967.camel@twins>
+ <20100519102743.GA10040@redhat.com>
+ <1274265465.5605.10564.camel@twins>
+ <20100519125711.GA30199@redhat.com>
 MIME-Version: 1.0
-To: Mike Chan <mike@android.com>
-CC: "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-       "menage@google.com" <menage@google.com>,
-       "balbir@in.ibm.com" <balbir@in.ibm.com>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-Subject: Re: [PATCH 4/4] omap: cpu: Power tracking support for cgroup cpuacct
-References: <1274232620-23003-1-git-send-email-mike@android.com> <1274232620-23003-5-git-send-email-mike@android.com>
-In-Reply-To: <1274232620-23003-5-git-send-email-mike@android.com>
-Content-Type: text/plain; charset="ISO-8859-1"; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100519125711.GA30199@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Chan had written, on 05/18/2010 08:30 PM, the following:
-> Specify new power field in struct omap_opp, which is
-> power exported in milliWatt.
+On Wed, May 19, 2010 at 02:57:11PM +0200, Oleg Nesterov wrote:
+> - Contrary to what 6d558c3a says, there is no need to reload
+>   prev = rq->curr after the context switch. You always schedule
+>   back to where you came from, prev must be equal to current
+>   even if cpu/rq was changed.
 > 
-> power_usage function gives power consumed in milliWatt seconds
+> - This also means reacquire_kernel_lock() can use prev instead
+>   of current.
 > 
-> Signed-off-by: Mike Chan <mike@android.com>
+> - No need to reassign switch_count if reacquire_kernel_lock()
+>   reports need_resched(), we can just move the initial assignment
+>   down, under the "need_resched_nonpreemptible:" label.
+> 
+> - Try to update the comment after context_switch().
+> 
+> Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+
+This make it more clear now. Thank you Oleg.
+
+Acked-by: Yong Zhang <yong.zhang0@gmail.com>
+
 > ---
->  arch/arm/plat-omap/cpu-omap.c             |   23 ++++++++++++++++++++++-
->  arch/arm/plat-omap/include/plat/omap-pm.h |    1 +
->  2 files changed, 23 insertions(+), 1 deletions(-)
 > 
-> diff --git a/arch/arm/plat-omap/cpu-omap.c b/arch/arm/plat-omap/cpu-omap.c
-> index d27234d..1381539 100644
-> --- a/arch/arm/plat-omap/cpu-omap.c
-> +++ b/arch/arm/plat-omap/cpu-omap.c
-> @@ -22,6 +22,7 @@
->  #include <linux/clk.h>
->  #include <linux/io.h>
->  #include <linux/cpuacct.h>
-> +#include <linux/math64.h>
+>  kernel/sched.c |   13 ++++++-------
+>  1 file changed, 6 insertions(+), 7 deletions(-)
+> 
+> --- 34-rc1/kernel/sched.c~SCHEDULE_PREV_EQ_TO_CURRENT	2010-05-18 23:32:50.000000000 +0200
+> +++ 34-rc1/kernel/sched.c	2010-05-19 14:32:57.000000000 +0200
+> @@ -3679,7 +3679,6 @@ need_resched:
+>  	rq = cpu_rq(cpu);
+>  	rcu_sched_qs(cpu);
+>  	prev = rq->curr;
+> -	switch_count = &prev->nivcsw;
 >  
->  #include <mach/hardware.h>
->  #include <plat/clock.h>
-> @@ -218,10 +219,30 @@ static void omap_cpuacct_freq_show(void *cpuacct_data, struct cgroup_map_cb *cb)
->  	}
->  }
+>  	release_kernel_lock(prev);
+>  need_resched_nonpreemptible:
+> @@ -3693,6 +3692,7 @@ need_resched_nonpreemptible:
+>  	update_rq_clock(rq);
+>  	clear_tsk_need_resched(prev);
 >  
-> +
-> +/* Returns power (in milliWatt seconds) for cgroup */
-> +static u64 omap_cpuacct_power_usage(void *cpuacct_data)
-> +{
-> +	int i;
-> +	u64 *cpuacct_freq = cpuacct_data;
-> +	u64 totalpower = 0;
-> +
-> +	/* mpu_opps table starts at 1 */
-> +	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
-> +		totalpower += cpuacct_freq[i] * mpu_opps[i + 1].power;
-> +
-> +	/* milliwatt seconds */
-> +	totalpower = div64_u64(totalpower, NSEC_PER_SEC);
-> +
-> +	return totalpower;
-> +}
-> +
-> +
->  static struct cpuacct_cpufreq_calls omap_cpuacct_cpufreq = {
->  	.init = omap_cpuacct_freq_init,
->  	.charge = omap_cpuacct_freq_charge,
-> -	.show = omap_cpuacct_freq_show,
-> +	.cpufreq_show = omap_cpuacct_freq_show,
-> +	.power_usage = omap_cpuacct_power_usage,
->  };
+> +	switch_count = &prev->nivcsw;
+>  	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+>  		if (unlikely(signal_pending_state(prev->state, prev)))
+>  			prev->state = TASK_RUNNING;
+> @@ -3719,8 +3719,10 @@ need_resched_nonpreemptible:
 >  
->  static int __init omap_cpuacct_init(void)
-> diff --git a/arch/arm/plat-omap/include/plat/omap-pm.h b/arch/arm/plat-omap/include/plat/omap-pm.h
-> index 3ee41d7..8f2db6f 100644
-> --- a/arch/arm/plat-omap/include/plat/omap-pm.h
-> +++ b/arch/arm/plat-omap/include/plat/omap-pm.h
-> @@ -31,6 +31,7 @@ struct omap_opp {
->  	unsigned long rate;
->  	u8 opp_id;
->  	u16 min_vdd;
-> +	unsigned long power; /* power consumed running at OPP in milliWatts */
-
-this conflicts with the OPP layer implementation. this structure will 
-disappear for good.
-
->  };
+>  		context_switch(rq, prev, next); /* unlocks the rq */
+>  		/*
+> -		 * the context switch might have flipped the stack from under
+> -		 * us, hence refresh the local variables.
+> +		 * The context switch have flipped the stack from under us
+> +		 * and restored the local variables which were saved when
+> +		 * this task called schedule() in the past. prev == current
+> +		 * is still correct, but it can be moved to another cpu/rq.
+>  		 */
+>  		cpu = smp_processor_id();
+>  		rq = cpu_rq(cpu);
+> @@ -3729,11 +3731,8 @@ need_resched_nonpreemptible:
 >  
->  extern struct omap_opp *mpu_opps;
-
-
--- 
-Regards,
-Nishanth Menon
+>  	post_schedule(rq);
+>  
+> -	if (unlikely(reacquire_kernel_lock(current) < 0)) {
+> -		prev = rq->curr;
+> -		switch_count = &prev->nivcsw;
+> +	if (unlikely(reacquire_kernel_lock(prev)))
+>  		goto need_resched_nonpreemptible;
+> -	}
+>  
+>  	preempt_enable_no_resched();
+>  	if (need_resched())
