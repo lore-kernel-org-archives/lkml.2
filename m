@@ -1,82 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753981Ab0ESQgq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:36:46 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55480 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753576Ab0ESQgp (ORCPT
+	id S1753891Ab0ESQiD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:38:03 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35435 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751723Ab0ESQiA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:36:45 -0400
-X-Authority-Analysis: v=1.1 cv=DB4JU8ZWelvwd5d0x20oybKyR86uyiSly0XbcMdosrc= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=hRW8RuVDvn31wFRIrZYA:9 a=4pe8B23pUEgkaVvZjkMgnxMoz30A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Unexpected splice "always copy" behavior observed
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Nick Piggin <npiggin@suse.de>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       mathieu.desnoyers@efficios.com, peterz@infradead.org,
-       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
-       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
-       linux-mm@kvack.org, akpm@linux-foundation.org,
-       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
-       jens.axboe@oracle.com
-In-Reply-To: <20100519155505.GD2516@laptop>
-References: <20100518153440.GB7748@Krystal>
-	 <1274197993.26328.755.camel@gandalf.stny.rr.com>
-	 <1274199039.26328.758.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
-	 <20100519063116.GR2516@laptop>
-	 <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-	 <1274280968.26328.774.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
-	 <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
-	 <1274283942.26328.783.camel@gandalf.stny.rr.com>
-	 <20100519155505.GD2516@laptop>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 19 May 2010 12:36:42 -0400
-Message-ID: <1274287002.26328.808.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 12:38:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mHXLKmZTGXDsqc19DWedIbZnoAmuzKiYwUsfDJbvrqxlONdxvDpFh/TStDoEXT2FbB
+         nJR1darl2SWcbrpjOiiwUOlwmvO/tYEm4SQwBLeiJF4nbP5xilJkWu8U6/pdxrEAeKMX
+         k27EmJ7Tf7BK3cex3UKNH67rF95LUcYi4URZ4=
+Date: Wed, 19 May 2010 09:37:45 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Cc: npiggin@suse.de, jw@emlix.com, dwmw2@infradead.org, marc@tensilica.com,
+       vapier.adi@gmail.com, cl@linux.com, penberg@cs.helsinki.fi,
+       mpm@selenic.com, akpm@linux-foundation.org, os@emlix.com,
+       Michael.Hennerich@analog.com, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, dg@emlix.com, osw@emlix.com,
+       rientjes@google.com, dbrownell@users.sourceforge.net,
+       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
+Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
+ cache lines
+Message-ID: <20100519163745.GA27475@core.coreip.homeip.net>
+References: <20100519133656.GY2516@laptop>
+ <20100519134429.GH26131@emlix.com>
+ <20100519135226.GZ2516@laptop>
+ <20100519234049C.fujita.tomonori@lab.ntt.co.jp>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100519234049C.fujita.tomonori@lab.ntt.co.jp>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 01:55 +1000, Nick Piggin wrote:
-> On Wed, May 19, 2010 at 11:45:42AM -0400, Steven Rostedt wrote:
-
-> > If the "move only on append to file" is easy to implement, I would
-> > really like to see that happen. The speed of splicing a disk image for a
-> > virtual machine only impacts the patience of the user. The speed of
-> > splicing tracing output, impacts how much you can trace without losing
-> > events.
+On Wed, May 19, 2010 at 11:38:34PM +0900, FUJITA Tomonori wrote:
+> On Wed, 19 May 2010 23:52:26 +1000
+> Nick Piggin <npiggin@suse.de> wrote:
 > 
-> It's not "easy" to implement :) What's your ring buffer look like?
-> Is it a normal user address which the kernel does copy_to_user()ish
-> things into? Or a mmapped special driver?
-
-Neither ;-)
-
+> > On Wed, May 19, 2010 at 03:44:30PM +0200, Johannes Weiner wrote:
+> > > On Wed, May 19, 2010 at 11:36:56PM +1000, Nick Piggin wrote:
+> > > > On Wed, May 19, 2010 at 02:17:47PM +0100, David Woodhouse wrote:
+> > > > >
+> > > > > The 'cacheline aligned' misconception did manage to get into the ad7877
+> > > > > driver in commit 3843384a though -- it now uses ____cacheline_aligned
+> > > > > instead of __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN))) as it
+> > > > > should.
+> > > > 
+> > > > OK so long as there is not a "must be cacheline aligned" requirement.
+> > > > Your proposal for a __dma_aligned attribute in an arch header looks
+> > > > like a good idea there.
+> > > 
+> > > Would you happen to know of other potential users?  At this point I'd
+> > > much rather just allocate the buffers dynamically and hide the issue
+> > > nicely behind kmalloc().
+> > 
+> > I don't think we need to hide the fact that some platforms have
+> > specific alignment restrictions for DMA. So if any drivers make use
+> > of the alignment, I see no problem with __dma_aligned.
 > 
-> If the latter, it get's even harder again. But either way if the
-> source pages just have to be regenerated anyway (eg. via page fault
-> on next access), then it might not even be worthwhile to do the
-> splice move.
+> IIRC, such was proposed several times:
+> 
+> http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
+> 
+> I guess that we agreed that it's better to tell driver writers to just
+> use kmalloc.
 
-The ring buffer is written to by kernel events. To read it, the user can
-either do a sys_read() and that is copied, or use splice. I do not
-support mmap(), and if we were to do that, it would then not support
-splice(). We have been talking about implementing both but with flags on
-allocation of the ring buffer. You can either support mmap() or splice()
-but not both with one instance of the ring buffer.
+It really dpeends on the size of the buffer. When I need a single byte I
+really do not want to mess with separate kmalloced buffer.
 
--- Steve
+If somebody coudl pick David's patch that would be great.
 
-
-
-
-
+-- 
+Dmitry
