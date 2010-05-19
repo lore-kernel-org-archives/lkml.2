@@ -1,58 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752794Ab0ESG1G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 02:27:06 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:36368 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751788Ab0ESG1C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 02:27:02 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Venkatesh Pallipadi <venki@google.com>, Ingo Molnar <mingo@elte.hu>,
-       chris.mason@oracle.com, linux-kernel@vger.kernel.org
-In-Reply-To: <20100518211328.GH22675@basil.fritz.box>
-References: <20100518112509.GD22675@basil.fritz.box>
-	 <1274183935.5605.7726.camel@twins>> <4BF2C30F.6030502@zytor.com>
-	 <1274201536.5605.8347.camel@twins> <4BF2C881.60807@zytor.com>
-	 <1dc4abc2-6455-4b95-90f6-c86bf56ff39a@default> <4BF2E0A2.6030209@zytor.com>
-	 <dd1c0508-5570-4e65-89c0-4037eb210646@default>
-	 <61e3a205-b578-4972-a65a-b96f779aeeb1@default> <4BF2F9E4.8020808@zytor.com>
-	 <20100518211328.GH22675@basil.fritz.box>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 May 2010 08:26:26 +0200
-Message-ID: <1274250386.5605.9982.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752480Ab0ESG2z (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 02:28:55 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:45971 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751353Ab0ESG2y (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 02:28:54 -0400
+Date: Wed, 19 May 2010 08:28:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
+       "David S. Miller" <davem@davemloft.net>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: Re: [PATCH 1/5] perf stat: add perf stat -B to pretty print large
+ numbers
+Message-ID: <20100519062832.GB21294@elte.hu>
+References: <1274234900-12162-1-git-send-email-acme@infradead.org>
+ <1274234900-12162-2-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274234900-12162-2-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 23:13 +0200, Andi Kleen wrote:
-> > I'm not in favor of emulating rdtsc instructions.  I would consider
-> > letting them SIGILL (actually SIGSEGV since RDTSC #GP in userspace) when
-> > the TSC is unavailable, though.
+
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+
+> From: Stephane Eranian <eranian@google.com>
 > 
-> I doubt we could ever do that, it would likely break just too much
-> code.  Yes the code is already broken likely on some system, but there's
+> It is hard to read very large numbers so provide an 
+> option to perf stat to separate thousands using a 
+> separator. The patch leverages the locale support of 
+> stdio. You need to set your LC_NUMERIC appropriately, 
+> for instance LC_NUMERIC=en_US.UTF8. You need to pass -B 
+> to activate this feature. This way existing scripts 
+> parsing the output do not need to be changed. Here is an 
+> example.
 
-s/some/most/
+I've pulled it, but IMO we should go one step further: 
+this feature should be made unconditional. The current 
+numbers displayed by perf stat are often human-unreadable.
 
-> a big difference between wrong time and crash.
+scripts should not parse pretty-printed output.
 
-Maybe start with a patch that logs all users and start sending patches
-to the respective projects to clean them up.
+We used to have something like that, in the form of:
 
-Once we get most of userspace running fine, we can switch it to
-generating faults.
+  perf record --no-samples --stat -e cycles -e instructions -a sleep 1
+  perf report -n -t :
 
-Of course closed source stuff will have to deal with it themselves, but
-who cares about that anyway ;-)
+But the Newt changes broke this stat-only recording mode. 
+Furthermore, there should be a --raw kind out output mode 
+for perf stat as well.
 
+Thanks,
 
+	Ingo
