@@ -1,79 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751624Ab0ESNbW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:31:22 -0400
-Received: from bar.sig21.net ([80.81.252.164]:39980 "EHLO bar.sig21.net"
+	id S1751884Ab0ESNfT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:35:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:20721 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751020Ab0ESNbU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:31:20 -0400
-Date: Wed, 19 May 2010 15:30:28 +0200
-From: Johannes Stezenbach <js@sig21.net>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>, manfred@colorfullife.com,
-       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and
- ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
-Message-ID: <20100519133028.GA26659@sig21.net>
-References: <1274266725.6930.9823.camel@macbook.infradead.org>
- <1274266902.6930.9834.camel@macbook.infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274266902.6930.9834.camel@macbook.infradead.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Spam-21-Score: -3.7 (---)
-X-Spam-21-Report: No, score=-3.7 required=5.0 tests=ALL_TRUSTED=-1.8,AWL=0.730,BAYES_00=-2.599 autolearn=no
+	id S1751714Ab0ESNfQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:35:16 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1274135154-24082-9-git-send-email-walken@google.com>
+References: <1274135154-24082-9-git-send-email-walken@google.com> <1274135154-24082-1-git-send-email-walken@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 08/10] rwsem: down_read_critical infrastructure support
+Date: Wed, 19 May 2010 14:34:15 +0100
+Message-ID: <4405.1274276055@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+Michel Lespinasse <walken@google.com> wrote:
 
-I have some comments/questions, I hope it's not too silly:
+>  #define RWSEM_WAITING_FOR_READ	0x00000001
+>  #define RWSEM_WAITING_FOR_WRITE	0x00000002
+> +#define RWSEM_UNFAIR            0x00000004
 
-On Wed, May 19, 2010 at 12:01:42PM +0100, David Woodhouse wrote:
-> +#ifndef ARCH_KMALLOC_MINALIGN
-> +/*
-> + * Enforce a minimum alignment for the kmalloc caches.
-> + * Usually, the kmalloc caches are cache_line_size() aligned, except when
-> + * DEBUG and FORCED_DEBUG are enabled, then they are BYTES_PER_WORD aligned.
-> + * Some archs want to perform DMA into kmalloc caches and need a guaranteed
-> + * alignment larger than the alignment of a 64-bit integer.
-> + * ARCH_KMALLOC_MINALIGN allows that.
-> + * Note that increasing this value may disable some debug features.
-> + */
-> +#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
-> +#endif
+Can I suggest you change this to:
 
-I think the comment is confusing.  IIRC kmalloc() API guarantees that
-the allocated buffer is suitable for DMA, so if cache coherence is not
-handled by hardware the arch might need to set this to the cache line size,
-and that's what ARCH_KMALLOC_MINALIGN is about. Nothing else.
+	enum rwsem_waiter_type {
+		RWSEM_WAITING_FOR_WRITE,
+		RWSEM_WAITING_FOR_READ,
+		RWSEM_WAITING_FOR_UNFAIR_READ
+	};
 
-I'm not sure if kmalloc() API makes any guarantee regarding alignment,
-like 32bit or 64bit or sizeof(void *) ...?  At least I cannot find
-any documentation about this.
+and then change:
 
+>  	unsigned int flags;
 
-> +#ifndef ARCH_SLAB_MINALIGN
-> +/*
-> + * Enforce a minimum alignment for all caches.
-> + * Intended for archs that get misalignment faults even for BYTES_PER_WORD
-> + * aligned buffers. Includes ARCH_KMALLOC_MINALIGN.
-> + * If possible: Do not enable this flag for CONFIG_DEBUG_SLAB, it disables
-> + * some debug features.
-> + */
-> +#define ARCH_SLAB_MINALIGN 0
-> +#endif
+to:
 
-Why is this needed at all?  If code calls kmem_cache_create()
-with wrong align parameter, or has wrong expectations wrt kmalloc()
-alignment guarantees, this code needs to be fixed?
-I mean, portable code cannot assume that unaligned accesses work?
+	enum rwsem_waiter_type type;
 
+and use this throughout.  It simplifies some of the code too.  See attached
+patch.
 
-Thanks
-Johannes
+David
+---
+rwsem: Make waiter type an enum in the slow path of the asm-optimised version
+
+Make the waiter type in the asm-optimised version of the slow path an
+enumeration rather than a bitmask.
+
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index b3fe179..8aa2238 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -28,13 +28,16 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+ 
+ EXPORT_SYMBOL(__init_rwsem);
+ 
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ,
++	RWSEM_WAITING_FOR_UNFAIR_READ
++};
++
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
+-#define RWSEM_UNFAIR            0x00000004
++	enum rwsem_waiter_type type;
+ };
+ 
+ /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
+@@ -64,7 +67,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	signed long oldcount, woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		goto readers_only;
+ 
+ 	if (wake_type == RWSEM_WAKE_READ_OWNED)
+@@ -133,10 +136,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		waiter = list_entry(waiter->list.next,
+ 					struct rwsem_waiter, list);
+ 
+-	} while (waiter->flags & RWSEM_WAITING_FOR_READ);
++	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 
+ 	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
+-	if (waiter->flags & RWSEM_WAITING_FOR_READ)
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		/* hit end of list above */
+ 		adjustment -= RWSEM_WAITING_BIAS;
+ 
+@@ -172,7 +175,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+  */
+ static struct rw_semaphore __sched *
+ rwsem_down_failed_common(struct rw_semaphore *sem,
+-			 unsigned int flags, signed long adjustment)
++			 enum rwsem_waiter_type type, signed long adjustment)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
+@@ -183,13 +186,13 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	/* set up my own style of waitqueue */
+ 	spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+-	waiter.flags = flags;
++	waiter.type = type;
+ 	get_task_struct(tsk);
+ 
+ 	if (list_empty(&sem->wait_list))
+ 		adjustment += RWSEM_WAITING_BIAS;
+ 
+-	if (flags & RWSEM_UNFAIR)
++	if (type & RWSEM_WAITING_FOR_UNFAIR_READ)
+ 		list_add(&waiter.list, &sem->wait_list);
+ 	else
+ 		list_add_tail(&waiter.list, &sem->wait_list);
+@@ -242,8 +245,7 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
+ asmregparm struct rw_semaphore __sched *
+ rwsem_down_read_unfair_failed(struct rw_semaphore *sem)
+ {
+-	return rwsem_down_failed_common(sem,
+-					RWSEM_WAITING_FOR_READ | RWSEM_UNFAIR,
++	return rwsem_down_failed_common(sem, RWSEM_WAITING_FOR_UNFAIR_READ,
+ 					-RWSEM_ACTIVE_READ_BIAS);
+ }
+ 
