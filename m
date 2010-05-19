@@ -1,35 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754666Ab0ESTYR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:24:17 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:60236 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753487Ab0ESTYP (ORCPT
+	id S1754203Ab0ESTZq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:25:46 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:58873 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0ESTZp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:24:15 -0400
-Date: Wed, 19 May 2010 14:19:26 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: David Woodhouse <dwmw2@infradead.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, manfred@colorfullife.com,
-       David Miller <davem@davemloft.net>, mpm@selenic.com, ken@codelabs.ch,
-       geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN
- to <linux/slab_def.h>
-In-Reply-To: <4BF437EA.9010904@cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1005191418520.5729@router.home>
-References: <1274266725.6930.9823.camel@macbook.infradead.org> <1274266902.6930.9834.camel@macbook.infradead.org> <4BF437EA.9010904@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 19 May 2010 15:25:45 -0400
+Date: Wed, 19 May 2010 21:25:42 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Andi Kleen <andi@firstfloor.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Subject: Re: [RFC] Unified Ring Buffer (Next Generation)
+Message-ID: <20100519192542.GD18073@basil.fritz.box>
+References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100519181001.GC18073@basil.fritz.box> <1274294658.26328.997.camel@gandalf.stny.rr.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274294658.26328.997.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 19, 2010 at 02:44:18PM -0400, Steven Rostedt wrote:
+> > > More than a year and a half ago (September 2008), at Linux Plumbers, we
+> > > had a meeting with several kernel developers to come up with a unified
+> > > ring buffer. A generic ring buffer in the kernel that any subsystem
+> > > could use. After coming up with a set of requirements, I worked on
+> > 
+> > If we take a step back.
+> > 
+> > Why do you want a single ring buffer for everyone?
+> 
+> Actually, I would like to have one ring buffer interface, not one ring
+> buffer per say.
 
-Maybe we can consolidate that into slab.h so that the alignment is the
-same for all allocators?
+Why does every user in the kernel need the same interface? 
 
+A user with simple requirements would prefer a simple and fast interface,
+an user with complex requirement a complex requirements a complex one.
+But they're not the same.
+
+Or do you just want the same interface between ftrace and perf?
+
+> What would be nice to have is a single interface where the same event
+> can be recorded using the same interface.
+
+I'm not fully sure what advantage that would have. Would you like
+to exchange different ring buffers for existing users frequently?
+
+> OK, as I mentioned, what about a layered approach? Where one level
+> builds off of another? This may actually solve some of the bloat. That
+> is, try to keep the more complex users using the same code, but have
+> that on top of code that is simple for the users that have a restrictive
+> environment.
+
+Some of the complexity is in the underlying implementation isn't it?
+e.g. single continuous buffer versus multiple ones. 
+
+That cannot really be addressed by layers, unless you go to 
+virtual call tables (which would seem a bad idea to me for such a hot
+path) 
+
+> > 
+> > Perhaps a better goal would be to have a smaller simpler more
+> > maintainable buffer for ftrace and let the other users their own?
+> 
+> Perhaps, but the goal is actually to handle all the features of perf and
+> ftrace in a generic fashion.
+
+Ok so your goal is to only cover perf and ftrace and let all 
+the other users be alone? 
+
+> 
+> You also bring up a point that I try very hard to get across. When
+> people think of a ring buffer, they think of the ones that they created
+> in CS101, not realizing that when you are dealing with production
+> systems, handling the requirements makes the buffering much more
+> complex.
+
+For most users the simple ones are totally adequate though.
+
+> Perhaps the answer is we are fine with more than one ring buffer. I'm OK
+
+That's what we already have in fact: kfifo, ftrace, perf, a couple
+of private ones all over.
+
+I think a couple of private ones could be converted to kfifo
+(I did some of that for my own code) 
+
+But I don't really see how you can marry the simple kfifo world
+to the highend bells'n'whistles ftrace world. And even in the highend
+world there might be space for multiple specialized ones.
+
+On the other hand if the highend world had less overhead
+then at least some of the "higher end" kfifo users could start 
+considering to use it.
+
+-Andi
+
+-- 
+ak@linux.intel.com -- Speaking for myself only.
