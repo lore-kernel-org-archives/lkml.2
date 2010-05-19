@@ -1,135 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752984Ab0ESVwS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:52:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:41490 "EHLO hera.kernel.org"
+	id S1752743Ab0ESVwE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:52:04 -0400
+Received: from f0.cmpxchg.org ([85.214.51.133]:43783 "EHLO cmpxchg.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752911Ab0ESVwO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:52:14 -0400
-Date: Wed, 19 May 2010 21:51:59 GMT
-From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       tglx@linutronix.de, hpa@linux.intel.com, jacob.jun.pan@linux.intel.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       tglx@linutronix.de, jacob.jun.pan@linux.intel.com, hpa@linux.intel.com
-In-Reply-To: <1274295685-6774-3-git-send-email-jacob.jun.pan@linux.intel.com>
-References: <1274295685-6774-3-git-send-email-jacob.jun.pan@linux.intel.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/mrst] x86, mrst: add cpu type detection
-Message-ID: <tip-a0c173bd8a3fd0541be8e4ef962170e48d8811c7@git.kernel.org>
-Git-Commit-ID: a0c173bd8a3fd0541be8e4ef962170e48d8811c7
-X-Mailer: tip-git-log-daemon
+	id S1752307Ab0ESVwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 17:52:00 -0400
+Date: Wed, 19 May 2010 23:51:45 +0200
+From: Johannes Weiner <hannes@cmpxchg.org>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Rik van Riel <riel@redhat.com>, Minchan Kim <minchan.kim@gmail.com>,
+       Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
+Message-ID: <20100519215145.GE2868@cmpxchg.org>
+References: <20100519174327.9591.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 21:52:00 +0000 (UTC)
+In-Reply-To: <20100519174327.9591.A69D9226@jp.fujitsu.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  a0c173bd8a3fd0541be8e4ef962170e48d8811c7
-Gitweb:     http://git.kernel.org/tip/a0c173bd8a3fd0541be8e4ef962170e48d8811c7
-Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
-AuthorDate: Wed, 19 May 2010 12:01:24 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Wed, 19 May 2010 13:32:29 -0700
+On Wed, May 19, 2010 at 05:44:49PM +0900, KOSAKI Motohiro wrote:
+> Shaohua Li reported parallel file copy on tmpfs can lead to
+> OOM killer. This is regression of caused by commit 9ff473b9a7
+> (vmscan: evict streaming IO first). Wow, It is 2 years old patch!
+> 
+> Currently, tmpfs file cache is inserted active list at first. It
+> mean the insertion doesn't only increase numbers of pages in anon LRU,
+> but also reduce anon scanning ratio. Therefore, vmscan will get totally
+> confusion. It scan almost only file LRU even though the system have
+> plenty unused tmpfs pages.
+> 
+> Historically, lru_cache_add_active_anon() was used by two reasons.
+> 1) Intend to priotize shmem page rather than regular file cache.
+> 2) Intend to avoid reclaim priority inversion of used once pages.
+> 
+> But we've lost both motivation because (1) Now we have separate
+> anon and file LRU list. then, to insert active list doesn't help
+> such priotize. (2) In past, one pte access bit will cause page
+> activation. then to insert inactive list with pte access bit mean
+> higher priority than to insert active list. Its priority inversion
+> may lead to uninteded lru chun. but it was already solved by commit
+> 645747462 (vmscan: detect mapped file pages used only once).
+> (Thanks Hannes, you are great!)
+> 
+> Thus, now we can use lru_cache_add_anon() instead.
+> 
+> Reported-by: Shaohua Li <shaohua.li@intel.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
 
-x86, mrst: add cpu type detection
+Reviewed-by: Johannes Weiner <hannes@cmpxchg.org>
 
-Medfield is the follow-up of Moorestown, it is treated under the same
-HW sub-architecture. However, we do need to know the CPU type in order
-for some of the driver to act accordingly.
-We also have different optimal clock configuration for each CPU type.
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> ---
+>  mm/filemap.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/mm/filemap.c b/mm/filemap.c
+> index b941996..023ef61 100644
+> --- a/mm/filemap.c
+> +++ b/mm/filemap.c
+> @@ -452,7 +452,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+>  		if (page_is_file_cache(page))
+>  			lru_cache_add_file(page);
+>  		else
+> -			lru_cache_add_active_anon(page);
+> +			lru_cache_add_anon(page);
 
-Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
-LKML-Reference: <1274295685-6774-3-git-send-email-jacob.jun.pan@linux.intel.com>
-Acked-by: Thomas Gleixner <tglx@linutronix.de>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
----
- arch/x86/include/asm/mrst.h |   19 +++++++++++++++++++
- arch/x86/kernel/mrst.c      |   26 ++++++++++++++++++++++++++
- 2 files changed, 45 insertions(+), 0 deletions(-)
-
-diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
-index 451d30e..dc5c850 100644
---- a/arch/x86/include/asm/mrst.h
-+++ b/arch/x86/include/asm/mrst.h
-@@ -11,8 +11,27 @@
- #ifndef _ASM_X86_MRST_H
- #define _ASM_X86_MRST_H
- extern int pci_mrst_init(void);
-+extern int mrst_identify_cpu(void);
- int __init sfi_parse_mrtc(struct sfi_table_header *table);
- 
-+/*
-+ * Medfield is the follow-up of Moorestown, it combines two chip solution into
-+ * one. Other than that it also added always-on and constant tsc and lapic
-+ * timers. Medfield is the platform name, and the chip name is called Penwell
-+ * we treat Medfield/Penwell as a variant of Moorestown. Penwell can be
-+ * identified via MSRs.
-+ */
-+enum mrst_cpu_type {
-+	MRST_CPU_CHIP_LINCROFT = 1,
-+	MRST_CPU_CHIP_PENWELL,
-+};
-+
-+enum mrst_timer_options {
-+	MRST_TIMER_DEFAULT,
-+	MRST_TIMER_APBT_ONLY,
-+	MRST_TIMER_LAPIC_APBT,
-+};
-+
- #define SFI_MTMR_MAX_NUM 8
- #define SFI_MRTC_MAX	8
- 
-diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
-index e796448..ceaebeb 100644
---- a/arch/x86/kernel/mrst.c
-+++ b/arch/x86/kernel/mrst.c
-@@ -27,6 +27,8 @@
- 
- static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
- static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
-+static int mrst_cpu_chip;
-+
- int sfi_mtimer_num;
- 
- struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
-@@ -216,6 +218,28 @@ static void __init mrst_setup_boot_clock(void)
- 		setup_boot_APIC_clock();
- };
- 
-+int mrst_identify_cpu(void)
-+{
-+	return mrst_cpu_chip;
-+}
-+EXPORT_SYMBOL_GPL(mrst_identify_cpu);
-+
-+void __cpuinit mrst_arch_setup(void)
-+{
-+	if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x27)
-+		mrst_cpu_chip = MRST_CPU_CHIP_PENWELL;
-+	else if (boot_cpu_data.x86 == 6 && boot_cpu_data.x86_model == 0x26)
-+		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-+	else {
-+		pr_err("Unknown Moorestown CPU (%d:%d), default to Lincroft\n",
-+			boot_cpu_data.x86, boot_cpu_data.x86_model);
-+		mrst_cpu_chip = MRST_CPU_CHIP_LINCROFT;
-+	}
-+	pr_debug("Moorestown CPU %s identified\n",
-+		(mrst_cpu_chip == MRST_CPU_CHIP_LINCROFT) ?
-+		"Lincroft" : "Penwell");
-+}
-+
- /*
-  * Moorestown specific x86_init function overrides and early setup
-  * calls.
-@@ -230,6 +254,8 @@ void __init x86_mrst_early_setup(void)
- 
- 	x86_init.irqs.pre_vector_init = x86_init_noop;
- 
-+	x86_init.oem.arch_setup = mrst_arch_setup;
-+
- 	x86_cpuinit.setup_percpu_clockev = mrst_setup_secondary_clock;
- 
- 	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
+Looks like the active_anon and active_file versions have no users
+anymore..
