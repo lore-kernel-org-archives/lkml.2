@@ -1,82 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756512Ab0ESCBq (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 22:01:46 -0400
-Received: from mga11.intel.com ([192.55.52.93]:16798 "EHLO mga11.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754193Ab0ESCBp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 22:01:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,258,1272870000"; 
-   d="scan'208";a="799726848"
-Subject: Re: [RFC][PATCH v2 02/11] perf: core, add pmu register and lookup
- functions
-From: Lin Ming <ming.m.lin@intel.com>
-To: Cyrill Gorcunov <gorcunov@gmail.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
-       Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100518183858.GE5081@lenovo>
-References: <1274233502.3036.80.camel@localhost>
-	 <20100518183858.GE5081@lenovo>
-Content-Type: text/plain
-Date: Wed, 19 May 2010 10:00:55 +0800
-Message-Id: <1274234455.3603.0.camel@minggr.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.24.1 (2.24.1-2.fc10) 
+	id S1755907Ab0ESCF0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 22:05:26 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:55316 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754604Ab0ESCFY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 22:05:24 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Jeff Moyer <jmoyer@redhat.com>
+Subject: Re: [PATCH 0/4 v4] ext3/4: enhance fsync performance when using CFQ
+Cc: kosaki.motohiro@jp.fujitsu.com, linux-kernel@vger.kernel.org,
+       linux-ext4@vger.kernel.org, jens.axboe@oracle.com, vgoyal@redhat.com
+In-Reply-To: <1274206820-17071-1-git-send-email-jmoyer@redhat.com>
+References: <1274206820-17071-1-git-send-email-jmoyer@redhat.com>
+Message-Id: <20100519105706.8821.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 19 May 2010 11:05:20 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 02:38 +0800, Cyrill Gorcunov wrote:
-> On Wed, May 19, 2010 at 01:45:02AM +0000, Lin Ming wrote:
-> ...
-> > +int perf_event_register_pmu(struct pmu *pmu)
-> > +{
-> > +	struct pmu *tmp;
-> > +	int ret = 1;
-> > +
-> > +	rcu_read_lock();
-> > +	list_for_each_entry_rcu(tmp, &pmus, entry) {
-> > +		if (tmp->id == pmu->id) {
-> > +			ret = 0;
-> > +			goto err;
-> 
-> Hi Ming, is it supposed to get out in locked state?
-> I mean imbalanced rcu_read_lock somehow suspicicous ;)
+Hi Jeff,
 
-Ah, yes, that's real bug.
-I'll fix it.
+> This patch series addresses a performance problem experienced when running
+> io_zone with small file sizes (from 4KB up to 8MB) and including fsync in
+> the timings.  A good example of this would be the following command line:
+>   iozone -s 64 -e -f /mnt/test/iozone.0 -i 0
+> As the file sizes get larger, the performance improves.  By the time the
+> file size is 16MB, there is no difference in performance between runs
+> using CFQ and runs using deadline.  The storage in my testing was a NetApp
+> array connected via a single fibre channel link.  When testing against a
+> single SATA disk, the performance difference is not apparent.
 
-Thanks for review.
+offtopic:
 
-> 
-> > +		}
-> > +	}
-> > +	rcu_read_unlock();
-> > +
-> > +	spin_lock(&pmus_lock);
-> > +	list_add_tail_rcu(&pmu->entry, &pmus);
-> > +	spin_unlock(&pmus_lock);
-> > +
-> > +err:
-> > +	return ret;
-> > +}
-> > +
-> ...
-> 
-> 	-- Cyrill
+Can this patch help to reduce a pain of following much small files issue?
+
+http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=578635
+
+Now, userland folks think sync() is faster than fsync() on ext4. I don't 
+hope spread this unrecommended habit widely.
+
+
 
