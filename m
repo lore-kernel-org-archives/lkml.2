@@ -1,73 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753286Ab0ESPBj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:01:39 -0400
-Received: from e5.ny.us.ibm.com ([32.97.182.145]:45714 "EHLO e5.ny.us.ibm.com"
+	id S1753293Ab0ESPCf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:02:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:48415 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752718Ab0ESPBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:01:35 -0400
-Date: Wed, 19 May 2010 08:01:32 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
-       willy@linux.intel.com, benh@kernel.crashing.org, paulus@samba.org,
-       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t definition
-Message-ID: <20100519150132.GJ2237@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100517043353.GA22127@kryten>
- <20100517043457.GA22416@kryten>
- <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org>
- <20100519130327.GW2516@laptop>
+	id S1752718Ab0ESPCd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:02:33 -0400
+Message-ID: <4BF3FD4F.1060108@zytor.com>
+Date: Wed, 19 May 2010 08:01:35 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519130327.GW2516@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: Geert Uytterhoeven <geert@linux-m68k.org>, Ingo Molnar <mingo@elte.hu>,
+       Luca Barbieri <luca@luca-barbieri.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
+References: <20100517224531.GA27400@elte.hu>	<AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>	<4BF3F480.3000902@zytor.com> <20100520003641.00618acb.sfr@canb.auug.org.au>
+In-Reply-To: <20100520003641.00618acb.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 11:03:27PM +1000, Nick Piggin wrote:
-> On Mon, May 17, 2010 at 08:01:54AM -0700, Linus Torvalds wrote:
-> > 
-> > 
-> > On Mon, 17 May 2010, Anton Blanchard wrote:
-> > > 
-> > > It turns out this bad code is a result of us defining atomic_t as a
-> > > volatile int.
-> > 
-> > Heh. Ok, as you point out in the commit message, I obviously agree with 
-> > this patch. "volatile" on data is evil, with the possible exception of 
-> > "jiffies" type things.
-> > 
-> > So applied.
+On 05/19/2010 07:36 AM, Stephen Rothwell wrote:
+> Hi,
 > 
-> I wonder, Linus, is there a good reason to use volatile for these at
-> all?
+> On Wed, 19 May 2010 07:24:00 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>>
+>> On 05/19/2010 04:46 AM, Geert Uytterhoeven wrote:
+>>> <boilerplate>
+>>> It's a pity this wasn't raised/resolved between its detection in linux-next and
+>>> before it entered mainline...
+>>> </boilerplate>
+>>
+>> As far as your boilerplate is concerned, I think Linus made it clear at
+>> the Kernel Summit that is it not the obligation of x86/ARM/PowerPC to
+>> slow down to not break the smaller architectures; it's the
+>> responsibility of those architecture maintainers to keep up.  Sorry.
 > 
-> I asked you about it quite a while back, and IIRC you said it might
-> be OK to remove volatile from bitops, provided that callers were audited
-> (ie. that nobody used bitops on volatile variables).
-> 
-> For atomic_read it shouldn't matter unless gcc is *really* bad at it.
-> Ah, for atomic_read, the required semantic is surely ACCESS_ONCE, so
-> that's where the volatile is needed? (maybe it would be clearer to
-> explicitly use ACCESS_ONCE?)
+> I don't think this reply has anything to do with the sentiments expr
+> by Geert above.  My interpretation of his comments is just that it is a
+> pity noone noticed the problem while it was only in linux-next and
+> reported it widely (like on linux-arch) so something could have been done
+> before it all Linus' tree.  There was no suggestion of slowing the pace
+> of development.
 
-Explicit use of ACCESS_ONCE() where needed makes a lot of sense to me,
-and allows better code to be generated for initialization and cleanup
-code where no other task has access to the atomic_t.
+It was discussed on linux-kernel -- note that there is no breakage for
+smaller architectures unless you enable the test directly or via randconfig.
 
-> The case I was thinking about for bitops was for multiple non-atomic
-> bitops, which would be nice to combine. In reality a lot of performance
-> critical code (like page allocator) bites the bullet and does the
-> open-coded bitwise ops. But it would be nice if that just worked for
-> __set_bit / __clear_bit too.
+The other part is that generic atomic64_t has been available since
+middle of 2009, and was *also* discussed extensively on linux-kernel --
+in fact, several of the smaller architectures added support at that
+time.  That the breakage occurred because of an inconsequential test
+rather than real code is thus really nothing but fortunate.
 
-FWIW, a similar debate in the C-language standards committee seems to
-be headed in the direction of allowing combining of adjacent atomic
-operations.
+	-hpa
 
-							Thanx, Paul
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
