@@ -1,70 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751947Ab0ESVVa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:21:30 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:41674 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751131Ab0ESVV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:21:29 -0400
-Date: Wed, 19 May 2010 13:39:01 -0700
-From: Greg KH <gregkh@suse.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 1/2] staging: hv: Fix race condition in hv_utils module
- initialization.
-Message-ID: <20100519203901.GA23214@suse.de>
-References: <1FB5E1D5CA062146B38059374562DF7266B8930E@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100519161011.GA20266@suse.de>
- <1FB5E1D5CA062146B38059374562DF7266B894B0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B894B0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1751427Ab0ESVdx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:33:53 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45532 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751070Ab0ESVdv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 17:33:51 -0400
+From: "Luis R. Rodriguez" <lrodriguez@atheros.com>
+To: greg@kroah.com, stable@kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-wireless@vger.kernel.org,
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Ming Lei <tom.leiming@gmail.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [PATCH] Revert "ath9k: fix lockdep warning when unloading module" on stable kernels
+Date: Wed, 19 May 2010 17:33:49 -0400
+Message-Id: <1274304829-14367-1-git-send-email-lrodriguez@atheros.com>
+X-Mailer: git-send-email 1.6.2.rc1.3.g81d3f
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 08:30:25PM +0000, Haiyang Zhang wrote:
-> > > +	/* Wait until all IC channels are initialized */
-> > > +	while (atomic_read(&hv_utils_initcnt) < MAX_MSG_TYPES)
-> > > +		msleep(100);
-> > 
-> > No, don't do this here, do something in your hv_vmbus core to handle
-> > registering sub-drivers properly.  Perhaps you need to sleep there
-> > before you can succeed on a initialization.
-> 
-> Thanks for the recommendation. I will put the sleep into vmbus_init to 
-> ensure all channels are ready before the vmbus_init function exits.
-> 
-> > >  	hv_cb_utils[HV_SHUTDOWN_MSG].channel->OnChannelCallback =
-> > >  		&shutdown_onchannelcallback;
-> > 
-> > The problem is that you just have a bunch of callbacks you are setting
-> > up, it's not a "real" function call.  Please change it over to a
-> > function call, like all other subsystems have.  Then, you can handle
-> > any
-> > "sleep until we are set up properly" issues in the vmbus code, not in
-> > each and every individual bus driver.
-> 
-> Actually, we already assign a default callback function, chn_cb_negotiate(),
-> when the channels are opened in vmbus module. It's a real function and can 
-> handle common negotiation messages.
+Johannes' patch 34e8950 titled:
 
-Then why don't you use it here?
+	mac80211: allow station add/remove to sleep
 
-> I will move the sleep into vmbus module as well.
+changed the way mac80211 adds and removes peers. The new
+sta_add() / sta_remove() callbacks allowed the driver callbacks
+to sleep. Johannes also ported ath9k to use sta_add() / sta_remove()
+via the patch 4ca7786 titled:
 
-I still think there's a real problem somewhere else in the architecture
-if such a sleep is necessary...
+	ath9k: convert to new station add/remove callbacks
 
-Is the issue that the modprobe of the hv_vmbus can return before the bus
-is really all set up and ready to go?  If so, just fix that, then you
-will not need any "sleep" calls anywhere, right?
+but this patch forgot to address a change in locking issue which
+Ming Lei eventually found on his 2.6.33-wl #12 build. The 2.6.33-wl
+build includes code for the 802.11 subsystem for 2.6.34 though so did
+already have the above two patches (ath9k_sta_remove() on his trace),
+the 2.6.33 kernel did not however have these two patches. Ming eventually
+cured his lockdep warnign via the patch a9f042c titled:
 
-thanks,
+	ath9k: fix lockdep warning when unloading module
 
-greg k-h
+This went in to 2.6.34 and although it was not marked as a stable
+fix it did get trickled down and applied on both 2.6.33 and 2.6.32.
+
+In review, the culprits:
+
+	mac80211: allow station add/remove to sleep
+git describe --contains 34e895075e21be3e21e71d6317440d1ee7969ad0
+v2.6.34-rc1~233^2~49^2~107
+
+	ath9k: convert to new station add/remove callbacks
+git describe --contains 4ca778605cfec53d8a689f0b57babb93b030c784
+v2.6.34-rc1~233^2~49^2~10
+
+	ath9k: fix lockdep warning when unloading module
+
+This last one trickled down to 2.6.33 (OK), 2.6.33 (invalid) and 2.6.32 (invalid).
+
+git describe --contains a9f042cbe5284f34ccff15f3084477e11b39b17b
+v2.6.34-rc2~48^2~77^2~7
+git describe --contains 0524bcfa80f1fffb4e1fe18a0a28900869a58a7c
+v2.6.33.2~125
+git describe --contains 0dcc9985f34aef3c60bffab3dfc7f7ba3748f35a
+v2.6.32.11~79
+
+The patch titled "ath9k: fix lockdep warning when unloading module"
+should be reverted on both 2.6.33 and 2.6.32 as it is invalid and
+actually ended up causing the following warning:
+
+ADDRCONF(NETDEV_CHANGE): wlan31: link becomes ready
+phy0: WMM queue=2 aci=0 acm=0 aifs=3 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94
+phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47
+phy0: device now idle
+------------[ cut here ]------------
+WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x7b/0xa0()
+Hardware name: 7660A14
+Modules linked in: ath9k(-) mac80211 ath cfg80211 <whatever-bleh-etc>
+Pid: 2003, comm: rmmod Not tainted 2.6.32.11 #6
+Call Trace:
+ [<ffffffff8105d178>] warn_slowpath_common+0x78/0xb0
+ [<ffffffff8105d1bf>] warn_slowpath_null+0xf/0x20
+ [<ffffffff81063f8b>] local_bh_enable_ip+0x7b/0xa0
+ [<ffffffff815121e4>] _spin_unlock_bh+0x14/0x20
+ [<ffffffffa034aea5>] ath_tx_node_cleanup+0x185/0x1b0 [ath9k]
+ [<ffffffffa0345597>] ath9k_sta_notify+0x57/0xb0 [ath9k]
+ [<ffffffffa02ac51a>] __sta_info_unlink+0x15a/0x260 [mac80211]
+ [<ffffffffa02ac658>] sta_info_unlink+0x38/0x60 [mac80211]
+ [<ffffffffa02b3fbe>] ieee80211_set_disassoc+0x1ae/0x210 [mac80211]
+ [<ffffffffa02b42d9>] ieee80211_mgd_deauth+0x109/0x110 [mac80211]
+ [<ffffffffa02ba409>] ieee80211_deauth+0x19/0x20 [mac80211]
+ [<ffffffffa028160e>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
+ [<ffffffff81118540>] ? init_object+0x50/0x90
+ [<ffffffffa0285429>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
+ [<ffffffffa027125f>] cfg80211_netdev_notifier_call+0x10f/0x450 [cfg80211]
+ [<ffffffff81514ca7>] notifier_call_chain+0x47/0x90
+ [<ffffffff8107f501>] raw_notifier_call_chain+0x11/0x20
+ [<ffffffff81442d66>] call_netdevice_notifiers+0x16/0x20
+ [<ffffffff8144352d>] dev_close+0x4d/0xa0
+ [<ffffffff814439a8>] rollback_registered+0x48/0x120
+ [<ffffffff81443a9d>] unregister_netdevice+0x1d/0x70
+ [<ffffffffa02b6cc4>] ieee80211_remove_interfaces+0x84/0xc0 [mac80211]
+ [<ffffffffa02aa072>] ieee80211_unregister_hw+0x42/0xf0 [mac80211]
+ [<ffffffffa0347bde>] ath_detach+0x8e/0x180 [ath9k]
+ [<ffffffffa0347ce1>] ath_cleanup+0x11/0x50 [ath9k]
+ [<ffffffffa0351a2c>] ath_pci_remove+0x1c/0x20 [ath9k]
+ [<ffffffff8129d712>] pci_device_remove+0x32/0x60
+ [<ffffffff81332373>] __device_release_driver+0x53/0xb0
+ [<ffffffff81332498>] driver_detach+0xc8/0xd0
+ [<ffffffff81331405>] bus_remove_driver+0x85/0xe0
+ [<ffffffff81332a5a>] driver_unregister+0x5a/0x90
+ [<ffffffff8129da00>] pci_unregister_driver+0x40/0xb0
+ [<ffffffffa03518d0>] ath_pci_exit+0x10/0x20 [ath9k]
+ [<ffffffffa0353cd5>] ath9k_exit+0x9/0x2a [ath9k]
+ [<ffffffff81092838>] sys_delete_module+0x1a8/0x270
+ [<ffffffff8107ebe9>] ? up_read+0x9/0x10
+ [<ffffffff81011f82>] system_call_fastpath+0x16/0x1b
+---[ end trace fad957019ffdd40b ]---
+phy0: Removed STA 00:22:6b:56:fd:e8
+phy0: Destroyed STA 00:22:6b:56:fd:e8
+wlan31: deauthenticating from 00:22:6b:56:fd:e8 by local choice (reason=3)
+ath9k 0000:16:00.0: PCI INT A disabled
+
+The original lockdep fixed an issue where due to the new changes
+the driver was not disabling the bottom halves but it is incorrect
+to do this on the older kernels since IRQs are already disabled.
+
+Cc: Ming Lei <tom.leiming@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: John W. Linville <linville@tuxdriver.com>
+---
+
+Greg, I've tested 2.6.32.11 and 2.6.33.4 both with and without
+this patch. This cures the WARNING for both. This same patch
+applies to both 2.6.33.y and 2.6.33.y branches of the stable
+series.
+
+ drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/net/wireless/ath/ath9k/xmit.c b/drivers/net/wireless/ath/ath9k/xmit.c
+index a232361..e499fb6 100644
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2190,7 +2190,7 @@ void ath_tx_node_cleanup(struct ath_softc *sc, struct ath_node *an)
+ 		if (ATH_TXQ_SETUP(sc, i)) {
+ 			txq = &sc->tx.txq[i];
+ 
+-			spin_lock_bh(&txq->axq_lock);
++			spin_lock(&txq->axq_lock);
+ 
+ 			list_for_each_entry_safe(ac,
+ 					ac_tmp, &txq->axq_acq, list) {
+@@ -2211,7 +2211,7 @@ void ath_tx_node_cleanup(struct ath_softc *sc, struct ath_node *an)
+ 				}
+ 			}
+ 
+-			spin_unlock_bh(&txq->axq_lock);
++			spin_unlock(&txq->axq_lock);
+ 		}
+ 	}
+ }
+-- 
+1.6.3.3
+
