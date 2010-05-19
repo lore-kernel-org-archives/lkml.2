@@ -1,69 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755051Ab0ESBZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 21:25:48 -0400
-Received: from ozlabs.org ([203.10.76.45]:47916 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752708Ab0ESBZr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 21:25:47 -0400
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-From: Michael Ellerman <michael@ellerman.id.au>
-Reply-To: michael@ellerman.id.au
-To: Darren Hart <dvhltc@us.ibm.com>
-Cc: Brian King <brking@linux.vnet.ibm.com>,
-       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-       niv@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
-       Doug Maxey <doug.maxey@us.ibm.com>, linuxppc-dev@lists.ozlabs.org
-In-Reply-To: <4BF31322.5090206@us.ibm.com>
-References: <4BF30793.5070300@us.ibm.com>
-	 <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>
-Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-4lkiPNYo67gNjmCGq6H0"
-Date: Wed, 19 May 2010 11:25:24 +1000
-Message-ID: <1274232324.29980.9.camel@concordia>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756001Ab0ESB0x (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 21:26:53 -0400
+Received: from mga10.intel.com ([192.55.52.92]:2606 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754725Ab0ESB0w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 21:26:52 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,258,1272870000"; 
+   d="scan'208";a="568439718"
+Date: Wed, 19 May 2010 09:27:00 +0800
+From: Huaxu Wan <huaxu.wan@linux.intel.com>
+To: Carsten Emde <C.Emde@osadl.org>
+Cc: Dmitry Gromov <gromovd@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LM Sensors <lm-sensors@lm-sensors.org>, Huaxu Wan <huaxu.wan@intel.com>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current
+ Intel processors
+Message-ID: <20100519012700.GB26906@owl>
+References: <20100510035031.GD9181@owl>
+ <20100514065808.GA11598@owl>
+ <20100517094136.094800562@osadl.org>
+ <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com>
+ <4BF23B36.7030809@osadl.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF23B36.7030809@osadl.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 09:01 Tue 18 May, Carsten Emde wrote:
+> Dmitry,
+> 
+> >>Here comes the current version of the coretemp patches. Huaxu did the
+> >>initial work; Jean suggested to submit them directly to Andrew.
+> >>
+> >>I made some style changes as advised by checkpatch.
+> >>
+> >>The patches have been tested successfully on Core 2 Duo and Quad, and on
+> >>Nehalem and Nehalem/Westmere where temperature readings were plausible and
+> >>changed with load as expected. When tested on an Atom processor (N270), the
+> >>temperature values were identical to previous versions of the coretemp
+> >>module and also changed with load. However, the readings should be higher
+> >>by 10 to 15C as compared to the outside temperature of the processor.
+> >>Huaxu, could you check? I would guess TjMax to be 105 instead of 90C in these
+> >>processors.
+> >I apologize, if I ask a stupid question, but are you saying that TjMax in
+> >coretemp.c should be set to higher value than Tcase-max value specified in
+> >Intel documents?
+> Hmm, no. I am saying that I would like the reading to be correct. I
+> have measured the outside temperature of the case with an infrared
+> thermometer [1] and found it to be higher than the readings returned
+> by the coretemp module. In all other CPUs I have, the coretemp
+> readings are higher than the case temperature.
+> 
+> [1] http://www.osadl.org/uploads/media/IPCworld-2008-4.pdf
+> 
 
---=-4lkiPNYo67gNjmCGq6H0
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: quoted-printable
+Hi Carsten,
 
-On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
-> On 05/18/2010 02:52 PM, Brian King wrote:
-> > Is IRQF_NODELAY something specific to the RT kernel? I don't see it in =
-mainline...
->=20
-> Yes, it basically says "don't make this handler threaded".
+I have no N270 and infrared thermometer in hand, so I can't check it by myself.
+I'll find a channel and file this issue to them. 
 
-That is a good fix for EHEA, but the threaded handling is still broken
-for anything else that is edge triggered isn't it?
-
-The result of the discussion about two years ago on this was that we
-needed a custom flow handler for XICS on RT.
-
-Apart from the issue of loosing interrupts there is also the fact that
-masking on the XICS requires an RTAS call which takes a global lock.
-
-cheers
+Thank you.
 
 
-
---=-4lkiPNYo67gNjmCGq6H0
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: This is a digitally signed message part
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkvzPgQACgkQdSjSd0sB4dJlNgCgsmZ8ujLaiur6wY9QHfb3QAMk
-HA4An2SFFJuOSG6pUuRhYEQNLy3sCCy1
-=uh9A
------END PGP SIGNATURE-----
-
---=-4lkiPNYo67gNjmCGq6H0--
-
+Huaxu
