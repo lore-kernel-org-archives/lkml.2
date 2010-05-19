@@ -1,182 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752544Ab0ESVm3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:42:29 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:47052 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab0ESVlG (ORCPT
+	id S1751843Ab0ESVro (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:47:44 -0400
+Received: from mail.catechsoftworks.biz ([80.123.216.188]:51316 "EHLO
+	mail.catechsoftworks.biz" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751085Ab0ESVrm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:41:06 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz936eMab9bhzz1202hzzz32i87h2a8h61h)
-X-Spam-TCS-SCL: 0:0
-X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L2OS87-02-UVA-02
-X-M-MSG: 
-From: Robert Richter <robert.richter@amd.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 7/7] perf, x86: implement the ibs interrupt handler
-Date: Wed, 19 May 2010 23:20:24 +0200
-Message-ID: <1274304024-6551-8-git-send-email-robert.richter@amd.com>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
-References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+	Wed, 19 May 2010 17:47:42 -0400
+Message-ID: <4BF45C6E.4040507@vmars.tuwien.ac.at>
+Date: Wed, 19 May 2010 23:47:26 +0200
+From: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain
-X-Reverse-DNS: ausb3extmailp02.amd.com
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Marcel Holtmann <marcel@holtmann.org>, linux-kernel@vger.kernel.org
+References: <4BE2D05C.1090708@vmars.tuwien.ac.at> <20100519120642.a84ba8b5.akpm@linux-foundation.org>
+In-Reply-To: <20100519120642.a84ba8b5.akpm@linux-foundation.org>
+Content-Type: multipart/mixed;
+ boundary="------------000804080906000905070706"
+X-SA-Exim-Connect-IP: 192.168.0.36
+X-SA-Exim-Mail-From: froemel@vmars.tuwien.ac.at
+Subject: Re: btusb patch, add_apple_MacBookPro62
+X-SA-Exim-Version: 4.2.1 (built Wed, 25 Jun 2008 17:20:07 +0000)
+X-SA-Exim-Scanned: Yes (on mail.catechsoftworks.biz)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch implements code to handle ibs interrupts. If ibs data is
-available a raw perf_event data sample is created and sent back to the
-userland. This patch only implements the storage of ibs data in the
-raw sample, but this could be extended in a later patch by generating
-generic event data such as the rip from the ibs sampling data.
+This is a multi-part message in MIME format.
+--------------000804080906000905070706
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 
-Signed-off-by: Robert Richter <robert.richter@amd.com>
----
- arch/x86/include/asm/msr-index.h     |    3 +
- arch/x86/kernel/cpu/perf_event_amd.c |   70 +++++++++++++++++++++++++++++++++-
- 2 files changed, 72 insertions(+), 1 deletions(-)
+On 05/19/2010 09:06 PM, Andrew Morton wrote:
+> [...]
+>    
+>> Hello Marcel,
+>>
+>> the Apple MBP model 6.2 (and maybe other recent MBPs) use an Apple
+>> branded BCM2046 USB bluetooth device that works well [1] with your
+>> generic driver.
+>> The attached patch just adds the vendor and device id - please apply.
+>>
+>> Cheers,
+>>    -bf
+>>
+>> [1] http://ubuntuforums.org/showthread.php?t=1469437
+>>
+>>      
+> Please send us a Signed-off-by: for this patch, as explained in
+> Documentation/SubmittingPatches, thanks.
+>    
+Sorry - there you go:
 
-diff --git a/arch/x86/include/asm/msr-index.h b/arch/x86/include/asm/msr-index.h
-index bc473ac..8b9929f 100644
---- a/arch/x86/include/asm/msr-index.h
-+++ b/arch/x86/include/asm/msr-index.h
-@@ -113,6 +113,7 @@
- #define MSR_AMD64_IBSFETCHCTL		0xc0011030
- #define MSR_AMD64_IBSFETCHLINAD		0xc0011031
- #define MSR_AMD64_IBSFETCHPHYSAD	0xc0011032
-+#define MSR_AMD64_IBSFETCH_REG_COUNT	3
- #define MSR_AMD64_IBSOPCTL		0xc0011033
- #define MSR_AMD64_IBSOPRIP		0xc0011034
- #define MSR_AMD64_IBSOPDATA		0xc0011035
-@@ -120,7 +121,9 @@
- #define MSR_AMD64_IBSOPDATA3		0xc0011037
- #define MSR_AMD64_IBSDCLINAD		0xc0011038
- #define MSR_AMD64_IBSDCPHYSAD		0xc0011039
-+#define MSR_AMD64_IBSOP_REG_COUNT	7
- #define MSR_AMD64_IBSCTL		0xc001103a
-+#define MSR_AMD64_IBS_REG_COUNT_MAX	MSR_AMD64_IBSOP_REG_COUNT
+Signed-off-by: Bernhard Froemel <froemel@vmars.tuwien.ac.at>
+
+
+Attached the patch one more time,
+   -bf
+
+--------------000804080906000905070706
+Content-Type: text/x-patch;
+ name="btusb_add_apple_MacBookPro62.patch"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: attachment;
+ filename="btusb_add_apple_MacBookPro62.patch"
+
+--- linux/drivers/bluetooth/btusb.c	2010-05-06 15:56:18.228630685 +0200
++++ linux_p/drivers/bluetooth/btusb.c	2010-05-02 11:03:55.955362854 +0200
+@@ -75,6 +75,9 @@
+ 	/* Canyon CN-BTU1 with HID interfaces */
+ 	{ USB_DEVICE(0x0c10, 0x0000) },
  
- /* Fam 10h MSRs */
- #define MSR_FAM10H_MMIO_CONF_BASE	0xc0010058
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 5161745..a083174 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -11,22 +11,31 @@
- struct ibs_map {
- 	int idx;
- 	u64 cnt_mask;
-+	u64 sample_valid;
-+	u64 enable;
- 	u64 valid_mask;
- 	unsigned int msr;
-+	int reg_count;
++	/* Apple MacBookPro6 BT device */
++	{ USB_DEVICE(0x05ac, 0x8218) },
++
+ 	{ }	/* Terminating entry */
  };
  
- static struct ibs_map ibs_map[] = {
- 	[IBS_FETCH_MAP_IDX] = {
- 		.idx		= X86_PMC_IDX_SPECIAL_IBS_FETCH,
- 		.cnt_mask	= IBS_FETCH_MAX_CNT,
-+		.sample_valid	= IBS_FETCH_VAL,
-+		.enable		= IBS_FETCH_ENABLE,
- 		.valid_mask	= IBS_FETCH_CONFIG_MASK,
- 		.msr		= MSR_AMD64_IBSFETCHCTL,
-+		.reg_count	= MSR_AMD64_IBSFETCH_REG_COUNT,
- 	},
- 	[IBS_OP_MAP_IDX] = {
- 		.idx		= X86_PMC_IDX_SPECIAL_IBS_OP,
- 		.cnt_mask	= IBS_OP_MAX_CNT,
-+		.sample_valid	= IBS_OP_VAL,
-+		.enable		= IBS_OP_ENABLE,
- 		.valid_mask	= IBS_OP_CONFIG_MASK,
- 		.msr		= MSR_AMD64_IBSOPCTL,
-+		.reg_count	= MSR_AMD64_IBSOP_REG_COUNT,
- 	},
- };
- 
-@@ -312,6 +321,65 @@ static inline void __amd_pmu_enable_ibs_event(struct hw_perf_event *hwc)
- 		__x86_pmu_enable_event(hwc, IBS_OP_ENABLE);
- }
- 
-+static int amd_pmu_check_ibs(struct pt_regs *iregs, int map_idx)
-+{
-+	struct ibs_map *map = &ibs_map[map_idx];
-+	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	struct perf_event *event = cpuc->events[map->idx];
-+	struct perf_sample_data data;
-+	struct perf_raw_record raw;
-+	struct pt_regs regs;
-+	u64 buffer[MSR_AMD64_IBS_REG_COUNT_MAX];
-+	int i;
-+	unsigned int msr;
-+	u64 *buf;
-+
-+	if (!test_bit(map->idx, cpuc->active_mask))
-+		return 0;
-+
-+	msr = map->msr;
-+	buf = buffer;
-+	rdmsrl(msr++, *buf);
-+	if (!(*buf++ & map->sample_valid))
-+		return 0;
-+
-+	perf_sample_data_init(&data, 0);
-+	if (event->attr.sample_type & PERF_SAMPLE_RAW) {
-+		for (i = 1; i < map->reg_count; i++)
-+			rdmsrl(msr++, *buf++);
-+		raw.size = sizeof(u32) + sizeof(u64) * map->reg_count;
-+		raw.data = buffer;
-+		data.raw = &raw;
-+	}
-+
-+	regs = *iregs; /* later: update ip from ibs sample */
-+
-+	if (perf_event_overflow(event, 1, &data, &regs))
-+		x86_pmu_stop(event);
-+	else
-+		__x86_pmu_enable_event(&event->hw, map->enable);
-+
-+	return 1;
-+}
-+
-+static int amd_pmu_handle_irq(struct pt_regs *regs)
-+{
-+	int handled, handled2;
-+
-+	handled = x86_pmu_handle_irq(regs);
-+
-+	if (!x86_pmu.ibs)
-+		return handled;
-+
-+	handled2 = 0;
-+	handled2 += amd_pmu_check_ibs(regs, IBS_FETCH_MAP_IDX);
-+	handled2 += amd_pmu_check_ibs(regs, IBS_OP_MAP_IDX);
-+	if (!handled && handled2)
-+		inc_irq_stat(apic_perf_irqs);
-+
-+	return (handled || handled2);
-+}
-+
- static void amd_pmu_disable_all(void)
- {
- 	x86_pmu_disable_all();
-@@ -642,7 +710,7 @@ static void amd_pmu_cpu_dead(int cpu)
- 
- static __initconst const struct x86_pmu amd_pmu = {
- 	.name			= "AMD",
--	.handle_irq		= x86_pmu_handle_irq,
-+	.handle_irq		= amd_pmu_handle_irq,
- 	.disable_all		= amd_pmu_disable_all,
- 	.enable_all		= amd_pmu_enable_all,
- 	.enable			= amd_pmu_enable_event,
--- 
-1.7.1
 
-
+--------------000804080906000905070706--
