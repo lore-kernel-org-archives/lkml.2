@@ -1,89 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754306Ab0ESHWr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 03:22:47 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:26960 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab0ESHWp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 03:22:45 -0400
-Date: Wed, 19 May 2010 09:59:34 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext James Bottomley <James.Bottomley@suse.de>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       "me@felipebalbi.com" <me@felipebalbi.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100519065934.GH12879@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1274115885.4418.59.camel@mulgrave.site>
- <20100517174647.GA11512@gandalf>
- <1274119179.4418.68.camel@mulgrave.site>
- <20100517181252.GA14260@gandalf>
- <1274124267.4418.149.camel@mulgrave.site>
- <20100517193840.GB14047@gandalf>
- <20100517193952.GC14047@gandalf>
- <1274125775.4418.182.camel@mulgrave.site>
- <20100518064022.GA6522@nokia.com>
- <1274191188.10304.5.camel@mulgrave.site>
+	id S1754749Ab0ESHYJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 03:24:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:40236 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753650Ab0ESHYH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 03:24:07 -0400
+Date: Wed, 19 May 2010 09:23:32 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Borislav Petkov <bp@amd64.org>, Lin Ming <ming.m.lin@intel.com>,
+       Greg KH <greg@kroah.com>, Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
+Message-ID: <20100519072332.GE9618@elte.hu>
+References: <1274233602.3036.84.camel@localhost>
+ <20100518200524.GA20223@kroah.com>
+ <1274236496.3603.22.camel@minggr.sh.intel.com>
+ <20100519070655.GB30320@aftab>
+ <1274253427.5605.10131.camel@twins>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274191188.10304.5.camel@mulgrave.site>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 May 2010 07:01:39.0887 (UTC) FILETIME=[2157E3F0:01CAF721]
-X-Nokia-AV: Clean
+In-Reply-To: <1274253427.5605.10131.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 03:59:48PM +0200, ext James Bottomley wrote:
->On Tue, 2010-05-18 at 09:40 +0300, Felipe Balbi wrote:
->> On Mon, May 17, 2010 at 09:49:35PM +0200, ext James Bottomley wrote:
->> >Right, because Firmware writers are from the rugged unresponsive uplands
->> >of planet
->> >ignore-user-complaints-and-eat-them-for-breakfast-if-they-file-bugs and
->> >Software writers are from the emollient responsive groves of planet
->> >harmony.  Obviously what would work for one wouldn't work for the other.
->> >
->> >As a software writer, I fully buy into that world view.  The trouble is
->> >that when I go to dinner with hardware people, they seem to be awfully
->> >nice chaps ... almost exactly like me, in fact ...
->>
->> what does this add to suspend_blockers discussion ?
->
->Sorry I was evidently being too subtle.
->
->The point is that if, as you acknowledge, that you can't train firmware
->engineers to be responsive, there's no reason to think you can train
->software engineers in the same quality ... they're very similar people.
 
-I wouldn't say it's up to the engineer himself, it's more related to how 
-the company that person works for deal with such things.
+* Peter Zijlstra <peterz@infradead.org> wrote:
 
->The corollary is that real world systems have to operate in the face of
->misbehaving hardware *and* software.
+> On Wed, 2010-05-19 at 09:06 +0200, Borislav Petkov wrote:
+> > 
+> > have we considered the per-cpu granularity of MCEs 
+> > here and if yes, how to represent that?
+> 
+> Uhm, by opening the MCE event on a particular cpu? 
+> Remember that sys_perf_event_open() has a cpu target.
+> 
+> The thing is, CPUs are assumed symmetric, thus also all 
+> MCE events are symmetric, one CPU cannot generate other 
+> MCE than another. So the only thing that differs is 
+> where you want to listen for them.
 
-I still think the kernel shouldn't deal with broken applications and we 
-shouldn't try to fix them in kernel space. We can, of course, try to 
-find them and have all sorts of bells and whistles shouting 'process 
-%s is preventing CPU from sleeping for %llu nanoseconds' or something 
-like that.
+Note, this does not preclude Linux from supporting 
+assymetric MP, should the need arise: if MP assymetry is 
+supported then that can (and should) be expressed in the 
+sysfs topology accordingly - and the moment the assymetric 
+MP topology is enumerated in sysfs it gives a place for 
+the different event_source's to live there as well.
 
--- 
-balbi
+Thanks,
 
-DefectiveByDesign.org
+	Ingo
