@@ -1,66 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753360Ab0ESPid (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:38:33 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:23383 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753252Ab0ESPia (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:38:30 -0400
-Date: Wed, 19 May 2010 18:36:05 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext John Masinter <johnmasinter@gmail.com>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: More than 1M open file descriptors
-Message-ID: <20100519153605.GA5221@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <AANLkTim5Yuvga5kwOFUaUgxbxzvkD9gyqiEUCN6nTs5b@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <AANLkTim5Yuvga5kwOFUaUgxbxzvkD9gyqiEUCN6nTs5b@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 19 May 2010 15:38:09.0324 (UTC) FILETIME=[487CB6C0:01CAF769]
-X-Nokia-AV: Clean
+	id S1753108Ab0ESPm3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:42:29 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40911 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752351Ab0ESPm1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:42:27 -0400
+Date: Thu, 20 May 2010 01:42:25 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "Gregory Haskins" <ghaskins@novell.com>
+Cc: "Tejun Heo" <tj@kernel.org>, <linux-kernel@vger.kernel.org>,
+       <linux-next@vger.kernel.org>
+Subject: Re: [PATCH 06/17] vbus: update gfp/slab.h includes
+Message-Id: <20100520014225.e4343903.sfr@canb.auug.org.au>
+In-Reply-To: <4BB2FF000200005A0006349E@soto.provo.novell.com>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-7-git-send-email-tj@kernel.org>
+	<4BB2FF000200005A0006349E@soto.provo.novell.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 04:52:56PM +0200, ext John Masinter wrote:
->I'm a software engineer and work with a fortune-500 company. We have a
->line of linux-powered network security appliances and I am responsible
->for Linux / OS development.
->Our multi-core appliance handles a large number of low-bandwith tcp
->connections, and after years of performance streamlining, we have hit
->the kernel's million tcp connection limit.
->Is there a kernel hack to increase the file descriptor limit beyond 1M
->to that we may have more than 1M open tcp connections? If this is
->discussed elsewhere, please point me in the right direction. Many
->thanks to everyone that contributes to open source.
+Hi Gregory,
 
-look into fs/file.c
-increasing sysctl_nr_open like below should help:
+On Wed, 31 Mar 2010 05:51:28 -0600 "Gregory Haskins" <ghaskins@novell.com> wrote:
+>
+> >>> On 3/29/2010 at 01:52 PM, in message
+> <1269885165-18617-7-git-send-email-tj@kernel.org>, Tejun Heo <tj@kernel.org>
+> wrote: 
+> > Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> > gfp.h or slab.h is included as necessary.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Cc: Gregory Haskins <ghaskins@novell.com>
+> 
+> Thanks Tejun,
+> 
+> Acked-by: Gregory Haskins <ghaskins@novell.com>
+> 
+> (will add to my tree)
 
-diff --git a/fs/file.c b/fs/file.c
-index 87e1290..23c83df 100644
---- a/fs/file.c
-+++ b/fs/file.c
-@@ -27,9 +27,9 @@ struct fdtable_defer {
-  	struct fdtable *next;
-  };
-  
--int sysctl_nr_open __read_mostly = 1024*1024;
-+int sysctl_nr_open __read_mostly = 4*1024*1024;
-  int sysctl_nr_open_min = BITS_PER_LONG;
--int sysctl_nr_open_max = 1024 * 1024; /* raised later */
-+int sysctl_nr_open_max = 4 * 1024 * 1024; /* raised later */
-  
-  /*
-   * We use this list to defer free fdtables that have vmalloced
+It never made it as far as I can see ... maybe something equivalent went in.
 
-you can also do it via /proc AFAICT.
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Gregory Haskins <ghaskins@novell.com>
+Subject: [PATCH 06/17] vbus: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:34 +0900
+
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Gregory Haskins <ghaskins@novell.com>
+---
+ drivers/vbus/pci-bridge.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/vbus/pci-bridge.c b/drivers/vbus/pci-bridge.c
+index 0d51324..36de7c4 100644
+--- a/drivers/vbus/pci-bridge.c
++++ b/drivers/vbus/pci-bridge.c
+@@ -22,6 +22,7 @@
+ #include <linux/pci.h>
+ #include <linux/mm.h>
+ #include <linux/workqueue.h>
++#include <linux/slab.h>
+ #include <linux/debugfs.h>
+ #include <linux/seq_file.h>
+ #include <linux/ioq.h>
+-- 
+1.6.4.2
 
 -- 
-balbi
-
-DefectiveByDesign.org
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
