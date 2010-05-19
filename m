@@ -1,39 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753179Ab0ESPdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:33:41 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:52807 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752639Ab0ESPdh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:33:37 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: rostedt@goodmis.org, npiggin@suse.de, mathieu.desnoyers@efficios.com,
-       peterz@infradead.org, fweisbec@gmail.com, tardyp@gmail.com,
-       mingo@elte.hu, acme@redhat.com, tzanussi@gmail.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem@davemloft.net, linux-mm@kvack.org,
-       akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-       cl@linux-foundation.org, tj@kernel.org, jens.axboe@oracle.com
-In-reply-to: <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
-	(message from Linus Torvalds on Wed, 19 May 2010 07:59:48 -0700 (PDT))
-Subject: Re: Unexpected splice "always copy" behavior observed
-References: <20100518153440.GB7748@Krystal>  <1274197993.26328.755.camel@gandalf.stny.rr.com>  <1274199039.26328.758.camel@gandalf.stny.rr.com>  <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>  <20100519063116.GR2516@laptop> 
- <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
-Message-Id: <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 19 May 2010 17:33:11 +0200
+	id S1753288Ab0ESPdo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:33:44 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55163 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753205Ab0ESPdm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:33:42 -0400
+Date: Thu, 20 May 2010 01:33:40 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 02/17] kdb: update gfp/slab.h includes
+Message-Id: <20100520013340.1fcc2c0d.sfr@canb.auug.org.au>
+In-Reply-To: <1269885165-18617-3-git-send-email-tj@kernel.org>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-3-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, Linus Torvalds wrote:
-> Btw, since you apparently have a real case - is the "splice to file" 
-> always just an append? IOW, if I'm not right in assuming that the only 
-> sane thing people would reasonable care about is "append to a file", then 
-> holler now.
+Hi Jason,
 
-Virtual machines might reasonably need this for splicing to a disk
-image.
+On Tue, 30 Mar 2010 02:52:30 +0900 Tejun Heo <tj@kernel.org> wrote:
+>
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
+> 
+> Signed-off-by: Tejun Heo <tj@kernel.org>
+> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> Cc: Jason Wessel <jason.wessel@windriver.com>
 
-Miklos
+Please apply to the kgdb tree (patch reposted below).
+
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 02/17] kdb: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:30 +0900
+
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jason Wessel <jason.wessel@windriver.com>
+---
+ kernel/debug/kdb/kdb_main.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index bad8e63..ec29a9d 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -37,6 +37,7 @@
+ #include <linux/kdebug.h>
+ #include <linux/proc_fs.h>
+ #include <linux/uaccess.h>
++#include <linux/slab.h>
+ #include "kdb_private.h"
+ 
+ #define GREP_LEN 256
+-- 
+1.6.4.2
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
