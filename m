@@ -1,54 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753073Ab0ESPAR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:00:17 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:42858 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752110Ab0ESPAP (ORCPT
+	id S1753163Ab0ESPA6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:00:58 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:42554 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752718Ab0ESPA4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:00:15 -0400
-Date: Wed, 19 May 2010 10:45:05 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
-Message-ID: <20100519144505.GD2412@tuxdriver.com>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
- <1269885165-18617-11-git-send-email-tj@kernel.org>
- <20100519190230.52385a65.sfr@canb.auug.org.au>
+	Wed, 19 May 2010 11:00:56 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=MRW4Wrjp33j4j5AcA0gM6DiRiG9lx5Pa3tdWy+Zq+n885REsljNXCLuBJPcSvKRuS6
+         q+ehbeU6ciC3CXr0wWyfcSC3crzekMf+JR0YNqwwoW9NlsymGgiQXmX5p1kvp765xMcc
+         1zFgMseoS+03ANigWYroD9UA9EOg1bv80+XxI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519190230.52385a65.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Date: Wed, 19 May 2010 10:52:56 -0400
+Message-ID: <AANLkTim5Yuvga5kwOFUaUgxbxzvkD9gyqiEUCN6nTs5b@mail.gmail.com>
+Subject: More than 1M open file descriptors
+From: John Masinter <johnmasinter@gmail.com>
+To: linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 07:02:30PM +1000, Stephen Rothwell wrote:
-> Hi John,
-> 
-> On Tue, 30 Mar 2010 02:52:38 +0900 Tejun Heo <tj@kernel.org> wrote:
-> >
-> > Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> > gfp.h or slab.h is included as necessary.
-> > 
-> > Signed-off-by: Tejun Heo <tj@kernel.org>
-> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Cc: John W. Linville <linville@tuxdriver.com>
-
-> I think that this patch is still needed in the wireless tree and I notice
-> that Dave has asked Linus to pull the net tree (containing the wireless
-> tree).  I have been carrying this in linux-next.
-
-Looks like this was part of a series...who merged the rest of it?
-I guess I presumed they would take care of the series.
-
-Tejun, I wouldn't mind a repost, preferrably Cc:
-linux-wireless@vger.kernel.org...
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
+I'm a software engineer and work with a fortune-500 company. We have a
+line of linux-powered network security appliances and I am responsible
+for Linux / OS development.
+Our multi-core appliance handles a large number of low-bandwith tcp
+connections, and after years of performance streamlining, we have hit
+the kernel's million tcp connection limit.
+Is there a kernel hack to increase the file descriptor limit beyond 1M
+to that we may have more than 1M open tcp connections? If this is
+discussed elsewhere, please point me in the right direction. Many
+thanks to everyone that contributes to open source.
