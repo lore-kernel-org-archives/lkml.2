@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754517Ab0ESRYZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:24:25 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:53492 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754463Ab0ESRYV (ORCPT
+	id S1754436Ab0ESRYa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:24:30 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33252 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754518Ab0ESRY0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:24:21 -0400
+	Wed, 19 May 2010 13:24:26 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=jlvoLk6TaInuq6/EyBCeaOo197XwXjgXh7SUVZDx0rkugyHu6I3+DBgEc/u7wYAOcY
-         gBV+8PNoYBUAlGvLnTXeP98CQXWKUKTPAa/Usq12kGckq0LBbT9UeIslK4bwxfOGme94
-         4K6xQqxfexx3GWxQtnS/POkXv76ETjupg49iY=
+        b=YitKjS01Hmkc9tqetKJYcXEWheOAkNviLiBO0/6pUec8u/qpEy+dSiNFXcQkQUTm21
+         zDCat1WUQznMR+f1EV3oBeOq7E9v3uT8hl+SnMS6JMtDTU+X8apFLS6p0bPb5lZR/eOG
+         TjjHfzN3LZsp+ESb1WlPUW9ZHX4Ara+ovv3y4=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-       Nfs <linux-nfs@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       Tony Luck <tony.luck@intel.com>, Fenghua Yu <fenghua.yu@intel.com>,
+       IA64 <linux-ia64@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
        John Kacur <jkacur@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 5/8] sunrpc: Pushdown the bkl from sunrpc cache ioctl
-Date: Wed, 19 May 2010 19:24:12 +0200
-Message-Id: <1274289855-10001-6-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 8/8] ia64: Use unlocked_ioctl from perfmon
+Date: Wed, 19 May 2010 19:24:15 +0200
+Message-Id: <1274289855-10001-9-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com>
@@ -32,61 +32,60 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pushdown the bkl to cache_ioctl_pipefs.
+pfm_ioctl() obviously doesn't need the bkl just to print a
+message.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Nfs <linux-nfs@vger.kernel.org>
+Cc: Tony Luck <tony.luck@intel.com>
+Cc: Fenghua Yu <fenghua.yu@intel.com>
+Cc: IA64 <linux-ia64@vger.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Kacur <jkacur@redhat.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- net/sunrpc/cache.c |   13 ++++++++++---
- 1 files changed, 10 insertions(+), 3 deletions(-)
+ arch/ia64/kernel/perfmon.c |   22 +++++++++++-----------
+ 1 files changed, 11 insertions(+), 11 deletions(-)
 
-diff --git a/net/sunrpc/cache.c b/net/sunrpc/cache.c
-index 39bddba..91b1ade 100644
---- a/net/sunrpc/cache.c
-+++ b/net/sunrpc/cache.c
-@@ -33,6 +33,7 @@
- #include <linux/sunrpc/cache.h>
- #include <linux/sunrpc/stats.h>
- #include <linux/sunrpc/rpc_pipe_fs.h>
-+#include <linux/smp_lock.h>
- 
- #define	 RPCDBG_FACILITY RPCDBG_CACHE
- 
-@@ -1525,12 +1526,18 @@ static unsigned int cache_poll_pipefs(struct file *filp, poll_table *wait)
- 	return cache_poll(filp, wait, cd);
+diff --git a/arch/ia64/kernel/perfmon.c b/arch/ia64/kernel/perfmon.c
+index ab985f7..7443290 100644
+--- a/arch/ia64/kernel/perfmon.c
++++ b/arch/ia64/kernel/perfmon.c
+@@ -1696,8 +1696,8 @@ pfm_poll(struct file *filp, poll_table * wait)
+ 	return mask;
  }
  
--static int cache_ioctl_pipefs(struct inode *inode, struct file *filp,
-+static long cache_ioctl_pipefs(struct file *filp,
- 			      unsigned int cmd, unsigned long arg)
+-static int
+-pfm_ioctl(struct inode *inode, struct file *file, unsigned int cmd, unsigned long arg)
++static long
++pfm_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
  {
-+	struct inode *inode = filp->f_dentry->d_inode;
- 	struct cache_detail *cd = RPC_I(inode)->private;
-+	long ret;
+ 	DPRINT(("pfm_ioctl called\n"));
+ 	return -EINVAL;
+@@ -2174,15 +2174,15 @@ pfm_no_open(struct inode *irrelevant, struct file *dontcare)
  
--	return cache_ioctl(inode, filp, cmd, arg, cd);
-+	lock_kernel();
-+	ret = cache_ioctl(inode, filp, cmd, arg, cd);
-+	unlock_kernel();
-+
-+	return ret;
- }
  
- static int cache_open_pipefs(struct inode *inode, struct file *filp)
-@@ -1553,7 +1560,7 @@ const struct file_operations cache_file_operations_pipefs = {
- 	.read		= cache_read_pipefs,
- 	.write		= cache_write_pipefs,
- 	.poll		= cache_poll_pipefs,
--	.ioctl		= cache_ioctl_pipefs, /* for FIONREAD */
-+	.unlocked_ioctl	= cache_ioctl_pipefs, /* for FIONREAD */
- 	.open		= cache_open_pipefs,
- 	.release	= cache_release_pipefs,
+ static const struct file_operations pfm_file_ops = {
+-	.llseek   = no_llseek,
+-	.read     = pfm_read,
+-	.write    = pfm_write,
+-	.poll     = pfm_poll,
+-	.ioctl    = pfm_ioctl,
+-	.open     = pfm_no_open,	/* special open code to disallow open via /proc */
+-	.fasync   = pfm_fasync,
+-	.release  = pfm_close,
+-	.flush	  = pfm_flush
++	.llseek		= no_llseek,
++	.read		= pfm_read,
++	.write		= pfm_write,
++	.poll		= pfm_poll,
++	.unlocked_ioctl = pfm_ioctl,
++	.open		= pfm_no_open,	/* special open code to disallow open via /proc */
++	.fasync		= pfm_fasync,
++	.release	= pfm_close,
++	.flush		= pfm_flush
  };
+ 
+ static int
 -- 
 1.6.2.3
 
