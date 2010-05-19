@@ -1,62 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754486Ab0ESRoT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:44:19 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:37172 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753523Ab0ESRoS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:44:18 -0400
-Message-ID: <4BF4235D.3080904@zytor.com>
-Date: Wed, 19 May 2010 10:43:57 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Yinghai <yinghai.lu@oracle.com>
-CC: Mathieu Rondonneau <mathieu.rondonneau@gmail.com>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent reserving RAM in the region already reserved
- by BIOS
-References: <AANLkTimwxXtNnmBuDJxg3i72VwWuHmemjrr1iGqj4j8e@mail.gmail.com> <4BF42296.1030905@oracle.com>
-In-Reply-To: <4BF42296.1030905@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754492Ab0ESRsd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:48:33 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:39760 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753647Ab0ESRsb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 13:48:31 -0400
+Date: Wed, 19 May 2010 10:48:00 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, jens.axboe@oracle.com
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 19 (mm/page-writeback)
+Message-Id: <20100519104800.5a43346f.randy.dunlap@oracle.com>
+In-Reply-To: <20100519163554.80c7fcd3.sfr@canb.auug.org.au>
+References: <20100519163554.80c7fcd3.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090203.4BF4246A.016A:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 10:40 AM, Yinghai wrote:
-> On 05/18/2010 10:35 PM, Mathieu Rondonneau wrote:
->> Does it make sense to prevent looking for stolen RAM below the ISA section.
->>
->>
->> Signed-off-by: Mathieu Rondonneau <mathieu.rondonneau@gmail.com>
->> ---
->>  arch/x86/kernel/e820.c |    2 ++
->>  1 files changed, 2 insertions(+), 0 deletions(-)
->>
->> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
->> index 7bca3c6..322c9c3 100644
->> --- a/arch/x86/kernel/e820.c
->> +++ b/arch/x86/kernel/e820.c
->> @@ -1156,6 +1156,8 @@ void __init e820_reserve_resources_late(void)
->>                         end = MAX_RESOURCE_SIZE;
->>                 if (start >= end)
->>                         continue;
->> +               if (end < ISA_START_ADDRESS)
->> +                       continue;
->>                 printk(KERN_DEBUG "reserve RAM buffer: %016llx - %016llx ",
->>                                start, end);
->>                 reserve_region_with_split(&iomem_resource, start, end,
+On Wed, 19 May 2010 16:35:54 +1000 Stephen Rothwell wrote:
+
+> Hi all,
 > 
-> do you notice any changes in /proc/iomem?
+> We are in the merge window again.  I remind you all not to add stuff for
+> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
 > 
+> Changes since 20100518:
 
-It should be harmless to reserve memory which is already reserved, so
-this patch is at best a no-op.  Furthermore, it introduces another
-instance of special address space (ISA_START_ADDRESS in this case) which
-is never a good thing.
 
-	-hpa
+When CONFIG_BLOCK is not enabled:
 
+mm/page-writeback.c: In function 'laptop_mode_timer_fn':
+mm/page-writeback.c:708: error: dereferencing pointer to incomplete type
+mm/page-writeback.c:709: error: dereferencing pointer to incomplete type
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
