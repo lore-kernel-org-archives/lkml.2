@@ -1,83 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756711Ab0ESJbP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 05:31:15 -0400
-Received: from mail-va3.bigfish.com ([216.32.180.114]:47253 "EHLO
-	mail182-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752847Ab0ESJbN (ORCPT
+	id S1756835Ab0ESJcV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 05:32:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34949 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752847Ab0ESJcT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 05:31:13 -0400
-X-SpamScore: -22
-X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h43h61h)
-X-Spam-TCS-SCL: 0:0
-X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.8;Service: EHS
-X-WSS-ID: 0L2NUFI-02-9FS-02
-X-M-MSG: 
-Date: Wed, 19 May 2010 11:31:00 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-CC: Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC PATCH] perf: align raw sample data on 64-bit boundaries
-Message-ID: <20100519093100.GL21799@erda.amd.com>
-References: <1271190201-25705-1-git-send-email-robert.richter@amd.com>
- <1271190201-25705-13-git-send-email-robert.richter@amd.com>
- <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com>
- <20100518151227.GJ21799@erda.amd.com>
- <20100519073908.GE5704@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100519073908.GE5704@nowhere>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: unknown
+	Wed, 19 May 2010 05:32:19 -0400
+Subject: Re: [PATCH] Make sure timers have migrated before killing
+ migration_thread
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100519090557.GA15237@amitarora.in.ibm.com>
+References: <20100519090557.GA15237@amitarora.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 May 2010 11:31:55 +0200
+Message-ID: <1274261515.5605.10423.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19.05.10 03:39:10, Frederic Weisbecker wrote:
-
-> > This changes the ABI and requires changes in the userland tools. For
-> > tools/perf this is at a single location in event.c only. This could
-> > also introduce some overhead on smaller architectures, but currently
-> > this is only used on x86 or for transferring raw tracepoint
-> > data.
+On Wed, 2010-05-19 at 14:35 +0530, Amit K. Arora wrote:
+> Problem : In a stress test where some heavy tests were running along with
+> regular CPU offlining and onlining, a hang was observed. The system seems to
+> be hung at a point where migration_call() tries to kill the migration_thread
+> of the dying CPU, which just got moved to the current CPU. This migration
+> thread does not get a chance to run (and die) since rt_throttled is set to 1
+> on current, and it doesn't get cleared as the hrtimer which is supposed to
+> reset the rt bandwidth (sched_rt_period_timer) is tied to the CPU being
+> offlined.
 > 
+> Solution : This patch pushes the killing of migration thread to "CPU_POST_DEAD"
+> event. By then all the timers (including sched_rt_period_timer) should have got
+> migrated (along with other callbacks).
 > 
-> No this is used on any architectures that event have a minimal support for
-> perf events.
+> Alternate Solution considered : Another option considered was to
+> increase the priority of the hrtimer cpu offline notifier, such that it
+> gets to run before scheduler's migration cpu offline notifier. In this
+> way we are sure that the timers will get migrated before migration_call
+> tries to kill migration_thread. But, this can have some non-obvious
+> implications, suggested Srivatsa.
 > 
-> I use tracepoint raw samples in sparc 64 for example (which has much more
-> than the minimal support).
+> Testing : Without the patch the stress tests didn't last for even 12
+> hours. And yes, the problem was reproducible. With the patch applied the
+> tests ran successfully for more than 48 hours.
+> 
+> Thanks!
+> --
+> Regards,
+> Amit Arora
+> 
+>  Signed-off-by: Amit Arora <aarora@in.ibm.com>
+>  Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
+> --
+> diff -Nuarp linux-2.6.34.org/kernel/sched.c linux-2.6.34/kernel/sched.c
+> --- linux-2.6.34.org/kernel/sched.c	2010-05-18 22:56:21.000000000 -0700
+> +++ linux-2.6.34/kernel/sched.c	2010-05-18 22:58:31.000000000 -0700
+> @@ -5942,14 +5942,26 @@ migration_call(struct notifier_block *nf
+>  		cpu_rq(cpu)->migration_thread = NULL;
+>  		break;
+>  
+> +	case CPU_POST_DEAD:
+> +		/*
+> +		  Bring the migration thread down in CPU_POST_DEAD event,
+> +		  since the timers should have got migrated by now and thus
+> +		  we should not see a deadlock between trying to kill the
+> +		  migration thread and the sched_rt_period_timer.
+> +		*/
 
-Isn't here the same alignment problem on archs there unsigned long is
-64 bit? Also, most samples I found have a size of multiples of 8
-bytes, so even on 32 bit archs there would be a padding of 4 bytes
-somethere in the sample.
+Faulty comment style that, please use:
 
-> I don't think we should do this. Ok it's true we've screwed up
-> something there but breaking the ABI is going to make the things
-> even worst I think.
+ /*
+  * text
+  *  goes
+  *   here
+  */
 
-I was not sure how hard an ABI breakage would be. I think the small
-number of users of raw samples is manageable, but I understand if you
-feel uncomfortable with it.
+> +		cpuset_lock();
+> +		rq = cpu_rq(cpu);
+> +		kthread_stop(rq->migration_thread);
+> +		put_task_struct(rq->migration_thread);
+> +		rq->migration_thread = NULL;
+> +		cpuset_unlock();
+> +		break;
+> +
 
-> I would feel better with a new PERF_SAMPLE_RAW_ALIGNED sample_type
-> and schedule the deprecation of PERF_SAMPLE_RAW for later but keep
-> it for some releases.
+The other problem is more urgent though, CPU_POST_DEAD runs outside of
+the hotplug lock and thus the above becomes a race where we could
+possible kill off the migration thread of a newly brought up cpu:
 
-This could be an alternative. Though, it duplicates code paths and
-introduces ugly sample type checks. Another alternative would be to
-check the size value, if it is (n * sizeof(u64)) we could asume 64 bit
-alignment. But maybe this makes things much worse.
+ cpu0 - down 2
+ cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
+ cpu0 - post_down 2 - frees the migration thread -- oops!
 
--Robert
-
--- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
 
