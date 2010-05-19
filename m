@@ -1,66 +1,177 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754406Ab0ESIqi (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:46:38 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:63829 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752992Ab0ESIqg (ORCPT
+	id S1755233Ab0ESIrF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:47:05 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43660 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754711Ab0ESIrA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:46:36 -0400
+	Wed, 19 May 2010 04:47:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=date:from:to:cc:subject:message-id:references:mime-version
          :content-type:content-disposition:in-reply-to:user-agent;
-        b=ZiAjwMF8ycSpdpxIKaehBth10LGZeSIYwjlV9eWSTaNtAadJQpDaE9/HRdUsPbiZOI
-         rA4sYLsnBSZNFf1joYYdaxnxNEVpttsyg/DLKUPjgRMWtwHPUjFghSNQ+7BZbKqj2ZY4
-         RLe8gedvJbSSKhykDCvdC0NphWc/3FLPy/JvM=
-Date: Wed, 19 May 2010 10:46:40 +0200
+        b=GaN46nIfcxAmWZP/69t3Y+hzV7lZU8zuH/1p5VWNa72ixGyama7ebeH/UiKLP6H8QL
+         2Ws8FMXDYhQfvDo+emnsF24R3RvjaWTua6f7r4k/w+PIy9WZd8kn4Z0WpHjoX4btL1I9
+         jD6mtPKNIVbk09TKtIgbPkTeA17nTVHRtbHgY=
+Date: Wed, 19 May 2010 10:47:05 +0200
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Don Zickus <dzickus@redhat.com>
 Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, gorcunov@gmail.com,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/3] [watchdog] separate hardlockup/softlockup enable
-	paths
-Message-ID: <20100519084638.GH5704@nowhere>
-References: <1274133966-18415-1-git-send-email-dzickus@redhat.com> <1274133966-18415-3-git-send-email-dzickus@redhat.com>
+Subject: Re: [PATCH 1/3] lockup_detector: convert per_cpu to __get_cpu_var
+	for readability
+Message-ID: <20100519084703.GI5704@nowhere>
+References: <1274133966-18415-1-git-send-email-dzickus@redhat.com> <1274133966-18415-2-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274133966-18415-3-git-send-email-dzickus@redhat.com>
+In-Reply-To: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 06:06:05PM -0400, Don Zickus wrote:
-> In preparation to support the backwards compatible option nmi_watchdog properly
-> from the kernel commandline, the enable/disable paths for the hardlockup and
-> softlockup code needed to separated more cleanly.
+On Mon, May 17, 2010 at 06:06:04PM -0400, Don Zickus wrote:
+> Just a bunch of conversions as suggested by Frederic W.
 > 
-> The code is re-arranged a bit to create a watchdog_softlockup_enable/disable
-> function to mimic the hardlockup counterpart.  In addition, a softlockup callback
-> is created to make it easy to turn the softlockup code on/off with out interfering
-> with the hardlockup code.
-> 
-> The functionality should still be the same.
+> Signed-off-by: Don Zickus <dzickus@redhat.com>
+> ---
 
 
-
-I don't think we want this really. The unification is not only a good
-thing for maintainance and genericity of code but also for the fact now
-we don't need anymore to worry about which watchdog to turn on/off.
-
-The fact is often when you have a lockup, you don't even know if it
-is soft or hard. If you are on X, you won't know.
-
-So people just don't bother about such granularity of control, they simply
-enable or disable both detectors.
-
-I would suggest you to let the things how they are and not making the code
-more complicated for something that won't be used.
-
-Just forget about the nmi_watchdog file. A simple watchdog file to control
-everything is much better.
+I'm taking this one,
 
 Thanks.
+
+
+
+>  kernel/watchdog.c |   35 +++++++++++++++++------------------
+>  1 files changed, 17 insertions(+), 18 deletions(-)
+> 
+> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+> index e53622c..91b0b26 100644
+> --- a/kernel/watchdog.c
+> +++ b/kernel/watchdog.c
+> @@ -115,7 +115,7 @@ static unsigned long get_sample_period(void)
+>  /* Commands for resetting the watchdog */
+>  static void __touch_watchdog(void)
+>  {
+> -	int this_cpu = raw_smp_processor_id();
+> +	int this_cpu = smp_processor_id();
+>  
+>  	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+>  }
+> @@ -157,21 +157,21 @@ void touch_softlockup_watchdog_sync(void)
+>  
+>  #ifdef CONFIG_HARDLOCKUP_DETECTOR
+>  /* watchdog detector functions */
+> -static int is_hardlockup(int cpu)
+> +static int is_hardlockup(void)
+>  {
+> -	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
+> +	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
+>  
+> -	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
+> +	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
+>  		return 1;
+>  
+> -	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
+> +	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
+>  	return 0;
+>  }
+>  #endif
+>  
+> -static int is_softlockup(unsigned long touch_ts, int cpu)
+> +static int is_softlockup(unsigned long touch_ts)
+>  {
+> -	unsigned long now = get_timestamp(cpu);
+> +	unsigned long now = get_timestamp(smp_processor_id());
+>  
+>  	/* Warn about unreasonable delays: */
+>  	if (time_after(now, touch_ts + softlockup_thresh))
+> @@ -206,8 +206,6 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>  		 struct perf_sample_data *data,
+>  		 struct pt_regs *regs)
+>  {
+> -	int this_cpu = smp_processor_id();
+> -
+>  	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+>  		__get_cpu_var(watchdog_nmi_touch) = false;
+>  		return;
+> @@ -219,7 +217,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+>  	 * fired multiple times before we overflow'd.  If it hasn't
+>  	 * then this is a good indication the cpu is stuck
+>  	 */
+> -	if (is_hardlockup(this_cpu)) {
+> +	if (is_hardlockup()) {
+> +		int this_cpu = smp_processor_id();
+> +
+>  		/* only print hardlockups once */
+>  		if (__get_cpu_var(hard_watchdog_warn) == true)
+>  			return;
+> @@ -247,7 +247,6 @@ static inline void watchdog_interrupt_count(void) { return; }
+>  /* watchdog kicker functions */
+>  static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  {
+> -	int this_cpu = smp_processor_id();
+>  	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
+>  	struct pt_regs *regs = get_irq_regs();
+>  	int duration;
+> @@ -262,12 +261,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+>  
+>  	if (touch_ts == 0) {
+> -		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
+> +		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
+>  			/*
+>  			 * If the time stamp was touched atomically
+>  			 * make sure the scheduler tick is up to date.
+>  			 */
+> -			per_cpu(softlockup_touch_sync, this_cpu) = false;
+> +			__get_cpu_var(softlockup_touch_sync) = false;
+>  			sched_clock_tick();
+>  		}
+>  		__touch_watchdog();
+> @@ -280,14 +279,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  	 * indicate it is getting cpu time.  If it hasn't then
+>  	 * this is a good indication some task is hogging the cpu
+>  	 */
+> -	duration = is_softlockup(touch_ts, this_cpu);
+> +	duration = is_softlockup(touch_ts);
+>  	if (unlikely(duration)) {
+>  		/* only warn once */
+>  		if (__get_cpu_var(soft_watchdog_warn) == true)
+>  			return HRTIMER_RESTART;
+>  
+>  		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+> -			this_cpu, duration,
+> +			smp_processor_id(), duration,
+>  			current->comm, task_pid_nr(current));
+>  		print_modules();
+>  		print_irqtrace_events(current);
+> @@ -309,10 +308,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+>  /*
+>   * The watchdog thread - touches the timestamp.
+>   */
+> -static int watchdog(void *__bind_cpu)
+> +static int watchdog(void *unused)
+>  {
+>  	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+> -	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
+> +	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+>  
+>  	sched_setscheduler(current, SCHED_FIFO, &param);
+>  
+> @@ -328,7 +327,7 @@ static int watchdog(void *__bind_cpu)
+>  	/*
+>  	 * Run briefly once per second to reset the softlockup timestamp.
+>  	 * If this gets delayed for more than 60 seconds then the
+> -	 * debug-printout triggers in softlockup_tick().
+> +	 * debug-printout triggers in watchdog_timer_fn().
+>  	 */
+>  	while (!kthread_should_stop()) {
+>  		__touch_watchdog();
+> -- 
+> 1.7.0.1
+> 
 
