@@ -1,111 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754268Ab0ESTMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:12:09 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:40352 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752961Ab0ESTMG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:12:06 -0400
-Message-ID: <4BF437EA.9010904@cs.helsinki.fi>
-Date: Wed, 19 May 2010 22:11:38 +0300
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-User-Agent: Thunderbird 2.0.0.24 (Macintosh/20100228)
+	id S1753870Ab0ESTNp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:13:45 -0400
+Received: from cantor.suse.de ([195.135.220.2]:39055 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753553Ab0ESTNn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 15:13:43 -0400
+From: Thomas Renninger <trenn@suse.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] scheduler: cgroups cpuaccouting: Make cpuusage atomic
+Date: Wed, 19 May 2010 21:13:51 +0200
+User-Agent: KMail/1.9.10
+Cc: mike@android.com, linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com,
+       menage@google.com, containers@lists.linux-foundation.org, mingo@elte.hu
+References: <1274264877.5605.10541.camel@twins> <1274295539-7798-3-git-send-email-trenn@suse.de> <1274295743.1674.1545.camel@laptop>
+In-Reply-To: <1274295743.1674.1545.camel@laptop>
 MIME-Version: 1.0
-To: David Woodhouse <dwmw2@infradead.org>
-CC: Herbert Xu <herbert@gondor.hengli.com.au>, manfred@colorfullife.com,
-       David Miller <davem@davemloft.net>, mpm@selenic.com, ken@codelabs.ch,
-       geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp, cl@linux-foundation.org
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN
- to <linux/slab_def.h>
-References: <1274266725.6930.9823.camel@macbook.infradead.org> <1274266902.6930.9834.camel@macbook.infradead.org>
-In-Reply-To: <1274266902.6930.9834.camel@macbook.infradead.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Type: text/plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005192113.52535.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-David Woodhouse wrote:
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+On Wednesday 19 May 2010 09:02:23 pm Peter Zijlstra wrote:
+> On Wed, 2010-05-19 at 20:58 +0200, Thomas Renninger wrote:
+> > and avoid locking on 32 bit.
+> > This resolves an ugly dependency in cgroups_cpuaccount.c
+> > to per_cpu runqueues lock variable.
+>
+> While I totally agree with the sentiments here, atomic64_t isn't
+> available on all 32bit archs and is _terribly_ expensive on ARCH=i386.
+Speed on i386 shouldn't count that much here.
+Big machines run x86_64 and cgroup cpu accounting doesn't make much
+sense on old i386 single core machines.
 
-I applied patches 1-4. Thanks David!
+Would still be great to see the first patch go in then.
+The idea of splitting was to:
+  a) show the real change
+  b) make at least the first go in if the snd does not work out
 
-> ---
->  include/linux/slab_def.h |   24 ++++++++++++++++++++++++
->  mm/slab.c                |   24 ------------------------
->  2 files changed, 24 insertions(+), 24 deletions(-)
-> 
-> diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
-> index ca6b2b3..1812dac 100644
-> --- a/include/linux/slab_def.h
-> +++ b/include/linux/slab_def.h
-> @@ -16,6 +16,30 @@
->  #include <linux/compiler.h>
->  #include <linux/kmemtrace.h>
->  
-> +#ifndef ARCH_KMALLOC_MINALIGN
-> +/*
-> + * Enforce a minimum alignment for the kmalloc caches.
-> + * Usually, the kmalloc caches are cache_line_size() aligned, except when
-> + * DEBUG and FORCED_DEBUG are enabled, then they are BYTES_PER_WORD aligned.
-> + * Some archs want to perform DMA into kmalloc caches and need a guaranteed
-> + * alignment larger than the alignment of a 64-bit integer.
-> + * ARCH_KMALLOC_MINALIGN allows that.
-> + * Note that increasing this value may disable some debug features.
-> + */
-> +#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
-> +#endif
-> +
-> +#ifndef ARCH_SLAB_MINALIGN
-> +/*
-> + * Enforce a minimum alignment for all caches.
-> + * Intended for archs that get misalignment faults even for BYTES_PER_WORD
-> + * aligned buffers. Includes ARCH_KMALLOC_MINALIGN.
-> + * If possible: Do not enable this flag for CONFIG_DEBUG_SLAB, it disables
-> + * some debug features.
-> + */
-> +#define ARCH_SLAB_MINALIGN 0
-> +#endif
-> +
->  /*
->   * struct kmem_cache
->   *
-> diff --git a/mm/slab.c b/mm/slab.c
-> index bac0f4f..7401ddc 100644
-> --- a/mm/slab.c
-> +++ b/mm/slab.c
-> @@ -144,30 +144,6 @@
->  #define	BYTES_PER_WORD		sizeof(void *)
->  #define	REDZONE_ALIGN		max(BYTES_PER_WORD, __alignof__(unsigned long long))
->  
-> -#ifndef ARCH_KMALLOC_MINALIGN
-> -/*
-> - * Enforce a minimum alignment for the kmalloc caches.
-> - * Usually, the kmalloc caches are cache_line_size() aligned, except when
-> - * DEBUG and FORCED_DEBUG are enabled, then they are BYTES_PER_WORD aligned.
-> - * Some archs want to perform DMA into kmalloc caches and need a guaranteed
-> - * alignment larger than the alignment of a 64-bit integer.
-> - * ARCH_KMALLOC_MINALIGN allows that.
-> - * Note that increasing this value may disable some debug features.
-> - */
-> -#define ARCH_KMALLOC_MINALIGN __alignof__(unsigned long long)
-> -#endif
-> -
-> -#ifndef ARCH_SLAB_MINALIGN
-> -/*
-> - * Enforce a minimum alignment for all caches.
-> - * Intended for archs that get misalignment faults even for BYTES_PER_WORD
-> - * aligned buffers. Includes ARCH_KMALLOC_MINALIGN.
-> - * If possible: Do not enable this flag for CONFIG_DEBUG_SLAB, it disables
-> - * some debug features.
-> - */
-> -#define ARCH_SLAB_MINALIGN 0
-> -#endif
-> -
->  #ifndef ARCH_KMALLOC_FLAGS
->  #define ARCH_KMALLOC_FLAGS SLAB_HWCACHE_ALIGN
->  #endif
+Thanks,
 
+     Thomas
