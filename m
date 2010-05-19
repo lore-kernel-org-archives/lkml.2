@@ -1,46 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0EST2p (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:28:45 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52417
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754560Ab0EST2n (ORCPT
+	id S1753120Ab0ESTba (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:31:30 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46565 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752128Ab0ESTb3 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:28:43 -0400
-Date: Wed, 19 May 2010 12:28:52 -0700 (PDT)
-Message-Id: <20100519.122852.77359021.davem@davemloft.net>
-To: ben@decadent.org.uk
-Cc: torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1274267582.2763.24.camel@localhost>
-References: <20100518.233752.256882583.davem@davemloft.net>
-	<1274267582.2763.24.camel@localhost>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 15:31:29 -0400
+MIME-Version: 1.0
+In-Reply-To: <201005192113.52535.trenn@suse.de>
+References: <1274264877.5605.10541.camel@twins>
+	 <1274295539-7798-3-git-send-email-trenn@suse.de>
+	 <1274295743.1674.1545.camel@laptop> <201005192113.52535.trenn@suse.de>
+Date: Wed, 19 May 2010 12:31:27 -0700
+Message-ID: <AANLkTilgcX0fHfGSyNRBsc257SsnZ4T3LNWvXb0VNseo@mail.gmail.com>
+Subject: Re: [PATCH 2/2] scheduler: cgroups cpuaccouting: Make cpuusage atomic
+From: Mike Chan <mike@android.com>
+To: Thomas Renninger <trenn@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>, linux-kernel@vger.kernel.org,
+       lizf@cn.fujitsu.com, menage@google.com,
+       containers@lists.linux-foundation.org, mingo@elte.hu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ben Hutchings <ben@decadent.org.uk>
-Date: Wed, 19 May 2010 12:13:02 +0100
+On Wed, May 19, 2010 at 12:13 PM, Thomas Renninger <trenn@suse.de> wrote:
+> On Wednesday 19 May 2010 09:02:23 pm Peter Zijlstra wrote:
+>> On Wed, 2010-05-19 at 20:58 +0200, Thomas Renninger wrote:
+>> > and avoid locking on 32 bit.
+>> > This resolves an ugly dependency in cgroups_cpuaccount.c
+>> > to per_cpu runqueues lock variable.
+>>
+>> While I totally agree with the sentiments here, atomic64_t isn't
+>> available on all 32bit archs and is _terribly_ expensive on ARCH=i386.
+> Speed on i386 shouldn't count that much here.
+> Big machines run x86_64 and cgroup cpu accounting doesn't make much
+> sense on old i386 single core machines.
+>
 
-> On Tue, 2010-05-18 at 23:37 -0700, David Miller wrote:
-> [...]
->> Some other things that stand out:
->> 
->> 1) Allow the administrator to reserve port ranges, such that the
->>    kernel bind allocation scheme won't use them.  From Amerigo Wang.
->> 
->> 2) ipv6 address et al. handling converted to use generic kernel lists.
->>    From Stephem Hemminger.
->> 
->> 3) PHY module autoloading support from David Howells
-> [...]
-> 
-> For the record, that was actually David Woodhouse.
+cpuacct can still be useful for single core machines, at least in
+Android it tracks the cpu usage if your apps. On ARM I'm not sure
+(maybe someone more knowledgeable can chime in) how much overhead this
+will incur relative to scheduler / cpuacct overhead that's already
+there.
 
-Indeed, already apologized to him in private email.   My bad :-/
+Since this is a per-cpu value already, is it not sufficient to just
+disable interrupts on that cpu while doing a normal u64 add for both
+MP and UP systems?
+
+-- Mike
+
+> Would still be great to see the first patch go in then.
+> The idea of splitting was to:
+>  a) show the real change
+>  b) make at least the first go in if the snd does not work out
+>
+> Thanks,
+>
+>     Thomas
+>
