@@ -1,45 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752975Ab0ESPfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:35:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39271 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752237Ab0ESPfl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:35:41 -0400
-Date: Wed, 19 May 2010 08:32:15 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Miklos Szeredi <miklos@szeredi.hu>
-cc: npiggin@suse.de, rostedt@goodmis.org, mathieu.desnoyers@efficios.com,
-       peterz@infradead.org, fweisbec@gmail.com, tardyp@gmail.com,
-       mingo@elte.hu, acme@redhat.com, tzanussi@gmail.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem@davemloft.net, linux-mm@kvack.org,
-       akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-       cl@linux-foundation.org, tj@kernel.org, jens.axboe@oracle.com
-Subject: Re: Unexpected splice "always copy" behavior observed
-In-Reply-To: <E1OElCI-0005v6-4D@pomaz-ex.szeredi.hu>
-Message-ID: <alpine.LFD.2.00.1005190831460.23538@i5.linux-foundation.org>
-References: <20100518153440.GB7748@Krystal> <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop>
- <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <E1OElCI-0005v6-4D@pomaz-ex.szeredi.hu>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1753141Ab0ESPgb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:36:31 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:55204 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752469Ab0ESPga (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:36:30 -0400
+Date: Thu, 20 May 2010 01:36:28 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Eric Paris <eparis@redhat.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 03/17] fsnotify: update gfp/slab.h includes
+Message-Id: <20100520013628.74a8c5a2.sfr@canb.auug.org.au>
+In-Reply-To: <1269885165-18617-4-git-send-email-tj@kernel.org>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-4-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Eric,
 
+On Tue, 30 Mar 2010 02:52:31 +0900 Tejun Heo <tj@kernel.org> wrote:
+>
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
 
-On Wed, 19 May 2010, Miklos Szeredi wrote:
-> 
-> Another limitation I found while splicing from one file to another is
-> that stealing from the source file's page cache does not always
-> succeed.  This turned out to be because of a reference from the lru
-> cache for freshly read pages.  I'm not sure how this could be fixed.
+Please apply to the fsnotify tree (patch reposted below).
 
-It should be fixed by saying "you can't always just move the page".
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Eric Paris <eparis@redhat.com>
+Subject: [PATCH 03/17] fsnotify: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:31 +0900
 
-Copying is not evil. Complexity  to avoid copies is evil.
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
 
-		Linus
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Eric Paris <eparis@redhat.com>
+---
+ fs/notify/fanotify/fanotify_user.c |    1 +
+ fs/notify/vfsmount_mark.c          |    1 -
+ 3 files changed, 1 insertions(+), 2 deletions(-)
+
+diff --git a/fs/notify/fanotify/fanotify_user.c b/fs/notify/fanotify/fanotify_user.c
+index 7c869fa..c437bd4 100644
+--- a/fs/notify/fanotify/fanotify_user.c
++++ b/fs/notify/fanotify/fanotify_user.c
+@@ -10,6 +10,7 @@
+ #include <linux/poll.h>
+ #include <linux/security.h>
+ #include <linux/syscalls.h>
++#include <linux/slab.h>
+ #include <linux/types.h>
+ #include <linux/uaccess.h>
+ 
+diff --git a/fs/notify/vfsmount_mark.c b/fs/notify/vfsmount_mark.c
+index 8f1aa02..ec580a2 100644
+--- a/fs/notify/vfsmount_mark.c
++++ b/fs/notify/vfsmount_mark.c
+@@ -22,7 +22,6 @@
+ #include <linux/module.h>
+ #include <linux/mount.h>
+ #include <linux/mutex.h>
+-#include <linux/slab.h>
+ #include <linux/spinlock.h>
+ #include <linux/writeback.h> /* for inode_lock */
+ 
+-- 
+1.6.4.2
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
