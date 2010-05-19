@@ -1,10 +1,10 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756129Ab0ESA2P (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:28:15 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50879 "EHLO
+	id S1756363Ab0ESA2Q (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 20:28:16 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50881 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752084Ab0ESA2N (ORCPT
+	with ESMTP id S1752219Ab0ESA2N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Tue, 18 May 2010 20:28:13 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
@@ -15,9 +15,9 @@ Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
        Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 3/5] perf probe: Fix some error exit paths
-Date: Tue, 18 May 2010 21:27:59 -0300
-Message-Id: <1274228881-8035-4-git-send-email-acme@infradead.org>
+Subject: [PATCH 4/5] perf probe: Don't call die()
+Date: Tue, 18 May 2010 21:28:00 -0300
+Message-Id: <1274228881-8035-5-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1274228881-8035-1-git-send-email-acme@infradead.org>
 References: <1274228881-8035-1-git-send-email-acme@infradead.org>
@@ -32,9 +32,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-That could leave filedescriptors open and leak memory. Also stop using
-xmalloc, use malloc and handle results just like other error cases in
-the same routine that used it.
+Functions that were calling xzalloc also returned -1 when, for other
+reasons, it could fail, and the calleds are coping with failures, so
+stop using die() and xzalloc().
 
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
 Cc: Masami Hiramatsu <mhiramat@redhat.com>
@@ -45,78 +45,37 @@ Cc: Tom Zanussi <tzanussi@gmail.com>
 LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/util/probe-finder.c |   27 +++++++++++++++++----------
- 1 files changed, 17 insertions(+), 10 deletions(-)
+ tools/perf/builtin-probe.c |   10 +++++++---
+ 1 files changed, 7 insertions(+), 3 deletions(-)
 
-diff --git a/tools/perf/util/probe-finder.c b/tools/perf/util/probe-finder.c
-index 93583eb..0bfd46a 100644
---- a/tools/perf/util/probe-finder.c
-+++ b/tools/perf/util/probe-finder.c
-@@ -743,32 +743,34 @@ static int find_lazy_match_lines(struct list_head *head,
- 				 const char *fname, const char *pat)
- {
- 	char *fbuf, *p1, *p2;
--	int fd, ret, line, nlines = 0;
-+	int fd, line, nlines = -1;
- 	struct stat st;
+diff --git a/tools/perf/builtin-probe.c b/tools/perf/builtin-probe.c
+index 61c6d70..99b1728 100644
+--- a/tools/perf/builtin-probe.c
++++ b/tools/perf/builtin-probe.c
+@@ -65,8 +65,10 @@ static int parse_probe_event(const char *str)
+ 	int ret;
  
- 	fd = open(fname, O_RDONLY);
- 	if (fd < 0) {
- 		pr_warning("Failed to open %s: %s\n", fname, strerror(-fd));
--		return fd;
+ 	pr_debug("probe-definition(%d): %s\n", params.nevents, str);
+-	if (++params.nevents == MAX_PROBES)
+-		die("Too many probes (> %d) are specified.", MAX_PROBES);
++	if (++params.nevents == MAX_PROBES) {
++		pr_err("Too many probes (> %d) were specified.", MAX_PROBES);
 +		return -1;
- 	}
++	}
  
--	ret = fstat(fd, &st);
--	if (ret < 0) {
-+	nlines = fstat(fd, &st);
-+	if (nlines < 0) {
- 		pr_warning("Failed to get the size of %s: %s\n",
- 			   fname, strerror(errno));
--		return ret;
-+		goto out_close;
- 	}
--	fbuf = xmalloc(st.st_size + 2);
--	ret = read(fd, fbuf, st.st_size);
--	if (ret < 0) {
-+	fbuf = malloc(st.st_size + 2);
-+	if (fbuf == NULL)
-+		goto out_close;
-+	nlines = read(fd, fbuf, st.st_size);
-+	if (nlines < 0) {
- 		pr_warning("Failed to read %s: %s\n", fname, strerror(errno));
--		return ret;
-+		goto out_free_fbuf;
- 	}
--	close(fd);
- 	fbuf[st.st_size] = '\n';	/* Dummy line */
- 	fbuf[st.st_size + 1] = '\0';
- 	p1 = fbuf;
- 	line = 1;
-+	nlines = 0;
- 	while ((p2 = strchr(p1, '\n')) != NULL) {
- 		*p2 = '\0';
- 		if (strlazymatch(p1, pat)) {
-@@ -778,7 +780,10 @@ static int find_lazy_match_lines(struct list_head *head,
- 		line++;
- 		p1 = p2 + 1;
- 	}
-+out_free_fbuf:
- 	free(fbuf);
-+out_close:
-+	close(fd);
- 	return nlines;
- }
- 
-@@ -955,6 +960,8 @@ int find_kprobe_trace_events(int fd, struct perf_probe_event *pev,
- 	if (!dbg) {
- 		pr_warning("No dwarf info found in the vmlinux - "
- 			"please rebuild with CONFIG_DEBUG_INFO=y.\n");
-+		free(pf.tevs);
-+		*tevs = NULL;
- 		return -EBADF;
- 	}
- 
+ 	/* Parse a perf-probe command into event */
+ 	ret = parse_perf_probe_command(str, pev);
+@@ -84,7 +86,9 @@ static int parse_probe_event_argv(int argc, const char **argv)
+ 	len = 0;
+ 	for (i = 0; i < argc; i++)
+ 		len += strlen(argv[i]) + 1;
+-	buf = xzalloc(len + 1);
++	buf = zalloc(len + 1);
++	if (buf == NULL)
++		return -1;
+ 	len = 0;
+ 	for (i = 0; i < argc; i++)
+ 		len += sprintf(&buf[len], "%s ", argv[i]);
 -- 
 1.6.2.5
 
