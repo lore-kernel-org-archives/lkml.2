@@ -1,75 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757997Ab0ESLwx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:52:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:58652 "EHLO mx1.redhat.com"
+	id S1757959Ab0ESLyA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:54:00 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52765 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754021Ab0ESLwv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:52:51 -0400
-Message-ID: <4BF3D10D.2040902@redhat.com>
-Date: Wed, 19 May 2010 13:52:45 +0200
-From: Jerome Marchand <jmarchan@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.4pre) Gecko/20091014 Fedora/3.0-2.8.b4.fc11 Thunderbird/3.0b4
+	id S1755440Ab0ESLx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 07:53:57 -0400
+Date: Wed, 19 May 2010 13:53:55 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Stefan Achatz <erazor_de@users.sourceforge.net>
+Cc: Stephane Chatty <chatty@enac.fr>, wylda@volny.cz,
+       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, Tejun Heo <tj@kernel.org>,
+       linux-input@vger.kernel.org, Jerome Vidal <jerom3@free.fr>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/5] HID: Added further information for Roccat Kone
+In-Reply-To: <1274199975.2243.0.camel@localhost>
+Message-ID: <alpine.LNX.2.00.1005191353230.28092@pobox.suse.cz>
+References: <1274199975.2243.0.camel@localhost>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-To: Eric Paris <eparis@parisplace.org>, Robert Love <rlove@rlove.org>,
-       John McCutchan <john@johnmccutchan.com>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: RFC][PATCH] inotify: Fix mask checks
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Tue, 18 May 2010, Stefan Achatz wrote:
 
-The mask checks in inotify_update_existing_watch() and
-inotify_new_watch() are useless because inotify_arg_to_mask() sets
-FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway. We should either
-test that at least one of the user events is set (see the untested
-patch below) or remove the test completely if we consider OK to only
-watch for the implicit events (IN_UNMOUNT, IN_Q_OVERFLOW and
-IN_IGNORED).
+> >From 0875b1fdc784c60d28d3c5bc02ffcf0f30ccea2c Mon Sep 17 00:00:00 2001
+> From: Stefan Achatz <erazor_de@users.sourceforge.net>
+> Date: Sat, 8 May 2010 16:53:31 +0200
+> Subject: [PATCH 2/5] HID: Added further information for Roccat Kone
+> 
+> Added new data and changed workaround for abnormal button behaviour
+> according to new gained knowledge about Roccat Kone device.
+> 
+> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
+> ---
+>  drivers/hid/hid-roccat-kone.c |   11 ++++++-----
+>  drivers/hid/hid-roccat-kone.h |   19 ++++++++++++++++---
+>  2 files changed, 22 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
+> index d23d309..9d68442 100644
+> --- a/drivers/hid/hid-roccat-kone.c
+> +++ b/drivers/hid/hid-roccat-kone.c
+> @@ -928,14 +928,15 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
+>  		return 0;
+>  
+>  	/*
+> -	 * Firmware 1.38 introduced new behaviour for tilt buttons.
+> -	 * Pressed tilt button is reported in each movement event.
+> +	 * Firmware 1.38 introduced new behaviour for tilt and special buttons.
+> +	 * Pressed button is reported in each movement event.
+>  	 * Workaround sends only one event per press.
 
-Btw, is it necessary to set IN_IGNORED in inotify_arg_to_mask()?
-Wouldn't the IN_IGNORED event be send anyway, whatever that bit is set
-or not in the mask?
+Applied, thank you Stefan.
 
-Thanks,
-Jerome
-
----
-From: Jerome Marchand <jmarchan@redhat.com>
-
-Currently, the mask checks in inotify_update_existing_watch() and
-inotify_new_watch() are useless because inotify_arg_to_mask() sets
-FS_IN_IGNORED and FS_EVENT_ON_CHILD bits anyway.
-
-Check that at least one user event is set.
-
-Signed-off-by: Jerome Marchand <jmarchan@redhat.com>
----
- inotify_user.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/fs/notify/inotify/inotify_user.c b/fs/notify/inotify/inotify_user.c
-index e46ca68..a95ca25 100644
---- a/fs/notify/inotify/inotify_user.c
-+++ b/fs/notify/inotify/inotify_user.c
-@@ -467,7 +467,7 @@ static int inotify_update_existing_watch(struct fsnotify_group *group,
- 
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!mask))
-+	if (unlikely(!(mask & IN_ALL_EVENTS)))
- 		return -EINVAL;
- 
- 	spin_lock(&inode->i_lock);
-@@ -527,7 +527,7 @@ static int inotify_new_watch(struct fsnotify_group *group,
- 
- 	/* don't allow invalid bits: we don't want flags set */
- 	mask = inotify_arg_to_mask(arg);
--	if (unlikely(!mask))
-+	if (unlikely(!(mask & IN_ALL_EVENTS)))
- 		return -EINVAL;
- 
- 	tmp_ientry = kmem_cache_alloc(inotify_inode_mark_cachep, GFP_KERNEL);
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
