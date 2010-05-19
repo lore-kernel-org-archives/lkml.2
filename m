@@ -1,63 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752886Ab0ESOpB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:45:01 -0400
-Received: from sh.osrg.net ([192.16.179.4]:47490 "EHLO sh.osrg.net"
+	id S1753054Ab0ESOpt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:45:49 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12148 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752866Ab0ESOo7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:44:59 -0400
-Date: Wed, 19 May 2010 23:38:34 +0900
-To: npiggin@suse.de
-Cc: jw@emlix.com, dwmw2@infradead.org, marc@tensilica.com,
-       vapier.adi@gmail.com, dmitry.torokhov@gmail.com, cl@linux.com,
-       penberg@cs.helsinki.fi, mpm@selenic.com, akpm@linux-foundation.org,
-       os@emlix.com, Michael.Hennerich@analog.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, dg@emlix.com, osw@emlix.com,
-       rientjes@google.com, dbrownell@users.sourceforge.net,
-       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
- cache lines
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <20100519135226.GZ2516@laptop>
-References: <20100519133656.GY2516@laptop>
-	<20100519134429.GH26131@emlix.com>
-	<20100519135226.GZ2516@laptop>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1752595Ab0ESOps (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:45:48 -0400
+Message-ID: <4BF3F930.7050808@redhat.com>
+Date: Wed, 19 May 2010 10:44:00 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 10/13] trace: Common code for kprobes/uprobes traceevents
+References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6> <20100518170024.20070.25438.sendpatchset@localhost6.localdomain6> <4BF2CD2F.8000104@redhat.com> <20100519062142.GD19957@linux.vnet.ibm.com>
+In-Reply-To: <20100519062142.GD19957@linux.vnet.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <20100519234049C.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 23:38:38 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010 23:52:26 +1000
-Nick Piggin <npiggin@suse.de> wrote:
-
-> On Wed, May 19, 2010 at 03:44:30PM +0200, Johannes Weiner wrote:
-> > On Wed, May 19, 2010 at 11:36:56PM +1000, Nick Piggin wrote:
-> > > On Wed, May 19, 2010 at 02:17:47PM +0100, David Woodhouse wrote:
-> > > >
-> > > > The 'cacheline aligned' misconception did manage to get into the ad7877
-> > > > driver in commit 3843384a though -- it now uses ____cacheline_aligned
-> > > > instead of __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN))) as it
-> > > > should.
-> > > 
-> > > OK so long as there is not a "must be cacheline aligned" requirement.
-> > > Your proposal for a __dma_aligned attribute in an arch header looks
-> > > like a good idea there.
-> > 
-> > Would you happen to know of other potential users?  At this point I'd
-> > much rather just allocate the buffers dynamically and hide the issue
-> > nicely behind kmalloc().
+Srikar Dronamraju wrote:
+>>
+>> Isn't it a common header for kprobes and uprobes? :)
+>>
+>> Maybe "Probe-based dynamic events common header" ?
+>>
 > 
-> I don't think we need to hide the fact that some platforms have
-> specific alignment restrictions for DMA. So if any drivers make use
-> of the alignment, I see no problem with __dma_aligned.
+> Agree.
+> 
+>>> +#define MAX_TRACE_ARGS 128
+>>> +#define MAX_ARGSTR_LEN 63
+>>> +#define MAX_EVENT_NAME_LEN 64
+>>> +#define UPROBE_EVENT_SYSTEM "uprobes"
+>>
+>> You should *just move* the common code in this patch.
+>> Additional uprobes code can be introduced in next patch.
+>>
+> 
+> Okay.
+> 
+>>> +
+>>> +/* Flags for trace_probe */
+>>> +#define TP_FLAG_TRACE	1
+>>> +#define TP_FLAG_PROFILE	2
+>>> +#define UPROBE_ENABLED	4
+>>
+>> If this is a trace_probe flag, it is better to start with TP_FLAG_.
+> 
+> Okay.
+> Does TP_FLAG_UPROBE sound fine?
 
-IIRC, such was proposed several times:
+Sure, that's good for me:)
 
-http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
+Thank you,
 
-I guess that we agreed that it's better to tell driver writers to just
-use kmalloc.
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
