@@ -1,262 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753689Ab0ESQBb (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:01:31 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:34946 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab0ESQB3 (ORCPT
+	id S1753829Ab0ESQBl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:01:41 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:46491 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753754Ab0ESQBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:01:29 -0400
-From: Daniel Mack <daniel@caiaq.de>
-To: linux-kernel@vger.kernel.org
-Cc: Daniel Mack <daniel@caiaq.de>, Tejun Heo <tj@kernel.org>,
-       Jiri Kosina <jkosina@suse.cz>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Joe Perches <joe@perches.com>, netdev@vger.kernel.org
-Subject: [PATCH] drivers/net/arcnet/capmode.c: clean up code
-Date: Wed, 19 May 2010 18:00:57 +0200
-Message-Id: <1274284857-21932-1-git-send-email-daniel@caiaq.de>
-X-Mailer: git-send-email 1.7.1
+	Wed, 19 May 2010 12:01:37 -0400
+Date: Wed, 19 May 2010 12:01:35 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>, Miklos Szeredi <miklos@szeredi.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: Unexpected splice "always copy" behavior observed
+Message-ID: <20100519160135.GC2039@Krystal>
+References: <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155505.GD2516@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100519155505.GD2516@laptop>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 11:58:45 up 116 days, 18:35,  9 users,  load average: 0.31, 0.40,
+	0.33
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
- - shuffle around functions to get rid of forward declarations
- - fix some CodingStyle and indentation issues
- - last but not least, get rid of the following CONFIG_MODULE=n warning:
+* Nick Piggin (npiggin@suse.de) wrote:
+> On Wed, May 19, 2010 at 11:45:42AM -0400, Steven Rostedt wrote:
+> > On Wed, 2010-05-19 at 17:33 +0200, Miklos Szeredi wrote:
+> > > On Wed, 19 May 2010, Linus Torvalds wrote:
+> > > > Btw, since you apparently have a real case - is the "splice to file" 
+> > > > always just an append? IOW, if I'm not right in assuming that the only 
+> > > > sane thing people would reasonable care about is "append to a file", then 
+> > > > holler now.
+> > > 
+> > > Virtual machines might reasonably need this for splicing to a disk
+> > > image.
+> > 
+> > This comes down to balancing speed and complexity. Perhaps a copy is
+> > fine in this case.
+> > 
+> > I'm concerned about high speed tracing, where we are always just taking
+> > pages from the trace ring buffer and appending them to a file or sending
+> > them off to the network. The slower this is, the more likely you will
+> > lose events.
+> > 
+> > If the "move only on append to file" is easy to implement, I would
+> > really like to see that happen. The speed of splicing a disk image for a
+> > virtual machine only impacts the patience of the user. The speed of
+> > splicing tracing output, impacts how much you can trace without losing
+> > events.
+> 
+> It's not "easy" to implement :) What's your ring buffer look like?
+> Is it a normal user address which the kernel does copy_to_user()ish
+> things into? Or a mmapped special driver?
+> 
+> If the latter, it get's even harder again. But either way if the
+> source pages just have to be regenerated anyway (eg. via page fault
+> on next access), then it might not even be worthwhile to do the
+> splice move.
 
-	drivers/net/arcnet/capmode.c:52: warning: ‘capmode_proto’ defined but not used
+Steven and I use pages to which we write directly by using the page address from
+the linear memory mapping returned by page_address(). These pages have no other
+mapping. They are moved to the pipe, and then from the pipe to a file (or to the
+network). It's possibly the simplest scenario you could think of for splice().
 
-Signed-off-by: Daniel Mack <daniel@caiaq.de>
-Cc: Tejun Heo <tj@kernel.org>
-Cc: Jiri Kosina <jkosina@suse.cz>
-Cc: Christoph Lameter <cl@linux-foundation.org>
-Cc: Joe Perches <joe@perches.com>
-Cc: netdev@vger.kernel.org
----
- drivers/net/arcnet/capmode.c |  176 +++++++++++++++++++-----------------------
- 1 files changed, 79 insertions(+), 97 deletions(-)
+Thanks,
 
-diff --git a/drivers/net/arcnet/capmode.c b/drivers/net/arcnet/capmode.c
-index 20e833a..e1810a3 100644
---- a/drivers/net/arcnet/capmode.c
-+++ b/drivers/net/arcnet/capmode.c
-@@ -37,67 +37,6 @@
- 
- #define VERSION "arcnet: cap mode (`c') encapsulation support loaded.\n"
- 
--
--static void rx(struct net_device *dev, int bufnum,
--	       struct archdr *pkthdr, int length);
--static int build_header(struct sk_buff *skb,
--			struct net_device *dev,
--			unsigned short type,
--			uint8_t daddr);
--static int prepare_tx(struct net_device *dev, struct archdr *pkt, int length,
--		      int bufnum);
--static int ack_tx(struct net_device *dev, int acked);
--
--
--static struct ArcProto capmode_proto =
--{
--	'r',
--	XMTU,
--	0,
--       	rx,
--	build_header,
--	prepare_tx,
--	NULL,
--	ack_tx
--};
--
--#ifdef MODULE
--
--static void arcnet_cap_init(void)
--{
--	int count;
--
--	for (count = 1; count <= 8; count++)
--		if (arc_proto_map[count] == arc_proto_default)
--			arc_proto_map[count] = &capmode_proto;
--
--	/* for cap mode, we only set the bcast proto if there's no better one */
--	if (arc_bcast_proto == arc_proto_default)
--		arc_bcast_proto = &capmode_proto;
--
--	arc_proto_default = &capmode_proto;
--	arc_raw_proto = &capmode_proto;
--}
--
--static int __init capmode_module_init(void)
--{
--	printk(VERSION);
--	arcnet_cap_init();
--	return 0;
--}
--
--static void __exit capmode_module_exit(void)
--{
--	arcnet_unregister_proto(&capmode_proto);
--}
--module_init(capmode_module_init);
--module_exit(capmode_module_exit);
--
--MODULE_LICENSE("GPL");
--
--#endif				/* MODULE */
--
--
- /* packet receiver */
- static void rx(struct net_device *dev, int bufnum,
- 	       struct archdr *pkthdr, int length)
-@@ -229,65 +168,108 @@ static int prepare_tx(struct net_device *dev, struct archdr *pkt, int length,
- 	BUGMSG(D_DURING, "prepare_tx: length=%d ofs=%d\n",
- 	       length,ofs);
- 
--	// Copy the arcnet-header + the protocol byte down:
-+	/* Copy the arcnet-header + the protocol byte down: */
- 	lp->hw.copy_to_card(dev, bufnum, 0, hard, ARC_HDR_SIZE);
- 	lp->hw.copy_to_card(dev, bufnum, ofs, &pkt->soft.cap.proto,
- 			    sizeof(pkt->soft.cap.proto));
- 
--	// Skip the extra integer we have written into it as a cookie
--	// but write the rest of the message:
-+	/* Skip the extra integer we have written into it as a cookie
-+	   but write the rest of the message: */
- 	lp->hw.copy_to_card(dev, bufnum, ofs+1,
- 			    ((unsigned char*)&pkt->soft.cap.mes),length-1);
- 
- 	lp->lastload_dest = hard->dest;
- 
--	return 1;		/* done */
-+	return 1;	/* done */
- }
- 
--
- static int ack_tx(struct net_device *dev, int acked)
- {
--  struct arcnet_local *lp = netdev_priv(dev);
--  struct sk_buff *ackskb;
--  struct archdr *ackpkt;
--  int length=sizeof(struct arc_cap);
-+	struct arcnet_local *lp = netdev_priv(dev);
-+	struct sk_buff *ackskb;
-+	struct archdr *ackpkt;
-+	int length=sizeof(struct arc_cap);
-+
-+	BUGMSG(D_DURING, "capmode: ack_tx: protocol: %x: result: %d\n",
-+		lp->outgoing.skb->protocol, acked);
- 
--  BUGMSG(D_DURING, "capmode: ack_tx: protocol: %x: result: %d\n",
--	 lp->outgoing.skb->protocol, acked);
-+	BUGLVL(D_SKB) arcnet_dump_skb(dev, lp->outgoing.skb, "ack_tx");
- 
--  BUGLVL(D_SKB) arcnet_dump_skb(dev, lp->outgoing.skb, "ack_tx");
-+	/* Now alloc a skb to send back up through the layers: */
-+	ackskb = alloc_skb(length + ARC_HDR_SIZE , GFP_ATOMIC);
-+	if (ackskb == NULL) {
-+		BUGMSG(D_NORMAL, "Memory squeeze, can't acknowledge.\n");
-+		goto free_outskb;
-+	}
- 
--  /* Now alloc a skb to send back up through the layers: */
--  ackskb = alloc_skb(length + ARC_HDR_SIZE , GFP_ATOMIC);
--  if (ackskb == NULL) {
--	  BUGMSG(D_NORMAL, "Memory squeeze, can't acknowledge.\n");
--	  goto free_outskb;
--  }
-+	skb_put(ackskb, length + ARC_HDR_SIZE );
-+	ackskb->dev = dev;
- 
--  skb_put(ackskb, length + ARC_HDR_SIZE );
--  ackskb->dev = dev;
-+	skb_reset_mac_header(ackskb);
-+	ackpkt = (struct archdr *)skb_mac_header(ackskb);
-+	/* skb_pull(ackskb, ARC_HDR_SIZE); */
- 
--  skb_reset_mac_header(ackskb);
--  ackpkt = (struct archdr *)skb_mac_header(ackskb);
--  /* skb_pull(ackskb, ARC_HDR_SIZE); */
-+	skb_copy_from_linear_data(lp->outgoing.skb, ackpkt,
-+				  ARC_HDR_SIZE + sizeof(struct arc_cap));
-+	ackpkt->soft.cap.proto = 0; /* using protocol 0 for acknowledge */
-+	ackpkt->soft.cap.mes.ack=acked;
- 
-+	BUGMSG(D_PROTO, "Ackknowledge for cap packet %x.\n",
-+			*((int*)&ackpkt->soft.cap.cookie[0]));
-+
-+	ackskb->protocol = cpu_to_be16(ETH_P_ARCNET);
-+
-+	BUGLVL(D_SKB) arcnet_dump_skb(dev, ackskb, "ack_tx_recv");
-+	netif_rx(ackskb);
-+
-+free_outskb:
-+	dev_kfree_skb_irq(lp->outgoing.skb);
-+	lp->outgoing.proto = NULL; /* We are always finished when in this protocol */
-+
-+	return 0;
-+}
- 
--  skb_copy_from_linear_data(lp->outgoing.skb, ackpkt,
--		ARC_HDR_SIZE + sizeof(struct arc_cap));
--  ackpkt->soft.cap.proto=0; /* using protocol 0 for acknowledge */
--  ackpkt->soft.cap.mes.ack=acked;
-+static struct ArcProto capmode_proto =
-+{
-+	'r',
-+	XMTU,
-+	0,
-+	rx,
-+	build_header,
-+	prepare_tx,
-+	NULL,
-+	ack_tx
-+};
-+
-+static void arcnet_cap_init(void)
-+{
-+	int count;
- 
--  BUGMSG(D_PROTO, "Ackknowledge for cap packet %x.\n",
--	 *((int*)&ackpkt->soft.cap.cookie[0]));
-+	for (count = 1; count <= 8; count++)
-+		if (arc_proto_map[count] == arc_proto_default)
-+			arc_proto_map[count] = &capmode_proto;
- 
--  ackskb->protocol = cpu_to_be16(ETH_P_ARCNET);
-+	/* for cap mode, we only set the bcast proto if there's no better one */
-+	if (arc_bcast_proto == arc_proto_default)
-+		arc_bcast_proto = &capmode_proto;
- 
--  BUGLVL(D_SKB) arcnet_dump_skb(dev, ackskb, "ack_tx_recv");
--  netif_rx(ackskb);
-+	arc_proto_default = &capmode_proto;
-+	arc_raw_proto = &capmode_proto;
-+}
- 
-- free_outskb:
--  dev_kfree_skb_irq(lp->outgoing.skb);
--  lp->outgoing.proto = NULL; /* We are always finished when in this protocol */
-+static int __init capmode_module_init(void)
-+{
-+	printk(VERSION);
-+	arcnet_cap_init();
-+	return 0;
-+}
- 
--  return 0;
-+static void __exit capmode_module_exit(void)
-+{
-+	arcnet_unregister_proto(&capmode_proto);
- }
-+module_init(capmode_module_init);
-+module_exit(capmode_module_exit);
-+
-+MODULE_LICENSE("GPL");
-+
+Mathieu
+
+
 -- 
-1.7.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
