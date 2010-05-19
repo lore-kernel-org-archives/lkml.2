@@ -1,242 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0ESH1X (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 03:27:23 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:35143 "EHLO
+	id S1754803Ab0ESH2g (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 03:28:36 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:37361 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751359Ab0ESH1V (ORCPT
+	with ESMTP id S1752580Ab0ESH2f (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 03:27:21 -0400
+	Wed, 19 May 2010 03:28:35 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=sender:from:reply-to:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=Ijmf87gyJCS4vIKGF7zhYj80FLs03uWAIdb2FdUNVOIY71nHvwhJ7Nr8PWQrpRhSeT
-         WHuBRis8WHTTTy8edb7c9kUKWF33yY37RKSLlUGkfnihablV+HHmxX5DSxu8311KOE+l
-         5xEWhNQBzhgp0g2Qpi54+ifGI/WwJwVdJBNS0=
-From: Florian Fainelli <florian@openwrt.org>
-Reply-To: Florian Fainelli <florian@openwrt.org>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Subject: [PATCH v3] x86: CPU detection for RDC System-on-Chip
-Date: Wed, 19 May 2010 09:27:12 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.33-2-686; KDE/4.3.4; i686; ; )
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
-       "linux-kernel" <linux-kernel@vger.kernel.org>, andi@firstfloor.org
-References: <201005161455.34100.florian@openwrt.org> <201005161521.47097.florian@openwrt.org> <4BF06CB4.5000909@zytor.com>
-In-Reply-To: <4BF06CB4.5000909@zytor.com>
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=h/+L2qMhasa7eSJtCZIYNFAkUL8dL8436xi2omXNBzJSJkpLg1s3F4sqLOv13qFPYO
+         l8QVJOdfRTowGbwpOt9NHrIrQ/hQ+5iMmk3D75c/TX0aNIxl+duWPtkEgSwDwR0JzeDm
+         YR7MBEeRGdUTzdXEAXzzGR4doz2eZ60aSIJK0=
+Date: Wed, 19 May 2010 09:28:39 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Johannes Berg <johannes@sipsolutions.net>
+Cc: rostedt@goodmis.org, linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: collecting static data related to tracing
+Message-ID: <20100519072838.GD5704@nowhere>
+References: <1274191742.31554.10.camel@jlt3.sipsolutions.net> <1274193698.26328.746.camel@gandalf.stny.rr.com> <1274193909.31554.12.camel@jlt3.sipsolutions.net>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005190927.14385.florian@openwrt.org>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274193909.31554.12.camel@jlt3.sipsolutions.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mark Kelly <mark@bifferos.com>
+On Tue, May 18, 2010 at 04:45:09PM +0200, Johannes Berg wrote:
+> On Tue, 2010-05-18 at 10:41 -0400, Steven Rostedt wrote:
+> 
+> > The latest version of trace-cmd has an "options" section. This allows
+> > you to add options to the file.
+> > 
+> > We could make a plugin that also can be used by trace-cmd record, that
+> > allows you to add options. The options are written such that if a
+> > trace-cmd does not know how to deal with them, they will be ignored.
+> > 
+> > Hmm, but the options require a unique ID. Well we could register IDs
+> > with plugins, or add a plugin id, which uses the name of the plugin as
+> > an identifier too.
+> > 
+> > But this would allow you to add the details you want about the system
+> > and then have the reader be able to print it out.
+> > 
+> > How's that sound?
+> 
+> Sounds good, although it does require that I tell people who want to
+> record to also install the recording plugin, but that should be
+> manageable :) I can just dig out the data from the regular debugfs once
+> I add files containing it.
+> 
+> johannes
 
-The RDC System-on-Chip i486 compatible core does not support the cpuid
-instruction and specific detection logic is required for this chip. The patch
-below adds proper vendor and SoC type detection.
 
-Signed-off-by: Mark Kelly <mark@bifferos.com>
-Tested-by: Florian Fainelli <florian@openwrt.org>
----
-Changes from v3:
-- read vendor and device id with a single 32-bits read
+This is a place where events injection might be suitable perhaps.
+Either kernel or user space event injection.
 
-Changes from v2:
-- change report url to bugzilla.kernel.org
-- set vendor name to RDC even if customer id is not known
+kernel space injection would be a simple trace event declared that
+have a callback called when it gets enabled. This callback would
+inject any events it wants.
 
-diff --git a/Documentation/x86/rdc.txt b/Documentation/x86/rdc.txt
-new file mode 100644
-index 0000000..f3dc7cf
---- /dev/null
-+++ b/Documentation/x86/rdc.txt
-@@ -0,0 +1,67 @@
-+
-+Introduction
-+============
-+
-+RDC (http://www.rdc.com.tw) have been manufacturing x86-compatible SoC
-+(system-on-chips) for a number of years.  They are not the fastest of
-+CPUs (clock speeds ranging from 133-150MHz) but 486SX compatibility
-+coupled with very low power consumption[1] and low cost make them ideal
-+for embedded applications.
-+
-+
-+Where to find
-+=============
-+
-+RDC chips show up in numerous embedded devices, but be careful since
-+many of them will not run Linux 2.6 without significant expertise.
-+
-+There are several variants of what the linux kernel refers to generically
-+as RDC321X:  R8610, R321x, S3282 and AMRISC20000.
-+
-+R321x: Found in various routers, see the OpenWrt project for details,
-+   http://wiki.openwrt.org/oldwiki/rdcport
-+
-+R8610: Found on the RDC evaluation board
-+   http://www.ivankuten.com/system-on-chip-soc/rdc-r8610/
-+
-+AMRISC20000: Found in the MGB-100 wireless hard disk
-+   http://tintuc.no-ip.com/linux/tipps/mgb100/
-+
-+S3282: Found in various NAS devices, including the Bifferboard
-+   http://www.bifferos.com
-+
-+
-+Kernel Configuration
-+====================
-+
-+Add support for this CPU with CONFIG_X86_RDC321X.  Ensure that maths
-+emulation is included (CONFIG_MATH_EMULATION selected) and avoid MCE
-+(CONFIG_X86_MCE not selected).
-+
-+
-+CPU detection
-+=============
-+
-+None of these chips support the cpuid instruction, so as with some
-+other x86 compatible SoCs, we must check the north bridge and look
-+for specific 'signature' PCI device config.
-+
-+If you run a kernel on an unsupported customer id device, please file
-+a bug with your customer id to: http://bugzilla.kernel.org/.
-+
-+Credits
-+=======
-+
-+Many thanks to RDC for providing the customer codes to allow
-+detection of all known variants, without which this detection code
-+would have been very hard to ascertain.
-+
-+
-+References
-+==========
-+
-+[1] S3282 in certain NAS solutions consumes less than 1W
-+
-+
-+mark@bifferos.com 2009
-+
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index 39e8e10..21b02f2 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -419,6 +419,7 @@ config X86_RDC321X
- 	bool "RDC R-321x SoC"
- 	depends on X86_32
- 	depends on X86_EXTENDED_PLATFORM
-+	select PCI
- 	select M486
- 	select X86_REBOOTFIXUPS
- 	---help---
-diff --git a/arch/x86/include/asm/processor.h b/arch/x86/include/asm/processor.h
-index 5a51379..eddf979 100644
---- a/arch/x86/include/asm/processor.h
-+++ b/arch/x86/include/asm/processor.h
-@@ -122,7 +122,8 @@ struct cpuinfo_x86 {
- #define X86_VENDOR_CENTAUR	5
- #define X86_VENDOR_TRANSMETA	7
- #define X86_VENDOR_NSC		8
--#define X86_VENDOR_NUM		9
-+#define X86_VENDOR_RDC		9
-+#define X86_VENDOR_NUM		10
- 
- #define X86_VENDOR_UNKNOWN	0xff
- 
-diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
-index 3a785da..af2d4a6 100644
---- a/arch/x86/kernel/cpu/Makefile
-+++ b/arch/x86/kernel/cpu/Makefile
-@@ -25,6 +25,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
- obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
- obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
- obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
-+obj-$(CONFIG_X86_RDC321X)		+= rdc.o
- 
- obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
- 
-diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
-new file mode 100644
-index 0000000..c2bcdcc
---- /dev/null
-+++ b/arch/x86/kernel/cpu/rdc.c
-@@ -0,0 +1,73 @@
-+/*
-+ * See Documentation/x86/rdc.txt
-+ *
-+ * mark@bifferos.com
-+ */
-+
-+#include <linux/pci.h>
-+#include <asm/pci-direct.h>
-+#include "cpu.h"
-+
-+
-+static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
-+{
-+	u32 id;
-+	u16 vendor, device;
-+	u32 customer_id;
-+
-+	if (!early_pci_allowed())
-+		return;
-+
-+	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
-+	id = read_pci_config(0, 0, 0, PCI_VENDOR_ID);
-+	vendor = id & 0xffff;
-+	device = (id >> 16) & 0xffff;
-+
-+	if (vendor != PCI_VENDOR_ID_RDC || device != PCI_DEVICE_ID_RDC_R6020)
-+		return;  /* not RDC */
-+	/*
-+	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
-+	 * that's probably overkill
-+	 */
-+
-+	customer_id = read_pci_config(0, 0, 0, 0x90);
-+
-+	switch (customer_id) {
-+		/* id names are from RDC */
-+	case 0x00321000:
-+		strcpy(c->x86_model_id, "R3210/R3211");
-+		break;
-+	case 0x00321001:
-+		strcpy(c->x86_model_id, "AMITRISC20000/20010");
-+		break;
-+	case 0x00321002:
-+		strcpy(c->x86_model_id, "R3210X/Edimax");
-+		break;
-+	case 0x00321003:
-+		strcpy(c->x86_model_id, "R3210/Kcodes");
-+		break;
-+	case 0x00321004:  /* tested */
-+		strcpy(c->x86_model_id, "S3282/CodeTek");
-+		break;
-+	case 0x00321007:
-+		strcpy(c->x86_model_id, "R8610");
-+		break;
-+	default:
-+		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
-+			"report to: http://bugzilla.kernel.org/\n",
-+			customer_id);
-+		break;
-+	}
-+
-+	strcpy(c->x86_vendor_id, "RDC");
-+	c->x86_vendor = X86_VENDOR_RDC;
-+}
-+
-+static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
-+	.c_vendor	= "RDC",
-+	.c_ident	= { "RDC" },
-+	.c_identify	= rdc_identify,
-+	.c_x86_vendor	= X86_VENDOR_RDC,
-+};
-+
-+cpu_dev_register(rdc_cpu_dev);
+userspace injection could be a bit different, the user can inject
+its own format and events content toward a debugfs or whatever file.
+This would be suitable if userspace have few things to inject,
+otherwise we would need to think about something else perhaps.
+
