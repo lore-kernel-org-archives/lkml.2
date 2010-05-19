@@ -1,131 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757640Ab0ESMBe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:01:34 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:40910 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756032Ab0ESMBd convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:01:33 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=ovIjY6A5zPwJMob/L2QYKGAmu4bd4lVajn44+nIEf1ueysKr/P3l7iGSVkDXYPFTLc
-         6Plgbk9Im6/7fDg5dM7rGab7PsbRG/g9Fwe9RKKv4sQRbWmpQDoQ4Q0O/CifBgmYa/3w
-         nk4BBCCB46rWA8g/tZSO8LVuff2PmW3rT7Oh4=
-MIME-Version: 1.0
-In-Reply-To: <4BF37DD5.9050409@ct.jp.nec.com>
-References: <1273532139-23043-2-git-send-email-snitzer@redhat.com>
-	 <4BEA659F.9050206@ct.jp.nec.com> <20100513035750.GA25523@redhat.com>
-	 <4BED049C.5040409@ct.jp.nec.com> <20100514140852.GA10373@redhat.com>
-	 <4BF10BF1.3040108@ct.jp.nec.com> <20100517172737.GA24591@redhat.com>
-	 <4BF25091.3000507@ct.jp.nec.com> <20100518134639.GA27582@redhat.com>
-	 <4BF37DD5.9050409@ct.jp.nec.com>
-Date: Wed, 19 May 2010 08:01:30 -0400
-X-Google-Sender-Auth: DJ1TEWt1R480QcHYAGyBV4rqIKg
-Message-ID: <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for 
-	request-based device
-From: Mike Snitzer <snitzer@redhat.com>
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>, Nikanth Karthikesan <knikanth@suse.de>,
-       Alasdair Kergon <agk@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1757755Ab0ESMFZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:05:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751961Ab0ESMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:05:23 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <1274135154-24082-3-git-send-email-walken@google.com>
+References: <1274135154-24082-3-git-send-email-walken@google.com> <1274135154-24082-1-git-send-email-walken@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 02/10] rwsem: fully separate code pathes to wake writers vs readers
+Date: Wed, 19 May 2010 13:04:42 +0100
+Message-ID: <2767.1274270682@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 1:57 AM, Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> Hi Mike,
->
-> On 05/18/2010 10:46 PM +0900, Mike Snitzer wrote:
->> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->>> On 05/18/2010 02:27 AM +0900, Mike Snitzer wrote:
->>>> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->>>>> As far as I understand, the current model of device-mapper is:
->>>>>   - a table (precisely, a target) has various attributes,
->>>>>     bio-based/request-based is one of such attributes
->>>>>   - a table and its attributes are bound to the block device on resume
->>>>> If we want to fix a problem, I think we should either work based on
->>>>> this model or change the model.
->>>>>
->>>>> Your patch makes that loading table affects the block device, so you
->>>>> are changing the model.
->>>>>
->>>>> If you change the model, it should be done carefully.
->>>>> For example, the current model allows most of the table loading code
->>>>> to run without exclusive lock on the device because it doesn't affect
->>>>> the device itself.  If you change this model, table loading needs to
->>>>> be serialized with appropriate locking.
->>>>
->>>> Nice catch, yes md->queue needs protection (see patch below).
->>>
->>> Not enough. (See drivers/md/dm-ioctl.c:table_load().)
->>> Table load sequence is:
->>>   1. populate table
->>>   2. set the table to ->new_map of the hash_cell for the mapped_device
->>>      in protection by _hash_lock.
->>>
->>> Since your fix only serializes the step 1, concurrent table loading
->>> could end up with inconsistent status; e.g. request-based table is
->>> bound to the mapped_device while the queue is initialized as bio-based.
->>> With your new model, those 2 steps above must be atomic.
->>
->> Ah, yes.. I looked at the possibility of serializing the entirety of
->> table_load but determined that would be too excessive (would reduce
->> parallelism of table_load).  But I clearly missed the fact that there
->> could be a race to the _hash_lock protected critical section in
->> table_load() -- leading to queue inconsistency.
->>
->> I'll post v5 of the overall patch which will revert the mapped_device
->> 'queue_lock' serialization that I proposed in v4.  v5 will contain
->> the following patch to localize all table load related queue
->> manipulation to the _hash_lock protected critical section in
->> table_load().  So it sets the queue up _after_ the table's type is
->> established with dm_table_set_type().
->
-> dm_table_setup_md_queue() may allocate memory with blocking mode.
-> Blocking allocation inside exclusive _hash_lock can cause deadlock;
-> e.g. when it has to wait for other dm devices to resume to free some
-> memory.
+Michel Lespinasse <walken@google.com> wrote:
 
-We make no guarantees that other DM devices will resume before a table
-load -- so calling dm_table_setup_md_queue() within the exclusive
-_hash_lock is no different than other DM devices being suspended while
-a request-based DM device performs its first table_load().
+> + readers_only:
+> +	if (!downgrading) {
+> +
 
-My thinking was this should not be a problem as it is only valid to
-call dm_table_setup_md_queue() before the newly created request-based
-DM device has been resumed.
+There's an unnecessary blank line here.
 
-AFAIK we don't have any explicit constraints on memory allocations
-during table load (e.g. table loads shouldn't depend on other devices'
-writeback) -- but any GFP_KERNEL allocation could recurse
-(elevator_alloc() currently uses GFP_KERNEL with kmalloc_node)...
+> +		/* if we came through an up_xxxx() call, we only only wake
+> +		 * someone up if we can transition the active part of the
+> +		 * count from 0 -> 1
+> +		 */
+> + try_again_read:
 
-I'll have to review the DM code further to see if all memory
-allocations during table_load() are done via mempools.  I'll also
-bring this up on this week's LVM call.
+I hate code that jumps into braced blocks with goto.  Would it be possible for
+you to do:
 
-> Also, your patch changes the queue configuration even when a table is
-> already active and used.  (e.g. Loading bio-based table to a mapped_device
-> which is already active/used as request-based sets q->requst_fn in NULL.)
-> That could cause some critical problems.
+	readers_only:
+		if (downgrading)
+			goto wake_readers;
+	...
+	wake_readers:
+		/* Grant an infinite number of read locks to the readers at the front
+	...
 
-Yes, that is possible and I can add additional checks to prevent this.
-But this speaks to a more general problem with the existing DM code.
+instead, please?
 
-dm_swap_table() has the negative check to prevent such table loads, e.g.:
-/* cannot change the device type, once a table is bound */
+Also, since the labels 'undo' and 'try_again' are now specific to the writer
+path, can you label them 'undo_write' and 'try_again_write' just to make it
+obvious?
 
-This check should come during table_load, as part of
-dm_table_set_type(), rather than during table resume.
+Other than that, no particular objections to this patch.
 
-Thanks,
-Mike
+David
