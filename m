@@ -1,68 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab0ESPy3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:54:29 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:5560 "EHLO SMTP02.CITRIX.COM"
+	id S1753763Ab0ESPy7 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:54:59 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45653 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753655Ab0ESPy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:54:27 -0400
-X-IronPort-AV: E=Sophos;i="4.53,264,1272859200"; 
-   d="scan'208";a="97739114"
-From: Ian Campbell <ian.campbell@citrix.com>
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: xen-devel@lists.xensource.com, linux-kernel@vger.kernel.org,
-       stable@kernel.org, Ian Campbell <ian.campbell@citrix.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>
-Subject: [PATCH] xen: ensure timer tick is resumed even on CPU driving the resume
-Date: Wed, 19 May 2010 16:55:18 +0100
-Message-Id: <1274284518-5333-1-git-send-email-ian.campbell@citrix.com>
-X-Mailer: git-send-email 1.5.6.5
-In-Reply-To: <1274283324.14939.209.camel@zakaz.uk.xensource.com>
-References: <1274283324.14939.209.camel@zakaz.uk.xensource.com>
-X-OriginalArrivalTime: 19 May 2010 15:54:26.0118 (UTC) FILETIME=[8EB3A660:01CAF76B]
+	id S1753474Ab0ESPy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:54:57 -0400
+Date: Thu, 20 May 2010 01:54:55 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Len Brown <lenb@kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 16/17] acpi: update gfp/slab.h includes
+Message-Id: <20100520015455.bee01631.sfr@canb.auug.org.au>
+In-Reply-To: <1269885165-18617-17-git-send-email-tj@kernel.org>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-17-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The core suspend/resume code is run from stop_machine on CPU0 but
-parts of the suspend/resume machinery (including xen_arch_resume) are
-run on whichever CPU happened to schedule the xenwatch kernel thread.
+Hi Len,
 
-As part of the non-core resume code xen_arch_resume is called in order
-to restart the timer tick on non-boot processors. The boot processor
-itself is taken care of by core timekeeping code.
+On Tue, 30 Mar 2010 02:52:44 +0900 Tejun Heo <tj@kernel.org> wrote:
+>
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
 
-xen_arch_resume uses smp_call_function which does not call the given
-function on the current processor. This means that we can end up with
-one CPU not receiving timer ticks if the xenwatch thread happened to
-be scheduled on CPU > 0.
+Please apply this to the acpi tree (patch reposted below).
 
-Use on_each_cpu instead of smp_call_function to ensure the timer tick
-is resumed everywhere.
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>
+Subject: [PATCH 16/17] acpi: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:44 +0900
 
-Signed-off-by: Ian Campbell <ian.campbell@citrix.com>
-Cc: Jeremy Fitzhardinge <jeremy@goop.org>
-Cc: Stable Kernel <stable@kernel.org>
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Len Brown <lenb@kernel.org>
 ---
+ drivers/acpi/apei/apei-base.c |    1 +
+ drivers/acpi/atomicio.c       |    1 +
+ 2 files changed, 2 insertions(+), 0 deletions(-)
 
-Resend with correct in-reply-to.
-
- arch/x86/xen/suspend.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
-index 987267f..a9c6611 100644
---- a/arch/x86/xen/suspend.c
-+++ b/arch/x86/xen/suspend.c
-@@ -60,6 +60,6 @@ static void xen_vcpu_notify_restore(void *data)
+diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
+index c35fec7..2672880 100644
+--- a/drivers/acpi/apei/apei-base.c
++++ b/drivers/acpi/apei/apei-base.c
+@@ -34,6 +34,7 @@
+ #include <linux/module.h>
+ #include <linux/init.h>
+ #include <linux/acpi.h>
++#include <linux/slab.h>
+ #include <linux/io.h>
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
+index 4ed1385..e21b1e4 100644
+--- a/drivers/acpi/atomicio.c
++++ b/drivers/acpi/atomicio.c
+@@ -31,6 +31,7 @@
+ #include <linux/kref.h>
+ #include <linux/rculist.h>
+ #include <linux/interrupt.h>
++#include <linux/slab.h>
+ #include <acpi/atomicio.h>
  
- void xen_arch_resume(void)
- {
--	smp_call_function(xen_vcpu_notify_restore,
--			       (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
-+	on_each_cpu(xen_vcpu_notify_restore,
-+		    (void *)CLOCK_EVT_NOTIFY_RESUME, 1);
- }
+ #define ACPI_PFX "ACPI: "
 -- 
-1.5.6.5
+1.6.4.2
 
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
