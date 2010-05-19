@@ -1,107 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752746Ab0ESOPL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:15:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:53715 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752487Ab0ESOPI (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:15:08 -0400
-Date: Wed, 19 May 2010 10:15:00 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Dominique Toupin <dominique.toupin@ericsson.com>
-Subject: Re: [PATCH v4 0/13] Uprobes v4
-Message-ID: <20100519141458.GA3961@Krystal>
-References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6> <20100518204944.GA6959@Krystal> <20100519060803.GB19957@linux.vnet.ibm.com>
+	id S1752696Ab0ESOQT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:16:19 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:53352 "EHLO SMTP.CITRIX.COM"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752175Ab0ESOQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:16:18 -0400
+X-IronPort-AV: E=Sophos;i="4.53,263,1272859200"; 
+   d="scan'208";a="8591094"
+Date: Wed, 19 May 2010 15:19:38 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [PATCH 08/12] Allow xen platform pci device to be compiled as
+ a module
+In-Reply-To: <4BF2D941.5070401@goop.org>
+Message-ID: <alpine.DEB.2.00.1005191519040.11380@kaball-desktop>
+References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com> <4BF2D941.5070401@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519060803.GB19957@linux.vnet.ibm.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 10:10:56 up 116 days, 16:48,  9 users,  load average: 1.37, 1.03,
-	1.10
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Srikar Dronamraju (srikar@linux.vnet.ibm.com) wrote:
-> > * Srikar Dronamraju (srikar@linux.vnet.ibm.com) wrote:
-> > > Uprobes Patches
-> > > 
-> > > Changelog from v3:
-> > >   - Reverted to background page replacement as suggested by Peter Zijlstra.
-> > 
-> > Why ?
-> > 
-> > I'm not sure we reached any concensus about the need for a background page
-> > replacement.
-> > 
-> > Thanks,
-> > 
-> > Mathieu
-> > 
+On Tue, 18 May 2010, Jeremy Fitzhardinge wrote:
+> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+> > index 6f5f3ba..f936d30 100644
+> > --- a/drivers/xen/grant-table.c
+> > +++ b/drivers/xen/grant-table.c
+> > @@ -56,6 +56,9 @@
+> >  #define GNTTAB_LIST_END 0xffffffff
+> >  #define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry))
+> >  
+> > +unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
+> > +EXPORT_SYMBOL_GPL(alloc_xen_mmio_hook);
+> > +
+> >  static grant_ref_t **gnttab_list;
+> >  static unsigned int nr_grant_frames;
+> >  static unsigned int boot_max_nr_grant_frames;
+> > @@ -514,7 +517,7 @@ int gnttab_resume(void)
+> >  		return gnttab_map(0, nr_grant_frames - 1);
+> >  
+> >  	if (!hvm_pv_resume_frames) {
+> > -		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+> > +		hvm_pv_resume_frames = alloc_xen_mmio_hook(PAGE_SIZE * max_nr_gframes);
+> >   
 > 
-> I was tested with access_process_vm(previous patchset) and the current
-> (background page replacement) and the results are the same. 
+> This looks like it should be restructured so the pci device driver
+> itself is doing this mapping, then calling into the grant subsystem to
+> tell it where the mapping is.
 > 
-> However Peter Zijlstra's contention still stands that we might be
-> relying on a undocumented feature in the hardware
 
-The access_process_vm scheme is in many ways similar to what kprobes has been
-doing for years. So I would not rely on that as a primary argument against
-the access_process_vm approach.
+OK
 
-> and the flipping the
-> pages isnt that hard or expensive.
+
+> >  		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
+> >  		if (shared == NULL) {
+> >  			printk(KERN_WARNING
+> > @@ -600,6 +603,7 @@ int gnttab_init(void)
+> >  	kfree(gnttab_list);
+> >  	return -ENOMEM;
+> >  }
+> > +EXPORT_SYMBOL_GPL(gnttab_init);
+> >  
+> >  static int __devinit __gnttab_init(void)
+> >  {
+> > diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> > index a73edd8..49ee52d 100644
+> > --- a/drivers/xen/manage.c
+> > +++ b/drivers/xen/manage.c
+> > @@ -34,6 +34,13 @@ enum shutdown_state {
+> >  	 SHUTDOWN_HALT = 4,
+> >  };
+> >  
+> > +void (*platform_pci_resume_hook)(void);
+> > +EXPORT_SYMBOL_GPL(platform_pci_resume_hook);
+> > +void (*platform_pci_disable_irq_hook)(void);
+> > +EXPORT_SYMBOL_GPL(platform_pci_disable_irq_hook);
+> > +void (*platform_pci_enable_irq_hook)(void);
+> > +EXPORT_SYMBOL_GPL(platform_pci_enable_irq_hook);
+> >   
 > 
-> Even Linus, (http://lkml.org/lkml/2010/1/27/87) had shown inclination
-> towards background page replacement. 
+> If all this _hook stuff is here to support a modular xen platform pci
+> device, then something has gone wrong.  The device should be doing this
+> via its own suspend/resume handlers.
 > 
-> Also when uprobes implements global tracing support (i.e probing a
-> particular symbol in a dso across processes), it has to rely on
-> background page replacement. 
 
-Ah OK. If you have to use page replacement for global tracing, I see that as a
-good argument for using page replacement everywhere.
+I'll give it another try.
 
-> 
-> Hence I based this patchset on background page replacement rather than
-> on access_process_vm. Later On, if there is a consensus on using
-> access_process_vm, we can make the corresponding changes.
 
-Well, page replacement seems like a good way to support global tracing, so I
-doubt that we'll ever revert back to access_process_vm.
-
-Thanks,
-
-Mathieu
-
-> 
-> --
-> Thanks and Regards
-> Srikar
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
