@@ -1,109 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753798Ab0ESPzP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:55:15 -0400
-Received: from mail.vyatta.com ([76.74.103.46]:54462 "EHLO mail.vyatta.com"
+	id S1753814Ab0ESPzg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:55:36 -0400
+Received: from sh.osrg.net ([192.16.179.4]:37249 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753722Ab0ESPy6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:54:58 -0400
-Date: Wed, 19 May 2010 08:54:53 -0700
-From: Stephen Hemminger <shemminger@vyatta.com>
-To: netdev@vger.kernel.org
-Cc: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: [ANNOUNCE] iproute2 2.6.34
-Message-ID: <20100519085453.77d56521@nehalam>
-Organization: Vyatta
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
+	id S1753524Ab0ESPzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:55:32 -0400
+Date: Wed, 19 May 2010 23:50:08 +0900
+To: dwmw2@infradead.org
+Cc: herbert@gondor.hengli.com.au, vapier@gentoo.org, npiggin@suse.de,
+       os@emlix.com, davem@davemloft.net, penberg@cs.helsinki.fi,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [PATCH 5/4] Provide __dma_aligned macro
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1274276948.6930.10117.camel@macbook.infradead.org>
+References: <20100519010524.GB18813@gondor.apana.org.au>
+	<1274266725.6930.9823.camel@macbook.infradead.org>
+	<1274276948.6930.10117.camel@macbook.infradead.org>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100519235158A.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 23:50:09 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This version of iproute2 utilities intended for use with 2.6.34 or
-later kernel, but should be backward compatible with older releases.
-In addition to build and man page fixes, this release includes a
-support for several new features:
+On Wed, 19 May 2010 14:49:08 +0100
+David Woodhouse <dwmw2@infradead.org> wrote:
 
-   * SR-IOV (I/O Virtualization) support.
-   * tuntap support
-   * bus-error reporting and counters
-   * new FIFO type head drop queue discipline
+> Commit 3843384a055496dfed3c93ae883d964d8290fdab ("Input: ad7877 - keep
+> dma rx buffers in seperate cache lines")[sic] introduced the use of
+> ____cacheline_aligned to ensure that buffers used for DMA as part of a
+> structure were suitably separated from the rest of the structure.
+> 
+> However, aligning to the cache line size isn't necessary on
+> cache-coherent architectures. To avoid wasting space, the correct value
+> to use for the alignment is ARCH_KMALLOC_MINALIGN.
+> 
+> This patch provides a __dma_aligned macro which does the right thing.
+> 
+> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+> 
+> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
+> index ca32ed7..4487cf3 100644
+> --- a/include/linux/dma-mapping.h
+> +++ b/include/linux/dma-mapping.h
+> @@ -5,6 +5,9 @@
+>  #include <linux/err.h>
+>  #include <linux/dma-attrs.h>
+>  #include <linux/scatterlist.h>
+> +#include <linux/slab.h>
+> +
+> +#define __dma_aligned __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN)))
 
-The tar ball is available at:
-  http://devresources.linuxfoundation.org/dev/iproute2/download
+As wrote in other mail, such was proposed several times:
 
-Repository:
-  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
+http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
+http://lwn.net/Articles/2269/
 
-For more info on iproute2 see:
-  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
+And rejected.
 
-Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
-
-Changes since last release (2.6.33)
-
-Alexandre Cassen (1):
-      Detect 6rd kernel missing support / 6rd tunnel scope
-
-Andreas Henriksson (2):
-      iproute2: detect iptables modules dir in configure.
-      iproute2: add option to build m_xt as a tc module (v3)
-
-Bart Trojanowski (1):
-      fix build issues with flex ver 2.5
-
-Brian Bloniarz (1):
-      ip: document initcwnd
-
-Chris Wright (1):
-      iproute2: rework SR-IOV VF support
-
-David Woodhouse (1):
-      Add 'ip tuntap' support.
-
-Florian Westphal (1):
-      iproute2: fix addrlabel interface names handling
-
-Hagen Paul Pfeifer (1):
-      tc: add new queue discipline: head drop fifo
-
-Jamal Hadi Salim (3):
-      xfrm: policy by mark
-      xfrm: Introduce xfrm by mark
-      xfrm: add support for SA by mark
-
-Jan Engelhardt (1):
-      ip: correctly report tunnel link type
-
-Michele Petrazzo - Unipex (1):
-      Continue after errors in -batch
-
-Williams, Mitch A (3):
-      Update man page to indicate current options
-      ip: Add support for setting and showing SR-IOV virtual funtion link params
-      libnetlink: Modify the parser to track first duplicated attributes
-
-Wolfgang Grandegger (1):
-      iproute2: netlink support for bus-error reporting and counters
-
-YOSHIFUJI Hideaki / 吉藤英明 (1):
-      gaiconf: /etc/gai.conf configuration helper.
-
-jamal (1):
-      skbedit: use get_u32 for parsing mark
-
-laurent chavey (1):
-      Add initcwnd to iproute2
-
-Stephen Hemminger:
-      Fix line numbering on batch commands
-      Remove mirred debug message
-      Workaround missing ALIGN() macro.
-      Update ip.8 man page to describe route table id values
-      Update kernel headers to 2.6.34 final version
-      Add documentation for ip link add/delete sub-commands
-      ip: add documentation for initrwnd
-      v2.6.34
+http://lwn.net/Articles/2270/
