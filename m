@@ -1,76 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752821Ab0ESOim (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:38:42 -0400
-Received: from www.tglx.de ([62.245.132.106]:59290 "EHLO www.tglx.de"
+	id S1752904Ab0ESOjP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:39:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15827 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752081Ab0ESOil (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:38:41 -0400
-Date: Wed, 19 May 2010 16:38:22 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: michael@ellerman.id.au, Brian King <brking@linux.vnet.ibm.com>,
-       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-       niv@linux.vnet.ibm.com, Doug Maxey <doug.maxey@us.ibm.com>,
-       linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-In-Reply-To: <4BF3F2DB.7030701@us.ibm.com>
-Message-ID: <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
-References: <4BF30793.5070300@us.ibm.com> <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com> <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1752860Ab0ESOjN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:39:13 -0400
+Date: Wed, 19 May 2010 10:39:00 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
+Cc: Nikanth Karthikesan <knikanth@suse.de>, linux-kernel@vger.kernel.org,
+       dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
+       Vivek Goyal <vgoyal@redhat.com>
+Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for
+ request-based device
+Message-ID: <20100519143900.GC24618@redhat.com>
+References: <4BEA659F.9050206@ct.jp.nec.com>
+ <20100513035750.GA25523@redhat.com>
+ <4BED049C.5040409@ct.jp.nec.com>
+ <20100514140852.GA10373@redhat.com>
+ <4BF10BF1.3040108@ct.jp.nec.com>
+ <20100517172737.GA24591@redhat.com>
+ <4BF25091.3000507@ct.jp.nec.com>
+ <20100518134639.GA27582@redhat.com>
+ <4BF37DD5.9050409@ct.jp.nec.com>
+ <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, Darren Hart wrote:
+On Wed, May 19 2010 at  8:01am -0400,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-> On 05/18/2010 06:25 PM, Michael Ellerman wrote:
-> > On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
-> > > On 05/18/2010 02:52 PM, Brian King wrote:
-> > > > Is IRQF_NODELAY something specific to the RT kernel? I don't see it in
-> > > > mainline...
-> > > 
-> > > Yes, it basically says "don't make this handler threaded".
-> > 
-> > That is a good fix for EHEA, but the threaded handling is still broken
-> > for anything else that is edge triggered isn't it?
+> On Wed, May 19, 2010 at 1:57 AM, Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
+> > Hi Mike,
+> >
+> > On 05/18/2010 10:46 PM +0900, Mike Snitzer wrote:
+> >> I'll post v5 of the overall patch which will revert the mapped_device
+> >> 'queue_lock' serialization that I proposed in v4.  v5 will contain
+> >> the following patch to localize all table load related queue
+> >> manipulation to the _hash_lock protected critical section in
+> >> table_load().  So it sets the queue up _after_ the table's type is
+> >> established with dm_table_set_type().
+> >
+> > dm_table_setup_md_queue() may allocate memory with blocking mode.
+> > Blocking allocation inside exclusive _hash_lock can cause deadlock;
+> > e.g. when it has to wait for other dm devices to resume to free some
+> > memory.
 > 
-> No, I don't believe so. Edge triggered interrupts that are reported as edge
-> triggered interrupts will use the edge handler (which was the approach
-> Sebastien took to make this work back in 2008). Since XICS presents all
-> interrupts as Level Triggered, they use the fasteoi path.
-
-I wonder whether the XICS interrupts which are edge type can be
-identified from the irq_desc->flags. Then we could avoid the masking
-for those in the fasteoi_handler in general.
-
-> > 
-> > The result of the discussion about two years ago on this was that we
-> > needed a custom flow handler for XICS on RT.
+> We make no guarantees that other DM devices will resume before a table
+> load -- so calling dm_table_setup_md_queue() within the exclusive
+> _hash_lock is no different than other DM devices being suspended while
+> a request-based DM device performs its first table_load().
 > 
-> I'm still not clear on why the ultimate solution wasn't to have XICS report
-> edge triggered as edge triggered. Probably some complexity of the entire power
-> stack that I am ignorant of.
+> My thinking was this should not be a problem as it is only valid to
+> call dm_table_setup_md_queue() before the newly created request-based
+> DM device has been resumed.
 > 
-> > Apart from the issue of loosing interrupts there is also the fact that
-> > masking on the XICS requires an RTAS call which takes a global lock.
+> AFAIK we don't have any explicit constraints on memory allocations
+> during table load (e.g. table loads shouldn't depend on other devices'
+> writeback) -- but any GFP_KERNEL allocation could recurse
+> (elevator_alloc() currently uses GFP_KERNEL with kmalloc_node)...
+> 
+> I'll have to review the DM code further to see if all memory
+> allocations during table_load() are done via mempools.  I'll also
+> bring this up on this week's LVM call.
 
-Right, I'd love to avoid that but with real level interrupts we'd run
-into an interrupt storm. Though another solution would be to issue the
-EOI after the threaded handler finished, that'd work as well, but
-needs testing.
+We discussed this and I understand the scope of the problem now.
 
-> Right, one of may reasons why we felt this was the right fix. The other is
-> that there is no real additional overhead in running this as non-threaded
-> since the receive handler is so short (just napi_schedule()).
+Just reiterating what you covered when you first pointed this issue out:
 
-Yes, in the case at hand it's the right thing to do, as we avoid
-another wakeup/context switch.
+It could be that a table load gets blocked (waiting on a memory
+allocation).  The table load can take as long as it needs.  But we can't
+have it block holding the exclusive _hash_lock while blocking.  Having
+_hash_lock prevents further DM ioctls.  The table load's allocation may
+be blocking waiting for writeback to a DM device that will be resumed by
+another thread.
 
-Thanks,
+Thanks again for pointing this out; I'll work to arrive at an
+alternative locking scheme.  Likely introduce a lock local to the
+multiple_device (effectively the 'queue_lock' I had before).  But
+difference is I'd take that lock before taking _hash_lock.
 
-	tglx
+I hope to have v6 available at some point today but it may be delayed by
+a day.
+
+> > Also, your patch changes the queue configuration even when a table is
+> > already active and used.  (e.g. Loading bio-based table to a mapped_device
+> > which is already active/used as request-based sets q->requst_fn in NULL.)
+> > That could cause some critical problems.
+> 
+> Yes, that is possible and I can add additional checks to prevent this.
+> But this speaks to a more general problem with the existing DM code.
+> 
+> dm_swap_table() has the negative check to prevent such table loads, e.g.:
+> /* cannot change the device type, once a table is bound */
+> 
+> This check should come during table_load, as part of
+> dm_table_set_type(), rather than during table resume.
+
+I'll look to address this issue in v6 too.
+
+Regards,
+Mike
