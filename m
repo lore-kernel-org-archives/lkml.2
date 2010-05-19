@@ -1,63 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752527Ab0ESOW6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:22:58 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:58101 "EHLO SMTP.CITRIX.COM"
+	id S1752763Ab0ESOYg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:24:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:36611 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752228Ab0ESOW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:22:57 -0400
-X-IronPort-AV: E=Sophos;i="4.53,263,1272859200"; 
-   d="scan'208";a="8591271"
-Date: Wed, 19 May 2010 15:25:45 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 09/12] Fix possible NULL pointer dereference in
- print_IO_APIC
-In-Reply-To: <4BF2D95B.2040007@goop.org>
-Message-ID: <alpine.DEB.2.00.1005191520290.11380@kaball-desktop>
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-9-git-send-email-stefano.stabellini@eu.citrix.com> <4BF2D95B.2040007@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752175Ab0ESOYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:24:33 -0400
+Message-ID: <4BF3F480.3000902@zytor.com>
+Date: Wed, 19 May 2010 07:24:00 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+CC: Ingo Molnar <mingo@elte.hu>, Luca Barbieri <luca@luca-barbieri.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
+References: <20100517224531.GA27400@elte.hu> <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
+In-Reply-To: <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Jeremy Fitzhardinge wrote:
-> On 05/18/2010 03:23 AM, Stefano Stabellini wrote:
-> > Make sure chip_data is not NULL before accessing it.
-> >   
+On 05/19/2010 04:46 AM, Geert Uytterhoeven wrote:
+> On Tue, May 18, 2010 at 00:45, Ingo Molnar <mingo@elte.hu> wrote:
+>> Please pull the latest x86-atomic-for-linus git tree from:
+>>
+>>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-atomic-for-linus
+>>
+>>
+>> out-of-topic modifications in x86-atomic-for-linus:
+>> ---------------------------------------------------
+>> lib/Makefile                       # 86a8938: lib: Add self-test for atomic64_t
+>> lib/atomic64.c                     # 9757789: lib: Fix atomic64_add_unless retu
+>> lib/atomic64_test.c                # a5c9161: x86, atomic64: In selftest, disti
+>>                                   # 25a304f: lib: Fix atomic64_inc_not_zero te
+>>                                   # 9efbcd5: lib: Fix atomic64_add_unless test
+>>                                   # d7f6de1: x86: Implement atomic[64]_dec_if_
+>>                                   # 8f4f202: lib: Only test atomic64_dec_if_po
+>>                                   # 86a8938: lib: Add self-test for atomic64_t
 > 
-> You should clarify under what circumstances it can be legitimately NULL.
+> Is having atomic64_t mandatory now?
 > 
+> According to the allmodconfig build logs
+> (http://kisskb.ellerman.id.au/kisskb/matrix/),
+> several architectures (at least m68k and mips) don't have it.
+> Furthermore, the test fails to compile on a few architectures that do have it
+> (parisc, s390, sh, ...).
+> 
+> <boilerplate>
+> It's a pity this wasn't raised/resolved between its detection in linux-next and
+> before it entered mainline...
+> </boilerplate>
 > 
 
-The VIRQ_TIMER handler and virq handlers in general don't have any
-chip_data.
+Is having atomic64_t mandatory?  Not yet, I don't think, but it probably
+will be soon -- which is why there is a generic implementation
+available.  All those architectures just need to select
+CONFIG_GENERIC_ATOMIC64 and voilà, problem solved.
 
+As far as your boilerplate is concerned, I think Linus made it clear at
+the Kernel Summit that is it not the obligation of x86/ARM/PowerPC to
+slow down to not break the smaller architectures; it's the
+responsibility of those architecture maintainers to keep up.  Sorry.
 
-> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> > ---
-> >  arch/x86/kernel/apic/io_apic.c |    2 ++
-> >  1 files changed, 2 insertions(+), 0 deletions(-)
-> >
-> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
-> > index eb2789c..c64499c 100644
-> > --- a/arch/x86/kernel/apic/io_apic.c
-> > +++ b/arch/x86/kernel/apic/io_apic.c
-> > @@ -1732,6 +1732,8 @@ __apicdebuginit(void) print_IO_APIC(void)
-> >  		struct irq_pin_list *entry;
-> >  
-> >  		cfg = desc->chip_data;
-> > +		if (!cfg)
-> > +			continue;
-> >  		entry = cfg->irq_2_pin;
-> >  		if (!entry)
-> >  			continue;
-> >   
-> 
+	-hpa
+
+-- 
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
