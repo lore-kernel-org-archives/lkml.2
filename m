@@ -1,24 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756538Ab0ESA2Z (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:28:25 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50885 "EHLO
+	id S1756606Ab0ESA21 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 20:28:27 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50891 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755410Ab0ESA2P (ORCPT
+	with ESMTP id S1756403Ab0ESA2R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 20:28:15 -0400
+	Tue, 18 May 2010 20:28:17 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Stephane Eranian <eranian@google.com>,
-       "David S. Miller" <davem@davemloft.net>,
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Ingo Molnar <mingo@elte.hu>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <peterz@infradead.org>, Tom Zanussi <tzanussi@gmail.com>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: [PATCH 1/5] perf stat: add perf stat -B to pretty print large numbers
-Date: Tue, 18 May 2010 21:27:57 -0300
-Message-Id: <1274228881-8035-2-git-send-email-acme@infradead.org>
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 5/5] perf tools: remove xstrndup, xmalloc, xzalloc
+Date: Tue, 18 May 2010 21:28:01 -0300
+Message-Id: <1274228881-8035-6-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
 In-Reply-To: <1274228881-8035-1-git-send-email-acme@infradead.org>
 References: <1274228881-8035-1-git-send-email-acme@infradead.org>
@@ -31,158 +29,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stephane Eranian <eranian@google.com>
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-It is hard to read very large numbers so provide an option to perf stat
-to separate thousands using a separator. The patch leverages the locale
-support of stdio. You need to set your LC_NUMERIC appropriately, for
-instance LC_NUMERIC=en_US.UTF8. You need to pass -B to activate this
-feature. This way existing scripts parsing the output do not need to be
-changed. Here is an example.
+All the functions that call this can handle the equivalent, non
+panic'ing wrapped routines.
 
-$ perf stat noploop 2
-noploop for 2 seconds
-
- Performance counter stats for 'noploop 2':
-
-        1998.347031  task-clock-msecs         #      0.998 CPUs
-                 61  context-switches         #      0.000 M/sec
-                  0  CPU-migrations           #      0.000 M/sec
-                118  page-faults              #      0.000 M/sec
-      4,138,410,900  cycles                   #   2070.917 M/sec  (scaled from 70.01%)
-      2,062,650,268  instructions             #      0.498 IPC    (scaled from 70.01%)
-      2,057,653,466  branches                 #   1029.678 M/sec  (scaled from 70.01%)
-             40,267  branch-misses            #      0.002 %      (scaled from 30.04%)
-      2,055,961,348  cache-references         #   1028.831 M/sec  (scaled from 30.03%)
-             53,725  cache-misses             #      0.027 M/sec  (scaled from 30.02%)
-
-        2.001393933  seconds time elapsed
-
-$ perf stat -B  noploop 2
-noploop for 2 seconds
-
- Performance counter stats for 'noploop 2':
-
-        1998.297883  task-clock-msecs         #      0.998 CPUs
-                 59  context-switches         #      0.000 M/sec
-                  0  CPU-migrations           #      0.000 M/sec
-                119  page-faults              #      0.000 M/sec
-      4,131,380,160  cycles                   #   2067.450 M/sec  (scaled from 70.01%)
-      2,059,096,507  instructions             #      0.498 IPC    (scaled from 70.01%)
-      2,054,681,303  branches                 #   1028.216 M/sec  (scaled from 70.01%)
-             25,650  branch-misses            #      0.001 %      (scaled from 30.05%)
-      2,056,283,014  cache-references         #   1029.017 M/sec  (scaled from 30.03%)
-             47,097  cache-misses             #      0.024 M/sec  (scaled from 30.02%)
-
-        2.001391016  seconds time elapsed
-
-Cc: David S. Miller <davem@davemloft.net>
 Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
 Cc: Mike Galbraith <efault@gmx.de>
 Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
 Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <4bf28fe8.914ed80a.01ca.fffff5f5@mx.google.com>
-Signed-off-by: Stephane Eranian <eranian@google.com>
+LKML-Reference: <new-submission>
 Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
- tools/perf/Documentation/perf-stat.txt |    3 +++
- tools/perf/builtin-stat.c              |   18 ++++++++++++++----
- 2 files changed, 17 insertions(+), 4 deletions(-)
+ tools/perf/util/exec_cmd.c |    4 ++--
+ tools/perf/util/path.c     |    2 +-
+ tools/perf/util/util.h     |    8 --------
+ tools/perf/util/wrapper.c  |   40 ----------------------------------------
+ 4 files changed, 3 insertions(+), 51 deletions(-)
 
-diff --git a/tools/perf/Documentation/perf-stat.txt b/tools/perf/Documentation/perf-stat.txt
-index 2cab8e8..909fa76 100644
---- a/tools/perf/Documentation/perf-stat.txt
-+++ b/tools/perf/Documentation/perf-stat.txt
-@@ -43,6 +43,9 @@ OPTIONS
- -c::
-         scale counter values
+diff --git a/tools/perf/util/exec_cmd.c b/tools/perf/util/exec_cmd.c
+index c1b3d34..67eeff5 100644
+--- a/tools/perf/util/exec_cmd.c
++++ b/tools/perf/util/exec_cmd.c
+@@ -53,8 +53,8 @@ const char *perf_extract_argv0_path(const char *argv0)
+ 		slash--;
  
-+-B::
-+        print large numbers with thousands' separators according to locale
-+
- EXAMPLES
- --------
- 
-diff --git a/tools/perf/builtin-stat.c b/tools/perf/builtin-stat.c
-index ff8c413..9a39ca3 100644
---- a/tools/perf/builtin-stat.c
-+++ b/tools/perf/builtin-stat.c
-@@ -50,6 +50,7 @@
- 
- #include <sys/prctl.h>
- #include <math.h>
-+#include <locale.h>
- 
- static struct perf_event_attr default_attrs[] = {
- 
-@@ -80,6 +81,8 @@ static pid_t			*all_tids			=  NULL;
- static int			thread_num			=  0;
- static pid_t			child_pid			= -1;
- static bool			null_run			=  false;
-+static bool			big_num				=  false;
-+
- 
- static int			*fd[MAX_NR_CPUS][MAX_COUNTERS];
- 
-@@ -377,7 +380,7 @@ static void nsec_printout(int counter, double avg)
- {
- 	double msecs = avg / 1e6;
- 
--	fprintf(stderr, " %14.6f  %-24s", msecs, event_name(counter));
-+	fprintf(stderr, " %18.6f  %-24s", msecs, event_name(counter));
- 
- 	if (MATCH_EVENT(SOFTWARE, SW_TASK_CLOCK, counter)) {
- 		fprintf(stderr, " # %10.3f CPUs ",
-@@ -389,7 +392,10 @@ static void abs_printout(int counter, double avg)
- {
- 	double total, ratio = 0.0;
- 
--	fprintf(stderr, " %14.0f  %-24s", avg, event_name(counter));
-+	if (big_num)
-+		fprintf(stderr, " %'18.0f  %-24s", avg, event_name(counter));
-+	else
-+		fprintf(stderr, " %18.0f  %-24s", avg, event_name(counter));
- 
- 	if (MATCH_EVENT(HARDWARE, HW_INSTRUCTIONS, counter)) {
- 		total = avg_stats(&runtime_cycles_stats);
-@@ -426,7 +432,7 @@ static void print_counter(int counter)
- 	int scaled = event_scaled[counter];
- 
- 	if (scaled == -1) {
--		fprintf(stderr, " %14s  %-24s\n",
-+		fprintf(stderr, " %18s  %-24s\n",
- 			"<not counted>", event_name(counter));
- 		return;
+ 	if (slash >= argv0) {
+-		argv0_path = xstrndup(argv0, slash - argv0);
+-		return slash + 1;
++		argv0_path = strndup(argv0, slash - argv0);
++		return argv0_path ? slash + 1 : NULL;
  	}
-@@ -477,7 +483,7 @@ static void print_stat(int argc, const char **argv)
- 		print_counter(counter);
  
- 	fprintf(stderr, "\n");
--	fprintf(stderr, " %14.9f  seconds time elapsed",
-+	fprintf(stderr, " %18.9f  seconds time elapsed",
- 			avg_stats(&walltime_nsecs_stats)/1e9);
- 	if (run_count > 1) {
- 		fprintf(stderr, "   ( +- %7.3f%% )",
-@@ -534,6 +540,8 @@ static const struct option options[] = {
- 		    "repeat command and print average + stddev (max: 100)"),
- 	OPT_BOOLEAN('n', "null", &null_run,
- 		    "null run - dont start any counters"),
-+	OPT_BOOLEAN('B', "big-num", &big_num,
-+		    "print large numbers with thousands\' separators"),
- 	OPT_END()
- };
+ 	return argv0;
+diff --git a/tools/perf/util/path.c b/tools/perf/util/path.c
+index b276c18..58a470d 100644
+--- a/tools/perf/util/path.c
++++ b/tools/perf/util/path.c
+@@ -152,5 +152,5 @@ char *strip_path_suffix(const char *path, const char *suffix)
  
-@@ -542,6 +550,8 @@ int cmd_stat(int argc, const char **argv, const char *prefix __used)
- 	int status;
- 	int i,j;
+ 	if (path_len && !is_dir_sep(path[path_len - 1]))
+ 		return NULL;
+-	return xstrndup(path, chomp_trailing_dir_sep(path, path_len));
++	return strndup(path, chomp_trailing_dir_sep(path, path_len));
+ }
+diff --git a/tools/perf/util/util.h b/tools/perf/util/util.h
+index 52118a0..45b9655 100644
+--- a/tools/perf/util/util.h
++++ b/tools/perf/util/util.h
+@@ -179,16 +179,8 @@ static inline char *gitstrchrnul(const char *s, int c)
+  * Wrappers:
+  */
+ extern char *xstrdup(const char *str);
+-extern void *xmalloc(size_t size) __attribute__((weak));
+-extern char *xstrndup(const char *str, size_t len);
+ extern void *xrealloc(void *ptr, size_t size) __attribute__((weak));
  
-+	setlocale(LC_ALL, "");
-+
- 	argc = parse_options(argc, argv, options, stat_usage,
- 		PARSE_OPT_STOP_AT_NON_OPTION);
- 	if (!argc && target_pid == -1 && target_tid == -1)
+-static inline void *xzalloc(size_t size)
+-{
+-	void *buf = xmalloc(size);
+-
+-	return memset(buf, 0, size);
+-}
+ 
+ static inline void *zalloc(size_t size)
+ {
+diff --git a/tools/perf/util/wrapper.c b/tools/perf/util/wrapper.c
+index c4ced7c..73e900e 100644
+--- a/tools/perf/util/wrapper.c
++++ b/tools/perf/util/wrapper.c
+@@ -23,46 +23,6 @@ char *xstrdup(const char *str)
+ 	return ret;
+ }
+ 
+-void *xmalloc(size_t size)
+-{
+-	void *ret = malloc(size);
+-	if (!ret && !size)
+-		ret = malloc(1);
+-	if (!ret) {
+-		release_pack_memory(size, -1);
+-		ret = malloc(size);
+-		if (!ret && !size)
+-			ret = malloc(1);
+-		if (!ret)
+-			die("Out of memory, malloc failed");
+-	}
+-#ifdef XMALLOC_POISON
+-	memset(ret, 0xA5, size);
+-#endif
+-	return ret;
+-}
+-
+-/*
+- * xmemdupz() allocates (len + 1) bytes of memory, duplicates "len" bytes of
+- * "data" to the allocated memory, zero terminates the allocated memory,
+- * and returns a pointer to the allocated memory. If the allocation fails,
+- * the program dies.
+- */
+-static void *xmemdupz(const void *data, size_t len)
+-{
+-	char *p = xmalloc(len + 1);
+-	memcpy(p, data, len);
+-	p[len] = '\0';
+-	return p;
+-}
+-
+-char *xstrndup(const char *str, size_t len)
+-{
+-	char *p = memchr(str, '\0', len);
+-
+-	return xmemdupz(str, p ? (size_t)(p - str) : len);
+-}
+-
+ void *xrealloc(void *ptr, size_t size)
+ {
+ 	void *ret = realloc(ptr, size);
 -- 
 1.6.2.5
 
