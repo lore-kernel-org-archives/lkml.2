@@ -1,77 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab0ESPFc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:05:32 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:41762 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752860Ab0ESPFb convert rfc822-to-8bit (ORCPT
+	id S1753195Ab0ESPMk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:12:40 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:61172 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752994Ab0ESPMj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:05:31 -0400
-Subject: Re: [RFC PATCH 5/5] perf: Implement perf_output_addr()
-From: Peter Zijlstra <peterz@infradead.org>
-To: rostedt@goodmis.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1274280439.26328.770.camel@gandalf.stny.rr.com>
-References: <20100518133258.000434886@chello.nl>
-	 <20100518133726.214318408@chello.nl>  <20100519072138.GC5704@nowhere>
-	 <1274255882.5605.10216.camel@twins>
-	 <1274280439.26328.770.camel@gandalf.stny.rr.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 May 2010 17:05:06 +0200
-Message-ID: <1274281506.5605.11111.camel@twins>
+	Wed, 19 May 2010 11:12:39 -0400
+X-Authority-Analysis: v=1.1 cv=APwCx09NCuKDvl2mjFwkKdJZScS8XOZHPgx3WG6BpL0= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=XpggZ2iZSn5MWXWuHqgA:9 a=5mfSRkGfoaHztOheGyX0XS-IpHcA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Unexpected splice "always copy" behavior observed
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@suse.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
+       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
+References: <20100518153440.GB7748@Krystal>
+	 <1274197993.26328.755.camel@gandalf.stny.rr.com>
+	 <1274199039.26328.758.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
+	 <20100519063116.GR2516@laptop>
+	 <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
+	 <1274280968.26328.774.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 19 May 2010 11:12:36 -0400
+Message-ID: <1274281956.26328.776.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 10:47 -0400, Steven Rostedt wrote:
-> On Wed, 2010-05-19 at 09:58 +0200, Peter Zijlstra wrote:
-> > On Wed, 2010-05-19 at 09:21 +0200, Frederic Weisbecker wrote:
-> > 
-> > > I'm still not sure what you mean here by this multiplexing. Is
-> > > this about per cpu multiplexing?
-> > 
-> > Suppose there's two events attached to the same tracepoint. Will you
-> > write the tracepoint twice and risk different data in each, or will you
-> > do it once and copy it into each buffer?
+On Wed, 2010-05-19 at 07:59 -0700, Linus Torvalds wrote:
 > 
-> Is this because the same function deals with the same tracepoint, and
-> has difficulty in knowing which event it is dealing with?
 
-No, but suppose the tracepoint has a racy expression in it. Having to
-evaluate { assign; } multiple times could yield different results, which
-in turn means you have to run the filter multiple times too, etc..
+> Btw, since you apparently have a real case - is the "splice to file" 
+> always just an append? IOW, if I'm not right in assuming that the only 
+> sane thing people would reasonable care about is "append to a file", then 
+> holler now.
 
-Although I suppose you could delay the commit of the first even and copy
-from there into the next events, but that might give rather messy code.
+My use case is just to move the data from the ring buffer into a file
+(or network) as fast as possible. It creates a new file and all
+additions are "append to a file".
 
-> Note, the shrinking of the TRACE_EVENT() code that I pushed (and I'm
-> hoping makes it to 35 since it lays the ground work for lots of features
-> on top of TRACE_EVENT()), allows you to pass private data to each probe
-> registered to the tracepoint. Letting the same function handle two
-> different activities, or different tracepoints.
+I believe Mathieu does the same.
 
-tracepoint_probe_register() is useless, it requires scheduling. I
-currently register a probe on pref_event creation and then maintain a
-per-cpu hlist of active events.
+With me, you are correct.
 
-> > > There is another problem. We need something like
-> > > perf_output_discard() in case the filter reject the event (which
-> > > must be filled for this check to happen).
-> > 
-> > Yeah, I utterly hate that, I opted to let anything with a filter take
-> > the slow path. Not only would I have to add a discard, but I'd have to
-> > decrement the counter as well, which is a big no-no.
-> 
-> Hmm, this would impact performance on system wide recording of events
-> that are filtered. One would think adding a filter would speed things
-> up, not slow it down.
+-- Steve
 
-Depends, actually running the filter and backing out might take more
-time than simply logging it, esp if you've already done all of the work
-and only lack a commit.
+
