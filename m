@@ -1,111 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756014Ab0ESUJd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:09:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:37975 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752661Ab0ESUJb (ORCPT
+	id S1756056Ab0ESUMF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:12:05 -0400
+Received: from casper.infradead.org ([85.118.1.10]:44247 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751522Ab0ESUMB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:09:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=sGkwcSNUHgU2U7hKVPDz8D3EZeCXC+PwSrX+nXhUJciids3NxHL752r2K8B72U+qRS
-         UCo9pMW5OvUpjbktfUdhBXnhVXOAnpSchakowVS2pR+UF6GOUSqhJFGEIXyAqmO0QhYc
-         v+igsl++NrJGFA+jrktJj8ZTeK7QvfO/Q1Jg8=
-Subject: Re: 2.6.34 + ssh segfault
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: George Spelvin <linux@horizon.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <20100519182027.3412.qmail@science.horizon.com>
-References: <20100519182027.3412.qmail@science.horizon.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 22:09:25 +0200
-Message-ID: <1274299765.2658.2.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 19 May 2010 16:12:01 -0400
+Date: Wed, 19 May 2010 17:11:37 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/2] perf session fix host_machine handling wrt build
+ ids
+Message-ID: <20100519201137.GA26284@ghostprotocols.net>
+References: <1274288493-15523-1-git-send-email-acme@infradead.org>
+ <AANLkTindijJnIeElAkoj0CGC7nJwVEzIC_OlDbJ_adE8@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTindijJnIeElAkoj0CGC7nJwVEzIC_OlDbJ_adE8@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 19 mai 2010 Ã  14:20 -0400, George Spelvin a Ã©crit :
-> Trying to scp a file (using a public key cached in ssh-agent) to another machine
-> with my new (up 21:40) 2.6.34 kernel failed twice with the same symptoms.
+Em Wed, May 19, 2010 at 09:36:45PM +0200, Stephane Eranian escreveu:
+> Hi,
 > 
-> Wasn't a problem in 2.6.34-rc5.  (Same machines, same ssh key, etc.)
-> Hopefully someone can figure it out.  Uniprocessor Athlon XP, 2 GB RAM,
-> GCC 4.4.4.
+> On Wed, May 19, 2010 at 7:01 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> > Hi Ingo,
+> >
+> >        Please pull from:
+> >
+> > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+> >
+> > Stephane and Tom,
+> >
+> >        Now the build id code should be back working:
+> >
+> > [root@doppio linux-2.6-tip]# rm -rf /root/.debug/
+> > [root@doppio linux-2.6-tip]# perf record find / > /dev/null
+> > ^C[ perf record: Woken up 3 times to write data ]
+> > [ perf record: Captured and wrote 0.667 MB perf.data (~29163 samples) ]
+> > [root@doppio linux-2.6-tip]# perf buildid-list
+> > 349199a1e1b7cc25ac4f7004deed260f0146665e [kernel.kallsyms]
 > 
 > 
-> I have another crash on boot on my laptop that I'm bisecting.  34
-> doesn't seem to be a lucky number for me.
-> 
-> 
-> [77350.698203] general protection fault: 4f80 [#1] 
-> [77350.698210] last sysfs file: /sys/devices/pci0000:00/0000:00:02.2/usb1/1-0:1.0/uevent
-> [77350.698214] Modules linked in: battery deflate zlib_deflate zlib_inflate ctr twofish twofish_common camellia serpent blowfish cast5 des_generic cbc aes_i586 aes_generic xcbc sha512_generic sha256_generic sha1_generic crypto_null af_key loop fan thermal evdev serio_raw processor button thermal_sys
-> [77350.698245] 
-> [77350.698250] Pid: 3697, comm: ssh Not tainted 2.6.34 #14 FN41 / 
-> [77350.698255] EIP: 0060:[<c11ad8f3>] EFLAGS: 00010286 CPU: 0
-> [77350.698268] EIP is at sk_stream_wait_memory+0x134/0x188
-> [77350.698272] EAX: eced4fa9 EBX: f650c000 ECX: 00000001 EDX: 00000000
-> [77350.698277] ESI: fffffff5 EDI: 00000000 EBP: ca450e68 ESP: ca450df4
-> [77350.698281]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-> [77350.698287] Process ssh (pid: 3697, ti=ca450000 task=eced4f80 task.ti=ca450000)
-> [77350.698290] Stack:
-> [77350.698292]  b91c6038 eced4f80 00000000 eced4f80 c1028f1e ca19edd0 ca19edd0 f650c000
-> [77350.698300] <0> 00000004 00000000 00000000 c11cd6b8 eced47c0 000032e8 00000040 b91c65e0
-> [77350.698308] <0> 00000d48 000005a8 f6814c3c 000005a8 c39a2df4 00000000 00000000 ca450f60
-> [77350.698317] Call Trace:
-> [77350.698329]  [<c1028f1e>] ? autoremove_wake_function+0x0/0x29
-> [77350.698339]  [<c11cd6b8>] ? tcp_sendmsg+0x5c7/0x6fa
-> [77350.698349]  [<c11a50c4>] ? sock_aio_write+0xe9/0xf2
-> [77350.698359]  [<c1067fae>] ? do_sync_write+0x9d/0xd2
-> [77350.698366]  [<c1067dbe>] ? fsnotify_access+0x4c/0x53
-> [77350.698372]  [<c10684df>] ? vfs_write+0x8b/0xd8
-> [77350.698377]  [<c10685bf>] ? sys_write+0x3c/0x60
-> [77350.698384]  [<c1002510>] ? sysenter_do_call+0x12/0x26
-> [77350.698387] Code: 74 72 89 f1 31 d2 89 d8 89 0c 24 e8 3d a3 ff ff 8b 0c 24 ff 8b 34 01 00 00 85 ff 89 ce 74 17 8b 75 00 81 fe ff ff ff 7f 74 0c 29 <cf> b8 00 00 00 00 29 fe 0f 48 f0 89 75 00 31 ff e9 18 ff ff ff 
-> [77350.698426] EIP: [<c11ad8f3>] sk_stream_wait_memory+0x134/0x188 SS:ESP 0068:ca450df4
-> [77350.698454] ---[ end trace f6ff9dff06070f9c ]---
-> 
-> [77366.937785] general protection fault: 43e0 [#2] 
-> [77366.937793] last sysfs file: /sys/devices/pci0000:00/0000:00:02.2/usb1/1-0:1.0/uevent
-> [77366.937797] Modules linked in: battery deflate zlib_deflate zlib_inflate ctr twofish twofish_common camellia serpent blowfish cast5 des_generic cbc aes_i586 aes_generic xcbc sha512_generic sha256_generic sha1_generic crypto_null af_key loop fan thermal evdev serio_raw processor button thermal_sys
-> [77366.937828] 
-> [77366.937834] Pid: 3702, comm: ssh Tainted: G      D    2.6.34 #14 FN41 / 
-> [77366.937839] EIP: 0060:[<c11ad8f3>] EFLAGS: 00010282 CPU: 0
-> [77366.937851] EIP is at sk_stream_wait_memory+0x134/0x188
-> [77366.937855] EAX: eced43e9 EBX: f6938480 ECX: 00000001 EDX: 00000000
-> [77366.937859] ESI: fffffff5 EDI: 00000000 EBP: da6c4e68 ESP: da6c4df4
-> [77366.937864]  DS: 007b ES: 007b FS: 0000 GS: 0033 SS: 0068
-> [77366.937870] Process ssh (pid: 3702, ti=da6c4000 task=eced43e0 task.ti=da6c4000)
-> [77366.937873] Stack:
-> [77366.937875]  b896d038 eced43e0 00000000 eced43e0 c1028f1e de29fc70 de29fc70 f6938480
-> [77366.937883] <0> 00000004 00000000 00000000 c11cd6b8 eced4000 000032e8 00000040 b896d5e0
-> [77366.937891] <0> 00000d48 000005a8 d7e88c3c 000005a8 f6a6c5f4 00000000 00000000 da6c4f60
-> [77366.937900] Call Trace:
-> [77366.937912]  [<c1028f1e>] ? autoremove_wake_function+0x0/0x29
-> [77366.937922]  [<c11cd6b8>] ? tcp_sendmsg+0x5c7/0x6fa
-> [77366.937932]  [<c11a50c4>] ? sock_aio_write+0xe9/0xf2
-> [77366.937942]  [<c1067fae>] ? do_sync_write+0x9d/0xd2
-> [77366.937949]  [<c1067dbe>] ? fsnotify_access+0x4c/0x53
-> [77366.937955]  [<c10684df>] ? vfs_write+0x8b/0xd8
-> [77366.937960]  [<c10685bf>] ? sys_write+0x3c/0x60
-> [77366.937967]  [<c1002510>] ? sysenter_do_call+0x12/0x26
-> [77366.937970] Code: 74 72 89 f1 31 d2 89 d8 89 0c 24 e8 3d a3 ff ff 8b 0c 24 ff 8b 34 01 00 00 85 ff 89 ce 74 17 8b 75 00 81 fe ff ff ff 7f 74 0c 29 <cf> b8 00 00 00 00 29 fe 0f 48 f0 89 75 00 31 ff e9 18 ff ff ff 
-> [77366.938009] EIP: [<c11ad8f3>] sk_stream_wait_memory+0x134/0x188 SS:ESP 0068:da6c4df4
-> [77366.938037] ---[ end trace f6ff9dff06070f9d ]---
-> 
+> It is working again for me too. Thanks for the quick fix.
 
-This makes no sense to me, the EIP is in the midle of an instruction.
-(29 <cf>           sub    %ecx,%edi )
+Great, and thanks for the "quick" part, myself I thought it took more
+time than needed :-)
+ 
+> Related to .debug, I think it would be useful to have a choice as to
+> where all that stuff gets saved. It is hardcoded to $HOME today.
+> 
+> We could provide:
+> - an environment variable, e.g., PERFHOME or PERFDEBUGDIR
+> - an option to perf record, perf report, perf annotate, i.e., all commands
+>   that use .debug
+> 
+> I looked at that today and I have a draft patch to add both the variable
+> + the option.
+>
 
-Bad compiler, cosmic ray, bad hardware... I dont know.
+Yeah, the NO_NEWT make target was out of our uneasyness about making
+newt the sole report output, and my patch removing tons of code stolen
+but not used (greedy us!) was also in that direction, trying to get the
+git ~/.CONFIG way into perf.
 
-Try to rebuild completely the kernel with gcc-4.5, or gcc-4.4.3 ?
+We have to have that and consistent accross the tools command line
+options to override where this is stored/used.
 
+> The problem with the environment variable is that you tend to forget to
+> set it. As you suggest below, you may run perf report on another machine
+> too and you don't necessarily want to overwrite the .debug you may already
 
+Well, we wouldn't be overwriting anything since we hope that what is
+used to create the buildid is reasonably safe against collision, so even
+if the DSOs are for different arches, it should be rather difficult to
+get 'perf unarchive' causing problems.
 
+> have in your $HOME dir. I think the option has the advantage of making this
+> explicit. It would still default to $HOME if not set.
+
+> 
+> > 1f095dcd586045d7aa158b4774b8b053e7f580a4 /lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko
+> > 78913cef49182f29a0237d9867ff12811df00663 /lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko
+> > 5b2b076ef0b0be593d76c96fbd4393455380e589 /lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko
+> > b6c457f3d69870e6f68f2c61978f8e3beb25221c /lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko
+> > 2249bf363819205e320e242af2e757906be5010e /lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko
+> > a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f /bin/find
+> > eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 /lib64/libc-2.10.2.so
+> > 5c68f7afeb33309c78037e374b0deee84dd441f6 /lib64/libpthread-2.10.2.so
+> > [root@doppio linux-2.6-tip]# ls -la /root/.debug/
+> > total 28
+> > drwxr-xr-x   7 root root 4096 Mai 19 13:56 .
+> > drwxr-x---. 31 root root 4096 Mai 19 13:56 ..
+> > drwxr-xr-x   3 root root 4096 Mai 19 13:56 bin
+> > drwxr-xr-x  76 root root 4096 Mai 19 13:56 .build-id
+> > drwxr-xr-x   2 root root 4096 Mai 19 13:56 [kernel.kallsyms]
+> > drwxr-xr-x   3 root root 4096 Mai 19 13:56 lib
+> > drwxr-xr-x   4 root root 4096 Mai 19 13:56 lib64
+> > [root@doppio linux-2.6-tip]# ls -la /root/.debug/.build-id/
+> > 03/ 0c/ 13/ 1e/ 20/ 28/ 2b/ 2d/ 34/ 3b/ 3f/ 47/ 56/ 5b/ 5e/ 6e/ 72/ 7e/
+> > 85/ 87/ 94/ 98/ a0/ a5/ a8/ ac/ bc/ c8/ cc/ d9/ dd/ e2/ e8/ eb/ ef/ f2/
+> > fd/ 0b/ 0e/ 19/ 1f/ 22/ 29/ 2c/ 2e/ 39/ 3e/ 42/ 55/ 57/ 5c/ 62/ 6f/ 78/
+> > 80/ 86/ 91/ 97/ 99/ a1/ a7/ a9/ b6/ c6/ ca/ d8/ dc/ df/ e3/ e9/ ed/ f1/
+> > fa/ fe/
+> > [root@doppio linux-2.6-tip]# ls -la /root/.debug/lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > -rwxr-xr-x 2 root root 1825560 Nov 20 09:29 /root/.debug/lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > [root@doppio linux-2.6-tip]# ls -la /root/.debug/.build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > lrwxrwxrwx 1 root root 67 Mai 19 13:56 /root/.debug/.build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 -> ../../lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > [root@doppio linux-2.6-tip]#
+> > [root@doppio linux-2.6-tip]# perf archive
+> > Now please run:
+> >
+> > $ tar xvf perf.data.tar.bz2 -C ~/.debug
+> >
+> > wherever you need to run 'perf report' on.
+> > [root@doppio linux-2.6-tip]#
+> >
+> > ot@doppio linux-2.6-tip]# tar tvf perf.data.tar.bz2
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/34/9199a1e1b7cc25ac4f7004deed260f0146665e -> ../../[kernel.kallsyms]/349199a1e1b7cc25ac4f7004deed260f0146665e
+> > -rw-r--r-- root/root   2842888 2010-05-19 13:56 [kernel.kallsyms]/349199a1e1b7cc25ac4f7004deed260f0146665e
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/1f/095dcd586045d7aa158b4774b8b053e7f580a4 -> ../../lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko/1f095dcd586045d7aa158b4774b8b053e7f580a4
+> > -rw-r--r-- root/root   1670552 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko/1f095dcd586045d7aa158b4774b8b053e7f580a4
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/78/913cef49182f29a0237d9867ff12811df00663 -> ../../lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko/78913cef49182f29a0237d9867ff12811df00663
+> > -rw-r--r-- root/root    326827 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko/78913cef49182f29a0237d9867ff12811df00663
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/5b/2b076ef0b0be593d76c96fbd4393455380e589 -> ../../lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko/5b2b076ef0b0be593d76c96fbd4393455380e589
+> > -rw-r--r-- root/root    325915 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko/5b2b076ef0b0be593d76c96fbd4393455380e589
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/b6/c457f3d69870e6f68f2c61978f8e3beb25221c -> ../../lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko/b6c457f3d69870e6f68f2c61978f8e3beb25221c
+> > -rw-r--r-- root/root   2587163 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko/b6c457f3d69870e6f68f2c61978f8e3beb25221c
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/22/49bf363819205e320e242af2e757906be5010e -> ../../lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko/2249bf363819205e320e242af2e757906be5010e
+> > -rw-r--r-- root/root   8296246 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko/2249bf363819205e320e242af2e757906be5010e
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/a8/e4f743b40fb1fd8b85e2f9b88d93b661472b8f -> ../../bin/find/a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f
+> > -rwxr-xr-x root/root    233032 2009-02-24 14:13 bin/find/a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 -> ../../lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > -rwxr-xr-x root/root   1825560 2009-11-20 09:29 lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+> > lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6 -> ../../lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6
+> > -rwxr-xr-x root/root    148528 2009-11-20 09:29 lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6
+> > [root@doppio linux-2.6-tip]#
+> >
+> > Regards,
+> >
+> > - Arnaldo
+> >
+> > Arnaldo Carvalho de Melo (2):
+> >  perf symbols: Don't try to read the build-id twice
+> >  perf session: Make read_build_id routines look at the host_machine too
+> >
+> >  tools/perf/util/header.c  |   84 ++++++++++++++++++++++++++++-----------------
+> >  tools/perf/util/session.c |    7 ++++
+> >  tools/perf/util/session.h |    8 +---
+> >  tools/perf/util/symbol.c  |   13 ++++++-
+> >  tools/perf/util/symbol.h  |    1 +
+> >  5 files changed, 73 insertions(+), 40 deletions(-)
+> >
+> >
