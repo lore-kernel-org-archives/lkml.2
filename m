@@ -1,61 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757913Ab0ESLTV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:19:21 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:36638 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab0ESLTT (ORCPT
+	id S1757702Ab0ESLbJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:31:09 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:58543 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754347Ab0ESLbG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:19:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=UZ6Mm69P3EcyYtnis8p9MRgi+DSFnPfrAJvslxjdhyFRw2aMqNKdyA4tqAwbCBCRrC
-         QzNDL3Jif6csKP0atubVR+c42y2frpR+YQ+nQlmdptJ9ExZSontsCRCSctuD7J9oqikB
-         nGBWTaTH7xOtb5Ae1imnlktstwnnghDUfNuc8=
+	Wed, 19 May 2010 07:31:06 -0400
+Date: Wed, 19 May 2010 13:31:02 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
+       Andr?? Goddard Rosa <andre.goddard@gmail.com>,
+       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH] [x86] NUMA implied when DISCONTIGMEM
+Message-ID: <20100519113101.GA4218@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
-In-Reply-To: <20100519105305.54804b57@lxorguk.ukuu.org.uk>
-References: <201005051757.o45HvPmY005954@amcc.com>
-	 <AANLkTiljlMJKimdT-ptwXrMMBhSxFuPdVdyUuKJ8BZve@mail.gmail.com>
-	 <20100519105305.54804b57@lxorguk.ukuu.org.uk>
-Date: Wed, 19 May 2010 20:19:18 +0900
-Message-ID: <AANLkTikJVJPn6eG8YsM2tDJxxo49cuKdstmZRdNkV1Te@mail.gmail.com>
-Subject: Re: [PATCH]460EX on-chip SATA driver <Kernel 2.6.33> < resubmission >
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Rupjyoti Sarmah <rsarmah@amcc.com>, linux-ide@vger.kernel.org,
-       linux-kernel@vger.kernel.org, jgarzik@pobox.com, sr@denx.de,
-       linuxppc-dev@ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 6:53 PM, Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
-> On Wed, 19 May 2010 10:49:59 +0900
-> Jassi Brar <jassisinghbrar@gmail.com> wrote:
->
->> On Thu, May 6, 2010 at 2:57 AM, Rupjyoti Sarmah <rsarmah@amcc.com> wrote:
->> > This patch enables the on-chip DWC SATA controller of the AppliedMicro processor 460EX.
->>
->> The controller seems to be a thrid party IP (from Synopsys) in your
->> SoC and there are many chances the IP will appear in some other
->> SOCs too. This implementation doesn't seem to take care of that
->> scenario.
->
-> I'd question if that is worth it seriously. At the point there are
-> multiple users of the device you know what it will look like. Until then
-> you neither know if the work is needed nor what will require abstracting.
-Well, am to start writing driver for some dwc sata core in near
-future, not sure of the
-exact version because I've not yet had my hands on the specs.
-Even if my version happens to be different, we don't wanna count on such odds.
-So I believe it's worthwhile.
+Hi all!
 
-Btw, I presented two options and the author can always choose the
-first one - rename
-the driver as SoC specific. And in a way, I'd prefer that :)
+	As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-> Lazy evaluation is good for code too ;)
-Apart from increasing re-usability, that POV brings out neat code too.
+	x86 Kconfig implies NUMA if DISCONTIGMEM is selected (the
+dependency is as [1] -- excerpt from our tool's output) meaning a
+check for NUMA inside a DISCONTIGMEM is useless (in x86 specific code
+not in general), so this part can be simplified as in the below patch.
+
+	Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
+
+Regards
+
+	Christoph Egger
+
+[0] http://vamos1.informatik.uni-erlangen.de/
+[1]
+ (DISCONTIGMEM -> !SELECT_MEMORY_MODEL & ARCH_DISCONTIGMEM_ENABLE |DISCONTIGMEM_MANUAL)
+ &
+ (DISCONTIGMEM_MANUAL -> CHOICE_11 & ARCH_DISCONTIGMEM_ENABLE)
+ &
+ (ARCH_DISCONTIGMEM_ENABLE -> NUMA & X86_32)
+[2]
+ config ARCH_DISCONTIGMEM_ENABLE
+    def_bool y
+    depends on NUMA && X86_32
+----
+>From e1e14a373f7ec346c0c51f36713c4a60d087f573 Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Wed, 19 May 2010 13:11:30 +0200
+Subject: [PATCH] on x86 NUMA is implied on DISCONTIGMEM
+
+There's a specialization on whether NUMA is selected inside a ifdef
+CONFIG_DISCONTIGMEM block in arch/x86/include/asm/mmzone_32.h, however
+the Kconfig model for x86 only alows DISCONTIGMEM when NUMA is set so
+the !NUMA block is effectively unreachable.
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ arch/x86/include/asm/mmzone_32.h |    4 ----
+ 1 files changed, 0 insertions(+), 4 deletions(-)
+
+diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
+index 91df7c5..993ed50 100644
+--- a/arch/x86/include/asm/mmzone_32.h
++++ b/arch/x86/include/asm/mmzone_32.h
+@@ -61,11 +61,7 @@ extern s8 physnode_map[];
+ 
+ static inline int pfn_to_nid(unsigned long pfn)
+ {
+-#ifdef CONFIG_NUMA
+ 	return((int) physnode_map[(pfn) / PAGES_PER_ELEMENT]);
+-#else
+-	return 0;
+-#endif
+ }
+ 
+ /*
+-- 
+1.6.3.3
+
+
+
+
+
+
