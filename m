@@ -1,61 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753012Ab0ESO7S (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:59:18 -0400
-Received: from casper.infradead.org ([85.118.1.10]:41857 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752544Ab0ESO7R (ORCPT
+	id S1753073Ab0ESPAR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:00:17 -0400
+Received: from charlotte.tuxdriver.com ([70.61.120.58]:42858 "EHLO
+	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752110Ab0ESPAP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:59:17 -0400
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
- cache lines
-From: David Woodhouse <dwmw2@infradead.org>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: npiggin@suse.de, jw@emlix.com, marc@tensilica.com, vapier.adi@gmail.com,
-       dmitry.torokhov@gmail.com, cl@linux.com, penberg@cs.helsinki.fi,
-       mpm@selenic.com, akpm@linux-foundation.org, os@emlix.com,
-       Michael.Hennerich@analog.com, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, dg@emlix.com, osw@emlix.com,
-       rientjes@google.com, dbrownell@users.sourceforge.net,
-       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
-In-Reply-To: <20100519234049C.fujita.tomonori@lab.ntt.co.jp>
-References: <20100519133656.GY2516@laptop>
-	 <20100519134429.GH26131@emlix.com> <20100519135226.GZ2516@laptop>
-	 <20100519234049C.fujita.tomonori@lab.ntt.co.jp>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 15:58:37 +0100
-Message-ID: <1274281117.6930.10190.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 19 May 2010 11:00:15 -0400
+Date: Wed, 19 May 2010 10:45:05 -0400
+From: "John W. Linville" <linville@tuxdriver.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
+Message-ID: <20100519144505.GD2412@tuxdriver.com>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+ <1269885165-18617-11-git-send-email-tj@kernel.org>
+ <20100519190230.52385a65.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100519190230.52385a65.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 23:38 +0900, FUJITA Tomonori wrote:
+On Wed, May 19, 2010 at 07:02:30PM +1000, Stephen Rothwell wrote:
+> Hi John,
 > 
-> > I don't think we need to hide the fact that some platforms have
-> > specific alignment restrictions for DMA. So if any drivers make use
-> > of the alignment, I see no problem with __dma_aligned.
-> 
-> IIRC, such was proposed several times:
-> 
-> http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
-> 
-> I guess that we agreed that it's better to tell driver writers to just
-> use kmalloc. 
+> On Tue, 30 Mar 2010 02:52:38 +0900 Tejun Heo <tj@kernel.org> wrote:
+> >
+> > Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> > gfp.h or slab.h is included as necessary.
+> > 
+> > Signed-off-by: Tejun Heo <tj@kernel.org>
+> > Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+> > Cc: John W. Linville <linville@tuxdriver.com>
 
-Perhaps -- but only a few days ago in this thread, they were being
-advised to use ____cacheline_aligned instead!
+> I think that this patch is still needed in the wireless tree and I notice
+> that Dave has asked Linus to pull the net tree (containing the wireless
+> tree).  I have been carrying this in linux-next.
 
-And for this case it really does seem to make sense to keep the buffer
-in the parent structure rather than allocating it separately. The DMA
-buffers are tiny and on cache-coherent architectures it's _much_ more
-efficient just to have them in the original structure and use
-__dma_aligned.
+Looks like this was part of a series...who merged the rest of it?
+I guess I presumed they would take care of the series.
 
+Tejun, I wouldn't mind a repost, preferrably Cc:
+linux-wireless@vger.kernel.org...
+
+John
 -- 
-dwmw2
-
+John W. Linville		Someday the world will need a hero, and you
+linville@tuxdriver.com			might be all we have.  Be ready.
