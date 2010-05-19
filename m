@@ -1,201 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753958Ab0ESQWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:22:39 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:6456 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753938Ab0ESQWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:22:36 -0400
-Date: Wed, 19 May 2010 12:21:57 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-       vgoyal@redhat.com
-Message-Id: <e4054989edd6b3f0ecaf8ec165631ff562f7dba3.1274283321.git.jbaron@redhat.com>
-In-Reply-To: <cover.1274283321.git.jbaron@redhat.com>
-References: <cover.1274283321.git.jbaron@redhat.com>
-Subject: [PATCH 03/13] jump label v8: x86 support
+	id S1753809Ab0ESQ1R (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:27:17 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:34178 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752379Ab0ESQ1Q (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:27:16 -0400
+X-Authority-Analysis: v=1.1 cv=XlIRUSWzFvHiorqRgyN8fup7OiOLcGcwhtEWqPJTlSs= c=1 sm=0 a=1hn_8qm_4N4A:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=29wpC8YMVHWIUfTSIyEA:9 a=Ng3c-Od_cgOWiuSLsL1NVZ3USWUA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [RFC PATCH 5/5] perf: Implement perf_output_addr()
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <1274285709.5605.11265.camel@twins>
+References: <20100518133258.000434886@chello.nl>
+	 <20100518133726.214318408@chello.nl>  <20100519072138.GC5704@nowhere>
+	 <1274255882.5605.10216.camel@twins>
+	 <1274280439.26328.770.camel@gandalf.stny.rr.com>
+	 <1274281506.5605.11111.camel@twins>
+	 <1274283492.26328.779.camel@gandalf.stny.rr.com>
+	 <1274284201.5605.11212.camel@twins>
+	 <1274285293.26328.788.camel@gandalf.stny.rr.com>
+	 <1274285709.5605.11265.camel@twins>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 19 May 2010 12:27:14 -0400
+Message-ID: <1274286434.26328.800.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-add x86 support for jump label. I'm keeping this patch separate so its clear to
-arch maintainers what was required for x86 support this new feature. hopefully,
-it wouldn't be too painful for other arches.
+On Wed, 2010-05-19 at 18:15 +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-19 at 12:08 -0400, Steven Rostedt wrote:
+> > > Now suppose you have multiple active consumers of the tracepoint, either
+> > > you do the evaluation once and copy that around, or you do it multiple
+> > > times and end up with different results.
+> > 
+> > OK, this is where I'm getting a bit lost. The "multiple active
+> > consumers". Is this multiple instances of perf? Or perf doing multiple
+> > things with that event using different buffers? 
+> 
+> Multiple perf events of the same tracepoint, basically what you would en
+> up with if you were to allow multiple buffers.
+> 
+> Say task A and B both sample C's sched:sched_wakeup events. Then the
+> tracepoint will have two active perf_events hanging from it and we need
+> to fill two buffers.
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
----
- arch/x86/Kconfig                  |    1 +
- arch/x86/include/asm/jump_entry.h |   28 +++++++++++++++++
- arch/x86/include/asm/jump_label.h |   27 ++++++++++++++++
- arch/x86/kernel/Makefile          |    2 +-
- arch/x86/kernel/jump_label.c      |   60 +++++++++++++++++++++++++++++++++++++
- 5 files changed, 117 insertions(+), 1 deletions(-)
- create mode 100644 arch/x86/include/asm/jump_entry.h
- create mode 100644 arch/x86/include/asm/jump_label.h
- create mode 100644 arch/x86/kernel/jump_label.c
+OK, so I would let them evaluate separately. If they do have two
+different results, then that's fine, because the view of an event could
+possible be different. The &bar may change in the two instances, but how
+much does that matter? Which version of &bar is correct anyway?
 
-diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
-index d80d2ab..95f84ed 100644
---- a/arch/x86/Kconfig
-+++ b/arch/x86/Kconfig
-@@ -59,6 +59,7 @@ config X86
- 	select ANON_INODES
- 	select HAVE_ARCH_KMEMCHECK
- 	select HAVE_USER_RETURN_NOTIFIER
-+	select HAVE_ARCH_JUMP_LABEL if !CC_OPTIMIZE_FOR_SIZE
- 
- config INSTRUCTION_DECODER
- 	def_bool (KPROBES || PERF_EVENTS)
-diff --git a/arch/x86/include/asm/jump_entry.h b/arch/x86/include/asm/jump_entry.h
-new file mode 100644
-index 0000000..9b32696
---- /dev/null
-+++ b/arch/x86/include/asm/jump_entry.h
-@@ -0,0 +1,28 @@
-+#ifndef _LINUX_JUMP_ENTRY_H
-+#define _LINUX_JUMP_ENTRY_H
-+
-+/* Defined in a separate file, so that it can be used by user program modpost.c
-+ * This file is included by include/asm/jump_label.h, in turn included by
-+ * include/linux/jump_label.h. Kernel sources should only include
-+ * include/linux/jump_label.h.
-+ **/
-+
-+#ifdef CONFIG_X86_64
-+
-+struct jump_entry {
-+	__u64 code;
-+	__u64 target;
-+	__u64 name;
-+};
-+
-+#else
-+
-+struct jump_entry {
-+	__u32 code;
-+	__u32 target;
-+	__u32 name;
-+};
-+
-+#endif
-+
-+#endif
-diff --git a/arch/x86/include/asm/jump_label.h b/arch/x86/include/asm/jump_label.h
-new file mode 100644
-index 0000000..70da737
---- /dev/null
-+++ b/arch/x86/include/asm/jump_label.h
-@@ -0,0 +1,27 @@
-+#ifndef _ASM_X86_JUMP_LABEL_H
-+#define _ASM_X86_JUMP_LABEL_H
-+
-+#include <linux/types.h>
-+#include <asm/nops.h>
-+#include <asm/jump_entry.h>
-+
-+#define JUMP_LABEL_NOP_SIZE 5
-+
-+#ifdef CONFIG_X86_64
-+# define JUMP_LABEL_NOP P6_NOP5
-+#else
-+# define JUMP_LABEL_NOP ".byte 0xe9 \n\t .long 0\n\t"
-+#endif
-+
-+#define JUMP_LABEL(tag, label, cond)				\
-+	do {							\
-+		extern const char __jlstrtab_##tag[];		\
-+		asm goto("1:"					\
-+			JUMP_LABEL_NOP				\
-+			".pushsection __jump_table,  \"a\" \n\t"\
-+			_ASM_PTR "1b, %l[" #label "], %c0 \n\t" \
-+			".popsection \n\t"			\
-+			: :  "i" (__jlstrtab_##tag) :  : label);\
-+	} while (0)
-+
-+#endif
-diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
-index e77b220..44f6bea 100644
---- a/arch/x86/kernel/Makefile
-+++ b/arch/x86/kernel/Makefile
-@@ -32,7 +32,7 @@ GCOV_PROFILE_paravirt.o		:= n
- obj-y			:= process_$(BITS).o signal.o entry_$(BITS).o
- obj-y			+= traps.o irq.o irq_$(BITS).o dumpstack_$(BITS).o
- obj-y			+= time.o ioport.o ldt.o dumpstack.o
--obj-y			+= setup.o x86_init.o i8259.o irqinit.o
-+obj-y			+= setup.o x86_init.o i8259.o irqinit.o jump_label.o
- obj-$(CONFIG_X86_VISWS)	+= visws_quirks.o
- obj-$(CONFIG_X86_32)	+= probe_roms_32.o
- obj-$(CONFIG_X86_32)	+= sys_i386_32.o i386_ksyms_32.o
-diff --git a/arch/x86/kernel/jump_label.c b/arch/x86/kernel/jump_label.c
-new file mode 100644
-index 0000000..c347431
---- /dev/null
-+++ b/arch/x86/kernel/jump_label.c
-@@ -0,0 +1,60 @@
-+/*
-+ * jump label x86 support
-+ *
-+ * Copyright (C) 2009 Jason Baron <jbaron@redhat.com>
-+ *
-+ */
-+#include <linux/jump_label.h>
-+#include <linux/memory.h>
-+#include <linux/uaccess.h>
-+#include <linux/module.h>
-+#include <linux/list.h>
-+#include <linux/jhash.h>
-+#include <linux/cpu.h>
-+#include <asm/kprobes.h>
-+
-+#ifdef HAVE_JUMP_LABEL
-+
-+union jump_code_union {
-+	char code[JUMP_LABEL_NOP_SIZE];
-+	struct {
-+		char jump;
-+		int offset;
-+	} __attribute__((packed));
-+};
-+
-+void arch_jump_label_transform(struct jump_entry *entry, enum jump_label_type type)
-+{
-+	union jump_code_union code;
-+
-+	if (type == JUMP_LABEL_ENABLE) {
-+		code.jump = 0xe9;
-+		code.offset = entry->target - (entry->code + JUMP_LABEL_NOP_SIZE);
-+	} else {
-+#ifdef CONFIG_X86_64
-+		/* opcode for P6_NOP5 */
-+		code.code[0] = 0x0f;
-+		code.code[1] = 0x1f;
-+		code.code[2] = 0x44;
-+		code.code[3] = 0x00;
-+		code.code[4] = 0x00;
-+#else
-+		code.jump = 0xe9;
-+		code.offset = 0;
-+#endif
-+	}
-+	get_online_cpus();
-+	mutex_lock(&text_mutex);
-+	text_poke_smp((void *)entry->code, &code, JUMP_LABEL_NOP_SIZE);
-+	mutex_unlock(&text_mutex);
-+	put_online_cpus();
-+}
-+
-+static const u8 jump_label_nop[JUMP_LABEL_NOP_SIZE] = { 0x0f, 0x1f, 0x44, 0x00, 0x00 };
-+
-+const u8 *arch_get_jump_label_nop()
-+{
-+	return jump_label_nop;
-+}
-+
-+#endif
--- 
-1.7.0.1
+How do you handle the multiple readers then? The call to record the
+event copies to each buffer that is registered for that event?
+
+If more than one buffer is attached to an event, you could also work to
+directly write to one, and then copy directly from that buffer to the
+others.
+
+-- Steve
+
+
 
