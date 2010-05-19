@@ -1,61 +1,134 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757959Ab0ESLyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:54:00 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52765 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755440Ab0ESLx5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:53:57 -0400
-Date: Wed, 19 May 2010 13:53:55 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: Stephane Chatty <chatty@enac.fr>, wylda@volny.cz,
-       Jussi Kivilinna <jussi.kivilinna@mbnet.fi>, Tejun Heo <tj@kernel.org>,
-       linux-input@vger.kernel.org, Jerome Vidal <jerom3@free.fr>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 2/5] HID: Added further information for Roccat Kone
-In-Reply-To: <1274199975.2243.0.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1005191353230.28092@pobox.suse.cz>
-References: <1274199975.2243.0.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1758004Ab0ESLyM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:54:12 -0400
+Received: from mga10.intel.com ([192.55.52.92]:26693 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755440Ab0ESLyJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 07:54:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,263,1272870000"; 
+   d="scan'208,223";a="799845861"
+Message-ID: <4BF3D15F.1000604@linux.intel.com>
+Date: Wed, 19 May 2010 19:54:07 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>
+CC: "ak@linux.intel.com" <ak@linux.intel.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: [PATCH 2/2] x86, mem-hotplug: update all PGDs for direct mapping
+ and vmemmap mapping changes on 64bit.
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Stefan Achatz wrote:
+ From 2e13fda80397342fcbb1b8986d99e3c2e7d8961c Mon Sep 17 00:00:00 2001
+From: Haicheng Li <haicheng.li@linux.intel.com>
+Date: Wed, 19 May 2010 18:53:49 +0800
+Subject: [PATCH] x86, mem-hotplug: update all PGDs for direct mapping and vmemmap mapping changes on 
+64bit.
 
-> >From 0875b1fdc784c60d28d3c5bc02ffcf0f30ccea2c Mon Sep 17 00:00:00 2001
-> From: Stefan Achatz <erazor_de@users.sourceforge.net>
-> Date: Sat, 8 May 2010 16:53:31 +0200
-> Subject: [PATCH 2/5] HID: Added further information for Roccat Kone
-> 
-> Added new data and changed workaround for abnormal button behaviour
-> according to new gained knowledge about Roccat Kone device.
-> 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hid-roccat-kone.c |   11 ++++++-----
->  drivers/hid/hid-roccat-kone.h |   19 ++++++++++++++++---
->  2 files changed, 22 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/hid/hid-roccat-kone.c b/drivers/hid/hid-roccat-kone.c
-> index d23d309..9d68442 100644
-> --- a/drivers/hid/hid-roccat-kone.c
-> +++ b/drivers/hid/hid-roccat-kone.c
-> @@ -928,14 +928,15 @@ static int kone_raw_event(struct hid_device *hdev, struct hid_report *report,
->  		return 0;
->  
->  	/*
-> -	 * Firmware 1.38 introduced new behaviour for tilt buttons.
-> -	 * Pressed tilt button is reported in each movement event.
-> +	 * Firmware 1.38 introduced new behaviour for tilt and special buttons.
-> +	 * Pressed button is reported in each movement event.
->  	 * Workaround sends only one event per press.
+When memory hotadd/removal happens for a large enough area
+that a new PGD entry is needed for the direct mapping, the PGDs
+of other processes would not get updated. This leads to some CPUs
+oopsing like below when they have to access the unmapped areas.
 
-Applied, thank you Stefan.
+[ 1139.243192] BUG: soft lockup - CPU#0 stuck for 61s! [bash:6534]
+[ 1139.243195] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc 
+dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc 
+lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib 
+i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
+[ 1139.243229] irq event stamp: 8538759
+[ 1139.243230] hardirqs last  enabled at (8538759): [<ffffffff8100c3fc>] restore_args+0x0/0x30
+[ 1139.243236] hardirqs last disabled at (8538757): [<ffffffff810422df>] __do_softirq+0x106/0x146
+[ 1139.243240] softirqs last  enabled at (8538758): [<ffffffff81042310>] __do_softirq+0x137/0x146
+[ 1139.243245] softirqs last disabled at (8538743): [<ffffffff8100cb5c>] call_softirq+0x1c/0x34
+[ 1139.243249] CPU 0:
+[ 1139.243250] Modules linked in: ipv6 autofs4 rfcomm l2cap crc16 bluetooth rfkill binfmt_misc 
+dm_mirror dm_region_hash dm_log dm_multipath dm_mod video output sbs sbshc fan battery ac parport_pc 
+lp parport joydev usbhid processor thermal thermal_sys container button rtc_cmos rtc_core rtc_lib 
+i2c_i801 i2c_core pcspkr uhci_hcd ohci_hcd ehci_hcd usbcore
+[ 1139.243284] Pid: 6534, comm: bash Tainted: G   M       2.6.32-haicheng-cpuhp #7 QSSC-S4R
+[ 1139.243287] RIP: 0010:[<ffffffff810ace35>]  [<ffffffff810ace35>] alloc_arraycache+0x35/0x69
+[ 1139.243292] RSP: 0018:ffff8802799f9d78  EFLAGS: 00010286
+[ 1139.243295] RAX: ffff8884ffc00000 RBX: ffff8802799f9d98 RCX: 0000000000000000
+[ 1139.243297] RDX: 0000000000190018 RSI: 0000000000000001 RDI: ffff8884ffc00010
+[ 1139.243300] RBP: ffffffff8100c34e R08: 0000000000000002 R09: 0000000000000000
+[ 1139.243303] R10: ffffffff8246dda0 R11: 000000d08246dda0 R12: ffff8802599bfff0
+[ 1139.243305] R13: ffff88027904c040 R14: ffff8802799f8000 R15: 0000000000000001
+[ 1139.243308] FS:  00007fe81bfe86e0(0000) GS:ffff88000d800000(0000) knlGS:0000000000000000
+[ 1139.243311] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[ 1139.243313] CR2: ffff8884ffc00000 CR3: 000000026cf2d000 CR4: 00000000000006f0
+[ 1139.243316] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[ 1139.243318] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[ 1139.243321] Call Trace:
+[ 1139.243324]  [<ffffffff810ace29>] ? alloc_arraycache+0x29/0x69
+[ 1139.243328]  [<ffffffff8135004e>] ? cpuup_callback+0x1b0/0x32a
+[ 1139.243333]  [<ffffffff8105385d>] ? notifier_call_chain+0x33/0x5b
+[ 1139.243337]  [<ffffffff810538a4>] ? __raw_notifier_call_chain+0x9/0xb
+[ 1139.243340]  [<ffffffff8134ecfc>] ? cpu_up+0xb3/0x152
+[ 1139.243344]  [<ffffffff813388ce>] ? store_online+0x4d/0x75
+[ 1139.243348]  [<ffffffff811e53f3>] ? sysdev_store+0x1b/0x1d
+[ 1139.243351]  [<ffffffff8110589f>] ? sysfs_write_file+0xe5/0x121
+[ 1139.243355]  [<ffffffff810b539d>] ? vfs_write+0xae/0x14a
+[ 1139.243358]  [<ffffffff810b587f>] ? sys_write+0x47/0x6f
+[ 1139.243362]  [<ffffffff8100b9ab>] ? system_call_fastpath+0x16/0x1b
+
+This patch makes sure to always replicate new direct mapping PGD entries
+to the PGDs of all processes, as well as ensures corresponding vmemmap
+mapping gets synced.
+
+CC: Wu Fengguang <fengguang.wu@intel.com>
+Signed-off-by: Andi Kleen <ak@linux.intel.com>
+Signed-off-by: Haicheng Li <haicheng.li@linux.intel.com>
+---
+  arch/x86/mm/init_64.c |    8 +++++++-
+  1 files changed, 7 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/init_64.c b/arch/x86/mm/init_64.c
+index b0c3df0..fa72b4b 100644
+--- a/arch/x86/mm/init_64.c
++++ b/arch/x86/mm/init_64.c
+@@ -564,11 +564,13 @@ kernel_physical_mapping_init(unsigned long start,
+  			     unsigned long end,
+  			     unsigned long page_size_mask)
+  {
+-
++	int pgd_changed = 0;
+  	unsigned long next, last_map_addr = end;
++	unsigned long addr;
+
+  	start = (unsigned long)__va(start);
+  	end = (unsigned long)__va(end);
++	addr = start;
+
+  	for (; start < end; start = next) {
+  		pgd_t *pgd = pgd_offset_k(start);
+@@ -593,7 +595,10 @@ kernel_physical_mapping_init(unsigned long start,
+  		spin_lock(&init_mm.page_table_lock);
+  		pgd_populate(&init_mm, pgd, __va(pud_phys));
+  		spin_unlock(&init_mm.page_table_lock);
++		pgd_changed = 1;
+  	}
++	if (pgd_changed)
++		sync_global_pgds(addr, end);
+  	__flush_tlb_all();
+
+  	return last_map_addr;
+@@ -1033,6 +1038,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+  		}
+
+  	}
++	sync_global_pgds((unsigned long)start_page, end);
+  	return 0;
+  }
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+1.5.6.1
+
