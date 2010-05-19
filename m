@@ -1,118 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752532Ab0ESVvp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:51:45 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:3270 "EHLO mx1.redhat.com"
+	id S1752861Ab0ESVwG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:52:06 -0400
+Received: from hera.kernel.org ([140.211.167.34]:41480 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752275Ab0ESVvn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:51:43 -0400
-Date: Wed, 19 May 2010 17:51:31 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-Cc: Nikanth Karthikesan <knikanth@suse.de>, linux-kernel@vger.kernel.org,
-       dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for
- request-based device
-Message-ID: <20100519215130.GA32301@redhat.com>
-References: <4BEA659F.9050206@ct.jp.nec.com>
- <20100513035750.GA25523@redhat.com>
- <4BED049C.5040409@ct.jp.nec.com>
- <20100514140852.GA10373@redhat.com>
- <4BF10BF1.3040108@ct.jp.nec.com>
- <20100517172737.GA24591@redhat.com>
- <4BF25091.3000507@ct.jp.nec.com>
- <20100518134639.GA27582@redhat.com>
- <4BF37DD5.9050409@ct.jp.nec.com>
- <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com>
+	id S1752590Ab0ESVwB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 17:52:01 -0400
+Date: Wed, 19 May 2010 21:51:42 GMT
+From: tip-bot for Jacob Pan <jacob.jun.pan@linux.intel.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       tglx@linutronix.de, hpa@linux.intel.com, jacob.jun.pan@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, jacob.jun.pan@linux.intel.com, hpa@linux.intel.com
+In-Reply-To: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/mrst] x86: detect scattered cpuid features earlier
+Message-ID: <tip-1dedefd1a066a795a87afca9c0236e1a94de9bf6@git.kernel.org>
+Git-Commit-ID: 1dedefd1a066a795a87afca9c0236e1a94de9bf6
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 21:51:43 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19 2010 at  8:01am -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+Commit-ID:  1dedefd1a066a795a87afca9c0236e1a94de9bf6
+Gitweb:     http://git.kernel.org/tip/1dedefd1a066a795a87afca9c0236e1a94de9bf6
+Author:     Jacob Pan <jacob.jun.pan@linux.intel.com>
+AuthorDate: Wed, 19 May 2010 12:01:23 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Wed, 19 May 2010 13:32:12 -0700
 
-> On Wed, May 19, 2010 at 1:57 AM, Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
-> > Also, your patch changes the queue configuration even when a table is
-> > already active and used.  (e.g. Loading bio-based table to a mapped_device
-> > which is already active/used as request-based sets q->requst_fn in NULL.)
-> > That could cause some critical problems.
-> 
-> Yes, that is possible and I can add additional checks to prevent this.
-> But this speaks to a more general problem with the existing DM code.
-> 
-> dm_swap_table() has the negative check to prevent such table loads, e.g.:
-> /* cannot change the device type, once a table is bound */
-> 
-> This check should come during table_load, as part of
-> dm_table_set_type(), rather than during table resume.
+x86: detect scattered cpuid features earlier
 
-FYI, the following patch is the relevant portion of the v6 patch that
-addresses the issue discussed above.
+Some extra CPU features such as ARAT is needed in early boot so
+that x86_init function pointers can be set up properly.
+http://lkml.org/lkml/2010/5/18/519
+At start_kernel() level, this patch moves init_scattered_cpuid_features()
+from check_bugs() to setup_arch() -> early_cpu_init() which is earlier than
+platform specific x86_init layer setup. Suggested by HPA.
 
-diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
-index 990cf17..62ebd94 100644
---- a/drivers/md/dm-table.c
-+++ b/drivers/md/dm-table.c
-@@ -782,6 +782,7 @@ int dm_table_set_type(struct dm_table *t)
- {
- 	unsigned i;
- 	unsigned bio_based = 0, request_based = 0;
-+	struct dm_table *live_table = NULL;
- 	struct dm_target *tgt;
- 	struct dm_dev_internal *dd;
- 	struct list_head *devices;
-@@ -803,7 +804,7 @@ int dm_table_set_type(struct dm_table *t)
- 	if (bio_based) {
- 		/* We must use this table as bio-based */
- 		t->type = DM_TYPE_BIO_BASED;
--		return 0;
-+		goto finish;
- 	}
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+LKML-Reference: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+Acked-by: Thomas Gleixner <tglx@linutronix.de>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/kernel/cpu/common.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index c1c00d0..284bf89 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -576,6 +576,7 @@ static void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
+ 	if (c->extended_cpuid_level >= 0x80000007)
+ 		c->x86_power = cpuid_edx(0x80000007);
  
- 	BUG_ON(!request_based); /* No targets in this table */
-@@ -831,6 +832,18 @@ int dm_table_set_type(struct dm_table *t)
- 
- 	t->type = DM_TYPE_REQUEST_BASED;
- 
-+finish:
-+	/* cannot change the device type, once a table is bound */
-+	live_table = dm_get_live_table(t->md);
-+	if (live_table) {
-+		if (dm_table_get_type(live_table) != dm_table_get_type(t)) {
-+			DMWARN("can't change the device type after a table is bound");
-+			dm_table_put(live_table);
-+			return -EINVAL;
-+		}
-+		dm_table_put(live_table);
-+	}
-+
- 	return 0;
++	init_scattered_cpuid_features(c);
  }
  
-diff --git a/drivers/md/dm.c b/drivers/md/dm.c
-index a47f0b8..923b662 100644
---- a/drivers/md/dm.c
-+++ b/drivers/md/dm.c
-@@ -2470,13 +2470,6 @@ struct dm_table *dm_swap_table(struct mapped_device *md, struct dm_table *table)
- 		goto out;
- 	}
+ static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
+@@ -731,7 +732,6 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
  
--	/* cannot change the device type, once a table is bound */
--	if (md->map &&
--	    (dm_table_get_type(md->map) != dm_table_get_type(table))) {
--		DMWARN("can't change the device type after a table is bound");
--		goto out;
--	}
--
- 	map = __bind(md, table, &limits);
+ 	get_model_name(c); /* Default name */
  
- out:
+-	init_scattered_cpuid_features(c);
+ 	detect_nopl(c);
+ }
+ 
