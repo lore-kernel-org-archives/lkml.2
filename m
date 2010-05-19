@@ -1,49 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756468Ab0ESK7L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 06:59:11 -0400
-Received: from casper.infradead.org ([85.118.1.10]:47789 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752942Ab0ESK7J (ORCPT
+	id S1756899Ab0ESLAt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:00:49 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:40830 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab0ESLAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 06:59:09 -0400
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Woodhouse <dwmw2@infradead.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-In-Reply-To: <20100519010524.GB18813@gondor.apana.org.au>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-	 <1274224834.6930.8361.camel@macbook.infradead.org>
-	 <20100519010524.GB18813@gondor.apana.org.au>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 11:58:45 +0100
-Message-ID: <1274266725.6930.9823.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 19 May 2010 07:00:48 -0400
+Date: Wed, 19 May 2010 13:00:30 +0200
+From: Daniel Mack <daniel@zonque.org>
+To: linux-kernel@vger.kernel.org
+Cc: David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Paul Mundt <lethal@linux-sh.org>,
+       Magnus Damm <damm@igel.co.jp>,
+       Yoshihiro Shimoda <shimoda.yoshihiro@renesas.com>,
+       Andrea Gelmini <andrea.gelmini@gelma.net>, linux-usb@vger.kernel.org
+Subject: =?utf-8?Q?drivers=2Fusb=2Fgadget=2Fr8a6659?=
+	=?utf-8?B?Ny11ZGMuaDoxMzk6IHdhcm5pbmc6IOKAmGRhdGE=?=
+	=?utf-8?B?4oCZ?= may be used uninitialized in this function
+Message-ID: <20100519110030.GG30804@buzzloop.caiaq.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 11:05 +1000, Herbert Xu wrote:
-> So no getting rid of them isn't going to fix things either.  Of
-> course I have no objections to moving this into slab.h or a similar
-> location should anyone be willing to do the hard work.
+Hi,
 
-http://git.infradead.org/users/dwmw2/minalign-2.6.git
-git://git.infradead.org/users/dwmw2/minalign-2.6.git
+I stumbled over the r8a66597 UDC gadget driver as the the compiler
+complained about the static inline function r8a66597_read():
 
-Should I include the SPARC patch in that too?
+drivers/usb/gadget/r8a66597-udc.c: In function ‘irq_packet_read’:
+drivers/usb/gadget/r8a66597-udc.h:139: warning: ‘data’ may be used uninitialized in this function
+drivers/usb/gadget/r8a66597-udc.h:139: note: ‘data’ was declared here
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+I know nothing about the code, but this function indeed looks bogus. Can
+anyone have a look at this? Also, I wonder whether this function is
+actually too big for a static inline.
+
+Thanks,
+Daniel
 
