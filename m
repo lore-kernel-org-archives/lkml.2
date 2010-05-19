@@ -1,55 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0ESAug (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:50:36 -0400
-Received: from mga06.intel.com ([134.134.136.21]:7294 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751876Ab0ESAuf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 20:50:35 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,258,1272870000"; 
-   d="scan'208";a="622830983"
-Date: Wed, 19 May 2010 08:50:32 +0800
-From: Huaxu Wan <huaxu.wan@linux.intel.com>
-To: Dmitry Gromov <gromovd@gmail.com>
-Cc: "Wan, Huaxu" <huaxu.wan@intel.com>,
+	id S1754856Ab0ESA45 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 20:56:57 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:48138 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752947Ab0ESA4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 20:56:55 -0400
+Date: Wed, 19 May 2010 10:56:49 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Richard Purdie <rpurdie@rpsys.net>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
        Andrew Morton <akpm@linux-foundation.org>,
-       LM Sensors <lm-sensors@lm-sensors.org>,
-       LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>
-Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current
- Intel processors
-Message-ID: <20100519005032.GA26906@owl>
-References: <20100510035031.GD9181@owl>
- <20100514065808.GA11598@owl>
- <20100517094136.094800562@osadl.org>
- <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com>
- <625BA99ED14B2D499DC4E29D8138F150181F574C31@shsmsx502.ccr.corp.intel.com>
- <AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       Michael Hennerich <michael.hennerich@analog.com>,
+       Mike Frysinger <vapier@gentoo.org>
+Subject: Re: linux-next: build failure after merge of the backlight tree
+Message-Id: <20100519105649.ab2d4d26.sfr@canb.auug.org.au>
+In-Reply-To: <1274198064.24454.252.camel@rex>
+References: <20100510124304.2249532c.sfr@canb.auug.org.au>
+	<20100517133239.8a30df8e.sfr@canb.auug.org.au>
+	<1274198064.24454.252.camel@rex>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 02:45 Tue 18 May, Dmitry Gromov wrote:
-> Hi!
-> 
-> And 90C seems to be good for N200 series of Atom CPUs only - I could not
-> find TjMax value published for N330 Dual Core  (quite popular one). Intel
-> only published Tcase for it:
-> http://ark.intel.com/Product.aspx?id=35641
-> So, if for N270 Tcase = TjMax = 90C, then, I'd suggest to use Tcase = 85.2C
-> for N330 TjMax value.
+--Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Quoted a sentence from [1], "Unless specified otherwise, all specifications for 
-the processor are at TJ = 90°C", I believe the TjMax of 330 is 90C too.
+Hi Richard,
 
-[1]http://download.intel.com/design/processor/datashts/320528.pdf
+On Tue, 18 May 2010 08:54:24 -0700 Richard Purdie <rpurdie@rpsys.net> wrote:
+>
+> Sorry about that. A bad combination of travel with limited internet
+> access followed by illness. I've pushed a fix, thanks.
 
-Thanks
-Huaxu
+Thanks for that.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvzN1EACgkQjjKRsyhoI8xreACeNgjOdJU/FjgG+6mPZcdGYevH
+EwcAoJeOsN0SmoLRMHOzN8kh+hzBkkPw
+=p3+m
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C--
