@@ -1,79 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758079Ab0ESMyA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:54:00 -0400
-Received: from ozlabs.org ([203.10.76.45]:54597 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757978Ab0ESMx7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:53:59 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PULL] virtio
-Date: Wed, 19 May 2010 22:23:56 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: virtualization@lists.linux-foundation.org, linux-kernel@vger.kernel.org
+	id S1758106Ab0ESMyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:54:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:42525 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755334Ab0ESMyp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:54:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=CaW3Tj8qnsMuBEzFvfxiuECrCxddW7NnOAJnubhbzrZIZ7OhLsqahr8y98/WWklysg
+         pI3yJTC/KRB2eTv4KQXRyjRf+AdJ9b6IWJ6c7F//yCb5iMt9HBB3w4rbBGxL6lkpKQ65
+         exRX8bxyD6FdVPyBh2EAd0ZCWTukB351A5ChA=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005192223.56991.rusty@rustcorp.com.au>
+In-Reply-To: <20100519114609.GA26610@gondor.apana.org.au>
+References: <1274211235.11603.1205.camel@calx>
+	 <20100518.135945.180391159.davem@davemloft.net>
+	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
+	 <20100518.142021.135951273.davem@davemloft.net>
+	 <1274224834.6930.8361.camel@macbook.infradead.org>
+	 <20100519010524.GB18813@gondor.apana.org.au>
+	 <1274266725.6930.9823.camel@macbook.infradead.org>
+	 <AANLkTikLhmQ2oYnYS2KblEayg6x1ZAmUnBvYfNu0yFh9@mail.gmail.com>
+	 <1274267805.6930.9877.camel@macbook.infradead.org>
+	 <20100519114609.GA26610@gondor.apana.org.au>
+Date: Wed, 19 May 2010 15:54:43 +0300
+X-Google-Sender-Auth: jVarNME7ZSQjIeW4lFMqFAGQgX4
+Message-ID: <AANLkTiky-saTpv6Vq2ipIWC39b5eox92qQGE0QcACEBR@mail.gmail.com>
+Subject: Re: [BUG] SLOB breaks Crypto
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: David Woodhouse <dwmw2@infradead.org>, David Miller <davem@davemloft.net>,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 537b60d17894b7c19a6060feae40299d7109d6e7:
-  Linus Torvalds (1):
-        Merge branch 'x86-uv-for-linus' of git://git.kernel.org/.../tip/linux-2.6-tip
+On Wed, May 19, 2010 at 2:46 PM, Herbert Xu <herbert@gondor.apana.org.au> wrote:
+> On Wed, May 19, 2010 at 12:16:45PM +0100, David Woodhouse wrote:
+>>
+>> I don't mind. Feel free to apply them to slab.git, but be aware that
+>> Herbert wanted to see a patch fixing sparc32 ARCH_SLAB_MINALIGN before
+>> the crypto one is applied.
+>>
+>> Although arguably SLOB was broken on sparc32 even before the crypto
+>> patch -- so perhaps that fix shouldn't _have_ to go in first?
+>
+> Well prior to this crypto on sparc32 did work with SLAB/SLUB.  If
+> you change it without including the sparc pach, then sparc32 would
+> be broken regardless of which allocator you used.
 
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git virtio
-
-Amit Shah (14):
-      virtio: Revert "virtio: disable multiport console support."
-      virtio: console: Add a __send_control_msg() that can send messages without a valid port
-      virtio: console: Let host know of port or device add failures
-      virtio: console: Return -EPIPE to hvc_console if we lost the connection
-      virtio: console: Don't call hvc_remove() on unplugging console ports
-      virtio: console: Remove config work handler
-      virtio: console: Move code around for future patches
-      virtio: console: Use a control message to add ports
-      virtio: console: Don't always create a port 0 if using multiport
-      virtio: console: Rename wait_is_over() to will_read_block()
-      virtio: console: Add support for nonblocking write()s
-      virtio: console: Resize console port 0 on config intr only if multiport is off
-      virtio: console: Store each console's size in the console structure
-      virtio: console: Accept console size along with resize control message
-
-Julia Lawall (1):
-      drivers/char: Eliminate use after free
-
-Michael S. Tsirkin (9):
-      virtio: add virtqueue_ vq_ops wrappers
-      virtio_balloon: use virtqueue_xxx wrappers
-      virtio_console: use virtqueue_xxx wrappers
-      virtio_blk: use virtqueue_xxx wrappers
-      virtio_net: use virtqueue_xxx wrappers
-      virtio_ring: remove a level of indirection
-      virtio-rng: use virtqueue_xxx wrappers
-      trans_virtio: use virtqueue_xxx wrappers
-      virtio: add_buf_gfp
-
-Rusty Russell (1):
-      virtio_blk: remove multichar constant.
-
-john cooper (2):
-      Add virtio disk identification support
-      Add virtio disk identification ioctl
-
- drivers/block/virtio_blk.c          |   46 +++-
- drivers/char/hw_random/virtio-rng.c |    6 +-
- drivers/char/virtio_console.c       |  700 +++++++++++++++++++----------------
- drivers/net/virtio_net.c            |   46 ++--
- drivers/virtio/virtio_balloon.c     |   17 +-
- drivers/virtio/virtio_ring.c        |   44 +--
- include/linux/virtio.h              |   55 ++--
- include/linux/virtio_blk.h          |    5 +
- include/linux/virtio_console.h      |   25 ++
- net/9p/trans_virtio.c               |    6 +-
- 10 files changed, 541 insertions(+), 409 deletions(-)
+OK, I'll pick up David's patches and just wait for sparc changes to
+hit Linus' tree first. Herbert, do I have your ACK for the crypto
+patches?
