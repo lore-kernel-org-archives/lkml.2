@@ -1,53 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753526Ab0ESPvy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:51:54 -0400
-Received: from mail.windriver.com ([147.11.1.11]:64578 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753655Ab0ESPvv (ORCPT
+	id S1753563Ab0ESPx4 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:53:56 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:63828 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753280Ab0ESPxy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:51:51 -0400
-Message-ID: <4BF408CF.5020209@windriver.com>
-Date: Wed, 19 May 2010 10:50:39 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Wed, 19 May 2010 11:53:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=BrtioebfdYzZGccQv520WjODlJC11xJps5WJzAMfMZQd5eC8MlL+DPLzgpibZ0wXZJ
+         xMj4ROwerWKQdEUOOegw1WCb7QGh/S8SsO85H/WJi4z5rD2RpYcHgHmJrlBdigzBM6vE
+         EZ/VwcAFh0Bulk43tuEFt9m2hDqooaVKGV3H0=
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 02/17] kdb: update gfp/slab.h includes
-References: <1269885165-18617-1-git-send-email-tj@kernel.org><1269885165-18617-3-git-send-email-tj@kernel.org> <20100520013340.1fcc2c0d.sfr@canb.auug.org.au>
-In-Reply-To: <20100520013340.1fcc2c0d.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 19 May 2010 15:50:40.0910 (UTC) FILETIME=[0877A2E0:01CAF76B]
+In-Reply-To: <AANLkTin3AJJRAV3HD0aKPbkG1oxrrl6uAO8aGQWgguw0@mail.gmail.com>
+References: <h2h6d38d2f91004271023hc2d2b69ekbfd40fe97d5b2566@mail.gmail.com> 
+	<1272473196.1827.91.camel@lenovo> <y2u604760771004281000y3d80fe59v15871802d3d0d9f2@mail.gmail.com> 
+	<r2r6d38d2f91004281555n6322c65dhe19b01a6dfe42771@mail.gmail.com> 
+	<AANLkTil1Rr9IGxan8diaQNwNmFnljQs3w0j3oyQoGLgA@mail.gmail.com> 
+	<AANLkTimSlLNf2b1YVBkUrFLM3PmRGmgVyBNMjNNccd8q@mail.gmail.com> 
+	<AANLkTin3AJJRAV3HD0aKPbkG1oxrrl6uAO8aGQWgguw0@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 19 May 2010 08:53:33 -0700
+Message-ID: <AANLkTilJIhcCkRDw4UoQFIMxHbtvGodxKr7MtP1qFGxY@mail.gmail.com>
+Subject: Re: Logitech Headset
+To: Kevin McKinney <klmckinney1@gmail.com>
+Cc: Daniel Chen <seven.steps@gmail.com>, kernel-team@lists.ubuntu.com,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 10:33 AM, Stephen Rothwell wrote:
-> Hi Jason,
+On Tue, May 18, 2010 at 6:27 PM, Kevin McKinney <klmckinney1@gmail.com> wrote:
+> Dan, thanks for the info, I was thinking I could leverage code from an
+> existing driver with similar functionality.
 >
-> On Tue, 30 Mar 2010 02:52:30 +0900 Tejun Heo <tj@kernel.org> wrote:
->   
->> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
->> gfp.h or slab.h is included as necessary.
->>
->> Signed-off-by: Tejun Heo <tj@kernel.org>
->> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
->> Cc: Jason Wessel <jason.wessel@windriver.com>
->>     
+> By the way, the advisor will NOT require any work.  The primary
+> responsibility of the advisor is to verify the requirements.  That is,
+> making sure the developed driver actually works.
 >
-> Please apply to the kgdb tree (patch reposted below).
->
->   
+> Anybody willing to verify the finished product can serve as the advisor.  If
+> I have any technical questions while developing the driver, I will post them
+> to the entire open source community. Please let me know if anyone is
+> interested.
 
-No problem.
+Stupid question, have you tried plugging the device in to verify it is
+indeed not supported? I have a Logitech headset with USB vendor:device
+ID 046d:0a12 (yours is 046d:0a01) and it works like a charm. I believe
+the device works using its own protocol and embedded firmware, it does
+not need a driver. Not sure how the device exposes the audio/input
+functionality to the OS yet but it does.
 
-Looks like it got missed earlier, because I have a fixup from you for
-the kdb_support.c file.
-
-I folded this into kgdb-next.
-
-Cheers,
-Jason.
+  Luis
