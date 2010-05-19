@@ -1,137 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752777Ab0ESXet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 19:34:49 -0400
-Received: from LION.seas.upenn.edu ([158.130.12.194]:51561 "EHLO
-	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751760Ab0ESXer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 19:34:47 -0400
-Message-ID: <4BF4756C.8030204@seas.upenn.edu>
-Date: Wed, 19 May 2010 19:34:04 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1752909Ab0ESXfI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 19:35:08 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50695 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752825Ab0ESXfE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 19:35:04 -0400
+Message-ID: <4BF4757C.5090303@redhat.com>
+Date: Wed, 19 May 2010 20:34:20 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Henrik Rydberg <rydberg@euromail.se>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
-References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>	 <1274213429-22667-2-git-send-email-rydberg@euromail.se> <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
-In-Reply-To: <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
+Subject: Re: mmotm 2010-05-11-18-20 uploaded
+References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <6195.1273763194@localhost> <20100513160249.GC22238@core.coreip.homeip.net>
+In-Reply-To: <20100513160249.GC22238@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-My understanding is that it would be more like
-+   SYN_MT_SLOT 0
-+   ABS_MT_POSITION_X x
-+   ABS_MT_POSITION_Y y
-+   SYN_REPORT
-+   SYN_MT_SLOT 0
-+   ABS_MT_POSITION_X x
-+   ABS_MT_POSITION_Y y
-+   SYN_REPORT
-+   SYN_MT_SLOT 0
-+   ABS_MT_POSITION_X x
-+   ABS_MT_POSITION_Y y
-+   SYN_MT_SLOT 1
-+   ABS_MT_POSITION_X x
-+   ABS_MT_POSITION_Y y
-+   SYN_REPORT
+Dmitry Torokhov wrote:
+> On Thu, May 13, 2010 at 11:06:34AM -0400, Valdis.Kletnieks@vt.edu wrote:
+>> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
+>>> The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
+>>>
+>>>    http://userweb.kernel.org/~akpm/mmotm/
+>> Dell Latitude E6500, x86_64 kernel.
+>>
+>> Boots to single user prompt, but has issues on the way there.  Possibly
+>> very important - I was definitely *not* typing at the time (as I had hit
+>> return on the LUKS passphrase for the disk at 36 seconds after boot, and
+>> I didn't get the # prompt for single-user for another minute or two (probably
+>> due to udev having issues due to the oops). So I have no idea what it was
+>> trying to get a keycode for...
+>>
+> 
+> Udev probably tries to remap special keys on your keyboard...
+> 
+>> [   40.717136] udev: starting version 154
+>> [   41.710153] BUG: unable to handle kernel NULL pointer dereference at (null)
+>> [   41.711007] IP: [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
+>> [   41.711007] PGD 11d318067 PUD 118af1067 PMD 0
+>> [   41.711007] Oops: 0002 [#1] PREEMPT SMP
+>> [   41.711007] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4/idVendor
+>> [   41.711007] CPU 0
+>> [   41.711007] Modules linked in:
+>> [   41.711007]
+>> [   41.711007] Pid: 2501, comm: keymap Not tainted 2.6.34-rc7-mmotm0511 #2 0X564R/Latitude E6500
+>>
+>> [   41.711007] RIP: 0010:[<ffffffff813bb996>]  [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
+> 
+> I think this is Mauro's big keycode additions.
+> 
 
+Ok, I was able to reproduce the bug:
 
-(2 events from 1 finger, followed by 1 event with both).
+# getkeycodes                                              
+[22726.468755] BUG: unable to handle kernel NULL pointer dereference at (null)  
+[22726.471074] IP: [<c138b6d0>] input_default_getkeycode_from_index+0x40/0x60   
+[22726.471074] *pde = 00000000                                                  
+[22726.471074] Oops: 0002 [#1] SMP                                              
+[22726.471074] last sysfs file: /sys/devices/pci0000:00/0000:00:0b.1/usb1/1-3/dm
+[22726.471074] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 ip6table_filter]
+[22726.471074]                                                                  
+[22726.471074] Pid: 947, comm: getkeycodes Not tainted 2.6.34 #6 C51MCP51/      
+[22726.471074] EIP: 0060:[<c138b6d0>] EFLAGS: 00210046 CPU: 0                   
+[22726.471074] EIP is at input_default_getkeycode_from_index+0x40/0x60          
+[22726.471074] EAX: 00000000 EBX: 00000000 ECX: 00000002 EDX: dacfbdc8          
+[22726.471074] ESI: dacfbdc8 EDI: f5daf794 EBP: dacfbdb8 ESP: dacfbdb4          
+[22726.471074]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068                    
+[22726.471074] Process getkeycodes (pid: 947, ti=dacfa000 task=f573d4a0 task.ti)
+[22726.471074] Stack:                                                           
+[22726.471074]  f5daf000 dacfbdec c138d233 dacfbe30 00200286 00000000 00000000 4
+[22726.471074] <0> 00000000 00000000 00000000 dacfbe2c f5da0340 c16c12cc dacfbd8
+[22726.471074] <0> c12f4130 dacfbe24 c138d9f8 00000002 00000001 00000000 c138d90
+[22726.471074] Call Trace:                                                      
+[22726.471074]  [<c138d233>] ? input_get_keycode+0x73/0x90                      
+[22726.471074]  [<c12f4148>] ? getkeycode_helper+0x18/0x30                      
+[22726.471074]  [<c12f4130>] ? getkeycode_helper+0x0/0x30                       
+[22726.471074]  [<c138d9f8>] ? input_handler_for_each_handle+0x78/0xa0          
+[22726.471074]  [<c138d980>] ? input_handler_for_each_handle+0x0/0xa0           
+[22726.471074]  [<c12f4130>] ? getkeycode_helper+0x0/0x30                       
+[22726.471074]  [<c12f399e>] ? getkeycode+0x2e/0x40                             
+[22726.471074]  [<c12f16ab>] ? vt_ioctl+0xb9b/0x1960                            
+[22726.471074]  [<c12ed600>] ? tty_ldisc_try+0x20/0x50                          
+[22726.471074]  [<c12ed8da>] ? put_ldisc+0x4a/0xd0                              
+[22726.471074]  [<c107649c>] ? trace_hardirqs_on_caller+0x12c/0x170             
+[22726.471074]  [<c10764eb>] ? trace_hardirqs_on+0xb/0x10                       
+[22726.471074]  [<c12f0b10>] ? vt_ioctl+0x0/0x1960                              
+[22726.471074]  [<c12e74bf>] ? tty_ioctl+0x7f/0x8a0                             
+[22726.471074]  [<c11150e2>] ? vfs_ioctl+0x32/0xc0                              
+[22726.471074]  [<c12e7440>] ? tty_ioctl+0x0/0x8a0                              
+[22726.471074]  [<c111584a>] ? do_vfs_ioctl+0x6a/0x5d0                          
+[22726.471074]  [<c10fc455>] ? kmem_cache_free+0x85/0xc0                        
+[22726.471074]  [<c107649c>] ? trace_hardirqs_on_caller+0x12c/0x170             
+[22726.471074]  [<c10764eb>] ? trace_hardirqs_on+0xb/0x10                       
+[22726.471074]  [<c111070b>] ? putname+0x2b/0x40                                
+[22726.471074]  [<c1105523>] ? do_sys_open+0xf3/0x110                           
+[22726.471074]  [<c1097f13>] ? audit_syscall_entry+0x1e3/0x210                  
+[22726.471074]  [<c1115e17>] ? sys_ioctl+0x67/0x80                              
+[22726.471074]  [<c1002fdf>] ? sysenter_do_call+0x12/0x38                       
+[22726.471074] Code: 0a b8 ea ff ff ff 5b 5d c3 66 90 3b 98 a4 00 00 00 73 ee 8 
+[22726.471074] EIP: [<c138b6d0>] input_default_getkeycode_from_index+0x40/0x60 4
+[22726.471074] CR2: 0000000000000000                                            
+[22726.471074] ---[ end trace 4ee8ba470bac54f1 ]---                             
 
+I've removed the big getkeycode stuff from the material I've submitted earlier
+today for 2.6.35. I'm currently working on fix the issue.
 
-On 05/19/2010 06:43 PM, Ping Cheng wrote:
-> Hi Henrik,
->
-> I am trying to link the protocol to the actual multi-touch devices in
-> my "mind". Hope it helps you to point out the mismatch between my
-> imagination and the protocol.  Please see details in line.
->
-> Ping
->
-> On Tue, May 18, 2010 at 1:10 PM, Henrik Rydberg<rydberg@euromail.se>  wrote:
->> This patch adds documentation for the SYN_MT_SLOT event and
->> gives examples of how to use the event slot protocol.
->
-> Am I right in thinking that SYN_MT_SLOT represents to the actual touch
-> area/finger on the surface? There could be more than one (x,y) (a few
-> points that form an irregular shape) that represents one finger.  The
-> following example shows that slot 0 (finger 1) touched three points on
-> the surface while slot 1 (finger 2) only has one point reported:
->
-> +   SYN_MT_SLOT 0
-> +   ABS_MT_TRACKING_ID 45
-> +   ABS_MT_POSITION_X x[0]
-> +   ABS_MT_POSITION_Y y[0]
-> +   ABS_MT_TRACKING_ID 46
-> +   ABS_MT_POSITION_X x[1]
-> +   ABS_MT_POSITION_Y y[1]
-> +   ABS_MT_TRACKING_ID 47
-> +   ABS_MT_POSITION_X x[2]
-> +   ABS_MT_POSITION_Y y[2]
-> +   SYN_MT_SLOT 1
-> +   ABS_MT_TRACKING_ID 30
-> +   ABS_MT_POSITION_X x[3]
-> +   ABS_MT_POSITION_Y y[3]
-> +   SYN_REPORT
->
-> If my assumption is correct, i.e., one slot can have more than one
-> point, I would think ABS_MT_TRACKING_ID may not have to be a required
-> entry inside SYN_MT_SLOT.  To the user land clients/drivers,
-> SYN_MT_SLOT itself could serve as an ID. So, the following case is
-> also a type B ( we know there are two touch areas. But we don't keep
-> track of the points inside the areas):
->
-> +   SYN_MT_SLOT 0
-> +   ABS_MT_POSITION_X x[0]
-> +   ABS_MT_POSITION_Y y[0]
-> +   ABS_MT_POSITION_X x[1]
-> +   ABS_MT_POSITION_Y y[1]
-> +   ABS_MT_POSITION_X x[2]
-> +   ABS_MT_POSITION_Y y[2]
-> +   SYN_MT_SLOT 1
-> +   ABS_MT_POSITION_X x[3]
-> +   ABS_MT_POSITION_Y y[3]
-> +   SYN_REPORT
->
-> So, an EVIO for X driver to retrieve the number of SLOTs would be very
-> helpful.  Something like the following would do the work:
->
-> input_set_abs_params(input_dev, ABS_MT_SLOT, 0, 12, 0, 0);
->
-> which tells the user land clients that they can expect up to 13 touch areas.
->
->> +The main difference between the raw type A protocol and the higher level
->> +type B slot protocol lies in the usage of identifiable contacts. The slot
->> +protocol requires the use of the ABS_MT_TRACKING_ID,
->
-> With what I said above, I think ABS_MT_TRACKING_ID is not the unique
-> identifier for type B protocol. It is the fact that we can identify
-> individual touch areas and use ABS_MT_SLOT to report them that makes
-> it a type B event.
->
->> ABS_MT_TRACKING_ID, either provided by the
->> +hardware of computed from the raw data [5].
->                     ^^ or  (is it?)
->
-> I agree with this ABS_MT_TRACKING_ID definition.  I would think something like:
->
-> input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0, 47, 0, 0);
->
-> which tells the clients that total of 48 points are tracked, would be helpful.
->
-> Another topic that may be irrelevant to this patch is the filter. With
-> the use of ABS_MT_TRACKING_ID, a filter can be applied to discard the
-> useless repeated points or less than a certain number of points
-> movement.
->
+-- 
+
+Cheers,
+Mauro
