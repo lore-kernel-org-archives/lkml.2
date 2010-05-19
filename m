@@ -1,66 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753814Ab0ESPzg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:55:36 -0400
-Received: from sh.osrg.net ([192.16.179.4]:37249 "EHLO sh.osrg.net"
+	id S1753823Ab0ESPzv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:55:51 -0400
+Received: from cantor.suse.de ([195.135.220.2]:33399 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753524Ab0ESPzc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:55:32 -0400
-Date: Wed, 19 May 2010 23:50:08 +0900
-To: dwmw2@infradead.org
-Cc: herbert@gondor.hengli.com.au, vapier@gentoo.org, npiggin@suse.de,
-       os@emlix.com, davem@davemloft.net, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-Subject: Re: [PATCH 5/4] Provide __dma_aligned macro
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-In-Reply-To: <1274276948.6930.10117.camel@macbook.infradead.org>
-References: <20100519010524.GB18813@gondor.apana.org.au>
-	<1274266725.6930.9823.camel@macbook.infradead.org>
-	<1274276948.6930.10117.camel@macbook.infradead.org>
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-Message-Id: <20100519235158A.fujita.tomonori@lab.ntt.co.jp>
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 23:50:09 +0900 (JST)
+	id S1753622Ab0ESPzL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:55:11 -0400
+Date: Thu, 20 May 2010 01:55:05 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       mathieu.desnoyers@efficios.com, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: Unexpected splice "always copy" behavior observed
+Message-ID: <20100519155505.GD2516@laptop>
+References: <20100518153440.GB7748@Krystal>
+ <1274197993.26328.755.camel@gandalf.stny.rr.com>
+ <1274199039.26328.758.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
+ <20100519063116.GR2516@laptop>
+ <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
+ <1274280968.26328.774.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
+ <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
+ <1274283942.26328.783.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274283942.26328.783.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010 14:49:08 +0100
-David Woodhouse <dwmw2@infradead.org> wrote:
-
-> Commit 3843384a055496dfed3c93ae883d964d8290fdab ("Input: ad7877 - keep
-> dma rx buffers in seperate cache lines")[sic] introduced the use of
-> ____cacheline_aligned to ensure that buffers used for DMA as part of a
-> structure were suitably separated from the rest of the structure.
+On Wed, May 19, 2010 at 11:45:42AM -0400, Steven Rostedt wrote:
+> On Wed, 2010-05-19 at 17:33 +0200, Miklos Szeredi wrote:
+> > On Wed, 19 May 2010, Linus Torvalds wrote:
+> > > Btw, since you apparently have a real case - is the "splice to file" 
+> > > always just an append? IOW, if I'm not right in assuming that the only 
+> > > sane thing people would reasonable care about is "append to a file", then 
+> > > holler now.
+> > 
+> > Virtual machines might reasonably need this for splicing to a disk
+> > image.
 > 
-> However, aligning to the cache line size isn't necessary on
-> cache-coherent architectures. To avoid wasting space, the correct value
-> to use for the alignment is ARCH_KMALLOC_MINALIGN.
+> This comes down to balancing speed and complexity. Perhaps a copy is
+> fine in this case.
 > 
-> This patch provides a __dma_aligned macro which does the right thing.
+> I'm concerned about high speed tracing, where we are always just taking
+> pages from the trace ring buffer and appending them to a file or sending
+> them off to the network. The slower this is, the more likely you will
+> lose events.
 > 
-> Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-> 
-> diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-> index ca32ed7..4487cf3 100644
-> --- a/include/linux/dma-mapping.h
-> +++ b/include/linux/dma-mapping.h
-> @@ -5,6 +5,9 @@
->  #include <linux/err.h>
->  #include <linux/dma-attrs.h>
->  #include <linux/scatterlist.h>
-> +#include <linux/slab.h>
-> +
-> +#define __dma_aligned __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN)))
+> If the "move only on append to file" is easy to implement, I would
+> really like to see that happen. The speed of splicing a disk image for a
+> virtual machine only impacts the patience of the user. The speed of
+> splicing tracing output, impacts how much you can trace without losing
+> events.
 
-As wrote in other mail, such was proposed several times:
+It's not "easy" to implement :) What's your ring buffer look like?
+Is it a normal user address which the kernel does copy_to_user()ish
+things into? Or a mmapped special driver?
 
-http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
-http://lwn.net/Articles/2269/
+If the latter, it get's even harder again. But either way if the
+source pages just have to be regenerated anyway (eg. via page fault
+on next access), then it might not even be worthwhile to do the
+splice move.
 
-And rejected.
-
-http://lwn.net/Articles/2270/
