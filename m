@@ -1,81 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753576Ab0ESQr4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:47:56 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33478 "EHLO mx1.redhat.com"
+	id S1754174Ab0ESQsJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:48:09 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50747 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751760Ab0ESQry (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:47:54 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip v3 0/5] kprobes: batch (un)optimization support
-To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
-Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
-       Jason Baron <jbaron@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>
-Date: Wed, 19 May 2010 12:53:05 -0400
-Message-ID: <20100519165305.31828.15577.stgit@localhost6.localdomain6>
-User-Agent: StGIT/0.14.3
+	id S1754101Ab0ESQsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:48:05 -0400
+Message-ID: <4BF4163A.503@kernel.org>
+Date: Wed, 19 May 2010 18:47:54 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>	<1269885165-18617-11-git-send-email-tj@kernel.org>	<20100519190230.52385a65.sfr@canb.auug.org.au>	<20100519144505.GD2412@tuxdriver.com>	<20100520012829.709931dc.sfr@canb.auug.org.au>	<4BF407C9.2020202@kernel.org> <20100520023111.1755c938.sfr@canb.auug.org.au>
+In-Reply-To: <20100520023111.1755c938.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 16:47:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On 05/19/2010 06:31 PM, Stephen Rothwell wrote:
+> Hi Tejun,
+> 
+> On Wed, 19 May 2010 17:46:17 +0200 Tejun Heo <tj@kernel.org> wrote:
+>>
+>> Yeap, I hoped that more of them would sort themselves out during devel
+>> cycle, but I guess rc1 window isn't too bad.
+> 
+> I have now reposted all the outstanding ones.
 
-Here is batch optimizing patch series version 3.
-
-Since current kprobes jump optimization calls stop_machine() for each
-probe, it can make a lot latency noise when (un)registering a lot of
-probes (~1000) at once. For example, on 4 core Xeon, 256 probes
-optimization takes 770us in average (max 3.3ms).
-This patch series introduces batch (un)optimization which modifies
-code with just one stop_machine(), and it improves optimization time
-to 90us in average (max 330us).
-
-- Introduce text_poke_smp_batch() which modifies multiple
-  codes with one stop_machine().
-- Limit how many probes can be (un)optimized at once.
-- Introduce delayed unoptimization for batch processing.
-
-text_poke_smp_batch() also helps Jason's Jump label to reduce
-its overhead coming from text_poke_smp().
-
-Changes in v3:
-- Set kp.addr = NULL according to Ananth's comment.
-
-Changes in v2:
-- Add kprobes selftest bugfix patch.
-- Add some comments about locks according to Mathieu's comment.
-- Allocate working buffers when initializing kprobes, instead of
-  using static arraies.
-- Merge max optimization limit patch into batch optimizing patch.
-
-Thank you,
-
----
-
-Masami Hiramatsu (5):
-      kprobes: Support delayed unoptimization
-      kprobes/x86: Use text_poke_smp_batch
-      x86: Introduce text_poke_smp_batch() for batch-code modifying
-      [CLEANUP] kprobes: Remove redundant text_mutex lock in optimize
-      [BUGFIX] kprobes: Fix selftest to clear flags field for reusing probes
-
-
- arch/x86/include/asm/alternative.h |    7 +
- arch/x86/include/asm/kprobes.h     |    4 
- arch/x86/kernel/alternative.c      |   49 +++-
- arch/x86/kernel/kprobes.c          |  114 +++++++++
- include/linux/kprobes.h            |    4 
- kernel/kprobes.c                   |  442 ++++++++++++++++++++++++------------
- kernel/test_kprobes.c              |   12 +
- 7 files changed, 464 insertions(+), 168 deletions(-)
+Thanks for taking care of them.  :-)
 
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+tejun
