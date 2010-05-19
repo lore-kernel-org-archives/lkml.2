@@ -1,84 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753763Ab0ESPy7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:54:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45653 "EHLO smtps.tip.net.au"
+	id S1753798Ab0ESPzP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:55:15 -0400
+Received: from mail.vyatta.com ([76.74.103.46]:54462 "EHLO mail.vyatta.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753474Ab0ESPy5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:54:57 -0400
-Date: Thu, 20 May 2010 01:54:55 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Len Brown <lenb@kernel.org>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 16/17] acpi: update gfp/slab.h includes
-Message-Id: <20100520015455.bee01631.sfr@canb.auug.org.au>
-In-Reply-To: <1269885165-18617-17-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-17-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753722Ab0ESPy6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:54:58 -0400
+Date: Wed, 19 May 2010 08:54:53 -0700
+From: Stephen Hemminger <shemminger@vyatta.com>
+To: netdev@vger.kernel.org
+Cc: linux-net@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [ANNOUNCE] iproute2 2.6.34
+Message-ID: <20100519085453.77d56521@nehalam>
+Organization: Vyatta
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.20.0; x86_64-pc-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Len,
+This version of iproute2 utilities intended for use with 2.6.34 or
+later kernel, but should be backward compatible with older releases.
+In addition to build and man page fixes, this release includes a
+support for several new features:
 
-On Tue, 30 Mar 2010 02:52:44 +0900 Tejun Heo <tj@kernel.org> wrote:
->
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
+   * SR-IOV (I/O Virtualization) support.
+   * tuntap support
+   * bus-error reporting and counters
+   * new FIFO type head drop queue discipline
 
-Please apply this to the acpi tree (patch reposted below).
+The tar ball is available at:
+  http://devresources.linuxfoundation.org/dev/iproute2/download
 
-From: Tejun Heo <tj@kernel.org>
-To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Len Brown <lenb@kernel.org>
-Subject: [PATCH 16/17] acpi: update gfp/slab.h includes
-Date: Tue, 30 Mar 2010 02:52:44 +0900
+Repository:
+  git://git.kernel.org/pub/scm/linux/kernel/git/shemminger/iproute2.git
 
-Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-gfp.h or slab.h is included as necessary.
+For more info on iproute2 see:
+  http://www.linuxfoundation.org/collaborate/workgroups/networking/iproute2
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Len Brown <lenb@kernel.org>
----
- drivers/acpi/apei/apei-base.c |    1 +
- drivers/acpi/atomicio.c       |    1 +
- 2 files changed, 2 insertions(+), 0 deletions(-)
+Report problems (or enhancements) to the netdev@vger.kernel.org mailing list.
 
-diff --git a/drivers/acpi/apei/apei-base.c b/drivers/acpi/apei/apei-base.c
-index c35fec7..2672880 100644
---- a/drivers/acpi/apei/apei-base.c
-+++ b/drivers/acpi/apei/apei-base.c
-@@ -34,6 +34,7 @@
- #include <linux/module.h>
- #include <linux/init.h>
- #include <linux/acpi.h>
-+#include <linux/slab.h>
- #include <linux/io.h>
- #include <linux/kref.h>
- #include <linux/rculist.h>
-diff --git a/drivers/acpi/atomicio.c b/drivers/acpi/atomicio.c
-index 4ed1385..e21b1e4 100644
---- a/drivers/acpi/atomicio.c
-+++ b/drivers/acpi/atomicio.c
-@@ -31,6 +31,7 @@
- #include <linux/kref.h>
- #include <linux/rculist.h>
- #include <linux/interrupt.h>
-+#include <linux/slab.h>
- #include <acpi/atomicio.h>
- 
- #define ACPI_PFX "ACPI: "
--- 
-1.6.4.2
+Changes since last release (2.6.33)
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Alexandre Cassen (1):
+      Detect 6rd kernel missing support / 6rd tunnel scope
+
+Andreas Henriksson (2):
+      iproute2: detect iptables modules dir in configure.
+      iproute2: add option to build m_xt as a tc module (v3)
+
+Bart Trojanowski (1):
+      fix build issues with flex ver 2.5
+
+Brian Bloniarz (1):
+      ip: document initcwnd
+
+Chris Wright (1):
+      iproute2: rework SR-IOV VF support
+
+David Woodhouse (1):
+      Add 'ip tuntap' support.
+
+Florian Westphal (1):
+      iproute2: fix addrlabel interface names handling
+
+Hagen Paul Pfeifer (1):
+      tc: add new queue discipline: head drop fifo
+
+Jamal Hadi Salim (3):
+      xfrm: policy by mark
+      xfrm: Introduce xfrm by mark
+      xfrm: add support for SA by mark
+
+Jan Engelhardt (1):
+      ip: correctly report tunnel link type
+
+Michele Petrazzo - Unipex (1):
+      Continue after errors in -batch
+
+Williams, Mitch A (3):
+      Update man page to indicate current options
+      ip: Add support for setting and showing SR-IOV virtual funtion link params
+      libnetlink: Modify the parser to track first duplicated attributes
+
+Wolfgang Grandegger (1):
+      iproute2: netlink support for bus-error reporting and counters
+
+YOSHIFUJI Hideaki / 吉藤英明 (1):
+      gaiconf: /etc/gai.conf configuration helper.
+
+jamal (1):
+      skbedit: use get_u32 for parsing mark
+
+laurent chavey (1):
+      Add initcwnd to iproute2
+
+Stephen Hemminger:
+      Fix line numbering on batch commands
+      Remove mirred debug message
+      Workaround missing ALIGN() macro.
+      Update ip.8 man page to describe route table id values
+      Update kernel headers to 2.6.34 final version
+      Add documentation for ip link add/delete sub-commands
+      ip: add documentation for initrwnd
+      v2.6.34
