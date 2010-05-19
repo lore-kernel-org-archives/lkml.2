@@ -1,99 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752787Ab0ESPiP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:38:15 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:63262 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751565Ab0ESPiO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:38:14 -0400
-X-Authority-Analysis: v=1.1 cv=XlIRUSWzFvHiorqRgyN8fup7OiOLcGcwhtEWqPJTlSs= c=1 sm=0 a=1hn_8qm_4N4A:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=udcjdiy2SnzlyEQnBuMA:9 a=SnD80HcebbXFANqmspIA:7 a=u9_mrYHQWqtlkjOuDbWNUBurcMkA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [RFC PATCH 5/5] perf: Implement perf_output_addr()
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-In-Reply-To: <1274281506.5605.11111.camel@twins>
-References: <20100518133258.000434886@chello.nl>
-	 <20100518133726.214318408@chello.nl>  <20100519072138.GC5704@nowhere>
-	 <1274255882.5605.10216.camel@twins>
-	 <1274280439.26328.770.camel@gandalf.stny.rr.com>
-	 <1274281506.5605.11111.camel@twins>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 19 May 2010 11:38:12 -0400
-Message-ID: <1274283492.26328.779.camel@gandalf.stny.rr.com>
+	id S1753133Ab0ESPiW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:38:22 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:41086 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751826Ab0ESPiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:38:18 -0400
+Date: Thu, 20 May 2010 01:38:16 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Joel Becker <joel.becker@oracle.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 04/17] ocfs2: update gfp/slab.h includes
+Message-Id: <20100520013816.0779e351.sfr@canb.auug.org.au>
+In-Reply-To: <1269885165-18617-5-git-send-email-tj@kernel.org>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-5-git-send-email-tj@kernel.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 17:05 +0200, Peter Zijlstra wrote:
-> On Wed, 2010-05-19 at 10:47 -0400, Steven Rostedt wrote:
-> > On Wed, 2010-05-19 at 09:58 +0200, Peter Zijlstra wrote:
-> > > On Wed, 2010-05-19 at 09:21 +0200, Frederic Weisbecker wrote:
-> > > 
-> > > > I'm still not sure what you mean here by this multiplexing. Is
-> > > > this about per cpu multiplexing?
-> > > 
-> > > Suppose there's two events attached to the same tracepoint. Will you
-> > > write the tracepoint twice and risk different data in each, or will you
-> > > do it once and copy it into each buffer?
-> > 
-> > Is this because the same function deals with the same tracepoint, and
-> > has difficulty in knowing which event it is dealing with?
-> 
-> No, but suppose the tracepoint has a racy expression in it. Having to
-> evaluate { assign; } multiple times could yield different results, which
-> in turn means you have to run the filter multiple times too, etc..
+Hi Joel,
 
-I'm still a bit confused by what you mean here. Could you show an
-example?
+On Tue, 30 Mar 2010 02:52:32 +0900 Tejun Heo <tj@kernel.org> wrote:
+>
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
 
-> 
-> Although I suppose you could delay the commit of the first even and copy
-> from there into the next events, but that might give rather messy code.
-> 
-> > Note, the shrinking of the TRACE_EVENT() code that I pushed (and I'm
-> > hoping makes it to 35 since it lays the ground work for lots of features
-> > on top of TRACE_EVENT()), allows you to pass private data to each probe
-> > registered to the tracepoint. Letting the same function handle two
-> > different activities, or different tracepoints.
-> 
-> tracepoint_probe_register() is useless, it requires scheduling. I
-> currently register a probe on pref_event creation and then maintain a
-> per-cpu hlist of active events.
+Please apply to the ocfs2 tree (patch reposted below).
 
-When is perf_event creation? When the user runs the code or at boot up?
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Joel Becker <joel.becker@oracle.com>
+Subject: [PATCH 04/17] ocfs2: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:32 +0900
 
-> 
-> > > > There is another problem. We need something like
-> > > > perf_output_discard() in case the filter reject the event (which
-> > > > must be filled for this check to happen).
-> > > 
-> > > Yeah, I utterly hate that, I opted to let anything with a filter take
-> > > the slow path. Not only would I have to add a discard, but I'd have to
-> > > decrement the counter as well, which is a big no-no.
-> > 
-> > Hmm, this would impact performance on system wide recording of events
-> > that are filtered. One would think adding a filter would speed things
-> > up, not slow it down.
-> 
-> Depends, actually running the filter and backing out might take more
-> time than simply logging it, esp if you've already done all of the work
-> and only lack a commit.
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
 
-Hmm, could be, don't know for sure. I just want to keep the macro magic
-to a minimum ;-)
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Joel Becker <joel.becker@oracle.com>
+---
+ fs/ocfs2/reservations.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
 
--- Steve
+diff --git a/fs/ocfs2/reservations.c b/fs/ocfs2/reservations.c
+index 7fc6cfe..ed59559 100644
+--- a/fs/ocfs2/reservations.c
++++ b/fs/ocfs2/reservations.c
+@@ -26,7 +26,6 @@
+ 
+ #include <linux/fs.h>
+ #include <linux/types.h>
+-#include <linux/slab.h>
+ #include <linux/highmem.h>
+ #include <linux/bitops.h>
+ #include <linux/list.h>
+-- 
+1.6.4.2
 
-
-
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
