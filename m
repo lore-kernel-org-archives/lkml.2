@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752081Ab0ESVJF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:09:05 -0400
-Received: from www.tglx.de ([62.245.132.106]:57686 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750832Ab0ESVJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:09:03 -0400
-Date: Wed, 19 May 2010 23:08:33 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Darren Hart <dvhltc@us.ibm.com>
-cc: michael@ellerman.id.au, Brian King <brking@linux.vnet.ibm.com>,
-       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-       niv@linux.vnet.ibm.com, Doug Maxey <doug.maxey@us.ibm.com>,
-       linuxppc-dev@lists.ozlabs.org
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-In-Reply-To: <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1005192244430.3368@localhost.localdomain>
-References: <4BF30793.5070300@us.ibm.com> <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com> <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com> <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751878Ab0ESVLt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:11:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:56307 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750787Ab0ESVLr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 17:11:47 -0400
+Message-ID: <4BF453E3.2040301@oracle.com>
+Date: Wed, 19 May 2010 14:10:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Alexander Kurz <linux@blala.de>
+CC: Greg KH <gregkh@suse.de>, linux-next@vger.kernel.org,
+       fmhess@users.sourceforge.net, Greg KH <greg@kroah.com>,
+       Ian Abbott <abbotti@mev.co.uk>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/2] staging/comedi: fixing ni_tio to mite PCI dependancy
+References: <alpine.DEB.1.10.1005081218220.5727@blala.de> <20100514190142.GA2505@kroah.com> <201005142029.37408.fmhess@speakeasy.net> <20100515034423.GA3811@suse.de> <20100519103203.155c9527.randy.dunlap@oracle.com> <alpine.DEB.1.10.1005200028420.20214@blala.de>
+In-Reply-To: <alpine.DEB.1.10.1005200028420.20214@blala.de>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090207.4BF453FB.00B9:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, Thomas Gleixner wrote:
-> > I'm still not clear on why the ultimate solution wasn't to have XICS report
-> > edge triggered as edge triggered. Probably some complexity of the entire power
-> > stack that I am ignorant of.
-> > 
-> > > Apart from the issue of loosing interrupts there is also the fact that
-> > > masking on the XICS requires an RTAS call which takes a global lock.
+On 05/19/10 13:32, Alexander Kurz wrote:
+> On Wed, 19 May 2010, Randy Dunlap wrote:
+>> linux-next of 2010-0519:
+>> when CONFIG_PCI is not enabled:
+>>
+>> drivers/staging/comedi/drivers/mite.c: In function 'mite_init':
+>> drivers/staging/comedi/drivers/mite.c:89: error: implicit declaration of function 'pci_dev_get'
+>> drivers/staging/comedi/drivers/mite.c:89: warning: assignment makes pointer from integer without a cast
+>> make[5]: *** [drivers/staging/comedi/drivers/mite.o] Error 1
 > 
-> Right, I'd love to avoid that but with real level interrupts we'd run
-> into an interrupt storm. Though another solution would be to issue the
-> EOI after the threaded handler finished, that'd work as well, but
-> needs testing.
+> thanks, this patch is a follow-up to
+>> [PATCH] staging/comedi: fixing 8255 and DAS08 Kconfig dependancies.
+> 
+> From 9804b6bc8c997433411b24f477417f8e7cc9a19d Mon Sep 17 00:00:00 2001
+> From: Alexander Kurz <linux@kbdbabel.org>
+> Date: Wed, 19 May 2010 22:23:00 +0200
+> Subject: [PATCH 2/2] staging/comedi: fixing ni_tio to mite PCI dependancy
+> 
+> Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
 
-Thought more about that. The case at hand (ehea) is nasty:
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-The driver does _NOT_ disable the rx interrupt in the card in the rx
-interrupt handler - for whatever reason.
+Thanks.
 
- So even in mainline you get repeated rx interrupts when packets
- arrive while napi is processing the poll, which is suboptimal at
- least. In fact it is counterproductive as the whole purpose of NAPI
- is to _NOT_ get interrupts for consecutive incoming packets while the
- poll is active.
+> ---
+>  drivers/staging/comedi/Kconfig |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+> 
+> diff --git a/drivers/staging/comedi/Kconfig b/drivers/staging/comedi/Kconfig
+> index ebc68ee..0aa2b0d 100644
+> --- a/drivers/staging/comedi/Kconfig
+> +++ b/drivers/staging/comedi/Kconfig
+> @@ -1258,8 +1258,8 @@ config COMEDI_MITE
+>  
+>  config COMEDI_NI_TIO
+>  	tristate "NI general purpose counter support"
+> +	depends on COMEDI_MITE
+>  	select COMEDI_8255
+> -	select COMEDI_MITE
+>  	default N
+>  	---help---
+>  	  Enable support for National Instruments general purpose counters.
 
-Most of the other network drivers do:
 
-      rx_irq()
-	disable rx interrupts on card
-	napi_schedule()
-
-Now when the napi poll is done (no more packets available) then the
-driver reenables the rx interrupt on the card.
-
-Thanks,
-
-	tglx
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
