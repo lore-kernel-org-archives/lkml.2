@@ -1,48 +1,166 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754283Ab0ESHPK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 03:15:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40820 "EHLO
+	id S1754415Ab0ESHPc (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 03:15:32 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40836 "EHLO
 	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab0ESHPH (ORCPT
+	with ESMTP id S1753711Ab0ESHPa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 03:15:07 -0400
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Woodhouse <dwmw2@infradead.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-In-Reply-To: <20100519010524.GB18813@gondor.apana.org.au>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-	 <1274224834.6930.8361.camel@macbook.infradead.org>
-	 <20100519010524.GB18813@gondor.apana.org.au>
+	Wed, 19 May 2010 03:15:30 -0400
+Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
+From: Peter Zijlstra <peterz@infradead.org>
+To: Greg KH <greg@kroah.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100519024823.GA25229@kroah.com>
+References: <1274233602.3036.84.camel@localhost>
+	 <20100518200524.GA20223@kroah.com>
+	 <1274236496.3603.22.camel@minggr.sh.intel.com>
+	 <20100519024823.GA25229@kroah.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 08:14:28 +0100
-Message-ID: <1274253269.6930.9325.camel@macbook.infradead.org>
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 May 2010 09:14:36 +0200
+Message-ID: <1274253276.5605.10124.camel@twins>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 11:05 +1000, Herbert Xu wrote:
-> While this problem wouldn't have occurred, we would instead have
-> data corruption/alignment faults on architectures such as sparc32
-> or ARM that require 64-bit alignment for 64-bit objects.
+On Tue, 2010-05-18 at 19:48 -0700, Greg KH wrote:
+> Again, why do you need/want anything in sysfs in the first place?
+> What problem is it going to solve?  Who is going to benifit?  Why do
+> they care?  What is this whole thing about? 
 
-Yeah, but that's what ARCH_SLAB_MINALIGN is for.
 
-ARM gets this right, and Dave has already said he's going to fix sparc.
+OK, so all of this is about perf_event. The story starts with CPUs
+adding a PMU (Performance Monitor Unit) which allows the user to
+count/sample cpu state.
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+The whole perf_counter subsystem was created to abstract this piece of
+hardware and provide an kernel interface to it.
+
+Then we realized that a generalization of the PMU exists in pretty much
+everything that generates 'events' of interest and so we started adding
+software PMUs that allowed us to do the same for tracepoints etc.
+
+So we ended up with perf_events. A subsystem dedicated to counting
+events and event based sampling.
+
+Now the problem this patch set tries to solve; more hardware than the
+CPU has such capabilities. There are memory controllers, bus controllers
+and devices with similar capabilities.
+
+So we need a way to identify and locate these things, and since sysfs
+has the full machine topology in it, the idea was to represent these
+things in sysfs as an event_source class.
+
+Since the CPU and memory controllers are (assumed) symmetric on the
+system, we get to add things like:
+
+
+  /sys/devices/system/cpu/cpu_event_source/
+  /sys/devices/system/node/node_event_source/
+
+Devices like GPUs can do:
+
+  /sys/devices/pci0000:00/0000:00:01.0/0000:01:00.0/radeon_event_source/
+
+Hooking them into sysfs at the proper device/machine topology location
+allows us to quickly locate and identify these 'event_sources'.
+
+
+Since all hardware wants to keep life interesting they all work
+differently and programming PMUs is no different, they count different
+things, have different ways to program them etc. But for each class
+there is a useful subset of things that is pretty uniform.
+
+CPU based PMUs all can count things like clock-cycles and instructions,
+Memory controllers can count things like local/remote memory accesses
+etc.
+
+So each class has a number of actual events that are worthy of
+abstracting. The idea was to place these events in the event_source,
+like:
+
+  /sys/devices/system/cpu/cpu_event_source/cycles/
+  /sys/devices/system/cpu/cpu_event_source/instructions/
+
+
+
+And then there are the software event_sources that expose kernel events
+(through tracepoints), currently tracepoints live
+in /debug/tracing/events/ (or /sys/kernel/debug/tracing/events/ for
+those so inclined). But the above abstraction would suggest we expose
+them similarly.
+
+I'm not sure where we'd want them to live, we could add them to:
+
+  /sys/kernel/tracepoint_event_source/
+
+and have them live there, but I'm open to alternatives :-)
+
+[ With event_source's being a sysfs-class, we also get a nice flat
+  collection in /sys/class/event_source/ helping those who get lost
+  in the device topology, me :-) ]
+
+
+The next issue seems to be the interface between this sysfs
+representation and the perf_event syscall, how do we go about creating
+an actual perf_event object from this rich sysfs event_source class
+object.
+
+The sys_perf_event_open() call takes a struct perf_event_attr pointer
+which describes the event and its properties. The current event
+classification goes through:
+
+struct perf_event_attr {
+	__u32 type;
+	__u64 config;
+
+	...
+};
+
+So my initial idea was to let each event_source have a type_id and let
+each of its events have a config field and read those and insert them in
+your structure.
+
+So we'd get:
+
+  /sys/devices/system/cpu/cpu_event_source/type_id
+  /sys/devices/system/cpu/cpu_event_source/instructions/config
+
+cat those to get: .type = 0, .config = 1
+(PERF_TYPE_HARDWARE:PERF_COUNT_HW_INSTRUCTIONS).
+
+Then Ingo objected and said, if we need to open and read those file, you
+might as well just open one file and pass the fd along, saves some
+syscalls.
+
+So you'd end up doing:
+
+ fd = open("/sys/devices/system/cpu/cpu_event_source/instructions/config");
+ attr->type = fd | PERF_TYPE_FD;
+ event_fd = perf_event_open(attr, ... );
+ close(fd);
+
+>From that one fd we can find to which 'event_source' it belongs and what
+particular config we need to use.
+
+Plenty of opinions to be had on that I guess.
+
+Anyway, this was the what, why and how of it. 
 
