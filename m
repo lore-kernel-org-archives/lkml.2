@@ -1,222 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756515Ab0ESAFW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:05:22 -0400
-Received: from e35.co.us.ibm.com ([32.97.110.153]:44430 "EHLO
-	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753549Ab0ESAFS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 20:05:18 -0400
-Subject: [ PATCH 3/3] vhost: make it more scalable by creating a vhost
- thread per device
-From: Sridhar Samudrala <sri@us.ibm.com>
-To: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
-       lkml <linux-kernel@vger.kernel.org>,
-       "kvm@vger.kernel.org" <kvm@vger.kernel.org>
-Content-Type: text/plain
-Date: Tue, 18 May 2010 17:04:55 -0700
-Message-Id: <1274227495.2370.111.camel@w-sridhar.beaverton.ibm.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
+	id S1755500Ab0ESAUx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 20:20:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15301 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754336Ab0ESAUw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 20:20:52 -0400
+Message-ID: <4BF32EDE.9080304@redhat.com>
+Date: Tue, 18 May 2010 21:20:46 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+MIME-Version: 1.0
+To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: [Fwd: [GIT PULL for 2.6.35] i7core/Nehalem/Nehalem-EP/Lynnfield/Westmore-EP]
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Make vhost more scalable by creating a separate vhost thread per
-vhost device. This provides better scaling across virtio-net interfaces
-in multiple guests.
+Hmm... I've c/c LMML, instead of LKML... Let's forward the pull request to the
+right list... sorry for the mess.
 
-Also attach each vhost thread to the cgroup and cpumask of the 
-associated guest(qemu or libvirt).
+Cheers,
+Mauro
 
-Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+-------- Mensagem original --------
+Assunto: [GIT PULL for 2.6.35] i7core/Nehalem/Nehalem-EP/Lynnfield/Westmore-EP
+Data: Tue, 18 May 2010 21:02:08 -0300
+De: Mauro Carvalho Chehab <mchehab@redhat.com>
+Para: Linus Torvalds <torvalds@linux-foundation.org>
+CC: akpm >> Andrew Morton <akpm@linux-foundation.org>,        Linux Edac Mailing List <linux-edac@vger.kernel.org>,        linux Media Mailing List <linux-media@vger.kernel.org>,        bluesmoke-devel@lists.sourceforge.net 	<bluesmoke-devel@lists.sourceforge.net>,        Doug Thompson <dougthompson@xmission.com>
 
-diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
-index 9777583..18bf5be 100644
---- a/drivers/vhost/net.c
-+++ b/drivers/vhost/net.c
-@@ -329,19 +329,22 @@ static void handle_rx_net(struct work_struct *work)
- static int vhost_net_open(struct inode *inode, struct file *f)
- {
- 	struct vhost_net *n = kmalloc(sizeof *n, GFP_KERNEL);
-+	struct vhost_dev *dev;
- 	int r;
- 	if (!n)
- 		return -ENOMEM;
-+
-+	dev = &n->dev;
- 	n->vqs[VHOST_NET_VQ_TX].handle_kick = handle_tx_kick;
- 	n->vqs[VHOST_NET_VQ_RX].handle_kick = handle_rx_kick;
--	r = vhost_dev_init(&n->dev, n->vqs, VHOST_NET_VQ_MAX);
-+	r = vhost_dev_init(dev, n->vqs, VHOST_NET_VQ_MAX);
- 	if (r < 0) {
- 		kfree(n);
- 		return r;
- 	}
- 
--	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT);
--	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN);
-+	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
-+	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
- 	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
- 
- 	f->private_data = n;
-@@ -644,25 +647,14 @@ static struct miscdevice vhost_net_misc = {
- 
- int vhost_net_init(void)
- {
--	int r = vhost_init();
--	if (r)
--		goto err_init;
--	r = misc_register(&vhost_net_misc);
--	if (r)
--		goto err_reg;
--	return 0;
--err_reg:
--	vhost_cleanup();
--err_init:
--	return r;
--
-+	return misc_register(&vhost_net_misc);
- }
-+
- module_init(vhost_net_init);
- 
- void vhost_net_exit(void)
- {
- 	misc_deregister(&vhost_net_misc);
--	vhost_cleanup();
- }
- module_exit(vhost_net_exit);
- 
-diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
-index 49fa953..b076b9b 100644
---- a/drivers/vhost/vhost.c
-+++ b/drivers/vhost/vhost.c
-@@ -37,8 +37,6 @@ enum {
- 	VHOST_MEMORY_F_LOG = 0x1,
- };
- 
--static struct workqueue_struct *vhost_workqueue;
--
- static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
- 			    poll_table *pt)
- {
-@@ -57,18 +55,19 @@ static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
- 	if (!((unsigned long)key & poll->mask))
- 		return 0;
- 
--	queue_work(vhost_workqueue, &poll->work);
-+	queue_work(poll->dev->wq, &poll->work);
- 	return 0;
- }
- 
- /* Init poll structure */
- void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
--		     unsigned long mask)
-+		     unsigned long mask, struct vhost_dev *dev)
- {
- 	INIT_WORK(&poll->work, func);
- 	init_waitqueue_func_entry(&poll->wait, vhost_poll_wakeup);
- 	init_poll_funcptr(&poll->table, vhost_poll_func);
- 	poll->mask = mask;
-+	poll->dev = dev;
- }
- 
- /* Start polling a file. We add ourselves to file's wait queue. The caller must
-@@ -97,7 +96,7 @@ void vhost_poll_flush(struct vhost_poll *poll)
- 
- void vhost_poll_queue(struct vhost_poll *poll)
- {
--	queue_work(vhost_workqueue, &poll->work);
-+	queue_work(poll->dev->wq, &poll->work);
- }
- 
- static void vhost_vq_reset(struct vhost_dev *dev,
-@@ -129,6 +128,13 @@ long vhost_dev_init(struct vhost_dev *dev,
- 		    struct vhost_virtqueue *vqs, int nvqs)
- {
- 	int i;
-+	char vhost_name[20];
-+
-+	snprintf(vhost_name, 20, "vhost-%d", current->pid);
-+	dev->wq = create_singlethread_workqueue_in_current_cg(vhost_name);
-+	if (!dev->wq)
-+		return -ENOMEM;
-+
- 	dev->vqs = vqs;
- 	dev->nvqs = nvqs;
- 	mutex_init(&dev->mutex);
-@@ -144,7 +150,7 @@ long vhost_dev_init(struct vhost_dev *dev,
- 		if (dev->vqs[i].handle_kick)
- 			vhost_poll_init(&dev->vqs[i].poll,
- 					dev->vqs[i].handle_kick,
--					POLLIN);
-+					POLLIN, dev);
- 	}
- 	return 0;
- }
-@@ -217,6 +223,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
- 	if (dev->mm)
- 		mmput(dev->mm);
- 	dev->mm = NULL;
-+
-+	destroy_workqueue(dev->wq);
- }
- 
- static int log_access_ok(void __user *log_base, u64 addr, unsigned long sz)
-@@ -1105,16 +1113,3 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
- 		vq_err(vq, "Failed to enable notification at %p: %d\n",
- 		       &vq->used->flags, r);
- }
--
--int vhost_init(void)
--{
--	vhost_workqueue = create_singlethread_workqueue("vhost");
--	if (!vhost_workqueue)
--		return -ENOMEM;
--	return 0;
--}
--
--void vhost_cleanup(void)
--{
--	destroy_workqueue(vhost_workqueue);
--}
-diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
-index 44591ba..60fefd0 100644
---- a/drivers/vhost/vhost.h
-+++ b/drivers/vhost/vhost.h
-@@ -29,10 +29,11 @@ struct vhost_poll {
- 	/* struct which will handle all actual work. */
- 	struct work_struct        work;
- 	unsigned long		  mask;
-+	struct vhost_dev	 *dev;
- };
- 
- void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
--		     unsigned long mask);
-+		     unsigned long mask, struct vhost_dev *dev);
- void vhost_poll_start(struct vhost_poll *poll, struct file *file);
- void vhost_poll_stop(struct vhost_poll *poll);
- void vhost_poll_flush(struct vhost_poll *poll);
-@@ -110,6 +111,7 @@ struct vhost_dev {
- 	int nvqs;
- 	struct file *log_file;
- 	struct eventfd_ctx *log_ctx;
-+	struct workqueue_struct *wq;
- };
- 
- long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
-@@ -136,9 +138,6 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
- int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
- 		    unsigned int log_num, u64 len);
- 
--int vhost_init(void);
--void vhost_cleanup(void);
--
- #define vq_err(vq, fmt, ...) do {                                  \
- 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
- 		if ((vq)->error_ctx)                               \
+The following changes since commit 66f41d4c5c8a5deed66fdcc84509376c9a0bf9d8:
+  Linus Torvalds (1):
+        Linux 2.6.34-rc6
+
+are available in the git repository at:
+
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/i7core.git linux-next
+
+This patch series adds support for memory error detection for the
+Memory Controllers found on the Nehalem CPU's, from i7core to Xeon 56xx,
+via EDAC interface.
+
+It doesn't support Xeon 75xx CPU's, as they use a different type of
+memory controller.
+
+Cheers,
+Mauro
 
 
+Alan Cox (1):
+      edac: i7core_edac produces undefined behaviour on 32bit
+
+Alexander Beregalov (1):
+      i7core_edac: fix memory leak of i7core_dev
+
+Aristeu Rozanski (1):
+      pci: Add a probing code that seeks for an specific bus
+
+Jiri Slaby (1):
+      EDAC: add __init to i7core_xeon_pci_fixup
+
+Keith Mannthey (2):
+      i7core_edac: Fix ecc enable shift
+      i7core_edac: Probe on Xeons eariler
+
+Mauro Carvalho Chehab (72):
+      i7core_edac: Add an EDAC memory controller driver for Nehalem chipsets
+      i7core_edac: Add error insertion code for Nehalem
+      i7core_edac: Add more status functions to EDAC driver
+      i7core_edac: Registers all supported MC functions
+      i7core_edac: Show read/write virtual/physical channel association
+      i7core_edac: A few fixes at error injection code
+      i7core_edac: need mci->edac_check, otherwise module removal doesn't work
+      i7core_edac: Add a memory check routine, based on device 3 function 4
+      i7core_edac: Add additional tests for error detection
+      i7core_edac: Properly fill struct csrow_info
+      i7core_edac: Improve error handling
+      i7core_edac: Add more information about each active dimm
+      i7core_edac: Get more info about the memory DIMMs
+      i7core_edac: Memory info fixes and preparation for properly filling cswrow data
+      i7core_edac: fill csrows edac sysfs info
+      i7core_edac: CodingStyle fixes
+      edac_mce: Add an interface driver to report mce errors via edac
+      edac/Kconfig: edac_mce can't be module
+      i7core_edac: Add edac_mce glue
+      i7core_edac: Adds write unlock to MC registers
+      i7core_edac: Add a code to probe Xeon 55xx bus
+      i7core_edac: add support for more than one MC socket
+      i7core_edac: maps all sockets as if ther are one MC controller
+      i7core_edac: decode mcelog error and send it via edac interface
+      i7core_edac: some fixes at memory error parser
+      i7core: fix probing on Xeon55xx
+      i7core: check if the memory error is fatal or non-fatal
+      i7core: enrich error information based on memory transaction type
+      i7core: fix get_devices routine for Xeon55xx
+      i7core: better document i7core_get_active_channels()
+      i7core: add socket info at the debug msg
+      i7core: remove some uneeded noisy debug messages
+      i7core_edac: Some cleanups at displayed info
+      i7core_edac: some fixes at error injection code
+      i7core_edac: fix error codes for sysfs error injection interface
+      i7core_edac: fix error injection
+      Documentation/edac.txt: Add Nehalem specific EDAC characteristics
+      i7core_edac: CodingSyle fixes/cleanups
+      i7core_edac: Print an error message if pci register fails
+      i7core_edac: Use Device 3 function 2 to report errors with RDIMM's
+      i7core: Use registered memories per processor
+      i7core_edac: Improve corrected_error_counts output for RDIMM
+      i7core: temporary workaround to allow it to compile against 2.6.30
+      Dynamically allocate memory for PCI devices
+      i7core_edac: create one mc per socket/QPI
+      i7core_edac: sanity check: print a warning if a mcelog is ignored
+      i7core_edac: a few fixes for multiple mc's
+      Documentation/edac.txt: Improve it to reflect the latest changes at the driver
+      i7core_edac: Fix a bug when printing error counts with RDIMMs
+      i7core_edac: at remove, don't remove all pci devices at once
+      i7core_edac: remove static counter for max sockets
+      i7core_edac: change remove module strategy
+      i7core_edac: We need to use list_for_each_entry_safe to avoid errors
+      i7core_edac: Avoid printing a warning when debug is disabled
+      edac_core: Allow the creation of sysfs groups
+      i7core_edac: Add support for sysfs addrmatch group
+      edac: store/show methods for device groups weren't working
+      edac: Don't create csrow entries on instance groups
+      i7core_edac: Convert UDIMM error counters into a proper sysfs group
+      Documentation/edac.txt: Reflect the sysfs changes at the document
+      edac: Create an unique instance for each kobj
+      i7core_edac: Use a lockless ringbuffer
+      i7core_edac: Better parse "any" addrmask
+      i7core_edac: First store, then increment
+      i7core_edac: Fix ringbuffer maxsize
+      i7core_edac: PCI device is called NONCORE, instead of NOCORE
+      i7core_edac: Use a more generic approach for probing PCI devices
+      i7core_edac: Add initial support for Lynnfield
+      i7core: add support for Lynnfield alternate address
+      i7core_edac: Fix wrong device id for channel 1 devices
+      i7core_edac: Add support for X5670
+      i7core_edac: Better describe the supported devices
+
+Randy Dunlap (1):
+      edac: fix i7core build
+
+Stephen Rothwell (1):
+      i7core_edac: do not export static functions
+
+Tony Luck (1):
+      i7core_edac: don't free on success
+
+Vernon Mauery (2):
+      Always call i7core_[ur]dimm_check_mc_ecc_err
+      Add support for Westmere to i7core_edac driver
+
+ Documentation/edac.txt           |  152 +++
+ arch/x86/include/asm/pci_x86.h   |    2 +
+ arch/x86/kernel/cpu/mcheck/mce.c |   10 +
+ arch/x86/pci/legacy.c            |   42 +-
+ drivers/edac/Kconfig             |   13 +
+ drivers/edac/Makefile            |    2 +
+ drivers/edac/edac_core.h         |   23 +-
+ drivers/edac/edac_mc_sysfs.c     |  175 +++-
+ drivers/edac/edac_mce.c          |   61 ++
+ drivers/edac/i7core_edac.c       | 2078 ++++++++++++++++++++++++++++++++++++++
+ include/linux/edac_mce.h         |   31 +
+ include/linux/pci.h              |    1 +
+ include/linux/pci_ids.h          |   52 +
+ 13 files changed, 2598 insertions(+), 44 deletions(-)
+ create mode 100644 drivers/edac/edac_mce.c
+ create mode 100644 drivers/edac/i7core_edac.c
+ create mode 100644 include/linux/edac_mce.h
+--
+To unsubscribe from this list: send the line "unsubscribe linux-edac" in
+the body of a message to majordomo@vger.kernel.org
+More majordomo info at  http://vger.kernel.org/majordomo-info.html
+
+-- 
+
+Cheers,
+Mauro
