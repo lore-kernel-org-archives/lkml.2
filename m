@@ -1,71 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755833Ab0ESKzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 06:55:20 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:56797 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752457Ab0ESKzR (ORCPT
+	id S1756468Ab0ESK7L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 06:59:11 -0400
+Received: from casper.infradead.org ([85.118.1.10]:47789 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752942Ab0ESK7J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 06:55:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=YHQ41+MqRmU3qkEoiriAgCSF+g2IRYqPdc9mayjYk5gxxGpKsxa88TQKx0F/gAAdPM
-         SnMb3k7ypHH+NHViE3ChpVg86FnCISzrRR0DMwUC0L8/AZ8Ci6oLL7xHf5TviuflU76c
-         Eh/YJU1SIe1hnU7wgWMnxWuSpv+msnokNu4io=
-Date: Wed, 19 May 2010 12:55:21 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Hans Verkuil <hverkuil@xs4all.nl>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
-       Arnd Bergmann <arnd@arndb.de>, John Kacur <jkacur@redhat.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@lxorguk.ukuu.org.uk>
-Subject: Re: [PATCH 0/4 v2] V4l bkl ioctl pushdown
-Message-ID: <20100519105519.GA1213@nowhere>
-References: <1274079052-23611-1-git-send-regression-fweisbec@gmail.com> <201005180850.27813.hverkuil@xs4all.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005180850.27813.hverkuil@xs4all.nl>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 19 May 2010 06:59:09 -0400
+Subject: Re: [BUG] SLOB breaks Crypto
+From: David Woodhouse <dwmw2@infradead.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+In-Reply-To: <20100519010524.GB18813@gondor.apana.org.au>
+References: <1274211235.11603.1205.camel@calx>
+	 <20100518.135945.180391159.davem@davemloft.net>
+	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
+	 <20100518.142021.135951273.davem@davemloft.net>
+	 <1274224834.6930.8361.camel@macbook.infradead.org>
+	 <20100519010524.GB18813@gondor.apana.org.au>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 May 2010 11:58:45 +0100
+Message-ID: <1274266725.6930.9823.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 08:50:27AM +0200, Hans Verkuil wrote:
-> On Monday 17 May 2010 08:50:48 Frederic Weisbecker wrote:
-> > Hi,
-> > 
-> > This is the second attempt to pushdown the bkl in v4l fops ioctl
-> > handlers.
-> > 
-> > Amongst the changes:
-> > 
-> > - keep video_ioctl2() unlocked but bring a new video_ioctl2_bkl()
-> >   that drivers can use and attribute to their .unlocked_ioctl instead.
-> > 
-> > - two new (or it I missed them last time) drivers have been included
-> >   to the pushdown.
-> > 
-> > This is against a fresh v4l/master.
-> > 
-> > Thanks.
-> 
-> Other than the single comment about the vivi driver in patch 3/4:
-> 
-> Acked-by: Hans Verkuil <hverkuil@xs4all.nl>
-> 
-> It looks good to me and it would be nice if this could be merged for 2.6.35.
-> 
-> Regards,
-> 
-> 	Hans
+On Wed, 2010-05-19 at 11:05 +1000, Herbert Xu wrote:
+> So no getting rid of them isn't going to fix things either.  Of
+> course I have no objections to moving this into slab.h or a similar
+> location should anyone be willing to do the hard work.
 
+http://git.infradead.org/users/dwmw2/minalign-2.6.git
+git://git.infradead.org/users/dwmw2/minalign-2.6.git
 
-Thanks I'm fixing the issue with the vivi driver and will resend the set
-with your acks.
+Should I include the SPARC patch in that too?
+
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
