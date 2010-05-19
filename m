@@ -1,95 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756723Ab0ESBbQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 21:31:16 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:10981 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755838Ab0ESBag (ORCPT
+	id S1756654Ab0ESBkM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 21:40:12 -0400
+Received: from mail.windriver.com ([147.11.1.11]:41106 "EHLO
+	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753907Ab0ESBkE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 21:30:36 -0400
-From: Mike Chan <mike@android.com>
-Cc: khilman@deeprootsystems.com, menage@google.com, balbir@in.ibm.com,
-       cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-omap@vger.kernel.org, Mike Chan <mike@android.com>
-Subject: [PATCH 4/4] omap: cpu: Power tracking support for cgroup cpuacct
-Date: Tue, 18 May 2010 18:30:20 -0700
-Message-Id: <1274232620-23003-5-git-send-email-mike@android.com>
-X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1274232620-23003-1-git-send-email-mike@android.com>
-References: <1274232620-23003-1-git-send-email-mike@android.com>
-X-System-Of-Record: true
-To: unlisted-recipients:; (no To-header on input)
+	Tue, 18 May 2010 21:40:04 -0400
+From: Jason Wessel <jason.wessel@windriver.com>
+To: torvalds@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, kgdb-bugreport@lists.sourceforge.net,
+       Jason Wessel <jason.wessel@windriver.com>
+Subject: [PATCH 12/25] sparc,sunzilog: Add console polling support for sunzilog serial driver
+Date: Tue, 18 May 2010 20:39:22 -0500
+Message-Id: <1274233175-3675-13-git-send-email-jason.wessel@windriver.com>
+X-Mailer: git-send-email 1.6.4.rc1
+In-Reply-To: <1274233175-3675-1-git-send-email-jason.wessel@windriver.com>
+References: <1274233175-3675-1-git-send-email-jason.wessel@windriver.com>
+X-OriginalArrivalTime: 19 May 2010 01:39:51.0594 (UTC) FILETIME=[2CB430A0:01CAF6F4]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Specify new power field in struct omap_opp, which is
-power exported in milliWatt.
+Allow kgdboc to work on sparc hardware with the Zilog serial chips.
 
-power_usage function gives power consumed in milliWatt seconds
-
-Signed-off-by: Mike Chan <mike@android.com>
+Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- arch/arm/plat-omap/cpu-omap.c             |   23 ++++++++++++++++++++++-
- arch/arm/plat-omap/include/plat/omap-pm.h |    1 +
- 2 files changed, 23 insertions(+), 1 deletions(-)
+ drivers/serial/sunzilog.c |   50 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 50 insertions(+), 0 deletions(-)
 
-diff --git a/arch/arm/plat-omap/cpu-omap.c b/arch/arm/plat-omap/cpu-omap.c
-index d27234d..1381539 100644
---- a/arch/arm/plat-omap/cpu-omap.c
-+++ b/arch/arm/plat-omap/cpu-omap.c
-@@ -22,6 +22,7 @@
- #include <linux/clk.h>
- #include <linux/io.h>
- #include <linux/cpuacct.h>
-+#include <linux/math64.h>
+diff --git a/drivers/serial/sunzilog.c b/drivers/serial/sunzilog.c
+index 2c7a66a..978b3ce 100644
+--- a/drivers/serial/sunzilog.c
++++ b/drivers/serial/sunzilog.c
+@@ -102,6 +102,8 @@ struct uart_sunzilog_port {
+ #endif
+ };
  
- #include <mach/hardware.h>
- #include <plat/clock.h>
-@@ -218,10 +219,30 @@ static void omap_cpuacct_freq_show(void *cpuacct_data, struct cgroup_map_cb *cb)
- 	}
++static void sunzilog_putchar(struct uart_port *port, int ch);
++
+ #define ZILOG_CHANNEL_FROM_PORT(PORT)	((struct zilog_channel __iomem *)((PORT)->membase))
+ #define UART_ZILOG(PORT)		((struct uart_sunzilog_port *)(PORT))
+ 
+@@ -996,6 +998,50 @@ static int sunzilog_verify_port(struct uart_port *port, struct serial_struct *se
+ 	return -EINVAL;
  }
  
-+
-+/* Returns power (in milliWatt seconds) for cgroup */
-+static u64 omap_cpuacct_power_usage(void *cpuacct_data)
++#ifdef CONFIG_CONSOLE_POLL
++static int sunzilog_get_poll_char(struct uart_port *port)
 +{
-+	int i;
-+	u64 *cpuacct_freq = cpuacct_data;
-+	u64 totalpower = 0;
++	unsigned char ch, r1;
++	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *) port;
++	struct zilog_channel __iomem *channel
++		= ZILOG_CHANNEL_FROM_PORT(&up->port);
 +
-+	/* mpu_opps table starts at 1 */
-+	for (i = 0; freq_table[i].frequency != CPUFREQ_TABLE_END; i++)
-+		totalpower += cpuacct_freq[i] * mpu_opps[i + 1].power;
 +
-+	/* milliwatt seconds */
-+	totalpower = div64_u64(totalpower, NSEC_PER_SEC);
++	r1 = read_zsreg(channel, R1);
++	if (r1 & (PAR_ERR | Rx_OVR | CRC_ERR)) {
++		writeb(ERR_RES, &channel->control);
++		ZSDELAY();
++		ZS_WSYNC(channel);
++	}
 +
-+	return totalpower;
++	ch = readb(&channel->control);
++	ZSDELAY();
++
++	/* This funny hack depends upon BRK_ABRT not interfering
++	 * with the other bits we care about in R1.
++	 */
++	if (ch & BRK_ABRT)
++		r1 |= BRK_ABRT;
++
++	if (!(ch & Rx_CH_AV))
++		return NO_POLL_CHAR;
++
++	ch = readb(&channel->data);
++	ZSDELAY();
++
++	ch &= up->parity_mask;
++	return ch;
 +}
 +
++static void sunzilog_put_poll_char(struct uart_port *port,
++			unsigned char ch)
++{
++	struct uart_sunzilog_port *up = (struct uart_sunzilog_port *)port;
 +
- static struct cpuacct_cpufreq_calls omap_cpuacct_cpufreq = {
- 	.init = omap_cpuacct_freq_init,
- 	.charge = omap_cpuacct_freq_charge,
--	.show = omap_cpuacct_freq_show,
-+	.cpufreq_show = omap_cpuacct_freq_show,
-+	.power_usage = omap_cpuacct_power_usage,
++	sunzilog_putchar(&up->port, ch);
++}
++#endif /* CONFIG_CONSOLE_POLL */
++
+ static struct uart_ops sunzilog_pops = {
+ 	.tx_empty	=	sunzilog_tx_empty,
+ 	.set_mctrl	=	sunzilog_set_mctrl,
+@@ -1013,6 +1059,10 @@ static struct uart_ops sunzilog_pops = {
+ 	.request_port	=	sunzilog_request_port,
+ 	.config_port	=	sunzilog_config_port,
+ 	.verify_port	=	sunzilog_verify_port,
++#ifdef CONFIG_CONSOLE_POLL
++	.poll_get_char	=	sunzilog_get_poll_char,
++	.poll_put_char	=	sunzilog_put_poll_char,
++#endif
  };
  
- static int __init omap_cpuacct_init(void)
-diff --git a/arch/arm/plat-omap/include/plat/omap-pm.h b/arch/arm/plat-omap/include/plat/omap-pm.h
-index 3ee41d7..8f2db6f 100644
---- a/arch/arm/plat-omap/include/plat/omap-pm.h
-+++ b/arch/arm/plat-omap/include/plat/omap-pm.h
-@@ -31,6 +31,7 @@ struct omap_opp {
- 	unsigned long rate;
- 	u8 opp_id;
- 	u16 min_vdd;
-+	unsigned long power; /* power consumed running at OPP in milliWatts */
- };
- 
- extern struct omap_opp *mpu_opps;
+ static int uart_chip_count;
 -- 
-1.7.0.1
+1.6.3.3
 
