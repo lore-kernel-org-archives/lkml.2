@@ -1,136 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755469Ab0ESDGr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 23:06:47 -0400
-Received: from mga02.intel.com ([134.134.136.20]:33123 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753461Ab0ESDGp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 23:06:45 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,259,1272870000"; 
-   d="scan'208";a="622862177"
-Subject: Re: [PATCH -v5 05/14] ACPI, APEI, Document for APEI
-From: Huang Ying <ying.huang@intel.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: "lenb@kernel.org" <lenb@kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "andi@firstfloor.org" <andi@firstfloor.org>,
-       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
-       Andi Kleen <ak@linux.intel.com>
-In-Reply-To: <4BF30BF8.8080202@oracle.com>
-References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
-	 <1274164524-6092-6-git-send-email-ying.huang@intel.com>
-	 <4BF30BF8.8080202@oracle.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 11:06:42 +0800
-Message-ID: <1274238402.24034.12.camel@yhuang-dev.sh.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1755794Ab0ESDNO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 23:13:14 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:37790 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754969Ab0ESDNM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 23:13:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=rbAclpH/N+BIKx7nOB4SIE3zfl57fVBe1falAlynNd3ALZhhX2EqARkalHNUOhtg3H
+         1Ms273NGoQVzPwKUfiJRqI6WP2Dw2qiTk9cjbDRcNPe7EaZfCvH8TigPUh7wwjh3CbUD
+         zWBPILk+ZrUTZdby8TmTkG51sr99sSfOPWK7E=
+MIME-Version: 1.0
+In-Reply-To: <20100519005032.GA26906@owl>
+References: <20100510035031.GD9181@owl> <20100514065808.GA11598@owl> 
+	<20100517094136.094800562@osadl.org> <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com> 
+	<625BA99ED14B2D499DC4E29D8138F150181F574C31@shsmsx502.ccr.corp.intel.com> 
+	<AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com> 
+	<20100519005032.GA26906@owl>
+From: Dmitry Gromov <gromovd@gmail.com>
+Date: Tue, 18 May 2010 23:12:51 -0400
+Message-ID: <AANLkTimgz4OF48ryaLAeXmbes786iKBLT0F7_h6ytAeP@mail.gmail.com>
+Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current Intel 
+	processors
+To: Huaxu Wan <huaxu.wan@linux.intel.com>
+Cc: "Wan, Huaxu" <huaxu.wan@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       LM Sensors <lm-sensors@lm-sensors.org>,
+       LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Randy,
+Hi!
 
-On Wed, 2010-05-19 at 05:51 +0800, Randy Dunlap wrote:
-> Huang Ying wrote:
-> > Add document for APEI, including kernel parameters and EINJ debug file
-> > sytem interface.
-> > 
-> > Signed-off-by: Huang Ying <ying.huang@intel.com>
-> > Signed-off-by: Andi Kleen <ak@linux.intel.com>
-> > ---
-> >  Documentation/acpi/apei/einj.txt    |   49 ++++++++++++++++++++++++++++++++++++
-> >  Documentation/kernel-parameters.txt |    5 +++
-> >  2 files changed, 54 insertions(+)
-> >  create mode 100644 Documentation/acpi/apei/einj.txt
-> > 
-> > --- /dev/null
-> > +++ b/Documentation/acpi/apei/einj.txt
-> > @@ -0,0 +1,49 @@
-> > +			APEI Error INJection
-> > +			~~~~~~~~~~~~~~~~~~~~
-> > +
-> > +EINJ provides a hardware error injection mechanism, it is very useful
-> 
->                                                      ; [or . + new sentence]
-> 
-> > +for debugging and testing of other APEI and RAS features.
-> > +
-> > +To use EINJ, make the following is enabled in your kernel
-> 
->                 make sure the following are enabled
-> 
-> > +configuration:
-> > +
-> > +CONFIG_DEBUG_FS
-> > +CONFIG_ACPI_APEI
-> > +CONFIG_ACPI_APEI_EINJ
-> > +
-> > +The user interface of EINJ is in debug file system, under the
-> 
->                               is the debug file system,
-> [or "is in the debug file system"]
-> 
-> > +directory apei/einj. The following files are provided.
-> > +
-> > +- available_error_type
-> > +  Read this file will return the error injection capability of the
-> 
->      Reading this file returns ...
-> 
-> > +  platform, that is, which error types are supported. The error type
-> > +  definition is as follow, the left field is the error type value, the
-> > +  right field is error description.
-> > +
-> > +    0x00000001	Processor Correctable
-> > +    0x00000002	Processor Uncorrectable non-fatal
-> > +    0x00000004	Processor Uncorrectable fatal
-> > +    0x00000008  Memory Correctable
-> > +    0x00000010  Memory Uncorrectable non-fatal
-> > +    0x00000020  Memory Uncorrectable fatal
-> > +    0x00000040	PCI Express Correctable
-> > +    0x00000080	PCI Express Uncorrectable fatal
-> > +    0x00000100	PCI Express Uncorrectable non-fatal
-> > +    0x00000200	Platform Correctable
-> > +    0x00000400	Platform Uncorrectable non-fatal
-> > +    0x00000800	Platform Uncorrectable fatal
-> > +
-> > +  The format of file contents are as above, except there are only the
-> > +  available error type lines.
-> > +
-> > +- error_type
-> > +  This file is used to set the error type value. The error type value
-> > +  is defined in "available_error_type" description.
-> > +
-> > +- error_inject
-> > +  Write any integer to this file to trigger the error
-> > +  injection. Before this, please specify all necessary error
-> > +  parameters.
-> > +
-> > +For more information about EINJ, please refer to ACPI specification
-> > +version 4.0, section 17.5.
-> > --- a/Documentation/kernel-parameters.txt
-> > +++ b/Documentation/kernel-parameters.txt
-> > @@ -843,6 +843,11 @@ and is between 256 and 4096 characters.
-> >  	hd=		[EIDE] (E)IDE hard drive subsystem geometry
-> >  			Format: <cyl>,<head>,<sect>
-> >  
-> > +	hest_disable	[ACPI]
-> > +			Disable Hardware Error Source Table (HEST) support,
-> 
-> s/,/;/
-> 
-> > +			corresponding firmware-first mode error processing
-> > +			logic will be disabled.
-> > +
-> >  	highmem=nn[KMG]	[KNL,BOOT] forces the highmem zone to have an exact
-> >  			size of <nn>. This works even on boxes that have no
-> >  			highmem otherwise. This also works to reduce highmem
+On Tue, May 18, 2010 at 20:50, Huaxu Wan <huaxu.wan@linux.intel.com> wrote:
+> On 02:45 Tue 18 May, Dmitry Gromov wrote:
+>> Hi!
+>>
+>> And 90C seems to be good for N200 series of Atom CPUs only - I could not
+>> find TjMax value published for N330 Dual Core  (quite popular one). Intel
+>> only published Tcase for it:
+>> http://ark.intel.com/Product.aspx?id=35641
+>> So, if for N270 Tcase = TjMax = 90C, then, I'd suggest to use Tcase = 85.2C
+>> for N330 TjMax value.
+>
+> Quoted a sentence from [1], "Unless specified otherwise, all specifications for
+> the processor are at TJ = 90°C", I believe the TjMax of 330 is 90C too.
+>
 
-Thanks, will fix theses. Sorry for my poor English.
+Well, that refers for the values in that specific table and entire
+document (which I went through as well) does not specify TjMax :(
+Similar document for N270 series does specify TjMax explicitly in Table 14:
+http://download.intel.com/design/processor/datashts/320032.pdf
 
-Best Regards,
-Huang Ying
+Another document, "Thermal and Mechanical Design Guidelines" for Atom
+300 series:
+http://download.intel.com/design/processor/designex/320530.pdf
+specifies Tcase-max = 85.2C
+Thinking about this a bit, I think Tcase-max should be lower than
+TjMax, which probably is still 90C.
+The document itself is a good reading too.
 
+Anyway, thank you very much for your help, Huaxu!
+
+-- 
+DG
+NJ
