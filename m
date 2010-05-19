@@ -1,44 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758173Ab0ESM7w (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:59:52 -0400
-Received: from ringil.hengli.com.au ([216.59.3.182]:51764 "EHLO
-	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1758052Ab0ESM7t (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:59:49 -0400
-Date: Wed, 19 May 2010 22:59:03 +1000
-From: Herbert Xu <herbert@gondor.hengli.com.au>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: David Woodhouse <dwmw2@infradead.org>, David Miller <davem@davemloft.net>,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-Subject: Re: [BUG] SLOB breaks Crypto
-Message-ID: <20100519125903.GA27496@gondor.apana.org.au>
-References: <20100518.135945.180391159.davem@davemloft.net> <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com> <20100518.142021.135951273.davem@davemloft.net> <1274224834.6930.8361.camel@macbook.infradead.org> <20100519010524.GB18813@gondor.apana.org.au> <1274266725.6930.9823.camel@macbook.infradead.org> <AANLkTikLhmQ2oYnYS2KblEayg6x1ZAmUnBvYfNu0yFh9@mail.gmail.com> <1274267805.6930.9877.camel@macbook.infradead.org> <20100519114609.GA26610@gondor.apana.org.au> <AANLkTiky-saTpv6Vq2ipIWC39b5eox92qQGE0QcACEBR@mail.gmail.com>
+	id S932093Ab0ESM76 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:59:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9863 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932069Ab0ESM7z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:59:55 -0400
+Date: Wed, 19 May 2010 14:57:11 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Yong Zhang <yong.zhang0@gmail.com>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] schedule: simplify the reacquire_kernel_lock() logic
+Message-ID: <20100519125711.GA30199@redhat.com>
+References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk> <20100518164547.6194.94193.stgit@warthog.procyon.org.uk> <20100518212220.GA5092@redhat.com> <1274250079.5605.9967.camel@twins> <20100519102743.GA10040@redhat.com> <1274265465.5605.10564.camel@twins>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTiky-saTpv6Vq2ipIWC39b5eox92qQGE0QcACEBR@mail.gmail.com>
+In-Reply-To: <1274265465.5605.10564.camel@twins>
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 03:54:43PM +0300, Pekka Enberg wrote:
->
-> OK, I'll pick up David's patches and just wait for sparc changes to
-> hit Linus' tree first. Herbert, do I have your ACK for the crypto
-> patches?
+- Contrary to what 6d558c3a says, there is no need to reload
+  prev = rq->curr after the context switch. You always schedule
+  back to where you came from, prev must be equal to current
+  even if cpu/rq was changed.
 
-Of course:
+- This also means reacquire_kernel_lock() can use prev instead
+  of current.
 
-Acked-by: Herbert Xu <herbert@gondor.apana.org.au>
+- No need to reassign switch_count if reacquire_kernel_lock()
+  reports need_resched(), we can just move the initial assignment
+  down, under the "need_resched_nonpreemptible:" label.
 
-Thanks!
--- 
-Visit Openswan at http://www.openswan.org/
-Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
-Home Page: http://gondor.apana.org.au/~herbert/
-PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
+- Try to update the comment after context_switch().
+
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+---
+
+ kernel/sched.c |   13 ++++++-------
+ 1 file changed, 6 insertions(+), 7 deletions(-)
+
+--- 34-rc1/kernel/sched.c~SCHEDULE_PREV_EQ_TO_CURRENT	2010-05-18 23:32:50.000000000 +0200
++++ 34-rc1/kernel/sched.c	2010-05-19 14:32:57.000000000 +0200
+@@ -3679,7 +3679,6 @@ need_resched:
+ 	rq = cpu_rq(cpu);
+ 	rcu_sched_qs(cpu);
+ 	prev = rq->curr;
+-	switch_count = &prev->nivcsw;
+ 
+ 	release_kernel_lock(prev);
+ need_resched_nonpreemptible:
+@@ -3693,6 +3692,7 @@ need_resched_nonpreemptible:
+ 	update_rq_clock(rq);
+ 	clear_tsk_need_resched(prev);
+ 
++	switch_count = &prev->nivcsw;
+ 	if (prev->state && !(preempt_count() & PREEMPT_ACTIVE)) {
+ 		if (unlikely(signal_pending_state(prev->state, prev)))
+ 			prev->state = TASK_RUNNING;
+@@ -3719,8 +3719,10 @@ need_resched_nonpreemptible:
+ 
+ 		context_switch(rq, prev, next); /* unlocks the rq */
+ 		/*
+-		 * the context switch might have flipped the stack from under
+-		 * us, hence refresh the local variables.
++		 * The context switch have flipped the stack from under us
++		 * and restored the local variables which were saved when
++		 * this task called schedule() in the past. prev == current
++		 * is still correct, but it can be moved to another cpu/rq.
+ 		 */
+ 		cpu = smp_processor_id();
+ 		rq = cpu_rq(cpu);
+@@ -3729,11 +3731,8 @@ need_resched_nonpreemptible:
+ 
+ 	post_schedule(rq);
+ 
+-	if (unlikely(reacquire_kernel_lock(current) < 0)) {
+-		prev = rq->curr;
+-		switch_count = &prev->nivcsw;
++	if (unlikely(reacquire_kernel_lock(prev)))
+ 		goto need_resched_nonpreemptible;
+-	}
+ 
+ 	preempt_enable_no_resched();
+ 	if (need_resched())
+
