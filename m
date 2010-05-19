@@ -1,55 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753608Ab0ESRFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:05:42 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1217 "EHLO mx1.redhat.com"
+	id S1754081Ab0ESRHS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:07:18 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42089 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752396Ab0ESRFl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:05:41 -0400
-Message-ID: <4BF41A33.8090309@redhat.com>
-Date: Wed, 19 May 2010 20:04:51 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1753524Ab0ESRHO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 13:07:14 -0400
+Date: Wed, 19 May 2010 17:06:43 GMT
+From: tip-bot for Don Zickus <dzickus@redhat.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, gorcunov@gmail.com, fweisbec@gmail.com,
+       tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, gorcunov@gmail.com, fweisbec@gmail.com,
+       tglx@linutronix.de, dzickus@redhat.com, mingo@elte.hu
+In-Reply-To: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+References: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:perf/nmi] lockup_detector: Convert per_cpu to __get_cpu_var for readability
+Message-ID: <tip-26e09c6eee14f4827b55137ba0eedc4e77cd50ab@git.kernel.org>
+Git-Commit-ID: 26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: davem@davemloft.net, Juan Quintela <quintela@redhat.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-       amit.shah@redhat.com
-Subject: Re: [PATCH] vhost-net: utilize PUBLISH_USED_IDX feature
-References: <20100518011931.GA21918@redhat.com>
-In-Reply-To: <20100518011931.GA21918@redhat.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 17:06:44 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/18/2010 04:19 AM, Michael S. Tsirkin wrote:
-> With PUBLISH_USED_IDX, guest tells us which used entries
-> it has consumed. This can be used to reduce the number
-> of interrupts: after we write a used entry, if the guest has not yet
-> consumed the previous entry, or if the guest has already consumed the
-> new entry, we do not need to interrupt.
-> This imporves bandwidth by 30% under some workflows.
->
-> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> ---
->
-> Rusty, Dave, this patch depends on the patch
-> "virtio: put last seen used index into ring itself"
-> which is currently destined at Rusty's tree.
-> Rusty, if you are taking that one for 2.6.35, please
-> take this one as well.
-> Dave, any objections?
->    
+Commit-ID:  26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+Gitweb:     http://git.kernel.org/tip/26e09c6eee14f4827b55137ba0eedc4e77cd50ab
+Author:     Don Zickus <dzickus@redhat.com>
+AuthorDate: Mon, 17 May 2010 18:06:04 -0400
+Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+CommitDate: Wed, 19 May 2010 11:32:14 +0200
 
-I object: I think the index should have its own cacheline, and that it 
-should be documented before merging.
+lockup_detector: Convert per_cpu to __get_cpu_var for readability
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Just a bunch of conversions as suggested by Frederic W.
+__get_cpu_var() provides preemption disabled checks.
 
+Plus it gives more readability as it makes it obvious
+we are dealing locally now with these vars.
+
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+LKML-Reference: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/watchdog.c |   35 +++++++++++++++++------------------
+ 1 files changed, 17 insertions(+), 18 deletions(-)
+
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e53622c..91b0b26 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -115,7 +115,7 @@ static unsigned long get_sample_period(void)
+ /* Commands for resetting the watchdog */
+ static void __touch_watchdog(void)
+ {
+-	int this_cpu = raw_smp_processor_id();
++	int this_cpu = smp_processor_id();
+ 
+ 	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+ }
+@@ -157,21 +157,21 @@ void touch_softlockup_watchdog_sync(void)
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ /* watchdog detector functions */
+-static int is_hardlockup(int cpu)
++static int is_hardlockup(void)
+ {
+-	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
++	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
+ 
+-	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
++	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
+ 		return 1;
+ 
+-	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
++	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
+ 	return 0;
+ }
+ #endif
+ 
+-static int is_softlockup(unsigned long touch_ts, int cpu)
++static int is_softlockup(unsigned long touch_ts)
+ {
+-	unsigned long now = get_timestamp(cpu);
++	unsigned long now = get_timestamp(smp_processor_id());
+ 
+ 	/* Warn about unreasonable delays: */
+ 	if (time_after(now, touch_ts + softlockup_thresh))
+@@ -206,8 +206,6 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct perf_sample_data *data,
+ 		 struct pt_regs *regs)
+ {
+-	int this_cpu = smp_processor_id();
+-
+ 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+ 		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
+@@ -219,7 +217,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 	 * fired multiple times before we overflow'd.  If it hasn't
+ 	 * then this is a good indication the cpu is stuck
+ 	 */
+-	if (is_hardlockup(this_cpu)) {
++	if (is_hardlockup()) {
++		int this_cpu = smp_processor_id();
++
+ 		/* only print hardlockups once */
+ 		if (__get_cpu_var(hard_watchdog_warn) == true)
+ 			return;
+@@ -247,7 +247,6 @@ static inline void watchdog_interrupt_count(void) { return; }
+ /* watchdog kicker functions */
+ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ {
+-	int this_cpu = smp_processor_id();
+ 	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
+ 	struct pt_regs *regs = get_irq_regs();
+ 	int duration;
+@@ -262,12 +261,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+ 
+ 	if (touch_ts == 0) {
+-		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
++		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
+ 			/*
+ 			 * If the time stamp was touched atomically
+ 			 * make sure the scheduler tick is up to date.
+ 			 */
+-			per_cpu(softlockup_touch_sync, this_cpu) = false;
++			__get_cpu_var(softlockup_touch_sync) = false;
+ 			sched_clock_tick();
+ 		}
+ 		__touch_watchdog();
+@@ -280,14 +279,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	 * indicate it is getting cpu time.  If it hasn't then
+ 	 * this is a good indication some task is hogging the cpu
+ 	 */
+-	duration = is_softlockup(touch_ts, this_cpu);
++	duration = is_softlockup(touch_ts);
+ 	if (unlikely(duration)) {
+ 		/* only warn once */
+ 		if (__get_cpu_var(soft_watchdog_warn) == true)
+ 			return HRTIMER_RESTART;
+ 
+ 		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+-			this_cpu, duration,
++			smp_processor_id(), duration,
+ 			current->comm, task_pid_nr(current));
+ 		print_modules();
+ 		print_irqtrace_events(current);
+@@ -309,10 +308,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ /*
+  * The watchdog thread - touches the timestamp.
+  */
+-static int watchdog(void *__bind_cpu)
++static int watchdog(void *unused)
+ {
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+-	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
++	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+@@ -328,7 +327,7 @@ static int watchdog(void *__bind_cpu)
+ 	/*
+ 	 * Run briefly once per second to reset the softlockup timestamp.
+ 	 * If this gets delayed for more than 60 seconds then the
+-	 * debug-printout triggers in softlockup_tick().
++	 * debug-printout triggers in watchdog_timer_fn().
+ 	 */
+ 	while (!kthread_should_stop()) {
+ 		__touch_watchdog();
