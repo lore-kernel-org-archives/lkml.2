@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752215Ab0ESWg1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 18:36:27 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:42213
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751041Ab0ESWg0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 18:36:26 -0400
-Date: Wed, 19 May 2010 15:36:34 -0700 (PDT)
-Message-Id: <20100519.153634.266077873.davem@davemloft.net>
-To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       vgoyal@redhat.com
-Subject: Re: [PATCH 07/13] jump label v8: sort jump table at build-time
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com>
-References: <cover.1274283321.git.jbaron@redhat.com>
-	<f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1752237Ab0ESWhX (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 18:37:23 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55166 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751153Ab0ESWhW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 18:37:22 -0400
+Date: Thu, 20 May 2010 01:33:12 +0300
+From: "Michael S. Tsirkin" <mst@redhat.com>
+To: Avi Kivity <avi@redhat.com>
+Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
+       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
+       qemu-devel@nongnu.org
+Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
+	ring itself
+Message-ID: <20100519223312.GC4111@redhat.com>
+References: <20100505205814.GA7090@redhat.com> <201005071253.53393.rusty@rustcorp.com.au> <4BE9AF9A.8080005@redhat.com> <201005191709.16401.rusty@rustcorp.com.au> <4BF39C12.7090407@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF39C12.7090407@redhat.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Baron <jbaron@redhat.com>
-Date: Wed, 19 May 2010 12:22:17 -0400
+On Wed, May 19, 2010 at 11:06:42AM +0300, Avi Kivity wrote:
+> On 05/19/2010 10:39 AM, Rusty Russell wrote:
+>>
+>> I think we're talking about the last 2 entries of the avail ring.  That means
+>> the worst case is 1 false bounce every time around the ring.
+>
+> It's low, but why introduce an inefficiency when you can avoid doing it  
+> for the same effort?
+> 
+>> I think that's
+>> why we're debating it instead of measuring it :)
+>>    
+>
+> Measure before optimize is good for code but not for protocols.   
+> Protocols have to be robust against future changes.  Virtio is warty  
+> enough already, we can't keep doing local optimizations.
+>
+>> Note that this is a exclusive->shared->exclusive bounce only, too.
+>>    
+>
+> A bounce is a bounce.
+>
+> Virtio is already way too bouncy due to the indirection between the  
+> avail/used rings and the descriptor pool.  A device with out of order  
+> completion (like virtio-blk) will quickly randomize the unused  
+> descriptor indexes, so every descriptor fetch will require a bounce.
+>
+> In contrast, if the rings hold the descriptors themselves instead of  
+> pointers, we bounce (sizeof(descriptor)/cache_line_size) cache lines for  
+> every descriptor, amortized.
 
-> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
-> index 2092361..fe6f8be 100644
-> --- a/scripts/mod/modpost.c
-> +++ b/scripts/mod/modpost.c
-> @@ -17,6 +17,8 @@
->  #include "modpost.h"
->  #include "../../include/generated/autoconf.h"
->  #include "../../include/linux/license.h"
-> +#include <linux/types.h>
-> +#include "jump_entry.h"
->  
+On the other hand, consider that on fast path we are never using all
+of the ring. With a good allocator we might be able to keep
+reusing only small part of the ring, instead of wrapping around
+all of it all of the time.
 
-This breaks the build on non-jump_label-supporting architectures
-because only they will have the jump_entry.h header file.
 
-I'm really getting tired trying to test your changes and every single
-time as I go through doing very basic build testing I always hit one
-patch that assumes jump label support exists, or assumes some x86'ism.
+> -- 
+> Do not meddle in the internals of kernels, for they are subtle and quick to panic.
