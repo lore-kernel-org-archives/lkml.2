@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752763Ab0ESOYg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:24:36 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:36611 "EHLO mail.zytor.com"
+	id S1752808Ab0ESOgx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:36:53 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56658 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175Ab0ESOYd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:24:33 -0400
-Message-ID: <4BF3F480.3000902@zytor.com>
-Date: Wed, 19 May 2010 07:24:00 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-CC: Ingo Molnar <mingo@elte.hu>, Luca Barbieri <luca@luca-barbieri.com>,
+	id S1751441Ab0ESOgv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:36:51 -0400
+Date: Thu, 20 May 2010 00:36:41 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Geert Uytterhoeven <geert@linux-m68k.org>, Ingo Molnar <mingo@elte.hu>,
+       Luca Barbieri <luca@luca-barbieri.com>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>,
        Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
 Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
-References: <20100517224531.GA27400@elte.hu> <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
-In-Reply-To: <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Message-Id: <20100520003641.00618acb.sfr@canb.auug.org.au>
+In-Reply-To: <4BF3F480.3000902@zytor.com>
+References: <20100517224531.GA27400@elte.hu>
+	<AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
+	<4BF3F480.3000902@zytor.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__20_May_2010_00_36_41_+1000_5fnWl/5VCSgBoC7I"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 04:46 AM, Geert Uytterhoeven wrote:
-> On Tue, May 18, 2010 at 00:45, Ingo Molnar <mingo@elte.hu> wrote:
->> Please pull the latest x86-atomic-for-linus git tree from:
->>
->>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-atomic-for-linus
->>
->>
->> out-of-topic modifications in x86-atomic-for-linus:
->> ---------------------------------------------------
->> lib/Makefile                       # 86a8938: lib: Add self-test for atomic64_t
->> lib/atomic64.c                     # 9757789: lib: Fix atomic64_add_unless retu
->> lib/atomic64_test.c                # a5c9161: x86, atomic64: In selftest, disti
->>                                   # 25a304f: lib: Fix atomic64_inc_not_zero te
->>                                   # 9efbcd5: lib: Fix atomic64_add_unless test
->>                                   # d7f6de1: x86: Implement atomic[64]_dec_if_
->>                                   # 8f4f202: lib: Only test atomic64_dec_if_po
->>                                   # 86a8938: lib: Add self-test for atomic64_t
-> 
-> Is having atomic64_t mandatory now?
-> 
-> According to the allmodconfig build logs
-> (http://kisskb.ellerman.id.au/kisskb/matrix/),
-> several architectures (at least m68k and mips) don't have it.
-> Furthermore, the test fails to compile on a few architectures that do have it
-> (parisc, s390, sh, ...).
-> 
-> <boilerplate>
-> It's a pity this wasn't raised/resolved between its detection in linux-next and
-> before it entered mainline...
-> </boilerplate>
-> 
+--Signature=_Thu__20_May_2010_00_36_41_+1000_5fnWl/5VCSgBoC7I
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Is having atomic64_t mandatory?  Not yet, I don't think, but it probably
-will be soon -- which is why there is a generic implementation
-available.  All those architectures just need to select
-CONFIG_GENERIC_ATOMIC64 and voilà, problem solved.
+Hi,
 
-As far as your boilerplate is concerned, I think Linus made it clear at
-the Kernel Summit that is it not the obligation of x86/ARM/PowerPC to
-slow down to not break the smaller architectures; it's the
-responsibility of those architecture maintainers to keep up.  Sorry.
+On Wed, 19 May 2010 07:24:00 -0700 "H. Peter Anvin" <hpa@zytor.com> wrote:
+>
+> On 05/19/2010 04:46 AM, Geert Uytterhoeven wrote:
+> > <boilerplate>
+> > It's a pity this wasn't raised/resolved between its detection in linux-=
+next and
+> > before it entered mainline...
+> > </boilerplate>
+>=20
+> As far as your boilerplate is concerned, I think Linus made it clear at
+> the Kernel Summit that is it not the obligation of x86/ARM/PowerPC to
+> slow down to not break the smaller architectures; it's the
+> responsibility of those architecture maintainers to keep up.  Sorry.
 
-	-hpa
+I don't think this reply has anything to do with the sentiments expressed
+by Geert above.  My interpretation of his comments is just that it is a
+pity noone noticed the problem while it was only in linux-next and
+reported it widely (like on linux-arch) so something could have been done
+before it all Linus' tree.  There was no suggestion of slowing the pace
+of development.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+--Signature=_Thu__20_May_2010_00_36_41_+1000_5fnWl/5VCSgBoC7I
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkvz93kACgkQjjKRsyhoI8yO1ACgts31lG2qBEm6WOdIPCAX0avs
+OYsAn224XYvw/hsM3NTgSpORRELF/bn4
+=hzth
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_May_2010_00_36_41_+1000_5fnWl/5VCSgBoC7I--
