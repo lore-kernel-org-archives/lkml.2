@@ -1,95 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752440Ab0ESJCk (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 05:02:40 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:58300 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751004Ab0ESJCi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 05:02:38 -0400
-Date: Wed, 19 May 2010 19:02:30 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
-Message-Id: <20100519190230.52385a65.sfr@canb.auug.org.au>
-In-Reply-To: <1269885165-18617-11-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-11-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__19_May_2010_19_02_30_+1000_upjhJPFx41jCqHI_"
+	id S1754260Ab0ESJDS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 05:03:18 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:58153 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751495Ab0ESJDQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 05:03:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=fsRnlUiAtGDyaxsGmRYksE5wnP9BJXJsMRYXl7imEIlR9ROt+dYfnVjzjcnrYi/iVR
+         0uRxObv3NZcFWQW2nCY9UHQyxL8vQXMHk6R4oi86K6FA/fXJtAiMp+7qXLeQoi7pywDl
+         KWpSfEQC0/NmfpEpUfHFHbTVsGN0PjYt6jmPI=
+Date: Wed, 19 May 2010 11:03:20 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [RFC PATCH 5/5] perf: Implement perf_output_addr()
+Message-ID: <20100519090319.GJ5704@nowhere>
+References: <20100518133258.000434886@chello.nl> <20100518133726.214318408@chello.nl> <20100519072138.GC5704@nowhere> <1274255882.5605.10216.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274255882.5605.10216.camel@twins>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_May_2010_19_02_30_+1000_upjhJPFx41jCqHI_
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 19, 2010 at 09:58:02AM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-19 at 09:21 +0200, Frederic Weisbecker wrote:
+> 
+> > I'm still not sure what you mean here by this multiplexing. Is
+> > this about per cpu multiplexing?
+> 
+> Suppose there's two events attached to the same tracepoint. Will you
+> write the tracepoint twice and risk different data in each, or will you
+> do it once and copy it into each buffer?
 
-Hi John,
 
-On Tue, 30 Mar 2010 02:52:38 +0900 Tejun Heo <tj@kernel.org> wrote:
->
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
->=20
-> Signed-off-by: Tejun Heo <tj@kernel.org>
-> Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-> Cc: John W. Linville <linville@tuxdriver.com>
-> ---
->  drivers/net/wireless/ath/ath9k/htc.h       |    1 +
->  drivers/net/wireless/iwlwifi/iwl-agn-ict.c |    1 +
->  2 files changed, 2 insertions(+), 0 deletions(-)
->=20
-> diff --git a/drivers/net/wireless/ath/ath9k/htc.h b/drivers/net/wireless/=
-ath/ath9k/htc.h
-> index 7770649..4497479 100644
-> --- a/drivers/net/wireless/ath/ath9k/htc.h
-> +++ b/drivers/net/wireless/ath/ath9k/htc.h
-> @@ -23,6 +23,7 @@
->  #include <linux/skbuff.h>
->  #include <linux/netdevice.h>
->  #include <linux/leds.h>
-> +#include <linux/slab.h>
->  #include <net/mac80211.h>
-> =20
->  #include "common.h"
-> diff --git a/drivers/net/wireless/iwlwifi/iwl-agn-ict.c b/drivers/net/wir=
-eless/iwlwifi/iwl-agn-ict.c
-> index 4c5395e..0cc7fd9 100644
-> --- a/drivers/net/wireless/iwlwifi/iwl-agn-ict.c
-> +++ b/drivers/net/wireless/iwlwifi/iwl-agn-ict.c
-> @@ -30,6 +30,7 @@
->  #include <linux/module.h>
->  #include <linux/etherdevice.h>
->  #include <linux/sched.h>
-> +#include <linux/gfp.h>
->  #include <net/mac80211.h>
-> =20
->  #include "iwl-dev.h"
 
-I think that this patch is still needed in the wireless tree and I notice
-that Dave has asked Linus to pull the net tree (containing the wireless
-tree).  I have been carrying this in linux-next.
+The only different data we risk in each is the timestamp, which is
+something we can probably fetch once before actually filling the
+buffers.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
 
---Signature=_Wed__19_May_2010_19_02_30_+1000_upjhJPFx41jCqHI_
-Content-Type: application/pgp-signature
+ 
+> > There is another problem. We need something like
+> > perf_output_discard() in case the filter reject the event (which
+> > must be filled for this check to happen).
+> 
+> Yeah, I utterly hate that, I opted to let anything with a filter take
+> the slow path. Not only would I have to add a discard, but I'd have to
+> decrement the counter as well, which is a big no-no.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
 
-iEYEARECAAYFAkvzqSYACgkQjjKRsyhoI8yGFwCfe1kYtq8NLO92EoGmgzUxLxok
-7ZoAoJ6OOAp7mJWZK0+80Kaw+IweClKB
-=jTyf
------END PGP SIGNATURE-----
+That makes it complicated. But for now we don't have much other solutions.
 
---Signature=_Wed__19_May_2010_19_02_30_+1000_upjhJPFx41jCqHI_--
