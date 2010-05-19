@@ -1,116 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756183Ab0ESUdl (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:33:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56318 "EHLO mx1.redhat.com"
+	id S1753676Ab0ESUil (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:38:41 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:48459 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751733Ab0ESUdj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:33:39 -0400
-Date: Wed, 19 May 2010 16:33:36 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: linux kernel mailing list <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Cc: Corrado Zoccolo <czoccolo@gmail.com>, Moyer Jeff Moyer <jmoyer@redhat.com>
-Subject: [PATCH] cfq-iosched: Revert the logic of deep queues
-Message-ID: <20100519203336.GB3394@redhat.com>
+	id S1751427Ab0ESUij convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:38:39 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 7)
+Date: Wed, 19 May 2010 22:39:25 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Brian Swetland <swetland@google.com>,
+       Daniel Walker <dwalker@fifo99.com>, "Theodore Ts'o" <tytso@mit.edu>,
+       Matthew Garrett <mjg@redhat.com>
+References: <1273810273-3039-1-git-send-email-arve@android.com> <201005190119.07710.rjw@sisk.pl> <AANLkTimFbvbDZdAFFTk0VCYhDtDk9B_LcEO60ZP70vjS@mail.gmail.com>
+In-Reply-To: <AANLkTimFbvbDZdAFFTk0VCYhDtDk9B_LcEO60ZP70vjS@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005192239.25892.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-o This patch basically reverts following commit.
+On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
+> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> > On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
+> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> > On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
+> >> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
+> >> >> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> >> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
+> >> >> >> >> 2010/5/17 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> >> >> >> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
+> >> >> >> >> >> 2010/5/14 Rafael J. Wysocki <rjw@sisk.pl>:
+> >> >> >> >> >> > On Friday 14 May 2010, Arve Hjønnevåg wrote:
+> >> >> >> >> >> >> This patch series adds a suspend-block api that provides the same
+> >> >> >> >> >> >> functionality as the android wakelock api. This version has some
+> >> >> >> >> >> >> changes from, or requested by, Rafael. The most notable changes are:
+> >> >> >> >> >> >> - DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
+> >> >> >> >> >> >>   for statically allocated suspend blockers.
+> >> >> >> >> >> >> - suspend_blocker_destroy is now called suspend_blocker_unregister
+> >> >> >> >> >> >> - The user space mandatory _INIT ioctl has been replaced with an
+> >> >> >> >> >> >>   optional _SET_NAME ioctl.
+> >> >> >> >> >> >>
+> >> >> >> >> >> >> I kept the ack and reviewed by tags on two of the patches even though
+> >> >> >> >> >> >> there were a few cosmetic changes.
+> >> >> >> >> >> >
+> >> >> >> >> >> > Thanks for the patches, I think they are in a pretty good shape now.
+> >> >> >> >> >> >
+> >> >> >> >> >> > That said, I'd like the changelogs to be a bit more descriptive, at least for
+> >> >> >> >> >> > patch [1/8].  I think it should explain (in a few words) what the purpose of
+> >> >> >> >> >> > the feature is and what problems it solves that generally a combination of
+> >> >> >> >> >> > runtime PM and cpuidle is not suitable for in your opinion.  IOW, why you
+> >> >> >> >> >> > think we need that feature.
+> >> >> >> >> >> >
+> >> >> >> >> >>
+> >> >> >> >> >> How about:
+> >> >> >> >> >>
+> >> >> >> >> >> PM: Add opportunistic suspend support.
+> >> >> >> >> >
+> >> >> >> >> > "PM: Opportunistic suspend support" would be sufficient IMO.
+> >> >> >> >> >
+> >> >> >> >> > Now, I'd start with the motivation.  Like "Power management features present
+> >> >> >> >> > in the current mainline kernel are insufficient to get maximum possible energy
+> >> >> >> >> > savings on some platforms, such as Android, because ..." (here go explanations
+> >> >> >> >> > why this is the case in your opinion).
+> >> >> >> >> >
+> >> >> >> >> > Next, "To allow Android and similar platforms to save more energy than they
+> >> >> >> >> > currently can save using the mainline kernel, introduce a mechanism by which
+> >> >> >> >> > the system is automatically suspended (i.e. put into a system-wide sleep state)
+> >> >> >> >> > whenever it's not doing useful work, called opportunistic suspend".
+> >> >> >> >> >
+> >> >> >> >> > "For this purpose introduce the suspend blockers framework allowing the
+> >> >> >> >> > kernel's power management subsystem to decide when it is desirable to suspend
+> >> >> >> >> > the system (i.e. when useful work is not being done).  Add an API that ..."
+> >> >> >> >> >
+> >> >> >> >>
+> >> >> >> >> PM: Opportunistic suspend support.
+> >> >> >> >>
+> >> >> >> >> Power management features present in the current mainline kernel are
+> >> >> >> >> insufficient to get maximum possible energy savings on some platforms,
+> >> >> >> >> such as Android, because low power states can only safely be entered
+> >> >> >> >> from idle.
+> >> >> >> >
+> >> >> >> > Do you mean CPU low-power states or system low-power states here?
+> >> >> >> >
+> >> >> >> I think either.
+> >> >> >
+> >> >> > The statement is not true for system low-power states (or sleep states),
+> >> >> > because generally (ie. on many platforms) they aren't entered from idle.
+> >> >> > Suspend is for entering them.
+> >> >> >
+> >> >> I don't think that makes my statement false. If you can only safely
+> >> >> enter low power states from idle, but some low power states cannot be
+> >> >> entered from idle, then it follows that you cannot safely enter those
+> >> >> low power states.
+> >> >
+> >> > Define "safely", then.
+> >> >
+> >> OK. Is this clearer:
+> >
+> > Not really.
+> >
+> >> Power management features present in the current mainline kernel are
+> >> insufficient to get maximum possible energy savings on some platforms,
+> >> such as Android, because some wakeup events must work at all times
+> >> which means that low power states can only safely be entered from idle.
+> >
+> > It's not clear what you mean by "some wakeup events must work at all times"
+> > and what "safely" means.
+> >
+> >> Suspend, in its current form, cannot be used, since wakeup events that
+> >> occur right after initiating suspend will not be processed until another
+> >> possibly unrelated event wake up the system again.
+> >
+> > Well, I _guess_ I know what you're trying to say, but I'm not sure if that's
+> > the core of the problem the patchset is supposed to address.
+> >
+> > The problem, as I see it, is really two-fold.
+> >
+> > First, to save as much energy as reasonably possible you need to put everything
+> > except for memory (ie. I/O devices and CPUs) into low-power states and let that
+> > stay in these low-power states for as long as reasonably possible, right?
+> 
+> Memory should also be in a low power state, but yes, everything should
+> be in the lowest power possible state for as long as possible.
+> 
+> >
+> > Second, you need the system to _always_ respond to some _specific_ events
+> > regardless of its current state, correct?
+> >
+> > Now, at present, we can put I/O devices and the CPU into low-power states
+> > at the same time in two ways: (1) by using runtime PM and cpuidle and (2) by
+> > suspending the system.  Unfortunately, none of these approaches is ideal,
+> > because (1) is vulnerable to periodic timers and polling apps (and CPU-bound
+> > apps) and (2) doesn't guarantee that all events you care about will be
+> > responded to.
+> >
+> > The proposed solution is to use suspend with an additional mechanism that
+> > will prevent the events that have to be responded to from being lost.  This
+> > additional mechanism is suspend blockers.
+> >
+> > Is this correct?
+> 
+> Yes.
+> 
+> >
+> >> >> > So, there is a difference and the explanation can go like this: "... to achieve
+> >> >> > maximum energy savings one has to put all I/O devices and the CPU into
+> >> >> > low-power states, but the CPU can only be put into a low-power state from
+> >> >> > idle.  This, in turn, means that the CPU leaves the low-power state on
+> >> >> > interrupts triggered by periodic timers and user space processes that use
+> >> >> > polling.  It turns out, however, that many of these events causing the CPU to
+> >> >> > leave the low-power state aren't essential for the desired system functionality
+> >> >> > and from the power management point of view it would be better if they didn't
+> >> >> > occur".
+> >> >>
+> >> >> This only explain why we still want to use suspend on systems that can
+> >> >> enter the same power states from idle and suspend.
+> >> >
+> >> > Sorry, I'm confused now.  Isn't that why you do that on Android?
+> >> >
+> >>
+> >> Yes, but it is not the only reason to use opportunistic support. It is
+> >> way more important to have opportunistic suspend support if the
+> >> hardware can enter lower power states from suspend than idle.
+> >
+> > Sure, but you can add something like "There also are systems where some
+> > devices cannot be put into low-power states without suspending the entire
+> > system (or the low-power states available to them without suspending the
+> > entire system are substantially shallower than the low-power states they are
+> > put into when the entire system is suspended), so the system have to be
+> > suspended as a whole to achieve the maximum energy savings".
+> >
+> 
+> Does this work for you:
 
-        76280af cfq-iosched: idling on deep seeky sync queues
+Well, almost.
 
-o Idling in CFQ is bad on high end storage. This is especially more true of
-  random reads. Idling works very well for SATA disks with single
-  spindle but harms a lot on powerful storage boxes.
+> PM: Opportunistic suspend support.
+> 
+> Power management features present in the current mainline kernel are
+> insufficient to get maximum possible energy savings on some platforms,
+> such as Android,
 
-  So even if deep queues can be little unfair to other random workload with
-  shallow depths, treat deep queues as sync-noidle workload and not sync,
-  because with sync workload we dispatch IO from only one queue at a time
-  and idle and we don't drive enough queue depth to keep the array busy.
+I'd finish the first sentence here.
 
-o I am running aio-stress (random reads) as follows.
+> because the system must always respond to certain
+> events. Suspend, in its current form, cannot be used on these
+> platforms,
 
-  aio-stress -s 2g -O -t 4 -r 64k aio5 aio6 aio7 aio8 -o 3
+This doesn't seem to be correct.  Surely you can suspend these systems, but
+you can't address the problem at hand using suspend as is.
 
-  Following are results with various combinations.
+I'd say (in the second sentence) "The problem is that to save maximum amount of
+energy all system hardware components need to be in the lowest-power states
+available for as long as reasonably possible, but at the same time the system
+must always respond to certain events, regardless of the current state of the
+hardware.
 
-  deadline:		232.94 MB/s
+The first goal can be achieved either by using device runtime PM and cpuidle to
+put all hardware into low-power states, transparently from the user space point
+of view, or by suspending the whole system.  However, system suspend, in its
+current form, does not guarantee that the events of interest will always be
+responded to, since wakeup events ..."
 
-  without patch
-  -------------
-  cfq default		75.32 MB/s
-  cfq, quantum=64	134.58 MB/s
+> since wakeup events (events that wake the CPU from idle and
+> the system from suspend) that occur right after initiating suspend
+> will not be processed until another possibly unrelated event wake up
 
-  with patch
-  ----------
-  cfq default		78.37 MB/s
-  cfq, quantum=64	213.94 MB
+"... wakes up ..." I guess.
 
-  Note that with the patch applied, cfq really scales well if "quantum" is
-  increased and comes close to deadline performance.
+> the system again.
+> 
+> On hardware where idle can enter the same power state as suspend, idle
+> combined with runtime PM can be used, but periodic wakeups increase
+> the average power consumption. Suspending the system also reduces the
+> harm caused by apps that never go idle. There also are systems where
+> some devices cannot be put into low-power states without suspending
+> the entire system (or the low-power states available to them without
+> suspending the entire system are substantially shallower than the
+> low-power states they are put into when the entire system is
+> suspended), so the system have to be suspended as a whole to achieve
+> the maximum energy savings.
+> 
+> To allow Android and similar platforms to save more energy than they
+> currently can save using the mainline kernel, introduce a mechanism by
+> which the system is automatically suspended (i.e. put into a
+> system-wide sleep state) whenever it's not doing useful work, called
+> opportunistic suspend.
 
-o Point being that on powerful arrays one queue is not sufficient to keep
-  array busy. This is already a bottleneck for sequential workloads. Lets
-  not aggravate the problem by marking random read queues as sync and
-  giving them exclusive access and hence effectively serializing the
-  access to array.
+I'd say "... whenever it's not doing work that's immediately useful to the
+user, called  ..." or something like this.
 
-Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
----
- block/cfq-iosched.c |   12 +-----------
- 1 files changed, 1 insertions(+), 11 deletions(-)
+The rest is fine by me.
 
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index 5f127cf..3336bd7 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -313,7 +313,6 @@ enum cfqq_state_flags {
- 	CFQ_CFQQ_FLAG_sync,		/* synchronous queue */
- 	CFQ_CFQQ_FLAG_coop,		/* cfqq is shared */
- 	CFQ_CFQQ_FLAG_split_coop,	/* shared cfqq will be splitted */
--	CFQ_CFQQ_FLAG_deep,		/* sync cfqq experienced large depth */
- 	CFQ_CFQQ_FLAG_wait_busy,	/* Waiting for next request */
- };
- 
-@@ -342,7 +341,6 @@ CFQ_CFQQ_FNS(slice_new);
- CFQ_CFQQ_FNS(sync);
- CFQ_CFQQ_FNS(coop);
- CFQ_CFQQ_FNS(split_coop);
--CFQ_CFQQ_FNS(deep);
- CFQ_CFQQ_FNS(wait_busy);
- #undef CFQ_CFQQ_FNS
- 
-@@ -3036,11 +3034,8 @@ cfq_update_idle_window(struct cfq_data *cfqd, struct cfq_queue *cfqq,
- 
- 	enable_idle = old_idle = cfq_cfqq_idle_window(cfqq);
- 
--	if (cfqq->queued[0] + cfqq->queued[1] >= 4)
--		cfq_mark_cfqq_deep(cfqq);
--
- 	if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
--	    (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
-+	    CFQQ_SEEKY(cfqq))
- 		enable_idle = 0;
- 	else if (sample_valid(cic->ttime_samples)) {
- 		if (cic->ttime_mean > cfqd->cfq_slice_idle)
-@@ -3593,11 +3588,6 @@ static void cfq_idle_slice_timer(unsigned long data)
- 		 */
- 		if (!RB_EMPTY_ROOT(&cfqq->sort_list))
- 			goto out_kick;
--
--		/*
--		 * Queue depth flag is reset only when the idle didn't succeed
--		 */
--		cfq_clear_cfqq_deep(cfqq);
- 	}
- expire:
- 	cfq_slice_expired(cfqd, timed_out);
--- 
-1.6.5.2
-
+Rafael
