@@ -1,74 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755794Ab0ESDNO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 23:13:14 -0400
-Received: from mail-qy0-f171.google.com ([209.85.221.171]:37790 "EHLO
-	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754969Ab0ESDNM convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 23:13:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=rbAclpH/N+BIKx7nOB4SIE3zfl57fVBe1falAlynNd3ALZhhX2EqARkalHNUOhtg3H
-         1Ms273NGoQVzPwKUfiJRqI6WP2Dw2qiTk9cjbDRcNPe7EaZfCvH8TigPUh7wwjh3CbUD
-         zWBPILk+ZrUTZdby8TmTkG51sr99sSfOPWK7E=
+	id S1756072Ab0ESDe4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 23:34:56 -0400
+Received: from kroah.org ([198.145.64.141]:34521 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751175Ab0ESDez (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 23:34:55 -0400
+Date: Tue, 18 May 2010 20:35:41 -0700
+From: Greg KH <greg@kroah.com>
+To: Lin Ming <ming.m.lin@intel.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2 08/11] sysfs: introduce new interface
+	sysfs_get_kobject
+Message-ID: <20100519033541.GA25967@kroah.com>
+References: <1274233723.3036.87.camel@localhost> <20100518200823.GC20223@kroah.com> <1274237717.3603.37.camel@minggr.sh.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20100519005032.GA26906@owl>
-References: <20100510035031.GD9181@owl> <20100514065808.GA11598@owl> 
-	<20100517094136.094800562@osadl.org> <AANLkTinQlH7LhCAz00WaHqbbslcSqipzVx4tDoQKSqIL@mail.gmail.com> 
-	<625BA99ED14B2D499DC4E29D8138F150181F574C31@shsmsx502.ccr.corp.intel.com> 
-	<AANLkTimQnaUvXs75rpTOcW7CODXWgUfzekY9FCDa5S8P@mail.gmail.com> 
-	<20100519005032.GA26906@owl>
-From: Dmitry Gromov <gromovd@gmail.com>
-Date: Tue, 18 May 2010 23:12:51 -0400
-Message-ID: <AANLkTimgz4OF48ryaLAeXmbes786iKBLT0F7_h6ytAeP@mail.gmail.com>
-Subject: Re: [lm-sensors] [PATCH 0/2] hwmon: Update coretemp to current Intel 
-	processors
-To: Huaxu Wan <huaxu.wan@linux.intel.com>
-Cc: "Wan, Huaxu" <huaxu.wan@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       LM Sensors <lm-sensors@lm-sensors.org>,
-       LKML <linux-kernel@vger.kernel.org>, Carsten Emde <C.Emde@osadl.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274237717.3603.37.camel@minggr.sh.intel.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+On Wed, May 19, 2010 at 10:55:17AM +0800, Lin Ming wrote:
+> On Wed, 2010-05-19 at 04:08 +0800, Greg KH wrote:
+> > On Wed, May 19, 2010 at 01:48:43AM +0000, Lin Ming wrote:
+> > > Need this interface in the later sysfs pmu lookup.
+> > > 
+> > > struct kobject *sysfs_get_kobject(struct file *file);
+> > > Return the relative kobject of the sysfs file.
+> > 
+> > Ick, no.  Why would you ever have the file, yet not have the kobject
+> > already?  Something is really wrong if this is needed.  Or strange.  Or
+> > maybe both :)
+> 
+> Let me show you the scenario.
+> 
+> /sys/devices/system/cpu/event_source/
+> `-- id
+> 
+> /sys/devices/system/cpu/events/
+> |-- L1-dcache-load-misses
+> |   |-- event_source -> ../../event_source
+> 
+> $perf top -e L1-dcache-load-misses
+> 
+> Lookup the pmu used to handle L1-dcache-load-misses as below,
+> 
+> 1. pmu_sys_fd =
+> open("/sys/devices/system/cpu/events/L1-dcache-load-misses/event_source/id", ...)
 
-On Tue, May 18, 2010 at 20:50, Huaxu Wan <huaxu.wan@linux.intel.com> wrote:
-> On 02:45 Tue 18 May, Dmitry Gromov wrote:
->> Hi!
->>
->> And 90C seems to be good for N200 series of Atom CPUs only - I could not
->> find TjMax value published for N330 Dual Core  (quite popular one). Intel
->> only published Tcase for it:
->> http://ark.intel.com/Product.aspx?id=35641
->> So, if for N270 Tcase = TjMax = 90C, then, I'd suggest to use Tcase = 85.2C
->> for N330 TjMax value.
->
-> Quoted a sentence from [1], "Unless specified otherwise, all specifications for
-> the processor are at TJ = 90°C", I believe the TjMax of 330 is 90C too.
->
+You do that within the kernel?  or from userspace?
 
-Well, that refers for the values in that specific table and entire
-document (which I went through as well) does not specify TjMax :(
-Similar document for N270 series does specify TjMax explicitly in Table 14:
-http://download.intel.com/design/processor/datashts/320032.pdf
+Either way, your id show callback will get called when you read or write
+to that file, right?  Then you have your kobject.
 
-Another document, "Thermal and Mechanical Design Guidelines" for Atom
-300 series:
-http://download.intel.com/design/processor/designex/320530.pdf
-specifies Tcase-max = 85.2C
-Thinking about this a bit, I think Tcase-max should be lower than
-TjMax, which probably is still 90C.
-The document itself is a good reading too.
+> 2. pmu_sys_file = fget_light(pmu_sys_fd, ....)
+> 
+> 3. pmu_kobject = sysfs_get_kobject(pmu_sys_file)
+> 
+> 4. pmu_kobject is embedded in struct pmu, pmu = container_of(kobj,
+> struct pmu, kobj);
 
-Anyway, thank you very much for your help, Huaxu!
+Oh no.
 
--- 
-DG
-NJ
+You are just using the kobject sysfs tree to store your kobjects so you
+can look them up again some time in the future from within the kernel?
+Seriously?
+
+What's wrong with a simple list of kobjects?  Or what the rest of the
+kernel does (busses and devices and iterating over the devices for a
+bus)?
+
+Don't act like userspace here and try to use the sysfs filesystem layout
+as a lookup into the kobject you are trying to find.  That's a
+horrible abuse of sysfs.  One of the worse I have ever seen.  And I've
+seen a lot of sysfs abuse over the years...
+
+ick.
+
+greg k-h
