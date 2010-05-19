@@ -1,75 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754688Ab0ESTIm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:08:42 -0400
-Received: from mail.gmx.net ([213.165.64.20]:48619 "HELO mail.gmx.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1754675Ab0ESTIj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:08:39 -0400
-X-Authenticated: #10250065
-X-Provags-ID: V01U2FsdGVkX182nggo3EM2Ii7/Zcg1G7lFXeq4BHLnXFtgXnM6ZY
-	j9nPa1abhyEeCO
-Message-ID: <4BF43722.4060601@gmx.de>
-Date: Wed, 19 May 2010 21:08:18 +0200
-From: Florian Tobias Schandinat <FlorianSchandinat@gmx.de>
-User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
-MIME-Version: 1.0
-To: =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>
-CC: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org,
-       JosephChan@via.com.tw, ScottFang@viatech.com.cn, corbet@lwn.net
-Subject: Re: viafb suspend & resume, v2
-References: <1272813454-3229-1-git-send-email-FlorianSchandinat@gmx.de> <20100510195636.7936ec76@neptune.home>
-In-Reply-To: <20100510195636.7936ec76@neptune.home>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Y-GMX-Trusted: 0
+	id S1754716Ab0ESTJS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:09:18 -0400
+Received: from mga06.intel.com ([134.134.136.21]:15519 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753979Ab0ESTIb (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 15:08:31 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,265,1272870000"; 
+   d="scan'208";a="519453406"
+From: Jacob Pan <jacob.jun.pan@linux.intel.com>
+To: LKML <linux-kernel@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Alek Du <alek.du@intel.com>, Alan Cox <alan@linux.intel.com>,
+       Feng Tang <feng.tang@intel.com>
+Cc: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Subject: [PATCH 1/3] x86: detect scattered cpuid features earlier
+Date: Wed, 19 May 2010 12:01:23 -0700
+Message-Id: <1274295685-6774-2-git-send-email-jacob.jun.pan@linux.intel.com>
+X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1274295685-6774-1-git-send-email-jacob.jun.pan@linux.intel.com>
+References: <1274295685-6774-1-git-send-email-jacob.jun.pan@linux.intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Bruno Prémont schrieb:
-> On Sun, 02 May 2010 Florian Tobias Schandinat <FlorianSchandinat@gmx.de> wrote:
->> This is the second version of this patch series. It is forward ported to apply
->> on Jon's current viafb-posted branch. Furthermore the engine is only
->> (re)started if the mmio space is mapped.
->> There are still issues left especially device configuration and it does not yet
->> integrate nicely in the new structure of the driver. However it is in a state
->> where it shouldn't hurt anyone but could be useful for some people.
-> 
-> Only works with restrictions on my box.
+Some extra CPU features such as ARAT is needed in early boot so
+that x86_init function pointers can be set up properly.
+http://lkml.org/lkml/2010/5/18/519
+At start_kernel() level, this patch moves init_scattered_cpuid_features()
+from check_bugs() to setup_arch() -> early_cpu_init() which is earlier than
+platform specific x86_init layer setup. Suggested by HPA.
 
-Thanks for testing it.
+Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
+Acked-by: H. Peter Anvin <hpa@zytor.com>
+---
+ arch/x86/kernel/cpu/common.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-> If I have accel enabled system freezes during suspend, if accel is disabled
-> system suspends&resumes.
->>From a quick glance at the code I don't know what to do to disable accel
-> during suspend (and restore it on resume)...
+diff --git a/arch/x86/kernel/cpu/common.c b/arch/x86/kernel/cpu/common.c
+index 4868e4a..fe1e5d6 100644
+--- a/arch/x86/kernel/cpu/common.c
++++ b/arch/x86/kernel/cpu/common.c
+@@ -576,6 +576,7 @@ static void __cpuinit get_cpu_cap(struct cpuinfo_x86 *c)
+ 	if (c->extended_cpuid_level >= 0x80000007)
+ 		c->x86_power = cpuid_edx(0x80000007);
+ 
++	init_scattered_cpuid_features(c);
+ }
+ 
+ static void __cpuinit identify_cpu_without_cpuid(struct cpuinfo_x86 *c)
+@@ -731,7 +732,6 @@ static void __cpuinit generic_identify(struct cpuinfo_x86 *c)
+ 
+ 	get_model_name(c); /* Default name */
+ 
+-	init_scattered_cpuid_features(c);
+ 	detect_nopl(c);
+ }
+ 
+-- 
+1.6.3.3
 
-I am wondering where the freeze comes from. We don't use too much of the engine
-and we already wait for it to become idle. Can you please test whether this patch
-fixes it? It's not really acceleration related but other framebuffers do the same
-and maybe it has a side effect for acceleration.
-
-> viafb is not able to get GPU alive from its own, it still needs to have the
-> BIOS run VBIOS on resume.
-
-Okay, I guess the current code needs to be cleaned up before I can expect it to
-work reliable...
-
-
-Thanks,
-
-Florian Tobias Schandinat
-
-diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
-index f581fb7..10b907a 100644
---- a/drivers/video/via/viafbdev.c
-+++ b/drivers/video/via/viafbdev.c
-@@ -1750,6 +1750,7 @@ int viafb_suspend(struct pci_dev *pdev, pm_message_t state)
-  		fb_set_suspend(viafbinfo, 1);
-
-  		viafb_sync(viafbinfo);
-+		viafb_blank(FB_BLANK_POWERDOWN, viafbinfo);
-
-  		pci_save_state(pdev);
-  		pci_disable_device(pdev);
