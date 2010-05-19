@@ -1,95 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752838Ab0ESSKJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 14:10:09 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:39997 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751519Ab0ESSKH (ORCPT
+	id S1752997Ab0ESSLM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 14:11:12 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43164 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752529Ab0ESSLI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 14:10:07 -0400
-Date: Wed, 19 May 2010 20:10:01 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] Unified Ring Buffer (Next Generation)
-Message-ID: <20100519181001.GC18073@basil.fritz.box>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274291514.26328.930.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Wed, 19 May 2010 14:11:08 -0400
+Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and
+ ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
+From: David Woodhouse <dwmw2@infradead.org>
+To: Manfred Spraul <manfred@colorfullife.com>
+Cc: Johannes Stezenbach <js@sig21.net>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+In-Reply-To: <4BF427D4.40600@colorfullife.com>
+References: <1274266725.6930.9823.camel@macbook.infradead.org>
+	 <1274266902.6930.9834.camel@macbook.infradead.org>
+	 <20100519133028.GA26659@sig21.net>  <4BF427D4.40600@colorfullife.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 May 2010 19:10:38 +0100
+Message-ID: <1274292638.6930.10394.camel@macbook.infradead.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 01:51:54PM -0400, Steven Rostedt wrote:
+On Wed, 2010-05-19 at 20:03 +0200, Manfred Spraul wrote:
+> Is this text better?
 
-Hi Steven,
+Not really...
 
-> More than a year and a half ago (September 2008), at Linux Plumbers, we
-> had a meeting with several kernel developers to come up with a unified
-> ring buffer. A generic ring buffer in the kernel that any subsystem
-> could use. After coming up with a set of requirements, I worked on
+> * Unless debug options are enabled, the kernel uses cache_line_size() 
+> automatically.
 
-If we take a step back.
+... that's a lie.
 
-Why do you want a single ring buffer for everyone?
-
-A lot more low profile subsystems subsystems simply use kfifo
-(which is also actively developed by Stefanie). In fact there
-are far more users of it than of your ring buffer. And it's 
-really quite simple and easy to use. And it works fine for them.
-
-I don't think it's that great a goal to have a single ring buffer
-for all possible ring buffer needs. After all the requirements
-are quite different.
-
-Some want a simple ring buffer with minimal overhead
-and simple interface, others need a mmaped one or have other special 
-requirements. One size doesn't fit all. 
-
-It's also not that we're talking about gigantic amounts of code
-in all cases where there is a pressing need to unify.
-
-If perf's current ring buffer works for it why not keep using it? 
-
-One problem I always had with your version was that it's quite 
-bloated frankly, especially in terms of code size, but 
-also in its data structures and in the interface complexity.
-
-For debugging kernels etc. with tracing that's not that big an issue, but
-I think it's a problem for "non debugging" use. After all Linux
-still has the goal to be at least configurable as a low footprint operating
-system.
-
-Part of the reason for its big code size seems to be that 
-it tries to support everyone's requirements, which unsurprisingly
-leads to some bloat both in implementation and interface.
-
-Also to be honest it's so clever now that at least I have
-a hard time understanding it, and I personally prefer code
-that I can understand over too clever code. After all if there
-is a bug in there and you need to be more clever than the programmer
-to debug it, how would that be done? 
-
-Perhaps a better goal would be to have a smaller simpler more
-maintainable buffer for ftrace and let the other users their own?
-
-Just my 0.05 cent.
-
--Andi
+-- 
+David Woodhouse                            Open Source Technology Centre
+David.Woodhouse@intel.com                              Intel Corporation
 
