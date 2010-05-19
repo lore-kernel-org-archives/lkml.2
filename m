@@ -1,45 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754591Ab0ESTtM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:49:12 -0400
-Received: from nlpi157.sbcis.sbc.com ([207.115.36.171]:34759 "EHLO
-	nlpi157.prodigy.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752549Ab0ESTtK (ORCPT
+	id S1754694Ab0ESTuP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:50:15 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:44761
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752549Ab0ESTuM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:49:10 -0400
-Date: Wed, 19 May 2010 14:45:01 -0500 (CDT)
-From: Christoph Lameter <cl@linux.com>
-X-X-Sender: cl@router.home
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-cc: David Woodhouse <dwmw2@infradead.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, manfred@colorfullife.com,
-       David Miller <davem@davemloft.net>, mpm@selenic.com, ken@codelabs.ch,
-       geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Subject: Re: [PATCH 1/4] mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN
- to <linux/slab_def.h>
-In-Reply-To: <4BF43AB0.2010606@cs.helsinki.fi>
-Message-ID: <alpine.DEB.2.00.1005191444230.5729@router.home>
-References: <1274266725.6930.9823.camel@macbook.infradead.org> <1274266902.6930.9834.camel@macbook.infradead.org> <4BF437EA.9010904@cs.helsinki.fi> <alpine.DEB.2.00.1005191418520.5729@router.home> <4BF43AB0.2010606@cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 19 May 2010 15:50:12 -0400
+Date: Wed, 19 May 2010 12:50:21 -0700 (PDT)
+Message-Id: <20100519.125021.51256632.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, sparclinux@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] Sparc
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, Pekka Enberg wrote:
 
-> Christoph Lameter wrote:
-> > Maybe we can consolidate that into slab.h so that the alignment is the
-> > same for all allocators?
->
-> But we don't want that for SLOB as discussed in the other thread. It really
-> wants to be sizeof(unsigned long), not sizeof(unsigned long long).
+Just a few small things, and explicitly set ARCH_SLAB_MINALIGN like we
+always should have.
 
-__alignof__(unsigned long long)
+Please pull, thanks!
 
-SLOB needs to respect that as well otherwise objects are not aligned as
-required by the compiler.
+The following changes since commit 024a6b95181f2df6090975c8a293499d24bf8b28:
+  Linus Torvalds (1):
+        Merge branch 'davinci-for-linus' of git://git.kernel.org/.../khilman/linux-davinci
 
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/sparc-2.6.git master
+
+David S. Miller (3):
+      sparc64: Show stack backtrace from show_regs() just like other platforms.
+      sparc64: Fix stack dumping and tracing when function graph is enabled.
+      sparc: Define ARCH_SLAB_MINALIGN
+
+Jan Blunck (1):
+      drivers/sbus/char/flash.c: flash_read should update ppos instead of file->f_pos
+
+ arch/sparc/include/asm/cache.h |    2 ++
+ arch/sparc/kernel/perf_event.c |   14 ++++++++++++++
+ arch/sparc/kernel/process_64.c |    1 +
+ arch/sparc/kernel/stacktrace.c |   23 ++++++++++++++++++++++-
+ arch/sparc/kernel/traps_64.c   |   14 ++++++++++++++
+ drivers/sbus/char/flash.c      |    6 +++---
+ 6 files changed, 56 insertions(+), 4 deletions(-)
