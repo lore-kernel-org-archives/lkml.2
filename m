@@ -1,65 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756110Ab0ESUaa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:30:30 -0400
-Received: from smtp.microsoft.com ([131.107.115.214]:18969 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751252Ab0ESUa3 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:30:29 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/2] staging: hv: Fix race condition in hv_utils module
- initialization.
-Thread-Topic: [PATCH 1/2] staging: hv: Fix race condition in hv_utils module
- initialization.
-Thread-Index: AQHK92uLW80ITLq46EC/wvbFNLfG5ZJZYgWA///QKxA=
-Date: Wed, 19 May 2010 20:30:25 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7266B894B0@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7266B8930E@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100519161011.GA20266@suse.de>
-In-Reply-To: <20100519161011.GA20266@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1756157Ab0ESUbI (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:31:08 -0400
+Received: from bamako.nerim.net ([62.4.17.28]:55465 "EHLO bamako.nerim.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756037Ab0ESUbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:31:05 -0400
+Date: Wed, 19 May 2010 22:31:00 +0200
+From: Jean Delvare <khali@linux-fr.org>
+To: Chase Douglas <chase.douglas@canonical.com>
+Cc: Ben Dooks <ben-linux@fluff.org>, linux-i2c@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] i2c-nforce2: Remove redundant error messages on ACPI
+ conflict
+Message-ID: <20100519223100.1634e789@hyperion.delvare>
+In-Reply-To: <1274127379-5433-1-git-send-email-chase.douglas@canonical.com>
+References: <1274127379-5433-1-git-send-email-chase.douglas@canonical.com>
+X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > +	/* Wait until all IC channels are initialized */
-> > +	while (atomic_read(&hv_utils_initcnt) < MAX_MSG_TYPES)
-> > +		msleep(100);
+Hi Chase,
+
+On Mon, 17 May 2010 16:16:19 -0400, Chase Douglas wrote:
+> The ACPI subsystem strictly checks for resource conflicts. When there's
+> a conflict, it outputs a warning message with all the details needed to
+> properly diagnose the underlying issue. However, the i2c-nforce2 driver
+> also prints its own message. Not only is the message redundant, it is at
+> the KERN_ERR level, which overrides some bootsplash screens for no good
+> reason. This change removes the two lines that print out the error
+> messages.
 > 
-> No, don't do this here, do something in your hv_vmbus core to handle
-> registering sub-drivers properly.  Perhaps you need to sleep there
-> before you can succeed on a initialization.
-
-Thanks for the recommendation. I will put the sleep into vmbus_init to 
-ensure all channels are ready before the vmbus_init function exits.
-
-> >  	hv_cb_utils[HV_SHUTDOWN_MSG].channel->OnChannelCallback =
-> >  		&shutdown_onchannelcallback;
+> Signed-off-by: Chase Douglas <chase.douglas@canonical.com>
+> ---
+>  drivers/i2c/busses/i2c-nforce2.c |    2 --
+>  1 files changed, 0 insertions(+), 2 deletions(-)
 > 
-> The problem is that you just have a bunch of callbacks you are setting
-> up, it's not a "real" function call.  Please change it over to a
-> function call, like all other subsystems have.  Then, you can handle
-> any
-> "sleep until we are set up properly" issues in the vmbus code, not in
-> each and every individual bus driver.
+> diff --git a/drivers/i2c/busses/i2c-nforce2.c b/drivers/i2c/busses/i2c-nforce2.c
+> index 4a48dd4..2da9a23 100644
+> --- a/drivers/i2c/busses/i2c-nforce2.c
+> +++ b/drivers/i2c/busses/i2c-nforce2.c
+> @@ -405,7 +405,6 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
+>  	/* SMBus adapter 1 */
+>  	res1 = nforce2_probe_smb(dev, 4, NFORCE_PCI_SMB1, &smbuses[0], "SMB1");
+>  	if (res1 < 0) {
+> -		dev_err(&dev->dev, "Error probing SMB1.\n");
+>  		smbuses[0].base = 0;	/* to have a check value */
+>  	}
+>  	/* SMBus adapter 2 */
+> @@ -417,7 +416,6 @@ static int __devinit nforce2_probe(struct pci_dev *dev, const struct pci_device_
+>  		res2 = nforce2_probe_smb(dev, 5, NFORCE_PCI_SMB2, &smbuses[1],
+>  					 "SMB2");
+>  		if (res2 < 0) {
+> -			dev_err(&dev->dev, "Error probing SMB2.\n");
+>  			smbuses[1].base = 0;	/* to have a check value */
+>  		}
+>  	}
 
-Actually, we already assign a default callback function, chn_cb_negotiate(),
-when the channels are opened in vmbus module. It's a real function and can 
-handle common negotiation messages.
-I will move the sleep into vmbus module as well.
+I agree that these messages are essentially redundant, as
+nforce2_probe_smb() never fails without printing an message. Patch
+applied, thanks.
 
-Thanks,
-
-- Haiyang
+-- 
+Jean Delvare
