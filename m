@@ -1,96 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752696Ab0ESOQT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:16:19 -0400
-Received: from smtp.citrix.com ([66.165.176.89]:53352 "EHLO SMTP.CITRIX.COM"
+	id S1752754Ab0ESORJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:17:09 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:58495 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752175Ab0ESOQS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:16:18 -0400
-X-IronPort-AV: E=Sophos;i="4.53,263,1272859200"; 
-   d="scan'208";a="8591094"
-Date: Wed, 19 May 2010 15:19:38 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 08/12] Allow xen platform pci device to be compiled as
- a module
-In-Reply-To: <4BF2D941.5070401@goop.org>
-Message-ID: <alpine.DEB.2.00.1005191519040.11380@kaball-desktop>
-References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-8-git-send-email-stefano.stabellini@eu.citrix.com> <4BF2D941.5070401@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	id S1752175Ab0ESORF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:17:05 -0400
+Message-ID: <4BF3F2DB.7030701@us.ibm.com>
+Date: Wed, 19 May 2010 07:16:59 -0700
+From: Darren Hart <dvhltc@us.ibm.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+To: michael@ellerman.id.au
+CC: Brian King <brking@linux.vnet.ibm.com>,
+       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
+       niv@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+       Doug Maxey <doug.maxey@us.ibm.com>, linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
+References: <4BF30793.5070300@us.ibm.com> <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com> <1274232324.29980.9.camel@concordia>
+In-Reply-To: <1274232324.29980.9.camel@concordia>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 18 May 2010, Jeremy Fitzhardinge wrote:
-> > diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
-> > index 6f5f3ba..f936d30 100644
-> > --- a/drivers/xen/grant-table.c
-> > +++ b/drivers/xen/grant-table.c
-> > @@ -56,6 +56,9 @@
-> >  #define GNTTAB_LIST_END 0xffffffff
-> >  #define GREFS_PER_GRANT_FRAME (PAGE_SIZE / sizeof(struct grant_entry))
-> >  
-> > +unsigned long (*alloc_xen_mmio_hook)(unsigned long len);
-> > +EXPORT_SYMBOL_GPL(alloc_xen_mmio_hook);
-> > +
-> >  static grant_ref_t **gnttab_list;
-> >  static unsigned int nr_grant_frames;
-> >  static unsigned int boot_max_nr_grant_frames;
-> > @@ -514,7 +517,7 @@ int gnttab_resume(void)
-> >  		return gnttab_map(0, nr_grant_frames - 1);
-> >  
-> >  	if (!hvm_pv_resume_frames) {
-> > -		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
-> > +		hvm_pv_resume_frames = alloc_xen_mmio_hook(PAGE_SIZE * max_nr_gframes);
-> >   
-> 
-> This looks like it should be restructured so the pci device driver
-> itself is doing this mapping, then calling into the grant subsystem to
-> tell it where the mapping is.
-> 
+On 05/18/2010 06:25 PM, Michael Ellerman wrote:
+> On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
+>> On 05/18/2010 02:52 PM, Brian King wrote:
+>>> Is IRQF_NODELAY something specific to the RT kernel? I don't see it in mainline...
+>>
+>> Yes, it basically says "don't make this handler threaded".
+>
+> That is a good fix for EHEA, but the threaded handling is still broken
+> for anything else that is edge triggered isn't it?
 
-OK
+No, I don't believe so. Edge triggered interrupts that are reported as 
+edge triggered interrupts will use the edge handler (which was the 
+approach Sebastien took to make this work back in 2008). Since XICS 
+presents all interrupts as Level Triggered, they use the fasteoi path.
 
+>
+> The result of the discussion about two years ago on this was that we
+> needed a custom flow handler for XICS on RT.
 
-> >  		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
-> >  		if (shared == NULL) {
-> >  			printk(KERN_WARNING
-> > @@ -600,6 +603,7 @@ int gnttab_init(void)
-> >  	kfree(gnttab_list);
-> >  	return -ENOMEM;
-> >  }
-> > +EXPORT_SYMBOL_GPL(gnttab_init);
-> >  
-> >  static int __devinit __gnttab_init(void)
-> >  {
-> > diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
-> > index a73edd8..49ee52d 100644
-> > --- a/drivers/xen/manage.c
-> > +++ b/drivers/xen/manage.c
-> > @@ -34,6 +34,13 @@ enum shutdown_state {
-> >  	 SHUTDOWN_HALT = 4,
-> >  };
-> >  
-> > +void (*platform_pci_resume_hook)(void);
-> > +EXPORT_SYMBOL_GPL(platform_pci_resume_hook);
-> > +void (*platform_pci_disable_irq_hook)(void);
-> > +EXPORT_SYMBOL_GPL(platform_pci_disable_irq_hook);
-> > +void (*platform_pci_enable_irq_hook)(void);
-> > +EXPORT_SYMBOL_GPL(platform_pci_enable_irq_hook);
-> >   
-> 
-> If all this _hook stuff is here to support a modular xen platform pci
-> device, then something has gone wrong.  The device should be doing this
-> via its own suspend/resume handlers.
-> 
+I'm still not clear on why the ultimate solution wasn't to have XICS 
+report edge triggered as edge triggered. Probably some complexity of the 
+entire power stack that I am ignorant of.
 
-I'll give it another try.
+> Apart from the issue of loosing interrupts there is also the fact that
+> masking on the XICS requires an RTAS call which takes a global lock.
 
+Right, one of may reasons why we felt this was the right fix. The other 
+is that there is no real additional overhead in running this as 
+non-threaded since the receive handler is so short (just napi_schedule()).
 
+-- 
+Darren Hart
+IBM Linux Technology Center
+Real-Time Linux Team
