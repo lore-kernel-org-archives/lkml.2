@@ -1,49 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752580Ab0ESPd2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:33:28 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59553 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751582Ab0ESPd0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:33:26 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Nishanth Menon <nm@ti.com>
-Subject: Re: [PATCH 4/4] omap: cpu: Power tracking support for cgroup cpuacct
-Date: Wed, 19 May 2010 17:34:27 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.12-0.2-desktop; KDE/4.4.3; x86_64; ; )
-Cc: Mike Chan <mike@android.com>,
-       "khilman@deeprootsystems.com" <khilman@deeprootsystems.com>,
-       "menage@google.com" <menage@google.com>,
-       "balbir@in.ibm.com" <balbir@in.ibm.com>,
-       "cpufreq@vger.kernel.org" <cpufreq@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
-References: <1274232620-23003-1-git-send-email-mike@android.com> <1274232620-23003-5-git-send-email-mike@android.com> <4BF3E367.5080906@ti.com>
-In-Reply-To: <4BF3E367.5080906@ti.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005191734.27887.trenn@suse.de>
+	id S1753002Ab0ESPdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:33:36 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:63442 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752639Ab0ESPdd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:33:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=eo6OY56gtB08O1S5ry7I3hlAucB5MqZ1h7bqL7cs+urp68OwlrY7Sei5j7dGb2se+7
+         IWHCF++5JfFDeDCYA3oizU2sKJhl8RquKX+FpjCNilXQrdsEwS+3vnodxCQE2oIQXi+S
+         uzEXdX5XhmWxDoxIjqIG7QwXlFihLEBIQgBnA=
+Subject: Re: More than 1M open file descriptors
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: John Masinter <johnmasinter@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTim5Yuvga5kwOFUaUgxbxzvkD9gyqiEUCN6nTs5b@mail.gmail.com>
+References: <AANLkTim5Yuvga5kwOFUaUgxbxzvkD9gyqiEUCN6nTs5b@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 May 2010 17:26:03 +0200
+Message-ID: <1274282763.2766.120.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 May 2010 15:11:03 Nishanth Menon wrote:
-> Mike Chan had written, on 05/18/2010 08:30 PM, the following:
-> > Specify new power field in struct omap_opp, which is
-> > power exported in milliWatt.
-...
-> > +		totalpower += cpuacct_freq[i] * mpu_opps[i + 1].power;
-...
-> > +	unsigned long power; /* power consumed running at OPP in 
-milliWatts */
-> 
-> this conflicts with the OPP layer implementation. this structure will 
-> disappear for good.
-Ah yes, another question:
-The power variable in struct omap_opp never gets initialized
-with a sane value, something is wrong...
+Le mercredi 19 mai 2010 à 10:52 -0400, John Masinter a écrit :
+> I'm a software engineer and work with a fortune-500 company. We have a
+> line of linux-powered network security appliances and I am responsible
+> for Linux / OS development.
+> Our multi-core appliance handles a large number of low-bandwith tcp
+> connections, and after years of performance streamlining, we have hit
+> the kernel's million tcp connection limit.
+> Is there a kernel hack to increase the file descriptor limit beyond 1M
+> to that we may have more than 1M open tcp connections? If this is
+> discussed elsewhere, please point me in the right direction. Many
+> thanks to everyone that contributes to open source.
+> --
 
-     Thomas
+Its not a problem with a recent kernel (2.6.25)
+
+commit 9cfe015aa424b3c003baba3841a60dd9b5ad319b
+Author: Eric Dumazet <dada1@cosmosbay.com>
+Date:   Wed Feb 6 01:37:16 2008 -0800
+
+    get rid of NR_OPEN and introduce a sysctl_nr_open
+    
+    NR_OPEN (historically set to 1024*1024) actually forbids processes to open
+    more than 1024*1024 handles.
+    
+    Unfortunatly some production servers hit the not so 'ridiculously high
+    value' of 1024*1024 file descriptors per process.
+    
+    Changing NR_OPEN is not considered safe because of vmalloc space potential
+    exhaust.
+    
+    This patch introduces a new sysctl (/proc/sys/fs/nr_open) wich defaults to
+    1024*1024, so that admins can decide to change this limit if their workload
+    needs it.
+    
+
+
