@@ -1,79 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754740Ab0ESTvr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:51:47 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:45963 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753669Ab0ESTvp (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:51:45 -0400
-X-SpamScore: -11
-X-BigFish: VPS-11(zz98dN936eMzz1202hzzz2fh61h)
-X-Spam-TCS-SCL: 0:0
-Message-ID: <4BF44156.2070807@am.sony.com>
-Date: Wed, 19 May 2010 12:51:50 -0700
-From: Frank Rowand <frank.rowand@am.sony.com>
-Reply-To: frank.rowand@am.sony.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.1) Gecko/20090814 Fedora/3.0-2.6.b3.fc11 Thunderbird/3.0b3
+	id S1754750Ab0ESTwU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:52:20 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:12536 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753245Ab0ESTwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 15:52:18 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip 0/4] perf-probe updates: string support, etc.
+To: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       lkml <linux-kernel@vger.kernel.org>
+Cc: Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Peter Zijlstra <peterz@infradead.org>, Mike Galbraith <efault@gmx.de>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>
+Date: Wed, 19 May 2010 15:57:17 -0400
+Message-ID: <20100519195717.2885.90799.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Arjan van de Ven <arjan@infradead.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "akpm@linux-foundation.org" <akpm@linux-foundation.org>
-Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
- menu governor
-References: <20100509160242.2e351e6a@infradead.org> <20100509160444.260ca9c9@infradead.org>
-In-Reply-To: <20100509160444.260ca9c9@infradead.org>
-Content-Type: text/plain; charset="ISO-8859-1"
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-SEL-encryption-scan: scanned
-X-Reverse-DNS: mail8.fw-sd.sony.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Aplogies if this is a duplicate, my outgoing email seems to have not
-been working.
 
-On 05/09/10 16:04, Arjan van de Ven wrote:
+Hi,
 
-> +/*
-> + * Try detecting repeating patterns by keeping track of the last 8
-> + * intervals, and checking if the standard deviation of that set
-> + * of points is below a threshold. If it is... then use the
-> + * average of these 8 points as the estimated value.
-> + */
-> +static void detect_repeating_patterns(struct menu_device *data)
-> +{
-> +	int i;
-> +	uint64_t avg = 0;
-> +	uint64_t stddev = 0; /* contains the square of the std deviation */
-> +
-> +	/* first calculate average and standard deviation of the past */
-> +	for (i = 0; i < INTERVALS; i++)
-> +		avg += data->intervals[i];
-> +
-> +	/* if the avg is beyond the known next tick, it's worthless */
-> +	if (avg > data->expected_us)
-> +		return;
-> +
+Here is a series of patches which improves perf probe to
+add below features. I cleared some coding style issues.
 
-Should the following division by INTERVALS be moved up 6 lines to before
-"if (avg > data->expected_us)"?
+- String support, which enables dynamic events to trace string
+  variables instead of its address.
 
-> +	avg = avg / INTERVALS;
-> +	for (i = 0; i < INTERVALS; i++)
-> +		stddev += (data->intervals[i] - avg) *
-> +			  (data->intervals[i] - avg);
-> +
-> +	stddev = stddev / INTERVALS;
-> +
-> +	/*
-> +	 * now.. if stddev is small.. then assume we have a
-> +	 * repeating pattern and predict we keep doing this.
-> +	 */
-> +
-> +	if (avg && stddev < STDDEV_THRESH)
-> +		data->predicted_us = avg;
-> +}
+- Fixed-index array entry support, which allows user to trace
+  an array entry with digit index, e.g. array[0].
+
+- Global/static variable support, which allows user to trace
+  global or static variables, as same as local one.
 
 
+TODOs (possible features):
+  - Support dynamic array-indexing (var[var2])
+  - Support force type-casting ((type)var)
+  - Show what deta-structure member is assigned to each argument.
+  - Better support for probes on modules
+  - More debugger like enhancements(%next, --disasm, etc.)
+
+Thank you,
+
+---
+
+Masami Hiramatsu (4):
+      perf probe: Support static and global variables
+      perf probe: Support tracing an entry of array
+      perf probe: Support "string" type
+      tracing/kprobes: Support "string" type
+
+
+ Documentation/trace/kprobetrace.txt     |    2 
+ kernel/trace/trace_kprobe.c             |  370 ++++++++++++++++++++++++-------
+ tools/perf/Documentation/perf-probe.txt |    4 
+ tools/perf/util/probe-event.c           |   71 ++++--
+ tools/perf/util/probe-event.h           |    1 
+ tools/perf/util/probe-finder.c          |  192 +++++++++++++---
+ 6 files changed, 498 insertions(+), 142 deletions(-)
+
+-- 
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
