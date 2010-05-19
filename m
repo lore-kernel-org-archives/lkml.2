@@ -1,85 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752570Ab0ESWq6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 18:46:58 -0400
-Received: from mtaout02-winn.ispmail.ntl.com ([81.103.221.48]:30058 "EHLO
-	mtaout02-winn.ispmail.ntl.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751518Ab0ESWq4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 18:46:56 -0400
-Message-ID: <4BF46A92.5050706@ntlworld.com>
-Date: Wed, 19 May 2010 23:47:46 +0100
-From: Graham Ramsey <ramsey.graham@ntlworld.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
-MIME-Version: 1.0
-To: Yinghai <yinghai.lu@oracle.com>
-CC: Bjorn Helgaas <bjorn.helgaas@hp.com>, linux-kernel@vger.kernel.org,
-       linux-pci@vger.kernel.org
-Subject: Re: x86/pci Oops with CONFIG_SND_HDA_INTEL
-References: <4BF40014.30303@ntlworld.com> <201005191044.05072.bjorn.helgaas@hp.com> <4BF41CFD.6040004@ntlworld.com> <4BF42786.2080603@oracle.com>
-In-Reply-To: <4BF42786.2080603@oracle.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Cloudmark-Analysis: v=1.1 cv=ZtHxNT4mZm3rCuM0SmWmgWxeBwJsziC8EqOrwwVkrhA= c=1 sm=0 a=gXeVw4TqrbgA:10 a=ood2b7iyd8MA:10 a=8nJEP1OIZ-IA:10 a=VwQbUJbxAAAA:8 a=_HBJ6pyTaw-e92Eha2wA:9 a=lWuIINRVIY0cdQOu4P3v0omwzeEA:4 a=wPNLvfGTeEIA:10 a=HpAAvcLHHh0Zw7uRqdWCyQ==:117
+	id S1752419Ab0ESWtq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 18:49:46 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:45039 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751359Ab0ESWto (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 18:49:44 -0400
+Date: Thu, 20 May 2010 08:49:38 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>, linux-next@vger.kernel.org,
+       Kernel development list <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: build failure after merge of the usb tree
+Message-Id: <20100520084938.192eaa44.sfr@canb.auug.org.au>
+In-Reply-To: <20100518211111.GA27870@kroah.com>
+References: <20100518174253.37e38d66.sfr@canb.auug.org.au>
+	<Pine.LNX.4.44L0.1005180949560.1795-100000@iolanthe.rowland.org>
+	<20100518211111.GA27870@kroah.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Thu__20_May_2010_08_49_38_+1000_wOmV4Ld1NYFrlKRU"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 19/05/10 19:01, Yinghai wrote:
-> On 05/19/2010 10:16 AM, Graham Ramsey wrote:
->    
->> On 19/05/10 17:44, Bjorn Helgaas wrote:
->>      
->>> On Wednesday, May 19, 2010 09:13:24 am Graham Ramsey wrote:
->>>
->>>        
->>>> I am on x86_64 with latest (v2.6.34) kernel. When i set
->>>> CONFIG_SND_HDA_INTEL=Y It hangs at an early stage in boot with kernel
->>>> oops.
->>>> When i use CONFIG_SND_HDA_INTEL=M the machine will boot, and i get the
->>>> dmesg (below).
->>>>
->>>> I have bisected down to one commit that causes the problem:
->>>>
->>>>      commit 3e3da00c01d050307e753fb7b3e84aefc16da0d0
->>>>      x86/pci: AMD one chain system to use pci read out res
->>>>      ...
->>>>
->>>>          
->>> I CC'd Yinghai, the author of that patch.  That commit went in after
->>> 2.6.33, so this is probably a regression between .33 and .34.  Can
->>> you open a report at https://bugzilla.kernel.org and respond to this
->>> thread with the URL?
->>>
->>> Please attach the complete dmesg (with SND_HDA_INTEL=m) to the
->>> bugzilla.
->>>
->>> Thanks a lot for your report!
->>>
->>>        
-> please send out bootlog with pci=earlydump.
->
-> looks like your system have a very sick BIOS,
->
-> system have two HT chains.
->
-> PCI: Probing PCI hardware (bus 00)
-> ...
-> PCI: Discovered primary peer bus 80 [IRQ]
->
->
-> rt to non-coherent only set one link:
-> node 0 link 0: io port [1000, ffffff]
-> TOM: 0000000080000000 aka 2048M
-> node 0 link 0: mmio [e0000000, efffffff]
-> node 0 link 0: mmio [a0000, bffff]
-> node 0 link 0: mmio [80000000, ffffffff]
-> bus: [00, ff] on node 0 link 0
->
-> YH
->
->    
-I have uploaded full boot log (of a working kernel) to bug if that is ok
+--Signature=_Thu__20_May_2010_08_49_38_+1000_wOmV4Ld1NYFrlKRU
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-https://bugzilla.kernel.org/attachment.cgi?id=26444
+Hi Greg,
 
+On Tue, 18 May 2010 14:11:11 -0700 Greg KH <greg@kroah.com> wrote:
+>
+> Thanks, now merged and pushed out.
+
+I haven't seen that fix in your published quilt series, yet.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Thu__20_May_2010_08_49_38_+1000_wOmV4Ld1NYFrlKRU
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv0awIACgkQjjKRsyhoI8zR8gCfblAQQCy/o2zy5zYvbFyiTZAI
+o1AAn1yvM3H0boEkqjXkp63aPHrfM+Ih
+=n7H9
+-----END PGP SIGNATURE-----
+
+--Signature=_Thu__20_May_2010_08_49_38_+1000_wOmV4Ld1NYFrlKRU--
