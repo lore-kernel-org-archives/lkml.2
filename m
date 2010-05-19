@@ -1,113 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754008Ab0ESQfm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:35:42 -0400
-Received: from wolverine01.qualcomm.com ([199.106.114.254]:10205 "EHLO
-	wolverine01.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752215Ab0ESQfl (ORCPT
+	id S1753981Ab0ESQgq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:36:46 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:55480 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753576Ab0ESQgp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:35:41 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,5987"; a="41961683"
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
-To: Daniel Walker <dwalker@codeaurora.org>
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-       David Brown <davidb@codeaurora.org>,
-       Daniel Walker <dwalker@codeaurora.org>,
-       Bryan Huntsman <bryanh@codeaurora.org>, Alan Cox <alan@linux.intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brian Swetland <swetland@google.com>, linux-arm-msm@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] msm_serial: fix serial on trout
-Date: Wed, 19 May 2010 09:35:35 -0700
-Message-Id: <1274286935-8474-1-git-send-email-adharmap@codeaurora.org>
-X-Mailer: git-send-email 1.5.6.3
+	Wed, 19 May 2010 12:36:45 -0400
+X-Authority-Analysis: v=1.1 cv=DB4JU8ZWelvwd5d0x20oybKyR86uyiSly0XbcMdosrc= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=hRW8RuVDvn31wFRIrZYA:9 a=4pe8B23pUEgkaVvZjkMgnxMoz30A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Unexpected splice "always copy" behavior observed
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Nick Piggin <npiggin@suse.de>
+Cc: Miklos Szeredi <miklos@szeredi.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       mathieu.desnoyers@efficios.com, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+In-Reply-To: <20100519155505.GD2516@laptop>
+References: <20100518153440.GB7748@Krystal>
+	 <1274197993.26328.755.camel@gandalf.stny.rr.com>
+	 <1274199039.26328.758.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
+	 <20100519063116.GR2516@laptop>
+	 <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
+	 <1274280968.26328.774.camel@gandalf.stny.rr.com>
+	 <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org>
+	 <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
+	 <1274283942.26328.783.camel@gandalf.stny.rr.com>
+	 <20100519155505.GD2516@laptop>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 19 May 2010 12:36:42 -0400
+Message-ID: <1274287002.26328.808.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-All targets report the correct uartclk except trout.
-For trout force mnd counter values as if uartclk was
-fed by tcxo/4. For other targets set the mnd counter
-based on uartclk.
+On Thu, 2010-05-20 at 01:55 +1000, Nick Piggin wrote:
+> On Wed, May 19, 2010 at 11:45:42AM -0400, Steven Rostedt wrote:
 
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
----
- drivers/serial/msm_serial.c |   33 ++++++++++++++++++++++++++++-----
- drivers/serial/msm_serial.h |    6 ++++++
- 2 files changed, 34 insertions(+), 5 deletions(-)
+> > If the "move only on append to file" is easy to implement, I would
+> > really like to see that happen. The speed of splicing a disk image for a
+> > virtual machine only impacts the patience of the user. The speed of
+> > splicing tracing output, impacts how much you can trace without losing
+> > events.
+> 
+> It's not "easy" to implement :) What's your ring buffer look like?
+> Is it a normal user address which the kernel does copy_to_user()ish
+> things into? Or a mmapped special driver?
 
-diff --git a/drivers/serial/msm_serial.c b/drivers/serial/msm_serial.c
-index ecdc0fa..7021c8c 100644
---- a/drivers/serial/msm_serial.c
-+++ b/drivers/serial/msm_serial.c
-@@ -315,16 +315,37 @@ static void msm_reset(struct uart_port *port)
- 	msm_write(port, UART_CR_CMD_SET_RFR, UART_CR);
- }
- 
-+
-+static void msm_serial_set_mnd_regs_tcxo(struct uart_port *port)
-+{
-+	msm_write(port, 0x06, UART_MREG);
-+	msm_write(port, 0xF1, UART_NREG);
-+	msm_write(port, 0x0F, UART_DREG);
-+	msm_write(port, 0x1A, UART_MNDREG);
-+}
-+
-+static void msm_serial_set_mnd_regs_tcxoby4(struct uart_port *port)
-+{
-+	msm_write(port, 0x18, UART_MREG);
-+	msm_write(port, 0xF6, UART_NREG);
-+	msm_write(port, 0x0F, UART_DREG);
-+	msm_write(port, 0x0A, UART_MNDREG);
-+}
-+
-+static void msm_serial_set_mnd_regs_from_uartclk(struct uart_port *port)
-+{
-+	if (port->uartclk == 19200000)
-+		msm_serial_set_mnd_regs_tcxo(port);
-+	else
-+		msm_serial_set_mnd_regs_tcxoby4(port);
-+}
-+
- static void msm_init_clock(struct uart_port *port)
- {
- 	struct msm_port *msm_port = UART_TO_MSM(port);
- 
- 	clk_enable(msm_port->clk);
--
--	msm_write(port, 0xC0, UART_MREG);
--	msm_write(port, 0xB2, UART_NREG);
--	msm_write(port, 0x7D, UART_DREG);
--	msm_write(port, 0x1C, UART_MNDREG);
-+	msm_serial_set_mnd_regs(port);
- }
- 
- static int msm_startup(struct uart_port *port)
-@@ -706,6 +727,8 @@ static int __init msm_serial_probe(struct platform_device *pdev)
- 	if (unlikely(IS_ERR(msm_port->clk)))
- 		return PTR_ERR(msm_port->clk);
- 	port->uartclk = clk_get_rate(msm_port->clk);
-+	printk(KERN_INFO "uartclk = %d\n", port->uartclk);
-+
- 
- 	resource = platform_get_resource(pdev, IORESOURCE_MEM, 0);
- 	if (unlikely(!resource))
-diff --git a/drivers/serial/msm_serial.h b/drivers/serial/msm_serial.h
-index 689f1fa..4767211 100644
---- a/drivers/serial/msm_serial.h
-+++ b/drivers/serial/msm_serial.h
-@@ -114,4 +114,10 @@
- #define UART_MISR	0x0010
- #define UART_ISR	0x0014
- 
-+#ifdef CONFIG_MACH_TROUT
-+#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_tcxoby4
-+#else
-+#define msm_serial_set_mnd_regs msm_serial_set_mnd_regs_from_uartclk
-+#endif
-+
- #endif	/* __DRIVERS_SERIAL_MSM_SERIAL_H */
--- 
-1.5.6.3
+Neither ;-)
+
+> 
+> If the latter, it get's even harder again. But either way if the
+> source pages just have to be regenerated anyway (eg. via page fault
+> on next access), then it might not even be worthwhile to do the
+> splice move.
+
+The ring buffer is written to by kernel events. To read it, the user can
+either do a sys_read() and that is copied, or use splice. I do not
+support mmap(), and if we were to do that, it would then not support
+splice(). We have been talking about implementing both but with flags on
+allocation of the ring buffer. You can either support mmap() or splice()
+but not both with one instance of the ring buffer.
+
+-- Steve
+
+
+
+
 
