@@ -1,88 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754628Ab0ESUjT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:39:19 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:48470 "EHLO ogre.sisk.pl"
+	id S1756049Ab0ESUk0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:40:26 -0400
+Received: from vs81.sauer-cs.de ([80.244.252.81]:40928 "EHLO kbdbabel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754069Ab0ESUjS convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:39:18 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 7)
-Date: Wed, 19 May 2010 22:40:39 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Brian Swetland <swetland@google.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org
-References: <1273810273-3039-1-git-send-email-arve@android.com> <201005190056.36804.rjw@sisk.pl> <AANLkTikc9MmR_r1NkdCwDaPD4kJa9l9KUwcWAxilcs3l@mail.gmail.com>
-In-Reply-To: <AANLkTikc9MmR_r1NkdCwDaPD4kJa9l9KUwcWAxilcs3l@mail.gmail.com>
+	id S1751739Ab0ESUkZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:40:25 -0400
+Date: Thu, 20 May 2010 00:40:08 +0400 (MSD)
+From: Alexander Kurz <linux@blala.de>
+X-X-Sender: linux@blala.de
+To: Ken Kawasaki <ken_kawasaki@spring.nifty.jp>,
+       "David S. Miller" <davem@davemloft.net>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Alan Cox <alan@linux.intel.com>
+cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] serial_cs: add and sort IDs for serial and modem cards
+Message-ID: <alpine.DEB.1.10.1005200034470.22205@blala.de>
+User-Agent: Alpine 1.10 (DEB 962 2008-03-14)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005192240.39803.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
-> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> > On Wednesday 19 May 2010, Arve Hjønnevåg wrote:
-> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
-> >> >> 2010/5/18 Rafael J. Wysocki <rjw@sisk.pl>:
-> >> >> > On Tuesday 18 May 2010, Arve Hjønnevåg wrote:
-> >> >> >> On Mon, May 17, 2010 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> >> > On Monday 17 May 2010, Brian Swetland wrote:
-> >> >> >> >> On Mon, May 17, 2010 at 1:40 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> >> >> >> >> > On Monday 17 May 2010, Arve Hjønnevåg wrote:
-> >> >> >> >> >>
-> >> > ...
-> >> >>
-> >> >> > Now, to make it more "user-friendly", we can simply use
-> >> >> > queue_delayed_work() with a reasonable delay instead of queue_work() to queue
-> >> >> > the suspend work (the delay may be configurable via sysfs).
-> >> >> >
-> >> >>
-> >> >> I can add a delay (and the timeout support code does add a delay as an
-> >> >> optimization) to the unknown wakeup case, but this does not fix the
-> >> >> problem of a user turning on opportunistic suspend with a user space
-> >> >> framework that does not use suspend blockers. If the kernel uses
-> >> >> suspend blockers to make sure the wakeup event makes it to user space,
-> >> >> but user space does not block suspend, then the system will suspend
-> >> >> before the event is processed.
-> >> >
-> >> > But the user can still manually write to /sys/power/state. :-)
-> >> >
-> >>
-> >> Does adding or removing a delay change this? It seems in only changes
-> >> how quickly the user can finish that write.
-> >
-> > Yes, but that should allow the user to avoid rebooting the system if he does
-> > the "wrong thing".
-> >
-> >> I'm not convinced adding a configurable delay here is necessary.
-> >
-> > No, it's not, but it would be useful in some cases IMO.  Pretty much the same
-> > way your debug features are useful.
-> >
-> >> Once the driver that enabled the wakeup event has been updated to block
-> >> suspend until this event gets to user space, then this delay will
-> >> never be triggered. The kernel cannot tell the difference between a
-> >> user enabling opportunistic suspend but not wanting it and
-> >> opportunistic suspend aware user space code deciding that this wakeup
-> >> event should be ignored.
-> >
-> > The point is, if there's a delay, it may be too aggressive for some users and
-> > too conservative for some other users, so it makes sense to provide a means
-> > to adjust it to the user's needs.
-> >
-> 
-> My point is that the delay will not be used at all if the driver uses
-> a suspend blocker (like it should). Why add a configuration option for
-> opportunistic suspend that only works when the driver does not support
-> opportunistic suspend.
+>From a0b7bb602321ee0f28fefc955e103788190a7cfa Mon Sep 17 00:00:00 2001
+From: Alexander Kurz <linux@kbdbabel.org>
+Date: Mon, 17 May 2010 18:54:38 +0200
+Subject: [PATCH] serial_cs: add and sort IDs for serial and modem cards
 
-Because on many systems there are no such drivers (yet, at least).
+Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
+---
+ drivers/serial/serial_cs.c |   18 ++++++++++++++++--
+ 1 files changed, 16 insertions(+), 2 deletions(-)
 
-Rafael
+diff --git a/drivers/serial/serial_cs.c b/drivers/serial/serial_cs.c
+index 8cfa5b1..624c67e 100644
+--- a/drivers/serial/serial_cs.c
++++ b/drivers/serial/serial_cs.c
+@@ -733,6 +733,8 @@ static struct pcmcia_device_id serial_ids[] = {
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0057, 0x0021),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0089, 0x110a),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0104, 0x000a),
++	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0105, 0x0d0a),
++	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0105, 0x0e0a),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0105, 0xea15),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0109, 0x0501),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0138, 0x110a),
+@@ -742,8 +744,6 @@ static struct pcmcia_device_id serial_ids[] = {
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x016c, 0x0081),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x021b, 0x0101),
+ 	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x08a1, 0xc0ab),
+-	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0105, 0x0d0a),
+-	PCMCIA_PFC_DEVICE_MANF_CARD(1, 0x0105, 0x0e0a),
+ 	PCMCIA_PFC_DEVICE_PROD_ID123(1, "MEGAHERTZ", "CC/XJEM3288", "DATA/FAX/CELL ETHERNET MODEM", 0xf510db04, 0x04cd2988, 0x46a52d63),
+ 	PCMCIA_PFC_DEVICE_PROD_ID123(1, "MEGAHERTZ", "CC/XJEM3336", "DATA/FAX/CELL ETHERNET MODEM", 0xf510db04, 0x0143b773, 0x46a52d63),
+ 	PCMCIA_PFC_DEVICE_PROD_ID123(1, "MEGAHERTZ", "EM1144T", "PCMCIA MODEM", 0xf510db04, 0x856d66c8, 0xbd6c43ef),
+@@ -786,17 +786,26 @@ static struct pcmcia_device_id serial_ids[] = {
+ 	PCMCIA_DEVICE_MANF_CARD(0x00a4, 0x0276),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0101, 0x0039),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0104, 0x0006),
++	PCMCIA_DEVICE_MANF_CARD(0x0105, 0x0101), /* TDK DF2814 */
++	PCMCIA_DEVICE_MANF_CARD(0x0105, 0x100a), /* Xircom CM-56G */
++	PCMCIA_DEVICE_MANF_CARD(0x0105, 0x3e0a), /* TDK DF5660 */
+ 	PCMCIA_DEVICE_MANF_CARD(0x0105, 0x410a),
++	PCMCIA_DEVICE_MANF_CARD(0x0107, 0x0002), /* USRobotics 14,400 */
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x0d50),
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x0d51),
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x0d52),
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0x0d53),
+ 	PCMCIA_DEVICE_MANF_CARD(0x010b, 0xd180),
++	PCMCIA_DEVICE_MANF_CARD(0x0115, 0x3330), /* USRobotics/SUN 14,400 */
++	PCMCIA_DEVICE_MANF_CARD(0x0124, 0x0100), /* Nokia DTP-2 ver II */
++	PCMCIA_DEVICE_MANF_CARD(0x0134, 0x5600), /* LASAT COMMUNICATIONS A/S */
+ 	PCMCIA_DEVICE_MANF_CARD(0x0137, 0x000e),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0137, 0x001b),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0137, 0x0025),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0137, 0x0045),
+ 	PCMCIA_DEVICE_MANF_CARD(0x0137, 0x0052),
++	PCMCIA_DEVICE_MANF_CARD(0x016c, 0x0006), /* Psion 56K+Fax */
++	PCMCIA_DEVICE_MANF_CARD(0x0200, 0x0001), /* MultiMobile */
+ 	PCMCIA_DEVICE_PROD_ID134("ADV", "TECH", "COMpad-32/85", 0x67459937, 0x916d02ba, 0x8fbe92ae),
+ 	PCMCIA_DEVICE_PROD_ID124("GATEWAY2000", "CC3144", "PCMCIA MODEM", 0x506bccae, 0xcb3685f1, 0xbd6c43ef),
+ 	PCMCIA_DEVICE_PROD_ID14("MEGAHERTZ", "PCMCIA MODEM", 0xf510db04, 0xbd6c43ef),
+@@ -810,16 +819,21 @@ static struct pcmcia_device_id serial_ids[] = {
+ 	PCMCIA_DEVICE_PROD_ID12("COMPAQ", "PCMCIA 33600 FAX/DATA MODEM", 0xa3a3062c, 0x5a00ce95),
+ 	PCMCIA_DEVICE_PROD_ID12("Computerboards, Inc.", "PCM-COM422", 0xd0b78f51, 0x7e2d49ed),
+ 	PCMCIA_DEVICE_PROD_ID12("Dr. Neuhaus", "FURY CARD 14K4", 0x76942813, 0x8b96ce65),
++	PCMCIA_DEVICE_PROD_ID12("IBM", "ISDN/56K/GSM", 0xb569a6e5, 0xfee5297b),
+ 	PCMCIA_DEVICE_PROD_ID12("Intelligent", "ANGIA FAX/MODEM", 0xb496e65e, 0xf31602a6),
+ 	PCMCIA_DEVICE_PROD_ID12("Intel", "MODEM 2400+", 0x816cc815, 0x412729fb),
++	PCMCIA_DEVICE_PROD_ID12("Intertex", "IX34-PCMCIA", 0xf8a097e3, 0x97880447),
+ 	PCMCIA_DEVICE_PROD_ID12("IOTech Inc ", "PCMCIA Dual RS-232 Serial Port Card", 0x3bd2d898, 0x92abc92f),
+ 	PCMCIA_DEVICE_PROD_ID12("MACRONIX", "FAX/MODEM", 0x668388b3, 0x3f9bdf2f),
+ 	PCMCIA_DEVICE_PROD_ID12("Multi-Tech", "MT1432LT", 0x5f73be51, 0x0b3e2383),
+ 	PCMCIA_DEVICE_PROD_ID12("Multi-Tech", "MT2834LT", 0x5f73be51, 0x4cd7c09e),
+ 	PCMCIA_DEVICE_PROD_ID12("OEM      ", "C288MX     ", 0xb572d360, 0xd2385b7a),
++	PCMCIA_DEVICE_PROD_ID12("Option International", "V34bis GSM/PSTN Data/Fax Modem", 0x9d7cd6f5, 0x5cb8bf41),
+ 	PCMCIA_DEVICE_PROD_ID12("PCMCIA   ", "C336MX     ", 0x99bcafe9, 0xaa25bcab),
+ 	PCMCIA_DEVICE_PROD_ID12("Quatech Inc", "PCMCIA Dual RS-232 Serial Port Card", 0xc4420b35, 0x92abc92f),
+ 	PCMCIA_DEVICE_PROD_ID12("Quatech Inc", "Dual RS-232 Serial Port PC Card", 0xc4420b35, 0x031a380d),
++	PCMCIA_DEVICE_PROD_ID12("Telia", "SurfinBird 560P/A+", 0xe2cdd5e, 0xc9314b38),
++	PCMCIA_DEVICE_PROD_ID1("Smart Serial Port", 0x2d8ce292),
+ 	PCMCIA_PFC_DEVICE_CIS_PROD_ID12(1, "PCMCIA", "EN2218-LAN/MODEM", 0x281f1c5d, 0x570f348e, "cis/PCMLM28.cis"),
+ 	PCMCIA_PFC_DEVICE_CIS_PROD_ID12(1, "PCMCIA", "UE2218-LAN/MODEM", 0x281f1c5d, 0x6fdcacee, "cis/PCMLM28.cis"),
+ 	PCMCIA_PFC_DEVICE_CIS_PROD_ID12(1, "Psion Dacom", "Gold Card V34 Ethernet", 0xf5f025c2, 0x338e8155, "cis/PCMLM28.cis"),
+-- 
+1.7.1
+
