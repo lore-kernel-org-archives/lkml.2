@@ -1,122 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753216Ab0ESU4G (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 16:56:06 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:31196 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752626Ab0ESU4C convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 16:56:02 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=YynL9biSaD/G1G2rTC/2PvpBn6So2gwsAFSd6X2O/awjeBS86W4Sfb4kcS41a95y7
-	HYs/PLfg7jr9dMLTyVCCw==
+	id S1753755Ab0ESU5J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 16:57:09 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:39919 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751139Ab0ESU5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 16:57:06 -0400
+From: Alex Elder <aelder@sgi.com>
+Message-Id: <201005192056.o4JKuua2012029@stout.americas.sgi.com>
+Date: Wed, 19 May 2010 15:56:56 -0500
+To: torvalds@linux-foundation.org
+Subject: [GIT PULL] XFS update for 2.6.35-rc1
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
+User-Agent: Heirloom mailx 12.4 7/29/08
 MIME-Version: 1.0
-In-Reply-To: <20100519201137.GA26284@ghostprotocols.net>
-References: <1274288493-15523-1-git-send-email-acme@infradead.org>
-	 <AANLkTindijJnIeElAkoj0CGC7nJwVEzIC_OlDbJ_adE8@mail.gmail.com>
-	 <20100519201137.GA26284@ghostprotocols.net>
-Date: Wed, 19 May 2010 22:55:55 +0200
-Message-ID: <AANLkTin1xWNaQLZrMcJmlC4GCKMibjinRmYNtUgxYJAK@mail.gmail.com>
-Subject: Re: [GIT PULL 0/2] perf session fix host_machine handling wrt build 
-	ids
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 10:11 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
->
-> Em Wed, May 19, 2010 at 09:36:45PM +0200, Stephane Eranian escreveu:
-> > Hi,
-> >
-> > On Wed, May 19, 2010 at 7:01 PM, Arnaldo Carvalho de Melo
-> > <acme@infradead.org> wrote:
-> > > Hi Ingo,
-> > >
-> > >        Please pull from:
-> > >
-> > > git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> > >
-> > > Stephane and Tom,
-> > >
-> > >        Now the build id code should be back working:
-> > >
-> > > [root@doppio linux-2.6-tip]# rm -rf /root/.debug/
-> > > [root@doppio linux-2.6-tip]# perf record find / > /dev/null
-> > > ^C[ perf record: Woken up 3 times to write data ]
-> > > [ perf record: Captured and wrote 0.667 MB perf.data (~29163 samples) ]
-> > > [root@doppio linux-2.6-tip]# perf buildid-list
-> > > 349199a1e1b7cc25ac4f7004deed260f0146665e [kernel.kallsyms]
-> >
-> >
-> > It is working again for me too. Thanks for the quick fix.
->
-> Great, and thanks for the "quick" part, myself I thought it took more
-> time than needed :-)
+FYI, I have a second batch of changes for XFS for 2.6.35-rc1.  I'll
+send a separate pull request for them in another day or two.
 
-Well I could not understand the logical code flow with buildids, that's why
-I posted the bug report. I am glad you fixed this.
+					-Alex
 
->
-> > Related to .debug, I think it would be useful to have a choice as to
-> > where all that stuff gets saved. It is hardcoded to $HOME today.
-> >
-> > We could provide:
-> > - an environment variable, e.g., PERFHOME or PERFDEBUGDIR
-> > - an option to perf record, perf report, perf annotate, i.e., all commands
-> >   that use .debug
-> >
-> > I looked at that today and I have a draft patch to add both the variable
-> > + the option.
-> >
->
-> Yeah, the NO_NEWT make target was out of our uneasyness about making
-> newt the sole report output, and my patch removing tons of code stolen
-> but not used (greedy us!) was also in that direction, trying to get the
-> git ~/.CONFIG way into perf.
+The following changes since commit 537b60d17894b7c19a6060feae40299d7109d6e7:
 
-That's not because I compile with newt support that I want curses output each
-time I use perf report. I could not find an option to turn it off.
-Unless you tell
-me that if it detects stdout is not a tty it does not use newt. But
-that would not
-be good enough I think.
-Ok, so you are advocating that perf configuration options be saved in
-~/.perfconfig
-and that would include the destination dir for all the "symbolization"
-files. BTW,
-I think the name .debug is confusing here. It contains symbolization info not
-debug info. For all I know the binaries may have no debug info at all.
+  Merge branch 'x86-uv-for-linus' of git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip (2010-05-18 09:46:35 -0700)
 
->
-> We have to have that and consistent accross the tools command line
-> options to override where this is stored/used.
->
-> > The problem with the environment variable is that you tend to forget to
-> > set it. As you suggest below, you may run perf report on another machine
-> > too and you don't necessarily want to overwrite the .debug you may already
->
-> Well, we wouldn't be overwriting anything since we hope that what is
-> used to create the buildid is reasonably safe against collision, so even
-> if the DSOs are for different arches, it should be rather difficult to
-> get 'perf unarchive' causing problems.
+are available in the git repository at:
 
+  git://oss.sgi.com/xfs/xfs for-linus
 
-I think you're right. If you have the same file name, e.g.,
-/usr/bin/date but compiled
-differently, then you should have different buildids, thus you will
-not clash on either
-leaf files in your tree. Directories may already exist but that's
-okay. Am I right?
+Alex Elder (12):
+      xfs: add const qualifiers to xfs error function args
+      xfs: fix min bufsize bugs in two places
+      xfs: simplify XLOG_SECTOR_ROUND*()
+      xfs: kill XLOG_SECTOR_ROUND*()
+      xfs: encapsulate bbcount validity checking
+      xfs: nothing special about 1-block log sector
+      xfs: change a few labels in xfs_log_recover.c
+      xfs: avoid repeated pointer dereferences
+      xfs: minor odds and ends in xfs_log_recover.c
+      xfs: record log sector size rather than log2(that)
+      xfs: kill off l_sectbb_mask
+      Merge branch 'master' into for-linus
+
+Andrea Gelmini (1):
+      xfs: xfs_trace.c: duplicated include
+
+Christoph Hellwig (23):
+      xfs: clean up xfs_trans_commit logic even more
+      xfs: reindent xlog_write
+      xfs: clean up xlog_write_adv_cnt
+      xfs: remove xfs_dqmarker
+      xfs: remove periodic superblock writeback
+      xfs: enforce synchronous writes in xfs_bwrite
+      xfs: wait for direct I/O to complete in fsync and write_inode
+      xfs: access quotainfo structure directly
+      xfs: remove a few macro indirections in the quota code
+      xfs: removed unused XFS_QMOPT_ flags
+      xfs: remove dead XFS_LOUD_RECOVERY code
+      xfs: simplify buffer to transaction matching
+      xfs: limit xfs_imap_to_bmap to a single mapping
+      xfs: remove iomap_target
+      xfs: remove iomap_delta
+      xfs: report iomap_offset and iomap_bsize in block base
+      xfs: report iomap_bn in block base
+      xfs: kill struct xfs_iomap
+      xfs: move I/O type flags into xfs_aops.c
+      xfs: clean up xfs_iomap_valid
+      xfs: clean up mapping size calculation in __xfs_get_blocks
+      xfs: clean up end index calculation in xfs_page_state_convert
+      xfs: mark xfs_iomap_write_ helpers static
+
+Dave Chinner (16):
+      xfs: factor log item initialisation
+      xfs: Add inode pin counts to traces
+      xfs: remove stale parameter from ->iop_unpin method
+      xfs: fix reservation release commit flag in xfs_bmap_add_attrfork()
+      xfs: split out iclog writing from xfs_trans_commit()
+      xfs: update and factor xfs_trans_committed()
+      xfs: Clean up xfs_trans_committed code after factoring
+      xfs: log ticket reservation underestimates the number of iclogs
+      xfs: factor xlog_write
+      xfs: introduce new internal log vector structure
+      xfs: add log item recovery tracing
+      xfs: convert the per-mount dquot list to use list heads
+      xfs: remove duplicate code from dquot reclaim
+      xfs: convert the dquot hash list to use list heads
+      xfs: convert the dquot free list to use list heads
+      xfs: make the log ticket transaction id random
+
+Jan Engelhardt (1):
+      xfs: add blockdev name to kthreads
+
+Tao Ma (1):
+      xfs: Make fiemap work in query mode.
+
+Zhitong Wang (1):
+      xfs: Fix integer overflow in fs/xfs/linux-2.6/xfs_ioctl*.c
+
+ fs/xfs/linux-2.6/xfs_aops.c    |  231 +++++++-----
+ fs/xfs/linux-2.6/xfs_buf.c     |   27 +-
+ fs/xfs/linux-2.6/xfs_buf.h     |    2 +-
+ fs/xfs/linux-2.6/xfs_file.c    |    2 +
+ fs/xfs/linux-2.6/xfs_ioctl.c   |    4 +
+ fs/xfs/linux-2.6/xfs_ioctl32.c |    4 +
+ fs/xfs/linux-2.6/xfs_iops.c    |    5 +-
+ fs/xfs/linux-2.6/xfs_super.c   |   10 +-
+ fs/xfs/linux-2.6/xfs_sync.c    |   91 ++----
+ fs/xfs/linux-2.6/xfs_trace.c   |    4 +-
+ fs/xfs/linux-2.6/xfs_trace.h   |  150 ++++++++-
+ fs/xfs/quota/xfs_dquot.c       |  193 +++++------
+ fs/xfs/quota/xfs_dquot.h       |   35 +--
+ fs/xfs/quota/xfs_dquot_item.c  |   30 +-
+ fs/xfs/quota/xfs_qm.c          |  609 ++++++++++++--------------------
+ fs/xfs/quota/xfs_qm.h          |   23 +-
+ fs/xfs/quota/xfs_qm_stats.c    |    2 +-
+ fs/xfs/quota/xfs_qm_syscalls.c |  152 ++++-----
+ fs/xfs/quota/xfs_quota_priv.h  |  102 ------
+ fs/xfs/quota/xfs_trans_dquot.c |   29 +-
+ fs/xfs/xfs_bmap.c              |    2 +-
+ fs/xfs/xfs_buf_item.c          |   55 ++--
+ fs/xfs/xfs_buf_item.h          |    2 +-
+ fs/xfs/xfs_error.c             |   30 +-
+ fs/xfs/xfs_error.h             |    9 +-
+ fs/xfs/xfs_extfree_item.c      |   18 +-
+ fs/xfs/xfs_inode.c             |    2 +
+ fs/xfs/xfs_inode_item.c        |   21 +-
+ fs/xfs/xfs_iomap.c             |  123 ++-----
+ fs/xfs/xfs_iomap.h             |   47 +---
+ fs/xfs/xfs_log.c               |  702 +++++++++++++++++++++++--------------
+ fs/xfs/xfs_log.h               |   13 +
+ fs/xfs/xfs_log_priv.h          |   12 +-
+ fs/xfs/xfs_log_recover.c       |  311 ++++++++---------
+ fs/xfs/xfs_mount.c             |    7 -
+ fs/xfs/xfs_quota.h             |    3 -
+ fs/xfs/xfs_trans.c             |  760 +++++++++++++++++++---------------------
+ fs/xfs/xfs_trans.h             |   14 +-
+ fs/xfs/xfs_trans_buf.c         |  187 +++--------
+ 39 files changed, 1905 insertions(+), 2118 deletions(-)
