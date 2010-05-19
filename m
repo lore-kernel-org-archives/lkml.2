@@ -1,54 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754128Ab0ESHRr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 03:17:47 -0400
-Received: from casper.infradead.org ([85.118.1.10]:40861 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752184Ab0ESHRp convert rfc822-to-8bit (ORCPT
+	id S1754506Ab0ESHTG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 03:19:06 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38322 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753250Ab0ESHTC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 03:17:45 -0400
-Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
-From: Peter Zijlstra <peterz@infradead.org>
-To: Borislav Petkov <bp@amd64.org>
-Cc: Lin Ming <ming.m.lin@intel.com>, Greg KH <greg@kroah.com>,
-       Ingo Molnar <mingo@elte.hu>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100519070655.GB30320@aftab>
-References: <1274233602.3036.84.camel@localhost>
-	 <20100518200524.GA20223@kroah.com>
-	 <1274236496.3603.22.camel@minggr.sh.intel.com>
-	 <20100519070655.GB30320@aftab>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 May 2010 09:17:07 +0200
-Message-ID: <1274253427.5605.10131.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 19 May 2010 03:19:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=etU+PxR3NhzElx9YCX8b30EMKFjwYqlyP0aWcvmganS74RRMPj1awKU/z3o/M14bFA
+         KWGTiMDCToXbKSAmhlrAPl3G0g/oW4YqrqQVC57mTb11DUI1U+7fe0fP6ODoE8/D1+Me
+         1nffaRIUOZdwwPw6TyIHxrbDGK8K+iNYUHDLY=
+Date: Wed, 19 May 2010 09:19:08 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/5] perf: Disallow mmap() on per-task inherited events
+Message-ID: <20100519071906.GB5704@nowhere>
+References: <20100518133258.000434886@chello.nl> <20100518133725.885757039@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518133725.885757039@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 09:06 +0200, Borislav Petkov wrote:
+On Tue, May 18, 2010 at 03:32:59PM +0200, Peter Zijlstra wrote:
+> Since we now have working per-task-per-cpu events for a while,
+> disallow mmap() on per-task inherited events. Those things were
+> a performance problem anyway, and doing away with it allows
+> us to optimize the buffer somewhat by assuming there is only a single
+> writer.
 > 
-> have we considered the per-cpu granularity of MCEs here and if yes, how
-> to represent that?
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
 
-Uhm, by opening the MCE event on a particular cpu? Remember that
-sys_perf_event_open() has a cpu target.
 
-The thing is, CPUs are assumed symmetric, thus also all MCE events are
-symmetric, one CPU cannot generate other MCE than another. So the only
-thing that differs is where you want to listen for them.
+
+That is a very good news.
+
