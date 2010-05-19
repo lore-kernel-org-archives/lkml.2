@@ -1,47 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752603Ab0ESGMu (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 02:12:50 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:44939 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752018Ab0ESGMs (ORCPT
+	id S1752269Ab0ESGVr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 02:21:47 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51913 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751353Ab0ESGVp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 02:12:48 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=tkF8B0TaFg2L4+U3yFC3vxRKf+HZ9132OzlYh+1Zz2kAFYTmmfVBge9t93N/YCg5gc
-         d0XD3p1uxd6MWx7NV2f16oXFqZN8dwwZ7mL/Y5SvkHW0lPRK2fKH6+f8fD1ECeH9tlAd
-         VMqfCNZsjnaKqNCpq3P1qot9+bU6JTYoVLMuY=
-MIME-Version: 1.0
-In-Reply-To: <1274248526.2667.2.camel@ubuntu.ubuntu-domain>
-References: <1274248526.2667.2.camel@ubuntu.ubuntu-domain>
-Date: Wed, 19 May 2010 09:12:46 +0300
-X-Google-Sender-Auth: o3fvsfvbjlOOb4tghWRLYkrHptc
-Message-ID: <AANLkTimb0ZdGxKtQnfFhIw2tqwVDJEWZ6yV58Fv5b74I@mail.gmail.com>
-Subject: Re: [PATCH] Staging: winbond: Fix C99 Comment issues in 
-	mac_structures.h
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: adam.latham@unisontorbay.org.uk
-Cc: gregkh@suse.de, sankar.curiosity@gmail.com, ruslan@rpisarev.org.ua,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Pavel Machek <pavel@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 19 May 2010 02:21:45 -0400
+Subject: Re: schedule() && prev/current (Was: [PATCH 3/3] Make
+ get_current() __attribute__((const)))
+From: Peter Zijlstra <peterz@infradead.org>
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Yong Zhang <yong.zhang0@gmail.com>, linux-arch@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100518212220.GA5092@redhat.com>
+References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk>
+	 <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
+	 <20100518212220.GA5092@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 May 2010 08:21:19 +0200
+Message-ID: <1274250079.5605.9967.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 8:55 AM, Adam Latham
-<adam.latham@unisontorbay.org.uk> wrote:
-> >From 75719374c007bfb664b866df3e7c1f30c93354d4 Mon Sep 17 00:00:00 2001
-> From: Adam Latham <adam.latham@unisontorbay.org.uk>
-> Date: Tue, 18 May 2010 20:00:00 +0100
-> Subject: [PATCH] Staging: winbond: Fix C99 Comment issues in mac_structures.h
->
-> This patch fixes the use of //C99 comments in the mac_structures.h found by
-> the checkpatch.pl tool
->
-> Signed-off-by: Adam Latham <adam.latham@unisontorbay.org.uk>
+On Tue, 2010-05-18 at 23:22 +0200, Oleg Nesterov wrote:
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+> And, looking at this patch I think that schedule() can be simplified
+> a little bit.
+> 
+> "sched: Reassign prev and switch_count when reacquire_kernel_lock() fail"
+> commit 6d558c3ac9b6508d26fd5cadccce51fc9d726b1c says:
+> 
+> 	Assume A->B schedule is processing,
+> 	...
+> 	Then on B's context,
+> 	...
+> 	prev and switch_count are related to A
+> 
+> How so? switch_count - yes, we should change it. But prev must be
+> equal to B, and it must be equal to current. When we return from
+> switch_to() registers/stack should be restored correctly, so we
+> can do
+
+What if schedule() got called at a different stack depth than we are
+now?
+
+I don't think we can assume anything about the stack context we just
+switched to.
