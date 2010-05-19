@@ -1,65 +1,228 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753173Ab0ESSdp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 14:33:45 -0400
-Received: from sinclair.provo.novell.com ([137.65.248.137]:9568 "EHLO
-	sinclair.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab0ESSdn convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-ksrinivasan@novell.com:4:1>);
-	Wed, 19 May 2010 14:33:43 -0400
-Message-Id: <4BF3DAA40200003000085673@sinclair.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Wed, 19 May 2010 12:33:40 -0600
-From: "Ky Srinivasan" <ksrinivasan@novell.com>
-To: "Greg KH" <greg@kroah.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: <hjanssen@microsoft.com>, "Avi Kivity" <avi@redhat.com>,
-       <mingo@redhat.com>, <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] Hyperv detection - code cleanup
-References: <4BF3C97F020000300008560D@sinclair.provo.novell.com>
- <4BF424FE.80400@zytor.com> <20100519181926.GA22228@kroah.com>
- <4BF42C3D.6030404@zytor.com>
-In-Reply-To: <4BF42C3D.6030404@zytor.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1753813Ab0ESSmL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 14:42:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:47014 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752576Ab0ESSmJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 14:42:09 -0400
+From: Will Drewry <wad@chromium.org>
+To: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Cc: agk@redhat.com, snitzer@redhat.com, Will Drewry <wad@chromium.org>
+Subject: [PATCH v3 1/3] dm: allow a dm-fs-style device to be shared via dm-ioctl
+Date: Wed, 19 May 2010 13:38:22 -0500
+Message-Id: <1274294304-30606-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Integrates feedback from Alisdair, Mike, and Kiyoshi.
 
+Two main changes occur here:
 
->>> On 5/19/2010 at  2:21 PM, in message <4BF42C3D.6030404@zytor.com>, "H. Peter
-Anvin" <hpa@zytor.com> wrote: 
-> On 05/19/2010 11:19 AM, Greg KH wrote:
->> On Wed, May 19, 2010 at 10:50:54AM -0700, H. Peter Anvin wrote:
->>> On 05/19/2010 10:20 AM, Ky Srinivasan wrote:
->>>> From: K. Y. Srinivasan <ksrinivasan@novell.com>
->>>> Subject: Code cleanup - get rid of the "ms" prefix in hyperv related files.  
->>>>
->>>>
->>>> Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
->>>
->>> NAK in the extreme.
->>>
->>> "hyperv" -- without the capitalization to make it stand out -- is way
->>> too easy to read as just an abbreviation for "hypervisor".
->> 
->> Which is what I confused it with, and hence I wrote the ms_* changes in
->> my patch.  But KY wanted it changed back so I suggested he write a
->> patch.
->> 
->> I personally like the ms_ stuff, it makes it more obvious what is going
->> on here, but that's just me.
->> 
-> 
-> Well, I agree with you.  Sorry, Ky.
-I see your concern.
+- One function is added which allows for a programmatically created
+  mapped device to be inserted into the dm-ioctl hash table.  This binds
+  the device to a name and, optional, uuid which is needed by udev and
+  allows for userspace management of the mapped device.
 
-Regards,
+- dm_table_complete() was extended to handle all of the final
+  functional changes required for the table to be operational once
+  called.
 
-K. Y
-> 
-> 	-hpa
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ drivers/md/dm-ioctl.c         |   72 +++++++++++++++++++++-------------------
+ drivers/md/dm-table.c         |   50 ++++++++++++++++++++++++++++-
+ include/linux/device-mapper.h |    6 +++
+ 3 files changed, 93 insertions(+), 35 deletions(-)
 
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index d7500e1..006be9d 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1112,28 +1112,9 @@ static int populate_table(struct dm_table *table,
+ 		next = spec->next;
+ 	}
+ 
+-	r = dm_table_set_type(table);
+-	if (r) {
+-		DMWARN("unable to set table type");
+-		return r;
+-	}
+-
+ 	return dm_table_complete(table);
+ }
+ 
+-static int table_prealloc_integrity(struct dm_table *t,
+-				    struct mapped_device *md)
+-{
+-	struct list_head *devices = dm_table_get_devices(t);
+-	struct dm_dev_internal *dd;
+-
+-	list_for_each_entry(dd, devices, list)
+-		if (bdev_get_integrity(dd->dm_dev.bdev))
+-			return blk_integrity_register(dm_disk(md), NULL);
+-
+-	return 0;
+-}
+-
+ static int table_load(struct dm_ioctl *param, size_t param_size)
+ {
+ 	int r;
+@@ -1155,21 +1136,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
+ 		goto out;
+ 	}
+ 
+-	r = table_prealloc_integrity(t, md);
+-	if (r) {
+-		DMERR("%s: could not register integrity profile.",
+-		      dm_device_name(md));
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+-	r = dm_table_alloc_md_mempools(t);
+-	if (r) {
+-		DMWARN("unable to allocate mempools for this table");
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+ 	down_write(&_hash_lock);
+ 	hc = dm_get_mdptr(md);
+ 	if (!hc || hc->md != md) {
+@@ -1637,6 +1603,44 @@ void dm_interface_exit(void)
+ 	dm_hash_exit();
+ }
+ 
++
++/**
++ * dm_ioctl_export - Permanently export a mapped device via the ioctl interface
++ * @md: Pointer to mapped_device
++ * @name: Buffer (size DM_NAME_LEN) for name
++ * @uuid: Buffer (size DM_UUID_LEN) for uuid or NULL if not desired
++ */
++int dm_ioctl_export(struct mapped_device *md, const char *name, const char *uuid)
++{
++	int r = 0;
++	struct hash_cell *hc;
++
++	if (!md) {
++		r = -ENXIO;
++		goto out;
++	}
++
++	/* The name and uuid can only be set once. */
++	mutex_lock(&dm_hash_cells_mutex);
++	hc = dm_get_mdptr(md);
++	mutex_unlock(&dm_hash_cells_mutex);
++	if (hc) {
++		DMERR("%s: already exported", dm_device_name(md));
++		r = -ENXIO;
++		goto out;
++	}
++
++	r = dm_hash_insert(name, uuid, md);
++	if (r) {
++		DMERR("%s: could not bind to '%s'", dm_device_name(md), name);
++		goto out;
++	}
++
++	/* Let udev know we've changed. */
++	dm_kobject_uevent(md, KOBJ_CHANGE, dm_get_event_nr(md));
++out:
++	return r;
++}
+ /**
+  * dm_copy_name_and_uuid - Copy mapped device name & uuid into supplied buffers
+  * @md: Pointer to mapped_device
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index 9924ea2..ef6a3ab 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -900,7 +900,7 @@ static int setup_indexes(struct dm_table *t)
+ /*
+  * Builds the btree to index the map.
+  */
+-int dm_table_complete(struct dm_table *t)
++int dm_table_build_index(struct dm_table *t)
+ {
+ 	int r = 0;
+ 	unsigned int leaf_nodes;
+@@ -919,6 +919,54 @@ int dm_table_complete(struct dm_table *t)
+ 	return r;
+ }
+ 
++/*
++ * Register the mapped device for blk_integrity support if
++ * the underlying devices support it.
++ */
++static int dm_table_prealloc_integrity(struct dm_table *t, struct mapped_device *md)
++{
++	struct list_head *devices = dm_table_get_devices(t);
++	struct dm_dev_internal *dd;
++
++	list_for_each_entry(dd, devices, list)
++		if (bdev_get_integrity(dd->dm_dev.bdev))
++			return blk_integrity_register(dm_disk(md), NULL);
++
++	return 0;
++}
++
++/*
++ * Prepares the table for use by building the indices,
++ * setting the type, and allocating mempools.
++ */
++int dm_table_complete(struct dm_table *t)
++{
++	int r = 0;
++	r = dm_table_set_type(t);
++	if (r) {
++		DMERR("unable to set table type");
++		return r;
++	}
++
++	r = dm_table_build_index(t);
++	if (r) {
++		DMERR("unable to build btrees");
++		return r;
++	}
++
++	r = dm_table_prealloc_integrity(t, t->md);
++	if (r) {
++		DMERR("could not register integrity profile.");
++		return r;
++	}
++
++	r = dm_table_alloc_md_mempools(t);
++	if (r) {
++		DMERR("unable to allocate mempools");
++	}
++	return r;
++}
++
+ static DEFINE_MUTEX(_event_lock);
+ void dm_table_event_callback(struct dm_table *t,
+ 			     void (*fn)(void *), void *context)
+diff --git a/include/linux/device-mapper.h b/include/linux/device-mapper.h
+index 1381cd9..0792cf3 100644
+--- a/include/linux/device-mapper.h
++++ b/include/linux/device-mapper.h
+@@ -215,6 +215,12 @@ void dm_set_mdptr(struct mapped_device *md, void *ptr);
+ void *dm_get_mdptr(struct mapped_device *md);
+ 
+ /*
++ * Export the device via the ioctl interface (uses mdptr).
++ */
++int dm_ioctl_export(struct mapped_device *md, const char *name,
++		    const char *uuid);
++
++/*
+  * A device can still be used while suspended, but I/O is deferred.
+  */
+ int dm_suspend(struct mapped_device *md, unsigned suspend_flags);
+-- 
+1.7.0.4
 
