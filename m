@@ -1,47 +1,130 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757049Ab0ESKTX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 06:19:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:53644 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754721Ab0ESKTV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 06:19:21 -0400
-Date: Wed, 19 May 2010 12:19:04 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: jacob pan <jacob.jun.pan@linux.intel.com>
-cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Alek Du <alek.du@intel.com>,
-       Alan Cox <alan@linux.intel.com>, Feng Tang <feng.tang@intel.com>
-Subject: Re: [PATCH 1/2] v4 x86/mrst: add cpu type detection
-In-Reply-To: <20100519022335.00007d65@unknown>
-Message-ID: <alpine.LFD.2.00.1005191210440.3368@localhost.localdomain>
-References: <1274184166-17242-1-git-send-email-jacob.jun.pan@linux.intel.com> <1274184166-17242-2-git-send-email-jacob.jun.pan@linux.intel.com> <alpine.LFD.2.00.1005182250460.3368@localhost.localdomain> <20100519022335.00007d65@unknown>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757005Ab0ESK0k (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 06:26:40 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:42771 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754274Ab0ESK0i (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 06:26:38 -0400
+From: Daniel Mack <daniel@caiaq.de>
+To: linux-kernel@vger.kernel.org
+Cc: Daniel Mack <daniel@caiaq.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+       Devin Heitmueller <dheitmueller@kernellabs.com>,
+       linux-media@vger.kernel.org
+Subject: [PATCH] drivers/media/dvb/dvb-usb/dib0700: fix return values
+Date: Wed, 19 May 2010 12:26:12 +0200
+Message-Id: <1274264772-19292-1-git-send-email-daniel@caiaq.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, jacob pan wrote:
-> 
-> >  Aside of that wouldn't it make more sense to do the chip
-> >  identification only once from mrst_init() and cache the result and
-> >  change mrst_identify_cpu()
-> >
-> the problem is again the ordering of cpuid, boot_cpu_data is not available
-> by the time we call  x86_mrst_early_setup(). I can move it to mrst_time_init()
+Propagte correct error values instead of returning -1 which just means
+-EPERM ("Permission denied")
 
-Hmm, right.
+While at it, also fix some coding style violations.
 
-> but not very ideal. Unless we go back to do cpuid directly in the v1 patch :).
+Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Jiri Slaby <jslaby@suse.cz>
+Cc: Dmitry Torokhov <dtor@mail.ru>
+Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
+Cc: linux-media@vger.kernel.org
+---
+ drivers/media/dvb/dvb-usb/dib0700_core.c |   47 ++++++++++++++---------------
+ 1 files changed, 23 insertions(+), 24 deletions(-)
 
-x86_init.oem.arch_setup() is the point where you can do that, that's
-called after early_cpu_init() which fills boot_cpu_data. It's way
-before the first user of mrst_chip.
-
-Thanks,
-
-	tglx
-
+diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
+index d5e2c23..c73da6b 100644
+--- a/drivers/media/dvb/dvb-usb/dib0700_core.c
++++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
+@@ -111,23 +111,24 @@ int dib0700_set_gpio(struct dvb_usb_device *d, enum dib07x0_gpios gpio, u8 gpio_
+ 
+ static int dib0700_set_usb_xfer_len(struct dvb_usb_device *d, u16 nb_ts_packets)
+ {
+-    struct dib0700_state *st = d->priv;
+-    u8 b[3];
+-    int ret;
+-
+-    if (st->fw_version >= 0x10201) {
+-	b[0] = REQUEST_SET_USB_XFER_LEN;
+-	b[1] = (nb_ts_packets >> 8)&0xff;
+-	b[2] = nb_ts_packets & 0xff;
+-
+-	deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
+-
+-	ret = dib0700_ctrl_wr(d, b, 3);
+-    } else {
+-	deb_info("this firmware does not allow to change the USB xfer len\n");
+-	ret = -EIO;
+-    }
+-    return ret;
++	struct dib0700_state *st = d->priv;
++	u8 b[3];
++	int ret;
++
++	if (st->fw_version >= 0x10201) {
++		b[0] = REQUEST_SET_USB_XFER_LEN;
++		b[1] = (nb_ts_packets >> 8)&0xff;
++		b[2] = nb_ts_packets & 0xff;
++
++		deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
++
++		ret = dib0700_ctrl_wr(d, b, 3);
++	} else {
++		deb_info("this firmware does not allow to change the USB xfer len\n");
++		ret = -EIO;
++	}
++
++	return ret;
+ }
+ 
+ /*
+@@ -642,7 +643,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+ 	i = dib0700_ctrl_wr(d, rc_setup, 3);
+ 	if (i<0) {
+ 		err("ir protocol setup failed");
+-		return -1;
++		return i;
+ 	}
+ 
+ 	if (st->fw_version < 0x10200)
+@@ -652,7 +653,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+ 	purb = usb_alloc_urb(0, GFP_KERNEL);
+ 	if (purb == NULL) {
+ 		err("rc usb alloc urb failed\n");
+-		return -1;
++		return -ENOMEM;
+ 	}
+ 
+ 	purb->transfer_buffer = usb_buffer_alloc(d->udev, RC_MSG_SIZE_V1_20,
+@@ -661,7 +662,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+ 	if (purb->transfer_buffer == NULL) {
+ 		err("rc usb_buffer_alloc() failed\n");
+ 		usb_free_urb(purb);
+-		return -1;
++		return -ENOMEM;
+ 	}
+ 
+ 	purb->status = -EINPROGRESS;
+@@ -670,12 +671,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+ 			  dib0700_rc_urb_completion, d);
+ 
+ 	ret = usb_submit_urb(purb, GFP_ATOMIC);
+-	if (ret != 0) {
++	if (ret != 0)
+ 		err("rc submit urb failed\n");
+-		return -1;
+-	}
+ 
+-	return 0;
++	return ret;
+ }
+ 
+ static int dib0700_probe(struct usb_interface *intf,
+-- 
+1.7.1
 
