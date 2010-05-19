@@ -1,56 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752959Ab0ESOmm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:42:42 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:44408 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751441Ab0ESOmk (ORCPT
+	id S1752932Ab0ESOoV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:44:21 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:37513 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751999Ab0ESOoU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:42:40 -0400
-Date: Wed, 19 May 2010 07:39:11 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Nick Piggin <npiggin@suse.de>
-cc: Steven Rostedt <rostedt@goodmis.org>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-Subject: Re: Unexpected splice "always copy" behavior observed
-In-Reply-To: <20100519063116.GR2516@laptop>
-Message-ID: <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-References: <20100518153440.GB7748@Krystal> <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 19 May 2010 10:44:20 -0400
+X-Authority-Analysis: v=1.1 cv=ThiPuEJrAfM5PTlEgIT3cJp8+3pkHBIG3CaogqDGxqo= c=1 sm=0 a=pjGjkNHRNmAA:10 a=0qYQvVkOOIcA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=rVFi2vXHS02sp9KjV5gA:9 a=NgsPNFqvbhenuB1Dg8jO5sBi4r8A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: collecting static data related to tracing
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100519072838.GD5704@nowhere>
+References: <1274191742.31554.10.camel@jlt3.sipsolutions.net>
+	 <1274193698.26328.746.camel@gandalf.stny.rr.com>
+	 <1274193909.31554.12.camel@jlt3.sipsolutions.net>
+	 <20100519072838.GD5704@nowhere>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 19 May 2010 10:44:17 -0400
+Message-ID: <1274280257.26328.767.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, 2010-05-19 at 09:28 +0200, Frederic Weisbecker wrote:
+> On Tue, May 18, 2010 at 04:45:09PM +0200, Johannes Berg wrote:
 
-
-On Wed, 19 May 2010, Nick Piggin wrote:
+> This is a place where events injection might be suitable perhaps.
+> Either kernel or user space event injection.
 > 
-> We can possibly do an attempt to invalidate existing pagecache and
-> then try to install the new page.
+> kernel space injection would be a simple trace event declared that
+> have a callback called when it gets enabled. This callback would
+> inject any events it wants.
+> 
+> userspace injection could be a bit different, the user can inject
+> its own format and events content toward a debugfs or whatever file.
+> This would be suitable if userspace have few things to inject,
+> otherwise we would need to think about something else perhaps.
+> 
 
-Yes, but that's going to be rather hairier. We need to make sure that the 
-filesystem doesn't have some kind of dirty pointers to the old page etc. 
-Although I guess that should always show up in the page counters, so I 
-guess we can always handle the case of page_count() being 1 (only page 
-cache) and the page being unlocked.
+The userspace injection actually sounds like a good idea. I don't think
+it needs to tell the kernel about it. Since it is running the trace.
+Perhaps just have a way that the userspace can add its own events to the
+recording file.
 
-So I'd much rather just handle the "append to the end".
+I guess this would be closer to what LTTng does with channels.
 
-The real limitation is likely always going to be the fact that it has to 
-be page-aligned and a full page. For a lot of splice inputs, that simply 
-won't be the case, and you'll end up copying for alignment reasons anyway.
+That is, you could have a separate recording stream to write events that
+tell the tracer what is happening. It would be nice to have a way that
+userspace can read the trace clock timer though.
 
-		Linus
+-- Steve
+
+
