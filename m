@@ -1,13 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754243Ab0ESQsh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:48:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13882 "EHLO mx1.redhat.com"
+	id S1754228Ab0ESQso (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:48:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4958 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754214Ab0ESQs3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:48:29 -0400
+	id S1754268Ab0ESQsl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:48:41 -0400
 From: Masami Hiramatsu <mhiramat@redhat.com>
-Subject: [PATCH -tip v3 4/5] kprobes/x86: Use text_poke_smp_batch
+Subject: [PATCH -tip v3 3/5] x86: Introduce text_poke_smp_batch() for
+	batch-code modifying
 To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
 Cc: systemtap <systemtap@sources.redhat.com>,
        DLE <dle-develop@lists.sourceforge.net>,
@@ -16,8 +17,8 @@ Cc: systemtap <systemtap@sources.redhat.com>,
        Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
        Jason Baron <jbaron@redhat.com>,
        Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Date: Wed, 19 May 2010 12:53:34 -0400
-Message-ID: <20100519165334.31828.1658.stgit@localhost6.localdomain6>
+Date: Wed, 19 May 2010 12:53:26 -0400
+Message-ID: <20100519165326.31828.43183.stgit@localhost6.localdomain6>
 In-Reply-To: <20100519165305.31828.15577.stgit@localhost6.localdomain6>
 References: <20100519165305.31828.15577.stgit@localhost6.localdomain6>
 User-Agent: StGIT/0.14.3
@@ -28,18 +29,10 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use text_poke_smp_batch() in optimization path for reducing
-the number of stop_machine() issues. If the number of optimizing
-probes is more than MAX_OPTIMIZE_PROBES(=256), kprobes optimizes
-first MAX_OPTIMIZE_PROBES probes and kicks optimizer for remaining
-probes.
-
-Changes in v2:
-- Allocate code buffer and parameters in arch_init_kprobes()
-  instead of using static arraies.
-- Merge previous max optimization limit patch into this patch.
-  So, this patch introduces upper limit of optimization at
-  once.
+Introduce text_poke_smp_batch(). This function modifies several
+text areas with one stop_machine() on SMPr. Because calling
+stop_machine() is heavy task, it is better to aggregate text_poke
+requests.
 
 Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
 Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
@@ -49,160 +42,114 @@ Cc: Jason Baron <jbaron@redhat.com>
 Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
 ---
 
- arch/x86/kernel/kprobes.c |   69 ++++++++++++++++++++++++++++++++++++++++-----
- include/linux/kprobes.h   |    2 +
- kernel/kprobes.c          |   11 ++-----
- 3 files changed, 65 insertions(+), 17 deletions(-)
+ arch/x86/include/asm/alternative.h |    7 +++++
+ arch/x86/kernel/alternative.c      |   49 +++++++++++++++++++++++++++++-------
+ 2 files changed, 47 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/kprobes.c b/arch/x86/kernel/kprobes.c
-index 345a4b1..50cf5d4 100644
---- a/arch/x86/kernel/kprobes.c
-+++ b/arch/x86/kernel/kprobes.c
-@@ -1385,10 +1385,16 @@ int __kprobes arch_prepare_optimized_kprobe(struct optimized_kprobe *op)
- 	return 0;
- }
- 
--/* Replace a breakpoint (int3) with a relative jump.  */
--int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
-+#define MAX_OPTIMIZE_PROBES 256
-+static struct text_poke_param *jump_poke_params;
-+static struct jump_poke_buffer {
-+	u8 buf[RELATIVEJUMP_SIZE];
-+} *jump_poke_bufs;
+diff --git a/arch/x86/include/asm/alternative.h b/arch/x86/include/asm/alternative.h
+index 03b6bb5..9a08773 100644
+--- a/arch/x86/include/asm/alternative.h
++++ b/arch/x86/include/asm/alternative.h
+@@ -176,7 +176,14 @@ static inline void apply_paravirt(struct paravirt_patch_site *start,
+  * On the local CPU you need to be protected again NMI or MCE handlers seeing an
+  * inconsistent instruction while you patch.
+  */
++struct text_poke_param {
++	void *addr;
++	const void *opcode;
++	size_t len;
++};
 +
-+static void __kprobes setup_optimize_kprobe(struct text_poke_param *tprm,
-+					    u8 *insn_buf,
-+					    struct optimized_kprobe *op)
+ extern void *text_poke(void *addr, const void *opcode, size_t len);
+ extern void *text_poke_smp(void *addr, const void *opcode, size_t len);
++extern void text_poke_smp_batch(struct text_poke_param *params, int n);
+ 
+ #endif /* _ASM_X86_ALTERNATIVE_H */
+diff --git a/arch/x86/kernel/alternative.c b/arch/x86/kernel/alternative.c
+index 7023773..7256800 100644
+--- a/arch/x86/kernel/alternative.c
++++ b/arch/x86/kernel/alternative.c
+@@ -590,17 +590,21 @@ static atomic_t stop_machine_first;
+ static int wrote_text;
+ 
+ struct text_poke_params {
+-	void *addr;
+-	const void *opcode;
+-	size_t len;
++	struct text_poke_param *params;
++	int nparams;
+ };
+ 
+ static int __kprobes stop_machine_text_poke(void *data)
  {
--	unsigned char jmp_code[RELATIVEJUMP_SIZE];
- 	s32 rel = (s32)((long)op->optinsn.insn -
- 			((long)op->kp.addr + RELATIVEJUMP_SIZE));
+ 	struct text_poke_params *tpp = data;
++	struct text_poke_param *p;
++	int i;
  
-@@ -1396,16 +1402,39 @@ int __kprobes arch_optimize_kprobe(struct optimized_kprobe *op)
- 	memcpy(op->optinsn.copied_insn, op->kp.addr + INT3_SIZE,
- 	       RELATIVE_ADDR_SIZE);
- 
--	jmp_code[0] = RELATIVEJUMP_OPCODE;
--	*(s32 *)(&jmp_code[1]) = rel;
-+	insn_buf[0] = RELATIVEJUMP_OPCODE;
-+	*(s32 *)(&insn_buf[1]) = rel;
-+
-+	tprm->addr = op->kp.addr;
-+	tprm->opcode = insn_buf;
-+	tprm->len = RELATIVEJUMP_SIZE;
-+}
-+
-+/*
-+ * Replace breakpoints (int3) with relative jumps.
-+ * Caller must call with locking kprobe_mutex.
-+ */
-+void __kprobes arch_optimize_kprobes(struct list_head *oplist)
-+{
-+	struct optimized_kprobe *op, *tmp;
-+	int c = 0;
-+
-+	list_for_each_entry_safe(op, tmp, oplist, list) {
-+		WARN_ON(kprobe_disabled(&op->kp));
-+		/* Setup param */
-+		setup_optimize_kprobe(&jump_poke_params[c],
-+				      jump_poke_bufs[c].buf, op);
-+		list_del_init(&op->list);
-+		if (++c >= MAX_OPTIMIZE_PROBES)
-+			break;
-+	}
- 
- 	/*
- 	 * text_poke_smp doesn't support NMI/MCE code modifying.
- 	 * However, since kprobes itself also doesn't support NMI/MCE
- 	 * code probing, it's not a problem.
- 	 */
--	text_poke_smp(op->kp.addr, jmp_code, RELATIVEJUMP_SIZE);
--	return 0;
-+	text_poke_smp_batch(jump_poke_params, c);
- }
- 
- /* Replace a relative jump with a breakpoint (int3).  */
-@@ -1437,11 +1466,35 @@ static int  __kprobes setup_detour_execution(struct kprobe *p,
+ 	if (atomic_dec_and_test(&stop_machine_first)) {
+-		text_poke(tpp->addr, tpp->opcode, tpp->len);
++		for (i = 0; i < tpp->nparams; i++) {
++			p = &tpp->params[i];
++			text_poke(p->addr, p->opcode, p->len);
++		}
+ 		smp_wmb();	/* Make sure other cpus see that this has run */
+ 		wrote_text = 1;
+ 	} else {
+@@ -609,8 +613,12 @@ static int __kprobes stop_machine_text_poke(void *data)
+ 		smp_mb();	/* Load wrote_text before following execution */
  	}
- 	return 0;
- }
-+
-+static int __kprobes init_poke_params(void)
-+{
-+	/* Allocate code buffer and parameter array */
-+	jump_poke_bufs = kmalloc(sizeof(struct jump_poke_buffer) *
-+				 MAX_OPTIMIZE_PROBES, GFP_KERNEL);
-+	if (!jump_poke_bufs)
-+		return -ENOMEM;
-+
-+	jump_poke_params = kmalloc(sizeof(struct text_poke_param) *
-+				   MAX_OPTIMIZE_PROBES, GFP_KERNEL);
-+	if (!jump_poke_params) {
-+		kfree(jump_poke_bufs);
-+		jump_poke_bufs = NULL;
-+		return -ENOMEM;
+ 
+-	flush_icache_range((unsigned long)tpp->addr,
+-			   (unsigned long)tpp->addr + tpp->len);
++	for (i = 0; i < tpp->nparams; i++) {
++		p = &tpp->params[i];
++		flush_icache_range((unsigned long)p->addr,
++				   (unsigned long)p->addr + p->len);
 +	}
 +
-+	return 0;
-+}
-+#else	/* !CONFIG_OPTPROBES */
-+static int __kprobes init_poke_params(void)
-+{
-+	return 0;
-+}
- #endif
- 
- int __init arch_init_kprobes(void)
- {
--	return 0;
-+	return init_poke_params();
+ 	return 0;
  }
  
- int __kprobes arch_trampoline_kprobe(struct kprobe *p)
-diff --git a/include/linux/kprobes.h b/include/linux/kprobes.h
-index e7d1b2e..fe157ba 100644
---- a/include/linux/kprobes.h
-+++ b/include/linux/kprobes.h
-@@ -275,7 +275,7 @@ extern int arch_prepared_optinsn(struct arch_optimized_insn *optinsn);
- extern int arch_check_optimized_kprobe(struct optimized_kprobe *op);
- extern int arch_prepare_optimized_kprobe(struct optimized_kprobe *op);
- extern void arch_remove_optimized_kprobe(struct optimized_kprobe *op);
--extern int  arch_optimize_kprobe(struct optimized_kprobe *op);
-+extern void arch_optimize_kprobes(struct list_head *oplist);
- extern void arch_unoptimize_kprobe(struct optimized_kprobe *op);
- extern kprobe_opcode_t *get_optinsn_slot(void);
- extern void free_optinsn_slot(kprobe_opcode_t *slot, int dirty);
-diff --git a/kernel/kprobes.c b/kernel/kprobes.c
-index f1351f2..6bd2e53 100644
---- a/kernel/kprobes.c
-+++ b/kernel/kprobes.c
-@@ -429,8 +429,6 @@ static DECLARE_DELAYED_WORK(optimizing_work, kprobe_optimizer);
- /* Kprobe jump optimizer */
- static __kprobes void kprobe_optimizer(struct work_struct *work)
+@@ -630,13 +638,36 @@ static int __kprobes stop_machine_text_poke(void *data)
+ void *__kprobes text_poke_smp(void *addr, const void *opcode, size_t len)
  {
--	struct optimized_kprobe *op, *tmp;
--
- 	/* Lock modules while optimizing kprobes */
- 	mutex_lock(&module_mutex);
- 	mutex_lock(&kprobe_mutex);
-@@ -458,14 +456,11 @@ static __kprobes void kprobe_optimizer(struct work_struct *work)
- 	 */
- 	get_online_cpus();
- 	mutex_lock(&text_mutex);
--	list_for_each_entry_safe(op, tmp, &optimizing_list, list) {
--		WARN_ON(kprobe_disabled(&op->kp));
--		if (arch_optimize_kprobe(op) < 0)
--			op->kp.flags &= ~KPROBE_FLAG_OPTIMIZED;
--		list_del_init(&op->list);
--	}
-+	arch_optimize_kprobes(&optimizing_list);
- 	mutex_unlock(&text_mutex);
- 	put_online_cpus();
-+	if (!list_empty(&optimizing_list))
-+		schedule_delayed_work(&optimizing_work, OPTIMIZE_DELAY);
- end:
- 	mutex_unlock(&kprobe_mutex);
- 	mutex_unlock(&module_mutex);
+ 	struct text_poke_params tpp;
++	struct text_poke_param p;
+ 
+-	tpp.addr = addr;
+-	tpp.opcode = opcode;
+-	tpp.len = len;
++	p.addr = addr;
++	p.opcode = opcode;
++	p.len = len;
++	tpp.params = &p;
++	tpp.nparams = 1;
+ 	atomic_set(&stop_machine_first, 1);
+ 	wrote_text = 0;
+ 	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
+ 	return addr;
+ }
+ 
++/**
++ * text_poke_smp_batch - Update instructions on a live kernel on SMP
++ * @params: an array of text_poke parameters
++ * @n: the number of elements in params.
++ *
++ * Modify multi-byte instruction by using stop_machine() on SMP. Since the
++ * stop_machine() is heavy task, it is better to aggregate text_poke requests
++ * and do it once if possible.
++ *
++ * Note: Must be called under get_online_cpus() and text_mutex.
++ */
++void __kprobes text_poke_smp_batch(struct text_poke_param *params, int n)
++{
++	struct text_poke_params tpp = {.params = params, .nparams = n};
++
++	atomic_set(&stop_machine_first, 1);
++	wrote_text = 0;
++	stop_machine(stop_machine_text_poke, (void *)&tpp, NULL);
++}
++
 
 
 -- 
