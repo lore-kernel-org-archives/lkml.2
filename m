@@ -1,177 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755233Ab0ESIrF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:47:05 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43660 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754711Ab0ESIrA (ORCPT
+	id S1753431Ab0ESIwk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:52:40 -0400
+Received: from e23smtp08.au.ibm.com ([202.81.31.141]:34338 "EHLO
+	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751358Ab0ESIwh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:47:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GaN46nIfcxAmWZP/69t3Y+hzV7lZU8zuH/1p5VWNa72ixGyama7ebeH/UiKLP6H8QL
-         2Ws8FMXDYhQfvDo+emnsF24R3RvjaWTua6f7r4k/w+PIy9WZd8kn4Z0WpHjoX4btL1I9
-         jD6mtPKNIVbk09TKtIgbPkTeA17nTVHRtbHgY=
-Date: Wed, 19 May 2010 10:47:05 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Don Zickus <dzickus@redhat.com>
-Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, gorcunov@gmail.com,
+	Wed, 19 May 2010 04:52:37 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Cc: Dave Chinner <david@fromorbit.com>, hch@infradead.org,
+       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+       serue@us.ibm.com, neilb@suse.de, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/3] lockup_detector: convert per_cpu to __get_cpu_var
-	for readability
-Message-ID: <20100519084703.GI5704@nowhere>
-References: <1274133966-18415-1-git-send-email-dzickus@redhat.com> <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+Subject: Re: [PATCH -V8 2/9] vfs: Add name to file handle conversion support
+In-Reply-To: <9972.1274253351@jrobl>
+References: <1274074432-29695-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274074432-29695-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <7252.1274150030@jrobl> <87fx1ppy21.fsf@linux.vnet.ibm.com> <20100518064336.GE2150@dastard> <877hn1pl97.fsf@linux.vnet.ibm.com> <9972.1274253351@jrobl>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Wed, 19 May 2010 14:22:22 +0530
+Message-ID: <87d3wsl1dl.fsf@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 06:06:04PM -0400, Don Zickus wrote:
-> Just a bunch of conversions as suggested by Frederic W.
+On Wed, 19 May 2010 16:15:51 +0900, "J. R. Okajima" <hooanon05@yahoo.co.jp> wrote:
 > 
-> Signed-off-by: Don Zickus <dzickus@redhat.com>
-> ---
-
-
-I'm taking this one,
-
-Thanks.
-
-
-
->  kernel/watchdog.c |   35 +++++++++++++++++------------------
->  1 files changed, 17 insertions(+), 18 deletions(-)
+> "Aneesh Kumar K. V":
+> > Now that we are not doing UUID based vfsmount lookup this make
+> > sense. Will update in the next iteration with UUID to be part of
+> > super_block.
 > 
-> diff --git a/kernel/watchdog.c b/kernel/watchdog.c
-> index e53622c..91b0b26 100644
-> --- a/kernel/watchdog.c
-> +++ b/kernel/watchdog.c
-> @@ -115,7 +115,7 @@ static unsigned long get_sample_period(void)
->  /* Commands for resetting the watchdog */
->  static void __touch_watchdog(void)
->  {
-> -	int this_cpu = raw_smp_processor_id();
-> +	int this_cpu = smp_processor_id();
->  
->  	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
->  }
-> @@ -157,21 +157,21 @@ void touch_softlockup_watchdog_sync(void)
->  
->  #ifdef CONFIG_HARDLOCKUP_DETECTOR
->  /* watchdog detector functions */
-> -static int is_hardlockup(int cpu)
-> +static int is_hardlockup(void)
->  {
-> -	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
-> +	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
->  
-> -	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
-> +	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
->  		return 1;
->  
-> -	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
-> +	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
->  	return 0;
->  }
->  #endif
->  
-> -static int is_softlockup(unsigned long touch_ts, int cpu)
-> +static int is_softlockup(unsigned long touch_ts)
->  {
-> -	unsigned long now = get_timestamp(cpu);
-> +	unsigned long now = get_timestamp(smp_processor_id());
->  
->  	/* Warn about unreasonable delays: */
->  	if (time_after(now, touch_ts + softlockup_thresh))
-> @@ -206,8 +206,6 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  		 struct perf_sample_data *data,
->  		 struct pt_regs *regs)
->  {
-> -	int this_cpu = smp_processor_id();
-> -
->  	if (__get_cpu_var(watchdog_nmi_touch) == true) {
->  		__get_cpu_var(watchdog_nmi_touch) = false;
->  		return;
-> @@ -219,7 +217,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
->  	 * fired multiple times before we overflow'd.  If it hasn't
->  	 * then this is a good indication the cpu is stuck
->  	 */
-> -	if (is_hardlockup(this_cpu)) {
-> +	if (is_hardlockup()) {
-> +		int this_cpu = smp_processor_id();
-> +
->  		/* only print hardlockups once */
->  		if (__get_cpu_var(hard_watchdog_warn) == true)
->  			return;
-> @@ -247,7 +247,6 @@ static inline void watchdog_interrupt_count(void) { return; }
->  /* watchdog kicker functions */
->  static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  {
-> -	int this_cpu = smp_processor_id();
->  	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
->  	struct pt_regs *regs = get_irq_regs();
->  	int duration;
-> @@ -262,12 +261,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
->  
->  	if (touch_ts == 0) {
-> -		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
-> +		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
->  			/*
->  			 * If the time stamp was touched atomically
->  			 * make sure the scheduler tick is up to date.
->  			 */
-> -			per_cpu(softlockup_touch_sync, this_cpu) = false;
-> +			__get_cpu_var(softlockup_touch_sync) = false;
->  			sched_clock_tick();
->  		}
->  		__touch_watchdog();
-> @@ -280,14 +279,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  	 * indicate it is getting cpu time.  If it hasn't then
->  	 * this is a good indication some task is hogging the cpu
->  	 */
-> -	duration = is_softlockup(touch_ts, this_cpu);
-> +	duration = is_softlockup(touch_ts);
->  	if (unlikely(duration)) {
->  		/* only warn once */
->  		if (__get_cpu_var(soft_watchdog_warn) == true)
->  			return HRTIMER_RESTART;
->  
->  		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
-> -			this_cpu, duration,
-> +			smp_processor_id(), duration,
->  			current->comm, task_pid_nr(current));
->  		print_modules();
->  		print_irqtrace_events(current);
-> @@ -309,10 +308,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
->  /*
->   * The watchdog thread - touches the timestamp.
->   */
-> -static int watchdog(void *__bind_cpu)
-> +static int watchdog(void *unused)
->  {
->  	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
-> -	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
-> +	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
->  
->  	sched_setscheduler(current, SCHED_FIFO, &param);
->  
-> @@ -328,7 +327,7 @@ static int watchdog(void *__bind_cpu)
->  	/*
->  	 * Run briefly once per second to reset the softlockup timestamp.
->  	 * If this gets delayed for more than 60 seconds then the
-> -	 * debug-printout triggers in softlockup_tick().
-> +	 * debug-printout triggers in watchdog_timer_fn().
->  	 */
->  	while (!kthread_should_stop()) {
->  		__touch_watchdog();
-> -- 
-> 1.7.0.1
-> 
+> Because this UUID is just for some FS's userspace helpers (in other
+> words, returning UUID is FS specific behaviour), I am afraid it is not a
+> good ideat to put the array into generic super_block.
 
+UUID should be looked at as the file system identifier and IMHO struct
+super_block is the right place to hold it. For ex: ext*  put then in
+ext*_super_block. File system that doesn't support UUID can leave the
+superblock field zero filled.
+
+
+> 
+> About the design or approach, this might have been discussed earlier,
+> but I'd like to suggest to clarify some points here.
+> - While these new systemcalls provide generic features, the
+>   implementation depends upon s_export_op, ie. NFS-exporting.
+>   It means there are two requirements for these systemcalls, enabling
+>   CONFIG_EXPORTFS and FS has to set s_export_op.
+>   Is this acceptable?
+
+
+I think exportfs is the right interface we want to depend on for
+generating a handle. We should not be having another parallel interface for file
+handle generation. But agreed that we should return -EOPNOTSUPP in case
+EXPORTFS is disabled.
+
+
+> 
+> - exportfs_encode_fh() supports the default encoding
+>   export_encode_fh(), but exportfs_decode_fh() doesn't.
+>   The latest patch series modifes exportfs_decode_fh() to return ESTALE,
+>   but I'd suggest to make the caller of export_encode_fh() to check
+>   s_export_op->fh_to_dentry() and return ENOSYS.
+
+I will fix to make the syscall return EOPNOTSUPP in case fh_to_dentry is
+not supported. But i guess we still need to keep the change in
+exportfs_decode_fh to return -ESTALE in case these operations are not definied.
+
+
+
+>   Or implement the default decode routine as a contrast of
+>   export_encode_fh().
+> 
+> - Some FS (or its userspace helper) may want to put UUID into the
+>   handle. If those FS already have UUID in their fs private_data, then
+>   putting a pointer (instead of an array) is better.
+>   Or creating two new operations in s_op to encode/decode handle
+>   may be good too (regardless CONFIG_EXPORTFS). The generic
+>   implementations should be provided, and when these function pointers
+>   in s_op are not set, they should be called as default. These generic
+>   implementaions will be able to be used by expfs.c too. And UUID in
+>   super_block will be unnecessary.
+
+
+IMHO that would be over design. We can depend on exportfs
+interfaces and if not defined return EOPNOTSUPP.
+
+-aneesh
