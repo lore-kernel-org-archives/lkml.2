@@ -1,42 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756218Ab0ESBzW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 21:55:22 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:48954 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753115Ab0ESBzU (ORCPT
+	id S1755556Ab0ESCA7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 22:00:59 -0400
+Received: from mailout4.samsung.com ([203.254.224.34]:42749 "EHLO
+	mailout4.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753051Ab0ESCA5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 21:55:20 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=ABuGsei4Ay10CGT4h6ue6qtGj+5tB6mp8tQGpC2Mk0no13pSLNnQmBwZmeO+6uaW76
-         hwPpDm6+s6Dw/9P9s9f376bD3FH+qRZMR5Ngurbo+EIeoXTDK67a0Ok4YGysgK0iTuIz
-         T9LF2A16HrnlknQgPPWSR09EsIOhqynKli+Mk=
-MIME-Version: 1.0
-In-Reply-To: <201005051757.o45HvPmY005954@amcc.com>
-References: <201005051757.o45HvPmY005954@amcc.com>
-Date: Wed, 19 May 2010 10:49:59 +0900
-Message-ID: <AANLkTiljlMJKimdT-ptwXrMMBhSxFuPdVdyUuKJ8BZve@mail.gmail.com>
-Subject: Re: [PATCH]460EX on-chip SATA driver <Kernel 2.6.33> < resubmission >
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Rupjyoti Sarmah <rsarmah@amcc.com>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org, jgarzik@pobox.com,
-       sr@denx.de, linuxppc-dev@ozlabs.org
-Content-Type: text/plain; charset=UTF-8
+	Tue, 18 May 2010 22:00:57 -0400
+Date: Wed, 19 May 2010 11:00:54 +0900
+From: InKi Dae <inki.dae@samsung.com>
+Subject: Re: [PATCH] s3c-fb:  enable fimd driver for s5pv210.
+In-reply-to: <20100519014959.GD4720@trinity.fluff.org>
+To: Ben Dooks <ben-linux@fluff.org>
+Cc: akpm@linux-foundation.org, linux-fbdev-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, kyungmin.park@samsung.com
+Message-id: <4BF34656.5040100@samsung.com>
+MIME-version: 1.0
+Content-type: text/plain; charset=UTF-8; format=flowed
+Content-transfer-encoding: 8BIT
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; ko; rv:1.9.1.9)
+ Gecko/20100317 Thunderbird/3.0.4
+References: <4BF29B5C.2050202@samsung.com>
+ <20100519014959.GD4720@trinity.fluff.org>
+X-OriginalArrivalTime: 19 May 2010 02:00:55.0485 (UTC)
+ FILETIME=[1E0AA6D0:01CAF6F7]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 6, 2010 at 2:57 AM, Rupjyoti Sarmah <rsarmah@amcc.com> wrote:
-> This patch enables the on-chip DWC SATA controller of the AppliedMicro processor 460EX.
+2010-05-19 오전 10:50, Ben Dooks 쓴 글:
+> On Tue, May 18, 2010 at 10:51:24PM +0900, InKi Dae wrote:
+>    
+>> I'm sorry for being late.
+>>
+>> this patch is for s5pv210.
+>> to support s5pv210, CH_ENABLE bit of SHADOW register should be enabled to enable window layer on s5pv210.
+>>      
+> I'd like to hold this until the chnages for multi-hardware
+> support and header file cleanup are done.
+>
+>    
+Ok,
 
-The controller seems to be a thrid party IP (from Synopsys) in your
-SoC and there are many chances the IP will appear in some other
-SOCs too. This implementation doesn't seem to take care of that
-scenario.
-So, please either call the driver something like sata_460ex.c
-or, better still, segregate the driver in two parts - SoC specific stuff
-and DWC IP core driver that can be reused by other SoCs having the
-same IP in future.
+and please review two other patches also.
+
+thank you.
