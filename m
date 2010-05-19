@@ -1,92 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752352Ab0ESXGM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 19:06:12 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36050 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751634Ab0ESXGI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 19:06:08 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=t+ixhgpINzvTTBASy/wvBcyM0gt8X49dkoMsgt2ANyqXTjMlFQkkJ5RPhFLJre+b9U
-         qjdbp/LgdwqePhE/hcb3cOxXh+G0Np4uMJyTQuYUFe4fFHhW6P6Z5DvDql5dOKdpVYbS
-         44MEBq/oWAMDAGQ0cuAjCA6zYTTWoLB3VWuq4=
+	id S1752645Ab0ESXLO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 19:11:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14170 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751881Ab0ESXLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 19:11:12 -0400
+Message-ID: <4BF46FFE.1080903@redhat.com>
+Date: Wed, 19 May 2010 20:10:54 -0300
+From: Mauro Carvalho Chehab <mchehab@redhat.com>
+User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
 MIME-Version: 1.0
-In-Reply-To: <4BF4235D.3080904@zytor.com>
-References: <AANLkTimwxXtNnmBuDJxg3i72VwWuHmemjrr1iGqj4j8e@mail.gmail.com>
-	 <4BF42296.1030905@oracle.com> <4BF4235D.3080904@zytor.com>
-Date: Wed, 19 May 2010 15:58:33 -0700
-Message-ID: <AANLkTikYcu6fM3yLoYIZOGZXgsRUfCgJeWS51Sjo-Fny@mail.gmail.com>
-Subject: Re: [PATCH] Prevent reserving RAM in the region already reserved by 
-	BIOS
-From: Mathieu Rondonneau <mathieu.rondonneau@gmail.com>
 To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Yinghai <yinghai.lu@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+CC: Eric Dumazet <eric.dumazet@gmail.com>, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
+       tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
+Subject: Re: Does anyone care about gcc 3.x support for x86 anymore?
+References: <1273135546-29690-2-git-send-email-avi@redhat.com>	 <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>	 <1274213443.2485.3.camel@edumazet-laptop>  <4BF2FF26.9050701@zytor.com> <1274217067.2485.9.camel@edumazet-laptop> <4BF308E9.4040809@zytor.com>
+In-Reply-To: <4BF308E9.4040809@zytor.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks for the feedback.
+H. Peter Anvin wrote:
+> Recently, we have seen an increasing number of problems with gcc 3.4 on
+> x86; mostly due to poor constant propagation producing not just bad code
+> but failing to properly eliminate what should be dead code.
 
-No, I don' t see any changes in the /proc/iomem.
+I don't see any problem, as, if people are using gcc3, they are probably
+not interested on the bleeding edge kernel. 
 
-I am trying to prevent a ioremap of a 4K size on a non aligned 4K
-address that is below the ISA_START_ADDRESS.
+However, if the problems are just performance/dead code removal, I would 
+just add a big warning if someone tries to compile x86 with it. I don't 
+like very much the idea of having different minimum gcc requirements 
+for each architecture, except if gcc is producing a broken code. 
 
-The problem generates a oops about overlapping.
-I have a fix which instruct to not to do any re-map if the section
-name is "reserved".
-Which is not really clean.
-I am looking for a clean way to tell the ioremap function to not remap
-bios reserved memory.
-That' s why I thought the e820 would be a good start.
+Currently,Documentation/Changes list just a common minimal list for
+everything - although the text describing gcc say that the "version 
+requirements" may vary for each CPU type.
 
-I will continue looking into this. It does not crash the systems. A
-warning generates the oops.
+-- 
 
--Mathieu
-
-
-On Wed, May 19, 2010 at 10:43 AM, H. Peter Anvin <hpa@zytor.com> wrote:
-> On 05/19/2010 10:40 AM, Yinghai wrote:
->> On 05/18/2010 10:35 PM, Mathieu Rondonneau wrote:
->>> Does it make sense to prevent looking for stolen RAM below the ISA section.
->>>
->>>
->>> Signed-off-by: Mathieu Rondonneau <mathieu.rondonneau@gmail.com>
->>> ---
->>>  arch/x86/kernel/e820.c |    2 ++
->>>  1 files changed, 2 insertions(+), 0 deletions(-)
->>>
->>> diff --git a/arch/x86/kernel/e820.c b/arch/x86/kernel/e820.c
->>> index 7bca3c6..322c9c3 100644
->>> --- a/arch/x86/kernel/e820.c
->>> +++ b/arch/x86/kernel/e820.c
->>> @@ -1156,6 +1156,8 @@ void __init e820_reserve_resources_late(void)
->>>                         end = MAX_RESOURCE_SIZE;
->>>                 if (start >= end)
->>>                         continue;
->>> +               if (end < ISA_START_ADDRESS)
->>> +                       continue;
->>>                 printk(KERN_DEBUG "reserve RAM buffer: %016llx - %016llx ",
->>>                                start, end);
->>>                 reserve_region_with_split(&iomem_resource, start, end,
->>
->> do you notice any changes in /proc/iomem?
->>
->
-> It should be harmless to reserve memory which is already reserved, so
-> this patch is at best a no-op.  Furthermore, it introduces another
-> instance of special address space (ISA_START_ADDRESS in this case) which
-> is never a good thing.
->
->        -hpa
->
->
+Cheers,
+Mauro
