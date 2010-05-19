@@ -1,51 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753545Ab0ESPqe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:46:34 -0400
-Received: from hera.kernel.org ([140.211.167.34]:35873 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753457Ab0ESPqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:46:32 -0400
-Message-ID: <4BF407C9.2020202@kernel.org>
-Date: Wed, 19 May 2010 17:46:17 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1753502Ab0ESPqY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:46:24 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:53292 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751565Ab0ESPqU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:46:20 -0400
+Date: Wed, 19 May 2010 17:46:18 +0200
+From: Cyril Hrubis <metan@ucw.cz>
+To: pave@ucw.cz, rpurdie@rpsys.net, lenz@cs.wisc.edu,
+       kernel list <linux-kernel@vger.kernel.org>, arminlitzel@web.de,
+       thommycheck@gmail.com,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       dbaryshkov@gmail.com, omegamoon@gmail.com, eric.y.miao@gmail.com,
+       utx@penguin.cz, zaurus-devel@www.linuxtogo.org
+Subject: usb gadget on zaurus and kexec
+Message-ID: <20100519154618.GA26381@atrey.karlin.mff.cuni.cz>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>	<1269885165-18617-11-git-send-email-tj@kernel.org>	<20100519190230.52385a65.sfr@canb.auug.org.au>	<20100519144505.GD2412@tuxdriver.com> <20100520012829.709931dc.sfr@canb.auug.org.au>
-In-Reply-To: <20100520012829.709931dc.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 15:46:20 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, John, Stephen.
-
-On 05/19/2010 05:28 PM, Stephen Rothwell wrote:
->> Looks like this was part of a series...who merged the rest of it?
->> I guess I presumed they would take care of the series.
-
-Most of the series have been applied circa 2.6.34-rc4.  Stephen has
-been carrying patches for branches which weren't yet in mainline.
-IOW, these patches are necessary for a branch to be merged into
-mainline.
-
-> It was a series of patches that were only relevant to the trees in
-> linux-next (for a change that happened in Linus' tree).  My hope (and I
-> assume Tejun's) was that each maintainer would take the patch relevant to
-> their tree (some did - I just checked I still have 10 of them being
-> applied to linux-next :-().
-
-Yeap, I hoped that more of them would sort themselves out during devel
-cycle, but I guess rc1 window isn't too bad.
-
-Thank you.
+Hi!
+After some testing I found out that no usb gadget (g_ether, g_mass_storage, ...)
+is working after zaurus boots with kexec. So it seems like some missing
+initalization (it's working after doing reboot again) anybody has any clue,
+patch or ideas how to debug this?
 
 -- 
-tejun
+Cyril Hrubis
+
