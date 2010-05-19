@@ -1,47 +1,124 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752645Ab0ESXLO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 19:11:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:14170 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751881Ab0ESXLM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 19:11:12 -0400
-Message-ID: <4BF46FFE.1080903@redhat.com>
-Date: Wed, 19 May 2010 20:10:54 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Eric Dumazet <eric.dumazet@gmail.com>, mingo@redhat.com,
-       linux-kernel@vger.kernel.org, suresh.b.siddha@intel.com,
-       tglx@linutronix.de, avi@redhat.com, linux-tip-commits@vger.kernel.org
-Subject: Re: Does anyone care about gcc 3.x support for x86 anymore?
-References: <1273135546-29690-2-git-send-email-avi@redhat.com>	 <tip-a3c8acd04376d604370dcb6cd2143c9c14078a50@git.kernel.org>	 <1274213443.2485.3.camel@edumazet-laptop>  <4BF2FF26.9050701@zytor.com> <1274217067.2485.9.camel@edumazet-laptop> <4BF308E9.4040809@zytor.com>
-In-Reply-To: <4BF308E9.4040809@zytor.com>
-Content-Type: text/plain; charset=UTF-8
+	id S1752714Ab0ESXQM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 19:16:12 -0400
+Received: from smtp127.sbc.mail.sp1.yahoo.com ([69.147.65.186]:20791 "HELO
+	smtp127.sbc.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1751390Ab0ESXQK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 19:16:10 -0400
+X-Yahoo-SMTP: fzDSGlOswBCWnIOrNw7KwwK1j9PqyNbe5PtLKiS4dDU.UNl_t6bdEZu9tTLW
+X-YMail-OSG: J7r.MgAVM1lTZ4MUFuYrayU1P09CvwsceTZ7zdhebYgvF9zzekFC56qvqGmyxjcgENNSvO.SEFh50yG0u06yHxFBDZbjjiPi226vGkfm6CfvXsKsp2sCeLN.WLOXPGuggh7hEMJ4ZDaA0KUQkhu.n0xfRPOMIUoTgnfaknZqR1X9MSX3QfTNr0n9SCSS9ziz797OePE41kIizfdz_r_D2ExoJZDI1ET4cl.pV.KIemksUNnIJqVJTgaTHObo76cap6XTI5lem6UFLD20_1hvUGh0Wm6hCORWnSRhfZRfxmXeuW7dgcS2QGs-
+X-Yahoo-Newman-Property: ymail-3
+Subject: [ANNOUNCE] - TCM/LIO v3.4.0
+From: "Nicholas A. Bellinger" <nab@linux-iscsi.org>
+To: LKML <linux-kernel@vger.kernel.org>,
+       linux-scsi <linux-scsi@vger.kernel.org>
+Cc: openfcoe-devel <devel@open-fcoe.org>
+Content-Type: text/plain
+Date: Wed, 19 May 2010 16:16:01 -0700
+Message-Id: <1274310961.25793.29.camel@haakon2.linux-iscsi.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.22.3.1 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-H. Peter Anvin wrote:
-> Recently, we have seen an increasing number of problems with gcc 3.4 on
-> x86; mostly due to poor constant propagation producing not just bad code
-> but failing to properly eliminate what should be dead code.
+Greetings all,
 
-I don't see any problem, as, if people are using gcc3, they are probably
-not interested on the bleeding edge kernel. 
+I am happy to announce that the v3.4.0 stable release of TCM/LIO has
+been tagged and branched into lio-core-2.6.git/lio-3.4.  This release is
+now tracking upstream linux-2.6.34.y.git for future stable kernel
+releases.
 
-However, if the problems are just performance/dead code removal, I would 
-just add a big warning if someone tries to compile x86 with it. I don't 
-like very much the idea of having different minimum gcc requirements 
-for each architecture, except if gcc is producing a broken code. 
+There where a number changes during the 3.4 development cycle to
+TCM-Core to handle multi-fabric persistent reservations with SPEC_I_PT=1
+and REGISTER_AND_MOVE ops correctly, as well as proper ALL_TG_PT=1
+support and processing of SPC-3 TransportIDs containing a iSCSI
+InitiatorName+ISID tuple.
 
-Currently,Documentation/Changes list just a common minimal list for
-everything - although the text describing gcc say that the "version 
-requirements" may vary for each CPU type.
+This also included a handful of bugfixes and improvements including
+minor changes to follow new TCM struct target_core_fabric_ops usage for
+the LIO-Target (iSCSI), TCM_FC (OpenFCoE+libfc) and TCM_Loop (Virtual
+SAS + SG_IO)
 
--- 
+Thanks to everyone who contributed their patches, bug reports, testing
+and time.  Below is the complete changelog.
 
-Cheers,
-Mauro
+Best,
+
+--nab
+
+Joe Eykholt (7):
+  tcm: add tcm_fc
+  tcm_fc: handle residual count
+  tcm_fc: add task management support
+  tcm_fc: allocate se_cmd in thread, not in softirq.
+  tcm_fc: fix session lookup and get lport events
+  tcm_fc: clean up tport/tpg pointers
+  tcm_fc: distinguish task management debug from other debug messages
+
+Nicholas Bellinger (42):
+  [TCM/ConfigFS]: Fix leak of se_hba_t in
+    target_core_call_addhbatotarget()
+  [TCM]: Force SPC-3 passthrough emulation logic for
+    HBA_FLAGS_INTERNAL_USE case
+  [TCM]: Add HBA and Device setup for RAMDISK_DR virtual LUN=0
+  [TCM]: Add TPG setup for RAMDISK_DR virtual LUN=0
+  [TCM]: Modify __transport_get_lun_for_cmd() to support virtual LUN=0
+  [TCM_Loop]: Add ALUA target port configfs attributes
+  [tcm_fc]: Add ALUA target port configfs attributes
+  [tcm_fc]: Add missing core_tpg_deregister() in ft_del_tpg()
+  [tcm_fc]: Convert ft_get_pr_transport_id() to use local initiator
+    WWPN
+  [tcm_fc]: Convert TCM_FC/ConfigFS NodeACL and MappedLUN logic to use
+    TCM v3.x struct config_groups
+  [TCM/PR]: Add proper comment for implict RELEASE with All Registrants
+  [TCM]: Declare core_tpg_get_initiator_node_acl() as extern
+  [TCM]: Add base logic for struct se_portal_group_t->tpg_pr_ref_count
+  [TCM]: Add base logic for struct se_node_acl_s->acl_pr_ref_count
+  [TCM]: Add base logic for struct se_dev_entry_s->pr_ref_count
+  [TCM/PR]: Add TPG, NodeACL and MappedLUN wrappers for
+    configfs_[un]depend_item()
+  [TCM/PR]: Convert REGISTER_AND_MOVE use new configfs dependency
+    wrappers
+  [TCM/PR]: Add support for intra-fabric SPEC_I_PT=1 TransportID
+    processing
+  Bump version to v3.4.0-rc1
+  [TCM/PR]: Fix SPEC_I_PT=1 exception path for illegal TransportID
+    payload length
+  [TCM/PR]: Add proper ALL_TG_PT=1 allocation support
+  [TCM/PR]: Add proper dest_node_acl failure case for SPEC_I_PT=1
+  [TCM/PR]: Add proper ALL_TG_PT=1 UNREGISTER support
+  [TCM/PR]: Add missing APTPL=1 metadata update for changing
+    reservation key
+  [TCM]: Convert utsrelease.h includes to include/generated/
+  [TCM]: Add proper support for multiple se_session_t per se_node_acl_t
+  [TCM]: Add t10_pr_registration_t *parameter to
+    tpg_get_pr_transport_id*()
+  [LIO-Target]: Convert lio_sess_get_initiator_wwn() and
+    lio_tpg_get_pr_transport_id*()
+  [TCM-FC]: Clear ft_fabric_ops->sess_get_initiator_sid() and update
+    ft_get_pr_transport_id*()
+  [TCM-Loop]: Clear fabric->tf_ops->sess_get_initiator_sid() and update
+    tcm_loop_get_pr_transport_id*()
+  [TCM/PR]: Add proper support for ISIDs in TransportID processing
+  [TCM/PR]: Replace usage of DEF_PR_REGISTERED with
+    *core_scsi3_locate_pr_reg()
+  [TCM/PR]: Update APTPL metadata logic for ISIDs in TransportID
+    processing
+  [TCM/ConfigFS]: Add per-device attribute 'enforce_pr_isids'
+  [TCM/ALUA]: Fix se_cmd_t->se_cmd_flags assignment bug in
+    core_alua_state_nonoptimized()
+  lio-core v3.4.0-rc2
+  [LIO-Target]: Fix compile breakage with LIO_TARGET_DEBUG
+  [LIO-Target]: Add iscsi_na_get_initiatorname() for TRACE_NODEATTRIB
+  [TCM]: Fix core_dev_setup_virtual_lun0() failure path in
+    target_core_init_configfs()
+  [TCM]: Fix EVPD SCSI Name length calculation bug
+  [TCM_Loop]: Fix debug option typo in Kbuild
+  [TCM_Loop]: Add proper HBA defaults to struct Scsi_Host
+
+
+
