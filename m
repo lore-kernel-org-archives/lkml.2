@@ -1,95 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751740Ab0ESNSV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:18:21 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49977 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751077Ab0ESNSU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:18:20 -0400
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
- cache lines
-From: David Woodhouse <dwmw2@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Marc Gauthier <marc@tensilica.com>, Mike Frysinger <vapier.adi@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Johannes Weiner <jw@emlix.com>, Christoph Lameter <cl@linux.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
+	id S1751832Ab0ESNWh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:22:37 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:25670 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750943Ab0ESNWf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:22:35 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <20100517232052.GB30847@google.com>
+References: <20100517232052.GB30847@google.com> <1274135154-24082-1-git-send-email-walken@google.com> <1274135154-24082-8-git-send-email-walken@google.com> <alpine.LFD.2.00.1005171532430.4195@i5.linux-foundation.org> <20100517231331.GA30847@google.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>,
-       David Rientjes <rientjes@google.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       Chris Zankel <chris@zankel.net>,
-       Piet Delaney <Piet.Delaney@tensilica.com>
-In-Reply-To: <20100519130710.GX2516@laptop>
-References: <alpine.DEB.2.00.1005111520260.1500@router.home>
-	 <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
-	 <alpine.DEB.2.00.1005111544330.8388@router.home>
-	 <AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com>
-	 <20100511214836.GH1726@emlix.com>
-	 <20100511215359.GF7396@core.coreip.homeip.net>
-	 <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
-	 <522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
-	 <20100512030350.GJ15903@laptop>
-	 <1274273325.6930.10022.camel@macbook.infradead.org>
-	 <20100519130710.GX2516@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 14:17:47 +0100
-Message-ID: <1274275067.6930.10073.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: Re: [PATCH 07/10] generic rwsem: implement down_read_critical() / up_read_critical()
+Date: Wed, 19 May 2010 14:21:23 +0100
+Message-ID: <32068.1274275283@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 23:07 +1000, Nick Piggin wrote:
-> On Wed, May 19, 2010 at 01:48:45PM +0100, David Woodhouse wrote:
-> > However, we _do_ allow drivers to assume that kmalloc is DMA-safe. That
-> > happens to mean "cacheline-aligned" for cache-incoherent architectures,
-> > but drivers should never really have to think about that.
-> 
-> DMA-safe for GFP_DMA, or all kmalloc?
+Michel Lespinasse <walken@google.com> wrote:
 
-Try not to think about that. Seriously, look over there! A kitten!
+> +void __sched down_read_critical(struct rw_semaphore *sem)
+> +{
+> +	might_sleep();
+> +	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
+> +
+> +	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
+> +
+> +	preempt_disable();
 
-(You have to use the DMA API anyway, so swiotlb will handle things if
-you're trying to use pages which are above the range that certain
-devices can reach. But we're only talking about the problems of sharing
-cache lines here; don't worry about that bit.)
+Shouldn't preemption really be disabled before __down_read_unfair() is called?
+Otherwise you can get an unfair read on a sem and immediately get taken off
+the CPU.  Of course, this means __down_read_unfair() would have to deal with
+that in the slow path:-/
 
-> > > So whenever strengthening API guarantees like this, it is better to be
-> > > very careful and conservative. Probably even introducing a new API with
-> > > the stronger semantics (even if it is just a wrapper in the case where
-> > > KMALLOC_MINALIGNED *is* cacheline sized).
-> > 
-> > We're not talking about strengthening API guarantees. It's _always_ been
-> > this way; it's just that some architectures are buggy.
-> 
-> It just appeared, in the post I replied to, that there was a suggestion
-> of making it explicitly cacheline aligned. If I misread that, ignore
-> me.
+Oh, and something else that occurs to me:  Do unfair readers have to go at the
+front of the wakeup queue?  Can they be slightly less unfair and go either
+before the first reader in the queue or at the back of the queue instead?
 
-Actually I think you read it just fine -- but it was misguided. They
-meant to say "cacheline aligned on architectures with cache-incoherent
-DMA which need that". But that's what ARCH_KMALLOC_MINALIGN is _already_
-supposed to do. If any architecture needs to set ARCH_KMALLOC_MINALIGN
-but doesn't, that's broken.
-
-The 'cacheline aligned' misconception did manage to get into the ad7877
-driver in commit 3843384a though -- it now uses ____cacheline_aligned
-instead of __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN))) as it
-should.
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
-
+David
