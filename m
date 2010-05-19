@@ -1,56 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757933Ab0ESLlD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:41:03 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45446 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753364Ab0ESLk5 (ORCPT
+	id S1756097Ab0ESLqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:46:07 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:38635 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754021Ab0ESLqE convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:40:57 -0400
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Woodhouse <dwmw2@infradead.org>
-To: Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-In-Reply-To: <AANLkTimyUoAsculVFkEPwlRQEI3eLAwX5x7M0Yr9AdOs@mail.gmail.com>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-	 <1274224834.6930.8361.camel@macbook.infradead.org>
-	 <20100519010524.GB18813@gondor.apana.org.au>
-	 <1274253269.6930.9325.camel@macbook.infradead.org>
-	 <AANLkTimyUoAsculVFkEPwlRQEI3eLAwX5x7M0Yr9AdOs@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 12:40:36 +0100
-Message-ID: <1274269236.6930.9930.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 19 May 2010 07:46:04 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=AZNR829GLVqtAoz31TLXWxRHm5jFwGZX6XX3tTnzuEwlhQ56e1nKeYwtIOSWn8AXwu
+         kGe4oMZQqBhHW7oxVeK/X3tOaWkNlwe/Zr8Ddau+lwmS4BdNu64vv9VZbx8vPthdqpqd
+         KsmeqzzLXIH+fpPygO5uhhJBBlyxW6GmsCoYQ=
+MIME-Version: 1.0
+In-Reply-To: <20100517224531.GA27400@elte.hu>
+References: <20100517224531.GA27400@elte.hu>
+Date: Wed, 19 May 2010 13:46:01 +0200
+X-Google-Sender-Auth: SssMtGwSPhRcGX5-JcS5WzexG9I
+Message-ID: <AANLkTinWbueCQZdQgZFDLQPJYieB13orxDGYJzzRpPni@mail.gmail.com>
+Subject: Re: [GIT PULL] x86/atomic changes for v2.6.35
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Ingo Molnar <mingo@elte.hu>, Luca Barbieri <luca@luca-barbieri.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-arch@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 13:32 +0200, Geert Uytterhoeven wrote:
-> Instead of having (different) defaults in sl[aou]b, perhaps we should
-> just remove the defaults completely, to ensure all architectures set
-> ARCH_SLAB_MINALIGN to the correct value? 
+On Tue, May 18, 2010 at 00:45, Ingo Molnar <mingo@elte.hu> wrote:
+> Please pull the latest x86-atomic-for-linus git tree from:
+>
+>   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git x86-atomic-for-linus
+>
+>
+> out-of-topic modifications in x86-atomic-for-linus:
+> ---------------------------------------------------
+> lib/Makefile                       # 86a8938: lib: Add self-test for atomic64_t
+> lib/atomic64.c                     # 9757789: lib: Fix atomic64_add_unless retu
+> lib/atomic64_test.c                # a5c9161: x86, atomic64: In selftest, disti
+>                                   # 25a304f: lib: Fix atomic64_inc_not_zero te
+>                                   # 9efbcd5: lib: Fix atomic64_add_unless test
+>                                   # d7f6de1: x86: Implement atomic[64]_dec_if_
+>                                   # 8f4f202: lib: Only test atomic64_dec_if_po
+>                                   # 86a8938: lib: Add self-test for atomic64_t
 
-What is 'correct'? The architecture sets it to the minimum value that it
-can cope with, according to its own alignment constraints (and DMA/cache
-constraints, in the case of ARCH_KMALLOC_MINALIGN).
+Is having atomic64_t mandatory now?
 
-Some architectures don't _have_ any minimum required alignment, so they
-have no need to set it. If the architecture _does_ specify a minimum,
-the allocators must honour it. Otherwise, they're free to do their own
-thing. And slob chooses to use a smaller alignment than slab and slub
-do, in accordance with its design and its raison d'être.
+According to the allmodconfig build logs
+(http://kisskb.ellerman.id.au/kisskb/matrix/),
+several architectures (at least m68k and mips) don't have it.
+Furthermore, the test fails to compile on a few architectures that do have it
+(parisc, s390, sh, ...).
 
--- 
-dwmw2
+<boilerplate>
+It's a pity this wasn't raised/resolved between its detection in linux-next and
+before it entered mainline...
+</boilerplate>
 
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
