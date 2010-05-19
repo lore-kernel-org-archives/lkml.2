@@ -1,289 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753544Ab0ESRBx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:01:53 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50041 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753351Ab0ESRBv (ORCPT
+	id S1753657Ab0ESRB6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:01:58 -0400
+Received: from casper.infradead.org ([85.118.1.10]:42204 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753220Ab0ESRB4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:01:51 -0400
+	Wed, 19 May 2010 13:01:56 -0400
 From: Arnaldo Carvalho de Melo <acme@infradead.org>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+Cc: linux-kernel@vger.kernel.org,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
        =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
        Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
        Peter Zijlstra <a.p.zijlstra@chello.nl>,
        Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 2/2] perf session: Make read_build_id routines look at the host_machine too
-Date: Wed, 19 May 2010 14:01:33 -0300
-Message-Id: <1274288493-15523-3-git-send-email-acme@infradead.org>
+Subject: [GIT PULL 0/2] perf session fix host_machine handling wrt build ids
+Date: Wed, 19 May 2010 14:01:31 -0300
+Message-Id: <1274288493-15523-1-git-send-email-acme@infradead.org>
 X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1274288493-15523-1-git-send-email-acme@infradead.org>
-References: <1274288493-15523-1-git-send-email-acme@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
 	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+Hi Ingo,
 
-The changes made to support host and guest machines in a session, that
-started when the 'perf kvm' tool was introduced ended up introducing a
-bug where the host_machine was not having its DSOs traversed for
-build-id processing.
+        Please pull from:
 
-Fix it by moving some methods to the right classes and considering the
-host_machine when processing build-ids.
+git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
 
-Reported-by: Tom Zanussi <tzanussi@gmail.com>
-Reported-by: Stephane Eranian <eranian@google.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
----
+Stephane and Tom,
+
+	Now the build id code should be back working:
+
+[root@doppio linux-2.6-tip]# rm -rf /root/.debug/
+[root@doppio linux-2.6-tip]# perf record find / > /dev/null
+^C[ perf record: Woken up 3 times to write data ]
+[ perf record: Captured and wrote 0.667 MB perf.data (~29163 samples) ]
+[root@doppio linux-2.6-tip]# perf buildid-list
+349199a1e1b7cc25ac4f7004deed260f0146665e [kernel.kallsyms]
+1f095dcd586045d7aa158b4774b8b053e7f580a4 /lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko
+78913cef49182f29a0237d9867ff12811df00663 /lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko
+5b2b076ef0b0be593d76c96fbd4393455380e589 /lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko
+b6c457f3d69870e6f68f2c61978f8e3beb25221c /lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko
+2249bf363819205e320e242af2e757906be5010e /lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko
+a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f /bin/find
+eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 /lib64/libc-2.10.2.so
+5c68f7afeb33309c78037e374b0deee84dd441f6 /lib64/libpthread-2.10.2.so
+[root@doppio linux-2.6-tip]# ls -la /root/.debug/
+total 28
+drwxr-xr-x   7 root root 4096 Mai 19 13:56 .
+drwxr-x---. 31 root root 4096 Mai 19 13:56 ..
+drwxr-xr-x   3 root root 4096 Mai 19 13:56 bin
+drwxr-xr-x  76 root root 4096 Mai 19 13:56 .build-id
+drwxr-xr-x   2 root root 4096 Mai 19 13:56 [kernel.kallsyms]
+drwxr-xr-x   3 root root 4096 Mai 19 13:56 lib
+drwxr-xr-x   4 root root 4096 Mai 19 13:56 lib64
+[root@doppio linux-2.6-tip]# ls -la /root/.debug/.build-id/
+03/ 0c/ 13/ 1e/ 20/ 28/ 2b/ 2d/ 34/ 3b/ 3f/ 47/ 56/ 5b/ 5e/ 6e/ 72/ 7e/
+85/ 87/ 94/ 98/ a0/ a5/ a8/ ac/ bc/ c8/ cc/ d9/ dd/ e2/ e8/ eb/ ef/ f2/
+fd/ 0b/ 0e/ 19/ 1f/ 22/ 29/ 2c/ 2e/ 39/ 3e/ 42/ 55/ 57/ 5c/ 62/ 6f/ 78/
+80/ 86/ 91/ 97/ 99/ a1/ a7/ a9/ b6/ c6/ ca/ d8/ dc/ df/ e3/ e9/ ed/ f1/
+fa/ fe/ 
+[root@doppio linux-2.6-tip]# ls -la /root/.debug/lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 
+-rwxr-xr-x 2 root root 1825560 Nov 20 09:29 /root/.debug/lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+[root@doppio linux-2.6-tip]# ls -la /root/.debug/.build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 
+lrwxrwxrwx 1 root root 67 Mai 19 13:56 /root/.debug/.build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 -> ../../lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+[root@doppio linux-2.6-tip]#
+[root@doppio linux-2.6-tip]# perf archive
+Now please run:
+
+$ tar xvf perf.data.tar.bz2 -C ~/.debug
+
+wherever you need to run 'perf report' on.
+[root@doppio linux-2.6-tip]# 
+
+ot@doppio linux-2.6-tip]# tar tvf perf.data.tar.bz2
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/34/9199a1e1b7cc25ac4f7004deed260f0146665e -> ../../[kernel.kallsyms]/349199a1e1b7cc25ac4f7004deed260f0146665e
+-rw-r--r-- root/root   2842888 2010-05-19 13:56 [kernel.kallsyms]/349199a1e1b7cc25ac4f7004deed260f0146665e
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/1f/095dcd586045d7aa158b4774b8b053e7f580a4 -> ../../lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko/1f095dcd586045d7aa158b4774b8b053e7f580a4
+-rw-r--r-- root/root   1670552 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/net/ipv4/netfilter/nf_nat.ko/1f095dcd586045d7aa158b4774b8b053e7f580a4
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/78/913cef49182f29a0237d9867ff12811df00663 -> ../../lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko/78913cef49182f29a0237d9867ff12811df00663
+-rw-r--r-- root/root    326827 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/md/dm-crypt.ko/78913cef49182f29a0237d9867ff12811df00663
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/5b/2b076ef0b0be593d76c96fbd4393455380e589 -> ../../lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko/5b2b076ef0b0be593d76c96fbd4393455380e589
+-rw-r--r-- root/root    325915 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/ata/sata_sil.ko/5b2b076ef0b0be593d76c96fbd4393455380e589
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/b6/c457f3d69870e6f68f2c61978f8e3beb25221c -> ../../lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko/b6c457f3d69870e6f68f2c61978f8e3beb25221c
+-rw-r--r-- root/root   2587163 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/net/e1000e/e1000e.ko/b6c457f3d69870e6f68f2c61978f8e3beb25221c
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/22/49bf363819205e320e242af2e757906be5010e -> ../../lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko/2249bf363819205e320e242af2e757906be5010e
+-rw-r--r-- root/root   8296246 2010-04-30 11:43 lib/modules/2.6.34-rc6/kernel/drivers/gpu/drm/i915/i915.ko/2249bf363819205e320e242af2e757906be5010e
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/a8/e4f743b40fb1fd8b85e2f9b88d93b661472b8f -> ../../bin/find/a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f
+-rwxr-xr-x root/root    233032 2009-02-24 14:13 bin/find/a8e4f743b40fb1fd8b85e2f9b88d93b661472b8f
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/eb/4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1 -> ../../lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+-rwxr-xr-x root/root   1825560 2009-11-20 09:29 lib64/libc-2.10.2.so/eb4ec8fa8b2a5eb18cad173c92f27ed8887ed1c1
+lrwxrwxrwx root/root         0 2010-05-19 13:56 .build-id/5c/68f7afeb33309c78037e374b0deee84dd441f6 -> ../../lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6
+-rwxr-xr-x root/root    148528 2009-11-20 09:29 lib64/libpthread-2.10.2.so/5c68f7afeb33309c78037e374b0deee84dd441f6
+[root@doppio linux-2.6-tip]# 
+
+Regards,
+
+- Arnaldo
+
+Arnaldo Carvalho de Melo (2):
+  perf symbols: Don't try to read the build-id twice
+  perf session: Make read_build_id routines look at the host_machine too
+
  tools/perf/util/header.c  |   84 ++++++++++++++++++++++++++++-----------------
  tools/perf/util/session.c |    7 ++++
  tools/perf/util/session.h |    8 +---
- tools/perf/util/symbol.c  |    9 ++++-
+ tools/perf/util/symbol.c  |   13 ++++++-
  tools/perf/util/symbol.h  |    1 +
- 5 files changed, 69 insertions(+), 40 deletions(-)
-
-diff --git a/tools/perf/util/header.c b/tools/perf/util/header.c
-index 8847bec..1f62435 100644
---- a/tools/perf/util/header.c
-+++ b/tools/perf/util/header.c
-@@ -221,29 +221,38 @@ static int __dsos__write_buildid_table(struct list_head *head, pid_t pid,
- 	return 0;
- }
- 
-+static int machine__write_buildid_table(struct machine *self, int fd)
-+{
-+	int err;
-+	u16 kmisc = PERF_RECORD_MISC_KERNEL,
-+	    umisc = PERF_RECORD_MISC_USER;
-+
-+	if (!machine__is_host(self)) {
-+		kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
-+		umisc = PERF_RECORD_MISC_GUEST_USER;
-+	}
-+
-+	err = __dsos__write_buildid_table(&self->kernel_dsos, self->pid,
-+					  kmisc, fd);
-+	if (err == 0)
-+		err = __dsos__write_buildid_table(&self->user_dsos,
-+						  self->pid, umisc, fd);
-+	return err;
-+}
-+
- static int dsos__write_buildid_table(struct perf_header *header, int fd)
- {
- 	struct perf_session *session = container_of(header,
- 			struct perf_session, header);
- 	struct rb_node *nd;
--	int err = 0;
--	u16 kmisc, umisc;
-+	int err = machine__write_buildid_table(&session->host_machine, fd);
-+
-+	if (err)
-+		return err;
- 
- 	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		if (machine__is_host(pos)) {
--			kmisc = PERF_RECORD_MISC_KERNEL;
--			umisc = PERF_RECORD_MISC_USER;
--		} else {
--			kmisc = PERF_RECORD_MISC_GUEST_KERNEL;
--			umisc = PERF_RECORD_MISC_GUEST_USER;
--		}
--
--		err = __dsos__write_buildid_table(&pos->kernel_dsos, pos->pid,
--						  kmisc, fd);
--		if (err == 0)
--			err = __dsos__write_buildid_table(&pos->user_dsos,
--							  pos->pid, umisc, fd);
-+		err = machine__write_buildid_table(pos, fd);
- 		if (err)
- 			break;
- 	}
-@@ -363,12 +372,17 @@ static int __dsos__cache_build_ids(struct list_head *head, const char *debugdir)
- 	return err;
- }
- 
--static int dsos__cache_build_ids(struct perf_header *self)
-+static int machine__cache_build_ids(struct machine *self, const char *debugdir)
-+{
-+	int ret = __dsos__cache_build_ids(&self->kernel_dsos, debugdir);
-+	ret |= __dsos__cache_build_ids(&self->user_dsos, debugdir);
-+	return ret;
-+}
-+
-+static int perf_session__cache_build_ids(struct perf_session *self)
- {
--	struct perf_session *session = container_of(self,
--			struct perf_session, header);
- 	struct rb_node *nd;
--	int ret = 0;
-+	int ret;
- 	char debugdir[PATH_MAX];
- 
- 	snprintf(debugdir, sizeof(debugdir), "%s/%s", getenv("HOME"),
-@@ -377,25 +391,30 @@ static int dsos__cache_build_ids(struct perf_header *self)
- 	if (mkdir(debugdir, 0755) != 0 && errno != EEXIST)
- 		return -1;
- 
--	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
-+	ret = machine__cache_build_ids(&self->host_machine, debugdir);
-+
-+	for (nd = rb_first(&self->machines); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= __dsos__cache_build_ids(&pos->kernel_dsos, debugdir);
--		ret |= __dsos__cache_build_ids(&pos->user_dsos, debugdir);
-+		ret |= machine__cache_build_ids(pos, debugdir);
- 	}
- 	return ret ? -1 : 0;
- }
- 
--static bool dsos__read_build_ids(struct perf_header *self, bool with_hits)
-+static bool machine__read_build_ids(struct machine *self, bool with_hits)
-+{
-+	bool ret = __dsos__read_build_ids(&self->kernel_dsos, with_hits);
-+	ret |= __dsos__read_build_ids(&self->user_dsos, with_hits);
-+	return ret;
-+}
-+
-+static bool perf_session__read_build_ids(struct perf_session *self, bool with_hits)
- {
--	bool ret = false;
--	struct perf_session *session = container_of(self,
--			struct perf_session, header);
- 	struct rb_node *nd;
-+	bool ret = machine__read_build_ids(&self->host_machine, with_hits);
- 
--	for (nd = rb_first(&session->machines); nd; nd = rb_next(nd)) {
-+	for (nd = rb_first(&self->machines); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret |= __dsos__read_build_ids(&pos->kernel_dsos, with_hits);
--		ret |= __dsos__read_build_ids(&pos->user_dsos, with_hits);
-+		ret |= machine__read_build_ids(pos, with_hits);
- 	}
- 
- 	return ret;
-@@ -404,12 +423,14 @@ static bool dsos__read_build_ids(struct perf_header *self, bool with_hits)
- static int perf_header__adds_write(struct perf_header *self, int fd)
- {
- 	int nr_sections;
-+	struct perf_session *session;
- 	struct perf_file_section *feat_sec;
- 	int sec_size;
- 	u64 sec_start;
- 	int idx = 0, err;
- 
--	if (dsos__read_build_ids(self, true))
-+	session = container_of(self, struct perf_session, header);
-+	if (perf_session__read_build_ids(session, true))
- 		perf_header__set_feat(self, HEADER_BUILD_ID);
- 
- 	nr_sections = bitmap_weight(self->adds_features, HEADER_FEAT_BITS);
-@@ -450,7 +471,7 @@ static int perf_header__adds_write(struct perf_header *self, int fd)
- 		}
- 		buildid_sec->size = lseek(fd, 0, SEEK_CUR) -
- 					  buildid_sec->offset;
--		dsos__cache_build_ids(self);
-+		perf_session__cache_build_ids(session);
- 	}
- 
- 	lseek(fd, sec_start, SEEK_SET);
-@@ -490,7 +511,6 @@ int perf_header__write(struct perf_header *self, int fd, bool at_exit)
- 
- 	lseek(fd, sizeof(f_header), SEEK_SET);
- 
--
- 	for (i = 0; i < self->attrs; i++) {
- 		attr = self->attr[i];
- 
-diff --git a/tools/perf/util/session.c b/tools/perf/util/session.c
-index e4eaa6d..8f83a18 100644
---- a/tools/perf/util/session.c
-+++ b/tools/perf/util/session.c
-@@ -895,3 +895,10 @@ size_t perf_session__fprintf_dsos(struct perf_session *self, FILE *fp)
- 	       __dsos__fprintf(&self->host_machine.user_dsos, fp) +
- 	       machines__fprintf_dsos(&self->machines, fp);
- }
-+
-+size_t perf_session__fprintf_dsos_buildid(struct perf_session *self, FILE *fp,
-+					  bool with_hits)
-+{
-+	size_t ret = machine__fprintf_dsos_buildid(&self->host_machine, fp, with_hits);
-+	return ret + machines__fprintf_dsos_buildid(&self->machines, fp, with_hits);
-+}
-diff --git a/tools/perf/util/session.h b/tools/perf/util/session.h
-index e7fce48..55c6881 100644
---- a/tools/perf/util/session.h
-+++ b/tools/perf/util/session.h
-@@ -132,12 +132,8 @@ void perf_session__process_machines(struct perf_session *self,
- 
- size_t perf_session__fprintf_dsos(struct perf_session *self, FILE *fp);
- 
--static inline
--size_t perf_session__fprintf_dsos_buildid(struct perf_session *self, FILE *fp,
--					  bool with_hits)
--{
--	return machines__fprintf_dsos_buildid(&self->machines, fp, with_hits);
--}
-+size_t perf_session__fprintf_dsos_buildid(struct perf_session *self,
-+					  FILE *fp, bool with_hits);
- 
- static inline
- size_t perf_session__fprintf_nr_events(struct perf_session *self, FILE *fp)
-diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
-index 87d9b1b..96bff0e 100644
---- a/tools/perf/util/symbol.c
-+++ b/tools/perf/util/symbol.c
-@@ -1937,6 +1937,12 @@ static size_t __dsos__fprintf_buildid(struct list_head *head, FILE *fp,
- 	return ret;
- }
- 
-+size_t machine__fprintf_dsos_buildid(struct machine *self, FILE *fp, bool with_hits)
-+{
-+	return __dsos__fprintf_buildid(&self->kernel_dsos, fp, with_hits) +
-+	       __dsos__fprintf_buildid(&self->user_dsos, fp, with_hits);
-+}
-+
- size_t machines__fprintf_dsos_buildid(struct rb_root *self, FILE *fp, bool with_hits)
- {
- 	struct rb_node *nd;
-@@ -1944,8 +1950,7 @@ size_t machines__fprintf_dsos_buildid(struct rb_root *self, FILE *fp, bool with_
- 
- 	for (nd = rb_first(self); nd; nd = rb_next(nd)) {
- 		struct machine *pos = rb_entry(nd, struct machine, rb_node);
--		ret += __dsos__fprintf_buildid(&pos->kernel_dsos, fp, with_hits);
--		ret += __dsos__fprintf_buildid(&pos->user_dsos, fp, with_hits);
-+		ret += machine__fprintf_dsos_buildid(pos, fp, with_hits);
- 	}
- 	return ret;
- }
-diff --git a/tools/perf/util/symbol.h b/tools/perf/util/symbol.h
-index 032469e..5d25b5e 100644
---- a/tools/perf/util/symbol.h
-+++ b/tools/perf/util/symbol.h
-@@ -170,6 +170,7 @@ int machine__load_vmlinux_path(struct machine *self, enum map_type type,
- 
- size_t __dsos__fprintf(struct list_head *head, FILE *fp);
- 
-+size_t machine__fprintf_dsos_buildid(struct machine *self, FILE *fp, bool with_hits);
- size_t machines__fprintf_dsos(struct rb_root *self, FILE *fp);
- size_t machines__fprintf_dsos_buildid(struct rb_root *self, FILE *fp, bool with_hits);
- 
--- 
-1.6.2.5
+ 5 files changed, 73 insertions(+), 40 deletions(-)
 
