@@ -1,29 +1,29 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754524Ab0ESRZp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:25:45 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:53492 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754459Ab0ESRYT (ORCPT
+	id S1754576Ab0ESRZz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:25:55 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:33252 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754462Ab0ESRYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 May 2010 13:24:19 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=OaUXQvMLkR682h5pKXIZ9lT3kJxwzphksUhA7Ge7AFMxbLrMR++fWefng58ZqXP2yl
-         ++vy9JUaJcW4zwaMLoamgpo0tGfUnhLnWN+Nom0a2bVNzWceEHBkuRd4qqzkcrn+qZEN
-         hxFKrFQ5QjdO0oJQaI+xC6Skv2DQqCOv2JoAA=
+        b=T0z/Q7ctETYte3tB5TkuUMQg53qigCGyN2lM7nYGjRbHtaBvZuuV3JO69cCisCn+tV
+         hXeSv60cWtOqbQtk8bfGhnY40A0IbXq8KRCcApUpwEerlHz6QXZ8mpccyPXEAtznu7Kr
+         e/EHaBDKPMKKpyAQBCYEdxuFAaZsXMIGM4MTY=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
-       "J. Bruce Fields" <bfields@fieldses.org>, Neil Brown <neilb@suse.de>,
-       Nfs <linux-nfs@vger.kernel.org>, Thomas Gleixner <tglx@linutronix.de>,
-       John Kacur <jkacur@redhat.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [PATCH 4/8] sunrpc: Pushdown the bkl from ioctl
-Date: Wed, 19 May 2010 19:24:11 +0200
-Message-Id: <1274289855-10001-5-git-send-regression-fweisbec@gmail.com>
+       "H. Peter Anvin" <hpa@zytor.com>, Autofs <autofs@linux.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+       Arnd Bergmann <arnd@arndb.de>
+Subject: [PATCH 2/8] autofs: Pushdown the bkl from ioctl
+Date: Wed, 19 May 2010 19:24:09 +0200
+Message-Id: <1274289855-10001-3-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com>
@@ -32,68 +32,63 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Pushdown the bkl to rpc_pipe_ioctl.
+Pushdown the bkl to autofs_root_ioctl.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: Neil Brown <neilb@suse.de>
-Cc: Nfs <linux-nfs@vger.kernel.org>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Autofs <autofs@linux.kernel.org>
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Cc: John Kacur <jkacur@redhat.com>
 Cc: Arnd Bergmann <arnd@arndb.de>
 ---
- net/sunrpc/rpc_pipe.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
+ fs/autofs/root.c |   19 ++++++++++++++++---
+ 1 files changed, 16 insertions(+), 3 deletions(-)
 
-diff --git a/net/sunrpc/rpc_pipe.c b/net/sunrpc/rpc_pipe.c
-index 20e30c6..95ccbcf 100644
---- a/net/sunrpc/rpc_pipe.c
-+++ b/net/sunrpc/rpc_pipe.c
-@@ -27,6 +27,7 @@
- #include <linux/workqueue.h>
- #include <linux/sunrpc/rpc_pipe_fs.h>
- #include <linux/sunrpc/cache.h>
-+#include <linux/smp_lock.h>
+diff --git a/fs/autofs/root.c b/fs/autofs/root.c
+index 8713c7c..dc16b3c 100644
+--- a/fs/autofs/root.c
++++ b/fs/autofs/root.c
+@@ -25,12 +25,12 @@ static int autofs_root_symlink(struct inode *,struct dentry *,const char *);
+ static int autofs_root_unlink(struct inode *,struct dentry *);
+ static int autofs_root_rmdir(struct inode *,struct dentry *);
+ static int autofs_root_mkdir(struct inode *,struct dentry *,int);
+-static int autofs_root_ioctl(struct inode *, struct file *,unsigned int,unsigned long);
++static long autofs_root_ioctl(struct file *, unsigned int, unsigned long);
  
- static struct vfsmount *rpc_mount __read_mostly;
- static int rpc_mount_count;
-@@ -309,8 +310,7 @@ rpc_pipe_poll(struct file *filp, struct poll_table_struct *wait)
- }
+ const struct file_operations autofs_root_operations = {
+ 	.read		= generic_read_dir,
+ 	.readdir	= autofs_root_readdir,
+-	.ioctl		= autofs_root_ioctl,
++	.unlocked_ioctl	= autofs_root_ioctl,
+ };
  
- static int
--rpc_pipe_ioctl(struct inode *ino, struct file *filp,
--		unsigned int cmd, unsigned long arg)
-+rpc_pipe_ioctl_unlocked(struct file *filp, unsigned int cmd, unsigned long arg)
+ const struct inode_operations autofs_root_inode_operations = {
+@@ -545,7 +545,7 @@ static inline int autofs_expire_run(struct super_block *sb,
+  * ioctl()'s on the root directory is the chief method for the daemon to
+  * generate kernel reactions
+  */
+-static int autofs_root_ioctl(struct inode *inode, struct file *filp,
++static int autofs_root_ioctl_unlocked(struct inode *inode, struct file *filp,
+ 			     unsigned int cmd, unsigned long arg)
  {
- 	struct rpc_inode *rpci = RPC_I(filp->f_path.dentry->d_inode);
- 	int len;
-@@ -331,13 +331,25 @@ rpc_pipe_ioctl(struct inode *ino, struct file *filp,
+ 	struct autofs_sb_info *sbi = autofs_sbi(inode->i_sb);
+@@ -579,3 +579,16 @@ static int autofs_root_ioctl(struct inode *inode, struct file *filp,
+ 		return -ENOSYS;
  	}
  }
- 
-+static long
-+rpc_pipe_ioctl(struct file *filp, unsigned int cmd, unsigned long arg)
++
++static long autofs_root_ioctl(struct file *filp,
++			     unsigned int cmd, unsigned long arg)
 +{
 +	long ret;
++	struct inode *inode = filp->f_dentry->d_inode;
 +
 +	lock_kernel();
-+	ret = rpc_pipe_ioctl_unlocked(filp, cmd, arg);
++	ret = autofs_root_ioctl_unlocked(inode, filp, cmd, arg);
 +	unlock_kernel();
 +
 +	return ret;
 +}
-+
- static const struct file_operations rpc_pipe_fops = {
- 	.owner		= THIS_MODULE,
- 	.llseek		= no_llseek,
- 	.read		= rpc_pipe_read,
- 	.write		= rpc_pipe_write,
- 	.poll		= rpc_pipe_poll,
--	.ioctl		= rpc_pipe_ioctl,
-+	.unlocked_ioctl	= rpc_pipe_ioctl,
- 	.open		= rpc_pipe_open,
- 	.release	= rpc_pipe_release,
- };
 -- 
 1.6.2.3
 
