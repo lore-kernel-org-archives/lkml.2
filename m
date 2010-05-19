@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757895Ab0ESLu6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:50:58 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:55899 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754021Ab0ESLuz convert rfc822-to-8bit (ORCPT
+	id S1757983Ab0ESLvL (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:51:11 -0400
+Received: from mga10.intel.com ([192.55.52.92]:5575 "EHLO
+	fmsmga102.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1757959Ab0ESLvG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:50:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=TD936oOaxQvUPTRmX0pzvL0iA1vECoXZsSeCUpwrk62Uio61fHPaPWbruTg8BGG2/l
-         7Do7Hr0vxCV0NYmr3ndUhQBhjqIu7h5HfLD+fyCUgrR30Dmym4d+qwzrfKPySANdOgJ0
-         ncvLWoQ4RXSKDQWaiESMrWEbEOhCiBUL5JR8w=
+	Wed, 19 May 2010 07:51:06 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,263,1272870000"; 
+   d="scan'208";a="568599383"
+Message-ID: <4BF3D0A8.9050509@linux.intel.com>
+Date: Wed, 19 May 2010 19:51:04 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
 MIME-Version: 1.0
-In-Reply-To: <1274269236.6930.9930.camel@macbook.infradead.org>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-	 <1274224834.6930.8361.camel@macbook.infradead.org>
-	 <20100519010524.GB18813@gondor.apana.org.au>
-	 <1274253269.6930.9325.camel@macbook.infradead.org>
-	 <AANLkTimyUoAsculVFkEPwlRQEI3eLAwX5x7M0Yr9AdOs@mail.gmail.com>
-	 <1274269236.6930.9930.camel@macbook.infradead.org>
-Date: Wed, 19 May 2010 13:50:52 +0200
-X-Google-Sender-Auth: TVRGys4Na24QN-lPhkJ78CK3Qhg
-Message-ID: <AANLkTikZyfxBjXdvNzuVT2N9XIyJmY6JDiKRMRtAykeC@mail.gmail.com>
-Subject: Re: [BUG] SLOB breaks Crypto
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: David Woodhouse <dwmw2@infradead.org>
-Cc: Herbert Xu <herbert@gondor.hengli.com.au>,
-       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: "ak@linux.intel.com" <ak@linux.intel.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Ingo Molnar <mingo@redhat.com>,
+       "dnelson@redhat.com" <dnelson@redhat.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       "Li, Haicheng" <haicheng.li@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [BUGFIX] [PATCH v2] x86: update all PGDs for direct mapping	changes
+ on 64bit.
+References: <4BCD1F46.2060002@linux.intel.com> <20100420051759.GA15370@localhost>
+In-Reply-To: <20100420051759.GA15370@localhost>
+Content-Type: text/plain; charset=us-ascii; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 13:40, David Woodhouse <dwmw2@infradead.org> wrote:
-> On Wed, 2010-05-19 at 13:32 +0200, Geert Uytterhoeven wrote:
->> Instead of having (different) defaults in sl[aou]b, perhaps we should
->> just remove the defaults completely, to ensure all architectures set
->> ARCH_SLAB_MINALIGN to the correct value?
->
-> What is 'correct'? The architecture sets it to the minimum value that it
-> can cope with, according to its own alignment constraints (and DMA/cache
-> constraints, in the case of ARCH_KMALLOC_MINALIGN).
->
-> Some architectures don't _have_ any minimum required alignment, so they
-> have no need to set it. If the architecture _does_ specify a minimum,
-> the allocators must honour it. Otherwise, they're free to do their own
-> thing. And slob chooses to use a smaller alignment than slab and slub
-> do, in accordance with its design and its raison d'être.
+I'm sorry for my slow response ...
 
-Currently 7 out of 20+ architectures set it.
-Any bets on how many are missing, but should set it?
+Wu Fengguang wrote:
+ >> +static void sync_global_pgds(unsigned long start, unsigned long end)
+ >
+ > It seems that this function can reuse code with vmalloc_sync_all().
 
-Gr{oetje,eeting}s,
+agreed.
 
-						Geert
+ > __init_extra_mapping() is not related to memory hotplug (note: the
+ > __init prefix), so not necessary to change this function?
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+yes, I think you are right. We don't need to change __init_extra_mapping().
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+ >>   vmemmap_populate(struct page *start_page, unsigned long size, int node)
+ > It's not necessary to introduce the "start" and "err" variables.
+ > It helps simplify the patch (or you can put them to another cleanup
+ > only patch).
+
+ok, let's make the fix as simple as possible.
+
+I'll send out the revised version right now. Thank you for the review.
+
+-haicheng
