@@ -1,96 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755701Ab0ESIj3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:39:29 -0400
-Received: from lan.nucleusys.com ([78.83.248.164]:54747 "EHLO
-	zztop.nucleusys.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1755189Ab0ESIj1 (ORCPT
+	id S1752755Ab0ESIo6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:44:58 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44958 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751589Ab0ESIo4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:39:27 -0400
-X-Greylist: delayed 1883 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 May 2010 04:39:27 EDT
-Date: Wed, 19 May 2010 11:07:50 +0300 (EEST)
-From: Petko Manolov <petkan@nucleusys.com>
-To: Julia Lawall <julia@diku.dk>
-cc: Petko Manolov <petkan@users.sourceforge.net>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 19/37] drivers/net/usb: Use kmemdup
-In-Reply-To: <Pine.LNX.4.64.1005152318410.21345@ask.diku.dk>
-Message-ID: <alpine.DEB.2.00.1005191106430.3093@bender.nucleusys.com>
-References: <Pine.LNX.4.64.1005152318410.21345@ask.diku.dk>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Wed, 19 May 2010 04:44:56 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Shaohua Li <shaohua.li@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
+Cc: kosaki.motohiro@jp.fujitsu.com
+Message-Id: <20100519174327.9591.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Wed, 19 May 2010 17:44:49 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Looks all right to me.
+Shaohua Li reported parallel file copy on tmpfs can lead to
+OOM killer. This is regression of caused by commit 9ff473b9a7
+(vmscan: evict streaming IO first). Wow, It is 2 years old patch!
+
+Currently, tmpfs file cache is inserted active list at first. It
+mean the insertion doesn't only increase numbers of pages in anon LRU,
+but also reduce anon scanning ratio. Therefore, vmscan will get totally
+confusion. It scan almost only file LRU even though the system have
+plenty unused tmpfs pages.
+
+Historically, lru_cache_add_active_anon() was used by two reasons.
+1) Intend to priotize shmem page rather than regular file cache.
+2) Intend to avoid reclaim priority inversion of used once pages.
+
+But we've lost both motivation because (1) Now we have separate
+anon and file LRU list. then, to insert active list doesn't help
+such priotize. (2) In past, one pte access bit will cause page
+activation. then to insert inactive list with pte access bit mean
+higher priority than to insert active list. Its priority inversion
+may lead to uninteded lru chun. but it was already solved by commit
+645747462 (vmscan: detect mapped file pages used only once).
+(Thanks Hannes, you are great!)
+
+Thus, now we can use lru_cache_add_anon() instead.
+
+Reported-by: Shaohua Li <shaohua.li@intel.com>
+Cc: Wu Fengguang <fengguang.wu@intel.com>
+Cc: Johannes Weiner <hannes@cmpxchg.org>
+Cc: Rik van Riel <riel@redhat.com>
+Cc: Minchan Kim <minchan.kim@gmail.com>
+Cc: Hugh Dickins <hughd@google.com>
+Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+---
+ mm/filemap.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/mm/filemap.c b/mm/filemap.c
+index b941996..023ef61 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -452,7 +452,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+ 		if (page_is_file_cache(page))
+ 			lru_cache_add_file(page);
+ 		else
+-			lru_cache_add_active_anon(page);
++			lru_cache_add_anon(page);
+ 	}
+ 	return ret;
+ }
+-- 
+1.6.5.2
 
 
- 		Petko
 
-
-On Sat, 15 May 2010, Julia Lawall wrote:
-
-> From: Julia Lawall <julia@diku.dk>
->
-> Use kmemdup when some other buffer is immediately copied into the
-> allocated region.
->
-> A simplified version of the semantic patch that makes this change is as
-> follows: (http://coccinelle.lip6.fr/)
->
-> // <smpl>
-> @@
-> expression from,to,size,flag;
-> statement S;
-> @@
->
-> -  to = \(kmalloc\|kzalloc\)(size,flag);
-> +  to = kmemdup(from,size,flag);
->   if (to==NULL || ...) S
-> -  memcpy(to, from, size);
-> // </smpl>
->
-> Signed-off-by: Julia Lawall <julia@diku.dk>
->
-> ---
-> drivers/net/usb/pegasus.c |    6 ++----
-> 1 file changed, 2 insertions(+), 4 deletions(-)
->
-> diff -u -p a/drivers/net/usb/pegasus.c b/drivers/net/usb/pegasus.c
-> --- a/drivers/net/usb/pegasus.c
-> +++ b/drivers/net/usb/pegasus.c
-> @@ -203,13 +203,12 @@ static int set_registers(pegasus_t * peg
-> 	char *buffer;
-> 	DECLARE_WAITQUEUE(wait, current);
->
-> -	buffer = kmalloc(size, GFP_KERNEL);
-> +	buffer = kmemdup(data, size, GFP_KERNEL);
-> 	if (!buffer) {
-> 		netif_warn(pegasus, drv, pegasus->net,
-> 			   "out of memory in %s\n", __func__);
-> 		return -ENOMEM;
-> 	}
-> -	memcpy(buffer, data, size);
->
-> 	add_wait_queue(&pegasus->ctrl_wait, &wait);
-> 	set_current_state(TASK_UNINTERRUPTIBLE);
-> @@ -255,13 +254,12 @@ static int set_register(pegasus_t * pega
-> 	char *tmp;
-> 	DECLARE_WAITQUEUE(wait, current);
->
-> -	tmp = kmalloc(1, GFP_KERNEL);
-> +	tmp = kmemdup(&data, 1, GFP_KERNEL);
-> 	if (!tmp) {
-> 		netif_warn(pegasus, drv, pegasus->net,
-> 			   "out of memory in %s\n", __func__);
-> 		return -ENOMEM;
-> 	}
-> -	memcpy(tmp, &data, 1);
-> 	add_wait_queue(&pegasus->ctrl_wait, &wait);
-> 	set_current_state(TASK_UNINTERRUPTIBLE);
-> 	while (pegasus->flags & ETH_REGS_CHANGED)
->
