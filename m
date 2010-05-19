@@ -1,100 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756751Ab0ESJFm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 05:05:42 -0400
-Received: from mailout2.w1.samsung.com ([210.118.77.12]:22844 "EHLO
-	mailout2.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756155Ab0ESJEE (ORCPT
+	id S1756845Ab0ESJF6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 05:05:58 -0400
+Received: from mailout1.w1.samsung.com ([210.118.77.11]:44956 "EHLO
+	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756096Ab0ESJEE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 19 May 2010 05:04:04 -0400
-Date: Wed, 19 May 2010 11:04:19 +0200
+Date: Wed, 19 May 2010 11:04:16 +0200
 From: Michal Nazarewicz <m.nazarewicz@samsung.com>
-Subject: [PATCH 5/8] USB: gadget: f_fs: use usb_string_ids_n()
-In-reply-to: <906519813412e3970e06499f0dbe2823280ed54a.1274187425.git.m.nazarewicz@samsung.com>
+Subject: [PATCH 2/8] USB: gadget: f_mass_storage: fsg_add() renamed to
+ fsg_bind_config()
+In-reply-to: <6577770c2519efd2193ed6454dcd895472bba404.1274187425.git.m.nazarewicz@samsung.com>
 To: linux-usb@vger.kernel.org
 Cc: Kyungmin Park <kyungmin.park@samsung.com>,
        Marek Szyprowski <m.szyprowski@samsung.com>,
        linux-kernel@vger.kernel.org
-Message-id: <a2865e8e9c3a9a305833ffea9caaec661082d5cf.1274187425.git.m.nazarewicz@samsung.com>
+Message-id: <f888a55a4bd4d631c0d36e8463bb5bbb8e9d7a3d.1274187425.git.m.nazarewicz@samsung.com>
 MIME-version: 1.0
 X-Mailer: git-send-email 1.7.1
 Content-type: TEXT/PLAIN
 Content-transfer-encoding: 7BIT
 References: <cover.1274187425.git.m.nazarewicz@samsung.com>
  <6577770c2519efd2193ed6454dcd895472bba404.1274187425.git.m.nazarewicz@samsung.com>
- <f888a55a4bd4d631c0d36e8463bb5bbb8e9d7a3d.1274187425.git.m.nazarewicz@samsung.com>
- <d38bd775a3b1c58255e19fda826cae7aa66a0a20.1274187425.git.m.nazarewicz@samsung.com>
- <906519813412e3970e06499f0dbe2823280ed54a.1274187425.git.m.nazarewicz@samsung.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use usb_string_ids_n() function to simplify string ids
-registeration.
+Mass Storage Function had a bit unique name for function
+used to add it to USB configuration.  Renamed as to match
+naming convention of other functions.
 
 Signed-off-by: Michal Nazarewicz <m.nazarewicz@samsung.com>
 Signed-off-by: Kyungmin Park <kyungmin.park@samsung.com>
 ---
- drivers/usb/gadget/f_fs.c |   29 ++++++++++++-----------------
- 1 files changed, 12 insertions(+), 17 deletions(-)
+ drivers/usb/gadget/f_mass_storage.c |   13 ++++++++++---
+ drivers/usb/gadget/mass_storage.c   |    2 +-
+ drivers/usb/gadget/multi.c          |    4 ++--
+ 3 files changed, 13 insertions(+), 6 deletions(-)
 
-diff --git a/drivers/usb/gadget/f_fs.c b/drivers/usb/gadget/f_fs.c
-index 3fe120f..ffc0001 100644
---- a/drivers/usb/gadget/f_fs.c
-+++ b/drivers/usb/gadget/f_fs.c
-@@ -1377,7 +1377,8 @@ static void ffs_data_reset(struct ffs_data *ffs)
+diff --git a/drivers/usb/gadget/f_mass_storage.c b/drivers/usb/gadget/f_mass_storage.c
+index 7d05a0b..072cbf9 100644
+--- a/drivers/usb/gadget/f_mass_storage.c
++++ b/drivers/usb/gadget/f_mass_storage.c
+@@ -3023,9 +3023,9 @@ static struct usb_gadget_strings *fsg_strings_array[] = {
+ 	NULL,
+ };
  
- static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
+-static int fsg_add(struct usb_composite_dev *cdev,
+-		   struct usb_configuration *c,
+-		   struct fsg_common *common)
++static int fsg_bind_config(struct usb_composite_dev *cdev,
++			   struct usb_configuration *c,
++			   struct fsg_common *common)
  {
--	unsigned i, count;
-+	struct usb_gadget_strings **lang;
-+	unsigned first_id;
- 
- 	ENTER();
- 
-@@ -1385,7 +1386,9 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- 		 || test_and_set_bit(FFS_FL_BOUND, &ffs->flags)))
- 		return -EBADFD;
- 
--	ffs_data_get(ffs);
-+	first_id = usb_string_ids_n(cdev, ffs->strings_count);
-+	if (unlikely(first_id < 0))
-+		return first_id;
- 
- 	ffs->ep0req = usb_ep_alloc_request(cdev->gadget->ep0, GFP_KERNEL);
- 	if (unlikely(!ffs->ep0req))
-@@ -1393,25 +1396,17 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
- 	ffs->ep0req->complete = ffs_ep0_complete;
- 	ffs->ep0req->context = ffs;
- 
--	/* Get strings identifiers */
--	for (count = ffs->strings_count, i = 0; i < count; ++i) {
--		struct usb_gadget_strings **lang;
--
--		int id = usb_string_id(cdev);
--		if (unlikely(id < 0)) {
--			usb_ep_free_request(cdev->gadget->ep0, ffs->ep0req);
--			ffs->ep0req = NULL;
--			return id;
-+	lang = ffs->stringtabs;
-+	while (*lang) {
-+		struct usb_string *str = (*lang)->strings;
-+		int id = first_id;
-+		for (; str->s; ++id, ++str) {
-+			str->id = id;
- 		}
--
--		lang = ffs->stringtabs;
--		do {
--			(*lang)->strings[i].id = id;
--			++lang;
--		} while (*lang);
- 	}
- 
- 	ffs->gadget = cdev->gadget;
-+	ffs_data_get(ffs);
- 	return 0;
+ 	struct fsg_dev *fsg;
+ 	int rc;
+@@ -3072,6 +3072,13 @@ error_free_fsg:
+ 	return rc;
  }
+ 
++static inline int __deprecated __maybe_unused
++fsg_add(struct usb_composite_dev *cdev,
++	struct usb_configuration *c,
++	struct fsg_common *common)
++{
++	return fsg_bind_config(cdev, c, common);
++}
+ 
+ 
+ /************************* Module parameters *************************/
+diff --git a/drivers/usb/gadget/mass_storage.c b/drivers/usb/gadget/mass_storage.c
+index a3349f2..d6975f4 100644
+--- a/drivers/usb/gadget/mass_storage.c
++++ b/drivers/usb/gadget/mass_storage.c
+@@ -159,7 +159,7 @@ static int __init msg_do_config(struct usb_configuration *c)
+ 	if (IS_ERR(retp))
+ 		return PTR_ERR(retp);
+ 
+-	ret = fsg_add(c->cdev, c, &common);
++	ret = fsg_bind_config(c->cdev, c, &common);
+ 	fsg_common_put(&common);
+ 	return ret;
+ }
+diff --git a/drivers/usb/gadget/multi.c b/drivers/usb/gadget/multi.c
+index a930d7f..d3d3140 100644
+--- a/drivers/usb/gadget/multi.c
++++ b/drivers/usb/gadget/multi.c
+@@ -172,7 +172,7 @@ static int __init rndis_do_config(struct usb_configuration *c)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = fsg_add(c->cdev, c, fsg_common);
++	ret = fsg_bind_config(c->cdev, c, fsg_common);
+ 	if (ret < 0)
+ 		return ret;
+ 
+@@ -208,7 +208,7 @@ static int __init cdc_do_config(struct usb_configuration *c)
+ 	if (ret < 0)
+ 		return ret;
+ 
+-	ret = fsg_add(c->cdev, c, fsg_common);
++	ret = fsg_bind_config(c->cdev, c, fsg_common);
+ 	if (ret < 0)
+ 		return ret;
  
 -- 
 1.7.1
