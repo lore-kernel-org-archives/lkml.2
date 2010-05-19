@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752576Ab0ESVlQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:41:16 -0400
-Received: from tx2ehsobe004.messaging.microsoft.com ([65.55.88.14]:47052 "EHLO
-	TX2EHSOBE008.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751375Ab0ESVlG (ORCPT
+	id S1752646Ab0ESVlT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:41:19 -0400
+Received: from tx2ehsobe002.messaging.microsoft.com ([65.55.88.12]:14029 "EHLO
+	TX2EHSOBE003.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751891Ab0ESVlH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:41:06 -0400
-X-SpamScore: -4
-X-BigFish: VPS-4(zz936eMab9bhzz1202hzzz32i87h2a8h43h62h)
-X-Spam-TCS-SCL: 1:0
+	Wed, 19 May 2010 17:41:07 -0400
+X-SpamScore: 2
+X-BigFish: VPS2(zz936eMab9bh905fnzz1202hzzz32i2a8h87h43h61h)
+X-Spam-TCS-SCL: 0:0
 X-FB-DOMAIN-IP-MATCH: fail
-X-WSS-ID: 0L2OS86-02-UV7-02
+X-WSS-ID: 0L2OS86-02-UV8-02
 X-M-MSG: 
 From: Robert Richter <robert.richter@amd.com>
 To: Peter Zijlstra <a.p.zijlstra@chello.nl>
 CC: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
        LKML <linux-kernel@vger.kernel.org>,
        Robert Richter <robert.richter@amd.com>
-Subject: [PATCH 4/7] perf, x86: implement IBS feature detection
-Date: Wed, 19 May 2010 23:20:21 +0200
-Message-ID: <1274304024-6551-5-git-send-email-robert.richter@amd.com>
+Subject: [PATCH 2/7] perf, x86: introduce bit range for special pmu events
+Date: Wed, 19 May 2010 23:20:19 +0200
+Message-ID: <1274304024-6551-3-git-send-email-robert.richter@amd.com>
 X-Mailer: git-send-email 1.7.1
 In-Reply-To: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
 References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
@@ -31,45 +31,137 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The new code checks if IBS is available on the cpu. It implements only
-a basic detection that should be later extended to read ibs cpuid
-feature flags.
+There are some pmu events such as Intel BTS or AMD IBS that do not fit
+in the generic or fixed performance counter scheme. The upper bits
+starting at bit 48 of the 64 bit counter mask are reserved for such
+events and can be used to handle them. The events can be identified by
+its index in the bit mask.
 
 Signed-off-by: Robert Richter <robert.richter@amd.com>
 ---
- arch/x86/kernel/cpu/perf_event.c     |    5 +++++
- arch/x86/kernel/cpu/perf_event_amd.c |    2 ++
- 2 files changed, 7 insertions(+), 0 deletions(-)
+ arch/x86/include/asm/perf_event.h         |    3 ++-
+ arch/x86/kernel/cpu/perf_event.c          |    6 +++---
+ arch/x86/kernel/cpu/perf_event_intel.c    |   10 +++++-----
+ arch/x86/kernel/cpu/perf_event_intel_ds.c |    4 ++--
+ 4 files changed, 12 insertions(+), 11 deletions(-)
 
+diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
+index 254883d..7e51c75 100644
+--- a/arch/x86/include/asm/perf_event.h
++++ b/arch/x86/include/asm/perf_event.h
+@@ -10,6 +10,7 @@
+ 
+ #define X86_PMC_IDX_GENERIC				        0
+ #define X86_PMC_IDX_FIXED				       32
++#define X86_PMC_IDX_SPECIAL				       48
+ #define X86_PMC_IDX_MAX					       64
+ 
+ #define MSR_ARCH_PERFMON_PERFCTR0			      0xc1
+@@ -107,7 +108,7 @@ union cpuid10_edx {
+  * values are used by actual fixed events and higher values are used
+  * to indicate other overflow conditions in the PERF_GLOBAL_STATUS msr.
+  */
+-#define X86_PMC_IDX_FIXED_BTS				(X86_PMC_IDX_FIXED + 16)
++#define X86_PMC_IDX_SPECIAL_BTS				(X86_PMC_IDX_SPECIAL + 0)
+ 
+ /* IbsFetchCtl bits/masks */
+ #define IBS_FETCH_RAND_EN		(1ULL<<57)
 diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index e64502c..e186d3b 100644
+index 3539b53..75c0a44 100644
 --- a/arch/x86/kernel/cpu/perf_event.c
 +++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -244,6 +244,11 @@ struct x86_pmu {
- 	 */
- 	unsigned long	lbr_tos, lbr_from, lbr_to; /* MSR base regs       */
- 	int		lbr_nr;			   /* hardware stack size */
-+
-+	/*
-+	 * AMD IBS
-+	 */
-+	int		ibs;			/* cpuid flags */
- };
+@@ -283,7 +283,7 @@ x86_perf_event_update(struct perf_event *event)
+ 	int idx = hwc->idx;
+ 	s64 delta;
  
- static struct x86_pmu x86_pmu __read_mostly;
-diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
-index 87e5ae4..cda8475 100644
---- a/arch/x86/kernel/cpu/perf_event_amd.c
-+++ b/arch/x86/kernel/cpu/perf_event_amd.c
-@@ -405,6 +405,8 @@ static __init int amd_pmu_init(void)
- 		return -ENODEV;
+-	if (idx == X86_PMC_IDX_FIXED_BTS)
++	if (idx == X86_PMC_IDX_SPECIAL_BTS)
+ 		return 0;
  
- 	x86_pmu = amd_pmu;
-+	if (boot_cpu_has(X86_FEATURE_IBS))
-+		x86_pmu.ibs = 1;
+ 	/*
+@@ -775,7 +775,7 @@ static inline void x86_assign_hw_event(struct perf_event *event,
+ 	hwc->last_cpu = smp_processor_id();
+ 	hwc->last_tag = ++cpuc->tags[i];
  
- 	/* Events are common for all AMDs */
- 	memcpy(hw_cache_event_ids, amd_hw_cache_event_ids,
+-	if (hwc->idx == X86_PMC_IDX_FIXED_BTS) {
++	if (hwc->idx == X86_PMC_IDX_SPECIAL_BTS) {
+ 		hwc->config_base = 0;
+ 		hwc->event_base	= 0;
+ 	} else if (hwc->idx >= X86_PMC_IDX_FIXED) {
+@@ -891,7 +891,7 @@ x86_perf_event_set_period(struct perf_event *event)
+ 	s64 period = hwc->sample_period;
+ 	int ret = 0, idx = hwc->idx;
+ 
+-	if (idx == X86_PMC_IDX_FIXED_BTS)
++	if (idx == X86_PMC_IDX_SPECIAL_BTS)
+ 		return 0;
+ 
+ 	/*
+diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+index d15faf5..dfbbe69 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel.c
++++ b/arch/x86/kernel/cpu/perf_event_intel.c
+@@ -458,7 +458,7 @@ static void intel_pmu_disable_all(void)
+ 
+ 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, 0);
+ 
+-	if (test_bit(X86_PMC_IDX_FIXED_BTS, cpuc->active_mask))
++	if (test_bit(X86_PMC_IDX_SPECIAL_BTS, cpuc->active_mask))
+ 		intel_pmu_disable_bts();
+ 
+ 	intel_pmu_pebs_disable_all();
+@@ -473,9 +473,9 @@ static void intel_pmu_enable_all(int added)
+ 	intel_pmu_lbr_enable_all();
+ 	wrmsrl(MSR_CORE_PERF_GLOBAL_CTRL, x86_pmu.intel_ctrl);
+ 
+-	if (test_bit(X86_PMC_IDX_FIXED_BTS, cpuc->active_mask)) {
++	if (test_bit(X86_PMC_IDX_SPECIAL_BTS, cpuc->active_mask)) {
+ 		struct perf_event *event =
+-			cpuc->events[X86_PMC_IDX_FIXED_BTS];
++			cpuc->events[X86_PMC_IDX_SPECIAL_BTS];
+ 
+ 		if (WARN_ON_ONCE(!event))
+ 			return;
+@@ -550,7 +550,7 @@ static void intel_pmu_disable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
++	if (unlikely(hwc->idx == X86_PMC_IDX_SPECIAL_BTS)) {
+ 		intel_pmu_disable_bts();
+ 		intel_pmu_drain_bts_buffer();
+ 		return;
+@@ -602,7 +602,7 @@ static void intel_pmu_enable_event(struct perf_event *event)
+ {
+ 	struct hw_perf_event *hwc = &event->hw;
+ 
+-	if (unlikely(hwc->idx == X86_PMC_IDX_FIXED_BTS)) {
++	if (unlikely(hwc->idx == X86_PMC_IDX_SPECIAL_BTS)) {
+ 		if (!__get_cpu_var(cpu_hw_events).enabled)
+ 			return;
+ 
+diff --git a/arch/x86/kernel/cpu/perf_event_intel_ds.c b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+index 18018d1..bd46bbd 100644
+--- a/arch/x86/kernel/cpu/perf_event_intel_ds.c
++++ b/arch/x86/kernel/cpu/perf_event_intel_ds.c
+@@ -176,7 +176,7 @@ static int reserve_ds_buffers(void)
+  */
+ 
+ static struct event_constraint bts_constraint =
+-	EVENT_CONSTRAINT(0, 1ULL << X86_PMC_IDX_FIXED_BTS, 0);
++	EVENT_CONSTRAINT(0, 1ULL << X86_PMC_IDX_SPECIAL_BTS, 0);
+ 
+ static void intel_pmu_enable_bts(u64 config)
+ {
+@@ -223,7 +223,7 @@ static void intel_pmu_drain_bts_buffer(void)
+ 		u64	to;
+ 		u64	flags;
+ 	};
+-	struct perf_event *event = cpuc->events[X86_PMC_IDX_FIXED_BTS];
++	struct perf_event *event = cpuc->events[X86_PMC_IDX_SPECIAL_BTS];
+ 	struct bts_record *at, *top;
+ 	struct perf_output_handle handle;
+ 	struct perf_event_header header;
 -- 
 1.7.1
 
