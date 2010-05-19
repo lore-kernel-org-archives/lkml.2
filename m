@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756351Ab0ESAFN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:05:13 -0400
-Received: from e39.co.us.ibm.com ([32.97.110.160]:60982 "EHLO
-	e39.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753804Ab0ESAFI (ORCPT
+	id S1756515Ab0ESAFW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 20:05:22 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:44430 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753549Ab0ESAFS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 20:05:08 -0400
-Subject: [PATCH 2/3] workqueue: Add an API to create a singlethread
- workqueue attached to the current task's cgroup
+	Tue, 18 May 2010 20:05:18 -0400
+Subject: [ PATCH 3/3] vhost: make it more scalable by creating a vhost
+ thread per device
 From: Sridhar Samudrala <sri@us.ibm.com>
 To: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
        lkml <linux-kernel@vger.kernel.org>,
        "kvm@vger.kernel.org" <kvm@vger.kernel.org>
 Content-Type: text/plain
-Date: Tue, 18 May 2010 17:04:51 -0700
-Message-Id: <1274227491.2370.110.camel@w-sridhar.beaverton.ibm.com>
+Date: Tue, 18 May 2010 17:04:55 -0700
+Message-Id: <1274227495.2370.111.camel@w-sridhar.beaverton.ibm.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.26.3 (2.26.3-1.fc11) 
 Content-Transfer-Encoding: 7bit
@@ -23,80 +23,200 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a new kernel API to create a singlethread workqueue and attach it's
-task to current task's cgroup and cpumask.
+Make vhost more scalable by creating a separate vhost thread per
+vhost device. This provides better scaling across virtio-net interfaces
+in multiple guests.
+
+Also attach each vhost thread to the cgroup and cpumask of the 
+associated guest(qemu or libvirt).
 
 Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
 
-diff --git a/include/linux/workqueue.h b/include/linux/workqueue.h
-index 9466e86..6d6f301 100644
---- a/include/linux/workqueue.h
-+++ b/include/linux/workqueue.h
-@@ -211,6 +211,7 @@ __create_workqueue_key(const char *name, int singlethread,
- #define create_freezeable_workqueue(name) __create_workqueue((name), 1, 1, 0)
- #define create_singlethread_workqueue(name) __create_workqueue((name), 1, 0, 0)
- 
-+extern struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name); 
- extern void destroy_workqueue(struct workqueue_struct *wq);
- 
- extern int queue_work(struct workqueue_struct *wq, struct work_struct *work);
-diff --git a/kernel/workqueue.c b/kernel/workqueue.c
-index 5bfb213..6ba226e 100644
---- a/kernel/workqueue.c
-+++ b/kernel/workqueue.c
-@@ -35,6 +35,7 @@
- #include <linux/lockdep.h>
- #define CREATE_TRACE_POINTS
- #include <trace/events/workqueue.h>
-+#include <linux/cgroup.h>
- 
- /*
-  * The per-CPU workqueue (if single thread, we always use the first
-@@ -193,6 +194,45 @@ static const struct cpumask *cpu_singlethread_map __read_mostly;
-  */
- static cpumask_var_t cpu_populated_map __read_mostly;
- 
-+static struct task_struct *get_singlethread_wq_task(struct workqueue_struct *wq)
-+{
-+	return (per_cpu_ptr(wq->cpu_wq, singlethread_cpu))->thread;
-+}
-+
-+/* Create a singlethread workqueue and attach it's task to the current task's
-+ * cgroup and set it's cpumask to the current task's cpumask.
-+ */
-+struct workqueue_struct *create_singlethread_workqueue_in_current_cg(char *name)
-+{
-+	struct workqueue_struct *wq;
-+	struct task_struct *task;
-+	cpumask_var_t mask;
-+
-+	wq = create_singlethread_workqueue(name);
-+	if (!wq)
-+		goto out;
-+
-+	if (!alloc_cpumask_var(&mask, GFP_KERNEL))
-+		goto err;
-+			
-+	if (sched_getaffinity(current->pid, mask))
-+		goto err;
-+
-+	task = get_singlethread_wq_task(wq);
-+	if (sched_setaffinity(task->pid, mask))
-+		goto err;
-+
-+	if (cgroup_attach_task_current_cg(task))
-+		goto err;
-+out:	
-+	return wq;
-+err:
-+	destroy_workqueue(wq);
-+	wq = NULL;
-+	goto out;
-+}
-+EXPORT_SYMBOL_GPL(create_singlethread_workqueue_in_current_cg);
-+
- /* If it's single threaded, it isn't in the list of workqueues. */
- static inline int is_wq_single_threaded(struct workqueue_struct *wq)
+diff --git a/drivers/vhost/net.c b/drivers/vhost/net.c
+index 9777583..18bf5be 100644
+--- a/drivers/vhost/net.c
++++ b/drivers/vhost/net.c
+@@ -329,19 +329,22 @@ static void handle_rx_net(struct work_struct *work)
+ static int vhost_net_open(struct inode *inode, struct file *f)
  {
-	
+ 	struct vhost_net *n = kmalloc(sizeof *n, GFP_KERNEL);
++	struct vhost_dev *dev;
+ 	int r;
+ 	if (!n)
+ 		return -ENOMEM;
++
++	dev = &n->dev;
+ 	n->vqs[VHOST_NET_VQ_TX].handle_kick = handle_tx_kick;
+ 	n->vqs[VHOST_NET_VQ_RX].handle_kick = handle_rx_kick;
+-	r = vhost_dev_init(&n->dev, n->vqs, VHOST_NET_VQ_MAX);
++	r = vhost_dev_init(dev, n->vqs, VHOST_NET_VQ_MAX);
+ 	if (r < 0) {
+ 		kfree(n);
+ 		return r;
+ 	}
+ 
+-	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT);
+-	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN);
++	vhost_poll_init(n->poll + VHOST_NET_VQ_TX, handle_tx_net, POLLOUT, dev);
++	vhost_poll_init(n->poll + VHOST_NET_VQ_RX, handle_rx_net, POLLIN, dev);
+ 	n->tx_poll_state = VHOST_NET_POLL_DISABLED;
+ 
+ 	f->private_data = n;
+@@ -644,25 +647,14 @@ static struct miscdevice vhost_net_misc = {
+ 
+ int vhost_net_init(void)
+ {
+-	int r = vhost_init();
+-	if (r)
+-		goto err_init;
+-	r = misc_register(&vhost_net_misc);
+-	if (r)
+-		goto err_reg;
+-	return 0;
+-err_reg:
+-	vhost_cleanup();
+-err_init:
+-	return r;
+-
++	return misc_register(&vhost_net_misc);
+ }
++
+ module_init(vhost_net_init);
+ 
+ void vhost_net_exit(void)
+ {
+ 	misc_deregister(&vhost_net_misc);
+-	vhost_cleanup();
+ }
+ module_exit(vhost_net_exit);
+ 
+diff --git a/drivers/vhost/vhost.c b/drivers/vhost/vhost.c
+index 49fa953..b076b9b 100644
+--- a/drivers/vhost/vhost.c
++++ b/drivers/vhost/vhost.c
+@@ -37,8 +37,6 @@ enum {
+ 	VHOST_MEMORY_F_LOG = 0x1,
+ };
+ 
+-static struct workqueue_struct *vhost_workqueue;
+-
+ static void vhost_poll_func(struct file *file, wait_queue_head_t *wqh,
+ 			    poll_table *pt)
+ {
+@@ -57,18 +55,19 @@ static int vhost_poll_wakeup(wait_queue_t *wait, unsigned mode, int sync,
+ 	if (!((unsigned long)key & poll->mask))
+ 		return 0;
+ 
+-	queue_work(vhost_workqueue, &poll->work);
++	queue_work(poll->dev->wq, &poll->work);
+ 	return 0;
+ }
+ 
+ /* Init poll structure */
+ void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
+-		     unsigned long mask)
++		     unsigned long mask, struct vhost_dev *dev)
+ {
+ 	INIT_WORK(&poll->work, func);
+ 	init_waitqueue_func_entry(&poll->wait, vhost_poll_wakeup);
+ 	init_poll_funcptr(&poll->table, vhost_poll_func);
+ 	poll->mask = mask;
++	poll->dev = dev;
+ }
+ 
+ /* Start polling a file. We add ourselves to file's wait queue. The caller must
+@@ -97,7 +96,7 @@ void vhost_poll_flush(struct vhost_poll *poll)
+ 
+ void vhost_poll_queue(struct vhost_poll *poll)
+ {
+-	queue_work(vhost_workqueue, &poll->work);
++	queue_work(poll->dev->wq, &poll->work);
+ }
+ 
+ static void vhost_vq_reset(struct vhost_dev *dev,
+@@ -129,6 +128,13 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		    struct vhost_virtqueue *vqs, int nvqs)
+ {
+ 	int i;
++	char vhost_name[20];
++
++	snprintf(vhost_name, 20, "vhost-%d", current->pid);
++	dev->wq = create_singlethread_workqueue_in_current_cg(vhost_name);
++	if (!dev->wq)
++		return -ENOMEM;
++
+ 	dev->vqs = vqs;
+ 	dev->nvqs = nvqs;
+ 	mutex_init(&dev->mutex);
+@@ -144,7 +150,7 @@ long vhost_dev_init(struct vhost_dev *dev,
+ 		if (dev->vqs[i].handle_kick)
+ 			vhost_poll_init(&dev->vqs[i].poll,
+ 					dev->vqs[i].handle_kick,
+-					POLLIN);
++					POLLIN, dev);
+ 	}
+ 	return 0;
+ }
+@@ -217,6 +223,8 @@ void vhost_dev_cleanup(struct vhost_dev *dev)
+ 	if (dev->mm)
+ 		mmput(dev->mm);
+ 	dev->mm = NULL;
++
++	destroy_workqueue(dev->wq);
+ }
+ 
+ static int log_access_ok(void __user *log_base, u64 addr, unsigned long sz)
+@@ -1105,16 +1113,3 @@ void vhost_disable_notify(struct vhost_virtqueue *vq)
+ 		vq_err(vq, "Failed to enable notification at %p: %d\n",
+ 		       &vq->used->flags, r);
+ }
+-
+-int vhost_init(void)
+-{
+-	vhost_workqueue = create_singlethread_workqueue("vhost");
+-	if (!vhost_workqueue)
+-		return -ENOMEM;
+-	return 0;
+-}
+-
+-void vhost_cleanup(void)
+-{
+-	destroy_workqueue(vhost_workqueue);
+-}
+diff --git a/drivers/vhost/vhost.h b/drivers/vhost/vhost.h
+index 44591ba..60fefd0 100644
+--- a/drivers/vhost/vhost.h
++++ b/drivers/vhost/vhost.h
+@@ -29,10 +29,11 @@ struct vhost_poll {
+ 	/* struct which will handle all actual work. */
+ 	struct work_struct        work;
+ 	unsigned long		  mask;
++	struct vhost_dev	 *dev;
+ };
+ 
+ void vhost_poll_init(struct vhost_poll *poll, work_func_t func,
+-		     unsigned long mask);
++		     unsigned long mask, struct vhost_dev *dev);
+ void vhost_poll_start(struct vhost_poll *poll, struct file *file);
+ void vhost_poll_stop(struct vhost_poll *poll);
+ void vhost_poll_flush(struct vhost_poll *poll);
+@@ -110,6 +111,7 @@ struct vhost_dev {
+ 	int nvqs;
+ 	struct file *log_file;
+ 	struct eventfd_ctx *log_ctx;
++	struct workqueue_struct *wq;
+ };
+ 
+ long vhost_dev_init(struct vhost_dev *, struct vhost_virtqueue *vqs, int nvqs);
+@@ -136,9 +138,6 @@ bool vhost_enable_notify(struct vhost_virtqueue *);
+ int vhost_log_write(struct vhost_virtqueue *vq, struct vhost_log *log,
+ 		    unsigned int log_num, u64 len);
+ 
+-int vhost_init(void);
+-void vhost_cleanup(void);
+-
+ #define vq_err(vq, fmt, ...) do {                                  \
+ 		pr_debug(pr_fmt(fmt), ##__VA_ARGS__);       \
+ 		if ((vq)->error_ctx)                               \
+
 
