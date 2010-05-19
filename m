@@ -1,175 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753093Ab0ESXvB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 19:51:01 -0400
-Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:48308 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751475Ab0ESXu7 (ORCPT
+	id S1752945Ab0ESXvx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 19:51:53 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:40230 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752307Ab0ESXvv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 19:50:59 -0400
-Date: Thu, 20 May 2010 09:50:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
-       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100519235054.GS8120@dastard>
-References: <20100514010042.GI13617@dastard>
- <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
- <20100514064145.GJ13617@dastard>
- <20100514072219.GC4706@laptop>
- <20100514083821.GL13617@dastard>
- <20100518063647.GD2516@laptop>
- <20100518080503.GF2150@dastard>
- <20100518104351.GF2516@laptop>
- <20100518122714.GG2150@dastard>
- <20100518150912.GI2516@laptop>
+	Wed, 19 May 2010 19:51:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=lkzc53A5WAlIwZ7isiJJeQWUVuGiUd0r5eTppLGh/73TmlOSjeP0GfZ0KEwHfE0JW8
+         eWzUTtR9LAKx9RfW+6Js+ImtffbUG+VszBKs8FYXgNpDvUDbKCCsbfmVy7le8jIcJZ7t
+         u77GGDxkreWnXyyN8ietQTCO8auy2OzXypwnA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100518150912.GI2516@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100519203336.GB3394@redhat.com>
+References: <20100519203336.GB3394@redhat.com>
+Date: Thu, 20 May 2010 01:51:49 +0200
+Message-ID: <AANLkTimL7SjlZW5qxylc2MdygYugTFgDVdMM-N-E0tk0@mail.gmail.com>
+Subject: Re: [PATCH] cfq-iosched: Revert the logic of deep queues
+From: Corrado Zoccolo <czoccolo@gmail.com>
+To: Vivek Goyal <vgoyal@redhat.com>
+Cc: linux kernel mailing list <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Moyer Jeff Moyer <jmoyer@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 01:09:12AM +1000, Nick Piggin wrote:
-> On Tue, May 18, 2010 at 10:27:14PM +1000, Dave Chinner wrote:
-> > On Tue, May 18, 2010 at 08:43:51PM +1000, Nick Piggin wrote:
-> > > On Tue, May 18, 2010 at 06:05:03PM +1000, Dave Chinner wrote:
-> > > > On Tue, May 18, 2010 at 04:36:47PM +1000, Nick Piggin wrote:
-> > > > > Well you could do a large span block allocation at the beginning,
-> > > > > and then dirty the pagecache one by one like we do right now.
-> > > > 
-> > > > The problem is that if we fail to allocate a page (e.g.  ENOMEM) or
-> > > > fail the copy (EFAULT) after the block allocation, we have to undo
-> > > > the allocation we have already completed. If we don't, we leave
-> > > > uninitialisaed allocations on disk that will expose stale data.
-> > > > 
-> > > > In the second case (EFAULT) we might be able to zero the pages to
-> > > > avoid punching out blocks, but the first case where pages can't be
-> > > > allocated to cover the block allocated range makes it very
-> > > > difficult without being able to punch holes in allocated block
-> > > > ranges.
-> > > > 
-> > > > AFAIK, only XFS and OCFS2 currently support punching out arbitrary
-> > > > ranges of allocated blocks from an inode - there is not VFS method
-> > > > for it, just an ioctl (XFS_IOC_UNRESVSP).
-> > > > 
-> > > > Hence the way to avoid needing hole punching is to allocate and lock
-> > > > down all the pages into the page cache fіrst, then do the copy so
-> > > > they fail before the allocation is done if they are going to fail.
-> > > > That makes it much, much easier to handle failures....
-> > > 
-> > > So it is just a matter of what is exposed as a vfs interface?
-> > 
-> > More a matter of utilising the functionality most filesystems
-> > already have and minimising the amount of churn in critical areas of
-> > filesytsem code. Hole punching is not simple, anѕ bugs will likely
-> > result in a corrupted filesystem.  And the hole punching will only
-> > occur in a hard to trigger corner case, so it's likely that bugs
-> > will go undetected and filesystems will suffer from random,
-> > impossible to track down corruptions as a result.
-> > 
-> > In comparison, adding reserve/unreserve functionality might cause
-> > block accounting issues if there is a bug, but it won't cause
-> > on-disk corruption that results in data loss.  Hole punching is not
-> > simple or easy - it's a damn complex way to handle errors and if
-> > that's all it's required for then we've failed already.
-> 
-> As I said, we can have a dumb fallback path for filesystems that
-> don't implement hole punching. Clear the blocks past i size, and
-> zero out the allocated but not initialized blocks.
-> 
-> There does not have to be pagecache allocated in order to do this,
-> you could do direct IO from the zero page in order to do it.
+On Wed, May 19, 2010 at 10:33 PM, Vivek Goyal <vgoyal@redhat.com> wrote:
+> o This patch basically reverts following commit.
+>
+>        76280af cfq-iosched: idling on deep seeky sync queues
+>
+> o Idling in CFQ is bad on high end storage. This is especially more true of
+>  random reads. Idling works very well for SATA disks with single
+>  spindle but harms a lot on powerful storage boxes.
+>
+>  So even if deep queues can be little unfair to other random workload with
+>  shallow depths, treat deep queues as sync-noidle workload and not sync,
+>  because with sync workload we dispatch IO from only one queue at a time
+>  and idle and we don't drive enough queue depth to keep the array busy.
 
-I don't see that as a good solution - it's once again a fairly
-complex way of dealing with the problem, especially as it now means
-that direct io would fall back to buffered which would fall back to
-direct IO....
+Maybe we should have a tunable for this behavior, like we have
+group_isolation for groups? It seems the same trade off to me
+(fairness vs. performance).
+And we could let it default off (on NCQ disks), since I guess deep
+seeky queues are more frequent on high end hardware than on our
+desktops.
+Note that on non-NCQ disks there is not only a fairness problem, but
+also a latency problem by having those deep queues as noidle (so I
+would say that non-NCQ disks should default to on, instead).
 
-> Hole punching is not only useful there, it is already exposed to
-> userspace via MADV_REMOVE.
+Thanks
+Corrado
+>
+> o I am running aio-stress (random reads) as follows.
+>
+>  aio-stress -s 2g -O -t 4 -r 64k aio5 aio6 aio7 aio8 -o 3
+>
+>  Following are results with various combinations.
+>
+>  deadline:             232.94 MB/s
+>
+>  without patch
+>  -------------
+>  cfq default           75.32 MB/s
+>  cfq, quantum=64       134.58 MB/s
+>
+>  with patch
+>  ----------
+>  cfq default           78.37 MB/s
+>  cfq, quantum=64       213.94 MB
+>
+>  Note that with the patch applied, cfq really scales well if "quantum" is
+>  increased and comes close to deadline performance.
+>
+> o Point being that on powerful arrays one queue is not sufficient to keep
+>  array busy. This is already a bottleneck for sequential workloads. Lets
+>  not aggravate the problem by marking random read queues as sync and
+>  giving them exclusive access and hence effectively serializing the
+>  access to array.
+>
+> Signed-off-by: Vivek Goyal <vgoyal@redhat.com>
+> ---
+>  block/cfq-iosched.c |   12 +-----------
+>  1 files changed, 1 insertions(+), 11 deletions(-)
+>
+> diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+> index 5f127cf..3336bd7 100644
+> --- a/block/cfq-iosched.c
+> +++ b/block/cfq-iosched.c
+> @@ -313,7 +313,6 @@ enum cfqq_state_flags {
+>        CFQ_CFQQ_FLAG_sync,             /* synchronous queue */
+>        CFQ_CFQQ_FLAG_coop,             /* cfqq is shared */
+>        CFQ_CFQQ_FLAG_split_coop,       /* shared cfqq will be splitted */
+> -       CFQ_CFQQ_FLAG_deep,             /* sync cfqq experienced large depth */
+>        CFQ_CFQQ_FLAG_wait_busy,        /* Waiting for next request */
+>  };
+>
+> @@ -342,7 +341,6 @@ CFQ_CFQQ_FNS(slice_new);
+>  CFQ_CFQQ_FNS(sync);
+>  CFQ_CFQQ_FNS(coop);
+>  CFQ_CFQQ_FNS(split_coop);
+> -CFQ_CFQQ_FNS(deep);
+>  CFQ_CFQQ_FNS(wait_busy);
+>  #undef CFQ_CFQQ_FNS
+>
+> @@ -3036,11 +3034,8 @@ cfq_update_idle_window(struct cfq_data *cfqd, struct cfq_queue *cfqq,
+>
+>        enable_idle = old_idle = cfq_cfqq_idle_window(cfqq);
+>
+> -       if (cfqq->queued[0] + cfqq->queued[1] >= 4)
+> -               cfq_mark_cfqq_deep(cfqq);
+> -
+>        if (!atomic_read(&cic->ioc->nr_tasks) || !cfqd->cfq_slice_idle ||
+> -           (!cfq_cfqq_deep(cfqq) && CFQQ_SEEKY(cfqq)))
+> +           CFQQ_SEEKY(cfqq))
+>                enable_idle = 0;
+>        else if (sample_valid(cic->ttime_samples)) {
+>                if (cic->ttime_mean > cfqd->cfq_slice_idle)
+> @@ -3593,11 +3588,6 @@ static void cfq_idle_slice_timer(unsigned long data)
+>                 */
+>                if (!RB_EMPTY_ROOT(&cfqq->sort_list))
+>                        goto out_kick;
+> -
+> -               /*
+> -                * Queue depth flag is reset only when the idle didn't succeed
+> -                */
+> -               cfq_clear_cfqq_deep(cfqq);
+>        }
+>  expire:
+>        cfq_slice_expired(cfqd, timed_out);
+> --
+> 1.6.5.2
+>
+>
 
-That interface is *totally broken*. It has all the same problems as
-vmtruncate() for removing file blocks (because it uses vmtruncate).
-It also has the fundamental problem of being called un the mmap_sem,
-which means that inode locks and therefore de-allocation cannot be
-executed without the possibility of deadlocks. Fundamentally, hole
-punching is an inode operation, not a VM operation....
 
 
-> > > > > Basically, once pagecache is marked uptodate, I don't think we should
-> > > > > ever put maybe-invalid data into it -- the way to do it is to invalidate
-> > > > > that page and put a *new* page in there.
-> > > > 
-> > > > Ok, so lets do that...
-> > > > 
-> > > > > Why? Because user mappings are just one problem, but once you had a
-> > > > > user mapping, you can have been subject to get_user_pages, so it could
-> > > > > be in the middle of a DMA operation or something.
-> > > > 
-> > > > ... because we already know this behaviour causes problems for
-> > > > high end enterprise level features like hardware checksumming IO
-> > > > paths.
-> > > > 
-> > > > Hence it seems that a multipage write needs to:
-> > > > 
-> > > > 	1. allocate new pages
-> > > > 	2. attach bufferheads/mapping structures to pages (if required)
-> > > > 	3. copy data into pages
-> > > > 	4. allocate space
-> > > > 	5. for each old page in the range:
-> > > > 		lock page
-> > > > 		invalidate mappings
-> > > > 		clear page uptodate flag
-> > > > 		remove page from page cache
-> > > > 	6. for each new page:
-> > > > 		map new page to allocated space
-> > > > 		lock new page
-> > > > 		insert new page into pagecache
-> > > > 		update new page state (write_end equivalent)
-> > > > 		unlock new page
-> > > > 	7. free old pages
-> > > > 
-> > > > Steps 1-4 can all fail, and can all be backed out from without
-> > > > changing the current state. Steps 5-7 can't fail AFAICT, so we
-> > > > should be able to run this safely after the allocation without
-> > > > needing significant error unwinding...
-> > > > 
-> > > > Thoughts?
-> > > 
-> > > Possibly. The importance of hot cache is reduced, because we are
-> > > doing full-page copies, and bulk copies, by definition. But it
-> > > could still be an issue. The allocations and deallocations could
-> > > cost a little as well.
-> > 
-> > They will cost far less than the reduction in allocation overhead
-> > saves us, and there are potential optimisations there 
-> 
-> An API that doesn't require that, though, should be less overhead
-> and simpler.
-> 
-> Is it really going to be a problem to implement block hole punching
-> in ext4 and gfs2?
-
-I can't follow the ext4 code - it's an intricate maze of weird entry
-and exit points, so I'm not even going to attempt to comment on it.
-
-The gfs2 code is easier to follow and it looks like it would require
-a redesign and rewrite of the block truncation implementation as it
-appears to assume that blocks are only ever removed from the end of
-the file - I don't think the recursive algorithms for trimming the
-indirect block trees can be easily modified for punching out
-arbitrary ranges of blocks easily. I could be wrong, though, as I'm
-not a gfs2 expert....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+__________________________________________________________________________
+
+dott. Corrado Zoccolo                          mailto:czoccolo@gmail.com
+PhD - Department of Computer Science - University of Pisa, Italy
+--------------------------------------------------------------------------
+The self-confidence of a warrior is not the self-confidence of the average
+man. The average man seeks certainty in the eyes of the onlooker and calls
+that self-confidence. The warrior seeks impeccability in his own eyes and
+calls that humbleness.
+                               Tales of Power - C. Castaneda
