@@ -1,71 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753342Ab0ESPoY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:44:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40957 "EHLO smtps.tip.net.au"
+	id S1753396Ab0ESPoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:44:39 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:59962 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753042Ab0ESPoX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:44:23 -0400
-Date: Thu, 20 May 2010 01:44:20 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 07/17] usb: update gfp/slab.h includes
-Message-Id: <20100520014420.22a0e715.sfr@canb.auug.org.au>
-In-Reply-To: <1269885165-18617-8-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-8-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1753367Ab0ESPoh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:44:37 -0400
+Date: Thu, 20 May 2010 01:44:31 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
+       linux-kernel@vger.kernel.org, arjan@infradead.org,
+       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
+       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: Re: Unexpected splice "always copy" behavior observed
+Message-ID: <20100519154431.GC2516@laptop>
+References: <20100518153440.GB7748@Krystal>
+ <1274197993.26328.755.camel@gandalf.stny.rr.com>
+ <1274199039.26328.758.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
+ <20100519063116.GR2516@laptop>
+ <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
+ <20100519151726.GB2516@laptop>
+ <alpine.LFD.2.00.1005190828050.23538@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005190828050.23538@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
+On Wed, May 19, 2010 at 08:30:10AM -0700, Linus Torvalds wrote:
+> 
+> 
+> On Thu, 20 May 2010, Nick Piggin wrote:
+> > 
+> > Well I mean a full invalidate -- invalidate_mapping_pages -- so there is
+> > literally no pagecache there at all.
+> 
+> Umm. That won't work. Think mapped pages. You can't handle them 
+> atomically, so somebody will page-fault them in.
+> 
+> So you'd have to have a "invalidate_and_replace()" to do it atomically 
+> while holding the mapping spinlock or something. 
+> 
+> And WHAT IS THE POINT? That will be about a million times slower than 
+> just doing the effing copy in the first place!
+> 
+> Memory copies are _not_ slow. Not compared to taking locks and doing TLB 
+> invalidates.
 
-On Tue, 30 Mar 2010 02:52:35 +0900 Tejun Heo <tj@kernel.org> wrote:
->
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
+No I never thought it would be a good idea to try to avoid all races
+or anything. Obviously some cases *cannot* be easily invalidated, if
+there is a ref on the page or whatever, so the fallback code has to
+be there anyway.
 
-Please apply to the usb tree (patch reposted below).
+So you would just invalidate and try to insert your page. 99.something%
+of the time it will work fine. If the insert fails, fall back to
+copying.
 
-From: Tejun Heo <tj@kernel.org>
-To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 07/17] usb: update gfp/slab.h includes
-Date: Tue, 30 Mar 2010 02:52:35 +0900
-
-Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-gfp.h or slab.h is included as necessary.
-
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
----
- drivers/usb/musb/musb_debugfs.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
-
-diff --git a/drivers/usb/musb/musb_debugfs.c b/drivers/usb/musb/musb_debugfs.c
-index b6a27ba..3310b52 100644
---- a/drivers/usb/musb/musb_debugfs.c
-+++ b/drivers/usb/musb/musb_debugfs.c
-@@ -34,7 +34,6 @@
- #include <linux/module.h>
- #include <linux/kernel.h>
- #include <linux/sched.h>
--#include <linux/slab.h>
- #include <linux/init.h>
- #include <linux/list.h>
- #include <linux/kobject.h>
--- 
-1.6.4.2
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+And hey you *may* even want a heuristic that avoids trying to invalidate
+if the page is mapped, due to cost of TLB flushing and faulting etc.
