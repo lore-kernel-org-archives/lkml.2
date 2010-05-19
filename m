@@ -1,93 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758090Ab0ESMtX (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:49:23 -0400
-Received: from casper.infradead.org ([85.118.1.10]:48231 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758067Ab0ESMtU (ORCPT
+	id S1758076Ab0ESMvu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:51:50 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63358 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752352Ab0ESMvs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:49:20 -0400
-Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
- cache lines
-From: David Woodhouse <dwmw2@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Marc Gauthier <marc@tensilica.com>, Mike Frysinger <vapier.adi@gmail.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Johannes Weiner <jw@emlix.com>, Christoph Lameter <cl@linux.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>, Matt Mackall <mpm@selenic.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Oskar Schirmer <os@emlix.com>,
-       Michael Hennerich <Michael.Hennerich@analog.com>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Daniel =?ISO-8859-1?Q?Gl=F6ckner?= <dg@emlix.com>,
-       Oliver Schneidewind <osw@emlix.com>,
-       David Rientjes <rientjes@google.com>,
-       David Brownell <dbrownell@users.sourceforge.net>,
-       Grant Likely <grant.likely@secretlab.ca>,
-       Chris Zankel <chris@zankel.net>,
-       Piet Delaney <Piet.Delaney@tensilica.com>
-In-Reply-To: <20100512030350.GJ15903@laptop>
-References: <1273608441.15067.1002.camel@calx>
-	 <AANLkTimt-eRCt_HTq7OUwzG1dgRuzJHk1tlgOcq4ocL7@mail.gmail.com>
-	 <alpine.DEB.2.00.1005111520260.1500@router.home>
-	 <AANLkTilEfZLWYxPmCQ1KHIvUGIF_8Qchali66wHNf2gB@mail.gmail.com>
-	 <alpine.DEB.2.00.1005111544330.8388@router.home>
-	 <AANLkTimzxrZyQAfocTwIt5zCVyXP7bReKOvP4K7m8epO@mail.gmail.com>
-	 <20100511214836.GH1726@emlix.com>
-	 <20100511215359.GF7396@core.coreip.homeip.net>
-	 <AANLkTimm7bOmIz2sdODgHwtCk26kdHgZt7PvceM6gjS3@mail.gmail.com>
-	 <522C1DF17AF50042AD8AE87F7887BD3D0163549554@exch.hq.tensilica.com>
-	 <20100512030350.GJ15903@laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 13:48:45 +0100
-Message-ID: <1274273325.6930.10022.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	Wed, 19 May 2010 08:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=uhd0iwvXuLQq6JfeOTV4btnTShS5+K1q6zpYCUY30wWQQtv5Q0zLzy+idsIA/ZeBRE
+         WGvuN095kmhHfXR9szoObg8LGPsM6KEvtyABy+Ukw/ku53ld/vyQu6mzEHxpkF6x3S9F
+         h7oTxwsp6PQdPGqw1Gwugj1Szr+cu0RxQB4bk=
+Date: Wed, 19 May 2010 14:51:51 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Arnd Bergmann <arnd@arndb.de>,
+       =?iso-8859-1?Q?J=F6rn?= Engel <joern@logfs.org>
+Cc: John Kacur <jkacur@redhat.com>, lkml <linux-kernel@vger.kernel.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [PATCH] logfs: kill BKL
+Message-ID: <20100519125148.GB1213@nowhere>
+References: <alpine.LFD.2.00.1004271359180.3318@localhost> <201004271738.50505.arnd@arndb.de> <20100427201247.GE5586@nowhere> <201004272230.07545.arnd@arndb.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201004272230.07545.arnd@arndb.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-12 at 13:03 +1000, Nick Piggin wrote:
-> I don't think it's necessarily a good idea. MINALIGN is an enforced
-> minimum alignment and the allocator has no leeway in reducing this.
-> In a UP system, or in a memory constrained system, it might be a better
-> idea to pack objects more tightly, for example.
+On Tue, Apr 27, 2010 at 10:30:06PM +0200, Arnd Bergmann wrote:
+> logfs does not need the BKL, so use ->unlocked_ioctl instead
+> of ->ioctl in file operations.
+> ---
+> On Tuesday 27 April 2010 22:12:52 Frederic Weisbecker wrote:
+> > 
+> > I've applied this series in bkl/ioctl, it passed allyesconfig in sparc.
+> > I will apply the others from you and John tomorrow or so (and will enjoy
+> > my part as well). Jörn, please queue this patch if you want to, as you prefer,
+> > we can host it as well if necessary.
 > 
-> If we allow drivers to assume kmalloc is cacheline aligned, it will be
-> (practically) impossible to revert this because it would require driver
-> audits.
+> I believe that this is the one that Jörn would prefer to go in. I hope I
+> got it right by editing the patch.
 
-No, we definitely don't, and shouldn't, allow drivers to assume that
-kmalloc is cacheline-aligned.
 
-However, we _do_ allow drivers to assume that kmalloc is DMA-safe. That
-happens to mean "cacheline-aligned" for cache-incoherent architectures,
-but drivers should never really have to think about that.
 
-> So whenever strengthening API guarantees like this, it is better to be
-> very careful and conservative. Probably even introducing a new API with
-> the stronger semantics (even if it is just a wrapper in the case where
-> KMALLOC_MINALIGNED *is* cacheline sized).
+Jörn, any news about this patch? If you're fine with it,
+could you queue it for .35 ?
 
-We're not talking about strengthening API guarantees. It's _always_ been
-this way; it's just that some architectures are buggy.
+Thanks.
 
-But it looks like ARM, PowerPC, SH, MIPS, Microblaze, AVR32 and all
-unconditionally cache-coherent architectures _do_ get it right already.
 
-> I think adding to the DMA API would be a better idea. If the arch knows
-> that kmalloc is suitable for the job directly, it can be used. Drivers
-> can use the new interface, and kmalloc doesn't get saddled with
-> alignment requirements.
 
-No, that would be a change which would require auditing all drivers. The
-_current_ rule is that buffers returned from kmalloc() are OK for DMA.
-
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+> 
+> diff --git a/fs/logfs/dir.c b/fs/logfs/dir.c
+> index 2396a85..a801b5e 100644
+> --- a/fs/logfs/dir.c
+> +++ b/fs/logfs/dir.c
+> @@ -821,7 +821,7 @@ const struct inode_operations logfs_dir_iops = {
+>  };
+>  const struct file_operations logfs_dir_fops = {
+>  	.fsync		= logfs_fsync,
+> -	.ioctl		= logfs_ioctl,
+> +	.unlocked_ioctl	= logfs_ioctl,
+>  	.readdir	= logfs_readdir,
+>  	.read		= generic_read_dir,
+>  };
+> diff --git a/fs/logfs/file.c b/fs/logfs/file.c
+> index 370f367..1dbc342 100644
+> --- a/fs/logfs/file.c
+> +++ b/fs/logfs/file.c
+> @@ -171,9 +172,9 @@ static int logfs_releasepage(struct page *page, gfp_t only_xfs_uses_this)
+>  }
+>  
+>  
+> -int logfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+> -		unsigned long arg)
+> +long logfs_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>  {
+> +	struct inode *inode = file->f_path.dentry->d_inode;
+>  	struct logfs_inode *li = logfs_inode(inode);
+>  	unsigned int oldflags, flags;
+>  	int err;
+> @@ -243,7 +255,7 @@ const struct file_operations logfs_reg_fops = {
+>  	.aio_read	= generic_file_aio_read,
+>  	.aio_write	= generic_file_aio_write,
+>  	.fsync		= logfs_fsync,
+> -	.ioctl		= logfs_ioctl,
+> +	.unlocked_ioctl	= logfs_ioctl,
+>  	.llseek		= generic_file_llseek,
+>  	.mmap		= generic_file_readonly_mmap,
+>  	.open		= generic_file_open,
+> diff --git a/fs/logfs/logfs.h b/fs/logfs/logfs.h
+> index 0a3df1a..8432c51 100644
+> --- a/fs/logfs/logfs.h
+> +++ b/fs/logfs/logfs.h
+> @@ -501,8 +501,8 @@ extern const struct inode_operations logfs_reg_iops;
+>  extern const struct file_operations logfs_reg_fops;
+>  extern const struct address_space_operations logfs_reg_aops;
+>  int logfs_readpage(struct file *file, struct page *page);
+> -int logfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
+> -		unsigned long arg);
+> +long logfs_ioctl(struct file *file, unsigned int cmd,
+> +		 unsigned long arg);
+>  int logfs_fsync(struct file *file, struct dentry *dentry, int datasync);
+>  
+>  /* gc.c */
 
