@@ -1,78 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751948Ab0ESFos (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 01:44:48 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:64799 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751273Ab0ESFor convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 01:44:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=kAGp6U5OM5TXS0XB5mYN7MN2SlMHFfB5UO/YpROe4UFopGLIyohKREJ5EEwkI4EdEN
-         w9RoKtBZRXwXy3hEs7AEuy3UCVcGTcDi5EFB8LJtt2teUoSUE15Y335yLmjOPmCr1YTJ
-         YJLIO9jlyPxfg2PMzEAr7bu+sdIW29teUpmBE=
+	id S1751981Ab0ESFqj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 01:46:39 -0400
+Received: from ozlabs.org ([203.10.76.45]:56709 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751273Ab0ESFqi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 01:46:38 -0400
+Date: Wed, 19 May 2010 15:46:36 +1000
+From: Tony Breeds <tony@bakeyournoodle.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, benh@kernel.crashing.org, stable@kernel.org,
+       tglx@linutronix.de, Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:core/locking] mutex: Fix optimistic spinning vs. BKL
+Message-ID: <20100519054636.GC12389@ozlabs.org>
+Mail-Followup-To: Ingo Molnar <mingo@elte.hu>, mingo@redhat.com,
+	hpa@zytor.com, linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl,
+	benh@kernel.crashing.org, stable@kernel.org, tglx@linutronix.de,
+	Linus Torvalds <torvalds@linux-foundation.org>,
+	linux-tip-commits@vger.kernel.org
+References: <20100507042010.GR12389@ozlabs.org>
+ <tip-227945799cc10d77c6ef812f3eb8a61a78689454@git.kernel.org>
+ <20100518160838.GA20658@elte.hu>
 MIME-Version: 1.0
-In-Reply-To: <20100518.142021.135951273.davem@davemloft.net>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-Date: Wed, 19 May 2010 08:44:43 +0300
-X-Google-Sender-Auth: GJ2TIaXuMKQmSt97B9E44YF261M
-Message-ID: <AANLkTimjyRdzK3gXptoheWQGEdzdQlJjSdpCTXSbGseV@mail.gmail.com>
-Subject: Re: [BUG] SLOB breaks Crypto
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: David Miller <davem@davemloft.net>
-Cc: mpm@selenic.com, herbert@gondor.hengli.com.au, ken@codelabs.ch,
-       geert@linux-m68k.org, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <20100518160838.GA20658@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+On Tue, May 18, 2010 at 06:08:38PM +0200, Ingo Molnar wrote:
+> 
+> * tip-bot for Tony Breeds <tony@bakeyournoodle.com> wrote:
+> 
+> > Commit-ID:  227945799cc10d77c6ef812f3eb8a61a78689454
+> > Gitweb:     http://git.kernel.org/tip/227945799cc10d77c6ef812f3eb8a61a78689454
+> > Author:     Tony Breeds <tony@bakeyournoodle.com>
+> > AuthorDate: Fri, 7 May 2010 14:20:10 +1000
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Tue, 11 May 2010 17:07:24 +0200
+> > 
+> > mutex: Fix optimistic spinning vs. BKL
+> 
+> Tony, mind sending a version of this patch that does not 
+> include a jiffies based spinning loop?
 
-On Wed, May 19, 2010 at 12:20 AM, David Miller <davem@davemloft.net> wrote:
->> Why? It doesn't make much sense for SLOB, which tries to be as space
->> efficient as possible, as a default. If things break on sparc, it
->> really needs to set ARCH_KMALLOC_MINALIGN as slab default alignment is
->> not something you really want to depend on.
->
-> I think it does make sense to expect that, whatever my architecture
-> defines or does not define, I can expect the allocators to provide the
-> same minimum alignment guarentee.  Otherwise it is no guarantee at all.
+Subject: [PATCH] mutex: Fix optimistic spinning vs. BKL
 
-They're not a guarantee, the default values are just "oh, you don't
-care about alignment, let me provide one for you".
+Currently, we can hit a nasty case with optimistic spinning on
+mutexes:
 
-> I'll add the define for sparc, but saying "sparc's fault" is bogus
-> because I defined what was necessary to get SLAB/SLUB to provide the
-> necessary alignment.  SLOB pays for choosing not to use the same
-> calculations for minimum alignment as the other allocators, and
-> therefore pays for being different in this regard.
->
-> And in fact I do know that the ifdef'ery in SLAB/SLUB is derived from
-> a change long ago that was specifically added to handle platforms like
-> sparc.
->
-> So one of two things should happen:
->
-> 1) SLOB conforms to SLAB/SLUB in it's test
->
-> 2) SLAB/SLUB conforms to SLOB in it's test
->
-> And yes this is an either-or, you can't say they are both valid.
+    CPU A tries to take a mutex, while holding the BKL
 
-I don't agree with that. The default values are subject to change and
-as pointed out by Paul, they have done so in the past. If you
-architecture has alignment requirements for _correctness_ you
-absolutely need to define ARCH_KMALLOC_MINALIGN.
+    CPU B tried to take the BLK while holding the mutex
 
-                         Pekka
+This looks like a AB-BA scenario but in practice, is allowed and
+happens due to the auto-release-on-schedule nature of the BKL.
+
+In that case, the optimistic spinning code can get us into a situation
+where instead of going to sleep, A will spin waiting for B who is
+spinning waiting for A, and the only way out of that loop is the
+need_resched() test in mutex_spin_on_owner().
+
+This patch fixes both in a rather crude way. I completely disable
+spinning if we own the BKL, and I add a safety timeout using jiffies
+to fallback to sleeping if we end up spinning for more than 1 or 2
+jiffies.
+
+Signed-off-by: Tony Breeds <tony@bakeyournoodle.com>
+Cc: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: <stable@kernel.org>
+---
+ kernel/mutex.c |    7 +++++++
+ 1 files changed, 7 insertions(+), 0 deletions(-)
+
+diff --git a/kernel/mutex.c b/kernel/mutex.c
+index 632f04c..c38d302 100644
+--- a/kernel/mutex.c
++++ b/kernel/mutex.c
+@@ -172,6 +172,13 @@ __mutex_lock_common(struct mutex *lock, long state, unsigned int subclass,
+ 		struct thread_info *owner;
+ 
+ 		/*
++		 * If we own the BKL, then don't spin. The owner of the mutex
++		 * might be waiting on us to release the BKL.
++		 */
++		if (current->lock_depth >= 0)
++			break;
++
++		/*
+ 		 * If there's an owner, wait for it to either
+ 		 * release the lock or go to sleep.
+ 		 */
+-- 
+1.6.6.1
+
+
+Yours Tony
