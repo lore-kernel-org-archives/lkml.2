@@ -1,82 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751900Ab0ESVIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 17:08:14 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36674 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750711Ab0ESVIM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 17:08:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gkhSYE/DISPqhL4A6XvRFJ+GdrDAAQA/MsAYxNSUIdeiFY8FR8tSblZmywPny5cHjT
-         dPuoF5RzXOIaIrhKh5BCCPJH4Fc3A8R8f2u3PfmqYRj2/FdnEcQQ3H+C4ZhFygIyiRir
-         g3EKR7RxzJdHz254dCx742ONmMvVakEfJ/Cjc=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-pcmcia@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org, linux@dominikbrodowski.net,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH][bisected]pcmcia:yenta_socket.c fix broken wireless cards.
-Date: Wed, 19 May 2010 14:08:04 -0700
-Message-Id: <1274303284-21529-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	id S1752081Ab0ESVJF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 17:09:05 -0400
+Received: from www.tglx.de ([62.245.132.106]:57686 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750832Ab0ESVJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 17:09:03 -0400
+Date: Wed, 19 May 2010 23:08:33 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Darren Hart <dvhltc@us.ibm.com>
+cc: michael@ellerman.id.au, Brian King <brking@linux.vnet.ibm.com>,
+       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
+       niv@linux.vnet.ibm.com, Doug Maxey <doug.maxey@us.ibm.com>,
+       linuxppc-dev@lists.ozlabs.org
+Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
+ (IRQF_NODELAY)
+In-Reply-To: <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1005192244430.3368@localhost.localdomain>
+References: <4BF30793.5070300@us.ibm.com> <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com> <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com> <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I've an old dell inspiron 1200(amazingly still works), that use's
-a D-Link DWL-G650, and/or a Dell Wireless 1350 for it's wireless
-connection.
+On Wed, 19 May 2010, Thomas Gleixner wrote:
+> > I'm still not clear on why the ultimate solution wasn't to have XICS report
+> > edge triggered as edge triggered. Probably some complexity of the entire power
+> > stack that I am ignorant of.
+> > 
+> > > Apart from the issue of loosing interrupts there is also the fact that
+> > > masking on the XICS requires an RTAS call which takes a global lock.
+> 
+> Right, I'd love to avoid that but with real level interrupts we'd run
+> into an interrupt storm. Though another solution would be to issue the
+> EOI after the threaded handler finished, that'd work as well, but
+> needs testing.
 
-With using opensuse11.2(kernel:2.6.32*), the card(s) work fine, but as soon
-as I pulled the latest HEAD, all hell broke loose. So after doing a
-days worth of bisecting with this machine(painfully slow), it finally
-came down to this commit:
+Thought more about that. The case at hand (ehea) is nasty:
 
-commit 28ca8dd71fc170090edca62cb8129625d01b7760
-Author: Jens K<C3><BC>nzer <Jens.Kuenzer@fpga.homeip.net>
-Date:   Sat Mar 6 07:46:16 2010 +0100
+The driver does _NOT_ disable the rx interrupt in the card in the rx
+interrupt handler - for whatever reason.
 
-    pcmcia: honor saved flags in yenta_socket's I365_CSCINT register
-    
-    Instead of overwriting the I365_CSCINT register, save the old value and
-    merely change the bits we care about.
-    
-    Part 1 of a series to allow the ISA irq to be used for Cardbus devices
-    if the socket's PCI irq is unusable.
-    
-    [linux@dominikbrodowski.net: split up the original patch, commit message]
-    
-    Signed-off-by: Jens Kuenzer <Jens.Kuenzer@fpga.homeip.net>
-    Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
- 
-so after fussing around with this commit, and yenta_socket.c
-I come up with something, that does get my cards
-powered up, and all good(hopefully).
+ So even in mainline you get repeated rx interrupts when packets
+ arrive while napi is processing the poll, which is suboptimal at
+ least. In fact it is counterproductive as the whole purpose of NAPI
+ is to _NOT_ get interrupts for consecutive incoming packets while the
+ poll is active.
 
-Anyways please have a look, if you need me to test something
-different let me know. 
- 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Most of the other network drivers do:
 
----
- drivers/pcmcia/yenta_socket.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+      rx_irq()
+	disable rx interrupts on card
+	napi_schedule()
 
-diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
-index 83ace27..7d6f43b 100644
---- a/drivers/pcmcia/yenta_socket.c
-+++ b/drivers/pcmcia/yenta_socket.c
-@@ -989,7 +989,7 @@ static int yenta_probe_cb_irq(struct yenta_socket *socket)
- 	}
- 
- 	/* generate interrupt, wait */
--	reg = exca_readb(socket, I365_CSCINT);
-+	reg = exca_readb(socket, I365_CSCINT | I365_CSC_ANY);
- 	exca_writeb(socket, I365_CSCINT, reg | I365_CSC_STSCHG);
- 	cb_writel(socket, CB_SOCKET_EVENT, -1);
- 	cb_writel(socket, CB_SOCKET_MASK, CB_CSTSMASK);
--- 
-1.6.5.2.180.gc5b3e
+Now when the napi poll is done (no more packets available) then the
+driver reenables the rx interrupt on the card.
 
+Thanks,
+
+	tglx
