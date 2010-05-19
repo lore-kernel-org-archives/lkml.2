@@ -1,187 +1,178 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756203Ab0ESKe4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 06:34:56 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41931 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753382Ab0ESKez (ORCPT
+	id S1757390Ab0ESKhd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 06:37:33 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:54638 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757112Ab0ESKhb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 06:34:55 -0400
-Date: Wed, 19 May 2010 12:34:48 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
-       Devin Heitmueller <dheitmueller@kernellabs.com>,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/dvb/dvb-usb/dib0700: fix return values
-Message-ID: <20100519103448.GH5202@pengutronix.de>
-References: <1274264772-19292-1-git-send-email-daniel@caiaq.de>
-MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="4C6bbPZ6c/S1npyF"
-Content-Disposition: inline
-In-Reply-To: <1274264772-19292-1-git-send-email-daniel@caiaq.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 19 May 2010 06:37:31 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
+         :in-reply-to:references;
+        b=K8r9mVSGQL8X5qe4VjOM03g5dGw5VhA4jkAZb3HhtcFEvfYKtSxHrvn1klREDvR2tR
+         Lxr3bWDRKDKTU/+ROdz25smZBjsYoo88pmyrZdohKgDXhnJ7Uc0ImztZ4pSbZ+jdykuu
+         lhZahnv4QCj3r0CnN3q5MnNFaWRX6BnGRvzqA=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>, Don Zickus <dzickus@redhat.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Cyrill Gorcunov <gorcunov@gmail.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: [PATCH 1/2] lockup_detector: Convert per_cpu to __get_cpu_var for readability
+Date: Wed, 19 May 2010 12:37:34 +0200
+Message-Id: <1274265455-1948-2-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+In-Reply-To: <1274265455-1948-1-git-send-regression-fweisbec@gmail.com>
+References: <1274265455-1948-1-git-send-regression-fweisbec@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Don Zickus <dzickus@redhat.com>
 
---4C6bbPZ6c/S1npyF
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Just a bunch of conversions as suggested by Frederic W.
+__get_cpu_var() provides preemption disabled checks.
 
-On Wed, May 19, 2010 at 12:26:12PM +0200, Daniel Mack wrote:
-> Propagte correct error values instead of returning -1 which just means
-> -EPERM ("Permission denied")
->=20
-> While at it, also fix some coding style violations.
->=20
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+Plus it gives more readability as it makes it obvious
+we are dealing locally now with these vars.
 
-Just minor nits. You decide if it is worth a resend ;)
+Signed-off-by: Don Zickus <dzickus@redhat.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Don Zickus <dzickus@redhat.com>
+Cc: Cyrill Gorcunov <gorcunov@gmail.com>
+LKML-Reference: <1274133966-18415-2-git-send-email-dzickus@redhat.com>
+Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
+---
+ kernel/watchdog.c |   35 +++++++++++++++++------------------
+ 1 files changed, 17 insertions(+), 18 deletions(-)
 
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
-> Cc: linux-media@vger.kernel.org
-> ---
->  drivers/media/dvb/dvb-usb/dib0700_core.c |   47 ++++++++++++++----------=
------
->  1 files changed, 23 insertions(+), 24 deletions(-)
->=20
-> diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb=
-/dvb-usb/dib0700_core.c
-> index d5e2c23..c73da6b 100644
-> --- a/drivers/media/dvb/dvb-usb/dib0700_core.c
-> +++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
-> @@ -111,23 +111,24 @@ int dib0700_set_gpio(struct dvb_usb_device *d, enum=
- dib07x0_gpios gpio, u8 gpio_
-> =20
->  static int dib0700_set_usb_xfer_len(struct dvb_usb_device *d, u16 nb_ts_=
-packets)
->  {
-> -    struct dib0700_state *st =3D d->priv;
-> -    u8 b[3];
-> -    int ret;
-> -
-> -    if (st->fw_version >=3D 0x10201) {
-> -	b[0] =3D REQUEST_SET_USB_XFER_LEN;
-> -	b[1] =3D (nb_ts_packets >> 8)&0xff;
-> -	b[2] =3D nb_ts_packets & 0xff;
-> -
-> -	deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
-> -
-> -	ret =3D dib0700_ctrl_wr(d, b, 3);
-> -    } else {
-> -	deb_info("this firmware does not allow to change the USB xfer len\n");
-> -	ret =3D -EIO;
-> -    }
-> -    return ret;
-> +	struct dib0700_state *st =3D d->priv;
-> +	u8 b[3];
-> +	int ret;
-> +
-> +	if (st->fw_version >=3D 0x10201) {
-> +		b[0] =3D REQUEST_SET_USB_XFER_LEN;
-> +		b[1] =3D (nb_ts_packets >> 8)&0xff;
+diff --git a/kernel/watchdog.c b/kernel/watchdog.c
+index e53622c..91b0b26 100644
+--- a/kernel/watchdog.c
++++ b/kernel/watchdog.c
+@@ -115,7 +115,7 @@ static unsigned long get_sample_period(void)
+ /* Commands for resetting the watchdog */
+ static void __touch_watchdog(void)
+ {
+-	int this_cpu = raw_smp_processor_id();
++	int this_cpu = smp_processor_id();
+ 
+ 	__get_cpu_var(watchdog_touch_ts) = get_timestamp(this_cpu);
+ }
+@@ -157,21 +157,21 @@ void touch_softlockup_watchdog_sync(void)
+ 
+ #ifdef CONFIG_HARDLOCKUP_DETECTOR
+ /* watchdog detector functions */
+-static int is_hardlockup(int cpu)
++static int is_hardlockup(void)
+ {
+-	unsigned long hrint = per_cpu(hrtimer_interrupts, cpu);
++	unsigned long hrint = __get_cpu_var(hrtimer_interrupts);
+ 
+-	if (per_cpu(hrtimer_interrupts_saved, cpu) == hrint)
++	if (__get_cpu_var(hrtimer_interrupts_saved) == hrint)
+ 		return 1;
+ 
+-	per_cpu(hrtimer_interrupts_saved, cpu) = hrint;
++	__get_cpu_var(hrtimer_interrupts_saved) = hrint;
+ 	return 0;
+ }
+ #endif
+ 
+-static int is_softlockup(unsigned long touch_ts, int cpu)
++static int is_softlockup(unsigned long touch_ts)
+ {
+-	unsigned long now = get_timestamp(cpu);
++	unsigned long now = get_timestamp(smp_processor_id());
+ 
+ 	/* Warn about unreasonable delays: */
+ 	if (time_after(now, touch_ts + softlockup_thresh))
+@@ -206,8 +206,6 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 		 struct perf_sample_data *data,
+ 		 struct pt_regs *regs)
+ {
+-	int this_cpu = smp_processor_id();
+-
+ 	if (__get_cpu_var(watchdog_nmi_touch) == true) {
+ 		__get_cpu_var(watchdog_nmi_touch) = false;
+ 		return;
+@@ -219,7 +217,9 @@ void watchdog_overflow_callback(struct perf_event *event, int nmi,
+ 	 * fired multiple times before we overflow'd.  If it hasn't
+ 	 * then this is a good indication the cpu is stuck
+ 	 */
+-	if (is_hardlockup(this_cpu)) {
++	if (is_hardlockup()) {
++		int this_cpu = smp_processor_id();
++
+ 		/* only print hardlockups once */
+ 		if (__get_cpu_var(hard_watchdog_warn) == true)
+ 			return;
+@@ -247,7 +247,6 @@ static inline void watchdog_interrupt_count(void) { return; }
+ /* watchdog kicker functions */
+ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ {
+-	int this_cpu = smp_processor_id();
+ 	unsigned long touch_ts = __get_cpu_var(watchdog_touch_ts);
+ 	struct pt_regs *regs = get_irq_regs();
+ 	int duration;
+@@ -262,12 +261,12 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	hrtimer_forward_now(hrtimer, ns_to_ktime(get_sample_period()));
+ 
+ 	if (touch_ts == 0) {
+-		if (unlikely(per_cpu(softlockup_touch_sync, this_cpu))) {
++		if (unlikely(__get_cpu_var(softlockup_touch_sync))) {
+ 			/*
+ 			 * If the time stamp was touched atomically
+ 			 * make sure the scheduler tick is up to date.
+ 			 */
+-			per_cpu(softlockup_touch_sync, this_cpu) = false;
++			__get_cpu_var(softlockup_touch_sync) = false;
+ 			sched_clock_tick();
+ 		}
+ 		__touch_watchdog();
+@@ -280,14 +279,14 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ 	 * indicate it is getting cpu time.  If it hasn't then
+ 	 * this is a good indication some task is hogging the cpu
+ 	 */
+-	duration = is_softlockup(touch_ts, this_cpu);
++	duration = is_softlockup(touch_ts);
+ 	if (unlikely(duration)) {
+ 		/* only warn once */
+ 		if (__get_cpu_var(soft_watchdog_warn) == true)
+ 			return HRTIMER_RESTART;
+ 
+ 		printk(KERN_ERR "BUG: soft lockup - CPU#%d stuck for %us! [%s:%d]\n",
+-			this_cpu, duration,
++			smp_processor_id(), duration,
+ 			current->comm, task_pid_nr(current));
+ 		print_modules();
+ 		print_irqtrace_events(current);
+@@ -309,10 +308,10 @@ static enum hrtimer_restart watchdog_timer_fn(struct hrtimer *hrtimer)
+ /*
+  * The watchdog thread - touches the timestamp.
+  */
+-static int watchdog(void *__bind_cpu)
++static int watchdog(void *unused)
+ {
+ 	struct sched_param param = { .sched_priority = MAX_RT_PRIO-1 };
+-	struct hrtimer *hrtimer = &per_cpu(watchdog_hrtimer, (unsigned long)__bind_cpu);
++	struct hrtimer *hrtimer = &__raw_get_cpu_var(watchdog_hrtimer);
+ 
+ 	sched_setscheduler(current, SCHED_FIFO, &param);
+ 
+@@ -328,7 +327,7 @@ static int watchdog(void *__bind_cpu)
+ 	/*
+ 	 * Run briefly once per second to reset the softlockup timestamp.
+ 	 * If this gets delayed for more than 60 seconds then the
+-	 * debug-printout triggers in softlockup_tick().
++	 * debug-printout triggers in watchdog_timer_fn().
+ 	 */
+ 	while (!kthread_should_stop()) {
+ 		__touch_watchdog();
+-- 
+1.6.2.3
 
-Spaces around operators?
-
-> +		b[2] =3D nb_ts_packets & 0xff;
-> +
-> +		deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
-> +
-> +		ret =3D dib0700_ctrl_wr(d, b, 3);
-> +	} else {
-> +		deb_info("this firmware does not allow to change the USB xfer len\n");
-> +		ret =3D -EIO;
-> +	}
-> +
-> +	return ret;
->  }
-> =20
->  /*
-> @@ -642,7 +643,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->  	i =3D dib0700_ctrl_wr(d, rc_setup, 3);
->  	if (i<0) {
-
-Spaces around operators?
-
->  		err("ir protocol setup failed");
-> -		return -1;
-> +		return i;
->  	}
-> =20
->  	if (st->fw_version < 0x10200)
-> @@ -652,7 +653,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->  	purb =3D usb_alloc_urb(0, GFP_KERNEL);
->  	if (purb =3D=3D NULL) {
->  		err("rc usb alloc urb failed\n");
-> -		return -1;
-> +		return -ENOMEM;
->  	}
-> =20
->  	purb->transfer_buffer =3D usb_buffer_alloc(d->udev, RC_MSG_SIZE_V1_20,
-> @@ -661,7 +662,7 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->  	if (purb->transfer_buffer =3D=3D NULL) {
->  		err("rc usb_buffer_alloc() failed\n");
->  		usb_free_urb(purb);
-> -		return -1;
-> +		return -ENOMEM;
->  	}
-> =20
->  	purb->status =3D -EINPROGRESS;
-> @@ -670,12 +671,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->  			  dib0700_rc_urb_completion, d);
-> =20
->  	ret =3D usb_submit_urb(purb, GFP_ATOMIC);
-> -	if (ret !=3D 0) {
-> +	if (ret !=3D 0)
-
-if (ret)
-
->  		err("rc submit urb failed\n");
-> -		return -1;
-> -	}
-> =20
-> -	return 0;
-> +	return ret;
->  }
-> =20
->  static int dib0700_probe(struct usb_interface *intf,
-> --=20
-> 1.7.1
->=20
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
-
---4C6bbPZ6c/S1npyF
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkvzvsgACgkQD27XaX1/VRs5VQCePmurfL6pe8838yyj/MV8DOzC
-eDUAnRl6ges/zmwrLUi1K77AM6vhvzLY
-=PdD+
------END PGP SIGNATURE-----
-
---4C6bbPZ6c/S1npyF--
