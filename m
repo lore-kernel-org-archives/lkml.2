@@ -1,77 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753887Ab0ESP5g (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:57:36 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:49747 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753592Ab0ESP5e (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:57:34 -0400
-Date: Wed, 19 May 2010 11:57:32 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Miklos Szeredi <miklos@szeredi.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>, npiggin@suse.de,
-       peterz@infradead.org, fweisbec@gmail.com, tardyp@gmail.com,
-       mingo@elte.hu, acme@redhat.com, tzanussi@gmail.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem@davemloft.net, linux-mm@kvack.org,
-       akpm@linux-foundation.org, kosaki.motohiro@jp.fujitsu.com,
-       cl@linux-foundation.org, tj@kernel.org, jens.axboe@oracle.com
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100519155732.GB2039@Krystal>
-References: <20100518153440.GB7748@Krystal> <1274197993.26328.755.camel@gandalf.stny.rr.com> <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com>
+	id S1753566Ab0ESQAq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:00:46 -0400
+Received: from web4212.mail.ogk.yahoo.co.jp ([124.83.212.32]:47052 "HELO
+	web4212.mail.ogk.yahoo.co.jp" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1752847Ab0ESQAp convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:00:45 -0400
+X-Greylist: delayed 401 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 May 2010 12:00:44 EDT
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=yj20050223; d=yahoo.co.jp;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=kmaJglp3ZK5q1FdA6Dk1zL0nqx74VUQMH+0YPS+cTu9VPgqtszUYySarsaQBZ6LRIZY3eB4FYJpoZ17o1+Gmtzdv3mGlDwqiMq7AcJMoFBBRmrLt4l8YY3eDQQz/uX2A  ;
+Message-ID: <436250.99909.qm@web4212.mail.ogk.yahoo.co.jp>
+X-YMail-OSG: OAZmC7cVM1l4GNpKrz1pCtpVzPmq9RMU3d7662qfx.7sKil3pOuw.hSn79AC_fRjeRs.hs0Zl4ay4Gf5OWAJhugY0QaePJN8xb33ivAPUbnBnq8_HO7nfL09tQONfLVnfERB0rVSQYbew3T9Xl8RG_FCpwW2b9O0QacxxB1wew1QiaOraGQazdoMisuVY7T8Q7QC0Tx1OtDhA22CHeaSiSfxe6SJiBNGnVOwuKTOu9TtSRZfMpAYXeZhxdQqP_fl
+X-Mailer: YahooMailWebService/0.7.289.12_20
+Date: Thu, 20 May 2010 00:54:01 +0900 (JST)
+From: Round Robinjp <roundrobinjp@yahoo.co.jp>
+Subject: timer/hrtimer: how do they work
+To: linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274283942.26328.783.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 11:54:01 up 116 days, 18:31,  9 users,  load average: 0.68, 0.42,
-	0.32
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-> On Wed, 2010-05-19 at 17:33 +0200, Miklos Szeredi wrote:
-> > On Wed, 19 May 2010, Linus Torvalds wrote:
-> > > Btw, since you apparently have a real case - is the "splice to file" 
-> > > always just an append? IOW, if I'm not right in assuming that the only 
-> > > sane thing people would reasonable care about is "append to a file", then 
-> > > holler now.
-> > 
-> > Virtual machines might reasonably need this for splicing to a disk
-> > image.
-> 
-> This comes down to balancing speed and complexity. Perhaps a copy is
-> fine in this case.
-> 
-> I'm concerned about high speed tracing, where we are always just taking
-> pages from the trace ring buffer and appending them to a file or sending
-> them off to the network. The slower this is, the more likely you will
-> lose events.
-> 
-> If the "move only on append to file" is easy to implement, I would
-> really like to see that happen. The speed of splicing a disk image for a
-> virtual machine only impacts the patience of the user. The speed of
-> splicing tracing output, impacts how much you can trace without losing
-> events.
+Hi
 
-I'm with Steven here. I only care about appending full pages at the end of a
-file. If possible, I'd also like to steal back the pages after waiting for the
-writeback I/O to complete so we can put them back in the ring buffer without
-stressing the page cache and the page allocator needlessly.
+I am trying to understand how timer/hrtimer work.
+I am not yet clear about the following points. Please help.
 
-Thanks,
+I understand that there are two types of timer queues:
+   - timer wheel
+   - hrtimer
 
-Mathieu
+I also understand that there are separate sets of APIs
+for adding and removing timers into those queues.
 
+Now I want to  understand:
+   - when and how the timers are armed
+   - how are they processed when fired
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+When and how the timers are armed:
+
+For hrtimers, it seems that they are armed in hrtimer_interrupt.
+Where are the timer wheel timers armed?
+
+How are they processed when fired:
+
+For hrtimers, it seems that they are processed in hrtimer_run_queues.
+Where are the timer wheel timers processed?
+
+Is there any doc or something which may help me understand
+the call sequence of the related source code?
+
+Thanks
+RR
+
+--------------------------------------
+2010 FIFA World Cup News [Yahoo!Sports/sportsnavi]
+http://pr.mail.yahoo.co.jp/southafrica2010/
