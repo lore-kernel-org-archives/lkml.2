@@ -1,58 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757953Ab0ESLza (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:55:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:20558 "EHLO mx1.redhat.com"
+	id S1758011Ab0ESLzo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:55:44 -0400
+Received: from sh.osrg.net ([192.16.179.4]:37422 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751788Ab0ESLz2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:55:28 -0400
-Message-ID: <4BF3D17F.5000605@redhat.com>
-Date: Wed, 19 May 2010 08:54:39 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Borislav Petkov <bp@amd64.org>,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Andi Kleen <andi@firstfloor.org>, "Luck, Tony" <tony.luck@intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       "Young, Brent" <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>
-Subject: Re: Hardware Error Kernel Mini-Summit
-References: <4BF2392A.9040409@jp.fujitsu.com> <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <20100519064619.GA30320@aftab> <20100519070919.GA9618@elte.hu>
-In-Reply-To: <20100519070919.GA9618@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1755208Ab0ESLzm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 07:55:42 -0400
+Date: Wed, 19 May 2010 20:54:29 +0900
+To: linux@arm.linux.org.uk
+Cc: fujita.tomonori@lab.ntt.co.jp, albert_herranz@yahoo.es,
+       konrad.wilk@oracle.com, Ian.Campbell@eu.citrix.com, jeremy@goop.org,
+       linux-kernel@vger.kernel.org, chrisw@sous-sol.org,
+       iommu@lists.linux-foundation.org, dwmw2@infradead.org
+Subject: Re: [PATCH 5/6] swiotlb: Make swiotlb bookkeeping functions
+	visible in the header file.
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <20100519071057.GB22212@n2100.arm.linux.org.uk>
+References: <4BF2C5C1.2020807@yahoo.es>
+	<20100519123626P.fujita.tomonori@lab.ntt.co.jp>
+	<20100519071057.GB22212@n2100.arm.linux.org.uk>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+Message-Id: <20100519205638E.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 20:54:34 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar wrote:
-> Regarding dmesg, there's a WIP patch on lkml that 
-> integrates printks into this framework as well - makes 
-> each printk also available as a special string event.
+On Wed, 19 May 2010 08:10:57 +0100
+Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
+
+> On Wed, May 19, 2010 at 12:34:18PM +0900, FUJITA Tomonori wrote:
+> > On Tue, 18 May 2010 18:52:17 +0200
+> > Albert Herranz <albert_herranz@yahoo.es> wrote:
+> > > Every single KB counts on the Wii. It has just 24MB of MEM1 and 64MB of MEM2 (discontiguous memory ranges).
+> > > I'm using 1MB for the SWIOTLB for now, but of course that can be further tweaked down.
+> > 
+> > You can decrease the swiotlb memory however you can't fix the root
+> > problems of swiotlb:
+> > 
+> > - it needs pre-allocated memory
+> > - it can't handle the out-of-pre-allocated memory situation.
 > 
-> That way a tool can have both programmatic access to 
-> printk output (without having to interact with the syslog 
-> buffer itself) - together with all the other structured 
-> log sources, while humans can also see what is happening.
+> That's actually the advantage of swiotlb over dmabounce.  dmabounce's
+> dynamic allocation results in OOMs under some IO activity patterns.
+> dmabounce also produces the occasional WARN_ON() from the dma coherent
+> allocator depending on the driver.
 
-Some system admins prefer to have everything on dmesg, as they
-can enable a serial console, and catch the logs remotely, even
-when the machine crashes for example due to a hardware failure.
+However, we can't guarantee that allocation always succeeds in any IO
+patters. And the I/O subsystems and drivers can handle the dma
+allocation failure nicely. With SCSI, commands that hit the allocation
+failure are re-queued. Nothing bad happens. We shouldn't use WARN_ON
+in the dma allocation failure path.
 
-So, IMHO, one feature that the perf event needs is the capability
-to report errors via a serial console also, or a mechanism where
-some events are sent via dmesg.
+For me, the problems are:
 
--- 
+- swiotlb could waste too much pre-allocated memory if there are not
+  much IO activities.
 
-Cheers,
-Mauro
+- Allocation failure could happen even if the system has lots of free
+  memory because swiotlb use only pre-allocated memory.
+
+> We really need to kill off dmabounce.
+
+Agreed. What changes to swiotlb are necessary to replace dmabounce?
+Needs to use coherent memory (I'm not sure why dmabounce uses coherent
+memory to dma_map_single though)? I'll try to take care of them.
