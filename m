@@ -1,54 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752269Ab0ESGVr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 02:21:47 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:51913 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751353Ab0ESGVp convert rfc822-to-8bit (ORCPT
+	id S1752521Ab0ESGVu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 02:21:50 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:55161 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751289Ab0ESGVq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 02:21:45 -0400
-Subject: Re: schedule() && prev/current (Was: [PATCH 3/3] Make
- get_current() __attribute__((const)))
-From: Peter Zijlstra <peterz@infradead.org>
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Yong Zhang <yong.zhang0@gmail.com>, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100518212220.GA5092@redhat.com>
-References: <20100518164537.6194.73366.stgit@warthog.procyon.org.uk>
-	 <20100518164547.6194.94193.stgit@warthog.procyon.org.uk>
-	 <20100518212220.GA5092@redhat.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 19 May 2010 08:21:19 +0200
-Message-ID: <1274250079.5605.9967.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 19 May 2010 02:21:46 -0400
+Date: Wed, 19 May 2010 11:51:42 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 10/13] trace: Common code for kprobes/uprobes
+ traceevents
+Message-ID: <20100519062142.GD19957@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
+ <20100518170024.20070.25438.sendpatchset@localhost6.localdomain6>
+ <4BF2CD2F.8000104@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <4BF2CD2F.8000104@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 23:22 +0200, Oleg Nesterov wrote:
-
-> And, looking at this patch I think that schedule() can be simplified
-> a little bit.
 > 
-> "sched: Reassign prev and switch_count when reacquire_kernel_lock() fail"
-> commit 6d558c3ac9b6508d26fd5cadccce51fc9d726b1c says:
+> Isn't it a common header for kprobes and uprobes? :)
 > 
-> 	Assume A->B schedule is processing,
-> 	...
-> 	Then on B's context,
-> 	...
-> 	prev and switch_count are related to A
+> Maybe "Probe-based dynamic events common header" ?
 > 
-> How so? switch_count - yes, we should change it. But prev must be
-> equal to B, and it must be equal to current. When we return from
-> switch_to() registers/stack should be restored correctly, so we
-> can do
 
-What if schedule() got called at a different stack depth than we are
-now?
+Agree.
 
-I don't think we can assume anything about the stack context we just
-switched to.
+> > +#define MAX_TRACE_ARGS 128
+> > +#define MAX_ARGSTR_LEN 63
+> > +#define MAX_EVENT_NAME_LEN 64
+> > +#define UPROBE_EVENT_SYSTEM "uprobes"
+> 
+> You should *just move* the common code in this patch.
+> Additional uprobes code can be introduced in next patch.
+> 
+
+Okay.
+
+> > +
+> > +/* Flags for trace_probe */
+> > +#define TP_FLAG_TRACE	1
+> > +#define TP_FLAG_PROFILE	2
+> > +#define UPROBE_ENABLED	4
+> 
+> If this is a trace_probe flag, it is better to start with TP_FLAG_.
+
+Okay.
+Does TP_FLAG_UPROBE sound fine?
+
+
+Thanks Masami.
+
+--
+Thanks and Regards
+Srikar
