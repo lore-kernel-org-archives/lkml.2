@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752755Ab0ESIo6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:44:58 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:44958 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751589Ab0ESIo4 (ORCPT
+	id S1754406Ab0ESIqi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:46:38 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:63829 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752992Ab0ESIqg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:44:56 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Shaohua Li <shaohua.li@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
-Cc: kosaki.motohiro@jp.fujitsu.com
-Message-Id: <20100519174327.9591.A69D9226@jp.fujitsu.com>
+	Wed, 19 May 2010 04:46:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ZiAjwMF8ycSpdpxIKaehBth10LGZeSIYwjlV9eWSTaNtAadJQpDaE9/HRdUsPbiZOI
+         rA4sYLsnBSZNFf1joYYdaxnxNEVpttsyg/DLKUPjgRMWtwHPUjFghSNQ+7BZbKqj2ZY4
+         RLe8gedvJbSSKhykDCvdC0NphWc/3FLPy/JvM=
+Date: Wed, 19 May 2010 10:46:40 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Don Zickus <dzickus@redhat.com>
+Cc: mingo@elte.hu, a.p.zijlstra@chello.nl, gorcunov@gmail.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 2/3] [watchdog] separate hardlockup/softlockup enable
+	paths
+Message-ID: <20100519084638.GH5704@nowhere>
+References: <1274133966-18415-1-git-send-email-dzickus@redhat.com> <1274133966-18415-3-git-send-email-dzickus@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Wed, 19 May 2010 17:44:49 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274133966-18415-3-git-send-email-dzickus@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shaohua Li reported parallel file copy on tmpfs can lead to
-OOM killer. This is regression of caused by commit 9ff473b9a7
-(vmscan: evict streaming IO first). Wow, It is 2 years old patch!
-
-Currently, tmpfs file cache is inserted active list at first. It
-mean the insertion doesn't only increase numbers of pages in anon LRU,
-but also reduce anon scanning ratio. Therefore, vmscan will get totally
-confusion. It scan almost only file LRU even though the system have
-plenty unused tmpfs pages.
-
-Historically, lru_cache_add_active_anon() was used by two reasons.
-1) Intend to priotize shmem page rather than regular file cache.
-2) Intend to avoid reclaim priority inversion of used once pages.
-
-But we've lost both motivation because (1) Now we have separate
-anon and file LRU list. then, to insert active list doesn't help
-such priotize. (2) In past, one pte access bit will cause page
-activation. then to insert inactive list with pte access bit mean
-higher priority than to insert active list. Its priority inversion
-may lead to uninteded lru chun. but it was already solved by commit
-645747462 (vmscan: detect mapped file pages used only once).
-(Thanks Hannes, you are great!)
-
-Thus, now we can use lru_cache_add_anon() instead.
-
-Reported-by: Shaohua Li <shaohua.li@intel.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>
-Cc: Johannes Weiner <hannes@cmpxchg.org>
-Cc: Rik van Riel <riel@redhat.com>
-Cc: Minchan Kim <minchan.kim@gmail.com>
-Cc: Hugh Dickins <hughd@google.com>
-Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
----
- mm/filemap.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/mm/filemap.c b/mm/filemap.c
-index b941996..023ef61 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -452,7 +452,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
- 		if (page_is_file_cache(page))
- 			lru_cache_add_file(page);
- 		else
--			lru_cache_add_active_anon(page);
-+			lru_cache_add_anon(page);
- 	}
- 	return ret;
- }
--- 
-1.6.5.2
+On Mon, May 17, 2010 at 06:06:05PM -0400, Don Zickus wrote:
+> In preparation to support the backwards compatible option nmi_watchdog properly
+> from the kernel commandline, the enable/disable paths for the hardlockup and
+> softlockup code needed to separated more cleanly.
+> 
+> The code is re-arranged a bit to create a watchdog_softlockup_enable/disable
+> function to mimic the hardlockup counterpart.  In addition, a softlockup callback
+> is created to make it easy to turn the softlockup code on/off with out interfering
+> with the hardlockup code.
+> 
+> The functionality should still be the same.
 
 
+
+I don't think we want this really. The unification is not only a good
+thing for maintainance and genericity of code but also for the fact now
+we don't need anymore to worry about which watchdog to turn on/off.
+
+The fact is often when you have a lockup, you don't even know if it
+is soft or hard. If you are on X, you won't know.
+
+So people just don't bother about such granularity of control, they simply
+enable or disable both detectors.
+
+I would suggest you to let the things how they are and not making the code
+more complicated for something that won't be used.
+
+Just forget about the nmi_watchdog file. A simple watchdog file to control
+everything is much better.
+
+Thanks.
 
