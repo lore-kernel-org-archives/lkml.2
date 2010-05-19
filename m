@@ -1,59 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1750906Ab0ESEDT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 00:03:19 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51790 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750709Ab0ESEDR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 00:03:17 -0400
-Date: Wed, 19 May 2010 14:03:10 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Rabin Vincent <rabin.vincent@stericsson.com>
-Subject: linux-next: build failure after merge of the mfd tree
-Message-Id: <20100519140310.e439960d.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__19_May_2010_14_03_10_+1000_s7hN2be_3ssEQbxy"
+	id S1750955Ab0ESEKV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 00:10:21 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:37089 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750702Ab0ESEKT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 00:10:19 -0400
+Date: Wed, 19 May 2010 14:09:46 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Miller <davem@davemloft.net>
+Cc: penberg@cs.helsinki.fi, mpm@selenic.com, ken@codelabs.ch,
+       geert@linux-m68k.org, michael-dev@fami-braun.de,
+       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+Message-ID: <20100519040946.GA21422@gondor.apana.org.au>
+References: <1274211235.11603.1205.camel@calx> <20100518.135945.180391159.davem@davemloft.net> <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com> <20100518.142021.135951273.davem@davemloft.net>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100518.142021.135951273.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_May_2010_14_03_10_+1000_s7hN2be_3ssEQbxy
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, May 18, 2010 at 02:20:21PM -0700, David Miller wrote:
+> 
+> I'll add the define for sparc, but saying "sparc's fault" is bogus
+> because I defined what was necessary to get SLAB/SLUB to provide the
+> necessary alignment.  SLOB pays for choosing not to use the same
+> calculations for minimum alignment as the other allocators, and
+> therefore pays for being different in this regard.
 
-Hi Samuel,
+Once that macro hits the main tree I'll push the crypto fix out.
 
-After merging the mfd tree, today's linux-next build (x86_64 allmodconfig)
-failed like this:
-
-drivers/mfd/ab8500-core.c: In function 'ab8500_irq_remove':
-drivers/mfd/ab8500-core.c:302: error: implicit declaration of function 'set=
-_irq_flags'
-
-Caused by commit 16548223daf6b3b95b75cb961d772831a754e126 ("mfd: new
-AB8500 driver").
-
-I have used the mfd tree from next-20100518 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__19_May_2010_14_03_10_+1000_s7hN2be_3ssEQbxy
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvzYv4ACgkQjjKRsyhoI8zbvQCfRlkvvFVwCZ3F/9nOYm4XcSnS
-G6gAn3KBB1owAiHrzHvSFW4c49vsaUUE
-=pjuQ
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_May_2010_14_03_10_+1000_s7hN2be_3ssEQbxy--
+Thanks!
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
