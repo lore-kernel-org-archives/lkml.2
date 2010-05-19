@@ -1,95 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752639Ab0ESXXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 19:23:34 -0400
-Received: from aeryn.fluff.org.uk ([87.194.8.8]:22824 "EHLO
-	kira.home.fluff.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751760Ab0ESXXc (ORCPT
+	id S1752672Ab0ESX3d (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 19:29:33 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:39516 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751760Ab0ESX3c (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 19:23:32 -0400
-Date: Thu, 20 May 2010 00:23:27 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: torvalds@linux-foundation.org
-Cc: linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Please pull bjdooks' for-linus/i2c-2635 tree
-Message-ID: <20100519232327.GA5024@fluff.org.uk>
+	Wed, 19 May 2010 19:29:32 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=PNEB7eN5AADYRpY0AaqBZ4H0mGmrdbZrPJN+fX0vWf817e2hO4mYsTyaT2AvejGfu7
+         XCG2V+F5WbSCMNlDb/NuLagaMJ4/6AvEowFDQxF787Gy2gaULTJswyoQJxqi8hH5ue55
+         c1xXx38IdrHM6V1CNLbATCfv90iyu0yhdUYrw=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=unknown-8bit
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-X-Disclaimer: These are my own opinions, so there!
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100519174327.9591.A69D9226@jp.fujitsu.com>
+References: <20100519174327.9591.A69D9226@jp.fujitsu.com>
+Date: Thu, 20 May 2010 08:29:30 +0900
+Message-ID: <AANLkTimN-vFhg6kL6u9yGryN3l0QnIk7nydG5Diwo3wr@mail.gmail.com>
+Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
+From: Minchan Kim <minchan.kim@gmail.com>
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Shaohua Li <shaohua.li@intel.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+       Hugh Dickins <hughd@google.com>, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull the following tree:
+On Wed, May 19, 2010 at 5:44 PM, KOSAKI Motohiro
+<kosaki.motohiro@jp.fujitsu.com> wrote:
+> Shaohua Li reported parallel file copy on tmpfs can lead to
+> OOM killer. This is regression of caused by commit 9ff473b9a7
+> (vmscan: evict streaming IO first). Wow, It is 2 years old patch!
+>
+> Currently, tmpfs file cache is inserted active list at first. It
+> mean the insertion doesn't only increase numbers of pages in anon LRU,
+> but also reduce anon scanning ratio. Therefore, vmscan will get totally
+> confusion. It scan almost only file LRU even though the system have
+> plenty unused tmpfs pages.
+>
+> Historically, lru_cache_add_active_anon() was used by two reasons.
+> 1) Intend to priotize shmem page rather than regular file cache.
+> 2) Intend to avoid reclaim priority inversion of used once pages.
+>
+> But we've lost both motivation because (1) Now we have separate
+> anon and file LRU list. then, to insert active list doesn't help
+> such priotize. (2) In past, one pte access bit will cause page
+> activation. then to insert inactive list with pte access bit mean
+> higher priority than to insert active list. Its priority inversion
+> may lead to uninteded lru chun. but it was already solved by commit
+> 645747462 (vmscan: detect mapped file pages used only once).
+> (Thanks Hannes, you are great!)
+>
+> Thus, now we can use lru_cache_add_anon() instead.
+>
+> Reported-by: Shaohua Li <shaohua.li@intel.com>
+> Cc: Wu Fengguang <fengguang.wu@intel.com>
+> Cc: Johannes Weiner <hannes@cmpxchg.org>
+> Cc: Rik van Riel <riel@redhat.com>
+> Cc: Minchan Kim <minchan.kim@gmail.com>
+> Cc: Hugh Dickins <hughd@google.com>
+> Signed-off-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Reviewed-by: Minchan Kim <minchan.kim@gmail.com>
 
-The following changes since commit 024a6b95181f2df6090975c8a293499d24bf8b28:
-  Linus Torvalds (1):
-        Merge branch 'davinci-for-linus' of git://git.kernel.org/.../khilman/linux-davinci
+The description itself is valuable. :)
+Thanks, Kosaki.
 
-are available in the git repository at:
 
-  git://git.fluff.org/bjdooks/linux.git for-linus/i2c-2635
 
-Alexander Shishkin (2):
-      omap: i2c: make errata 1.153 workaround a separate function
-      omap: i2c: add a timeout to the busy waiting
-
-Kalle Jokiniemi (1):
-      i2c-omap: add mpu wake up latency constraint in i2c
-
-Mark Brown (1):
-      i2c-s3c2410: Remove unconditional 1ms delay on each transfer
-
-Michael Hennerich (1):
-      i2c-bfin-twi: add debug output for error status
-
-Rabin Vincent (2):
-      i2c-nomadik: release region when removed
-      i2c-nomadik: fix operator precedence warning
-
-Santosh Shilimkar (1):
-      omap: i2c: Add i2c support on omap4 platform
-
-Sonic Zhang (4):
-      i2c-bfin-twi: integrate timeout timer with completion interface
-      i2c-bfin-twi: fix lost interrupts at high speeds
-      i2c-bfin-twi: remove redundant retry
-      i2c-bfin-twi: return completion in interrupt for smbus quick transfers
-
-Uwe Kleine-König (2):
-      i2c-pxa: remove unused macro
-      MAINTAINERS: add i2c tree for embedded platforms
-
-Wolfram Sang (5):
-      i2c-pxa: only define 'blue_murder'-function if DEBUG is #defined
-      i2c-mpc: drop NO_IRQ
-      i2c-cpm: drop NO_IRQ
-      i2c-ibm-iic: drop NO_IRQ
-      i2c-highlander: remover superflous variable
-
-manjugk manjugk (2):
-      OMAP2/3: I2C: Errata ID i207: Clear wrong RDR interrupt
-      OMAP3: I2C: Clean up Errata 1p153 handling
-
- MAINTAINERS                         |    1 +
- arch/arm/plat-omap/i2c.c            |   39 ++++--
- drivers/i2c/busses/i2c-bfin-twi.c   |  168 ++++++++++------------
- drivers/i2c/busses/i2c-cpm.c        |    2 +-
- drivers/i2c/busses/i2c-highlander.c |    5 +-
- drivers/i2c/busses/i2c-ibm_iic.c    |   14 +-
- drivers/i2c/busses/i2c-mpc.c        |    6 +-
- drivers/i2c/busses/i2c-nomadik.c    |    6 +-
- drivers/i2c/busses/i2c-omap.c       |  265 +++++++++++++++++++++++++++-------
- drivers/i2c/busses/i2c-pxa.c        |   26 ++--
- drivers/i2c/busses/i2c-s3c2410.c    |   19 +++-
- include/linux/i2c-omap.h            |    9 ++
- 12 files changed, 374 insertions(+), 186 deletions(-)
- create mode 100644 include/linux/i2c-omap.h
 
 -- 
-Ben (ben@fluff.org, http://www.fluff.org/)
-
-  'a smiley only costs 4 bytes'
+Kind regards,
+Minchan Kim
