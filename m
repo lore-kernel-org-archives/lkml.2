@@ -1,46 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754579Ab0ESRuY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:50:24 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55176 "EHLO kernel.dk"
+	id S1754594Ab0ESRvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:51:10 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:40609 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753720Ab0ESRuW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:50:22 -0400
-Date: Wed, 19 May 2010 19:50:18 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 19 (mm/page-writeback)
-Message-ID: <20100519175018.GW25951@kernel.dk>
-References: <20100519163554.80c7fcd3.sfr@canb.auug.org.au> <20100519104800.5a43346f.randy.dunlap@oracle.com>
+	id S1754463Ab0ESRvI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 13:51:08 -0400
+Message-ID: <4BF424FE.80400@zytor.com>
+Date: Wed, 19 May 2010 10:50:54 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519104800.5a43346f.randy.dunlap@oracle.com>
+To: Ky Srinivasan <ksrinivasan@novell.com>
+CC: greg@kroah.com, hjanssen@microsoft.com, mingo@redhat.com,
+       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>
+Subject: Re: [PATCH 2/2] Hyperv detection - code cleanup
+References: <4BF3C97F020000300008560D@sinclair.provo.novell.com>
+In-Reply-To: <4BF3C97F020000300008560D@sinclair.provo.novell.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19 2010, Randy Dunlap wrote:
-> On Wed, 19 May 2010 16:35:54 +1000 Stephen Rothwell wrote:
-> 
-> > Hi all,
-> > 
-> > We are in the merge window again.  I remind you all not to add stuff for
-> > 2.6.36 to your linux-next trees until after 2.6.35-rc1.
-> > 
-> > Changes since 20100518:
+On 05/19/2010 10:20 AM, Ky Srinivasan wrote:
+> From: K. Y. Srinivasan <ksrinivasan@novell.com>
+> Subject: Code cleanup - get rid of the "ms" prefix in hyperv related files.  
 > 
 > 
-> When CONFIG_BLOCK is not enabled:
-> 
-> mm/page-writeback.c: In function 'laptop_mode_timer_fn':
-> mm/page-writeback.c:708: error: dereferencing pointer to incomplete type
-> mm/page-writeback.c:709: error: dereferencing pointer to incomplete type
+> Signed-off-by: K. Y. Srinivasan <ksrinivasan@novell.com>
 
-Thanks Randy, I'll fix that up.
+NAK in the extreme.
 
--- 
-Jens Axboe
+"hyperv" -- without the capitalization to make it stand out -- is way
+too easy to read as just an abbreviation for "hypervisor".
 
+	-hpa
