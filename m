@@ -1,61 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754856Ab0ESA45 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 20:56:57 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48138 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752947Ab0ESA4z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 20:56:55 -0400
-Date: Wed, 19 May 2010 10:56:49 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Richard Purdie <rpurdie@rpsys.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Michael Hennerich <michael.hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>
-Subject: Re: linux-next: build failure after merge of the backlight tree
-Message-Id: <20100519105649.ab2d4d26.sfr@canb.auug.org.au>
-In-Reply-To: <1274198064.24454.252.camel@rex>
-References: <20100510124304.2249532c.sfr@canb.auug.org.au>
-	<20100517133239.8a30df8e.sfr@canb.auug.org.au>
-	<1274198064.24454.252.camel@rex>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C"
+	id S1754644Ab0ESBGY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 21:06:24 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:59192 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752084Ab0ESBGW (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 21:06:22 -0400
+Date: Wed, 19 May 2010 11:05:24 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: David Woodhouse <dwmw2@infradead.org>
+Cc: David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
+       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+Message-ID: <20100519010524.GB18813@gondor.apana.org.au>
+References: <1274211235.11603.1205.camel@calx> <20100518.135945.180391159.davem@davemloft.net> <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com> <20100518.142021.135951273.davem@davemloft.net> <1274224834.6930.8361.camel@macbook.infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274224834.6930.8361.camel@macbook.infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Wed, May 19, 2010 at 12:20:34AM +0100, David Woodhouse wrote:
+> 
+> It would be better if the minimum alignment was exposed to generic code
+> though -- you're right that the CPP tests in linux/crypto.h really
+> shouldn't have to exist. If it wasn't for that, then the crypto problem
+> wouldn't have occurred.
 
-Hi Richard,
+While this problem wouldn't have occurred, we would instead have
+data corruption/alignment faults on architectures such as sparc32
+or ARM that require 64-bit alignment for 64-bit objects.
 
-On Tue, 18 May 2010 08:54:24 -0700 Richard Purdie <rpurdie@rpsys.net> wrote:
->
-> Sorry about that. A bad combination of travel with limited internet
-> access followed by illness. I've pushed a fix, thanks.
+So no getting rid of them isn't going to fix things either.  Of
+course I have no objections to moving this into slab.h or a similar
+location should anyone be willing to do the hard work.
 
-Thanks for that.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkvzN1EACgkQjjKRsyhoI8xreACeNgjOdJU/FjgG+6mPZcdGYevH
-EwcAoJeOsN0SmoLRMHOzN8kh+hzBkkPw
-=p3+m
------END PGP SIGNATURE-----
-
---Signature=_Wed__19_May_2010_10_56_49_+1000_kKyftPuLxO3Kcg3C--
+Thanks,
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
