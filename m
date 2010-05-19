@@ -1,38 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab0ESMI7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:08:59 -0400
-Received: from omr6.networksolutionsemail.com ([205.178.146.56]:50916 "EHLO
-	omr6.networksolutionsemail.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751004Ab0ESMI5 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:08:57 -0400
-X-Greylist: delayed 879 seconds by postgrey-1.27 at vger.kernel.org; Wed, 19 May 2010 08:08:57 EDT
-From: "Webmail Helpdest Support Centre" <webmaster@nfmjfa.com>
-Importance: Normal
-Sensitivity: Normal
-Message-ID: <W700302306115401274270055@webmail60>
-X-Mailer: Network Solutions Webmail, Build 11.2.30
-X-Originating-IP: [78.138.3.236]
-X-Forwarded-For: [(null)]
-Date: Wed, 19 May 2010 11:54:15 +0000
-Subject: Vous avez =?utf-8?Q?d=C3=A9pass=C3=A9?= votre limite de quota de 
-    courriel
+	id S1756367Ab0ESMMN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:12:13 -0400
+Received: from mga02.intel.com ([134.134.136.20]:53961 "EHLO mga02.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754021Ab0ESMML (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:12:11 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,263,1272870000"; 
+   d="scan'208";a="622961022"
+Date: Wed, 19 May 2010 20:12:02 +0800
+From: Wu Fengguang <fengguang.wu@intel.com>
+To: Haicheng Li <haicheng.li@linux.intel.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       "ak@linux.intel.com" <ak@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, mem-hotplug: update all PGDs for direct
+ mapping and vmemmap mapping changes on 64bit.
+Message-ID: <20100519121202.GB23778@localhost>
+References: <4BF3D15F.1000604@linux.intel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF3D15F.1000604@linux.intel.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Il s'agit de vous informer que vous avez dépassé votre limite de quota de 425 Mo d'e-mail et vous avez besoin pour augmenter votre limite de quota de courrier électronique, car en moins de 48 heures de votre e-mail sera désactiver. Augmentez votre limite de quota de courriel et de continuer à utiliser votre compte de messagerie Web. 
+> @@ -1033,6 +1038,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+>   		}
+> 
+>   	}
+> +	sync_global_pgds((unsigned long)start_page, end);
 
-Pour augmenter votre limite de quota de courriel à 2,5 Go, cliquez sur le lien ci-dessous:
-http://www.emailmeform.com/fid.php?formid=708708
+Here you removed the tlb flush in the original patch. Is it safe to do so?
 
-
-Nous vous remercions de votre compréhension. 
-Copyright © 2010 Centre Webmail Helpdest Support
-
-
+Thanks,
+Fengguang
