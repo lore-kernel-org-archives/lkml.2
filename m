@@ -1,41 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754174Ab0ESQsJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:48:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:50747 "EHLO hera.kernel.org"
+	id S1754201Ab0ESQsQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:48:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:24037 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754101Ab0ESQsF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:48:05 -0400
-Message-ID: <4BF4163A.503@kernel.org>
-Date: Wed, 19 May 2010 18:47:54 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1754164Ab0ESQsJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:48:09 -0400
+From: Masami Hiramatsu <mhiramat@redhat.com>
+Subject: [PATCH -tip v3 2/5] [CLEANUP] kprobes: Remove redundant text_mutex
+	lock in optimize
+To: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>
+Cc: systemtap <systemtap@sources.redhat.com>,
+       DLE <dle-develop@lists.sourceforge.net>,
+       Masami Hiramatsu <mhiramat@redhat.com>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, Jim Keniston <jkenisto@us.ibm.com>,
+       Jason Baron <jbaron@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+Date: Wed, 19 May 2010 12:53:19 -0400
+Message-ID: <20100519165319.31828.63114.stgit@localhost6.localdomain6>
+In-Reply-To: <20100519165305.31828.15577.stgit@localhost6.localdomain6>
+References: <20100519165305.31828.15577.stgit@localhost6.localdomain6>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
-Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>	<1269885165-18617-11-git-send-email-tj@kernel.org>	<20100519190230.52385a65.sfr@canb.auug.org.au>	<20100519144505.GD2412@tuxdriver.com>	<20100520012829.709931dc.sfr@canb.auug.org.au>	<4BF407C9.2020202@kernel.org> <20100520023111.1755c938.sfr@canb.auug.org.au>
-In-Reply-To: <20100520023111.1755c938.sfr@canb.auug.org.au>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 16:47:56 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 06:31 PM, Stephen Rothwell wrote:
-> Hi Tejun,
-> 
-> On Wed, 19 May 2010 17:46:17 +0200 Tejun Heo <tj@kernel.org> wrote:
->>
->> Yeap, I hoped that more of them would sort themselves out during devel
->> cycle, but I guess rc1 window isn't too bad.
-> 
-> I have now reposted all the outstanding ones.
+Remove text_mutex locking in optimize_all_kprobes, because
+this function doesn't modify text. It simply queues probes on
+optimization list for kprobe_optimizer worker thread.
 
-Thanks for taking care of them.  :-)
+Changes in v2:
+ - Update changelog.
+ - Add comments for (un)optimize_all_kprobes.
+ - Update kprobe_mutex comment.
+
+Signed-off-by: Masami Hiramatsu <mhiramat@redhat.com>
+Cc: Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Jim Keniston <jkenisto@us.ibm.com>
+Cc: Jason Baron <jbaron@redhat.com>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+---
+
+ kernel/kprobes.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
+
+diff --git a/kernel/kprobes.c b/kernel/kprobes.c
+index 282035f..f1351f2 100644
+--- a/kernel/kprobes.c
++++ b/kernel/kprobes.c
+@@ -73,7 +73,8 @@ static struct hlist_head kretprobe_inst_table[KPROBE_TABLE_SIZE];
+ /* NOTE: change this value only with kprobe_mutex held */
+ static bool kprobes_all_disarmed;
+ 
+-static DEFINE_MUTEX(kprobe_mutex);	/* Protects kprobe_table */
++/* This protects kprobe_table and optimizing_list */
++static DEFINE_MUTEX(kprobe_mutex);
+ static DEFINE_PER_CPU(struct kprobe *, kprobe_instance) = NULL;
+ static struct {
+ 	spinlock_t lock ____cacheline_aligned_in_smp;
+@@ -594,6 +595,7 @@ static __kprobes void try_to_optimize_kprobe(struct kprobe *p)
+ }
+ 
+ #ifdef CONFIG_SYSCTL
++/* This should be called with kprobe_mutex locked */
+ static void __kprobes optimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+@@ -606,17 +608,16 @@ static void __kprobes optimize_all_kprobes(void)
+ 		return;
+ 
+ 	kprobes_allow_optimization = true;
+-	mutex_lock(&text_mutex);
+ 	for (i = 0; i < KPROBE_TABLE_SIZE; i++) {
+ 		head = &kprobe_table[i];
+ 		hlist_for_each_entry_rcu(p, node, head, hlist)
+ 			if (!kprobe_disabled(p))
+ 				optimize_kprobe(p);
+ 	}
+-	mutex_unlock(&text_mutex);
+ 	printk(KERN_INFO "Kprobes globally optimized\n");
+ }
+ 
++/* This should be called with kprobe_mutex locked */
+ static void __kprobes unoptimize_all_kprobes(void)
+ {
+ 	struct hlist_head *head;
+
 
 -- 
-tejun
+Masami Hiramatsu
+e-mail: mhiramat@redhat.com
