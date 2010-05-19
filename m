@@ -1,63 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752866Ab0ESO4N (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:56:13 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:48249 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752175Ab0ESO4M (ORCPT
+	id S1752916Ab0ESO5x (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:57:53 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:56246 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752110Ab0ESO5v (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:56:12 -0400
-X-Authority-Analysis: v=1.1 cv=APwCx09NCuKDvl2mjFwkKdJZScS8XOZHPgx3WG6BpL0= c=1 sm=0 a=8EtQVlZUVNwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=0_atlRnjNRK3KSvZqngA:9 a=bkT0IEqUNN8wu51UCvEau_KDZuAA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: Unexpected splice "always copy" behavior observed
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@suse.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Pierre Tardy <tardyp@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Tom Zanussi <tzanussi@gmail.com>, Paul Mackerras <paulus@samba.org>,
-       linux-kernel@vger.kernel.org, arjan@infradead.org,
-       ziga.mahkovec@gmail.com, davem <davem@davemloft.net>,
-       linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>
-In-Reply-To: <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-References: <20100518153440.GB7748@Krystal>
-	 <1274197993.26328.755.camel@gandalf.stny.rr.com>
-	 <1274199039.26328.758.camel@gandalf.stny.rr.com>
-	 <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org>
-	 <20100519063116.GR2516@laptop>
-	 <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 19 May 2010 10:56:08 -0400
-Message-ID: <1274280968.26328.774.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 10:57:51 -0400
+Date: Wed, 19 May 2010 07:55:19 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Nick Piggin <npiggin@suse.de>
+cc: Anton Blanchard <anton@samba.org>, akpm@linux-foundation.org,
+       willy@linux.intel.com, benh@kernel.crashing.org, paulus@samba.org,
+       linux-arch@vger.kernel.org, linux-kernel@vger.kernel.org,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t
+ definition
+In-Reply-To: <20100519130327.GW2516@laptop>
+Message-ID: <alpine.LFD.2.00.1005190740390.23538@i5.linux-foundation.org>
+References: <20100517043353.GA22127@kryten> <20100517043457.GA22416@kryten> <alpine.LFD.2.00.1005170800100.4195@i5.linux-foundation.org> <20100519130327.GW2516@laptop>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 07:39 -0700, Linus Torvalds wrote:
-
-> The real limitation is likely always going to be the fact that it has to 
-> be page-aligned and a full page. For a lot of splice inputs, that simply 
-> won't be the case, and you'll end up copying for alignment reasons anyway.
-
-That's understandable. For the use cases of splice I use, I work to make
-it page aligned and full pages. Anyone else using splice for
-optimizations, should do the same. It only makes sense.
-
-The end of buffer may not be a full page, but then it's the end anyway,
-and I'm not as interested in the speed.
-
--- Steve
 
 
+On Wed, 19 May 2010, Nick Piggin wrote:
+> 
+> I wonder, Linus, is there a good reason to use volatile for these at
+> all?
+> 
+> I asked you about it quite a while back, and IIRC you said it might
+> be OK to remove volatile from bitops, provided that callers were audited
+> (ie. that nobody used bitops on volatile variables).
+
+The bitops volatiles are different. They are there to allow for the C type 
+system (ie "const volatile *" just means that it accepts any kind of 
+pointer without complaining about implicit casting of const -> non-const 
+or volatile -> non-volatile).
+
+For atomic_read(), and for the test_bit(), the _internal_ volatiles are 
+there just to get that ACCESS_ONCE() behavior, so that you can do things 
+like
+
+	while (test_bit(..)) {
+		..
+	}
+
+and know that the compiler doesn't think it can do things like move the 
+atomic or bit read outside the loop or whatever.
+
+Now, I do agree that _normally_ we should have memory barriers or similar 
+that guarantee that the compiler won't do odd things, but atomics and the 
+bitops are basically designed to work in the _absense_ of any other 
+serialization, so that's why it makes sense to have ACCESS_ONCE() 
+semantics for them.
+
+> For atomic_read it shouldn't matter unless gcc is *really* bad at it.
+> Ah, for atomic_read, the required semantic is surely ACCESS_ONCE, so
+> that's where the volatile is needed? (maybe it would be clearer to
+> explicitly use ACCESS_ONCE?)
+
+Exactly. The volatile access on read inside those macros/functions (as 
+opposed to the "volatiles" that are there for C type reasons) is basically 
+the same as ACCESS_ONCE(). We could replace it with ACCESS_ONCE, although 
+I don't think it makes much difference as long as you always just think of 
+volatile as ACCESS_ONCE and just always put it in code (rather than on the 
+data structures)).
+
+And replacing it with ACCESS_ONCE always has the header file dependency 
+issues, so..
+
+> The case I was thinking about for bitops was for multiple non-atomic
+> bitops, which would be nice to combine. In reality a lot of performance
+> critical code (like page allocator) bites the bullet and does the
+> open-coded bitwise ops. But it would be nice if that just worked for
+> __set_bit / __clear_bit too.
+
+__set_bit / __clear_bit should probably just be done as regular C code. 
+And yeah, we should remove the volatile from them. They aren't even valid 
+on anything that isn't locked anyway, so if somebody uses them on 
+something they have marked volatile, it's a bug.
+
+		Linus
