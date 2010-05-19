@@ -1,16 +1,15 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758653Ab0ERRqD (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 18 May 2010 13:46:03 -0400
-Received: from mga02.intel.com ([134.134.136.20]:2439 "EHLO mga02.intel.com"
+	id S1758671Ab0ERRqR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 18 May 2010 13:46:17 -0400
+Received: from mga03.intel.com ([143.182.124.21]:35182 "EHLO mga03.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758560Ab0ERRqA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 18 May 2010 13:46:00 -0400
+	id S1758560Ab0ERRqO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 18 May 2010 13:46:14 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,256,1272870000"; 
-   d="scan'208";a="622723657"
-Subject: [RFC][PATCH v2 04/11] perf: core, use new api to lookup pmu and
- init event
+   d="scan'208";a="278572628"
+Subject: [RFC][PATCH v2 05/11] perf: x86, remove hw_perf_event_init
 From: Lin Ming <ming.m.lin@intel.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Corey Ashford <cjashfor@linux.vnet.ibm.com>
@@ -27,8 +26,8 @@ Cc: Frederic Weisbecker <fweisbec@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
        Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
        Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 01:45:56 +0000
-Message-Id: <1274233556.3036.82.camel@localhost>
+Date: Wed, 19 May 2010 01:46:11 +0000
+Message-Id: <1274233571.3036.83.camel@localhost>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.0 (2.28.0-2.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -36,71 +35,52 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Remove the weak function hw_perf_event_init
-    
+Now x86 hw_perf_event_init can be removed.
+
 Signed-off-by: Lin Ming <ming.m.lin@intel.com>
 ---
- include/linux/perf_event.h |    2 --
- kernel/perf_event.c        |   12 ++++--------
- 2 files changed, 4 insertions(+), 10 deletions(-)
+ arch/x86/kernel/cpu/perf_event.c |   31 -------------------------------
+ 1 files changed, 0 insertions(+), 31 deletions(-)
 
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index 40809f5..ad2aea3 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -825,8 +825,6 @@ struct perf_output_handle {
-  */
- extern int perf_max_events;
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index aad4221..8a3aea6 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1757,34 +1757,3 @@ unsigned long perf_misc_flags(struct pt_regs *regs)
  
--extern struct pmu *hw_perf_event_init(struct perf_event *event);
+ 	return misc;
+ }
 -
- extern void perf_event_task_sched_in(struct task_struct *task);
- extern void perf_event_task_sched_out(struct task_struct *task, struct task_struct *next);
- extern void perf_event_task_tick(struct task_struct *task);
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 31b032b..17eff7b 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -81,11 +81,6 @@ static DEFINE_SPINLOCK(perf_resource_lock);
- /*
-  * Architecture provided APIs - weak aliases:
-  */
--extern __weak struct pmu *hw_perf_event_init(struct perf_event *event)
+-struct pmu *hw_perf_event_init(struct perf_event *event)
 -{
--	return NULL;
--}
+-	struct pmu *tmp;
+-	int err;
 -
- void __weak hw_perf_disable(void)		{ barrier(); }
- void __weak hw_perf_enable(void)		{ barrier(); }
- 
-@@ -4727,7 +4722,7 @@ perf_event_alloc(struct perf_event_attr *attr,
- 	struct pmu *pmu;
- 	struct perf_event *event;
- 	struct hw_perf_event *hwc;
--	long err;
-+	long err = 0;
- 
- 	event = kzalloc(sizeof(*event), gfpflags);
- 	if (!event)
-@@ -4792,7 +4787,9 @@ perf_event_alloc(struct perf_event_attr *attr,
- 	case PERF_TYPE_RAW:
- 	case PERF_TYPE_HARDWARE:
- 	case PERF_TYPE_HW_CACHE:
--		pmu = hw_perf_event_init(event);
-+		pmu = perf_event_lookup_pmu(event);
-+		if (pmu && pmu->init_event)
-+			err = pmu->init_event(event);
- 		break;
- 
- 	case PERF_TYPE_SOFTWARE:
-@@ -4812,7 +4809,6 @@ perf_event_alloc(struct perf_event_attr *attr,
- 		break;
- 	}
- done:
--	err = 0;
- 	if (!pmu)
- 		err = -EINVAL;
- 	else if (IS_ERR(pmu))
+-	err = __hw_perf_event_init(event);
+-	if (!err) {
+-		/*
+-		 * we temporarily connect event to its pmu
+-		 * such that validate_group() can classify
+-		 * it as an x86 event using is_x86_event()
+-		 */
+-		tmp = event->pmu;
+-		event->pmu = &pmu;
+-
+-		if (event->group_leader != event)
+-			err = validate_group(event);
+-		else
+-			err = validate_event(event);
+-
+-		event->pmu = tmp;
+-	}
+-	if (err) {
+-		if (event->destroy)
+-			event->destroy(event);
+-		return ERR_PTR(err);
+-	}
+-
+-	return &pmu;
+-}
 
 
 
