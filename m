@@ -1,86 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753872Ab0ESTFJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:05:09 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37996 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1752561Ab0ESTFG (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:05:06 -0400
-Date: Wed, 19 May 2010 15:05:04 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>
-Subject: Re: [RFC] Unified Ring Buffer (Next Generation)
-Message-ID: <20100519190504.GB19522@Krystal>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com>
+	id S1754447Ab0ESTFS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:05:18 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:59150 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752561Ab0ESTFN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 15:05:13 -0400
+Date: Wed, 19 May 2010 21:05:11 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+Message-ID: <20100519190510.GZ25951@kernel.dk>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <20100519180554.GY25951@kernel.dk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274291514.26328.930.camel@gandalf.stny.rr.com>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 14:56:33 up 116 days, 21:33,  9 users,  load average: 0.35, 0.27,
-	0.20
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <20100519180554.GY25951@kernel.dk>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt (rostedt@goodmis.org) wrote:
-[...]
-> Unfortunately, we are now back with more than one ring buffer in the
-> kernel. What's worse, neither of them can perform all the features
-> needed. This is putting a bit of stress on the users of these tools, not
-> to mention the stress on the developers as well.
-[...]
-> This email is about finding a solution to the problem. If we can once
-> again create a generic ring buffer that handles all requirements, then
-> we can also merge the functionality of ftrace into perf, and lower the
-> duplication of code within the kernel.
+On Wed, May 19 2010, Jens Axboe wrote:
+> On Wed, May 19 2010, Linus Torvalds wrote:
+> > 
+> > 
+> > On Wed, 19 May 2010, Miklos Szeredi wrote:
+> > > 
+> > > One issue I see is that it's possible to grow pipes indefinitely.
+> > > Should this be restricted to privileged users?
+> > 
+> > Yes. But perhaps only if it grows past the default (or perhaps "default*2" 
+> > or similar). That way a normal user could shrink the pipe buffers, and 
+> > then grow them again if he wants to.
 > 
+> That's still a bit arbitrary, I don't think allowing default*2 only for
+> non-root is going to be hugely interesting. But limiting makes sense,
+> but lets at least allow a larger max limit for the normal user. I'm
+> suspecting that the media application that wants to use this will not be
+> running as root, and we don't make the feature properly available to the
+> ones that want to use it, then we may as well not do it.
 > 
-> This time around, I'm asking Mathieu Desnoyers to come to the plate, and
-> see if he can handle the task.
+> Or we could expose a sysctl for instance that holds the max non-root
+> size. And make that default to default*16 or something. How does that
+> sound?
 > 
-> I'm hoping that this email will start a thread that gets everyone into
-> agreement and produces something that will make everyone happy.
+> > Oh, and I think you need to also require that there be at least two 
+> > buffers. Otherwise we can't guarantee POSIX behavior, I think.
+> 
+> Good point, and at least that part is easily doable :-)
 
-I also hope this will get us to a state of concensus.
+So I updated the patch, that branch was pretty ancient... The fcntl pipe
+numbers were also screwed up, so got that fixed. New patch is here:
 
-For the records: I'm willing to handle that task. I plan to use the
+http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=23dcb845246946aeda5a5e398c6911381ad28365
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/compudj/linux-2.6-ringbuffer.git
+and I implemented a /proc/sys/fs/pipe-max-pages addon, that part is
+here:
 
-git tree to publish my work (and to submit occasional rounds of patches to LKML
-too)
+http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=6ef1fd2ea2fdba7a47706a46f0ca564ab2c46a52
 
-The current state of that tree is that it includes only the bare-bone ring
-buffer core, without the filesystem operations, only for per-cpu buffers, and
-still needs a bit of cleanup. It's currently in kernel/trace/, but, as we
-discussed, it's probably better if I move it to kernel/ringbuffer/, because it
-does not have to be tied specifically to tracers. I'm doing it with tracing in
-mind, but it could be reused as generic ring buffer in the future.
-
-Thanks,
-
-Mathieu
+Totally untested.
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+Jens Axboe
+
