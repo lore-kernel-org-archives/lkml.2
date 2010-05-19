@@ -1,68 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754368Ab0ESRiQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 13:38:16 -0400
-Received: from e23smtp05.au.ibm.com ([202.81.31.147]:34977 "EHLO
-	e23smtp05.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750900Ab0ESRiO (ORCPT
+	id S1754409Ab0ESRkW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:40:22 -0400
+Received: from mail-pz0-f194.google.com ([209.85.222.194]:43713 "EHLO
+	mail-pz0-f194.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750900Ab0ESRkU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 13:38:14 -0400
-Date: Wed, 19 May 2010 23:08:06 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 0/13] Uprobes v4
-Message-ID: <20100519173806.GA3319@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
- <20100518204944.GA6959@Krystal>
- <20100519060803.GB19957@linux.vnet.ibm.com>
- <1274278660.5605.11006.camel@twins>
+	Wed, 19 May 2010 13:40:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=d3KjdfxnGRwJGIrLrjrmATEa0z04NxSnOW/mziMUvZH+owOEYOnI6t9Y3t5lOb1Xbs
+         Fv0BKTZE6i52uc+MQkHBa3bPLegyDjwL4EuavZUflWWkrRWmtg5FMP9u+J9unBsqN7MU
+         5Tx3T51p8bkAWHcaZ7k3+vGJtFnEPNfP/+k+M=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1274278660.5605.11006.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <AANLkTimF8GtXDwUbqX8O1PZ0KLHeAKsV-C1o6KHTReZy@mail.gmail.com>
+References: <h2h6d38d2f91004271023hc2d2b69ekbfd40fe97d5b2566@mail.gmail.com> 
+	<AANLkTil1Rr9IGxan8diaQNwNmFnljQs3w0j3oyQoGLgA@mail.gmail.com> 
+	<AANLkTimSlLNf2b1YVBkUrFLM3PmRGmgVyBNMjNNccd8q@mail.gmail.com> 
+	<AANLkTin3AJJRAV3HD0aKPbkG1oxrrl6uAO8aGQWgguw0@mail.gmail.com> 
+	<AANLkTilJIhcCkRDw4UoQFIMxHbtvGodxKr7MtP1qFGxY@mail.gmail.com> 
+	<AANLkTinybFoRb7FJE4yj8zy3Bgi_2dw6SFMkXWkt4c3x@mail.gmail.com> 
+	<AANLkTilYTbyFLP4J91zOwckbsegA7-udGT8xGin4DCBO@mail.gmail.com> 
+	<AANLkTim29sghIN6Xr-ZhjYN92iChYpmXODty12THu364@mail.gmail.com> 
+	<AANLkTiljPn9SXU_OR_SOR2r9WpDpJf2ybcbCpmxpV3WI@mail.gmail.com> 
+	<AANLkTimF8GtXDwUbqX8O1PZ0KLHeAKsV-C1o6KHTReZy@mail.gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 19 May 2010 10:39:58 -0700
+Message-ID: <AANLkTimGKyjR2uqy7E5D_2bRxkgCk76JxIvBEGTHtF-3@mail.gmail.com>
+Subject: Re: Logitech Headset
+To: Kevin McKinney <klmckinney1@gmail.com>
+Cc: Daniel Chen <seven.steps@gmail.com>, kernel-team@lists.ubuntu.com,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-05-19 16:17:40]:
+On Wed, May 19, 2010 at 10:35 AM, Kevin McKinney <klmckinney1@gmail.com> wrote:
+> Luis,
+> Yeah, I was thinking about reverse engineering the process and delineating
+> that in a formal report; but my project would be stronger by creating a new
+> driver. So I will look at porting another device.
+> Thank you for your help!! I am glad you chimed in!!
+> Do you mind if I send any more questions I have to you?  I will limit my
+> questions to only two per week (if needed)…
 
-> On Wed, 2010-05-19 at 11:38 +0530, Srikar Dronamraju wrote:
-> > 
-> > Also when uprobes implements global tracing support (i.e probing a
-> > particular symbol in a dso across processes), it has to rely on
-> > background page replacement. 
-> 
-> Uhm, how so?
+you might be better off using the devel driver list.
 
-For global tracing we cant use access_process_vm. The equivalent to
-access_process_vm for global tracing would be to use copy_to_user.
+http://driverdev.linuxdriverproject.org/mailman/listinfo/devel
 
-However I am sure people wouldnt be happy using copy_to_user on a page
-that other processes could have mapped. 
-
-So that leaves us with background page replacement method. 
-I do agree that we will not be using the same routine. But the technique
-should be something similar(or do you disagree?). 
-
-Or do you suggest any alternative methods for global tracing?
-
---
-Thanks and Regards
-Srikar
+  Luis
