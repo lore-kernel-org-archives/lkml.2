@@ -1,66 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757721Ab0ESM0P (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:26:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63638 "EHLO mx1.redhat.com"
+	id S1758010Ab0ESMc3 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:32:29 -0400
+Received: from sh.osrg.net ([192.16.179.4]:38491 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754994Ab0ESM0N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:26:13 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1274135154-24082-4-git-send-email-walken@google.com>
-References: <1274135154-24082-4-git-send-email-walken@google.com> <1274135154-24082-1-git-send-email-walken@google.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 03/10] rwsem: lighter active count checks when waking up readers
-Date: Wed, 19 May 2010 13:25:31 +0100
-Message-ID: <5592.1274271931@redhat.com>
+	id S1756041Ab0ESMc1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:32:27 -0400
+Date: Wed, 19 May 2010 21:26:49 +0900
+To: dwmw2@infradead.org
+Cc: fujita.tomonori@lab.ntt.co.jp, geert@linux-m68k.org,
+       herbert@gondor.hengli.com.au, davem@davemloft.net,
+       penberg@cs.helsinki.fi, mpm@selenic.com, ken@codelabs.ch,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1274271585.6930.9983.camel@macbook.infradead.org>
+References: <1274269236.6930.9930.camel@macbook.infradead.org>
+	<20100519210506U.fujita.tomonori@lab.ntt.co.jp>
+	<1274271585.6930.9983.camel@macbook.infradead.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-Id: <20100519212904N.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Wed, 19 May 2010 21:26:51 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel Lespinasse <walken@google.com> wrote:
+On Wed, 19 May 2010 13:19:45 +0100
+David Woodhouse <dwmw2@infradead.org> wrote:
 
-> ... When there are waiter threads on a rwsem and the spinlock is held, other
-> threads can only increment the active count by trying to grab the rwsem in
-> up_xxxx().
+> On Wed, 2010-05-19 at 21:02 +0900, FUJITA Tomonori wrote:
+> > On Wed, 19 May 2010 12:40:36 +0100
+> > David Woodhouse <dwmw2@infradead.org> wrote:
+> > 
+> > > On Wed, 2010-05-19 at 13:32 +0200, Geert Uytterhoeven wrote:
+> > > > Instead of having (different) defaults in sl[aou]b, perhaps we should
+> > > > just remove the defaults completely, to ensure all architectures set
+> > > > ARCH_SLAB_MINALIGN to the correct value? 
+> > > 
+> > > What is 'correct'? The architecture sets it to the minimum value that it
+> > > can cope with, according to its own alignment constraints (and DMA/cache
+> > > constraints, in the case of ARCH_KMALLOC_MINALIGN).
+> > 
+> > IIRC, not all the architectures do that; ARCH_KMALLOC_MINALIGN doesn't
+> > mean "DMA-safe" alignment currently. 
+> 
+> Surely those architectures that have alignment constraints for DMA but
+> which don't set ARCH_KMALLOC_MINALIGN are just buggy -- it _does_ mean
+> that.
 
-That's not true.  A thread attempting to get an rwsem by issuing a down_read()
-or down_write() will also unconditionally increment the active count before it
-considers calling out to the slow path.
+Well, I thought so but seems that there isn't such agreement:
 
-Maybe what you mean is that other threads wanting to do a wake up can only
-increase the active count for the processes being woken up whilst holding the
-rwsem's spinlock.
+http://kerneltrap.org/mailarchive/linux-kernel/2010/5/12/4568960
 
-> +	/* If we come here from up_xxxx(), another thread might have reached
-> +	 * rwsem_down_failed_common() before we acquired the spinlock and
-> +	 * woken up an active locker.
-
-Do you mean a waiter rather than an active locker?  If a process is still
-registering activity on the rwsem, then it can't be woken yet.
-Michel Lespinasse <walken@google.com> wrote:
-
-> +	 * Note that we do not need to update the rwsem count: any writer
-> +	 * trying to acquire rwsem will run rwsem_down_write_failed() due
-> +	 * to the waiting threads, and block trying to acquire the spinlock.
-
-That comma shouldn't be there.
-
->  	/* Grant an infinite number of read locks to the readers at the front
->  	 * of the queue.  Note we increment the 'active part' of the count by
-
-I wonder if I should've called it the 'activity part' of the count rather than
-the 'active part'.
-
-Apart from that, the patch looks fine.  That's all comment/description fixes.
-
-David
