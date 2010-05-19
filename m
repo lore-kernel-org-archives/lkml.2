@@ -1,91 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756874Ab0ESJGs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 05:06:48 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:36241 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756132Ab0ESJGj (ORCPT
+	id S1755292Ab0ESJNH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 05:13:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:35630 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0ESJND convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 05:06:39 -0400
-Date: Wed, 19 May 2010 14:35:57 +0530
-From: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>
-Cc: Srivatsa Vaddagiri <vatsa@in.ibm.com>, Gautham R Shenoy <ego@in.ibm.com>,
-       Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] Make sure timers have migrated before killing
-	migration_thread
-Message-ID: <20100519090557.GA15237@amitarora.in.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Wed, 19 May 2010 05:13:03 -0400
+Subject: Re: [tip:perf/core] perf/ftrace: Optimize perf/tracepoint
+ interaction for single events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: mingo@redhat.com, hpa@zytor.com, paulus@samba.org, acme@redhat.com,
+       linux-kernel@vger.kernel.org, efault@gmx.de, rostedt@goodmis.org,
+       tglx@linutronix.de, mingo@elte.hu, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20100519090654.GK5704@nowhere>
+References: <tip-4f41c013f553957765902fb01475972f0af3e8e7@git.kernel.org>
+	 <20100519075804.GF5704@nowhere> <1274257123.5605.10260.camel@twins>
+	 <20100519082335.GG5704@nowhere> <1274259525.5605.10352.camel@twins>
+	 <20100519090654.GK5704@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 19 May 2010 11:12:28 +0200
+Message-ID: <1274260348.5605.10379.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Problem : In a stress test where some heavy tests were running along with
-regular CPU offlining and onlining, a hang was observed. The system seems to
-be hung at a point where migration_call() tries to kill the migration_thread
-of the dying CPU, which just got moved to the current CPU. This migration
-thread does not get a chance to run (and die) since rt_throttled is set to 1
-on current, and it doesn't get cleared as the hrtimer which is supposed to
-reset the rt bandwidth (sched_rt_period_timer) is tied to the CPU being
-offlined.
+On Wed, 2010-05-19 at 11:06 +0200, Frederic Weisbecker wrote:
+> On Wed, May 19, 2010 at 10:58:45AM +0200, Peter Zijlstra wrote:
+> > How about something like the below?
+> > 
+> > 
+> > ---
+> > Subject: perf, trace: Remove IRQ-disable from perf/tracepoint interaction
+> > From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > Date: Wed May 19 10:52:27 CEST 2010
+> > 
+> > 
+> > 
+> > Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> > ---
+> 
+> 
+> 
+> Looks fine if we don't have nested irqs.
 
-Solution : This patch pushes the killing of migration thread to "CPU_POST_DEAD"
-event. By then all the timers (including sched_rt_period_timer) should have got
-migrated (along with other callbacks).
-
-Alternate Solution considered : Another option considered was to
-increase the priority of the hrtimer cpu offline notifier, such that it
-gets to run before scheduler's migration cpu offline notifier. In this
-way we are sure that the timers will get migrated before migration_call
-tries to kill migration_thread. But, this can have some non-obvious
-implications, suggested Srivatsa.
-
-Testing : Without the patch the stress tests didn't last for even 12
-hours. And yes, the problem was reproducible. With the patch applied the
-tests ran successfully for more than 48 hours.
-
-Thanks!
---
-Regards,
-Amit Arora
-
- Signed-off-by: Amit Arora <aarora@in.ibm.com>
- Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
---
-diff -Nuarp linux-2.6.34.org/kernel/sched.c linux-2.6.34/kernel/sched.c
---- linux-2.6.34.org/kernel/sched.c	2010-05-18 22:56:21.000000000 -0700
-+++ linux-2.6.34/kernel/sched.c	2010-05-18 22:58:31.000000000 -0700
-@@ -5942,14 +5942,26 @@ migration_call(struct notifier_block *nf
- 		cpu_rq(cpu)->migration_thread = NULL;
- 		break;
- 
-+	case CPU_POST_DEAD:
-+		/*
-+		  Bring the migration thread down in CPU_POST_DEAD event,
-+		  since the timers should have got migrated by now and thus
-+		  we should not see a deadlock between trying to kill the
-+		  migration thread and the sched_rt_period_timer.
-+		*/
-+		cpuset_lock();
-+		rq = cpu_rq(cpu);
-+		kthread_stop(rq->migration_thread);
-+		put_task_struct(rq->migration_thread);
-+		rq->migration_thread = NULL;
-+		cpuset_unlock();
-+		break;
-+
- 	case CPU_DEAD:
- 	case CPU_DEAD_FROZEN:
- 		cpuset_lock(); /* around calls to cpuset_cpus_allowed_lock() */
- 		migrate_live_tasks(cpu);
- 		rq = cpu_rq(cpu);
--		kthread_stop(rq->migration_thread);
--		put_task_struct(rq->migration_thread);
--		rq->migration_thread = NULL;
- 		/* Idle task back to normal (off runqueue, low prio) */
- 		raw_spin_lock_irq(&rq->lock);
- 		update_rq_clock(rq);
+Well, I was thinking the per-context recursion thing would sort that
+out. We can have 1 event per context in-flight.
