@@ -1,63 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757755Ab0ESMFZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 08:05:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:25863 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751961Ab0ESMFX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 08:05:23 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <1274135154-24082-3-git-send-email-walken@google.com>
-References: <1274135154-24082-3-git-send-email-walken@google.com> <1274135154-24082-1-git-send-email-walken@google.com>
-To: Michel Lespinasse <walken@google.com>
-Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: Re: [PATCH 02/10] rwsem: fully separate code pathes to wake writers vs readers
-Date: Wed, 19 May 2010 13:04:42 +0100
-Message-ID: <2767.1274270682@redhat.com>
+	id S1757986Ab0ESMGw (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 08:06:52 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:38514 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756188Ab0ESMGv convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 08:06:51 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=YdiIkROP3XPFWpq10gFyZVUgiWu8gRLkSPYl1d0XM5jbTvONZ8PRZK9jJPNB/hokZF
+         JlHKBH6P9UwlWxFXUeyBR9VppesiJZUvl0GCnZwsGdfWNliGdqAAM9AuTHvkv6Vd75Qs
+         8icTHYmZ1i1xxyZEHwTe4m68Ioxfo4JRrEPOI=
+MIME-Version: 1.0
+In-Reply-To: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
+References: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
+Date: Wed, 19 May 2010 14:06:46 +0200
+Message-ID: <AANLkTimTjuQUEulo8g7clpECJVHwwDc29nkWskw6fWF-@mail.gmail.com>
+Subject: Re: [PATCH] drivers/platform/x86/eeepc-wmi.c: fix build warning
+From: Corentin Chary <corentin.chary@gmail.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org, Matthew Garrett <mjg@redhat.com>,
+       Yong Wang <yong.y.wang@intel.com>, Dmitry Torokhov <dtor@mail.ru>,
+       Tejun Heo <tj@kernel.org>, platform-driver-x86@vger.kernel.org
+Content-Type: text/plain; charset=windows-1252
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Michel Lespinasse <walken@google.com> wrote:
+On Wed, May 19, 2010 at 12:37 PM, Daniel Mack <daniel@caiaq.de> wrote:
+> drivers/platform/x86/eeepc-wmi.c: In function ‘eeepc_wmi_notify’:
+> drivers/platform/x86/eeepc-wmi.c:209: warning: ‘new’ may be used uninitialized in this function
+> drivers/platform/x86/eeepc-wmi.c:209: note: ‘new’ was declared here
+>
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> Cc: Matthew Garrett <mjg@redhat.com>
+> Cc: Yong Wang <yong.y.wang@intel.com>
+> Cc: Corentin Chary <corentincj@iksaif.net>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: Tejun Heo <tj@kernel.org>
+> Cc: platform-driver-x86@vger.kernel.org
+> ---
+>  drivers/platform/x86/eeepc-wmi.c |    2 +-
+>  1 files changed, 1 insertions(+), 1 deletions(-)
+>
+> diff --git a/drivers/platform/x86/eeepc-wmi.c b/drivers/platform/x86/eeepc-wmi.c
+> index b227eb4..9dc50fb 100644
+> --- a/drivers/platform/x86/eeepc-wmi.c
+> +++ b/drivers/platform/x86/eeepc-wmi.c
+> @@ -206,7 +206,7 @@ static int eeepc_wmi_backlight_notify(struct eeepc_wmi *eeepc, int code)
+>  {
+>        struct backlight_device *bd = eeepc->backlight_device;
+>        int old = bd->props.brightness;
+> -       int new;
+> +       int new = old;
+>
+>        if (code >= NOTIFY_BRNUP_MIN && code <= NOTIFY_BRNUP_MAX)
+>                new = code - NOTIFY_BRNUP_MIN + 1;
+> --
+> 1.7.1
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe platform-driver-x86" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
-> + readers_only:
-> +	if (!downgrading) {
-> +
+Acked-By: Corentin Chary <corentincj@iksaif.net>
 
-There's an unnecessary blank line here.
-
-> +		/* if we came through an up_xxxx() call, we only only wake
-> +		 * someone up if we can transition the active part of the
-> +		 * count from 0 -> 1
-> +		 */
-> + try_again_read:
-
-I hate code that jumps into braced blocks with goto.  Would it be possible for
-you to do:
-
-	readers_only:
-		if (downgrading)
-			goto wake_readers;
-	...
-	wake_readers:
-		/* Grant an infinite number of read locks to the readers at the front
-	...
-
-instead, please?
-
-Also, since the labels 'undo' and 'try_again' are now specific to the writer
-path, can you label them 'undo_write' and 'try_again_write' just to make it
-obvious?
-
-Other than that, no particular objections to this patch.
-
-David
+-- 
+Corentin Chary
+http://xf.iksaif.net
