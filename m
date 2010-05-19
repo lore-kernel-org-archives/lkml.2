@@ -1,71 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753484Ab0ESPp7 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 11:45:59 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:40981 "EHLO smtps.tip.net.au"
+	id S1753545Ab0ESPqe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 11:46:34 -0400
+Received: from hera.kernel.org ([140.211.167.34]:35873 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753254Ab0ESPp4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 11:45:56 -0400
-Date: Thu, 20 May 2010 01:45:54 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Kevin Hilman <khilman@deeprootsystems.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 08/17] davinci: update gfp/slab.h includes
-Message-Id: <20100520014554.7bd9dbc6.sfr@canb.auug.org.au>
-In-Reply-To: <1269885165-18617-9-git-send-email-tj@kernel.org>
-References: <1269885165-18617-1-git-send-email-tj@kernel.org>
-	<1269885165-18617-9-git-send-email-tj@kernel.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1753457Ab0ESPqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 11:46:32 -0400
+Message-ID: <4BF407C9.2020202@kernel.org>
+Date: Wed, 19 May 2010 17:46:17 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: "John W. Linville" <linville@tuxdriver.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, "David S. Miller" <davem@davemloft.net>
+Subject: Re: [PATCH 10/17] wireless: update gfp/slab.h includes
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>	<1269885165-18617-11-git-send-email-tj@kernel.org>	<20100519190230.52385a65.sfr@canb.auug.org.au>	<20100519144505.GD2412@tuxdriver.com> <20100520012829.709931dc.sfr@canb.auug.org.au>
+In-Reply-To: <20100520012829.709931dc.sfr@canb.auug.org.au>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 19 May 2010 15:46:20 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Kevin,
+Hello, John, Stephen.
 
-On Tue, 30 Mar 2010 02:52:36 +0900 Tejun Heo <tj@kernel.org> wrote:
->
-> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-> gfp.h or slab.h is included as necessary.
+On 05/19/2010 05:28 PM, Stephen Rothwell wrote:
+>> Looks like this was part of a series...who merged the rest of it?
+>> I guess I presumed they would take care of the series.
 
-Please apply to the davinci tree (patch reposted below).
+Most of the series have been applied circa 2.6.34-rc4.  Stephen has
+been carrying patches for branches which weren't yet in mainline.
+IOW, these patches are necessary for a branch to be merged into
+mainline.
 
-From: Tejun Heo <tj@kernel.org>
-To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
-        linux-kernel@vger.kernel.org
-Cc: Tejun Heo <tj@kernel.org>, Kevin Hilman <khilman@deeprootsystems.com>
-Subject: [PATCH 08/17] davinci: update gfp/slab.h includes
-Date: Tue, 30 Mar 2010 02:52:36 +0900
+> It was a series of patches that were only relevant to the trees in
+> linux-next (for a change that happened in Linus' tree).  My hope (and I
+> assume Tejun's) was that each maintainer would take the patch relevant to
+> their tree (some did - I just checked I still have 10 of them being
+> applied to linux-next :-().
 
-Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
-gfp.h or slab.h is included as necessary.
+Yeap, I hoped that more of them would sort themselves out during devel
+cycle, but I guess rc1 window isn't too bad.
 
-Signed-off-by: Tejun Heo <tj@kernel.org>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>
----
- drivers/rtc/rtc-davinci.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
-
-diff --git a/drivers/rtc/rtc-davinci.c b/drivers/rtc/rtc-davinci.c
-index 92a8f6c..34647fc 100644
---- a/drivers/rtc/rtc-davinci.c
-+++ b/drivers/rtc/rtc-davinci.c
-@@ -29,6 +29,7 @@
- #include <linux/bcd.h>
- #include <linux/platform_device.h>
- #include <linux/io.h>
-+#include <linux/slab.h>
- 
- /*
-  * The DaVinci RTC is a simple RTC with the following
--- 
-1.6.4.2
+Thank you.
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+tejun
