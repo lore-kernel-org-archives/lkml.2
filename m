@@ -1,63 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754025Ab0ESQY2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:24:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53582 "EHLO mx1.redhat.com"
+	id S1754185Ab0ESQYF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 12:24:05 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49955 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754041Ab0ESQXA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:23:00 -0400
-Date: Wed, 19 May 2010 12:22:21 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, mathieu.desnoyers@polymtl.ca, hpa@zytor.com,
-       tglx@linutronix.de, rostedt@goodmis.org, andi@firstfloor.org,
-       roland@redhat.com, rth@redhat.com, mhiramat@redhat.com,
-       fweisbec@gmail.com, avi@redhat.com, davem@davemloft.net,
-       vgoyal@redhat.com
-Message-Id: <640f800a9493bf62064774263f3e6d77dbaf20fe.1274283321.git.jbaron@redhat.com>
-In-Reply-To: <cover.1274283321.git.jbaron@redhat.com>
-References: <cover.1274283321.git.jbaron@redhat.com>
-Subject: [PATCH 08/13] jump label v8: initialize workqueue tracepoints *before* they are registered
+	id S1753975Ab0ESQYA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 12:24:00 -0400
+Date: Thu, 20 May 2010 02:23:57 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Gregory Haskins <ghaskins@novell.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tejun Heo <tj@kernel.org>
+Subject: Re: linux-next: build failure after merge of the slabh tree
+Message-Id: <20100520022357.d57a6673.sfr@canb.auug.org.au>
+In-Reply-To: <20100329170727.7a7b9a6d.sfr@canb.auug.org.au>
+References: <20100329170727.7a7b9a6d.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Initialize the workqueue data structures *before* they are registered
-so that they are ready for callbacks.
+Hi Gregory,
 
-Signed-off-by: Jason Baron <jbaron@redhat.com>
+On Mon, 29 Mar 2010 17:07:27 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> After merging the slabh tree, today's linux-next build (x86_64
+> allmodconfig) failed like this:
+> 
+> drivers/vbus/bus-proxy.c: In function 'vbus_driver_ioq_release':
+> drivers/vbus/bus-proxy.c:192: error: implicit declaration of function 'kfree'
+> drivers/vbus/bus-proxy.c: In function 'vbus_driver_ioq_alloc':
+> drivers/vbus/bus-proxy.c:210: error: implicit declaration of function 'kzalloc'
+> drivers/vbus/bus-proxy.c:210: warning: assignment makes pointer from integer without a cast
+> drivers/vbus/bus-proxy.c:214: warning: assignment makes pointer from integer without a cast
+> 
+> Caused by commit d103d3b3e8512312b5254950035366d4422a479a ("percpu: don't
+> implicitly include slab.h from percpu.h") from the slabh tree interacting
+> with commit 5ff775e4c3d6b0ead7d8784797123a2deed73364 ("ioq: add
+> driver-side vbus helpers") from the alacrity tree.
+> 
+> I applied the following merge fixup patch which should be applied to the
+> alacrity tree (see Documentation/SubmitChecklist Rule #1 :-)).
+> 
+> From: Stephen Rothwell <sfr@canb.auug.org.au>
+> Date: Mon, 29 Mar 2010 17:03:25 +1100
+> Subject: [PATCH] vbus: use of kzalloc/kfree requires the include of slab.h
+
+This patch is needed on the alacrity tree since the slabh tree has been
+merged int Linus' tree some time ago.  Pleas apply (patch reposted below).
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Mon, 29 Mar 2010 17:03:25 +1100
+Subject: [PATCH] vbus: use of kzalloc/kfree requires the include of slab.h
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- kernel/trace/trace_workqueue.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/vbus/bus-proxy.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/kernel/trace/trace_workqueue.c b/kernel/trace/trace_workqueue.c
-index cc2d2fa..7705ad4 100644
---- a/kernel/trace/trace_workqueue.c
-+++ b/kernel/trace/trace_workqueue.c
-@@ -259,6 +259,11 @@ int __init trace_workqueue_early_init(void)
- {
- 	int ret, cpu;
+diff --git a/drivers/vbus/bus-proxy.c b/drivers/vbus/bus-proxy.c
+index 4792842..ae11f67 100644
+--- a/drivers/vbus/bus-proxy.c
++++ b/drivers/vbus/bus-proxy.c
+@@ -19,6 +19,7 @@
+  */
  
-+	for_each_possible_cpu(cpu) {
-+		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
-+		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
-+	}
-+
- 	ret = register_trace_workqueue_insertion(probe_workqueue_insertion);
- 	if (ret)
- 		goto out;
-@@ -275,11 +280,6 @@ int __init trace_workqueue_early_init(void)
- 	if (ret)
- 		goto no_creation;
+ #include <linux/module.h>
++#include <linux/slab.h>
+ #include <linux/vbus_driver.h>
  
--	for_each_possible_cpu(cpu) {
--		spin_lock_init(&workqueue_cpu_stat(cpu)->lock);
--		INIT_LIST_HEAD(&workqueue_cpu_stat(cpu)->list);
--	}
--
- 	return 0;
- 
- no_creation:
+ MODULE_AUTHOR("Gregory Haskins");
 -- 
-1.7.0.1
+1.7.0.3
 
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
