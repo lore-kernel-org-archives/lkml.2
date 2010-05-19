@@ -1,39 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753292Ab0ESTdS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 15:33:18 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39127
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752128Ab0ESTdQ (ORCPT
+	id S1753153Ab0ESTfK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 15:35:10 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39033 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752221Ab0ESTfI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 15:33:16 -0400
-Date: Wed, 19 May 2010 12:33:25 -0700 (PDT)
-Message-Id: <20100519.123325.123438307.davem@davemloft.net>
-To: mpm@selenic.com
-Cc: geert@linux-m68k.org, dwmw2@infradead.org, herbert@gondor.hengli.com.au,
-       penberg@cs.helsinki.fi, ken@codelabs.ch, michael-dev@fami-braun.de,
-       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
-       anemo@mba.ocn.ne.jp
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <1274278307.11603.1264.camel@calx>
-References: <1274269236.6930.9930.camel@macbook.infradead.org>
-	<AANLkTikZyfxBjXdvNzuVT2N9XIyJmY6JDiKRMRtAykeC@mail.gmail.com>
-	<1274278307.11603.1264.camel@calx>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 15:35:08 -0400
+Date: Wed, 19 May 2010 12:31:25 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: Unexpected splice "always copy" behavior observed
+In-Reply-To: <20100519191439.GA2845@Krystal>
+Message-ID: <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org>
+References: <1274199039.26328.758.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005180918300.4195@i5.linux-foundation.org> <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com>
+ <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Matt Mackall <mpm@selenic.com>
-Date: Wed, 19 May 2010 09:11:47 -0500
 
-> I still think we should add it to all of them as positive documentation
-> that this issue has been considered. And then make the kernel not
-> compile without it so new arch implementors can't miss it.
 
-I agree and would even go so far as to suggest that we break all
-architectures not setting it now.
+On Wed, 19 May 2010, Mathieu Desnoyers wrote:
+> 
+> Good point. This discard flag might do the trick and let us keep things simple.
+> The major concern here is to keep the page cache disturbance relatively low.
+> Which of new page allocation or stealing back the page has the lowest overhead
+> would have to be determined with benchmarks.
+
+We could probably make it easier somehow to do the writeback and discard 
+thing, but I have had _very_ good experiences with even a rather trivial 
+file writer that basically used (iirc) 8MB windows, and the logic was very 
+trivial:
+
+ - before writing a new 8M window, do "start writeback" 
+   (SYNC_FILE_RANGE_WRITE) on the previous window, and do 
+   a wait (SYNC_FILE_RANGE_WAIT_AFTER) on the window before that.
+
+in fact, in its simplest form, you can do it like this (this is from my 
+"overwrite disk images" program that I use on old disks):
+
+	for (index = 0; index < max_index ;index++) {
+		if (write(fd, buffer, BUFSIZE) != BUFSIZE)
+			break;
+		/* This won't block, but will start writeout asynchronously */
+		sync_file_range(fd, index*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WRITE);
+		/* This does a blocking write-and-wait on any old ranges */
+		if (index)
+			sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+	}
+
+and even if you don't actually do a discard (maybe we should add a 
+SYNC_FILE_RANGE_DISCARD bit, right now you'd need to do a separate 
+fadvise(FADV_DONTNEED) to throw it out) the system behavior is pretty 
+nice, because the heavy writer gets good IO performance _and_ leaves only 
+easy-to-free pages around after itself.
+
+		Linus
