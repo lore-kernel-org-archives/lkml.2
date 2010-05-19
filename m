@@ -1,51 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab0ESOTK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:19:10 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:54750 "EHLO e1.ny.us.ibm.com"
+	id S1752527Ab0ESOW6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:22:58 -0400
+Received: from smtp.citrix.com ([66.165.176.89]:58101 "EHLO SMTP.CITRIX.COM"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752626Ab0ESOTG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:19:06 -0400
-Date: Wed, 19 May 2010 07:17:45 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: mingo@elte.hu, akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       mathieu.desnoyers@efficios.com
-Subject: Re: [PATCH] block: remove all rcu head initializations
-Message-ID: <20100519141745.GD2237@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100518183603.GA6238@linux.vnet.ibm.com>
- <20100519062628.GF25951@kernel.dk>
- <20100519135401.GB2237@linux.vnet.ibm.com>
- <20100519140344.GU25951@kernel.dk>
+	id S1752228Ab0ESOW5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:22:57 -0400
+X-IronPort-AV: E=Sophos;i="4.53,263,1272859200"; 
+   d="scan'208";a="8591271"
+Date: Wed, 19 May 2010 15:25:45 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Jeremy Fitzhardinge <jeremy@goop.org>
+CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [PATCH 09/12] Fix possible NULL pointer dereference in
+ print_IO_APIC
+In-Reply-To: <4BF2D95B.2040007@goop.org>
+Message-ID: <alpine.DEB.2.00.1005191520290.11380@kaball-desktop>
+References: <alpine.DEB.2.00.1005181054260.11380@kaball-desktop> <1274178187-20602-9-git-send-email-stefano.stabellini@eu.citrix.com> <4BF2D95B.2040007@goop.org>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519140344.GU25951@kernel.dk>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 04:03:44PM +0200, Jens Axboe wrote:
-> On Wed, May 19 2010, Paul E. McKenney wrote:
-> > On Wed, May 19, 2010 at 08:26:28AM +0200, Jens Axboe wrote:
-> > > On Tue, May 18 2010, Paul E. McKenney wrote:
-> > > > Hello, Jens,
-> > > > 
-> > > > Would you like to carry this patch, or should I push it up -tip?  If I
-> > > > don't hear otherwise from you, I will push it up -tip.  The
-> > > > INIT_RCU_HEAD() primitive is going away in favor of debugobjects.
-> > > 
-> > > I'll queue it up, thanks!
-> > 
-> > Let me know when you have it, and I will happily remove it from my
-> > tree.  ;-)
+On Tue, 18 May 2010, Jeremy Fitzhardinge wrote:
+> On 05/18/2010 03:23 AM, Stefano Stabellini wrote:
+> > Make sure chip_data is not NULL before accessing it.
+> >   
 > 
-> It was in when I sent the email, it's queued up in for-2.6.35 :-)
+> You should clarify under what circumstances it can be legitimately NULL.
+> 
+> 
 
-;-)
+The VIRQ_TIMER handler and virq handlers in general don't have any
+chip_data.
 
-Very good, I have removed it from my tree.
 
-							Thanx, Paul
+> > Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> > ---
+> >  arch/x86/kernel/apic/io_apic.c |    2 ++
+> >  1 files changed, 2 insertions(+), 0 deletions(-)
+> >
+> > diff --git a/arch/x86/kernel/apic/io_apic.c b/arch/x86/kernel/apic/io_apic.c
+> > index eb2789c..c64499c 100644
+> > --- a/arch/x86/kernel/apic/io_apic.c
+> > +++ b/arch/x86/kernel/apic/io_apic.c
+> > @@ -1732,6 +1732,8 @@ __apicdebuginit(void) print_IO_APIC(void)
+> >  		struct irq_pin_list *entry;
+> >  
+> >  		cfg = desc->chip_data;
+> > +		if (!cfg)
+> > +			continue;
+> >  		entry = cfg->irq_2_pin;
+> >  		if (!entry)
+> >  			continue;
+> >   
+> 
