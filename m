@@ -1,70 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752140Ab0ESNtp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 09:49:45 -0400
-Received: from casper.infradead.org ([85.118.1.10]:49797 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751441Ab0ESNtn (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 09:49:43 -0400
-Subject: [PATCH 5/4] Provide __dma_aligned macro
-From: David Woodhouse <dwmw2@infradead.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>,
-       Mike Frysinger <vapier@gentoo.org>, Nick Piggin <npiggin@suse.de>,
-       os@emlix.com
-Cc: David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
-       mpm@selenic.com, ken@codelabs.ch, geert@linux-m68k.org,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-In-Reply-To: <1274266725.6930.9823.camel@macbook.infradead.org>
-References: <1274211235.11603.1205.camel@calx>
-	 <20100518.135945.180391159.davem@davemloft.net>
-	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
-	 <20100518.142021.135951273.davem@davemloft.net>
-	 <1274224834.6930.8361.camel@macbook.infradead.org>
-	 <20100519010524.GB18813@gondor.apana.org.au>
-	 <1274266725.6930.9823.camel@macbook.infradead.org>
+	id S1752272Ab0ESNvK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 09:51:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751587Ab0ESNvH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 09:51:07 -0400
+Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Minchan Kim <minchan.kim@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100505161632.GB5378@laptop>
+References: <1271262948.2233.14.camel@barrios-desktop>
+	 <1271320388.2537.30.camel@localhost>
+	 <1271350270.2013.29.camel@barrios-desktop>
+	 <1271427056.7196.163.camel@localhost.localdomain>
+	 <1271603649.2100.122.camel@barrios-desktop>
+	 <1271681929.7196.175.camel@localhost.localdomain>
+	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+	 <1272548602.7196.371.camel@localhost.localdomain>
+	 <1272821394.2100.224.camel@barrios-desktop>
+	 <1273063728.7196.385.camel@localhost.localdomain>
+	 <20100505161632.GB5378@laptop>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 19 May 2010 14:49:08 +0100
-Message-ID: <1274276948.6930.10117.camel@macbook.infradead.org>
+Organization: Red Hat UK Ltd
+Date: Wed, 19 May 2010 14:54:54 +0100
+Message-ID: <1274277294.2532.54.camel@localhost>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
 Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit 3843384a055496dfed3c93ae883d964d8290fdab ("Input: ad7877 - keep
-dma rx buffers in seperate cache lines")[sic] introduced the use of
-____cacheline_aligned to ensure that buffers used for DMA as part of a
-structure were suitably separated from the rest of the structure.
+Hi,
 
-However, aligning to the cache line size isn't necessary on
-cache-coherent architectures. To avoid wasting space, the correct value
-to use for the alignment is ARCH_KMALLOC_MINALIGN.
+On Thu, 2010-05-06 at 02:16 +1000, Nick Piggin wrote:
+> On Wed, May 05, 2010 at 01:48:48PM +0100, Steven Whitehouse wrote:
+> > Hi,
+> > 
+> > On Mon, 2010-05-03 at 02:29 +0900, Minchan Kim wrote:
+> > > Hi, Steven. 
+> > > 
+> > > Sorry for lazy response.
+> > > I wanted to submit the patch which implement Nick's request whole.
+> > > And unfortunately, I am so busy now. 
+> > > But if it's urgent, I want to submit this one firstly and 
+> > > at next version, maybe I will submit remained TODO things 
+> > > after middle of May.
+> > > 
+> > > I think this patch can't make regression other usages.
+> > > Nick. What do you think about?
+> > > 
+> > I guess the question is whether the remaining items are essential for
+> > correct functioning of this patch, or whether they are "it would be nice
+> > if" items. I suspect that they are the latter (I'm not a VM expert, but
+> > from the brief descriptions it looks like that to me) in which case I'd
+> > suggest send the currently existing patch first and the following up
+> > with the remaining changes later.
+> > 
+> > We have got a nice speed up with your current patch and so far as I'm
+> > aware not introduced any new bugs or regressions with it.
+> > 
+> > Nick, does that sound ok?
+> 
+> Just got around to looking at it again. I definitely agree we need to
+> fix the regression, however I'm concerned about introducing other
+> possible problems while doing that.
+> 
+> The following patch should (modulo bugs, but it's somewhat tested) give
+> no difference in the allocation patterns, so won't introduce virtual
+> memory layout changes.
+> 
+> Any chance you could test it?
+> 
 
-This patch provides a __dma_aligned macro which does the right thing.
+At last some further info on the failed boot during testing. The
+messages look like this:
 
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
+dracut: Starting plymouth daemon
+G------------[ cut here ]------------
+kernel BUG at mm/vmalloc.c:391!
+invalid opcode: 0000 [#1] SMP 
+last sysfs file: /sys/devices/virtual/vtconsole/vtcon0/uevent
+CPU 7 
+Modules linked in:
+Pid: 193, comm: modprobe Tainted: G        W  2.6.32-23.el6.bz583026.patches2.3.7.x86_64 #1 ProLiant DL580 G3
+RIP: 0010:[<ffffffff8113c161>]  [<ffffffff8113c161>] alloc_vmap_area+0x431/0x440
+RSP: 0018:ffff8803dae3bcf8  EFLAGS: 00010287
+RAX: ffffc9001232e000 RBX: 0000000000004000 RCX: 0000000000000000
+RDX: ffffffffa0000000 RSI: ffff8803db66fdc0 RDI: ffffffff81b6d0a0
+RBP: ffff8803dae3bd88 R08: 000000000000000a R09: 00000000000000d0
+R10: ffff8803db6b6e40 R11: 0000000000000040 R12: 0000000000000001
+R13: ffffffffff000000 R14: ffffffffffffffff R15: ffffffffa0000000
+FS:  00007f5872189700(0000) GS:ffff88002c2e0000(0000) knlGS:0000000000000000
 
-diff --git a/include/linux/dma-mapping.h b/include/linux/dma-mapping.h
-index ca32ed7..4487cf3 100644
---- a/include/linux/dma-mapping.h
-+++ b/include/linux/dma-mapping.h
-@@ -5,6 +5,9 @@
- #include <linux/err.h>
- #include <linux/dma-attrs.h>
- #include <linux/scatterlist.h>
-+#include <linux/slab.h>
-+
-+#define __dma_aligned __attribute__((__aligned__(ARCH_KMALLOC_MINALIGN)))
- 
- /* These definitions mirror those in pci.h, so they can be used
-  * interchangeably with their PCI_ counterparts */
+and the code around that point is:
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+static struct vmap_area *alloc_vmap_area(unsigned long size,
+                                unsigned long align,
+                                unsigned long vstart, unsigned long vend,
+                                int node, gfp_t gfp_mask)
+{
+
+...
+
+                if (!first)
+                        goto found;
+
+                if (first->va_start < addr) {
+391>                    BUG_ON(first->va_end < addr);
+                        n = rb_next(&first->rb_node);
+                        addr = ALIGN(first->va_end + PAGE_SIZE, align);
+                        if (n)
+                                first = rb_entry(n, struct vmap_area, rb_node);
+                        else
+                                goto found;
+                }
+
+
+so that seems to pinpoint the line on which the problem occurred. Let us
+know if you'd like us to do some more testing. I think we have the
+console access issue fixed now. Many thanks for all you help in this
+so far,
+
+Steve.
+
+
+
 
