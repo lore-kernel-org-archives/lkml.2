@@ -1,48 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752546Ab0ESOJE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 10:09:04 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:54264 "EHLO mail.zytor.com"
+	id S1752622Ab0ESOLx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 10:11:53 -0400
+Received: from waste.org ([173.11.57.241]:50954 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752419Ab0ESOJC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 10:09:02 -0400
-Message-ID: <4BF3F0D3.6070609@zytor.com>
-Date: Wed, 19 May 2010 07:08:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Andi Kleen <andi@firstfloor.org>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       eric.dumazet@gmail.com, Ingo Molnar <mingo@elte.hu>,
-       "Siddha\, Suresh B" <suresh.b.siddha@intel.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>
-Subject: Re: Does anyone care about gcc 3.x support for *x86* anymore?
-References: <4BF33CAD.2070602@zytor.com> <871vd8xb8t.fsf@basil.nowhere.org>
-In-Reply-To: <871vd8xb8t.fsf@basil.nowhere.org>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S1751873Ab0ESOLv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 10:11:51 -0400
+Subject: Re: [BUG] SLOB breaks Crypto
+From: Matt Mackall <mpm@selenic.com>
+To: Geert Uytterhoeven <geert@linux-m68k.org>
+Cc: David Woodhouse <dwmw2@infradead.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>,
+       David Miller <davem@davemloft.net>, penberg@cs.helsinki.fi,
+       ken@codelabs.ch, michael-dev@fami-braun.de,
+       linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       anemo@mba.ocn.ne.jp
+In-Reply-To: <AANLkTikZyfxBjXdvNzuVT2N9XIyJmY6JDiKRMRtAykeC@mail.gmail.com>
+References: <1274211235.11603.1205.camel@calx>
+	 <20100518.135945.180391159.davem@davemloft.net>
+	 <AANLkTik3tKpPvilnWV6eVIm5_rUPeuCzXBDwmnZl9N6o@mail.gmail.com>
+	 <20100518.142021.135951273.davem@davemloft.net>
+	 <1274224834.6930.8361.camel@macbook.infradead.org>
+	 <20100519010524.GB18813@gondor.apana.org.au>
+	 <1274253269.6930.9325.camel@macbook.infradead.org>
+	 <AANLkTimyUoAsculVFkEPwlRQEI3eLAwX5x7M0Yr9AdOs@mail.gmail.com>
+	 <1274269236.6930.9930.camel@macbook.infradead.org>
+	 <AANLkTikZyfxBjXdvNzuVT2N9XIyJmY6JDiKRMRtAykeC@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 19 May 2010 09:11:47 -0500
+Message-ID: <1274278307.11603.1264.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 06:38 AM, Andi Kleen wrote:
-> "H. Peter Anvin" <hpa@zytor.com> writes:
->>
->> If there isn't a reason to preserve support, I would like to consider
->> discontinue support for using gcc 3 to compile x86 kernels.  If there is
->> a valid use case, it would be good to know what it is.
+On Wed, 2010-05-19 at 13:50 +0200, Geert Uytterhoeven wrote:
+> On Wed, May 19, 2010 at 13:40, David Woodhouse <dwmw2@infradead.org> wrote:
+> > On Wed, 2010-05-19 at 13:32 +0200, Geert Uytterhoeven wrote:
+> >> Instead of having (different) defaults in sl[aou]b, perhaps we should
+> >> just remove the defaults completely, to ensure all architectures set
+> >> ARCH_SLAB_MINALIGN to the correct value?
+> >
+> > What is 'correct'? The architecture sets it to the minimum value that it
+> > can cope with, according to its own alignment constraints (and DMA/cache
+> > constraints, in the case of ARCH_KMALLOC_MINALIGN).
+> >
+> > Some architectures don't _have_ any minimum required alignment, so they
+> > have no need to set it. If the architecture _does_ specify a minimum,
+> > the allocators must honour it. Otherwise, they're free to do their own
+> > thing. And slob chooses to use a smaller alignment than slab and slub
+> > do, in accordance with its design and its raison d'être.
 > 
-> I suspect there are still distributions around that use it as a standard
-> compiler. Wasn't it used in some major release of Debian?
-> 
-> -Andi
+> Currently 7 out of 20+ architectures set it.
+> Any bets on how many are missing, but should set it?
 
-There are, but that doesn't mean it's relevant for people to compile
-bleeding-edge kernels with it.
-
-	-hpa
+I still think we should add it to all of them as positive documentation
+that this issue has been considered. And then make the kernel not
+compile without it so new arch implementors can't miss it.
 
 -- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+Mathematics is the supreme nostalgia of our time.
+
 
