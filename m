@@ -1,93 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0ESQ5I (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 12:57:08 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24311 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753336Ab0ESQ5G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 12:57:06 -0400
-Message-ID: <4BF41501.1020909@redhat.com>
-Date: Wed, 19 May 2010 12:42:41 -0400
-From: Masami Hiramatsu <mhiramat@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc11 Thunderbird/3.0.4
+	id S1753068Ab0ESRBp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 13:01:45 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50031 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752154Ab0ESRBn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 13:01:43 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/2] perf symbols: Don't try to read the build-id twice
+Date: Wed, 19 May 2010 14:01:32 -0300
+Message-Id: <1274288493-15523-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274288493-15523-1-git-send-email-acme@infradead.org>
+References: <1274288493-15523-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: ananth@in.ibm.com
-CC: Ingo Molnar <mingo@elte.hu>, lkml <linux-kernel@vger.kernel.org>,
-       systemtap <systemtap@sources.redhat.com>,
-       DLE <dle-develop@lists.sourceforge.net>,
-       Jim Keniston <jkenisto@us.ibm.com>, Jason Baron <jbaron@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Subject: Re: [PATCH -tip v2 1/5] [BUGFIX] kprobes: Fix selftest to clear	flags
- field for reusing probes
-References: <20100518201244.6058.73083.stgit@localhost6.localdomain6> <20100518201251.6058.60749.stgit@localhost6.localdomain6> <20100519050246.GB17114@in.ibm.com>
-In-Reply-To: <20100519050246.GB17114@in.ibm.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ananth N Mavinakayanahalli wrote:
-> On Tue, May 18, 2010 at 04:12:51PM -0400, Masami Hiramatsu wrote:
->  
->>  kernel/test_kprobes.c |   12 +++++++++---
->>  1 files changed, 9 insertions(+), 3 deletions(-)
->>
->> diff --git a/kernel/test_kprobes.c b/kernel/test_kprobes.c
->> index 4f10451..ede20f4 100644
->> --- a/kernel/test_kprobes.c
->> +++ b/kernel/test_kprobes.c
->> @@ -115,7 +115,9 @@ static int test_kprobes(void)
->>  	int ret;
->>  	struct kprobe *kps[2] = {&kp, &kp2};
->>
->> -	kp.addr = 0; /* addr should be cleard for reusing kprobe. */
->> +	/* addr and flags should be cleard for reusing kprobe. */
->> +	kp.addr = 0;
-> 
-> kp.addr = NULL;
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-OK, I'll fix that (and below too).
+In __dsos__read_build_ids if the dso already had its build-id read,
+don't try again.
 
-Thank you!
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/util/symbol.c |    4 ++++
+ 1 files changed, 4 insertions(+), 0 deletions(-)
 
-> 
->> +	kp.flags = 0;
->>  	ret = register_kprobes(kps, 2);
->>  	if (ret < 0) {
->>  		printk(KERN_ERR "Kprobe smoke test failed: "
->> @@ -210,7 +212,9 @@ static int test_jprobes(void)
->>  	int ret;
->>  	struct jprobe *jps[2] = {&jp, &jp2};
->>
->> -	jp.kp.addr = 0; /* addr should be cleard for reusing kprobe. */
->> +	/* addr and flags should be cleard for reusing kprobe. */
->> +	jp.kp.addr = 0;
-> 
-> Same here...
-> 
->> +	jp.kp.flags = 0;
->>  	ret = register_jprobes(jps, 2);
->>  	if (ret < 0) {
->>  		printk(KERN_ERR "Kprobe smoke test failed: "
->> @@ -323,7 +327,9 @@ static int test_kretprobes(void)
->>  	int ret;
->>  	struct kretprobe *rps[2] = {&rp, &rp2};
->>
->> -	rp.kp.addr = 0; /* addr should be cleard for reusing kprobe. */
->> +	/* addr and flags should be cleard for reusing kprobe. */
->> +	rp.kp.addr = 0;
-> 
-> Here too.
-> 
-> Ananth
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
+diff --git a/tools/perf/util/symbol.c b/tools/perf/util/symbol.c
+index a06131f..87d9b1b 100644
+--- a/tools/perf/util/symbol.c
++++ b/tools/perf/util/symbol.c
+@@ -1131,6 +1131,10 @@ bool __dsos__read_build_ids(struct list_head *head, bool with_hits)
+ 	list_for_each_entry(pos, head, node) {
+ 		if (with_hits && !pos->hit)
+ 			continue;
++		if (pos->has_build_id) {
++			have_build_id = true;
++			continue;
++		}
+ 		if (filename__read_build_id(pos->long_name, pos->build_id,
+ 					    sizeof(pos->build_id)) > 0) {
+ 			have_build_id	  = true;
 -- 
-Masami Hiramatsu
-e-mail: mhiramat@redhat.com
+1.6.2.5
+
