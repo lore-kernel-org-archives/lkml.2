@@ -1,95 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757702Ab0ESLbJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 07:31:09 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:58543 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754347Ab0ESLbG (ORCPT
+	id S1756043Ab0ESLin (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 07:38:43 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:65299 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751434Ab0ESLil (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 07:31:06 -0400
-Date: Wed, 19 May 2010 13:31:02 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org,
-       Andr?? Goddard Rosa <andre.goddard@gmail.com>,
-       Jiri Kosina <jkosina@suse.cz>, linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] [x86] NUMA implied when DISCONTIGMEM
-Message-ID: <20100519113101.GA4218@faui49.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 19 May 2010 07:38:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=POovLLVTi64el/ZJCR8vwviLxAcIvoBtf+/F2Dh2Pqt9xptgl6XAOR8aPxIAcIAb63
+         r+rnFP7UyRaLNQYtjaq7jlanRmnD4hMmXuASjDBE8AjrUhrhFvXcM7RwRTuTatFYnoyv
+         6ioz0mmZ5JmbBZ/JpQTtKb7ZQPpQZ4MOFALRg=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Laurent Pinchart <laurent.pinchart@ideasonboard.com>,
+       Hans Verkuil <hverkuil@xs4all.nl>, Arnd Bergmann <arnd@arndb.de>,
+       John Kacur <jkacur@redhat.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Jan Blunck <jblunck@gmail.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Alan Cox <alan@lxorguk.ukuu.org.uk>
+Subject: [PATCH 0/4 v3] V4l bkl ioctl pushdown
+Date: Wed, 19 May 2010 13:38:42 +0200
+Message-Id: <1274269126-3274-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+Hi,
 
-	As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+This set addresses the issue pointed by Hans Verkuil
+and adds his ack.
 
-	x86 Kconfig implies NUMA if DISCONTIGMEM is selected (the
-dependency is as [1] -- excerpt from our tool's output) meaning a
-check for NUMA inside a DISCONTIGMEM is useless (in x86 specific code
-not in general), so this part can be simplified as in the below patch.
+Hopefully this can make 2.6.35.
 
-	Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
+Thanks.
 
-Regards
+--
+Frederic Weisbecker (4):
+  v4l: Introduce video_ioctl2_bkl
+  v4l: Convert video_ioctl2 to video_ioctl2_bkl for users that need the bkl
+  v4l: Pushdown bkl to drivers that implement their own ioctl
+  v4l: Remove struct v4l2_file_operations::ioctl
 
-	Christoph Egger
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-[1]
- (DISCONTIGMEM -> !SELECT_MEMORY_MODEL & ARCH_DISCONTIGMEM_ENABLE |DISCONTIGMEM_MANUAL)
- &
- (DISCONTIGMEM_MANUAL -> CHOICE_11 & ARCH_DISCONTIGMEM_ENABLE)
- &
- (ARCH_DISCONTIGMEM_ENABLE -> NUMA & X86_32)
-[2]
- config ARCH_DISCONTIGMEM_ENABLE
-    def_bool y
-    depends on NUMA && X86_32
-----
->From e1e14a373f7ec346c0c51f36713c4a60d087f573 Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 19 May 2010 13:11:30 +0200
-Subject: [PATCH] on x86 NUMA is implied on DISCONTIGMEM
-
-There's a specialization on whether NUMA is selected inside a ifdef
-CONFIG_DISCONTIGMEM block in arch/x86/include/asm/mmzone_32.h, however
-the Kconfig model for x86 only alows DISCONTIGMEM when NUMA is set so
-the !NUMA block is effectively unreachable.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- arch/x86/include/asm/mmzone_32.h |    4 ----
- 1 files changed, 0 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/include/asm/mmzone_32.h b/arch/x86/include/asm/mmzone_32.h
-index 91df7c5..993ed50 100644
---- a/arch/x86/include/asm/mmzone_32.h
-+++ b/arch/x86/include/asm/mmzone_32.h
-@@ -61,11 +61,7 @@ extern s8 physnode_map[];
- 
- static inline int pfn_to_nid(unsigned long pfn)
- {
--#ifdef CONFIG_NUMA
- 	return((int) physnode_map[(pfn) / PAGES_PER_ELEMENT]);
--#else
--	return 0;
--#endif
- }
- 
- /*
--- 
-1.6.3.3
-
-
-
-
-
+ drivers/media/common/saa7146_fops.c              |    2 +-
+ drivers/media/radio/dsbr100.c                    |    2 +-
+ drivers/media/radio/radio-aimslab.c              |    2 +-
+ drivers/media/radio/radio-aztech.c               |    2 +-
+ drivers/media/radio/radio-cadet.c                |    2 +-
+ drivers/media/radio/radio-gemtek-pci.c           |    2 +-
+ drivers/media/radio/radio-gemtek.c               |    2 +-
+ drivers/media/radio/radio-maestro.c              |    2 +-
+ drivers/media/radio/radio-maxiradio.c            |    2 +-
+ drivers/media/radio/radio-miropcm20.c            |    2 +-
+ drivers/media/radio/radio-mr800.c                |    5 ++-
+ drivers/media/radio/radio-rtrack2.c              |    2 +-
+ drivers/media/radio/radio-sf16fmi.c              |    2 +-
+ drivers/media/radio/radio-sf16fmr2.c             |    2 +-
+ drivers/media/radio/radio-si4713.c               |    2 +-
+ drivers/media/radio/radio-tea5764.c              |    2 +-
+ drivers/media/radio/radio-terratec.c             |    2 +-
+ drivers/media/radio/radio-timb.c                 |    2 +-
+ drivers/media/radio/radio-trust.c                |    2 +-
+ drivers/media/radio/radio-typhoon.c              |    2 +-
+ drivers/media/radio/radio-zoltrix.c              |    2 +-
+ drivers/media/radio/si470x/radio-si470x-common.c |    2 +-
+ drivers/media/video/arv.c                        |    2 +-
+ drivers/media/video/au0828/au0828-video.c        |   14 ++++----
+ drivers/media/video/bt8xx/bttv-driver.c          |   26 +++++++-------
+ drivers/media/video/bw-qcam.c                    |   11 +++++-
+ drivers/media/video/c-qcam.c                     |   11 +++++-
+ drivers/media/video/cafe_ccic.c                  |   14 ++++----
+ drivers/media/video/cpia.c                       |   11 +++++-
+ drivers/media/video/cpia2/cpia2_v4l.c            |   11 +++++-
+ drivers/media/video/cx18/cx18-ioctl.c            |    4 ++
+ drivers/media/video/cx18/cx18-streams.c          |   12 +++---
+ drivers/media/video/cx231xx/cx231xx-video.c      |    4 +-
+ drivers/media/video/cx23885/cx23885-417.c        |    2 +-
+ drivers/media/video/cx23885/cx23885-video.c      |    4 +-
+ drivers/media/video/cx88/cx88-blackbird.c        |    2 +-
+ drivers/media/video/cx88/cx88-video.c            |    4 +-
+ drivers/media/video/davinci/vpif_capture.c       |    2 +-
+ drivers/media/video/davinci/vpif_display.c       |    2 +-
+ drivers/media/video/em28xx/em28xx-video.c        |    4 +-
+ drivers/media/video/et61x251/et61x251_core.c     |   27 +++++++++++----
+ drivers/media/video/mem2mem_testdev.c            |    2 +-
+ drivers/media/video/meye.c                       |    2 +-
+ drivers/media/video/omap24xxcam.c                |   10 +++---
+ drivers/media/video/ov511.c                      |   15 +++++---
+ drivers/media/video/pms.c                        |    2 +-
+ drivers/media/video/pvrusb2/pvrusb2-v4l2.c       |   20 +++++++----
+ drivers/media/video/pwc/pwc-if.c                 |   19 ++++++----
+ drivers/media/video/s2255drv.c                   |   12 +++---
+ drivers/media/video/saa5246a.c                   |   11 ++++--
+ drivers/media/video/saa5249.c                    |    6 +++-
+ drivers/media/video/saa7134/saa7134-empress.c    |   14 ++++----
+ drivers/media/video/saa7134/saa7134-video.c      |   26 +++++++-------
+ drivers/media/video/se401.c                      |   20 +++++++----
+ drivers/media/video/sh_vou.c                     |    2 +-
+ drivers/media/video/sn9c102/sn9c102_core.c       |   27 +++++++++++----
+ drivers/media/video/soc_camera.c                 |    2 +-
+ drivers/media/video/stk-webcam.c                 |   14 ++++----
+ drivers/media/video/stradis.c                    |   26 +++++++++++----
+ drivers/media/video/stv680.c                     |   20 +++++++----
+ drivers/media/video/tlg2300/pd-radio.c           |    8 ++--
+ drivers/media/video/tlg2300/pd-video.c           |    2 +-
+ drivers/media/video/usbvideo/usbvideo.c          |   21 ++++++++----
+ drivers/media/video/usbvideo/vicam.c             |   14 +++++++-
+ drivers/media/video/usbvision/usbvision-video.c  |    4 +-
+ drivers/media/video/uvc/uvc_v4l2.c               |   11 +++++-
+ drivers/media/video/v4l2-dev.c                   |   38 ++-------------------
+ drivers/media/video/v4l2-ioctl.c                 |   14 ++++++++
+ drivers/media/video/vivi.c                       |    2 +-
+ drivers/media/video/w9966.c                      |    2 +-
+ drivers/media/video/w9968cf.c                    |   25 +++++++++++---
+ drivers/media/video/zc0301/zc0301_core.c         |   27 +++++++++++----
+ drivers/media/video/zoran/zoran_driver.c         |   16 ++++----
+ drivers/media/video/zr364xx.c                    |   14 ++++----
+ drivers/staging/cx25821/cx25821-audups11.c       |   18 ++++++----
+ drivers/staging/cx25821/cx25821-video0.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video1.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video2.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video3.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video4.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video5.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video6.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-video7.c         |   14 ++++----
+ drivers/staging/cx25821/cx25821-videoioctl.c     |   27 +++++++++++----
+ drivers/staging/cx25821/cx25821-vidups10.c       |   19 +++++++----
+ drivers/staging/cx25821/cx25821-vidups9.c        |   18 ++++++----
+ drivers/staging/dream/camera/msm_v4l2.c          |   27 +++++++++++----
+ drivers/staging/go7007/go7007-v4l2.c             |    2 +-
+ drivers/staging/tm6000/tm6000-video.c            |    2 +-
+ include/media/v4l2-dev.h                         |    1 -
+ include/media/v4l2-ioctl.h                       |    3 ++
+ sound/i2c/other/tea575x-tuner.c                  |    2 +-
+ 92 files changed, 536 insertions(+), 357 deletions(-)
 
