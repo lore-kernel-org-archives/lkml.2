@@ -1,263 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754153Ab0ESIIO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 04:08:14 -0400
-Received: from mail.df.lth.se ([194.47.250.12]:39576 "EHLO df.lth.se"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1751518Ab0ESIIL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 04:08:11 -0400
-From: Ulf Hansson <ulf.hansson@stericsson.com>
-To: Andries Brouwer <aeb@cwi.nl>, linux-kernel@vger.kernel.org
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Ulf Hansson <ulf.hansson@stericsson.com>
-Subject: [PATCH] Added commandline partitions for block devices
-Date: Wed, 19 May 2010 10:08:15 +0200
-Message-Id: <1274256495-8699-1-git-send-email-ulf.hansson@stericsson.com>
-X-Mailer: git-send-email 1.6.2.rc1
+	id S1754873Ab0ESIKP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 04:10:15 -0400
+Received: from ozlabs.org ([203.10.76.45]:55167 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751589Ab0ESIKL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 04:10:11 -0400
+From: Rusty Russell <rusty@rustcorp.com.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PULL] modules
+Date: Wed, 19 May 2010 17:39:43 +0930
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
+Cc: linux-kernel@vger.kernel.org, Ondrej Zary <linux@rainbow-software.org>,
+       Brandon Philips <brandon@ifup.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005191739.44524.rusty@rustcorp.com.au>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This adds an option to pass in block device partitions from the
-kernel cmdline.
+The following changes since commit 537b60d17894b7c19a6060feae40299d7109d6e7:
+  Linus Torvalds (1):
+        Merge branch 'x86-uv-for-linus' of git://git.kernel.org/.../tip/linux-2.6-tip
 
-The rationale is that in embedded systems we sometimes have no
-standard partition table available: often due to the fact that raw
-binary data is read out from the first sectors of the device by
-ROM code in ASICs. We have for a long time supplied custom partition
-information to embedded flash memories through the MTDparts interface
-which has similar semantics, and with the advent of embedded MMC
-block devices this now comes to standard block devices.
+are available in the git repository at:
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Signed-off-by: Ulf Hansson <ulf.hansson@stericsson.com>
----
- fs/partitions/Kconfig        |   19 ++++++
- fs/partitions/Makefile       |    1 +
- fs/partitions/blkdev_parts.c |  127 ++++++++++++++++++++++++++++++++++++++++++
- fs/partitions/blkdev_parts.h |   14 +++++
- fs/partitions/check.c        |    4 +
- 5 files changed, 165 insertions(+), 0 deletions(-)
- create mode 100755 fs/partitions/blkdev_parts.c
- create mode 100755 fs/partitions/blkdev_parts.h
+  ssh://master.kernel.org/pub/scm/linux/kernel/git/rusty/linux-2.6-for-linus.git modules
 
-diff --git a/fs/partitions/Kconfig b/fs/partitions/Kconfig
-index cb5f0a3..097be19 100644
---- a/fs/partitions/Kconfig
-+++ b/fs/partitions/Kconfig
-@@ -68,6 +68,25 @@ config ACORN_PARTITION_RISCIX
- 	  of machines called RISCiX.  If you say 'Y' here, Linux will be able
- 	  to read disks partitioned under RISCiX.
- 
-+config BLKDEV_PARTITION
-+	bool "Blockdev commandline partition support" if PARTITION_ADVANCED
-+	default n
-+	help
-+	  Say Y if you like to setup partitions for block devices by reading
-+	  from the kernel command line (kernel boot arguments).
-+
-+	  The format of the partitions on the command line:
-+	  blkdevparts=<blkdev-def>[;<blkdev-def>]
-+	  <blkdev-def> := <blkdev-id>:<partdef>[,<partdef>]
-+	  <partdef>    := <size>[@<offset>]
-+
-+	  <blkdev-id>  := unique id used to map driver to blockdev name
-+	  <size>       := size in numbers of sectors
-+	  <offset>     := offset in sectors for partition to start at
-+
-+	  Example:
-+	  blkdevparts=mmc0:1024@0,524288@1024;mmc1:8192@0,8192@8192
-+
- config OSF_PARTITION
- 	bool "Alpha OSF partition support" if PARTITION_ADVANCED
- 	default y if ALPHA
-diff --git a/fs/partitions/Makefile b/fs/partitions/Makefile
-index 03af8ea..48b216c 100644
---- a/fs/partitions/Makefile
-+++ b/fs/partitions/Makefile
-@@ -7,6 +7,7 @@ obj-$(CONFIG_BLOCK) := check.o
- obj-$(CONFIG_ACORN_PARTITION) += acorn.o
- obj-$(CONFIG_AMIGA_PARTITION) += amiga.o
- obj-$(CONFIG_ATARI_PARTITION) += atari.o
-+obj-$(CONFIG_BLKDEV_PARTITION) += blkdev_parts.o
- obj-$(CONFIG_MAC_PARTITION) += mac.o
- obj-$(CONFIG_LDM_PARTITION) += ldm.o
- obj-$(CONFIG_MSDOS_PARTITION) += msdos.o
-diff --git a/fs/partitions/blkdev_parts.c b/fs/partitions/blkdev_parts.c
-new file mode 100755
-index 0000000..48f4136
---- /dev/null
-+++ b/fs/partitions/blkdev_parts.c
-@@ -0,0 +1,127 @@
-+/*
-+ *
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Author: Ulf Hansson <ulf.hansson@stericsson.com> for ST-Ericsson
-+ * License terms: GNU General Public License (GPL) version 2
-+ *
-+ * Create partitions for block devices by reading from the kernel
-+ * command line (kernel boot arguments).
-+ *
-+ */
-+
-+#include "check.h"
-+#include "blkdev_parts.h"
-+
-+static char *cmdline;
-+
-+/*
-+ * This is the handler for our kernel commandline parameter,
-+ * called from main.c::checksetup().
-+ * Note that we can not yet kmalloc() anything, so we only save
-+ * the commandline for later processing.
-+ */
-+static int cmdline_setup(char *s)
-+{
-+	cmdline = s;
-+	return 1;
-+}
-+__setup("blkdevparts=", cmdline_setup);
-+
-+/* Parse for a matching blkdev-id and return pointer to partdef */
-+static char *parse_blkdev_id(char *blkdev_name)
-+{
-+	int blkdev_id_len;
-+	char *p, *blkdev_id;
-+
-+	/* Start parsing for a matching blkdev-id */
-+	p = blkdev_id = cmdline;
-+	while (blkdev_id != NULL) {
-+
-+		/* Find the end of the blkdev-id string */
-+		p = strchr(blkdev_id, ':');
-+		if (p == NULL)
-+			return NULL;
-+
-+		/* Check if we found a matching blkdev-id */
-+		blkdev_id_len = p - blkdev_id;
-+		if (strlen(blkdev_name)	== blkdev_id_len) {
-+			if (strncmp(blkdev_name, blkdev_id, blkdev_id_len) == 0)
-+				return p;
-+		}
-+
-+		/* Move to next blkdev-id string if there is one */
-+		blkdev_id = strchr(p, ';');
-+		if (blkdev_id != NULL)
-+			blkdev_id++;
-+	}
-+	return NULL;
-+}
-+
-+static int parse_partdef(char **part, struct parsed_partitions *state, int part_nbr)
-+{
-+	sector_t size, offset;
-+	char *p = *part;
-+
-+	/* Skip the beginning "," or ":" */
-+	p++;
-+
-+	/* Fetch and verify size from partdef */
-+	size = simple_strtoull(p, &p, 10);
-+	if ((size == 0) || (*p != '@'))
-+		return 0;
-+
-+	/* Skip the "@" */
-+	p++;
-+
-+	/* Fetch offset from partdef and check if there are more parts */
-+	offset = simple_strtoull(p, &p, 10);
-+	if (*p == ',')
-+		*part = p;
-+	else
-+		*part = NULL;
-+
-+	/* Add partition to state */
-+	put_partition(state, part_nbr, offset, size);
-+	printk(KERN_INFO "\nPartition: size=%llu, offset=%llu\n",
-+		(unsigned long long) size,
-+		(unsigned long long) offset);
-+	return 1;
-+}
-+
-+static int parse_blkdev_parts(char *blkdev_name, struct parsed_partitions *state)
-+{
-+	char *partdef;
-+	int part_nbr = 0;
-+
-+	/* Find partdef */
-+	partdef = parse_blkdev_id(blkdev_name);
-+
-+	/* Add parts */
-+	while (partdef != NULL) {
-+		/* Find next part and add it to state */
-+		part_nbr++;
-+		if (!parse_partdef(&partdef, state, part_nbr))
-+			return 0;
-+	}
-+	return part_nbr;
-+}
-+
-+int blkdev_partition(struct parsed_partitions *state, struct block_device *bdev)
-+{
-+	char blkdev_name[BDEVNAME_SIZE];
-+
-+	/* Check if there are any partitions to handle */
-+	if (cmdline == NULL)
-+		return 0;
-+
-+	/* Get the name of the blockdevice we are operating upon */
-+	if (bdevname(bdev, blkdev_name) == NULL) {
-+		printk(KERN_WARNING "Could not get a blkdev name\n");
-+		return 0;
-+	}
-+
-+	/* Parse for partitions and add them to the state */
-+	return parse_blkdev_parts(blkdev_name, state);
-+}
-+
-diff --git a/fs/partitions/blkdev_parts.h b/fs/partitions/blkdev_parts.h
-new file mode 100755
-index 0000000..e6c5d40
---- /dev/null
-+++ b/fs/partitions/blkdev_parts.h
-@@ -0,0 +1,14 @@
-+/*
-+ *
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * Author: Ulf Hansson <ulf.hansson@stericsson.com> for ST-Ericsson
-+ * License terms: GNU General Public License (GPL) version 2
-+ *
-+ * Create partitions for block devices by reading from the kernel
-+ * command line (kernel boot arguments).
-+ *
-+ */
-+
-+int blkdev_partition(struct parsed_partitions *state, struct block_device *bdev);
-+
-diff --git a/fs/partitions/check.c b/fs/partitions/check.c
-index e238ab2..e669059 100644
---- a/fs/partitions/check.c
-+++ b/fs/partitions/check.c
-@@ -27,6 +27,7 @@
- #include "acorn.h"
- #include "amiga.h"
- #include "atari.h"
-+#include "blkdev_parts.h"
- #include "ldm.h"
- #include "mac.h"
- #include "msdos.h"
-@@ -50,6 +51,9 @@ static int (*check_part[])(struct parsed_partitions *, struct block_device *) =
- 	 * Probe partition formats with tables at disk address 0
- 	 * that also have an ADFS boot block at 0xdc0.
- 	 */
-+#ifdef CONFIG_BLKDEV_PARTITION
-+	blkdev_partition,
-+#endif
- #ifdef CONFIG_ACORN_PARTITION_ICS
- 	adfspart_check_ICS,
- #endif
--- 
-1.6.3.3
+Ondrej Zary (1):
+      MODULE_DEVICE_TABLE(isapnp, ...) does nothing
 
+Rusty Russell (3):
+      isapnp: move definitions to mod_devicetable.h so file2alias can reach them.
+      hisax_fcpcipnp: fix broken isapnp device table.
+      module: drop the lock while waiting for module to complete initialization.
+
+ drivers/isdn/hisax/hisax_fcpcipnp.c |    3 +-
+ include/linux/isapnp.h              |    8 +----
+ include/linux/mod_devicetable.h     |    7 ++++
+ kernel/module.c                     |   57 ++++++++++++++++++++++-------------
+ scripts/mod/file2alias.c            |   17 ++++++++++
+ 5 files changed, 63 insertions(+), 29 deletions(-)
