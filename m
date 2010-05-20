@@ -1,112 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755279Ab0ETXqq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 19:46:46 -0400
-Received: from e7.ny.us.ibm.com ([32.97.182.137]:49730 "EHLO e7.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755025Ab0ETXqp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 19:46:45 -0400
-Date: Thu, 20 May 2010 18:39:42 -0500
-From: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Dustin Kirkland <kirkland@canonical.com>,
-       Ecryptfs <ecryptfs-devel@lists.launchpad.net>,
-       Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-       Arnd Bergmann <arnd@arndb.de>, Alexander Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH 1/8] ecryptfs: Pushdown the bkl from ioctl
-Message-ID: <20100520233942.GA1086@ecryptfs>
-References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com>
- <1274289855-10001-2-git-send-regression-fweisbec@gmail.com>
+	id S1755301Ab0ETXtE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 19:49:04 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:40370 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755196Ab0ETXtB (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 19:49:01 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: lwoodman@redhat.com
+Subject: Re: RFC: dirty_ratio back to 40%
+Cc: kosaki.motohiro@jp.fujitsu.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, Nick Piggin <npiggin@suse.de>,
+       Jan Kara <jack@suse.cz>
+In-Reply-To: <4BF51B0A.1050901@redhat.com>
+References: <4BF51B0A.1050901@redhat.com>
+Message-Id: <20100521083408.1E36.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274289855-10001-2-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-12-10)
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 21 May 2010 08:48:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed May 19, 2010 at 07:24:08PM +0200, Frederic Weisbecker (fweisbec@gmail.com) was quoted:
-> Pushdown the bkl to ecryptfs_ioctl.
+Hi
 
-I've been sitting on a bug fix for a while that cleans up the eCryptfs
-ioctl code. eCryptfs doesn't need the BKL itself and can leave that
-decision up to the lower file sytem. The patch I have written should
-cover what you're trying to do here, too. I'll respond with the patch
-and if you think it looks good, I'll carry it in my tree and ask Linus
-to pull soon.
+CC to Nick and Jan
 
-I reuse vfs_ioctl(), which must be exported, so I should get Al's ack.
+> We've seen multiple performance regressions linked to the lower(20%)
+> dirty_ratio.  When performing enough IO to overwhelm the background  
+> flush daemons the percent of dirty pagecache memory quickly climbs 
+> to the new/lower dirty_ratio value of 20%.  At that point all writing 
+> processes are forced to stop and write dirty pagecache pages back to disk.  
+> This causes performance regressions in several benchmarks as well as causing
+> a noticeable overall sluggishness.  We all know that the dirty_ratio is
+> an integrity vs performance trade-off but the file system journaling
+> will cover any devastating effects in the event of a system crash.
+> 
+> Increasing the dirty_ratio to 40% will regain the performance loss seen
+> in several benchmarks.  Whats everyone think about this???
 
+In past, Jan Kara also claim the exactly same thing.
+
+	Subject: [LSF/VM TOPIC] Dynamic sizing of dirty_limit
+	Date: Wed, 24 Feb 2010 15:34:42 +0100
+
+	> (*) We ended up increasing dirty_limit in SLES 11 to 40% as it used to be
+	> with old kernels because customers running e.g. LDAP (using BerkelyDB
+	> heavily) were complaining about performance problems.
+
+So, I'd prefer to restore the default rather than both Redhat and SUSE apply exactly
+same distro specific patch. because we can easily imazine other users will face the same
+issue in the future.
+
+	Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+
+Nick, Jan, if the above is too old and your distro have been dropped the patch, please
+correct me.
+
+My motivation is, distro specific patches should keep minimum as far as possible.
+It exactly help I and other MM developers handle MM bug report.
+
+Thanks.
+
+
+> ------------------------------------------------------------------------
 > 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-> Cc: Dustin Kirkland <kirkland@canonical.com>
-> Cc: Ecryptfs <ecryptfs-devel@lists.launchpad.net>
-> Cc: Thomas Gleixner <tglx@linutronix.de>
-> Cc: John Kacur <jkacur@redhat.com>
-> Cc: Arnd Bergmann <arnd@arndb.de>
-> ---
->  fs/ecryptfs/file.c |   23 ++++++++++++++++++-----
->  1 files changed, 18 insertions(+), 5 deletions(-)
+> diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+> index ef27e73..645a462 100644
+> --- a/mm/page-writeback.c
+> +++ b/mm/page-writeback.c
+> @@ -78,7 +78,7 @@ int vm_highmem_is_dirtyable;
+>  /*
+>   * The generator of dirty data starts writeback at this percentage
+>   */
+> -int vm_dirty_ratio = 20;
+> +int vm_dirty_ratio = 40;
+>  
+>  /*
+>   * vm_dirty_bytes starts at 0 (disabled) so that it is a function of
 > 
-> diff --git a/fs/ecryptfs/file.c b/fs/ecryptfs/file.c
-> index e7440a6..9352613 100644
-> --- a/fs/ecryptfs/file.c
-> +++ b/fs/ecryptfs/file.c
-> @@ -294,12 +294,12 @@ static int ecryptfs_fasync(int fd, struct file *file, int flag)
->  	return rc;
->  }
-> 
-> -static int ecryptfs_ioctl(struct inode *inode, struct file *file,
-> +static long ecryptfs_ioctl(struct file *file,
->  			  unsigned int cmd, unsigned long arg);
-> 
->  const struct file_operations ecryptfs_dir_fops = {
->  	.readdir = ecryptfs_readdir,
-> -	.ioctl = ecryptfs_ioctl,
-> +	.unlocked_ioctl = ecryptfs_ioctl,
->  	.open = ecryptfs_open,
->  	.flush = ecryptfs_flush,
->  	.release = ecryptfs_release,
-> @@ -315,7 +315,7 @@ const struct file_operations ecryptfs_main_fops = {
->  	.write = do_sync_write,
->  	.aio_write = generic_file_aio_write,
->  	.readdir = ecryptfs_readdir,
-> -	.ioctl = ecryptfs_ioctl,
-> +	.unlocked_ioctl = ecryptfs_ioctl,
->  	.mmap = generic_file_mmap,
->  	.open = ecryptfs_open,
->  	.flush = ecryptfs_flush,
-> @@ -326,8 +326,8 @@ const struct file_operations ecryptfs_main_fops = {
->  };
-> 
->  static int
-> -ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
-> -	       unsigned long arg)
-> +ecryptfs_ioctl_unlocked(struct inode *inode, struct file *file,
-> +			unsigned int cmd, unsigned long arg)
->  {
->  	int rc = 0;
->  	struct file *lower_file = NULL;
-> @@ -341,3 +341,16 @@ ecryptfs_ioctl(struct inode *inode, struct file *file, unsigned int cmd,
->  		rc = -ENOTTY;
->  	return rc;
->  }
-> +
-> +static long ecryptfs_ioctl(struct file *file, unsigned int cmd,
-> +			   unsigned long arg)
-> +{
-> +	long ret;
-> +	struct inode *inode = file->f_dentry->d_inode;
-> +
-> +	lock_kernel();
-> +	ret = ecryptfs_ioctl_unlocked(inode, file, cmd, arg);
-> +	unlock_kernel();
-> +
-> +	return ret;
-> +}
-> -- 
-> 1.6.2.3
-> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+
+
+
