@@ -1,72 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754892Ab0ETWuo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:50:44 -0400
-Received: from n18.bullet.mail.mud.yahoo.com ([68.142.206.145]:33908 "HELO
-	n18.bullet.mail.mud.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753002Ab0ETWum convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:50:42 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 790459.42111.bm@omp204.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
-  b=LDS2wP720waZLNZh3N0jORwj+30ZLB+hg97X5RnwT96L46BzdTZbIMgl+RKdJ/Cx5H1BLamqmGAWUn6xnwwnfFWwRxdyazHXo0mHrqUw3suCcb/n5Os2+cgi3MNcEaVXzzY7zDnggYLeWw/bx9ZfaAGw53cgjQ/xSFRVvTtRuKY=;
-Message-ID: <598314.1671.qm@web180305.mail.gq1.yahoo.com>
-X-YMail-OSG: FeZ8zSIVM1nZWwfuF8W.mEZcCB1O_gOqeCnUBRmMHG1D7Tu
- WI64zBDb_._JMZP6FdWtv.qoHhWj.yIEk1lNvzwjSVBb21JUwK0mB9v7BiHQ
- pv7eWC788nf6AK1oRu4GHmr9Z9u0QhLPBVKBJesfr1CxdTbfWszXfC6Gkoao
- 5Kb88C.etiggB0K8qvolQlFd5cZfNtGkXU4RDA3RA55u7Jzb1zVq.lsT6Ax_
- Ac7HsLx8z0yycVHrAsahQ7cz1cYy1hmaUfKd8WXeV0u0Dttrt8quJvyUzsyy
- ig6XBiSXUErYYhWf42dCtyUiSwRboBMAuUXyd7EWIdl.7HXasBDs5Vw--
-X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
-Date: Thu, 20 May 2010 15:50:41 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
-To: felipe.balbi@nokia.com, Mark Brown <broonie@opensource.wolfsonmicro.com>
-Cc: Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100520194509.GB10739@sirena.org.uk>
+	id S1754943Ab0ETWwS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:52:18 -0400
+Received: from mga09.intel.com ([134.134.136.24]:10047 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753133Ab0ETWwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:52:16 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,273,1272870000"; 
+   d="scan'208";a="623488691"
+Date: Fri, 21 May 2010 00:52:10 +0200
+From: Samuel Ortiz <sameo@linux.intel.com>
+To: Wolfram Sang <w.sang@pengutronix.de>
+Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
+       Jean Delvare <khali@linux-fr.org>, stable@kernel.org
+Subject: Re: [PATCH] drivers/mfd: remove unneeded and dangerous clearing of
+ clientdata
+Message-ID: <20100520225209.GC3130@sortiz.org>
+References: <1274098229-13858-1-git-send-email-w.sang@pengutronix.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274098229-13858-1-git-send-email-w.sang@pengutronix.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Wolfgang,
 
-> This would be generally useful for embedded systems,
-> especially where the interrupt concerned is a wake source.
->  It allows drivers to avoid
-> spurious interrupts from noisy sources so if the hardware
-> supports it
-> the driver can avoid having to explicitly wait for the
-> signal to become
-> stable and software has to cope with fewer events.
+On Mon, May 17, 2010 at 02:10:29PM +0200, Wolfram Sang wrote:
+> Unlike real i2c-devices which get detached from the driver, dummy-devices get
+> truly unregistered. So, there has never been a need to clear the clientdata
+> because the device will go away anyhow. For the occasions fixed here, clearing
+> clientdata was even dangerous as the structure was freed already.
+Patch applied, many thanks.
 
-True.
+Cheers,
+Samuel.
 
-Not all GPIOs have hardware debounce though, so offering this
-capability sort of begs the question of where/how to provide a
-software debounce mechanism too...
+> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Jean Delvare <khali@linux-fr.org>
+> Cc: Samuel Ortiz <sameo@linux.intel.com>
+> Cc: stable@kernel.org
+> ---
+> 
+> Note: While most of the other calls clearing clientdata became superfluous
+> meanwhile and will be fixed later to remove redundancy, this is a seperate
+> issue. It was wrong from the beginning and needs to be fixed as it can cause
+> crashes. Hopefully, during this release-cycle, all other clearings of
+> clientdata will be removed and we will never see the related confusion again.
+> 
+>  drivers/mfd/88pm860x-i2c.c |    1 -
+>  drivers/mfd/max8925-i2c.c  |    2 --
+>  2 files changed, 0 insertions(+), 3 deletions(-)
+> 
+> diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
+> index 4a6e718..e55f3d2 100644
+> --- a/drivers/mfd/88pm860x-i2c.c
+> +++ b/drivers/mfd/88pm860x-i2c.c
+> @@ -200,7 +200,6 @@ static int __devexit pm860x_remove(struct i2c_client *client)
+>  
+>  	pm860x_device_exit(chip);
+>  	i2c_unregister_device(chip->companion);
+> -	i2c_set_clientdata(chip->companion, NULL);
+>  	i2c_set_clientdata(chip->client, NULL);
+>  	kfree(chip);
+>  	return 0;
+> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
+> index d9fd878..e73f3f5 100644
+> --- a/drivers/mfd/max8925-i2c.c
+> +++ b/drivers/mfd/max8925-i2c.c
+> @@ -173,8 +173,6 @@ static int __devexit max8925_remove(struct i2c_client *client)
+>  	max8925_device_exit(chip);
+>  	i2c_unregister_device(chip->adc);
+>  	i2c_unregister_device(chip->rtc);
+> -	i2c_set_clientdata(chip->adc, NULL);
+> -	i2c_set_clientdata(chip->rtc, NULL);
+>  	i2c_set_clientdata(chip->i2c, NULL);
+>  	kfree(chip);
+>  	return 0;
+> -- 
+> 1.7.0
+> 
 
-
-> We've lived without it for quite some time, though.
-
-I looked at adding debounce support to the generic GPIO calls
-(and thus gpiolib) some time back, but decided against it.  I
-forget why at this time (check list archives) but it wasn't because
-of lack of utility in certain contexts.
-
-One thing to watch out for is just how variable the hardware
-capabilities are.  Atmel GPIOs have something like a fixed number
-of 32K clock cycles for debounce, twl4030 had something odd, OMAPs
-were more like the Atmel chips but with a different clock.  In some
-cases debouncing had to be ganged, not per-GPIO.  And so forth.
-
-- Dave
-
-
+-- 
+Intel Open Source Technology Centre
+http://oss.intel.com/
