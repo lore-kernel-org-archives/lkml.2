@@ -1,53 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757123Ab0ETUHa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:07:30 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:60442 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754058Ab0ETUH3 (ORCPT
+	id S1757194Ab0ETUI6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:08:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:44626 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab0ETUI5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:07:29 -0400
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
-       akpm@linux-foundation.org
-In-reply-to: <alpine.LFD.2.00.1005201215120.23538@i5.linux-foundation.org>
-	(message from Linus Torvalds on Thu, 20 May 2010 12:19:08 -0700 (PDT))
-Subject: Re: [RFC PATCH] fuse: support splice() reading from fuse device
-References: <E1OF3kc-00084X-Hi@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005201043321.23538@i5.linux-foundation.org> <E1OFAsd-0000Ra-1V@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005201215120.23538@i5.linux-foundation.org>
-Message-Id: <E1OFC1b-0000Yx-80@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 20 May 2010 22:07:23 +0200
+	Thu, 20 May 2010 16:08:57 -0400
+Subject: Re: [RFC][PATCH v2 11/11] perf top: demo of how to use the sysfs
+ interface
+From: Peter Zijlstra <peterz@infradead.org>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+Cc: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
+       Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
+In-Reply-To: <4BF4915B.10104@linux.vnet.ibm.com>
+References: <1274233792.3036.90.camel@localhost>
+	 <4BF42B6F.6000009@linux.vnet.ibm.com>
+	 <1274318249.3603.135.camel@minggr.sh.intel.com>
+	 <4BF4915B.10104@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 May 2010 22:08:46 +0200
+Message-ID: <1274386126.1674.1637.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Linus Torvalds wrote:
-> But that's a damn big if. Does it ever trigger in practice? I doubt it. In 
-> practice, you'll have to fill the pages with something in the first place. 
-> In practice, the destination of the data is such that you'll often end up 
-> copying anyway - it won't be /dev/null.
+On Wed, 2010-05-19 at 18:33 -0700, Corey Ashford wrote:
 > 
-> That's why I claim your benchmark is meaningless. It does NOT even say 
-> what you claim it says. It does not say 1% CPU on a 200MB/s transfer, 
-> exactly the same way my stupid pipe zero-copy didn't mean that people 
-> could magically get MB/s throughput with 1% CPU on pipes.
+> We also need to take into account event "attributes" - other data that
+> is needed to configure a specific event.  For example, think about a
+> memory controller which has a PMU can count events in a particular
+> memory range; we need to be able to supply the memory range somehow, 
 
-I'm talking about *overhead* not actual CPU usage.  And I know that
-caches tend to reduce the effect of multiple copies, but that depends
-on a lot of things as well (size of request, delay between copies,
-etc.)  Generally I've seen pretty significant reductions in overhead
-for eliminating each copy.
+That's that perf_event_attr is for.
 
-I'm not saying it will always be zero copy all the way, I'm saying
-that less copies will tend to mean less overhead.  And the same is
-true for making requests larger.
-
-> It says nothing at all, in short. You need to have a real source, and a 
-> real destination. Not some empty filesystem and /dev/null destination.
-
-Sure, I will do that.  It's just a lot harder to measure the effects
-on hardware I have access to, where the CPU speed is just damn too
-large compared to I/O speed.
-
-Miklos
