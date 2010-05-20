@@ -1,67 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754652Ab0ETIOX (ORCPT <rfc822;w@1wt.eu>);
+	id S1754682Ab0ETIOZ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 04:14:25 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34429
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754095Ab0ETIOX (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 May 2010 04:14:23 -0400
-Received: from www.tglx.de ([62.245.132.106]:59346 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754095Ab0ETIOU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 04:14:20 -0400
-Date: Thu, 20 May 2010 10:14:02 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Jan-Bernd Themann <THEMANN@de.ibm.com>
-cc: michael@ellerman.id.au, Brian King <brking@linux.vnet.ibm.com>,
-       Doug Maxey <doug.maxey@us.ibm.com>, dvhltc@linux.vnet.ibm.com,
-       Darren Hart <dvhltc@us.ibm.com>, linux-kernel@vger.kernel.org,
-       linuxppc-dev@lists.ozlabs.org, niv@linux.vnet.ibm.com,
-       Will Schmidt <will_schmidt@vnet.ibm.com>
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-In-Reply-To: <OF17F8F35C.B09E4797-ONC1257729.0028292D-C1257729.0029E9AC@de.ibm.com>
-Message-ID: <alpine.LFD.2.00.1005200950410.3368@localhost.localdomain>
-References: <4BF30793.5070300@us.ibm.com>  <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>  <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com>  <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain> 
- <alpine.LFD.2.00.1005192244430.3368@localhost.localdomain> <1274319248.22892.40.camel@concordia> <OF17F8F35C.B09E4797-ONC1257729.0028292D-C1257729.0029E9AC@de.ibm.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Date: Thu, 20 May 2010 01:14:32 -0700 (PDT)
+Message-Id: <20100520.011432.209562565.davem@davemloft.net>
+To: peterz@infradead.org
+Cc: suresh.b.siddha@intel.com, mingo@elte.hu, tglx@linutronix.de,
+       arjan@linux.jf.intel.com, venki@google.com, svaidy@linux.vnet.ibm.com,
+       ego@in.ibm.com, linux-kernel@vger.kernel.org,
+       linux@dominikbrodowski.net, ncunningham@crca.org.au,
+       jens.axboe@oracle.com
+Subject: Re: [patch 3/7] softirq: avoid softirq_work_list for SCHED_SOFTIRQ
+ when sent remotely
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <1274343159.5605.13325.camel@twins>
+References: <20100517182726.089700767@sbs-t61.sc.intel.com>
+	<20100517184027.777058425@sbs-t61.sc.intel.com>
+	<1274343159.5605.13325.camel@twins>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Jan-Bernd Themann wrote:
-> > > Thought more about that. The case at hand (ehea) is nasty:
-> > >
-> > > The driver does _NOT_ disable the rx interrupt in the card in the rx
-> > > interrupt handler - for whatever reason.
-> >
-> > Yeah I saw that, but I don't know why it's written that way. Perhaps
-> > Jan-Bernd or Doug will chime in and enlighten us? :)
-> 
-> From our perspective there is no need to disable interrupts for the
-> RX side as the chip does not fire further interrupts until we tell
-> the chip to do so for a particular queue. We have multiple receive
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Thu, 20 May 2010 10:12:39 +0200
 
-The traces tell a different story though:
+> Most odd all that, Dave, Jens, what happened to all that remote_softirq
+> stuff?
 
-    ehea_recv_irq_handler()
-      napi_reschedule()
-    eoi()
-    ehea_poll()
-      ...
-      ehea_recv_irq_handler()    <---------------- ???
-        napi_reschedule()
-      ...
-      napi_complete()
-
-Can't tell whether you can see the same behaviour in mainline, but I
-don't see a reason why not.
-
-> queues with an own interrupt each so that the interrupts can arrive
-> on multiple CPUs in parallel.  Interrupts are enabled again when we
-> leave the NAPI Poll function for the corresponding receive queue.
-
-I can't see a piece of code which does that, but that's probably just
-lack of detailed hardware knowledge on my side.
-
-Thanks,
-
-	tglx
+Nobody ended up using this remote softirq infrastructure, it can be
+completely deleted.
