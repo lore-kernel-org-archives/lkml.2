@@ -1,64 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab0ETJZp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:25:45 -0400
-Received: from mail-qy0-f171.google.com ([209.85.221.171]:53079 "EHLO
-	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751954Ab0ETJZn convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:25:43 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=dahlCIHiSSxY/rLSL5qV4EgNPxQV+4pHVLe5nMMqDSwdyguHgVJBxY2CE8ydX6O56s
-         /l/Y8cp1on7Gtto/DZadeYN9aAgxkgnjZf1qCQsQAzpg8Buo6vscFcMvN28QoQVUB+ec
-         Tflk7AWnulp8qD90ZP59OvZeQY04lhcD9Qc+4=
-MIME-Version: 1.0
-In-Reply-To: <201005201233.56877@zigzag.lvk.cs.msu.su>
-References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com>
-	 <AANLkTinClrTDoXH4NPP2-SgSYH24ZTnqsop88aocdg4R@mail.gmail.com>
-	 <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>
-	 <201005201233.56877@zigzag.lvk.cs.msu.su>
-Date: Thu, 20 May 2010 14:55:42 +0530
-Message-ID: <AANLkTilEbFndi-rPczi6OBxeU8p87gOz4yfveEsyHqcE@mail.gmail.com>
-Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after 
-	console_init
-From: Sujit K M <sjt.kar@gmail.com>
-To: "Nikita V. Youshchenko" <yoush@cs.msu.su>
-Cc: Thomas Gleixner <tglx@linutronix.de>, linux-rt-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1754600Ab0ETJ05 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:26:57 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:43623 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752098Ab0ETJ0z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 05:26:55 -0400
+X-Greylist: delayed 929 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 May 2010 05:26:55 EDT
+Date: Thu, 20 May 2010 11:26:42 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Pavel Machek <pavel@ucw.cz>
+Newsgroups: gmane.linux.kernel,gmane.linux.documentation
+Cc: Arve Hj??nnev??g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+Message-ID: <20100520112642.74d93d26@schatten.dmk.lab>
+In-Reply-To: <20100520111111.333beb73@schatten.dmk.lab>
+References: <1273810273-3039-1-git-send-email-arve@android.com>
+	<1273810273-3039-2-git-send-email-arve@android.com>
+	<20100518131111.GB1563@ucw.cz>
+	<20100520111111.333beb73@schatten.dmk.lab>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-http://www.vanemery.com/Linux/Serial/serial-console.html
+On Thu, 20 May 2010 11:11:11 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-Could this be of help.
+> On Tue, 18 May 2010 15:11:11 +0200
+> Pavel Machek <pavel@ucw.cz> wrote:
+> 
+> > On Thu 2010-05-13 21:11:06, Arve Hj??nnev??g wrote:
+> > > Adds /sys/power/policy that selects the behaviour of /sys/power/state.
+> > > After setting the policy to opportunistic, writes to /sys/power/state
+> > > become non-blocking requests that specify which suspend state to
+> > > enter
+> > 
+> > Yeah, one file selects behavior of another file, and to read available
+> > states for opportunistic, you have to write to file first.
+> > 
+> > I still don't like the interface.
+> > 
+> 
+> Actually, what would be a better interface? 
+> 
+> I wonder why it is not like this:
+> 
+> /sys/power/state 
+> 	no change, works with and without opportunistic suspend the
+> 	same. Ignores suspend blockers. Really no change. (From user
+> 	perspective)
+> 
+> /sys/power/opportunistic
+> 	On / Off
+> 	While Off the opportunistic suspend is off.
+> 	While On, the opportunistic suspend is on and if there are no
+> 	suspend blockers the system goes to suspend. 
+> 
 
-On Thu, May 20, 2010 at 2:03 PM, Nikita V. Youshchenko <yoush@cs.msu.su> wrote:
->> > I could not get dmesg output to console/serial and
->> > klogd(/var/log/messages) anymore with 2.6.33-rt17 _after_ the kernel
->> > boot is done(on non-RT kernel it works fine). I made below changes it
->> > starts to work again, however I'm unsure how safe the change is.
->> > Please advise.
->>
->> Well, obviously it's unsafe if you remove safety checks. And if you
->> care to look at the changelog of kernel/printk.c you'll find out why.
->
-> Hmm... did a quick look and could not find anything related there.
-> Could you please give a pointer?
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
+I forgot, of course there needs to be another knob to implement the
+"on" behaviour  in the opportunistic mode
 
+ /sys/power/block_opportunistic_suspend
 
+There you have it. One file, one purpose. 
 
--- 
--- Sujit K M
-
-blog(http://kmsujit.blogspot.com/)
+> Cheers,
+> Flo
