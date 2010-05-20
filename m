@@ -1,32 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0ETCof (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 22:44:35 -0400
-Received: from vms173019pub.verizon.net ([206.46.173.19]:39489 "EHLO
-	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751390Ab0ETCod (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 22:44:33 -0400
-Date: Wed, 19 May 2010 22:44:31 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Huang Ying <ying.huang@intel.com>
-Cc: linux-kernel@vger.kernel.org, andi@firstfloor.org,
-       linux-acpi@vger.kernel.org
-Subject: Re: [PATCH -v5 00/14] ACPI, APEI support
-In-reply-to: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
-Message-id: <alpine.LFD.2.00.1005192244070.2921@localhost.localdomain>
-References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	id S1753146Ab0ETDD5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 23:03:57 -0400
+Received: from ozlabs.org ([203.10.76.45]:52961 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751634Ab0ETDD4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 23:03:56 -0400
+Date: Thu, 20 May 2010 13:03:24 +1000
+From: Paul Mackerras <paulus@samba.org>
+To: Andreas Schwab <schwab@linux-m68k.org>
+Cc: linuxppc-dev@ozlabs.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] powerpc: Fix string library functions
+Message-ID: <20100520030324.GA31208@drongo>
+References: <m2bpcdjcue.fsf@igel.home>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <m2bpcdjcue.fsf@igel.home>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thank for the update, Ying.
-I've replaced v4 in the acpi tree with v5.
+On Tue, May 18, 2010 at 08:15:21PM +0200, Andreas Schwab wrote:
 
-cheers,
-Len Brown, Intel Open Source Technology Center
+> The powerpc strncmp implementation does not correctly handle a zero
+> length, despite the claim in 0119536cd314ef95553604208c25bc35581f7f0a
+> (Add hand-coded assembly strcmp).
+> 
+> Additionally, all the length arguments are size_t, not int, so use
+> PPC_LCMPI and eq instead of cmpwi and le throughout.
+> 
+> Signed-off-by: Andreas Schwab <schwab@linux-m68k.org>
 
+Looks fine to me.
+
+Acked-by: Paul Mackerras <paulus@samba.org>
