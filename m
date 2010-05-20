@@ -1,56 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755359Ab0ETW0K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:26:10 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53303 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754808Ab0ETW0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:26:06 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Tejun Heo <tj@kernel.org>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-Date: Fri, 21 May 2010 00:27:31 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Oleg Nesterov <oleg@redhat.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100430172618.GA9043@redhat.com> <4BF4F31D.8070900@kernel.org>
-In-Reply-To: <4BF4F31D.8070900@kernel.org>
+	id S1756105Ab0ETW04 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:26:56 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:53064 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755257Ab0ETW0z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:26:55 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=xhTrE/YTUqp9lSaGcX+X0DpF7n2SBxvj5tyYA9mKj78Ck+3/4fLYQkFSSwVQOQTZX
+	rcCMlVAmfRDQBX/8DFPUw==
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005210027.31910.rjw@sisk.pl>
+In-Reply-To: <AANLkTinsrFoLVKDFM5pcKcL_6MvAzhR6IzbNmWKh3BDh@mail.gmail.com>
+References: <1274227488.2370.107.camel@w-sridhar.beaverton.ibm.com>
+	 <AANLkTinsrFoLVKDFM5pcKcL_6MvAzhR6IzbNmWKh3BDh@mail.gmail.com>
+Date: Thu, 20 May 2010 15:26:52 -0700
+Message-ID: <AANLkTiknLBB9WkWwnyMQv-qmCFE0HpWIo5L20b79DgLs@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cgroups: Add an API to attach a task to current 
+	task's cgroup
+From: Paul Menage <menage@google.com>
+To: Sridhar Samudrala <samudrala.sridhar@gmail.com>
+Cc: "Michael S. Tsirkin" <mst@redhat.com>, netdev <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 May 2010, Tejun Heo wrote:
-> Hello,
-> 
-> (sorry about late reply)
-> 
-> On 04/30/2010 07:26 PM, Oleg Nesterov wrote:
-> > Currently _cpu_down() can't flush and/or stop the frozen cwq->thread.
-> > 
-> > IIRC this is fixable, but needs the nasty complications. We should
-> > thaw + stop the frozen cwq->thread, then move the pending works to
-> > another CPU.
-> 
-> Oh, this isn't an issue w/ cmwq.  While frozen all new works are
-> collected into per-cpu delayed worklist and while frozen trustee in
-> charge of the cpu will keep waiting.  Once thawed, trustee will
-> execute all works including the delayed ones unbound to any cpu.
+On Thu, May 20, 2010 at 3:22 PM, Paul Menage <menage@google.com> wrote:
+> On Tue, May 18, 2010 at 5:04 PM, Sridhar Samudrala
+> <samudrala.sridhar@gmail.com> wrote:
+>> Add a new kernel API to attach a task to current task's cgroup
+>> in all the active hierarchies.
+>>
+>> Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+>
+> Reviewed-by: Paul Menage <menage@google.com>
+>
 
-So, does it require any intrusive changes to make it possible to create
-multithread freezable workqueues?
+One other thought on this - this would be the first piece of code
+that's attaching a task to a cgroup without holding the cgroup
+directory inode i_mutex. I believe that this is probably OK.
 
-Rafael
+Paul
