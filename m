@@ -1,63 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755419Ab0ETKEc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:04:32 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:39123 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753035Ab0ETKEa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:04:30 -0400
-From: Ilkka Koskinen <ilkka.koskinen@nokia.com>
-To: linux-kernel@vger.kernel.org, sameo@linux.intel.com
-Cc: linux-omap@vger.kernel.org, ilkka.koskinen@nokia.com
-Subject: [PATCH] mfd: twl5031: Rename sih modules
-Date: Thu, 20 May 2010 13:04:20 +0300
-Message-Id: <1274349860-1736-1-git-send-email-ilkka.koskinen@nokia.com>
-X-Mailer: git-send-email 1.6.0.4
-X-OriginalArrivalTime: 20 May 2010 10:04:10.0924 (UTC) FILETIME=[CB1546C0:01CAF803]
-X-Nokia-AV: Clean
+	id S1755427Ab0ETKFg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:05:36 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:33775 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753035Ab0ETKFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 06:05:34 -0400
+Date: Thu, 20 May 2010 12:05:19 +0200
+From: Florian Mickler <florian@mickler.org>
+To: me@felipebalbi.com
+Cc: felipe.balbi@nokia.com, ext James Bottomley <James.Bottomley@suse.de>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
+       Brian Swetland <swetland@google.com>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Tejun Heo <tj@kernel.org>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100520120519.0d27d6bf@schatten.dmk.lab>
+In-Reply-To: <20100520085739.GB14584@gandalf>
+References: <1274119179.4418.68.camel@mulgrave.site>
+	<20100517181252.GA14260@gandalf>
+	<1274124267.4418.149.camel@mulgrave.site>
+	<20100517193840.GB14047@gandalf>
+	<20100517193952.GC14047@gandalf>
+	<1274125775.4418.182.camel@mulgrave.site>
+	<20100518064022.GA6522@nokia.com>
+	<1274191188.10304.5.camel@mulgrave.site>
+	<20100519065934.GH12879@nokia.com>
+	<20100520071528.494c38e4@schatten.dmk.lab>
+	<20100520085739.GB14584@gandalf>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix the names of twl5031 specific sih modules to match
-the documentation.
+On Thu, 20 May 2010 11:57:40 +0300
+Felipe Balbi <me@felipebalbi.com> wrote:
 
-Signed-off-by: Ilkka Koskinen <ilkka.koskinen@nokia.com>
----
- drivers/mfd/twl4030-irq.c |   11 ++++++-----
- 1 files changed, 6 insertions(+), 5 deletions(-)
+> On Thu, May 20, 2010 at 07:15:28AM +0200, Florian Mickler wrote:
+> > But with that, you still shift the burden of exchanging that app with
+> > an feature-equivalent non-broken version to the user. 
+> > which is not user friendly and not necessary if you have a "smart"
+> > enough kernel.
+> 
+> and _without that_, you shift the burden of having a working power
+> management completely into the kernel. Forcing the kernel to deal with
+> completely broken apps. What will happen is that apps developers won't
+> boder thinking about power consumption since the kernel is "smart"
+> enough to "fix" their mess.
+> 
+> To me that's much bigger burden to the kernel than the other option is
+> to apps.
+> 
 
-diff --git a/drivers/mfd/twl4030-irq.c b/drivers/mfd/twl4030-irq.c
-index 202bdd5..097f24d 100644
---- a/drivers/mfd/twl4030-irq.c
-+++ b/drivers/mfd/twl4030-irq.c
-@@ -232,10 +232,11 @@ static const struct sih sih_modules_twl5031[8] = {
- 	},
- 	[6] = {
- 		/*
--		 * ACI doesn't use the same SIH organization.
--		 * For example, it supports only one interrupt line
-+		 * ECI/DBI doesn't use the same SIH organization.
-+		 * For example, it supports only one interrupt output line.
-+		 * That is, the interrupts are seen on both INT1 and INT2 lines.
- 		 */
--		.name		= "aci",
-+		.name		= "eci_dbi",
- 		.module		= TWL5031_MODULE_ACCESSORY,
- 		.bits		= 9,
- 		.bytes_ixr	= 2,
-@@ -247,8 +248,8 @@ static const struct sih sih_modules_twl5031[8] = {
- 
- 	},
- 	[7] = {
--		/* Accessory */
--		.name		= "acc",
-+		/* Audio accessory */
-+		.name		= "audio",
- 		.module		= TWL5031_MODULE_ACCESSORY,
- 		.control_offset	= TWL5031_ACCSIHCTRL,
- 		.bits		= 2,
--- 
-1.6.0.4
+You said that already. For me this sounds like you want to take the
+users hostage in order to get nice (poweraware) apps.
 
+Robust system design can take crap and perform well. Users will most of
+the time prefer a robust system over a nicely designed system. (Just
+think of the ak-47)
+
+I think we just have to agree to disagree here? 
+
+Cheers,
+Flo
+
+p.s.: don't take me seriously, i'm just a user
