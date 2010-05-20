@@ -1,89 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754943Ab0ETWwS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:52:18 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10047 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753133Ab0ETWwQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:52:16 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,273,1272870000"; 
-   d="scan'208";a="623488691"
-Date: Fri, 21 May 2010 00:52:10 +0200
-From: Samuel Ortiz <sameo@linux.intel.com>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: linux-kernel@vger.kernel.org, linux-i2c@vger.kernel.org,
-       Jean Delvare <khali@linux-fr.org>, stable@kernel.org
-Subject: Re: [PATCH] drivers/mfd: remove unneeded and dangerous clearing of
- clientdata
-Message-ID: <20100520225209.GC3130@sortiz.org>
-References: <1274098229-13858-1-git-send-email-w.sang@pengutronix.de>
+	id S1755014Ab0ETWxp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:53:45 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:56514 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754513Ab0ETWxn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:53:43 -0400
+Message-ID: <51638.41.184.4.162.1274395111.squirrel@41.184.4.162>
+Date: Thu, 20 May 2010 20:38:31 -0200 (FNT)
+Subject: You Have Won!
+From: "Microsoft E-mail Promotions" <e-contact@microsoft.com>
+Reply-To: ivannickerson02@live.com
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274098229-13858-1-git-send-email-w.sang@pengutronix.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Wolfgang,
+Congratulations: You Have Won!
 
-On Mon, May 17, 2010 at 02:10:29PM +0200, Wolfram Sang wrote:
-> Unlike real i2c-devices which get detached from the driver, dummy-devices get
-> truly unregistered. So, there has never been a need to clear the clientdata
-> because the device will go away anyhow. For the occasions fixed here, clearing
-> clientdata was even dangerous as the structure was freed already.
-Patch applied, many thanks.
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+20th May 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-Cheers,
-Samuel.
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF NO:MICRO-L/2009-END10.
 
-> Signed-off-by: Wolfram Sang <w.sang@pengutronix.de>
-> Cc: Jean Delvare <khali@linux-fr.org>
-> Cc: Samuel Ortiz <sameo@linux.intel.com>
-> Cc: stable@kernel.org
-> ---
-> 
-> Note: While most of the other calls clearing clientdata became superfluous
-> meanwhile and will be fixed later to remove redundancy, this is a seperate
-> issue. It was wrong from the beginning and needs to be fixed as it can cause
-> crashes. Hopefully, during this release-cycle, all other clearings of
-> clientdata will be removed and we will never see the related confusion again.
-> 
->  drivers/mfd/88pm860x-i2c.c |    1 -
->  drivers/mfd/max8925-i2c.c  |    2 --
->  2 files changed, 0 insertions(+), 3 deletions(-)
-> 
-> diff --git a/drivers/mfd/88pm860x-i2c.c b/drivers/mfd/88pm860x-i2c.c
-> index 4a6e718..e55f3d2 100644
-> --- a/drivers/mfd/88pm860x-i2c.c
-> +++ b/drivers/mfd/88pm860x-i2c.c
-> @@ -200,7 +200,6 @@ static int __devexit pm860x_remove(struct i2c_client *client)
->  
->  	pm860x_device_exit(chip);
->  	i2c_unregister_device(chip->companion);
-> -	i2c_set_clientdata(chip->companion, NULL);
->  	i2c_set_clientdata(chip->client, NULL);
->  	kfree(chip);
->  	return 0;
-> diff --git a/drivers/mfd/max8925-i2c.c b/drivers/mfd/max8925-i2c.c
-> index d9fd878..e73f3f5 100644
-> --- a/drivers/mfd/max8925-i2c.c
-> +++ b/drivers/mfd/max8925-i2c.c
-> @@ -173,8 +173,6 @@ static int __devexit max8925_remove(struct i2c_client *client)
->  	max8925_device_exit(chip);
->  	i2c_unregister_device(chip->adc);
->  	i2c_unregister_device(chip->rtc);
-> -	i2c_set_clientdata(chip->adc, NULL);
-> -	i2c_set_clientdata(chip->rtc, NULL);
->  	i2c_set_clientdata(chip->i2c, NULL);
->  	kfree(chip);
->  	return 0;
-> -- 
-> 1.7.0
-> 
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
 
--- 
-Intel Open Source Technology Centre
-http://oss.intel.com/
+NAME:  Ivan Nickerson
+EMAIL: ivannickerson02@live.com
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:... 5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+HILDA CREIGHTON.
+
+
