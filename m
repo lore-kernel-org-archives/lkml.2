@@ -1,39 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753812Ab0ETQd3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 12:33:29 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:47716 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751835Ab0ETQd2 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 12:33:28 -0400
-Date: Thu, 20 May 2010 09:31:04 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: David Miller <davem@davemloft.net>
-cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-In-Reply-To: <20100519.193426.09743465.davem@davemloft.net>
-Message-ID: <alpine.LFD.2.00.1005200929150.23538@i5.linux-foundation.org>
-References: <20100518.233752.256882583.davem@davemloft.net> <20100519.193426.09743465.davem@davemloft.net>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754097Ab0ETQfF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 12:35:05 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:45217 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1751947Ab0ETQfD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 12:35:03 -0400
+Date: Thu, 20 May 2010 18:34:19 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>,
+       Jens.Kuenzer@fpga.homeip.net
+Cc: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][bisected]pcmcia:yenta_socket.c fix broken wireless
+ cards.
+Message-ID: <20100520163419.GA16522@comet.dominikbrodowski.net>
+Mail-Followup-To: "Justin P. Mattock" <justinmattock@gmail.com>,
+	Jens.Kuenzer@fpga.homeip.net, linux-pcmcia@lists.infradead.org,
+	linux-kernel@vger.kernel.org
+References: <1274303284-21529-1-git-send-email-justinmattock@gmail.com>
+ <20100520145434.GA12166@comet.dominikbrodowski.net>
+ <4BF55AC9.4000905@gmail.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF55AC9.4000905@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Jens, Justin,
 
+could both of you test this patch on top of 2.6.34, please?
 
-On Wed, 19 May 2010, David Miller wrote:
-> > 
-> >   master.kernel.org:/pub/scm/linux/kernel/git/davem/net-next-2.6.git master
-> 
-> Ping?
+pcmcia: only keep saved I365_CSCING flag if there is no PCI irq
 
-I'm still merging. I don't want to merge everything in one day, because I 
-want to encourage people that do nightly snapshots or find problems 
-quickly, and not force them to bisect through multiple thousand commits. 
-So I tend to try to merge in chunks.
+Signed-off-by: Dominik Brodowski <linux@dominikbrodowski.net>
 
-				Linus
+diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
+index 424e576..151ca43 100644
+--- a/drivers/pcmcia/yenta_socket.c
++++ b/drivers/pcmcia/yenta_socket.c
+@@ -371,8 +371,11 @@ static int yenta_set_socket(struct pcmcia_socket *sock, socket_state_t *state)
+ 			exca_writeb(socket, I365_POWER, reg);
+ 
+ 		/* CSC interrupt: no ISA irq for CSC */
+-		reg = exca_readb(socket, I365_CSCINT);
+-		reg &= I365_CSC_IRQ_MASK;
++		reg = 0;
++		if (!socket->dev->irq) {
++			reg = exca_readb(socket, I365_CSCINT);
++			reg &= I365_CSC_IRQ_MASK;
++		}
+ 		reg |= I365_CSC_DETECT;
+ 		if (state->flags & SS_IOCARD) {
+ 			if (state->csc_mask & SS_STSCHG)
