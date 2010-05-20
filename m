@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754119Ab0ETHSq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:18:46 -0400
-Received: from e23smtp08.au.ibm.com ([202.81.31.141]:40746 "EHLO
-	e23smtp08.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751470Ab0ETHSn (ORCPT
+	id S1754173Ab0ETHSx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 03:18:53 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:45021 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751470Ab0ETHSs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 03:18:43 -0400
+	Thu, 20 May 2010 03:18:48 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V10 2/9] vfs: Add name to file handle conversion support
-Date: Thu, 20 May 2010 12:48:17 +0530
-Message-Id: <1274339904-17623-3-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V10 3/9] vfs: Add open by file handle support
+Date: Thu, 20 May 2010 12:48:18 +0530
+Message-Id: <1274339904-17623-4-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.78.g212f0
 In-Reply-To: <1274339904-17623-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1274339904-17623-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -23,191 +23,299 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch add a new superblock field unsigned char s_uuid[16]
-to store UUID mapping for the file system. The s_uuid[16] is used to
-identify the file system apart of file_handle
-
 Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/exportfs/expfs.c      |    2 +-
- fs/open.c                |   97 ++++++++++++++++++++++++++++++++++++++++++++++
- include/linux/fs.h       |   11 +++++
- include/linux/syscalls.h |    3 +
- 4 files changed, 112 insertions(+), 1 deletions(-)
+ fs/exportfs/expfs.c      |    2 +
+ fs/namei.c               |   50 +++++++++++++
+ fs/open.c                |  177 ++++++++++++++++++++++++++++++++++++++++++++++
+ include/linux/fs.h       |    3 +-
+ include/linux/syscalls.h |    2 +
+ 5 files changed, 233 insertions(+), 1 deletions(-)
 
 diff --git a/fs/exportfs/expfs.c b/fs/exportfs/expfs.c
-index cfee0f0..d103c31 100644
+index d103c31..e73c0ab 100644
 --- a/fs/exportfs/expfs.c
 +++ b/fs/exportfs/expfs.c
-@@ -352,7 +352,7 @@ int exportfs_encode_fh(struct dentry *dentry, struct fid *fid, int *max_len,
- 	const struct export_operations *nop = dentry->d_sb->s_export_op;
- 	int error;
- 
--	if (nop->encode_fh)
-+	if (nop && nop->encode_fh)
- 		error = nop->encode_fh(dentry, fid->raw, max_len, connectable);
- 	else
- 		error = export_encode_fh(dentry, fid, max_len, connectable);
-diff --git a/fs/open.c b/fs/open.c
-index 74e5cd9..9dbd317 100644
---- a/fs/open.c
-+++ b/fs/open.c
-@@ -30,6 +30,7 @@
- #include <linux/falloc.h>
- #include <linux/fs_struct.h>
- #include <linux/ima.h>
-+#include <linux/exportfs.h>
- 
- #include "internal.h"
- 
-@@ -1206,3 +1207,99 @@ int nonseekable_open(struct inode *inode, struct file *filp)
+@@ -373,6 +373,8 @@ struct dentry *exportfs_decode_fh(struct vfsmount *mnt, struct fid *fid,
+ 	/*
+ 	 * Try to get any dentry for the given file handle from the filesystem.
+ 	 */
++	if (!nop || !nop->fh_to_dentry)
++		return ERR_PTR(-ESTALE);
+ 	result = nop->fh_to_dentry(mnt->mnt_sb, fid, fh_len, fileid_type);
+ 	if (!result)
+ 		result = ERR_PTR(-ESTALE);
+diff --git a/fs/namei.c b/fs/namei.c
+index b86b96f..21cf0a5 100644
+--- a/fs/namei.c
++++ b/fs/namei.c
+@@ -1556,6 +1556,56 @@ static int open_will_truncate(int flag, struct inode *inode)
+ 	return (flag & O_TRUNC);
  }
  
- EXPORT_SYMBOL(nonseekable_open);
++struct file *finish_open_handle(struct path *path,
++			int open_flag, int acc_mode)
++{
++	int error;
++	struct file *filp;
++	int will_truncate;
++
++	will_truncate = open_will_truncate(open_flag, path->dentry->d_inode);
++	if (will_truncate) {
++		error = mnt_want_write(path->mnt);
++		if (error)
++			goto exit;
++	}
++	error = may_open(path, acc_mode, open_flag);
++	if (error) {
++		if (will_truncate)
++			mnt_drop_write(path->mnt);
++		goto exit;
++	}
++	filp = dentry_open(path->dentry, path->mnt, open_flag, current_cred());
++	if (!IS_ERR(filp)) {
++		error = ima_file_check(filp, acc_mode);
++		if (error) {
++			fput(filp);
++			filp = ERR_PTR(error);
++		}
++	}
++	if (!IS_ERR(filp)) {
++		if (will_truncate) {
++			error = handle_truncate(path);
++			if (error) {
++				fput(filp);
++				filp = ERR_PTR(error);
++			}
++		}
++	}
++	/*
++	 * It is now safe to drop the mnt write
++	 * because the filp has had a write taken
++	 * on its behalf.
++	 */
++	if (will_truncate)
++		mnt_drop_write(path->mnt);
++	return filp;
++
++exit:
++	path_put(path);
++	return ERR_PTR(error);
++}
++
+ static struct file *finish_open(struct nameidata *nd,
+ 				int open_flag, int acc_mode)
+ {
+diff --git a/fs/open.c b/fs/open.c
+index 9dbd317..bb28c38 100644
+--- a/fs/open.c
++++ b/fs/open.c
+@@ -1303,3 +1303,180 @@ SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
+ 	return -ENOSYS;
+ }
+ #endif
 +
 +#ifdef CONFIG_EXPORTFS
-+/* limit the handle size to some value */
-+#define MAX_HANDLE_SZ 4096
-+static long do_sys_name_to_handle(struct path *path,
-+			struct file_handle __user *ufh)
++static struct vfsmount *get_vfsmount_from_fd(int fd)
++{
++	int fput_needed;
++	struct path *path;
++	struct file *filep;
++
++	if (fd == AT_FDCWD) {
++		struct fs_struct *fs = current->fs;
++		read_lock(&fs->lock);
++		path = &fs->pwd;
++		mntget(path->mnt);
++		read_unlock(&fs->lock);
++	} else {
++		filep = fget_light(fd, &fput_needed);
++		if (!filep)
++			return ERR_PTR(-EBADF);
++		path = &filep->f_path;
++		mntget(path->mnt);
++		fput_light(filep, fput_needed);
++	}
++	return path->mnt;
++}
++
++static int vfs_dentry_acceptable(void *context, struct dentry *dentry)
++{
++	return 1;
++}
++
++static struct path *handle_to_path(int mountdirfd, struct file_handle *handle)
 +{
 +	int retval;
 +	int handle_size;
-+	struct super_block *sb;
++	struct path *path;
++
++	path = kmalloc(sizeof(struct path), GFP_KERNEL);
++	if (!path)
++		return ERR_PTR(-ENOMEM);
++
++	path->mnt = get_vfsmount_from_fd(mountdirfd);
++	if (IS_ERR(path->mnt)) {
++		retval = PTR_ERR(path->mnt);
++		goto out_err;
++	}
++	/* change the handle size to multiple of sizeof(u32) */
++	handle_size = handle->handle_size >> 2;
++	path->dentry = exportfs_decode_fh(path->mnt,
++					(struct fid *)handle->f_handle,
++					handle_size, handle->handle_type,
++					vfs_dentry_acceptable, NULL);
++	if (IS_ERR(path->dentry)) {
++		retval = PTR_ERR(path->dentry);
++		goto out_mnt;
++	}
++	return path;
++out_mnt:
++	mntput(path->mnt);
++out_err:
++	kfree(path);
++	return ERR_PTR(retval);
++}
++
++static long do_sys_open_by_handle(int mountdirfd,
++				struct file_handle __user *ufh, int open_flag)
++{
++	int acc_mode;
++	int fd, retval = 0;
++	struct file *filp;
++	struct path *path;
 +	struct file_handle f_handle;
 +	struct file_handle *handle = NULL;
 +
++	/* can't use O_CREATE with open_by_handle */
++	if (open_flag & O_CREAT) {
++		retval = -EINVAL;
++		goto out_err;
++	}
 +	if (copy_from_user(&f_handle, ufh, sizeof(struct file_handle))) {
 +		retval = -EFAULT;
-+		goto err_out;
++		goto out_err;
 +	}
-+	if (f_handle.handle_size > MAX_HANDLE_SZ) {
-+		retval = -EINVAL;
-+		goto err_out;
++	if ((f_handle.handle_size > MAX_HANDLE_SZ) ||
++		(f_handle.handle_size <= 0)) {
++		retval =  -EINVAL;
++		goto out_err;
++	}
++	if (!capable(CAP_DAC_OVERRIDE)) {
++		retval = -EPERM;
++		goto out_err;
 +	}
 +	handle = kmalloc(sizeof(struct file_handle) + f_handle.handle_size,
 +			GFP_KERNEL);
 +	if (!handle) {
-+		retval = -ENOMEM;
-+		goto err_out;
++		retval =  -ENOMEM;
++		goto out_err;
 +	}
-+	handle_size = f_handle.handle_size;
-+
-+	/* we ask for a non connected handle */
-+	retval = exportfs_encode_fh(path->dentry,
-+				(struct fid *)handle->f_handle,
-+				&handle_size,  0);
-+	/* convert handle size to bytes */
-+	handle_size *= sizeof(u32);
-+	handle->handle_type = retval;
-+	handle->handle_size = handle_size;
-+	if (handle_size <= f_handle.handle_size) {
-+		/* get the uuid */
-+		sb = path->mnt->mnt_sb;
-+		memcpy(handle->fs_uuid,
-+			sb->s_uuid,
-+			sizeof(handle->fs_uuid));
-+		retval = 0;
-+	} else {
-+		/*
-+		 * set the handle_size to zero so we copy only
-+		 * non variable part of the file_handle
-+		 */
-+		handle_size = 0;
-+		retval = -EOVERFLOW;
-+	}
-+	if (copy_to_user(ufh, handle,
-+				sizeof(struct file_handle) + handle_size))
++	/* copy the full handle */
++	if (copy_from_user(handle, ufh,
++				sizeof(struct file_handle) +
++				f_handle.handle_size)) {
 +		retval = -EFAULT;
++		goto out_handle;
++	}
++	path = handle_to_path(mountdirfd, handle);
++	if (IS_ERR(path)) {
++		retval = PTR_ERR(path);
++		goto out_handle;
++	}
++	/*
++	 * O_SYNC is implemented as __O_SYNC|O_DSYNC.  As many places only
++	 * check for O_DSYNC if the need any syncing at all we enforce it's
++	 * always set instead of having to deal with possibly weird behaviour
++	 * for malicious applications setting only __O_SYNC.
++	 */
++	if (open_flag & __O_SYNC)
++		open_flag |= O_DSYNC;
 +
++	acc_mode = MAY_OPEN | ACC_MODE(open_flag);
++
++	/* O_TRUNC implies we need access checks for write permissions */
++	if (open_flag & O_TRUNC)
++		acc_mode |= MAY_WRITE;
++	/*
++	 * Allow the LSM permission hook to distinguish append
++	 * access from general write access.
++	 */
++	if (open_flag & O_APPEND)
++		acc_mode |= MAY_APPEND;
++
++	fd = get_unused_fd_flags(open_flag);
++	if (fd < 0) {
++		retval = fd;
++		goto out_path;
++	}
++	filp = finish_open_handle(path, open_flag, acc_mode);
++	if (IS_ERR(filp)) {
++		put_unused_fd(fd);
++		retval =  PTR_ERR(filp);
++	} else {
++		retval = fd;
++		fsnotify_open(filp->f_path.dentry);
++		fd_install(fd, filp);
++	}
++	kfree(path);
 +	kfree(handle);
-+err_out:
++	return retval;
++
++out_path:
++	path_put(path);
++	kfree(path);
++out_handle:
++	kfree(handle);
++out_err:
 +	return retval;
 +}
 +
-+SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-+		struct file_handle __user *, handle, int, flag)
++SYSCALL_DEFINE3(open_by_handle_at, int, mountdirfd,
++		struct file_handle __user *, handle,
++		int, flags)
 +{
++	long ret;
 +
-+	int follow;
-+	long ret = -EINVAL;
-+	struct path path;
++	if (force_o_largefile())
++		flags |= O_LARGEFILE;
 +
-+	if ((flag & ~AT_SYMLINK_FOLLOW) != 0)
-+		goto err_out;
-+
-+	follow = (flag & AT_SYMLINK_FOLLOW) ? LOOKUP_FOLLOW : 0;
-+	ret = user_path_at(dfd, name, follow, &path);
-+	if (ret)
-+		goto err_out;
-+	/*
-+	 * We need t make sure wether the file system
-+	 * support decoding of the file handle
-+	 */
-+	if (!path.mnt->mnt_sb->s_export_op ||
-+		!path.mnt->mnt_sb->s_export_op->fh_to_dentry)
-+		return -EOPNOTSUPP;
-+
-+	ret = do_sys_name_to_handle(&path, handle);
-+	path_put(&path);
-+err_out:
++	ret = do_sys_open_by_handle(mountdirfd, handle, flags);
 +	return ret;
 +}
 +#else
-+SYSCALL_DEFINE4(name_to_handle_at, int, dfd, const char __user *, name,
-+		struct file_handle __user *, handle, int, flag)
++SYSCALL_DEFINE3(open_by_handle, int, mountdirfd,
++		struct file_handle __user *, handle,
++		int, flags)
 +{
 +	return -ENOSYS;
 +}
 +#endif
 diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 44f35ae..d428b1a 100644
+index d428b1a..c30940c 100644
 --- a/include/linux/fs.h
 +++ b/include/linux/fs.h
-@@ -948,6 +948,16 @@ struct file {
- 	unsigned long f_mnt_write_state;
- #endif
- };
-+
-+struct file_handle {
-+	int handle_size;
-+	int handle_type;
-+	/* File system UUID identifier */
-+	u8 fs_uuid[16];
-+	/* file identifier */
-+	unsigned char f_handle[0];
-+};
-+
- extern spinlock_t files_lock;
- #define file_list_lock() spin_lock(&files_lock);
- #define file_list_unlock() spin_unlock(&files_lock);
-@@ -1358,6 +1368,7 @@ struct super_block {
- 	wait_queue_head_t	s_wait_unfrozen;
+@@ -2140,7 +2140,8 @@ extern int may_open(struct path *, int, int);
  
- 	char s_id[32];				/* Informational name */
-+	u8 s_uuid[16];				/* UUID */
- 
- 	void 			*s_fs_info;	/* Filesystem private info */
- 	fmode_t			s_mode;
+ extern int kernel_read(struct file *, loff_t, char *, unsigned long);
+ extern struct file * open_exec(const char *);
+- 
++extern struct file *finish_open_handle(struct path *, int, int);
++
+ /* fs/dcache.c -- generic fs support functions */
+ extern int is_subdir(struct dentry *, struct dentry *);
+ extern int path_is_under(struct path *, struct path *);
 diff --git a/include/linux/syscalls.h b/include/linux/syscalls.h
-index 057929b..d0deef0 100644
+index d0deef0..58b9702 100644
 --- a/include/linux/syscalls.h
 +++ b/include/linux/syscalls.h
-@@ -61,6 +61,7 @@ struct robust_list_head;
- struct getcpu_cache;
- struct old_linux_dirent;
- struct perf_event_attr;
-+struct file_handle;
- 
- #include <linux/types.h>
- #include <linux/aio_abi.h>
-@@ -846,5 +847,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
- 			unsigned long prot, unsigned long flags,
- 			unsigned long fd, unsigned long pgoff);
+@@ -849,5 +849,7 @@ asmlinkage long sys_mmap_pgoff(unsigned long addr, unsigned long len,
  asmlinkage long sys_old_mmap(struct mmap_arg_struct __user *arg);
-+asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
-+				struct file_handle __user *handle, int flag);
+ asmlinkage long sys_name_to_handle_at(int dfd, const char __user *name,
+ 				struct file_handle __user *handle, int flag);
++asmlinkage long sys_open_by_handle_at(int mountdirfd,
++				struct file_handle __user *handle, int flags);
  
  #endif
 -- 
