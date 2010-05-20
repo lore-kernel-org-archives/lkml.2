@@ -1,149 +1,242 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754451Ab0ETL2w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:28:52 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:49848 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab0ETL2u (ORCPT
+	id S1754791Ab0ETL3M (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:29:12 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35670 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754554Ab0ETL3I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:28:50 -0400
-Message-ID: <4BF51B52.70308@ct.jp.nec.com>
-Date: Thu, 20 May 2010 20:21:54 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
-MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Nikanth Karthikesan <knikanth@suse.de>, linux-kernel@vger.kernel.org,
-       dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       "Jun'ichi Nomura" <j-nomura@ce.jp.nec.com>,
-       Vivek Goyal <vgoyal@redhat.com>
-Subject: Re: [RFC PATCH 2/2] dm: only initialize full request_queue for request-based
- device
-References: <4BEA659F.9050206@ct.jp.nec.com> <20100513035750.GA25523@redhat.com> <4BED049C.5040409@ct.jp.nec.com> <20100514140852.GA10373@redhat.com> <4BF10BF1.3040108@ct.jp.nec.com> <20100517172737.GA24591@redhat.com> <4BF25091.3000507@ct.jp.nec.com> <20100518134639.GA27582@redhat.com> <4BF37DD5.9050409@ct.jp.nec.com> <AANLkTinndXq8DkMBOUf5z8R_8lWRoRbDuOZ1LEmWeI21@mail.gmail.com> <20100519143900.GC24618@redhat.com>
-In-Reply-To: <20100519143900.GC24618@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	Thu, 20 May 2010 07:29:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DIIANjfOYX56ffsKYrjuNraZ9ePj/1HRqDSISG4G3l4tyMYFbeixeQVi1wYyH0+rh5
+         JbRg6ljpveYc3toHxt8m+WvPSI22uUJsgKSVJnzTy94To4hoIDILGsLLRVrpWloUygOr
+         DhjHKWkqIv/XjgPAj3qv/ZjuufhPFItDJu9LI=
+From: Neil Munro <neilmunro@gmail.com>
+To: gregkh@suse.de, wfp5p@virginia.edu
+Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       Niadh <neilmunro@gmail.com>
+Subject: [PATCH 1586/1586] Staging: RT2860: Fixed my previous patch.
+Date: Thu, 20 May 2010 12:28:53 +0100
+Message-Id: <1274354933-24377-1-git-send-email-neilmunro@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+From: Niadh <neilmunro@gmail.com>
 
-On 05/19/2010 11:39 PM +0900, Mike Snitzer wrote:
-> Mike Snitzer <snitzer@redhat.com> wrote:
->> On Wed, May 19, 2010 at 1:57 AM, Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->>> On 05/18/2010 10:46 PM +0900, Mike Snitzer wrote:
->>>> I'll post v5 of the overall patch which will revert the mapped_device
->>>> 'queue_lock' serialization that I proposed in v4.  v5 will contain
->>>> the following patch to localize all table load related queue
->>>> manipulation to the _hash_lock protected critical section in
->>>> table_load().  So it sets the queue up _after_ the table's type is
->>>> established with dm_table_set_type().
->>>
->>> dm_table_setup_md_queue() may allocate memory with blocking mode.
->>> Blocking allocation inside exclusive _hash_lock can cause deadlock;
->>> e.g. when it has to wait for other dm devices to resume to free some
->>> memory.
->>
->> We make no guarantees that other DM devices will resume before a table
->> load -- so calling dm_table_setup_md_queue() within the exclusive
->> _hash_lock is no different than other DM devices being suspended while
->> a request-based DM device performs its first table_load().
->>
->> My thinking was this should not be a problem as it is only valid to
->> call dm_table_setup_md_queue() before the newly created request-based
->> DM device has been resumed.
->>
->> AFAIK we don't have any explicit constraints on memory allocations
->> during table load (e.g. table loads shouldn't depend on other devices'
->> writeback) -- but any GFP_KERNEL allocation could recurse
->> (elevator_alloc() currently uses GFP_KERNEL with kmalloc_node)...
->>
->> I'll have to review the DM code further to see if all memory
->> allocations during table_load() are done via mempools.  I'll also
->> bring this up on this week's LVM call.
-> 
-> We discussed this and I understand the scope of the problem now.
-> 
-> Just reiterating what you covered when you first pointed this issue out:
-> 
-> It could be that a table load gets blocked (waiting on a memory
-> allocation).  The table load can take as long as it needs.  But we can't
-> have it block holding the exclusive _hash_lock while blocking.  Having
-> _hash_lock prevents further DM ioctls.  The table load's allocation may
-> be blocking waiting for writeback to a DM device that will be resumed by
-> another thread.
+I have corrected the confusion between braces and parethesis. In addition I have removed a few warnings where the lines were over 80 lines and finaly have implemented a few suggestions Joe Perches suggested (thanks Joe).
 
-That's right.
- 
-> Thanks again for pointing this out; I'll work to arrive at an
-> alternative locking scheme.  Likely introduce a lock local to the
-> multiple_device (effectively the 'queue_lock' I had before).  But
-> difference is I'd take that lock before taking _hash_lock.
+Signed-off-by: Neil Munro <neilmunro@gmail.com>
+---
+ drivers/staging/rt2860/mlme.h |   89 +++++++++++++++++++++++++----------------
+ 1 files changed, 55 insertions(+), 34 deletions(-)
 
-You have to see do_resume(), too.
-do_resume() gets hc->new_map with _hash_lock held but without your
-'queue_lock' held.  This could cause inconsistent status;
-  table_load() for bio-based table    do_resume() for rq-based table
-  --------------------------------------------------------------------
-  dm_lock_md_queue(md)
-  dm_table_setup_md_queue(t) (<= bio-based)
-    dm_clear_request_based_queue(md)
-      md->queue->request_fn = NULL
-                                       down_write(_hash_lock)
-                                       new_map = hc->new_map (<= rq-based)
-                                       up_write(_hash_lock)
-                                       dm_swap_table(md, new_map)
-                                       __bind(md, new_map) (<= rq-based)
-  down_write(_hash_lock)
-  hc->new_map = t
-  up_write(_hash_lock)
-  dm_unlock_md_queue(md)
- 
-Other ioctls might be as well, since I have checked only interaction
-between table load and resume.
+diff --git a/drivers/staging/rt2860/mlme.h b/drivers/staging/rt2860/mlme.h
+index 63cada3..02cbe9a 100644
+--- a/drivers/staging/rt2860/mlme.h
++++ b/drivers/staging/rt2860/mlme.h
+@@ -31,7 +31,7 @@
 
+ 	Revision History:
+ 	Who			When			What
+-	--------	----------		----------------------------------------------
++	--------	----------		------------
+ 	John Chang	2003-08-28		Created
+ 	John Chang  2004-09-06      modified for RT2600
 
-> I hope to have v6 available at some point today but it may be delayed by
-> a day.
+@@ -49,8 +49,9 @@
+ #define LFSR_MASK                   0x80000057
+ #define MLME_TASK_EXEC_INTV         100/*200*/	/* */
+ #define LEAD_TIME                   5
+-#define MLME_TASK_EXEC_MULTIPLE       10  /*5*/	/* MLME_TASK_EXEC_MULTIPLE * MLME_TASK_EXEC_INTV = 1 sec */
+-#define REORDER_EXEC_INTV         	100	/* 0.1 sec */
++#define MLME_TASK_EXEC_MULTIPLE       10
++/*5*/	/* MLME_TASK_EXEC_MULTIPLE * MLME_TASK_EXEC_INTV = 1 sec */
++#define REORDER_EXEC_INTV		100	/* 0.1 sec */
 
-Sorry for repeating but since you are trying to change the current dm
-model, please design/consider it carefully; what objects/ioctls are
-involved and how you change their relationships, where are the critical
-sections and how you protect them.
-Otherwise, I'm afraid we will just spend your time in transforming
-one bug to another. (and my time for reviewing and verifying problems :)
+ /* The definition of Radar detection duration region */
+ #define CE		0
+@@ -60,7 +61,7 @@
+ #define JAP_W56	4
+ #define MAX_RD_REGION 5
 
+-#define BEACON_LOST_TIME            { 4 * OS_HZ }	/* 2048 msec = 2 sec */
++#define BEACON_LOST_TIME            (4 * OS_HZ)	/* 2048 msec = 2 sec */
 
->>> Also, your patch changes the queue configuration even when a table is
->>> already active and used.  (e.g. Loading bio-based table to a mapped_device
->>> which is already active/used as request-based sets q->requst_fn in NULL.)
->>> That could cause some critical problems.
->>
->> Yes, that is possible and I can add additional checks to prevent this.
->> But this speaks to a more general problem with the existing DM code.
->>
->> dm_swap_table() has the negative check to prevent such table loads, e.g.:
->> /* cannot change the device type, once a table is bound */
->>
->> This check should come during table_load, as part of
->> dm_table_set_type(), rather than during table resume.
-> 
-> I'll look to address this issue in v6 too.
+ #define DLS_TIMEOUT                 1200	/* unit: msec */
+ #define AUTH_TIMEOUT                300	/* unit: msec */
+@@ -69,23 +70,30 @@
+ #define SHORT_CHANNEL_TIME          90	/* unit: msec */
+ #define MIN_CHANNEL_TIME            110	/* unit: msec, for dual band scan */
+ #define MAX_CHANNEL_TIME            140	/* unit: msec, for single band scan */
+-#define	FAST_ACTIVE_SCAN_TIME	    30	/* Active scan waiting for probe response time */
+-#define CW_MIN_IN_BITS              4	/* actual CwMin = 2^CW_MIN_IN_BITS - 1 */
++#define	FAST_ACTIVE_SCAN_TIME	    30
++/* Active scan waiting for probe response time */
++#define CW_MIN_IN_BITS              4
++/* actual CwMin = 2^CW_MIN_IN_BITS - 1 */
+ #define LINK_DOWN_TIMEOUT           20000	/* unit: msec */
+-#define AUTO_WAKEUP_TIMEOUT			70	/*unit: msec */
++#define AUTO_WAKEUP_TIMEOUT		70	/*unit: msec */
++#define CW_MAX_IN_BITS              10
++/* actual CwMax = 2^CW_MAX_IN_BITS - 1 */
++/* Note: RSSI_TO_DBM_OFFSET has been changed
++to variable for new RF (2004-0720). */
 
-It can race between table_load() and do_resume() as well;
-  table_load() for bio-based            do_resume() for rq-based
-  ---------------------------------------------------------------------
-  dm_table_set_type(t) (<= bio-based)
-    live_table = dm_get_live_table(md)
-    (assume no live_table yet)
-                                        new_map = hc->new_map (<= rq-based)
-                                        dm_swap_table(md, new_map)
-                                        __bind(md, new_map)
-  dm_table_setup_md_queue(t)
-    dm_clear_request_based_queue(md)
-      md->queue->request_fn = NULL
+-#define CW_MAX_IN_BITS              10	/* actual CwMax = 2^CW_MAX_IN_BITS - 1 */
+-
+-/* Note: RSSI_TO_DBM_OFFSET has been changed to variable for new RF (2004-0720). */
+ /* SHould not refer to this constant anymore */
+ /*#define RSSI_TO_DBM_OFFSET          120 // for RT2530 RSSI-115 = dBm */
+ #define RSSI_FOR_MID_TX_POWER       -55	/* -55 db is considered mid-distance */
+-#define RSSI_FOR_LOW_TX_POWER       -45	/* -45 db is considered very short distance and */
+-				/* eligible to use a lower TX power */
++#define RSSI_FOR_LOW_TX_POWER       -45
++/* -45 db is considered very short distance and eligible to use a
++lower TX power */
+ #define RSSI_FOR_LOWEST_TX_POWER    -30
+-/*#define MID_TX_POWER_DELTA          0   // 0 db from full TX power upon mid-distance to AP */
+-#define LOW_TX_POWER_DELTA          6	/* -3 db from full TX power upon very short distance. 1 grade is 0.5 db */
+-#define LOWEST_TX_POWER_DELTA       16	/* -8 db from full TX power upon shortest distance. 1 grade is 0.5 db */
++/*#define MID_TX_POWER_DELTA          0
++0 db from full TX power upon mid-distance to AP*/
++#define LOW_TX_POWER_DELTA          6
++/* -3 db from full TX power upon very short distance. 1 grade is 0.5 db */
++#define LOWEST_TX_POWER_DELTA       16
++/* -8 db from full TX power upon shortest distance. 1 grade is 0.5 db */
 
-Thanks,
-Kiyoshi Ueda
+ #define RSSI_TRIGGERED_UPON_BELOW_THRESHOLD     0
+ #define RSSI_TRIGGERED_UPON_EXCCEED_THRESHOLD   1
+@@ -95,7 +103,8 @@
+ /* Channel Quality Indication */
+ #define CQI_IS_GOOD(cqi)            ((cqi) >= 50)
+ /*#define CQI_IS_FAIR(cqi)          (((cqi) >= 20) && ((cqi) < 50)) */
+-#define CQI_IS_POOR(cqi)            (cqi < 50)	/*(((cqi) >= 5) && ((cqi) < 20)) */
++#define CQI_IS_POOR(cqi)            (cqi < 50)
++/*(((cqi) >= 5) && ((cqi) < 20)) */
+ #define CQI_IS_BAD(cqi)             (cqi < 5)
+ #define CQI_IS_DEAD(cqi)            (cqi == 0)
+
+@@ -107,14 +116,20 @@
+ #define BSS_NOT_FOUND                    0xFFFFFFFF
+
+ #define MAX_LEN_OF_MLME_QUEUE            40	/*10 */
+-
+-#define SCAN_PASSIVE                     18	/* scan with no probe request, only wait beacon and probe response */
+-#define SCAN_ACTIVE                      19	/* scan with probe request, and wait beacon and probe response */
+-#define	SCAN_CISCO_PASSIVE				 20	/* Single channel passive scan */
+-#define	SCAN_CISCO_ACTIVE				 21	/* Single channel active scan */
+-#define	SCAN_CISCO_NOISE				 22	/* Single channel passive scan for noise histogram collection */
+-#define	SCAN_CISCO_CHANNEL_LOAD			 23	/* Single channel passive scan for channel load collection */
+-#define FAST_SCAN_ACTIVE                 24	/* scan with probe request, and wait beacon and probe response */
++#define SCAN_PASSIVE                     18
++/* scan with no probe request, only wait beacon and probe response */
++#define SCAN_ACTIVE                      19
++/* scan with probe request, and wait beacon and probe response */
++#define	SCAN_CISCO_PASSIVE				 20
++/* Single channel passive scan */
++#define	SCAN_CISCO_ACTIVE				 21
++/* Single channel active scan */
++#define	SCAN_CISCO_NOISE				 22
++/* Single channel passive scan for noise histogram collection */
++#define	SCAN_CISCO_CHANNEL_LOAD			 23
++/* Single channel passive scan for channel load collection */
++#define FAST_SCAN_ACTIVE                 24
++/* scan with probe request, and wait beacon and probe response */
+
+ #define MAC_ADDR_IS_GROUP(Addr)       (((Addr[0]) & 0x01))
+ #define MAC_ADDR_HASH(Addr)            (Addr[0] ^ Addr[1] ^ Addr[2] ^ Addr[3] ^ Addr[4] ^ Addr[5])
+@@ -145,7 +160,13 @@
+ #define CAP_IS_DSSS_OFDM(x)              (((x) & 0x2000) != 0)
+ #define CAP_IS_DELAY_BA(x)               (((x) & 0x4000) != 0)	/* 802.11e d9 */
+
+-#define CAP_GENERATE(ess, ibss, priv, s_pre, s_slot, spectrum)  (((ess) ? 0x0001 : 0x0000) | ((ibss) ? 0x0002 : 0x0000) | ((priv) ? 0x0010 : 0x0000) | ((s_pre) ? 0x0020 : 0x0000) | ((s_slot) ? 0x0400 : 0x0000) | ((spectrum) ? 0x0100 : 0x0000))
++#define CAP_GENERATE(ess, ibss, priv, s_pre, s_slot, spectrum) \
++(((ess) ? 0x0001 : 0x0000) | \
++((ibss) ? 0x0002 : 0x0000) | \
++((priv) ? 0x0010 : 0x0000) | \
++((s_pre) ? 0x0020 : 0x0000) | \
++((s_slot) ? 0x0400 : 0x0000) | \
++((spectrum) ? 0x0100 : 0x0000))
+
+ #define ERP_IS_NON_ERP_PRESENT(x)        (((x) & 0x01) != 0)	/* 802.11g */
+ #define ERP_IS_USE_PROTECTION(x)         (((x) & 0x02) != 0)	/* 802.11g */
+@@ -154,9 +175,9 @@
+ #define DRS_TX_QUALITY_WORST_BOUND       8	/* 3  // just test by gary */
+ #define DRS_PENALTY                      8
+
+-#define BA_NOTUSE 	2
++#define BA_NOTUSE	2
+ /*BA Policy subfiled value in ADDBA frame */
+-#define IMMED_BA 	1
++#define IMMED_BA	1
+ #define DELAY_BA	0
+
+ /* BA Initiator subfield in DELBA frame */
+@@ -306,7 +327,7 @@ struct PACKED rt_overlap_bss_scan_ie {
+ };
+
+ /*  7.3.2.56. 20/40 Coexistence element used in  Element ID = 72 = IE_2040_BSS_COEXIST */
+-typedef union PACKED _BSS_2040_COEXIST_IE {
++union PACKED _BSS_2040_COEXIST_IE {
+ 	struct PACKED {
+ 		u8 InfoReq:1;
+ 		u8 Intolerant40:1;	/* Inter-BSS. set 1 when prohibits a receiving BSS from operating as a 20/40 Mhz BSS. */
+@@ -485,7 +506,7 @@ struct PACKED rt_ba_parm {
+ };
+
+ /* 2-byte BA Starting Seq CONTROL field */
+-typedef union PACKED _BASEQ_CONTROL {
++union PACKED _BASEQ_CONTROL {
+ 	struct PACKED {
+ 		u16 FragNum:4;	/* always set to 0 */
+ 		u16 StartSeq:12;	/* sequence number of the 1st MSDU for which this BAR is sent */
+@@ -1000,14 +1021,14 @@ struct PACKED rt_rtmp_tx_rate_switch {
+ #define MAC_ENTRY_LIFE_CHECK_CNT		20	/* packet cnt. */
+
+ /* Value domain of pMacEntry->Sst */
+-typedef enum _Sst {
++enum _Sst {
+ 	SST_NOT_AUTH,		/* 0: equivalent to IEEE 802.11/1999 state 1 */
+ 	SST_AUTH,		/* 1: equivalent to IEEE 802.11/1999 state 2 */
+ 	SST_ASSOC		/* 2: equivalent to IEEE 802.11/1999 state 3 */
+ } SST;
+
+ /* value domain of pMacEntry->AuthState */
+-typedef enum _AuthState {
++enum _AuthState {
+ 	AS_NOT_AUTH,
+ 	AS_AUTH_OPEN,		/* STA has been authenticated using OPEN SYSTEM */
+ 	AS_AUTH_KEY,		/* STA has been authenticated using SHARED KEY */
+@@ -1015,7 +1036,7 @@ typedef enum _AuthState {
+ } AUTH_STATE;
+
+ /*for-wpa value domain of pMacEntry->WpaState  802.1i D3   p.114 */
+-typedef enum _ApWpaState {
++enum _ApWpaState {
+ 	AS_NOTUSE,		/* 0 */
+ 	AS_DISCONNECT,		/* 1 */
+ 	AS_DISCONNECTED,	/* 2 */
+@@ -1033,14 +1054,14 @@ typedef enum _ApWpaState {
+ } AP_WPA_STATE;
+
+ /* for-wpa value domain of pMacEntry->WpaState  802.1i D3   p.114 */
+-typedef enum _GTKState {
++enum _GTKState {
+ 	REKEY_NEGOTIATING,
+ 	REKEY_ESTABLISHED,
+ 	KEYERROR,
+ } GTK_STATE;
+
+ /*  for-wpa  value domain of pMacEntry->WpaState  802.1i D3   p.114 */
+-typedef enum _WpaGTKState {
++enum _WpaGTKState {
+ 	SETKEYS,
+ 	SETKEYS_DONE,
+ } WPA_GTK_STATE;
+--
+1.7.1
+
