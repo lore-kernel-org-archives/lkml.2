@@ -1,55 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab0ETVJt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 17:09:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:25989 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754689Ab0ETVJr (ORCPT
+	id S932160Ab0ETVJw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 17:09:52 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57227 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689Ab0ETVJu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 17:09:47 -0400
-Date: Thu, 20 May 2010 14:08:23 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>
-Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
-Subject: [PATCH -mmotm] media: ak881x needs slab.h
-Message-Id: <20100520140823.a9b81de9.randy.dunlap@oracle.com>
-In-Reply-To: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
-References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Thu, 20 May 2010 17:09:50 -0400
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, axboe@kernel.dk, linux-kernel@vger.kernel.org
+In-Reply-To: <20100520204810.GA19188@think>
+References: <20100520204810.GA19188@think>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 May 2010 23:09:46 +0200
+Message-ID: <1274389786.1674.1653.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BF5A4F1.00BD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Thu, 2010-05-20 at 16:48 -0400, Chris Mason wrote:
+> 
+> This is more of a starting point than a patch, but it is something I've
+> been meaning to look at for a long time.  Many different workloads end
+> up hammering very hard on try_to_wake_up, to the point where the
+> runqueue locks dominate CPU profiles.
 
-Add slab.h to fix ak881x build:
+Right, so one of the things that I considered was to make p->state an
+atomic_t and replace the initial stage of try_to_wake_up() with
+something like:
 
-drivers/media/video/ak881x.c:265:error: implicit declaration of function 'kzalloc'
-drivers/media/video/ak881x.c:265:warning: assignment makes pointer from integer without a cast
-drivers/media/video/ak881x.c:283:error: implicit declaration of function 'kfree'
+int try_to_wake_up(struct task *p, unsigned int mask, wake_flags)
+{
+  int state = atomic_read(&p->state);
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
----
- drivers/media/video/ak881x.c |    1 +
- 1 file changed, 1 insertion(+)
+  do {
+    if (!(state & mask))
+      return 0;
 
---- mmotm-2010-0519-1612.orig/drivers/media/video/ak881x.c
-+++ mmotm-2010-0519-1612/drivers/media/video/ak881x.c
-@@ -11,6 +11,7 @@
- #include <linux/i2c.h>
- #include <linux/init.h>
- #include <linux/platform_device.h>
-+#include <linux/slab.h>
- #include <linux/videodev2.h>
- 
- #include <media/ak881x.h>
+    state = atomic_cmpxchg(&p->state, state, TASK_WAKING);
+  } while (state != TASK_WAKING);
+
+  /* do this pending queue + ipi thing */
+
+  return 1;
+}
+
+Also, I think we might want to put that atomic single linked list thing
+into some header (using atomic_long_t or so), because I have a similar
+thing living in kernel/perf_event.c, that needs to queue things from NMI
+context.
+
+The advantage of doing basically the whole enqueue on the remote cpu is
+less cacheline bouncing of the runqueue structures.
+
