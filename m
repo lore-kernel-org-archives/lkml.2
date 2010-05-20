@@ -1,65 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754674Ab0ETIWE (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 04:22:04 -0400
-Received: from www.tglx.de ([62.245.132.106]:45440 "EHLO www.tglx.de"
+	id S1754685Ab0ETIXO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 04:23:14 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:35479 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413Ab0ETIV7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 04:21:59 -0400
-Date: Thu, 20 May 2010 10:21:36 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Michael Ellerman <michael@ellerman.id.au>
-cc: Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
-       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-       niv@linux.vnet.ibm.com, Doug Maxey <doug.maxey@us.ibm.com>,
-       linuxppc-dev@lists.ozlabs.org, Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-In-Reply-To: <1274319125.22892.38.camel@concordia>
-Message-ID: <alpine.LFD.2.00.1005201014250.3368@localhost.localdomain>
-References: <4BF30793.5070300@us.ibm.com>  <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>  <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com>  <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
- <1274319125.22892.38.camel@concordia>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1751470Ab0ETIXL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 04:23:11 -0400
+Date: Thu, 20 May 2010 10:23:09 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: David Miller <davem@davemloft.net>
+Cc: peterz@infradead.org, suresh.b.siddha@intel.com, mingo@elte.hu,
+       tglx@linutronix.de, arjan@linux.jf.intel.com, venki@google.com,
+       svaidy@linux.vnet.ibm.com, ego@in.ibm.com, linux-kernel@vger.kernel.org,
+       linux@dominikbrodowski.net, ncunningham@crca.org.au
+Subject: Re: [patch 3/7] softirq: avoid softirq_work_list for SCHED_SOFTIRQ
+	when sent remotely
+Message-ID: <20100520082309.GH25951@kernel.dk>
+References: <20100517182726.089700767@sbs-t61.sc.intel.com> <20100517184027.777058425@sbs-t61.sc.intel.com> <1274343159.5605.13325.camel@twins> <20100520.011432.209562565.davem@davemloft.net>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100520.011432.209562565.davem@davemloft.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Michael Ellerman wrote:
-> On Wed, 2010-05-19 at 16:38 +0200, Thomas Gleixner wrote:
-> > On Wed, 19 May 2010, Darren Hart wrote:
-> > 
-> > > On 05/18/2010 06:25 PM, Michael Ellerman wrote:
-> > > > On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
+On Thu, May 20 2010, David Miller wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Thu, 20 May 2010 10:12:39 +0200
 > 
-> > > > The result of the discussion about two years ago on this was that we
-> > > > needed a custom flow handler for XICS on RT.
-> > > 
-> > > I'm still not clear on why the ultimate solution wasn't to have XICS report
-> > > edge triggered as edge triggered. Probably some complexity of the entire power
-> > > stack that I am ignorant of.
-> > > 
-> > > > Apart from the issue of loosing interrupts there is also the fact that
-> > > > masking on the XICS requires an RTAS call which takes a global lock.
-> > 
-> > Right, I'd love to avoid that but with real level interrupts we'd run
-> > into an interrupt storm. Though another solution would be to issue the
-> > EOI after the threaded handler finished, that'd work as well, but
-> > needs testing.
+> > Most odd all that, Dave, Jens, what happened to all that remote_softirq
+> > stuff?
 > 
-> Yeah I think that was the idea for the custom flow handler. We'd reset
-> the processor priority so we can take other interrupts (which the EOI
-> usually does for you), then do the actual EOI after the handler
-> finished.
+> Nobody ended up using this remote softirq infrastructure, it can be
+> completely deleted.
 
-That only works when the card does not issue new interrupts until the
-EOI happens. If the EOI is only relevant for the interrupt controller,
-then you are going to lose any edge which comes in before the EOI as
-well.
+What parts of it? There has been reworks of parts of the code since I
+added it, the block layer only uses __smp_call_function_single() to
+trigger remote softirqs.
 
-Thanks,
-
-	tglx
+-- 
+Jens Axboe
 
