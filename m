@@ -1,63 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757117Ab0ETUA3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:00:29 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:56808 "EHLO mx3.mail.elte.hu"
+	id S1757156Ab0ETUCp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:02:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15182 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab0ETUA2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:00:28 -0400
-Date: Thu, 20 May 2010 22:00:15 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, Fr??d??ric Weisbecker <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: Re: [GIT PULL 0/2] perf fixes and improvements
-Message-ID: <20100520200015.GA11470@elte.hu>
-References: <1274371845-27784-1-git-send-email-acme@infradead.org>
+	id S1752886Ab0ETUCo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 16:02:44 -0400
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274371845-27784-1-git-send-email-acme@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+X-Fcc: ~/Mail/linus
+Cc: Oleg Nesterov <oleg@redhat.com>, Andrew Tridgell <tridge@samba.org>,
+       David Howells <dhowells@redhat.com>, Eric Paris <eparis@parisplace.org>,
+       Jakub Jelinek <jakub@redhat.com>, James Morris <jmorris@namei.org>,
+       Stephen Smalley <sds@tycho.nsa.gov>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] signals: check_kill_permission: don't check creds if
+ same_thread_group()
+In-Reply-To: Andrew Morton's message of  Thursday, 20 May 2010 12:42:14 -0700 <20100520124214.2ac81a21.akpm@linux-foundation.org>
+X-Fcc: ~/Mail/linus
+References: <20100517195414.GA21504@redhat.com>
+	<20100520124214.2ac81a21.akpm@linux-foundation.org>
+Emacs: where editing text is like playing Paganini on a glass harmonica.
+Message-Id: <20100520200225.A01E4403F1@magilla.sf.frob.com>
+Date: Thu, 20 May 2010 13:02:25 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+> So... which kernel(s) do we think this fix should be merged into?
 
-* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+I'd say all.  The glibc (libpthread) that does set*id across threads has
+been in use for a while (2.3.4?), probably in distro's using kernels as old
+or older than any active -stable streams.  In the race in question, this
+kernel bug is breaking valid POSIX application expectations.
 
-> Hi Ingo,
-> 
->         Please pull from:
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
-> 
-> Regards,
-> 
-> - Arnaldo
-> 
-> Arnaldo Carvalho de Melo (2):
->   perf TUI: Make 'space' be an alias to 'PgDn'
->   perf annotate: Use build-ids to find the right DSO
-> 
->  tools/perf/util/build-id.c  |   22 ++++++++++++++++++++++
->  tools/perf/util/build-id.h  |    2 ++
->  tools/perf/util/callchain.c |    1 +
->  tools/perf/util/callchain.h |    1 -
->  tools/perf/util/hist.c      |   34 ++++++++++++++++++++++++++--------
->  tools/perf/util/newt.c      |    2 ++
->  tools/perf/util/symbol.c    |   12 +++---------
->  7 files changed, 56 insertions(+), 18 deletions(-)
 
-Pulled, thanks Arnaldo!
-
-	Ingo
+Thanks,
+Roland
