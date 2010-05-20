@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0ETRDO (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 13:03:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:16371 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753873Ab0ETRDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 13:03:13 -0400
-Date: Thu, 20 May 2010 12:03:04 -0500
-From: David Teigland <teigland@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PULL] dlm updates for 2.6.35
-Message-ID: <20100520170304.GC17119@redhat.com>
+	id S1754647Ab0ETRDg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 13:03:36 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:33782 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754580Ab0ETRDe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 13:03:34 -0400
+Date: Thu, 20 May 2010 10:01:09 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Jiri Kosina <jkosina@suse.cz>
+cc: Don Prince <dhprince-devel@yahoo.co.uk>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] HID
+In-Reply-To: <alpine.LNX.2.00.1005201834190.28092@pobox.suse.cz>
+Message-ID: <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
+References: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz> <alpine.LFD.2.00.1005200912540.23538@i5.linux-foundation.org> <alpine.LFD.2.00.1005200922020.23538@i5.linux-foundation.org> <alpine.LNX.2.00.1005201834190.28092@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
 
-Please pull dlm updates for 2.6.35 from:
 
-git://git.kernel.org/pub/scm/linux/kernel/git/teigland/dlm.git for-linus
+On Thu, 20 May 2010, Jiri Kosina wrote:
+> 
+> Originally, all the quirks were sprinkled all over the generic code, 
+> making it unmaintainable mess. Then the quirks for paricular 
+> devices/device groups were separated into idividual drivers, which meant 
+> quite a few new config options.
 
-The fix is the second half of a prior patch, so nothing new.  Thanks,
-Dave
+I _entirely_ agree with splitting up quirks. There's nothing wrong with 
+that.
 
-Dan Carpenter (1):
-      dlm: cleanup remove unused code
+However, what is wrong is when those quirks then become
+ (a) fairly big drivers (ie not just one-liner "this has an extra button" 
+     kind of things)
+ (b) are enabled for default
+AND
+ (c) are for devices that are so rare that almost nobody cares.
 
-David Teigland (1):
-      dlm: fix ast ordering for user locks
+We do use that "enable automatically for non-embedded", but we use it for 
+common stuff, and for stuff that we _historically_ used to support. Not 
+for new random drivers.
 
- fs/dlm/lock.c |    5 +--
- fs/dlm/user.c |   88 +++++++++++++++++++++++++++++++++++++++++++++++---------
- 2 files changed, 75 insertions(+), 18 deletions(-)
+> Other larger drivers, which actually implement something substantial and 
+> have non-trivial code size impact, are added as a normal config options.
+
+Well, I look at something like "hid-ortec.c", and it has basically a few 
+lines of code, much of it __init, and I say "ok, that makes sense to not 
+even ask about".
+
+So I can see your argument. That said, I've never even _heard_ of ortek. 
+Maybe it's some common chip and I use it every day. But even for something 
+that small, I'd wonder how common they really are.
+
+So that kensington driver is a good example of something where I do think 
+it makes sense to make it default. It's small, and kensington is a big 
+name.
+
+But when the driver is several hundred lines, and the text size is 
+probably in the kilobytes (I didn't compile that new driver, but even the 
+trivial ones are a few hundred bytes) _and_ the driver is for something 
+I've never even heard about, then I really think it shouldn't be enabled 
+without asking.
+
+			Linus
