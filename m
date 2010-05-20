@@ -1,190 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755010Ab0ETJc0 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:32:26 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:39017 "EHLO mx2.mail.elte.hu"
+	id S1755265Ab0ETJmg (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:42:36 -0400
+Received: from hera.kernel.org ([140.211.167.34]:50354 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754790Ab0ETJcX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:32:23 -0400
-Date: Thu, 20 May 2010 11:31:31 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Robert Richter <robert.richter@amd.com>
-Subject: [RFD] Future tracing/instrumentation directions
-Message-ID: <20100520093131.GA30929@elte.hu>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com>
+	id S1755140Ab0ETJme (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 05:42:34 -0400
+Message-ID: <4BF50405.4070706@kernel.org>
+Date: Thu, 20 May 2010 11:42:29 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274291514.26328.930.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -1.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-1.0 required=5.9 tests=BAYES_20 autolearn=no SpamAssassin version=3.2.5
-	-1.0 BAYES_20               BODY: Bayesian spam probability is 5 to 20%
-	[score: 0.1887]
+To: Pierre Ossman <pierre-list@ossman.eu>
+CC: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: Strange read data corruption on ext4/LVM/md
+References: <20100519225653.1fedb453@mjolnir.ossman.eu>	<20100519230426.47c6c1ed@mjolnir.ossman.eu>	<20100519232906.3be82279@mjolnir.ossman.eu>	<20100519233408.7436bd9b@mjolnir.ossman.eu>	<20100520091429.192d560c@mjolnir.ossman.eu>	<4BF4F979.4070903@kernel.org> <20100520112945.61bf9705@mjolnir.ossman.eu>
+In-Reply-To: <20100520112945.61bf9705@mjolnir.ossman.eu>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 20 May 2010 09:42:30 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Steven Rostedt <rostedt@goodmis.org> wrote:
+Hello,
 
-> More than a year and a half ago (September 2008), at 
-> Linux Plumbers, we had a meeting with several kernel 
-> developers to come up with a unified ring buffer. A 
-> generic ring buffer in the kernel that any subsystem 
-> could use. After coming up with a set of requirements, I 
-> worked on implementing it. One of the requirements was 
-> to start off simple and work to become a more complete 
-> buffering system.
->
-> [...]
+On 05/20/2010 11:29 AM, Pierre Ossman wrote:
+> The machine is rather crammed right now, with one controller in each of
+> the three available pci-e slots (5 disks). I am running continuous tests
+> on the disks right now though to see if the problems is on all disks or
+> just some. If just one slot is causing problems then we should see some
+> results there.
 
-The thing is, in tracing land and more broadly in 
-instrumentation land we have _much_ more earthly problems 
-these days:
+I see.
 
- - Lets face it, performance of the ring-buffer sucks, in 
-   a big way. I've recently benchmarked it and it takes 
-   hundreds of instructions to trace a single event. 
-   Puh-lease ...
+> When you say FIS corruption, do you mean corruption in the sense of
 
- - It has grown a lot of slack. It's complex and hard to
-   read.
+Oh, not FIS, FIS is the name for SATA packets.  I meant the PCI-e
+packets.  How were they called... yeap TLPs.
 
- - Over the last year or so the majority of bleeding-edge
-   tracing developers have gradually migrated over to perf 
-   and 'perf trace' / 'perf probe' in particular. As far 
-   as the past two merge windows go they are 
-   out-developing the old ftrace UIs by a ratio of 4:1.
+> randomly flipped bits? I don't know if you saw the first couple of
+> mails (before linux-ide was added), but the problem is data being moved
+> around, not just randomly changed.
 
-   So this angle is becoming a prime thing to improve and
-   users and developers are hurting from the ftrace/perf
-   duality.
+I ony saw your previous posting.  TLP corruption can happen during
+command setup phase and bit flipping in the command address part is
+definitely possible, so reads and writes can be headed at wrong places
+in both memory and disk.  I don't know whether this would fit your
+symptom tho.
 
- - [ While it's still a long way off, if this trend continues
-     we eventually might even be able to get rid of the 
-     /debug/tracing/ temporary debug API and get rid of 
-     the ugly in-kernel pretty-printing bits. This is 
-     good: it may make Andrew very happy for a change ;-)
+> Another note is that the problem seems to worsen under load. I'm
+> running the dd thing in the background, which seems to make read errors
+> more common on my test files on the filesystem level.
 
-     The main detail here to be careful of is that lots of
-     people are fond of the simplicity of the 
-     /debug/tracing/ debug UI, so when we replace it we 
-     want to do it by keeping that simple workflow (or 
-     best by making it even simpler). I have a few ideas 
-     how to do this.
+It would be great if you can try a different controller in similar
+setup.  But please keep trying to narrow down the problem and if
+possible please remove filesystem from the stack and test against the
+block device directly.
 
-     There's also the detail that in some cases we want to
-     print events in the kernel in a human readable way: 
-     for example EDAC/MCE and other critical events,
-     trace-on-oops, etc. This too can be solved. ]
+Thanks.
 
-Regarding performance and complexity, which is our main 
-worry atm, fortunately there's work going on in that 
-direction - please see PeterZ's recent string of patches 
-on lkml:
-
-  4f41c01: perf/ftrace: Optimize perf/tracepoint interaction for single events
-  a19d35c: perf: Optimize buffer placement by allocating buffers NUMA aware
-  ef60777: perf: Optimize the perf_output() path by removing IRQ-disables
-  fa58815: perf: Optimize the hotpath by converting the perf output buffer to local_t
-  6d1acfd: perf: Optimize perf_output_*() by avoiding local_xchg()
-
-And it may sound harsh but at this stage i'm personally 
-not at all interested in big design talk. This isnt rocket 
-science, we have developers and users and we know what 
-they are doing and we know what we need to do: we need to 
-improve our crap and we need to reduce complexity. Less is 
-more.
-
-So i'd like to see iterative, useful action first, and i 
-am somewhat sceptical about yet another grand tracing 
-design trying to match 100 requirements.
-
-Steve, Mathieu, if you are interested please help out 
-Peter with the performance and simplification work. The 
-last thing we need is yet another replace-everything 
-event.
-
-If we really want to create a new ring-buffer abstraction 
-i'd suggest we start with Peter's, it has a quite sane 
-design and stayed simple and flexible - if then it could 
-be factored out a bit.
-
-Here are more bits of what i see as the 'action' going 
-forward, in no particular order:
-
-1) Push the /debug/tracing/events/ event description
-   into sysfs, as per this thread on lkml:
-
-     [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
-
-     http://groups.google.com/group/linux.kernel/msg/ab9aa075016c639e
-
-   I.e. one more step towards integrating ftrace into perf.
-
-2) Use 1) to unify the perf events and the ftrace
-   ring-buffer. This, as things are standing is
-   best done by factoring out Peter's ring-buffer
-   in kernel/perf_event.c. It's properly abstracted
-   and it _far_ simpler than kernel/tracing/ring_buffer.c,
-   which has become a monstrosity.
-
-   (but i'm open to other simplifications as well)
-
-3) Add the function-tracer and function-graph tracer
-   as an event and integrate it into perf.
-
-   This will live-test the efficiency of the unification
-   and brings over the last big ftrace plugin to perf.
-
-4) Gradually convert/port/migrate all the remaining 
-   plugins over as well. We need to do this very gently 
-   because there are users - but stop piling new 
-   functionality on to the old ftrace side. This usually 
-   involves:
-
-    - Conversion of an explicit tracing callback to
-      TRACE_EVENT (for example in the case of mmiotrace),
-      while keeping all tool functionality.
-
-    - Migrate any 'special' ftrace feature to perf 
-      capabilities so that it's available via the 
-      syscall interface as well. (for example 
-      'latency maximum tracking' is something that we 
-      probably want to do with kernel-side help - we 
-      probably dont want to implement it via tracing 
-      everything all the time and finding the maximum 
-      based on terabytes of data.)
-
-   (And there are other complications here too, but you 
-    get the idea.)
-
-All in one, i think we can reuse more than 50% of all 
-current ftrace code (possibly up to 70-80%) - and we are 
-already reusing bits of it.
-
-Thanks,
-
-	Ingo
+-- 
+tejun
