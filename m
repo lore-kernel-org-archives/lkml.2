@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753437Ab0ETFoV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 01:44:21 -0400
-Received: from waste.org ([173.11.57.241]:35289 "EHLO waste.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751756Ab0ETFoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 01:44:20 -0400
-Subject: [PATCH] random: simplify fips mode
-From: Matt Mackall <mpm@selenic.com>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Linux Mailing List <linux-kernel@vger.kernel.org>,
-       Steven Liu <lingjiujianke@gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 May 2010 00:44:17 -0500
-Message-ID: <1274334257.11603.1438.camel@calx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	id S1753782Ab0ETFs1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 01:48:27 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44100 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab0ETFs0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 01:48:26 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=xZOGnrj/5SoY+o5otC3LGOzQDLaQQpl4JxT4brxuVO5pRYKyaTN4DKhx8nlksNv75/
+         6hVicdWZefOc/DldXLR/LMWhWobkkcjk2fE506FKfHjn0nmTPbOKNJAgtiv28CmH04e8
+         LyOiO/TwzUSq2JaqenQUEHzS+LZ9J0bapyH7E=
+Message-ID: <4BF4CD22.4080509@gmail.com>
+Date: Thu, 20 May 2010 13:48:18 +0800
+From: Ang Way Chuang <wcang79@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Linux Media Mailing List <linux-media@vger.kernel.org>
+CC: Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT PULL for 2.6.35] V4L/DVB updates
+References: <20100519191837.6a01c559@pedra>
+In-Reply-To: <20100519191837.6a01c559@pedra>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rather than dynamically allocate 10 bytes, move it to static allocation.
-This saves space and avoids the need for error checking.
+Hi Mauro/Linux DVB developers,
 
-Signed-off-by: Matt Mackall <mpm@selenic.com>
+    Can someone please review the following patch asap?
+https://patchwork.kernel.org/patch/97358/
 
-diff -r a12387bbcc93 drivers/char/random.c
---- a/drivers/char/random.c	Thu Apr 08 10:02:02 2010 -0700
-+++ b/drivers/char/random.c	Thu May 20 00:43:13 2010 -0500
-@@ -257,6 +257,7 @@
- #define INPUT_POOL_WORDS 128
- #define OUTPUT_POOL_WORDS 32
- #define SEC_XFER_SIZE 512
-+#define EXTRACT_SIZE 10
- 
- /*
-  * The minimum number of bits of entropy before we wake up a read on
-@@ -414,7 +415,7 @@
- 	unsigned add_ptr;
- 	int entropy_count;
- 	int input_rotate;
--	__u8 *last_data;
-+	__u8 last_data[EXTRACT_SIZE];
- };
- 
- static __u32 input_pool_data[INPUT_POOL_WORDS];
-@@ -714,8 +715,6 @@
- }
- #endif
- 
--#define EXTRACT_SIZE 10
--
- /*********************************************************************
-  *
-  * Entropy extraction routines
-@@ -862,7 +861,7 @@
- 	while (nbytes) {
- 		extract_buf(r, tmp);
- 
--		if (r->last_data) {
-+		if (fips_enabled) {
- 			spin_lock_irqsave(&r->lock, flags);
- 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
- 				panic("Hardware RNG duplicated output!\n");
-@@ -951,9 +950,6 @@
- 	now = ktime_get_real();
- 	mix_pool_bytes(r, &now, sizeof(now));
- 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
--	/* Enable continuous test in fips mode */
--	if (fips_enabled)
--		r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
- }
- 
- static int rand_initialize(void)
-
--- 
-Mathematics is the supreme nostalgia of our time.
+    I may not have access to the testbed for long because I'm leaving my university soon. I had been using the fix introduced through this patch on my testbed since 2.6.32 and had not experienced any issue of dropped packets yet. If there is any problem with this patch, I can follow up while I'm still here. I would like take this opportunity to express my gratitude towards Linux DVB developers. Without you guys, I won't have any platform for my research. Thanks a lot.
 
 
+Regards,
+Ang Way Chuang
