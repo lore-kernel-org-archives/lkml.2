@@ -1,61 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752482Ab0ETQXe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 12:23:34 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59797 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752652Ab0ETQXd (ORCPT
+	id S1753900Ab0ETQXi (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 12:23:38 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:56037 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab0ETQXf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 12:23:33 -0400
-Date: Thu, 20 May 2010 09:20:30 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Jiri Kosina <jkosina@suse.cz>, Don Prince <dhprince-devel@yahoo.co.uk>
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] HID
-In-Reply-To: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz>
-Message-ID: <alpine.LFD.2.00.1005200912540.23538@i5.linux-foundation.org>
-References: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Thu, 20 May 2010 12:23:35 -0400
+Date: Thu, 20 May 2010 17:23:33 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Dajun Chen <Dajun.Chen@diasemi.com>
+Cc: linux-kernel@vger.kernel.org, Michael Buesch <mb@bu3sch.de>
+Subject: Re: [PATCH] GPIO of DA9052 Linux device drivers (2/9)
+Message-ID: <20100520162333.GA3597@sirena.org.uk>
+References: <3495EC08FA53E94AAA00CC4743D5BA7E010C20EF@pandora.diasemi.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <3495EC08FA53E94AAA00CC4743D5BA7E010C20EF@pandora.diasemi.com>
+X-Cookie: Because the wine remembers.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 19, 2010 at 10:28:22AM +0100, David Dajun Chen wrote:
 
+> The attached is the GPIO part of the device drivers newly developed for DA9052 Power Management IC from Dialog Semiconductor.
 
-On Wed, 19 May 2010, Jiri Kosina wrote:
-> 
-> please pull from 'for-linus' branch from
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
-> 
-> to receive HID subsystem patches queued for 2.6.35 merge window.
-
-This is just unbelievable SH*T:
-
-	config HID_ZYDACRON
-		tristate "Zydacron remote control support" if EMBEDDED
-		depends on USB_HID
-		default !EMBEDDED
-		---help---
-		Support for Zydacron remote control.
-
-First it says "only ask if EMBEDDED", and then it says "default to Y if 
-not embedded".
-
-Why? Why the hell did somebody decide that everybody and their pet dog 
-should get that totally uninteresting driver, whether they want it or not?
-
-I realize that every single developer thinks that their driver is the most 
-important thing in the universe, but come on! This kind of thing is 
-totally inappropriate, and to make matters worse, it looks like there are 
-a few commits that won't even compile because the whole file wasn't even 
-added until later.
-
-And this piece of shit was made _mandatory_?
-
-Get a grip, people. I'm not pulling idiotic crap like this. Some quality 
-control before you ask me to pull, for chissake!
-
-		Linus
+While there is some gpiolib functionality in this code there is also
+substantial additional functionality implementing non-stnadard APIs
+which appear to mostly replicate existing kernel functionality.  As I
+said in reply to the regulator driver I'd strongly suggest comparing the
+driver with other drivers for similar devices and if you're producing
+something that looks substantially different to those drivers really
+reexamining in detail why your driver is different and if it should be.
