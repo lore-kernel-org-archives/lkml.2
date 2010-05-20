@@ -1,38 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755387Ab0ETWYV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:24:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54611
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754729Ab0ETWYT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:24:19 -0400
-Date: Thu, 20 May 2010 15:24:28 -0700 (PDT)
-Message-Id: <20100520.152428.112847950.davem@davemloft.net>
-To: jbaron@redhat.com
-Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
-       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
-       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
-       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
-       vgoyal@redhat.com
-Subject: Re: [PATCH 07/13] jump label v8: sort jump table at build-time
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100520201728.GA18815@redhat.com>
-References: <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com>
-	<20100519.153634.266077873.davem@davemloft.net>
-	<20100520201728.GA18815@redhat.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	id S1755359Ab0ETW0K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:26:10 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:53303 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754808Ab0ETW0G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:26:06 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Tejun Heo <tj@kernel.org>
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+Date: Fri, 21 May 2010 00:27:31 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Oleg Nesterov <oleg@redhat.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+References: <1272429119-12103-1-git-send-email-arve@android.com> <20100430172618.GA9043@redhat.com> <4BF4F31D.8070900@kernel.org>
+In-Reply-To: <4BF4F31D.8070900@kernel.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005210027.31910.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jason Baron <jbaron@redhat.com>
-Date: Thu, 20 May 2010 16:17:29 -0400
+On Thursday 20 May 2010, Tejun Heo wrote:
+> Hello,
+> 
+> (sorry about late reply)
+> 
+> On 04/30/2010 07:26 PM, Oleg Nesterov wrote:
+> > Currently _cpu_down() can't flush and/or stop the frozen cwq->thread.
+> > 
+> > IIRC this is fixable, but needs the nasty complications. We should
+> > thaw + stop the frozen cwq->thread, then move the pending works to
+> > another CPU.
+> 
+> Oh, this isn't an issue w/ cmwq.  While frozen all new works are
+> collected into per-cpu delayed worklist and while frozen trustee in
+> charge of the cpu will keep waiting.  Once thawed, trustee will
+> execute all works including the delayed ones unbound to any cpu.
 
-> btw, how do the sparc bits look?
+So, does it require any intrusive changes to make it possible to create
+multithread freezable workqueues?
 
-I have to send you a fix because I use the "call" opcode instead
-of the one for "ba".
+Rafael
