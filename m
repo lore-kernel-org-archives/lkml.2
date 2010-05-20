@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753284Ab0ETETF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 00:19:05 -0400
-Received: from ozlabs.org ([203.10.76.45]:58224 "EHLO ozlabs.org"
+	id S1753543Ab0ETEsw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 00:48:52 -0400
+Received: from sh.osrg.net ([192.16.179.4]:41292 "EHLO sh.osrg.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306Ab0ETETB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 00:19:01 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: "Michael S. Tsirkin" <mst@redhat.com>
-Subject: Re: [PATCH] vhost-net: utilize PUBLISH_USED_IDX feature
-Date: Thu, 20 May 2010 13:48:52 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: Avi Kivity <avi@redhat.com>, davem@davemloft.net,
-       Juan Quintela <quintela@redhat.com>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>,
-       Arnd Bergmann <arnd@arndb.de>, kvm@vger.kernel.org,
-       virtualization@lists.osdl.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, alex.williamson@redhat.com,
-       amit.shah@redhat.com
-References: <20100518011931.GA21918@redhat.com> <4BF41A33.8090309@redhat.com> <20100519222718.GB4111@redhat.com>
-In-Reply-To: <20100519222718.GB4111@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S1752171Ab0ETEsu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 00:48:50 -0400
+Date: Thu, 20 May 2010 13:42:51 +0900
+To: dwmw2@infradead.org
+Cc: fujita.tomonori@lab.ntt.co.jp, npiggin@suse.de, jw@emlix.com,
+       marc@tensilica.com, vapier.adi@gmail.com, dmitry.torokhov@gmail.com,
+       cl@linux.com, penberg@cs.helsinki.fi, mpm@selenic.com,
+       akpm@linux-foundation.org, os@emlix.com, Michael.Hennerich@analog.com,
+       linux-input@vger.kernel.org, linux-kernel@vger.kernel.org, dg@emlix.com,
+       osw@emlix.com, rientjes@google.com, dbrownell@users.sourceforge.net,
+       grant.likely@secretlab.ca, chris@zankel.net, Piet.Delaney@tensilica.com
+Subject: Re: [LKML] Re: [PATCH v3] ad7877: keep dma rx buffers in seperate
+ cache lines
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+In-Reply-To: <1274281117.6930.10190.camel@macbook.infradead.org>
+References: <20100519135226.GZ2516@laptop>
+	<20100519234049C.fujita.tomonori@lab.ntt.co.jp>
+	<1274281117.6930.10190.camel@macbook.infradead.org>
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005201348.53702.rusty@rustcorp.com.au>
+Message-Id: <20100520134455W.fujita.tomonori@lab.ntt.co.jp>
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Thu, 20 May 2010 13:42:57 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010 07:57:18 am Michael S. Tsirkin wrote:
-> On Wed, May 19, 2010 at 08:04:51PM +0300, Avi Kivity wrote:
-> > On 05/18/2010 04:19 AM, Michael S. Tsirkin wrote:
-> >> With PUBLISH_USED_IDX, guest tells us which used entries
-> >> it has consumed. This can be used to reduce the number
-> >> of interrupts: after we write a used entry, if the guest has not yet
-> >> consumed the previous entry, or if the guest has already consumed the
-> >> new entry, we do not need to interrupt.
-> >> This imporves bandwidth by 30% under some workflows.
-> >>
-> >> Signed-off-by: Michael S. Tsirkin<mst@redhat.com>
-> >> ---
-> >>
-> >> Rusty, Dave, this patch depends on the patch
-> >> "virtio: put last seen used index into ring itself"
-> >> which is currently destined at Rusty's tree.
-> >> Rusty, if you are taking that one for 2.6.35, please
-> >> take this one as well.
-> >> Dave, any objections?
-> >>    
-> >
-> > I object: I think the index should have its own cacheline,
+On Wed, 19 May 2010 15:58:37 +0100
+David Woodhouse <dwmw2@infradead.org> wrote:
+
+> On Wed, 2010-05-19 at 23:38 +0900, FUJITA Tomonori wrote:
+> > 
+> > > I don't think we need to hide the fact that some platforms have
+> > > specific alignment restrictions for DMA. So if any drivers make use
+> > > of the alignment, I see no problem with __dma_aligned.
+> > 
+> > IIRC, such was proposed several times:
+> > 
+> > http://www.mail-archive.com/linux-scsi@vger.kernel.org/msg12633.html
+> > 
+> > I guess that we agreed that it's better to tell driver writers to just
+> > use kmalloc. 
 > 
-> The issue here is that host/guest do not know each
-> other's cache line size. I guess we could just put it
-> at offset 128 or something like that ... Rusty?
+> Perhaps -- but only a few days ago in this thread, they were being
+> advised to use ____cacheline_aligned instead!
 
-I was assuming you'd put it at the end of the padding.
+Hmm, driver writers should read DMA-API and DMA-API-HOWTO docs.
 
-I think it's a silly optimization, but Avi obviously feels strongly about
-it and I respect his opinion.
 
-Please resubmit...
-Thanks,
-Rusty.
+> And for this case it really does seem to make sense to keep the buffer
+> in the parent structure rather than allocating it separately. The DMA
+> buffers are tiny and on cache-coherent architectures it's _much_ more
+> efficient just to have them in the original structure and use
+> __dma_aligned.
+
+Yeah, I think that that's a valid point (which was also discussed in
+the past). However, I tend to agree on:
+
+http://lwn.net/Articles/2270/
+
+I think that forcing kmalloc is not that bad. Surely more code, but
+the performance is not notable in most cases. IMHO, exporting cache
+line thing everywhere is worse than it.
