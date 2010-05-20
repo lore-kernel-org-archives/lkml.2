@@ -1,122 +1,148 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754927Ab0ETV3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 17:29:00 -0400
-Received: from cpoproxy3-pub.bluehost.com ([67.222.54.6]:42057 "HELO
-	outbound-mail-313.bluehost.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1754546Ab0ETV26 (ORCPT
+	id S1757316Ab0ETVcX (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 17:32:23 -0400
+Received: from tomts5-srv.bellnexxia.net ([209.226.175.25]:52353 "EHLO
+	tomts5-srv.bellnexxia.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754665Ab0ETVcV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 17:28:58 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
-	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
-	b=BNo6CwJpJBNea/t1gEAPr30F2d0vcmCi+9PVl8IEMXCly+uPyTH7RHHcJn9ZUx8G3y7vx/qTuJjQYiNdxD38P0UafzNZoAGoqXDfrYe/+i7HNGGLSEkaoM10aiJPnyhR;
-Date: Thu, 20 May 2010 14:27:23 -0700
-From: Jesse Barnes <jbarnes@virtuousgeek.org>
-To: intel-gfx@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Matthew Garrett <mjg@redhat.com>, eric@anholt.net
-Subject: [PATCH 1/2] IPS driver: add GPU busy and turbo checking
-Message-ID: <20100520142723.01c217d0@virtuousgeek.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+	Thu, 20 May 2010 17:32:21 -0400
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEAC5H9UtGGOJc/2dsb2JhbACeGXK/OoUSBA
+Date: Thu, 20 May 2010 17:32:16 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@polymtl.ca>
+To: Jason Baron <jbaron@redhat.com>
+Cc: David Miller <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       mingo@elte.hu, hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       vgoyal@redhat.com
+Subject: Re: [PATCH 07/13] jump label v8: sort jump table at build-time
+Message-ID: <20100520213216.GB14957@Krystal>
+References: <cover.1274283321.git.jbaron@redhat.com> <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com> <20100519.153634.266077873.davem@davemloft.net> <20100520201728.GA18815@redhat.com>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
-X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
+Content-Disposition: inline
+In-Reply-To: <20100520201728.GA18815@redhat.com>
+X-Editor: vi
+X-Info: http://krystal.dyndns.org:8080
+X-Operating-System: Linux/2.6.27.31-grsec (i686)
+X-Uptime: 17:25:59 up 43 days,  7:19,  5 users,  load average: 0.27, 0.32,
+	0.27
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Be sure to enable GPU turbo by default at load time and check GPU busy
-and MCP exceeded status correctly.  Also fix up CPU power comparison and
-work around buggy MCH temp reporting.
+* Jason Baron (jbaron@redhat.com) wrote:
+> On Wed, May 19, 2010 at 03:36:34PM -0700, David Miller wrote:
+> > > diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> > > index 2092361..fe6f8be 100644
+> > > --- a/scripts/mod/modpost.c
+> > > +++ b/scripts/mod/modpost.c
+> > > @@ -17,6 +17,8 @@
+> > >  #include "modpost.h"
+> > >  #include "../../include/generated/autoconf.h"
+> > >  #include "../../include/linux/license.h"
+> > > +#include <linux/types.h>
+> > > +#include "jump_entry.h"
+> > >  
+> > 
+> > This breaks the build on non-jump_label-supporting architectures
+> > because only they will have the jump_entry.h header file.
+> > 
+> > I'm really getting tired trying to test your changes and every single
+> > time as I go through doing very basic build testing I always hit one
+> > patch that assumes jump label support exists, or assumes some x86'ism.
+> 
+> sorry about that. I mis-tested it. anyways here's the interdiff to this
+> patch to fix. btw, how do the sparc bits look?
+> 
+> thanks,
+> 
+> -Jason
+> 
+> 
+> diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> index fe6f8be..cc87012 100644
+> --- a/scripts/mod/modpost.c
+> +++ b/scripts/mod/modpost.c
+> @@ -18,7 +18,9 @@
+>  #include "../../include/generated/autoconf.h"
+>  #include "../../include/linux/license.h"
+>  #include <linux/types.h>
+> -#include "jump_entry.h"
 
-Signed-off-by: Jesse Barnes <jbarnes@virtuousgeek.org>
----
- drivers/platform/x86/intel_ips.c |   30 +++++++++++++++++-------------
- 1 files changed, 17 insertions(+), 13 deletions(-)
+includes with "" is a bit unexpected in kernel code. Any reason for this ?
+Is jump_entry.h shipped in scripts/mod/ ?
 
-diff --git a/drivers/platform/x86/intel_ips.c b/drivers/platform/x86/intel_ips.c
-index c675bf2..62b1e41 100644
---- a/drivers/platform/x86/intel_ips.c
-+++ b/drivers/platform/x86/intel_ips.c
-@@ -515,7 +515,10 @@ static void ips_disable_cpu_turbo(struct ips_driver *ips)
-  */
- static bool ips_gpu_busy(struct ips_driver *ips)
- {
--	return false;
-+	if (!ips->gpu_turbo_enabled)
-+		return false;
-+
-+	return ips->gpu_busy();
- }
- 
- /**
-@@ -627,7 +630,7 @@ static bool cpu_exceeded(struct ips_driver *ips, int cpu)
- 	avg = cpu ? ips->ctv2_avg_temp : ips->ctv1_avg_temp;
- 	if (avg > (ips->limits->core_temp_limit * 100))
- 		ret = true;
--	if (ips->cpu_avg_power > ips->core_power_limit)
-+	if (ips->cpu_avg_power > ips->core_power_limit * 100)
- 		ret = true;
- 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
- 
-@@ -652,6 +655,8 @@ static bool mch_exceeded(struct ips_driver *ips)
- 	spin_lock_irqsave(&ips->turbo_status_lock, flags);
- 	if (ips->mch_avg_temp > (ips->limits->mch_temp_limit * 100))
- 		ret = true;
-+	if (ips->mch_avg_power > ips->mch_power_limit)
-+		ret = true;
- 	spin_unlock_irqrestore(&ips->turbo_status_lock, flags);
- 
- 	return ret;
-@@ -747,7 +752,7 @@ static int ips_adjust(void *data)
- 			ips_disable_gpu_turbo(ips);
- 
- 		/* We're outside our comfort zone, crank them down */
--		if (!mcp_exceeded(ips)) {
-+		if (mcp_exceeded(ips)) {
- 			ips_cpu_lower(ips);
- 			ips_gpu_lower(ips);
- 			goto sleep;
-@@ -808,8 +813,7 @@ static u16 read_mgtv(struct ips_driver *ips)
- 
- 	ret = ((val * slope + 0x40) >> 7) + offset;
- 
--
--	return ret;
-+	return 0; /* MCH temp reporting buggy */
- }
- 
- static u16 read_ptv(struct ips_driver *ips)
-@@ -1471,14 +1475,6 @@ static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (trc & TRC_CORE2_EN)
- 		ips->second_cpu = true;
- 
--	if (!ips_get_i915_syms(ips)) {
--		dev_err(&dev->dev, "failed to get i915 symbols, graphics turbo disabled\n");
--		ips->gpu_turbo_enabled = false;
--	} else {
--		dev_dbg(&dev->dev, "graphics turbo enabled\n");
--		ips->gpu_turbo_enabled = true;
--	}
--
- 	update_turbo_limits(ips);
- 	dev_dbg(&dev->dev, "max cpu power clamp: %dW\n",
- 		ips->mcp_power_limit / 10);
-@@ -1488,6 +1484,14 @@ static int ips_probe(struct pci_dev *dev, const struct pci_device_id *id)
- 	if (thm_readl(THM_PSC) & PSP_PBRT)
- 		ips->poll_turbo_status = true;
- 
-+	if (!ips_get_i915_syms(ips)) {
-+		dev_err(&dev->dev, "failed to get i915 symbols, graphics turbo disabled\n");
-+		ips->gpu_turbo_enabled = false;
-+	} else {
-+		dev_dbg(&dev->dev, "graphics turbo enabled\n");
-+		ips->gpu_turbo_enabled = true;
-+	}
-+
- 	/*
- 	 * Check PLATFORM_INFO MSR to make sure this chip is
- 	 * turbo capable.
+> +#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
+
+ifdefs everywhere cripples the code and make it unreadable. You might
+want to try to find another way to deal with the problem. E.g.
+
+create linux/jump_entry.h
+which contains 
+
+#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
+#include <asm/jump_entry.h>
+#else
+
+define some empty static inlines, and use them in the .c files.
+
+e.g. 
+
+static inline void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
+{
+}
+
+#endif
+
+> + #include "jump_entry.h"
+> +#endif
+>  
+>  /* Some toolchains use a `_' prefix for all user symbols. */
+>  #ifdef CONFIG_SYMBOL_PREFIX
+> @@ -377,6 +379,8 @@ void release_file(void *file, unsigned long size)
+>  	munmap(file, size);
+>  }
+>  
+> +#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
+> +
+>  static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
+>  {
+>  	struct jump_entry tmp;
+> @@ -421,6 +425,8 @@ static void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
+>  	} while (swapped == 1);
+>  }
+>  
+> +#endif
+> +
+>  static int parse_elf(struct elf_info *info, const char *filename)
+>  {
+>  	unsigned int i;
+> @@ -539,8 +545,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
+>  		sym->st_size  = TO_NATIVE(sym->st_size);
+>  	}
+>  
+> +#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
+>  	if (enable_jump_label)
+>  		sort_jump_label_table(info, hdr);
+> +#endif
+
+And remove this ifdef.
+
+Thanks,
+
+Mathieu
+
+>  
+>  	return 1;
+>  }
+
 -- 
-1.7.0.1
-
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
