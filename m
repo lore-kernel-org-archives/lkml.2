@@ -1,94 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754413Ab0ETJYK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:24:10 -0400
-Received: from casper.infradead.org ([85.118.1.10]:54738 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753567Ab0ETJYF convert rfc822-to-8bit (ORCPT
+	id S1754327Ab0ETJZp (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:25:45 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:53079 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab0ETJZn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:24:05 -0400
-Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the 
- type of a raw sample
-From: Peter Zijlstra <peterz@infradead.org>
-To: Stephane Eranian <eranian@google.com>
-Cc: Robert Richter <robert.richter@amd.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
-       Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
-References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
-	 <1274304024-6551-2-git-send-email-robert.richter@amd.com>
-	 <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
+	Thu, 20 May 2010 05:25:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=dahlCIHiSSxY/rLSL5qV4EgNPxQV+4pHVLe5nMMqDSwdyguHgVJBxY2CE8ydX6O56s
+         /l/Y8cp1on7Gtto/DZadeYN9aAgxkgnjZf1qCQsQAzpg8Buo6vscFcMvN28QoQVUB+ec
+         Tflk7AWnulp8qD90ZP59OvZeQY04lhcD9Qc+4=
+MIME-Version: 1.0
+In-Reply-To: <201005201233.56877@zigzag.lvk.cs.msu.su>
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com>
+	 <AANLkTinClrTDoXH4NPP2-SgSYH24ZTnqsop88aocdg4R@mail.gmail.com>
+	 <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>
+	 <201005201233.56877@zigzag.lvk.cs.msu.su>
+Date: Thu, 20 May 2010 14:55:42 +0530
+Message-ID: <AANLkTilEbFndi-rPczi6OBxeU8p87gOz4yfveEsyHqcE@mail.gmail.com>
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after 
+	console_init
+From: Sujit K M <sjt.kar@gmail.com>
+To: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-rt-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 May 2010 11:23:33 +0200
-Message-ID: <1274347413.5605.13636.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 10:10 +0200, Stephane Eranian wrote:
-> I still don't understand why you need all of this to encode IBS.
-> I still believe that with attr.config there is plenty of bits to choose
-> from. I do understand the need for PERF_SAMPLE_RAW. I think
-> there is no other way.
-> 
-> You simply need to pick an encoding to mark the config as IBS. You
-> need two bits for this: 00 regular counters, 01 IBS Fetch, 10 IBS op.
-> Regular counters use 43 bits, IBS fetch uses 58, IBS op uses 52.
-> So you could use bits 62-63 for instance. You don't need to encode
-> the sampling period in attr.config for either IBS. You can use
-> attr.sample_period, so you free up 16 bits.
-> 
-> I understand that IBS may evolve and thus may use more bits. But
-> you still have at least 16 bits of margin.
-> 
-> Users and tools would rely on an library to provide the event encoding.
-> No need to come up with some raw hex number on the cmdline. 
+http://www.vanemery.com/Linux/Serial/serial-console.html
 
-No need for any of that afaict, how about:
+Could this be of help.
 
-For Instruction-Fetch:
-
-  0:15 sample-period (r/w)
- 16:31 cnt           (r/w)
- 32:47 latency       (r/w)
-    48 enable        (r/w)
-    49 valid         (r/w)
- 50:56               (ro)
-    57 randomized    (r/w)
+On Thu, May 20, 2010 at 2:03 PM, Nikita V. Youshchenko <yoush@cs.msu.su> wrote:
+>> > I could not get dmesg output to console/serial and
+>> > klogd(/var/log/messages) anymore with 2.6.33-rt17 _after_ the kernel
+>> > boot is done(on non-RT kernel it works fine). I made below changes it
+>> > starts to work again, however I'm unsure how safe the change is.
+>> > Please advise.
+>>
+>> Well, obviously it's unsafe if you remove safety checks. And if you
+>> care to look at the changelog of kernel/printk.c you'll find out why.
+>
+> Hmm... did a quick look and could not find anything related there.
+> Could you please give a pointer?
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
 
 
-For Instruction-Execution:
 
-  0:15 sample-period (r/w)
-    17 enable        (r/w)
-    18 valid         (r/w)
+-- 
+-- Sujit K M
 
-So if we add perf_event_attr::latency (can also be used for
-PEBS-load-latency, can Sparc/PowerPC/ARM/SH use this too?), we can
-encode these IBS things as:
-
-  0x87 Instruction Fetch Stall -- Ins-Fetch 
-  0xC0 Retired Instructions    -- Ins-Exec
-  
-When we set perf_event_attr::precise > 0
-
-The Ins-Exec will have to re-construct the actual event->count by adding
-sample-period on each interrupt, as it seems we lack an actual counter
-in hardware.
-
-Furthermore, these counters will have to deal with sample-period > 2^16
-by 'ignoring' interrupts until we get ->period_left down to 0.
-
-The extra data could possibly be exposed through attaching non-sampling
-group events and using SAMPLE_READ, like L1-misses, although
-reconstructing the count from just one bit seems 'interesting'. 
-
-The IbsFetchLinAd/IbsOpRip would go straight into PERF_SAMPLE_IP by
-replacing pt_regs->ip I guess.
-
-IbsDcLinAd goes into PERF_SAMPLE_ADDR
-
+blog(http://kmsujit.blogspot.com/)
