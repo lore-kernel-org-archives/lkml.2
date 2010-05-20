@@ -1,45 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754802Ab0ETRRS (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 13:17:18 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42469 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752712Ab0ETRRQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 13:17:16 -0400
-Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
- type of a raw sample
-From: Peter Zijlstra <peterz@infradead.org>
-To: Robert Richter <robert.richter@amd.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
-       Paul Mundt <lethal@linux-sh.org>
-In-Reply-To: <20100520170712.GV21799@erda.amd.com>
-References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
-	 <1274304024-6551-2-git-send-email-robert.richter@amd.com>
-	 <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
-	 <1274347413.5605.13636.camel@twins>
-	 <AANLkTikWSOPpHsvJGht7c7QnwcOk-nMyBNhY-g6QpNzg@mail.gmail.com>
-	 <1274351859.5605.13961.camel@twins> <20100520140819.GQ21799@erda.amd.com>
-	 <20100520165501.GA8281@elte.hu>  <20100520170712.GV21799@erda.amd.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 May 2010 19:16:35 +0200
-Message-ID: <1274375795.5605.15313.camel@twins>
+	id S1754502Ab0ETRaV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 13:30:21 -0400
+Received: from lo.gmane.org ([80.91.229.12]:57227 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753310Ab0ETRaU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 13:30:20 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: "Frank A. Kingswood" <frank@kingswood-consulting.co.uk>
+Subject: SCHED_OMIT_FRAME_POINTER configuration option wrong
+Date: Thu, 20 May 2010 18:30:07 +0100
+Message-ID: <ht3riv$b5f$1@dough.gmane.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: 88-97-16-53.dsl.zen.co.uk
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 19:07 +0200, Robert Richter wrote:
-> On 20.05.10 12:55:01, Ingo Molnar wrote:
-> > Not really, fds are really cheap on Linux, and in any case it's only needed 
-> > when the event is created - can be closed afterwards.
-> 
-> I was wondering if we could get the perf event fd directly with the
-> open("/sys/...") command? This would be really easy to set up.
+Hi!
 
-I guess we could sorta do that, but then we'd need a ioctl to change the
-perf_event_attr.
+The configuration option SCHED_OMIT_FRAME_POINTER seems to have gained a 
+most unusual description in 2.6.34.
+
+490 config SCHED_OMIT_FRAME_POINTER
+491         def_bool y
+492         prompt "Single-depth WCHAN output"
+493         depends on X86
+494         ---help---
+495           Calculate simpler /proc/<PID>/wchan values. If this option
+496           is disabled then wchan values will recurse back to the
+497           caller function. This provides more accurate wchan values,
+498           at the expense of slightly more scheduling overhead.
+499
+500           If in doubt, say "Y".
+
+Frank
+
