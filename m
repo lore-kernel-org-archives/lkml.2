@@ -1,80 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753897Ab0ETGlr (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 02:41:47 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:51271 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752826Ab0ETGlq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 02:41:46 -0400
-Date: Thu, 20 May 2010 08:41:40 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-Cc: Andi Kleen <andi@firstfloor.org>, Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC] Unified Ring Buffer (Next Generation)
-Message-ID: <20100520064139.GA15946@basil.fritz.box>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100519181001.GC18073@basil.fritz.box> <20100519184745.GA19522@Krystal>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519184745.GA19522@Krystal>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	id S1753904Ab0ETGq2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 02:46:28 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:46814 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752991Ab0ETGq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 02:46:27 -0400
+Date: Thu, 20 May 2010 08:46:15 +0200
+From: Florian Mickler <florian@mickler.org>
+To: akpm@linux-foundation.org
+Cc: Joe Perches <joe@perches.com>, Stephen Hemminger <shemminger@vyatta.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] get_maintainer.pl: improve config-file support
+Message-ID: <20100520084615.6e2efa38@schatten.dmk.lab>
+In-Reply-To: <20100513095652.34aea727@schatten.dmk.lab>
+References: <1273698720-4010-1-git-send-email-florian@mickler.org>
+	<1273703333.20514.392.camel@Joe-Laptop.home>
+	<20100513095652.34aea727@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The plan here is to create a ring buffer that supports per-buffer instance
-> "flags" that specify what must be supported: e.g. either splice() or mmap(),
-> global vs per-cpu buffers, etc.
+Hi Andrew!
 
-And you plan to test all those flags in the hot path? 
+What's the status of this patch?
+Do you take it, or do you have an issue with it? This is a clear
+improvement in my opinion.
 
-> The new implementation I propose lessens the complexity level, presents clear
-> abstractions to deal with that complexity, and comes with a formal proof of
-> correctness, all of which I think is really very important to give a good level
-> of insurance that the ring buffer works as expected.
+cheers,
+Flo
 
-Any simplifcation for the ftrace buffer would be a good thing IMHO.
+On Thu, 13 May 2010 09:56:52 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
-> > For debugging kernels etc. with tracing that's not that big an issue, but
-> > I think it's a problem for "non debugging" use. After all Linux
-> > still has the goal to be at least configurable as a low footprint operating
-> > system.
+> On Wed, 12 May 2010 15:28:53 -0700
+> Joe Perches <joe@perches.com> wrote:
 > 
-> My implementation, at the moment, has 50% less lines of code and is 25% smaller
-> in object size than the current ring buffer.
-
-Good.
-
+> > On Wed, 2010-05-12 at 23:12 +0200, florian@mickler.org wrote:
+> > > This changes the syntax of the config-file introduced in the commit
+> > > "scripts/get_maintainer.pl: add .get_maintainer.conf default options
+> > > file".
+> > > Entries are now of the more commonly found form:
+> > > 	key = value
+> > > where keys are cmd-line arguments without the "--" prefixed.
+> > 
+> > I don't have a strong opinion one way or another about the
+> > .conf file format.
+> > 
+> > Another option which could be useful:  --noconf, don't read the file.
+> > 
+> > > as well as warn if unrecognized options are
+> > > specified.
+> > 
+> > The old approach does that as well.
 > 
-> But all in all, I think users needing _something_ to perform system-wide tracing
-> shout a lot louder than users who need to save a few bytes. So let's try to get
-> something good in first, while keeping an eye on the object size, and if it
-> happens to be too large for some users, then they can always implement a
-> slower and less efficient ring_buffer_tiny.c if they feel like it.
+> True.
+> 
+> > 
+> > > +if (!GetOptions( \%prefs,
+> > 
+> > I think you don't need to repeat the options.
+> > Doesn't this work?
+> > 	if (!GetOptions(\%prefs)) {
+> > 	    die "$P: invalid argument - use --help if necessary\n";
+> > 
+> No, GetOpts::Long needs a special markup for parsing the cmdline
+> string, like =s for specifying that that option is accompanied by a
+> string value or the ! for specifying that it is a flag. 
+> Also there are aliases defined for config-options.
+> 
+> Cheers,
+> Flo
 
-They don't need to, they already have kfifo.
-
-> I totally agree with you. This is in good part why I spent a large part of 2009
-> writing papers explaining my ring buffer, doing Promela models and formal proofs
-> of correctness. I think after all that work, the abstractions I will use will be
-> much easier to grap by anyone willing to do a bit of reading.
-
-Writing papers is not a replacement for simple maintainable code.
-
--Andi
-
--- 
-ak@linux.intel.com -- Speaking for myself only.
