@@ -1,51 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753669Ab0ETDqH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 23:46:07 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46151
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753553Ab0ETDqF (ORCPT
+	id S1753697Ab0ETDwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 23:52:07 -0400
+Received: from mga05.intel.com ([192.55.52.89]:20381 "EHLO
+	fmsmga101.fm.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753553Ab0ETDwF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 23:46:05 -0400
-Date: Wed, 19 May 2010 20:46:11 -0700 (PDT)
-Message-Id: <20100519.204611.254862260.davem@davemloft.net>
-To: fujita.tomonori@lab.ntt.co.jp
-Cc: mpm@selenic.com, geert@linux-m68k.org, dwmw2@infradead.org,
-       herbert@gondor.hengli.com.au, penberg@cs.helsinki.fi, ken@codelabs.ch,
-       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
-Subject: Re: [BUG] SLOB breaks Crypto
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100520124026G.fujita.tomonori@lab.ntt.co.jp>
-References: <1274278307.11603.1264.camel@calx>
-	<20100519.123325.123438307.davem@davemloft.net>
-	<20100520124026G.fujita.tomonori@lab.ntt.co.jp>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
+	Wed, 19 May 2010 23:52:05 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,268,1272870000"; 
+   d="scan'208";a="800122576"
+Message-ID: <4BF4B1E1.4030208@linux.intel.com>
+Date: Thu, 20 May 2010 11:52:01 +0800
+From: Haicheng Li <haicheng.li@linux.intel.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090812)
+MIME-Version: 1.0
+To: Wu Fengguang <fengguang.wu@intel.com>
+CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@redhat.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       "ak@linux.intel.com" <ak@linux.intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 2/2] x86, mem-hotplug: update all PGDs for direct mapping
+ and vmemmap mapping changes on 64bit.
+References: <4BF3D15F.1000604@linux.intel.com> <20100519121202.GB23778@localhost>
+In-Reply-To: <20100519121202.GB23778@localhost>
+Content-Type: text/plain; charset=us-ascii; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Date: Thu, 20 May 2010 12:38:01 +0900
-
-> On Wed, 19 May 2010 12:33:25 -0700 (PDT)
-> David Miller <davem@davemloft.net> wrote:
+Wu Fengguang wrote:
+>> @@ -1033,6 +1038,7 @@ vmemmap_populate(struct page *start_page, unsigned long size, int node)
+>>   		}
+>>
+>>   	}
+>> +	sync_global_pgds((unsigned long)start_page, end);
 > 
->> From: Matt Mackall <mpm@selenic.com>
->> Date: Wed, 19 May 2010 09:11:47 -0500
->> 
->> > I still think we should add it to all of them as positive documentation
->> > that this issue has been considered. And then make the kernel not
->> > compile without it so new arch implementors can't miss it.
->> 
->> I agree and would even go so far as to suggest that we break all
->> architectures not setting it now.
-> 
-> About documentation, I think that ARCH_KMALLOC_MINALIGN description
-> would fit in "Platform Issues" section in DMA-API-HOWTO. I'll add it
-> later.
+> Here you removed the tlb flush in the original patch. Is it safe to do so?
 
-Ok, good idea.
+Yes, I think so. Before this populate, such vmemmap mapping should be always zero, so it's optional 
+to do tlb flush here.
+
+-haicheng
