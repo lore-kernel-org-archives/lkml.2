@@ -1,89 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755292Ab0ETWR2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:17:28 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:53230 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754977Ab0ETWR0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:17:26 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Florian Mickler <florian@mickler.org>
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-Date: Fri, 21 May 2010 00:18:43 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Pavel Machek <pavel@ucw.cz>, "Arve Hj??nnev??g" <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-References: <1273810273-3039-1-git-send-email-arve@android.com> <20100520111111.333beb73@schatten.dmk.lab> <20100520112642.74d93d26@schatten.dmk.lab>
-In-Reply-To: <20100520112642.74d93d26@schatten.dmk.lab>
+	id S1755280Ab0ETWSr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:18:47 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26902 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754338Ab0ETWSq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:18:46 -0400
+Date: Thu, 20 May 2010 18:17:42 -0400
+From: Chris Mason <chris.mason@oracle.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, axboe@kernel.dk, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+Message-ID: <20100520221742.GB20946@think>
+Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
+	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	axboe@kernel.dk, linux-kernel@vger.kernel.org
+References: <20100520204810.GA19188@think>
+ <1274389786.1674.1653.camel@laptop>
+ <1274390592.1674.1656.camel@laptop>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005210018.43576.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274390592.1674.1656.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090203.4BF5B520.012B:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 20 May 2010, Florian Mickler wrote:
-> On Thu, 20 May 2010 11:11:11 +0200
-> Florian Mickler <florian@mickler.org> wrote:
+On Thu, May 20, 2010 at 11:23:12PM +0200, Peter Zijlstra wrote:
+> On Thu, 2010-05-20 at 23:09 +0200, Peter Zijlstra wrote:
 > 
-> > On Tue, 18 May 2010 15:11:11 +0200
-> > Pavel Machek <pavel@ucw.cz> wrote:
+> > int try_to_wake_up(struct task *p, unsigned int mask, wake_flags)
+> > {
+> >   int state = atomic_read(&p->state);
 > > 
-> > > On Thu 2010-05-13 21:11:06, Arve Hj??nnev??g wrote:
-> > > > Adds /sys/power/policy that selects the behaviour of /sys/power/state.
-> > > > After setting the policy to opportunistic, writes to /sys/power/state
-> > > > become non-blocking requests that specify which suspend state to
-> > > > enter
-> > > 
-> > > Yeah, one file selects behavior of another file, and to read available
-> > > states for opportunistic, you have to write to file first.
-> > > 
-> > > I still don't like the interface.
-> > > 
+> >   do {
+> >     if (!(state & mask))
+> >       return 0;
 > > 
-> > Actually, what would be a better interface? 
-> > 
-> > I wonder why it is not like this:
-
-Because I think the "forced" and "opportunistic" suspend "modes" are mutually
-exclusive in practice and the interface as proposed reflects that quite well.
-
-> > /sys/power/state 
-> > 	no change, works with and without opportunistic suspend the
-> > 	same. Ignores suspend blockers. Really no change. (From user
-> > 	perspective)
-> > 
-> > /sys/power/opportunistic
-> > 	On / Off
-> > 	While Off the opportunistic suspend is off.
-> > 	While On, the opportunistic suspend is on and if there are no
-> > 	suspend blockers the system goes to suspend. 
-> > 
+> >     state = atomic_cmpxchg(&p->state, state, TASK_WAKING);
+> >   } while (state != TASK_WAKING);
 > 
-> I forgot, of course there needs to be another knob to implement the
-> "on" behaviour  in the opportunistic mode
+>     cpu = select_task_rq()
 > 
->  /sys/power/block_opportunistic_suspend
+> and then somehow see we get set_task_cpu() done without races :-)
 > 
-> There you have it. One file, one purpose. 
+> >   /* do this pending queue + ipi thing */
+> > 
+> >   return 1;
+> > }
 
-That's getting messy IMHO.
+I tried not to set the task waking, since I was worried about races with
+us getting queued somewhere else.  But, I don't have a good handle on
+all of that so I kind of chickened out.  That's why my code falls back
+to the full ttwu in a few cases.
 
-In addition to that you get a nice race when the user writes "mem"
-to /sys/power/state and opportunistic suspend happens at the same time.
-If the latter wins the race, the system will suspend again immediately after
-being woken up, which probably is not the result you'd like to get.
+Do you think the above could be an addition to my patch or that it's
+required for my patch to work well?
 
-Thanks,
-Rafael
+-chris
+
