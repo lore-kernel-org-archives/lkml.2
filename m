@@ -1,76 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754376Ab0ETVVo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 17:21:44 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:38226 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752186Ab0ETVVm convert rfc822-to-8bit (ORCPT
+	id S1754704Ab0ETVXR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 17:23:17 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43332 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753860Ab0ETVXQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 17:21:42 -0400
-MIME-Version: 1.0
-In-Reply-To: <201005202301.12259.trenn@suse.de>
-References: <1274380944-20947-1-git-send-email-mike@android.com>
-	 <201005202301.12259.trenn@suse.de>
-Date: Thu, 20 May 2010 14:21:40 -0700
-Message-ID: <AANLkTimrJ-F-rBDKnEusN2oViObCCPvZzeIWavkf-tqa@mail.gmail.com>
-Subject: Re: [PATCH v2 0/3] Enable CPU frequency and power tracking in cpuacct 
-	cgroup
-From: Mike Chan <mike@android.com>
-To: Thomas Renninger <trenn@suse.de>
-Cc: menage@google.com, balbir@in.ibm.com, cpufreq@vger.kernel.org,
-       linux-kernel@vger.kernel.org, khilman@deeprootsystems.com,
-       linux-omap@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 May 2010 17:23:16 -0400
+Subject: Re: [PATCH RFC] reduce runqueue lock contention
+From: Peter Zijlstra <peterz@infradead.org>
+To: Chris Mason <chris.mason@oracle.com>
+Cc: Ingo Molnar <mingo@elte.hu>, axboe@kernel.dk, linux-kernel@vger.kernel.org
+In-Reply-To: <1274389786.1674.1653.camel@laptop>
+References: <20100520204810.GA19188@think>
+	 <1274389786.1674.1653.camel@laptop>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 May 2010 23:23:12 +0200
+Message-ID: <1274390592.1674.1656.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 2:01 PM, Thomas Renninger <trenn@suse.de> wrote:
-> Hi Mike,
->
-> On Thursday 20 May 2010 08:42:21 pm Mike Chan wrote:
->> v2:
->> Rebased off of Thomas Renninger's patch for cgroups_cpuacct refactoring,
-> thanks.
-> A general comment:
-> I don't know much about the cgroup stuff.
+On Thu, 2010-05-20 at 23:09 +0200, Peter Zijlstra wrote:
 
-Perhaps Paul Menage or Balbir Singh can look and sign off on the API's?
+> int try_to_wake_up(struct task *p, unsigned int mask, wake_flags)
+> {
+>   int state = atomic_read(&p->state);
+> 
+>   do {
+>     if (!(state & mask))
+>       return 0;
+> 
+>     state = atomic_cmpxchg(&p->state, state, TASK_WAKING);
+>   } while (state != TASK_WAKING);
 
-> I am also not sure how exactly power can be measured on this arch based on
+    cpu = select_task_rq()
 
-If you know how much time was spent at each frequency executing code,
-you can calculate how much power was consumed if the platform (with
-hooks) provide power numbers (in milliWatts) for the power at
-frequency X.
+and then somehow see we get set_task_cpu() done without races :-)
 
-I did some initial testing on Motorola Droid comparing to a power
-meter and I got within 2% variance.
+>   /* do this pending queue + ipi thing */
+> 
+>   return 1;
+> }
 
-> frequency accounting (there also were some threads I was not aware of?)
-> A signed-off-by or reviewed-by from someone who is more involved in this omap
-> stuff would probably not that bad.
->
 
-OMAP was the closest with mainline support I could provide an example
-how to use these hooks.
-
-I'm hoping for some blessing from some people on the linux-omap list
-for that. However can we possibly just stack the first two patches to
-get the API in? This will make it easier to fixup the omap hooks if
-they don't get in.
-
--- Mike
-
-> Still I Iike this interface and I could imagine others hook into it as well,
-> for whatever has to be cpu cgroup accounted.
->
-> My two cents...,
->
->     Thomas
-> --
-> To unsubscribe from this list: send the line "unsubscribe cpufreq" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
