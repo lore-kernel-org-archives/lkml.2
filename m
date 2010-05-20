@@ -1,76 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755081Ab0ETKu5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:50:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:49839 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab0ETKuz convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:50:55 -0400
-Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to
- push model
-From: Peter Zijlstra <peterz@infradead.org>
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@linux.jf.intel.com>,
-       Venkatesh Pallipadi <venki@google.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
-       LKML <linux-kernel@vger.kernel.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Nigel Cunningham <ncunningham@crca.org.au>,
-       David Miller <davem@davemloft.net>, Jens Axboe <jens.axboe@oracle.com>
-In-Reply-To: <20100517182726.089700767@sbs-t61.sc.intel.com>
-References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 May 2010 12:50:21 +0200
-Message-ID: <1274352621.5605.14017.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1752075Ab0ETKwG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:52:06 -0400
+Received: from cantor.suse.de ([195.135.220.2]:60503 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751614Ab0ETKwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 06:52:04 -0400
+From: Thomas Renninger <trenn@suse.de>
+Organization: SUSE Products GmbH
+To: Peter Zijlstra <peterz@infradead.org>
+Subject: Re: [PATCH 2/2] scheduler: cgroups cpuaccouting: Make cpuusage atomic
+Date: Thu, 20 May 2010 12:53:08 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.31.12-0.2-desktop; KDE/4.4.3; x86_64; ; )
+Cc: mike@android.com, linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com,
+       menage@google.com, containers@lists.linux-foundation.org, mingo@elte.hu
+References: <1274264877.5605.10541.camel@twins> <1274295539-7798-3-git-send-email-trenn@suse.de> <1274295743.1674.1545.camel@laptop>
+In-Reply-To: <1274295743.1674.1545.camel@laptop>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005201253.08904.trenn@suse.de>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 11:27 -0700, Suresh Siddha wrote:
-> This is an updated version of patchset which is posted earlier at
-> http://lkml.org/lkml/2009/12/10/470
+On Wednesday 19 May 2010 21:02:23 Peter Zijlstra wrote:
+> On Wed, 2010-05-19 at 20:58 +0200, Thomas Renninger wrote:
+> > and avoid locking on 32 bit.
+> > This resolves an ugly dependency in cgroups_cpuaccount.c
+> > to per_cpu runqueues lock variable.
 > 
-> Description:
-> Existing nohz idle load balance logic uses the pull model, with one
-> idle load balancer CPU nominated on any partially idle system and that
-> balancer CPU not going into nohz mode. With the periodic tick, the
-> balancer does the idle balancing on behalf of all the CPUs in nohz mode.
-> 
-> This is not very optimal and has few issues:
-> * the balancer will continue to have periodic ticks and wakeup
->   frequently (HZ rate), even though it may not have any rebalancing to do on
->   behalf of any of the idle CPUs.
-> * On x86 and CPUs that have APIC timer stoppage on idle CPUs, this periodic
->   wakeup can result in an additional interrupt on a CPU doing the timer
->   broadcast.
-> 
-> The alternative is to have a push model, where all idle CPUs can enter nohz
-> mode and any busy CPU kicks one of the idle CPUs to take care of idle
-> balancing on behalf of a group of idle CPUs.
-> 
-> Following patches switches idle load balancer to this push approach.
-> 
-> Updates from the previous version:
-> 
-> * Busy CPU uses send_remote_softirq() for invoking SCHED_SOFTIRQ on the
->   idle load balancing cpu, which does the load balancing on behalf of
->   all the idle CPUs.
-> 
-> * Dropped the per NUMA node nohz load balancing as it doesn't detect
->   certain imbalance scenarios. This will be addressed later.
+> While I totally agree with the sentiments here, atomic64_t isn't
+> available on all 32bit archs and is _terribly_ expensive on ARCH=i386.
 
-Looks good.
+Please ignore the 2nd patch.
+If nobody objects about the creation of kernel/sched.h which should get
+used for further cleanups IMO, the first patch should get in.
+I thought a bit about it, but taking the per_cpu rq lock is the most sane
+thing I could think of.
 
-I think we want to keep init_remote_softirq_csd() and a function that
-directly triggers the relevant softirq and make the networking code and
-the block layer use that if possible -- and axe the rest of the
-send_remote_softirq() infrastructure.
+Here is a fix (bug always was there), for "on top" patching of the first.
+It should also be possible to fix this by exchanging:
+CONFIG_64BIT to CONFIG_X86_64, but removing the #ifdefs should
+be preferred over a lock that is only grabbed via sysfs access...
 
-Also, I think it makes sense to fold patches 4-6.
+Thanks,
 
+    Thomas
 
+scheduler: cgroup_cpuaccount - Fix race on cpuusage
+
+A u64 access is not atomic on all 64 bit archs.
+Especially this:
+*cpuusage += cputime;
+should not necessarily be atomic on non X86_64 archs.
+As cpuacct_cpuusage_{read,write} is only used during
+sysfs access, the lock should be acquired rather rarely
+and the code is nicer as well.
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
+CC: linux-kernel@vger.kernel.org
+CC: mike@android.com
+CC: menage@google.com
+CC: lizf@cn.fujitsu.com
+CC: containers@lists.linux-foundation.org
+CC: mingo@elte.hu
+CC: peterz@infradead.org
+
+diff --git a/kernel/cgroup_cpuaccount.c b/kernel/cgroup_cpuaccount.c
+index 0ad356a..a9e0345 100644
+--- a/kernel/cgroup_cpuaccount.c
++++ b/kernel/cgroup_cpuaccount.c
+@@ -95,16 +95,12 @@ static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
+ 	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+ 	u64 data;
+ 
+-#ifndef CONFIG_64BIT
+ 	/*
+-	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
++	 * Take rq->lock to make 64-bit read safe
+ 	 */
+ 	lock_runqueue(cpu);
+ 	data = *cpuusage;
+ 	unlock_runqueue(cpu);
+-#else
+-	data = *cpuusage;
+-#endif
+ 
+ 	return data;
+ }
+@@ -113,16 +109,12 @@ static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
+ {
+ 	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
+ 
+-#ifndef CONFIG_64BIT
+ 	/*
+-	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
++	 * Take rq->lock to make 64-bit write safe
+ 	 */
+ 	lock_runqueue(cpu);
+ 	*cpuusage = val;
+ 	unlock_runqueue(cpu);
+-#else
+-	*cpuusage = val;
+-#endif
+ }
+ 
+ /* return total cpu usage (in nanoseconds) of a group */
