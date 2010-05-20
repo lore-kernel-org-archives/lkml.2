@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754566Ab0ETHhJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:37:09 -0400
-Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44047 "EHLO
-	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753938Ab0ETHgA (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
+	id S1754090Ab0ETHgA (ORCPT <rfc822;w@1wt.eu>);
 	Thu, 20 May 2010 03:36:00 -0400
+Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50562 "EHLO
+	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751146Ab0ETHfz (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 03:35:55 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V11 6/9] ext4: Copy fs UUID to superblock
-Date: Thu, 20 May 2010 13:05:35 +0530
-Message-Id: <1274340938-29628-7-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V11 5/9] vfs: Support null pathname in readlink
+Date: Thu, 20 May 2010 13:05:34 +0530
+Message-Id: <1274340938-29628-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.78.g212f0
 In-Reply-To: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -23,28 +23,72 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This enables userspace application to find the file system
-UUID using sys_name_to_handle_at syscall
+From: NeilBrown <neilb@suse.de>
 
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+This enables to use readlink to get the link target name
+from a file descriptor point to the link. This can be used
+with open_by_handle syscall that returns a file descriptor for a link.
+We can then use this file descriptor to get the target name.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/ext4/super.c |    2 ++
- 1 files changed, 2 insertions(+), 0 deletions(-)
+ fs/stat.c |   30 ++++++++++++++++++++++--------
+ 1 files changed, 22 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index e14d22c..02ba21b 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -2828,6 +2828,8 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- 	sb->s_qcop = &ext4_qctl_operations;
- 	sb->dq_op = &ext4_quota_operations;
- #endif
-+	memcpy(sb->s_uuid, es->s_uuid, sizeof(es->s_uuid));
+diff --git a/fs/stat.c b/fs/stat.c
+index c4ecd52..49b95a7 100644
+--- a/fs/stat.c
++++ b/fs/stat.c
+@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
+ SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
+ 		char __user *, buf, int, bufsiz)
+ {
+-	struct path path;
+-	int error;
++	int error = 0;
++	struct path path, *pp;
++	struct file *file = NULL;
+ 
+ 	if (bufsiz <= 0)
+ 		return -EINVAL;
+ 
+-	error = user_path_at(dfd, pathname, 0, &path);
++	if (pathname == NULL && dfd != AT_FDCWD) {
++		file = fget(dfd);
 +
- 	INIT_LIST_HEAD(&sbi->s_orphan); /* unlinked but open files */
- 	mutex_init(&sbi->s_orphan_lock);
- 	mutex_init(&sbi->s_resize_lock);
++		if (file)
++			pp = &file->f_path;
++		else
++			error = -EBADF;
++	} else {
++		error = user_path_at(dfd, pathname, 0, &path);
++		pp = &path;
++	}
+ 	if (!error) {
+-		struct inode *inode = path.dentry->d_inode;
++		struct inode *inode = pp->dentry->d_inode;
+ 
+ 		error = -EINVAL;
+ 		if (inode->i_op->readlink) {
+-			error = security_inode_readlink(path.dentry);
++			error = security_inode_readlink(pp->dentry);
+ 			if (!error) {
+-				touch_atime(path.mnt, path.dentry);
+-				error = inode->i_op->readlink(path.dentry,
++				touch_atime(pp->mnt, pp->dentry);
++				error = inode->i_op->readlink(pp->dentry,
+ 							      buf, bufsiz);
+ 			}
+ 		}
+-		path_put(&path);
++		if (file)
++			fput(file);
++		else
++			path_put(&path);
+ 	}
+ 	return error;
+ }
 -- 
 1.7.1.78.g212f0
 
