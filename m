@@ -1,45 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754604Ab0ETRMc (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 13:12:32 -0400
-Received: from moutng.kundenserver.de ([212.227.17.9]:63259 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754166Ab0ETRMb (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 13:12:31 -0400
-Date: Thu, 20 May 2010 19:12:30 +0200
-From: Heinz Diehl <htd@fancy-poultry.org>
-To: linux-kernel@vger.kernel.org
-Subject: Re: RFC: dirty_ratio back to 40%
-Message-ID: <20100520171230.GA6910@fancy-poultry.org>
-References: <4BF51B0A.1050901@redhat.com>
- <20100520122919.GA3420@fancy-poultry.org>
- <4BF53D8B.5090407@rsk.demon.co.uk>
+	id S1754800Ab0ETRNL (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 13:13:11 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43024 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754502Ab0ETRNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 13:13:08 -0400
+Date: Thu, 20 May 2010 19:13:06 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Don Prince <dhprince-devel@yahoo.co.uk>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [GIT] HID
+In-Reply-To: <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
+Message-ID: <alpine.LNX.2.00.1005201905320.28092@pobox.suse.cz>
+References: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz> <alpine.LFD.2.00.1005200912540.23538@i5.linux-foundation.org> <alpine.LFD.2.00.1005200922020.23538@i5.linux-foundation.org> <alpine.LNX.2.00.1005201834190.28092@pobox.suse.cz>
+ <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF53D8B.5090407@rsk.demon.co.uk>
-X-Accept-Language: no,dk,se,en,de
-Organization: private site
-X-OpenPGP-KeyID: 0xA9353F12
-X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
-X-OpenPGP-URL: http://www.fritha.org/htd.asc
-User-Agent: Mutt/1.5.20+20100519 (GNU/Linux)
-X-Provags-ID: V01U2FsdGVkX18hfAXogarWmw9onmGY+5Vo4+QIrxnahAmIrB8
- J5sh9RifFfbSWUzDlbEpTbu54Zjawwv6A8gO98SUtTcH65zQBV
- 1PoGQe6PpFrJ/M0gFCMnA==
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.05.2010, Richard Kennedy wrote: 
+On Thu, 20 May 2010, Linus Torvalds wrote:
 
-> But it's interesting that you find lowering the dirty_ratio helpful. Do
-> you have any benchmark results you can share?
+> Well, I look at something like "hid-ortec.c", and it has basically a few 
+> lines of code, much of it __init, and I say "ok, that makes sense to not 
+> even ask about".
+> 
+> So I can see your argument. That said, I've never even _heard_ of ortek. 
+> Maybe it's some common chip and I use it every day. But even for something 
+> that small, I'd wonder how common they really are.
+> 
+> So that kensington driver is a good example of something where I do think 
+> it makes sense to make it default. It's small, and kensington is a big 
+> name.
+> 
+> But when the driver is several hundred lines, and the text size is 
+> probably in the kilobytes (I didn't compile that new driver, but even the 
+> trivial ones are a few hundred bytes) _and_ the driver is for something 
+> I've never even heard about, then I really think it shouldn't be enabled 
+> without asking.
 
-No, unfortunately not. My machine is mainly designed to run squid,
-and it suffered from very long stalls. After posting the problem, I was
-advised to read about vm.dirty_ratio and vm.dirty_background_ratio, and
-lower these. I tried several combinations, and with 4/2, the stalls
-vanished completely.
+Well the borderline is still a little bit vague, but I see your point.
 
+Having the things we used to support even before the quirk splitup 
+compiled without asking, and separating the rest of the drivers into 
+'really really really small and trivial, or common enough' and 'the rest' 
+makes sense. 
+And explicitly asking for 'the rest'.
+
+This would basically mean removing the 'EMBEDDED' crap from a few drivers 
+in Kconfig. Do you want me to fix that now and redo the pull request, or 
+are you going to pull it anyway and I will rearrange that in 2nd merge 
+round later?
+
+-- 
+Jiri Kosina
+SUSE Labs, Novell Inc.
