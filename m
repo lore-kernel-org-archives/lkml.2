@@ -1,113 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755042Ab0ETLnI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:43:08 -0400
-Received: from mx3.mail.elte.hu ([157.181.1.138]:50201 "EHLO mx3.mail.elte.hu"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753347Ab0ETLnF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:43:05 -0400
-Date: Thu, 20 May 2010 13:42:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFD] Future tracing/instrumentation directions
-Message-ID: <20100520114218.GA15531@elte.hu>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com>
- <20100520093131.GA30929@elte.hu>
- <20100520100732.GD5309@nowhere>
- <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+	id S1755117Ab0ETLnq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:43:46 -0400
+Received: from out5.smtp.messagingengine.com ([66.111.4.29]:57021 "EHLO
+	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752737Ab0ETLnp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 07:43:45 -0400
+X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 May 2010 07:43:45 EDT
+X-Sasl-enc: Bk0InpfzbyHrsGgW7iBh8HykXCvG40LLrjoLw3WBMODZ 1274355352
+Subject: Re: [PATCH 2/8] autofs: Pushdown the bkl from ioctl
+From: Ian Kent <raven@themaw.net>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Autofs <autofs@linux.kernel.org>,
+       Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
+       Arnd Bergmann <arnd@arndb.de>
+In-Reply-To: <4BF4445F.9040104@zytor.com>
+References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com>
+	 <1274289855-10001-3-git-send-regression-fweisbec@gmail.com>
+	 <4BF4279C.2000805@zytor.com> <20100519180832.GA9752@nowhere>
+	 <4BF42A5E.6060503@zytor.com> <20100519190307.GC9752@nowhere>
+	 <4BF4445F.9040104@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 May 2010 19:35:45 +0800
+Message-ID: <1274355346.2264.17.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-* Thomas Gleixner <tglx@linutronix.de> wrote:
-
-> On Thu, 20 May 2010, Frederic Weisbecker wrote:
-> > On Thu, May 20, 2010 at 11:31:31AM +0200, Ingo Molnar wrote:
-> > >  - [ While it's still a long way off, if this trend continues
-> > >      we eventually might even be able to get rid of the 
-> > >      /debug/tracing/ temporary debug API and get rid of 
-> > >      the ugly in-kernel pretty-printing bits. This is 
-> > >      good: it may make Andrew very happy for a change ;-)
-> > > 
-> > >      The main detail here to be careful of is that lots of
-> > >      people are fond of the simplicity of the 
-> > >      /debug/tracing/ debug UI, so when we replace it we 
-> > >      want to do it by keeping that simple workflow (or 
-> > >      best by making it even simpler). I have a few ideas 
-> > >      how to do this.
+On Wed, 2010-05-19 at 13:04 -0700, H. Peter Anvin wrote:
+> On 05/19/2010 12:03 PM, Frederic Weisbecker wrote:
+> >>
+> >> But it's not ... it is locked at that point.  It's not lock*ing*, but it
+> >> is not *unlocked*, either.  Furthermore, it is directly contradicting
+> >> the naming scheme of the ops structure.
+> >>
 > > 
-> > How? We can emulate the /debug/tracing result with something
-> > like perf trace, still that won't replace the immediate
-> > availability of the result of any trace, which makes it
-> > valuable for any simplest workflows.
+> > Would you prefer me to resend a patch?
+> > 
 > 
-> I'm a bit torn about this. I really like the availability of the ascii
-> interface, but if we can come up with a very basic trace binary tool
-> which can be built for deep embedded w/o requiring the world and some
-> more libs to be available, then I might give up my resistance. Ideally
-> it should be done so it can be easily integrated into busybox.
+> Yes, that would be my preference.
 > 
-> I don't care whether I do
-> 
-> echo 1 >/debug/..../XXX/enable
-> cat /debug/tracing/trace
-> 
-> or
-> 
-> perfmini trace enable XXX
-> perfmini trace dump
+> We really need to set a date to kill off autofs3 completely -- I don't
+> care if we rename anything or not -- and add it to feature-removal.txt.
 
-My suggestion for that flow is even shorter:
+Yes, my bad.
+I have to get onto that, sorry.
 
-  trace --enable XXX
-  trace
+Ian
 
-Plus:
-
-  trace --list
-  trace --enable
-  trace --disable
-
-> as long as the tool is built in a way that it does not 
-> need updates when we add trace points or other 
-> functionality to the kernel.
-
-Yeah, most definitely. The sysfs event_source class will 
-ensure that whatever (new) events are available propagate 
-through the tool and are available to it.
-
-Thanks,
-
-	Ingo
