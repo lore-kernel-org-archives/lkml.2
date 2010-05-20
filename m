@@ -1,72 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757271Ab0ETUkK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:40:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:37921 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754419Ab0ETUkG (ORCPT
+	id S1757226Ab0ETUoR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:44:17 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:39737 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754176Ab0ETUoP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:40:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=L1wVmqJarCUQ7euMqXqQYksK4i3EX1HLC4pac80Te3IK0HHaaLlyR8vhswZsh8ZLmC
-         +HoiFWtRcqz49E4VDszxnhoeYM3EiZu6iCggtiE3f3MaNbxfxZ54cyE9C08GD7OjW6iS
-         /oFRCrFlOSRdIPjiUOLDW38/zImCfyRtrQPtQ=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: linux-pcmcia@lists.infradead.org
-Cc: linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH]pacmcia:yena_socket.c Remove extra #ifdef CONFIG_YENTA_TI
-Date: Thu, 20 May 2010 13:40:02 -0700
-Message-Id: <1274388002-2132-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.6.5.2.180.gc5b3e
+	Thu, 20 May 2010 16:44:15 -0400
+Date: Thu, 20 May 2010 13:43:59 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: minskey guo <chaohong_guo@linux.intel.com>
+Cc: linux-mm@kvack.org, prarit@redhat.com, andi.kleen@intel.com,
+       linux-kernel@vger.kernel.org, minskey guo <chaohong.guo@intel.com>,
+       Tejun Heo <tj@kernel.org>, stable@kernel.org
+Subject: Re: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
+Message-Id: <20100520134359.fdfb397e.akpm@linux-foundation.org>
+In-Reply-To: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
+References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Seems pointless to have two #ifdef's with the same
-CONFIG_YENTA_TI.. Remove the extra one and
-move CARDBUS_TYPE_ENE with the others.
+On Tue, 18 May 2010 14:17:22 +0800
+minskey guo <chaohong_guo@linux.intel.com> wrote:
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+> From: minskey guo <chaohong.guo@intel.com>
+> 
+> The operation of "enable CPU to online before memory within a node"
+> fails in some case according to Prarit. The warnings as follows:
+> 
+> Pid: 7440, comm: bash Not tainted 2.6.32 #2
+> Call Trace:
+>  [<ffffffff81155985>] pcpu_alloc+0xa05/0xa70
+>  [<ffffffff81155a20>] __alloc_percpu+0x10/0x20
+>  [<ffffffff81089605>] __create_workqueue_key+0x75/0x280
+>  [<ffffffff8110e050>] ? __build_all_zonelists+0x0/0x5d0
+>  [<ffffffff810c1eba>] stop_machine_create+0x3a/0xb0
+>  [<ffffffff810c1f57>] stop_machine+0x27/0x60
+>  [<ffffffff8110f1a0>] build_all_zonelists+0xd0/0x2b0
+>  [<ffffffff814c1d12>] cpu_up+0xb3/0xe3
+>  [<ffffffff814b3c40>] store_online+0x70/0xa0
+>  [<ffffffff81326100>] sysdev_store+0x20/0x30
+>  [<ffffffff811d29a5>] sysfs_write_file+0xe5/0x170
+>  [<ffffffff81163d28>] vfs_write+0xb8/0x1a0
+>  [<ffffffff810cfd22>] ? audit_syscall_entry+0x252/0x280
+>  [<ffffffff81164761>] sys_write+0x51/0x90
+>  [<ffffffff81013132>] system_call_fastpath+0x16/0x1b
+> Built 4 zonelists in Zone order, mobility grouping on.  Total pages: 12331603
+> PERCPU: allocation failed, size=128 align=64, failed to populate
+> 
+> With "enable CPU to online before memory" patch, when the 1st CPU of
+> an offlined node is being onlined, we build zonelists for that node.
+> If per-cpu area needs to be extended during zonelists building period,
+> alloc_pages_node() will be called. The routine alloc_pages_node() fails
+> on the node in-onlining because the node doesn't have zonelists created
+> yet.
+> 
+> To fix this issue,  we try to alloc memory from current node.
 
----
- drivers/pcmcia/yenta_socket.c |   14 ++++++--------
- 1 files changed, 6 insertions(+), 8 deletions(-)
+How serious is this issue?  Just a warning?  Dead box?
 
-diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
-index 83ace27..5a09bbb 100644
---- a/drivers/pcmcia/yenta_socket.c
-+++ b/drivers/pcmcia/yenta_socket.c
-@@ -880,6 +880,12 @@ static struct cardbus_type cardbus_type[] = {
- 		.restore_state	= ti_restore_state,
- 		.sock_init	= ti_init,
- 	},
-+	[CARDBUS_TYPE_ENE]	= {
-+		.override	= ene_override,
-+		.save_state	= ti_save_state,
-+		.restore_state	= ti_restore_state,
-+		.sock_init	= ti_init,
-+	},
- #endif
- #ifdef CONFIG_YENTA_RICOH
- 	[CARDBUS_TYPE_RICOH]	= {
-@@ -902,14 +908,6 @@ static struct cardbus_type cardbus_type[] = {
- 		.restore_state	= o2micro_restore_state,
- 	},
- #endif
--#ifdef CONFIG_YENTA_TI
--	[CARDBUS_TYPE_ENE]	= {
--		.override	= ene_override,
--		.save_state	= ti_save_state,
--		.restore_state	= ti_restore_state,
--		.sock_init	= ti_init,
--	},
--#endif
- };
- 
- 
--- 
-1.6.5.2.180.gc5b3e
+Because if we want to port this fix into 2.6.34.x, we have a little
+problem.
+
+
+> --- a/mm/percpu.c
+> +++ b/mm/percpu.c
+> @@ -714,13 +714,29 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+
+In linux-next, Tejun has gone and moved pcpu_alloc_pages() into the new
+mm/percpu-vm.c.  So either
+
+a) the -stable guys will need to patch a different file or
+
+b) we apply this fix first and muck up Tejun's tree or
+
+c) the bug isn't very serious so none of this applies.
+
+>  {
+>  	const gfp_t gfp = GFP_KERNEL | __GFP_HIGHMEM | __GFP_COLD;
+>  	unsigned int cpu;
+> +	int nid;
+>  	int i;
+>  
+>  	for_each_possible_cpu(cpu) {
+>  		for (i = page_start; i < page_end; i++) {
+>  			struct page **pagep = &pages[pcpu_page_idx(cpu, i)];
+>  
+> -			*pagep = alloc_pages_node(cpu_to_node(cpu), gfp, 0);
+> +			nid = cpu_to_node(cpu);
+> +
+> +			/*
+> +			 * It is allowable to online a CPU within a NUMA
+> +			 * node which doesn't have onlined local memory.
+> +			 * In this case, we need to create zonelists for
+> +			 * that node when cpu is being onlined. If per-cpu
+> +			 * area needs to be extended at the exact time when
+> +			 * zonelists of that node is being created, we alloc
+> +			 * memory from current node.
+> +			 */
+> +			if ((nid == -1) ||
+> +			    !(node_zonelist(nid, GFP_KERNEL)->_zonerefs->zone))
+> +				nid = numa_node_id();
+> +
+> +			*pagep = alloc_pages_node(nid, gfp, 0);
+>  			if (!*pagep) {
+>  				pcpu_free_pages(chunk, pages, populated,
+>  						page_start, page_end);
 
