@@ -1,39 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753729Ab0ETNcw (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 09:32:52 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38303 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751961Ab0ETNcv (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 09:32:51 -0400
-Date: Thu, 20 May 2010 14:32:37 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Joey Lee <jlee@novell.com>
-Cc: dmitry.torokhov@gmail.com, gregkh@suse.de, mzxreary@0pointer.de,
-       greg@kroah.com, rpurdie@linux.intel.com, linux-kernel@vger.kernel.org,
-       platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state with
-	BIOS when function key pressed
-Message-ID: <20100520133237.GC15356@srcf.ucam.org>
-References: <4BEE602B020000230001928D@novprvlin0050.provo.novell.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1754704Ab0ETNje (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 09:39:34 -0400
+Received: from novprvlin0050.provo.novell.com ([137.65.248.33]:21124 "EHLO
+	novprvlin0050.provo.novell.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754547Ab0ETNjc (ORCPT
+	<rfc822;groupwise-jlee@novell.com:7:1>);
+	Thu, 20 May 2010 09:39:32 -0400
+Message-Id: <4BF5C82F0200002300019A4B@novprvlin0050.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Thu, 20 May 2010 07:39:27 -0600
+From: "Joey Lee" <jlee@novell.com>
+To: <mjg59@srcf.ucam.org>
+Cc: <mzxreary@0pointer.de>, <dmitry.torokhov@gmail.com>, <greg@kroah.com>,
+       <rpurdie@linux.intel.com>, <gregkh@suse.de>,
+       <linux-kernel@vger.kernel.org>, <platform-driver-x86@vger.kernel.org>
+Subject: Re: [PATCH 4/4] msi-laptop: Add i8042 filter to sync sw state
+	 with BIOS when function key pressed
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Content-Disposition: inline
-In-Reply-To: <4BEE602B020000230001928D@novprvlin0050.provo.novell.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Joey,
+Hi Mattew, 
 
-This patch didn't apply cleanly, but I've fixed it up by hand. I've also 
-applied the rest of the patchset.
+於 四，2010-05-20 於 14:32 +0100，Matthew Garrett 提到：
+> Hi Joey,
+> 
+> This patch didn't apply cleanly, but I've fixed it up by hand. I've also 
+> applied the rest of the patchset.
+> 
 
-Thanks,
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+Thank's for your help! :-)
+
+
+Joey Lee
+
