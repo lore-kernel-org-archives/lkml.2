@@ -1,55 +1,116 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754445Ab0ETBv5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 21:51:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:43675 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751495Ab0ETBv4 (ORCPT
+	id S1754671Ab0ETB4L (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 21:56:11 -0400
+Received: from mail.openrapids.net ([64.15.138.104]:37235 "EHLO
+	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753523Ab0ETB4J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 21:51:56 -0400
-Message-ID: <4BF495B6.6030804@infradead.org>
-Date: Wed, 19 May 2010 22:51:50 -0300
-From: Mauro Carvalho Chehab <mchehab@infradead.org>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	Wed, 19 May 2010 21:56:09 -0400
+Date: Wed, 19 May 2010 21:56:05 -0400
+From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com, Michael Kerrisk <mtk.manpages@gmail.com>,
+       linux-man@vger.kernel.org
+Subject: Re: Unexpected splice "always copy" behavior observed
+Message-ID: <20100520015605.GA28411@Krystal>
+References: <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal> <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org> <20100519214905.GA22486@Krystal> <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
 MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the v4l-dvb tree
-References: <20100520114543.898f02c7.sfr@canb.auug.org.au>
-In-Reply-To: <20100520114543.898f02c7.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <mchehab@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
+X-Editor: vi
+X-Info: http://www.efficios.com
+X-Operating-System: Linux/2.6.26-2-686 (i686)
+X-Uptime: 21:41:34 up 117 days,  4:18,  9 users,  load average: 0.30, 0.34,
+	0.28
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi Mauro,
+* Linus Torvalds (torvalds@linux-foundation.org) wrote:
 > 
-> After merging the v4l-dvb tree, today's linux-next build (powerpc
-> ppc64_defconfig) failed like this:
 > 
-> drivers/input/evdev.c: In function 'evdev_do_ioctl':
-> drivers/input/evdev.c:596: error: duplicate case value
-> drivers/input/evdev.c:574: error: previously used here
+> On Wed, 19 May 2010, Mathieu Desnoyers wrote:
+> > 
+> > A faced a small counter-intuitive fadvise behavior though.
+> > 
+> >   posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+> > 
+> > only seems to affect the parts of a file that already exist.
 > 
-> Caused by commit ff2956560d97ccdd2c54cb9d0fdd7eb78c113ba9 ("V4L/DVB:
-> input: Add support for EVIO[CS]GKEYCODEBIG").
+> POSIX_FADV_DONTNEED does not have _any_ long-term behavior. So when you do 
+> a 
 > 
-> Please build test.
+> 	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 > 
-> I have used the v4l-dvb tree from next-20100519 for today.
+> it only affects the pages that are there right now, it has no effect on 
+> any future actions.
 
-Yeah, I noticed that. It was due to a bad merge conflict I did. As there's
-a bug at the new big getkeycode, I've removed those input changes from
-linux-next for a while, since I wanted to send upstream the patches
-that I currently have. I've already pushed the new version.
+Hrm, someone should tell the author of posix_fadvise(2) about the benefit of
+some clarifications (I'm CCing the manpage maintainer)
 
-I'll probably add later the input patches, if I can fix the bug today.
+Quoting man posix_fadvise, annotated:
+
+
+       Programs  can  use  posix_fadvise()  to announce an intention to access
+       file data in a specific pattern in the future, thus allowing the kernel
+       to perform appropriate optimizations.
+
+This only talks about future accesses, not past. From what I understand, you are
+saying that in the writeback case it's better to think of posix_fadvise() as
+applying to pages that have been written in the past too.
+
+
+       The  advice  applies to a (not necessarily existent) region starting at
+       offset and extending for len bytes (or until the end of the file if len
+       is 0) within the file referred to by fd.  The advice is not binding; it
+       merely constitutes an expectation on behalf of the application.
+ 
+This could be enhanced by saying that it applies up to the current file size if
+0 is specified, and does not extend as the file grows. The formulation as it is
+currently stated is a bit misleading.
+
+> > So after each splice() that appends to the file, I have to call fadvise 
+> > again. I would have expected the "0" len parameter to tell the kernel to 
+> > apply the hint to the whole file, even parts that will be added in the 
+> > future.
+> 
+> It's not a hint about future at all. It's a "throw current pages away".
+> 
+> I would also suggest against doing that kind of thing in a streaming write 
+> situation. The behavior for dirty page writeback is _not_ welldefined, and 
+> if you do POSIX_FADV_DONTNEED, I would suggest you do it as part of that 
+> writeback logic, ie you do it only on ranges that you have just waited on.
+> 
+> IOW, in my example, you'd couple the
+> 
+> 	sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> 
+> with a
+> 
+> 	posix_fadvise(fd, (index-1)*BUFSIZE, BUFSIZE, POSIX_FADV_DONTNEED);
+> 
+> afterwards to throw out the pages that you just waited for.
+
+OK, so it's better to do the writeback as part of sync_file_range rather than
+relying on the dirty page writeback to do it for us. I guess the I/O scheduler
+will have more room to ensure that writes are contiguous.
+
+Thanks for the feedback,
+
+Mathieu
 
 -- 
-
-Cheers,
-Mauro
+Mathieu Desnoyers
+Operating System Efficiency R&D Consultant
+EfficiOS Inc.
+http://www.efficios.com
