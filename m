@@ -1,110 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752075Ab0ETKwG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:52:06 -0400
-Received: from cantor.suse.de ([195.135.220.2]:60503 "EHLO mx1.suse.de"
+	id S1755437Ab0ETKwx (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:52:53 -0400
+Received: from www.tglx.de ([62.245.132.106]:49874 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751614Ab0ETKwE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:52:04 -0400
-From: Thomas Renninger <trenn@suse.de>
-Organization: SUSE Products GmbH
-To: Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH 2/2] scheduler: cgroups cpuaccouting: Make cpuusage atomic
-Date: Thu, 20 May 2010 12:53:08 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.31.12-0.2-desktop; KDE/4.4.3; x86_64; ; )
-Cc: mike@android.com, linux-kernel@vger.kernel.org, lizf@cn.fujitsu.com,
-       menage@google.com, containers@lists.linux-foundation.org, mingo@elte.hu
-References: <1274264877.5605.10541.camel@twins> <1274295539-7798-3-git-send-email-trenn@suse.de> <1274295743.1674.1545.camel@laptop>
-In-Reply-To: <1274295743.1674.1545.camel@laptop>
+	id S1751429Ab0ETKww (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 06:52:52 -0400
+Date: Thu, 20 May 2010 12:52:45 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+cc: Sujit K M <sjt.kar@gmail.com>, linux-rt-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after
+ console_init
+In-Reply-To: <201005201423.09075@zigzag.lvk.cs.msu.su>
+Message-ID: <alpine.LFD.2.00.1005201225170.3368@localhost.localdomain>
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com> <AANLkTil18TnOR9D-dSFsSFA74Q4UFnldrGLhG1H4jwhf@mail.gmail.com> <alpine.LFD.2.00.1005201142360.3368@localhost.localdomain> <201005201423.09075@zigzag.lvk.cs.msu.su>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005201253.08904.trenn@suse.de>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 19 May 2010 21:02:23 Peter Zijlstra wrote:
-> On Wed, 2010-05-19 at 20:58 +0200, Thomas Renninger wrote:
-> > and avoid locking on 32 bit.
-> > This resolves an ugly dependency in cgroups_cpuaccount.c
-> > to per_cpu runqueues lock variable.
+On Thu, 20 May 2010, Nikita V. Youshchenko wrote:
+
+> > > >>> Well, obviously it's unsafe if you remove safety checks. And if
+> > > >>> you care to look at the changelog of kernel/printk.c you'll find
+> > > >>> out why.
+> > > >>
+> > > >> Hmm... did a quick look and could not find anything related there.
+> > > >> Could you please give a pointer?
+> >
+> > Gah, yes. The changelog of the commit is not really helpful. Let me
+> > explain:
+> >
+> > The console drivers might take locks, which are converted to "sleeping
+> > locks" in preempt-rt. As a result we cannot call into those drivers
+> > from atomic contexts. And that's what the checks in the printk code
+> > prevent.
 > 
-> While I totally agree with the sentiments here, atomic64_t isn't
-> available on all 32bit archs and is _terribly_ expensive on ARCH=i386.
+> I've already understood that when looking at that code some weeks ago.
+> 
+> Still questions:
+> 
+> 1) why does that prevent klogd from working?
 
-Please ignore the 2nd patch.
-If nobody objects about the creation of kernel/sched.h which should get
-used for further cleanups IMO, the first patch should get in.
-I thought a bit about it, but taking the per_cpu rq lock is the most sane
-thing I could think of.
+Patch below.
+ 
+> 2) why does print not pass to non-CON_ATOMIC even if called from non-atomic 
+> context?
 
-Here is a fix (bug always was there), for "on top" patching of the first.
-It should also be possible to fix this by exchanging:
-CONFIG_64BIT to CONFIG_X86_64, but removing the #ifdefs should
-be preferred over a lock that is only grabbed via sysfs access...
+That's a good question. We call release_console_mutex() always with
+interrupts disabled from printk(), so that atomic check triggers. Have
+to look deeper to figure out whether we can enable interupts there,
+probably not, but with the klogd fix this should not matter.
+ 
+> 3) I believe that 8250 serial driver is aware of preempt-rt.
+> Could you please comment on my "2.6.33.2-rt13: RFC: fix serial console" 
+> post to linux-rt-users list 
+> (http://eeek.borgchat.net/lists/linux-rt-users/msg05569.html)
+
+While that can work due to the trylock, it can introduce massive
+latencies just in case some driver reports a status change or what
+ever.
 
 Thanks,
 
-    Thomas
+	tglx
+----
+Subject: printk: Fix missing klogd wakeup
+From: Thomas Gleixner <tglx@linutronix.de>
+Date: Thu, 20 May 2010 12:33:00 +0200
 
-scheduler: cgroup_cpuaccount - Fix race on cpuusage
+The RT check for !in_atomic() && !irqs_disabled()) to prevent the
+klogd wakeup is actually bogus as wake_up_klogd() is just setting the
+needs print flag which is then evaluated from printk_tick() which does
+the actual wakeup.
 
-A u64 access is not atomic on all 64 bit archs.
-Especially this:
-*cpuusage += cputime;
-should not necessarily be atomic on non X86_64 archs.
-As cpuacct_cpuusage_{read,write} is only used during
-sysfs access, the lock should be acquired rather rarely
-and the code is nicer as well.
+Remove the double raw_spin_unlock_irqrestore(&logbuf_lock, flags)
+while at it.
 
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-CC: linux-kernel@vger.kernel.org
-CC: mike@android.com
-CC: menage@google.com
-CC: lizf@cn.fujitsu.com
-CC: containers@lists.linux-foundation.org
-CC: mingo@elte.hu
-CC: peterz@infradead.org
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+---
+ kernel/printk.c |   10 ----------
+ 1 file changed, 10 deletions(-)
 
-diff --git a/kernel/cgroup_cpuaccount.c b/kernel/cgroup_cpuaccount.c
-index 0ad356a..a9e0345 100644
---- a/kernel/cgroup_cpuaccount.c
-+++ b/kernel/cgroup_cpuaccount.c
-@@ -95,16 +95,12 @@ static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
- 	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
- 	u64 data;
+Index: linux-2.6-tip/kernel/printk.c
+===================================================================
+--- linux-2.6-tip.orig/kernel/printk.c
++++ linux-2.6-tip/kernel/printk.c
+@@ -1084,18 +1084,8 @@ void release_console_mutex(void)
+ #endif
+ 	}
+ 	console_locked = 0;
+-	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+ 	mutex_unlock(&console_mutex);
  
--#ifndef CONFIG_64BIT
- 	/*
--	 * Take rq->lock to make 64-bit read safe on 32-bit platforms.
-+	 * Take rq->lock to make 64-bit read safe
- 	 */
- 	lock_runqueue(cpu);
- 	data = *cpuusage;
- 	unlock_runqueue(cpu);
--#else
--	data = *cpuusage;
+-	/*
+-	 * On PREEMPT_RT kernels __wake_up may sleep, so wake syslogd
+-	 * up only if we are in a preemptible section. We normally dont
+-	 * printk from non-preemptible sections so this is for the emergency
+-	 * case only.
+-	 */
+-#ifdef CONFIG_PREEMPT_RT
+-	if (!in_atomic() && !irqs_disabled())
 -#endif
- 
- 	return data;
+ 	if (wake_klogd)
+ 		wake_up_klogd();
  }
-@@ -113,16 +109,12 @@ static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
- {
- 	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
- 
--#ifndef CONFIG_64BIT
- 	/*
--	 * Take rq->lock to make 64-bit write safe on 32-bit platforms.
-+	 * Take rq->lock to make 64-bit write safe
- 	 */
- 	lock_runqueue(cpu);
- 	*cpuusage = val;
- 	unlock_runqueue(cpu);
--#else
--	*cpuusage = val;
--#endif
- }
- 
- /* return total cpu usage (in nanoseconds) of a group */
+
+
