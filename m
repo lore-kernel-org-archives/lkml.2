@@ -1,180 +1,153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757262Ab0ETUMq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:12:46 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:47846 "EHLO mx2.suse.de"
+	id S1753997Ab0ETUPV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:15:21 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:57455 "EHLO mx2.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756359Ab0ETUMn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:12:43 -0400
-Date: Thu, 20 May 2010 22:12:32 +0200
-From: Jan Kara <jack@suse.cz>
-To: Dave Chinner <david@fromorbit.com>
-Cc: Nick Piggin <npiggin@suse.de>, Josef Bacik <josef@redhat.com>,
-       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
-       hch@infradead.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100520201232.GP3395@quack.suse.cz>
-References: <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
- <20100514064145.GJ13617@dastard>
- <20100514072219.GC4706@laptop>
- <20100514083821.GL13617@dastard>
- <20100518063647.GD2516@laptop>
- <20100518080503.GF2150@dastard>
- <20100518104351.GF2516@laptop>
- <20100518122714.GG2150@dastard>
- <20100518150912.GI2516@laptop>
- <20100519235054.GS8120@dastard>
+	id S1751555Ab0ETUPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 16:15:19 -0400
+Date: Thu, 20 May 2010 22:14:18 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Greg KH <greg@kroah.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
+       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       "eranian@gmail.com" <eranian@gmail.com>,
+       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
+       "arjan@linux.intel.com" <arjan@linux.intel.com>,
+       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Russell King <rmk+kernel@arm.linux.org.uk>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
+       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
+Message-ID: <20100520201418.GB11470@elte.hu>
+References: <1274233602.3036.84.camel@localhost>
+ <20100518200524.GA20223@kroah.com>
+ <1274236496.3603.22.camel@minggr.sh.intel.com>
+ <20100519024823.GA25229@kroah.com>
+ <1274253276.5605.10124.camel@twins>
+ <20100520184213.GB21030@kroah.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100519235054.GS8120@dastard>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100520184213.GB21030@kroah.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 20-05-10 09:50:54, Dave Chinner wrote:
-> On Wed, May 19, 2010 at 01:09:12AM +1000, Nick Piggin wrote:
-> > On Tue, May 18, 2010 at 10:27:14PM +1000, Dave Chinner wrote:
-> > > On Tue, May 18, 2010 at 08:43:51PM +1000, Nick Piggin wrote:
-> > > > On Tue, May 18, 2010 at 06:05:03PM +1000, Dave Chinner wrote:
-> > > > > On Tue, May 18, 2010 at 04:36:47PM +1000, Nick Piggin wrote:
-> > > > > > Well you could do a large span block allocation at the beginning,
-> > > > > > and then dirty the pagecache one by one like we do right now.
-> > > > > 
-> > > > > The problem is that if we fail to allocate a page (e.g.  ENOMEM) or
-> > > > > fail the copy (EFAULT) after the block allocation, we have to undo
-> > > > > the allocation we have already completed. If we don't, we leave
-> > > > > uninitialisaed allocations on disk that will expose stale data.
-> > > > > 
-> > > > > In the second case (EFAULT) we might be able to zero the pages to
-> > > > > avoid punching out blocks, but the first case where pages can't be
-> > > > > allocated to cover the block allocated range makes it very
-> > > > > difficult without being able to punch holes in allocated block
-> > > > > ranges.
-> > > > > 
-> > > > > AFAIK, only XFS and OCFS2 currently support punching out arbitrary
-> > > > > ranges of allocated blocks from an inode - there is not VFS method
-> > > > > for it, just an ioctl (XFS_IOC_UNRESVSP).
-> > > > > 
-> > > > > Hence the way to avoid needing hole punching is to allocate and lock
-> > > > > down all the pages into the page cache fіrst, then do the copy so
-> > > > > they fail before the allocation is done if they are going to fail.
-> > > > > That makes it much, much easier to handle failures....
-> > > > 
-> > > > So it is just a matter of what is exposed as a vfs interface?
-> > > 
-> > > More a matter of utilising the functionality most filesystems
-> > > already have and minimising the amount of churn in critical areas of
-> > > filesytsem code. Hole punching is not simple, anѕ bugs will likely
-> > > result in a corrupted filesystem.  And the hole punching will only
-> > > occur in a hard to trigger corner case, so it's likely that bugs
-> > > will go undetected and filesystems will suffer from random,
-> > > impossible to track down corruptions as a result.
-> > > 
-> > > In comparison, adding reserve/unreserve functionality might cause
-> > > block accounting issues if there is a bug, but it won't cause
-> > > on-disk corruption that results in data loss.  Hole punching is not
-> > > simple or easy - it's a damn complex way to handle errors and if
-> > > that's all it's required for then we've failed already.
-> > 
-> > As I said, we can have a dumb fallback path for filesystems that
-> > don't implement hole punching. Clear the blocks past i size, and
-> > zero out the allocated but not initialized blocks.
-> > 
-> > There does not have to be pagecache allocated in order to do this,
-> > you could do direct IO from the zero page in order to do it.
-> 
-> I don't see that as a good solution - it's once again a fairly
-> complex way of dealing with the problem, especially as it now means
-> that direct io would fall back to buffered which would fall back to
-> direct IO....
-> 
-> > Hole punching is not only useful there, it is already exposed to
-> > userspace via MADV_REMOVE.
-> 
-> That interface is *totally broken*. It has all the same problems as
-> vmtruncate() for removing file blocks (because it uses vmtruncate).
-> It also has the fundamental problem of being called un the mmap_sem,
-> which means that inode locks and therefore de-allocation cannot be
-> executed without the possibility of deadlocks. Fundamentally, hole
-> punching is an inode operation, not a VM operation....
-> 
-> 
-> > > > > > Basically, once pagecache is marked uptodate, I don't think we should
-> > > > > > ever put maybe-invalid data into it -- the way to do it is to invalidate
-> > > > > > that page and put a *new* page in there.
-> > > > > 
-> > > > > Ok, so lets do that...
-> > > > > 
-> > > > > > Why? Because user mappings are just one problem, but once you had a
-> > > > > > user mapping, you can have been subject to get_user_pages, so it could
-> > > > > > be in the middle of a DMA operation or something.
-> > > > > 
-> > > > > ... because we already know this behaviour causes problems for
-> > > > > high end enterprise level features like hardware checksumming IO
-> > > > > paths.
-> > > > > 
-> > > > > Hence it seems that a multipage write needs to:
-> > > > > 
-> > > > > 	1. allocate new pages
-> > > > > 	2. attach bufferheads/mapping structures to pages (if required)
-> > > > > 	3. copy data into pages
-> > > > > 	4. allocate space
-> > > > > 	5. for each old page in the range:
-> > > > > 		lock page
-> > > > > 		invalidate mappings
-> > > > > 		clear page uptodate flag
-> > > > > 		remove page from page cache
-> > > > > 	6. for each new page:
-> > > > > 		map new page to allocated space
-> > > > > 		lock new page
-> > > > > 		insert new page into pagecache
-> > > > > 		update new page state (write_end equivalent)
-> > > > > 		unlock new page
-> > > > > 	7. free old pages
-> > > > > 
-> > > > > Steps 1-4 can all fail, and can all be backed out from without
-> > > > > changing the current state. Steps 5-7 can't fail AFAICT, so we
-> > > > > should be able to run this safely after the allocation without
-> > > > > needing significant error unwinding...
-> > > > > 
-> > > > > Thoughts?
-> > > > 
-> > > > Possibly. The importance of hot cache is reduced, because we are
-> > > > doing full-page copies, and bulk copies, by definition. But it
-> > > > could still be an issue. The allocations and deallocations could
-> > > > cost a little as well.
-> > > 
-> > > They will cost far less than the reduction in allocation overhead
-> > > saves us, and there are potential optimisations there 
-> > 
-> > An API that doesn't require that, though, should be less overhead
-> > and simpler.
-> > 
-> > Is it really going to be a problem to implement block hole punching
-> > in ext4 and gfs2?
-> 
-> I can't follow the ext4 code - it's an intricate maze of weird entry
-> and exit points, so I'm not even going to attempt to comment on it.
-  Hmm, I was thinking about it and I see two options how to get out
-of problems:
-  a) Filesystems which are not able to handle hole punching will allow
-     multipage writes only after EOF (which can be easily undone by
-     truncate in case of failure). That should actually cover lots of
-     cases we are interested in (I don't expect multipage writes to holes
-     to be a common case).
-  b) E.g. ext4 can do even without hole punching. It can allocate extent
-     as 'unwritten' and when something during the write fails, it just
-     leaves the extent allocated and the 'unwritten' flag makes sure that
-     any read will see zeros. I suppose that other filesystems that care
-     about multipage writes are able to do similar things (e.g. btrfs can
-     do the same as far as I remember, I'm not sure about gfs2).
 
+* Greg KH <greg@kroah.com> wrote:
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+> [...]
+>
+> I can always knock up a eventfs for you do mount at /sys/kernel/events/ or 
+> something if you want :)
+
+eventfs was my first idea, until Peter convinced me that we want sysfs :-)
+
+One important aspect would be to move it into the physical topology. Graphics 
+card? It might have events. PCI device? It might have events. Southbridge? It 
+might have a PMU and events. CPU? It has a PMU.
+
+Especially when it comes to complex physical topologies on larger systems, we 
+eventually want to visualize things in tooling as well - as a tree of the 
+physical topology. Also, physical topologies will only become more complex, so 
+we dont want to detach events from them.
+
+> sysfs exports single values just fine.  If you are starting to do more 
+> complex things, like you currently are, maybe you shouldn't be in sysfs...
+
+This is really like a read-only attributes, and it would be multi-line only 
+for the event format descriptor - a genuinely new aspect: a flexible ABI 
+descriptor.
+
+It's an attribute for a very good purpose: flexible ABI with a user-space that 
+interprets new format descriptions automatically. This is not just theory, for 
+example perf trace does this today, and you can write scripts with old tools 
+for a new event that shows up in a new kernel, without rebuilding the tools.
+
+Here is an example of a format descriptor:
+
+# cat /debug/tracing/events/sched/sched_wakeup/format 
+name: sched_wakeup
+ID: 59
+format:
+	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
+	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
+	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
+	field:int common_pid;	offset:4;	size:4;	signed:1;
+	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
+
+	field:char comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
+	field:pid_t pid;	offset:28;	size:4;	signed:1;
+	field:int prio;	offset:32;	size:4;	signed:1;
+	field:int success;	offset:36;	size:4;	signed:1;
+	field:int target_cpu;	offset:40;	size:4;	signed:1;
+
+print fmt: "comm=%s pid=%d prio=%d success=%d target_cpu=%03d", REC->comm, REC->pid, REC->prio, REC->success, REC->target_cpu
+
+Also, we already have quite a few multi-line files in sysfs, for example:
+
+$ cat /sys/devices/pnp0/00:09/options
+Dependent: 00 - Priority preferred
+  port 0x378-0x378, align 0x0, size 0x8, 16-bit address decoding
+  port 0x778-0x778, align 0x0, size 0x8, 16-bit address decoding
+  irq 7 High-Edge
+  dma 3 8-bit compatible
+Dependent: 01 - Priority acceptable
+  port 0x378-0x378, align 0x0, size 0x8, 16-bit address decoding
+  port 0x778-0x778, align 0x0, size 0x8, 16-bit address decoding
+  irq 3,4,5,6,7,10,11,12 High-Edge
+  dma 0,1,2,3 8-bit compatible
+Dependent: 02 - Priority acceptable
+  port 0x278-0x278, align 0x0, size 0x8, 16-bit address decoding
+  port 0x678-0x678, align 0x0, size 0x8, 16-bit address decoding
+  irq 3,4,5,6,7,10,11,12 High-Edge
+  dma 0,1,2,3 8-bit compatible
+Dependent: 03 - Priority acceptable
+  port 0x3bc-0x3bc, align 0x0, size 0x4, 16-bit address decoding
+  port 0x7bc-0x7bc, align 0x0, size 0x4, 16-bit address decoding
+  irq 3,4,5,6,7,10,11,12 High-Edge
+  dma 0,1,2,3 8-bit compatible
+
+$ cat /sys/devices/pci0000:00/0000:00:1a.7/pools
+poolinfo - 0.1
+ehci_sitd           0    0   96  0
+ehci_itd            0    0  160  0
+ehci_qh             4   42   96  1
+ehci_qtd            4   42   96  1
+buffer-2048         0    0 2048  0
+buffer-512          0    0  512  0
+buffer-128          0    0  128  0
+buffer-32           1  128   32  1
+
+In fact uevents have multi-line attributes as well:
+
+$ cat /sys/devices/pci0000:00/0000:00:1a.1/usb4/uevent
+MAJOR=189
+MINOR=384
+DEVNAME=bus/usb/004/001
+DEVTYPE=usb_device
+DRIVER=usb
+DEVICE=/proc/bus/usb/004/001
+PRODUCT=1d6b/1/206
+TYPE=9/0/0
+BUSNUM=004
+DEVNUM=001
+
+Thanks,
+
+	Ingo
