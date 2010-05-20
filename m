@@ -1,90 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753418Ab0ETPXF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 11:23:05 -0400
-Received: from mail-va3.bigfish.com ([216.32.180.112]:38680 "EHLO
-	mail56-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1751835Ab0ETPXD (ORCPT
+	id S1752878Ab0ETP3P (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 11:29:15 -0400
+Received: from opensource.wolfsonmicro.com ([80.75.67.52]:60439 "EHLO
+	opensource2.wolfsonmicro.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751835Ab0ETP3N (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 11:23:03 -0400
-X-SpamScore: -30
-X-BigFish: VPS-30(zz1432P98dN936eM62a3Lzz1202hzz5eeePz32i2a8h65h)
-X-Spam-TCS-SCL: 4:0
-X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
-X-WSS-ID: 0L2Q5D7-01-AL5-02
-X-M-MSG: 
-Date: Thu, 20 May 2010 17:22:21 +0200
-From: Robert Richter <robert.richter@amd.com>
-To: Stephane Eranian <eranian@google.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
-       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
-       Paul Mundt <lethal@linux-sh.org>
-Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
- type of a raw sample
-Message-ID: <20100520152221.GR21799@erda.amd.com>
-References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
- <1274304024-6551-2-git-send-email-robert.richter@amd.com>
- <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
- <1274347413.5605.13636.camel@twins>
- <AANLkTikWSOPpHsvJGht7c7QnwcOk-nMyBNhY-g6QpNzg@mail.gmail.com>
- <1274351859.5605.13961.camel@twins>
- <AANLkTimkCIw2va2qF9D6zIuMZoh5VdSdWAxeXRBXSDLD@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <AANLkTimkCIw2va2qF9D6zIuMZoh5VdSdWAxeXRBXSDLD@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Reverse-DNS: ausb3extmailp02.amd.com
+	Thu, 20 May 2010 11:29:13 -0400
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Alessandro Zummo <a.zummo@towertech.it>, akpm@linux-foundation.org
+Cc: rtc-linux@googlegroups.com, linux-kernel@vger.kernel.org,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: [PATCH] rtc: Use genirq directly in rtc-wm831x
+Date: Thu, 20 May 2010 08:29:16 -0700
+Message-Id: <1274369356-8680-1-git-send-email-broonie@opensource.wolfsonmicro.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 20.05.10 08:13:43, Stephane Eranian wrote:
-> What's wrong with creating pseudo-events for IBS? We'd have to pick
-> two unused event codes. That would have the advantage of making it
-> explicit you're using IBS. I think we could still use the precise_ip field
-> if people are only interested in the IP. They would use PERF_SAMPLE_RAW
-> if they need more.
+Now that the WM831x core uses genirq for the IRQ controller there is
+no need to use the WM831x-specific wrappers to request interrupts so
+convert to use genirq directly.
 
-For some key events this is fine and useful. But, if this has to be
-used to programm all IBS features, it will introduce too much
-implementation and maintenance effort. What you get then will probably
-of less interest since users/tools want to have the raw sample data
-for further processing. But maybe we agree already in this point, if
-there is a demand we should provide pseudo events for important or
-offen used events.
+Also use more meaningful strings to make /proc/interrupts more readily
+legible.
 
-> >> > The Ins-Exec will have to re-construct the actual event->count by adding
-> >> > sample-period on each interrupt, as it seems we lack an actual counter
-> >> > in hardware.
-> >> >
-> >> For what? counting mode?
-> >
-> > Yeah, events are supposed to count.
-> >
-> IBS is a sampling only feature. I suspect it would be okay to return 0 here
-> or do as you said, count the number of IBS interrupts and multiply by the
-> sampling period.
+Signed-off-by: Mark Brown <broonie@opensource.wolfsonmicro.com>
+---
+ drivers/rtc/rtc-wm831x.c |   16 ++++++++--------
+ 1 files changed, 8 insertions(+), 8 deletions(-)
 
-True, ibs can be used as an additional counter using the interrupt
-only and dropping sampling data. I was already thinking of adding it
-somehow to the list of available counters. But this is also later work
-as its 64 bit extension.
-
-> > Dunno, reconstruct sensible counters? Surely the software that uses IBS
-> > does something useful with that data? What does libpfm do with the IBS
-> > data?
-
-Here are some use cases described:
-
- http://developer.amd.com/assets/AMD_IBS_paper_EN.pdf
- http://developer.amd.com/cpu/CodeAnalyst/assets/ISPASS2010_IBS_CA_abstract.pdf
-
--Robert
-
+diff --git a/drivers/rtc/rtc-wm831x.c b/drivers/rtc/rtc-wm831x.c
+index b16cfe5..82931dc 100644
+--- a/drivers/rtc/rtc-wm831x.c
++++ b/drivers/rtc/rtc-wm831x.c
+@@ -449,17 +449,17 @@ static int wm831x_rtc_probe(struct platform_device *pdev)
+ 		goto err;
+ 	}
+ 
+-	ret = wm831x_request_irq(wm831x, per_irq, wm831x_per_irq,
+-				 IRQF_TRIGGER_RISING, "wm831x_rtc_per",
+-				 wm831x_rtc);
++	ret = request_threaded_irq(per_irq, NULL, wm831x_per_irq,
++				   IRQF_TRIGGER_RISING, "RTC period",
++				   wm831x_rtc);
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "Failed to request periodic IRQ %d: %d\n",
+ 			per_irq, ret);
+ 	}
+ 
+-	ret = wm831x_request_irq(wm831x, alm_irq, wm831x_alm_irq,
+-				 IRQF_TRIGGER_RISING, "wm831x_rtc_alm",
+-				 wm831x_rtc);
++	ret = request_threaded_irq(alm_irq, NULL, wm831x_alm_irq,
++				   IRQF_TRIGGER_RISING, "RTC alarm",
++				   wm831x_rtc);
+ 	if (ret != 0) {
+ 		dev_err(&pdev->dev, "Failed to request alarm IRQ %d: %d\n",
+ 			alm_irq, ret);
+@@ -478,8 +478,8 @@ static int __devexit wm831x_rtc_remove(struct platform_device *pdev)
+ 	int per_irq = platform_get_irq_byname(pdev, "PER");
+ 	int alm_irq = platform_get_irq_byname(pdev, "ALM");
+ 
+-	wm831x_free_irq(wm831x_rtc->wm831x, alm_irq, wm831x_rtc);
+-	wm831x_free_irq(wm831x_rtc->wm831x, per_irq, wm831x_rtc);
++	free_irq(alm_irq, wm831x_rtc);
++	free_irq(per_irq, wm831x_rtc);
+ 	rtc_device_unregister(wm831x_rtc->rtc);
+ 	kfree(wm831x_rtc);
+ 
 -- 
-Advanced Micro Devices, Inc.
-Operating System Research Center
-email: robert.richter@amd.com
+1.7.1
 
