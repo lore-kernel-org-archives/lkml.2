@@ -1,93 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754550Ab0ETJ3y (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:29:54 -0400
-Received: from 82-117-125-11.tcdsl.calypso.net ([82.117.125.11]:58860 "EHLO
-	smtp.ossman.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751470Ab0ETJ3w (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:29:52 -0400
-Date: Thu, 20 May 2010 11:29:45 +0200
-From: Pierre Ossman <pierre-list@ossman.eu>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Strange read data corruption on ext4/LVM/md
-Message-ID: <20100520112945.61bf9705@mjolnir.ossman.eu>
-In-Reply-To: <4BF4F979.4070903@kernel.org>
-References: <20100519225653.1fedb453@mjolnir.ossman.eu>
-	<20100519230426.47c6c1ed@mjolnir.ossman.eu>
-	<20100519232906.3be82279@mjolnir.ossman.eu>
-	<20100519233408.7436bd9b@mjolnir.ossman.eu>
-	<20100520091429.192d560c@mjolnir.ossman.eu>
-	<4BF4F979.4070903@kernel.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1; protocol="application/pgp-signature"; boundary="=_freyr.ossman.eu-3709-1274347789-0001-2"
+	id S1754637Ab0ETJcO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:32:14 -0400
+Received: from mail-qy0-f171.google.com ([209.85.221.171]:34126 "EHLO
+	mail-qy0-f171.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab0ETJcM convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 05:32:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=kV8F0UNZ9yYV40ln5DVLgydJ1h88rBzMzcwH6IGhrRkP2IKiFuYs9jwRxfrJiZ6C5p
+         oWfCmNp2iPbH5ti4zWAQKZWAPd1AVroWYvceZzFevtu937lsHIPGoTf3VQ0hFlbMLjrC
+         zrtJy5NnOnzm4Tcej6CXezmFl7uJwpBJCPcOA=
+MIME-Version: 1.0
+In-Reply-To: <AANLkTilEbFndi-rPczi6OBxeU8p87gOz4yfveEsyHqcE@mail.gmail.com>
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com>
+	 <AANLkTinClrTDoXH4NPP2-SgSYH24ZTnqsop88aocdg4R@mail.gmail.com>
+	 <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>
+	 <201005201233.56877@zigzag.lvk.cs.msu.su>
+	 <AANLkTilEbFndi-rPczi6OBxeU8p87gOz4yfveEsyHqcE@mail.gmail.com>
+Date: Thu, 20 May 2010 15:02:10 +0530
+Message-ID: <AANLkTil18TnOR9D-dSFsSFA74Q4UFnldrGLhG1H4jwhf@mail.gmail.com>
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after 
+	console_init
+From: Sujit K M <sjt.kar@gmail.com>
+To: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+Cc: Thomas Gleixner <tglx@linutronix.de>, linux-rt-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+Sorry does not help as it is very old and does not seem to provide
+information regarding
+Real Time Linux. But the section  for
 
---=_freyr.ossman.eu-3709-1274347789-0001-2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+setserial -g /dev/ttyS[01]
 
-On Thu, 20 May 2010 10:57:29 +0200
-Tejun Heo <tj@kernel.org> wrote:
+and
 
-> On 05/20/2010 09:14 AM, Pierre Ossman wrote:
-> > Note that this is a live system, so there is some chance that something
-> > wrote to than area, then restored it to the previous state. I'm not
-> > sure how likely that is.
-> >=20
-> > If not, then it would seem that this is a problem in either the disks,
-> > the controller or the controller driver. The components are WD
-> > WD1002FAEX, sil3132 and sata_sil24 respectively.
->=20
-> There is a report that sil3124/32 recognizes FIS corruption but keeps
-> using the payload anyway thus leading to data corruption when the bus
-> condition on pci-e side isn't ideal.  Does moving the controller to
-> different slot make difference?
->=20
+/etc/inittab modifications are pointer to the changes required for
+Real Timliness.
 
-The machine is rather crammed right now, with one controller in each of
-the three available pci-e slots (5 disks). I am running continuous tests
-on the disks right now though to see if the problems is on all disks or
-just some. If just one slot is causing problems then we should see some
-results there.
+The problem is that baud rate of the COM/TTY port may require some modification.
+I Think you will need to have an Critical Section for the Driver to
+timeout in sync with
+the baud rate.
 
-When you say FIS corruption, do you mean corruption in the sense of
-randomly flipped bits? I don't know if you saw the first couple of
-mails (before linux-ide was added), but the problem is data being moved
-around, not just randomly changed.
+Hope what I have said makes sense.
 
-Another note is that the problem seems to worsen under load. I'm
-running the dd thing in the background, which seems to make read errors
-more common on my test files on the filesystem level.
 
-I also tried disabling NCQ without any noticeable change.
+On Thu, May 20, 2010 at 2:55 PM, Sujit K M <sjt.kar@gmail.com> wrote:
+> http://www.vanemery.com/Linux/Serial/serial-console.html
+>
+> Could this be of help.
+>
+> On Thu, May 20, 2010 at 2:03 PM, Nikita V. Youshchenko <yoush@cs.msu.su> wrote:
+>>> > I could not get dmesg output to console/serial and
+>>> > klogd(/var/log/messages) anymore with 2.6.33-rt17 _after_ the kernel
+>>> > boot is done(on non-RT kernel it works fine). I made below changes it
+>>> > starts to work again, however I'm unsure how safe the change is.
+>>> > Please advise.
+>>>
+>>> Well, obviously it's unsafe if you remove safety checks. And if you
+>>> care to look at the changelog of kernel/printk.c you'll find out why.
+>>
+>> Hmm... did a quick look and could not find anything related there.
+>> Could you please give a pointer?
+>> --
+>> To unsubscribe from this list: send the line "unsubscribe linux-rt-users" in
+>> the body of a message to majordomo@vger.kernel.org
+>> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>>
+>
+>
+>
+> --
+> -- Sujit K M
+>
+> blog(http://kmsujit.blogspot.com/)
+>
 
-Rgds
---=20
-     -- Pierre Ossman
 
-  WARNING: This correspondence is being monitored by FRA, a
-  Swedish intelligence agency. Make sure your server uses
-  encryption for SMTP traffic and consider using PGP for
-  end-to-end encryption.
 
---=_freyr.ossman.eu-3709-1274347789-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename=signature.asc
+-- 
+-- Sujit K M
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.13 (GNU/Linux)
-
-iEYEARECAAYFAkv1AQwACgkQ7b8eESbyJLjRbACgyHRN81yFOg20dy+r60eXBVkT
-diAAoKB1wj/AMnJN/jQaxvXooraseGJf
-=pf+E
------END PGP SIGNATURE-----
-
---=_freyr.ossman.eu-3709-1274347789-0001-2--
+blog(http://kmsujit.blogspot.com/)
