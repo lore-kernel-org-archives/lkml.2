@@ -1,62 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754798Ab0ETCLm (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 22:11:42 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:34560 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754301Ab0ETCLk (ORCPT
+	id S1753379Ab0ETC0U (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 22:26:20 -0400
+Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38676 "EHLO
+	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752381Ab0ETC0S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 22:11:40 -0400
-Date: Wed, 19 May 2010 22:11:39 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: ltt-dev@lists.casi.polymtl.ca
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [RELEASE] ltt-control 0.86, better streaming fadvise
-Message-ID: <20100520021139.GA15828@Krystal>
-References: <20100519220015.GA8028@Krystal>
+	Wed, 19 May 2010 22:26:18 -0400
+Date: Thu, 20 May 2010 07:56:10 +0530
+From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
+       Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Subject: Re: [PATCH v4 0/13] Uprobes v4
+Message-ID: <20100520022610.GC3319@linux.vnet.ibm.com>
+Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
+ <20100518204944.GA6959@Krystal>
+ <20100519060803.GB19957@linux.vnet.ibm.com>
+ <1274278660.5605.11006.camel@twins>
+ <20100519173806.GA3319@linux.vnet.ibm.com>
+ <1274291660.1674.1544.camel@laptop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <20100519220015.GA8028@Krystal>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 22:10:27 up 117 days,  4:47,  9 users,  load average: 0.22, 0.24,
-	0.25
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1274291660.1674.1544.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-A discussion follow-up with Linus made me change the implementation to put the
-fadvise after the synchronous page writeback, to ensure better streaming
-behavior.
+* Peter Zijlstra <peterz@infradead.org> [2010-05-19 19:54:20]:
 
-Mathieu
+> On Wed, 2010-05-19 at 23:08 +0530, Srikar Dronamraju wrote:
+> 
+> > Or do you suggest any alternative methods for global tracing?
+> 
+> COW the page for each existing and future mapping.
 
-* Mathieu Desnoyers (mathieu.desnoyers@efficios.com) wrote:
-> Hi,
-> 
-> I just released ltt-control 0.85 which waits for previous subbuffers to be
-> written to disk (using sync_file_range()) and uses fadvise to tell the kernel
-> that pages won't be reaccessed. This lessens the tracer impact on the page
-> cache.
-> 
-> Thanks to Linus for hints on how to use fadvise and sync_file_range to do
-> this, c.f.:
-> 
-> http://marc.info/?l=linux-kernel&m=127430576309253&w=2
-> 
-> Mathieu
-> 
-> -- 
-> Mathieu Desnoyers
-> Operating System Efficiency R&D Consultant
-> EfficiOS Inc.
-> http://www.efficios.com
+Yes, we could certainly do this. However we could end up with multiple
+copies of the same page. And probably equal number of uprobe and probept
+structures. 
 
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+--
+Thanks and Regards
+Srikar
+
+> 
