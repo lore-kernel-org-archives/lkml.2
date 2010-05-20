@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753541Ab0ETFNG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 01:13:06 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:42119 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752630Ab0ETFNE (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 01:13:04 -0400
-Date: Thu, 20 May 2010 07:49:26 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: "ext Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       ext James Bottomley <James.Bottomley@suse.de>,
+	id S1753804Ab0ETFPq (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 01:15:46 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:48008 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753045Ab0ETFPp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 01:15:45 -0400
+Date: Thu, 20 May 2010 07:15:28 +0200
+From: Florian Mickler <florian@mickler.org>
+To: felipe.balbi@nokia.com
+Newsgroups: gmane.linux.kernel,gmane.linux.ports.arm.omap
+Cc: ext James Bottomley <James.Bottomley@suse.de>,
        "me@felipebalbi.com" <me@felipebalbi.com>,
        Kevin Hilman <khilman@deeprootsystems.com>,
        Alan Stern <stern@rowland.harvard.edu>,
@@ -28,46 +27,45 @@ Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
        Andrew Morton <akpm@linux-foundation.org>,
        Linus Torvalds <torvalds@linux-foundation.org>
 Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100520044926.GB6773@nokia.com>
-Reply-To: felipe.balbi@nokia.com
+Message-ID: <20100520071528.494c38e4@schatten.dmk.lab>
+In-Reply-To: <20100519065934.GH12879@nokia.com>
 References: <1274115885.4418.59.camel@mulgrave.site>
- <1274191188.10304.5.camel@mulgrave.site>
- <20100519065934.GH12879@nokia.com>
- <201005192242.55706.rjw@sisk.pl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <201005192242.55706.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 20 May 2010 04:51:38.0123 (UTC) FILETIME=[218AEDB0:01CAF7D8]
-X-Nokia-AV: Clean
+	<20100517174647.GA11512@gandalf>
+	<1274119179.4418.68.camel@mulgrave.site>
+	<20100517181252.GA14260@gandalf>
+	<1274124267.4418.149.camel@mulgrave.site>
+	<20100517193840.GB14047@gandalf>
+	<20100517193952.GC14047@gandalf>
+	<1274125775.4418.182.camel@mulgrave.site>
+	<20100518064022.GA6522@nokia.com>
+	<1274191188.10304.5.camel@mulgrave.site>
+	<20100519065934.GH12879@nokia.com>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Wed, 19 May 2010 09:59:34 +0300
+Felipe Balbi <felipe.balbi@nokia.com> wrote:
 
-On Wed, May 19, 2010 at 10:42:55PM +0200, ext Rafael J. Wysocki wrote:
->Please note that this approach is not too practical for vendors who ship
->systems like cell phones to the general public.
 
-yeah, tell me about it :-p
+> >The corollary is that real world systems have to operate in the face of
+> >misbehaving hardware *and* software.
+> 
+> I still think the kernel shouldn't deal with broken applications and we 
+> shouldn't try to fix them in kernel space. We can, of course, try to 
+> find them and have all sorts of bells and whistles shouting 'process 
+> %s is preventing CPU from sleeping for %llu nanoseconds' or something 
+> like that.
+> 
 
-during development on MeeGo devices we try to tackle down as much as 
-possible the use_time offenders and start by filing bugs to those apps, 
-instead of fixing their issues in kernel space.
+But with that, you still shift the burden of exchanging that app with
+an feature-equivalent non-broken version to the user. 
+which is not user friendly and not necessary if you have a "smart"
+enough kernel.
 
-if suspend_blockers could at least be transparent to applications, then 
-it wouldn't be the best scenario but at least applications wouldn't have 
-to be specially written to support that. And like I said, if anyone can 
-hold a suspend_blocker forever the idea of "improving use_time" is easy 
-to break, but then someone replied "anyone holding a suspend_blocker 
-will show up in UI", and again I say you don't need suspend_blockers to 
-have a fancy UI showing which processes are waking up the processor. 
-Powertop already gathers that information, you just need to make a fancy 
-UI around it.
-
--- 
-balbi
-
-DefectiveByDesign.org
+Cheers,
+Flo 
