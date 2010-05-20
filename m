@@ -1,207 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752982Ab0ETQJP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 12:09:15 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:1389 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751385Ab0ETQJN (ORCPT
+	id S1753405Ab0ETQK6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 12:10:58 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53481 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751920Ab0ETQK5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 12:09:13 -0400
-Subject: add devname module aliases to allow module on-demand auto-loading
-From: Kay Sievers <kay.sievers@vrfy.org>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>,
-       "David S. Miller" <davem@davemloft.net>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       Chris Mason <chris.mason@oracle.com>,
-       Alasdair G Kergon <agk@redhat.com>,
-       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-       Ian Kent <raven@themaw.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 May 2010 18:07:20 +0200
-Message-ID: <1274371640.302.5.camel@yio.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 May 2010 12:10:57 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/2] perf TUI: Make 'space' be an alias to 'PgDn'
+Date: Thu, 20 May 2010 13:10:44 -0300
+Message-Id: <1274371845-27784-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274371845-27784-1-git-send-email-acme@infradead.org>
+References: <1274371845-27784-1-git-send-email-acme@infradead.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Kay Sievers <kay.sievers@vrfy.org>
-Subject: add devname module aliases to allow module on-demand auto-loading
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-This adds:
-  alias: devname:<name>
-to some common kernel modules, which will allow the on-demand loading
-of the kernel module when the device node is accessed.
+Just like if one is using the stdio based pager, or more/less, for that
+matter.
 
-Ideally all these modules would be compiled-in, but distros seems too
-much in love with their modularization that we need to cover the common
-cases with this new facility. It will allow us to remove a bunch of pretty
-useless init scripts and modprobes from init scripts.
-
-The static device node aliases will be carried in the module itself. The
-program depmod will extract this information to a file in the module directory:
-  $ cat /lib/modules/2.6.34-00650-g537b60d-dirty/modules.devname 
-  # Device nodes to trigger on-demand module loading.
-  microcode cpu/microcode c10:184
-  fuse fuse c10:229
-  ppp_generic ppp c108:0
-  tun net/tun c10:200
-  dm_mod mapper/control c10:235
-
-Udev will pick up the depmod created file on startup and create all the
-static device nodes which the kernel modules specify, so that these modules
-get automatically loaded when the device node is accessed:
-  $ /sbin/udevd --debug
-  ...
-  static_dev_create_from_modules: mknod '/dev/cpu/microcode' c10:184
-  static_dev_create_from_modules: mknod '/dev/fuse' c10:229
-  static_dev_create_from_modules: mknod '/dev/ppp' c108:0
-  static_dev_create_from_modules: mknod '/dev/net/tun' c10:200
-  static_dev_create_from_modules: mknod '/dev/mapper/control' c10:235
-  udev_rules_apply_static_dev_perms: chmod '/dev/net/tun' 0666
-  udev_rules_apply_static_dev_perms: chmod '/dev/fuse' 0666
-
-A few device nodes are switched to statically allocated numbers, to allow
-the static nodes to work. This might also useful for systems which still run
-a plain static /dev, which is completely unsafe to use with any dynamic minor
-numbers.
-
-Note:
-The devname aliases must be limited to the *common* and *single*instance*
-device nodes, like the misc devices, and never be used for conceptually limited
-systems like the loop devices, which should rather get fixed properly and get a
-control node for losetup to talk to, instead of creating a random number of
-device nodes in advance, regardless if they are ever used.
-
-This facility is to hide the mess distros are creating with too modualized
-kernels, and just to hide that these modules are not compiled-in, and not to
-paper-over broken concepts. Thanks! :)
-
-Cc: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: David S. Miller <davem@davemloft.net>
-Cc: Miklos Szeredi <miklos@szeredi.hu>
-Cc: Chris Mason <chris.mason@oracle.com>
-Cc: Alasdair G Kergon <agk@redhat.com>
-Cc: Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-Cc: Ian Kent <raven@themaw.net>
-Signed-Off-By: Kay Sievers <kay.sievers@vrfy.org>
+Suggested-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
 ---
+ tools/perf/util/newt.c |    2 ++
+ 1 files changed, 2 insertions(+), 0 deletions(-)
 
- arch/x86/kernel/microcode_core.c |    1 +
- drivers/md/dm-ioctl.c            |    5 ++++-
- drivers/net/ppp_generic.c        |    4 ++--
- drivers/net/tun.c                |    1 +
- fs/autofs4/dev-ioctl.c           |    5 ++++-
- fs/btrfs/super.c                 |    5 ++++-
- fs/fuse/dev.c                    |    1 +
- include/linux/miscdevice.h       |    3 +++
- 8 files changed, 20 insertions(+), 5 deletions(-)
-
---- a/arch/x86/kernel/microcode_core.c
-+++ b/arch/x86/kernel/microcode_core.c
-@@ -260,6 +260,7 @@ static void microcode_dev_exit(void)
- }
+diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
+index 9338d06..051022e 100644
+--- a/tools/perf/util/newt.c
++++ b/tools/perf/util/newt.c
+@@ -383,6 +383,7 @@ static int ui_browser__run(struct ui_browser *self, const char *title,
+ 	newtFormAddHotKey(self->form, NEWT_KEY_DOWN);
+ 	newtFormAddHotKey(self->form, NEWT_KEY_PGUP);
+ 	newtFormAddHotKey(self->form, NEWT_KEY_PGDN);
++	newtFormAddHotKey(self->form, ' ');
+ 	newtFormAddHotKey(self->form, NEWT_KEY_HOME);
+ 	newtFormAddHotKey(self->form, NEWT_KEY_END);
  
- MODULE_ALIAS_MISCDEV(MICROCODE_MINOR);
-+MODULE_ALIAS("devname:cpu/microcode");
- #else
- #define microcode_dev_init()	0
- #define microcode_dev_exit()	do { } while (0)
---- a/drivers/md/dm-ioctl.c
-+++ b/drivers/md/dm-ioctl.c
-@@ -1599,12 +1599,15 @@ static const struct file_operations _ctl
- };
+@@ -419,6 +420,7 @@ static int ui_browser__run(struct ui_browser *self, const char *title,
+ 			}
+ 			break;
+ 		case NEWT_KEY_PGDN:
++		case ' ':
+ 			if (self->first_visible_entry_idx + self->height > self->nr_entries - 1)
+ 				break;
  
- static struct miscdevice _dm_misc = {
--	.minor 		= MISC_DYNAMIC_MINOR,
-+	.minor 		= MAPPER_CTRL_MINOR,
- 	.name  		= DM_NAME,
- 	.nodename	= "mapper/control",
- 	.fops  		= &_ctl_fops
- };
- 
-+MODULE_ALIAS_MISCDEV(MAPPER_CTRL_MINOR);
-+MODULE_ALIAS("devname:mapper/control");
-+
- /*
-  * Create misc character device and link to DM_DIR/control.
-  */
---- a/drivers/net/ppp_generic.c
-+++ b/drivers/net/ppp_generic.c
-@@ -2907,5 +2907,5 @@ EXPORT_SYMBOL(ppp_output_wakeup);
- EXPORT_SYMBOL(ppp_register_compressor);
- EXPORT_SYMBOL(ppp_unregister_compressor);
- MODULE_LICENSE("GPL");
--MODULE_ALIAS_CHARDEV_MAJOR(PPP_MAJOR);
--MODULE_ALIAS("/dev/ppp");
-+MODULE_ALIAS_CHARDEV(PPP_MAJOR, 0);
-+MODULE_ALIAS("devname:ppp");
---- a/drivers/net/tun.c
-+++ b/drivers/net/tun.c
-@@ -1624,3 +1624,4 @@ MODULE_DESCRIPTION(DRV_DESCRIPTION);
- MODULE_AUTHOR(DRV_COPYRIGHT);
- MODULE_LICENSE("GPL");
- MODULE_ALIAS_MISCDEV(TUN_MINOR);
-+MODULE_ALIAS("devname:net/tun");
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -736,11 +736,14 @@ static const struct file_operations _dev
- };
- 
- static struct miscdevice _autofs_dev_ioctl_misc = {
--	.minor 		= MISC_DYNAMIC_MINOR,
-+	.minor 		= AUTOFS_MINOR,
- 	.name  		= AUTOFS_DEVICE_NAME,
- 	.fops  		= &_dev_ioctl_fops
- };
- 
-+MODULE_ALIAS_MISCDEV(BTRFS_MINOR);
-+MODULE_ALIAS("devname:autofs");
-+
- /* Register/deregister misc character device */
- int autofs_dev_ioctl_init(void)
- {
---- a/fs/btrfs/super.c
-+++ b/fs/btrfs/super.c
-@@ -832,11 +832,14 @@ static const struct file_operations btrf
- };
- 
- static struct miscdevice btrfs_misc = {
--	.minor		= MISC_DYNAMIC_MINOR,
-+	.minor		= BTRFS_MINOR,
- 	.name		= "btrfs-control",
- 	.fops		= &btrfs_ctl_fops
- };
- 
-+MODULE_ALIAS_MISCDEV(BTRFS_MINOR);
-+MODULE_ALIAS("devname:btrfs-control");
-+
- static int btrfs_interface_init(void)
- {
- 	return misc_register(&btrfs_misc);
---- a/fs/fuse/dev.c
-+++ b/fs/fuse/dev.c
-@@ -18,6 +18,7 @@
- #include <linux/slab.h>
- 
- MODULE_ALIAS_MISCDEV(FUSE_MINOR);
-+MODULE_ALIAS("devname:fuse");
- 
- static struct kmem_cache *fuse_req_cachep;
- 
---- a/include/linux/miscdevice.h
-+++ b/include/linux/miscdevice.h
-@@ -31,6 +31,9 @@
- #define FUSE_MINOR		229
- #define KVM_MINOR		232
- #define VHOST_NET_MINOR		233
-+#define BTRFS_MINOR		234
-+#define MAPPER_CTRL_MINOR	235
-+#define AUTOFS_MINOR		236
- #define MISC_DYNAMIC_MINOR	255
- 
- struct device;
-
+-- 
+1.6.2.5
 
