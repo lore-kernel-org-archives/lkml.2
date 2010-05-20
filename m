@@ -1,82 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753494Ab0ETLK1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:10:27 -0400
-Received: from www.tglx.de ([62.245.132.106]:53651 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752521Ab0ETLKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:10:25 -0400
-Date: Thu, 20 May 2010 13:07:57 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Robert Richter <robert.richter@amd.com>
-Subject: Re: [RFD] Future tracing/instrumentation directions
-In-Reply-To: <20100520100732.GD5309@nowhere>
-Message-ID: <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100520093131.GA30929@elte.hu> <20100520100732.GD5309@nowhere>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753965Ab0ETLMr (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:12:47 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:53656 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751838Ab0ETLMq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 07:12:46 -0400
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after console_init
+Date: Thu, 20 May 2010 15:12:38 +0400
+User-Agent: KMail/1.9.9
+Cc: Sujit K M <sjt.kar@gmail.com>, linux-rt-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com> <201005201423.09075@zigzag.lvk.cs.msu.su> <alpine.LFD.2.00.1005201225170.3368@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005201225170.3368@localhost.localdomain>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005201512.40304@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Frederic Weisbecker wrote:
-> On Thu, May 20, 2010 at 11:31:31AM +0200, Ingo Molnar wrote:
-> >  - [ While it's still a long way off, if this trend continues
-> >      we eventually might even be able to get rid of the 
-> >      /debug/tracing/ temporary debug API and get rid of 
-> >      the ugly in-kernel pretty-printing bits. This is 
-> >      good: it may make Andrew very happy for a change ;-)
-> > 
-> >      The main detail here to be careful of is that lots of
-> >      people are fond of the simplicity of the 
-> >      /debug/tracing/ debug UI, so when we replace it we 
-> >      want to do it by keeping that simple workflow (or 
-> >      best by making it even simpler). I have a few ideas 
-> >      how to do this.
-> 
-> How? We can emulate the /debug/tracing result with something
-> like perf trace, still that won't replace the immediate
-> availability of the result of any trace, which makes it
-> valuable for any simplest workflows.
+> > Still questions:
+> >
+> > 1) why does that prevent klogd from working?
+>
+> Patch below.
+> ...
+> @@ -1084,18 +1084,8 @@ void release_console_mutex(void)
+>  #endif
+>  	}
+>  	console_locked = 0;
+> -	raw_spin_unlock_irqrestore(&logbuf_lock, flags);
+>  	mutex_unlock(&console_mutex);
 
-I'm a bit torn about this. I really like the availability of the ascii
-interface, but if we can come up with a very basic trace binary tool
-which can be built for deep embedded w/o requiring the world and some
-more libs to be available, then I might give up my resistance. Ideally
-it should be done so it can be easily integrated into busybox.
+Hmm... that lock is taken inside loop body, then control goes out of loop 
+at 'break' statement, and then, if this line is deteled, lock is still 
+held at function return. Looks wrong.
 
-I don't care whether I do
+> > 2) why does print not pass to non-CON_ATOMIC even if called from
+> > non-atomic context?
+>
+> That's a good question. We call release_console_mutex() always with
+> interrupts disabled from printk(), so that atomic check triggers. Have
+> to look deeper to figure out whether we can enable interupts there,
+> probably not, but with the klogd fix this should not matter.
 
-echo 1 >/debug/..../XXX/enable
-cat /debug/tracing/trace
+IMO it still matters, since printk-over-serial is almost only available 
+debugging tool when [while driver debugging] system just hangs and one is 
+trying to find out why and where.
 
-or
+> > 3) I believe that 8250 serial driver is aware of preempt-rt.
+> > Could you please comment on my "2.6.33.2-rt13: RFC: fix serial
+> > console" post to linux-rt-users list
+> > (http://eeek.borgchat.net/lists/linux-rt-users/msg05569.html)
+>
+> While that can work due to the trylock, it can introduce massive
+> latencies just in case some driver reports a status change or what
+> ever.
 
-perfmini trace enable XXX
-perfmini trace dump
+Isn't it better just manually disable console (with 'quiet' kernel command 
+line option) when running in production? This may be recommended in proper 
+guidelines.
+But while developing, serial console functionality is essential.
 
-as long as the tool is built in a way that it does not need updates
-when we add trace points or other functionality to the kernel.
-
-Thanks,
-
-	tglx
+Nikita
