@@ -1,153 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753997Ab0ETUPV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:15:21 -0400
-Received: from mx2.mail.elte.hu ([157.181.151.9]:57455 "EHLO mx2.mail.elte.hu"
+	id S1756402Ab0ETUSF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:18:05 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7684 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751555Ab0ETUPT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:15:19 -0400
-Date: Thu, 20 May 2010 22:14:18 +0200
-From: Ingo Molnar <mingo@elte.hu>
-To: Greg KH <greg@kroah.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Lin Ming <ming.m.lin@intel.com>,
-       Corey Ashford <cjashfor@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, Kay Sievers <kay.sievers@vrfy.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2 06/11] perf: core, export pmus via sysfs
-Message-ID: <20100520201418.GB11470@elte.hu>
-References: <1274233602.3036.84.camel@localhost>
- <20100518200524.GA20223@kroah.com>
- <1274236496.3603.22.camel@minggr.sh.intel.com>
- <20100519024823.GA25229@kroah.com>
- <1274253276.5605.10124.camel@twins>
- <20100520184213.GB21030@kroah.com>
+	id S1753133Ab0ETUSC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 16:18:02 -0400
+Date: Thu, 20 May 2010 16:17:29 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: David Miller <davem@davemloft.net>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       vgoyal@redhat.com
+Subject: Re: [PATCH 07/13] jump label v8: sort jump table at build-time
+Message-ID: <20100520201728.GA18815@redhat.com>
+References: <cover.1274283321.git.jbaron@redhat.com> <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com> <20100519.153634.266077873.davem@davemloft.net>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100520184213.GB21030@kroah.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
-X-ELTE-SpamScore: -2.0
-X-ELTE-SpamLevel: 
-X-ELTE-SpamCheck: no
-X-ELTE-SpamVersion: ELTE 2.0 
-X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
-	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
-	[score: 0.0000]
+In-Reply-To: <20100519.153634.266077873.davem@davemloft.net>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 19, 2010 at 03:36:34PM -0700, David Miller wrote:
+> > diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+> > index 2092361..fe6f8be 100644
+> > --- a/scripts/mod/modpost.c
+> > +++ b/scripts/mod/modpost.c
+> > @@ -17,6 +17,8 @@
+> >  #include "modpost.h"
+> >  #include "../../include/generated/autoconf.h"
+> >  #include "../../include/linux/license.h"
+> > +#include <linux/types.h>
+> > +#include "jump_entry.h"
+> >  
+> 
+> This breaks the build on non-jump_label-supporting architectures
+> because only they will have the jump_entry.h header file.
+> 
+> I'm really getting tired trying to test your changes and every single
+> time as I go through doing very basic build testing I always hit one
+> patch that assumes jump label support exists, or assumes some x86'ism.
 
-* Greg KH <greg@kroah.com> wrote:
+sorry about that. I mis-tested it. anyways here's the interdiff to this
+patch to fix. btw, how do the sparc bits look?
 
-> [...]
->
-> I can always knock up a eventfs for you do mount at /sys/kernel/events/ or 
-> something if you want :)
+thanks,
 
-eventfs was my first idea, until Peter convinced me that we want sysfs :-)
+-Jason
 
-One important aspect would be to move it into the physical topology. Graphics 
-card? It might have events. PCI device? It might have events. Southbridge? It 
-might have a PMU and events. CPU? It has a PMU.
 
-Especially when it comes to complex physical topologies on larger systems, we 
-eventually want to visualize things in tooling as well - as a tree of the 
-physical topology. Also, physical topologies will only become more complex, so 
-we dont want to detach events from them.
-
-> sysfs exports single values just fine.  If you are starting to do more 
-> complex things, like you currently are, maybe you shouldn't be in sysfs...
-
-This is really like a read-only attributes, and it would be multi-line only 
-for the event format descriptor - a genuinely new aspect: a flexible ABI 
-descriptor.
-
-It's an attribute for a very good purpose: flexible ABI with a user-space that 
-interprets new format descriptions automatically. This is not just theory, for 
-example perf trace does this today, and you can write scripts with old tools 
-for a new event that shows up in a new kernel, without rebuilding the tools.
-
-Here is an example of a format descriptor:
-
-# cat /debug/tracing/events/sched/sched_wakeup/format 
-name: sched_wakeup
-ID: 59
-format:
-	field:unsigned short common_type;	offset:0;	size:2;	signed:0;
-	field:unsigned char common_flags;	offset:2;	size:1;	signed:0;
-	field:unsigned char common_preempt_count;	offset:3;	size:1;	signed:0;
-	field:int common_pid;	offset:4;	size:4;	signed:1;
-	field:int common_lock_depth;	offset:8;	size:4;	signed:1;
-
-	field:char comm[TASK_COMM_LEN];	offset:12;	size:16;	signed:1;
-	field:pid_t pid;	offset:28;	size:4;	signed:1;
-	field:int prio;	offset:32;	size:4;	signed:1;
-	field:int success;	offset:36;	size:4;	signed:1;
-	field:int target_cpu;	offset:40;	size:4;	signed:1;
-
-print fmt: "comm=%s pid=%d prio=%d success=%d target_cpu=%03d", REC->comm, REC->pid, REC->prio, REC->success, REC->target_cpu
-
-Also, we already have quite a few multi-line files in sysfs, for example:
-
-$ cat /sys/devices/pnp0/00:09/options
-Dependent: 00 - Priority preferred
-  port 0x378-0x378, align 0x0, size 0x8, 16-bit address decoding
-  port 0x778-0x778, align 0x0, size 0x8, 16-bit address decoding
-  irq 7 High-Edge
-  dma 3 8-bit compatible
-Dependent: 01 - Priority acceptable
-  port 0x378-0x378, align 0x0, size 0x8, 16-bit address decoding
-  port 0x778-0x778, align 0x0, size 0x8, 16-bit address decoding
-  irq 3,4,5,6,7,10,11,12 High-Edge
-  dma 0,1,2,3 8-bit compatible
-Dependent: 02 - Priority acceptable
-  port 0x278-0x278, align 0x0, size 0x8, 16-bit address decoding
-  port 0x678-0x678, align 0x0, size 0x8, 16-bit address decoding
-  irq 3,4,5,6,7,10,11,12 High-Edge
-  dma 0,1,2,3 8-bit compatible
-Dependent: 03 - Priority acceptable
-  port 0x3bc-0x3bc, align 0x0, size 0x4, 16-bit address decoding
-  port 0x7bc-0x7bc, align 0x0, size 0x4, 16-bit address decoding
-  irq 3,4,5,6,7,10,11,12 High-Edge
-  dma 0,1,2,3 8-bit compatible
-
-$ cat /sys/devices/pci0000:00/0000:00:1a.7/pools
-poolinfo - 0.1
-ehci_sitd           0    0   96  0
-ehci_itd            0    0  160  0
-ehci_qh             4   42   96  1
-ehci_qtd            4   42   96  1
-buffer-2048         0    0 2048  0
-buffer-512          0    0  512  0
-buffer-128          0    0  128  0
-buffer-32           1  128   32  1
-
-In fact uevents have multi-line attributes as well:
-
-$ cat /sys/devices/pci0000:00/0000:00:1a.1/usb4/uevent
-MAJOR=189
-MINOR=384
-DEVNAME=bus/usb/004/001
-DEVTYPE=usb_device
-DRIVER=usb
-DEVICE=/proc/bus/usb/004/001
-PRODUCT=1d6b/1/206
-TYPE=9/0/0
-BUSNUM=004
-DEVNUM=001
-
-Thanks,
-
-	Ingo
+diff --git a/scripts/mod/modpost.c b/scripts/mod/modpost.c
+index fe6f8be..cc87012 100644
+--- a/scripts/mod/modpost.c
++++ b/scripts/mod/modpost.c
+@@ -18,7 +18,9 @@
+ #include "../../include/generated/autoconf.h"
+ #include "../../include/linux/license.h"
+ #include <linux/types.h>
+-#include "jump_entry.h"
++#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
++ #include "jump_entry.h"
++#endif
+ 
+ /* Some toolchains use a `_' prefix for all user symbols. */
+ #ifdef CONFIG_SYMBOL_PREFIX
+@@ -377,6 +379,8 @@ void release_file(void *file, unsigned long size)
+ 	munmap(file, size);
+ }
+ 
++#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
++
+ static void swap_jump_label_entries(struct jump_entry *previous, struct jump_entry *next)
+ {
+ 	struct jump_entry tmp;
+@@ -421,6 +425,8 @@ static void sort_jump_label_table(struct elf_info *info, Elf_Ehdr *hdr)
+ 	} while (swapped == 1);
+ }
+ 
++#endif
++
+ static int parse_elf(struct elf_info *info, const char *filename)
+ {
+ 	unsigned int i;
+@@ -539,8 +545,10 @@ static int parse_elf(struct elf_info *info, const char *filename)
+ 		sym->st_size  = TO_NATIVE(sym->st_size);
+ 	}
+ 
++#ifdef CONFIG_HAVE_ARCH_JUMP_LABEL
+ 	if (enable_jump_label)
+ 		sort_jump_label_table(info, hdr);
++#endif
+ 
+ 	return 1;
+ }
