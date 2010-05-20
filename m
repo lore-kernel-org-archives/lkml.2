@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754882Ab0ETShL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 14:37:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40686 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751343Ab0ETShJ (ORCPT
+	id S1754928Ab0ETSiA (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 14:38:00 -0400
+Received: from 88-97-16-53.dsl.zen.co.uk ([88.97.16.53]:29971 "EHLO
+	andromeda.kingswood-consulting.co.uk" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754020Ab0ETSh6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 14:37:09 -0400
-Date: Thu, 20 May 2010 11:36:03 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Valdis.Kletnieks@vt.edu
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [2.6.34 PATCH] kernel: fix exit message for dead process
-Message-Id: <20100520113603.e8103ef1.akpm@linux-foundation.org>
-In-Reply-To: <10672.1274379460@localhost>
-References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
-	<4637.1274370470@localhost>
-	<20100520085520.5176d13c.akpm@linux-foundation.org>
-	<10672.1274379460@localhost>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Thu, 20 May 2010 14:37:58 -0400
+X-Greylist: delayed 302 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 May 2010 14:37:58 EDT
+Message-ID: <4BF58054.8060601@kingswood-consulting.co.uk>
+Date: Thu, 20 May 2010 19:32:52 +0100
+From: "Frank A. Kingswood" <frank@kingswood-consulting.co.uk>
+User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090706)
+MIME-Version: 1.0
+To: Randy Dunlap <randy.dunlap@oracle.com>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: NR_CPUS configuration option wrong
+References: <ht3rr8$b5f$2@dough.gmane.org> <20100520103851.8e051a3f.randy.dunlap@oracle.com>
+In-Reply-To: <20100520103851.8e051a3f.randy.dunlap@oracle.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010 14:17:40 -0400
-Valdis.Kletnieks@vt.edu wrote:
-
-> If a process is exiting with a non-zero preempt_count, it's in fact almost
-> certainly going to fail to do so because it is exiting due to a BUG or OOPS
-> while it held a lock, at which point it will never actually exit.  So change
-> the message to say it attempted to do so, rather than implying it succeeded.
-> Problem spotted when a process BUG'ed, the kernel reported the 'exited' status,
-> and then proceeded to BUG twice more dealing with the now-zombied process:
+Randy Dunlap wrote:
+> On Thu, 20 May 2010 18:34:32 +0100 Frank A. Kingswood wrote:
 > 
-> > [   35.357018] note: keymap[2481] exited with preempt_count 1
-> > [   35.360503] BUG: scheduling while atomic: keymap/2481/0x10000002
+>> Hi!
+>>
+>> The configuration MAXSMP help text indicates it is used to enable 
+>> configuration of number of CPUs. However, NR_CPUS depends on !MAXSMP.
+>>
+>> arch/x86/Kconfig:
+>> 758 config NR_CPUS
+>> 759         int "Maximum number of CPUs" if SMP && !MAXSMP
 > 
-> Yes, one line is 83 characters. It's still more readable than a split printk.
+> That line depends on !MAXSMP.  Then below there, we find:
 > 
-> Signed-off-by: Valdis Kletnieks <valdis.kletnieks@vt.edu>
-> 
-> --- linux-2.6.34-mmotm0519/kernel/exit.c.dist	2010-05-20 10:59:11.646870592 -0400
-> +++ linux-2.6.34-mmotm0519/kernel/exit.c	2010-05-20 14:05:16.068800223 -0400
-> @@ -936,7 +936,7 @@ NORET_TYPE void do_exit(long code)
->  	raw_spin_unlock_wait(&tsk->pi_lock);
->  
->  	if (unlikely(in_atomic()))
-> -		printk(KERN_INFO "note: %s[%d] exited with preempt_count %d\n",
-> +		printk(KERN_INFO "note: %s[%d] tried to exit with preempt_count %d\n",
->  				current->comm, task_pid_nr(current),
->  				preempt_count());
+> 	default "4096" if MAXSMP
 
-a) this message is kinda like __schedule_bug(), only
-   __schedule_bug() does more stuff.  Perhaps some sharing is in order.
+Hah, weird.
+I can see now it is possible to parse the MAXSMP help this way, but it 
+was not obvious.
 
-b) do_exit() eventually calls schedule() anyway, so if we have a bad
-   preempt_count() here, schedule() should end up calling
-   __schedule_bug(), so we don't need this message in do_exit(). 
+In menuconfig you see two questions:
 
-   ah-hah, __schedule_bug() doesn't get called on the exit() path due to
-   task->state==TASK_DEAD.  But we can surely change that. 
-   schedule_debug() needs fixing anyway - what's it doing assuming that
-   TASK_RUNNING==0?
+[ ] Configure Maximum number of SMP Processors and NUMA Nodes
+[8] Maximum number of CPUs
 
-c) it's pretty pointless printing anything at all if this task has
-   oopsed.  This info is never interesting and will just cause the
-   useful info to scroll into oblivion.
+and setting the first one YES makes the second one go away.
 
+Perhaps restating the help as "Set number of SMP processors and NUMA 
+nodes to the maximum that the kernel supports" might help.
+
+Thanks,
+
+Frank
