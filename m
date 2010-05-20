@@ -1,111 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754788Ab0ETWoo (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:44:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33249 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754547Ab0ETWom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:44:42 -0400
-Date: Fri, 21 May 2010 00:42:58 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH 6/5] adjust mm_take_all_locks to anon-vma-root locking
-Message-ID: <20100520224258.GA12100@random.random>
-References: <20100512133815.0d048a86@annuminas.surriel.com>
+	id S1754841Ab0ETWqe (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:46:34 -0400
+Received: from va3ehsobe004.messaging.microsoft.com ([216.32.180.14]:28252
+	"EHLO VA3EHSOBE004.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1754699Ab0ETWqd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:46:33 -0400
+X-SpamScore: -22
+X-BigFish: VPS-22(zz1432P98dN936eM62a3Lzz1202hzzz32i2a8h43h64h)
+X-Spam-TCS-SCL: 3:0
+X-WSS-ID: 0L2QPX8-02-4FT-02
+X-M-MSG: 
+Date: Fri, 21 May 2010 00:46:25 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Corey Ashford <cjashfor@linux.vnet.ibm.com>
+CC: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Lin Ming <ming.m.lin@intel.com>
+Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
+ type of a raw sample
+Message-ID: <20100520224625.GW21799@erda.amd.com>
+References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+ <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+ <4BF46000.20203@linux.vnet.ibm.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset="us-ascii"
 Content-Disposition: inline
-In-Reply-To: <20100512133815.0d048a86@annuminas.surriel.com>
+In-Reply-To: <4BF46000.20203@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is needed as 6/5 to avoid lockups in mm_take_all_locks.
+On 19.05.10 18:02:40, Corey Ashford wrote:
 
-======
-Subject: adjust mm_take_all_locks to the root_anon_vma locking
+> >  perf record -e r186A:IBS_FETCH ...
+> >  perf record -e r0:IBS_FETCH -c 100000 ...
+> 
+> Should this raw value have been 186A0 instead of 186A?
 
-From: Andrea Arcangeli <aarcange@redhat.com>
+This is the 20 bit value of the cycle count, but only bits 19:4 are
+encoded in bits 15:0 of the raw ibs register. Lower 4 bits of the
+cycle count must be null and thus not pushed to the register. The raw
+register setup is correct.
 
-Track the anon_vma->root->lock.
+> Where is the named type translation coming from?  Is this something
+> that needs to be hard-coded into perf?
 
-Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
----
+I was thinking of an enum or macro definition for the values in the
+kernel. A name mapping table could be implemented at least in the
+userspace, if needed maybe also in the kernel.
 
-diff --git a/mm/mmap.c b/mm/mmap.c
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -2480,7 +2480,7 @@ static DEFINE_MUTEX(mm_all_locks_mutex);
- 
- static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
- {
--	if (!test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-+	if (!test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
- 		/*
- 		 * The LSB of head.next can't change from under us
- 		 * because we hold the mm_all_locks_mutex.
-@@ -2488,15 +2488,15 @@ static void vm_lock_anon_vma(struct mm_s
- 		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
- 		/*
- 		 * We can safely modify head.next after taking the
--		 * anon_vma->lock. If some other vma in this mm shares
-+		 * anon_vma->root->lock. If some other vma in this mm shares
- 		 * the same anon_vma we won't take it again.
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us thanks to the
--		 * anon_vma->lock.
-+		 * anon_vma->root->lock.
- 		 */
- 		if (__test_and_set_bit(0, (unsigned long *)
--				       &anon_vma->head.next))
-+				       &anon_vma->root->head.next))
- 			BUG();
- 	}
- }
-@@ -2537,12 +2537,12 @@ static void vm_lock_mapping(struct mm_st
-  * A single task can't take more than one mm_take_all_locks() in a row
-  * or it would deadlock.
-  *
-- * The LSB in anon_vma->head.next and the AS_MM_ALL_LOCKS bitflag in
-+ * The LSB in anon_vma->root->head.next and the AS_MM_ALL_LOCKS bitflag in
-  * mapping->flags avoid to take the same lock twice, if more than one
-  * vma in this mm is backed by the same anon_vma or address_space.
-  *
-  * We can take all the locks in random order because the VM code
-- * taking i_mmap_lock or anon_vma->lock outside the mmap_sem never
-+ * taking i_mmap_lock or anon_vma->root->lock outside the mmap_sem never
-  * takes more than one of them in a row. Secondly we're protected
-  * against a concurrent mm_take_all_locks() by the mm_all_locks_mutex.
-  *
-@@ -2587,21 +2587,21 @@ out_unlock:
- 
- static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
- {
--	if (test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-+	if (test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
- 		/*
- 		 * The LSB of head.next can't change to 0 from under
- 		 * us because we hold the mm_all_locks_mutex.
- 		 *
- 		 * We must however clear the bitflag before unlocking
--		 * the vma so the users using the anon_vma->head will
-+		 * the vma so the users using the anon_vma->root->head will
- 		 * never see our bitflag.
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us until we release the
--		 * anon_vma->lock.
-+		 * anon_vma->root->lock.
- 		 */
- 		if (!__test_and_clear_bit(0, (unsigned long *)
--					  &anon_vma->head.next))
-+					  &anon_vma->root->head.next))
- 			BUG();
- 		anon_vma_unlock(anon_vma);
- 	}
+> Have you looked at Lin Ming's patch series?  I think it offers
+> another way to support IBS and other arch-specific and off-chip PMUs
+> in a more general way, though it's not quite fully-baked yet.
+
+Yes, this could be an option too. The proposal was some days ago and a
+little hidden in its subject, so I missed it first. But the concept of
+registering a pmu feature looks good and could be an alternative to
+the raw_value approach.
+
+-Robert
+
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
+
