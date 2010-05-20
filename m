@@ -1,51 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753327Ab0ETLHx (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:07:53 -0400
-Received: from crca.org.au ([74.207.252.120]:41521 "EHLO crca.org.au"
+	id S1753494Ab0ETLK1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:10:27 -0400
+Received: from www.tglx.de ([62.245.132.106]:53651 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752480Ab0ETLHw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:07:52 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BF517FE.1000103@tuxonice.net>
-Date: Thu, 20 May 2010 21:07:42 +1000
-From: Nigel Cunningham <nigel@tuxonice.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Suresh Siddha <suresh.b.siddha@intel.com>
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Arjan van de Ven <arjan@linux.jf.intel.com>,
-       Venkatesh Pallipadi <venki@google.com>,
-       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+	id S1752521Ab0ETLKZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 07:10:25 -0400
+Date: Thu, 20 May 2010 13:07:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
        LKML <linux-kernel@vger.kernel.org>,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Nigel Cunningham <ncunningham@crca.org.au>
-Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to push
- model
-References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-In-Reply-To: <20100517182726.089700767@sbs-t61.sc.intel.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFD] Future tracing/instrumentation directions
+In-Reply-To: <20100520100732.GD5309@nowhere>
+Message-ID: <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
+References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100520093131.GA30929@elte.hu> <20100520100732.GD5309@nowhere>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Thu, 20 May 2010, Frederic Weisbecker wrote:
+> On Thu, May 20, 2010 at 11:31:31AM +0200, Ingo Molnar wrote:
+> >  - [ While it's still a long way off, if this trend continues
+> >      we eventually might even be able to get rid of the 
+> >      /debug/tracing/ temporary debug API and get rid of 
+> >      the ugly in-kernel pretty-printing bits. This is 
+> >      good: it may make Andrew very happy for a change ;-)
+> > 
+> >      The main detail here to be careful of is that lots of
+> >      people are fond of the simplicity of the 
+> >      /debug/tracing/ debug UI, so when we replace it we 
+> >      want to do it by keeping that simple workflow (or 
+> >      best by making it even simpler). I have a few ideas 
+> >      how to do this.
+> 
+> How? We can emulate the /debug/tracing result with something
+> like perf trace, still that won't replace the immediate
+> availability of the result of any trace, which makes it
+> valuable for any simplest workflows.
 
-I finally found the time to give this patch series a try. Minor updates 
-were required, but I'm now running it against 2.6.34.
+I'm a bit torn about this. I really like the availability of the ascii
+interface, but if we can come up with a very basic trace binary tool
+which can be built for deep embedded w/o requiring the world and some
+more libs to be available, then I might give up my resistance. Ideally
+it should be done so it can be easily integrated into busybox.
 
-"Load balancing tick" is still number one in my powertop list of top 
-causes of wakeups (sitting at ~60 to 80 per second as I type this, with 
-~170 wakeups per second total). Comparing this to the numbers I posted 
-earlier, we seem to have a win.
+I don't care whether I do
 
-I do wonder, though, whether further work could still be done. If I take 
-one core offline, for example, I'm still getting load balancing ticks. 
-Intuitively, I'd expect there to be no need for them with only one core 
-available. But maybe I'm just ignorant of what's going on.
+echo 1 >/debug/..../XXX/enable
+cat /debug/tracing/trace
 
-Regards,
+or
 
-Nigel
+perfmini trace enable XXX
+perfmini trace dump
+
+as long as the tool is built in a way that it does not need updates
+when we add trace points or other functionality to the kernel.
+
+Thanks,
+
+	tglx
