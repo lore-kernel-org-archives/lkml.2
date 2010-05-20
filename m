@@ -1,67 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754933Ab0ETMTa (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 08:19:30 -0400
-Received: from DMZ-MAILSEC-SCANNER-5.MIT.EDU ([18.7.68.34]:62393 "EHLO
-	dmz-mailsec-scanner-5.mit.edu" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754493Ab0ETMT3 convert rfc822-to-8bit
-	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 08:19:29 -0400
-X-AuditID: 12074422-b7c13ae000003829-70-4bf528d0200d
-Subject: Re: [RFD] Future tracing/instrumentation directions
-Mime-Version: 1.0 (Apple Message framework v1078)
+	id S1752111Ab0ETM3Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 08:29:25 -0400
+Received: from moutng.kundenserver.de ([212.227.126.187]:61304 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751182Ab0ETM3X (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 08:29:23 -0400
+Date: Thu, 20 May 2010 14:29:19 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Cc: linux-mm <linux-mm@kvack.org>
+Subject: Re: RFC: dirty_ratio back to 40%
+Message-ID: <20100520122919.GA3420@fancy-poultry.org>
+References: <4BF51B0A.1050901@redhat.com>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-From: Theodore Tso <tytso@MIT.EDU>
-In-Reply-To: <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
-Date: Thu, 20 May 2010 08:19:04 -0400
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Christoph Hellwig <hch@lst.de>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Andi Kleen <andi@firstfloor.org>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
-       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
-       Robert Richter <robert.richter@amd.com>
-Content-Transfer-Encoding: 8BIT
-Message-Id: <34C06D7E-3CAF-41C9-A0B0-A14D71E81F1F@mit.edu>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100520093131.GA30929@elte.hu> <20100520100732.GD5309@nowhere> <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
-To: Thomas Gleixner <tglx@linutronix.de>
-X-Mailer: Apple Mail (2.1078)
-X-Brightmail-Tracker: AAAAAA==
+Content-Disposition: inline
+In-Reply-To: <4BF51B0A.1050901@redhat.com>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100519 (GNU/Linux)
+X-Provags-ID: V01U2FsdGVkX1+SuIc99aNIBHeg4qdRFrIwCsP3xNBWYytuwDh
+ a63Tx2mHMNAGA71tRvdZ5Ly4VKY3us7enB5GJC0Pyow9fDRQpY
+ tL/q8lkd0CLt7DUd/lm9Q==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On 20.05.2010, Larry Woodman wrote: 
 
-On May 20, 2010, at 7:07 AM, Thomas Gleixner wrote:
-> 
-> I don't care whether I do
-> 
-> echo 1 >/debug/..../XXX/enable
-> cat /debug/tracing/trace
-> 
-> or
-> 
-> perfmini trace enable XXX
-> perfmini trace dump
-> 
-> as long as the tool is built in a way that it does not need updates
-> when we add trace points or other functionality to the kernel.
+> Increasing the dirty_ratio to 40% will regain the performance loss seen
+> in several benchmarks.  Whats everyone think about this???
 
-I won't care that much assuming that there is a bash_completion script so I can type "perf mini trace enable ext4_da_writep<TAB>" and the right thing happens....
+These are tuneable via sysctl. What I have in my /etc/sysctl.conf is
 
-The point is there are a number of advantages of the current system that go beyond just guaranteed availability of the binary->ascii translation tool.  Command competion, shell globbing to find interesting events you want to enable, etc., are also part of the picture
+ vm.dirty_ratio = 4
+ vm.dirty_background_ratio = 2
+ 
+This writes back the data more often and frequently, thus preventing the
+system from long stalls. 
 
--- Ted
+Works at least for me. AMD Quadcore, 8 GB RAM.
 
