@@ -1,159 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0ETWe3 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:34:29 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50387 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754956Ab0ETWe0 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:34:26 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [PATCH 1/1] perf tui: Allow disabling the TUI on a per command basis in ~/.perfconfig
-Date: Thu, 20 May 2010 19:34:04 -0300
-Message-Id: <1274394844-994-2-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-In-Reply-To: <1274394844-994-1-git-send-email-acme@infradead.org>
-References: <1274394844-994-1-git-send-email-acme@infradead.org>
+	id S1754788Ab0ETWoo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:44:44 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:33249 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754547Ab0ETWom (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 18:44:42 -0400
+Date: Fri, 21 May 2010 00:42:58 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: [PATCH 6/5] adjust mm_take_all_locks to anon-vma-root locking
+Message-ID: <20100520224258.GA12100@random.random>
+References: <20100512133815.0d048a86@annuminas.surriel.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100512133815.0d048a86@annuminas.surriel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Arnaldo Carvalho de Melo <acme@redhat.com>
+This is needed as 6/5 to avoid lockups in mm_take_all_locks.
 
-Using the same scheme as for git's/perf's pager setup, i.e. if one
-doesn't want to, on a newt enabled perf binary, to disable the TUI for
-'perf report', its just a matter of doing:
+======
+Subject: adjust mm_take_all_locks to the root_anon_vma locking
 
-[root@doppio linux-2.6-tip]# printf "[tui]\n\nreport = off\n" >
-/root/.perfconfig
-[root@doppio linux-2.6-tip]# cat /root/.perfconfig
-[tui]
+From: Andrea Arcangeli <aarcange@redhat.com>
 
-report = off
-[root@doppio linux-2.6-tip]#
+Track the anon_vma->root->lock.
 
-System wide settings are also possible, by editing /etc/perfconfig, etc,
-i.e. the git machinery for config files applies to perf as well, so when
-in doubt where to put your settings, consult the git documentation, if
-it fails, please let us know.
-
-Suggested-by: Ingo Molnar <mingo@elte.hu>
-Discussed-with: Stephane Eranian <eranian@google.com>
-Cc: Frédéric Weisbecker <fweisbec@gmail.com>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Stephane Eranian <eranian@google.com>
-Cc: Tom Zanussi <tzanussi@gmail.com>
-LKML-Reference: <new-submission>
-Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+Signed-off-by: Andrea Arcangeli <aarcange@redhat.com>
 ---
- tools/perf/perf.c       |   25 +++++++++++++++++++++++--
- tools/perf/util/cache.h |    2 +-
- tools/perf/util/newt.c  |    7 +++++--
- 3 files changed, 29 insertions(+), 5 deletions(-)
 
-diff --git a/tools/perf/perf.c b/tools/perf/perf.c
-index 08e0e5d..6e48711 100644
---- a/tools/perf/perf.c
-+++ b/tools/perf/perf.c
-@@ -15,15 +15,15 @@
- #include "util/parse-events.h"
- #include "util/debugfs.h"
+diff --git a/mm/mmap.c b/mm/mmap.c
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -2480,7 +2480,7 @@ static DEFINE_MUTEX(mm_all_locks_mutex);
  
--bool use_browser;
--
- const char perf_usage_string[] =
- 	"perf [--version] [--help] COMMAND [ARGS]";
- 
- const char perf_more_info_string[] =
- 	"See 'perf help COMMAND' for more information on a specific command.";
- 
-+int use_browser = -1;
- static int use_pager = -1;
-+
- struct pager_config {
- 	const char *cmd;
- 	int val;
-@@ -49,6 +49,24 @@ int check_pager_config(const char *cmd)
- 	return c.val;
+ static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
+ {
+-	if (!test_bit(0, (unsigned long *) &anon_vma->head.next)) {
++	if (!test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
+ 		/*
+ 		 * The LSB of head.next can't change from under us
+ 		 * because we hold the mm_all_locks_mutex.
+@@ -2488,15 +2488,15 @@ static void vm_lock_anon_vma(struct mm_s
+ 		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
+ 		/*
+ 		 * We can safely modify head.next after taking the
+-		 * anon_vma->lock. If some other vma in this mm shares
++		 * anon_vma->root->lock. If some other vma in this mm shares
+ 		 * the same anon_vma we won't take it again.
+ 		 *
+ 		 * No need of atomic instructions here, head.next
+ 		 * can't change from under us thanks to the
+-		 * anon_vma->lock.
++		 * anon_vma->root->lock.
+ 		 */
+ 		if (__test_and_set_bit(0, (unsigned long *)
+-				       &anon_vma->head.next))
++				       &anon_vma->root->head.next))
+ 			BUG();
+ 	}
  }
+@@ -2537,12 +2537,12 @@ static void vm_lock_mapping(struct mm_st
+  * A single task can't take more than one mm_take_all_locks() in a row
+  * or it would deadlock.
+  *
+- * The LSB in anon_vma->head.next and the AS_MM_ALL_LOCKS bitflag in
++ * The LSB in anon_vma->root->head.next and the AS_MM_ALL_LOCKS bitflag in
+  * mapping->flags avoid to take the same lock twice, if more than one
+  * vma in this mm is backed by the same anon_vma or address_space.
+  *
+  * We can take all the locks in random order because the VM code
+- * taking i_mmap_lock or anon_vma->lock outside the mmap_sem never
++ * taking i_mmap_lock or anon_vma->root->lock outside the mmap_sem never
+  * takes more than one of them in a row. Secondly we're protected
+  * against a concurrent mm_take_all_locks() by the mm_all_locks_mutex.
+  *
+@@ -2587,21 +2587,21 @@ out_unlock:
  
-+static int tui_command_config(const char *var, const char *value, void *data)
-+{
-+	struct pager_config *c = data;
-+	if (!prefixcmp(var, "tui.") && !strcmp(var + 4, c->cmd))
-+		c->val = perf_config_bool(var, value);
-+	return 0;
-+}
-+
-+/* returns 0 for "no tui", 1 for "use tui", and -1 for "not specified" */
-+static int check_tui_config(const char *cmd)
-+{
-+	struct pager_config c;
-+	c.cmd = cmd;
-+	c.val = -1;
-+	perf_config(tui_command_config, &c);
-+	return c.val;
-+}
-+
- static void commit_pager_choice(void)
+ static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
  {
- 	switch (use_pager) {
-@@ -255,6 +273,9 @@ static int run_builtin(struct cmd_struct *p, int argc, const char **argv)
- 	if (p->option & RUN_SETUP)
- 		prefix = NULL; /* setup_perf_directory(); */
- 
-+	if (use_browser == -1)
-+		use_browser = check_tui_config(p->cmd);
-+
- 	if (use_pager == -1 && p->option & RUN_SETUP)
- 		use_pager = check_pager_config(p->cmd);
- 	if (use_pager == -1 && p->option & USE_PAGER)
-diff --git a/tools/perf/util/cache.h b/tools/perf/util/cache.h
-index 5eca525..65fe664 100644
---- a/tools/perf/util/cache.h
-+++ b/tools/perf/util/cache.h
-@@ -30,7 +30,7 @@ extern const char *pager_program;
- extern int pager_in_use(void);
- extern int pager_use_color;
- 
--extern bool use_browser;
-+extern int use_browser;
- 
- #ifdef NO_NEWT_SUPPORT
- static inline void setup_browser(void)
-diff --git a/tools/perf/util/newt.c b/tools/perf/util/newt.c
-index 051022e..f65e859 100644
---- a/tools/perf/util/newt.c
-+++ b/tools/perf/util/newt.c
-@@ -1068,10 +1068,13 @@ static struct newtPercentTreeColors {
- void setup_browser(void)
- {
- 	struct newtPercentTreeColors *c = &defaultPercentTreeColors;
--	if (!isatty(1))
-+
-+	if (!isatty(1) || use_browser != -1) {
-+		setup_pager();
- 		return;
-+	}
- 
--	use_browser = true;
-+	use_browser = 1;
- 	newtInit();
- 	newtCls();
- 	ui_helpline__puts(" ");
--- 
-1.6.2.5
-
+-	if (test_bit(0, (unsigned long *) &anon_vma->head.next)) {
++	if (test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
+ 		/*
+ 		 * The LSB of head.next can't change to 0 from under
+ 		 * us because we hold the mm_all_locks_mutex.
+ 		 *
+ 		 * We must however clear the bitflag before unlocking
+-		 * the vma so the users using the anon_vma->head will
++		 * the vma so the users using the anon_vma->root->head will
+ 		 * never see our bitflag.
+ 		 *
+ 		 * No need of atomic instructions here, head.next
+ 		 * can't change from under us until we release the
+-		 * anon_vma->lock.
++		 * anon_vma->root->lock.
+ 		 */
+ 		if (!__test_and_clear_bit(0, (unsigned long *)
+-					  &anon_vma->head.next))
++					  &anon_vma->root->head.next))
+ 			BUG();
+ 		anon_vma_unlock(anon_vma);
+ 	}
