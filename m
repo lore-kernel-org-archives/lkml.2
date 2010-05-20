@@ -1,62 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753379Ab0ETC0U (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 22:26:20 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:38676 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752381Ab0ETC0S (ORCPT
+	id S1753001Ab0ETCeT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 22:34:19 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49158
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751876Ab0ETCeR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 22:26:18 -0400
-Date: Thu, 20 May 2010 07:56:10 +0530
-From: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Ingo Molnar <mingo@elte.hu>, Masami Hiramatsu <mhiramat@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>, Steven Rostedt <rostedt@goodmis.org>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       "H. Peter Anvin" <hpa@zytor.com>, Roland McGrath <roland@redhat.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-Subject: Re: [PATCH v4 0/13] Uprobes v4
-Message-ID: <20100520022610.GC3319@linux.vnet.ibm.com>
-Reply-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
- <20100518204944.GA6959@Krystal>
- <20100519060803.GB19957@linux.vnet.ibm.com>
- <1274278660.5605.11006.camel@twins>
- <20100519173806.GA3319@linux.vnet.ibm.com>
- <1274291660.1674.1544.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-In-Reply-To: <1274291660.1674.1544.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 19 May 2010 22:34:17 -0400
+Date: Wed, 19 May 2010 19:34:26 -0700 (PDT)
+Message-Id: <20100519.193426.09743465.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100518.233752.256882583.davem@davemloft.net>
+References: <20100518.233752.256882583.davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Peter Zijlstra <peterz@infradead.org> [2010-05-19 19:54:20]:
+From: David Miller <davem@davemloft.net>
+Date: Tue, 18 May 2010 23:37:52 -0700 (PDT)
 
-> On Wed, 2010-05-19 at 23:08 +0530, Srikar Dronamraju wrote:
+> Please pull, thanks a lot!
 > 
-> > Or do you suggest any alternative methods for global tracing?
+> The following changes since commit 537b60d17894b7c19a6060feae40299d7109d6e7:
+>   Linus Torvalds (1):
+>         Merge branch 'x86-uv-for-linus' of git://git.kernel.org/.../tip/linux-2.6-tip
 > 
-> COW the page for each existing and future mapping.
-
-Yes, we could certainly do this. However we could end up with multiple
-copies of the same page. And probably equal number of uprobe and probept
-structures. 
-
---
-Thanks and Regards
-Srikar
-
+> are available in the git repository at:
 > 
+>   master.kernel.org:/pub/scm/linux/kernel/git/davem/net-next-2.6.git master
+
+Ping?
