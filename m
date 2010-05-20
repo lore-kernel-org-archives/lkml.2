@@ -1,19 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932171Ab0ETVJ5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 17:09:57 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:26034 "EHLO
+	id S1757824Ab0ETVKR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 17:10:17 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:26031 "EHLO
 	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab0ETVJv (ORCPT
+	with ESMTP id S932148Ab0ETVJv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 20 May 2010 17:09:51 -0400
-Date: Thu, 20 May 2010 14:08:29 -0700
+Date: Thu, 20 May 2010 14:08:35 -0700
 From: Randy Dunlap <randy.dunlap@oracle.com>
-To: akpm@linux-foundation.org, InKi Dae <inki.dae@samsung.com>,
+To: akpm@linux-foundation.org
+Cc: linux-kernel@vger.kernel.org, InKi Dae <inki.dae@samsung.com>,
        Richard Purdie <rpurdie@rpsys.net>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: [PATCH -mmotm] backlight: fix s6e63m0 kconfig
-Message-Id: <20100520140829.11233713.randy.dunlap@oracle.com>
+Subject: [PATCH -mmotm] backlight: fix s6e63m0 device attr function return
+ types
+Message-Id: <20100520140835.b06ece52.randy.dunlap@oracle.com>
 In-Reply-To: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
 References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
 Organization: Oracle Linux Eng.
@@ -22,49 +23,53 @@ Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BF5A4F0.010D:SCFMA922111,ss=1,fgs=0
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090204.4BF5A4F0.00CB:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Fix kconfig file dependency and help text.
-Move the driver's Kconfig symbol inside the LCD_CLASS_DEVICE block.
+Fix device attribute functions return types.
 
-When CONFIG_BACKLIGHT_CLASS_DEVICE is not enabled:
-ERROR: "backlight_device_register" [drivers/video/backlight/s6e63m0.ko] undefined!
+drivers/video/backlight/s6e63m0.c:718: warning: initialization from incompatible pointer type
+drivers/video/backlight/s6e63m0.c:718: warning: initialization from incompatible pointer type
+drivers/video/backlight/s6e63m0.c:732: warning: initialization from incompatible pointer type
 
 Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 Cc: InKi Dae  <inki.dae@samsung.com>
 Cc: Richard Purdie <rpurdie@rpsys.net>
 ---
-Looks like several backlight/LCD drivers have this kind of relationship.
+ drivers/video/backlight/s6e63m0.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
- drivers/video/backlight/Kconfig |   10 ++++++----
- 1 file changed, 6 insertions(+), 4 deletions(-)
-
---- mmotm-2010-0519-1612.orig/drivers/video/backlight/Kconfig
-+++ mmotm-2010-0519-1612/drivers/video/backlight/Kconfig
-@@ -101,14 +101,16 @@ config LCD_HP700
- 	  If you have an HP Jornada 700 series handheld (710/720/728)
- 	  say Y to enable LCD control driver.
+--- mmotm-2010-0519-1612.orig/drivers/video/backlight/s6e63m0.c
++++ mmotm-2010-0519-1612/drivers/video/backlight/s6e63m0.c
+@@ -654,7 +654,7 @@ static const struct backlight_ops s6e63m
+ 	.update_status = s6e63m0_set_brightness,
+ };
  
--endif # LCD_CLASS_DEVICE
--
- config LCD_S6E63M0
- 	tristate "S6E63M0 AMOLED LCD Driver"
--	depends on LCD_CLASS_DEVICE && SPI
-+	depends on SPI && BACKLIGHT_CLASS_DEVICE
- 	default n
- 	help
--	  If you have an S6E63M0 LCD Panel say Y to enable LCD control driver
-+	  If you have an S6E63M0 LCD Panel, say Y to enable its
-+	  LCD control driver.
-+
-+endif # LCD_CLASS_DEVICE
-+
- #
- # Backlight
- #
+-static int s6e63m0_sysfs_show_gamma_mode(struct device *dev,
++static ssize_t s6e63m0_sysfs_show_gamma_mode(struct device *dev,
+ 				      struct device_attribute *attr, char *buf)
+ {
+ 	struct s6e63m0 *lcd = dev_get_drvdata(dev);
+@@ -681,7 +681,7 @@ static int s6e63m0_sysfs_show_gamma_mode
+ 	return strlen(buf);
+ }
+ 
+-static int s6e63m0_sysfs_store_gamma_mode(struct device *dev,
++static ssize_t s6e63m0_sysfs_store_gamma_mode(struct device *dev,
+ 				       struct device_attribute *attr,
+ 				       const char *buf, size_t len)
+ {
+@@ -718,7 +718,7 @@ static int s6e63m0_sysfs_store_gamma_mod
+ static DEVICE_ATTR(gamma_mode, 0644,
+ 		s6e63m0_sysfs_show_gamma_mode, s6e63m0_sysfs_store_gamma_mode);
+ 
+-static int s6e63m0_sysfs_show_gamma_table(struct device *dev,
++static ssize_t s6e63m0_sysfs_show_gamma_table(struct device *dev,
+ 				      struct device_attribute *attr, char *buf)
+ {
+ 	struct s6e63m0 *lcd = dev_get_drvdata(dev);
