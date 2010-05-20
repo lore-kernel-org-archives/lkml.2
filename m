@@ -1,46 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754292Ab0ETQxP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 12:53:15 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:34364 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753873Ab0ETQxO (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 12:53:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=dVJOehswVbmx3Iqyl72eilAAQNUiZV9T9E9CrZskL0T9Uyw/7hFTVcsZKr5ZCbVE6m
-         cluC5cs7R0Wf/OyLlpW4MavwcJDdEER/6a2bJcwR3NUC30GWvNdcVr9PK3cWvhuYY4t7
-         2qOaym+VBP5p6hB/filNRzUEHsOWdrA2PKApk=
-Date: Thu, 20 May 2010 09:53:08 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jacob Pan <jacob.jun.pan@linux.intel.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Alan Cox <alan@linux.intel.com>, Jacob Pan <jacob.jun.pan@intel.com>
-Subject: Re: [PATCH] input: do not select i8042 for x86 mid
-Message-ID: <20100520165308.GC20861@core.coreip.homeip.net>
-References: <1274124916-23668-1-git-send-email-jacob.jun.pan@linux.intel.com>
+	id S1753875Ab0ETQzm (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 12:55:42 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:54108 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146Ab0ETQzl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 12:55:41 -0400
+Date: Thu, 20 May 2010 18:55:01 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
+       Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
+ type of a raw sample
+Message-ID: <20100520165501.GA8281@elte.hu>
+References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+ <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+ <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
+ <1274347413.5605.13636.camel@twins>
+ <AANLkTikWSOPpHsvJGht7c7QnwcOk-nMyBNhY-g6QpNzg@mail.gmail.com>
+ <1274351859.5605.13961.camel@twins>
+ <20100520140819.GQ21799@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274124916-23668-1-git-send-email-jacob.jun.pan@linux.intel.com>
+In-Reply-To: <20100520140819.GQ21799@erda.amd.com>
 User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0225]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 17, 2010 at 12:35:16PM -0700, Jacob Pan wrote:
-> From: Jacob Pan <jacob.jun.pan@intel.com>
-> 
-> Moorestown does not have i8042 based keyboard controller, so give
-> an option to deselect i8042 for non-pc mid
-> 
-> Signed-off-by: Jacob Pan <jacob.jun.pan@linux.intel.com>
 
-Applied, thanks Jacob.
+* Robert Richter <robert.richter@amd.com> wrote:
 
--- 
-Dmitry
+> On 20.05.10 06:37:39, Peter Zijlstra wrote:
+> 
+> > So yeah, you might as well expose it as a whole separate PMU using Lin's 
+> > stuff.
+> 
+> This seems to be the most promising alternative to raw_type. But it's also 
+> much more bloated requiring sysfs and additional file descriptors.
+
+Not really, fds are really cheap on Linux, and in any case it's only needed 
+when the event is created - can be closed afterwards.
+
+	Ingo
