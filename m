@@ -1,55 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755117Ab0ETLnq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:43:46 -0400
-Received: from out5.smtp.messagingengine.com ([66.111.4.29]:57021 "EHLO
-	out5.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752737Ab0ETLnp (ORCPT
+	id S1755223Ab0ETLob (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:44:31 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:36551 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754805Ab0ETLoa (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:43:45 -0400
-X-Greylist: delayed 471 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 May 2010 07:43:45 EDT
-X-Sasl-enc: Bk0InpfzbyHrsGgW7iBh8HykXCvG40LLrjoLw3WBMODZ 1274355352
-Subject: Re: [PATCH 2/8] autofs: Pushdown the bkl from ioctl
-From: Ian Kent <raven@themaw.net>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, Autofs <autofs@linux.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-       Arnd Bergmann <arnd@arndb.de>
-In-Reply-To: <4BF4445F.9040104@zytor.com>
-References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com>
-	 <1274289855-10001-3-git-send-regression-fweisbec@gmail.com>
-	 <4BF4279C.2000805@zytor.com> <20100519180832.GA9752@nowhere>
-	 <4BF42A5E.6060503@zytor.com> <20100519190307.GC9752@nowhere>
-	 <4BF4445F.9040104@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 May 2010 19:35:45 +0800
-Message-ID: <1274355346.2264.17.camel@localhost>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	Thu, 20 May 2010 07:44:30 -0400
+To: Jens Axboe <jens.axboe@oracle.com>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       torvalds@linux-foundation.org
+In-reply-to: <20100520112821.GP25951@kernel.dk> (message from Jens Axboe on
+	Thu, 20 May 2010 13:28:22 +0200)
+Subject: Re: [RFC PATCH] fuse: support splice() reading from fuse device
+References: <E1OF3kc-00084X-Hi@pomaz-ex.szeredi.hu> <20100520112821.GP25951@kernel.dk>
+Message-Id: <E1OF4Ak-00088m-Jm@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 20 May 2010 13:44:18 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 13:04 -0700, H. Peter Anvin wrote:
-> On 05/19/2010 12:03 PM, Frederic Weisbecker wrote:
-> >>
-> >> But it's not ... it is locked at that point.  It's not lock*ing*, but it
-> >> is not *unlocked*, either.  Furthermore, it is directly contradicting
-> >> the naming scheme of the ops structure.
-> >>
+On Thu, 20 May 2010, Jens Axboe wrote:
+> On Thu, May 20 2010, Miklos Szeredi wrote:
+> > This continues zero copy I/O support on the fuse interface.  The first
+> > part of the patchset (splice write support on fuse device) was posted
+> > here:
 > > 
-> > Would you prefer me to resend a patch?
+> >   http://lkml.org/lkml/2010/4/28/215
 > > 
+> > With Jens' pipe growing patch and additional fuse patches it was
+> > possible to achieve a 20GBytes/s write throghput on my laptop in a
+> > "null" filesystem (no page cache, data goes to /dev/null).
 > 
-> Yes, that would be my preference.
-> 
-> We really need to set a date to kill off autofs3 completely -- I don't
-> care if we rename anything or not -- and add it to feature-removal.txt.
+> Do you have some numbers on how that compares to the same test with the
+> default 16 page pipe size?
 
-Yes, my bad.
-I have to get onto that, sorry.
+With the default 64k pipe size it's about 4 times slower than with a
+pipe size of 1MB.
 
-Ian
-
+Miklos
