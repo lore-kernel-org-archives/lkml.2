@@ -1,61 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754800Ab0ETRNL (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 13:13:11 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43024 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754502Ab0ETRNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 13:13:08 -0400
-Date: Thu, 20 May 2010 19:13:06 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Prince <dhprince-devel@yahoo.co.uk>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] HID
-In-Reply-To: <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
-Message-ID: <alpine.LNX.2.00.1005201905320.28092@pobox.suse.cz>
-References: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz> <alpine.LFD.2.00.1005200912540.23538@i5.linux-foundation.org> <alpine.LFD.2.00.1005200922020.23538@i5.linux-foundation.org> <alpine.LNX.2.00.1005201834190.28092@pobox.suse.cz>
- <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754802Ab0ETRRS (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 13:17:18 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42469 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752712Ab0ETRRQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 13:17:16 -0400
+Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
+ type of a raw sample
+From: Peter Zijlstra <peterz@infradead.org>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Stephane Eranian <eranian@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
+       Paul Mundt <lethal@linux-sh.org>
+In-Reply-To: <20100520170712.GV21799@erda.amd.com>
+References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+	 <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+	 <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
+	 <1274347413.5605.13636.camel@twins>
+	 <AANLkTikWSOPpHsvJGht7c7QnwcOk-nMyBNhY-g6QpNzg@mail.gmail.com>
+	 <1274351859.5605.13961.camel@twins> <20100520140819.GQ21799@erda.amd.com>
+	 <20100520165501.GA8281@elte.hu>  <20100520170712.GV21799@erda.amd.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 20 May 2010 19:16:35 +0200
+Message-ID: <1274375795.5605.15313.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Linus Torvalds wrote:
-
-> Well, I look at something like "hid-ortec.c", and it has basically a few 
-> lines of code, much of it __init, and I say "ok, that makes sense to not 
-> even ask about".
+On Thu, 2010-05-20 at 19:07 +0200, Robert Richter wrote:
+> On 20.05.10 12:55:01, Ingo Molnar wrote:
+> > Not really, fds are really cheap on Linux, and in any case it's only needed 
+> > when the event is created - can be closed afterwards.
 > 
-> So I can see your argument. That said, I've never even _heard_ of ortek. 
-> Maybe it's some common chip and I use it every day. But even for something 
-> that small, I'd wonder how common they really are.
-> 
-> So that kensington driver is a good example of something where I do think 
-> it makes sense to make it default. It's small, and kensington is a big 
-> name.
-> 
-> But when the driver is several hundred lines, and the text size is 
-> probably in the kilobytes (I didn't compile that new driver, but even the 
-> trivial ones are a few hundred bytes) _and_ the driver is for something 
-> I've never even heard about, then I really think it shouldn't be enabled 
-> without asking.
+> I was wondering if we could get the perf event fd directly with the
+> open("/sys/...") command? This would be really easy to set up.
 
-Well the borderline is still a little bit vague, but I see your point.
-
-Having the things we used to support even before the quirk splitup 
-compiled without asking, and separating the rest of the drivers into 
-'really really really small and trivial, or common enough' and 'the rest' 
-makes sense. 
-And explicitly asking for 'the rest'.
-
-This would basically mean removing the 'EMBEDDED' crap from a few drivers 
-in Kconfig. Do you want me to fix that now and redo the pull request, or 
-are you going to pull it anyway and I will rearrange that in 2nd merge 
-round later?
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+I guess we could sorta do that, but then we'd need a ioctl to change the
+perf_event_attr.
