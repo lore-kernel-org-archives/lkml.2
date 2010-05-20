@@ -1,81 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754696Ab0ETRIq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 13:08:46 -0400
-Received: from g5t0006.atlanta.hp.com ([15.192.0.43]:35912 "EHLO
-	g5t0006.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab0ETRIo (ORCPT
+	id S1754604Ab0ETRMc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 13:12:32 -0400
+Received: from moutng.kundenserver.de ([212.227.17.9]:63259 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754166Ab0ETRMb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 13:08:44 -0400
-From: Bjorn Helgaas <bjorn.helgaas@hp.com>
-To: Yinghai <yinghai.lu@oracle.com>
-Subject: Re: [Bug 16007] x86/pci Oops with CONFIG_SND_HDA_INTEL
-Date: Thu, 20 May 2010 11:08:06 -0600
-User-Agent: KMail/1.9.10
-Cc: Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Graham Ramsey <ramsey.graham@ntlworld.com>,
-       linux-kernel@vger.kernel.org, linux-pci@vger.kernel.org,
-       bugzilla-daemon@bugzilla.kernel.org
-References: <4BF40014.30303@ntlworld.com> <20100519172221.73702261@virtuousgeek.org> <4BF48425.2040702@oracle.com>
-In-Reply-To: <4BF48425.2040702@oracle.com>
+	Thu, 20 May 2010 13:12:31 -0400
+Date: Thu, 20 May 2010 19:12:30 +0200
+From: Heinz Diehl <htd@fancy-poultry.org>
+To: linux-kernel@vger.kernel.org
+Subject: Re: RFC: dirty_ratio back to 40%
+Message-ID: <20100520171230.GA6910@fancy-poultry.org>
+References: <4BF51B0A.1050901@redhat.com>
+ <20100520122919.GA3420@fancy-poultry.org>
+ <4BF53D8B.5090407@rsk.demon.co.uk>
 MIME-Version: 1.0
-Content-Type: text/plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201005201108.07040.bjorn.helgaas@hp.com>
+In-Reply-To: <4BF53D8B.5090407@rsk.demon.co.uk>
+X-Accept-Language: no,dk,se,en,de
+Organization: private site
+X-OpenPGP-KeyID: 0xA9353F12
+X-OpenPGP-Fingerprint: C67E 9A93 1033 DF8A 9321  9F90 DC39 B8C3 A935 3F12
+X-OpenPGP-URL: http://www.fritha.org/htd.asc
+User-Agent: Mutt/1.5.20+20100519 (GNU/Linux)
+X-Provags-ID: V01U2FsdGVkX18hfAXogarWmw9onmGY+5Vo4+QIrxnahAmIrB8
+ J5sh9RifFfbSWUzDlbEpTbu54Zjawwv6A8gO98SUtTcH65zQBV
+ 1PoGQe6PpFrJ/M0gFCMnA==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >>>> looks like your system have a very sick BIOS,
-> >>>>
-> >>>> system have two HT chains.
-> >>>>
-> >>>> PCI: Probing PCI hardware (bus 00)
-> >>>> PCI: Discovered primary peer bus 80 [IRQ]
-> >>>>
-> >>>> rt to non-coherent only set one link:
-> >>>> node 0 link 0: io port [1000, ffffff]
-> >>>> TOM: 0000000080000000 aka 2048M
-> >>>> node 0 link 0: mmio [e0000000, efffffff]
-> >>>> node 0 link 0: mmio [a0000, bffff]
-> >>>> node 0 link 0: mmio [80000000, ffffffff]
-> >>>> bus: [00, ff] on node 0 link 0
+On 20.05.2010, Richard Kennedy wrote: 
 
-> >> ah, that 80:01.0 is standalone device, the system still only have one HT chain.
-> >> that is CRAZY that they can sell those poor designed chips.
-> >>
-> >> actually 3e3da00c is fixing another bug with one HT chain.
-> >>
-> >> We have two options:
-> >> 1. revert that 3e3da00c
-> >> 2. or use quirks to black out system with VIA chipset.
+> But it's interesting that you find lowering the dirty_ratio helpful. Do
+> you have any benchmark results you can share?
 
-This is voodoo kernel development, and I don't think we should do it.
+No, unfortunately not. My machine is mainly designed to run squid,
+and it suffered from very long stalls. After posting the problem, I was
+advised to read about vm.dirty_ratio and vm.dirty_background_ratio, and
+lower these. I tried several combinations, and with 4/2, the stalls
+vanished completely.
 
-Can you explain the cause of Graham's oops?  All I can see is that we
-discovered a host bridge window of [mem 0x80000000-0xfcffffffff] to
-bus 00, we did *not* find a bridge leading to bus 80, we found a device
-on bus 80 that is inside the window forwarded to bus 00, so we moved
-that device outside the window:
-
-  bus: 00 index 1 [mem 0x80000000-0xfcffffffff]
-  pci 0000:80:01.0: reg 10: [mem 0xfebfc000-0xfebfffff 64bit]
-  pci 0000:80:01.0: address space collision: [mem 0xfebfc000-0xfebfffff 64bit] conflicts with PCI Bus #00 [mem 0x80000000-0xfcffffffff]
-  pci 0000:80:01.0: BAR 0: set to [mem 0xfd00000000-0xfd00003fff 64bit]
-
-I have no idea why this led to a page fault at ffffc90000078000:
-
-  BUG: unable to handle kernel paging request at ffffc90000078000
-  IP: [<ffffffffa0018d11>] azx_probe+0x3a2/0xa6a [snd_hda_intel]
-
-It looks to me like amd_bus.c just failed to discover the host bridge
-to bus 80.  If the BIOS can program the chipset to work that way, we
-should be able to figure that out, too.
-
-Graham, I think your "pci=earlydump" log is missing the KERN_DEBUG
-output.  It would be interesting to see that for the patched kernel
-so we can compare it with 2.6.34.
-
-Bjorn
