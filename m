@@ -1,79 +1,158 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752058Ab0ETPrZ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 11:47:25 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:62015 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751031Ab0ETPrX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 11:47:23 -0400
-Message-ID: <4BF55963.30503@redhat.com>
-Date: Thu, 20 May 2010 18:46:43 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Rusty Russell <rusty@rustcorp.com.au>
-CC: "Michael S. Tsirkin" <mst@redhat.com>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
- ring itself
-References: <20100505205814.GA7090@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <4BF4DE28.2080103@redhat.com> <201005210004.29670.rusty@rustcorp.com.au>
-In-Reply-To: <201005210004.29670.rusty@rustcorp.com.au>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+	id S1753094Ab0ETPsa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 11:48:30 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57478 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751835Ab0ETPs2 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 11:48:28 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: mmotm 2010-05-19 BUG weirdness...
+In-Reply-To: Your message of "Wed, 19 May 2010 16:13:09 PDT."
+             <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
+From: Valdis.Kletnieks@vt.edu
+References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1274370470_3881P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
 Content-Transfer-Encoding: 7bit
+Date: Thu, 20 May 2010 11:47:50 -0400
+Message-ID: <4637.1274370470@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=dagger.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020201.4BF559A7.0008,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/20/2010 05:34 PM, Rusty Russell wrote:
->
->> Have just one ring, no indexes.  The producer places descriptors into
->> the ring and updates the head,  The consumer copies out descriptors to
->> be processed and copies back in completed descriptors.  Chaining is
->> always linear.  The descriptors contain a tag that allow the producer to
->> identify the completion.
->>      
-> This could definitely work.  The original reason for the page boundaries
-> was for untrusted inter-guest communication: with appropriate page protections
-> they could see each other's rings and a simply inter-guest copy hypercall
-> could verify that the other guest really exposed that data via virtio ring.
->
-> But, cute as that is, we never did that.  And it's not clear that it wins
-> much over simply having the hypervisor read both rings directly.
->    
+--==_Exmh_1274370470_3881P
+Content-Type: text/plain; charset=us-ascii
 
-AFAICS having separate avail_ring/used_ring/desc_pool is orthogonal to 
-this cuteness.
+On Wed, 19 May 2010 16:13:09 PDT, akpm@linux-foundation.org said:
+> The mm-of-the-moment snapshot 2010-05-19-16-12 has been uploaded to
+> 
+>    http://userweb.kernel.org/~akpm/mmotm/
 
->>> Can we do better?  The obvious idea is to try to get rid of last_used and
->>> used, and use the ring itself.  We would use an invalid entry to mark the
->>> head of the ring.
->>>        
->> Interesting!  So a peer will read until it hits a wall.  But how to
->> update the wall atomically?
->>
->> Maybe we can have a flag in the descriptor indicate headness or
->> tailness.  Update looks ugly though: write descriptor with head flag,
->> write next descriptor with head flag, remove flag from previous descriptor.
->>      
-> I was thinking a separate magic "invalid" entry.  To publish an 3 descriptor
-> chain, you would write descriptors 2 and 3, write an invalid entry at 4,
-> barrier, write entry 1.  It is a bit ugly, yes, but not terrible.
->    
+So I'm looking closer at the BUG I just posted - I had deleted two further
+BUGs because they were obviously follow-ons to the original.  But then...
 
-Worth exploring. This amortizes the indexes into the ring, a good thing.
+Note the following 2 lines:
 
-Another thing we can do is place the tail a half ring away from the head 
-(and limit ring utilization to 50%), reducing bounces on short kicks.  
-Or equivalently have an avail ring and used ring, but both containing 
-tagged descriptors instead of pointers to descriptors.
+[   35.357018] note: keymap[2481] exited with preempt_count 1
+[   35.360503] BUG: scheduling while atomic: keymap/2481/0x10000002
 
-> I think that a simple simulator for this is worth writing, which tracks
-> cacheline moves under various fullness scenarios...
->    
+The kernel reports the instigating process exited - and then reports it as
+the offender for a "scheduling while atomic". Insufficient attempted cleanup
+after the first BUG?  Do we care because this is a sign of a scheduler bug
+that could trip on a non-BUG as well, or is it "all bets are off" because of
+the first BUG?
 
-Yup.
+[   35.294528] BUG: unable to handle kernel NULL pointer dereference at (null)
+[   35.295005] IP: [<(null)>] (null)
+[   35.296935] PGD 11da3c067 PUD 11d4ad067 PMD 0 
+[   35.296935] Oops: 0010 [#1] PREEMPT SMP 
+[   35.299667] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/idVendor
+[   35.300328] CPU 0 
+[   35.300328] Modules linked in:
+[   35.300328] 
+[   35.300328] Pid: 2481, comm: keymap Not tainted 2.6.34-mmotm0519 #1 0X564R/Latitude E6500                  
+[   35.300328] RIP: 0010:[<0000000000000000>]  [<(null)>] (null)
+[   35.300328] RSP: 0018:ffff88011d4d5cb0  EFLAGS: 00010046
+[   35.310163] RAX: 0000000000000000 RBX: ffff88011c03e000 RCX: 0000000000000081
+[   35.310163] RDX: ffff88011d4d5cc4 RSI: ffff88011d4d5cc8 RDI: ffff88011c03e000
+[   35.310163] RBP: ffff88011d4d5d28 R08: ffff88011e9b28e8 R09: 0000000000000001
+[   35.310163] R10: ffffffff81e0b160 R11: 0000000000000004 R12: 00000000000000a4
+[   35.310163] R13: ffff88011c03e830 R14: 0000000000000286 R15: ffff88011d4d5cc8
+[   35.310163] FS:  00007f4b86283700(0000) GS:ffff880002600000(0000) knlGS:0000000000000000
+[   35.319397] CS:  0010 DS: 0000 ES: 0000 CR0: 0000000080050033
+[   35.319397] CR2: 0000000000000000 CR3: 000000011d575000 CR4: 00000000000406f0
+[   35.319397] DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+[   35.319397] DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+[   35.319397] Process keymap (pid: 2481, threadinfo ffff88011d4d4000, task ffff88011e9b28c0)
+[   35.319397] Stack:
+[   35.319397]  ffffffff813bf3d1 ffff88011d4d5cf8 0000008100000246 00000081000000a4
+[   35.319397] <0> 0000000000000004 0000000000000000 ffff88011d4d5cc4 ffff88011cf11200
+[   35.319397] <0> ffff88011c179000 ffff88011d4d5d28 0000000000000081 00007fff9ee21fa0
+[   35.319397] Call Trace:
+[   35.319397]  [<ffffffff813bf3d1>] ? input_set_keycode+0xad/0x12c
+[   35.319397]  [<ffffffff813c231d>] evdev_do_ioctl+0x22b/0x79b
+[   35.337913]  [<ffffffff815a4b04>] ? __mutex_lock_common+0x564/0x580
+[   35.337913]  [<ffffffff813c28ca>] ? evdev_ioctl_handler+0x3d/0x80
+[   35.341507]  [<ffffffff813c28ca>] ? evdev_ioctl_handler+0x3d/0x80
+[   35.341507]  [<ffffffff813c28f0>] evdev_ioctl_handler+0x63/0x80
+[   35.344034]  [<ffffffff813c292a>] evdev_ioctl+0xb/0xd
+[   35.344034]  [<ffffffff810ea6cd>] vfs_ioctl+0x2d/0xa1
+[   35.344034]  [<ffffffff810eac4c>] do_vfs_ioctl+0x494/0x4cd
+[   35.344034]  [<ffffffff810eacdc>] sys_ioctl+0x57/0x95
+[   35.344034]  [<ffffffff8100266b>] system_call_fastpath+0x16/0x1b
+[   35.344034] Code:  Bad RIP value.
+[   35.344034] RIP  [<(null)>] (null)
+[   35.344034]  RSP <ffff88011d4d5cb0>
+[   35.344034] CR2: 0000000000000000
+[   35.357018] ---[ end trace 394fa5aa8a77b6f3 ]---
+[   35.357018] note: keymap[2481] exited with preempt_count 1
+[   35.360503] BUG: scheduling while atomic: keymap/2481/0x10000002
+[   35.361774] INFO: lockdep is turned off.
+[   35.363106] Modules linked in:
+[   35.364442] Pid: 2481, comm: keymap Tainted: G      D     2.6.34-mmotm0519 #1
+[   35.365759] Call Trace:
+[   35.367082]  [<ffffffff810653af>] ? __debug_show_held_locks+0x1b/0x24
+[   35.368391]  [<ffffffff8102e742>] __schedule_bug+0x6d/0x72
+[   35.369716]  [<ffffffff815a34de>] schedule+0x10a/0x902
+[   35.371012]  [<ffffffff81030b30>] __cond_resched+0x13/0x1f
+[   35.372305]  [<ffffffff815a3dfa>] _cond_resched+0x16/0x1d
+[   35.373576]  [<ffffffff810c3f10>] unmap_vmas+0x7b7/0x828
+[   35.374850]  [<ffffffff810c922b>] exit_mmap+0x82/0xfd
+[   35.376093]  [<ffffffff81035ede>] mmput+0x43/0xcf
+[   35.377339]  [<ffffffff8103a23a>] exit_mm+0x11d/0x12a
+[   35.378564]  [<ffffffff8103c21e>] do_exit+0x2e1/0x932
+[   35.379792]  [<ffffffff810393cf>] ? kmsg_dump+0x136/0x150
+[   35.381014]  [<ffffffff815a78b5>] oops_end+0x89/0x8e
+[   35.382211]  [<ffffffff8101fc79>] no_context+0x1f7/0x206
+[   35.383384]  [<ffffffff8101fe0f>] __bad_area_nosemaphore+0x187/0x1c7
+[   35.384571]  [<ffffffff810674bf>] ? __lock_acquire+0xc58/0xd09
+[   35.385751]  [<ffffffff8101fe5d>] bad_area_nosemaphore+0xe/0x10
+[   35.386936]  [<ffffffff815a9433>] do_page_fault+0x1f3/0x44b
+[   35.388111]  [<ffffffff815a58f2>] ? trace_hardirqs_off_thunk+0x3a/0x3c
+[   35.389296]  [<ffffffff815a6cbf>] page_fault+0x1f/0x30
+[   35.390437]  [<ffffffff813bf3d1>] ? input_set_keycode+0xad/0x12c
+[   35.391534]  [<ffffffff813c231d>] evdev_do_ioctl+0x22b/0x79b
+[   35.392639]  [<ffffffff815a4b04>] ? __mutex_lock_common+0x564/0x580
+[   35.393722]  [<ffffffff813c28ca>] ? evdev_ioctl_handler+0x3d/0x80
+[   35.394747]  [<ffffffff813c28ca>] ? evdev_ioctl_handler+0x3d/0x80
+[   35.395748]  [<ffffffff813c28f0>] evdev_ioctl_handler+0x63/0x80
+[   35.396686]  [<ffffffff813c292a>] evdev_ioctl+0xb/0xd
+[   35.397627]  [<ffffffff810ea6cd>] vfs_ioctl+0x2d/0xa1
+[   35.398541]  [<ffffffff810eac4c>] do_vfs_ioctl+0x494/0x4cd
+[   35.399471]  [<ffffffff810eacdc>] sys_ioctl+0x57/0x95
+[   35.400387]  [<ffffffff8100266b>] system_call_fastpath+0x16/0x1b
 
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
+--==_Exmh_1274370470_3881P
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
+
+iD8DBQFL9VmmcC3lWbTT17ARAkwuAKC00l9nDHWgUD3rPi/TtK8AT50SnwCgjPVt
+mpObf65+/3OGIW4+zRNYtIY=
+=zmJV
+-----END PGP SIGNATURE-----
+
+--==_Exmh_1274370470_3881P--
 
