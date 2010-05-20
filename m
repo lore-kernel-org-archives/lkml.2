@@ -1,77 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755368Ab0ETWXP (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 18:23:15 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57060 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755296Ab0ETWXO (ORCPT
+	id S1755387Ab0ETWYV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 18:24:21 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:54611
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754729Ab0ETWYT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 18:23:14 -0400
-Date: Thu, 20 May 2010 18:21:54 -0400
-From: Chris Mason <chris.mason@oracle.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, axboe@kernel.dk, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH RFC] reduce runqueue lock contention
-Message-ID: <20100520222154.GC20946@think>
-Mail-Followup-To: Chris Mason <chris.mason@oracle.com>,
-	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-	axboe@kernel.dk, linux-kernel@vger.kernel.org
-References: <20100520204810.GA19188@think>
- <1274389786.1674.1653.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274389786.1674.1653.camel@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090209.4BF5B62A.00D1:SCFMA4539811,ss=1,fgs=0
+	Thu, 20 May 2010 18:24:19 -0400
+Date: Thu, 20 May 2010 15:24:28 -0700 (PDT)
+Message-Id: <20100520.152428.112847950.davem@davemloft.net>
+To: jbaron@redhat.com
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, mathieu.desnoyers@polymtl.ca,
+       hpa@zytor.com, tglx@linutronix.de, rostedt@goodmis.org,
+       andi@firstfloor.org, roland@redhat.com, rth@redhat.com,
+       mhiramat@redhat.com, fweisbec@gmail.com, avi@redhat.com,
+       vgoyal@redhat.com
+Subject: Re: [PATCH 07/13] jump label v8: sort jump table at build-time
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100520201728.GA18815@redhat.com>
+References: <f9a6149e89c8c0131e1ac1fa5ea163c4f5b023d1.1274283321.git.jbaron@redhat.com>
+	<20100519.153634.266077873.davem@davemloft.net>
+	<20100520201728.GA18815@redhat.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 11:09:46PM +0200, Peter Zijlstra wrote:
-> On Thu, 2010-05-20 at 16:48 -0400, Chris Mason wrote:
-> > 
-> > This is more of a starting point than a patch, but it is something I've
-> > been meaning to look at for a long time.  Many different workloads end
-> > up hammering very hard on try_to_wake_up, to the point where the
-> > runqueue locks dominate CPU profiles.
-> 
-> Right, so one of the things that I considered was to make p->state an
-> atomic_t and replace the initial stage of try_to_wake_up() with
-> something like:
-> 
-> int try_to_wake_up(struct task *p, unsigned int mask, wake_flags)
-> {
->   int state = atomic_read(&p->state);
-> 
->   do {
->     if (!(state & mask))
->       return 0;
-> 
->     state = atomic_cmpxchg(&p->state, state, TASK_WAKING);
->   } while (state != TASK_WAKING);
-> 
->   /* do this pending queue + ipi thing */
-> 
->   return 1;
-> }
-> 
-> Also, I think we might want to put that atomic single linked list thing
-> into some header (using atomic_long_t or so), because I have a similar
-> thing living in kernel/perf_event.c, that needs to queue things from NMI
-> context.
+From: Jason Baron <jbaron@redhat.com>
+Date: Thu, 20 May 2010 16:17:29 -0400
 
-So I've done three of these cmpxchg lists recently...but they have all
-been a little different.  I went back and forth a bunch of times about
-using a list_head based thing instead to avoid the walk for list append.
-I really don't like the walk.
+> btw, how do the sparc bits look?
 
-But, what makes this one unique is that I'm using a cmpxchg on the list
-pointer in the in task struct to take ownership of this task struct.
-It is how I avoid concurrent lockless enqueues.
-
-Your fiddling with the p->state above would let me avoid that.
-
--chris
+I have to send you a fix because I use the "call" opcode instead
+of the one for "ba".
