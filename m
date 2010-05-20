@@ -1,35 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab0ETDnn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 23:43:43 -0400
-Received: from science.horizon.com ([71.41.210.146]:12421 "HELO
-	science.horizon.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753410Ab0ETDnm (ORCPT
+	id S1753669Ab0ETDqH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 23:46:07 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:46151
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753553Ab0ETDqF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 23:43:42 -0400
-Date: 19 May 2010 23:43:40 -0400
-Message-ID: <20100520034340.15087.qmail@science.horizon.com>
-From: "George Spelvin" <linux@horizon.com>
-To: eric.dumazet@gmail.com, linux@horizon.com
-Subject: Re: 2.6.34 + ssh segfault
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <1274299765.2658.2.camel@edumazet-laptop>
+	Wed, 19 May 2010 23:46:05 -0400
+Date: Wed, 19 May 2010 20:46:11 -0700 (PDT)
+Message-Id: <20100519.204611.254862260.davem@davemloft.net>
+To: fujita.tomonori@lab.ntt.co.jp
+Cc: mpm@selenic.com, geert@linux-m68k.org, dwmw2@infradead.org,
+       herbert@gondor.hengli.com.au, penberg@cs.helsinki.fi, ken@codelabs.ch,
+       michael-dev@fami-braun.de, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org, anemo@mba.ocn.ne.jp
+Subject: Re: [BUG] SLOB breaks Crypto
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <20100520124026G.fujita.tomonori@lab.ntt.co.jp>
+References: <1274278307.11603.1264.camel@calx>
+	<20100519.123325.123438307.davem@davemloft.net>
+	<20100520124026G.fujita.tomonori@lab.ntt.co.jp>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> This makes no sense to me, the EIP is in the midle of an instruction.
-> (29 <cf>           sub    %ecx,%edi )
+From: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
+Date: Thu, 20 May 2010 12:38:01 +0900
+
+> On Wed, 19 May 2010 12:33:25 -0700 (PDT)
+> David Miller <davem@davemloft.net> wrote:
 > 
-> Bad compiler, cosmic ray, bad hardware... I dont know.
+>> From: Matt Mackall <mpm@selenic.com>
+>> Date: Wed, 19 May 2010 09:11:47 -0500
+>> 
+>> > I still think we should add it to all of them as positive documentation
+>> > that this issue has been considered. And then make the kernel not
+>> > compile without it so new arch implementors can't miss it.
+>> 
+>> I agree and would even go so far as to suggest that we break all
+>> architectures not setting it now.
 > 
-> Try to rebuild completely the kernel with gcc-4.5, or gcc-4.4.3 ?
+> About documentation, I think that ARCH_KMALLOC_MINALIGN description
+> would fit in "Platform Issues" section in DMA-API-HOWTO. I'll add it
+> later.
 
-Actually, I started just recompiing with the same compiler and am
-suffering internal compiler errors.  Which go away when I type "make"
-a second time.  I think I need to check my hardware.
-
-So although it's a geniuine bug in *my* kernel, it's not looking
-like a problem with the source code.
-
-Apologies for the false alarm.
+Ok, good idea.
