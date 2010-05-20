@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754687Ab0ETIaF (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 04:30:05 -0400
-Received: from casper.infradead.org ([85.118.1.10]:39678 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753875Ab0ETIaA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 04:30:00 -0400
-Subject: Re: [patch 3/7] softirq: avoid softirq_work_list for SCHED_SOFTIRQ
- when sent remotely
-From: Peter Zijlstra <peterz@infradead.org>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: David Miller <davem@davemloft.net>, suresh.b.siddha@intel.com,
-       mingo@elte.hu, tglx@linutronix.de, arjan@linux.jf.intel.com,
-       venki@google.com, svaidy@linux.vnet.ibm.com, ego@in.ibm.com,
-       linux-kernel@vger.kernel.org, linux@dominikbrodowski.net,
-       ncunningham@crca.org.au
-In-Reply-To: <20100520082309.GH25951@kernel.dk>
-References: <20100517182726.089700767@sbs-t61.sc.intel.com>
-	 <20100517184027.777058425@sbs-t61.sc.intel.com>
-	 <1274343159.5605.13325.camel@twins>
-	 <20100520.011432.209562565.davem@davemloft.net>
-	 <20100520082309.GH25951@kernel.dk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 May 2010 10:29:18 +0200
-Message-ID: <1274344158.5605.13394.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1754241Ab0ETIcT (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 04:32:19 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56403 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753915Ab0ETIcP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 04:32:15 -0400
+Message-ID: <4BF4F31D.8070900@kernel.org>
+Date: Thu, 20 May 2010 10:30:21 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Oleg Nesterov <oleg@redhat.com>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5?= =?ISO-8859-1?Q?g?= 
+	<arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+References: <1272429119-12103-1-git-send-email-arve@android.com> <201004282250.44200.rjw@sisk.pl> <l2yd6200be21004282037rc063266by91db7f732ceaa529@mail.gmail.com> <201004292316.14524.rjw@sisk.pl> <4BDA5B8B.50004@kernel.org> <20100430172618.GA9043@redhat.com>
+In-Reply-To: <20100430172618.GA9043@redhat.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Thu, 20 May 2010 08:30:26 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 10:23 +0200, Jens Axboe wrote:
-> On Thu, May 20 2010, David Miller wrote:
-> > From: Peter Zijlstra <peterz@infradead.org>
-> > Date: Thu, 20 May 2010 10:12:39 +0200
-> > 
-> > > Most odd all that, Dave, Jens, what happened to all that remote_softirq
-> > > stuff?
-> > 
-> > Nobody ended up using this remote softirq infrastructure, it can be
-> > completely deleted.
+Hello,
+
+(sorry about late reply)
+
+On 04/30/2010 07:26 PM, Oleg Nesterov wrote:
+> Currently _cpu_down() can't flush and/or stop the frozen cwq->thread.
 > 
-> What parts of it? There has been reworks of parts of the code since I
-> added it, the block layer only uses __smp_call_function_single() to
-> trigger remote softirqs.
+> IIRC this is fixable, but needs the nasty complications. We should
+> thaw + stop the frozen cwq->thread, then move the pending works to
+> another CPU.
 
-Right, so __smp_call_function_single() is the normal remote ipi stuff
-from kernel/smp.c, send_remote_softirq() is the pile of code in
-kernel/softirq.c that uses that to tickle remote softirqs.
+Oh, this isn't an issue w/ cmwq.  While frozen all new works are
+collected into per-cpu delayed worklist and while frozen trustee in
+charge of the cpu will keep waiting.  Once thawed, trustee will
+execute all works including the delayed ones unbound to any cpu.
 
-The 'problem' seems to be that the remote softirq code (not the ipi
-bits) doesn't have any users and is quite complex and apparently
-incomplete.
+Thanks.
 
-Suresh, would it make sense to do as Jens does and simply use
-__smp_call_function_single() or do you think it still makes sense to
-have a small wrapper and maybe share that with Jens?
+-- 
+tejun
