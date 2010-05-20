@@ -1,54 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757804Ab0ETVEI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 17:04:08 -0400
-Received: from home.kolivas.org ([59.167.196.135]:39592 "EHLO home.kolivas.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757786Ab0ETVEG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 17:04:06 -0400
-From: Con Kolivas <kernel@kolivas.org>
-To: Thomas Backlund <tmb@mandriva.org>
-Subject: Re: 2.6.34-ck1
-Date: Fri, 21 May 2010 07:04:03 +1000
-User-Agent: KMail/1.12.4 (Linux/2.6.34-ck1; KDE/4.3.4; x86_64; ; )
-Cc: linux-kernel@vger.kernel.org
-References: <201005201738.51749.kernel@kolivas.org> <4BF564F6.202@mandriva.org>
-In-Reply-To: <4BF564F6.202@mandriva.org>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	id S932139Ab0ETVJt (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 17:09:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:25989 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754689Ab0ETVJr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 17:09:47 -0400
+Date: Thu, 20 May 2010 14:08:23 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: akpm@linux-foundation.org, Guennadi Liakhovetski <g.liakhovetski@gmx.de>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: linux-kernel@vger.kernel.org, linux-media@vger.kernel.org
+Subject: [PATCH -mmotm] media: ak881x needs slab.h
+Message-Id: <20100520140823.a9b81de9.randy.dunlap@oracle.com>
+In-Reply-To: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
+References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005210704.03900.kernel@kolivas.org>
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BF5A4F1.00BD:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 02:36:06 Thomas Backlund wrote:
-> 20.05.2010 10:38, Con Kolivas skrev:
-> > These are patches designed to improve system responsiveness and
-> > interactivity with specific emphasis on the desktop, but suitable to any
-> > workload.
-> 
-> A small "problem"...
-> 
-> > Apply to 2.6.34:
-> > http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.34/2.6.3
-> >4- ck1/patch-2.6.34-ck1.bz2
-> 
-> This one contains BFS v317
-> 
-> > Broken out tarball:
-> > http://www.kernel.org/pub/linux/kernel/people/ck/patches/2.6/2.6.34/2.6.3
-> >4- ck1/2.6.34-ck1-broken-out.tar.bz2
-> 
-> This one contains BFS v318
-> 
-> --
-> Thomas
-> 
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-Darn, screwup by me for being out of practice. Fixing. Mirrors will take an 
-hour or so to catch up. Thanks for the heads up.
+Add slab.h to fix ak881x build:
 
--- 
--ck
+drivers/media/video/ak881x.c:265:error: implicit declaration of function 'kzalloc'
+drivers/media/video/ak881x.c:265:warning: assignment makes pointer from integer without a cast
+drivers/media/video/ak881x.c:283:error: implicit declaration of function 'kfree'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Guennadi Liakhovetski <g.liakhovetski@gmx.de>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+---
+ drivers/media/video/ak881x.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- mmotm-2010-0519-1612.orig/drivers/media/video/ak881x.c
++++ mmotm-2010-0519-1612/drivers/media/video/ak881x.c
+@@ -11,6 +11,7 @@
+ #include <linux/i2c.h>
+ #include <linux/init.h>
+ #include <linux/platform_device.h>
++#include <linux/slab.h>
+ #include <linux/videodev2.h>
+ 
+ #include <media/ak881x.h>
