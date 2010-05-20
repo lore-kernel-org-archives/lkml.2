@@ -1,43 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755223Ab0ETLob (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:44:31 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:36551 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754805Ab0ETLoa (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:44:30 -0400
-To: Jens Axboe <jens.axboe@oracle.com>
-CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org
-In-reply-to: <20100520112821.GP25951@kernel.dk> (message from Jens Axboe on
-	Thu, 20 May 2010 13:28:22 +0200)
-Subject: Re: [RFC PATCH] fuse: support splice() reading from fuse device
-References: <E1OF3kc-00084X-Hi@pomaz-ex.szeredi.hu> <20100520112821.GP25951@kernel.dk>
-Message-Id: <E1OF4Ak-00088m-Jm@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 20 May 2010 13:44:18 +0200
+	id S1755315Ab0ETLt1 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:49:27 -0400
+Received: from mx2.mail.elte.hu ([157.181.151.9]:34867 "EHLO mx2.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755041Ab0ETLtZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 07:49:25 -0400
+Date: Thu, 20 May 2010 13:48:51 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFD] Future tracing/instrumentation directions
+Message-ID: <20100520114851.GA17860@elte.hu>
+References: <1274291514.26328.930.camel@gandalf.stny.rr.com>
+ <20100520093131.GA30929@elte.hu>
+ <20100520100732.GD5309@nowhere>
+ <alpine.LFD.2.00.1005201256420.3368@localhost.localdomain>
+ <20100520114218.GA15531@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100520114218.GA15531@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0000]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Jens Axboe wrote:
-> On Thu, May 20 2010, Miklos Szeredi wrote:
-> > This continues zero copy I/O support on the fuse interface.  The first
-> > part of the patchset (splice write support on fuse device) was posted
-> > here:
-> > 
-> >   http://lkml.org/lkml/2010/4/28/215
-> > 
-> > With Jens' pipe growing patch and additional fuse patches it was
-> > possible to achieve a 20GBytes/s write throghput on my laptop in a
-> > "null" filesystem (no page cache, data goes to /dev/null).
+
+* Ingo Molnar <mingo@elte.hu> wrote:
+
+> > as long as the tool is built in a way that it does not 
+> > need updates when we add trace points or other 
+> > functionality to the kernel.
 > 
-> Do you have some numbers on how that compares to the same test with the
-> default 16 page pipe size?
+> Yeah, most definitely. The sysfs event_source class will 
+> ensure that whatever (new) events are available 
+> propagate through the tool and are available to it.
 
-With the default 64k pipe size it's about 4 times slower than with a
-pipe size of 1MB.
+Note that this approach isnt just for tools/perf/, it will 
+be useful for other perf events based tools as well: 
+SysProf and for the libpfm based apps.
 
-Miklos
+	Ingo
