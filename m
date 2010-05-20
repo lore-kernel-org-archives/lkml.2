@@ -1,34 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754739Ab0ETNoH (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 09:44:07 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:38005 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754611Ab0ETNoF (ORCPT
+	id S1754547Ab0ETNr7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 09:47:59 -0400
+Received: from lon1-post-3.mail.demon.net ([195.173.77.150]:51457 "EHLO
+	lon1-post-3.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753102Ab0ETNr6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 09:44:05 -0400
-Date: Thu, 20 May 2010 14:43:54 +0100
-From: Matthew Garrett <mjg59@srcf.ucam.org>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org, Yong Wang <yong.y.wang@intel.com>,
-       Corentin Chary <corentincj@iksaif.net>, Dmitry Torokhov <dtor@mail.ru>,
-       Tejun Heo <tj@kernel.org>, platform-driver-x86@vger.kernel.org
-Subject: Re: [PATCH] drivers/platform/x86/eeepc-wmi.c: fix build warning
-Message-ID: <20100520134354.GF15356@srcf.ucam.org>
-References: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
+	Thu, 20 May 2010 09:47:58 -0400
+Message-ID: <4BF53D8B.5090407@rsk.demon.co.uk>
+Date: Thu, 20 May 2010 14:47:55 +0100
+From: Richard Kennedy <richard@rsk.demon.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274265421-26747-1-git-send-email-daniel@caiaq.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+To: Heinz Diehl <htd@fancy-poultry.org>
+CC: linux-kernel@vger.kernel.org, linux-mm <linux-mm@kvack.org>,
+       lwoodman@redhat.com
+Subject: Re: RFC: dirty_ratio back to 40%
+References: <4BF51B0A.1050901@redhat.com> <20100520122919.GA3420@fancy-poultry.org>
+In-Reply-To: <20100520122919.GA3420@fancy-poultry.org>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Applied, thanks.
-
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+On 20/05/10 13:29, Heinz Diehl wrote:
+> On 20.05.2010, Larry Woodman wrote: 
+> lwoodman@redhat.com
+>> Increasing the dirty_ratio to 40% will regain the performance loss seen
+>> in several benchmarks.  Whats everyone think about this???
+> 
+> These are tuneable via sysctl. What I have in my /etc/sysctl.conf is
+> 
+>  vm.dirty_ratio = 4
+>  vm.dirty_background_ratio = 2
+>  
+> This writes back the data more often and frequently, thus preventing the
+> system from long stalls. 
+> 
+> Works at least for me. AMD Quadcore, 8 GB RAM.
+> 
+get_dirty_limits uses a minimum vm_dirty_ratio of 5, so you can't set it
+lower than that (unless you use vm_dirty_bytes).
+But it's interesting that you find lowering the dirty_ratio helpful. Do
+you have any benchmark results you can share?
+regards
+Richard
