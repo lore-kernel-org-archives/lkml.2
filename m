@@ -1,127 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753592Ab0ETE5w (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 00:57:52 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:43872 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751756Ab0ETE5u (ORCPT
+	id S1753758Ab0ETE54 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 00:57:56 -0400
+Received: from vms173017pub.verizon.net ([206.46.173.17]:52728 "EHLO
+	vms173017pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753666Ab0ETE5y (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 00:57:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=qTMLndOiff4oR5Ql9HTJ5r5sZOFncIvRvQ8tprXP8OXmJcXN6Z0gcUbZsbweyI4xn2
-         7YB9TS99Oh0xIMLwBtOi1GbUEMpf5oNMpo80DDaYnq0O4fRLGevmlS3phXRG17hgTI5V
-         Xf/k04AyIFU6PZomsKtvNqqLt5SJq9/eUXuuI=
-Message-ID: <4BF4C147.2030604@gmail.com>
-Date: Thu, 20 May 2010 01:57:43 -0300
-From: Mauro Carvalho Chehab <maurochehab@gmail.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
+	Thu, 20 May 2010 00:57:54 -0400
+Date: Thu, 20 May 2010 00:56:18 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Valdis.Kletnieks@vt.edu, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: Re: mmotm 2010-05-11-18-20 uploaded
-References: <201005120149.o4C1n7P4002637@imap1.linux-foundation.org> <6195.1273763194@localhost> <20100513160249.GC22238@core.coreip.homeip.net> <4BF4757C.5090303@redhat.com>
-In-Reply-To: <4BF4757C.5090303@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-reply-to: <201005131405.45732.dmitry.torokhov@gmail.com>
+Message-id: <alpine.LFD.2.00.1005200054090.2921@localhost.localdomain>
+References: <20100513075728.GF30110@core.coreip.homeip.net>
+ <20100513181002.GB23708@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005131232350.3711@i5.linux-foundation.org>
+ <201005131405.45732.dmitry.torokhov@gmail.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mauro Carvalho Chehab wrote:
-> Dmitry Torokhov wrote:
->> On Thu, May 13, 2010 at 11:06:34AM -0400, Valdis.Kletnieks@vt.edu wrote:
->>> On Tue, 11 May 2010 18:21:22 PDT, akpm@linux-foundation.org said:
->>>> The mm-of-the-moment snapshot 2010-05-11-18-20 has been uploaded to
->>>>
->>>>    http://userweb.kernel.org/~akpm/mmotm/
->>> Dell Latitude E6500, x86_64 kernel.
->>>
->>> Boots to single user prompt, but has issues on the way there.  Possibly
->>> very important - I was definitely *not* typing at the time (as I had hit
->>> return on the LUKS passphrase for the disk at 36 seconds after boot, and
->>> I didn't get the # prompt for single-user for another minute or two (probably
->>> due to udev having issues due to the oops). So I have no idea what it was
->>> trying to get a keycode for...
->>>
->> Udev probably tries to remap special keys on your keyboard...
->>
->>> [   40.717136] udev: starting version 154
->>> [   41.710153] BUG: unable to handle kernel NULL pointer dereference at (null)
->>> [   41.711007] IP: [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
->>> [   41.711007] PGD 11d318067 PUD 118af1067 PMD 0
->>> [   41.711007] Oops: 0002 [#1] PREEMPT SMP
->>> [   41.711007] last sysfs file: /sys/devices/pci0000:00/0000:00:1a.7/usb1/1-4/idVendor
->>> [   41.711007] CPU 0
->>> [   41.711007] Modules linked in:
->>> [   41.711007]
->>> [   41.711007] Pid: 2501, comm: keymap Not tainted 2.6.34-rc7-mmotm0511 #2 0X564R/Latitude E6500
->>>
->>> [   41.711007] RIP: 0010:[<ffffffff813bb996>]  [<ffffffff813bb996>] input_default_getkeycode_from_index+0x4e/0x5b
->> I think this is Mauro's big keycode additions.
->>
-> 
-> Ok, I was able to reproduce the bug:
-> 
-> # getkeycodes                                              
-> [22726.468755] BUG: unable to handle kernel NULL pointer dereference at (null)  
-> [22726.471074] IP: [<c138b6d0>] input_default_getkeycode_from_index+0x40/0x60   
-> [22726.471074] *pde = 00000000                                                  
-> [22726.471074] Oops: 0002 [#1] SMP                                              
-> [22726.471074] last sysfs file: /sys/devices/pci0000:00/0000:00:0b.1/usb1/1-3/dm
-> [22726.471074] Modules linked in: ip6t_REJECT nf_conntrack_ipv6 ip6table_filter]
-> [22726.471074]                                                                  
-> [22726.471074] Pid: 947, comm: getkeycodes Not tainted 2.6.34 #6 C51MCP51/      
-> [22726.471074] EIP: 0060:[<c138b6d0>] EFLAGS: 00210046 CPU: 0                   
-> [22726.471074] EIP is at input_default_getkeycode_from_index+0x40/0x60          
-> [22726.471074] EAX: 00000000 EBX: 00000000 ECX: 00000002 EDX: dacfbdc8          
-> [22726.471074] ESI: dacfbdc8 EDI: f5daf794 EBP: dacfbdb8 ESP: dacfbdb4          
-> [22726.471074]  DS: 007b ES: 007b FS: 00d8 GS: 00e0 SS: 0068                    
-> [22726.471074] Process getkeycodes (pid: 947, ti=dacfa000 task=f573d4a0 task.ti)
-> [22726.471074] Stack:                                                           
-> [22726.471074]  f5daf000 dacfbdec c138d233 dacfbe30 00200286 00000000 00000000 4
-> [22726.471074] <0> 00000000 00000000 00000000 dacfbe2c f5da0340 c16c12cc dacfbd8
-> [22726.471074] <0> c12f4130 dacfbe24 c138d9f8 00000002 00000001 00000000 c138d90
-> [22726.471074] Call Trace:                                                      
-> [22726.471074]  [<c138d233>] ? input_get_keycode+0x73/0x90                      
-> [22726.471074]  [<c12f4148>] ? getkeycode_helper+0x18/0x30                      
-> [22726.471074]  [<c12f4130>] ? getkeycode_helper+0x0/0x30                       
-> [22726.471074]  [<c138d9f8>] ? input_handler_for_each_handle+0x78/0xa0          
-> [22726.471074]  [<c138d980>] ? input_handler_for_each_handle+0x0/0xa0           
-> [22726.471074]  [<c12f4130>] ? getkeycode_helper+0x0/0x30                       
-> [22726.471074]  [<c12f399e>] ? getkeycode+0x2e/0x40                             
-> [22726.471074]  [<c12f16ab>] ? vt_ioctl+0xb9b/0x1960                            
-> [22726.471074]  [<c12ed600>] ? tty_ldisc_try+0x20/0x50                          
-> [22726.471074]  [<c12ed8da>] ? put_ldisc+0x4a/0xd0                              
-> [22726.471074]  [<c107649c>] ? trace_hardirqs_on_caller+0x12c/0x170             
-> [22726.471074]  [<c10764eb>] ? trace_hardirqs_on+0xb/0x10                       
-> [22726.471074]  [<c12f0b10>] ? vt_ioctl+0x0/0x1960                              
-> [22726.471074]  [<c12e74bf>] ? tty_ioctl+0x7f/0x8a0                             
-> [22726.471074]  [<c11150e2>] ? vfs_ioctl+0x32/0xc0                              
-> [22726.471074]  [<c12e7440>] ? tty_ioctl+0x0/0x8a0                              
-> [22726.471074]  [<c111584a>] ? do_vfs_ioctl+0x6a/0x5d0                          
-> [22726.471074]  [<c10fc455>] ? kmem_cache_free+0x85/0xc0                        
-> [22726.471074]  [<c107649c>] ? trace_hardirqs_on_caller+0x12c/0x170             
-> [22726.471074]  [<c10764eb>] ? trace_hardirqs_on+0xb/0x10                       
-> [22726.471074]  [<c111070b>] ? putname+0x2b/0x40                                
-> [22726.471074]  [<c1105523>] ? do_sys_open+0xf3/0x110                           
-> [22726.471074]  [<c1097f13>] ? audit_syscall_entry+0x1e3/0x210                  
-> [22726.471074]  [<c1115e17>] ? sys_ioctl+0x67/0x80                              
-> [22726.471074]  [<c1002fdf>] ? sysenter_do_call+0x12/0x38                       
-> [22726.471074] Code: 0a b8 ea ff ff ff 5b 5d c3 66 90 3b 98 a4 00 00 00 73 ee 8 
-> [22726.471074] EIP: [<c138b6d0>] input_default_getkeycode_from_index+0x40/0x60 4
-> [22726.471074] CR2: 0000000000000000                                            
-> [22726.471074] ---[ end trace 4ee8ba470bac54f1 ]---                             
-> 
-> I've removed the big getkeycode stuff from the material I've submitted earlier
-> today for 2.6.35. I'm currently working on fix the issue.
+On Thu, 13 May 2010, Dmitry Torokhov wrote:
 
-OK, I just sent the one-line fix to LMML and input ML.
+> On Thursday 13 May 2010 12:40:43 pm Linus Torvalds wrote:
+> > On Thu, 13 May 2010, Dmitry Torokhov wrote:
+> > > You don't have anything plugged into the ports though, do you?
+> > 
+> > No. It's a modern machine. But the port is there, and we've been very good
+> > at booting up and finding keyboards later (I've done it myself - headless
+> > machines that you hotplug a PS/2 keyboard into: it's not necessarily
+> > technically something you're supposed to do, but it has worked fine for
+> > me).
+> > 
+> > > I wonder what your DSDT looks like.
+> 
+> [... pulling LKML back in...]
+> 
+> Lookie, lookie:
+> 
+>                 Device (PS2K)
+>                 {
+>                     Name (_HID, EisaId ("PNP0303"))
+>                     Name (_CID, EisaId ("PNP030B"))
+>                     Method (_STA, 0, NotSerialized)
+>                     {
+>                         ShiftLeft (One, 0x0A, Local0)
+>                         If (And (IOST, Local0))
+>                         {
+>                             Return (0x0F)
+>                         }
+> 
+>                         Return (Zero)
+>                     }
+> ...
+> 
+>                 Device (PS2M)
+>                 {
+>                     Name (_HID, EisaId ("PNP0F03"))
+>                     Name (_CID, EisaId ("PNP0F13"))
+>                     Method (_STA, 0, NotSerialized)
+>                     {
+> 
+> But I guess because there are no devices plugged in ACPI they are "inactive" 
+> and thus ACPI drop them. I was always wondered by ACPI did that. Len?
 
--- 
+I guess only a Windows person could answer this --
+since it is really a Windows-ism, rather than something that
+makes any sense based on what is in the ACPI spec itself.
 
-Cheers,
-Mauro
+cheers,
+Len Brown, Intel Open Source Technology Center
+
