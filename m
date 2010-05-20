@@ -1,65 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753598Ab0ETEuJ (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 00:50:09 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:32924 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753551Ab0ETEuH convert rfc822-to-8bit (ORCPT
+	id S1753460Ab0ETEyc (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 00:54:32 -0400
+Received: from vms173011pub.verizon.net ([206.46.173.11]:58070 "EHLO
+	vms173011pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753510Ab0ETEy2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 00:50:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=LNwlWCdjLhQ9jtIDhhRD3FED34qef6YygU2q4jW0p7LLjehnwfMLtdkY2oFC34Rn9g
-         LwydR13t4Kq2gTv93chz5Y/70xpK7VYiNy+bmUNB5SGSG9Vbhpo1zOOeCS2lB/cRcvMN
-         x+j1oBSjr3YrRanfdbpW9wbVtedOTH/zfbt0Y=
-MIME-Version: 1.0
-In-Reply-To: <1274325703-11092-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-References: <1274325703-11092-1-git-send-email-fujita.tomonori@lab.ntt.co.jp>
-Date: Thu, 20 May 2010 07:50:05 +0300
-X-Google-Sender-Auth: M_GMzWL_dinH8N1K-vCy9fvC7-c
-Message-ID: <AANLkTil7bciN2D_4cjROmONihRHQNpH3t_bJNSyz92UW@mail.gmail.com>
-Subject: Re: [PATCH -mm 0/6] ARCH_KMALLOC_MINALIGN fixes
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: FUJITA Tomonori <fujita.tomonori@lab.ntt.co.jp>
-Cc: linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
-       davem@davemloft.net, dwmw2@infradead.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Thu, 20 May 2010 00:54:28 -0400
+Date: Thu, 20 May 2010 00:53:39 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-input@vger.kernel.org, Bastien Nocera <hadess@hadess.net>
+Subject: Re: [git pull] Input updates for 2.6.34-rc6
+In-reply-to: <20100514154905.GA6681@srcf.ucam.org>
+Message-id: <alpine.LFD.2.00.1005200025360.2921@localhost.localdomain>
+References: <20100513160117.GB22238@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005130943460.3711@i5.linux-foundation.org>
+ <20100513171639.GA23708@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005131017070.3711@i5.linux-foundation.org>
+ <20100513181002.GB23708@core.coreip.homeip.net>
+ <alpine.LFD.2.00.1005131253310.3711@i5.linux-foundation.org>
+ <m1aas2kjb6.fsf@fess.ebiederm.org>
+ <alpine.LFD.2.00.1005140751300.3711@i5.linux-foundation.org>
+ <20100514153842.GA6398@srcf.ucam.org>
+ <alpine.LFD.2.00.1005140841320.3711@i5.linux-foundation.org>
+ <20100514154905.GA6681@srcf.ucam.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 6:21 AM, FUJITA Tomonori
-<fujita.tomonori@lab.ntt.co.jp> wrote:
-> As DMA-API-HOWTO says, kmalloc'ed buffer must be DMA-safe. Drivers and
-> subsystems depend on it.
->
-> So architectures that handle DMA-non-coherent memory need to set
-> ARCH_KMALLOC_MINALIGN: the kmalloc'ed buffer doesn't share a cache
-> with the others. Otherwise, we hit memory corruption due to DMA.
->
-> I had a quick look at all the architectures. Seems that some
-> architectures that need to set ARCH_KMALLOC_MINALIGN don't do.
+> Also, even with Windows, I do wonder if they have things like cut-off 
+> dates for trusting ACPI. We certainly do.
 
-Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Upstream Linux's main ACPI cutoff, CONFIG_ACPI_BLACKLIST_YEAR
+has been disabled by default since Linux-2.6.9.
+So if a platform claims to support ACPI,
+upstream Linux has run in ACPI mode on it for many years.
 
-for the whole series.
+The idea was that we'd harvest and debug ACPI failures
+using the upstream kernels, while the distros could play it safe
+and set the cutoff to 1999 or even later.
 
->
-> =
->  arch/blackfin/include/asm/cache.h |    2 ++
->  arch/frv/include/asm/cache.h      |    2 ++
->  arch/m68k/include/asm/cache.h     |    2 ++
->  arch/mn10300/include/asm/cache.h  |    2 ++
->  arch/parisc/include/asm/cache.h   |    2 ++
->  arch/xtensa/include/asm/cache.h   |    1 +
->  6 files changed, 11 insertions(+), 0 deletions(-)
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
+But a funny thing happened a few years ago.
+The distros stopped setting this cutoff, and nobody complained.
+Of course, it could simply be that few people are using machines
+that old anymore...
+
+In any case, I expect that versions of Windows around 1999 or 2000
+had to check, but that like Linux, they don't really need to anymore.
+
+cheers,
+Len Brown, Intel Open Source Technology Center
+
