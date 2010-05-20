@@ -1,57 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757200Ab0ETTxR (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 15:53:17 -0400
-Received: from sprinkles.athenacr.com ([64.95.46.210]:26298 "EHLO
-	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757006Ab0ETTxN (ORCPT
+	id S1757006Ab0ETT47 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 15:56:59 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:50476 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752886Ab0ETT45 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 15:53:13 -0400
-X-Greylist: delayed 1992 seconds by postgrey-1.27 at vger.kernel.org; Thu, 20 May 2010 15:53:13 EDT
-Message-ID: <4BF58B59.7080901@athenacr.com>
-Date: Thu, 20 May 2010 15:19:53 -0400
-From: Brian Bloniarz <bmb@athenacr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Thu, 20 May 2010 15:56:57 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=ffu1xSISbf3cEP9W1SJdSy/3d7rGG4rKBK76DI3OXC6e0hAOOB8XyhMuOyHwasQzM0
+         ouueDdna5FzNj+KufSuh/T5EMxbXwndcZO/GI70Y9XgWci4/bQCtFP2iEruKhJTy7qp5
+         EIUONGg0UjJqVYUBwAI8HydWBapXbiAHbpTDM=
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+In-Reply-To: <20100520183701.GW26248@jirafa.cyrius.com>
+References: <4BF33CAD.2070602@zytor.com> <871vd8xb8t.fsf@basil.nowhere.org>
+	 <20100520183701.GW26248@jirafa.cyrius.com>
+Date: Thu, 20 May 2010 21:56:56 +0200
+Message-ID: <AANLkTikB9Fcyrp-_8XqOWhrxXS1aOVFQRfbzv0vBUQQR@mail.gmail.com>
+Subject: Re: Does anyone care about gcc 3.x support for *x86* anymore?
+From: Miguel Ojeda <miguel.ojeda.sandonis@gmail.com>
+To: Martin Michlmayr <tbm@cyrius.com>
+Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       eric.dumazet@gmail.com, Ingo Molnar <mingo@elte.hu>,
+       "Siddha, Suresh B" <suresh.b.siddha@intel.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Avi Kivity <avi@redhat.com>
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ingo Molnar wrote:
-> The point is for the kernel to not be complicit in 
-> practices that are technically not reliable.
+On Thu, May 20, 2010 at 8:37 PM, Martin Michlmayr <tbm@cyrius.com> wrote:
+> * Andi Kleen <andi@firstfloor.org> [2010-05-19 15:38]:
+>> > If there isn't a reason to preserve support, I would like to consider
+>> > discontinue support for using gcc 3 to compile x86 kernels.  If there is
+>> > a valid use case, it would be good to know what it is.
+>>
+>> I suspect there are still distributions around that use it as a standard
+>> compiler. Wasn't it used in some major release of Debian?
+>
+> Not in a recent one, no.
 
-One usecase that hasn't been discussed is when userspace needs this info to
-calibrate the TSC.
+Not even in oldstable (etch).
 
-Take NTP as an example. It does a pretty good job of observing the drift in
-gettimeofday() against a reference clock and correcting for it. This seems
-to work well even when GTOD uses the TSC. But, it assumes that the drift
-changes slowly.
-
-That goes out the window on reboot, because the kernel only spends 25ms on
-TSC<->PIT calibration and the value of tsc_khz can vary a lot from boot to
-boot. Then NTP starts up and reads a drift value from /var/lib/ntp/ntp.drift
-that it *thinks* is accurate. In our experience, it'll then spend up to 48
-hours doing god knows what to the clock until it converges on the real
-drift at the new tsc_khz.  initscripts could correct for the kernel's
-recalibration, but tsc_khz isn't exported.
-
-So it's too bad that it can't be exported somehow. The TSC on our
-machines has proven to be stable for all intents and purposes; I just
-checked 25 of my machines, most have uptime of >200 days, all of them
-still have current_clocksource=tsc. After NTP or PTPd has been running
-for a while, things converge, but being unable to reboot is a headache.
-Using the HPET for gettimeofday() would be impractical for performance
-reasons.
+> --
+> Martin Michlmayr
+> http://www.cyrius.com/
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+>
