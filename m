@@ -1,60 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753108Ab0ETTMV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 15:12:21 -0400
-Received: from king.tilera.com ([72.1.168.226]:6986 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751854Ab0ETTMU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 15:12:20 -0400
-Message-ID: <4BF5898E.7050503@tilera.com>
-Date: Thu, 20 May 2010 12:12:14 -0700
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-CC: Barry Song <21cnbao@gmail.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: [PATCH] generic: make lowmem_page_address() use PFN_PHYS() for improved
- portability
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <AANLkTilpV71K2L2N1B85yRnlTc302KbMUz2P5kuvktyl@mail.gmail.com>
-In-Reply-To: <AANLkTilpV71K2L2N1B85yRnlTc302KbMUz2P5kuvktyl@mail.gmail.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=UTF-8
+	id S1753259Ab0ETTRn (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 15:17:43 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58122 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1751611Ab0ETTRl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 15:17:41 -0400
+Date: Thu, 20 May 2010 12:16:52 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>
+Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
+Message-Id: <20100520121652.cbcbb8b4.akpm@linux-foundation.org>
+In-Reply-To: <20100520200417.5ec99735@lxorguk.ukuu.org.uk>
+References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
+	<1274090554-19420-2-git-send-email-felipe.balbi@nokia.com>
+	<20100520110600.be702f58.akpm@linux-foundation.org>
+	<20100520200417.5ec99735@lxorguk.ukuu.org.uk>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 20 May 2010 19:12:19.0364 (UTC) FILETIME=[5E1EF640:01CAF850]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This ensures that platforms with lowmem PAs above 32 bits work
-correctly by avoiding truncating the PA during a left shift.
+On Thu, 20 May 2010 20:04:17 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
-Signed-off-by: Chris Metcalf <cmetcalf@tilera.com>
----
- include/linux/mm.h |    3 ++-
- 1 files changed, 2 insertions(+), 1 deletions(-)
+> 
+> > > +EXPORT_SYMBOL_GPL(gpio_set_debounce);
+> > 
+> > nitlet: I suspect this function is taking gpio_lock sooner than it
+> > strictly needs to.  Find-tuning that would decrease contention by an
+> > insignificant amount ;)
+> 
+> We need this for Intel MID boxes as well Andrew - so its a generic need.
+> 
 
-diff --git a/include/linux/mm.h b/include/linux/mm.h
-index fb19bb9..33bedcf 100644
---- a/include/linux/mm.h
-+++ b/include/linux/mm.h
-@@ -13,6 +13,7 @@
- #include <linux/debug_locks.h>
- #include <linux/mm_types.h>
- #include <linux/range.h>
-+#include <linux/pfn.h>
+Thanks.
 
- struct mempolicy;
- struct anon_vma;
-@@ -591,7 +592,7 @@ static inline void set_page_links(struct page *page,
-enum zone_type zone,
+I'm still wobbling on the 35-vs-36 line.  Is that a big need or a
+little need?  What user-visible problem does it solve, etc?
 
- static __always_inline void *lowmem_page_address(struct page *page)
- {
--       return __va(page_to_pfn(page) << PAGE_SHIFT);
-+       return __va(PFN_PHYS(page_to_pfn(page)));
- }
+Did anyone test it on the MID boxes?
 
- #if defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL)
-
-
+etc ;)
