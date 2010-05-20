@@ -1,85 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754699Ab0ETNsm (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 09:48:42 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:51546 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753102Ab0ETNsl (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 09:48:41 -0400
-Date: Thu, 20 May 2010 09:48:38 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
-       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
-       Johannes Berg <johannes.berg@intel.com>,
-       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Subject: Re: [RFC] Unified Ring Buffer (Next Generation)
-Message-ID: <20100520134838.GA26573@Krystal>
-References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100519181001.GC18073@basil.fritz.box> <20100519184745.GA19522@Krystal> <20100520064139.GA15946@basil.fritz.box>
+	id S1754805Ab0ETNsu (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 09:48:50 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:57096 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754721Ab0ETNsr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 09:48:47 -0400
+Message-ID: <4BF53C1E.9040305@zytor.com>
+Date: Thu, 20 May 2010 06:41:50 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100520064139.GA15946@basil.fritz.box>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 09:46:38 up 117 days, 16:23,  9 users,  load average: 1.13, 1.23,
-	1.25
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: mingo@redhat.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, tzanussi@gmail.com,
+       a.p.zijlstra@chello.nl, fweisbec@gmail.com, tglx@linutronix.de,
+       mingo@elte.hu, linux-tip-commits@vger.kernel.org
+Subject: Re: [tip:perf/core] perf: Use read() instead of lseek() in 	trace_event_read.c:skip()
+References: <1273032130.6383.28.camel@tropicana>	 <tip-cbb5cf7ff6b298beacfe23db3386335b0b9c0a2d@git.kernel.org> <AANLkTikqkbScJOVxynoOzejKnaNIucrAczgtGIDqXLCO@mail.gmail.com>
+In-Reply-To: <AANLkTikqkbScJOVxynoOzejKnaNIucrAczgtGIDqXLCO@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Andi Kleen (andi@firstfloor.org) wrote:
-> > The plan here is to create a ring buffer that supports per-buffer instance
-> > "flags" that specify what must be supported: e.g. either splice() or mmap(),
-> > global vs per-cpu buffers, etc.
+On 05/20/2010 06:39 AM, Pekka Enberg wrote:
+> On Thu, May 20, 2010 at 3:54 PM, tip-bot for Tom Zanussi
+> <tzanussi@gmail.com> wrote:
+>> Commit-ID:  cbb5cf7ff6b298beacfe23db3386335b0b9c0a2d
+>> Gitweb:     http://git.kernel.org/tip/cbb5cf7ff6b298beacfe23db3386335b0b9c0a2d
+>> Author:     Tom Zanussi <tzanussi@gmail.com>
+>> AuthorDate: Tue, 4 May 2010 23:02:10 -0500
+>> Committer:  Frederic Weisbecker <fweisbec@gmail.com>
+>> CommitDate: Thu, 20 May 2010 08:37:17 +0200
+>>
+>> perf: Use read() instead of lseek() in trace_event_read.c:skip()
+>>
+>> This is a small fix for a problem affecting live-mode, introduced
+>> recently:
+>>
+>> root@tropicana:~# perf trace rwtop
+>> perf trace started with Perl
+>> script /root/libexec/perf-core/scripts/perl/rwtop.pl
+>>
+>>  Fatal: did not read header event
+>>
+>> commit d00a47cce569a3e660a8c9de5d57af28d6a9f0f7 added a skip()
+>> function to skip over e.g. header_page, but this doesn't work for
+>> live mode.  This patch re-implements skip() to use read() instead of
+>> lseek() to fix that.
 > 
-> And you plan to test all those flags in the hot path? 
+> Out of curiosity: why doesn't lseek() work and why can't we fix that?
 
-No, I plan to make the hot path inline in the caller, so the flags can
-statically select the proper behavior at compile-time. We can test flags
-dynamically on the slow-path to save space.
+Presumably because we're reading from a nonseekable stream?
 
-[...]
-
-> > 
-> > But all in all, I think users needing _something_ to perform system-wide tracing
-> > shout a lot louder than users who need to save a few bytes. So let's try to get
-> > something good in first, while keeping an eye on the object size, and if it
-> > happens to be too large for some users, then they can always implement a
-> > slower and less efficient ring_buffer_tiny.c if they feel like it.
-> 
-> They don't need to, they already have kfifo.
-> 
-
-Right.
-
-> > I totally agree with you. This is in good part why I spent a large part of 2009
-> > writing papers explaining my ring buffer, doing Promela models and formal proofs
-> > of correctness. I think after all that work, the abstractions I will use will be
-> > much easier to grap by anyone willing to do a bit of reading.
-> 
-> Writing papers is not a replacement for simple maintainable code.
-
-True. I rather mean "in addition to simple maintainable code".
-
-Thanks,
-
-Mathieu
-
+	-hpa
 
 -- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+H. Peter Anvin, Intel Open Source Technology Center
+I work for Intel.  I don't speak on their behalf.
+
