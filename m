@@ -1,84 +1,154 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753909Ab0ETHMI (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:12:08 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53696 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752734Ab0ETHME (ORCPT
+	id S1754027Ab0ETHJO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 03:09:14 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:43230 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752980Ab0ETHJL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 03:12:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=m5+DuXHzmBln2Fr8PwermSF+0LkLhLX8bO+WOTFXGLLCsfj4OP/DG/4nGdAZrYRtbD
-         JB7r9Gk/rzLU4mkjRXSYgZT0yuCn5gh7RLsUhp3IrS4wND/4nc0R9xULW+k8UPzWWkZC
-         1EzN1GU+IpYUqe/AtSvRsL7IM9k2Dt1gnDxrk=
-Date: Thu, 20 May 2010 00:11:58 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Henrik Rydberg <rydberg@euromail.se>,
+	Thu, 20 May 2010 03:09:11 -0400
+Message-ID: <4BF4E00A.30206@euromail.se>
+Date: Thu, 20 May 2010 09:08:58 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Ping Cheng <pinglinux@gmail.com>
+CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
        Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
        Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
        Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
 Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
-Message-ID: <20100520071158.GC8080@core.coreip.homeip.net>
-References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
- <1274213429-22667-2-git-send-email-rydberg@euromail.se>
- <20100519023727.GA21030@barra.bne.redhat.com>
- <4BF3D59E.1070801@euromail.se>
- <20100520001323.GA28116@barra.bne.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100520001323.GA28116@barra.bne.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>	 <1274213429-22667-2-git-send-email-rydberg@euromail.se> <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
+In-Reply-To: <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OEzsN-000656-9K.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OEzsN-000656-9K c66cbe56baf41f2080ede02eac07dd77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 10:13:24AM +1000, Peter Hutterer wrote:
-> On Wed, May 19, 2010 at 02:12:14PM +0200, Henrik Rydberg wrote:
-> > Peter Hutterer wrote:
-> > > On Tue, May 18, 2010 at 10:10:29PM +0200, Henrik Rydberg wrote:
-> > >> This patch adds documentation for the SYN_MT_SLOT event and gives
-> > >> examples of how to use the event slot protocol.
-> > > 
-> > > thanks, this is really nice documentation! the approach seems good, though I
-> > > do have a few questions inline.
-> > > 
-> > [...]
-> > > 
-> > > Is there a limit on the number of slots?
-> > 
-> > The slots are dynamically allocated by the driver, so there is no practical
-> > limit. Each slot currently takes 44 bytes, and allocating a few kilobytes of
-> > kernel memory is not a problem.
-> > 
-> > > Will all drivers with ABS_MT_TRACKING_ID use slots? if not, how can I know
-> > > in advance if a device may use slots or not?
-> > 
-> > Eventually, this might become true, but you are pointing at one of the weaker
-> > points of the current setup. There is no bit field for the EV_SYN events, so
-> > there is no way to know in advance if SYN_MT_SYNC or SYN_MT_SLOT is used. This
-> > could quite possibly be added to the EVIO interface. Meanwhile, the method I use
-> > is to detect the first SYN_MT_SLOT and select parser based on that information.
+Ping Cheng wrote:
+> Hi Henrik,
 > 
-> I'd really prefer if there was some way to detect this. While I'm not quite
-> sure how the matching X drivers would look like it's likely that the setups
-> will be different for drivers that support slots and those that don't.
-> e.g. those that don't have slots simply send events as valuators, those that
-> do may split into multiple devices.
+> I am trying to link the protocol to the actual multi-touch devices in
+> my "mind". Hope it helps you to point out the mismatch between my
+> imagination and the protocol.  Please see details in line.
 > 
-> Doing this at runtime - after the device has been set up is...tricky.
+> Ping
+
+Hi Ping,
+
+first out, thank you for your detailed analysis, it aids in removing ambiguities
+ and defining the borders of the protocol.
+
+> Am I right in thinking that SYN_MT_SLOT represents to the actual touch
+> area/finger on the surface? There could be more than one (x,y) (a few
+> points that form an irregular shape) that represents one finger.  The
+> following example shows that slot 0 (finger 1) touched three points on
+> the surface while slot 1 (finger 2) only has one point reported:
+> 
+> +   SYN_MT_SLOT 0
+> +   ABS_MT_TRACKING_ID 45
+> +   ABS_MT_POSITION_X x[0]
+> +   ABS_MT_POSITION_Y y[0]
+> +   ABS_MT_TRACKING_ID 46
+> +   ABS_MT_POSITION_X x[1]
+> +   ABS_MT_POSITION_Y y[1]
+> +   ABS_MT_TRACKING_ID 47
+> +   ABS_MT_POSITION_X x[2]
+> +   ABS_MT_POSITION_Y y[2]
+> +   SYN_MT_SLOT 1
+> +   ABS_MT_TRACKING_ID 30
+> +   ABS_MT_POSITION_X x[3]
+> +   ABS_MT_POSITION_Y y[3]
+> +   SYN_REPORT
 > 
 
-Right, I think we should try our hardest to allow userspace base
-protocol decoding decisions on device capabilities and not the event
-datastream. What about moving from SYN_MT_SLOT to ABS_MT_SLOT? I think
-it makes more sense since it is not a simple marker but carries data
-(slot number).
+It helps to think of both TRACKING_ID and BLOB_ID as labels of a single
+identified contact which occupies one slot. To represent a set of contacts as an
+entity, one needs to add a label to the slot, representing that entity. As
+pointed out in a later reply by Peter, the BLOB_ID serves this purpose well. The
+name is slightly unfortunate, being a bit too generic. Let us use this
+discussion to pin down a more exact definition:
 
--- 
-Dmitry
+ABS_MT_BLOB_ID is a label which groups contacts in close relation to each other,
+such as a hand.
+
+With this in mind, the sequence becomes
+
+SYN_MT_SLOT 0
+ABS_MT_BLOB_ID 11
+ABS_MT_TRACKING_ID 45
+ABS_MT_POSITION_X x[0]
+ABS_MT_POSITION_Y y[0]
+SYN_MT_SLOT 1
+ABS_MT_BLOB_ID 11
+ABS_MT_TRACKING_ID 46
+ABS_MT_POSITION_X x[1]
+ABS_MT_POSITION_Y y[1]
+SYN_MT_SLOT 2
+ABS_MT_BLOB_ID 11
+ABS_MT_TRACKING_ID 47
+ABS_MT_POSITION_X x[2]
+ABS_MT_POSITION_Y y[2]
+SYN_MT_SLOT 3
+ABS_MT_BLOB_ID 89
+ABS_MT_TRACKING_ID 30
+ABS_MT_POSITION_X x[3]
+ABS_MT_POSITION_Y y[3]
+SYN_REPORT
+
+Here, we are looking at one blob (11) consisting of three contacts (45, 46, 47),
+and another blob (89) consisting of one contact (30).
+
+[...]
+> So, an EVIO for X driver to retrieve the number of SLOTs would be very
+> helpful.  Something like the following would do the work:
+> 
+> input_set_abs_params(input_dev, ABS_MT_SLOT, 0, 12, 0, 0);
+> 
+> which tells the user land clients that they can expect up to 13 touch areas.
+
+The SYN_MT_SLOT is a synchronization control event (EV_SYN), so it would require
+a different way to report value ranges, but the idea is sound. I will think
+about how to achieve this.
+
+>> +The main difference between the raw type A protocol and the higher level
+>> +type B slot protocol lies in the usage of identifiable contacts. The slot
+>> +protocol requires the use of the ABS_MT_TRACKING_ID,
+> 
+> With what I said above, I think ABS_MT_TRACKING_ID is not the unique
+> identifier for type B protocol. It is the fact that we can identify
+> individual touch areas and use ABS_MT_SLOT to report them that makes
+> it a type B event.
+
+This is correct, but the TRACKING_ID is strong evidence that the device is
+capable of identifying contacts.
+
+>> ABS_MT_TRACKING_ID, either provided by the
+>> +hardware of computed from the raw data [5].
+>                    ^^ or  (is it?)
+> 
+> I agree with this ABS_MT_TRACKING_ID definition.  I would think something like:
+> 
+> input_set_abs_params(input_dev, ABS_MT_TRACKING_ID, 0, 47, 0, 0);
+> 
+> which tells the clients that total of 48 points are tracked, would be helpful.
+
+Agreed.
+
+> Another topic that may be irrelevant to this patch is the filter. With
+> the use of ABS_MT_TRACKING_ID, a filter can be applied to discard the
+> useless repeated points or less than a certain number of points
+> movement.
+
+As pointed out by Rafi in a later post, this is indeed one of the major points
+of the slot protocol. The filtering details can be found in the patch
+accompanying this documentation.
+
+Cheers,
+Henrik
