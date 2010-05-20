@@ -1,49 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752344Ab0ETSwM (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 14:52:12 -0400
-Received: from ns1.siteground211.com ([209.62.36.12]:56904 "EHLO
-	serv01.siteground211.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751626Ab0ETSwI (ORCPT
+	id S1752452Ab0ETSyU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 14:54:20 -0400
+Received: from fxip-0047f.externet.hu ([88.209.222.127]:41102 "EHLO
+	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751492Ab0ETSyT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 14:52:08 -0400
-Date: Thu, 20 May 2010 21:52:50 +0300
-From: Felipe Balbi <me@felipebalbi.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, David Brownell <david-b@pacbell.net>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>
-Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
-Message-ID: <20100520185249.GB25089@gandalf>
-Reply-To: me@felipebalbi.com
-References: <1274090554-19420-1-git-send-email-felipe.balbi@nokia.com>
- <1274090554-19420-2-git-send-email-felipe.balbi@nokia.com>
- <20100520110600.be702f58.akpm@linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100520110600.be702f58.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - serv01.siteground211.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - felipebalbi.com
+	Thu, 20 May 2010 14:54:19 -0400
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: miklos@szeredi.hu, linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
+       akpm@linux-foundation.org
+In-reply-to: <alpine.LFD.2.00.1005201043321.23538@i5.linux-foundation.org>
+	(message from Linus Torvalds on Thu, 20 May 2010 10:49:46 -0700 (PDT))
+Subject: Re: [RFC PATCH] fuse: support splice() reading from fuse device
+References: <E1OF3kc-00084X-Hi@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005201043321.23538@i5.linux-foundation.org>
+Message-Id: <E1OFAsd-0000Ra-1V@pomaz-ex.szeredi.hu>
+From: Miklos Szeredi <miklos@szeredi.hu>
+Date: Thu, 20 May 2010 20:54:03 +0200
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Thu, 20 May 2010, Linus Torvalds wrote:
+> Are there actual real loads that get improved? I don't care if it means 
+> that the improvement goes from three orders of magnitude to just a couple 
+> of percent. The "couple of percent on actual loads" is a lot more 
+> important than "many orders of magnitude on a made-up benchmark".
 
-On Thu, May 20, 2010 at 11:06:00AM -0700, Andrew Morton wrote:
-> nitlet: I suspect this function is taking gpio_lock sooner than it
-> strictly needs to.  Find-tuning that would decrease contention by an
-> insignificant amount ;)
+The reason I've been looking at zero copy for fuse is that embedded
+people have been complaining about fuse's large CPU overhead for I/O.
+So large in fact that it was having a performance impact even for
+relatively slow devices.  And most of that overhead comes from copying
+data around.
 
-heh, I can post another version if you like, but this is pretty much
-what other functions are doing, just following the 'standard'.
+So it's not the 20GB/s throughput that's interesting but the reduced
+CPU overhead, especially on slower processors.  Apart from cache
+effects 20GB/s throughput with a null filesystem means 1% CPU at
+200MB/s transfer speed with _any_ filesystem.  Without bigger requests
+that translates to 4% overhead and without zero copy about 15%.
+That's on a core2/1.8GHz, with an embedded CPU the overhead reduction
+would be even more significant.
 
--- 
-balbi
+Miklos
