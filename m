@@ -1,73 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753079Ab0ETAMz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 20:12:55 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40145 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752276Ab0ETAMx (ORCPT
+	id S1752998Ab0ETARN (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 20:17:13 -0400
+Received: from leo.clearchain.com ([199.73.29.74]:56106 "EHLO
+	mail.clearchain.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752276Ab0ETARM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 20:12:53 -0400
-Date: Wed, 19 May 2010 17:04:07 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
-       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
-       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
-       linux-mm@kvack.org, akpm@linux-foundation.org,
-       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
-       jens.axboe@oracle.com
-Subject: Re: Unexpected splice "always copy" behavior observed
-In-Reply-To: <20100519214905.GA22486@Krystal>
-Message-ID: <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
-References: <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
- <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal> <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org> <20100519214905.GA22486@Krystal>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 19 May 2010 20:17:12 -0400
+Date: Thu, 20 May 2010 10:13:24 +1000
+From: Peter Hutterer <peter.hutterer@who-t.net>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
+Message-ID: <20100520001323.GA28116@barra.bne.redhat.com>
+References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
+ <1274213429-22667-2-git-send-email-rydberg@euromail.se>
+ <20100519023727.GA21030@barra.bne.redhat.com>
+ <4BF3D59E.1070801@euromail.se>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF3D59E.1070801@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-12-10)
+X-Greylist: Sender is SPF-compliant, not delayed by milter-greylist-4.0.1 (mail.clearchain.com [127.0.0.1]); Thu, 20 May 2010 09:46:21 +0930 (CST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Wed, 19 May 2010, Mathieu Desnoyers wrote:
+On Wed, May 19, 2010 at 02:12:14PM +0200, Henrik Rydberg wrote:
+> Peter Hutterer wrote:
+> > On Tue, May 18, 2010 at 10:10:29PM +0200, Henrik Rydberg wrote:
+> >> This patch adds documentation for the SYN_MT_SLOT event and gives
+> >> examples of how to use the event slot protocol.
+> > 
+> > thanks, this is really nice documentation! the approach seems good, though I
+> > do have a few questions inline.
+> > 
+> [...]
+> > 
+> > Is there a limit on the number of slots?
 > 
-> A faced a small counter-intuitive fadvise behavior though.
+> The slots are dynamically allocated by the driver, so there is no practical
+> limit. Each slot currently takes 44 bytes, and allocating a few kilobytes of
+> kernel memory is not a problem.
 > 
->   posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+> > Will all drivers with ABS_MT_TRACKING_ID use slots? if not, how can I know
+> > in advance if a device may use slots or not?
 > 
-> only seems to affect the parts of a file that already exist.
+> Eventually, this might become true, but you are pointing at one of the weaker
+> points of the current setup. There is no bit field for the EV_SYN events, so
+> there is no way to know in advance if SYN_MT_SYNC or SYN_MT_SLOT is used. This
+> could quite possibly be added to the EVIO interface. Meanwhile, the method I use
+> is to detect the first SYN_MT_SLOT and select parser based on that information.
 
-POSIX_FADV_DONTNEED does not have _any_ long-term behavior. So when you do 
-a 
+I'd really prefer if there was some way to detect this. While I'm not quite
+sure how the matching X drivers would look like it's likely that the setups
+will be different for drivers that support slots and those that don't.
+e.g. those that don't have slots simply send events as valuators, those that
+do may split into multiple devices.
 
-	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
+Doing this at runtime - after the device has been set up is...tricky.
 
-it only affects the pages that are there right now, it has no effect on 
-any future actions.
+> >> +
+> >> +Protocol Example B
+> >> +------------------
+> >> +
+> >> +Here is what a minimal event sequence for a two-contact touch would look
+> >> +like for a type B device:
+> >> +
+> >> +   SYN_MT_SLOT 0
+> >> +   ABS_MT_TRACKING_ID 45
+> >> +   ABS_MT_POSITION_X x[0]
+> >> +   ABS_MT_POSITION_Y y[0]
+> >> +   SYN_MT_SLOT 1
+> >> +   ABS_MT_TRACKING_ID 46
+> >> +   ABS_MT_POSITION_X x[1]
+> >> +   ABS_MT_POSITION_Y y[1]
+> >> +   SYN_REPORT
+> >> +
+> >> +Here is the sequence after moving contact 45 in the x direction:
+> >> +
+> >> +   SYN_MT_SLOT 0
+> >> +   ABS_MT_POSITION_X x[0]
+> >> +   SYN_REPORT
+> >> +
+> >> +Here is the sequence after lifting the contact in slot 0:
+> >> +
+> >> +   ABS_MT_TRACKING_ID 0
+> >> +   SYN_REPORT
+> >> +
+> >> +The active slot is already 0, so the SYN_MT_SLOT is omitted.  The message
+> >> +removes the association of slot 0 with contact 45, thereby destroying
+> >> +contact 45 and freeing slot 0 to be reused for another contact.
+> > 
+> > I'm probably missing something here, but how would a process know which one
+> > is the active slot if it didn't get the previous event?
+> 
+> I am assuming you are not talking about losing events in the stream, but simply
+> what information is available at the point of parsing it. The parser (the X
+> evdev driver for instance) keeps all attributes of all slots, plus a single
+> variable saying what slot is currently active, i.e, being modified.
+> 
+> If you are thinking of a setup where one program is already hooked up to the
+> device, and a new one comes in just as the message in question appears on the
+> wire, it just means the new program will have to spend some time catching up. If
+> this should ever become a problem, one could possibly add a send-full-state
+> method to the input layer, to be issued when the new program opens the device. I
+> doubt this will be needed in practice though, since contacts change all the time.
 
-> So after each splice() that appends to the file, I have to call fadvise 
-> again. I would have expected the "0" len parameter to tell the kernel to 
-> apply the hint to the whole file, even parts that will be added in the 
-> future.
+This was the case I was wondering about. While I agree with the last part
+(contacts change all the time) the side-effect that you'll get from this is
+that devices can seemingly be non-responsive for random periods of time.
 
-It's not a hint about future at all. It's a "throw current pages away".
+If you have a finger down when the X server starts or after a VT switch (or
+even a fast user switch), the driver will have to drop events. So you can
+wriggle your finger around and nothing happens, but once you lift it goes
+"well, now it works again". Since this happens only once in a while, it can
+make the whole lot appear flaky.  Especially if one finger works and the
+other one doesn't.
 
-I would also suggest against doing that kind of thing in a streaming write 
-situation. The behavior for dirty page writeback is _not_ welldefined, and 
-if you do POSIX_FADV_DONTNEED, I would suggest you do it as part of that 
-writeback logic, ie you do it only on ranges that you have just waited on.
+So I guess it comes down to whether sending SYN_MT_SLOT with every event
+costs too much compared to these admittedly rare use-cases. They're not much
+different to the current button events either, if you weren't there when a
+button was pressed you won't know. So I'm somewhat indifferent about this
+bit.
 
-IOW, in my example, you'd couple the
+And yes, you could add it once we find it's an issue, but by then someone
+has already spent time to work around this. And when you then start sending
+slot events all the time, you admit that writing the workaround was just a
+time waster :)
 
-	sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+> As a side note, the notion of a used slot depends on how the attributes of the
+> slot are interpreted. The method described in the document treats an
+> ABS_MT_TRACKING_ID value outside of the driver-specified value range as an
+> unused slot.
 
-with a
+It's easier for a latecomer to guess a tracking ID since you can just
+assign any random value to it, provided the kernel guarantees to only send
+updates on the tracking ID for changes. This doesn't quite work for slots.
 
-	posix_fadvise(fd, (index-1)*BUFSIZE, BUFSIZE, POSIX_FADV_DONTNEED);
+But I'm not sure what your last sentence means. Does this mean the kernel
+will open a new slot for out-of-range tracking IDs? I'm missing something
+here.
 
-afterwards to throw out the pages that you just waited for.
-
-		Linus
+Cheers,
+  Peter
