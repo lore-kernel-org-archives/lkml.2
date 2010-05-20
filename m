@@ -1,80 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755427Ab0ETKFg (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:05:36 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:33775 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753035Ab0ETKFe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:05:34 -0400
-Date: Thu, 20 May 2010 12:05:19 +0200
-From: Florian Mickler <florian@mickler.org>
-To: me@felipebalbi.com
-Cc: felipe.balbi@nokia.com, ext James Bottomley <James.Bottomley@suse.de>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>,
+	id S1755434Ab0ETKHb (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:07:31 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:52905 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753103Ab0ETKHa (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 06:07:30 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=G3XPpbCkUa7MIh+kE327kUpmIsJkwQwuVTFpuWr1I0CxQgNp8C42AzbClgwSl8zhxp
+         8q/n92j8Dgq1KHvEiQyUj47IddGbbA8Zc+A4XATHnTkvcTMiCI4ZRmbuIg9pCJRcG25U
+         /KBBbp5p6rb4zIgVeb2PnZKmPwRlta/X3C/vQ=
+Date: Thu, 20 May 2010 12:07:34 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100520120519.0d27d6bf@schatten.dmk.lab>
-In-Reply-To: <20100520085739.GB14584@gandalf>
-References: <1274119179.4418.68.camel@mulgrave.site>
-	<20100517181252.GA14260@gandalf>
-	<1274124267.4418.149.camel@mulgrave.site>
-	<20100517193840.GB14047@gandalf>
-	<20100517193952.GC14047@gandalf>
-	<1274125775.4418.182.camel@mulgrave.site>
-	<20100518064022.GA6522@nokia.com>
-	<1274191188.10304.5.camel@mulgrave.site>
-	<20100519065934.GH12879@nokia.com>
-	<20100520071528.494c38e4@schatten.dmk.lab>
-	<20100520085739.GB14584@gandalf>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+       Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Li Zefan <lizf@cn.fujitsu.com>, Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFD] Future tracing/instrumentation directions
+Message-ID: <20100520100732.GD5309@nowhere>
+References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100520093131.GA30929@elte.hu>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100520093131.GA30929@elte.hu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010 11:57:40 +0300
-Felipe Balbi <me@felipebalbi.com> wrote:
-
-> On Thu, May 20, 2010 at 07:15:28AM +0200, Florian Mickler wrote:
-> > But with that, you still shift the burden of exchanging that app with
-> > an feature-equivalent non-broken version to the user. 
-> > which is not user friendly and not necessary if you have a "smart"
-> > enough kernel.
+On Thu, May 20, 2010 at 11:31:31AM +0200, Ingo Molnar wrote:
+>  - [ While it's still a long way off, if this trend continues
+>      we eventually might even be able to get rid of the 
+>      /debug/tracing/ temporary debug API and get rid of 
+>      the ugly in-kernel pretty-printing bits. This is 
+>      good: it may make Andrew very happy for a change ;-)
 > 
-> and _without that_, you shift the burden of having a working power
-> management completely into the kernel. Forcing the kernel to deal with
-> completely broken apps. What will happen is that apps developers won't
-> boder thinking about power consumption since the kernel is "smart"
-> enough to "fix" their mess.
+>      The main detail here to be careful of is that lots of
+>      people are fond of the simplicity of the 
+>      /debug/tracing/ debug UI, so when we replace it we 
+>      want to do it by keeping that simple workflow (or 
+>      best by making it even simpler). I have a few ideas 
+>      how to do this.
+
+
+
+How? We can emulate the /debug/tracing result with something
+like perf trace, still that won't replace the immediate
+availability of the result of any trace, which makes it
+valuable for any simplest workflows.
+
+
+
+
+> Regarding performance and complexity, which is our main 
+> worry atm, fortunately there's work going on in that 
+> direction - please see PeterZ's recent string of patches 
+> on lkml:
 > 
-> To me that's much bigger burden to the kernel than the other option is
-> to apps.
+>   4f41c01: perf/ftrace: Optimize perf/tracepoint interaction for single events
+>   a19d35c: perf: Optimize buffer placement by allocating buffers NUMA aware
+>   ef60777: perf: Optimize the perf_output() path by removing IRQ-disables
+>   fa58815: perf: Optimize the hotpath by converting the perf output buffer to local_t
+
+
+
+I would like to highlight the following commit too that _totally_
+changes the requirements of our next common ring buffer, whatever it is: 
+
+    c792061: perf: Disallow mmap() on per-task inherited events
+
+Now we only need to care about local contention, we have removed the
+support for buffers that contend across cpus in a single process.
+
+Do I understand it right?
+
+
+
+> 3) Add the function-tracer and function-graph tracer
+>    as an event and integrate it into perf.
 > 
+>    This will live-test the efficiency of the unification
+>    and brings over the last big ftrace plugin to perf.
 
-You said that already. For me this sounds like you want to take the
-users hostage in order to get nice (poweraware) apps.
 
-Robust system design can take crap and perform well. Users will most of
-the time prefer a robust system over a nicely designed system. (Just
-think of the ak-47)
+I may start to take care of this soon.
 
-I think we just have to agree to disagree here? 
-
-Cheers,
-Flo
-
-p.s.: don't take me seriously, i'm just a user
