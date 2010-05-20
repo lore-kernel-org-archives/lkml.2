@@ -1,78 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753904Ab0ETGq2 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 02:46:28 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:46814 "EHLO mx01.d-labs.de"
+	id S1753955Ab0ETGsQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 02:48:16 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:52976 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752991Ab0ETGq1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 02:46:27 -0400
-Date: Thu, 20 May 2010 08:46:15 +0200
-From: Florian Mickler <florian@mickler.org>
-To: akpm@linux-foundation.org
-Cc: Joe Perches <joe@perches.com>, Stephen Hemminger <shemminger@vyatta.com>,
+	id S1752991Ab0ETGsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 02:48:15 -0400
+Date: Thu, 20 May 2010 16:48:08 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] get_maintainer.pl: improve config-file support
-Message-ID: <20100520084615.6e2efa38@schatten.dmk.lab>
-In-Reply-To: <20100513095652.34aea727@schatten.dmk.lab>
-References: <1273698720-4010-1-git-send-email-florian@mickler.org>
-	<1273703333.20514.392.camel@Joe-Laptop.home>
-	<20100513095652.34aea727@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100520064808.GF2516@laptop>
+References: <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+ <20100518063647.GD2516@laptop>
+ <20100518080503.GF2150@dastard>
+ <20100518104351.GF2516@laptop>
+ <20100518122714.GG2150@dastard>
+ <20100518150912.GI2516@laptop>
+ <20100519235054.GS8120@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100519235054.GS8120@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Andrew!
-
-What's the status of this patch?
-Do you take it, or do you have an issue with it? This is a clear
-improvement in my opinion.
-
-cheers,
-Flo
-
-On Thu, 13 May 2010 09:56:52 +0200
-Florian Mickler <florian@mickler.org> wrote:
-
-> On Wed, 12 May 2010 15:28:53 -0700
-> Joe Perches <joe@perches.com> wrote:
+On Thu, May 20, 2010 at 09:50:54AM +1000, Dave Chinner wrote:
+> > As I said, we can have a dumb fallback path for filesystems that
+> > don't implement hole punching. Clear the blocks past i size, and
+> > zero out the allocated but not initialized blocks.
+> > 
+> > There does not have to be pagecache allocated in order to do this,
+> > you could do direct IO from the zero page in order to do it.
 > 
-> > On Wed, 2010-05-12 at 23:12 +0200, florian@mickler.org wrote:
-> > > This changes the syntax of the config-file introduced in the commit
-> > > "scripts/get_maintainer.pl: add .get_maintainer.conf default options
-> > > file".
-> > > Entries are now of the more commonly found form:
-> > > 	key = value
-> > > where keys are cmd-line arguments without the "--" prefixed.
-> > 
-> > I don't have a strong opinion one way or another about the
-> > .conf file format.
-> > 
-> > Another option which could be useful:  --noconf, don't read the file.
-> > 
-> > > as well as warn if unrecognized options are
-> > > specified.
-> > 
-> > The old approach does that as well.
+> I don't see that as a good solution - it's once again a fairly
+> complex way of dealing with the problem, especially as it now means
+> that direct io would fall back to buffered which would fall back to
+> direct IO....
+
+Well it wouldn't use the full direct IO path. It has the block, just
+build a bio with the source zero page and write it out. If the fs
+requires anything more fancy than that, tough, it should just
+implement hole punching.
+
+ 
+> > Hole punching is not only useful there, it is already exposed to
+> > userspace via MADV_REMOVE.
 > 
-> True.
+> That interface is *totally broken*.
+
+Why?
+
+> It has all the same problems as
+> vmtruncate() for removing file blocks (because it uses vmtruncate).
+> It also has the fundamental problem of being called un the mmap_sem,
+> which means that inode locks and therefore de-allocation cannot be
+> executed without the possibility of deadlocks.
+
+None of that is an API problem, it's all implementation. Yes fadivse
+would be a much better API, but the madvise API is still there.
+Implementation wise: it does not use vmtruncate; it has no mmap_sem
+problem.
+
+
+> Fundamentally, hole
+> punching is an inode operation, not a VM operation....
+
+VM acts as a handle to inode operations. It's no big deal.
+
+
+> > An API that doesn't require that, though, should be less overhead
+> > and simpler.
+> > 
+> > Is it really going to be a problem to implement block hole punching
+> > in ext4 and gfs2?
 > 
-> > 
-> > > +if (!GetOptions( \%prefs,
-> > 
-> > I think you don't need to repeat the options.
-> > Doesn't this work?
-> > 	if (!GetOptions(\%prefs)) {
-> > 	    die "$P: invalid argument - use --help if necessary\n";
-> > 
-> No, GetOpts::Long needs a special markup for parsing the cmdline
-> string, like =s for specifying that that option is accompanied by a
-> string value or the ! for specifying that it is a flag. 
-> Also there are aliases defined for config-options.
+> I can't follow the ext4 code - it's an intricate maze of weird entry
+> and exit points, so I'm not even going to attempt to comment on it.
 > 
-> Cheers,
-> Flo
+> The gfs2 code is easier to follow and it looks like it would require
+> a redesign and rewrite of the block truncation implementation as it
+> appears to assume that blocks are only ever removed from the end of
+> the file - I don't think the recursive algorithms for trimming the
+> indirect block trees can be easily modified for punching out
+> arbitrary ranges of blocks easily. I could be wrong, though, as I'm
+> not a gfs2 expert....
+
+I'm far more in favour of doing the interfaces right, and making
+the filesystems fix themselves to use it.
 
