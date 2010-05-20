@@ -1,61 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755052Ab0ETJBe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:01:34 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:62869 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752759Ab0ETJBc (ORCPT
+	id S1754897Ab0ETJF7 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:05:59 -0400
+Received: from mtagate6.de.ibm.com ([195.212.17.166]:42485 "EHLO
+	mtagate6.de.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751954Ab0ETJF5 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:01:32 -0400
-Date: Thu, 20 May 2010 11:57:52 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Felipe Balbi <me@felipebalbi.com>
-Cc: Florian Mickler <florian@mickler.org>,
-       "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       ext James Bottomley <James.Bottomley@suse.de>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100520085752.GB9992@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <20100517181252.GA14260@gandalf>
- <1274124267.4418.149.camel@mulgrave.site>
- <20100517193840.GB14047@gandalf>
- <20100517193952.GC14047@gandalf>
- <1274125775.4418.182.camel@mulgrave.site>
- <20100518064022.GA6522@nokia.com>
- <1274191188.10304.5.camel@mulgrave.site>
- <20100519065934.GH12879@nokia.com>
- <20100520071528.494c38e4@schatten.dmk.lab>
- <20100520085739.GB14584@gandalf>
+	Thu, 20 May 2010 05:05:57 -0400
+In-Reply-To: <alpine.LFD.2.00.1005200950410.3368@localhost.localdomain>
+References: <4BF30793.5070300@us.ibm.com>  <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>  <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com>  <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>  <alpine.LFD.2.00.1005192244430.3368@localhost.localdomain> <1274319248.22892.40.camel@concordia> <OF17F8F35C.B09E4797-ONC1257729.0028292D-C1257729.0029E9AC@de.ibm.com> <alpine.LFD.2.00.1005200950410.3368@localhost.localdomain>
+Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
+X-KeepSent: CBBE5EB9:FD616EDA-C1257729:0030B539;
+ type=4; name=$KeepSent
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: Brian King <brking@linux.vnet.ibm.com>, Doug Maxey <doug.maxey@us.ibm.com>,
+       Darren Hart <dvhltc@us.ibm.com>, dvhltc@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, linuxppc-dev@lists.ozlabs.org,
+       michael@ellerman.id.au, niv@linux.vnet.ibm.com,
+       Will Schmidt <will_schmidt@vnet.ibm.com>
+X-Mailer: Lotus Notes Release 8.5 HF58 February 06, 2009
+Message-ID: <OFCBBE5EB9.FD616EDA-ONC1257729.0030B539-C1257729.0031FB06@de.ibm.com>
+From: Jan-Bernd Themann <THEMANN@de.ibm.com>
+Date: Thu, 20 May 2010 11:05:55 +0200
+X-MIMETrack: Serialize by Router on D12ML064/12/M/IBM(Release 8.0.2FP2|June 22, 2009) at
+ 20/05/2010 11:05:54
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <20100520085739.GB14584@gandalf>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 20 May 2010 09:00:16.0208 (UTC) FILETIME=[DD6A0D00:01CAF7FA]
-X-Nokia-AV: Clean
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 10:57:40AM +0200, ext Felipe Balbi wrote:
->boder thinking about power consumption since the kernel is "smart"
-  ^I mean bother
 
--- 
-balbi
+Hi Thomas
 
-DefectiveByDesign.org
+> Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
+>
+> On Thu, 20 May 2010, Jan-Bernd Themann wrote:
+> > > > Thought more about that. The case at hand (ehea) is nasty:
+> > > >
+> > > > The driver does _NOT_ disable the rx interrupt in the card in the
+rx
+> > > > interrupt handler - for whatever reason.
+> > >
+> > > Yeah I saw that, but I don't know why it's written that way. Perhaps
+> > > Jan-Bernd or Doug will chime in and enlighten us? :)
+> >
+> > From our perspective there is no need to disable interrupts for the
+> > RX side as the chip does not fire further interrupts until we tell
+> > the chip to do so for a particular queue. We have multiple receive
+>
+> The traces tell a different story though:
+>
+>     ehea_recv_irq_handler()
+>       napi_reschedule()
+>     eoi()
+>     ehea_poll()
+>       ...
+>       ehea_recv_irq_handler()    <---------------- ???
+>         napi_reschedule()
+>       ...
+>       napi_complete()
+>
+> Can't tell whether you can see the same behaviour in mainline, but I
+> don't see a reason why not.
+
+Is this the same interrupt we are seeing here, or do we see a second other
+interrupt popping up on the same CPU? As I said, with multiple receive
+queues
+(if enabled) you can have multiple interrupts in parallel.
+
+Pleaes check if multiple queues are enabled. The following module parameter
+is used for that:
+
+MODULE_PARM_DESC(use_mcs, " 0:NAPI, 1:Multiple receive queues, Default = 0
+");
+
+you should also see the number of used HEA interrupts in /proc/interrupts
+
+
+>
+> > queues with an own interrupt each so that the interrupts can arrive
+> > on multiple CPUs in parallel.  Interrupts are enabled again when we
+> > leave the NAPI Poll function for the corresponding receive queue.
+>
+> I can't see a piece of code which does that, but that's probably just
+> lack of detailed hardware knowledge on my side.
+
+If you mean the "re-enable" piece of code, it is not very obvious, you are
+right.
+Interrupts are only generated if a particular register for our completion
+queues
+is written. We do this in the following line:
+
+          ehea_reset_cq_ep(pr->recv_cq);
+          ehea_reset_cq_ep(pr->send_cq);
+          ehea_reset_cq_n1(pr->recv_cq);
+          ehea_reset_cq_n1(pr->send_cq);
+
+So this is in a way an indirect way to ask for interrupts when new
+completions were
+written to memory. We don't really disable/enable interrupts on the HEA
+chip itself.
+
+I think there are some mechanisms build in the HEA chip that should prevent
+that
+interrupts don't get lost. But that is something that is / was completely
+hidden from
+us, so my skill is very limited there.
+
+If more details are needed here we should involve the PHYP guys + eHEA HW
+guys if not
+already done. Did anyone already talk to them?
+
+Regards,
+Jan-Bernd
+
