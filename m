@@ -1,80 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754817Ab0ETSda (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 14:33:30 -0400
-Received: from mga01.intel.com ([192.55.52.88]:16159 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab0ETSd3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 14:33:29 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,272,1272870000"; 
-   d="scan'208";a="569102879"
-Subject: Re: kernel BUG in iwl-agn-rs.c:2076, WAS: iwlagn + some
- accesspoint == hardlock
-From: reinette chatre <reinette.chatre@intel.com>
-To: Nils Radtke <lkml@Think-Future.de>
-Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100520121518.GA2757@localhost>
-References: <20100513150504.GB7535@localhost>
-	 <1274138381.2091.4864.camel@rchatre-DESK> <20100520121518.GA2757@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 May 2010 11:33:28 -0700
-Message-ID: <1274380408.2091.9272.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	id S1754668Ab0ETSgQ (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 14:36:16 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:41512 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751343Ab0ETSgP (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 14:36:15 -0400
+Message-ID: <4BF580ED.3080207@oracle.com>
+Date: Thu, 20 May 2010 11:35:25 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+MIME-Version: 1.0
+To: "Frank A. Kingswood" <frank@kingswood-consulting.co.uk>
+CC: linux-kernel@vger.kernel.org
+Subject: Re: NR_CPUS configuration option wrong
+References: <ht3rr8$b5f$2@dough.gmane.org> <20100520103851.8e051a3f.randy.dunlap@oracle.com> <4BF58054.8060601@kingswood-consulting.co.uk>
+In-Reply-To: <4BF58054.8060601@kingswood-consulting.co.uk>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BF5811A.001D:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 05:15 -0700, Nils Radtke wrote:
-> # 
-> # To address (1), could you please run with attached debug patch and also
-> # enable rate scaling debugging. That will be "modprobe iwlagn
-> # debug=0x143fff).
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c: In function ‘rs_collect_tx_data’:
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c:364: error: ‘priv’ undeclared (first use in this function)
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c:364: error: (Each undeclared identifier is reported only once
-> drivers/net/wireless/iwlwifi/iwl-agn-rs.c:364: error: for each function it appears in.)
+On 05/20/10 11:32, Frank A. Kingswood wrote:
+> Randy Dunlap wrote:
+>> On Thu, 20 May 2010 18:34:32 +0100 Frank A. Kingswood wrote:
+>>
+>>> Hi!
+>>>
+>>> The configuration MAXSMP help text indicates it is used to enable
+>>> configuration of number of CPUs. However, NR_CPUS depends on !MAXSMP.
+>>>
+>>> arch/x86/Kconfig:
+>>> 758 config NR_CPUS
+>>> 759         int "Maximum number of CPUs" if SMP && !MAXSMP
+>>
+>> That line depends on !MAXSMP.  Then below there, we find:
+>>
+>>     default "4096" if MAXSMP
 > 
-> This happens when compiling w/ the patch applied cleanly against .33.3
-> I'll try to fix it, then conduct the field test.
+> Hah, weird.
+> I can see now it is possible to parse the MAXSMP help this way, but it
+> was not obvious.
 
-Sorry ... and thanks.
+Ambiguity is fairly easy.  :(
 
->  For the latter, do 
-> you need the same kind of log as for the previous one? 
+> In menuconfig you see two questions:
+> 
+> [ ] Configure Maximum number of SMP Processors and NUMA Nodes
+> [8] Maximum number of CPUs
+> 
+> and setting the first one YES makes the second one go away.
+> 
+> Perhaps restating the help as "Set number of SMP processors and NUMA
+> nodes to the maximum that the kernel supports" might help.
 
-The goal of this patch is to find the reason behind the error
-"expected_tpt should have been calculated by now". From what I
-understand you only encountered that in one of your tests, not all. Any
-test you can run to reproduce that error will be welcome. 
+Yes, that sounds better.  Want to submit a patch for that?
 
-Thinking about your question more ... I believe your previous debug logs
-were created with debug flag 0x43fff. For this iteration, please use
-debug flag 0x143fff.
-
->  
-> # Regarding (2): This is a common issue in busy environments where AP
-> # decides to deathenticate station after it does not receive an ack for
-> # data sent after a few retries. Was this test done in busy environment?
-> Both. This happens in busy environment as well as in an idle one. Can't tell
-> yet whether there're more of those msgs in busy env. I start to feel against 
-> Cisco APs..
-
-I don't know ... perhaps these APs have been set up to be strict wrt
-delays.
-
- 
-> # Regarding (3): Seems like driver is getting a request to scan after a
-> # request to remove interface. I am still inquiring about this.
-> Probably due to me switching of via RF_KILLSWITCH. But anyway I assume this
-> msg should not happen..
-
-Absolutely. What are the exact steps you run when you encounter this
-issue?
-
-Reinette
-
-
-
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
