@@ -1,52 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755397Ab0ETJzW (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 05:55:22 -0400
-Received: from www.tglx.de ([62.245.132.106]:58139 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755344Ab0ETJzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 05:55:20 -0400
-Date: Thu, 20 May 2010 11:47:32 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Sujit K M <sjt.kar@gmail.com>
-cc: "Nikita V. Youshchenko" <yoush@cs.msu.su>, linux-rt-users@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after
- console_init
-In-Reply-To: <AANLkTil18TnOR9D-dSFsSFA74Q4UFnldrGLhG1H4jwhf@mail.gmail.com>
-Message-ID: <alpine.LFD.2.00.1005201142360.3368@localhost.localdomain>
-References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com>  <AANLkTinClrTDoXH4NPP2-SgSYH24ZTnqsop88aocdg4R@mail.gmail.com>  <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>  <201005201233.56877@zigzag.lvk.cs.msu.su> 
- <AANLkTilEbFndi-rPczi6OBxeU8p87gOz4yfveEsyHqcE@mail.gmail.com> <AANLkTil18TnOR9D-dSFsSFA74Q4UFnldrGLhG1H4jwhf@mail.gmail.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1755384Ab0ETJzV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 05:55:21 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:38122 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752865Ab0ETJzT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 05:55:19 -0400
+Date: Thu, 20 May 2010 19:55:15 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Matt Mackall <mpm@selenic.com>
+Cc: Linux Mailing List <linux-kernel@vger.kernel.org>,
+       Steven Liu <lingjiujianke@gmail.com>
+Subject: Re: [PATCH] random: simplify fips mode
+Message-ID: <20100520095515.GA11455@gondor.apana.org.au>
+References: <1274334257.11603.1438.camel@calx>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274334257.11603.1438.camel@calx>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please stop top posting !
+On Thu, May 20, 2010 at 12:44:17AM -0500, Matt Mackall wrote:
+> Rather than dynamically allocate 10 bytes, move it to static allocation.
+> This saves space and avoids the need for error checking.
+> 
+> Signed-off-by: Matt Mackall <mpm@selenic.com>
 
-On Thu, 20 May 2010, Sujit K M wrote:
-
-> >>> Well, obviously it's unsafe if you remove safety checks. And if you
-> >>> care to look at the changelog of kernel/printk.c you'll find out why.
-> >>
-> >> Hmm... did a quick look and could not find anything related there.
-> >> Could you please give a pointer?
-
-Gah, yes. The changelog of the commit is not really helpful. Let me
-explain:
-
-The console drivers might take locks, which are converted to "sleeping
-locks" in preempt-rt. As a result we cannot call into those drivers
-from atomic contexts. And that's what the checks in the printk code
-prevent.
-
-Hope that helps.
-
-Thanks,
-
-	tglx
-
-
-
+Patch applied.  Thanks a lot!
+-- 
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
