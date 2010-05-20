@@ -1,116 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754671Ab0ETB4L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 21:56:11 -0400
-Received: from mail.openrapids.net ([64.15.138.104]:37235 "EHLO
-	blackscsi.openrapids.net" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753523Ab0ETB4J (ORCPT
+	id S1754792Ab0ETB4r (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 21:56:47 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:62991 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754724Ab0ETB4p convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 21:56:09 -0400
-Date: Wed, 19 May 2010 21:56:05 -0400
-From: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
-       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
-       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
-       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
-       linux-mm@kvack.org, akpm@linux-foundation.org,
-       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
-       jens.axboe@oracle.com, Michael Kerrisk <mtk.manpages@gmail.com>,
-       linux-man@vger.kernel.org
-Subject: Re: Unexpected splice "always copy" behavior observed
-Message-ID: <20100520015605.GA28411@Krystal>
-References: <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu> <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal> <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org> <20100519214905.GA22486@Krystal> <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
+	Wed, 19 May 2010 21:56:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type
+         :content-transfer-encoding;
+        b=s79PIL1ftL6wPjh6+acz/TdUULbmguD/2OB0PRSdQVsUsxIuQeHiik3kqF4bAy6i2d
+         PUYQXhlWLt9eUv51+GjMfdxTjFDVKvjZiSH4i3rHYO+a+hb6ALrpC/PPIXjV78k43hIF
+         RpCs/oUeUfo55fj9FdV7EBESuTbisNIeiP8sA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
-X-Editor: vi
-X-Info: http://www.efficios.com
-X-Operating-System: Linux/2.6.26-2-686 (i686)
-X-Uptime: 21:41:34 up 117 days,  4:18,  9 users,  load average: 0.30, 0.34,
-	0.28
-User-Agent: Mutt/1.5.18 (2008-05-17)
+From: Frank Pan <frankpzh@gmail.com>
+Date: Thu, 20 May 2010 09:56:25 +0800
+Message-ID: <AANLkTilhnzVtLsWqyllH5vhFIwDaUKllnkfxSyqKC6hv@mail.gmail.com>
+Subject: Comments of fbcon_cw.c made a mistake
+To: linux-kernel@vger.kernel.org, linux-fbdev@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-* Linus Torvalds (torvalds@linux-foundation.org) wrote:
-> 
-> 
-> On Wed, 19 May 2010, Mathieu Desnoyers wrote:
-> > 
-> > A faced a small counter-intuitive fadvise behavior though.
-> > 
-> >   posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
-> > 
-> > only seems to affect the parts of a file that already exist.
-> 
-> POSIX_FADV_DONTNEED does not have _any_ long-term behavior. So when you do 
-> a 
-> 
-> 	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
-> 
-> it only affects the pages that are there right now, it has no effect on 
-> any future actions.
+Greetings.
 
-Hrm, someone should tell the author of posix_fadvise(2) about the benefit of
-some clarifications (I'm CCing the manpage maintainer)
+Recently I'm reading linux kernel and I've found this tiny problem.
 
-Quoting man posix_fadvise, annotated:
+    The comment at top of fbcon_cw.c annonced it is fbcon_ud.c.
 
+I'm strongly interested in linux kernel and wish to learn the
+community. Although this problem is really not a big deal, but maybe
+it's a good start, good chance to learn.
 
-       Programs  can  use  posix_fadvise()  to announce an intention to access
-       file data in a specific pattern in the future, thus allowing the kernel
-       to perform appropriate optimizations.
+If I did anything unregular, please tell me. Thank you.
 
-This only talks about future accesses, not past. From what I understand, you are
-saying that in the writeback case it's better to think of posix_fadvise() as
-applying to pages that have been written in the past too.
+Here is my patch:
 
-
-       The  advice  applies to a (not necessarily existent) region starting at
-       offset and extending for len bytes (or until the end of the file if len
-       is 0) within the file referred to by fd.  The advice is not binding; it
-       merely constitutes an expectation on behalf of the application.
- 
-This could be enhanced by saying that it applies up to the current file size if
-0 is specified, and does not extend as the file grows. The formulation as it is
-currently stated is a bit misleading.
-
-> > So after each splice() that appends to the file, I have to call fadvise 
-> > again. I would have expected the "0" len parameter to tell the kernel to 
-> > apply the hint to the whole file, even parts that will be added in the 
-> > future.
-> 
-> It's not a hint about future at all. It's a "throw current pages away".
-> 
-> I would also suggest against doing that kind of thing in a streaming write 
-> situation. The behavior for dirty page writeback is _not_ welldefined, and 
-> if you do POSIX_FADV_DONTNEED, I would suggest you do it as part of that 
-> writeback logic, ie you do it only on ranges that you have just waited on.
-> 
-> IOW, in my example, you'd couple the
-> 
-> 	sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
-> 
-> with a
-> 
-> 	posix_fadvise(fd, (index-1)*BUFSIZE, BUFSIZE, POSIX_FADV_DONTNEED);
-> 
-> afterwards to throw out the pages that you just waited for.
-
-OK, so it's better to do the writeback as part of sync_file_range rather than
-relying on the dirty page writeback to do it for us. I guess the I/O scheduler
-will have more room to ensure that writes are contiguous.
-
-Thanks for the feedback,
-
-Mathieu
-
--- 
-Mathieu Desnoyers
-Operating System Efficiency R&D Consultant
-EfficiOS Inc.
-http://www.efficios.com
+diff --git a/drivers/video/console/fbcon_cw.c b/drivers/video/console/fbcon_cw.c
+index 126110f..2f51a51 100644
+--- a/drivers/video/console/fbcon_cw.c
++++ b/drivers/video/console/fbcon_cw.c
+@@ -1,5 +1,5 @@
+/*
+- *  linux/drivers/video/console/fbcon_ud.c -- Software Rotation - 90 degrees
++ *  linux/drivers/video/console/fbcon_cw.c -- Software Rotation - 90 degrees
+ *
+ *      Copyright (C) 2005 Antonino Daplas <adaplas @pol.net>
+ *
