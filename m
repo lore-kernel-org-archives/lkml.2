@@ -1,87 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753979Ab0ETHAT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:00:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53213 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753530Ab0ETHAR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 03:00:17 -0400
-Date: Thu, 20 May 2010 17:00:04 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Manfred Spraul <manfred@colorfullife.com>, linux-kernel@vger.kernel.org
-Subject: [patch 2/3] ipc: use shifts to extract seq/idx
-Message-ID: <20100520070004.GH2516@laptop>
-References: <20100520065911.GG2516@laptop>
+	id S1754013Ab0ETHBV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 03:01:21 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:51009 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753551Ab0ETHBU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 03:01:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=mwOun9CR+gRSOSKy/347zVhSE00nUA5EbZ9WTUQJSseTdfp0syn4rGM+kHE1EiuLYB
+         Z88QPqWEOX83Ly8Ooum6/eQq74Z27IeNPqgjfI+VYw9+Q5tFiKZ3H58db9wR8AliruXq
+         nCtpkn9ISRzb2PB85rPSB5IySlpVluQDQMhf8=
+Date: Thu, 20 May 2010 09:01:24 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+Cc: linux-kernel@vger.kernel.org, mingo@elte.hu, a.p.zijlstra@chello.nl,
+       paulus@samba.org, acme@redhat.com
+Subject: Re: [PATCH RFC] perf: fix find_swevent_head() RCU lockdep splat
+Message-ID: <20100520070121.GA5309@nowhere>
+References: <20100513182556.GA14326@linux.vnet.ibm.com> <20100513190325.GB5377@nowhere> <20100513194605.GG2879@linux.vnet.ibm.com> <20100513204855.GD5377@nowhere> <20100513205925.GE5377@nowhere> <20100513234327.GP2879@linux.vnet.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100520065911.GG2516@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100513234327.GP2879@linux.vnet.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Thu, May 13, 2010 at 04:43:27PM -0700, Paul E. McKenney wrote:
+> On Thu, May 13, 2010 at 10:59:26PM +0200, Frederic Weisbecker wrote:
+> > >  	hash = swevent_hash(type, event_id);
+> > >  
+> > > +	return &hlist->heads[hash];
+> > > +}
+> > > +
+> > > +static inline struct hlist_head *
+> > > +find_swevent_head_rcu(struct perf_cpu_context *ctx, u64 type, u32 event_id)
+> > > +{
+> > > +	struct swevent_hlist *hlist;
+> > > +
+> > >  	hlist = rcu_dereference(ctx->swevent_hlist);
+> 
+> This is appropriate if find_swevent_head_rcu() is always invoked in an
+> RCU read-side critical section.  (Which at first glance does appear to
+> be the intent, just checking.)
 
-All the ipc ids and sequences are signed integers, so power of 2
-sequence multiplier does not work so well. Convert it to use shifts,
-which improves generated code particularly in ipc_lock/ipc_lock_check
-fast paths.
 
-Index: linux-2.6/ipc/util.c
-===================================================================
---- linux-2.6.orig/ipc/util.c
-+++ linux-2.6/ipc/util.c
-@@ -123,7 +123,7 @@ void ipc_init_ids(struct ipc_ids *ids)
- 	ids->in_use = 0;
- 	ids->seq = 0;
- 	{
--		int seq_limit = INT_MAX/SEQ_MULTIPLIER;
-+		int seq_limit = INT_MAX >> SEQ_SHIFT;
- 		if (seq_limit > USHORT_MAX)
- 			ids->seq_max = USHORT_MAX;
- 		 else
-Index: linux-2.6/ipc/util.h
-===================================================================
---- linux-2.6.orig/ipc/util.h
-+++ linux-2.6/ipc/util.h
-@@ -13,9 +13,11 @@
- #include <linux/unistd.h>
- #include <linux/err.h>
+
+Exactly!
+
+
  
--#define IPCMNI_MAX 32768  /* <= MAX_INT absolute limit for ipc arrays */
-+/* IPCMNI_MAX should be <= MAX_INT, absolute limit for ipc arrays */
-+#define IPCMNI_MAX_SHIFT	15
-+#define IPCMNI_MAX		(1 << IPCMNI_MAX_SHIFT)
- 
--#define SEQ_MULTIPLIER	(IPCMNI_MAX)
-+#define SEQ_SHIFT		IPCMNI_MAX_SHIFT
- 
- void sem_init (void);
- void msg_init (void);
-@@ -93,7 +95,7 @@ void __init ipc_init_proc_interface(cons
- #define IPC_MSG_IDS	1
- #define IPC_SHM_IDS	2
- 
--#define ipcid_to_idx(id) ((id) % SEQ_MULTIPLIER)
-+#define ipcid_to_idx(id) ((id) & ((1UL << SEQ_SHIFT) - 1))
- 
- /* must be called with ids->rw_mutex acquired for writing */
- int ipc_addid(struct ipc_ids *, struct kern_ipc_perm *, int);
-@@ -146,7 +148,7 @@ extern void recompute_msgmni(struct ipc_
- 
- static inline int ipc_buildid(int id, int seq)
- {
--	return SEQ_MULTIPLIER * seq + id;
-+	return (seq << SEQ_SHIFT) + id;
- }
- 
- /*
-@@ -154,7 +156,7 @@ static inline int ipc_buildid(int id, in
-  */
- static inline int ipc_checkid(struct kern_ipc_perm *ipcp, int uid)
- {
--	if (uid / SEQ_MULTIPLIER != ipcp->seq)
-+	if ((uid >> SEQ_SHIFT) != ipcp->seq)
- 		return 1;
- 	return 0;
- }
+> > > -	if (!hlist)
+> > > -		return NULL;
+> > >  
+> > > -	return &hlist->heads[hash];
+> > > +	return __find_swevent_head(hlist, type, event_id);
+> > > +}
+> > > +
+> > > +static inline struct hlist_head *
+> > > +find_swevent_head(struct perf_cpu_context *ctx, u64 type,
+> > > +		  u32 event_id, struct perf_event *event)
+> > > +{
+> > > +	struct swevent_hlist *hlist;
+> > > +
+> > > +	hlist = rcu_dereference_check(ctx->swevent_hlist,
+> > > +				      lockdep_is_held(&event->ctx->lock));
+> 
+> This could be invoked with either the event->ctx->lock held or in
+> an RCU read-side critical section.  If this is always called with
+> the update-side lock held, you can (but don't need to) instead say:
+> 
+> 	hlist = rcu_dereference_protected(ctx->swevent_hlist,
+> 				          lockdep_is_held(&event->ctx->lock));
+> 
+> This is slightly faster, as it drops the volatile casts.  In many cases,
+> you won't care, but in case this code path needs ultimate performance.
+> 
+> Also I thought it was event->ctx.lock, but at this point I trust your eyes
+> more than my own.  ;-)
+> 
+> 							Thanx, Paul
+
+
+
+This is indeed never called from the read side.
+
+In fact the situation is a bit complicated.
+The true update side is:
+
+	creation_of_perf_event() {
+		mutex_lock(ctx->mutex);
+		alloc/rcu_assign_pointer the hlist
+		mutex_unlock(ctx->mutex);
+	}
+	/* the event for which we've allocated the hlist
+	   can be scheduled only once the above is
+	   finished */
+
+And, in a serialized way, we can have:
+
+	schedule_perf_event() {
+		spin_lock(ctx->lock);
+		rcu_deref hlist
+		spin_unlock(ctx->lock);
+	}
+
+Scheduling an event that derefs the hlist will not happen if we haven't
+created and assigned the hlist before.
+And also scheduling an event that derefs the hlist won't happen after
+the hlist has been destroyed (released), it also can't be destroyed
+concurrently with the scheduling.
+
+This is why I consider the event scheduling as part of the update side,
+since it is serialized with it, the ctx->lock guarantees that.
+
+OTOH, we can have the read side concurrently anytime, hence the need
+for rcu_read_lock() there.
+	
+So, I guess it's justified to use rcu_dereference_protected() here.
+
+Thanks.
+
