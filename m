@@ -1,47 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753280Ab0ETPJy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 11:09:54 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39540 "EHLO mx2.suse.de"
+	id S1753794Ab0ETPJ6 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 11:09:58 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:39543 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750942Ab0ETPJw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 11:09:52 -0400
-Date: Thu, 20 May 2010 08:03:31 -0700
+	id S1751495Ab0ETPJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 11:09:56 -0400
+Date: Thu, 20 May 2010 08:06:44 -0700
 From: Greg KH <gregkh@suse.de>
-To: Dominik Brodowski <linux@dominikbrodowski.net>,
-       Alexander Kurz <linux@blala.de>,
-       Ken Kawasaki <ken_kawasaki@spring.nifty.jp>,
-       "David S. Miller" <davem@davemloft.net>,
-       Alan Cox <alan@linux.intel.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] serial_cs: add and sort IDs for serial and modem cards
-Message-ID: <20100520150331.GA3825@suse.de>
-References: <alpine.DEB.1.10.1005200034470.22205@blala.de>
- <20100520145747.GA12462@comet.dominikbrodowski.net>
+To: Neil Munro <neilmunro@gmail.com>
+Cc: wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1586/1586] Staging: RT2860: Fixed my previous patch.
+Message-ID: <20100520150644.GA3862@suse.de>
+References: <1274354933-24377-1-git-send-email-neilmunro@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100520145747.GA12462@comet.dominikbrodowski.net>
+In-Reply-To: <1274354933-24377-1-git-send-email-neilmunro@gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 04:57:47PM +0200, Dominik Brodowski wrote:
+On Thu, May 20, 2010 at 12:28:53PM +0100, Neil Munro wrote:
+> From: Niadh <neilmunro@gmail.com>
 > 
-> On Thu, May 20, 2010 at 12:40:08AM +0400, Alexander Kurz wrote:
-> > From a0b7bb602321ee0f28fefc955e103788190a7cfa Mon Sep 17 00:00:00 2001
-> > From: Alexander Kurz <linux@kbdbabel.org>
-> > Date: Mon, 17 May 2010 18:54:38 +0200
-> > Subject: [PATCH] serial_cs: add and sort IDs for serial and modem cards
-> > 
-> > Signed-off-by: Alexander Kurz <linux@kbdbabel.org>
+> I have corrected the confusion between braces and parethesis. In
+> addition I have removed a few warnings where the lines were over 80
+> lines and finaly have implemented a few suggestions Joe Perches
+> suggested (thanks Joe).
 > 
-> Acked-by: Dominik Brodowski <linux@dominikbrodowski.net>
+> Signed-off-by: Neil Munro <neilmunro@gmail.com>
+> ---
+>  drivers/staging/rt2860/mlme.h |   89 +++++++++++++++++++++++++----------------
+>  1 files changed, 55 insertions(+), 34 deletions(-)
 > 
-> Who can push it upstream? I'm willing to do so, but would prefer it to
-> go via serial.
+> diff --git a/drivers/staging/rt2860/mlme.h b/drivers/staging/rt2860/mlme.h
+> index 63cada3..02cbe9a 100644
+> --- a/drivers/staging/rt2860/mlme.h
+> +++ b/drivers/staging/rt2860/mlme.h
+> @@ -31,7 +31,7 @@
+> 
+>  	Revision History:
+>  	Who			When			What
+> -	--------	----------		----------------------------------------------
+> +	--------	----------		------------
+>  	John Chang	2003-08-28		Created
+>  	John Chang  2004-09-06      modified for RT2600
+> 
+> @@ -49,8 +49,9 @@
+>  #define LFSR_MASK                   0x80000057
+>  #define MLME_TASK_EXEC_INTV         100/*200*/	/* */
+>  #define LEAD_TIME                   5
+> -#define MLME_TASK_EXEC_MULTIPLE       10  /*5*/	/* MLME_TASK_EXEC_MULTIPLE * MLME_TASK_EXEC_INTV = 1 sec */
+> -#define REORDER_EXEC_INTV         	100	/* 0.1 sec */
+> +#define MLME_TASK_EXEC_MULTIPLE       10
+> +/*5*/	/* MLME_TASK_EXEC_MULTIPLE * MLME_TASK_EXEC_INTV = 1 sec */
 
-I will take it.
+This doesn't make sense.  Put the comment on the line before.
+
+And drop the /*5*/, it too doesn't make sense.
+
+> +#define REORDER_EXEC_INTV		100	/* 0.1 sec */
+> 
+>  /* The definition of Radar detection duration region */
+>  #define CE		0
+> @@ -60,7 +61,7 @@
+>  #define JAP_W56	4
+>  #define MAX_RD_REGION 5
+> 
+> -#define BEACON_LOST_TIME            { 4 * OS_HZ }	/* 2048 msec = 2 sec */
+> +#define BEACON_LOST_TIME            (4 * OS_HZ)	/* 2048 msec = 2 sec */
+
+As I didn't take your original patch, this patch will not apply.  Please
+generate a new patch that I can apply properly to the linux-next tree.
 
 thanks,
 
