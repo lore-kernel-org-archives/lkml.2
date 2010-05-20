@@ -1,178 +1,248 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752911Ab0ETOxY (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 10:53:24 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:49133 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab0ETOxX (ORCPT
+	id S1752703Ab0ETO4Z (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 10:56:25 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:43006 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750942Ab0ETO4X (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 10:53:23 -0400
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
- (IRQF_NODELAY)
-From: Will Schmidt <will_schmidt@vnet.ibm.com>
-Reply-To: will_schmidt@vnet.ibm.com
-To: Jan-Bernd Themann <THEMANN@de.ibm.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Brian King <brking@linux.vnet.ibm.com>,
-       Doug Maxey <doug.maxey@us.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
-       dvhltc@linux.vnet.ibm.com, linux-kernel@vger.kernel.org,
-       linuxppc-dev@lists.ozlabs.org, michael@ellerman.id.au,
-       niv@linux.vnet.ibm.com
-In-Reply-To: <OFCBBE5EB9.FD616EDA-ONC1257729.0030B539-C1257729.0031FB06@de.ibm.com>
-References: <4BF30793.5070300@us.ibm.com>
-	 <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>
-	 <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com>
-	 <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain>
-	 <alpine.LFD.2.00.1005192244430.3368@localhost.localdomain>
-	 <1274319248.22892.40.camel@concordia>
-	 <OF17F8F35C.B09E4797-ONC1257729.0028292D-C1257729.0029E9AC@de.ibm.com>
-	 <alpine.LFD.2.00.1005200950410.3368@localhost.localdomain>
-	 <OFCBBE5EB9.FD616EDA-ONC1257729.0030B539-C1257729.0031FB06@de.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Organization: IBM
-Date: Thu, 20 May 2010 09:53:14 -0500
-Message-ID: <1274367195.1675.27.camel@lexx>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.1 
+	Thu, 20 May 2010 10:56:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:subject:date:user-agent:cc:references:in-reply-to
+         :organization:mime-version:content-type:content-transfer-encoding
+         :message-id;
+        b=Dzbtqb4/Ap2PYr3rQJAWJH0iP/3u0ubW7Tq/zX9M3H7nnWKmf7mtpFK+T+pBGOFBwy
+         vppGLi+oDwMLO2ZJAujnwzNCoCwq/wg0fvdrWSEvBiBRBQLv8lwQNyGu8MJBTHgUyPdS
+         EOFPYdV8nDCstN7qcFWkjJi1HJwk1bU7w0dXQ=
+From: Florian Fainelli <florian@openwrt.org>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [PATCH v3] x86: CPU detection for RDC System-on-Chip
+Date: Thu, 20 May 2010 16:58:48 +0200
+User-Agent: KMail/1.13.2 (Linux/2.6.32-21-server; KDE/4.4.2; x86_64; ; )
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, mingo@elte.hu,
+       "linux-kernel" <linux-kernel@vger.kernel.org>, andi@firstfloor.org
+References: <201005161455.34100.florian@openwrt.org> <4BF06CB4.5000909@zytor.com> <201005190927.14385.florian@openwrt.org>
+In-Reply-To: <201005190927.14385.florian@openwrt.org>
+Organization: OpenWrt
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005201658.49187.florian@openwrt.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 11:05 +0200, Jan-Bernd Themann wrote:
-> Hi Thomas
+On Wednesday 19 May 2010 09:27:12 Florian Fainelli wrote:
+> From: Mark Kelly <mark@bifferos.com>
 > 
-> > Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
-> >
-> > On Thu, 20 May 2010, Jan-Bernd Themann wrote:
-> > > > > Thought more about that. The case at hand (ehea) is nasty:
-> > > > >
-> > > > > The driver does _NOT_ disable the rx interrupt in the card in the
-> rx
-> > > > > interrupt handler - for whatever reason.
-> > > >
-> > > > Yeah I saw that, but I don't know why it's written that way. Perhaps
-> > > > Jan-Bernd or Doug will chime in and enlighten us? :)
-> > >
-> > > From our perspective there is no need to disable interrupts for the
-> > > RX side as the chip does not fire further interrupts until we tell
-> > > the chip to do so for a particular queue. We have multiple receive
-> >
-> > The traces tell a different story though:
-> >
-> >     ehea_recv_irq_handler()
-> >       napi_reschedule()
-> >     eoi()
-> >     ehea_poll()
-> >       ...
-> >       ehea_recv_irq_handler()    <---------------- ???
-> >         napi_reschedule()
-> >       ...
-> >       napi_complete()
-> >
-> > Can't tell whether you can see the same behaviour in mainline, but I
-> > don't see a reason why not.
-> 
-> Is this the same interrupt we are seeing here, or do we see a second other
-> interrupt popping up on the same CPU? As I said, with multiple receive
-> queues
-> (if enabled) you can have multiple interrupts in parallel.
+> The RDC System-on-Chip i486 compatible core does not support the cpuid
+> instruction and specific detection logic is required for this chip. The
+> patch below adds proper vendor and SoC type detection.
 
-Same interrupt number (260).      Per the trace data, the first
-ehea_recv_irq_handler (at 117.904525) was on cpu 0, the second (at
-117.904689) was on cpu 1.
+Is this version acceptable like it is now?
 
-
-
-<...>-2180  [000]  117.904525: .ehea_recv_irq_handler: ENTER 0 c0000000e8bd08b0
-<...>-2180  [000]  117.904527: .ehea_recv_irq_handler: napi_reschedule COMpleted  c0000000e8bd08b0
-<...>-2180  [000]  117.904528: .ehea_recv_irq_handler: EXIT reschedule(1) 1 c0000000e8bd08b0
-<...>-2180  [000]  117.904529: .xics_unmask_irq: xics: unmask virq 260 772
-<...>-2180  [000]  117.904547: .xics_unmask_irq: xics: unmask virq pre-xive 260 772 0 status:0 ff
-<...>-2180  [000]  117.904586: .xics_unmask_irq: xics: unmask virq post-xive 260 772 0 D:11416 status:0 5
-<...>-2180  [000]  117.904602: .handle_fasteoi_irq: 260 8004000
-<...>-2180  [000]  117.904603: .xics_mask_irq: xics: mask virq 260 772
-<...>-2180  [000]  117.904634: .xics_mask_real_irq: xics: before: mask_real 772 status:0 5
-<...>-2180  [000]  117.904668: .xics_mask_real_irq: xics: after: mask_real 772 status:0 ff
-<...>-2180  [000]  117.904669: .handle_fasteoi_irq: pre-action:  260 8004100
-<...>-2180  [000]  117.904671: .handle_fasteoi_irq: post-action: 260 8004100
-<...>-2180  [000]  117.904672: .handle_fasteoi_irq: exit.  260 8004000
-<...>-7     [000]  117.904681: .ehea_poll:  ENTER  1  c0000000e8bd08b0 poll_counter:0 force:0
-<...>-7     [000]  117.904683: .ehea_proc_rwqes: ehea_check_cqe 0
-<...>-2180  [001]  117.904689: .ehea_recv_irq_handler: ENTER 1 c0000000e8bd08b0
-<...>-7     [000]  117.904690: .ehea_proc_rwqes: ehea_check_cqe 0
-<...>-2180  [001]  117.904691: .ehea_recv_irq_handler: napi_reschedule inCOMplete  c0000000e8bd08b0
-<...>-2180  [001]  117.904692: .ehea_recv_irq_handler: EXIT reschedule(0) 1 c0000000e8bd08b0
-<...>-2180  [001]  117.904694: .xics_unmask_irq: xics: unmask virq 260 772
-<...>-7     [000]  117.904702: .ehea_refill_rq2: ehea_refill_rq2
-<...>-7     [000]  117.904703: .ehea_refill_rq_def: ehea_refill_rq_def
-<...>-7     [000]  117.904704: .ehea_refill_rq3: ehea_refill_rq3
-<...>-7     [000]  117.904705: .ehea_refill_rq_def: ehea_refill_rq_def
-<...>-7     [000]  117.904706: .napi_complete: napi_complete: ENTER  state: 1  c0000000e8bd08b0
-<...>-7     [000]  117.904707: .napi_complete: napi_complete: EXIT  state: 0  c0000000e8bd08b0
-<...>-7     [000]  117.904710: .ehea_poll: EXIT  !cqe rx(2).   0  c0000000e8bd08b0
-<...>-2180  [001]  117.904719: .xics_unmask_irq: xics: unmask virq pre-xive 260 772 0 status:0 ff
-<...>-2180  [001]  117.904761: .xics_unmask_irq: xics: unmask virq post-xive 260 772 0 D:12705 status:0 5
-
-
-
-
-> Pleaes check if multiple queues are enabled. The following module parameter
-> is used for that:
-> 
-> MODULE_PARM_DESC(use_mcs, " 0:NAPI, 1:Multiple receive queues, Default = 0
-> ");
-
-No module parameters were used, should be plain old defaults.  
+Thank you for your answer.
 
 > 
-> you should also see the number of used HEA interrupts in /proc/interrupts
+> Signed-off-by: Mark Kelly <mark@bifferos.com>
+> Tested-by: Florian Fainelli <florian@openwrt.org>
+> ---
+> Changes from v3:
+> - read vendor and device id with a single 32-bits read
 > 
-
-256:          1    0    0    0    0    0   0    0   XICS      Level     ehea_neq
-259:          0    0    0    0    0    0   0    0   XICS      Level     eth0-aff
-260:     361965    0    0    0    0    0   0    0   XICS      Level     eth0-queue0
-
-
-
-
+> Changes from v2:
+> - change report url to bugzilla.kernel.org
+> - set vendor name to RDC even if customer id is not known
 > 
-> >
-> > > queues with an own interrupt each so that the interrupts can arrive
-> > > on multiple CPUs in parallel.  Interrupts are enabled again when we
-> > > leave the NAPI Poll function for the corresponding receive queue.
-> >
-> > I can't see a piece of code which does that, but that's probably just
-> > lack of detailed hardware knowledge on my side.
+> diff --git a/Documentation/x86/rdc.txt b/Documentation/x86/rdc.txt
+> new file mode 100644
+> index 0000000..f3dc7cf
+> --- /dev/null
+> +++ b/Documentation/x86/rdc.txt
+> @@ -0,0 +1,67 @@
+> +
+> +Introduction
+> +============
+> +
+> +RDC (http://www.rdc.com.tw) have been manufacturing x86-compatible SoC
+> +(system-on-chips) for a number of years.  They are not the fastest of
+> +CPUs (clock speeds ranging from 133-150MHz) but 486SX compatibility
+> +coupled with very low power consumption[1] and low cost make them ideal
+> +for embedded applications.
+> +
+> +
+> +Where to find
+> +=============
+> +
+> +RDC chips show up in numerous embedded devices, but be careful since
+> +many of them will not run Linux 2.6 without significant expertise.
+> +
+> +There are several variants of what the linux kernel refers to generically
+> +as RDC321X:  R8610, R321x, S3282 and AMRISC20000.
+> +
+> +R321x: Found in various routers, see the OpenWrt project for details,
+> +   http://wiki.openwrt.org/oldwiki/rdcport
+> +
+> +R8610: Found on the RDC evaluation board
+> +   http://www.ivankuten.com/system-on-chip-soc/rdc-r8610/
+> +
+> +AMRISC20000: Found in the MGB-100 wireless hard disk
+> +   http://tintuc.no-ip.com/linux/tipps/mgb100/
+> +
+> +S3282: Found in various NAS devices, including the Bifferboard
+> +   http://www.bifferos.com
+> +
+> +
+> +Kernel Configuration
+> +====================
+> +
+> +Add support for this CPU with CONFIG_X86_RDC321X.  Ensure that maths
+> +emulation is included (CONFIG_MATH_EMULATION selected) and avoid MCE
+> +(CONFIG_X86_MCE not selected).
+> +
+> +
+> +CPU detection
+> +=============
+> +
+> +None of these chips support the cpuid instruction, so as with some
+> +other x86 compatible SoCs, we must check the north bridge and look
+> +for specific 'signature' PCI device config.
+> +
+> +If you run a kernel on an unsupported customer id device, please file
+> +a bug with your customer id to: http://bugzilla.kernel.org/.
+> +
+> +Credits
+> +=======
+> +
+> +Many thanks to RDC for providing the customer codes to allow
+> +detection of all known variants, without which this detection code
+> +would have been very hard to ascertain.
+> +
+> +
+> +References
+> +==========
+> +
+> +[1] S3282 in certain NAS solutions consumes less than 1W
+> +
+> +
+> +mark@bifferos.com 2009
+> +
+> diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+> index 39e8e10..21b02f2 100644
+> --- a/arch/x86/Kconfig
+> +++ b/arch/x86/Kconfig
+> @@ -419,6 +419,7 @@ config X86_RDC321X
+>  	bool "RDC R-321x SoC"
+>  	depends on X86_32
+>  	depends on X86_EXTENDED_PLATFORM
+> +	select PCI
+>  	select M486
+>  	select X86_REBOOTFIXUPS
+>  	---help---
+> diff --git a/arch/x86/include/asm/processor.h
+> b/arch/x86/include/asm/processor.h index 5a51379..eddf979 100644
+> --- a/arch/x86/include/asm/processor.h
+> +++ b/arch/x86/include/asm/processor.h
+> @@ -122,7 +122,8 @@ struct cpuinfo_x86 {
+>  #define X86_VENDOR_CENTAUR	5
+>  #define X86_VENDOR_TRANSMETA	7
+>  #define X86_VENDOR_NSC		8
+> -#define X86_VENDOR_NUM		9
+> +#define X86_VENDOR_RDC		9
+> +#define X86_VENDOR_NUM		10
 > 
-> If you mean the "re-enable" piece of code, it is not very obvious, you are
-> right.
-> Interrupts are only generated if a particular register for our completion
-> queues
-> is written. We do this in the following line:
+>  #define X86_VENDOR_UNKNOWN	0xff
 > 
->           ehea_reset_cq_ep(pr->recv_cq);
->           ehea_reset_cq_ep(pr->send_cq);
->           ehea_reset_cq_n1(pr->recv_cq);
->           ehea_reset_cq_n1(pr->send_cq);
+> diff --git a/arch/x86/kernel/cpu/Makefile b/arch/x86/kernel/cpu/Makefile
+> index 3a785da..af2d4a6 100644
+> --- a/arch/x86/kernel/cpu/Makefile
+> +++ b/arch/x86/kernel/cpu/Makefile
+> @@ -25,6 +25,7 @@ obj-$(CONFIG_CPU_SUP_CYRIX_32)		+= cyrix.o
+>  obj-$(CONFIG_CPU_SUP_CENTAUR)		+= centaur.o
+>  obj-$(CONFIG_CPU_SUP_TRANSMETA_32)	+= transmeta.o
+>  obj-$(CONFIG_CPU_SUP_UMC_32)		+= umc.o
+> +obj-$(CONFIG_X86_RDC321X)		+= rdc.o
 > 
-> So this is in a way an indirect way to ask for interrupts when new
-> completions were
-> written to memory. We don't really disable/enable interrupts on the HEA
-> chip itself.
+>  obj-$(CONFIG_PERF_EVENTS)		+= perf_event.o
 > 
-> I think there are some mechanisms build in the HEA chip that should prevent
-> that
-> interrupts don't get lost. But that is something that is / was completely
-> hidden from
-> us, so my skill is very limited there.
-> 
-> If more details are needed here we should involve the PHYP guys + eHEA HW
-> guys if not
-> already done. Did anyone already talk to them?
-> 
-> Regards,
-> Jan-Bernd
-> 
-
-
+> diff --git a/arch/x86/kernel/cpu/rdc.c b/arch/x86/kernel/cpu/rdc.c
+> new file mode 100644
+> index 0000000..c2bcdcc
+> --- /dev/null
+> +++ b/arch/x86/kernel/cpu/rdc.c
+> @@ -0,0 +1,73 @@
+> +/*
+> + * See Documentation/x86/rdc.txt
+> + *
+> + * mark@bifferos.com
+> + */
+> +
+> +#include <linux/pci.h>
+> +#include <asm/pci-direct.h>
+> +#include "cpu.h"
+> +
+> +
+> +static void __cpuinit rdc_identify(struct cpuinfo_x86 *c)
+> +{
+> +	u32 id;
+> +	u16 vendor, device;
+> +	u32 customer_id;
+> +
+> +	if (!early_pci_allowed())
+> +		return;
+> +
+> +	/* RDC CPU is SoC (system-on-chip), Northbridge is always present */
+> +	id = read_pci_config(0, 0, 0, PCI_VENDOR_ID);
+> +	vendor = id & 0xffff;
+> +	device = (id >> 16) & 0xffff;
+> +
+> +	if (vendor != PCI_VENDOR_ID_RDC || device != PCI_DEVICE_ID_RDC_R6020)
+> +		return;  /* not RDC */
+> +	/*
+> +	 * NB: We could go on and check other devices, e.g. r6040 NIC, but
+> +	 * that's probably overkill
+> +	 */
+> +
+> +	customer_id = read_pci_config(0, 0, 0, 0x90);
+> +
+> +	switch (customer_id) {
+> +		/* id names are from RDC */
+> +	case 0x00321000:
+> +		strcpy(c->x86_model_id, "R3210/R3211");
+> +		break;
+> +	case 0x00321001:
+> +		strcpy(c->x86_model_id, "AMITRISC20000/20010");
+> +		break;
+> +	case 0x00321002:
+> +		strcpy(c->x86_model_id, "R3210X/Edimax");
+> +		break;
+> +	case 0x00321003:
+> +		strcpy(c->x86_model_id, "R3210/Kcodes");
+> +		break;
+> +	case 0x00321004:  /* tested */
+> +		strcpy(c->x86_model_id, "S3282/CodeTek");
+> +		break;
+> +	case 0x00321007:
+> +		strcpy(c->x86_model_id, "R8610");
+> +		break;
+> +	default:
+> +		pr_info("RDC CPU: Unrecognised Customer ID (0x%x) please "
+> +			"report to: http://bugzilla.kernel.org/\n",
+> +			customer_id);
+> +		break;
+> +	}
+> +
+> +	strcpy(c->x86_vendor_id, "RDC");
+> +	c->x86_vendor = X86_VENDOR_RDC;
+> +}
+> +
+> +static const struct cpu_dev __cpuinitconst rdc_cpu_dev = {
+> +	.c_vendor	= "RDC",
+> +	.c_ident	= { "RDC" },
+> +	.c_identify	= rdc_identify,
+> +	.c_x86_vendor	= X86_VENDOR_RDC,
+> +};
+> +
+> +cpu_dev_register(rdc_cpu_dev);
