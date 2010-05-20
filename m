@@ -1,146 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753029Ab0ETPWK (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 11:22:10 -0400
-Received: from lennier.cc.vt.edu ([198.82.162.213]:52829 "EHLO
-	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751219Ab0ETPWI (ORCPT
+	id S1753418Ab0ETPXF (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 11:23:05 -0400
+Received: from mail-va3.bigfish.com ([216.32.180.112]:38680 "EHLO
+	mail56-va3-R.bigfish.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751835Ab0ETPXD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 11:22:08 -0400
-X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Roman Zippel <zippel@linux-m68k.org>
-Cc: linux-kernel@vger.kernel.org, linux-kbuild@vger.kernel.org
-Subject: mmotm 2010-05-19 - Kconfig dependency list from hell...
-In-Reply-To: Your message of "Wed, 19 May 2010 16:13:09 PDT."
-             <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
-From: Valdis.Kletnieks@vt.edu
-References: <201005192341.o4JNf5Hv012931@imap1.linux-foundation.org>
-Mime-Version: 1.0
-Content-Type: multipart/signed; boundary="==_Exmh_1274368903_4237P";
-	 micalg=pgp-sha1; protocol="application/pgp-signature"
-Content-Transfer-Encoding: 7bit
-Date: Thu, 20 May 2010 11:21:43 -0400
-Message-ID: <38232.1274368903@localhost>
-X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
-X-Mirapoint-IP-Reputation: reputation=neutral-1,
-	source=Fixed,
-	refid=n/a,
-	actions=MAILHURDLE SPF TAG
-X-Junkmail: UCE(50)
-X-Junkmail-Info: (50) HELO_LOCALHOST,UPPERCASE_50_75
-X-Junkmail-Status: score=50/50, host=vivi.cc.vt.edu
-X-Junkmail-SD-Raw: score=unknown,
-	refid=str=0001.0A020207.4BF55388.0222,ss=1,fgs=0,
-	ip=0.0.0.0,
-	so=2009-09-22 00:05:22,
-	dmn=2009-09-10 00:05:08,
-	mode=multiengine
-X-Junkmail-IWF: false
+	Thu, 20 May 2010 11:23:03 -0400
+X-SpamScore: -30
+X-BigFish: VPS-30(zz1432P98dN936eM62a3Lzz1202hzz5eeePz32i2a8h65h)
+X-Spam-TCS-SCL: 4:0
+X-MS-Exchange-Organization-Antispam-Report: OrigIP: 163.181.251.22;Service: EHS
+X-WSS-ID: 0L2Q5D7-01-AL5-02
+X-M-MSG: 
+Date: Thu, 20 May 2010 17:22:21 +0200
+From: Robert Richter <robert.richter@amd.com>
+To: Stephane Eranian <eranian@google.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, Paul Mackerras <paulus@samba.org>,
+       David Miller <davem@davemloft.net>, Will Deacon <will.deacon@arm.com>,
+       Paul Mundt <lethal@linux-sh.org>
+Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the
+ type of a raw sample
+Message-ID: <20100520152221.GR21799@erda.amd.com>
+References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+ <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+ <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
+ <1274347413.5605.13636.camel@twins>
+ <AANLkTikWSOPpHsvJGht7c7QnwcOk-nMyBNhY-g6QpNzg@mail.gmail.com>
+ <1274351859.5605.13961.camel@twins>
+ <AANLkTimkCIw2va2qF9D6zIuMZoh5VdSdWAxeXRBXSDLD@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="us-ascii"
+Content-Disposition: inline
+In-Reply-To: <AANLkTimkCIw2va2qF9D6zIuMZoh5VdSdWAxeXRBXSDLD@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Reverse-DNS: ausb3extmailp02.amd.com
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---==_Exmh_1274368903_4237P
-Content-Type: text/plain; charset=us-ascii
+On 20.05.10 08:13:43, Stephane Eranian wrote:
+> What's wrong with creating pseudo-events for IBS? We'd have to pick
+> two unused event codes. That would have the advantage of making it
+> explicit you're using IBS. I think we could still use the precise_ip field
+> if people are only interested in the IP. They would use PERF_SAMPLE_RAW
+> if they need more.
 
-On Wed, 19 May 2010 16:13:09 PDT, akpm@linux-foundation.org said:
-> The mm-of-the-moment snapshot 2010-05-19-16-12 has been uploaded to
-> 
->    http://userweb.kernel.org/~akpm/mmotm/
+For some key events this is fine and useful. But, if this has to be
+used to programm all IBS features, it will introduce too much
+implementation and maintenance effort. What you get then will probably
+of less interest since users/tools want to have the raw sample data
+for further processing. But maybe we agree already in this point, if
+there is a demand we should provide pseudo events for important or
+offen used events.
 
-Looks like some code to sort the dependency list and eliminate duplicates is
-called for. I hit '?' on a new prompt, and saw this:
+> >> > The Ins-Exec will have to re-construct the actual event->count by adding
+> >> > sample-period on each interrupt, as it seems we lack an actual counter
+> >> > in hardware.
+> >> >
+> >> For what? counting mode?
+> >
+> > Yeah, events are supposed to count.
+> >
+> IBS is a sampling only feature. I suspect it would be okay to return 0 here
+> or do as you said, count the number of IBS interrupts and multiply by the
+> sampling period.
 
-CONFIG_COMEDI_FC:
+True, ibs can be used as an additional counter using the interrupt
+only and dropping sampling data. I was already thinking of adding it
+somehow to the list of available counters. But this is also later work
+as its 64 bit extension.
 
-Enable support for shared functions for low-level drivers.
-This module is not used directly by end-users. Rather, it
-is used by many other comedi drivers.
+> > Dunno, reconstruct sensible counters? Surely the software that uses IBS
+> > does something useful with that data? What does libpfm do with the IBS
+> > data?
 
-To compile this driver as a module, choose M here: the module will be
-called comedi_fc.
+Here are some use cases described:
 
-Symbol: COMEDI_FC [=n]
-Prompt: Comedi shared functions for low-level driver support
-  Defined at drivers/staging/comedi/Kconfig:1294
-  Depends on: STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n]
-  Location:
-    -> Device Drivers
-      -> Staging drivers (STAGING [=y])
-        -> Exclude Staging drivers from being built (STAGING_EXCLUDE_BUILD [=n])
+ http://developer.amd.com/assets/AMD_IBS_paper_EN.pdf
+ http://developer.amd.com/cpu/CodeAnalyst/assets/ISPASS2010_IBS_CA_abstract.pdf
 
-  Selected by: COMEDI_TEST [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n]
-&& COMEDI_MISC_DRIVERS [=n] || COMEDI_DAS16M1 [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_ISA_DRIVERS [=n] && ISA [=n] ||
-COMEDI_DAS16 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_ISA_DRIVERS [=n] && ISA [=n] || COMEDI_DAS800 [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_ISA_DRIVERS [=n] && ISA [=n] ||
-COMEDI_DAS1800 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_ISA_DRIVERS [=n] && ISA [=n] || COMEDI_DT282X [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_ISA_DRIVERS [=n] && ISA [=n] ||
-COMEDI_ADDI_APCI_3001 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_PCI_DRIVERS [=n] && PCI [=y] || COMEDI_ADDI_APCI_3120 [=n] && STAGING
-[=y] && !STAGING_EXCLUDE_BUILD [=n] && COMEDI_PCI_DRIVERS [=n] && PCI [=y] ||
-COMEDI_ADL_PCI9111 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_PCI_DRIVERS [=n] && PCI [=y] || COMEDI_ADL_PCI9118 [=n] && STAGING [=y]
-&& !STAGING_EXCLUDE_BUILD [=n] && COMEDI_PCI_DRIVERS [=n] && PCI [=y] ||
-COMEDI_AMPLC_PCI224 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_PCI_DRIVERS [=n] && PCI [=y] || COMEDI_GSC_HPDI [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_PCI_DRIVERS [=n] && PCI [=y] ||
-COMEDI_CB_PCIDAS64 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_PCI_DRIVERS [=n] && PCI [=y] || COMEDI_CB_PCIDAS [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_PCI_DRIVERS [=n] && PCI [=y] ||
-COMEDI_S626 [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_PCI_DRIVERS [=n] && PCI [=y] || COMEDI_NI_MIO_CS [=n] && STAGING [=y] &&
-!STAGING_EXCLUDE_BUILD [=n] && COMEDI_PCMCIA_DRIVERS [=n] && PCMCIA [=y] &&
-COMEDI_NI_TIO [=n] && COMEDI_NI_COMMON [=n] || COMEDI_USBDUXFAST [=n] &&
-STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] && COMEDI_USB_DRIVERS [=n] && USB
-[=y] || COMEDI_NI_LABPC [=n] && STAGING [=y] && !STAGING_EXCLUDE_BUILD [=n] &&
-COMEDI_NI_COMMON [=n]
+-Robert
 
-(Last line wrapped for readability). That includes these dups:
-
-     19  !STAGING_EXCLUDE_BUILD [=n]
-     18  STAGING [=y]
-      9  COMEDI_PCI_DRIVERS [=n]
-      5  COMEDI_ISA_DRIVERS [=n]
-
-It would probably be harder to reduce these:
-
-      1  PCI [=y] || COMEDI_S626 [=n] 
-      1  PCI [=y] || COMEDI_NI_MIO_CS [=n] 
-      1  PCI [=y] || COMEDI_GSC_HPDI [=n] 
-      1  PCI [=y] || COMEDI_CB_PCIDAS64 [=n] 
-      1  PCI [=y] || COMEDI_CB_PCIDAS [=n] 
-      1  PCI [=y] || COMEDI_AMPLC_PCI224 [=n] 
-      1  PCI [=y] || COMEDI_ADL_PCI9118 [=n] 
-      1  PCI [=y] || COMEDI_ADL_PCI9111 [=n] 
-      1  PCI [=y] || COMEDI_ADDI_APCI_3120 [=n] 
-      1  ISA [=n] || COMEDI_DT282X [=n] 
-      1  ISA [=n] || COMEDI_DAS800 [=n] 
-      1  ISA [=n] || COMEDI_DAS1800 [=n] 
-      1  ISA [=n] || COMEDI_DAS16 [=n] 
-      1  ISA [=n] || COMEDI_ADDI_APCI_3001 [=n] 
-
-(Is there a reason these don't print with () around them?  It looks like it
-needs them to enforce proper semantics...)
-
-
-
-
-
---==_Exmh_1274368903_4237P
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-Comment: Exmh version 2.5 07/13/2001
-
-iD8DBQFL9VOHcC3lWbTT17ARAoiBAKDwrqLYAMeJVqXixRkdH4KnIAeUjACeO+qi
-vn1gxJFZjK6XgeBgtFm52S8=
-=yofM
------END PGP SIGNATURE-----
-
---==_Exmh_1274368903_4237P--
+-- 
+Advanced Micro Devices, Inc.
+Operating System Research Center
+email: robert.richter@amd.com
 
