@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754695Ab0ETIdq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 04:33:46 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42286 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754426Ab0ETIdn (ORCPT
+	id S1754713Ab0ETIeO (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 04:34:14 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:55203 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754564Ab0ETIeL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 04:33:43 -0400
-Date: Thu, 20 May 2010 04:33:40 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Shi Weihua <shiwh@cn.fujitsu.com>
-Cc: chris.mason@oracle.com, "Yan, Zheng" <zheng.yan@oracle.com>,
-       linux-btrfs@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] btrfs: should add a permission check for setfacl
-Message-ID: <20100520083340.GC11920@infradead.org>
-References: <4BF1E458.7060500@cn.fujitsu.com>
+	Thu, 20 May 2010 04:34:11 -0400
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after console_init
+Date: Thu, 20 May 2010 12:33:55 +0400
+User-Agent: KMail/1.9.9
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com> <AANLkTinClrTDoXH4NPP2-SgSYH24ZTnqsop88aocdg4R@mail.gmail.com> <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005182143100.3368@localhost.localdomain>
+Cc: linux-rt-users@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
 Content-Disposition: inline
-In-Reply-To: <4BF1E458.7060500@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+Message-Id: <201005201233.56877@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 08:50:32AM +0800, Shi Weihua wrote:
-> On btrfs, do the following
-> ------------------
-> # su user1
-> # cd btrfs-part/
-> # touch aaa
-> # getfacl aaa
->   # file: aaa
->   # owner: user1
->   # group: user1
->   user::rw-
->   group::rw-
->   other::r--
-> # su user2
-> # cd btrfs-part/
-> # setfacl -m u::rwx aaa
-> # getfacl aaa
->   # file: aaa
->   # owner: user1
->   # group: user1
->   user::rwx           <- successed to setfacl
->   group::rw-
->   other::r--
-> ------------------
-> but we should prohibit it that user2 changing user1's acl.
-> In fact, on ext3 and other fs, a message occurs:
->   setfacl: aaa: Operation not permitted
+> > I could not get dmesg output to console/serial and
+> > klogd(/var/log/messages) anymore with 2.6.33-rt17 _after_ the kernel
+> > boot is done(on non-RT kernel it works fine). I made below changes it
+> > starts to work again, however I'm unsure how safe the change is.
+> > Please advise.
+>
+> Well, obviously it's unsafe if you remove safety checks. And if you
+> care to look at the changelog of kernel/printk.c you'll find out why.
 
-Can you add this as a new testcase to xfstests so that we can easiy
-check for regressions and future filesystems implementing this
-correctly?
-
+Hmm... did a quick look and could not find anything related there.
+Could you please give a pointer?
