@@ -1,180 +1,261 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754519Ab0ETIE1 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 04:04:27 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:41492 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754038Ab0ETIEX convert rfc822-to-8bit (ORCPT
+	id S1754558Ab0ETIK2 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 04:10:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:17159 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754026Ab0ETIKX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 04:04:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=sAFmTWmgNrGPFZF2s6RxhZNDOeT1eoJs9oWJInwX91DqQ/XJOSNZHeafKch6lDlfKy
-         qWQ90nb2d9mf9BZvKXQTKLa0GrgVyFcLSe4KWU36sDJe60YgkXMYYRYkSnmLH4ZpwYdi
-         XuyKxohdGQqdaCjxGiE+a+zMF2LX2BA1laRiU=
+	Thu, 20 May 2010 04:10:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=VmLq9l07E0yAe1wfu3Y0TE7WtxmOdgwul4G8cH8x6XQoxmGpmoKUVA7vabda+S9Ex
+	17CVqdgmyO8d9frIN3kDQ==
 MIME-Version: 1.0
-In-Reply-To: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com>
-From: Barry Song <21cnbao@gmail.com>
-Date: Thu, 20 May 2010 16:04:02 +0800
-Message-ID: <AANLkTilpV71K2L2N1B85yRnlTc302KbMUz2P5kuvktyl@mail.gmail.com>
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-To: Chris Metcalf <cmetcalf@tilera.com>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
+In-Reply-To: <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+References: <1274304024-6551-1-git-send-email-robert.richter@amd.com>
+	 <1274304024-6551-2-git-send-email-robert.richter@amd.com>
+Date: Thu, 20 May 2010 10:10:19 +0200
+Message-ID: <AANLkTiniEWKJIrbTSZQ0jBXps75WVQbvGSXVyUVttJ7P@mail.gmail.com>
+Subject: Re: [PATCH 1/7] perf: introduce raw_type attribute to specify the 
+	type of a raw sample
+From: Stephane Eranian <eranian@google.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 1:43 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
-> At Tilera we have been running Linux 2.6.26 on our architecture for a
-> while and distributing the sources to our customers.  We just sync'ed up
-> our sources to 2.6.34 and would like to return it to the community more
-> widely, so I'm hoping to take advantage of the merge window for 2.6.35
-> to integrate support for our architecture.
->
-> The "tile" architecture supports the Tilera chips, both our current
-> 32-bit chips and our upcoming 64-bit architecture.  The chips are
-> multicore, with 64 (or 36) cores per chip on our current product line,
-> and up to 100 cores on the upcoming 64-bit architecture.  They also
-> include multiple built-in memory controllers, 10 Gb Ethernet, PCIe,
-> and a number of other I/Os.  There's more info at http://www.tilera.com.
->
-> The architecture is somewhat MIPS-like, but VLIW, with up to three
-> instructions per bundle.  The system architecture is nicely orthogonal,
-> with four privilege levels that can be assigned to each of forty-odd
-> separate protection domains, many with an associated interrupt, e.g.
-> ITLB/DTLB misses, timer, performance counters, various interrupts
-> associated with the generic networks that connect the cores, etc.
-> A hypervisor (kind of like the Alpha PAL) runs at a higher privilege
-> level to support Linux via software-interrupt calls.
->
-> The Linux we ship has some additional performance and functionality
-> customization in the generic code, but appended is the patch that just
-> adds the minimum amount of functionality into the platform-independent
-> code to hook in the tile architecture code in arch/tile.  We will
-> attempt to push the other changes to the platform-independent code
-> piece by piece, after the initial architecture support is in.
-> We will also push up the 64-bit TILE-Gx support once that architecture
-> is fully frozen (e.g. instruction encodings finalized).
->
-> We are using the http://www.tilera.com/scm/ web site to push
-> Tilera-modified sources back up to the community.  At the moment, the
-> arch/tile hierarchy is there (as a bzipped tarball) as well as a copy
-> of the patch appended to this email.  In addition, our gcc, binutils,
-> and gdb sources are available on the web site.  We have not yet started
-> the community return process for gcc, binutils, and gdb, so they are in
-> a preliminary form at this point.
->
-> The git://www.tilera.com server is up, but without content yet, since
-> we realized this week that we need to upgrade the web server to
-> a 64-bit kernel to support a decent git server, so though we plan to
-> make the code available via git in the future, it isn't yet.
->
-> As far as the platform-independent changes go, two of the changes in the
-> appended patch are uncontroversial, one adding a stanza to MAINTAINERS,
-> and one adding a line to drivers/pci/Makefile to request "setup-bus.o
-> setup-irq.o" for tile PCI.
->
-> A slightly more interesting one-line change is to <linux/mm.h>,
-> to support lowmem PAs above the 4GB limit.  We use NUMA to manage
-> the multiple memory controllers attached to the chip, and map some of
-> each controller into kernel LOWMEM to load-balance memory bandwidth for
-> kernel-intensive apps.  The controllers can each manage up to 16GB, so we
-> use bits above the 4GB limit in the PA to indicate the controller number.
-> It turns out that generic Linux almost tolerates this, but requires one
-> cast in lowmem_page_address() to avoid shifting the high PA bits out of
-> a 32-bit PFN type.
->
-> The final change is just a PCI quirk for our TILEmpower platform, which
-> explains itself in the comment.  This is not a critical change from our
-> point of view, but without it you can't use the SATA disks attached to
-> the PCI controller on that platform, so we're hoping it can be accepted
-> as part of the initial tile architecture submission as well.
->
-> I'd appreciate being cc'ed on any comments on the patch or the tile
-> architecture support, since although I try to follow LKML, the volume
-> can be somewhat overwhelming.
->
->
-> --- linux-2.6.34/MAINTAINERS    2010-05-16 17:17:36.000000000 -0400
-> +++ tilera-source/MAINTAINERS   2010-05-17 18:00:12.651112000 -0400
-> @@ -5436,6 +5436,12 @@
->  S:     Maintained
->  F:     sound/soc/codecs/twl4030*
->
-> +TILE ARCHITECTURE
-> +M:     Chris Metcalf <cmetcalf@tilera.com>
-> +W:     http://www.tilera.com/scm/
-> +S:     Supported
-> +F:     arch/tile/
-> +
->  TIPC NETWORK LAYER
->  M:     Jon Maloy <jon.maloy@ericsson.com>
->  M:     Allan Stephens <allan.stephens@windriver.com>
-> --- linux-2.6.34/include/linux/mm.h     2010-05-16 17:17:36.000000000 -0400
-> +++ tilera-source/include/linux/mm.h    2010-05-17 12:54:33.540145000 -0400
-> @@ -592,7 +592,7 @@
->
->  static __always_inline void *lowmem_page_address(struct page *page)
->  {
-> -       return __va(page_to_pfn(page) << PAGE_SHIFT);
-> +       return __va((phys_addr_t)page_to_pfn(page) << PAGE_SHIFT);
+Robert,
 
-Here doesn't make sense. you give a u64 type cast, but change the
-meaning of pfn. Is pfn phys_addr_t? Anyway, page_to_pfn can be
-re-fulfilled in your arch, but not change it in common code.
+I still don't understand why you need all of this to encode IBS.
+I still believe that with attr.config there is plenty of bits to choose
+from. I do understand the need for PERF_SAMPLE_RAW. I think
+there is no other way.
 
->  }
+You simply need to pick an encoding to mark the config as IBS. You
+need two bits for this: 00 regular counters, 01 IBS Fetch, 10 IBS op.
+Regular counters use 43 bits, IBS fetch uses 58, IBS op uses 52.
+So you could use bits 62-63 for instance. You don't need to encode
+the sampling period in attr.config for either IBS. You can use
+attr.sample_period, so you free up 16 bits.
+
+I understand that IBS may evolve and thus may use more bits. But
+you still have at least 16 bits of margin.
+
+Users and tools would rely on an library to provide the event encoding.
+No need to come up with some raw hex number on the cmdline.
+
+On Wed, May 19, 2010 at 11:20 PM, Robert Richter <robert.richter@amd.com> wrote:
+> This patch introduces a method to specify the type of a raw sample.
+> This can be used to setup hardware events other than generic
+> performance counters by passing special config data to the pmu. The
+> config data can be interpreted different from generic events and thus
+> can be used for other purposes.
 >
->  #if defined(CONFIG_HIGHMEM) && !defined(WANT_PAGE_VIRTUAL)
-> --- linux-2.6.34/drivers/pci/Makefile   2010-05-09 21:36:28.000000000 -0400
-> +++ tilera-source/drivers/pci/Makefile  2010-05-13 15:03:05.615238000 -0400
-> @@ -49,6 +49,7 @@
->  obj-$(CONFIG_X86_VISWS) += setup-irq.o
->  obj-$(CONFIG_MN10300) += setup-bus.o
->  obj-$(CONFIG_MICROBLAZE) += setup-bus.o
-> +obj-$(CONFIG_TILE) += setup-bus.o setup-irq.o
+> The raw_type attribute is an extension of the ABI. It reuses the
+> unused bp_type space for this. Generic performance counters can be
+> setup by setting the raw_type attribute to null. Thus special raw
+> events must have a type other than null.
 >
->  #
->  # ACPI Related PCI FW Functions
-> --- linux-2.6.34/drivers/pci/quirks.c   2010-05-16 17:17:36.000000000 -0400
-> +++ tilera-source/drivers/pci/quirks.c  2010-05-17 13:26:22.347178000 -0400
-> @@ -2094,6 +2094,23 @@
->                        quirk_unhide_mch_dev6);
+> Raw types can be defined as needed for cpu models or architectures.
+> To keep backward compatibility all architectures must return an error
+> for an event with a raw_type other than null that is not supported.
 >
+> E.g., raw_type can be used to setup IBS on an AMD cpu. IBS is not
+> common to pmu features from other vendors or architectures. The pmu
+> must be setup with a special config value. Sample data is returned in
+> a certain format back to the userland. An IBS event is created by
+> setting a raw event and encoding the IBS type in raw_type. The pmu
+> handles this raw event then and passes raw sample data back.
 >
-> +/*
-> + * The Tilera Blade V1.0 platform needs to set the link speed
-> + * to 2.5GT(Giga-Transfers)/s (Gen 1). The default link speed
-> + * setting is 5GT/s (Gen 2). 0x98 is the Link Control2 PCIe
-> + * capability register of the PEX8624 PCIe switch. The switch
-> + * supports link speed auto negotiation. This is expected to
-> + * be fixed in the next release of the Blade platform.
-> + */
-> +static void __devinit quirk_tile_blade(struct pci_dev *dev)
-> +{
-> +       if (blade_pci) {
-> +               pci_write_config_dword(dev, 0x98, 0x1);
-> +               mdelay(50);
+> Raw type could be architecure specific, e.g. for x86:
+>
+> enum perf_raw_type {
+>        PERF_RAW_PERFCTR                        = 0,
+>        PERF_RAW_IBS_FETCH                      = 1,
+>        PERF_RAW_IBS_OP                         = 2,
+>
+>        PERF_RAW_MAX,
+> };
+>
+> Null is the architecture's default, meaning for x86 a perfctr.
+>
+> Maybe the raw type definition could also be part of the ABI with one
+> definition for all architectures.
+>
+> To use raw events with perf, the raw event syntax could be suffixed by
+> the type (as for breakpoints):
+>
+>   -e rNNN[:TYPE]
+>
+> Example:
+>
+>  perf record -e r186A:1          # ... meaning IBS fetch, cycle count 100000
+>  perf record -e r0:1 -c 100000   # ... the same
+>
+> Or with named types:
+>
+>  perf record -e r186A:IBS_FETCH ...
+>  perf record -e r0:IBS_FETCH -c 100000 ...
+>
+> This solution has a number of advantages: A raw event type may be
+> specified without to encode the type in the config value. The attr
+> flags are not 'polluted'. We can follow the already existing
+> breakpoint concept in syntax and encoding.
+>
+> Signed-off-by: Robert Richter <robert.richter@amd.com>
+> ---
+>  arch/arm/kernel/perf_event.c             |    5 +++++
+>  arch/powerpc/kernel/perf_event.c         |    2 ++
+>  arch/powerpc/kernel/perf_event_fsl_emb.c |    2 ++
+>  arch/sh/kernel/perf_event.c              |    2 ++
+>  arch/x86/kernel/cpu/perf_event.c         |    5 ++++-
+>  arch/x86/kernel/cpu/perf_event_amd.c     |    3 +++
+>  arch/x86/kernel/cpu/perf_event_intel.c   |    3 +++
+>  arch/x86/kernel/cpu/perf_event_p4.c      |    5 +++++
+>  include/linux/perf_event.h               |    5 ++++-
+>  9 files changed, 30 insertions(+), 2 deletions(-)
+>
+> diff --git a/arch/arm/kernel/perf_event.c b/arch/arm/kernel/perf_event.c
+> index 9e70f20..73d680c 100644
+> --- a/arch/arm/kernel/perf_event.c
+> +++ b/arch/arm/kernel/perf_event.c
+> @@ -388,6 +388,11 @@ __hw_perf_event_init(struct perf_event *event)
+>        } else if (PERF_TYPE_HW_CACHE == event->attr.type) {
+>                mapping = armpmu_map_cache_event(event->attr.config);
+>        } else if (PERF_TYPE_RAW == event->attr.type) {
+> +               if (event->attr.raw_type) {
+> +                       pr_debug("invalid raw type %x\n",
+> +                                event->attr.raw_type);
+> +                       return -EINVAL;
+> +               }
+>                mapping = armpmu->raw_event(event->attr.config);
+>        } else {
+>                pr_debug("event type %x not supported\n", event->attr.type);
+> diff --git a/arch/powerpc/kernel/perf_event.c b/arch/powerpc/kernel/perf_event.c
+> index 43b83c3..c8fb3cf 100644
+> --- a/arch/powerpc/kernel/perf_event.c
+> +++ b/arch/powerpc/kernel/perf_event.c
+> @@ -1036,6 +1036,8 @@ const struct pmu *hw_perf_event_init(struct perf_event *event)
+>                        return ERR_PTR(err);
+>                break;
+>        case PERF_TYPE_RAW:
+> +               if (event->attr.raw_type)
+> +                       return ERR_PTR(-EINVAL);
+>                ev = event->attr.config;
+>                break;
+>        default:
+> diff --git a/arch/powerpc/kernel/perf_event_fsl_emb.c b/arch/powerpc/kernel/perf_event_fsl_emb.c
+> index 369872f..7547e96 100644
+> --- a/arch/powerpc/kernel/perf_event_fsl_emb.c
+> +++ b/arch/powerpc/kernel/perf_event_fsl_emb.c
+> @@ -452,6 +452,8 @@ const struct pmu *hw_perf_event_init(struct perf_event *event)
+>                break;
+>
+>        case PERF_TYPE_RAW:
+> +               if (event->attr.raw_type)
+> +                       return ERR_PTR(-EINVAL);
+>                ev = event->attr.config;
+>                break;
+>
+> diff --git a/arch/sh/kernel/perf_event.c b/arch/sh/kernel/perf_event.c
+> index 81b6de4..482cf48 100644
+> --- a/arch/sh/kernel/perf_event.c
+> +++ b/arch/sh/kernel/perf_event.c
+> @@ -142,6 +142,8 @@ static int __hw_perf_event_init(struct perf_event *event)
+>
+>        switch (attr->type) {
+>        case PERF_TYPE_RAW:
+> +               if (attr->raw_type)
+> +                       return -EINVAL;
+>                config = attr->config & sh_pmu->raw_event_mask;
+>                break;
+>        case PERF_TYPE_HW_CACHE:
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index fd4db0d..3539b53 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -449,8 +449,11 @@ static int x86_setup_perfctr(struct perf_event *event)
+>                        return -EOPNOTSUPP;
+>        }
+>
+> -       if (attr->type == PERF_TYPE_RAW)
+> +       if (attr->type == PERF_TYPE_RAW) {
+> +               if (attr->raw_type)
+> +                       return -EINVAL;
+>                return 0;
 > +       }
-> +}
-> +DECLARE_PCI_FIXUP_EARLY(PCI_VENDOR_ID_PLX, 0x8624, quirk_tile_blade);
-
-Your patch is not compilable, and the subject doesn't match well with
-the content. I think you need re-organize patches.
-
+>
+>        if (attr->type == PERF_TYPE_HW_CACHE)
+>                return set_ext_hw_attr(hwc, attr);
+> diff --git a/arch/x86/kernel/cpu/perf_event_amd.c b/arch/x86/kernel/cpu/perf_event_amd.c
+> index 611df11..87e5ae4 100644
+> --- a/arch/x86/kernel/cpu/perf_event_amd.c
+> +++ b/arch/x86/kernel/cpu/perf_event_amd.c
+> @@ -121,6 +121,9 @@ static int amd_pmu_hw_config(struct perf_event *event)
+>        if (event->attr.type != PERF_TYPE_RAW)
+>                return 0;
+>
+> +       if (event->attr.raw_type)
+> +               return -EINVAL;
 > +
->  #ifdef CONFIG_PCI_MSI
->  /* Some chipsets do not support MSI. We cannot easily rely on setting
->  * PCI_BUS_FLAGS_NO_MSI in its bus flags because there are actually
+>        event->hw.config |= event->attr.config & AMD64_RAW_EVENT_MASK;
+>
+>        return 0;
+> diff --git a/arch/x86/kernel/cpu/perf_event_intel.c b/arch/x86/kernel/cpu/perf_event_intel.c
+> index fdbc652..d15faf5 100644
+> --- a/arch/x86/kernel/cpu/perf_event_intel.c
+> +++ b/arch/x86/kernel/cpu/perf_event_intel.c
+> @@ -770,6 +770,9 @@ static int intel_pmu_hw_config(struct perf_event *event)
+>        if (event->attr.type != PERF_TYPE_RAW)
+>                return 0;
+>
+> +       if (event->attr.raw_type)
+> +               return -EINVAL;
+> +
+>        if (!(event->attr.config & ARCH_PERFMON_EVENTSEL_ANY))
+>                return 0;
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event_p4.c b/arch/x86/kernel/cpu/perf_event_p4.c
+> index 87e1803..1001892 100644
+> --- a/arch/x86/kernel/cpu/perf_event_p4.c
+> +++ b/arch/x86/kernel/cpu/perf_event_p4.c
+> @@ -437,6 +437,11 @@ static int p4_hw_config(struct perf_event *event)
+>                event->hw.config = p4_set_ht_bit(event->hw.config);
+>
+>        if (event->attr.type == PERF_TYPE_RAW) {
+> +               /* only raw perfctr config supported */
+> +               if (event->attr.raw_type) {
+> +                       rc = -EINVAL;
+> +                       goto out;
+> +               }
+>
+>                /* user data may have out-of-bound event index */
+>                evnt = p4_config_unpack_event(event->attr.config);
+> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
+> index fe50347..f9d2d5e 100644
+> --- a/include/linux/perf_event.h
+> +++ b/include/linux/perf_event.h
+> @@ -222,7 +222,10 @@ struct perf_event_attr {
+>                __u32           wakeup_watermark; /* bytes before wakeup   */
+>        };
+>
+> -       __u32                   bp_type;
+> +       union {
+> +               __u32           bp_type;
+> +               __u32           raw_type;
+> +       };
+>        __u64                   bp_addr;
+>        __u64                   bp_len;
+>  };
 > --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
+> 1.7.1
+>
+>
 >
