@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754090Ab0ETHgA (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:36:00 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:50562 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751146Ab0ETHfz (ORCPT
+	id S1754555Ab0ETHhG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 03:37:06 -0400
+Received: from e28smtp03.in.ibm.com ([122.248.162.3]:44050 "EHLO
+	e28smtp03.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753943Ab0ETHgB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 03:35:55 -0400
+	Thu, 20 May 2010 03:36:01 -0400
 From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
 To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
        corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp
 Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
        linux-kernel@vger.kernel.org,
        "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [PATCH -V11 5/9] vfs: Support null pathname in readlink
-Date: Thu, 20 May 2010 13:05:34 +0530
-Message-Id: <1274340938-29628-6-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+Subject: [PATCH -V11 7/9] x86: Add new syscalls for x86_32
+Date: Thu, 20 May 2010 13:05:36 +0530
+Message-Id: <1274340938-29628-8-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 X-Mailer: git-send-email 1.7.1.78.g212f0
 In-Reply-To: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
 References: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
@@ -23,72 +23,44 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+This patch adds sys_name_to_handle_at and sys_open_by_handle_at
+syscalls to x86_32
 
-This enables to use readlink to get the link target name
-from a file descriptor point to the link. This can be used
-with open_by_handle syscall that returns a file descriptor for a link.
-We can then use this file descriptor to get the target name.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 ---
- fs/stat.c |   30 ++++++++++++++++++++++--------
- 1 files changed, 22 insertions(+), 8 deletions(-)
+ arch/x86/include/asm/unistd_32.h   |    4 +++-
+ arch/x86/kernel/syscall_table_32.S |    2 ++
+ 2 files changed, 5 insertions(+), 1 deletions(-)
 
-diff --git a/fs/stat.c b/fs/stat.c
-index c4ecd52..49b95a7 100644
---- a/fs/stat.c
-+++ b/fs/stat.c
-@@ -284,26 +284,40 @@ SYSCALL_DEFINE2(newfstat, unsigned int, fd, struct stat __user *, statbuf)
- SYSCALL_DEFINE4(readlinkat, int, dfd, const char __user *, pathname,
- 		char __user *, buf, int, bufsiz)
- {
--	struct path path;
--	int error;
-+	int error = 0;
-+	struct path path, *pp;
-+	struct file *file = NULL;
+diff --git a/arch/x86/include/asm/unistd_32.h b/arch/x86/include/asm/unistd_32.h
+index beb9b5f..06890db 100644
+--- a/arch/x86/include/asm/unistd_32.h
++++ b/arch/x86/include/asm/unistd_32.h
+@@ -343,10 +343,12 @@
+ #define __NR_rt_tgsigqueueinfo	335
+ #define __NR_perf_event_open	336
+ #define __NR_recvmmsg		337
++#define __NR_name_to_handle_at	338
++#define __NR_open_by_handle_at  339
  
- 	if (bufsiz <= 0)
- 		return -EINVAL;
+ #ifdef __KERNEL__
  
--	error = user_path_at(dfd, pathname, 0, &path);
-+	if (pathname == NULL && dfd != AT_FDCWD) {
-+		file = fget(dfd);
-+
-+		if (file)
-+			pp = &file->f_path;
-+		else
-+			error = -EBADF;
-+	} else {
-+		error = user_path_at(dfd, pathname, 0, &path);
-+		pp = &path;
-+	}
- 	if (!error) {
--		struct inode *inode = path.dentry->d_inode;
-+		struct inode *inode = pp->dentry->d_inode;
+-#define NR_syscalls 338
++#define NR_syscalls 340
  
- 		error = -EINVAL;
- 		if (inode->i_op->readlink) {
--			error = security_inode_readlink(path.dentry);
-+			error = security_inode_readlink(pp->dentry);
- 			if (!error) {
--				touch_atime(path.mnt, path.dentry);
--				error = inode->i_op->readlink(path.dentry,
-+				touch_atime(pp->mnt, pp->dentry);
-+				error = inode->i_op->readlink(pp->dentry,
- 							      buf, bufsiz);
- 			}
- 		}
--		path_put(&path);
-+		if (file)
-+			fput(file);
-+		else
-+			path_put(&path);
- 	}
- 	return error;
- }
+ #define __ARCH_WANT_IPC_PARSE_VERSION
+ #define __ARCH_WANT_OLD_READDIR
+diff --git a/arch/x86/kernel/syscall_table_32.S b/arch/x86/kernel/syscall_table_32.S
+index 8b37293..646717f 100644
+--- a/arch/x86/kernel/syscall_table_32.S
++++ b/arch/x86/kernel/syscall_table_32.S
+@@ -337,3 +337,5 @@ ENTRY(sys_call_table)
+ 	.long sys_rt_tgsigqueueinfo	/* 335 */
+ 	.long sys_perf_event_open
+ 	.long sys_recvmmsg
++	.long sys_name_to_handle_at
++	.long sys_open_by_handle_at	/* 339 */
 -- 
 1.7.1.78.g212f0
 
