@@ -1,53 +1,114 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754489Ab0ETBqd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 21:46:33 -0400
-Received: from trinity.fluff.org ([89.16.178.74]:60322 "EHLO trinity.fluff.org"
+	id S1754569Ab0ETBtE (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 21:49:04 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:35793 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752832Ab0ETBqb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 21:46:31 -0400
-Date: Thu, 20 May 2010 02:46:28 +0100
-From: Ben Dooks <ben-linux@fluff.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Ben Dooks <ben-linux@fluff.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Pannaga Bhushan <p.bhushan@samsung.com>
-Subject: Re: linux-next: manual merge of the samsung tree with the  tree
-Message-ID: <20100520014628.GL4720@trinity.fluff.org>
-References: <20100520110411.c16ea156.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100520110411.c16ea156.sfr@canb.auug.org.au>
-X-Disclaimer: These are my views alone.
-X-URL: http://www.fluff.org/
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: ben@trinity.fluff.org
-X-SA-Exim-Scanned: No (on trinity.fluff.org); SAEximRunCond expanded to false
+	id S1753650Ab0ETBtB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 21:49:01 -0400
+Date: Thu, 20 May 2010 11:48:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Mauro Carvalho Chehab <mchehab@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: Re: [PATCH 05a/17] v4l-dvb: update gfp/slab.h includes
+Message-Id: <20100520114858.27464e05.sfr@canb.auug.org.au>
+In-Reply-To: <20100403124331.f6d073cb.sfr@canb.auug.org.au>
+References: <1269885165-18617-1-git-send-email-tj@kernel.org>
+	<1269885165-18617-6-git-send-email-tj@kernel.org>
+	<20100403123629.d1148066.sfr@canb.auug.org.au>
+	<20100403124331.f6d073cb.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 11:04:11AM +1000, Stephen Rothwell wrote:
-> Hi Ben,
-> 
-> Today's linux-next merge of the samsung tree got a conflict in
-> arch/arm/mach-s5pv210/gpiolib.c between commit
-> ea5f50706385b61c1c0d24271bbe7c6e93129fbc ("ARM: S5PV210: Add GPIOlib
-> support") from Linus' tree and commit
-> 026fcae436e846b0cc1db8d4af11890dfdde3689 ("ARM: S5PV210: Add S5PV210 GPIO
-> support") from the samsung tree.
-> 
-> Two versions of the same commit.  I used the version in Linus' tree as
-> that was dated later.
+Hi Mauro,
 
-sorry, the tree that went to linus had that one replaced due to a minor
-bug in the GPH banks that got fixed. Decided to replace the patch than
-put a patch ontop.
+On Sat, 3 Apr 2010 12:43:31 +1100 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+>
+> From: Tejun Heo <tj@kernel.org>
+> 
+> Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+> gfp.h or slab.h is included as necessary.
+
+Please apply this to the v4l-dvb tree (patch reposted below).
+
+From: Tejun Heo <tj@kernel.org>
+To: sfr@canb.auug.org.au, linux-next@vger.kernel.org,
+        linux-kernel@vger.kernel.org
+Cc: Tejun Heo <tj@kernel.org>, Mauro Carvalho Chehab <mchehab@infradead.org>
+Subject: [PATCH 05a/17] v4l-dvb: update gfp/slab.h includes
+Date: Tue, 30 Mar 2010 02:52:33 +0900
+
+Implicit slab.h inclusion via percpu.h is about to go away.  Make sure
+gfp.h or slab.h is included as necessary.
+
+Signed-off-by: Tejun Heo <tj@kernel.org>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+---
+ drivers/staging/tm6000/tm6000-alsa.c             |    1 +
+ drivers/staging/tm6000/tm6000-cards.c            |    1 +
+ drivers/staging/tm6000/tm6000-core.c             |    1 +
+ drivers/staging/tm6000/tm6000-dvb.c              |    1 +
+ 4 files changed, 4 insertions(+), 0 deletions(-)
+
+diff --git a/drivers/staging/tm6000/tm6000-alsa.c b/drivers/staging/tm6000/tm6000-alsa.c
+index bc89f9d..3404516 100644
+--- a/drivers/staging/tm6000/tm6000-alsa.c
++++ b/drivers/staging/tm6000/tm6000-alsa.c
+@@ -15,6 +15,7 @@
+ #include <linux/device.h>
+ #include <linux/interrupt.h>
+ #include <linux/usb.h>
++#include <linux/slab.h>
+ 
+ #include <asm/delay.h>
+ #include <sound/core.h>
+diff --git a/drivers/staging/tm6000/tm6000-cards.c b/drivers/staging/tm6000/tm6000-cards.c
+index 2053008..2935533 100644
+--- a/drivers/staging/tm6000/tm6000-cards.c
++++ b/drivers/staging/tm6000/tm6000-cards.c
+@@ -24,6 +24,7 @@
+ #include <linux/i2c.h>
+ #include <linux/usb.h>
+ #include <linux/version.h>
++#include <linux/slab.h>
+ #include <media/v4l2-common.h>
+ #include <media/tuner.h>
+ #include <media/tvaudio.h>
+diff --git a/drivers/staging/tm6000/tm6000-core.c b/drivers/staging/tm6000/tm6000-core.c
+index d9cade0..2ae7ae0 100644
+--- a/drivers/staging/tm6000/tm6000-core.c
++++ b/drivers/staging/tm6000/tm6000-core.c
+@@ -22,6 +22,7 @@
+ 
+ #include <linux/module.h>
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/usb.h>
+ #include <linux/i2c.h>
+ #include "tm6000.h"
+diff --git a/drivers/staging/tm6000/tm6000-dvb.c b/drivers/staging/tm6000/tm6000-dvb.c
+index 1072206..dfba5e6 100644
+--- a/drivers/staging/tm6000/tm6000-dvb.c
++++ b/drivers/staging/tm6000/tm6000-dvb.c
+@@ -18,6 +18,7 @@
+  */
+ 
+ #include <linux/kernel.h>
++#include <linux/slab.h>
+ #include <linux/usb.h>
+ 
+ #include "tm6000.h"
+-- 
+1.6.4.2
 
 -- 
-Ben
-
-Q:      What's a light-year?
-A:      One-third less calories than a regular year.
-
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
