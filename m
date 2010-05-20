@@ -1,65 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753652Ab0ETFjN (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 01:39:13 -0400
-Received: from tauceti.net ([62.245.250.166]:59159 "EHLO www.tauceti.net"
+	id S1753437Ab0ETFoV (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 01:44:21 -0400
+Received: from waste.org ([173.11.57.241]:35289 "EHLO waste.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752652Ab0ETFjK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 01:39:10 -0400
-MIME-Version: 1.0
-Date: Thu, 20 May 2010 09:39:07 +0200
-From: kernel <kernel@tauceti.net>
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-Cc: <mst@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, <linux-mm@kvack.org>,
-       <bugzilla-daemon@bugzilla.kernel.org>,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       <linux-nfs@vger.kernel.org>, <linux-kernel@vger.kernel.org>
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-In-Reply-To: <1273785234.22932.14.camel@localhost.localdomain>
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net> <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net> <4BE33259.3000609@tauceti.net> <1273181438.22155.26.camel@localhost.localdomain> <4BEC6A5D.5070304@tauceti.net> <1273785234.22932.14.camel@localhost.localdomain>
-Message-ID: <a133ef4ed022a00afd40b505719ae3d2@tauceti.net>
-User-Agent: RoundCube Webmail/0.3.1
-Content-Transfer-Encoding: 8bit
-Content-Type: text/plain; charset=UTF-8
+	id S1751756Ab0ETFoU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 01:44:20 -0400
+Subject: [PATCH] random: simplify fips mode
+From: Matt Mackall <mpm@selenic.com>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Linux Mailing List <linux-kernel@vger.kernel.org>,
+       Steven Liu <lingjiujianke@gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Thu, 20 May 2010 00:44:17 -0500
+Message-ID: <1274334257.11603.1438.camel@calx>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
+Rather than dynamically allocate 10 bytes, move it to static allocation.
+This saves space and avoids the need for error checking.
 
-have you had some time to download the wireshark dump?
+Signed-off-by: Matt Mackall <mpm@selenic.com>
 
-Thanks!
-Robert
+diff -r a12387bbcc93 drivers/char/random.c
+--- a/drivers/char/random.c	Thu Apr 08 10:02:02 2010 -0700
++++ b/drivers/char/random.c	Thu May 20 00:43:13 2010 -0500
+@@ -257,6 +257,7 @@
+ #define INPUT_POOL_WORDS 128
+ #define OUTPUT_POOL_WORDS 32
+ #define SEC_XFER_SIZE 512
++#define EXTRACT_SIZE 10
+ 
+ /*
+  * The minimum number of bits of entropy before we wake up a read on
+@@ -414,7 +415,7 @@
+ 	unsigned add_ptr;
+ 	int entropy_count;
+ 	int input_rotate;
+-	__u8 *last_data;
++	__u8 last_data[EXTRACT_SIZE];
+ };
+ 
+ static __u32 input_pool_data[INPUT_POOL_WORDS];
+@@ -714,8 +715,6 @@
+ }
+ #endif
+ 
+-#define EXTRACT_SIZE 10
+-
+ /*********************************************************************
+  *
+  * Entropy extraction routines
+@@ -862,7 +861,7 @@
+ 	while (nbytes) {
+ 		extract_buf(r, tmp);
+ 
+-		if (r->last_data) {
++		if (fips_enabled) {
+ 			spin_lock_irqsave(&r->lock, flags);
+ 			if (!memcmp(tmp, r->last_data, EXTRACT_SIZE))
+ 				panic("Hardware RNG duplicated output!\n");
+@@ -951,9 +950,6 @@
+ 	now = ktime_get_real();
+ 	mix_pool_bytes(r, &now, sizeof(now));
+ 	mix_pool_bytes(r, utsname(), sizeof(*(utsname())));
+-	/* Enable continuous test in fips mode */
+-	if (fips_enabled)
+-		r->last_data = kmalloc(EXTRACT_SIZE, GFP_KERNEL);
+ }
+ 
+ static int rand_initialize(void)
 
-On Thu, 13 May 2010 17:13:54 -0400, Trond Myklebust
-<Trond.Myklebust@netapp.com> wrote:
-> On Thu, 2010-05-13 at 23:08 +0200, Robert Wimmer wrote: 
->> Finally I've had some time to do the next test.
->> Here is a wireshark dump (~750 MByte):
->> http://213.252.12.93/2.6.34-rc5.cap.gz
->> 
->> dmesg output after page allocation failure:
->> https://bugzilla.kernel.org/attachment.cgi?id=26371
->> 
->> stack trace before page allocation failure:
->> https://bugzilla.kernel.org/attachment.cgi?id=26369
->> 
->> stack trace after page allocation failure:
->> https://bugzilla.kernel.org/attachment.cgi?id=26370
->> 
->> I hope the wireshark dump is not to big to download.
->> It was created with
->> tshark -f "tcp port 2049" -i eth0 -w 2.6.34-rc5.cap
->> 
->> Thanks!
->> Robert
-> 
-> Hi Robert,
-> 
-> I tried the above wireshark dump URL, but it appears to point to an
-> empty file.
-> 
-> Cheers
->   Trond
+-- 
+Mathematics is the supreme nostalgia of our time.
+
+
