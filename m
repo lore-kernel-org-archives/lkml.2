@@ -1,150 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755511Ab0ETKWf (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:22:35 -0400
-Received: from 82-117-125-11.tcdsl.calypso.net ([82.117.125.11]:50289 "EHLO
-	smtp.ossman.eu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751571Ab0ETKWe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:22:34 -0400
-Date: Thu, 20 May 2010 12:22:27 +0200
-From: Pierre Ossman <pierre-list@ossman.eu>
-To: Tejun Heo <tj@kernel.org>
-Cc: linux-ide@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: Strange read data corruption on ext4/LVM/md
-Message-ID: <20100520122227.16ea1cbc@mjolnir.ossman.eu>
-In-Reply-To: <4BF50405.4070706@kernel.org>
-References: <20100519225653.1fedb453@mjolnir.ossman.eu>
-	<20100519230426.47c6c1ed@mjolnir.ossman.eu>
-	<20100519232906.3be82279@mjolnir.ossman.eu>
-	<20100519233408.7436bd9b@mjolnir.ossman.eu>
-	<20100520091429.192d560c@mjolnir.ossman.eu>
-	<4BF4F979.4070903@kernel.org>
-	<20100520112945.61bf9705@mjolnir.ossman.eu>
-	<4BF50405.4070706@kernel.org>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; micalg=PGP-SHA1; protocol="application/pgp-signature"; boundary="=_freyr.ossman.eu-4156-1274350951-0001-2"
+	id S1755366Ab0ETKXN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:23:13 -0400
+Received: from gate.lvk.cs.msu.su ([158.250.17.1]:42529 "EHLO
+	mail.lvk.cs.msu.su" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751571Ab0ETKXM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 06:23:12 -0400
+X-Spam-ASN: 
+From: "Nikita V. Youshchenko" <yoush@cs.msu.su>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: PREEMPT_RT (2.6.33-rt17) disabled printk-to-console after console_init
+Date: Thu, 20 May 2010 14:23:07 +0400
+User-Agent: KMail/1.9.9
+Cc: Sujit K M <sjt.kar@gmail.com>, linux-rt-users@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+References: <AANLkTimxLHngWamPvWt-htGoZ7Nub72rvJAnmGtw4Eqw@mail.gmail.com> <AANLkTil18TnOR9D-dSFsSFA74Q4UFnldrGLhG1H4jwhf@mail.gmail.com> <alpine.LFD.2.00.1005201142360.3368@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005201142360.3368@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005201423.09075@zigzag.lvk.cs.msu.su>
+X-AV-Checked: ClamAV using ClamSMTP
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a MIME-formatted message.  If you see this text it means that your
-E-mail software does not support MIME-formatted messages.
+> > >>> Well, obviously it's unsafe if you remove safety checks. And if
+> > >>> you care to look at the changelog of kernel/printk.c you'll find
+> > >>> out why.
+> > >>
+> > >> Hmm... did a quick look and could not find anything related there.
+> > >> Could you please give a pointer?
+>
+> Gah, yes. The changelog of the commit is not really helpful. Let me
+> explain:
+>
+> The console drivers might take locks, which are converted to "sleeping
+> locks" in preempt-rt. As a result we cannot call into those drivers
+> from atomic contexts. And that's what the checks in the printk code
+> prevent.
 
---=_freyr.ossman.eu-4156-1274350951-0001-2
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: quoted-printable
+I've already understood that when looking at that code some weeks ago.
 
-On Thu, 20 May 2010 11:42:29 +0200
-Tejun Heo <tj@kernel.org> wrote:
+Still questions:
 
-> > randomly flipped bits? I don't know if you saw the first couple of
-> > mails (before linux-ide was added), but the problem is data being moved
-> > around, not just randomly changed.
->=20
-> I ony saw your previous posting.  TLP corruption can happen during
-> command setup phase and bit flipping in the command address part is
-> definitely possible, so reads and writes can be headed at wrong places
-> in both memory and disk.  I don't know whether this would fit your
-> symptom tho.
->=20
+1) why does that prevent klogd from working?
 
-Ah. Here's the problem description from a previous mail:
+2) why does print not pass to non-CON_ATOMIC even if called from non-atomic 
+context?
 
-The corruption is 104 bytes. Somewhat odd number. I would have expected
-something more fundamental like a sector or a page.
+3) I believe that 8250 serial driver is aware of preempt-rt.
+Could you please comment on my "2.6.33.2-rt13: RFC: fix serial console" 
+post to linux-rt-users list 
+(http://eeek.borgchat.net/lists/linux-rt-users/msg05569.html)
 
-The data in question seems to come from another part of the file.
-
-The shifts are 015d1380 =3D> 015d0f80 (-1024 bytes) and 02210380 =3D>
-0220ff80 (also -1024 bytes). At least the offset is a nice, sane power
-of two number.
-
-Noteworthy is also that the last three nibbles of the corruption are
-always the same (xxxxx380 =3D> xxxxxf80).
-
-</recap>
-
-Note that the above analysis is from files, so it involves the entire
-stack. I've since focused on raw disks. See below.
-
-> > Another note is that the problem seems to worsen under load. I'm
-> > running the dd thing in the background, which seems to make read errors
-> > more common on my test files on the filesystem level.
->=20
-> It would be great if you can try a different controller in similar
-> setup.
-
-I only stock sil3132 cards as those are the only decent add-on cards
-I've found. AHCI stuff all seems to be onboard.
-
-> But please keep trying to narrow down the problem and if
-> possible please remove filesystem from the stack and test against the
-> block device directly.
-
-That's what I've been doing the last couple of runs. From a previous
-mail:
-
-I did some more testing though, and this might be a low level issue. I
-did the following multiple times:
-
-# dd if=3D/dev/sde skip=3D4k bs=3D4M count=3D500 | md5sum
-
-And the results were:
-
-13aa29adcd16f8d0faf3cb5c39f43826
-d1e3df33c0b0d03c61f880a8f2bb6cfb
-13aa29adcd16f8d0faf3cb5c39f43826
-13aa29adcd16f8d0faf3cb5c39f43826
-13aa29adcd16f8d0faf3cb5c39f43826
-13aa29adcd16f8d0faf3cb5c39f43826
-7a746328b60a63b76847c3e1319a8534
-13aa29adcd16f8d0faf3cb5c39f43826
-
-</recap2>
-
-Since the amount of data is much larger here and the incidents more
-rare, I haven't been able to confirm that the corruption is identical
-to what I've seen in the files. I'm working on the assumption that it
-is...
-
-I've since constructed a script that keeps re-running the above over
-all relevant disks and keeps track of how many unique md5 values we
-get. It's been running for about 1.5 hours right now, and here are the
-results so far:
-
-sdd - 3, sde - 4, sdf - 1, sdb - 1, sdc - 1,=20
-
-sdd and sde are both on the same controller, so the problem you
-mentioned could be relevant.
-
-I'll let the test run for a few more hours and try moving things off
-that controller later tonight.
-
-
-Thanks for looking at this. Unstable data storage is one of those
-things that can keep you up at night. :/
-
-Rgds
---=20
-     -- Pierre Ossman
-
-  WARNING: This correspondence is being monitored by FRA, a
-  Swedish intelligence agency. Make sure your server uses
-  encryption for SMTP traffic and consider using PGP for
-  end-to-end encryption.
-
---=_freyr.ossman.eu-4156-1274350951-0001-2
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: attachment; filename=signature.asc
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.13 (GNU/Linux)
-
-iEYEARECAAYFAkv1DWYACgkQ7b8eESbyJLiymwCfdo7vtkhLgEa8FPk+NBlBili1
-04UAnjwr7r6lTgFWXzoM0hpH8N6DzbtV
-=pvxB
------END PGP SIGNATURE-----
-
---=_freyr.ossman.eu-4156-1274350951-0001-2--
+Nikita
