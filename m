@@ -1,40 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753001Ab0ETCeT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 22:34:19 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:49158
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751876Ab0ETCeR (ORCPT
+	id S1753205Ab0ETCjp (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 22:39:45 -0400
+Received: from vms173019pub.verizon.net ([206.46.173.19]:36611 "EHLO
+	vms173019pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752181Ab0ETCjn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 22:34:17 -0400
-Date: Wed, 19 May 2010 19:34:26 -0700 (PDT)
-Message-Id: <20100519.193426.09743465.davem@davemloft.net>
-To: torvalds@linux-foundation.org
-Cc: akpm@linux-foundation.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [GIT] Networking
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100518.233752.256882583.davem@davemloft.net>
-References: <20100518.233752.256882583.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Wed, 19 May 2010 22:39:43 -0400
+Date: Wed, 19 May 2010 22:39:36 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Huang Ying <ying.huang@intel.com>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "andi@firstfloor.org" <andi@firstfloor.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+       Andi Kleen <ak@linux.intel.com>
+Subject: Re: [PATCH -v5 05/14] ACPI, APEI, Document for APEI
+In-reply-to: <1274238402.24034.12.camel@yhuang-dev.sh.intel.com>
+Message-id: <alpine.LFD.2.00.1005192238320.2921@localhost.localdomain>
+References: <1274164524-6092-1-git-send-email-ying.huang@intel.com>
+ <1274164524-6092-6-git-send-email-ying.huang@intel.com>
+ <4BF30BF8.8080202@oracle.com>
+ <1274238402.24034.12.camel@yhuang-dev.sh.intel.com>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Tue, 18 May 2010 23:37:52 -0700 (PDT)
+Ying, I fixed these documentation issues in place,
+so no need to send an incremental patch.
 
-> Please pull, thanks a lot!
-> 
-> The following changes since commit 537b60d17894b7c19a6060feae40299d7109d6e7:
->   Linus Torvalds (1):
->         Merge branch 'x86-uv-for-linus' of git://git.kernel.org/.../tip/linux-2.6-tip
-> 
-> are available in the git repository at:
-> 
->   master.kernel.org:/pub/scm/linux/kernel/git/davem/net-next-2.6.git master
+thanks,
+Len Brown, Intel Open Source Technology Center
 
-Ping?
