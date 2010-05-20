@@ -1,41 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757142Ab0ETUWT (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 16:22:19 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:50143 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754302Ab0ETUWS (ORCPT
+	id S1757168Ab0ETUZE (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 16:25:04 -0400
+Received: from server5a.woolnet.net ([209.59.181.202]:56602 "EHLO
+	server5a.woolnet.net" rhost-flags-OK-FAIL-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754813Ab0ETUZB (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 16:22:18 -0400
-To: Matthew Wilcox <matthew@wil.cx>
-CC: miklos@szeredi.hu, torvalds@linux-foundation.org,
-       linux-fsdevel@vger.kernel.org, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, jens.axboe@oracle.com,
-       akpm@linux-foundation.org
-In-reply-to: <20100520201122.GL10452@parisc-linux.org> (message from Matthew
-	Wilcox on Thu, 20 May 2010 14:11:22 -0600)
-Subject: Re: [RFC PATCH] fuse: support splice() reading from fuse device
-References: <E1OF3kc-00084X-Hi@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005201043321.23538@i5.linux-foundation.org> <E1OFAsd-0000Ra-1V@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005201215120.23538@i5.linux-foundation.org> <E1OFC1b-0000Yx-80@pomaz-ex.szeredi.hu> <20100520201122.GL10452@parisc-linux.org>
-Message-Id: <E1OFCFp-0000dB-Es@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Thu, 20 May 2010 22:22:05 +0200
+	Thu, 20 May 2010 16:25:01 -0400
+Message-ID: <60fb9130e8a3fc2fa1dfbc145121ef87.squirrel@woolnet.net>
+Date: Thu, 20 May 2010 14:08:13 -0400
+Subject: HIGHLY CONFIDENTIAL
+From: "Ming Yang" <mingyang43@hotmail.com>
+Reply-To: mingyang43@hotmail.com
+User-Agent: SquirrelMail/1.4.20
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
+X-AntiAbuse: Primary Hostname - server5a.woolnet.net
+X-AntiAbuse: Original Domain - vger.kernel.org
+X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
+X-AntiAbuse: Sender Address Domain - hotmail.com
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Matthew Wilcox wrote:
-> On Thu, May 20, 2010 at 10:07:23PM +0200, Miklos Szeredi wrote:
-> > > It says nothing at all, in short. You need to have a real source, and a 
-> > > real destination. Not some empty filesystem and /dev/null destination.
-> > 
-> > Sure, I will do that.  It's just a lot harder to measure the effects
-> > on hardware I have access to, where the CPU speed is just damn too
-> > large compared to I/O speed.
-> 
-> Try running a CPU burner on all the cores.  Something that's low priority,
-> so it'll be preempted by FUSE, and doesn't consume much cache.
 
-Umm, that doesn't really make the CPU any slower, it just makes it
-consume more power.
+Greeting from Hong Kong
 
-Miklos
+An arab made a fixed deposit of $24,500.000.00 in my bank branch where am
+a director and he died with his entire family in the war leaving behind no
+next of kin,if you choose to stand as my deceased client's next of kin. if
+interested mail me at the address below:
+yangming64@yahoo.com.hk
+
+Yours Truly,
+Ming Yang
+
+
+
