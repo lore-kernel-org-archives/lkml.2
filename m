@@ -1,102 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753086Ab0ETB1O (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 21:27:14 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:53296 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752284Ab0ETB1M (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 21:27:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=KZeNWwnXWZExeacO/tauz8uN/yZpSS95hHfUBcSxP/AePz2al20SjikMY4bfn1ZA8E
-         GR48oyhhncqXBDdm+mlF0rkghAINWvAVgz2INM5MUCBrvQ630qolWxt0lg0tOci0oQ3N
-         Vaj+SJBUXQ5cjTzoWX6OvNL3QflmqM7+eJ840=
-Subject: Re: [RFC] Try a bit harder to get output on the screen at panic
- time
-From: Maxim Levitsky <maximlevitsky@gmail.com>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: dri-devel@lists.freedesktop.org, linux-kernel@vger.kernel.org,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Dave Airlie <airlied@gmail.com>, James Simmons <jsimmons@infradead.org>
-In-Reply-To: <1274317983.2815.1.camel@maxim-laptop>
-References: <20100409151050.74ef6dcd@virtuousgeek.org>
-	 <20100519173449.6babbdfa@virtuousgeek.org>
-	 <1274317983.2815.1.camel@maxim-laptop>
-Content-Type: text/plain; charset="UTF-8"
-Date: Thu, 20 May 2010 04:27:07 +0300
-Message-ID: <1274318827.3386.3.camel@maxim-laptop>
+	id S1753431Ab0ETB2j (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 21:28:39 -0400
+Received: from ozlabs.org ([203.10.76.45]:42405 "EHLO ozlabs.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752698Ab0ETB2i (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 21:28:38 -0400
+Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded
+ (IRQF_NODELAY)
+From: Michael Ellerman <michael@ellerman.id.au>
+Reply-To: michael@ellerman.id.au
+To: Darren Hart <dvhltc@us.ibm.com>
+Cc: Brian King <brking@linux.vnet.ibm.com>,
+       Jan-Bernd Themann <themann@de.ibm.com>, dvhltc@linux.vnet.ibm.com,
+       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
+       niv@linux.vnet.ibm.com, Thomas Gleixner <tglx@linutronix.de>,
+       Doug Maxey <doug.maxey@us.ibm.com>, linuxppc-dev@lists.ozlabs.org,
+       Milton Miller <miltonm@bga.com>
+In-Reply-To: <4BF3F2DB.7030701@us.ibm.com>
+References: <4BF30793.5070300@us.ibm.com>
+	 <4BF30C32.1020403@linux.vnet.ibm.com>  <4BF31322.5090206@us.ibm.com>
+	 <1274232324.29980.9.camel@concordia>  <4BF3F2DB.7030701@us.ibm.com>
+Content-Type: multipart/signed; micalg="pgp-sha1"; protocol="application/pgp-signature"; boundary="=-rZP5bf+tIaO2xBY2bClr"
+Date: Thu, 20 May 2010 11:28:36 +1000
+Message-ID: <1274318916.22892.35.camel@concordia>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 04:13 +0300, Maxim Levitsky wrote: 
-> On Wed, 2010-05-19 at 17:34 -0700, Jesse Barnes wrote: 
-> > On Fri, 9 Apr 2010 15:10:50 -0700
-> > Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> > 
-> > > This set of 3 patches makes it a little more likely we'll get panic
-> > > output onto the screen even when X is running, assuming a KMS enabled
-> > > stack anyway.
-> > > 
-> > > It gets me from a blank or very sparsely populated black screen at
-> > > panic time, to one including the full backtrace and panic output at
-> > > panic time (tested with "echo c > /proc/sysrq-trigger" from an X
-> > > session).
-> > > 
-> > > It doesn't cover every case; for instance I think it'll fail when X has
-> > > disabled the display, but those cases need to be handled with separate
-> > > patches anyway (need to add atomic DPMS paths for instance).
-> > > 
-> > > Anyway, please test these out and let me know if they work for you.
-> > 
-> > Ping Linus & Dave again.  Have you guys tried these?  Really, it's cool.
-> > 
-> Second that, just tested these patches, and these work perfectly.
-> One more reason for me to dump nvidia driver for nouveau.
 
+--=-rZP5bf+tIaO2xBY2bClr
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: quoted-printable
 
-Unfortunately I spoke too soon.
+On Wed, 2010-05-19 at 07:16 -0700, Darren Hart wrote:
+> On 05/18/2010 06:25 PM, Michael Ellerman wrote:
+> > On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
+> >> On 05/18/2010 02:52 PM, Brian King wrote:
+> >>> Is IRQF_NODELAY something specific to the RT kernel? I don't see it i=
+n mainline...
+> >>
+> >> Yes, it basically says "don't make this handler threaded".
+> >
+> > That is a good fix for EHEA, but the threaded handling is still broken
+> > for anything else that is edge triggered isn't it?
+>=20
+> No, I don't believe so. Edge triggered interrupts that are reported as=20
+> edge triggered interrupts will use the edge handler (which was the=20
+> approach Sebastien took to make this work back in 2008). Since XICS=20
+> presents all interrupts as Level Triggered, they use the fasteoi path.
 
+But that's the point, no interrupts on XICS are reported as edge, even
+if they are actually edge somewhere deep in the hardware. I don't think
+we have any reliable way to determine what is what.
 
-After suspend to ram, system doesn't properly resume now.
+> > The result of the discussion about two years ago on this was that we
+> > needed a custom flow handler for XICS on RT.
+>=20
+> I'm still not clear on why the ultimate solution wasn't to have XICS=20
+> report edge triggered as edge triggered. Probably some complexity of the=20
+> entire power stack that I am ignorant of.
 
-My system is based on nvidia G86, I use latest nouveau drivers, and
-suspend with compiz running.
+I'm not really sure either, but I think it's a case of a leaky
+abstraction on the part of the hypervisor. Edge interrupts behave as
+level as long as you handle the irq before EOI, but if you mask they
+don't. But Milton's the expert on that.
 
-I also patched kernel not to do vt switch on suspend/resume:
+> > Apart from the issue of loosing interrupts there is also the fact that
+> > masking on the XICS requires an RTAS call which takes a global lock.
+>=20
+> Right, one of may reasons why we felt this was the right fix. The other=20
+> is that there is no real additional overhead in running this as=20
+> non-threaded since the receive handler is so short (just napi_schedule())=
+.
 
-diff --git a/drivers/gpu/drm/nouveau/nouveau_state.c
-b/drivers/gpu/drm/nouveau/nouveau_state.c
-index 062b7f6..b3ef08b 100644
---- a/drivers/gpu/drm/nouveau/nouveau_state.c
-+++ b/drivers/gpu/drm/nouveau/nouveau_state.c
-@@ -31,6 +31,7 @@
-#include "drm_crtc_helper.h"
-#include <linux/vgaarb.h>
-#include <linux/vga_switcheroo.h>
-+#include <linux/suspend.h>
+True. It's not a fix in general though. I'm worried that we're going to
+see the exact same bug for MSI(-X) interrupts.
 
-#include "nouveau_drv.h"
-#include "nouveau_drm.h"
-@@ -771,6 +772,8 @@ int nouveau_load(struct drm_device *dev, unsigned
-long flags)
-                int ret = nouveau_card_init(dev);
-                if (ret)
-                        return ret;
-+
-+               pm_set_vt_switch(0);
-        }
-
-        return 0;
+cheers
 
 
 
-Best regards,
-Maxim Levitsky
+--=-rZP5bf+tIaO2xBY2bClr
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: This is a digitally signed message part
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEABECAAYFAkv0kEAACgkQdSjSd0sB4dIF2QCcCAoeORbwsKzwzxOVUBfaIIT6
+figAn0n5mFqrMbAliS0Y3RsBEPRhSReQ
+=neam
+-----END PGP SIGNATURE-----
+
+--=-rZP5bf+tIaO2xBY2bClr--
 
