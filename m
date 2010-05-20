@@ -1,74 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754527Ab0ETLc5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 07:32:57 -0400
-Received: from smtp.nokia.com ([192.100.122.233]:28105 "EHLO
-	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752456Ab0ETLcz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 07:32:55 -0400
-Date: Thu, 20 May 2010 14:29:13 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext Vladimir Pantelic <pan@nt.tu-darmstadt.de>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       "ext Rafael J. Wysocki" <rjw@sisk.pl>,
-       ext James Bottomley <James.Bottomley@suse.de>,
-       "me@felipebalbi.com" <me@felipebalbi.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "Theodore Ts'o" <tytso@mit.edu>, Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Tejun Heo <tj@kernel.org>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Liam Girdwood <lrg@slimlogic.co.uk>, Matthew Garrett <mjg@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100520112913.GA12055@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1274115885.4418.59.camel@mulgrave.site>
- <1274191188.10304.5.camel@mulgrave.site>
- <20100519065934.GH12879@nokia.com>
- <201005192242.55706.rjw@sisk.pl>
- <20100520044926.GB6773@nokia.com>
- <4BF51C9D.8050406@nt.tu-darmstadt.de>
+	id S1754723Ab0ETLf4 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 07:35:56 -0400
+Received: from crca.org.au ([74.207.252.120]:47704 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752662Ab0ETLfz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 07:35:55 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BF51E93.4030601@crca.org.au>
+Date: Thu, 20 May 2010 21:35:47 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii; format=flowed
-Content-Disposition: inline
-In-Reply-To: <4BF51C9D.8050406@nt.tu-darmstadt.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 20 May 2010 11:31:26.0337 (UTC) FILETIME=[FBA1E710:01CAF80F]
-X-Nokia-AV: Clean
+To: Dominik Brodowski <linux@dominikbrodowski.net>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to	push
+ model
+References: <20100517182726.089700767@sbs-t61.sc.intel.com> <4BF517FE.1000103@tuxonice.net> <20100520111753.GA2264@isilmar-3.linta.de>
+In-Reply-To: <20100520111753.GA2264@isilmar-3.linta.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 01:27:25PM +0200, ext Vladimir Pantelic wrote:
->Felipe Balbi wrote:
->> Hi,
->>
->> On Wed, May 19, 2010 at 10:42:55PM +0200, ext Rafael J. Wysocki wrote:
->>>Please note that this approach is not too practical for vendors who ship
->>>systems like cell phones to the general public.
->>
->> yeah, tell me about it :-p
->>
->> during development on MeeGo devices we try to tackle down as much as
->> possible the use_time offenders and start by filing bugs to those apps,
->> instead of fixing their issues in kernel space.
+Hi.
+
+On 20/05/10 21:17, Dominik Brodowski wrote:
+> Hey,
 >
->And you will continue doing that once the Meego app store has 100k apps?
+> On Thu, May 20, 2010 at 09:07:42PM +1000, Nigel Cunningham wrote:
+>> "Load balancing tick" is still number one in my powertop list of top
+>> causes of wakeups (sitting at ~60 to 80 per second as I type this, with
+>> ~170 wakeups per second total). Comparing this to the numbers I posted
+>> earlier, we seem to have a win.
+>>
+>> I do wonder, though, whether further work could still be done. If I take
+>> one core offline, for example, I'm still getting load balancing ticks.
+>> Intuitively, I'd expect there to be no need for them with only one core
+>> available. But maybe I'm just ignorant of what's going on.
+>
+> Are you using HZ=1000, and is the CPU active ~ 6-8 % ? If so, is it just the
+> regular timer tick while the CPU is active, and so not a real "wakeup"? (Or
+> possibly double the number if both CPUs are active)
 
-I'm not here speaking for MeeGo. I'm presenting my own feelings and my 
-own opinion regarding this issue. Don't bring the company into the game, 
-please.
+HZ is 1000, and the CPU running percentage in Powertop is low (2% when 
+I'm not typing).
 
--- 
-balbi
+Regards,
 
-DefectiveByDesign.org
+Nigel
