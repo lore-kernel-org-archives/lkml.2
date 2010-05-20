@@ -1,60 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755389Ab0ETKqy (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 06:46:54 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:35234 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751954Ab0ETKqx (ORCPT
+	id S1755081Ab0ETKu5 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 06:50:57 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:49839 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752275Ab0ETKuz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 06:46:53 -0400
-Message-ID: <4BF512F9.5010607@euromail.se>
-Date: Thu, 20 May 2010 12:46:17 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Peter Hutterer <peter.hutterer@who-t.net>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
-References: <1274213429-22667-1-git-send-email-rydberg@euromail.se> <1274213429-22667-2-git-send-email-rydberg@euromail.se> <20100519023727.GA21030@barra.bne.redhat.com> <4BF3D59E.1070801@euromail.se> <20100520001323.GA28116@barra.bne.redhat.com> <20100520071158.GC8080@core.coreip.homeip.net>
-In-Reply-To: <20100520071158.GC8080@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.129.72
-X-Scan-Result: No virus found in message 1OF3Gd-0003Jc-9w.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OF3Gd-0003Jc-9w 4c3dd89bfae58694b67eb1b4b2edb690
+	Thu, 20 May 2010 06:50:55 -0400
+Subject: Re: [patch 0/7] sched: change nohz idle load balancing logic to
+ push model
+From: Peter Zijlstra <peterz@infradead.org>
+To: Suresh Siddha <suresh.b.siddha@intel.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Arjan van de Ven <arjan@linux.jf.intel.com>,
+       Venkatesh Pallipadi <venki@google.com>,
+       Vaidyanathan Srinivasan <svaidy@linux.vnet.ibm.com>, ego@in.ibm.com,
+       LKML <linux-kernel@vger.kernel.org>,
+       Dominik Brodowski <linux@dominikbrodowski.net>,
+       Nigel Cunningham <ncunningham@crca.org.au>,
+       David Miller <davem@davemloft.net>, Jens Axboe <jens.axboe@oracle.com>
+In-Reply-To: <20100517182726.089700767@sbs-t61.sc.intel.com>
+References: <20100517182726.089700767@sbs-t61.sc.intel.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Thu, 20 May 2010 12:50:21 +0200
+Message-ID: <1274352621.5605.14017.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
->>>> Will all drivers with ABS_MT_TRACKING_ID use slots? if not, how can I know
->>>> in advance if a device may use slots or not?
->>> Eventually, this might become true, but you are pointing at one of the weaker
->>> points of the current setup. There is no bit field for the EV_SYN events, so
->>> there is no way to know in advance if SYN_MT_SYNC or SYN_MT_SLOT is used. This
->>> could quite possibly be added to the EVIO interface. Meanwhile, the method I use
->>> is to detect the first SYN_MT_SLOT and select parser based on that information.
->> I'd really prefer if there was some way to detect this. While I'm not quite
->> sure how the matching X drivers would look like it's likely that the setups
->> will be different for drivers that support slots and those that don't.
->> e.g. those that don't have slots simply send events as valuators, those that
->> do may split into multiple devices.
->>
->> Doing this at runtime - after the device has been set up is...tricky.
->>
+On Mon, 2010-05-17 at 11:27 -0700, Suresh Siddha wrote:
+> This is an updated version of patchset which is posted earlier at
+> http://lkml.org/lkml/2009/12/10/470
 > 
-> Right, I think we should try our hardest to allow userspace base
-> protocol decoding decisions on device capabilities and not the event
-> datastream. What about moving from SYN_MT_SLOT to ABS_MT_SLOT? I think
-> it makes more sense since it is not a simple marker but carries data
-> (slot number).
+> Description:
+> Existing nohz idle load balance logic uses the pull model, with one
+> idle load balancer CPU nominated on any partially idle system and that
+> balancer CPU not going into nohz mode. With the periodic tick, the
+> balancer does the idle balancing on behalf of all the CPUs in nohz mode.
+> 
+> This is not very optimal and has few issues:
+> * the balancer will continue to have periodic ticks and wakeup
+>   frequently (HZ rate), even though it may not have any rebalancing to do on
+>   behalf of any of the idle CPUs.
+> * On x86 and CPUs that have APIC timer stoppage on idle CPUs, this periodic
+>   wakeup can result in an additional interrupt on a CPU doing the timer
+>   broadcast.
+> 
+> The alternative is to have a push model, where all idle CPUs can enter nohz
+> mode and any busy CPU kicks one of the idle CPUs to take care of idle
+> balancing on behalf of a group of idle CPUs.
+> 
+> Following patches switches idle load balancer to this push approach.
+> 
+> Updates from the previous version:
+> 
+> * Busy CPU uses send_remote_softirq() for invoking SCHED_SOFTIRQ on the
+>   idle load balancing cpu, which does the load balancing on behalf of
+>   all the idle CPUs.
+> 
+> * Dropped the per NUMA node nohz load balancing as it doesn't detect
+>   certain imbalance scenarios. This will be addressed later.
 
-I agree, it both makes sense and resolves two issues. Will change.
+Looks good.
 
-Cheers,
-Henrik
+I think we want to keep init_remote_softirq_csd() and a function that
+directly triggers the relevant softirq and make the networking code and
+the block layer use that if possible -- and axe the rest of the
+send_remote_softirq() infrastructure.
+
+Also, I think it makes sense to fold patches 4-6.
+
 
