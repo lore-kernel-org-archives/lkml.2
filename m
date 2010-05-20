@@ -1,137 +1,221 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754365Ab0ETH2p (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 03:28:45 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:50209 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754254Ab0ETH2n convert rfc822-to-8bit (ORCPT
+	id S1753434Ab0ETHfw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 03:35:52 -0400
+Received: from e28smtp04.in.ibm.com ([122.248.162.4]:40080 "EHLO
+	e28smtp04.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750877Ab0ETHfv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 03:28:43 -0400
-Subject: Re: [PATCH v2] Make sure timers have migrated before killing
- migration_thread
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
-       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
-       Thomas Gleixner <tglx@linutronix.de>
-In-Reply-To: <20100519121356.GB15237@amitarora.in.ibm.com>
-References: <20100519090557.GA15237@amitarora.in.ibm.com>
-	 <1274261515.5605.10423.camel@twins>
-	 <20100519121356.GB15237@amitarora.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Thu, 20 May 2010 09:28:03 +0200
-Message-ID: <1274340483.5605.13161.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Thu, 20 May 2010 03:35:51 -0400
+From: "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+To: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp
+Cc: linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH -V11 0/9] Generic name to handle and open by handle syscalls 
+Date: Thu, 20 May 2010 13:05:29 +0530
+Message-Id: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+X-Mailer: git-send-email 1.7.1.78.g212f0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-19 at 17:43 +0530, Amit K. Arora wrote:
-> Alternate Solution considered : Another option considered was to
-> increase the priority of the hrtimer cpu offline notifier, such that it
-> gets to run before scheduler's migration cpu offline notifier. In this
-> way we are sure that the timers will get migrated before migration_call
-> tries to kill migration_thread. But, this can have some non-obvious
-> implications, suggested Srivatsa.
+Hi,
+
+The below set of patches implement open by handle support using exportfs
+operations. This allows user space application to map a file name to file 
+handle and later open the file using handle. This should be usable
+for userspace NFS [1] and 9P server [2]. XFS already support this with the ioctls
+XFS_IOC_PATH_TO_HANDLE and XFS_IOC_OPEN_BY_HANDLE.
+
+[1] http://nfs-ganesha.sourceforge.net/
+[2] http://thread.gmane.org/gmane.comp.emulators.qemu/68992
+
+Changes from V10:
+a) Missed an stg refresh before sending out the patchset. Send
+   updated patchset.
+
+Changes from V9:
+a) Fix compile errors with CONFIG_EXPORTFS not defined
+b) Return -EOPNOTSUPP if file system doesn't support fh_to_dentry exportfs callback.
+
+Changes from V8:
+a)  exportfs_decode_fh now returns -ESTALE if export operations is not defined.
+b)  drop get_fsid super_operations. Instead use superblock to store uuid.
+
+Changes from V7:
+a) open_by_handle now use mountdirfd to identify the vfsmount.
+b) We don't validate the UUID passed as a part of file handle in open_by_handle.
+   UUID is provided as a part of file handle as an easy way for userspace to
+   use the kernel returned handle as it is. It also helps in finding the 16 byte
+   filessytem UUID in userspace without using file system specific libraries to
+   read file system superblock. If a particular file system doesn't support UUID
+   or any form of unique id this field in the file handle will be zero filled.
+c) drop freadlink syscall. Instead use readlinkat with NULL pathname to indicate
+   read the link target name of the link pointed by fd. This is similar to
+   sys_utimensat
+d) Instead of opencoding all the open flag related check use helper functions.
+   Did finish_open_by_handle similar to finish_open.
+c) Fix may_open to not return ELOOP for symlink when we are called from handle open.
+   open(2) still returns error as expected. 
+
+Changes from V6:
+a) Add uuid to vfsmount lookup and drop uuid to superblock lookup
+b) Return -EOPNOTSUPP in sys_name_to_handle if the file system returned uuid
+   doesn't give the same vfsmount on lookup. This ensure that we fail
+   sys_name_to_handle when we have multiple file system returning same UUID.
+
+Changes from V5:
+a) added sys_name_to_handle_at syscall which takes AT_SYMLINK_NOFOLLOW flag 
+   instead of two syscalls sys_name_to_handle and sys_lname_to_handle.
+b) addressed review comments from Niel Brown
+c) rebased to b91ce4d14a21fc04d165be30319541e0f9204f15
+d) Add compat_sys_open_by_handle
+
+Chages from V4:
+a) Changed the syscal arguments so that we don't need compat syscalls
+   as suggested by Christoph
+c) Added two new syscall sys_lname_to_handle and sys_freadlink to work with
+   symlinks
+d) Changed open_by_handle to work with all file types
+e) Add ext3 support
+
+Changes from V3:
+a) Code cleanup suggested by Andreas
+b) x86_64 syscall support
+c) add compat syscall
+
+Chages from V2:
+a) Support system wide unique handle.
+
+Changes from v1:
+a) handle size is now specified in bytes
+b) returns -EOVERFLOW if the handle size is small
+c) dropped open_handle syscall and added open_by_handle_at syscall
+   open_by_handle_at takes mount_fd as the directory fd of the mount point
+   containing the file
+e) handle will only be unique in a given file system. So for an NFS server
+   exporting multiple file system, NFS server will have to internally track the
+   mount point to which a file handle belongs to. We should be able to do it much
+   easily than expecting kernel to give a system wide unique file handle. System
+   wide unique file handle would need much larger changes to the exportfs or VFS
+   interface and I was not sure whether we really need to do that in the kernel or
+   in the user space
+f) open_handle_at now only check for DAC_OVERRIDE capability
 
 
-> On Wed, May 19, 2010 at 11:31:55AM +0200, Peter Zijlstra wrote:
-> > The other problem is more urgent though, CPU_POST_DEAD runs outside of
-> > the hotplug lock and thus the above becomes a race where we could
-> > possible kill off the migration thread of a newly brought up cpu:
-> > 
-> >  cpu0 - down 2
-> >  cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
-> >  cpu0 - post_down 2 - frees the migration thread -- oops!
-> 
-> Ok. So, how about adding a check in CPU_UP_PREPARE event handling too ?
-> The cpuset_lock will synchronize, and thus avoid race between killing of
-> migration_thread in up_prepare and post_dead events. 
-> 
-> Here is the updated patch. If you don't like this one too, do you mind
-> suggesting an alternate approach to tackle the problem ? Thanks !
+Example program: (x86_32). (x86_64 would need a different syscall number)
+-------
+cc <source.c> -luuid
+--------
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
 
-Right, so this isn't pretty at all..
+#include <fcntl.h>
+#include <unistd.h>
+#include <errno.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <string.h>
+#include <uuid/uuid.h>
 
-Ingo, the comment near the migration_notifier says that migration_call
-should happen before all else, but can you see anything that would break
-if we let the timer migration happen first?
+struct uuid {
+	unsigned char uuid[16];
+};
 
-Thomas?
+struct file_handle {
+        int handle_size;
+        int handle_type;
+	struct uuid fsid;
+        unsigned char handle[0];
+};
 
->  Signed-off-by: Amit Arora <aarora@in.ibm.com>
->  Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
-> --
+#define AT_FDCWD		-100
+#define AT_SYMLINK_FOLLOW	0x400
 
-For everybody who reads this, _please_ use three (3) dashes '-' to
-separate the changelog from the patch, and left-align the changelog
-(including all tags).
+static int name_to_handle(const char *name, struct file_handle  *fh)
+{
+	return syscall(338, AT_FDCWD, name, fh, AT_SYMLINK_FOLLOW);
+}
 
-I seem to get more and more people sending patches with 2 dashes and
-daft changelogs with whitespace stuffing which break my scripts.
+static int lname_to_handle(const char *name, struct file_handle  *fh)
+{
+	return syscall(338, AT_FDCWD, name, fh, 0);
+}
 
-> diff -Nuarp linux-2.6.34.org/kernel/sched.c linux-2.6.34/kernel/sched.c
-> --- linux-2.6.34.org/kernel/sched.c	2010-05-18 22:56:21.000000000 -0700
-> +++ linux-2.6.34/kernel/sched.c	2010-05-19 04:47:49.000000000 -0700
-> @@ -5900,6 +5900,19 @@ migration_call(struct notifier_block *nf
->  
->  	case CPU_UP_PREPARE:
->  	case CPU_UP_PREPARE_FROZEN:
-> +		cpuset_lock();
-> +		rq = cpu_rq(cpu);
-> +		/*
-> +		 * Since we now kill migration_thread in CPU_POST_DEAD event,
-> +		 * there may be a race here. So, lets cleanup the old
-> +		 * migration_thread on the rq, if any.
-> +		 */
-> +		if (unlikely(rq->migration_thread)) {
-> +			kthread_stop(rq->migration_thread);
-> +			put_task_struct(rq->migration_thread);
-> +			rq->migration_thread = NULL;
-> +		}
-> +		cpuset_unlock();
->  		p = kthread_create(migration_thread, hcpu, "migration/%d", cpu);
->  		if (IS_ERR(p))
->  			return NOTIFY_BAD;
-> @@ -5942,14 +5955,34 @@ migration_call(struct notifier_block *nf
->  		cpu_rq(cpu)->migration_thread = NULL;
->  		break;
->  
-> +	case CPU_POST_DEAD:
-> +		/*
-> +		 * Bring the migration thread down in CPU_POST_DEAD event,
-> +		 * since the timers should have got migrated by now and thus
-> +		 * we should not see a deadlock between trying to kill the
-> +		 * migration thread and the sched_rt_period_timer.
-> +		 */
-> +		cpuset_lock();
-> +		rq = cpu_rq(cpu);
-> +		if (likely(rq->migration_thread)) {
-> +			/*
-> +			 * Its possible that this CPU was onlined (from a
-> +			 * different CPU) before we reached here and
-> +			 * migration_thread was cleaned-up in the
-> +			 * CPU_UP_PREPARE event handling.
-> +			 */
-> +			kthread_stop(rq->migration_thread);
-> +			put_task_struct(rq->migration_thread);
-> +			rq->migration_thread = NULL;
-> +		}
-> +		cpuset_unlock();
-> +		break;
-> +
->  	case CPU_DEAD:
->  	case CPU_DEAD_FROZEN:
->  		cpuset_lock(); /* around calls to cpuset_cpus_allowed_lock() */
->  		migrate_live_tasks(cpu);
->  		rq = cpu_rq(cpu);
-> -		kthread_stop(rq->migration_thread);
-> -		put_task_struct(rq->migration_thread);
-> -		rq->migration_thread = NULL;
->  		/* Idle task back to normal (off runqueue, low prio) */
->  		raw_spin_lock_irq(&rq->lock);
->  		update_rq_clock(rq);
+static int open_by_handle(int mountfd, struct file_handle *fh,  int flags)
+{
+	return syscall(339, mountfd, fh, flags);
+}
+
+#define BUFSZ 100
+int main(int argc, char *argv[])
+{
+        int fd;
+        int ret;
+	int mountfd;
+	int handle_sz;
+	struct stat bufstat;
+        char buf[BUFSZ];
+	char uuid[36];
+        struct file_handle *fh = NULL;;
+	if (argc != 3 ) {
+		printf("Usage: %s <filename> <mount-dir-name>\n", argv[0]);
+		exit(1);
+	}
+again:
+	if (fh && fh->handle_size) {
+		handle_sz = fh->handle_size;
+		free(fh);
+		fh = malloc(sizeof(struct file_handle) + handle_sz);
+		fh->handle_size = handle_sz;
+	} else {
+		fh = malloc(sizeof(struct file_handle));
+		fh->handle_size = 0;
+	}
+        errno  = 0;
+        ret = lname_to_handle(argv[1], fh);
+        if (ret && errno == EOVERFLOW) {
+		printf("Found the handle size needed to be %d\n", fh->handle_size);
+		goto again;
+        } else if (ret) {
+                perror("Error:");
+		exit(1);
+	}
+	uuid_unparse(fh->fsid.uuid, uuid);
+	printf("UUID:%s\n", uuid);
+	printf("Waiting for input");
+	getchar();
+	mountfd = open(argv[2], O_RDONLY | O_DIRECTORY);
+	if (mountfd <= 0) {
+                perror("Error:");
+                exit(1);
+        }
+        fd = open_by_handle(mountfd, fh, O_RDWR);
+        if (fd <= 0 ) {
+                perror("Error:");
+                exit(1);
+        }
+	printf("Reading the content now \n");
+	fstat(fd, &bufstat);
+	ret = S_ISLNK(bufstat.st_mode);
+	if (ret) {
+		memset(buf, 0 , BUFSZ);
+		readlinkat(fd, NULL, buf, BUFSZ);
+		printf("%s is a symlink pointing to %s\n", argv[1], buf);
+	}
+        memset(buf, 0 , BUFSZ);
+	while (1) {
+		ret = read(fd, buf, BUFSZ -1);
+		if (ret <= 0)
+			break;
+		buf[ret] = '\0';
+                printf("%s", buf);
+                memset(buf, 0 , BUFSZ);
+        }
+        return 0;
+}
+
+-aneesh
 
