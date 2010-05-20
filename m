@@ -1,53 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753267Ab0ETAKK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 19 May 2010 20:10:10 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:52632 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752912Ab0ETAKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 19 May 2010 20:10:08 -0400
-Message-ID: <4BF47DAF.5040409@zytor.com>
-Date: Wed, 19 May 2010 17:09:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1753079Ab0ETAMz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 19 May 2010 20:12:55 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:40145 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752276Ab0ETAMx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 19 May 2010 20:12:53 -0400
+Date: Wed, 19 May 2010 17:04:07 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Mathieu Desnoyers <mathieu.desnoyers@efficios.com>
+cc: Nick Piggin <npiggin@suse.de>, Steven Rostedt <rostedt@goodmis.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, peterz@infradead.org,
+       fweisbec@gmail.com, tardyp@gmail.com, mingo@elte.hu, acme@redhat.com,
+       tzanussi@gmail.com, paulus@samba.org, linux-kernel@vger.kernel.org,
+       arjan@infradead.org, ziga.mahkovec@gmail.com, davem@davemloft.net,
+       linux-mm@kvack.org, akpm@linux-foundation.org,
+       kosaki.motohiro@jp.fujitsu.com, cl@linux-foundation.org, tj@kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: Unexpected splice "always copy" behavior observed
+In-Reply-To: <20100519214905.GA22486@Krystal>
+Message-ID: <alpine.LFD.2.00.1005191659100.23538@i5.linux-foundation.org>
+References: <20100519063116.GR2516@laptop> <alpine.LFD.2.00.1005190736370.23538@i5.linux-foundation.org> <1274280968.26328.774.camel@gandalf.stny.rr.com> <alpine.LFD.2.00.1005190758070.23538@i5.linux-foundation.org> <E1OElGh-0005wc-I8@pomaz-ex.szeredi.hu>
+ <1274283942.26328.783.camel@gandalf.stny.rr.com> <20100519155732.GB2039@Krystal> <20100519162729.GE2516@laptop> <20100519191439.GA2845@Krystal> <alpine.LFD.2.00.1005191220370.23538@i5.linux-foundation.org> <20100519214905.GA22486@Krystal>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Mathieu Rondonneau <mathieu.rondonneau@gmail.com>
-CC: Yinghai <yinghai.lu@oracle.com>, linux-kernel@vger.kernel.org,
-       linux-arch@vger.kernel.org, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] Prevent reserving RAM in the region already reserved
- by 	BIOS
-References: <AANLkTimwxXtNnmBuDJxg3i72VwWuHmemjrr1iGqj4j8e@mail.gmail.com>	 <4BF42296.1030905@oracle.com> <4BF4235D.3080904@zytor.com>	 <AANLkTikYcu6fM3yLoYIZOGZXgsRUfCgJeWS51Sjo-Fny@mail.gmail.com>	 <4BF46D9B.4090806@zytor.com> <AANLkTiltANJ9eaGBkfJJOyZ8skCxxOmkAs1UvCLB_YQ9@mail.gmail.com>
-In-Reply-To: <AANLkTiltANJ9eaGBkfJJOyZ8skCxxOmkAs1UvCLB_YQ9@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/19/2010 05:01 PM, Mathieu Rondonneau wrote:
-> it' s not in ISA space.
-> once loading the NVIDIA driver, the warnign oops shows up.
-> 4K starting at 0x9f800 (i.e. to 0xa007ff) overlap with the ISA space
-> (starting at 0xa0000).
+
+
+On Wed, 19 May 2010, Mathieu Desnoyers wrote:
 > 
-> When I don' t load the driver, no oops.
-> So I am assuming nvidia driver request 4K of memory, that happens to
-> be available in the bios area.
+> A faced a small counter-intuitive fadvise behavior though.
 > 
-> I think that there is a check missing somewhere to report that
-> available RAM buffer is already reserved (by BIOS) so we need to get
-> it from somewhere else.
+>   posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 > 
-> Does it make sense?
-> -Mathieu
+> only seems to affect the parts of a file that already exist.
 
-No.
+POSIX_FADV_DONTNEED does not have _any_ long-term behavior. So when you do 
+a 
 
-The top page (0x9f000) is generally also reserved... there is pretty
-much always BIOS data structures there.
+	posix_fadvise(fd, 0, 0, POSIX_FADV_DONTNEED);
 
-It sounds like the Nvidia driver is trying to map those, and doing it
-incorrectly.  -ENVIDIA.
+it only affects the pages that are there right now, it has no effect on 
+any future actions.
 
-	-hpa
+> So after each splice() that appends to the file, I have to call fadvise 
+> again. I would have expected the "0" len parameter to tell the kernel to 
+> apply the hint to the whole file, even parts that will be added in the 
+> future.
+
+It's not a hint about future at all. It's a "throw current pages away".
+
+I would also suggest against doing that kind of thing in a streaming write 
+situation. The behavior for dirty page writeback is _not_ welldefined, and 
+if you do POSIX_FADV_DONTNEED, I would suggest you do it as part of that 
+writeback logic, ie you do it only on ranges that you have just waited on.
+
+IOW, in my example, you'd couple the
+
+	sync_file_range(fd, (index-1)*BUFSIZE, BUFSIZE, SYNC_FILE_RANGE_WAIT_BEFORE|SYNC_FILE_RANGE_WRITE|SYNC_FILE_RANGE_WAIT_AFTER);
+
+with a
+
+	posix_fadvise(fd, (index-1)*BUFSIZE, BUFSIZE, POSIX_FADV_DONTNEED);
+
+afterwards to throw out the pages that you just waited for.
+
+		Linus
