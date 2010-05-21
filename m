@@ -1,201 +1,315 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754327Ab0EUL0o (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 07:26:44 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:39196 "EHLO mx2.suse.de"
+	id S1754048Ab0EUL2O (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 07:28:14 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58479 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752302Ab0EUL0m (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 07:26:42 -0400
-Date: Fri, 21 May 2010 13:26:40 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Don Prince <dhprince-devel@yahoo.co.uk>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [GIT] HID
-In-Reply-To: <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
-Message-ID: <alpine.LNX.2.00.1005211322140.28092@pobox.suse.cz>
-References: <alpine.LNX.2.00.1005191430370.28092@pobox.suse.cz> <alpine.LFD.2.00.1005200912540.23538@i5.linux-foundation.org> <alpine.LFD.2.00.1005200922020.23538@i5.linux-foundation.org> <alpine.LNX.2.00.1005201834190.28092@pobox.suse.cz>
- <alpine.LFD.2.00.1005200948210.23538@i5.linux-foundation.org>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1751637Ab0EUL2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 07:28:12 -0400
+Date: Fri, 21 May 2010 11:27:37 GMT
+From: tip-bot for Venkatesh Pallipadi <venki@google.com>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
+       venki@google.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
+       mingo@elte.hu
+In-Reply-To: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+References: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:sched/urgent] sched: Avoid side-effect of tickless idle on update_cpu_load
+Message-ID: <tip-4afc7e60ab25b72611771e48ca97b4f0104f77c7@git.kernel.org>
+Git-Commit-ID: 4afc7e60ab25b72611771e48ca97b4f0104f77c7
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=ISO-8859-15
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 11:27:39 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Linus Torvalds wrote:
+Commit-ID:  4afc7e60ab25b72611771e48ca97b4f0104f77c7
+Gitweb:     http://git.kernel.org/tip/4afc7e60ab25b72611771e48ca97b4f0104f77c7
+Author:     Venkatesh Pallipadi <venki@google.com>
+AuthorDate: Mon, 17 May 2010 18:14:43 -0700
+Committer:  Ingo Molnar <mingo@elte.hu>
+CommitDate: Fri, 21 May 2010 11:37:17 +0200
 
-> Well, I look at something like "hid-ortec.c", and it has basically a few 
-> lines of code, much of it __init, and I say "ok, that makes sense to not 
-> even ask about".
-> 
-> So I can see your argument. That said, I've never even _heard_ of ortek. 
-> Maybe it's some common chip and I use it every day. But even for something 
-> that small, I'd wonder how common they really are.
-> 
-> So that kensington driver is a good example of something where I do think 
-> it makes sense to make it default. It's small, and kensington is a big 
-> name.
-> 
-> But when the driver is several hundred lines, and the text size is 
-> probably in the kilobytes (I didn't compile that new driver, but even the 
-> trivial ones are a few hundred bytes) _and_ the driver is for something 
-> I've never even heard about, then I really think it shouldn't be enabled 
-> without asking.
+sched: Avoid side-effect of tickless idle on update_cpu_load
 
-So I see that you haven't pulled. I have therefore updated the 'for-linus' 
-branch with one extra commit, which removes the EMBEDDED crap for most of 
-the drivers, and preserves it only for those which
+tickless idle has a negative side effect on
+update_cpu_load(), which in turn can affect load
+balancing behavior.
 
-- we historically used to support by the core code before the quirk 
-  separation
-- the ones that are likely to hit many users while not growing the text 
-  size significantly (Microsoft, Logitech, Genius)
+update_cpu_load() is supposed to be called every
+tick, to keep track of various load indicies. With
+tickless idle, there are no scheduler ticks called on
+the idle CPUs. Idle CPUs may still do load balancing
+(with idle_load_balance CPU) using the stale
+cpu_load. It will also cause problems when all CPUs
+go idle for a while and become active again. In this
+case loads would not degrade as expected.
 
-Updated pull request below. Thanks.
+This is how rq->nr_load_updates change looks like
+under different conditions:
 
+<cpu_num> <nr_load_updates change>
+All CPUS idle for 10 seconds (HZ=1000)
+0 1621
+10 496
+11 139
+12 875
+13 1672
+14 12
+15 21
+1 1472
+2 2426
+3 1161
+4 2108
+5 1525
+6 701
+7 249
+8 766
+9 1967
 
-Please pull from 'for-linus' branch at
+One CPU busy rest idle for 10 seconds
+0 10003
+10 601
+11 95
+12 966
+13 1597
+14 114
+15 98
+1 3457
+2 93
+3 6679
+4 1425
+5 1479
+6 595
+7 193
+8 633
+9 1687
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jikos/hid.git for-linus
+All CPUs busy for 10 seconds
+0 10026
+10 10026
+11 10026
+12 10026
+13 10025
+14 10025
+15 10025
+1 10026
+2 10026
+3 10026
+4 10026
+5 10026
+6 10026
+7 10026
+8 10026
+9 10026
 
-to receive the following updates:
+That is update_cpu_load works properly only when all
+CPUs are busy. If all are idle, all the CPUs get way
+lower updates. And when few CPUs are busy and rest
+are idle, only busy and ilb CPU does proper updates
+and rest of the idle CPUs will do lower updates.
 
-Alan Ott (1):
-      HID: hidraw: Use Interrupt Endpoint for OUT Transfers if Available
+The patch keeps track of when a last update was done
+and fixes up the load avg based on current time.
 
-Alan Stern (1):
-      HID: usbhid: enable remote wakeup for keyboards
+On one of my test system SPECjbb with warehouse
+1..numcpus, patch improves throughput numbers by ~1%
+(average of 6 runs). On another test system (with
+different domain hierarchy) there is no noticable
+change in perf.
 
-Antonio Ospite (1):
-      HID: hidraw: fix indentation
+Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+Signed-off-by: Ingo Molnar <mingo@elte.hu>
+---
+ kernel/sched.c      |  100 ++++++++++++++++++++++++++++++++++++++++++++++++---
+ kernel/sched_fair.c |    5 ++-
+ 2 files changed, 99 insertions(+), 6 deletions(-)
 
-Bastien Nocera (2):
-      HID: add HID_QUIRK_HIDDEV_FORCE and HID_QUIRK_NO_IGNORE
-      HID: add support for the Wacom Intuos 4 wireless
-
-Bruno Prémont (12):
-      HID: register debugfs entries before adding device
-      HID: new driver for PicoLCD device
-      HID: add framebuffer support to PicoLCD device
-      HID: add backlight support to PicoLCD device
-      HID: add lcd support to PicoLCD device
-      HID: add GPO (leds) support to PicoLCD device
-      HID: add experimental access to PicoLCD device's EEPROM and FLASH
-      HID: hid-picolcd depends on LCD_CLASS_DEVICE
-      HID: fix picolcd's version parsing
-      HID: add suspend/resume hooks for hid drivers
-      HID: split picolcd's operation_mode sysfs attribute
-      HID: add PM support to PicoLCD device
-
-Don Prince (4):
-      HID: Prodikeys PC-MIDI HID Driver
-      HID: Zydacron Remote Control driver
-      HID: hid-samsung: add support for Creative Desktop Wireless 6000
-      HID: hid-samsung: remove redundant key mappings
-
-Jiri Kosina (14):
-      HID: output event in debugfs even if hid_get_report() fails
-      HID: simplify error handling in hid_input_report()
-      HID: fixup Kconfig entry for Roccat Kone
-      HID: remove BKL from hidraw
-      HID: remove excessive _EMERG messages from hidraw
-      HID: update BKL comment in hiddev
-      HID: picolcd: fix build failure
-      HID: egalax: update slab.h include
-      HID: fix support for Wacom Intuos 4 wireless
-      HID: fix build failure
-      HID: make Prodikeys driver standalone config option
-      HID: magicmouse: fix input registration
-      HID: add omitted hid-zydacron.c file
-      HID: fix up 'EMBEDDED' mess in Kconfig
-
-Julia Lawall (2):
-      HID: Use kmemdup
-      HID: picolcd: Eliminate use after free
-
-Lorenzo Castelli (1):
-      HID: add mappings for a few keys found on Logitech MX3200
-
-Pete Zaitcev (1):
-      HID: non-overlapping zeroing of extra bits
-
-Peter Hutterer (1):
-      HID: add multi-input quirk for eGalax Touchcontroller
-
-Przemo Firszt (4):
-      HID: expose wacom pen tablet battery through power_supply class
-      HID: separate mode switching function for wacom bluetooth driver
-      HID: add sysfs speed attribute for wacom bluetooth tablet
-      HID: wacom: add ABI doc entry for speed attribute
-
-Rafi Rubin (3):
-      HID: ntrig: add sensitivity and responsiveness support
-      HID: ntrig: add sysfs access to filter parameters
-      HID: ntrig: add filtering module parameters
-
-Stefan Achatz (5):
-      HID: add driver for Roccat Kone gaming mouse
-      HID: roccat: Correctly mark init and exit functions
-      HID: roccat: fix special button support
-      HID: roccat: refactor special event handling
-      HID: roccat: cleanup preprocessor macros
-
-Stephane Chatty (5):
-      HID: add support for the eGalax dual-touch panel
-      HID: add support for 3M multitouch 22" display
-      HID: added support for the Cando dual touch panel
-      HID: fixed missing inits in hid-cando.c
-      HID: Support for the 11.6" Cando panel
-
-Tejun Heo (1):
-      HID: update gfp/slab.h includes
-
-Wayne Thomas (1):
-      HID: add support for BTC Emprex 3009URF III Vista MCE Remote
-
- Documentation/ABI/testing/sysfs-driver-hid-picolcd |   43 +
- .../ABI/testing/sysfs-driver-hid-prodikeys         |   29 +
- .../ABI/testing/sysfs-driver-hid-roccat-kone       |  111 +
- Documentation/ABI/testing/sysfs-wacom              |   10 +
- drivers/hid/Kconfig                                |  151 +-
- drivers/hid/Makefile                               |    6 +
- drivers/hid/hid-3m-pct.c                           |   31 +-
- drivers/hid/hid-cando.c                            |  272 ++
- drivers/hid/hid-core.c                             |   53 +-
- drivers/hid/hid-egalax.c                           |  281 +++
- drivers/hid/hid-ids.h                              |   25 +
- drivers/hid/hid-lg.c                               |    9 +
- drivers/hid/hid-magicmouse.c                       |    5 +-
- drivers/hid/hid-ntrig.c                            |  526 ++++-
- drivers/hid/hid-picolcd.c                          | 2631 ++++++++++++++++++++
- drivers/hid/hid-prodikeys.c                        |  910 +++++++
- drivers/hid/hid-roccat-kone.c                      |  994 ++++++++
- drivers/hid/hid-roccat-kone.h                      |  224 ++
- drivers/hid/hid-samsung.c                          |   95 +-
- drivers/hid/hid-topseed.c                          |   38 +-
- drivers/hid/hid-wacom.c                            |  229 ++-
- drivers/hid/hid-zydacron.c                         |  237 ++
- drivers/hid/hidraw.c                               |   50 +-
- drivers/hid/usbhid/hid-core.c                      |   73 +-
- drivers/hid/usbhid/hid-quirks.c                    |    1 +
- drivers/hid/usbhid/hiddev.c                        |   19 +-
- drivers/hid/usbhid/usbkbd.c                        |    1 +
- include/linux/hid.h                                |   10 +
- 28 files changed, 6907 insertions(+), 157 deletions(-)
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-picolcd
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-prodikeys
- create mode 100644 Documentation/ABI/testing/sysfs-driver-hid-roccat-kone
- create mode 100644 Documentation/ABI/testing/sysfs-wacom
- create mode 100644 drivers/hid/hid-cando.c
- create mode 100644 drivers/hid/hid-egalax.c
- create mode 100644 drivers/hid/hid-picolcd.c
- create mode 100644 drivers/hid/hid-prodikeys.c
- create mode 100644 drivers/hid/hid-roccat-kone.c
- create mode 100644 drivers/hid/hid-roccat-kone.h
- create mode 100644 drivers/hid/hid-zydacron.c
-
--- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 1d93cd0..2d17e3b 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -502,6 +502,7 @@ struct rq {
+ 	unsigned long nr_running;
+ 	#define CPU_LOAD_IDX_MAX 5
+ 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
++	unsigned long last_load_update_tick;
+ #ifdef CONFIG_NO_HZ
+ 	u64 nohz_stamp;
+ 	unsigned char in_nohz_recently;
+@@ -1826,6 +1827,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
+ static void calc_load_account_idle(struct rq *this_rq);
+ static void update_sysctl(void);
+ static int get_update_sysctl_factor(void);
++static void update_cpu_load(struct rq *this_rq);
+ 
+ static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
+ {
+@@ -3024,23 +3026,102 @@ static void calc_load_account_active(struct rq *this_rq)
+ }
+ 
+ /*
++ * The exact cpuload at various idx values, calculated at every tick would be
++ * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
++ *
++ * If a cpu misses updates for n-1 ticks (as it was idle) and update gets called
++ * on nth tick when cpu may be busy, then we have:
++ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
++ * load = (2^idx - 1) / 2^idx) * load + 1 / 2^idx * cur_load
++ *
++ * decay_load_missed() below does efficient calculation of
++ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
++ * avoiding 0..n-1 loop doing load = ((2^idx - 1) / 2^idx) * load
++ *
++ * The calculation is approximated on a 128 point scale.
++ * degrade_zero_ticks is the number of ticks after which load at any
++ * particular idx is approximated to be zero.
++ * degrade_factor is a precomputed table, a row for each load idx.
++ * Each column corresponds to degradation factor for a power of two ticks,
++ * based on 128 point scale.
++ * Example:
++ * row 2, col 3 (=12) says that the degradation at load idx 2 after
++ * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
++ *
++ * With this power of 2 load factors, we can degrade the load n times
++ * by looking at 1 bits in n and doing as many mult/shift instead of
++ * n mult/shifts needed by the exact degradation.
++ */
++#define DEGRADE_SHIFT		7
++static const unsigned char
++		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
++static const unsigned char
++		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
++					{0, 0, 0, 0, 0, 0, 0, 0},
++					{64, 32, 8, 0, 0, 0, 0, 0},
++					{96, 72, 40, 12, 1, 0, 0},
++					{112, 98, 75, 43, 15, 1, 0},
++					{120, 112, 98, 76, 45, 16, 2} };
++
++/*
++ * Update cpu_load for any missed ticks, due to tickless idle. The backlog
++ * would be when CPU is idle and so we just decay the old load without
++ * adding any new load.
++ */
++static unsigned long
++decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
++{
++	int j = 0;
++
++	if (!missed_updates)
++		return load;
++
++	if (missed_updates >= degrade_zero_ticks[idx])
++		return 0;
++
++	if (idx == 1)
++		return load >> missed_updates;
++
++	while (missed_updates) {
++		if (missed_updates % 2)
++			load = (load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
++
++		missed_updates >>= 1;
++		j++;
++	}
++	return load;
++}
++
++/*
+  * Update rq->cpu_load[] statistics. This function is usually called every
+- * scheduler tick (TICK_NSEC).
++ * scheduler tick (TICK_NSEC). With tickless idle this will not be called
++ * every tick. We fix it up based on jiffies.
+  */
+ static void update_cpu_load(struct rq *this_rq)
+ {
+ 	unsigned long this_load = this_rq->load.weight;
++	unsigned long curr_jiffies = jiffies;
++	unsigned long pending_updates;
+ 	int i, scale;
+ 
+ 	this_rq->nr_load_updates++;
+ 
++	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
++	if (curr_jiffies == this_rq->last_load_update_tick)
++		return;
++
++	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
++	this_rq->last_load_update_tick = curr_jiffies;
++
+ 	/* Update our load: */
+-	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
++	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
++	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
+ 		unsigned long old_load, new_load;
+ 
+ 		/* scale is effectively 1 << i now, and >> i divides by scale */
+ 
+ 		old_load = this_rq->cpu_load[i];
++		old_load = decay_load_missed(old_load, pending_updates - 1, i);
+ 		new_load = this_load;
+ 		/*
+ 		 * Round up the averaging division if load is increasing. This
+@@ -3048,9 +3129,15 @@ static void update_cpu_load(struct rq *this_rq)
+ 		 * example.
+ 		 */
+ 		if (new_load > old_load)
+-			new_load += scale-1;
+-		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
++			new_load += scale - 1;
++
++		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
+ 	}
++}
++
++static void update_cpu_load_active(struct rq *this_rq)
++{
++	update_cpu_load(this_rq);
+ 
+ 	calc_load_account_active(this_rq);
+ }
+@@ -3438,7 +3525,7 @@ void scheduler_tick(void)
+ 
+ 	raw_spin_lock(&rq->lock);
+ 	update_rq_clock(rq);
+-	update_cpu_load(rq);
++	update_cpu_load_active(rq);
+ 	curr->sched_class->task_tick(rq, curr, 0);
+ 	raw_spin_unlock(&rq->lock);
+ 
+@@ -7592,6 +7679,9 @@ void __init sched_init(void)
+ 
+ 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
+ 			rq->cpu_load[j] = 0;
++
++		rq->last_load_update_tick = jiffies;
++
+ #ifdef CONFIG_SMP
+ 		rq->sd = NULL;
+ 		rq->rd = NULL;
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index 217e4a9..e91f833 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3410,9 +3410,12 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 			if (need_resched())
+ 				break;
+ 
++			rq = cpu_rq(balance_cpu);
++			raw_spin_lock(&rq->lock);
++			update_cpu_load(rq);
++			raw_spin_unlock(&rq->lock);
+ 			rebalance_domains(balance_cpu, CPU_IDLE);
+ 
+-			rq = cpu_rq(balance_cpu);
+ 			if (time_after(this_rq->next_balance, rq->next_balance))
+ 				this_rq->next_balance = rq->next_balance;
+ 		}
