@@ -1,71 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755957Ab0EUOGX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 10:06:23 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:60045 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755853Ab0EUOGS (ORCPT
+	id S1755944Ab0EUOHV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 10:07:21 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:35317 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755483Ab0EUOHS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 10:06:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ETp/P5zPIHF3J2DWNP2DRifEwWd0Mgn9qksiawrN6L4a3/Y40EVTJicFF0ZeDN5K3d
-         /bBhCIP/yQ50/Rj7qtJJG4d+gxb9/gggmx8f9ChRb0eqgzR3RdTGoD/xtx67IyxUIDQh
-         hcbytBSz5ar2kMWL9yFeK/qbSw3lZwHHeelGE=
-Date: Fri, 21 May 2010 16:06:25 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: Re: [PATCH 3/4] perf: Support for irq exclusion
-Message-ID: <20100521140623.GK30108@nowhere>
-References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com> <1274450715-23955-4-git-send-regression-fweisbec@gmail.com>
+	Fri, 21 May 2010 10:07:18 -0400
+Date: Fri, 21 May 2010 10:07:15 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Adrian Hunter <adrian.hunter@nokia.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mmc@vger.kernel.org" <linux-mmc@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC][PATCH] mmc: add an ioctl for erasing
+Message-ID: <20100521140714.GB15070@infradead.org>
+References: <4BF68EFC.70101@nokia.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274450715-23955-4-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BF68EFC.70101@nokia.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 04:05:14PM +0200, Frederic Weisbecker wrote:
-> Provide exclude_softirq and exclude_hardirq support in perf
-> event attributes. This brings the final pieces to subscribe
-> to any desired context granularity of profiling or tracing.
-> 
-> Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-> Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-> Cc: Paul Mackerras <paulus@samba.org>
-> ---
->  include/linux/perf_event.h |    8 +++++---
->  kernel/perf_event.c        |   42 +++++++++++++++++++++++++++++++-----------
->  2 files changed, 36 insertions(+), 14 deletions(-)
-> 
-> diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-> index d939fc7..ca55ec5 100644
-> --- a/include/linux/perf_event.h
-> +++ b/include/linux/perf_event.h
-> @@ -213,10 +213,12 @@ struct perf_event_attr {
->  				 *
->  				 *  See also PERF_RECORD_MISC_EXACT_IP
->  				 */
-> -				precise_ip     :  2, /* skid constraint       */
-> -				exclude_task   :  1, /* don't count task context */
-> +				precise_ip	:  2, /* skid constraint */
-> +				exclude_task	:  1, /* don't count task context */
-> +				exclude_softirq	:  1, /* don't count softirq */
-> +				exclude_hardirq	:  1, /* don't count hardirq */
->  
-> -				__reserved_1   : 46;
-> +				__reserved_1	: 45;
+On Fri, May 21, 2010 at 04:47:40PM +0300, Adrian Hunter wrote:
+>> From f3baf566eb33a22bf12a48e4cdc7c99611bde934 Mon Sep 17 00:00:00 2001
+> From: Adrian Hunter <adrian.hunter@nokia.com>
+> Date: Wed, 5 May 2010 14:07:55 +0300
+> Subject: [PATCH] mmc: add an ioctl for erasing
+>
+> As SD and MMC cards have a NAND core, they can support an erase
+> operation that is typically 10x to 100x faster than writing.
+>
+> In addition, eMMCv4.4 also offers:
+> 	o Secure Erase
+> 	o Trim
+> 	o Secure Trim
+>
+> The "secure" variants also ensure that any copies of the data
+> (for example remnants of garbage collection) are also erased.
+>
+> "Trim" is the same as "erase" except that individual sectors
+> can be erased instead of whole Erase Groups.
+>
+> The Erase Operation and its variants are not supported by
+> default and drivers must set MMC_CAP_ERASE.  This is because
+> the operation can take a long time and drivers that rely on
+> polling the status may perform very badly.  Also drivers
+> may need changes to support the very long erase timeouts.
 
-
-Should be 44.
+Please don't add new device specific ioctls.  Just implement the
+block layer discard operation to make the discard ioctl work on MMC
+device.  We can talk about adding a secure erase variant of it then.
 
