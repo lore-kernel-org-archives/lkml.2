@@ -1,69 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754610Ab0EUKse (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 06:48:34 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:49002 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751606Ab0EUKsc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 06:48:32 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :mime-version:content-type:content-transfer-encoding;
-        b=M/02raAGDOg9Jepxt72AgD7eyzy3E48xVRmADKTMMMG4VfquRBS0wds6z0XrsdCE5K
-         ftaXJ1XLdwtX4vlKjYImP6alzhzg92cpmeIX8McRXDvVXkLdLFzpHOMmupROjpwQ3j5P
-         eT8s40qu42pLjXtMUEi/01P0KldcOvvspa4O8=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Paul Mackerras <paulus@samba.org>
-Subject: [PATCH] perf: Fix getline undeclared
-Date: Fri, 21 May 2010 12:48:39 +0200
-Message-Id: <1274438919-5104-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	id S1754789Ab0EUKvN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 06:51:13 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:36192 "EHLO mx3.mail.elte.hu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752415Ab0EUKvM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 06:51:12 -0400
+Date: Fri, 21 May 2010 12:51:02 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 02/10] perf, trace: Use per-tracepoint-per-cpu hlist to
+ track events
+Message-ID: <20100521105102.GA11568@elte.hu>
+References: <20100521090201.326791353@chello.nl>
+ <20100521090710.473188012@chello.nl>
+ <20100521094014.GA30108@nowhere>
+ <1274436125.1674.1690.camel@laptop>
+ <20100521101347.GC30108@nowhere>
+ <1274436943.1674.1693.camel@laptop>
+ <20100521103840.GA23624@elte.hu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521103840.GA23624@elte.hu>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -1.1
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-1.1 required=5.9 tests=BAYES_05 autolearn=no SpamAssassin version=3.2.5
+	-1.1 BAYES_05               BODY: Bayesian spam probability is 1 to 5%
+	[score: 0.0222]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We need to have stdio.h included with _GNU_SOURCEfopr getline, which
-is broken with the inclusion of build-id.h.
 
-Keep util.h included first in hist.c
+* Ingo Molnar <mingo@elte.hu> wrote:
 
-Fixes:
-	util/hist.c: Dans la fonction «hist_entry__parse_objdump_line» :
-	util/hist.c:938: attention : déclaration implicite de la fonction « «getline» »
-	util/hist.c:938: attention : nested extern declaration of «getline»
-	make: *** [util/hist.o] Erreur 1
+> 
+> * Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Fri, 2010-05-21 at 12:13 +0200, Frederic Weisbecker wrote:
+> > > > What exactly is the puzzlement about?
+> > 
+> > > The fact we use the hlist API not for hlist purpose 
+> > > but for a list.
+> > 
+> > I might miss the confusion, but hlist _are_ lists. Its 
+> > just that their structure is slightly different that 
+> > the regular struct list_head stuff.
+> 
+> Using an API in such a mixed way may cause puzzlement 
+> ;-)
 
-Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Paul Mackerras <paulus@samba.org>
----
- tools/perf/util/hist.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+I take that back - it's clear from the function prototype 
+that we are using a mixed API: (hlist,list).
 
-diff --git a/tools/perf/util/hist.c b/tools/perf/util/hist.c
-index 739c39f..009ad76 100644
---- a/tools/perf/util/hist.c
-+++ b/tools/perf/util/hist.c
-@@ -1,5 +1,5 @@
--#include "build-id.h"
- #include "util.h"
-+#include "build-id.h"
- #include "hist.h"
- #include "session.h"
- #include "sort.h"
--- 
-1.6.2.3
+Sorry,
 
+	Ingo
