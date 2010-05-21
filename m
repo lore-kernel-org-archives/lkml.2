@@ -1,98 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934445Ab0EURWz (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:22:55 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:47614 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934369Ab0EURWw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:22:52 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject:references
-         :in-reply-to:content-type:content-transfer-encoding;
-        b=jyqIHTg38Pt559Hp3+w8IFCx6m1PEReHkpL+0WmCaDasigaqMIfbd5Wlxj1dYxa3WK
-         q9GfV/Se+FzN2rUbQRWs6HeyIp4Unp6CgqYr2iMXXygdzZ5+UcizSy1oPn0YH+SWhoZk
-         QxcbfY39IDmvYcoEnzU69hiXtRGPCgDo1yYCM=
-Message-ID: <4BF6C171.7040603@gmail.com>
-Date: Fri, 21 May 2010 10:22:57 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH]pacmcia:yena_socket.c Remove extra #ifdef CONFIG_YENTA_TI
-References: <1274388002-2132-1-git-send-email-justinmattock@gmail.com> <20100521131851.GB22685@comet.dominikbrodowski.net>
-In-Reply-To: <20100521131851.GB22685@comet.dominikbrodowski.net>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	id S934480Ab0EURXb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:23:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51334 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934303Ab0EURX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 13:23:29 -0400
+Subject: Re: bug fix patch lost: git problem or just incorrect merge?
+From: James Bottomley <James.Bottomley@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: David Miller <davem@davemloft.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+       linux-scsi <linux-scsi@vger.kernel.org>
+In-Reply-To: <alpine.LFD.2.00.1005210947440.4243@i5.linux-foundation.org>
+References: <1274456515.9022.14.camel@mulgrave.site>
+	 <alpine.LFD.2.00.1005210931010.4243@i5.linux-foundation.org>
+	 <alpine.LFD.2.00.1005210947440.4243@i5.linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 May 2010 12:23:23 -0500
+Message-ID: <1274462603.9022.30.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2010 06:18 AM, Dominik Brodowski wrote:
-> Applied (see below), thanks.
->
-> Best,
-> 	Dominik
->
-> From: Justin P. Mattock<justinmattock@gmail.com>
-> Date: Thu, 20 May 2010 13:40:02 -0700
-> Subject: [PATCH] pcmcia: yenta_socket.c Remove extra #ifdef CONFIG_YENTA_TI
->
-> Seems pointless to have two #ifdef's with the same
-> CONFIG_YENTA_TI.. Remove the extra one and
-> move CARDBUS_TYPE_ENE with the others.
->
-> [linux@dominikbrodowski.net: spelling&  whitespace fixes]
-> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
-> Signed-off-by: Dominik Brodowski<linux@dominikbrodowski.net>
->
-> diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
-> index 6bf8b2c..f1d4137 100644
-> --- a/drivers/pcmcia/yenta_socket.c
-> +++ b/drivers/pcmcia/yenta_socket.c
-> @@ -880,6 +880,12 @@ static struct cardbus_type cardbus_type[] = {
->   		.restore_state	= ti_restore_state,
->   		.sock_init	= ti_init,
->   	},
-> +	[CARDBUS_TYPE_ENE]	= {
-> +		.override	= ene_override,
-> +		.save_state	= ti_save_state,
-> +		.restore_state	= ti_restore_state,
-> +		.sock_init	= ti_init,
-> +	},
->   #endif
->   #ifdef CONFIG_YENTA_RICOH
->   	[CARDBUS_TYPE_RICOH]	= {
-> @@ -902,14 +908,6 @@ static struct cardbus_type cardbus_type[] = {
->   		.restore_state	= o2micro_restore_state,
->   	},
->   #endif
-> -#ifdef CONFIG_YENTA_TI
-> -	[CARDBUS_TYPE_ENE]	= {
-> -		.override	= ene_override,
-> -		.save_state	= ti_save_state,
-> -		.restore_state	= ti_restore_state,
-> -		.sock_init	= ti_init,
-> -	},
-> -#endif
->   };
->
->
->
->
+On Fri, 2010-05-21 at 10:04 -0700, Linus Torvalds wrote:
+> 
+> On Fri, 21 May 2010, Linus Torvalds wrote:
+> > 
+> > > Either way, of course, we need the patch back ...
+> > 
+> > I'll fix it up.
+> 
+> Hmm. Pushed that out as appended, since that is the correct resolve.
+
+Thanks!
+
+> HOWEVER - the code still doesn't actually make any sense. It does
+> 
+> 	if (sk_sleep(sock->sk)) {
+> 
+> and that sk_sleep() today is an inline function that just does
+> 
+> 	return &sk->sk_wq->wait;
+> 
+> and testing the result of an address-of operation for NULL is almost 
+> certainly totally non-sensical. Sure, it _might_ work (maybe 'wait' is the 
+> first element in the 'sk_wq' data structure, and sk_wq is NULL), but that 
+> kind of code is always total and utterl crap regardless.
+> 
+> So I pushed it out because I had done the resolve already, and it's no 
+> worse than it was before, but it's still a steaming buggy pile of shit.
+
+Yes, the problem was caused by this patch
+
+commit 43815482370c510c569fd18edb57afcb0fa8cab6
+Author: Eric Dumazet <eric.dumazet@gmail.com>
+Date:   Thu Apr 29 11:01:49 2010 +0000
+
+    net: sock_def_readable() and friends RCU conversion
+
+Which moved sk_sleep() from returning the pointer to the waitqueue,
+which may or may not be assigned to returning a pointer to an internal
+waitqueue in the socket, which, obviously, can never be null.
+
+I suspect what iscsi should be doing is always sending the wakeup ... in
+which case with your resolution, the code is operating correctly even if
+the form is suboptimal.
+
+> It being iscsi, I can't bring myself to care. But somebody who does, 
+> should really look at it. The most likely resolution is to remove the test 
+> entirely, since I don't think it's ever valid to have a socket that 
+> doesn't have a sk_wq (there's a _lot_ of unconditional use of sk_sleep()).
+
+I'll have Mike look at it, but I think just removing the if() will be
+the correct resolution.
+
+James
 
 
-cool..
-
-As for the problem with
-pcmcia, I've my machine ready to take anything
-but am in no real hurry with it(was more curious
-how 2.6.34 ran on the old beast of a machine).
-
-I'll go and send the bug report to Raphael
-so he can add it to the list of regressions,
-then down the line if something comes up
-I can test it out or something..
-
-Justin P. Mattock
