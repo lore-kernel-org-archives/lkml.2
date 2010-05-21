@@ -1,26 +1,26 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754607Ab0EULy7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 07:54:59 -0400
-Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:50056 "EHLO
-	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752896Ab0EULyz (ORCPT
+	id S1754522Ab0EUMD3 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 08:03:29 -0400
+Received: from ppsw-33.csi.cam.ac.uk ([131.111.8.133]:38448 "EHLO
+	ppsw-33.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752801Ab0EUMD0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 07:54:55 -0400
+	Fri, 21 May 2010 08:03:26 -0400
 X-Cam-AntiVirus: no malware found
 X-Cam-SpamDetails: not scanned
 X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
-Message-ID: <4BF6753B.60201@cam.ac.uk>
-Date: Fri, 21 May 2010 12:57:47 +0100
+Message-ID: <4BF6773A.2020803@cam.ac.uk>
+Date: Fri, 21 May 2010 13:06:18 +0100
 From: Jonathan Cameron <jic23@cam.ac.uk>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
 MIME-Version: 1.0
 To: Hemanth V <hemanthv@ti.com>
-CC: linux-input@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-omap@vger.kernel.org
-Subject: Re: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
-References: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
-In-Reply-To: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
+References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
+In-Reply-To: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
 X-Enigmail-Version: 1.0
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
@@ -28,240 +28,83 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/10 07:52, Hemanth V wrote:
+On 05/21/10 12:35, Hemanth V wrote:
 > From: Hemanth V <hemanthv@ti.com>
-> Date: Thu, 20 May 2010 20:18:17 +0530
-> Subject: [PATCH] input: CMA3000 Accelerometer Driver
+> Date: Fri, 21 May 2010 15:52:03 +0530
+> Subject: [PATCH] misc: ROHM BH1780GLI Ambient light sensor Driver
 > 
-> This patch adds support for CMA3000 Tri-axis accelerometer, which
-> supports Motion detect, Measurement and Free fall modes.
-> CMA3000 supports both I2C/SPI bus for communication, currently the
-> driver supports I2C based communication.
+> Corrected the mailing list, should be linux-kernel
 > 
-> Driver reports acceleration data through input subsystem and supports
-> sysfs for configuration changes.
+> This patch adds support for ROHM BH1780GLI Ambient light sensor.
 > 
-> This is V2 of patch, which fixes open source review comments
+> BH1780 supports I2C interface. Driver supports read/update of power state and
+> read of lux value (through SYSFS). Writing value 3 to power_state enables the
+> sensor and current lux value could be read.
+Only comment here is that lux is the unit, but what we are measuring is
+illuminance.  (see the whole debate that took place when working
+out the abi for the now defunct Ambient Light Sensors (ALS) frameowrk.)
+Hence I'd rather see the attribute being called illuminance.
+Acutally on that note, after the many abi debates, it probably makes sense
+to match hwmon conventions and call it, illuminance0_input.
+
+Nice simple driver.
+
+Up to you whether you change the attribute name.  I know there are various
+namings in other drivers as things currently stand.  That was what
+ALS was meant to clear up, but such is life.  We're standardising 
+in IIO on the above and will probably eat all the als drivers
+at somepoint given Linus isn't happy with them having their own subsystem.
+
+Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
 > 
-
-Hi,
-
-The driver is nice and clean.
-
-Still leaving aside the long argued question of whether this should be
-in input.  If you care for my views on that there are plenty or other
-threads! There are a few things I'd still like to suggest:
-
-Attribute naming:  The names you have gone with are way too short. The
-	  documentation helps, but if possible it is always nice to have
-	  names that are effectively human readable. 'mdfftmr' is rather
-	  cryptic!   Also I know you aren't trying to write a general
-	  interface here, but it would be nice if the units of these
-	  magic attributes were not dependant on the current mode.
-	  The snag here is that this is a user visible interface, so it
-	  is rather frowned upon to change it later.  I guess you could
-	  get away with adding some more attributes, say:   
-	  mdfftmr_scale (which could just be a string and hence floating point)
-
-Documentation: I'd have prefered to see the sysfs attributes documented
-	       in Documentation/abi/  (but that is just a matter of personal
-	       taste. I don't think there are any hard and fast rules on this
-	       yet)
-
-I'm still not keen on naming the files with a wild card. Also, if the d0x
-is relevant, why is this not reflected in Kconfig?
-
-The one thing that really bothers me is the setting of a precendent
-wrt to the attribute naming.
-
-What you have here won't generalise well, particularly wrt to controls
-relating to the on chip motion and free fall detectors.  We've been round
-the houses with this in IIO and I fully admit we still haven't gotten it
-right there.  The advantage on this stuff that we have is that, as we
-are in staging, we can mess around the userspace abi till we get it right.
-In mainline things are by convention much more rigid!
-
-Still it's a good driver and obviously some of the above issues are pretty
-general.
-
-To that end, having stated my reservations, you can add
-
-Reviewed-by: Jonathan Cameron <jic23@cam.ac.uk>
-
-(not ack as I'm indicating that whilst I think it is a worthwhile addition
-I'm not entirely happy with some aspects of the driver).
-
-
 > Signed-off-by: Hemanth V <hemanthv@ti.com>
-> Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 > ---
->  Documentation/input/cma3000_d0x.txt  |  112 ++++++
->  drivers/input/misc/Kconfig           |    7 +
->  drivers/input/misc/Makefile          |    1 +
->  drivers/input/misc/cma3000_d0x.c     |  633 ++++++++++++++++++++++++++++++++++
->  drivers/input/misc/cma3000_d0x.h     |   46 +++
->  drivers/input/misc/cma3000_d0x_i2c.c |  136 ++++++++
->  include/linux/i2c/cma3000.h          |   60 ++++
->  7 files changed, 995 insertions(+), 0 deletions(-)
->  create mode 100644 Documentation/input/cma3000_d0x.txt
->  create mode 100644 drivers/input/misc/cma3000_d0x.c
->  create mode 100644 drivers/input/misc/cma3000_d0x.h
->  create mode 100644 drivers/input/misc/cma3000_d0x_i2c.c
->  create mode 100644 include/linux/i2c/cma3000.h
+>  drivers/misc/Kconfig     |   11 ++
+>  drivers/misc/Makefile    |    1 +
+>  drivers/misc/bh1780gli.c |  278 ++++++++++++++++++++++++++++++++++++++++++++++
+>  3 files changed, 290 insertions(+), 0 deletions(-)
+>  create mode 100644 drivers/misc/bh1780gli.c
 > 
-> diff --git a/Documentation/input/cma3000_d0x.txt b/Documentation/input/cma3000_d0x.txt
-> new file mode 100644
-> index 0000000..29ab6b7
-> --- /dev/null
-> +++ b/Documentation/input/cma3000_d0x.txt
-> @@ -0,0 +1,112 @@
-> +Kernel driver for CMA3000-D0x
-> +============================
-> +
-> +Supported chips:
-> +* VTI CMA3000-D0x
-> +Datasheet:
-> +  CMA3000-D0X Product Family Specification 8281000A.02.pdf
-> +
-> +Author: Hemanth V <hemanthv@ti.com>
-> +
-> +
-> +Description
-> +-----------
-> +CMA3000 Tri-axis accelerometer supports Motion detect, Measurement and
-> +Free fall modes.
-> +
-> +Motion Detect Mode: Its the low power mode where interrupts are generated only
-> +when motion exceeds the defined thresholds.
-> +
-> +Measurement Mode: This mode is used to read the acceleration data on X,Y,Z
-> +axis and supports 400, 100, 40 Hz sample frequency.
-> +
-> +Free fall Mode: This mode is intented to save system resources.
-> +
-> +Threshold values: Chip supports defining threshold values for above modes
-> +which includes time and g value. Refer product specifications for more details.
-> +
-> +CMA3000 supports both I2C/SPI bus for communication, currently the driver
-> +supports I2C based communication.
-> +
-> +Driver reports acceleration data through input subsystem and supports sysfs
-> +for configuration changes. It generates ABS_MISC event with value 1 when
-> +free fall is detected.
-> +
-> +Platform data need to be configured for initial default values.
-> +
-> +Platform Data
-> +-------------
-> +fuzz_x: Noise on X Axis
-> +
-> +fuzz_y: Noise on Y Axis
-> +
-> +fuzz_z: Noise on Z Axis
-> +
-> +g_range: G range in milli g i.e 2000 or 8000
-> +
-> +mode: Default Operating mode
-> +
-> +mdthr: Motion detect threshold value
-> +
-> +mdfftmr: Motion detect and free fall time value
-> +
-> +ffthr: Free fall threshold value
-> +
-> +Input Interface
-> +--------------
-> +Input driver version is 1.0.0
-> +Input device ID: bus 0x18 vendor 0x0 product 0x0 version 0x0
-> +Input device name: "cma3000-acclerometer"
-> +Supported events:
-> +  Event type 0 (Sync)
-> +  Event type 3 (Absolute)
-> +    Event code 0 (X)
-> +      Value     47
-> +      Min    -8000
-> +      Max     8000
-> +      Fuzz     200
-> +    Event code 1 (Y)
-> +      Value    -28
-> +      Min    -8000
-> +      Max     8000
-> +      Fuzz     200
-> +    Event code 2 (Z)
-> +      Value    905
-> +      Min    -8000
-> +      Max     8000
-> +      Fuzz     200
-> +    Event code 40 (Misc)
-> +      Value      0
-> +      Min        0
-> +      Max        1
-> +  Event type 4 (Misc)
-> +
-> +Sysfs entries
-> +-------------
-> +
-> +mode:
-> +	0: power down mode
-> +	1: 100 Hz Measurement mode
-> +	2: 400 Hz Measurement mode
-> +	3: 40 Hz Measurement mode
-> +	4: Motion Detect mode (default)
-> +	5: 100 Hz Free fall mode
-> +	6: 40 Hz Free fall mode
-> +	7: Power off mode
-> +
-> +grange:
-> +	2000: 2000 mg or 2G Range
-> +	8000: 8000 mg or 8G Range
-> +
-> +mdthr:
-> +	X: X * 71mg (8G Range)
-> +	X: X * 18mg (2G Range)
-> +
-> +mdfftmr:
-> +	X: (X & 0x70) * 100 ms (MDTMR)
-> +	   (X & 0x0F) * 2.5 ms (FFTMR 400 Hz)
-> +	   (X & 0x0F) * 10 ms  (FFTMR 100 Hz)
-> +
-> +ffthr:
-> +       X: (X >> 2) * 18mg (2G Range)
-> +       X: (X & 0x0F) * 71 mg (8G Range)
-> diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
-> index 1cf25ee..043ee8d 100755
-> --- a/drivers/input/misc/Kconfig
-> +++ b/drivers/input/misc/Kconfig
-> @@ -340,4 +340,11 @@
->  	  To compile this driver as a module, choose M here: the
->  	  module will be called pcap_keys.
+> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+> index 0d0d625..0687a0c 100644
+> --- a/drivers/misc/Kconfig
+> +++ b/drivers/misc/Kconfig
+> @@ -278,6 +278,17 @@ config SENSORS_TSL2550
+>  	  This driver can also be built as a module.  If so, the module
+>  	  will be called tsl2550.
 > 
-> +config INPUT_CMA3000_I2C
-> +	bool "VTI CMA3000 Tri-axis accelerometer"
+> +config SENSORS_BH1780
+> +	tristate "ROHM BH1780GLI ambient light sensor"
 > +	depends on I2C && SYSFS
 > +	help
-> +	  Say Y here if you want to use VTI CMA3000 Accelerometer
-> +	  through I2C interface.
+> +	  If you say yes here you get support for the ROHM BH1780GLI
+> +	  ambient light sensor.
 > +
->  endif
-> diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
-> index 07ee237..011161d 100644
-> --- a/drivers/input/misc/Makefile
-> +++ b/drivers/input/misc/Makefile
-> @@ -32,3 +32,4 @@
->  obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
->  obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
->  obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
-> +obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x.o cma3000_d0x_i2c.o
-> diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+> +	  This driver can also be built as a module.  If so, the module
+> +	  will be called bh1780gli.
+> +
+> +
+>  config EP93XX_PWM
+>  	tristate "EP93xx PWM support"
+>  	depends on ARCH_EP93XX
+> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+> index 7b6f7ee..c479d91 100644
+> --- a/drivers/misc/Makefile
+> +++ b/drivers/misc/Makefile
+> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+>  obj-y				+= eeprom/
+>  obj-y				+= cb710/
+>  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+> +obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
+> diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
 > new file mode 100644
-> index 0000000..812c464
+> index 0000000..9b4137d
 > --- /dev/null
-> +++ b/drivers/input/misc/cma3000_d0x.c
-> @@ -0,0 +1,633 @@
+> +++ b/drivers/misc/bh1780gli.c
+> @@ -0,0 +1,278 @@
 > +/*
-> + * cma3000_d0x.c
-> + * VTI CMA3000_D0x Accelerometer driver
-> + *	Supports I2C/SPI interfaces
+> + * bh1780gli.c
+> + * ROHM Ambient Light Sensor Driver
 > + *
 > + * Copyright (C) 2010 Texas Instruments
 > + * Author: Hemanth V <hemanthv@ti.com>
@@ -278,279 +121,93 @@ I'm not entirely happy with some aspects of the driver).
 > + * You should have received a copy of the GNU General Public License along with
 > + * this program.  If not, see <http://www.gnu.org/licenses/>.
 > + */
-> +
-> +#include <linux/interrupt.h>
-> +#include <linux/delay.h>
-> +#include <linux/input.h>
+> +#include <linux/i2c.h>
+> +#include <linux/slab.h>
+> +#include <linux/mutex.h>
 > +#include <linux/platform_device.h>
-> +#include <linux/i2c/cma3000.h>
+> +#include <linux/delay.h>
 > +
-> +#include "cma3000_d0x.h"
+> +#define BH1780_REG_CONTROL     0x80
+> +#define BH1780_REG_PARTID      0x8A
+> +#define BH1780_REG_MANFID      0x8B
+> +#define BH1780_REG_DLOW        0x8C
+> +#define BH1780_REG_DHIGH       0x8D
 > +
-> +#define CMA3000_WHOAMI      0x00
-> +#define CMA3000_REVID       0x01
-> +#define CMA3000_CTRL        0x02
-> +#define CMA3000_STATUS      0x03
-> +#define CMA3000_RSTR        0x04
-> +#define CMA3000_INTSTATUS   0x05
-> +#define CMA3000_DOUTX       0x06
-> +#define CMA3000_DOUTY       0x07
-> +#define CMA3000_DOUTZ       0x08
-> +#define CMA3000_MDTHR       0x09
-> +#define CMA3000_MDFFTMR     0x0A
-> +#define CMA3000_FFTHR       0x0B
+> +#define BH1780_REVMASK        (0xf)
+> +#define BH1780_POWMASK        (0x3)
+> +#define BH1780_POFF	      (0x0)
+> +#define BH1780_PON            (0x3)
 > +
-> +#define CMA3000_RANGE2G    (1 << 7)
-> +#define CMA3000_RANGE8G    (0 << 7)
-> +#define CMA3000_BUSI2C     (0 << 4)
-> +#define CMA3000_MODEMASK   (7 << 1)
-> +#define CMA3000_GRANGEMASK (1 << 7)
+> +/* power on settling time in ms */
+> +#define BH1780_PON_DELAY      2
 > +
-> +#define CMA3000_STATUS_PERR    1
-> +#define CMA3000_INTSTATUS_FFDET (1 << 2)
-> +
-> +/* Settling time delay in ms */
-> +#define CMA3000_SETDELAY    30
-> +
-> +/* Delay for clearing interrupt in us */
-> +#define CMA3000_INTDELAY    44
-> +
-> +
-> +/*
-> + * Bit weights in mg for bit 0, other bits need
-> + * multipy factor 2^n. Eight bit is the sign bit.
-> + */
-> +#define BIT_TO_2G  18
-> +#define BIT_TO_8G  71
-> +
-> +/*
-> + * Conversion for each of the eight modes to g, depending
-> + * on G range i.e 2G or 8G. Some modes always operate in
-> + * 8G.
-> + */
-> +
-> +static int mode_to_mg[8][2] = {
-> +	{0, 0},
-> +	{BIT_TO_8G, BIT_TO_2G},
-> +	{BIT_TO_8G, BIT_TO_2G},
-> +	{BIT_TO_8G, BIT_TO_8G},
-> +	{BIT_TO_8G, BIT_TO_8G},
-> +	{BIT_TO_8G, BIT_TO_2G},
-> +	{BIT_TO_8G, BIT_TO_2G},
-> +	{0, 0},
+> +struct bh1780_data {
+> +	struct i2c_client *client;
+> +	int power_state;
+> +	/* lock for sysfs operations */
+> +	struct mutex lock;
 > +};
 > +
-> +static ssize_t cma3000_show_attr_mode(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     char *buf)
+> +int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
 > +{
-> +	uint8_t mode;
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +
-> +	mode = cma3000_read(data, CMA3000_CTRL, "ctrl");
-> +	if (mode < 0)
-> +		return mode;
-> +
-> +	return sprintf(buf, "%d\n", (mode & CMA3000_MODEMASK) >> 1);
+> +	int ret = i2c_smbus_write_byte_data(ddata->client, reg, val);
+> +	if (ret < 0)
+> +		dev_err(&ddata->client->dev,
+> +			"i2c_smbus_write_byte_data failed error %d\
+> +			Register (%s)\n", ret, msg);
+> +	return ret;
 > +}
 > +
-> +static ssize_t cma3000_store_attr_mode(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
+> +int bh1780_read(struct bh1780_data *ddata, u8 reg, char *msg)
 > +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +	unsigned long val;
-> +	int error;
-> +	uint8_t ctrl;
-> +
-> +	error = strict_strtoul(buf, 0, &val);
-> +	if (error)
-> +		goto err_op3_failed;
-> +
-> +	if (val < CMAMODE_DEFAULT || val > CMAMODE_POFF) {
-> +		error = -EINVAL;
-> +		goto err_op3_failed;
-> +	}
-> +
-> +	mutex_lock(&data->mutex);
-> +	val &= (CMA3000_MODEMASK >> 1);
-> +	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
-> +	if (ctrl < 0) {
-> +		error = ctrl;
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	ctrl &= ~CMA3000_MODEMASK;
-> +	ctrl |= (val << 1);
-> +	data->pdata.mode = val;
-> +	disable_irq(data->client->irq);
-> +
-> +	error = cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
-> +	if (error < 0)
-> +		goto err_op1_failed;
-> +
-> +	/* Settling time delay required after mode change */
-> +	msleep(CMA3000_SETDELAY);
-> +
-> +	enable_irq(data->client->irq);
-> +	mutex_unlock(&data->mutex);
-> +	return count;
-> +
-> +err_op1_failed:
-> +	enable_irq(data->client->irq);
-> +err_op2_failed:
-> +	mutex_unlock(&data->mutex);
-> +err_op3_failed:
-> +	return error;
+> +	int ret = i2c_smbus_read_byte_data(ddata->client, reg);
+> +	if (ret < 0)
+> +		dev_err(&ddata->client->dev,
+> +			"i2c_smbus_read_byte_data failed error %d\
+> +			 Register (%s)\n", ret, msg);
+> +	return ret;
 > +}
 > +
-> +static ssize_t cma3000_show_attr_grange(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       char *buf)
+> +static ssize_t bh1780_show_lux(struct device *dev,
+> +				struct device_attribute *attr, char *buf)
 > +{
-> +	uint8_t mode;
-> +	int g_range;
 > +
 > +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
+> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
+> +	int lsb, msb;
 > +
-> +	mode = cma3000_read(data, CMA3000_CTRL, "ctrl");
-> +	if (mode < 0)
-> +		return mode;
+> +	lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
+> +	if (lsb < 0)
+> +		return lsb;
 > +
-> +	g_range = (mode & CMA3000_GRANGEMASK) ? CMARANGE_2G : CMARANGE_8G;
-> +	return sprintf(buf, "%d\n", g_range);
+> +	msb = bh1780_read(ddata, BH1780_REG_DHIGH, "DHIGH");
+> +	if (msb < 0)
+> +		return msb;
+> +
+> +	return sprintf(buf, "%d\n", (msb << 8) | lsb);
 > +}
 > +
-> +static ssize_t cma3000_store_attr_grange(struct device *dev,
-> +				     struct device_attribute *attr,
-> +				     const char *buf, size_t count)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +	unsigned long val;
-> +	int error, g_range, fuzz_x, fuzz_y, fuzz_z;
-> +	uint8_t ctrl;
-> +
-> +	error = strict_strtoul(buf, 0, &val);
-> +	if (error)
-> +		goto err_op3_failed;
-> +
-> +	mutex_lock(&data->mutex);
-> +	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
-> +	if (ctrl < 0) {
-> +		error = ctrl;
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	ctrl &= ~CMA3000_GRANGEMASK;
-> +
-> +	if (val == CMARANGE_2G) {
-> +		ctrl |= CMA3000_RANGE2G;
-> +		data->pdata.g_range = CMARANGE_2G;
-> +	} else if (val == CMARANGE_8G) {
-> +		ctrl |= CMA3000_RANGE8G;
-> +		data->pdata.g_range = CMARANGE_8G;
-> +	} else {
-> +		error = -EINVAL;
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	g_range = data->pdata.g_range;
-> +	fuzz_x = data->pdata.fuzz_x;
-> +	fuzz_y = data->pdata.fuzz_y;
-> +	fuzz_z = data->pdata.fuzz_z;
-> +
-> +	disable_irq(data->client->irq);
-> +	error = cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
-> +	if (error < 0)
-> +		goto err_op1_failed;
-> +
-> +	input_set_abs_params(data->input_dev, ABS_X, -g_range,
-> +				g_range, fuzz_x, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Y, -g_range,
-> +				g_range, fuzz_y, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Z, -g_range,
-> +				g_range, fuzz_z, 0);
-> +
-> +	enable_irq(data->client->irq);
-> +	mutex_unlock(&data->mutex);
-> +	return count;
-> +
-> +err_op1_failed:
-> +	enable_irq(data->client->irq);
-> +err_op2_failed:
-> +	mutex_unlock(&data->mutex);
-> +err_op3_failed:
-> +	return error;
-> +}
-> +
-> +static ssize_t cma3000_show_attr_mdthr(struct device *dev,
-> +				      struct device_attribute *attr,
-> +				      char *buf)
-> +{
-> +	uint8_t mode;
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +
-> +	mode = cma3000_read(data, CMA3000_MDTHR, "mdthr");
-> +	if (mode < 0)
-> +		return mode;
-> +
-> +	return sprintf(buf, "%d\n", mode);
-> +}
-> +
-> +static ssize_t cma3000_store_attr_mdthr(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       const char *buf, size_t count)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +	unsigned long val;
-> +	int error;
-> +
-> +	error = strict_strtoul(buf, 0, &val);
-> +	if (error)
-> +		return error;
-> +
-> +	mutex_lock(&data->mutex);
-> +	data->pdata.mdthr = val;
-> +	disable_irq(data->client->irq);
-> +	error = cma3000_set(data, CMA3000_MDTHR, val, "mdthr");
-> +	enable_irq(data->client->irq);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	/* If there was error during write, return error */
-> +	if (error < 0)
-> +		return error;
-> +	else
-> +		return count;
-> +}
-> +
-> +static ssize_t cma3000_show_attr_mdfftmr(struct device *dev,
+> +static ssize_t bh1780_show_power_state(struct device *dev,
 > +					struct device_attribute *attr,
 > +					char *buf)
 > +{
-> +	uint8_t mode;
-> +
 > +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
+> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
+> +	int state;
 > +
-> +	mode = cma3000_read(data, CMA3000_MDFFTMR, "mdfftmr");
-> +	if (mode < 0)
-> +		return mode;
+> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
+> +	if (state < 0)
+> +		return state;
 > +
-> +	return sprintf(buf, "%d\n", mode);
+> +	return sprintf(buf, "%d\n", state & BH1780_POWMASK);
 > +}
 > +
-> +static ssize_t cma3000_store_attr_mdfftmr(struct device *dev,
+> +static ssize_t bh1780_store_power_state(struct device *dev,
 > +					struct device_attribute *attr,
 > +					const char *buf, size_t count)
 > +{
 > +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
+> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
 > +	unsigned long val;
 > +	int error;
 > +
@@ -558,597 +215,169 @@ I'm not entirely happy with some aspects of the driver).
 > +	if (error)
 > +		return error;
 > +
-> +	mutex_lock(&data->mutex);
-> +	data->pdata.mdfftmr = val;
-> +	disable_irq(data->client->irq);
-> +	error = cma3000_set(data, CMA3000_MDFFTMR, val, "mdthr");
-> +	enable_irq(data->client->irq);
-> +	mutex_unlock(&data->mutex);
+> +	if (val < BH1780_POFF || val > BH1780_PON)
+> +		return -EINVAL;
 > +
-> +	/* If there was error during write, return error */
-> +	if (error < 0)
+> +	mutex_lock(&ddata->lock);
+> +
+> +	error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
+> +	if (error < 0) {
+> +		mutex_unlock(&ddata->lock);
 > +		return error;
-> +	else
-> +		return count;
+> +	}
+> +
+> +	msleep(BH1780_PON_DELAY);
+> +	ddata->power_state = val;
+> +	mutex_unlock(&ddata->lock);
+> +	return count;
+> +
 > +}
 > +
-> +static ssize_t cma3000_show_attr_ffthr(struct device *dev,
-> +					struct device_attribute *attr,
-> +					char *buf)
-> +{
-> +	uint8_t mode;
+> +static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
 > +
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
+> +static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
+> +		bh1780_show_power_state, bh1780_store_power_state);
 > +
-> +	mode = cma3000_read(data, CMA3000_FFTHR, "ffthr");
-> +	if (mode < 0)
-> +		return mode;
-> +
-> +	return sprintf(buf, "%d\n", mode);
-> +}
-> +
-> +static ssize_t cma3000_store_attr_ffthr(struct device *dev,
-> +				       struct device_attribute *attr,
-> +				       const char *buf, size_t count)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
-> +	unsigned long val;
-> +	int error;
-> +
-> +	error = strict_strtoul(buf, 0, &val);
-> +	if (error)
-> +		return error;
-> +
-> +	mutex_lock(&data->mutex);
-> +	data->pdata.ffthr = val;
-> +	disable_irq(data->client->irq);
-> +	error = cma3000_set(data, CMA3000_FFTHR, val, "mdthr");
-> +	enable_irq(data->client->irq);
-> +	mutex_unlock(&data->mutex);
-> +
-> +	/* If there was error during write, return error */
-> +	if (error < 0)
-> +		return error;
-> +	else
-> +		return count;
-> +}
-> +
-> +static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO,
-> +		cma3000_show_attr_mode, cma3000_store_attr_mode);
-> +
-> +static DEVICE_ATTR(grange, S_IWUSR | S_IRUGO,
-> +		cma3000_show_attr_grange, cma3000_store_attr_grange);
-> +
-> +static DEVICE_ATTR(mdthr, S_IWUSR | S_IRUGO,
-> +		cma3000_show_attr_mdthr, cma3000_store_attr_mdthr);
-> +
-> +static DEVICE_ATTR(mdfftmr, S_IWUSR | S_IRUGO,
-> +		cma3000_show_attr_mdfftmr, cma3000_store_attr_mdfftmr);
-> +
-> +static DEVICE_ATTR(ffthr, S_IWUSR | S_IRUGO,
-> +		cma3000_show_attr_ffthr, cma3000_store_attr_ffthr);
-> +
-> +
-> +static struct attribute *cma_attrs[] = {
-> +	&dev_attr_mode.attr,
-> +	&dev_attr_grange.attr,
-> +	&dev_attr_mdthr.attr,
-> +	&dev_attr_mdfftmr.attr,
-> +	&dev_attr_ffthr.attr,
-> +	NULL,
+> +static struct attribute *bh1780_attributes[] = {
+> +	&dev_attr_power_state.attr,
+> +	&dev_attr_lux.attr,
+> +	NULL
 > +};
 > +
-> +static struct attribute_group cma3000_attr_group = {
-> +	.attrs = cma_attrs,
+> +static const struct attribute_group bh1780_attr_group = {
+> +	.attrs = bh1780_attributes,
 > +};
 > +
-> +static void decode_mg(struct cma3000_accl_data *data, int *datax,
-> +				int *datay, int *dataz)
-> +{
-> +	/* Data in 2's complement, convert to mg */
-> +	*datax = (((s8)(*datax)) * (data->bit_to_mg));
-> +	*datay = (((s8)(*datay)) * (data->bit_to_mg));
-> +	*dataz = (((s8)(*dataz)) * (data->bit_to_mg));
-> +}
-> +
-> +static irqreturn_t cma3000_thread_irq(int irq, void *dev_id)
-> +{
-> +	struct cma3000_accl_data *data = dev_id;
-> +	int  datax, datay, dataz;
-> +	u8 ctrl, mode, range, intr_status;
-> +
-> +	intr_status = cma3000_read(data, CMA3000_INTSTATUS, "interrupt status");
-> +	if (intr_status < 0)
-> +		return IRQ_NONE;
-> +
-> +	/* Check if free fall is detected, report immediately */
-> +	if (intr_status & CMA3000_INTSTATUS_FFDET) {
-> +		input_report_abs(data->input_dev, ABS_MISC, 1);
-> +		input_sync(data->input_dev);
-> +	} else {
-> +		input_report_abs(data->input_dev, ABS_MISC, 0);
-> +	}
-> +
-> +	datax = cma3000_read(data, CMA3000_DOUTX, "X");
-> +	datay = cma3000_read(data, CMA3000_DOUTY, "Y");
-> +	dataz = cma3000_read(data, CMA3000_DOUTZ, "Z");
-> +
-> +	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
-> +	mode = (ctrl & CMA3000_MODEMASK) >> 1;
-> +	range = (ctrl & CMA3000_GRANGEMASK) >> 7;
-> +
-> +	data->bit_to_mg = mode_to_mg[mode][range];
-> +
-> +	/* Interrupt not for this device */
-> +	if (data->bit_to_mg == 0)
-> +		return IRQ_NONE;
-> +
-> +	/* Decode register values to milli g */
-> +	decode_mg(data, &datax, &datay, &dataz);
-> +
-> +	input_report_abs(data->input_dev, ABS_X, datax);
-> +	input_report_abs(data->input_dev, ABS_Y, datay);
-> +	input_report_abs(data->input_dev, ABS_Z, dataz);
-> +	input_sync(data->input_dev);
-> +
-> +	return IRQ_HANDLED;
-> +}
-> +
-> +static int cma3000_reset(struct cma3000_accl_data *data)
+> +static int __devinit bh1780_probe(struct i2c_client *client,
+> +						const struct i2c_device_id *id)
 > +{
 > +	int ret;
+> +	struct bh1780_data *ddata = NULL;
+> +	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
 > +
-> +	/* Reset sequence */
-> +	cma3000_set(data, CMA3000_RSTR, 0x02, "Reset");
-> +	cma3000_set(data, CMA3000_RSTR, 0x0A, "Reset");
-> +	cma3000_set(data, CMA3000_RSTR, 0x04, "Reset");
-> +
-> +	/* Settling time delay */
-> +	mdelay(10);
-> +
-> +	ret = cma3000_read(data, CMA3000_STATUS, "Status");
-> +	if (ret < 0) {
-> +		dev_err(&data->client->dev, "Reset failed\n");
-> +		return ret;
-> +	} else if (ret & CMA3000_STATUS_PERR) {
-> +		dev_err(&data->client->dev, "Parity Error\n");
-> +		return -EIO;
-> +	} else {
-> +		return 0;
-> +	}
-> +}
-> +
-> +int cma3000_poweron(struct cma3000_accl_data *data)
-> +{
-> +	uint8_t ctrl = 0, mdthr, mdfftmr, ffthr, mode;
-> +	int g_range, ret;
-> +
-> +	g_range = data->pdata.g_range;
-> +	mode = data->pdata.mode;
-> +	mdthr = data->pdata.mdthr;
-> +	mdfftmr = data->pdata.mdfftmr;
-> +	ffthr = data->pdata.ffthr;
-> +
-> +	if (mode < CMAMODE_DEFAULT || mode > CMAMODE_POFF) {
-> +		data->pdata.mode = CMAMODE_MOTDET;
-> +		mode = data->pdata.mode;
-> +		dev_info(&data->client->dev,
-> +			"Invalid mode specified, assuming Motion Detect\n");
+> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
+> +		ret = -EIO;
+> +		goto err_op_failed;
 > +	}
 > +
-> +	if (g_range == CMARANGE_2G) {
-> +		ctrl = (mode << 1) | CMA3000_RANGE2G;
-> +	} else if (g_range == CMARANGE_8G) {
-> +		ctrl = (mode << 1) | CMA3000_RANGE8G;
-> +	} else {
-> +		dev_info(&data->client->dev,
-> +			"Invalid G range specified, assuming 8G\n");
-> +		ctrl = (mode << 1) | CMA3000_RANGE8G;
-> +		data->pdata.g_range = CMARANGE_8G;
-> +	}
-> +#ifdef CONFIG_INPUT_CMA3000_I2C
-> +	ctrl |= CMA3000_BUSI2C;
-> +#endif
-> +
-> +	cma3000_set(data, CMA3000_MDTHR, mdthr, "Motion Detect Threshold");
-> +	cma3000_set(data, CMA3000_MDFFTMR, mdfftmr, "Time register");
-> +	cma3000_set(data, CMA3000_FFTHR, ffthr, "Free fall threshold");
-> +	ret = cma3000_set(data, CMA3000_CTRL, ctrl, "Mode setting");
-> +	if (ret < 0)
-> +		return -EIO;
-> +
-> +	mdelay(CMA3000_SETDELAY);
-> +
-> +	return 0;
-> +}
-> +
-> +int cma3000_poweroff(struct cma3000_accl_data *data)
-> +{
-> +	int ret;
-> +
-> +	ret = cma3000_set(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
-> +	mdelay(CMA3000_SETDELAY);
-> +
-> +	return ret;
-> +}
-> +
-> +int cma3000_init(struct cma3000_accl_data *data)
-> +{
-> +	int ret = 0, fuzz_x, fuzz_y, fuzz_z, g_range;
-> +	uint32_t irqflags;
-> +
-> +	if (data->client->dev.platform_data == NULL) {
-> +		dev_err(&data->client->dev, "platform data not found\n");
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	memcpy(&(data->pdata), data->client->dev.platform_data,
-> +		sizeof(struct cma3000_platform_data));
-> +
-> +	ret = cma3000_reset(data);
-> +	if (ret)
-> +		goto err_op2_failed;
-> +
-> +	ret = cma3000_read(data, CMA3000_REVID, "Revid");
-> +	if (ret < 0)
-> +		goto err_op2_failed;
-> +
-> +	pr_info("CMA3000 Acclerometer : Revision %x\n", ret);
-> +
-> +	/* Bring it out of default power down state */
-> +	ret = cma3000_poweron(data);
-> +	if (ret < 0)
-> +		goto err_op2_failed;
-> +
-> +	fuzz_x = data->pdata.fuzz_x;
-> +	fuzz_y = data->pdata.fuzz_y;
-> +	fuzz_z = data->pdata.fuzz_z;
-> +	g_range = data->pdata.g_range;
-> +	irqflags = data->pdata.irqflags;
-> +
-> +	data->input_dev = input_allocate_device();
-> +	if (data->input_dev == NULL) {
-> +		ret = -ENOMEM;
-> +		dev_err(&data->client->dev,
-> +			"Failed to allocate input device\n");
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	data->input_dev->name = "cma3000-acclerometer";
-> +
-> +#ifdef CONFIG_INPUT_CMA3000_I2C
-> +	data->input_dev->id.bustype = BUS_I2C;
-> +#endif
-> +
-> +	 __set_bit(EV_ABS, data->input_dev->evbit);
-> +	 __set_bit(EV_MSC, data->input_dev->evbit);
-> +
-> +	input_set_abs_params(data->input_dev, ABS_X, -g_range,
-> +				g_range, fuzz_x, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Y, -g_range,
-> +				g_range, fuzz_y, 0);
-> +	input_set_abs_params(data->input_dev, ABS_Z, -g_range,
-> +				g_range, fuzz_z, 0);
-> +	input_set_abs_params(data->input_dev, ABS_MISC, 0,
-> +				1, 0, 0);
-> +
-> +	ret = input_register_device(data->input_dev);
-> +	if (ret) {
-> +		dev_err(&data->client->dev,
-> +			"Unable to register input device\n");
-> +		goto err_op2_failed;
-> +	}
-> +
-> +	mutex_init(&data->mutex);
-> +
-> +	if (data->client->irq) {
-> +		ret = request_threaded_irq(data->client->irq, NULL,
-> +					cma3000_thread_irq,
-> +					irqflags | IRQF_ONESHOT,
-> +					data->client->name, data);
-> +
-> +		if (ret < 0) {
-> +			dev_err(&data->client->dev,
-> +				"request_threaded_irq failed\n");
-> +			goto err_op1_failed;
-> +		}
-> +	}
-> +
-> +	ret = sysfs_create_group(&data->client->dev.kobj, &cma3000_attr_group);
-> +	if (ret) {
-> +		dev_err(&data->client->dev,
-> +			"failed to create sysfs entries\n");
-> +		goto err_op1_failed;
-> +	}
-> +	return 0;
-> +
-> +err_op1_failed:
-> +	mutex_destroy(&data->mutex);
-> +	input_unregister_device(data->input_dev);
-> +err_op2_failed:
-> +	if (data != NULL) {
-> +		if (data->input_dev != NULL)
-> +			input_free_device(data->input_dev);
-> +	}
-> +
-> +	return ret;
-> +}
-> +
-> +int cma3000_exit(struct cma3000_accl_data *data)
-> +{
-> +	int ret;
-> +
-> +	ret = cma3000_poweroff(data);
-> +
-> +	if (data->client->irq)
-> +		free_irq(data->client->irq, data);
-> +
-> +	mutex_destroy(&data->mutex);
-> +	input_unregister_device(data->input_dev);
-> +	input_free_device(data->input_dev);
-> +	sysfs_remove_group(&data->client->dev.kobj, &cma3000_attr_group);
-> +	return ret;
-> +}
-> diff --git a/drivers/input/misc/cma3000_d0x.h b/drivers/input/misc/cma3000_d0x.h
-> new file mode 100644
-> index 0000000..12a8faf
-> --- /dev/null
-> +++ b/drivers/input/misc/cma3000_d0x.h
-> @@ -0,0 +1,46 @@
-> +/*
-> + * cma3000_d0x.h
-> + * VTI CMA3000_D0x Accelerometer driver
-> + *
-> + * Copyright (C) 2010 Texas Instruments
-> + * Author: Hemanth V <hemanthv@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef INPUT_CMA3000_H
-> +#define INPUT_CMA3000_H
-> +
-> +#include <linux/i2c.h>
-> +#include <linux/input.h>
-> +
-> +struct cma3000_accl_data {
-> +#ifdef CONFIG_INPUT_CMA3000_I2C
-> +	struct i2c_client *client;
-> +#endif
-> +	struct input_dev *input_dev;
-> +	struct cma3000_platform_data pdata;
-> +
-> +	/* mutex for sysfs operations */
-> +	struct mutex mutex;
-> +	int bit_to_mg;
-> +};
-> +
-> +int cma3000_set(struct cma3000_accl_data *, u8, u8, char *);
-> +int cma3000_read(struct cma3000_accl_data *, u8, char *);
-> +int cma3000_init(struct cma3000_accl_data *);
-> +int cma3000_exit(struct cma3000_accl_data *);
-> +int cma3000_poweron(struct cma3000_accl_data *);
-> +int cma3000_poweroff(struct cma3000_accl_data *);
-> +
-> +#endif
-> diff --git a/drivers/input/misc/cma3000_d0x_i2c.c b/drivers/input/misc/cma3000_d0x_i2c.c
-> new file mode 100644
-> index 0000000..41f845c
-> --- /dev/null
-> +++ b/drivers/input/misc/cma3000_d0x_i2c.c
-> @@ -0,0 +1,136 @@
-> +/*
-> + * cma3000_d0x_i2c.c
-> + *
-> + * Implements I2C interface for VTI CMA300_D0x Accelerometer driver
-> + *
-> + * Copyright (C) 2010 Texas Instruments
-> + * Author: Hemanth V <hemanthv@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#include <linux/module.h>
-> +#include <linux/slab.h>
-> +#include <linux/i2c.h>
-> +#include <linux/i2c/cma3000.h>
-> +#include "cma3000_d0x.h"
-> +
-> +int cma3000_set(struct cma3000_accl_data *accl, u8 reg, u8 val, char *msg)
-> +{
-> +	int ret = i2c_smbus_write_byte_data(accl->client, reg, val);
-> +	if (ret < 0)
-> +		dev_err(&accl->client->dev,
-> +			"i2c_smbus_write_byte_data failed (%s)\n", msg);
-> +	return ret;
-> +}
-> +
-> +int cma3000_read(struct cma3000_accl_data *accl, u8 reg, char *msg)
-> +{
-> +	int ret = i2c_smbus_read_byte_data(accl->client, reg);
-> +	if (ret < 0)
-> +		dev_err(&accl->client->dev,
-> +			"i2c_smbus_read_byte_data failed (%s)\n", msg);
-> +	return ret;
-> +}
-> +
-> +static int __devinit cma3000_accl_probe(struct i2c_client *client,
-> +					const struct i2c_device_id *id)
-> +{
-> +	int ret;
-> +	struct cma3000_accl_data *data = NULL;
-> +
-> +	data = kzalloc(sizeof(*data), GFP_KERNEL);
-> +	if (data == NULL) {
+> +	ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
+> +	if (ddata == NULL) {
 > +		ret = -ENOMEM;
 > +		goto err_op_failed;
 > +	}
 > +
-> +	data->client = client;
-> +	i2c_set_clientdata(client, data);
+> +	ddata->client = client;
+> +	i2c_set_clientdata(client, ddata);
 > +
-> +	ret = cma3000_init(data);
+> +	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
+> +	if (ret < 0)
+> +		goto err_op_failed;
+> +
+> +	dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
+> +			(ret & BH1780_REVMASK));
+> +
+> +	mutex_init(&ddata->lock);
+> +
+> +	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
 > +	if (ret)
 > +		goto err_op_failed;
 > +
 > +	return 0;
 > +
 > +err_op_failed:
-> +
-> +	if (data != NULL)
-> +		kfree(data);
+> +	if (ddata != NULL)
+> +		kfree(ddata);
 > +
 > +	return ret;
 > +}
 > +
-> +static int __devexit cma3000_accl_remove(struct i2c_client *client)
+> +static int __devexit bh1780_remove(struct i2c_client *client)
 > +{
-> +	struct cma3000_accl_data *data = i2c_get_clientdata(client);
-> +	int ret;
+> +	struct bh1780_data *ddata;
 > +
-> +	ret = cma3000_exit(data);
-> +	i2c_set_clientdata(client, NULL);
-> +	kfree(data);
+> +	ddata = i2c_get_clientdata(client);
+> +	sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
 > +
-> +	return ret;
+> +	if (ddata != NULL) {
+> +		i2c_set_clientdata(client, NULL);
+> +		kfree(ddata);
+> +	}
+> +
+> +	return 0;
 > +}
 > +
 > +#ifdef CONFIG_PM
-> +static int cma3000_accl_suspend(struct i2c_client *client, pm_message_t mesg)
+> +static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
 > +{
-> +	struct cma3000_accl_data *data = i2c_get_clientdata(client);
+> +	struct bh1780_data *ddata;
+> +	int state, ret;
 > +
-> +	return cma3000_poweroff(data);
+> +	ddata = i2c_get_clientdata(client);
+> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
+> +	if (state < 0)
+> +		return state;
+> +
+> +	ddata->power_state = state & BH1780_POWMASK;
+> +
+> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
+> +				"CONTROL");
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
 > +}
 > +
-> +static int cma3000_accl_resume(struct i2c_client *client)
+> +static int bh1780_resume(struct i2c_client *client)
 > +{
-> +	struct cma3000_accl_data *data = i2c_get_clientdata(client);
+> +	struct bh1780_data *ddata;
+> +	int state, ret;
 > +
-> +	return cma3000_poweron(data);
+> +	ddata = i2c_get_clientdata(client);
+> +	state = ddata->power_state;
+> +
+> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
+> +				"CONTROL");
+> +
+> +	if (ret < 0)
+> +		return ret;
+> +
+> +	return 0;
 > +}
 > +#endif
 > +
-> +static const struct i2c_device_id cma3000_id[] = {
-> +	{ "cma3000_accl", 0 },
+> +static const struct i2c_device_id bh1780_id[] = {
+> +	{ "bh1780", 0 },
 > +	{ },
 > +};
 > +
-> +static struct i2c_driver cma3000_accl_driver = {
-> +	.probe		= cma3000_accl_probe,
-> +	.remove		= cma3000_accl_remove,
-> +	.id_table	= cma3000_id,
+> +static struct i2c_driver bh1780_driver = {
+> +	.probe		= bh1780_probe,
+> +	.remove		= bh1780_remove,
+> +	.id_table	= bh1780_id,
 > +#ifdef CONFIG_PM
-> +	.suspend	= cma3000_accl_suspend,
-> +	.resume		= cma3000_accl_resume,
+> +	.suspend	= bh1780_suspend,
+> +	.resume		= bh1780_resume,
 > +#endif
 > +	.driver = {
-> +		.name = "cma3000_accl"
+> +		.name = "bh1780"
 > +	},
 > +};
 > +
-> +static int __init cma3000_accl_init(void)
+> +static int __init bh1780_init(void)
 > +{
-> +	return i2c_add_driver(&cma3000_accl_driver);
+> +	return i2c_add_driver(&bh1780_driver);
 > +}
 > +
-> +static void __exit cma3000_accl_exit(void)
+> +static void __exit bh1780_exit(void)
 > +{
-> +	i2c_del_driver(&cma3000_accl_driver);
+> +	i2c_del_driver(&bh1780_driver);
 > +}
 > +
-> +module_init(cma3000_accl_init);
-> +module_exit(cma3000_accl_exit);
+> +module_init(bh1780_init)
+> +module_exit(bh1780_exit)
 > +
-> +MODULE_DESCRIPTION("CMA3000-D0x Accelerometer Driver");
+> +MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
 > +MODULE_LICENSE("GPL");
 > +MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
-> diff --git a/include/linux/i2c/cma3000.h b/include/linux/i2c/cma3000.h
-> new file mode 100644
-> index 0000000..50aa3fc
-> --- /dev/null
-> +++ b/include/linux/i2c/cma3000.h
-> @@ -0,0 +1,60 @@
-> +/*
-> + * cma3000.h
-> + * VTI CMA300_Dxx Accelerometer driver
-> + *
-> + * Copyright (C) 2010 Texas Instruments
-> + * Author: Hemanth V <hemanthv@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +
-> +#ifndef _LINUX_CMA3000_I2C_H
-> +#define _LINUX_CMA3000_I2C_H
-> +
-> +#define CMAMODE_DEFAULT    0
-> +#define CMAMODE_MEAS100    1
-> +#define CMAMODE_MEAS400    2
-> +#define CMAMODE_MEAS40     3
-> +#define CMAMODE_MOTDET     4
-> +#define CMAMODE_FF100      5
-> +#define CMAMODE_FF400      6
-> +#define CMAMODE_POFF       7
-> +
-> +#define CMARANGE_2G   2000
-> +#define CMARANGE_8G   8000
-> +
-> +/**
-> + * struct cma3000_i2c_platform_data - CMA3000 Platform data
-> + * @fuzz_x: Noise on X Axis
-> + * @fuzz_y: Noise on Y Axis
-> + * @fuzz_z: Noise on Z Axis
-> + * @g_range: G range in milli g i.e 2000 or 8000
-> + * @mode: Operating mode
-> + * @mdthr: Motion detect threshold value
-> + * @mdfftmr: Motion detect and free fall time value
-> + * @ffthr: Free fall threshold value
-> + */
-> +
-> +struct cma3000_platform_data {
-> +	int fuzz_x;
-> +	int fuzz_y;
-> +	int fuzz_z;
-> +	int g_range;
-> +	uint8_t  mode;
-> +	uint8_t  mdthr;
-> +	uint8_t  mdfftmr;
-> +	uint8_t  ffthr;
-> +	uint32_t  irqflags;
-> +};
-> +
-> +#endif
 
