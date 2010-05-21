@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934314Ab0EUQ4n (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:56:43 -0400
-Received: from kroah.org ([198.145.64.141]:39179 "EHLO coco.kroah.org"
+	id S934327Ab0EUQ4z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:56:55 -0400
+Received: from kroah.org ([198.145.64.141]:39177 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934281Ab0EUQyl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:41 -0400
+	id S934221Ab0EUQyk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:40 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 36/38] kobj: Send hotplug events in the proper namespace.
-Date: Fri, 21 May 2010 09:54:06 -0700
-Message-Id: <1274460848-11377-36-git-send-email-gregkh@suse.de>
+Subject: [PATCH 35/38] netlink: Implment netlink_broadcast_filtered
+Date: Fri, 21 May 2010 09:54:05 -0700
+Message-Id: <1274460848-11377-35-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -22,56 +22,99 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Utilize netlink_broacast_filtered to allow sending hotplug events
-in the proper namespace.
+When netlink sockets are used to convey data that is in a namespace
+we need a way to select a subset of the listening sockets to deliver
+the packet to.  For the network namespace we have been doing this
+by only transmitting packets in the correct network namespace.
+
+For data belonging to other namespaces netlink_bradcast_filtered
+provides a mechanism that allows us to examine the destination
+socket and to decide if we should transmit the specified packet
+to it.
 
 Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
 Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- lib/kobject_uevent.c |   22 ++++++++++++++++++++--
- 1 files changed, 20 insertions(+), 2 deletions(-)
+ include/linux/netlink.h  |    4 ++++
+ net/netlink/af_netlink.c |   21 +++++++++++++++++++--
+ 2 files changed, 23 insertions(+), 2 deletions(-)
 
-diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
-index 9084f25..239c8e8 100644
---- a/lib/kobject_uevent.c
-+++ b/lib/kobject_uevent.c
-@@ -83,6 +83,22 @@ out:
- 	return ret;
+diff --git a/include/linux/netlink.h b/include/linux/netlink.h
+index 6eaca5e..59d0669 100644
+--- a/include/linux/netlink.h
++++ b/include/linux/netlink.h
+@@ -188,6 +188,10 @@ extern int netlink_has_listeners(struct sock *sk, unsigned int group);
+ extern int netlink_unicast(struct sock *ssk, struct sk_buff *skb, __u32 pid, int nonblock);
+ extern int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, __u32 pid,
+ 			     __u32 group, gfp_t allocation);
++extern int netlink_broadcast_filtered(struct sock *ssk, struct sk_buff *skb,
++	__u32 pid, __u32 group, gfp_t allocation,
++	int (*filter)(struct sock *dsk, struct sk_buff *skb, void *data),
++	void *filter_data);
+ extern int netlink_set_err(struct sock *ssk, __u32 pid, __u32 group, int code);
+ extern int netlink_register_notifier(struct notifier_block *nb);
+ extern int netlink_unregister_notifier(struct notifier_block *nb);
+diff --git a/net/netlink/af_netlink.c b/net/netlink/af_netlink.c
+index 6464a19..a2eb965 100644
+--- a/net/netlink/af_netlink.c
++++ b/net/netlink/af_netlink.c
+@@ -978,6 +978,8 @@ struct netlink_broadcast_data {
+ 	int delivered;
+ 	gfp_t allocation;
+ 	struct sk_buff *skb, *skb2;
++	int (*tx_filter)(struct sock *dsk, struct sk_buff *skb, void *data);
++	void *tx_data;
+ };
+ 
+ static inline int do_one_broadcast(struct sock *sk,
+@@ -1020,6 +1022,9 @@ static inline int do_one_broadcast(struct sock *sk,
+ 		p->failure = 1;
+ 		if (nlk->flags & NETLINK_BROADCAST_SEND_ERROR)
+ 			p->delivery_failure = 1;
++	} else if (p->tx_filter && p->tx_filter(sk, p->skb2, p->tx_data)) {
++		kfree_skb(p->skb2);
++		p->skb2 = NULL;
+ 	} else if (sk_filter(sk, p->skb2)) {
+ 		kfree_skb(p->skb2);
+ 		p->skb2 = NULL;
+@@ -1038,8 +1043,10 @@ out:
+ 	return 0;
  }
  
-+static int kobj_bcast_filter(struct sock *dsk, struct sk_buff *skb, void *data)
-+{
-+	struct kobject *kobj = data;
-+	const struct kobj_ns_type_operations *ops;
-+
-+	ops = kobj_ns_ops(kobj);
-+	if (ops) {
-+		const void *sock_ns, *ns;
-+		ns = kobj->ktype->namespace(kobj);
-+		sock_ns = ops->netlink_ns(dsk);
-+		return sock_ns != ns;
-+	}
-+
-+	return 0;
-+}
-+
- /**
-  * kobject_uevent_env - send an uevent with environmental data
-  *
-@@ -244,8 +260,10 @@ int kobject_uevent_env(struct kobject *kobj, enum kobject_action action,
- 			}
+-int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, u32 pid,
+-		      u32 group, gfp_t allocation)
++int netlink_broadcast_filtered(struct sock *ssk, struct sk_buff *skb, u32 pid,
++	u32 group, gfp_t allocation,
++	int (*filter)(struct sock *dsk, struct sk_buff *skb, void *data),
++	void *filter_data)
+ {
+ 	struct net *net = sock_net(ssk);
+ 	struct netlink_broadcast_data info;
+@@ -1059,6 +1066,8 @@ int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, u32 pid,
+ 	info.allocation = allocation;
+ 	info.skb = skb;
+ 	info.skb2 = NULL;
++	info.tx_filter = filter;
++	info.tx_data = filter_data;
  
- 			NETLINK_CB(skb).dst_group = 1;
--			retval = netlink_broadcast(uevent_sock, skb, 0, 1,
--						   GFP_KERNEL);
-+			retval = netlink_broadcast_filtered(uevent_sock, skb,
-+							    0, 1, GFP_KERNEL,
-+							    kobj_bcast_filter,
-+							    kobj);
- 			/* ENOBUFS should be handled in userspace */
- 			if (retval == -ENOBUFS)
- 				retval = 0;
+ 	/* While we sleep in clone, do not allow to change socket list */
+ 
+@@ -1083,6 +1092,14 @@ int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, u32 pid,
+ 	}
+ 	return -ESRCH;
+ }
++EXPORT_SYMBOL(netlink_broadcast_filtered);
++
++int netlink_broadcast(struct sock *ssk, struct sk_buff *skb, u32 pid,
++		      u32 group, gfp_t allocation)
++{
++	return netlink_broadcast_filtered(ssk, skb, pid, group, allocation,
++		NULL, NULL);
++}
+ EXPORT_SYMBOL(netlink_broadcast);
+ 
+ struct netlink_set_err_data {
 -- 
 1.7.0.3
 
