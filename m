@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756956Ab0EUMS6 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 08:18:58 -0400
-Received: from mail.kwanghua.edu.my ([202.133.107.218]:56414 "EHLO
+	id S1755205Ab0EUMYm (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 08:24:42 -0400
+Received: from mail.kwanghua.edu.my ([202.133.107.218]:64731 "EHLO
 	mail.kwanghua.edu.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab0EUMS4 (ORCPT
+	with ESMTP id S1753899Ab0EUMYl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 08:18:56 -0400
-Message-ID: <20100521194157.5ww3wbpwy4g4s004@mail.kwanghua.edu.my>
-Date: Fri, 21 May 2010 19:41:57 +0800
+	Fri, 21 May 2010 08:24:41 -0400
+Message-ID: <20100521194729.nix54aa8a8skwc00@mail.kwanghua.edu.my>
+Date: Fri, 21 May 2010 19:47:29 +0800
 From: Western Union <webmaster@westernunion.com>
 Reply-to: westernounion@w.cn
 To: undisclosed-recipients:;
