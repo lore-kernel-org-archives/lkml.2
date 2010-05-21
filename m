@@ -1,104 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934421Ab0EURGe (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:06:34 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41618 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934436Ab0EURGZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:06:25 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, hch@infradead.org,
-       akpm@linux-foundation.org
-Subject: [PATCH 1/6] fs: allow short direct-io reads to be completed via buffered IO
-Date: Fri, 21 May 2010 13:03:37 -0400
-Message-Id: <1274461422-18433-1-git-send-email-josef@redhat.com>
+	id S934503Ab0EURHb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:07:31 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:52053 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755374Ab0EURHY (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 13:07:24 -0400
+Date: Fri, 21 May 2010 10:04:35 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: James Bottomley <James.Bottomley@suse.de>
+cc: David Miller <davem@davemloft.net>,
+       linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
+       linux-scsi <linux-scsi@vger.kernel.org>
+Subject: Re: bug fix patch lost: git problem or just incorrect merge?
+In-Reply-To: <alpine.LFD.2.00.1005210931010.4243@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1005210947440.4243@i5.linux-foundation.org>
+References: <1274456515.9022.14.camel@mulgrave.site> <alpine.LFD.2.00.1005210931010.4243@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is similar to what already happens in the write case.  If we have a short
-read while doing O_DIRECT, instead of just returning, fallthrough and try to
-read the rest via buffered IO.  BTRFS needs this because if we encounter a
-compressed or inline extent during DIO, we need to fallback on buffered.  If the
-extent is compressed we need to read the entire thing into memory and
-de-compress it into the users pages.  I have tested this with fsx and everything
-works great.  Thanks,
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
----
 
-V1->V2: Check to see if our current ppos is >= i_size after a short DIO read,
-just in case it was actually a short read and we need to just return.
+On Fri, 21 May 2010, Linus Torvalds wrote:
+> 
+> > Either way, of course, we need the patch back ...
+> 
+> I'll fix it up.
 
- mm/filemap.c |   36 +++++++++++++++++++++++++++++++-----
- 1 files changed, 31 insertions(+), 5 deletions(-)
+Hmm. Pushed that out as appended, since that is the correct resolve.
 
-diff --git a/mm/filemap.c b/mm/filemap.c
-index 140ebda..829ac9c 100644
---- a/mm/filemap.c
-+++ b/mm/filemap.c
-@@ -1263,7 +1263,7 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- {
- 	struct file *filp = iocb->ki_filp;
- 	ssize_t retval;
--	unsigned long seg;
-+	unsigned long seg = 0;
- 	size_t count;
- 	loff_t *ppos = &iocb->ki_pos;
- 
-@@ -1290,21 +1290,47 @@ generic_file_aio_read(struct kiocb *iocb, const struct iovec *iov,
- 				retval = mapping->a_ops->direct_IO(READ, iocb,
- 							iov, pos, nr_segs);
- 			}
--			if (retval > 0)
-+			if (retval > 0) {
- 				*ppos = pos + retval;
--			if (retval) {
-+				count -= retval;
-+			}
-+
-+			/*
-+			 * Btrfs can have a short DIO read if we encounter
-+			 * compressed extents, so if there was an error, or if
-+			 * we've already read everything we wanted to, or if
-+			 * there was a short read because we hit EOF, go ahead
-+			 * and return.  Otherwise fallthrough to buffered io for
-+			 * the rest of the read.
-+			 */
-+			if (retval < 0 || !count || *ppos >= size) {
- 				file_accessed(filp);
- 				goto out;
- 			}
- 		}
- 	}
- 
-+	count = retval;
- 	for (seg = 0; seg < nr_segs; seg++) {
- 		read_descriptor_t desc;
-+		loff_t offset = 0;
-+
-+		/*
-+		 * If we did a short DIO read we need to skip the section of the
-+		 * iov that we've already read data into.
-+		 */
-+		if (count) {
-+			if (count > iov[seg].iov_len) {
-+				count -= iov[seg].iov_len;
-+				continue;
-+			}
-+			offset = count;
-+			count = 0;
-+		}
- 
- 		desc.written = 0;
--		desc.arg.buf = iov[seg].iov_base;
--		desc.count = iov[seg].iov_len;
-+		desc.arg.buf = iov[seg].iov_base + offset;
-+		desc.count = iov[seg].iov_len - offset;
- 		if (desc.count == 0)
- 			continue;
- 		desc.error = 0;
--- 
-1.6.6.1
+HOWEVER - the code still doesn't actually make any sense. It does
 
+	if (sk_sleep(sock->sk)) {
+
+and that sk_sleep() today is an inline function that just does
+
+	return &sk->sk_wq->wait;
+
+and testing the result of an address-of operation for NULL is almost 
+certainly totally non-sensical. Sure, it _might_ work (maybe 'wait' is the 
+first element in the 'sk_wq' data structure, and sk_wq is NULL), but that 
+kind of code is always total and utterl crap regardless.
+
+So I pushed it out because I had done the resolve already, and it's no 
+worse than it was before, but it's still a steaming buggy pile of shit.
+
+It being iscsi, I can't bring myself to care. But somebody who does, 
+should really look at it. The most likely resolution is to remove the test 
+entirely, since I don't think it's ever valid to have a socket that 
+doesn't have a sk_wq (there's a _lot_ of unconditional use of sk_sleep()).
+
+		Linus
