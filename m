@@ -1,70 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758714Ab0EUWHY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 18:07:24 -0400
-Received: from mailc.microsoft.com ([131.107.115.214]:34404 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758703Ab0EUWHU convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 18:07:20 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization
-Thread-Topic: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization
-Thread-Index: Acr5H/mIA2ovCiH5RJSF72cnsl7mOgAPKJIAAAs5tDA=
-Date: Fri, 21 May 2010 22:07:17 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7266B8B5F2@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7266B8AE7C@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100521201228.GA6712@suse.de>
-In-Reply-To: <20100521201228.GA6712@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	id S1758703Ab0EUWMK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 18:12:10 -0400
+Received: from xenotime.net ([72.52.115.56]:60077 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1753078Ab0EUWMI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 18:12:08 -0400
+Date: Fri, 21 May 2010 15:12:03 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: piotr@hosowicz.com
+Cc: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+Message-Id: <20100521151203.f94c1d3e.rdunlap@xenotime.net>
+In-Reply-To: <4BF6FBB0.6060407@example.com>
+References: <4BF6F2E4.5030800@example.com>
+	<20100521210729.GC2495@tuxdriver.com>
+	<4BF6F959.5040401@example.com>
+	<4BF6FBB0.6060407@example.com>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@suse.de]
-> > +/* Counter of IC channels initialized */
-> > +atomic_t hv_utils_initcnt = ATOMIC_INIT(0);
+On Fri, 21 May 2010 23:31:28 +0200 Piotr Hosowicz wrote:
+
+> On 21.05.2010 23:21, Piotr Hosowicz wrote:
+> > On 21.05.2010 23:07, John W. Linville wrote:
+> >> On Fri, May 21, 2010 at 10:53:56PM +0200, Piotr Hosowicz wrote:
+> >>> Hello,
+> >>>
+> >>> I try to build kernel from git source. Now n-th build try is
+> >>> performing, each time it failed on wireless drivers - Atheros,
+> >>> Marvel etc. Did I miss something?
+> >>>
+> >>> Regards,
+> >>>
+> >>> Piotr Hosowicz
+> >>
+> >> Perhaps you should post your actual output from the build failure?
+> >
+> > I dont have it right now, I disabled wireless at all and started build.
+> > The output to the console was make-kpkg ordinary message - saying that
+> > sub build finished with error code 2 AFAIR, it stopped each time on
+> > wireless drivers.
 > 
-> This doesn't need to be an atomic variable, does it really?
+> Zonk! It seems that the problem is not only with wireless, now it broke 
+> here:
 > 
-> Why not have a simple bool variable "vmbus_initialized" or something.
-> It starts out as false, and then turns true when you are up and ready.
-> Then provide a function that tests it:
-> 	bool hv_vmbus_ready(void)
-> 	{
-> 		return vmbus_initialized
-> 	}
-> 	EXPORT_SYMBOL_GPL(hv_vmbus_ready);
+> (snip)
+>    CC [M]  drivers/net/usb/int51x1.o
+>    CC [M]  drivers/net/usb/cdc-phonet.o
+>    CC [M]  drivers/net/wan/lmc/lmc_media.o
+>    CC [M]  drivers/net/wan/lmc/lmc_main.o
+>    CC [M]  drivers/net/wan/wanxl.o
+>    CC [M]  drivers/net/usb/ipheth.o
+>    LD [M]  drivers/net/wan/cyclomx.o
+>    CC [M]  drivers/net/usb/sierra_net.o
+>    CC [M]  drivers/net/wan/lmc/lmc_proto.o
+>    LD [M]  drivers/net/wan/lmc/lmc.o
+> make[1]: Opuszczenie katalogu `/usr/src/linus/linux-2.6-20100521-2044'
+> make: *** [debian/stamp/build/kernel] Błąd 2
 > 
-> 
-> this turns into a simple function call, again, never needing to know
-> about message types or any other mess.
+> Opuszczenie katalogu `/usr/src/linus/linux-2.6-20100521-2044' is 
+> "leaving directory", Błąd is error.
 
-This looks good. I will add the hv_vmbus_ready() function. It doesn't even 
-have to be exported symbol, because it's only used in vmbus module to ensure 
-all channels are ready before vmbus_init() returns. Other modules won't get a 
-chance to see uninitialized channels after hv_vmbus is loaded.
+That still doesn't show the actual error/problem message...
 
-Also, I'll cleanup the printk in hv_utils load/unload.
-
-Regarding the atomic variable -- the channel offer processing function is 
-triggered by interrupts from host -- should we be concerned about "counter++" 
-racing with each other in two interrupts happening around the same time?
-
-Thanks,
-
-- Haiyang
-
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
