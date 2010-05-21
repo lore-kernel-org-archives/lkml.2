@@ -1,112 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754890Ab0EULMJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 07:12:09 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:41106 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751606Ab0EULMH (ORCPT
+	id S1754934Ab0EULPn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 07:15:43 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:33350 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751606Ab0EULPl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 07:12:07 -0400
-X-Sasl-enc: qQ96YXtqtv9Hq96YC8atxMtZJQHLSsHhDlOU+0BVkJk1 1274440323
-Subject: Re: add devname module aliases to allow module on-demand
- auto-loading
-From: Ian Kent <raven@themaw.net>
-To: Kay Sievers <kay.sievers@vrfy.org>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "David S. Miller" <davem@davemloft.net>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       Chris Mason <chris.mason@oracle.com>,
-       Alasdair G Kergon <agk@redhat.com>,
-       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>
-In-Reply-To: <1274371640.302.5.camel@yio.site>
-References: <1274371640.302.5.camel@yio.site>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 19:11:57 +0800
-Message-ID: <1274440317.2291.1.camel@localhost>
+	Fri, 21 May 2010 07:15:41 -0400
+X-Authority-Analysis: v=1.1 cv=APwCx09NCuKDvl2mjFwkKdJZScS8XOZHPgx3WG6BpL0= c=1 sm=0 a=itNhnfdbGUoA:10 a=GQCbJdZ--msA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=a0pwoTYIkv52p8aK-ukA:9 a=xzzUEe34HKX5hb3VoEkA:7 a=N4gP-O_OJuTe_jVDflXY5Xp0DfAA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH 09/10] perf: Remove more fastpath code
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>
+In-Reply-To: <20100521090710.852926930@chello.nl>
+References: <20100521090201.326791353@chello.nl>
+	 <20100521090710.852926930@chello.nl>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Fri, 21 May 2010 07:15:38 -0400
+Message-ID: <1274440538.26328.3575.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 18:07 +0200, Kay Sievers wrote:
-> From: Kay Sievers <kay.sievers@vrfy.org>
-> Subject: add devname module aliases to allow module on-demand auto-loading
+On Fri, 2010-05-21 at 11:02 +0200, Peter Zijlstra wrote:
+> plain text document attachment (perf-opt-output-more.patch)
+> Sanity checks cost instructions
 > 
-> This adds:
->   alias: devname:<name>
-> to some common kernel modules, which will allow the on-demand loading
-> of the kernel module when the device node is accessed.
-> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+> -
+> -	/*
+> -	 * Check we didn't copy past our reservation window, taking the
+> -	 * possible unsigned int wrap into account.
+> -	 */
+> -	if (WARN_ON_ONCE(((long)(handle->head - handle->offset)) < 0))
+> -		return;
 
-snip ...
+Are you sure you want to remove this? I mean, sanity checks are a small
+cost (I have several in the ftrace ring buffer) and can catch bugs in
+case something happens during development. Especially when the code is
+under a lot of flux.
 
-> --- a/fs/autofs4/dev-ioctl.c
-> +++ b/fs/autofs4/dev-ioctl.c
-> @@ -736,11 +736,14 @@ static const struct file_operations _dev
->  };
->  
->  static struct miscdevice _autofs_dev_ioctl_misc = {
-> -	.minor 		= MISC_DYNAMIC_MINOR,
-> +	.minor 		= AUTOFS_MINOR,
->  	.name  		= AUTOFS_DEVICE_NAME,
->  	.fops  		= &_dev_ioctl_fops
->  };
->  
-> +MODULE_ALIAS_MISCDEV(BTRFS_MINOR);
+I even have a sanity check that Ingo asked me to add, which would detect
+if a tracer (not the ring buffer, but the user of the ring buffer)
+recursed on itself. I think that check detected one bug in the function
+tracer in the begging, but hasn't caught anything since.
 
-Is this a typo or am I missing something?
+-- Steve
 
-Shouldn't it be:
-+MODULE_ALIAS_MISCDEV(AUTOFS_MINOR);
-
-> +MODULE_ALIAS("devname:autofs");
-> +
->  /* Register/deregister misc character device */
->  int autofs_dev_ioctl_init(void)
->  {
-> --- a/fs/btrfs/super.c
-> +++ b/fs/btrfs/super.c
-> @@ -832,11 +832,14 @@ static const struct file_operations btrf
->  };
+> -
+>  	do {
+> -		unsigned long size = min(handle->size, len);
+> +		unsigned long size = min_t(unsigned long, handle->size, len);
 >  
->  static struct miscdevice btrfs_misc = {
-> -	.minor		= MISC_DYNAMIC_MINOR,
-> +	.minor		= BTRFS_MINOR,
->  	.name		= "btrfs-control",
->  	.fops		= &btrfs_ctl_fops
->  };
+>  		memcpy(handle->addr, buf, size);
 >  
-> +MODULE_ALIAS_MISCDEV(BTRFS_MINOR);
-> +MODULE_ALIAS("devname:btrfs-control");
-> +
->  static int btrfs_interface_init(void)
->  {
->  	return misc_register(&btrfs_misc);
-> --- a/fs/fuse/dev.c
-> +++ b/fs/fuse/dev.c
-> @@ -18,6 +18,7 @@
->  #include <linux/slab.h>
+> @@ -3054,15 +3045,12 @@ int perf_output_begin(struct perf_output
+>  			goto fail;
+>  	} while (local_cmpxchg(&data->head, offset, head) != offset);
 >  
->  MODULE_ALIAS_MISCDEV(FUSE_MINOR);
-> +MODULE_ALIAS("devname:fuse");
+> -	handle->offset	= offset;
+> -	handle->head	= head;
+> -
+>  	if (head - local_read(&data->wakeup) > data->watermark)
+>  		local_add(data->watermark, &data->wakeup);
 >  
->  static struct kmem_cache *fuse_req_cachep;
->  
-> --- a/include/linux/miscdevice.h
-> +++ b/include/linux/miscdevice.h
-> @@ -31,6 +31,9 @@
->  #define FUSE_MINOR		229
->  #define KVM_MINOR		232
->  #define VHOST_NET_MINOR		233
-> +#define BTRFS_MINOR		234
-> +#define MAPPER_CTRL_MINOR	235
-> +#define AUTOFS_MINOR		236
->  #define MISC_DYNAMIC_MINOR	255
->  
->  struct device;
+> -	handle->page = handle->offset >> (PAGE_SHIFT + page_order(data));
+> +	handle->page = offset >> (PAGE_SHIFT + page_order(data));
+>  	handle->page &= data->nr_pages - 1;
+> -	handle->size = handle->offset & ((PAGE_SIZE << page_order(data)) - 1);
+> +	handle->size = offset & ((PAGE_SIZE << page_order(data)) - 1);
+>  	handle->addr = data->data_pages[handle->page];
+>  	handle->addr += handle->size;
+>  	handle->size = (PAGE_SIZE << page_order(data)) - handle->size;
 > 
 > 
 
