@@ -1,76 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934162Ab0EURFT (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:05:19 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:65494 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934442Ab0EURFL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:05:11 -0400
-To: Mike Chan <mike@android.com>
-Cc: Thomas Renninger <trenn@suse.de>, menage@google.com, balbir@in.ibm.com,
-       cpufreq@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-omap@vger.kernel.org, Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH v2 0/3] Enable CPU frequency and power tracking in cpuacct  cgroup
-References: <1274380944-20947-1-git-send-email-mike@android.com>
-	<201005202301.12259.trenn@suse.de>
-	<AANLkTimrJ-F-rBDKnEusN2oViObCCPvZzeIWavkf-tqa@mail.gmail.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Fri, 21 May 2010 10:05:08 -0700
-In-Reply-To: <AANLkTimrJ-F-rBDKnEusN2oViObCCPvZzeIWavkf-tqa@mail.gmail.com> (Mike Chan's message of "Thu\, 20 May 2010 14\:21\:40 -0700")
-Message-ID: <87sk5ljid7.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S934068Ab0EUQv7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:51:59 -0400
+Received: from kroah.org ([198.145.64.141]:50276 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934030Ab0EUQv4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:51:56 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Sonic Zhang <sonic.zhang@analog.com>, Mike Frysinger <vapier@gentoo.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 01/25] serial: bfin_sport_uart: work around anomaly 05000473 (make 32bit fifo read atomic)
+Date: Fri, 21 May 2010 09:51:30 -0700
+Message-Id: <1274460714-11277-1-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.0.3
+In-Reply-To: <20100521165113.GB11216@kroah.com>
+References: <20100521165113.GB11216@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Chan <mike@android.com> writes:
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-> On Thu, May 20, 2010 at 2:01 PM, Thomas Renninger <trenn@suse.de> wrote:
->> Hi Mike,
->>
->> On Thursday 20 May 2010 08:42:21 pm Mike Chan wrote:
->>> v2:
->>> Rebased off of Thomas Renninger's patch for cgroups_cpuacct refactoring,
->> thanks.
->> A general comment:
->> I don't know much about the cgroup stuff.
->
-> Perhaps Paul Menage or Balbir Singh can look and sign off on the API's?
->
->> I am also not sure how exactly power can be measured on this arch based on
->
-> If you know how much time was spent at each frequency executing code,
-> you can calculate how much power was consumed if the platform (with
-> hooks) provide power numbers (in milliWatts) for the power at
-> frequency X.
->
-> I did some initial testing on Motorola Droid comparing to a power
-> meter and I got within 2% variance.
->
->> frequency accounting (there also were some threads I was not aware of?)
->> A signed-off-by or reviewed-by from someone who is more involved in this omap
->> stuff would probably not that bad.
->>
->
-> OMAP was the closest with mainline support I could provide an example
-> how to use these hooks.
->
-> I'm hoping for some blessing from some people on the linux-omap list
-> for that. However can we possibly just stack the first two patches to
-> get the API in? This will make it easier to fixup the omap hooks if
-> they don't get in.
+We cannot let a 32-bit RX FIFO read be interrupted otherwise a fake RX
+underflow error might be generated.
 
-This looks like a great enhancement to me.
+URL: http://blackfin.uclinux.org/gf/tracker/5145
 
-Speaking for OMAP PM... I'd suggest getting the generic stuff upstream
-(or into -next) soon and then work out the OMAP specifics after.
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/bfin_sport_uart.h |   16 +++++++++++++++-
+ 1 files changed, 15 insertions(+), 1 deletions(-)
 
-Since the OMAP OPP layer is going through some churn (but stabilizing
-and will be submitted for 2.6.36), I'd suggest we queue the
-OMAP-specific parts of this along with the OPP layer changes.
+diff --git a/drivers/serial/bfin_sport_uart.h b/drivers/serial/bfin_sport_uart.h
+index abe0361..9791fcc 100644
+--- a/drivers/serial/bfin_sport_uart.h
++++ b/drivers/serial/bfin_sport_uart.h
+@@ -37,7 +37,21 @@
+ #define SPORT_GET_TFSDIV(sport)		bfin_read16(((sport)->port.membase + OFFSET_TFSDIV))
+ #define SPORT_GET_TX(sport)		bfin_read16(((sport)->port.membase + OFFSET_TX))
+ #define SPORT_GET_RX(sport)		bfin_read16(((sport)->port.membase + OFFSET_RX))
+-#define SPORT_GET_RX32(sport)		bfin_read32(((sport)->port.membase + OFFSET_RX))
++/*
++ * If another interrupt fires while doing a 32-bit read from RX FIFO,
++ * a fake RX underflow error will be generated.  So disable interrupts
++ * to prevent interruption while reading the FIFO.
++ */
++#define SPORT_GET_RX32(sport) \
++({ \
++	unsigned int __ret; \
++	if (ANOMALY_05000473) \
++		local_irq_disable(); \
++	__ret = bfin_read32((sport)->port.membase + OFFSET_RX); \
++	if (ANOMALY_05000473) \
++		local_irq_enable(); \
++	__ret; \
++})
+ #define SPORT_GET_RCR1(sport)		bfin_read16(((sport)->port.membase + OFFSET_RCR1))
+ #define SPORT_GET_RCR2(sport)		bfin_read16(((sport)->port.membase + OFFSET_RCR2))
+ #define SPORT_GET_RCLKDIV(sport)	bfin_read16(((sport)->port.membase + OFFSET_RCLKDIV))
+-- 
+1.7.0.3
 
-Kevin
