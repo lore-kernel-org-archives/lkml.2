@@ -1,68 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934359Ab0EURWg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:22:36 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:63199 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933577Ab0EURWe (ORCPT
+	id S934445Ab0EURWz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:22:55 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:47614 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934369Ab0EURWw (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:22:34 -0400
+	Fri, 21 May 2010 13:22:52 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=WpGLdGsNN7uT1OjBxglNBkPyq6zZ203yINMpGYjJwEFREqeYLepZLwdOwJ73YfZz1g
-         zyqW7+cndinTh2oH5PTrurXVblIdpCkg8S1/ACP4SWWCNP5exR+w86kzzruJVsJfooTO
-         n0T44uHz79M43zKxZReIBnIEBR6RJC6sl8DsM=
-Date: Fri, 21 May 2010 10:22:22 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
-Message-ID: <20100521172222.GB26439@core.coreip.homeip.net>
-References: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
- <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com>
- <4BF6B673.1080507@euromail.se>
- <20100521165218.GA26439@core.coreip.homeip.net>
- <4BF6BB43.2020405@euromail.se>
+        h=message-id:date:from:user-agent:mime-version:to:subject:references
+         :in-reply-to:content-type:content-transfer-encoding;
+        b=jyqIHTg38Pt559Hp3+w8IFCx6m1PEReHkpL+0WmCaDasigaqMIfbd5Wlxj1dYxa3WK
+         q9GfV/Se+FzN2rUbQRWs6HeyIp4Unp6CgqYr2iMXXygdzZ5+UcizSy1oPn0YH+SWhoZk
+         QxcbfY39IDmvYcoEnzU69hiXtRGPCgDo1yYCM=
+Message-ID: <4BF6C171.7040603@gmail.com>
+Date: Fri, 21 May 2010 10:22:57 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF6BB43.2020405@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: linux-pcmcia@lists.infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH]pacmcia:yena_socket.c Remove extra #ifdef CONFIG_YENTA_TI
+References: <1274388002-2132-1-git-send-email-justinmattock@gmail.com> <20100521131851.GB22685@comet.dominikbrodowski.net>
+In-Reply-To: <20100521131851.GB22685@comet.dominikbrodowski.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 06:56:35PM +0200, Henrik Rydberg wrote:
-> Dmitry Torokhov wrote:
-> > On Friday 21 May 2010 09:36:03 am Henrik Rydberg wrote:
-> >> Ping Cheng wrote:
-> >>> Hi Henrik,
-> >>>
-> >>> Thank you for your quick turnaround. Two minor comments in line.
-> >>>
-> >>> Ping
-> >> Thanks for those, yes, both mistakes. Dmitry, in case you find these last
-> >> versions acceptable, perhaps one could change them manually:
-> >>
-> >> 1. Patch description: s/SYN_MT_SLOT/ABS_SLOT/
-> > 
-> > Not ABS_MT_SLOT?
-> 
-> I wrote an argument for ABS_SLOT in the first patch, in short there is a
-> namespace clash I would like to avoid.
-> 
+On 05/21/2010 06:18 AM, Dominik Brodowski wrote:
+> Applied (see below), thanks.
+>
+> Best,
+> 	Dominik
+>
+> From: Justin P. Mattock<justinmattock@gmail.com>
+> Date: Thu, 20 May 2010 13:40:02 -0700
+> Subject: [PATCH] pcmcia: yenta_socket.c Remove extra #ifdef CONFIG_YENTA_TI
+>
+> Seems pointless to have two #ifdef's with the same
+> CONFIG_YENTA_TI.. Remove the extra one and
+> move CARDBUS_TYPE_ENE with the others.
+>
+> [linux@dominikbrodowski.net: spelling&  whitespace fixes]
+> Signed-off-by: Justin P. Mattock<justinmattock@gmail.com>
+> Signed-off-by: Dominik Brodowski<linux@dominikbrodowski.net>
+>
+> diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
+> index 6bf8b2c..f1d4137 100644
+> --- a/drivers/pcmcia/yenta_socket.c
+> +++ b/drivers/pcmcia/yenta_socket.c
+> @@ -880,6 +880,12 @@ static struct cardbus_type cardbus_type[] = {
+>   		.restore_state	= ti_restore_state,
+>   		.sock_init	= ti_init,
+>   	},
+> +	[CARDBUS_TYPE_ENE]	= {
+> +		.override	= ene_override,
+> +		.save_state	= ti_save_state,
+> +		.restore_state	= ti_restore_state,
+> +		.sock_init	= ti_init,
+> +	},
+>   #endif
+>   #ifdef CONFIG_YENTA_RICOH
+>   	[CARDBUS_TYPE_RICOH]	= {
+> @@ -902,14 +908,6 @@ static struct cardbus_type cardbus_type[] = {
+>   		.restore_state	= o2micro_restore_state,
+>   	},
+>   #endif
+> -#ifdef CONFIG_YENTA_TI
+> -	[CARDBUS_TYPE_ENE]	= {
+> -		.override	= ene_override,
+> -		.save_state	= ti_save_state,
+> -		.restore_state	= ti_restore_state,
+> -		.sock_init	= ti_init,
+> -	},
+> -#endif
+>   };
+>
+>
+>
+>
 
-Hm, I am not sure I follow that argument. While you are saying that slot
-is not an MT event it is certainly not an ST event either. I would even
-say that slot _is_ an MT event since it signals current "slot" or group
-of MT data to userspace. Am I missing something?
 
--- 
-Dmitry
+cool..
+
+As for the problem with
+pcmcia, I've my machine ready to take anything
+but am in no real hurry with it(was more curious
+how 2.6.34 ran on the old beast of a machine).
+
+I'll go and send the bug report to Raphael
+so he can add it to the list of regressions,
+then down the line if something comes up
+I can test it out or something..
+
+Justin P. Mattock
