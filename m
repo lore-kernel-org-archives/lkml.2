@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933753Ab0EUQAp (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:00:45 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49378 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933711Ab0EUQAW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:00:22 -0400
-Date: Fri, 21 May 2010 18:00:14 +0200
-From: Jan Kara <jack@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Zan Lynx <zlynx@acm.org>, lwoodman@redhat.com,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Nick Piggin <npiggin@suse.de>, Jan Kara <jack@suse.cz>
-Subject: Re: RFC: dirty_ratio back to 40%
-Message-ID: <20100521160014.GC3412@quack.suse.cz>
-References: <20100521083408.1E36.A69D9226@jp.fujitsu.com>
- <4BF5D875.3030900@acm.org>
- <20100521100943.1E4D.A69D9226@jp.fujitsu.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100521100943.1E4D.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S933991Ab0EUQES (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:04:18 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:36811 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933945Ab0EUQEQ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:04:16 -0400
+Date: Fri, 21 May 2010 09:03:01 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: lkml <linux-kernel@vger.kernel.org>
+Cc: torvalds <torvalds@linux-foundation.org>,
+       Marc Zyngier <maz@misterjones.org>
+Subject: [PATCH] interrupt.h: fix fatal kernel-doc error
+Message-Id: <20100521090301.716af51c.randy.dunlap@oracle.com>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090201.4BF6AEEF.003F:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 21-05-10 10:11:59, KOSAKI Motohiro wrote:
-> > > So, I'd prefer to restore the default rather than both Redhat and SUSE apply exactly
-> > > same distro specific patch. because we can easily imazine other users will face the same
-> > > issue in the future.
-> > 
-> > On desktop systems the low dirty limits help maintain interactive feel. 
-> > Users expect applications that are saving data to be slow. They do not 
-> > like it when every application in the system randomly comes to a halt 
-> > because of one program stuffing data up to the dirty limit.
-> 
-> really?
-> Do you mean our per-task dirty limit wouldn't works?
-> 
-> If so, I think we need fix it. IOW sane per-task dirty limitation seems
-> independent issue from per-system dirty limit.
-  Well, I don't know about any per-task dirty limits. What function
-implements them? Any application that dirties a single page can be caught
-and forced to call balance_dirty_pages() and do writeback.
-  But generally what we observe on a desktop with lots of dirty memory is
-that application needs to allocate memory (either private one or for page
-cache) and that triggers direct reclaim so the allocation takes a long
-time to finish and thus the application is sluggish...
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Fix kernel-doc fatal error:
+/** beginning a non-kernel-doc comment block:
+(That alone does not kill kernel-doc, but the 'enum' was
+totally confusing to it.)
+
+Error(/lnx/src/TMP/linux-2.6.34-git6//include/linux/interrupt.h:88): cannot understand prototype: 'enum '
+make[2]: *** [Documentation/DocBook/genericirq.xml] Error 1
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ include/linux/interrupt.h |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-2.6.34-git6.orig/include/linux/interrupt.h
++++ linux-2.6.34-git6/include/linux/interrupt.h
+@@ -78,7 +78,7 @@ enum {
+ 	IRQTF_AFFINITY,
+ };
+ 
+-/**
++/*
+  * These values can be returned by request_any_context_irq() and
+  * describe the context the interrupt will be run in.
+  *
