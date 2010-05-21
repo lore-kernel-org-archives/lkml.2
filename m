@@ -1,469 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754022Ab0EUMkP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 08:40:15 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:57093 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751139Ab0EUMkM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 08:40:12 -0400
-Message-ID: <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
-From: "Hemanth V" <hemanthv@ti.com>
-To: "Daniel Mack" <daniel@caiaq.de>
-Cc: <linux-kernel@vger.kernel.org>, <linux-omap@vger.kernel.org>,
-       <linux-input@vger.kernel.org>
-References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com> <20100521120347.GP30801@buzzloop.caiaq.de>
+	id S1754155Ab0EUMrB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 08:47:01 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:60011 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753353Ab0EUMq7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 08:46:59 -0400
+Date: Fri, 21 May 2010 14:46:41 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Hemanth V <hemanthv@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-input@vger.kernel.org
 Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
-Date: Fri, 21 May 2010 18:10:00 +0530
+Message-ID: <20100521124641.GQ30801@buzzloop.caiaq.de>
+References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
+ <20100521120347.GP30801@buzzloop.caiaq.de>
+ <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
 MIME-Version: 1.0
-Content-Type: text/plain;
-	format=flowed;
-	charset="iso-8859-1";
-	reply-type=original
-Content-Transfer-Encoding: 7bit
-X-Priority: 3
-X-MSMail-Priority: Normal
-X-Mailer: Microsoft Outlook Express 6.00.2900.3598
-X-MimeOLE: Produced By Microsoft MimeOLE V6.00.2900.3350
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
------ Original Message ----- 
-From: "Daniel Mack" <daniel@caiaq.de>
-To: "Hemanth V" <hemanthv@ti.com>
-Cc: <linux-kernel@vger.kernel.org>; <linux-omap@vger.kernel.org>; 
-<linux-input@vger.kernel.org>
-Sent: Friday, May 21, 2010 5:33 PM
-Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
-
-
-> Hi,
->
-> On Fri, May 21, 2010 at 05:05:50PM +0530, Hemanth V wrote:
->> Corrected the mailing list, should be linux-kernel
->>
->> This patch adds support for ROHM BH1780GLI Ambient light sensor.
->>
->> BH1780 supports I2C interface. Driver supports read/update of power state 
->> and
->> read of lux value (through SYSFS). Writing value 3 to power_state enables 
->> the
->> sensor and current lux value could be read.
->
-> FWIW, this looks pretty good to me, just some minor things below.
-
-Thanks for the review comment, responses inline
-
->
-> Daniel
->
->> Signed-off-by: Hemanth V <hemanthv@ti.com>
->> ---
->>  drivers/misc/Kconfig     |   11 ++
->>  drivers/misc/Makefile    |    1 +
->>  drivers/misc/bh1780gli.c |  278 
->> ++++++++++++++++++++++++++++++++++++++++++++++
->>  3 files changed, 290 insertions(+), 0 deletions(-)
->>  create mode 100644 drivers/misc/bh1780gli.c
->>
->> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
->> index 0d0d625..0687a0c 100644
->> --- a/drivers/misc/Kconfig
->> +++ b/drivers/misc/Kconfig
->> @@ -278,6 +278,17 @@ config SENSORS_TSL2550
->>    This driver can also be built as a module.  If so, the module
->>    will be called tsl2550.
->>
->> +config SENSORS_BH1780
->> + tristate "ROHM BH1780GLI ambient light sensor"
->> + depends on I2C && SYSFS
->> + help
->> +   If you say yes here you get support for the ROHM BH1780GLI
->> +   ambient light sensor.
->> +
->> +   This driver can also be built as a module.  If so, the module
->> +   will be called bh1780gli.
->> +
->> +
->>  config EP93XX_PWM
->>  tristate "EP93xx PWM support"
->>  depends on ARCH_EP93XX
->> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
->> index 7b6f7ee..c479d91 100644
->> --- a/drivers/misc/Makefile
->> +++ b/drivers/misc/Makefile
->> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->>  obj-y += eeprom/
->>  obj-y += cb710/
->>  obj-$(CONFIG_VMWARE_BALLOON) += vmware_balloon.o
->> +obj-$(CONFIG_SENSORS_BH1780) += bh1780gli.o
->> diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
->> new file mode 100644
->> index 0000000..9b4137d
->> --- /dev/null
->> +++ b/drivers/misc/bh1780gli.c
->> @@ -0,0 +1,278 @@
->> +/*
->> + * bh1780gli.c
->> + * ROHM Ambient Light Sensor Driver
->> + *
->> + * Copyright (C) 2010 Texas Instruments
->> + * Author: Hemanth V <hemanthv@ti.com>
->> + *
->> + * This program is free software; you can redistribute it and/or modify 
->> it
->> + * under the terms of the GNU General Public License version 2 as 
->> published by
->> + * the Free Software Foundation.
->> + *
->> + * This program is distributed in the hope that it will be useful, but 
->> WITHOUT
->> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
->> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License 
->> for
->> + * more details.
->> + *
->> + * You should have received a copy of the GNU General Public License 
->> along with
->> + * this program.  If not, see <http://www.gnu.org/licenses/>.
->> + */
->> +#include <linux/i2c.h>
->> +#include <linux/slab.h>
->> +#include <linux/mutex.h>
->> +#include <linux/platform_device.h>
->> +#include <linux/delay.h>
->> +
->> +#define BH1780_REG_CONTROL     0x80
->> +#define BH1780_REG_PARTID      0x8A
->> +#define BH1780_REG_MANFID      0x8B
->> +#define BH1780_REG_DLOW        0x8C
->> +#define BH1780_REG_DHIGH       0x8D
->> +
->> +#define BH1780_REVMASK        (0xf)
->> +#define BH1780_POWMASK        (0x3)
->> +#define BH1780_POFF       (0x0)
->> +#define BH1780_PON            (0x3)
->
-> Just a nit ... something's wrong with the indentation here.
-
-Will fix
-
->
->> +/* power on settling time in ms */
->> +#define BH1780_PON_DELAY      2
->> +
->> +struct bh1780_data {
->> + struct i2c_client *client;
->> + int power_state;
->> + /* lock for sysfs operations */
->> + struct mutex lock;
->> +};
->> +
->> +int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
->
-> Should be static.
-
-Yes, agreed
->
->> +{
->> + int ret = i2c_smbus_write_byte_data(ddata->client, reg, val);
->> + if (ret < 0)
->> + dev_err(&ddata->client->dev,
->> + "i2c_smbus_write_byte_data failed error %d\
->> + Register (%s)\n", ret, msg);
->> + return ret;
->> +}
->> +
->> +int bh1780_read(struct bh1780_data *ddata, u8 reg, char *msg)
->
-> Dito.
-
-Yes, agreed
->
->> +{
->> + int ret = i2c_smbus_read_byte_data(ddata->client, reg);
->> + if (ret < 0)
->> + dev_err(&ddata->client->dev,
->> + "i2c_smbus_read_byte_data failed error %d\
->> + Register (%s)\n", ret, msg);
->> + return ret;
->> +}
->> +
->> +static ssize_t bh1780_show_lux(struct device *dev,
->> + struct device_attribute *attr, char *buf)
->> +{
->> +
->> + struct platform_device *pdev = to_platform_device(dev);
->> + struct bh1780_data *ddata = platform_get_drvdata(pdev);
->> + int lsb, msb;
->> +
->> + lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
->> + if (lsb < 0)
->> + return lsb;
->> +
->> + msb = bh1780_read(ddata, BH1780_REG_DHIGH, "DHIGH");
->> + if (msb < 0)
->> + return msb;
->> +
->> + return sprintf(buf, "%d\n", (msb << 8) | lsb);
->> +}
->> +
->> +static ssize_t bh1780_show_power_state(struct device *dev,
->> + struct device_attribute *attr,
->> + char *buf)
->> +{
->> + struct platform_device *pdev = to_platform_device(dev);
->> + struct bh1780_data *ddata = platform_get_drvdata(pdev);
->> + int state;
->> +
->> + state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
->> + if (state < 0)
->> + return state;
->> +
->> + return sprintf(buf, "%d\n", state & BH1780_POWMASK);
->> +}
->> +
->> +static ssize_t bh1780_store_power_state(struct device *dev,
->> + struct device_attribute *attr,
->> + const char *buf, size_t count)
->> +{
->> + struct platform_device *pdev = to_platform_device(dev);
->> + struct bh1780_data *ddata = platform_get_drvdata(pdev);
->> + unsigned long val;
->> + int error;
->> +
->> + error = strict_strtoul(buf, 0, &val);
->> + if (error)
->> + return error;
->> +
->> + if (val < BH1780_POFF || val > BH1780_PON)
->> + return -EINVAL;
->> +
->> + mutex_lock(&ddata->lock);
->> +
->> + error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
->> + if (error < 0) {
->> + mutex_unlock(&ddata->lock);
->> + return error;
->> + }
->> +
->> + msleep(BH1780_PON_DELAY);
->
-> Hmm, what do you wait for here?
-
-Settling time delay required before lux read out
-
->
->> + ddata->power_state = val;
->> + mutex_unlock(&ddata->lock);
->
-> And I don't get the usage of the mutex here. Can you explain?
-
-Basically prevent two concurrent sysfs calls from interfering
-with each other
-
->
->> + return count;
->> +
->> +}
->
-> Remove the empty line. Or move it above the return statement.
-
-Yes, agreed
-
->
->> +
->> +static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
->> +
->> +static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
->> + bh1780_show_power_state, bh1780_store_power_state);
->> +
->> +static struct attribute *bh1780_attributes[] = {
->> + &dev_attr_power_state.attr,
->> + &dev_attr_lux.attr,
->> + NULL
->> +};
->> +
->> +static const struct attribute_group bh1780_attr_group = {
->> + .attrs = bh1780_attributes,
->> +};
->> +
->> +static int __devinit bh1780_probe(struct i2c_client *client,
->> + const struct i2c_device_id *id)
->> +{
->> + int ret;
->> + struct bh1780_data *ddata = NULL;
->
-> The initialization isn't needed.
-
-This is basically added for the first goto error, to prevent
-any garbage values
-
->
->> + struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
->> +
->> + if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
->> + ret = -EIO;
->> + goto err_op_failed;
->> + }
->> +
->> + ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
->> + if (ddata == NULL) {
->> + ret = -ENOMEM;
->> + goto err_op_failed;
->> + }
->> +
->> + ddata->client = client;
->> + i2c_set_clientdata(client, ddata);
->> +
->> + ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
->> + if (ret < 0)
->> + goto err_op_failed;
->> +
->> + dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
->> + (ret & BH1780_REVMASK));
->> +
->> + mutex_init(&ddata->lock);
->> +
->> + ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
->> + if (ret)
->> + goto err_op_failed;
->> +
->> + return 0;
->> +
->> +err_op_failed:
->> + if (ddata != NULL)
->> + kfree(ddata);
->
-> kfree() is resitant against NULL pointers, so you can call it
-> unconditionally.
-
-Yes, agreed
-
->
->> +
->> + return ret;
->> +}
->> +
->> +static int __devexit bh1780_remove(struct i2c_client *client)
->> +{
->> + struct bh1780_data *ddata;
->> +
->> + ddata = i2c_get_clientdata(client);
->> + sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
->> +
->> + if (ddata != NULL) {
->> + i2c_set_clientdata(client, NULL);
->> + kfree(ddata);
->> + }
->
-> Same here.
-
-Yes, agreed
-
->
->> +
->> + return 0;
->> +}
->> +
->> +#ifdef CONFIG_PM
->> +static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
->> +{
->> + struct bh1780_data *ddata;
->> + int state, ret;
->> +
->> + ddata = i2c_get_clientdata(client);
->> + state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
->> + if (state < 0)
->> + return state;
->> +
->> + ddata->power_state = state & BH1780_POWMASK;
->> +
->> + ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
->> + "CONTROL");
->> +
->> + if (ret < 0)
->> + return ret;
->> +
->> + return 0;
->> +}
->> +
->> +static int bh1780_resume(struct i2c_client *client)
->> +{
->> + struct bh1780_data *ddata;
->> + int state, ret;
->> +
->> + ddata = i2c_get_clientdata(client);
->> + state = ddata->power_state;
->> +
->> + ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
->> + "CONTROL");
->> +
->> + if (ret < 0)
->> + return ret;
->> +
->> + return 0;
->> +}
->
-> #else
-> static inline int bh1780_suspend(struct i2c_client *client, pm_message_t 
-> mesg) {}
-> static inline int bh1780_resume(struct i2c_client *client) {}
->
-
-Yes, I could add as below which seems to be used in quite a few
-misc drivers
-
-#define bh1780_suspend NULL
-
->
->> +#endif
->> +
->> +static const struct i2c_device_id bh1780_id[] = {
->> + { "bh1780", 0 },
->> + { },
->> +};
->> +
->> +static struct i2c_driver bh1780_driver = {
->> + .probe = bh1780_probe,
->> + .remove = bh1780_remove,
->> + .id_table = bh1780_id,
->> +#ifdef CONFIG_PM
->
-> ... then this #ifdef can go away.
->
->> + .suspend = bh1780_suspend,
->> + .resume = bh1780_resume,
->> +#endif
->> + .driver = {
->> + .name = "bh1780"
->> + },
->> +};
->> +
->> +static int __init bh1780_init(void)
->> +{
->> + return i2c_add_driver(&bh1780_driver);
->> +}
->> +
->> +static void __exit bh1780_exit(void)
->> +{
->> + i2c_del_driver(&bh1780_driver);
->> +}
->> +
->> +module_init(bh1780_init)
->> +module_exit(bh1780_exit)
->> +
->> +MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
->> +MODULE_LICENSE("GPL");
->> +MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
->> -- 
->> 1.5.6.3
->>
->> --
->> To unsubscribe from this list: send the line "unsubscribe linux-kernel" 
->> in
->> the body of a message to majordomo@vger.kernel.org
->> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->> Please read the FAQ at  http://www.tux.org/lkml/
+On Fri, May 21, 2010 at 06:10:00PM +0530, Hemanth V wrote:
+> >On Fri, May 21, 2010 at 05:05:50PM +0530, Hemanth V wrote:
+> >>+ mutex_lock(&ddata->lock);
+> >>+
+> >>+ error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
+> >>+ if (error < 0) {
+> >>+ mutex_unlock(&ddata->lock);
+> >>+ return error;
+> >>+ }
+> >>+
+> >>+ msleep(BH1780_PON_DELAY);
+> >
+> >Hmm, what do you wait for here?
 > 
+> Settling time delay required before lux read out
+
+I thought so, but in fact you're just delaying the next two lines by
+that:
+
+> >>+ ddata->power_state = val;
+> >>+ mutex_unlock(&ddata->lock);
+
+... which doesn't make sense to me.
+
+I can believe there is need to wait for the value to settle, but I think
+it's the wrong place where you're doing it currently.
+
+> >>+static int __devinit bh1780_probe(struct i2c_client *client,
+> >>+ const struct i2c_device_id *id)
+> >>+{
+> >>+ int ret;
+> >>+ struct bh1780_data *ddata = NULL;
+> >
+> >The initialization isn't needed.
+> 
+> This is basically added for the first goto error, to prevent
+> any garbage values
+
+Sorry, you're right. Ignore this comment :)
+
+Thanks,
+Daniel
 
