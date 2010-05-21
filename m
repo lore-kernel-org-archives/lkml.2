@@ -1,61 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933599Ab0EUPmE (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 11:42:04 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:45860 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933248Ab0EUPmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 11:42:01 -0400
-Subject: bug fix patch lost: git problem or just incorrect merge?
-From: James Bottomley <James.Bottomley@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       David Miller <davem@davemloft.net>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>, netdev@vger.kernel.org,
-       linux-scsi <linux-scsi@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 10:41:55 -0500
-Message-ID: <1274456515.9022.14.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S933610Ab0EUPmW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 11:42:22 -0400
+Received: from smtprelay04.ispgateway.de ([80.67.31.27]:38659 "EHLO
+	smtprelay04.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933492Ab0EUPmU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 11:42:20 -0400
+X-Greylist: delayed 558 seconds by postgrey-1.27 at vger.kernel.org; Fri, 21 May 2010 11:42:20 EDT
+Message-ID: <4BF6A7A6.9080807@ladisch.de>
+Date: Fri, 21 May 2010 17:32:54 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Ralf Baechle <ralf@linux-mips.org>, Krzysztof Helt <krzysztof.h1@wp.pl>
+CC: linux-kernel@vger.kernel.org, Arnd Bergmann <arndbergmann@googlemail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Subject: Re: bkl: Pushdowns for sound/oss ?
+References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain> <20100521144055.GB13174@linux-mips.org>
+In-Reply-To: <20100521144055.GB13174@linux-mips.org>
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The patch in question is this one (upstream for a while):
+Ralf Baechle wrote:
+> On Fri, May 21, 2010 at 03:45:04PM +0200, John Kacur wrote:
+> > sound/oss/msnd_pinnacle.c
+> 
+> Random weirdo ISA sound card.  Probably only ever tested on x86 and will
+> have the chances
 
-commit d7d05548a62c87ee55b0c81933669177f885aa8d
-Author: Mike Christie <michaelc@cs.wisc.edu>
-Date:   Wed Mar 31 14:41:35 2010 -0500
-
-    [SCSI] iscsi_tcp: fix relogin/shutdown hang
-
-It's a simple one line change in iscsi_tcp.c (diff clipped):
-
---- a/drivers/scsi/iscsi_tcp.c
-+++ b/drivers/scsi/iscsi_tcp.c
-@@ -599,7 +599,7 @@ static void iscsi_sw_tcp_conn_stop(struct iscsi_cls_conn *cls_conn, int flag)
--       if (sock->sk->sk_sleep && waitqueue_active(sock->sk->sk_sleep)) {
-+       if (sock->sk->sk_sleep) {
-
-It was killed by this merge commit in the net-next tree:
-
-commit 278554bd6579206921f5d8a523649a7a57f8850d
-Merge: 5a147e8 cea0d76
-Author: David S. Miller <davem@davemloft.net>
-Date:   Wed May 12 00:05:35 2010 -0700
-
-However, the curious thing is that git seems to have lost trace of the
-missing patch entirely:  if I try to find it in linus' tree with a git
-log -- drivers/scsi/iscsi_tcp.c, it doesn't show up.  The merge commit
-which killed it does list iscsi_tcp.c as a file conflict, but git show
-on that commit doesn't list that file in the resolution diff ... even
-though this is where it actually got killed.
-
-Is this a git problem ... or is it just a mismerge in the net tree?
-
-Either way, of course, we need the patch back ...
-
-James
-
-
+This has since been replaced with an ALSA driver, so we can basically
+just kill the OSS driver off at this point.  Krzystof?
