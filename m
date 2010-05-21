@@ -1,153 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758532Ab0EUVr5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 17:47:57 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:35688 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755483Ab0EUVr4 (ORCPT
+	id S1758578Ab0EUVum (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 17:50:42 -0400
+Received: from cpoproxy1-pub.bluehost.com ([69.89.21.11]:41014 "HELO
+	outbound-mail-01.bluehost.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1755483Ab0EUVuk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 17:47:56 -0400
-Date: Fri, 21 May 2010 14:47:39 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Sergey Temerkhanov <temerkhanov@yandex.ru>
-Cc: "linux-aio" <linux-aio@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Benjamin LaHaise <bcrl@kvack.org>, Jeff Moyer <jmoyer@redhat.com>,
-       Zach Brown <zach.brown@oracle.com>
-Subject: Re: [PATCH][RFC] AIO: always reinitialize iocb->ki_run_list at the
- end of aio_run_iocb()
-Message-Id: <20100521144739.56c1ce0b.akpm@linux-foundation.org>
-In-Reply-To: <201004300256.58207.temerkhanov@yandex.ru>
-References: <201004280251.43430.temerkhanov@yandex.ru>
-	<20100428113149.b912a3e8.akpm@linux-foundation.org>
-	<201004300256.58207.temerkhanov@yandex.ru>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 21 May 2010 17:50:40 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=virtuousgeek.org;
+	h=Received:Date:From:To:Subject:Message-ID:X-Mailer:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Identified-User;
+	b=mmoHWeThZbsYRddYRkRV4H2kAXZLQKTmvQW0q1znmNTemEOjFAXMnp8twkb1lbw2otPPjraE6uPcREwb1p31rYqBy0Dub17YKc05aQf3GzqwIYLafy0Z/riwVJ2GmFQ1;
+Date: Fri, 21 May 2010 14:48:59 -0700
+From: Jesse Barnes <jbarnes@virtuousgeek.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [git pull] PCI changes
+Message-ID: <20100521144859.0a5b18c9@virtuousgeek.org>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
 Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
+X-Identified-User: {10642:box514.bluehost.com:virtuous:virtuousgeek.org} {sentby:smtp auth 75.110.194.140 authed with jbarnes@virtuousgeek.org}
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 30 Apr 2010 02:56:58 +0400
-Sergey Temerkhanov <temerkhanov@yandex.ru> wrote:
+The following changes since commit
+fc2a093e7ad23e935aa29e349bc27173c92f1a95: Linus Torvalds (1):
+        Merge branch 'drm-linus' of
+git://git.kernel.org/.../airlied/drm-2.6
 
-> On Wednesday 28 April 2010 22:31:49 Andrew Morton wrote:
-> > On Wed, 28 Apr 2010 02:51:43 +0400
-> > 
-> > Sergey Temerkhanov <temerkhanov@yandex.ru> wrote:
-> > > This patch makes aio_run_iocb() to always reinitialize iocb->ki_run_list
-> > > (not only when iocb->ki_retry() function returns -EIOCBRETRY) so that
-> > > subsequent call of kick_iocb() will succeed.
-> > >
-> > > Regards, Sergey Temerkhanov,
-> > > Cifronic ZAO.
-> > >
-> > >
-> > > [reinit-ki_run_list.patch  text/x-patch (657B)]
-> > > diff -r 97344a0f62c9 fs/aio.c
-> > > --- a/fs/aio.c	Tue Apr 27 21:18:14 2010 +0400
-> > > +++ b/fs/aio.c	Tue Apr 27 21:30:23 2010 +0400
-> > > @@ -748,6 +748,9 @@
-> > >  out:
-> > >  	spin_lock_irq(&ctx->ctx_lock);
-> > >
-> > > +	/* will make __queue_kicked_iocb succeed from here on */
-> > > +	INIT_LIST_HEAD(&iocb->ki_run_list);
-> > > +
-> > >  	if (-EIOCBRETRY == ret) {
-> > >  		/*
-> > >  		 * OK, now that we are done with this iteration
-> > > @@ -756,8 +759,6 @@
-> > >  		 * "kick" can start the next iteration
-> > >  		 */
-> > >
-> > > -		/* will make __queue_kicked_iocb succeed from here on */
-> > > -		INIT_LIST_HEAD(&iocb->ki_run_list);
-> > >  		/* we must queue the next iteration ourselves, if it
-> > >  		 * has already been kicked */
-> > >  		if (kiocbIsKicked(iocb)) {
-> > 
-> > I assume that this fixes some runtime problem which you observed?
-> > 
-> > Can you please describe that problem?  This code is pretty old - what
-> > was your application doing that nobody else's application has thus far
-> > done?
-> 
-> I've written the driver code which implements a zero-copy DMA char device. It 
-> has aio_read() and aio_write() methods which return -EIOCBQUEUED after the 
-> successful preparation of the buffers described by kiocb and posting it to the 
-> descriptor chain. When the descriptors are processed, the DMA engine raises 
-> the interrupt and the cleanup work is done in the handler, including 
-> aio_complete() for the completed kiocbs.
-> 
-> This works fine, however, there is a problem with canceling the queued 
-> requests, espesially on io_destroy() syscall. Since there is no simple way to 
-> remove single kiocb from the descriptor chain, I'm removing all of them from 
-> the queue using aio_complete() or aio_put_req() in the ki_cancel() callback 
-> routine of my driver. The main problem is the reference counting in 
-> aio_cancel_all():
-> 
-> 		if (cancel) {
-> 			iocb->ki_users++;
-> 			spin_unlock_irq(&ctx->ctx_lock);
-> 			cancel(iocb, &res);
-> 			spin_lock_irq(&ctx->ctx_lock);
-> 		}
-> 
-> Here the iocb->ki_users gets incremented which already has the value 1 at this 
-> point (after the io_submit_one() completion) and it's never released (). So I 
-> have to call aio_put_req() twice for the given kiocb (this seems to be the 
-> hack to me) or I'll end up with the unkillable process stuck in 
-> wait_for_all_aios() at the io_schedule(). I've posted the patches where I've 
-> added aio_put_req() but I think it needs more testing. So, I've tried another 
-> approach (hack) - requeue the kiocb with kick_iocb() before calling 
-> aio_put_req() in the ki_cancel() callback (that's because aio_run_iocb() takes 
-> some special actions for the canceled kiocbs). And I've found out that 
-> kick_iocb() fails because aio_run_iocb() does this:
-> 	iocb->ki_run_list.next = iocb->ki_run_list.prev = NULL;
-> and only reinitializes iocb->ki_run_list when iocb->ki_retry() returns 
-> -EIOCBRETRY but kick_iocb() is exported and looks like intended for usage 
-> (though not recommended).
-> 
-> The only place where I've found the similar approach to AIO in the device 
-> driver is drivers/usb/gadget/inode.c.
+are available in the git repository at:
 
-Looking up a few lines in aio_run_iocb() I see the helpful comment:
+  git://git.kernel.org/pub/scm/linux/kernel/git/jbarnes/pci-2.6 ..BRANCH.NOT.VERIFIED..
 
-	/*
-	 * This is so that aio_complete knows it doesn't need to
-	 * pull the iocb off the run list (We can't just call
-	 * INIT_LIST_HEAD because we don't want a kick_iocb to
-	 * queue this on the run list yet)
-	 */
-	iocb->ki_run_list.next = iocb->ki_run_list.prev = NULL;
+Sorry about the "not verified" bit, I just rebased the top 3 patches &
+pushed an update to drop one Bjorn was a little nervous about.  The rest
+have been soaking for some time.
 
-and I wonder whether your change broke that.					
+There's nothing too exciting in here compared to last time, it's a
+small set of changes, but there are a few good bits: Alan's basic
+resource exclusion mechanism, a few good quirks for various chipsets and
+machines, and other misc. fixes and improvements.
 
-Given that we've already run aoi_complete(), I assume it's OK, but it
-would be good if some of the more recently-involved aio guys could haev
-a think, please.
+Thanks,
+Jesse
 
---- a/fs/aio.c~aio-always-reinitialize-iocb-ki_run_list-at-the-end-of-aio_run_iocb
-+++ a/fs/aio.c
-@@ -717,6 +717,9 @@ static ssize_t aio_run_iocb(struct kiocb
- out:
- 	spin_lock_irq(&ctx->ctx_lock);
- 
-+	/* will make __queue_kicked_iocb succeed from here on */
-+	INIT_LIST_HEAD(&iocb->ki_run_list);
-+
- 	if (-EIOCBRETRY == ret) {
- 		/*
- 		 * OK, now that we are done with this iteration
-@@ -725,8 +728,6 @@ out:
- 		 * "kick" can start the next iteration
- 		 */
- 
--		/* will make __queue_kicked_iocb succeed from here on */
--		INIT_LIST_HEAD(&iocb->ki_run_list);
- 		/* we must queue the next iteration ourselves, if it
- 		 * has already been kicked */
- 		if (kiocbIsKicked(iocb)) {
-_
+Alan Cox (1):
+      resource: shared I/O region support
 
+Alan Stern (1):
+      PCI: clearing wakeup flags not needed
+
+Alex Chiang (1):
+      PCI: create function symlinks in /sys/bus/pci/slots/N/
+
+Alex Deucher (1):
+      PCI quirks: disable msi on AMD rs4xx internal gfx bridges
+
+Ben Hutchings (1):
+      PCI: Disable MSI for MCP55 on P5N32-E SLI
+
+Felix Radensky (1):
+      PCI: Allow manual resource allocation for PCI hotplug bridges
+
+Feng Tang (1):
+      x86/PCI: make ACPI MCFG reserved error messages ACPI specific
+
+Hidetoshi Seto (18):
+      PCI: aerdrv, doc: update example output in pcieaer-howto.txt
+      PCI: aerdrv: RsvdP of PCI_ERR_ROOT_COMMAND
+      PCI: aerdrv: cleanup inconsistent functions
+      PCI: aerdrv: make aer_{en,dis}able_rootport static
+      PCI: aerdrv: rework find_source_device
+      PCI: aerdrv: introduce is_error_source
+      PCI: aerdrv: remove compare_device_id
+      PCI: aerdrv: rework add_error_device
+      PCI: aerdrv: rework aer_isr_one_error()
+      PCI: aerdrv: rework get_e_source()
+      PCI: aerdrv: rework do_recovery
+      PCI: aerdrv: redefine PCI_ERR_ROOT_*_SRC
+      PCI: aerdrv: remove magical ROOT_ERR_STATUS_MASKS
+      PCI: aerdrv: remove is_downstream
+      PCI: aerdrv: rework find_aer_service
+      PCI: aerdrv: introduce default_downstream_reset_link
+      PCI: aerdrv: trivial cleanup for aerdrv.c
+      PCI: aerdrv: trivial cleanup for aerdrv_core.c
+
+Ira W. Snyder (1):
+      PCI: read memory ranges out of Broadcom CNB20LE host bridge
+
+Jesse Barnes (1):
+      PCI: change PCI_MSI help text to recommend enabling
+
+Julia Lawall (1):
+      PCI hotplug: Use kmemdup
+
+Michal Schmidt (1):
+      PCI: return correct value when writing to the "reset" attribute
+
+Prarit Bhargava (1):
+      PCI: output FW warning in pci_read/write_vpd
+
+Praveen Kalamegham (1):
+      PCI: hotplug: pciehp: Removed check for hotplug of display devices
+
+Rafael J. Wysocki (1):
+      PM/PCI: Update PCI power management documentation
+
+Roman Fietze (1):
+      PCI: fix typos pci_device_dis/enable to pci_dis/enable_device in comments
+
+Seth Heasley (1):
+      x86/PCI: irq and pci_ids patch for additional Intel Cougar Point DeviceIDs
+
+Thomas Gleixner (2):
+      PCI: Convert pci_lock to raw_spinlock
+      x86/PCI: Convert pci_config_lock to raw_spinlock
+
+ Documentation/ABI/testing/sysfs-bus-pci |   40 +
+ Documentation/PCI/pcieaer-howto.txt     |   29 +-
+ Documentation/power/pci.txt             | 1258 ++++++++++++++++++++++++-------
+ arch/x86/Kconfig                        |    8 +
+ arch/x86/include/asm/pci_x86.h          |    2 +-
+ arch/x86/pci/Makefile                   |    2 +
+ arch/x86/pci/broadcom_bus.c             |  101 +++
+ arch/x86/pci/common.c                   |    2 +-
+ arch/x86/pci/direct.c                   |   16 +-
+ arch/x86/pci/irq.c                      |    9 +-
+ arch/x86/pci/mmconfig-shared.c          |   17 +-
+ arch/x86/pci/mmconfig_32.c              |    8 +-
+ arch/x86/pci/numaq_32.c                 |    8 +-
+ arch/x86/pci/pcbios.c                   |    8 +-
+ drivers/edac/amd76x_edac.c              |    2 +-
+ drivers/edac/i82443bxgx_edac.c          |    2 +-
+ drivers/edac/r82600_edac.c              |    2 +-
+ drivers/pci/Kconfig                     |    2 +-
+ drivers/pci/access.c                    |   41 +-
+ drivers/pci/hotplug/cpqphp_core.c       |    3 +-
+ drivers/pci/hotplug/pciehp_pci.c        |   17 +-
+ drivers/pci/pci-sysfs.c                 |   44 ++-
+ drivers/pci/pci.c                       |    4 +-
+ drivers/pci/pcie/aer/aer_inject.c       |    2 +-
+ drivers/pci/pcie/aer/aerdrv.c           |  179 ++++--
+ drivers/pci/pcie/aer/aerdrv.h           |    6 +-
+ drivers/pci/pcie/aer/aerdrv_core.c      |  558 ++++++--------
+ drivers/pci/quirks.c                    |   21 +-
+ drivers/pci/slot.c                      |   48 ++
+ include/linux/ioport.h                  |    4 +-
+ include/linux/pci_ids.h                 |    4 +-
+ include/linux/pci_regs.h                |    3 +-
+ kernel/resource.c                       |   16 +-
+ 33 files changed, 1726 insertions(+), 740 deletions(-)
+ create mode 100644 arch/x86/pci/broadcom_bus.c
