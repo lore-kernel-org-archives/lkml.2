@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934111Ab0EUQwJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:52:09 -0400
-Received: from kroah.org ([198.145.64.141]:50320 "EHLO coco.kroah.org"
+	id S934205Ab0EURCx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:02:53 -0400
+Received: from kroah.org ([198.145.64.141]:50329 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757512Ab0EUQwG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:52:06 -0400
+	id S934115Ab0EUQwK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:52:10 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Mike Frysinger <vapier@gentoo.org>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 13/25] serial: bfin_sport_uart: drop redundant cpu depends
-Date: Fri, 21 May 2010 09:51:42 -0700
-Message-Id: <1274460714-11277-13-git-send-email-gregkh@suse.de>
+Cc: Randy Dunlap <randy.dunlap@oracle.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 16/25] tty: n_gsm: depends on NET
+Date: Fri, 21 May 2010 09:51:45 -0700
+Message-Id: <1274460714-11277-16-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165113.GB11216@kroah.com>
 References: <20100521165113.GB11216@kroah.com>
@@ -19,29 +20,32 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Mike Frysinger <vapier@gentoo.org>
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-The BF54xM procs imply the related BF54x define, so no need to check both.
+n_gsm uses skb functions, so it should depend on NET.
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+n_gsm.c:(.text+0x123d49): undefined reference to `skb_dequeue'
+n_gsm.c:(.text+0x123d98): undefined reference to `kfree_skb'
+n_gsm.c:(.text+0x123e1e): undefined reference to `skb_pull'
+
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/Kconfig |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ drivers/char/Kconfig |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/serial/Kconfig b/drivers/serial/Kconfig
-index f41cfce..577d276 100644
---- a/drivers/serial/Kconfig
-+++ b/drivers/serial/Kconfig
-@@ -1439,7 +1439,7 @@ config SERIAL_BFIN_SPORT_CONSOLE
- 
- config SERIAL_BFIN_SPORT0_UART
- 	bool "Enable UART over SPORT0"
--	depends on SERIAL_BFIN_SPORT && !(BF542 || BF542M || BF544 || BF544M)
-+	depends on SERIAL_BFIN_SPORT && !(BF542 || BF544)
+diff --git a/drivers/char/Kconfig b/drivers/char/Kconfig
+index 51a5700..e21175b 100644
+--- a/drivers/char/Kconfig
++++ b/drivers/char/Kconfig
+@@ -284,6 +284,7 @@ config N_HDLC
+ config N_GSM
+ 	tristate "GSM MUX line discipline support (EXPERIMENTAL)"
+ 	depends on EXPERIMENTAL
++	depends on NET
  	help
- 	  Enable UART over SPORT0
- 
+ 	  This line discipline provides support for the GSM MUX protocol and
+ 	  presents the mux as a set of 61 individual tty devices.
 -- 
 1.7.0.3
 
