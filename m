@@ -1,72 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758165Ab0EUG0L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:26:11 -0400
-Received: from moutng.kundenserver.de ([212.227.126.187]:64255 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752213Ab0EUG0J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:26:09 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Tyler Hicks <tyhicks@linux.vnet.ibm.com>
-Subject: Re: [PATCH] vfs/eCryptfs: Handle ioctl calls with unlocked and compat functions
-Date: Fri, 21 May 2010 08:25:32 +0200
-User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Dustin Kirkland <kirkland@canonical.com>,
-       Ecryptfs <ecryptfs-devel@lists.launchpad.net>,
-       Thomas Gleixner <tglx@linutronix.de>, John Kacur <jkacur@redhat.com>,
-       Alexander Viro <viro@zeniv.linux.org.uk>
-References: <1274289855-10001-1-git-send-regression-fweisbec@gmail.com> <20100520233942.GA1086@ecryptfs> <20100520234223.GA1133@ecryptfs>
-In-Reply-To: <20100520234223.GA1133@ecryptfs>
+	id S1753864Ab0EUGgi (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:36:38 -0400
+Received: from hera.kernel.org ([140.211.167.34]:51779 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751864Ab0EUGgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 02:36:36 -0400
+Message-ID: <4BF629BB.9000805@kernel.org>
+Date: Fri, 21 May 2010 08:35:39 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Oleg Nesterov <oleg@redhat.com>,
+       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
+       Nigel Cunningham <nigel@tuxonice.net>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Add suspend block api.
+References: <1272429119-12103-1-git-send-email-arve@android.com> <20100430172618.GA9043@redhat.com> <4BF4F31D.8070900@kernel.org> <201005210027.31910.rjw@sisk.pl>
+In-Reply-To: <201005210027.31910.rjw@sisk.pl>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005210825.32819.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+FIUwTDdDpQpjyguYJpKeR8ZpB4SX07iTA0cF
- +3Fw1XXbci24JE87XnlXbldzSpk8Gn8zGxrKKK1Y3FN5M3GbbF
- hidj+aDpw6L4T27giWlKw==
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 06:35:42 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 May 2010, Tyler Hicks wrote:
-> Lower filesystems that only implement unlocked_ioctl aren't being
-> passed ioctl calls because eCryptfs only checked for
-> lower_file->f_op->ioctl and returned -ENOTTY if it was NULL.
+Hello,
+
+On 05/21/2010 12:27 AM, Rafael J. Wysocki wrote:
+>> Oh, this isn't an issue w/ cmwq.  While frozen all new works are
+>> collected into per-cpu delayed worklist and while frozen trustee in
+>> charge of the cpu will keep waiting.  Once thawed, trustee will
+>> execute all works including the delayed ones unbound to any cpu.
 > 
-> eCryptfs shouldn't implement ioctl(), since it doesn't require the BKL.
-> Instead, unlocked_ioctl() should be used and vfs_ioctl() can be called
-> on the lower file since it handles locking, if necessary.  This requires
-> vfs_ioctl() to be exported.
+> So, does it require any intrusive changes to make it possible to create
+> multithread freezable workqueues?
 
-Calling vfs_ioctl doesn't help you at all here, you could simply call
-the ->unlocked_ioctl function of the lower fs directly to do the same,
-because ->ioctl will be gone soon.
+cmwq itself is quite intrusive changes but w/ cmwq it just takes
+flipping a flag when creating the queue.
 
-You are howevers still missing a few calls that are done through do_vfs_ioctl
-or file_ioctl.  To implement these, you need to add the file and super operations
-that these call and forward the functions to the lower fs.
+Thanks.
 
-> +#ifdef CONFIG_COMPAT
-> +static long
-> +ecryptfs_compat_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
-> +{
-> +	long rc = -ENOTTY;
-> +	struct file *lower_file = NULL;
-> +
-> +	if (ecryptfs_file_to_private(file))
-> +		lower_file = ecryptfs_file_to_lower(file);
-> +	if (lower_file && lower_file->f_op && lower_file->f_op->compat_ioctl)
-> +		rc = lower_file->f_op->compat_ioctl(lower_file, cmd, arg);
-> +	return rc;
-> +}
-> +#endif
-
-You need to return -ENOIOCTLCMD here, not ENOTTY to cover the case where
-the lower file system does not have a ->compat_ioctl function but has its
-calls listed in fs/compat_ioctl.c.
-
-	Arnd
+-- 
+tejun
