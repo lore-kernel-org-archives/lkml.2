@@ -1,73 +1,106 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753871Ab0EUEsn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 00:48:43 -0400
-Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:46848 "EHLO
-	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab0EUEsm (ORCPT
+	id S1753552Ab0EUEwv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 00:52:51 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:49883 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752987Ab0EUEwu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 00:48:42 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-Date: Fri, 21 May 2010 13:44:24 +0900
-From: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       minskey guo <chaohong_guo@linux.intel.com>, linux-mm@kvack.org,
-       prarit@redhat.com, andi.kleen@intel.com, linux-kernel@vger.kernel.org,
-       minskey guo <chaohong.guo@intel.com>, Tejun Heo <tj@kernel.org>,
-       stable@kernel.org
-Subject: Re: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
-Message-Id: <20100521134424.45e0ee36.kamezawa.hiroyu@jp.fujitsu.com>
-In-Reply-To: <20100521105512.0c2cf254.sfr@canb.auug.org.au>
-References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
-	<20100520134359.fdfb397e.akpm@linux-foundation.org>
-	<20100521105512.0c2cf254.sfr@canb.auug.org.au>
-Organization: FUJITSU Co. LTD.
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.10.14; i686-pc-mingw32)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Fri, 21 May 2010 00:52:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=CAGtqXCUDsHEnVfyHrcP6nREUG6XznMInC1q7DIVG31TFgUwa3oIa2/hqYkHHloBL8
+         oacf98uJEfzRN2oAaT3LVrikvATRHj/wCXw3Z4rgt4mGFBw6aMxMpxsg7PWFhNWWnsvC
+         mY5tE3/EXv4Uxk2rhNXox5fPUbVZLb6IT9BWA=
+MIME-Version: 1.0
+In-Reply-To: <4BF5892E.5080302@tilera.com>
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> 
+	<AANLkTilpV71K2L2N1B85yRnlTc302KbMUz2P5kuvktyl@mail.gmail.com> 
+	<4BF5892E.5080302@tilera.com>
+From: Barry Song <21cnbao@gmail.com>
+Date: Fri, 21 May 2010 12:52:27 +0800
+Message-ID: <AANLkTikN6S2nMLAw0uQ9_BosJ0i3_vdpajVrVq0Kllp7@mail.gmail.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+To: Chris Metcalf <cmetcalf@tilera.com>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 10:55:12 +1000
-Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On Fri, May 21, 2010 at 3:10 AM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+> On 5/20/2010 1:04 AM, Barry Song wrote:
+>> On Thu, May 20, 2010 at 1:43 PM, Chris Metcalf <cmetcalf@tilera.com> wrote:
+>>
+>>> --- linux-2.6.34/include/linux/mm.h     2010-05-16 17:17:36.000000000 -0400
+>>> +++ tilera-source/include/linux/mm.h    2010-05-17 12:54:33.540145000 -0400
+>>> @@ -592,7 +592,7 @@
+>>>
+>>>  static __always_inline void *lowmem_page_address(struct page *page)
+>>>  {
+>>> -       return __va(page_to_pfn(page) << PAGE_SHIFT);
+>>> +       return __va((phys_addr_t)page_to_pfn(page) << PAGE_SHIFT);
+>>>
+>> Here doesn't make sense. you give a u64 type cast, but change the
+>> meaning of pfn. Is pfn phys_addr_t? Anyway, page_to_pfn can be
+>> re-fulfilled in your arch, but not change it in common code.
+>> [...]
+>> Your patch is not compilable, and the subject doesn't match well with
+>> the content. I think you need re-organize patches.
 
-> Hi Andrew,
-> 
-> On Thu, 20 May 2010 13:43:59 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
-> >
-> > > --- a/mm/percpu.c
-> > > +++ b/mm/percpu.c
-> > > @@ -714,13 +714,29 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
-> > 
-> > In linux-next, Tejun has gone and moved pcpu_alloc_pages() into the new
-> > mm/percpu-vm.c.  So either
-> 
-> This has gone into Linus' tree today ...
-> 
+Where does the blade_pci symbol come from? "No matches found" by a
+grep. Is it exported in your local codes?
+Why not just use #if CONFIG_TILE to cover your quirk_tile_blade. And
+where is CONFIG_TILE?
+I guess all will be explained by your arch codes, but this patch
+depends on your arch codes, so it shouldn't be here by itself.
 
-Hmm, a comment here.
-
-Recently, Lee Schermerhorn developed
-
- numa-introduce-numa_mem_id-effective-local-memory-node-id-fix2.patch
-
-Then, you can use cpu_to_mem() instead of cpu_to_node() to find the
-nearest available node.
-I don't check cpu_to_mem() is synchronized with NUMA hotplug but
-using cpu_to_mem() rather than adding 
-=
-
-+			if ((nid == -1) ||
-+			    !(node_zonelist(nid, GFP_KERNEL)->_zonerefs->zone))
-+				nid = numa_node_id();
-+
-==
-
-is better. 
-
-Thanks,
--Kame
-
+>>
+>
+> Where do you see the compilation failure?  I tested this with the only
+> other architecture I have handy (x86_64) and it built OK.  And by code
+> inspection, <linux/mm.h> includes <linux/mm_types.h> includes
+> <linux/types.h>, which always provides phys_addr_t suitably (based on
+> CONFIG_PHYS_ADDR_T_64BIT).
+>
+> In any case, a better solution might be to #include <linux/pfn.h> in
+> <linux/mm.h> and write this function as:
+>
+> static __always_inline void *lowmem_page_address(struct page *page)
+> {
+>        return __va(PFN_PHYS(page_to_pfn(page));
+> }
+>
+>
+> Note that PFN_PHYS() is already defined to include the cast to
+> phys_addr_t.  Jeremy Fitzhardinge added the cast in Sep 2008 with a
+> comment that echoes this discussion:
+>
+>    generic: make PFN_PHYS explicitly return phys_addr_t
+>
+>    PFN_PHYS, as its name suggests, turns a pfn into a physical address.
+>    However, it is a macro which just operates on its argument without
+>    modifying its type.  pfns are typed unsigned long, but an unsigned
+>    long may not be long enough to hold a physical address (32-bit systems
+>    with more than 32 bits of physcial address).
+>
+>    Make sure we cast to phys_addr_t to return a complete result.
+>
+>
+> Linus, does this seem like the right generic answer, or would it make
+> more sense, as you suggested, to try to provide a new pfn_to_phys()
+> function in the architecture-independent code?
+>
+> In any case, in the spirit of providing a complete answer, I'll provide
+> a proper patch in a following email.
+>
+> --
+> Chris Metcalf, Tilera Corp.
+> http://www.tilera.com
+>
+>
+>
