@@ -1,30 +1,27 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758216Ab0EUILX (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 04:11:23 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:51412 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758162Ab0EUILR (ORCPT
+	id S1758228Ab0EUIL0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 04:11:26 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:56361 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756232Ab0EUILP (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 04:11:17 -0400
+	Fri, 21 May 2010 04:11:15 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
          :in-reply-to:references;
-        b=Zy27Ikit1n2wSA5PaREoDBwDeCuSjoi9QyYyoobN9VGZcjfnpddkC0dKaroJj2SCuU
-         2jIOkn7l0/WDbm/OLKr1XStX2v/8A/L0jauEd8jYCnKns6Pg8amgqYK/bdn5cYUGmWRx
-         6k/wnb0UBQ/EP0iCV/YJoMBzWTSXOiyEvF3uE=
+        b=rnwPADWY6Z4hzIiTbzPFG0THtwaaAdW1qhXcZ1qcpF5qnMqM3aG1WKf4zcr2PTj0Vk
+         qXwzHWSSuDMKEdFosDnOzS/1uPHVTk0suaWjKqwbcnTojJXQBBBMsG0GAWIDuc8VYiHH
+         8UJ299xB1nC2rqB7z6HWquzaTy3mEiX9BwhnU=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: LKML <linux-kernel@vger.kernel.org>
 Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       David Miller <davem@davemloft.net>
-Subject: [PATCH 2/2] perf: Drop the skip argument from perf_arch_fetch_regs_caller
-Date: Fri, 21 May 2010 10:11:17 +0200
-Message-Id: <1274429477-21531-3-git-send-regression-fweisbec@gmail.com>
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>
+Subject: [PATCH 1/2] x86: Unify dumpstack.h and stacktrace.h
+Date: Fri, 21 May 2010 10:11:16 +0200
+Message-Id: <1274429477-21531-2-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1274429477-21531-1-git-send-regression-fweisbec@gmail.com>
@@ -33,288 +30,242 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Drop this argument now that we always want to rewind only to the
-state of the first caller.
-It means frame pointers are not necessary anymore to reliably get
-the source of an event. But this also means we need this helper
-to be a macro now, as an inline function is not an option since
-we need to know when to provide a default implentation.
+arch/x86/include/asm/stacktrace.h and arch/x86/kernel/dumpstack.h
+declare headers of objects that deal with the same topic.
+Actually most of the files that include stacktrace.h also include
+dumpstack.h
+
+Although dumpstack.h seems more reserved for internals of stack
+traces, those are quite often needed to define specialized stack
+trace operations. And perf event arch headers are going to need
+access to such low level operations anyway. So don't continue to
+bother with dumpstack.h as it's not anymore about isolated deep
+internals.
 
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
-Signed-off-by: Paul Mackerras <paulus@samba.org>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: David Miller <davem@davemloft.net>
+Cc: H. Peter Anvin <hpa@zytor.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
 ---
- arch/powerpc/include/asm/perf_event.h |   12 ++++++++++++
- arch/powerpc/kernel/misc.S            |   26 --------------------------
- arch/sparc/include/asm/perf_event.h   |    4 ++++
- arch/sparc/kernel/helpers.S           |    6 +++---
- arch/x86/include/asm/perf_event.h     |    9 +++++++++
- arch/x86/include/asm/stacktrace.h     |    7 ++-----
- arch/x86/kernel/cpu/perf_event.c      |   12 ------------
- include/linux/perf_event.h            |   32 +++++++-------------------------
- include/trace/ftrace.h                |    2 +-
- kernel/perf_event.c                   |    5 -----
- kernel/trace/trace_event_perf.c       |    2 --
- 11 files changed, 38 insertions(+), 79 deletions(-)
+ arch/x86/include/asm/stacktrace.h |   52 ++++++++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.c  |    2 -
+ arch/x86/kernel/dumpstack.c       |    1 -
+ arch/x86/kernel/dumpstack.h       |   56 -------------------------------------
+ arch/x86/kernel/dumpstack_32.c    |    2 -
+ arch/x86/kernel/dumpstack_64.c    |    1 -
+ arch/x86/kernel/stacktrace.c      |    7 ++--
+ 7 files changed, 56 insertions(+), 65 deletions(-)
+ delete mode 100644 arch/x86/kernel/dumpstack.h
 
-diff --git a/arch/powerpc/include/asm/perf_event.h b/arch/powerpc/include/asm/perf_event.h
-index e6d4ce6..5c16b89 100644
---- a/arch/powerpc/include/asm/perf_event.h
-+++ b/arch/powerpc/include/asm/perf_event.h
-@@ -21,3 +21,15 @@
- #ifdef CONFIG_FSL_EMB_PERF_EVENT
- #include <asm/perf_event_fsl_emb.h>
- #endif
-+
-+#ifdef CONFIG_PERF_EVENTS
-+#include <asm/ptrace.h>
-+#include <asm/reg.h>
-+
-+#define perf_arch_fetch_caller_regs(regs, __ip)			\
-+	do {							\
-+		(regs)->nip = __ip;				\
-+		(regs)->gpr[1] = *(unsigned long *)__get_SP();	\
-+		asm volatile("mfmsr %0" : "=r" ((regs)->msr));	\
-+	} while (0)
-+#endif
-diff --git a/arch/powerpc/kernel/misc.S b/arch/powerpc/kernel/misc.S
-index 22e507c..2d29752 100644
---- a/arch/powerpc/kernel/misc.S
-+++ b/arch/powerpc/kernel/misc.S
-@@ -127,29 +127,3 @@ _GLOBAL(__setup_cpu_power7)
- _GLOBAL(__restore_cpu_power7)
- 	/* place holder */
- 	blr
--
--/*
-- * Get a minimal set of registers for our caller's nth caller.
-- * r3 = regs pointer, r5 = n.
-- *
-- * We only get R1 (stack pointer), NIP (next instruction pointer)
-- * and LR (link register).  These are all we can get in the
-- * general case without doing complicated stack unwinding, but
-- * fortunately they are enough to do a stack backtrace, which
-- * is all we need them for.
-- */
--_GLOBAL(perf_arch_fetch_caller_regs)
--	mr	r6,r1
--	cmpwi	r5,0
--	mflr	r4
--	ble	2f
--	mtctr	r5
--1:	PPC_LL	r6,0(r6)
--	bdnz	1b
--	PPC_LL	r4,PPC_LR_STKOFF(r6)
--2:	PPC_LL	r7,0(r6)
--	PPC_LL	r7,PPC_LR_STKOFF(r7)
--	PPC_STL	r6,GPR1-STACK_FRAME_OVERHEAD(r3)
--	PPC_STL	r4,_NIP-STACK_FRAME_OVERHEAD(r3)
--	PPC_STL	r7,_LINK-STACK_FRAME_OVERHEAD(r3)
--	blr
-diff --git a/arch/sparc/include/asm/perf_event.h b/arch/sparc/include/asm/perf_event.h
-index 7e26698..7e7d4de 100644
---- a/arch/sparc/include/asm/perf_event.h
-+++ b/arch/sparc/include/asm/perf_event.h
-@@ -7,6 +7,10 @@ extern void set_perf_event_pending(void);
- 
- #ifdef CONFIG_PERF_EVENTS
- extern void init_hw_perf_events(void);
-+
-+#define perf_arch_fetch_caller_regs(pt_regs, ip)	\
-+	__perf_arch_fetch_caller_regs(pt_regs, ip, 1);
-+#endif
- #else
- static inline void init_hw_perf_events(void)	{ }
- #endif
-diff --git a/arch/sparc/kernel/helpers.S b/arch/sparc/kernel/helpers.S
-index 92090cc..682fee0 100644
---- a/arch/sparc/kernel/helpers.S
-+++ b/arch/sparc/kernel/helpers.S
-@@ -47,9 +47,9 @@ stack_trace_flush:
- 	.size		stack_trace_flush,.-stack_trace_flush
- 
- #ifdef CONFIG_PERF_EVENTS
--	.globl		perf_arch_fetch_caller_regs
--	.type		perf_arch_fetch_caller_regs,#function
--perf_arch_fetch_caller_regs:
-+	.globl		__perf_arch_fetch_caller_regs
-+	.type		__perf_arch_fetch_caller_regs,#function
-+__perf_arch_fetch_caller_regs:
- 	/* We always read the %pstate into %o5 since we will use
- 	 * that to construct a fake %tstate to store into the regs.
- 	 */
-diff --git a/arch/x86/include/asm/perf_event.h b/arch/x86/include/asm/perf_event.h
-index 254883d..ea871a5 100644
---- a/arch/x86/include/asm/perf_event.h
-+++ b/arch/x86/include/asm/perf_event.h
-@@ -140,6 +140,15 @@ extern unsigned long perf_instruction_pointer(struct pt_regs *regs);
- extern unsigned long perf_misc_flags(struct pt_regs *regs);
- #define perf_misc_flags(regs)	perf_misc_flags(regs)
- 
-+#include <asm/stacktrace.h>
-+
-+#define perf_arch_fetch_caller_regs(regs, __ip)		{	\
-+	(regs)->ip = (__ip);					\
-+	(regs)->bp = caller_frame_pointer();			\
-+	(regs)->cs = __KERNEL_CS;				\
-+	local_save_flags((regs)->flags);			\
-+}
-+
- #else
- static inline void init_hw_perf_events(void)		{ }
- static inline void perf_events_lapic_init(void)	{ }
 diff --git a/arch/x86/include/asm/stacktrace.h b/arch/x86/include/asm/stacktrace.h
-index a957463..2b16a2a 100644
+index 4dab78e..a957463 100644
 --- a/arch/x86/include/asm/stacktrace.h
 +++ b/arch/x86/include/asm/stacktrace.h
-@@ -78,17 +78,14 @@ struct stack_frame_ia32 {
-     u32 return_address;
+@@ -1,6 +1,13 @@
++/*
++ *  Copyright (C) 1991, 1992  Linus Torvalds
++ *  Copyright (C) 2000, 2001, 2002 Andi Kleen, SuSE Labs
++ */
++
+ #ifndef _ASM_X86_STACKTRACE_H
+ #define _ASM_X86_STACKTRACE_H
+ 
++#include <linux/uaccess.h>
++
+ extern int kstack_depth_to_print;
+ 
+ struct thread_info;
+@@ -42,4 +49,49 @@ void dump_trace(struct task_struct *tsk, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp,
+ 		const struct stacktrace_ops *ops, void *data);
+ 
++#ifdef CONFIG_X86_32
++#define STACKSLOTS_PER_LINE 8
++#define get_bp(bp) asm("movl %%ebp, %0" : "=r" (bp) :)
++#else
++#define STACKSLOTS_PER_LINE 4
++#define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
++#endif
++
++extern void
++show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *stack, unsigned long bp, char *log_lvl);
++
++extern void
++show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
++		unsigned long *sp, unsigned long bp, char *log_lvl);
++
++extern unsigned int code_bytes;
++
++/* The form of the top of the frame on the stack */
++struct stack_frame {
++	struct stack_frame *next_frame;
++	unsigned long return_address;
++};
++
++struct stack_frame_ia32 {
++    u32 next_frame;
++    u32 return_address;
++};
++
++static inline unsigned long rewind_frame_pointer(int n)
++{
++	struct stack_frame *frame;
++
++	get_bp(frame);
++
++#ifdef CONFIG_FRAME_POINTER
++	while (n--) {
++		if (probe_kernel_address(&frame->next_frame, frame))
++			break;
++	}
++#endif
++
++	return (unsigned long)frame;
++}
++
+ #endif /* _ASM_X86_STACKTRACE_H */
+diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+index fd4db0d..2ae6112 100644
+--- a/arch/x86/kernel/cpu/perf_event.c
++++ b/arch/x86/kernel/cpu/perf_event.c
+@@ -1585,8 +1585,6 @@ static const struct stacktrace_ops backtrace_ops = {
+ 	.walk_stack		= print_context_stack_bp,
  };
  
--static inline unsigned long rewind_frame_pointer(int n)
-+static inline unsigned long caller_frame_pointer(void)
+-#include "../dumpstack.h"
+-
+ static void
+ perf_callchain_kernel(struct pt_regs *regs, struct perf_callchain_entry *entry)
  {
- 	struct stack_frame *frame;
+diff --git a/arch/x86/kernel/dumpstack.c b/arch/x86/kernel/dumpstack.c
+index c89a386..6e8752c 100644
+--- a/arch/x86/kernel/dumpstack.c
++++ b/arch/x86/kernel/dumpstack.c
+@@ -18,7 +18,6 @@
  
- 	get_bp(frame);
+ #include <asm/stacktrace.h>
  
- #ifdef CONFIG_FRAME_POINTER
+-#include "dumpstack.h"
+ 
+ int panic_on_unrecovered_nmi;
+ int panic_on_io_nmi;
+diff --git a/arch/x86/kernel/dumpstack.h b/arch/x86/kernel/dumpstack.h
+deleted file mode 100644
+index e1a93be..0000000
+--- a/arch/x86/kernel/dumpstack.h
++++ /dev/null
+@@ -1,56 +0,0 @@
+-/*
+- *  Copyright (C) 1991, 1992  Linus Torvalds
+- *  Copyright (C) 2000, 2001, 2002 Andi Kleen, SuSE Labs
+- */
+-
+-#ifndef DUMPSTACK_H
+-#define DUMPSTACK_H
+-
+-#ifdef CONFIG_X86_32
+-#define STACKSLOTS_PER_LINE 8
+-#define get_bp(bp) asm("movl %%ebp, %0" : "=r" (bp) :)
+-#else
+-#define STACKSLOTS_PER_LINE 4
+-#define get_bp(bp) asm("movq %%rbp, %0" : "=r" (bp) :)
+-#endif
+-
+-#include <linux/uaccess.h>
+-
+-extern void
+-show_trace_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *stack, unsigned long bp, char *log_lvl);
+-
+-extern void
+-show_stack_log_lvl(struct task_struct *task, struct pt_regs *regs,
+-		unsigned long *sp, unsigned long bp, char *log_lvl);
+-
+-extern unsigned int code_bytes;
+-
+-/* The form of the top of the frame on the stack */
+-struct stack_frame {
+-	struct stack_frame *next_frame;
+-	unsigned long return_address;
+-};
+-
+-struct stack_frame_ia32 {
+-    u32 next_frame;
+-    u32 return_address;
+-};
+-
+-static inline unsigned long rewind_frame_pointer(int n)
+-{
+-	struct stack_frame *frame;
+-
+-	get_bp(frame);
+-
+-#ifdef CONFIG_FRAME_POINTER
 -	while (n--) {
 -		if (probe_kernel_address(&frame->next_frame, frame))
 -			break;
 -	}
-+	frame = frame->next_frame;
- #endif
- 
- 	return (unsigned long)frame;
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 2ae6112..2c075fe 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -1706,18 +1706,6 @@ struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return entry;
- }
- 
--void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
--{
--	regs->ip = ip;
--	/*
--	 * perf_arch_fetch_caller_regs adds another call, we need to increment
--	 * the skip level
--	 */
--	regs->bp = rewind_frame_pointer(skip + 1);
--	regs->cs = __KERNEL_CS;
--	local_save_flags(regs->flags);
+-#endif
+-
+-	return (unsigned long)frame;
 -}
 -
- unsigned long perf_instruction_pointer(struct pt_regs *regs)
+-#endif /* DUMPSTACK_H */
+diff --git a/arch/x86/kernel/dumpstack_32.c b/arch/x86/kernel/dumpstack_32.c
+index 11540a1..0f6376f 100644
+--- a/arch/x86/kernel/dumpstack_32.c
++++ b/arch/x86/kernel/dumpstack_32.c
+@@ -16,8 +16,6 @@
+ 
+ #include <asm/stacktrace.h>
+ 
+-#include "dumpstack.h"
+-
+ 
+ void dump_trace(struct task_struct *task, struct pt_regs *regs,
+ 		unsigned long *stack, unsigned long bp,
+diff --git a/arch/x86/kernel/dumpstack_64.c b/arch/x86/kernel/dumpstack_64.c
+index 272c9f1..57a21f1 100644
+--- a/arch/x86/kernel/dumpstack_64.c
++++ b/arch/x86/kernel/dumpstack_64.c
+@@ -16,7 +16,6 @@
+ 
+ #include <asm/stacktrace.h>
+ 
+-#include "dumpstack.h"
+ 
+ #define N_EXCEPTION_STACKS_END \
+ 		(N_EXCEPTION_STACKS + DEBUG_STKSZ/EXCEPTION_STKSZ - 2)
+diff --git a/arch/x86/kernel/stacktrace.c b/arch/x86/kernel/stacktrace.c
+index 922eefb..ea54d02 100644
+--- a/arch/x86/kernel/stacktrace.c
++++ b/arch/x86/kernel/stacktrace.c
+@@ -96,12 +96,13 @@ EXPORT_SYMBOL_GPL(save_stack_trace_tsk);
+ 
+ /* Userspace stacktrace - based on kernel/trace/trace_sysprof.c */
+ 
+-struct stack_frame {
++struct stack_frame_user {
+ 	const void __user	*next_fp;
+ 	unsigned long		ret_addr;
+ };
+ 
+-static int copy_stack_frame(const void __user *fp, struct stack_frame *frame)
++static int
++copy_stack_frame(const void __user *fp, struct stack_frame_user *frame)
  {
- 	unsigned long ip;
-diff --git a/include/linux/perf_event.h b/include/linux/perf_event.h
-index fe50347..49d441e 100644
---- a/include/linux/perf_event.h
-+++ b/include/linux/perf_event.h
-@@ -903,8 +903,10 @@ extern atomic_t perf_swevent_enabled[PERF_COUNT_SW_MAX];
+ 	int ret;
  
- extern void __perf_sw_event(u32, u64, int, struct pt_regs *, u64);
+@@ -126,7 +127,7 @@ static inline void __save_stack_trace_user(struct stack_trace *trace)
+ 		trace->entries[trace->nr_entries++] = regs->ip;
  
--extern void
--perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip);
-+#ifndef perf_arch_fetch_caller_regs
-+static inline void
-+perf_arch_fetch_caller_regs(struct regs *regs, unsigned long ip) { }
-+#endif
+ 	while (trace->nr_entries < trace->max_entries) {
+-		struct stack_frame frame;
++		struct stack_frame_user frame;
  
- /*
-  * Take a snapshot of the regs. Skip ip and frame pointer to
-@@ -914,31 +916,11 @@ perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip);
-  * - bp for callchains
-  * - eflags, for future purposes, just in case
-  */
--static inline void perf_fetch_caller_regs(struct pt_regs *regs, int skip)
-+static inline void perf_fetch_caller_regs(struct pt_regs *regs)
- {
--	unsigned long ip;
--
- 	memset(regs, 0, sizeof(*regs));
- 
--	switch (skip) {
--	case 1 :
--		ip = CALLER_ADDR0;
--		break;
--	case 2 :
--		ip = CALLER_ADDR1;
--		break;
--	case 3 :
--		ip = CALLER_ADDR2;
--		break;
--	case 4:
--		ip = CALLER_ADDR3;
--		break;
--	/* No need to support further for now */
--	default:
--		ip = 0;
--	}
--
--	return perf_arch_fetch_caller_regs(regs, ip, skip);
-+	perf_arch_fetch_caller_regs(regs, CALLER_ADDR0);
- }
- 
- static inline void
-@@ -948,7 +930,7 @@ perf_sw_event(u32 event_id, u64 nr, int nmi, struct pt_regs *regs, u64 addr)
- 		struct pt_regs hot_regs;
- 
- 		if (!regs) {
--			perf_fetch_caller_regs(&hot_regs, 1);
-+			perf_fetch_caller_regs(&hot_regs);
- 			regs = &hot_regs;
- 		}
- 		__perf_sw_event(event_id, nr, nmi, regs, addr);
-diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-index 1016b21..976cc09 100644
---- a/include/trace/ftrace.h
-+++ b/include/trace/ftrace.h
-@@ -801,7 +801,7 @@ static notrace void perf_trace_##call(proto)				\
- 	struct ftrace_event_call *event_call = &event_##call;		\
- 	struct pt_regs *__regs = &get_cpu_var(perf_trace_regs);		\
- 									\
--	perf_fetch_caller_regs(__regs, 1);				\
-+	perf_fetch_caller_regs(__regs);					\
- 									\
- 	perf_trace_templ_##template(event_call, __regs, args);		\
- 									\
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index 45b7aec..77387fa 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -2842,11 +2842,6 @@ __weak struct perf_callchain_entry *perf_callchain(struct pt_regs *regs)
- 	return NULL;
- }
- 
--__weak
--void perf_arch_fetch_caller_regs(struct pt_regs *regs, unsigned long ip, int skip)
--{
--}
--
- 
- /*
-  * We assume there is only KVM supporting the callbacks.
-diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
-index 89b780a..924bab2 100644
---- a/kernel/trace/trace_event_perf.c
-+++ b/kernel/trace/trace_event_perf.c
-@@ -12,8 +12,6 @@
- DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
- EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
- 
--EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
--
- static char *perf_trace_buf;
- static char *perf_trace_buf_nmi;
- 
+ 		frame.next_fp = NULL;
+ 		frame.ret_addr = 0;
 -- 
 1.6.2.3
 
