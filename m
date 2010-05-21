@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754448Ab0EUNSA (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 09:18:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43001 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753353Ab0EUNR7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 09:17:59 -0400
-Date: Fri, 21 May 2010 09:17:51 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace
-	backlogged group status
-Message-ID: <20100521131751.GA15302@redhat.com>
-References: <4BF64712.1070500@cn.fujitsu.com>
+	id S1754628Ab0EUNVF (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 09:21:05 -0400
+Received: from isilmar-3.linta.de ([188.40.101.200]:49032 "EHLO linta.de"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753774Ab0EUNVC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 09:21:02 -0400
+Date: Fri, 21 May 2010 15:16:38 +0200
+From: Dominik Brodowski <linux@dominikbrodowski.net>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: Jens.Kuenzer@fpga.homeip.net, linux-pcmcia@lists.infradead.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH][bisected]pcmcia:yenta_socket.c fix broken wireless
+ cards.
+Message-ID: <20100521131638.GA22685@comet.dominikbrodowski.net>
+Mail-Followup-To: "Justin P. Mattock" <justinmattock@gmail.com>,
+	Jens.Kuenzer@fpga.homeip.net, linux-pcmcia@lists.infradead.org,
+	linux-kernel@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BF64712.1070500@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <4BF5974A.4050100@gmail.com>
+ <4BF57515.6030404@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
-> Hi,
-> 
-> This series implements three new interfaces to keep track of tranferred bytes,
-> elapsing time and io rate since group getting backlogged. If the group dequeues
-> from service tree, these three interfaces will reset and shows zero.
+Justin,
 
-Hi Gui,
+would you be willing to test another patch? This one replaces the previous
+version, and makes the readb() conditional at the right place (hopefully,
+that is).
 
-Can you give some details regarding how this functionality is useful? Why
-would somebody be interested in only in stats of till group was
-backlogged and not in total stats?
+Thanks & best,
 
-Groups can come and go so fast and these stats will reset so many times
-that I am not able to visualize how these stats will be useful.
+	Dominik
 
-Thanks
-Vivek
 
-> 
-> Thanks
-> Gui
+diff --git a/drivers/pcmcia/yenta_socket.c b/drivers/pcmcia/yenta_socket.c
+index 424e576..6bf8b2c 100644
+--- a/drivers/pcmcia/yenta_socket.c
++++ b/drivers/pcmcia/yenta_socket.c
+@@ -975,7 +975,7 @@ static irqreturn_t yenta_probe_handler(int irq, void *dev_id)
+ /* probes the PCI interrupt, use only on override functions */
+ static int yenta_probe_cb_irq(struct yenta_socket *socket)
+ {
+-	u8 reg;
++	u8 reg = 0;
+ 
+ 	if (!socket->cb_irq)
+ 		return -1;
+@@ -989,7 +989,8 @@ static int yenta_probe_cb_irq(struct yenta_socket *socket)
+ 	}
+ 
+ 	/* generate interrupt, wait */
+-	reg = exca_readb(socket, I365_CSCINT);
++	if (!socket->dev->irq)
++		reg = exca_readb(socket, I365_CSCINT);
+ 	exca_writeb(socket, I365_CSCINT, reg | I365_CSC_STSCHG);
+ 	cb_writel(socket, CB_SOCKET_EVENT, -1);
+ 	cb_writel(socket, CB_SOCKET_MASK, CB_CSTSMASK);
