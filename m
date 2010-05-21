@@ -1,64 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758584Ab0EUUcL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 16:32:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:49980 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753494Ab0EUUcJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 16:32:09 -0400
-Date: Fri, 21 May 2010 13:31:36 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Manfred Spraul <manfred@colorfullife.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] ipc: increase IPCMNI_MAX
-Message-Id: <20100521133136.d0e282df.akpm@linux-foundation.org>
-In-Reply-To: <20100520070741.GI2516@laptop>
-References: <20100520065911.GG2516@laptop>
-	<20100520070741.GI2516@laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758591Ab0EUUtf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 16:49:35 -0400
+Received: from kroah.org ([198.145.64.141]:33528 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751534Ab0EUUte (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 16:49:34 -0400
+Date: Fri, 21 May 2010 13:37:16 -0700
+From: Greg KH <greg@kroah.com>
+To: Sergei Shtylyov <sshtylyov@mvista.com>
+Cc: linux-usb@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: 2.6.35 merge window is over for USB
+Message-ID: <20100521203716.GA8434@kroah.com>
+References: <20100521152141.GA18603@kroah.com>
+ <4BF6EC5D.6080005@ru.mvista.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF6EC5D.6080005@ru.mvista.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010 17:07:41 +1000
-Nick Piggin <npiggin@suse.de> wrote:
-
-> Just wondering whether there is a good reason to have a full 16 bits of
-> sequence in ipc ids? 32K indexes is pretty easy to overflow, if only in
-> stress tests for now. I was doing some big aim7 stress testing, which
-> required this patch, but it's not exactly a realistic workload :) 
+On Sat, May 22, 2010 at 12:26:05AM +0400, Sergei Shtylyov wrote:
+> Hello.
 > 
-> But the sequence seems like it just helps slightly with buggy apps, and
-> if the app is buggy then it can by definition mess up its own ids
-> anyway? So I don't see that such amount of seq is required.
+> Greg KH wrote:
 > 
-> Index: linux-2.6/ipc/util.h
-> ===================================================================
-> --- linux-2.6.orig/ipc/util.h
-> +++ linux-2.6/ipc/util.h
-> @@ -14,7 +14,16 @@
->  #include <linux/err.h>
->  
->  /* IPCMNI_MAX should be <= MAX_INT, absolute limit for ipc arrays */
-> -#define IPCMNI_MAX_SHIFT	15
-> +/*
-> + * IPC ids consist of an index into the idr, which allocates from the bottom
-> + * up, and a sequence number which is continually incremented. Valid indexes
-> + * are from 0..IPCMNI_MAX (or further constrained by sysctls or other limits).
-> + * The sequence number prevents ids from being reused quickly. The sequence
-> + * number resides in the top part of the 'int' after IPCMNI_MAX.
-> + *
-> + * Increasing IPCMNI_MAX reduces the sequence wrap interval.
-> + */
-> +#define IPCMNI_MAX_SHIFT	20
->  #define IPCMNI_MAX		(1 << IPCMNI_MAX_SHIFT)
->  
->  #define SEQ_SHIFT		IPCMNI_MAX_SHIFT
+> >Hi all,
+> 
+> >If you haven't noticed, all of the new features for USB are now merged
+> >in Linus's tree for the .35 kernel version.  At this point in time, I'm
+> >only expecting there to be minor bugfixes and new device ids for the .35
+> >kernel for the USB subsystem.  Anything else, will be gladly accepted by
+> >me at any time, but note that I will be queueing it up for the .36
+> >kernel release.
+> 
+> >If anyone has any questions, please let me know.
+> 
+>    How about the new drivers (or new glue layers) and the
+> "new-driver-can't-break-anything" rule? ;-)
 
-Some anaylsis of the worst-case memory consumption would be mollifying.
+Perhaps, but a glue layer does not sound very "stand alone", especially
+in the musb space.
 
-I took the absence of Signed-off-by:'s to mean "rfc" and wandered away.
+Brand new drivers would be easy to be merged, as always.
+
+thanks,
+
+greg k-h
