@@ -1,408 +1,410 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754966Ab0EUMEO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 08:04:14 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:59521 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753058Ab0EUMEN (ORCPT
+	id S1755230Ab0EUMRx (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 08:17:53 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:56289 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754608Ab0EUMRv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 08:04:13 -0400
-Date: Fri, 21 May 2010 14:03:48 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Hemanth V <hemanthv@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
-Message-ID: <20100521120347.GP30801@buzzloop.caiaq.de>
-References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
+	Fri, 21 May 2010 08:17:51 -0400
+From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+CC: "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
+Date: Fri, 21 May 2010 17:47:46 +0530
+Subject: [RFC] [PATCH] TMP105 : Driver support for the temperature sensor
+Thread-Topic: [RFC] [PATCH] TMP105 : Driver support for the temperature
+ sensor
+Thread-Index: Acr43Hz0vOw7mFCpTrWmDQZ9lsENfAAADBMg
+Message-ID: <0680EC522D0CC943BC586913CF3768C003B32B3AC4@dbde02.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
 
-On Fri, May 21, 2010 at 05:05:50PM +0530, Hemanth V wrote:
-> Corrected the mailing list, should be linux-kernel
-> 
-> This patch adds support for ROHM BH1780GLI Ambient light sensor.
-> 
-> BH1780 supports I2C interface. Driver supports read/update of power state and
-> read of lux value (through SYSFS). Writing value 3 to power_state enables the
-> sensor and current lux value could be read.
+Adds the driver support for the TMP105 temperature sensor device. The interface is I2C.The driver supports the read of the temperature values.
 
-FWIW, this looks pretty good to me, just some minor things below.
+Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+---
+ drivers/hwmon/Kconfig  |   10 ++
+ drivers/hwmon/Makefile |    1 +
+ drivers/hwmon/tmp105.c |  326 ++++++++++++++++++++++++++++++++++++++++++++++++
+ 3 files changed, 337 insertions(+), 0 deletions(-)
+ create mode 100644 drivers/hwmon/tmp105.c
 
-Daniel
+diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+index 68cf877..a4a5352 100644
+--- a/drivers/hwmon/Kconfig
++++ b/drivers/hwmon/Kconfig
+@@ -1076,6 +1076,16 @@ config SENSORS_MC13783_ADC
+         help
+           Support for the A/D converter on MC13783 PMIC.
+ 
++config SENSORS_TMP105
++	tristate "Texas Instruments TMP421 and compatible"
++	depends on I2C
++	help
++	  If you say yes here you get support for Texas Instruments TMP105
++	  temperature sensor chips.
++
++	  This driver can also be built as a module.  If so, the module
++	  will be called tmp105.
++
+ if ACPI
+ 
+ comment "ACPI drivers"
+diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+index 4bc215c..2c4e7a5 100644
+--- a/drivers/hwmon/Makefile
++++ b/drivers/hwmon/Makefile
+@@ -99,6 +99,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+ obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+ obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+ obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
++obj-$(CONFIG_SENSORS_TMP105)    += tmp105.o
+ 
+ ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+ EXTRA_CFLAGS += -DDEBUG
+diff --git a/drivers/hwmon/tmp105.c b/drivers/hwmon/tmp105.c
+new file mode 100644
+index 0000000..8765b11
+--- /dev/null
++++ b/drivers/hwmon/tmp105.c
+@@ -0,0 +1,326 @@
++/*
++ * tmp105.c
++ *
++ * TMP105 temperature sensor driver
++ *
++ * Copyright (C) 2010 Texas Instruments
++ *
++ * Author: Shubhrajyoti Datta <a0393217@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful,
++ * but WITHOUT ANY WARRANTY; without even the implied warranty of
++ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
++ * GNU General Public License for more details.
++ *
++ * You should have received a copy of the GNU General Public License
++ * along with this program; if not, write to the Free Software
++ * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
++*/
++
++#include <linux/module.h>
++#include <linux/init.h>
++#include <linux/i2c.h>
++#include <linux/kernel.h>
++#include <linux/hwmon.h>
++#include <linux/hwmon-sysfs.h>
++#include <linux/err.h>
++#include <linux/slab.h>
++
++/* Registers */
++#define		TMP105_TEMP_REG		0x00
++#define		TMP105_CONF_REG		0x01
++#define		TMP105_TLOW_REG		0x02
++#define		TMP105_THIGH_REG	0x03
++
++/* Configuration register parameters */
++#define		TMP105_CONF_SD		0x01
++#define		TMP105_CONF_TM		0x02
++#define		TMP105_CONF_POL		0x04
++#define		TMP105_CONF_F0		0x08
++#define		TMP105_CONF_F1		0x10
++#define		TMP105_CONF_R0		0x20
++#define		TMP105_CONF_R1		0x40
++#define		TMP105_CONF_OS		0x80
++
++#define 	TMP105_I2C_ADDRESS	0x48
++
++#define         MAX_TEMP		128
++#define         MIN_TEMP		-55
++
++/* Each client has this additional data */
++struct tmp105_data {
++	struct i2c_client *client;
++	/* mutex for sysfs operations */
++	struct mutex lock;
++	struct device *hwmon_dev;
++	s16 temp[3];
++	unsigned long last_updated;
++	u8 configuration_setting;
++};
++
++static const u8 tmp105_reg[] = {
++	TMP105_TEMP_REG,
++	TMP105_TLOW_REG,
++	TMP105_THIGH_REG,
++};
++
++static void tmp105_init_client(struct i2c_client *client);
++
++static signed long tmp105_reg_to_mC(s16 val)
++{
++	signed long temp_mC;
++	if (val  & 0x800)
++		val = val - 0x1000 ;
++	 temp_mC = (val * 64000) / 1024;
++	 return temp_mC;
++}
++
++static u16 tmp105_C_to_reg(signed long val)
++{
++	val =  (val * 1024) / 64000;
++	if (val < 0)
++		val = val + 0x1000;
++	return (u16)val;
++}
++
++static s16 *tmp105_update_device(struct i2c_client *client,
++						int  index)
++{
++	struct tmp105_data *data = i2c_get_clientdata(client);
++	u8 tmp[2];
++
++	mutex_lock(&data->lock);
++
++	if (time_after(jiffies, data->last_updated +  HZ/4)) {
++		i2c_smbus_read_i2c_block_data(client,
++						tmp105_reg[index], 2, tmp);
++		data->temp[index] = ((tmp[0] << 4) | ((tmp[1] & 0xF0) >> 4));
++		printk(KERN_INFO "Raw temperature: %u\n", data->temp[index]);
++		data->last_updated = jiffies;
++	}
++
++	mutex_unlock(&data->lock);
++	return data->temp[index] ;
++}
++
++static ssize_t show_temp_value(struct device *dev,
++			       struct device_attribute *devattr, char *buf)
++{
++	struct sensor_device_attribute *sda = to_sensor_dev_attr(devattr);
++	struct i2c_client *client = to_i2c_client(dev);
++	s16 temperature = tmp105_update_device(client , sda->index);
++	signed long temp_in_mC;
++
++	temp_in_mC = tmp105_reg_to_mC(temperature);
++
++	return sprintf(buf, "%d\n", temp_in_mC);
++}
++
++static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp_value, NULL , 0);
++
++static ssize_t tmp105_set_temp(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
++	struct i2c_client *client = to_i2c_client(dev);
++	struct tmp105_data *tmp105 = i2c_get_clientdata(client);
++	signed long val;
++	int status = 0;
++	u16 temp;
++
++	if ((strict_strtol(buf, 10, &val) < 0))
++		return -EINVAL;
++
++	SENSORS_LIMIT(val , MIN_TEMP , MAX_TEMP);
++
++	mutex_lock(&tmp105->lock);
++
++	temp = tmp105_C_to_reg(val);
++	temp = ((temp & 0xFF0) >> 4) | ((temp & 0xF)<<12);
++
++	status = i2c_smbus_write_word_data(client, tmp105_reg[sda->index],
++			temp);
++
++	tmp105->temp[sda->index] = temp;
++	mutex_unlock(&tmp105->lock);
++	return status ? : count;
++}
++
++static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO, show_temp_value,
++	tmp105_set_temp, 1);
++static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO, show_temp_value,
++	tmp105_set_temp, 2);
++
++/* sysfs call */
++static ssize_t set_configuration(struct device *dev,
++				struct device_attribute *attr,
++				const char *buf, size_t count)
++{
++	s32 status;
++	struct i2c_client *client = to_i2c_client(dev);
++	struct tmp105_data *data = i2c_get_clientdata(client);
++	data->configuration_setting = simple_strtoul(buf, NULL, 10);
++	/* I2C write to the configuration register */
++	status = i2c_smbus_write_byte_data(client, TMP105_CONF_REG,
++			data->configuration_setting);
++	return count;
++}
++
++static ssize_t show_configuration(struct device *dev,
++				struct device_attribute *attr, char *buf)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	struct tmp105_data *data = i2c_get_clientdata(client);
++	u8 tmp;
++	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1, &tmp);
++	data->configuration_setting = tmp;
++	return sprintf(buf, "%u\n", data->configuration_setting);
++}
++static DEVICE_ATTR(configuration, S_IWUSR | S_IRUGO, show_configuration,
++		set_configuration);
++
++
++static struct attribute *tmp105_attributes[] = {
++	&dev_attr_configuration.attr,
++	&sensor_dev_attr_temp1_input.dev_attr.attr,
++	&sensor_dev_attr_temp1_min.dev_attr.attr,
++	&sensor_dev_attr_temp1_max.dev_attr.attr,
++	NULL
++};
++
++static const struct attribute_group tmp105_attr_group = {
++	.attrs = tmp105_attributes,
++};
++
++static int tmp105_probe(struct i2c_client *client,
++			 const struct i2c_device_id *id)
++{
++	struct tmp105_data *tmp105_data;
++	int err;
++
++	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
++		dev_dbg(&client->dev, "adapter doesn't support I2C\n");
++		return -ENODEV;
++	}
++
++	tmp105_data = kzalloc(sizeof(struct tmp105_data), GFP_KERNEL);
++	if (!tmp105_data) {
++		err = -ENOMEM;
++		goto exit;
++	}
++	tmp105_data->client = client;
++
++	i2c_set_clientdata(client, tmp105_data);
++	mutex_init(&tmp105_data->lock);
++
++	/* Initialize the TMP105 chip */
++	tmp105_init_client(client);
++
++	/* Register sysfs hooks */
++	err = sysfs_create_group(&client->dev.kobj, &tmp105_attr_group);
++	if (err)
++		goto exit_free;
++	tmp105_data->hwmon_dev = hwmon_device_register(&client->dev);
++	if (IS_ERR(tmp105_data->hwmon_dev)) {
++		err = PTR_ERR(tmp105_data->hwmon_dev);
++		tmp105_data->hwmon_dev = NULL;
++		goto exit_remove;
++	}
++	return 0;
++
++exit_remove:
++	sysfs_remove_group(&client->dev.kobj, &tmp105_attr_group);
++exit_free:
++	i2c_set_clientdata(client, NULL);
++	kfree(tmp105_data);
++exit:
++	return err;
++}
++
++static int tmp105_remove(struct i2c_client *client)
++{
++	struct tmp105_data *tmp105 = i2c_get_clientdata(client);
++	hwmon_device_unregister(tmp105->hwmon_dev);
++
++	sysfs_remove_group(&client->dev.kobj, &tmp105_attr_group);
++	i2c_set_clientdata(client, NULL);
++	kfree(tmp105);
++	return 0;
++}
++
++/* Called when we have found a new TMP105. */
++static void tmp105_init_client(struct i2c_client *client)
++{
++	struct tmp105_data *data = i2c_get_clientdata(client);
++	data->last_updated = jiffies - HZ;
++	mutex_init(&data->lock);
++}
++
++static const struct i2c_device_id tmp105_id[] = {
++	{ "tmp105", 0 },
++	{ }
++};
++
++#ifdef CONFIG_PM
++static int tmp105_suspend(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	u8 config_reg;
++	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1, &config_reg);
++	config_reg = config_reg | TMP102_CONF_SD;
++	i2c_smbus_write_byte_data(client, TMP105_CONF_REG, TMP102_CONF_SD);
++	return 0;
++}
++
++static int tmp105_resume(struct device *dev)
++{
++	struct i2c_client *client = to_i2c_client(dev);
++	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1, &config_reg);
++	config_reg = config_reg & ~TMP102_CONF_SD;
++	i2c_smbus_write_byte_data(client, TMP105_CONF_REG, TMP102_CONF_SD);
++}
++
++static struct dev_pm_ops tmp105_dev_pm_ops = {
++	.suspend = tmp105_suspend,
++	.resume = tmp105_resume,
++};
++
++#define TMP105_DEV_PM_OPS (&tmp105_dev_pm_ops)
++#else
++#define TMP105_DEV_PM_OPS NULL
++#endif /* CONFIG_PM */
++
++
++static struct i2c_driver tmp105_driver = {
++	.driver = {
++		.name	= "tmp105",
++		.owner = THIS_MODULE,
++		.pm = TMP105_DEV_PM_OPS,
++	},
++	.probe		= tmp105_probe,
++	.remove		= tmp105_remove,
++	.id_table	= tmp105_id,
++	.class = I2C_CLASS_HWMON,
++};
++
++static int __init tmp105_init(void)
++{
++	return i2c_add_driver(&tmp105_driver);
++}
++
++static void __exit tmp105_exit(void)
++{
++	i2c_del_driver(&tmp105_driver);
++}
++
++MODULE_DESCRIPTION("TMP105 driver");
++MODULE_LICENSE("GPL");
++
++module_init(tmp105_init);
++module_exit(tmp105_exit);
++
+-- 
+1.5.4.7
 
-> Signed-off-by: Hemanth V <hemanthv@ti.com>
-> ---
->  drivers/misc/Kconfig     |   11 ++
->  drivers/misc/Makefile    |    1 +
->  drivers/misc/bh1780gli.c |  278 ++++++++++++++++++++++++++++++++++++++++++++++
->  3 files changed, 290 insertions(+), 0 deletions(-)
->  create mode 100644 drivers/misc/bh1780gli.c
-> 
-> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-> index 0d0d625..0687a0c 100644
-> --- a/drivers/misc/Kconfig
-> +++ b/drivers/misc/Kconfig
-> @@ -278,6 +278,17 @@ config SENSORS_TSL2550
->  	  This driver can also be built as a module.  If so, the module
->  	  will be called tsl2550.
-> 
-> +config SENSORS_BH1780
-> +	tristate "ROHM BH1780GLI ambient light sensor"
-> +	depends on I2C && SYSFS
-> +	help
-> +	  If you say yes here you get support for the ROHM BH1780GLI
-> +	  ambient light sensor.
-> +
-> +	  This driver can also be built as a module.  If so, the module
-> +	  will be called bh1780gli.
-> +
-> +
->  config EP93XX_PWM
->  	tristate "EP93xx PWM support"
->  	depends on ARCH_EP93XX
-> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-> index 7b6f7ee..c479d91 100644
-> --- a/drivers/misc/Makefile
-> +++ b/drivers/misc/Makefile
-> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
->  obj-y				+= eeprom/
->  obj-y				+= cb710/
->  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
-> +obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
-> diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
-> new file mode 100644
-> index 0000000..9b4137d
-> --- /dev/null
-> +++ b/drivers/misc/bh1780gli.c
-> @@ -0,0 +1,278 @@
-> +/*
-> + * bh1780gli.c
-> + * ROHM Ambient Light Sensor Driver
-> + *
-> + * Copyright (C) 2010 Texas Instruments
-> + * Author: Hemanth V <hemanthv@ti.com>
-> + *
-> + * This program is free software; you can redistribute it and/or modify it
-> + * under the terms of the GNU General Public License version 2 as published by
-> + * the Free Software Foundation.
-> + *
-> + * This program is distributed in the hope that it will be useful, but WITHOUT
-> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-> + * more details.
-> + *
-> + * You should have received a copy of the GNU General Public License along with
-> + * this program.  If not, see <http://www.gnu.org/licenses/>.
-> + */
-> +#include <linux/i2c.h>
-> +#include <linux/slab.h>
-> +#include <linux/mutex.h>
-> +#include <linux/platform_device.h>
-> +#include <linux/delay.h>
-> +
-> +#define BH1780_REG_CONTROL     0x80
-> +#define BH1780_REG_PARTID      0x8A
-> +#define BH1780_REG_MANFID      0x8B
-> +#define BH1780_REG_DLOW        0x8C
-> +#define BH1780_REG_DHIGH       0x8D
-> +
-> +#define BH1780_REVMASK        (0xf)
-> +#define BH1780_POWMASK        (0x3)
-> +#define BH1780_POFF	      (0x0)
-> +#define BH1780_PON            (0x3)
-
-Just a nit ... something's wrong with the indentation here.
-
-> +/* power on settling time in ms */
-> +#define BH1780_PON_DELAY      2
-> +
-> +struct bh1780_data {
-> +	struct i2c_client *client;
-> +	int power_state;
-> +	/* lock for sysfs operations */
-> +	struct mutex lock;
-> +};
-> +
-> +int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
-
-Should be static.
-
-> +{
-> +	int ret = i2c_smbus_write_byte_data(ddata->client, reg, val);
-> +	if (ret < 0)
-> +		dev_err(&ddata->client->dev,
-> +			"i2c_smbus_write_byte_data failed error %d\
-> +			Register (%s)\n", ret, msg);
-> +	return ret;
-> +}
-> +
-> +int bh1780_read(struct bh1780_data *ddata, u8 reg, char *msg)
-
-Dito.
-
-> +{
-> +	int ret = i2c_smbus_read_byte_data(ddata->client, reg);
-> +	if (ret < 0)
-> +		dev_err(&ddata->client->dev,
-> +			"i2c_smbus_read_byte_data failed error %d\
-> +			 Register (%s)\n", ret, msg);
-> +	return ret;
-> +}
-> +
-> +static ssize_t bh1780_show_lux(struct device *dev,
-> +				struct device_attribute *attr, char *buf)
-> +{
-> +
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-> +	int lsb, msb;
-> +
-> +	lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
-> +	if (lsb < 0)
-> +		return lsb;
-> +
-> +	msb = bh1780_read(ddata, BH1780_REG_DHIGH, "DHIGH");
-> +	if (msb < 0)
-> +		return msb;
-> +
-> +	return sprintf(buf, "%d\n", (msb << 8) | lsb);
-> +}
-> +
-> +static ssize_t bh1780_show_power_state(struct device *dev,
-> +					struct device_attribute *attr,
-> +					char *buf)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-> +	int state;
-> +
-> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-> +	if (state < 0)
-> +		return state;
-> +
-> +	return sprintf(buf, "%d\n", state & BH1780_POWMASK);
-> +}
-> +
-> +static ssize_t bh1780_store_power_state(struct device *dev,
-> +					struct device_attribute *attr,
-> +					const char *buf, size_t count)
-> +{
-> +	struct platform_device *pdev = to_platform_device(dev);
-> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-> +	unsigned long val;
-> +	int error;
-> +
-> +	error = strict_strtoul(buf, 0, &val);
-> +	if (error)
-> +		return error;
-> +
-> +	if (val < BH1780_POFF || val > BH1780_PON)
-> +		return -EINVAL;
-> +
-> +	mutex_lock(&ddata->lock);
-> +
-> +	error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
-> +	if (error < 0) {
-> +		mutex_unlock(&ddata->lock);
-> +		return error;
-> +	}
-> +
-> +	msleep(BH1780_PON_DELAY);
-
-Hmm, what do you wait for here?
-
-> +	ddata->power_state = val;
-> +	mutex_unlock(&ddata->lock);
-
-And I don't get the usage of the mutex here. Can you explain?
-
-> +	return count;
-> +
-> +}
-
-Remove the empty line. Or move it above the return statement.
-
-> +
-> +static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
-> +
-> +static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
-> +		bh1780_show_power_state, bh1780_store_power_state);
-> +
-> +static struct attribute *bh1780_attributes[] = {
-> +	&dev_attr_power_state.attr,
-> +	&dev_attr_lux.attr,
-> +	NULL
-> +};
-> +
-> +static const struct attribute_group bh1780_attr_group = {
-> +	.attrs = bh1780_attributes,
-> +};
-> +
-> +static int __devinit bh1780_probe(struct i2c_client *client,
-> +						const struct i2c_device_id *id)
-> +{
-> +	int ret;
-> +	struct bh1780_data *ddata = NULL;
-
-The initialization isn't needed.
-
-> +	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-> +
-> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
-> +		ret = -EIO;
-> +		goto err_op_failed;
-> +	}
-> +
-> +	ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
-> +	if (ddata == NULL) {
-> +		ret = -ENOMEM;
-> +		goto err_op_failed;
-> +	}
-> +
-> +	ddata->client = client;
-> +	i2c_set_clientdata(client, ddata);
-> +
-> +	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
-> +	if (ret < 0)
-> +		goto err_op_failed;
-> +
-> +	dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
-> +			(ret & BH1780_REVMASK));
-> +
-> +	mutex_init(&ddata->lock);
-> +
-> +	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
-> +	if (ret)
-> +		goto err_op_failed;
-> +
-> +	return 0;
-> +
-> +err_op_failed:
-> +	if (ddata != NULL)
-> +		kfree(ddata);
-
-kfree() is resitant against NULL pointers, so you can call it
-unconditionally.
-
-> +
-> +	return ret;
-> +}
-> +
-> +static int __devexit bh1780_remove(struct i2c_client *client)
-> +{
-> +	struct bh1780_data *ddata;
-> +
-> +	ddata = i2c_get_clientdata(client);
-> +	sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
-> +
-> +	if (ddata != NULL) {
-> +		i2c_set_clientdata(client, NULL);
-> +		kfree(ddata);
-> +	}
-
-Same here.
-
-> +
-> +	return 0;
-> +}
-> +
-> +#ifdef CONFIG_PM
-> +static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
-> +{
-> +	struct bh1780_data *ddata;
-> +	int state, ret;
-> +
-> +	ddata = i2c_get_clientdata(client);
-> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-> +	if (state < 0)
-> +		return state;
-> +
-> +	ddata->power_state = state & BH1780_POWMASK;
-> +
-> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
-> +				"CONTROL");
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-> +
-> +static int bh1780_resume(struct i2c_client *client)
-> +{
-> +	struct bh1780_data *ddata;
-> +	int state, ret;
-> +
-> +	ddata = i2c_get_clientdata(client);
-> +	state = ddata->power_state;
-> +
-> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
-> +				"CONTROL");
-> +
-> +	if (ret < 0)
-> +		return ret;
-> +
-> +	return 0;
-> +}
-
-#else
-static inline int bh1780_suspend(struct i2c_client *client, pm_message_t mesg) {}
-static inline int bh1780_resume(struct i2c_client *client) {}
-
-
-> +#endif
-> +
-> +static const struct i2c_device_id bh1780_id[] = {
-> +	{ "bh1780", 0 },
-> +	{ },
-> +};
-> +
-> +static struct i2c_driver bh1780_driver = {
-> +	.probe		= bh1780_probe,
-> +	.remove		= bh1780_remove,
-> +	.id_table	= bh1780_id,
-> +#ifdef CONFIG_PM
-
-... then this #ifdef can go away.
-
-> +	.suspend	= bh1780_suspend,
-> +	.resume		= bh1780_resume,
-> +#endif
-> +	.driver = {
-> +		.name = "bh1780"
-> +	},
-> +};
-> +
-> +static int __init bh1780_init(void)
-> +{
-> +	return i2c_add_driver(&bh1780_driver);
-> +}
-> +
-> +static void __exit bh1780_exit(void)
-> +{
-> +	i2c_del_driver(&bh1780_driver);
-> +}
-> +
-> +module_init(bh1780_init)
-> +module_exit(bh1780_exit)
-> +
-> +MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
-> +MODULE_LICENSE("GPL");
-> +MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
-> -- 
-> 1.5.6.3
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
