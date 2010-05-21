@@ -1,68 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752909Ab0EUVam (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 17:30:42 -0400
-Received: from cantor.suse.de ([195.135.220.2]:57637 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab0EUVal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 17:30:41 -0400
-Date: Fri, 21 May 2010 23:30:37 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-X-X-Sender: jikos@twin.jikos.cz
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Stefan Achatz <erazor_de@users.sourceforge.net>,
-       Chris Wright <chrisw@sous-sol.org>
-Subject: Re: linux-next: build warnings after merge of the driver-core tree
-In-Reply-To: <20100521164730.GA11173@kroah.com>
-Message-ID: <alpine.LRH.2.00.1005212330060.14809@twin.jikos.cz>
-References: <20100521161843.20e795db.sfr@canb.auug.org.au> <20100521164730.GA11173@kroah.com>
-User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+	id S1753079Ab0EUVbd (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 17:31:33 -0400
+Received: from 64.mail-out.ovh.net ([91.121.185.65]:43119 "HELO
+	64.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1752352Ab0EUVbc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 17:31:32 -0400
+Message-ID: <4BF6FBB0.6060407@example.com>
+Date: Fri, 21 May 2010 23:31:28 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: piotr@hosowicz.com
+CC: "John W. Linville" <linville@tuxdriver.com>, linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+References: <4BF6F2E4.5030800@example.com> <20100521210729.GC2495@tuxdriver.com> <4BF6F959.5040401@example.com>
+In-Reply-To: <4BF6F959.5040401@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 18136558650178236786
+X-Ovh-Remote: 83.24.109.69 (dob69.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010, Greg KH wrote:
+On 21.05.2010 23:21, Piotr Hosowicz wrote:
+> On 21.05.2010 23:07, John W. Linville wrote:
+>> On Fri, May 21, 2010 at 10:53:56PM +0200, Piotr Hosowicz wrote:
+>>> Hello,
+>>>
+>>> I try to build kernel from git source. Now n-th build try is
+>>> performing, each time it failed on wireless drivers - Atheros,
+>>> Marvel etc. Did I miss something?
+>>>
+>>> Regards,
+>>>
+>>> Piotr Hosowicz
+>>
+>> Perhaps you should post your actual output from the build failure?
+>
+> I dont have it right now, I disabled wireless at all and started build.
+> The output to the console was make-kpkg ordinary message - saying that
+> sub build finished with error code 2 AFAIR, it stopped each time on
+> wireless drivers.
 
-> > drivers/hid/hid-roccat-kone.c:694: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:696: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:701: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:703: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:708: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:710: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:715: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:717: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:722: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:724: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:729: warning: initialization from incompatible pointer type
-> > drivers/hid/hid-roccat-kone.c:731: warning: initialization from incompatible pointer type
-> > 
-> > Introduced by commit 867040163f10f2b52b45bc573f330d6eb28f5914 ("sysfs:
-> > add struct file* to bin_attr callbacks") from the driver-core tree
-> > interacting with commit 14bf62cde79423a02a590e02664ed29a36facec1 ("HID:
-> > add driver for Roccat Kone gaming mouse") from the hid tree.
-> > 
-> > I added the following patch:
-> > 
-> > From: Stephen Rothwell <sfr@canb.auug.org.au>
-> > Date: Fri, 21 May 2010 16:15:32 +1000
-> > Subject: [PATCH] hid: fix hid-roccat-kone for bin_attr API change
-> > 
-> > Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> > ---
-> >  drivers/hid/hid-roccat-kone.c |   24 ++++++++++++------------
-> 
-> That patch looks fine, but I can't take it in my tree as the HID tree
-> isn't merged with Linus's tree yet :(
+Zonk! It seems that the problem is not only with wireless, now it broke 
+here:
 
-It is merged now, so you can proceed.
+(snip)
+   CC [M]  drivers/net/usb/int51x1.o
+   CC [M]  drivers/net/usb/cdc-phonet.o
+   CC [M]  drivers/net/wan/lmc/lmc_media.o
+   CC [M]  drivers/net/wan/lmc/lmc_main.o
+   CC [M]  drivers/net/wan/wanxl.o
+   CC [M]  drivers/net/usb/ipheth.o
+   LD [M]  drivers/net/wan/cyclomx.o
+   CC [M]  drivers/net/usb/sierra_net.o
+   CC [M]  drivers/net/wan/lmc/lmc_proto.o
+   LD [M]  drivers/net/wan/lmc/lmc.o
+make[1]: Opuszczenie katalogu `/usr/src/linus/linux-2.6-20100521-2044'
+make: *** [debian/stamp/build/kernel] B³±d 2
 
-Thanks,
+Opuszczenie katalogu `/usr/src/linus/linux-2.6-20100521-2044' is 
+"leaving directory", B³±d is error.
+
+I give up for now, I must go to sleep.
+
+Regards and good night.
+
+Piotr Hosowicz
+
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
-
+TV: "W tej chwili, ¿e siê tak wyra¿ê, zaliczonych mamy 17 zawodniczek."
+NP: Rage Against The Machine - Know Your Enemy
+NB: 2.6.34-20100521-1728
