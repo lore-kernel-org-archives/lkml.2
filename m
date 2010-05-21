@@ -1,70 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754194Ab0EUDf5 (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 23:35:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:21505 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753659Ab0EUDfr convert rfc822-to-8bit (ORCPT
+	id S1754314Ab0EUDgU (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 23:36:20 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:42720 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753659Ab0EUDgS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 23:35:47 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=G9z4uqS4jZKnkUJBdLfnd3ixQxUecG40VDW+hTcgxkXCQSR7jbxq6TACQaR6G3ZsD
-	UX8XYVbCgedInZOVWFSMA==
+	Thu, 20 May 2010 23:36:18 -0400
+Message-ID: <49466.41.206.15.1.1274408220.squirrel@41.206.15.1>
+Date: Fri, 21 May 2010 00:17:00 -0200 (FNT)
+Subject: Congratulations - You have won
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivan_nickerson04@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-In-Reply-To: <32068.1274275283@redhat.com>
-References: <1274135154-24082-1-git-send-email-walken@google.com>
-	 <1274135154-24082-8-git-send-email-walken@google.com>
-	 <alpine.LFD.2.00.1005171532430.4195@i5.linux-foundation.org>
-	 <20100517231331.GA30847@google.com>
-	 <20100517232052.GB30847@google.com> <32068.1274275283@redhat.com>
-Date: Thu, 20 May 2010 20:35:43 -0700
-Message-ID: <AANLkTiks8Wb95EC-cJsfdoboIif78vfxKJr-XjmBtOCv@mail.gmail.com>
-Subject: Re: [PATCH 07/10] generic rwsem: implement down_read_critical() / 
-	up_read_critical()
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 6:21 AM, David Howells <dhowells@redhat.com> wrote:
-> Michel Lespinasse <walken@google.com> wrote:
->
->> +void __sched down_read_critical(struct rw_semaphore *sem)
->> +{
->> +     might_sleep();
->> +     rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
->> +
->> +     LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
->> +
->> +     preempt_disable();
->
-> Shouldn't preemption really be disabled before __down_read_unfair() is called?
-> Otherwise you can get an unfair read on a sem and immediately get taken off
-> the CPU.  Of course, this means __down_read_unfair() would have to deal with
-> that in the slow path:-/
+Congratulations - You have won
 
-I think it's not that bad - I mean, the unfairness does not come into
-factor here. If you tried to do a regular down_read(), you could also
-get preempted on your way to the blocking path. Being preempted on the
-way to your critical section after a successful (if unfair) acquire
-really is no worse.
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+19th May 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-The critical section prevents you from blocking on long-latency events
-such as disk accesses; being preempted but still runnable is not
-nearly as bad.
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
+
+NAME:  Ivan Nickerson
+EMAIL: mrivan.nickerson05@yahoo.com.hk
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
