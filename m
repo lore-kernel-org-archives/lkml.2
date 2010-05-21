@@ -1,66 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934038Ab0EUQvu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:51:50 -0400
-Received: from kroah.org ([198.145.64.141]:50266 "EHLO coco.kroah.org"
+	id S934098Ab0EUQwG (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:52:06 -0400
+Received: from kroah.org ([198.145.64.141]:50293 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758233Ab0EUQvs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:51:48 -0400
-Date: Fri, 21 May 2010 09:47:30 -0700
-From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Stefan Achatz <erazor_de@users.sourceforge.net>,
-       Jiri Kosina <jikos@jikos.cz>, Chris Wright <chrisw@sous-sol.org>
-Subject: Re: linux-next: build warnings after merge of the driver-core tree
-Message-ID: <20100521164730.GA11173@kroah.com>
-References: <20100521161843.20e795db.sfr@canb.auug.org.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100521161843.20e795db.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934030Ab0EUQwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:52:00 -0400
+From: Greg Kroah-Hartman <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org
+Cc: Sonic Zhang <sonic.zhang@analog.com>, Mike Frysinger <vapier@gentoo.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 05/25] serial: bfin_sport_uart: rename early platform driver class string
+Date: Fri, 21 May 2010 09:51:34 -0700
+Message-Id: <1274460714-11277-5-git-send-email-gregkh@suse.de>
+X-Mailer: git-send-email 1.7.0.3
+In-Reply-To: <20100521165113.GB11216@kroah.com>
+References: <20100521165113.GB11216@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 04:18:43PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
-> 
-> After merging the driver-core tree, today's linux-next build (x86_64
-> allmodconfig) produced these warnings:
-> 
-> drivers/hid/hid-roccat-kone.c:694: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:696: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:701: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:703: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:708: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:710: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:715: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:717: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:722: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:724: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:729: warning: initialization from incompatible pointer type
-> drivers/hid/hid-roccat-kone.c:731: warning: initialization from incompatible pointer type
-> 
-> Introduced by commit 867040163f10f2b52b45bc573f330d6eb28f5914 ("sysfs:
-> add struct file* to bin_attr callbacks") from the driver-core tree
-> interacting with commit 14bf62cde79423a02a590e02664ed29a36facec1 ("HID:
-> add driver for Roccat Kone gaming mouse") from the hid tree.
-> 
-> I added the following patch:
-> 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Fri, 21 May 2010 16:15:32 +1000
-> Subject: [PATCH] hid: fix hid-roccat-kone for bin_attr API change
-> 
-> Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> ---
->  drivers/hid/hid-roccat-kone.c |   24 ++++++++++++------------
+From: Sonic Zhang <sonic.zhang@analog.com>
 
-That patch looks fine, but I can't take it in my tree as the HID tree
-isn't merged with Linus's tree yet :(
+Clarifies command line set up for devices between consoles and early
+devices.
 
-thanks,
+Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+---
+ drivers/serial/bfin_sport_uart.c |    7 +++++--
+ 1 files changed, 5 insertions(+), 2 deletions(-)
 
-greg k-h
+diff --git a/drivers/serial/bfin_sport_uart.c b/drivers/serial/bfin_sport_uart.c
+index 49e7e4f..7925266 100644
+--- a/drivers/serial/bfin_sport_uart.c
++++ b/drivers/serial/bfin_sport_uart.c
+@@ -527,6 +527,8 @@ struct uart_ops sport_uart_ops = {
+ static struct sport_uart_port *bfin_sport_uart_ports[BFIN_SPORT_UART_MAX_PORTS];
+ 
+ #ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
++#define CLASS_BFIN_SPORT_CONSOLE	"bfin-sport-console"
++
+ static int __init
+ sport_uart_console_setup(struct console *co, char *options)
+ {
+@@ -788,7 +790,7 @@ static struct platform_driver sport_uart_driver = {
+ 
+ #ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
+ static __initdata struct early_platform_driver early_sport_uart_driver = {
+-	.class_str = DRV_NAME,
++	.class_str = CLASS_BFIN_SPORT_CONSOLE,
+ 	.pdrv = &sport_uart_driver,
+ 	.requested_id = EARLY_PLATFORM_ID_UNSET,
+ };
+@@ -797,7 +799,8 @@ static int __init sport_uart_rs_console_init(void)
+ {
+ 	early_platform_driver_register(&early_sport_uart_driver, DRV_NAME);
+ 
+-	early_platform_driver_probe(DRV_NAME, BFIN_SPORT_UART_MAX_PORTS, 0);
++	early_platform_driver_probe(CLASS_BFIN_SPORT_CONSOLE,
++		BFIN_SPORT_UART_MAX_PORTS, 0);
+ 
+ 	register_console(&sport_uart_console);
+ 
+-- 
+1.7.0.3
+
