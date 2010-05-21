@@ -1,67 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754795Ab0EUGo7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:44:59 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:37038 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752985Ab0EUGo5 (ORCPT
+	id S1754979Ab0EUGqb (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:46:31 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:59957 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752985Ab0EUGq3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:44:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=Xe3cE2K/t9MKEV9JuPM6cBgywdK8cay2qaYf+uUzbxgCmU4De5vzB5mQiuWmVH3qMs
-         +cJ1jr3BLAopDNknFW2z2pAbT4brZ/aaBUxf9NRFjC0JKrQswvbrXB+kAWN/GXyCe0ii
-         o2IBO4mcXX1OOskkdlf2+aYkUqdxWIgR3ng5I=
-Subject: Re: [PATCH 2/2]: atomic_t: Remove volatile from atomic_t definition
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: David Miller <davem@davemloft.net>
-Cc: npiggin@suse.de, paulmck@linux.vnet.ibm.com, torvalds@linux-foundation.org,
-       anton@samba.org, akpm@linux-foundation.org, willy@linux.intel.com,
-       benh@kernel.crashing.org, paulus@samba.org, linux-arch@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100520.231037.200798708.davem@davemloft.net>
-References: <20100521052746.GL2516@laptop>
-	 <20100520.225454.37197037.davem@davemloft.net>
-	 <20100521060600.GM2516@laptop>
-	 <20100520.231037.200798708.davem@davemloft.net>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 08:44:52 +0200
-Message-ID: <1274424292.2439.6.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Fri, 21 May 2010 02:46:29 -0400
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Greg KH <greg@kroah.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Tom Herbert <therbert@google.com>,
+       David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+References: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Thu, 20 May 2010 23:46:22 -0700
+In-Reply-To: <20100521162134.6b6326bd.sfr@canb.auug.org.au> (Stephen Rothwell's message of "Fri\, 21 May 2010 16\:21\:34 +1000")
+Message-ID: <m1tyq1wy4h.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: sfr@canb.auug.org.au, netdev@vger.kernel.org, davem@davemloft.net, therbert@google.com, linux-kernel@vger.kernel.org, linux-next@vger.kernel.org, greg@kroah.com
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa01 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Stephen Rothwell <sfr@canb.auug.org.au>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa01 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: linux-next: manual merge of the driver-core tree with the net tree
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le jeudi 20 mai 2010 à 23:10 -0700, David Miller a écrit :
-> From: Nick Piggin <npiggin@suse.de>
-> Date: Fri, 21 May 2010 16:06:00 +1000
-> 
-> > Actually, I bet we have a lot of bugs there with loading integers and
-> > pointers atomically, where the code assumes the loaded value will not
-> > be reloaded by the compiler, because it is an easy thing to assume.
-> 
-> Alexey Kuznetsov was aware of this problem 8+ years ago when we were
-> first adding fine-grained locking the the networking.
-> 
-> > atomic_read_light could be useful though, for sure.
-> 
-> I definitely think so. And every usage of it should have a big fat
-> comment right next to it explaining how it's usage is valid in that
-> spot :-)
-> -
+Stephen Rothwell <sfr@canb.auug.org.au> writes:
 
-I really doubt a valid (and dully commented) usage of
-atomic_read_light() will bring anything, but added complexity to API.
+> Hi Greg,
+>
+> Today's linux-next merge of the driver-core tree got a conflict in
+> net/core/net-sysfs.c between commits
+> 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive Packet Steering")
+> and fec5e652e58fa6017b2c9e06466cb2a6538de5b4 ("rfs: Receive Flow
+> Steering") from the net tree and commits
+> bc28c84244da26bafb0d3bce95ef45212b31c6b8 ("net/sysfs: Fix the bitrot in
+> network device kobject namespace support") and
+> 83dc0fbf37495691219d019ec16b40d8592d2956 ("net: Expose all network
+> devices in a namespaces in sysfs") from the driver-core tree.
+>
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Generated code will be the same than atomic_read() in these cases,
-unless some real factorization can be done inside a loop.
+It looks right, except perhaps the RPS code looks like it will cause a
+build failure with sysfs disabled, but that has nothing to do with your
+changes.  I don't see any real conflicts here, just two patches passing
+very close to each other.
 
-We still have some uneeded RMW atomic ops to remove, before even
-thinking to optimise reads ;)
+Thanks for the heads up.
 
-
-
+Eric
