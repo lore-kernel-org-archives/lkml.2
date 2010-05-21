@@ -1,134 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932516Ab0EUWr7 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 18:47:59 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:43909 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758815Ab0EUWr3 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 18:47:29 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       =?UTF-8?q?M=C3=A1rton=20N=C3=A9meth?= <nm127@freemail.hu>,
-       Sven Neumann <s.neumann@raumfeld.com>,
-       Tero Saarni <tero.saarni@gmail.com>,
-       Alexey Dobriyan <adobriyan@gmail.com>, Matthew Garrett <mjg@redhat.com>,
-       Jiri Kosina <jkosina@suse.cz>, Henrik Rydberg <rydberg@euromail.se>,
-       linux-input@vger.kernel.org
-Subject: [PATCH 7/8] Input: Block suspend while event queue is not empty.
-Date: Fri, 21 May 2010 15:46:54 -0700
-Message-Id: <1274482015-30899-8-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1274482015-30899-7-git-send-email-arve@android.com>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
- <1274482015-30899-2-git-send-email-arve@android.com>
- <1274482015-30899-3-git-send-email-arve@android.com>
- <1274482015-30899-4-git-send-email-arve@android.com>
- <1274482015-30899-5-git-send-email-arve@android.com>
- <1274482015-30899-6-git-send-email-arve@android.com>
- <1274482015-30899-7-git-send-email-arve@android.com>
+	id S1758822Ab0EUWsJ (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 18:48:09 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56378 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932479Ab0EUWr6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 18:47:58 -0400
+From: Neil Brown <neilb@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Date: Sat, 22 May 2010 08:47:49 +1000
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+Message-ID: <19447.3477.501889.730865@notabene.brown>
+Cc: linux-raid@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PULL REQUEST] md updates for 2.6.35
+X-Mailer: VM under 22.3.1 (x86_64-pc-linux-gnu)
+X-face: [Gw_3E*Gng}4rRrKRYotwlE?.2|**#s9D<ml'fY1Vw+@XfR[fRCsUoP?K6bt3YD\ui5Fh?f
+	LONpR';(ql)VM_TQ/<l_^D3~B:z$\YC7gUCuC=sYm/80G=$tt"98mr8(l))QzVKCk$6~gldn~*FK9x
+	8`;pM{3S8679sP+MbP,72<3_PIH-$I&iaiIb|hV1d%cYg))BmI)AZ
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add an ioctl, EVIOCSSUSPENDBLOCK, to enable a suspend_blocker that will block
-suspend while the event queue is not empty. This allows userspace code to
-process input events while the device appears to be asleep.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
----
- drivers/input/evdev.c |   22 ++++++++++++++++++++++
- include/linux/input.h |    3 +++
- 2 files changed, 25 insertions(+), 0 deletions(-)
+Hi Linus,
+ please pull the following updates for md for 2.6.35.
 
-diff --git a/drivers/input/evdev.c b/drivers/input/evdev.c
-index 2ee6c7a..bff2247 100644
---- a/drivers/input/evdev.c
-+++ b/drivers/input/evdev.c
-@@ -20,6 +20,7 @@
- #include <linux/input.h>
- #include <linux/major.h>
- #include <linux/device.h>
-+#include <linux/suspend.h>
- #include "input-compat.h"
- 
- struct evdev {
-@@ -43,6 +44,8 @@ struct evdev_client {
- 	struct fasync_struct *fasync;
- 	struct evdev *evdev;
- 	struct list_head node;
-+	struct suspend_blocker suspend_blocker;
-+	bool use_suspend_blocker;
- };
- 
- static struct evdev *evdev_table[EVDEV_MINORS];
-@@ -55,6 +58,8 @@ static void evdev_pass_event(struct evdev_client *client,
- 	 * Interrupts are disabled, just acquire the lock
- 	 */
- 	spin_lock(&client->buffer_lock);
-+	if (client->use_suspend_blocker)
-+		suspend_block(&client->suspend_blocker);
- 	client->buffer[client->head++] = *event;
- 	client->head &= EVDEV_BUFFER_SIZE - 1;
- 	spin_unlock(&client->buffer_lock);
-@@ -234,6 +239,8 @@ static int evdev_release(struct inode *inode, struct file *file)
- 	mutex_unlock(&evdev->mutex);
- 
- 	evdev_detach_client(evdev, client);
-+	if (client->use_suspend_blocker)
-+		suspend_blocker_unregister(&client->suspend_blocker);
- 	kfree(client);
- 
- 	evdev_close_device(evdev);
-@@ -335,6 +342,8 @@ static int evdev_fetch_next_event(struct evdev_client *client,
- 	if (have_event) {
- 		*event = client->buffer[client->tail++];
- 		client->tail &= EVDEV_BUFFER_SIZE - 1;
-+		if (client->use_suspend_blocker && client->head == client->tail)
-+			suspend_unblock(&client->suspend_blocker);
- 	}
- 
- 	spin_unlock_irq(&client->buffer_lock);
-@@ -585,6 +594,19 @@ static long evdev_do_ioctl(struct file *file, unsigned int cmd,
- 		else
- 			return evdev_ungrab(evdev, client);
- 
-+	case EVIOCGSUSPENDBLOCK:
-+		return put_user(client->use_suspend_blocker, ip);
-+
-+	case EVIOCSSUSPENDBLOCK:
-+		spin_lock_irq(&client->buffer_lock);
-+		if (!client->use_suspend_blocker && p)
-+			suspend_blocker_init(&client->suspend_blocker, "evdev");
-+		else if (client->use_suspend_blocker && !p)
-+			suspend_blocker_unregister(&client->suspend_blocker);
-+		client->use_suspend_blocker = !!p;
-+		spin_unlock_irq(&client->buffer_lock);
-+		return 0;
-+
- 	default:
- 
- 		if (_IOC_TYPE(cmd) != 'E')
-diff --git a/include/linux/input.h b/include/linux/input.h
-index 7ed2251..b2d93b4 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -82,6 +82,9 @@ struct input_absinfo {
- 
- #define EVIOCGRAB		_IOW('E', 0x90, int)			/* Grab/Release device */
- 
-+#define EVIOCGSUSPENDBLOCK	_IOR('E', 0x91, int)			/* get suspend block enable */
-+#define EVIOCSSUSPENDBLOCK	_IOW('E', 0x91, int)			/* set suspend block enable */
-+
- /*
-  * Event types
-  */
--- 
-1.6.5.1
+ The head commit is a merge which fixes up a conflict between some
+ patches in here and other that went in late in 2.6.34,
+ and also resolves a compile-time conflict with sysfs patches (which
+ added an arg to sysfs_get_dirent (as discovered in -next).
 
+ All have been seen on linux-raid mailing list and have been in -next
+ for a while.
+
+ The first few are tagged for -stable.
+
+Thanks,
+NeilBrown
+
+
+The following changes since commit d515e86e639890b33a09390d062b0831664f04a2:
+
+  Merge branch 'for_linus' of git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-udf-2.6 (2010-05-21 11:17:43 -0700)
+
+are available in the git repository at:
+
+  git://neil.brown.name/md/ for-linus
+
+Dan Williams (4):
+      md: set mddev readonly flag on blkdev BLKROSET ioctl
+      md/raid4: permit raid0 takeover
+      md: notify mdstat waiters of level change
+      md: allow integers to be passed to md/level
+
+Gabriele A. Trombetti (1):
+      md/raid6: Fix raid-6 read-error correction in degraded state
+
+H Hartley Sweeten (1):
+      drivers/md: Remove unnecessary casts of void *
+
+Maciej Trela (2):
+      md: Correctly handle device removal via sysfs
+      md: notify level changes through sysfs.
+
+NeilBrown (34):
+      md/linear: avoid possible oops and array stop
+      md: remove unneeded sysfs files more promptly
+      md: manage redundancy group in sysfs when changing level.
+      md/raid1: fix counting of write targets.
+      md: remove some dead fields from mddev_s
+      md: discard StateChanged device flag.
+      md: don't use mddev->raid_disks in raid0 or raid10 while array is active.
+      md: Relax checks on ->max_disks when external metadata handling is used.
+      md: add support for raid5 to raid4 conversion
+      md/raid5: small tidyup in raid5_align_endio
+      md: move io accounting out of personalities into md_make_request
+      md: don't reference gendisk in getgeo
+      md: remove ->changed and related code.
+      md: factor do_md_run to separate accesses to ->gendisk
+      md: start to refactor do_md_stop
+      md: factor md_stop_writes out of do_md_stop.
+      md: split md_set_readonly out of do_md_stop
+      md: call md_stop_writes from md_stop
+      md: pass mddev to make_request functions rather than request_queue
+      md: factor out init code for an mddev
+      md: don't unregister the thread in mddev_suspend
+      md/raid1: fix confusing 'redirect sector' message.
+      md/raid1: delay reads that could overtake behind-writes.
+      md: remove EXPERIMENTAL designation from RAID10
+      md/raid5: improve consistency of error messages.
+      md/raid1: improve printk messages
+      md/raid10: tidy up printk messages.
+      md/raid0: tidy up printk messages.
+      md/linear: standardise all printk messages
+      md: Fix read balancing in RAID1 and RAID10 on drives > 2TB
+      md: restore ability of spare drives to spin down.
+      md: simplify updating of event count to sometimes avoid updating spares.
+      md: don't insist on valid event count for spare devices.
+      Merge commit '3ff195b011d7decf501a4d55aeed312731094796' into for-linus
+
+Paul Clements (1):
+      md: expose max value of behind writes counter
+
+Trela Maciej (1):
+      md:Add support for Raid0->Raid5 takeover
+
+Trela, Maciej (2):
+      md: Add support for Raid5->Raid0 and Raid10->Raid0 takeover
+      md: Add support for Raid0->Raid10 takeover
+
+ drivers/md/Kconfig     |    4 +-
+ drivers/md/bitmap.c    |   41 +++-
+ drivers/md/bitmap.h    |    2 +
+ drivers/md/faulty.c    |    9 +-
+ drivers/md/linear.c    |   36 ++--
+ drivers/md/md.c        |  537 +++++++++++++++++++++++++++++-------------------
+ drivers/md/md.h        |   16 +-
+ drivers/md/multipath.c |   13 +-
+ drivers/md/raid0.c     |  251 +++++++++++++++++------
+ drivers/md/raid0.h     |    3 +
+ drivers/md/raid1.c     |  114 ++++++-----
+ drivers/md/raid10.c    |  300 ++++++++++++++++++---------
+ drivers/md/raid10.h    |   12 +
+ drivers/md/raid5.c     |  231 ++++++++++++----------
+ 14 files changed, 987 insertions(+), 582 deletions(-)
