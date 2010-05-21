@@ -1,83 +1,187 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755648Ab0EUNhu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 09:37:50 -0400
-Received: from cantor.suse.de ([195.135.220.2]:45621 "EHLO mx1.suse.de"
+	id S1755778Ab0EUNnO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 09:43:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:53417 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753829Ab0EUNht (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 09:37:49 -0400
-From: Nikanth Karthikesan <knikanth@suse.de>
-Organization: suse.de
-To: Kay Sievers <kay.sievers@vrfy.org>
-Subject: Re: add devname module aliases to allow module on-demand auto-loading
-Date: Fri, 21 May 2010 19:09:28 +0530
-User-Agent: KMail/1.12.4 (Linux/2.6.31.12-0.2-desktop; KDE/4.3.5; x86_64; ; )
-Cc: Alasdair G Kergon <agk@redhat.com>,
-       "linux-kernel" <linux-kernel@vger.kernel.org>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>,
-       "David S. Miller" <davem@davemloft.net>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       Chris Mason <chris.mason@oracle.com>,
-       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-       Ian Kent <raven@themaw.net>
-References: <1274371640.302.5.camel@yio.site> <AANLkTilI3RYcybjG7b1juTa3H31ImxQI1-2R_l7q0yc1@mail.gmail.com> <AANLkTinQwEqFKAiyAwVPwmzLtUXJkaOdZ0c88O_tfp-1@mail.gmail.com>
-In-Reply-To: <AANLkTinQwEqFKAiyAwVPwmzLtUXJkaOdZ0c88O_tfp-1@mail.gmail.com>
+	id S1753716Ab0EUNnN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 09:43:13 -0400
+Date: Fri, 21 May 2010 09:50:54 -0400
+From: Josef Bacik <josef@redhat.com>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@suse.de>,
+       Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100521135054.GN32248@dhcp231-156.rdu.redhat.com>
+References: <20100514072219.GC4706@laptop> <20100514083821.GL13617@dastard> <20100518063647.GD2516@laptop> <20100518080503.GF2150@dastard> <20100518104351.GF2516@laptop> <20100518122714.GG2150@dastard> <20100518150912.GI2516@laptop> <20100519235054.GS8120@dastard> <20100520201232.GP3395@quack.suse.cz> <20100520230524.GU8120@dastard>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005211909.29326.knikanth@suse.de>
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100520230524.GU8120@dastard>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday 21 May 2010 18:41:38 Kay Sievers wrote:
-> On Fri, May 21, 2010 at 13:51, Kay Sievers <kay.sievers@vrfy.org> wrote:
-> > On Fri, May 21, 2010 at 13:34, Alasdair G Kergon <agk@redhat.com> wrote:
-> >
-> > There is no harm to make a well-know device node static, it just
-> > solves a lot of problems, and also makes it possible to work off of a
-> > static /dev.
+On Fri, May 21, 2010 at 09:05:24AM +1000, Dave Chinner wrote:
+> On Thu, May 20, 2010 at 10:12:32PM +0200, Jan Kara wrote:
+> > On Thu 20-05-10 09:50:54, Dave Chinner wrote:
+> > > On Wed, May 19, 2010 at 01:09:12AM +1000, Nick Piggin wrote:
+> > > > On Tue, May 18, 2010 at 10:27:14PM +1000, Dave Chinner wrote:
+> > > > > On Tue, May 18, 2010 at 08:43:51PM +1000, Nick Piggin wrote:
+> > > > > > On Tue, May 18, 2010 at 06:05:03PM +1000, Dave Chinner wrote:
+> > > > > > > On Tue, May 18, 2010 at 04:36:47PM +1000, Nick Piggin wrote:
+> > > > > > > > Well you could do a large span block allocation at the beginning,
+> > > > > > > > and then dirty the pagecache one by one like we do right now.
+> > > > > > > 
+> > > > > > > The problem is that if we fail to allocate a page (e.g.  ENOMEM) or
+> > > > > > > fail the copy (EFAULT) after the block allocation, we have to undo
+> > > > > > > the allocation we have already completed. If we don't, we leave
+> > > > > > > uninitialisaed allocations on disk that will expose stale data.
+> > > > > > > 
+> > > > > > > In the second case (EFAULT) we might be able to zero the pages to
+> > > > > > > avoid punching out blocks, but the first case where pages can't be
+> > > > > > > allocated to cover the block allocated range makes it very
+> > > > > > > difficult without being able to punch holes in allocated block
+> > > > > > > ranges.
+> > > > > > > 
+> > > > > > > AFAIK, only XFS and OCFS2 currently support punching out arbitrary
+> > > > > > > ranges of allocated blocks from an inode - there is not VFS method
+> > > > > > > for it, just an ioctl (XFS_IOC_UNRESVSP).
+> > > > > > > 
+> > > > > > > Hence the way to avoid needing hole punching is to allocate and lock
+> > > > > > > down all the pages into the page cache fіrst, then do the copy so
+> > > > > > > they fail before the allocation is done if they are going to fail.
+> > > > > > > That makes it much, much easier to handle failures....
+> > > > > > 
+> > > > > > So it is just a matter of what is exposed as a vfs interface?
+> > > > > 
+> > > > > More a matter of utilising the functionality most filesystems
+> > > > > already have and minimising the amount of churn in critical areas of
+> > > > > filesytsem code. Hole punching is not simple, anѕ bugs will likely
+> > > > > result in a corrupted filesystem.  And the hole punching will only
+> > > > > occur in a hard to trigger corner case, so it's likely that bugs
+> > > > > will go undetected and filesystems will suffer from random,
+> > > > > impossible to track down corruptions as a result.
+> > > > > 
+> > > > > In comparison, adding reserve/unreserve functionality might cause
+> > > > > block accounting issues if there is a bug, but it won't cause
+> > > > > on-disk corruption that results in data loss.  Hole punching is not
+> > > > > simple or easy - it's a damn complex way to handle errors and if
+> > > > > that's all it's required for then we've failed already.
+> > > > 
+> > > > As I said, we can have a dumb fallback path for filesystems that
+> > > > don't implement hole punching. Clear the blocks past i size, and
+> > > > zero out the allocated but not initialized blocks.
+> > > > 
+> > > > There does not have to be pagecache allocated in order to do this,
+> > > > you could do direct IO from the zero page in order to do it.
+> > > 
+> > > I don't see that as a good solution - it's once again a fairly
+> > > complex way of dealing with the problem, especially as it now means
+> > > that direct io would fall back to buffered which would fall back to
+> > > direct IO....
+> > > 
+> > > > Hole punching is not only useful there, it is already exposed to
+> > > > userspace via MADV_REMOVE.
+> > > 
+> > > That interface is *totally broken*. It has all the same problems as
+> > > vmtruncate() for removing file blocks (because it uses vmtruncate).
+> > > It also has the fundamental problem of being called un the mmap_sem,
+> > > which means that inode locks and therefore de-allocation cannot be
+> > > executed without the possibility of deadlocks. Fundamentally, hole
+> > > punching is an inode operation, not a VM operation....
+> > > 
+> > > 
+> > > > > > > > Basically, once pagecache is marked uptodate, I don't think we should
+> > > > > > > > ever put maybe-invalid data into it -- the way to do it is to invalidate
+> > > > > > > > that page and put a *new* page in there.
+> > > > > > > 
+> > > > > > > Ok, so lets do that...
+> > > > > > > 
+> > > > > > > > Why? Because user mappings are just one problem, but once you had a
+> > > > > > > > user mapping, you can have been subject to get_user_pages, so it could
+> > > > > > > > be in the middle of a DMA operation or something.
+> > > > > > > 
+> > > > > > > ... because we already know this behaviour causes problems for
+> > > > > > > high end enterprise level features like hardware checksumming IO
+> > > > > > > paths.
+> > > > > > > 
+> > > > > > > Hence it seems that a multipage write needs to:
+> > > > > > > 
+> > > > > > > 	1. allocate new pages
+> > > > > > > 	2. attach bufferheads/mapping structures to pages (if required)
+> > > > > > > 	3. copy data into pages
+> > > > > > > 	4. allocate space
+> > > > > > > 	5. for each old page in the range:
+> > > > > > > 		lock page
+> > > > > > > 		invalidate mappings
+> > > > > > > 		clear page uptodate flag
+> > > > > > > 		remove page from page cache
+> > > > > > > 	6. for each new page:
+> > > > > > > 		map new page to allocated space
+> > > > > > > 		lock new page
+> > > > > > > 		insert new page into pagecache
+> > > > > > > 		update new page state (write_end equivalent)
+> > > > > > > 		unlock new page
+> > > > > > > 	7. free old pages
+> > > > > > > 
+> > > > > > > Steps 1-4 can all fail, and can all be backed out from without
+> > > > > > > changing the current state. Steps 5-7 can't fail AFAICT, so we
+> > > > > > > should be able to run this safely after the allocation without
+> > > > > > > needing significant error unwinding...
+> > > > > > > 
+> > > > > > > Thoughts?
+> > > > > > 
+> > > > > > Possibly. The importance of hot cache is reduced, because we are
+> > > > > > doing full-page copies, and bulk copies, by definition. But it
+> > > > > > could still be an issue. The allocations and deallocations could
+> > > > > > cost a little as well.
+> > > > > 
+> > > > > They will cost far less than the reduction in allocation overhead
+> > > > > saves us, and there are potential optimisations there 
+> > > > 
+> > > > An API that doesn't require that, though, should be less overhead
+> > > > and simpler.
+> > > > 
+> > > > Is it really going to be a problem to implement block hole punching
+> > > > in ext4 and gfs2?
+> > > 
+> > > I can't follow the ext4 code - it's an intricate maze of weird entry
+> > > and exit points, so I'm not even going to attempt to comment on it.
+> >   Hmm, I was thinking about it and I see two options how to get out
+> > of problems:
+> >   a) Filesystems which are not able to handle hole punching will allow
+> >      multipage writes only after EOF (which can be easily undone by
+> >      truncate in case of failure). That should actually cover lots of
+> >      cases we are interested in (I don't expect multipage writes to holes
+> >      to be a common case).
 > 
-> To illustrate:
+> multipage writes to holes is a relatively common operation in the
+> HPC space that XFS is designed for (e.g. calculations on huge sparse
+> matrices), so I'm not really fond of this idea....
 > 
-> On my box without this patch:
->   dmsetup version
->   Library version:   1.02.42 (2010-01-14)
->   /proc/misc: No entry for device-mapper found
->   Is device-mapper driver missing from kernel?
->   Failure to communicate with kernel device-mapper driver.
+> >   b) E.g. ext4 can do even without hole punching. It can allocate extent
+> >      as 'unwritten' and when something during the write fails, it just
+> >      leaves the extent allocated and the 'unwritten' flag makes sure that
+> >      any read will see zeros. I suppose that other filesystems that care
+> >      about multipage writes are able to do similar things (e.g. btrfs can
+> >      do the same as far as I remember, I'm not sure about gfs2).
 > 
-> And the same box just with this patch, nothing else changed:
->   dmsetup version
->   Library version:   1.02.42 (2010-01-14)
->   Driver version:    4.17.0
-> 
-> But its up to you to care if device-mapper just works, or if there is
-> stuff like an init script with modprobe needed to load stuff that
-> might never be needed. :)
+> Allocating multipage writes as unwritten extents turns off delayed
+> allocation and hence we'd lose all the benefits that this gives...
 >
 
-If this is needed, the dmsetup itself can do a `modprobe dm` instead of 
-printing the message, "Is device-mapper driver missing from kernel?"?
+I just realized we have another problem, the mmap_sem/page_lock deadlock.
+Currently BTRFS is susceptible to this, since we don't prefault any of the pages
+in yet.  If we're going to do multi-page writes we're going to need to have a
+way to fault in all of the iovec's at once, so when we do the
+pagefault_disable() copy pagefault_enable() we don't just end up copying the
+first iovec.  Nick have you done something like this already?  If not I assume
+I can just loop through all the iovec's and call fault_in_pages_readable on all
+of them and be good to go right?  Thanks,
 
-> This is surely not about dynamic vs. static, it is about race-free
-> on-demand activation of services and subsystems.
-> 
-
-Loading dm-mod alone is enough for `dmsetup version`. But for other operations 
-dm-mod may not be enough, as various other modules like dm-crypt, dm-
-mirror,... would also be required, depending on the dm table, which may or may 
-not be installed.
-
-Thanks
-Nikanth
-
-> Thanks,
-> Kay
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-> 
+Josef 
