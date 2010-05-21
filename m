@@ -1,66 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757120Ab0EUBJs (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 21:09:48 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:44034 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754413Ab0EUBJp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 21:09:45 -0400
-Date: Fri, 21 May 2010 11:09:38 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-Message-Id: <20100521110938.7bbbbf59.sfr@canb.auug.org.au>
-In-Reply-To: <4BF5D8AF.6010408@windriver.com>
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
-	<20100325154307.9cdeae10.sfr@canb.auug.org.au>
-	<201003242159.25770.dmitry.torokhov@gmail.com>
-	<20100521102158.bf6df441.sfr@canb.auug.org.au>
-	<4BF5D8AF.6010408@windriver.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__21_May_2010_11_09_38_+1000_JK.m8j92zw6_Gi+w"
+	id S1754550Ab0EUBMG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 21:12:06 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:38186 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752157Ab0EUBMD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 21:12:03 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Zan Lynx <zlynx@acm.org>
+Subject: Re: RFC: dirty_ratio back to 40%
+Cc: kosaki.motohiro@jp.fujitsu.com, lwoodman@redhat.com,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Nick Piggin <npiggin@suse.de>, Jan Kara <jack@suse.cz>
+In-Reply-To: <4BF5D875.3030900@acm.org>
+References: <20100521083408.1E36.A69D9226@jp.fujitsu.com> <4BF5D875.3030900@acm.org>
+Message-Id: <20100521100943.1E4D.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 21 May 2010 10:11:59 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_May_2010_11_09_38_+1000_JK.m8j92zw6_Gi+w
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> > So, I'd prefer to restore the default rather than both Redhat and SUSE apply exactly
+> > same distro specific patch. because we can easily imazine other users will face the same
+> > issue in the future.
+> 
+> On desktop systems the low dirty limits help maintain interactive feel. 
+> Users expect applications that are saving data to be slow. They do not 
+> like it when every application in the system randomly comes to a halt 
+> because of one program stuffing data up to the dirty limit.
 
-Hi Jason,
+really?
+Do you mean our per-task dirty limit wouldn't works?
 
-On Thu, 20 May 2010 19:49:51 -0500 Jason Wessel <jason.wessel@windriver.com=
-> wrote:
->
-> Before brute force toggling it, it seems we should check the value and
-> restore it after the execution of handle_sysrq().
+If so, I think we need fix it. IOW sane per-task dirty limitation seems independent issue 
+from per-system dirty limit.
 
-Indeed, at the time I couldn't find an easy way to do that.
 
-> I'll have to look and see if there is an access function for this.
+> The cause and effect for the system slowdown is clear when the dirty 
+> limit is low. "I saved data and now the system is slow until it is 
+> done." When the dirty page ratio is very high, the cause and effect is 
+> disconnected. "I was just web surfing and the system came to a halt."
+> 
+> I think we should expect server admins to do more tuning than desktop 
+> users, so the default limits should stay low in my opinion.
 
-Great, thanks.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__21_May_2010_11_09_38_+1000_JK.m8j92zw6_Gi+w
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv13VIACgkQjjKRsyhoI8ziTACZARRVTGV44Ta9YCL+ue0Vh0nq
-RL8AoKEUWXyBVNnVdFae1/lurA0mFwQd
-=pQ/f
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_May_2010_11_09_38_+1000_JK.m8j92zw6_Gi+w--
