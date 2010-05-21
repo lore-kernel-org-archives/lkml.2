@@ -1,51 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934400Ab0EURBw (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:01:52 -0400
-Received: from kroah.org ([198.145.64.141]:39082 "EHLO coco.kroah.org"
+	id S934203Ab0EUQyE (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:54:04 -0400
+Received: from kroah.org ([198.145.64.141]:50335 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934216Ab0EUQyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:15 -0400
+	id S934121Ab0EUQwL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:52:11 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Alan Stern <stern@rowland.harvard.edu>,
+Cc: Roel Kluin <roel.kluin@gmail.com>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 06/38] Driver core: don't initialize wakeup flags
-Date: Fri, 21 May 2010 09:53:36 -0700
-Message-Id: <1274460848-11377-6-git-send-email-gregkh@suse.de>
+Subject: [PATCH 18/25] serial: two branches the same in timbuart_set_mctrl()
+Date: Fri, 21 May 2010 09:51:47 -0700
+Message-Id: <1274460714-11277-18-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
-In-Reply-To: <20100521165106.GA11216@kroah.com>
-References: <20100521165106.GA11216@kroah.com>
+In-Reply-To: <20100521165113.GB11216@kroah.com>
+References: <20100521165113.GB11216@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Alan Stern <stern@rowland.harvard.edu>
+From: Roel Kluin <roel.kluin@gmail.com>
 
-This patch (as1351) removes an unnecessary and unwanted assignment
-from device_initialize().  The wakeup flags are set to 0 along with
-everything else when the device structure is allocated, so we don't
-need to do it again.  Furthermore, the subsystem might already have
-set these flags to their correct values; we don't want to override it.
+CTS is a read only bit and we are to stop signal RTS if modem line
+TIOCM_RTS is not set.
 
-Signed-off-by: Alan Stern <stern@rowland.harvard.edu>
+Thanks for suggestions by Richard Röjfors.
+
+Signed-off-by: Roel Kluin <roel.kluin@gmail.com>
+Acked-by: Richard Röjfors <richard.rojfors@pelagicore.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/core.c |    1 -
- 1 files changed, 0 insertions(+), 1 deletions(-)
+ drivers/serial/timbuart.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index b56a0ba..e11c8c3 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -562,7 +562,6 @@ void device_initialize(struct device *dev)
- 	init_MUTEX(&dev->sem);
- 	spin_lock_init(&dev->devres_lock);
- 	INIT_LIST_HEAD(&dev->devres_head);
--	device_init_wakeup(dev, 0);
- 	device_pm_init(dev);
- 	set_dev_node(dev, -1);
+diff --git a/drivers/serial/timbuart.c b/drivers/serial/timbuart.c
+index 786ba85..62f389f 100644
+--- a/drivers/serial/timbuart.c
++++ b/drivers/serial/timbuart.c
+@@ -220,7 +220,7 @@ static void timbuart_set_mctrl(struct uart_port *port, unsigned int mctrl)
+ 	if (mctrl & TIOCM_RTS)
+ 		iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
+ 	else
+-		iowrite8(TIMBUART_CTRL_RTS, port->membase + TIMBUART_CTRL);
++		iowrite8(0, port->membase + TIMBUART_CTRL);
  }
+ 
+ static void timbuart_mctrl_check(struct uart_port *port, u32 isr, u32 *ier)
 -- 
 1.7.0.3
 
