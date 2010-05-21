@@ -1,221 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab0EURJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:09:29 -0400
-Received: from kroah.org ([198.145.64.141]:50272 "EHLO coco.kroah.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758488Ab0EUQvt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:51:49 -0400
-Date: Fri, 21 May 2010 09:51:06 -0700
-From: Greg KH <gregkh@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [GIT PATCH] driver core patches for .35
-Message-ID: <20100521165106.GA11216@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S934061Ab0EURJz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:09:55 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42629 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934028Ab0EURJw (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 13:09:52 -0400
+Subject: Re: [tip:sched/urgent] sched: Avoid side-effect of tickless idle
+ on update_cpu_load
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       tglx@linutronix.de, venki@google.com, linux-tip-commits@vger.kernel.org
+In-Reply-To: <20100521170320.GA2023@elte.hu>
+References: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+	 <tip-4afc7e60ab25b72611771e48ca97b4f0104f77c7@git.kernel.org>
+	 <20100521170320.GA2023@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 May 2010 19:09:47 +0200
+Message-ID: <1274461787.1674.1717.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here's the big driver core merge for the .35 merge window.
+On Fri, 2010-05-21 at 19:03 +0200, Ingo Molnar wrote:
+> * tip-bot for Venkatesh Pallipadi <venki@google.com> wrote:
+> 
+> > Commit-ID:  4afc7e60ab25b72611771e48ca97b4f0104f77c7
+> > Gitweb:     http://git.kernel.org/tip/4afc7e60ab25b72611771e48ca97b4f0104f77c7
+> > Author:     Venkatesh Pallipadi <venki@google.com>
+> > AuthorDate: Mon, 17 May 2010 18:14:43 -0700
+> > Committer:  Ingo Molnar <mingo@elte.hu>
+> > CommitDate: Fri, 21 May 2010 11:37:17 +0200
+> > 
+> > sched: Avoid side-effect of tickless idle on update_cpu_load
+> 
+> ok, probably this patch is causing:
+> 
+> [   59.250427] 
+> [   59.250429] =================================
+> [   59.256299] [ INFO: inconsistent lock state ]
+> [   59.260014] 2.6.34-tip+ #6253
+> [   59.260014] ---------------------------------
+> [   59.260014] inconsistent {IN-HARDIRQ-W} -> {HARDIRQ-ON-W} usage.
+> [   59.260014] swapper/0 [HC0[0]:SC1[1]:HE1:SE0] takes:
+> [   59.260014]  (&rq->lock){?.-.-.}, at: [<ffffffff81038e23>] run_rebalance_domains+0xa1/0x131
+> [   59.260014] {IN-HARDIRQ-W} state was registered at:
+> [   59.260014]   [<ffffffff8106583a>] __lock_acquire+0x5e8/0x1384
+> [   59.260014]   [<ffffffff81066659>] lock_acquire+0x83/0x9d
+> [   59.260014]   [<ffffffff81bae24c>] _raw_spin_lock+0x3b/0x6e
+> [   59.260014]   [<ffffffff81037865>] scheduler_tick+0x3a/0x2b7
+> [   59.260014]   [<ffffffff810497c4>] update_process_times+0x4b/0x5b
+> [   59.260014]   [<ffffffff8105f467>] tick_periodic+0x63/0x6f
+> [   59.260014]   [<ffffffff8105f492>] tick_handle_periodic+0x1f/0x6d
+> [   59.260014]   [<ffffffff81005e2d>] timer_interrupt+0x19/0x20
+> [   59.260014]   [<ffffffff81084dc9>] handle_IRQ_event+0x20/0x9f
+> [   59.260014]   [<ffffffff81086c2e>] handle_level_irq+0x9a/0xf4
+> [   59.260014]   [<ffffffff81005729>] handle_irq+0x62/0x6d
+> [   59.260014]   [<ffffffff81004b08>] do_IRQ+0x5e/0xc4
+> [   59.260014]   [<ffffffff81baefd3>] ret_from_intr+0x0/0xf
+> [   59.260014]   [<ffffffff81085abb>] __setup_irq+0x21b/0x2c1
+> [   59.260014]   [<ffffffff81085d06>] setup_irq+0x1e/0x23
+> [   59.260014]   [<ffffffff8282735f>] setup_default_timer_irq+0x12/0x14
+> [   59.260014]   [<ffffffff82827378>] hpet_time_init+0x17/0x19
+> [   59.260014]   [<ffffffff82827346>] x86_late_time_init+0xa/0x11
+> [   59.260014]   [<ffffffff82824ce9>] start_kernel+0x338/0x3bf
+> [   59.260014]   [<ffffffff828242a3>] x86_64_start_reservations+0xb3/0xb7
+> [   59.260014]   [<ffffffff8282438b>] x86_64_start_kernel+0xe4/0xeb
+> [   59.260014] irq event stamp: 186338
+> [   59.260014] hardirqs last  enabled at (186338): [<ffffffff81baecf5>] _raw_spin_unlock_irq+0x2b/0x53
+> [   59.260014] hardirqs last disabled at (186337): [<ffffffff81bae317>] _raw_spin_lock_irq+0x14/0x74
+> [   59.260014] softirqs last  enabled at (186326): [<ffffffff810449fe>] __do_softirq+0x13a/0x150
+> [   59.260014] softirqs last disabled at (186331): [<ffffffff8100388c>] call_softirq+0x1c/0x28
+> [   59.260014] 
+> [   59.260014] other info that might help us debug this:
+> [   59.260014] no locks held by swapper/0.
+> [   59.260014] 
+> [   59.260014] stack backtrace:
+> [   59.260014] Pid: 0, comm: swapper Not tainted 2.6.34-tip+ #6253
+> [   59.260014] Call Trace:
+> [   59.260014]  <IRQ>  [<ffffffff8106318d>] print_usage_bug+0x187/0x198
+> [   59.260014]  [<ffffffff8100d920>] ? save_stack_trace+0x2a/0x47
+> [   59.260014]  [<ffffffff81063c67>] ? check_usage_backwards+0x0/0xa5
+> [   59.260014]  [<ffffffff810633cd>] mark_lock+0x22f/0x412
+> [   59.260014]  [<ffffffff810658b3>] __lock_acquire+0x661/0x1384
+> [   59.260014]  [<ffffffff81038631>] ? load_balance+0xda/0x64d
+> [   59.260014]  [<ffffffff8106275e>] ? put_lock_stats+0xe/0x27
+> [   59.260014]  [<ffffffff8106285d>] ? lock_release_holdtime+0xe6/0xeb
+> [   59.260014]  [<ffffffff81066659>] lock_acquire+0x83/0x9d
+> [   59.260014]  [<ffffffff81038e23>] ? run_rebalance_domains+0xa1/0x131
+> [   59.260014]  [<ffffffff81bae24c>] _raw_spin_lock+0x3b/0x6e
+> [   59.260014]  [<ffffffff81038e23>] ? run_rebalance_domains+0xa1/0x131
+> [   59.260014]  [<ffffffff81038e23>] run_rebalance_domains+0xa1/0x131
+> [   59.260014]  [<ffffffff81044979>] __do_softirq+0xb5/0x150
+> [   59.260014]  [<ffffffff8100388c>] call_softirq+0x1c/0x28
+> [   59.260014]  [<ffffffff81005690>] do_softirq+0x38/0x6f
+> [   59.260014]  [<ffffffff81044571>] irq_exit+0x45/0x90
+> [   59.260014]  [<ffffffff81017ec4>] smp_apic_timer_interrupt+0x87/0x95
+> [   59.260014]  [<ffffffff81003353>] apic_timer_interrupt+0x13/0x20
+> [   59.260014]  <EOI>  [<ffffffff81009f8c>] ? default_idle+0x29/0x43
+> [   59.260014]  [<ffffffff81009f8a>] ? default_idle+0x27/0x43
+> [   59.260014]  [<ffffffff81001c52>] cpu_idle+0x6c/0xbe
+> [   59.260014]  [<ffffffff81b411fb>] rest_init+0xff/0x106
+> [   59.260014]  [<ffffffff81b410fc>] ? rest_init+0x0/0x106
+> [   59.260014]  [<ffffffff82824d65>] start_kernel+0x3b4/0x3bf
+> [   59.260014]  [<ffffffff828242a3>] x86_64_start_reservations+0xb3/0xb7
+> [   59.260014]  [<ffffffff8282438b>] x86_64_start_kernel+0xe4/0xeb 
 
-It touches a lot of places outside of the driver core, due to some API
-changes, and due to the network namespace patches coming in through this
-tree due to the dependancy on the kobject namespace code.  David Miller
-has acked all of these patches and asked that they go in through here.
+I figure the below should fix that..
 
-Full details as to what is included is below in the shortlog.
+---
+ kernel/sched_fair.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-Please pull from:
-	master.kernel.org:/pub/scm/linux/kernel/git/gregkh/driver-core-2.6.git/
+diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
+index e91f833..980c909 100644
+--- a/kernel/sched_fair.c
++++ b/kernel/sched_fair.c
+@@ -3411,9 +3411,9 @@ static void run_rebalance_domains(struct softirq_action *h)
+ 				break;
+ 
+ 			rq = cpu_rq(balance_cpu);
+-			raw_spin_lock(&rq->lock);
++			raw_spin_lock_irq(&rq->lock);
+ 			update_cpu_load(rq);
+-			raw_spin_unlock(&rq->lock);
++			raw_spin_unlock_irq(&rq->lock);
+ 			rebalance_domains(balance_cpu, CPU_IDLE);
+ 
+ 			if (time_after(this_rq->next_balance, rq->next_balance))
 
-All of these patches have been in the linux-next and mm trees.
-
-The patches will be sent as a follow-on to this message to lkml for
-people to see.
-
-thanks,
-
-greg k-h
-
-------------
-
- Documentation/filesystems/sysfs-tagging.txt      |   42 +++++
- arch/alpha/kernel/pci-sysfs.c                    |    8 +-
- arch/mips/txx9/generic/setup.c                   |    4 +-
- arch/powerpc/sysdev/mv64x60_pci.c                |    4 +-
- arch/s390/kernel/ipl.c                           |   14 +-
- drivers/acpi/system.c                            |    2 +-
- drivers/base/Kconfig                             |    7 +-
- drivers/base/class.c                             |    9 +
- drivers/base/core.c                              |  130 +++++++++++---
- drivers/base/cpu.c                               |    2 +-
- drivers/base/dd.c                                |    4 +-
- drivers/base/devtmpfs.c                          |    5 +
- drivers/base/firmware_class.c                    |  206 ++++++++++++----------
- drivers/base/module.c                            |    4 +-
- drivers/base/platform.c                          |    8 +-
- drivers/block/loop.c                             |   10 +-
- drivers/firmware/dcdbas.c                        |    4 +-
- drivers/firmware/dell_rbu.c                      |   10 +-
- drivers/firmware/efivars.c                       |    4 +-
- drivers/gpio/gpiolib.c                           |    2 +-
- drivers/gpu/drm/drm_sysfs.c                      |    5 +-
- drivers/md/bitmap.c                              |    4 +-
- drivers/md/md.c                                  |    6 +-
- drivers/misc/c2port/core.c                       |    4 +-
- drivers/misc/ds1682.c                            |    6 +-
- drivers/misc/eeprom/at24.c                       |    6 +-
- drivers/misc/eeprom/at25.c                       |    6 +-
- drivers/misc/eeprom/eeprom.c                     |    3 +-
- drivers/misc/eeprom/max6875.c                    |    2 +-
- drivers/net/mlx4/mlx4.h                          |    1 +
- drivers/net/netxen/netxen_nic_main.c             |   11 +-
- drivers/net/qlcnic/qlcnic_main.c                 |   12 +-
- drivers/pci/hotplug/acpiphp_ibm.c                |    5 +-
- drivers/pci/pci-sysfs.c                          |   45 ++++--
- drivers/pcmcia/cistpl.c                          |    4 +-
- drivers/power/olpc_battery.c                     |    2 +-
- drivers/rapidio/rio-sysfs.c                      |    6 +-
- drivers/rtc/rtc-cmos.c                           |    6 +-
- drivers/rtc/rtc-ds1305.c                         |    6 +-
- drivers/rtc/rtc-ds1307.c                         |    6 +-
- drivers/rtc/rtc-ds1511.c                         |   10 +-
- drivers/rtc/rtc-ds1553.c                         |    4 +-
- drivers/rtc/rtc-ds1742.c                         |    4 +-
- drivers/rtc/rtc-m48t59.c                         |    4 +-
- drivers/rtc/rtc-stk17ta8.c                       |    4 +-
- drivers/rtc/rtc-tx4939.c                         |    4 +-
- drivers/s390/cio/chp.c                           |    5 +-
- drivers/scsi/3w-sas.c                            |    4 +-
- drivers/scsi/arcmsr/arcmsr_attr.c                |    9 +-
- drivers/scsi/ibmvscsi/ibmvfc.c                   |    3 +-
- drivers/scsi/ipr.c                               |    9 +-
- drivers/scsi/lpfc/lpfc_attr.c                    |   20 ++-
- drivers/scsi/qla2xxx/qla_attr.c                  |   32 ++--
- drivers/staging/comedi/drivers/quatech_daqp_cs.c |    1 +
- drivers/staging/udlfb/udlfb.c                    |    3 +-
- drivers/usb/core/sysfs.c                         |    3 +-
- drivers/usb/core/usb.c                           |    2 +-
- drivers/video/aty/radeon_base.c                  |    4 +-
- drivers/w1/slaves/w1_ds2431.c                    |    4 +-
- drivers/w1/slaves/w1_ds2433.c                    |    4 +-
- drivers/w1/slaves/w1_ds2760.c                    |    2 +-
- drivers/w1/w1.c                                  |    4 +-
- drivers/zorro/zorro-sysfs.c                      |    2 +-
- fs/ramfs/inode.c                                 |    2 +-
- fs/sysfs/bin.c                                   |   26 ++--
- fs/sysfs/dir.c                                   |  114 ++++++++++---
- fs/sysfs/file.c                                  |   17 +-
- fs/sysfs/group.c                                 |    6 +-
- fs/sysfs/inode.c                                 |    6 +-
- fs/sysfs/mount.c                                 |   95 ++++++++++-
- fs/sysfs/symlink.c                               |   35 ++++-
- fs/sysfs/sysfs.h                                 |   34 +++-
- include/linux/device.h                           |   12 +-
- include/linux/firmware.h                         |    1 +
- include/linux/kobject.h                          |   38 ++++
- include/linux/kref.h                             |    1 -
- include/linux/lockdep.h                          |    8 +
- include/linux/netlink.h                          |    4 +
- include/linux/ramfs.h                            |    2 +
- include/linux/sysfs.h                            |   26 +++-
- kernel/ksysfs.c                                  |    3 +-
- kernel/lockdep.c                                 |    5 +
- kernel/module.c                                  |    2 +-
- kernel/user_namespace.c                          |    4 +-
- lib/kobject.c                                    |  115 ++++++++++++
- lib/kobject_uevent.c                             |  109 ++++++++++--
- lib/kref.c                                       |   15 +--
- net/bridge/br_sysfs_br.c                         |    2 +-
- net/core/dev.c                                   |   28 +---
- net/core/net-sysfs.c                             |   63 +++++--
- net/core/net-sysfs.h                             |    1 -
- net/netlink/af_netlink.c                         |   21 ++-
- scripts/checkpatch.pl                            |   11 ++
- security/integrity/ima/ima_iint.c                |    4 +-
- 94 files changed, 1165 insertions(+), 411 deletions(-)
- create mode 100644 Documentation/filesystems/sysfs-tagging.txt
-
----------------
-
-Alan Stern (1):
-      Driver core: don't initialize wakeup flags
-
-Chris Wright (2):
-      sysfs: add struct file* to bin_attr callbacks
-      pci: check caps from sysfs file open to read device dependent config space
-
-Christoph Egger (1):
-      driver-core: fix Typo in drivers/base/core.c for CONFIG_MODULE
-
-David Woodhouse (1):
-      firmware_class: fix memory leak - free allocated pages
-
-David Zeuthen (1):
-      generate "change" uevent for loop device
-
-Dmitry Torokhov (3):
-      firmware loader: rely on driver core to create class attribute
-      firmware loader: split out builtin firmware handling
-      firmware loader: do not allocate firmare id separately
-
-Eric W. Biederman (16):
-      sysfs: Basic support for multiple super blocks
-      sysfs: Remove double free sysfs_get_sb
-      kobj: Add basic infrastructure for dealing with namespaces.
-      sysfs: Implement sysfs tagged directory support.
-      sysfs: Add support for tagged directories with untagged members.
-      sysfs: Implement sysfs_delete_link
-      driver core: Implement ns directory support for device classes.
-      sysfs: Don't use enums in inline function declaration.
-      sysfs: Remove usage of S_BIAS to avoid merge conflict with the vfs tree
-      kobject: Send hotplug events in all network namespaces
-      netns: Teach network device kobjects which namespace they are in.
-      net/sysfs: Fix the bitrot in network device kobject namespace support
-      netlink: Implment netlink_broadcast_filtered
-      kobj: Send hotplug events in the proper namespace.
-      hotplug: netns aware uevent_helper
-      net: Expose all network devices in a namespaces in sysfs
-
-Hugh Daschbach (1):
-      Driver core: Protect device shutdown from hot unplug events.
-
-Jan Beulich (1):
-      drivers/base/cpu.c: fix the output from /sys/devices/system/cpu/offline
-
-Johannes Berg (1):
-      firmware class: export nowait to userspace
-
-Julia Lawall (1):
-      driver core: module.c: Use kasprintf
-
-Kevin Hilman (1):
-      platform_bus: allow custom extensions to system PM methods
-
-NeilBrown (1):
-      kref: remove kref_set
-
-Peter Korsgaard (1):
-      devtmpfs: support !CONFIG_TMPFS
-
-Peter Zijlstra (1):
-      lockdep: Add novalidate class for dev->mutex conversion
-
-Rafael J. Wysocki (1):
-      Driver core: Reduce the level of request_firmware() messages
-
-Serge E. Hallyn (2):
-      sysfs: Comment sysfs directory tagging logic
-      sysfs-namespaces: add a high-level Documentation file
-
-Stefani Seibold (1):
-      driver-core: fix potential race condition in drivers/base/dd.c
-
-Thomas Gleixner (1):
-      drivers/base: Convert dev->sem to mutex
 
