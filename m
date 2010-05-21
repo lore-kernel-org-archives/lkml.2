@@ -1,61 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754861Ab0EUJXt (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 05:23:49 -0400
-Received: from mga01.intel.com ([192.55.52.88]:32584 "EHLO mga01.intel.com"
+	id S1755198Ab0EUJX4 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 05:23:56 -0400
+Received: from mga01.intel.com ([192.55.52.88]:1945 "EHLO mga01.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754198Ab0EUJXr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 05:23:47 -0400
+	id S1752302Ab0EUJXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 05:23:52 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,277,1272870000"; 
-   d="scan'208";a="569306328"
+   d="scan'208";a="569306350"
 From: xiaohui.xin@intel.com
 To: netdev@vger.kernel.org, kvm@vger.kernel.org, linux-kernel@vger.kernel.org,
        mst@redhat.com, mingo@elte.hu, davem@davemloft.net,
        jdike@linux.intel.com
 Cc: Xin Xiaohui <xiaohui.xin@intel.com>
-Subject: [RFC][PATCH v6 04/19] Add a ndo_mp_port_prep pointer to net_device_ops.
-Date: Fri, 21 May 2010 17:30:20 +0800
-Message-Id: <1274434235-5929-5-git-send-email-xiaohui.xin@intel.com>
+Subject: [RFC][PATCH v6 07/19] Add interface to get external buffers.
+Date: Fri, 21 May 2010 17:30:23 +0800
+Message-Id: <1274434235-5929-8-git-send-email-xiaohui.xin@intel.com>
 X-Mailer: git-send-email 1.5.4.4
-In-Reply-To: <1274434235-5929-4-git-send-email-xiaohui.xin@intel.com>
+In-Reply-To: <1274434235-5929-7-git-send-email-xiaohui.xin@intel.com>
 References: <1274434235-5929-1-git-send-email-xiaohui.xin@intel.com>
  <1274434235-5929-2-git-send-email-xiaohui.xin@intel.com>
  <1274434235-5929-3-git-send-email-xiaohui.xin@intel.com>
  <1274434235-5929-4-git-send-email-xiaohui.xin@intel.com>
+ <1274434235-5929-5-git-send-email-xiaohui.xin@intel.com>
+ <1274434235-5929-6-git-send-email-xiaohui.xin@intel.com>
+ <1274434235-5929-7-git-send-email-xiaohui.xin@intel.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Xin Xiaohui <xiaohui.xin@intel.com>
 
-If the driver want to allocate external buffers,
-then it can export it's capability, as the skb
-buffer header length, the page length can be DMA, etc.
-The external buffers owner may utilize this.
+Currently, it can get external buffers from mp device.
 
 Signed-off-by: Xin Xiaohui <xiaohui.xin@intel.com>
 Signed-off-by: Zhao Yu <yzhao81new@gmail.com>
 Reviewed-by: Jeff Dike <jdike@linux.intel.com>
 ---
- include/linux/netdevice.h |    4 ++++
- 1 files changed, 4 insertions(+), 0 deletions(-)
+ include/linux/skbuff.h |   12 ++++++++++++
+ net/core/skbuff.c      |   16 ++++++++++++++++
+ 2 files changed, 28 insertions(+), 0 deletions(-)
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index efb575a..183c786 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -707,6 +707,10 @@ struct net_device_ops {
- 	int			(*ndo_fcoe_get_wwn)(struct net_device *dev,
- 						    u64 *wwn, int type);
- #endif
-+#if defined(CONFIG_MEDIATE_PASSTHRU) || defined(CONFIG_MEDIATE_PASSTHRU_MODULE)
-+	int			(*ndo_mp_port_prep)(struct net_device *dev,
-+						struct mpassthru_port *port);
-+#endif
- };
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index cf309c9..281a1c0 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1519,6 +1519,18 @@ static inline void netdev_free_page(struct net_device *dev, struct page *page)
+ 	__free_page(page);
+ }
  
- /*
++extern struct skb_external_page *netdev_alloc_external_pages(
++					struct net_device *dev,
++					struct sk_buff *skb, int npages);
++
++static inline struct skb_external_page *netdev_alloc_external_page(
++		struct net_device *dev,
++		struct sk_buff *skb, unsigned int size)
++{
++	return netdev_alloc_external_pages(dev, skb,
++					   DIV_ROUND_UP(size, PAGE_SIZE));
++}
++
+ /**
+  *	skb_clone_writable - is the header of a clone writable
+  *	@skb: buffer to check
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index 93c4e06..fbdb1f1 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -278,6 +278,22 @@ struct page *__netdev_alloc_page(struct net_device *dev, gfp_t gfp_mask)
+ }
+ EXPORT_SYMBOL(__netdev_alloc_page);
+ 
++struct skb_external_page *netdev_alloc_external_pages(struct net_device *dev,
++			struct sk_buff *skb, int npages)
++{
++	struct mpassthru_port *port;
++	struct skb_external_page *ext_page = NULL;
++
++	port = rcu_dereference(dev->mp_port);
++	if (!port)
++		goto out;
++	WARN_ON(npages > port->npages);
++	ext_page = port->ctor(port, skb, npages);
++out:
++	return ext_page;
++}
++EXPORT_SYMBOL(netdev_alloc_external_pages);
++
+ void skb_add_rx_frag(struct sk_buff *skb, int i, struct page *page, int off,
+ 		int size)
+ {
 -- 
 1.5.4.4
 
