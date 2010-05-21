@@ -1,70 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752904Ab0EUJSQ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 05:18:16 -0400
-Received: from mail4.comsite.net ([205.238.176.238]:53826 "EHLO
-	mail4.comsite.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751803Ab0EUJSP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 05:18:15 -0400
-X-Default-Received-SPF: pass (skip=forwardok (res=PASS)) x-ip-name=71.22.98.68;
-From: Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
-To: Thomas Gleixner <tglx@linutronix.de>,
-       Jan-Bernd Themann <themann@de.ibm.com>
-cc: Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
-       Michael Ellerman <michael@ellerman.id.au>, dvhltc@linux.vnet.ibm.com,
-       linux-kernel@vger.kernel.org, Will Schmidt <will_schmidt@vnet.ibm.com>,
-       niv@linux.vnet.ibm.com, Doug Maxey <doug.maxey@us.ibm.com>,
-       linuxppc-dev@lists.ozlabs.org, Milton Miller <miltonm@bga.com>
-Subject: Re: [PATCH RT] ehea: make receive irq handler non-threaded (IRQF_NODELAY)
-In-Reply-To: <alpine.LFD.2.00.1005201014250.3368@localhost.localdomain>
-References: <4BF30793.5070300@us.ibm.com> <4BF30C32.1020403@linux.vnet.ibm.com> <4BF31322.5090206@us.ibm.com> <1274232324.29980.9.camel@concordia> <4BF3F2DB.7030701@us.ibm.com> <alpine.LFD.2.00.1005191620350.3368@localhost.localdomain> <1274319125.22892.38.camel@concordia> <1274319125.22892.38.camel@concordia> <alpine.LFD.2.00.1005201014250.3368@localhost.localdomain>
-Date: Fri, 21 May 2010 04:18:01 -0500
-X-Originating-IP: 71.22.98.68
-Message-ID: <1274433481_6943@mail4.comsite.net>
-X-HeloNotChecked: Helo response was not checked before commands sent
+	id S1752865Ab0EUJWk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 05:22:40 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:64192 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751280Ab0EUJWi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 05:22:38 -0400
+Message-ID: <4BF65168.2010401@cn.fujitsu.com>
+Date: Fri, 21 May 2010 17:24:56 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Steven Rostedt <rostedt@goodmis.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Christoph Hellwig <hch@lst.de>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Lai Jiangshan <laijs@cn.fujitsu.com>,
+       Johannes Berg <johannes.berg@intel.com>,
+       Masami Hiramatsu <masami.hiramatsu.pt@hitachi.com>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Andi Kleen <andi@firstfloor.org>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Lin Ming <ming.m.lin@intel.com>,
+       Cyrill Gorcunov <gorcunov@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       Hitoshi Mitake <mitake@dcl.info.waseda.ac.jp>,
+       Robert Richter <robert.richter@amd.com>
+Subject: Re: [RFD] Future tracing/instrumentation directions
+References: <1274291514.26328.930.camel@gandalf.stny.rr.com> <20100520093131.GA30929@elte.hu>
+In-Reply-To: <20100520093131.GA30929@elte.hu>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010 at 10:21:36 +0200 (CEST) Thomas Gleixner  wrote:
-> On Thu, 20 May 2010, Michael Ellerman wrote:
-> > On Wed, 2010-05-19 at 16:38 +0200, Thomas Gleixner wrote:
-> > > On Wed, 19 May 2010, Darren Hart wrote:
-> > >
-> > > > On 05/18/2010 06:25 PM, Michael Ellerman wrote:
-> > > > > On Tue, 2010-05-18 at 15:22 -0700, Darren Hart wrote:
-> >
-> > > > > The result of the discussion about two years ago on this was that we
-> > > > > needed a custom flow handler for XICS on RT.
-> > > >
-> > > > I'm still not clear on why the ultimate solution wasn't to have XICS report
-> > > > edge triggered as edge triggered. Probably some complexity of the entire power
-> > > > stack that I am ignorant of.
-> > > >
-> > > > > Apart from the issue of loosing interrupts there is also the fact that
-> > > > > masking on the XICS requires an RTAS call which takes a global lock.
-> > >
-> > > Right, I'd love to avoid that but with real level interrupts we'd run
-> > > into an interrupt storm. Though another solution would be to issue the
-> > > EOI after the threaded handler finished, that'd work as well, but
-> > > needs testing.
-> >
-> > Yeah I think that was the idea for the custom flow handler. We'd reset
-> > the processor priority so we can take other interrupts (which the EOI
-> > usually does for you), then do the actual EOI after the handler
-> > finished.
+Ingo Molnar wrote:
+> * Steven Rostedt <rostedt@goodmis.org> wrote:
 > 
-> That only works when the card does not issue new interrupts until the
-> EOI happens. If the EOI is only relevant for the interrupt controller,
-> then you are going to lose any edge which comes in before the EOI as
-> well.
+>> More than a year and a half ago (September 2008), at 
+>> Linux Plumbers, we had a meeting with several kernel 
+>> developers to come up with a unified ring buffer. A 
+>> generic ring buffer in the kernel that any subsystem 
+>> could use. After coming up with a set of requirements, I 
+>> worked on implementing it. One of the requirements was 
+>> to start off simple and work to become a more complete 
+>> buffering system.
+>>
+>> [...]
+> 
+> The thing is, in tracing land and more broadly in 
+> instrumentation land we have _much_ more earthly problems 
+> these days:
+> 
+>  - Lets face it, performance of the ring-buffer sucks, in 
+>    a big way. I've recently benchmarked it and it takes 
+>    hundreds of instructions to trace a single event. 
+>    Puh-lease ...
+> 
 
-Well, the real MSIs have an extra bit to allow the eoi to dally behind
-the mmio on another path and that should cover this race when the irq
-is left enabled.
+We ran some benchmarks with all the trace events enabled except
+lock and kmem events, and the results showed the overhead was
+quite small and acceptable.
 
-Jan-Bernd HEA has that change, right?
-
-milton
+But that was 2.6.31, we didn't benchmark newer kernels which have
+more tracepoints.
