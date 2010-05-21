@@ -1,54 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933991Ab0EUQES (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:04:18 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:36811 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933945Ab0EUQEQ (ORCPT
+	id S934004Ab0EUQJf (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:09:35 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:59693 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757551Ab0EUQJe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:04:16 -0400
-Date: Fri, 21 May 2010 09:03:01 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: lkml <linux-kernel@vger.kernel.org>
-Cc: torvalds <torvalds@linux-foundation.org>,
-       Marc Zyngier <maz@misterjones.org>
-Subject: [PATCH] interrupt.h: fix fatal kernel-doc error
-Message-Id: <20100521090301.716af51c.randy.dunlap@oracle.com>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BF6AEEF.003F:SCFMA922111,ss=1,fgs=0
+	Fri, 21 May 2010 12:09:34 -0400
+Message-ID: <37994.41.206.15.2.1274422345.squirrel@41.206.15.2>
+Date: Fri, 21 May 2010 04:12:25 -0200 (FNT)
+Subject: Congratulations - You have won
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivan_nickerson04@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
+MIME-Version: 1.0
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+Congratulations - You have won
 
-Fix kernel-doc fatal error:
-/** beginning a non-kernel-doc comment block:
-(That alone does not kill kernel-doc, but the 'enum' was
-totally confusing to it.)
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+19th May 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
 
-Error(/lnx/src/TMP/linux-2.6.34-git6//include/linux/interrupt.h:88): cannot understand prototype: 'enum '
-make[2]: *** [Documentation/DocBook/genericirq.xml] Error 1
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
----
- include/linux/interrupt.h |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
 
---- linux-2.6.34-git6.orig/include/linux/interrupt.h
-+++ linux-2.6.34-git6/include/linux/interrupt.h
-@@ -78,7 +78,7 @@ enum {
- 	IRQTF_AFFINITY,
- };
- 
--/**
-+/*
-  * These values can be returned by request_any_context_irq() and
-  * describe the context the interrupt will be run in.
-  *
+NAME:  Ivan Nickerson
+EMAIL: mrivan.nickerson05@yahoo.com.hk
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
+
+
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
+
