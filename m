@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934411Ab0EURB4 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:01:56 -0400
-Received: from kroah.org ([198.145.64.141]:39074 "EHLO coco.kroah.org"
+	id S934388Ab0EURBt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:01:49 -0400
+Received: from kroah.org ([198.145.64.141]:39084 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934194Ab0EUQyO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:14 -0400
+	id S934218Ab0EUQyP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:15 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Stefani Seibold <stefani@seibold.net>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 05/38] driver-core: fix potential race condition in drivers/base/dd.c
-Date: Fri, 21 May 2010 09:53:35 -0700
-Message-Id: <1274460848-11377-5-git-send-email-gregkh@suse.de>
+Cc: Julia Lawall <julia@diku.dk>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 07/38] driver core: module.c: Use kasprintf
+Date: Fri, 21 May 2010 09:53:37 -0700
+Message-Id: <1274460848-11377-7-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -19,41 +19,54 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Stefani Seibold <stefani@seibold.net>
+From: Julia Lawall <julia@diku.dk>
 
-This patch fix a potential race condition in the driver_bound() function
-in the file driver/base/dd.c.
+kasprintf combines kmalloc and sprintf, and takes care of the size
+calculation itself.
 
-The broadcast of the BUS_NOTIFY_BOUND_DRIVER notifier should be done
-after adding the new device to the driver list. Otherwise notifier
-listener will fail if they use functions like usb_find_interface().
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-The patch is against kernel 2.6.33. Please merge it.
+// <smpl>
+@@
+expression a,flag;
+expression list args;
+statement S;
+@@
 
-Signed-off-by: Stefani Seibold <stefani@seibold.net>
+  a =
+-  \(kmalloc\|kzalloc\)(...,flag)
++  kasprintf(flag,args)
+  <... when != a
+  if (a == NULL || ...) S
+  ...>
+- sprintf(a,args);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/dd.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
+ drivers/base/module.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-diff --git a/drivers/base/dd.c b/drivers/base/dd.c
-index c89291f..503c262 100644
---- a/drivers/base/dd.c
-+++ b/drivers/base/dd.c
-@@ -40,11 +40,11 @@ static void driver_bound(struct device *dev)
- 	pr_debug("driver: '%s': %s: bound to device '%s'\n", dev_name(dev),
- 		 __func__, dev->driver->name);
+diff --git a/drivers/base/module.c b/drivers/base/module.c
+index f32f2f9..db930d3 100644
+--- a/drivers/base/module.c
++++ b/drivers/base/module.c
+@@ -15,12 +15,10 @@ static char *make_driver_name(struct device_driver *drv)
+ {
+ 	char *driver_name;
  
-+	klist_add_tail(&dev->p->knode_driver, &dev->driver->p->klist_devices);
-+
- 	if (dev->bus)
- 		blocking_notifier_call_chain(&dev->bus->p->bus_notifier,
- 					     BUS_NOTIFY_BOUND_DRIVER, dev);
--
--	klist_add_tail(&dev->p->knode_driver, &dev->driver->p->klist_devices);
+-	driver_name = kmalloc(strlen(drv->name) + strlen(drv->bus->name) + 2,
+-			      GFP_KERNEL);
++	driver_name = kasprintf(GFP_KERNEL, "%s:%s", drv->bus->name, drv->name);
+ 	if (!driver_name)
+ 		return NULL;
+ 
+-	sprintf(driver_name, "%s:%s", drv->bus->name, drv->name);
+ 	return driver_name;
  }
  
- static int driver_sysfs_add(struct device *dev)
 -- 
 1.7.0.3
 
