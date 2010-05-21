@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934345Ab0EUQ7a (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:59:30 -0400
-Received: from kroah.org ([198.145.64.141]:39123 "EHLO coco.kroah.org"
+	id S934244Ab0EUQyW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:54:22 -0400
+Received: from kroah.org ([198.145.64.141]:39074 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934256Ab0EUQy2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:28 -0400
+	id S934214Ab0EUQyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:12 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@maxwell.aristanetworks.com>,
-       "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 22/38] sysfs: Add support for tagged directories with untagged members.
-Date: Fri, 21 May 2010 09:53:52 -0700
-Message-Id: <1274460848-11377-22-git-send-email-gregkh@suse.de>
+Cc: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 03/38] kref: remove kref_set
+Date: Fri, 21 May 2010 09:53:33 -0700
+Message-Id: <1274460848-11377-3-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -21,78 +19,116 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@maxwell.aristanetworks.com>
+From: NeilBrown <neilb@suse.de>
 
-I had hopped to avoid this but the bonding driver adds a file
-to /sys/class/net/  and the easiest way to handle that file is
-to make it untagged and to register it only once.
+Of the three uses of kref_set in the kernel:
 
-So relax the rules on tagged directories, and make bonding work.
+ One really should be kref_put as the code is letting go of a
+    reference,
+ Two really should be kref_init because the kref is being
+    initialised.
 
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+This suggests that making kref_set available encourages bad code.
+So fix the three uses and remove kref_set completely.
+
+Signed-off-by: NeilBrown <neilb@suse.de>
+Acked-by: Mimi Zohar <zohar@us.ibm.com>
+Acked-by: Serge Hallyn <serue@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/sysfs/dir.c   |   12 +++---------
- fs/sysfs/inode.c |    2 ++
- 2 files changed, 5 insertions(+), 9 deletions(-)
+ include/linux/kref.h              |    1 -
+ kernel/user_namespace.c           |    4 ++--
+ lib/kref.c                        |   15 ++-------------
+ security/integrity/ima/ima_iint.c |    4 ++--
+ 4 files changed, 6 insertions(+), 18 deletions(-)
 
-diff --git a/fs/sysfs/dir.c b/fs/sysfs/dir.c
-index b2b8306..a63eb4b 100644
---- a/fs/sysfs/dir.c
-+++ b/fs/sysfs/dir.c
-@@ -383,12 +383,6 @@ int __sysfs_add_one(struct sysfs_addrm_cxt *acxt, struct sysfs_dirent *sd)
- 	if (sysfs_find_dirent(acxt->parent_sd, sd->s_ns, sd->s_name))
- 		return -EEXIST;
+diff --git a/include/linux/kref.h b/include/linux/kref.h
+index baf4b9e..6cc38fc 100644
+--- a/include/linux/kref.h
++++ b/include/linux/kref.h
+@@ -21,7 +21,6 @@ struct kref {
+ 	atomic_t refcount;
+ };
  
--	if (sysfs_ns_type(acxt->parent_sd) && !sd->s_ns) {
--		WARN(1, KERN_WARNING "sysfs: ns required in '%s' for '%s'\n",
--			acxt->parent_sd->s_name, sd->s_name);
--		return -EINVAL;
--	}
+-void kref_set(struct kref *kref, int num);
+ void kref_init(struct kref *kref);
+ void kref_get(struct kref *kref);
+ int kref_put(struct kref *kref, void (*release) (struct kref *kref));
+diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
+index 076c7c8..b2d70d3 100644
+--- a/kernel/user_namespace.c
++++ b/kernel/user_namespace.c
+@@ -54,8 +54,8 @@ int create_user_ns(struct cred *new)
+ #endif
+ 	/* tgcred will be cleared in our caller bc CLONE_THREAD won't be set */
+ 
+-	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
+-	kref_set(&ns->kref, 1);
++	/* root_user holds a reference to ns, our reference can be dropped */
++	put_user_ns(ns);
+ 
+ 	return 0;
+ }
+diff --git a/lib/kref.c b/lib/kref.c
+index 6d19f69..d3d227a 100644
+--- a/lib/kref.c
++++ b/lib/kref.c
+@@ -16,23 +16,13 @@
+ #include <linux/slab.h>
+ 
+ /**
+- * kref_set - initialize object and set refcount to requested number.
+- * @kref: object in question.
+- * @num: initial reference counter
+- */
+-void kref_set(struct kref *kref, int num)
+-{
+-	atomic_set(&kref->refcount, num);
+-	smp_mb();
+-}
 -
- 	sd->s_parent = sysfs_get(acxt->parent_sd);
+-/**
+  * kref_init - initialize object.
+  * @kref: object in question.
+  */
+ void kref_init(struct kref *kref)
+ {
+-	kref_set(kref, 1);
++	atomic_set(&kref->refcount, 1);
++	smp_mb();
+ }
  
- 	sysfs_link_sibling(sd);
-@@ -545,7 +539,7 @@ struct sysfs_dirent *sysfs_find_dirent(struct sysfs_dirent *parent_sd,
- 	struct sysfs_dirent *sd;
+ /**
+@@ -72,7 +62,6 @@ int kref_put(struct kref *kref, void (*release)(struct kref *kref))
+ 	return 0;
+ }
  
- 	for (sd = parent_sd->s_dir.children; sd; sd = sd->s_sibling) {
--		if (sd->s_ns != ns)
-+		if (ns && sd->s_ns && (sd->s_ns != ns))
- 			continue;
- 		if (!strcmp(sd->s_name, name))
- 			return sd;
-@@ -879,7 +873,7 @@ static struct sysfs_dirent *sysfs_dir_pos(const void *ns,
- 		while (pos && (ino > pos->s_ino))
- 			pos = pos->s_sibling;
+-EXPORT_SYMBOL(kref_set);
+ EXPORT_SYMBOL(kref_init);
+ EXPORT_SYMBOL(kref_get);
+ EXPORT_SYMBOL(kref_put);
+diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
+index 2dc2d65..7625b85 100644
+--- a/security/integrity/ima/ima_iint.c
++++ b/security/integrity/ima/ima_iint.c
+@@ -94,7 +94,7 @@ void iint_free(struct kref *kref)
+ 		       iint->opencount);
+ 		iint->opencount = 0;
  	}
--	while (pos && pos->s_ns != ns)
-+	while (pos && pos->s_ns && pos->s_ns != ns)
- 		pos = pos->s_sibling;
- 	return pos;
+-	kref_set(&iint->refcount, 1);
++	kref_init(&iint->refcount);
+ 	kmem_cache_free(iint_cache, iint);
  }
-@@ -890,7 +884,7 @@ static struct sysfs_dirent *sysfs_dir_next_pos(const void *ns,
- 	pos = sysfs_dir_pos(ns, parent_sd, ino, pos);
- 	if (pos)
- 		pos = pos->s_sibling;
--	while (pos && pos->s_ns != ns)
-+	while (pos && pos->s_ns && pos->s_ns != ns)
- 		pos = pos->s_sibling;
- 	return pos;
+ 
+@@ -133,7 +133,7 @@ static void init_once(void *foo)
+ 	iint->readcount = 0;
+ 	iint->writecount = 0;
+ 	iint->opencount = 0;
+-	kref_set(&iint->refcount, 1);
++	kref_init(&iint->refcount);
  }
-diff --git a/fs/sysfs/inode.c b/fs/sysfs/inode.c
-index cf2bad1..bbd77e9 100644
---- a/fs/sysfs/inode.c
-+++ b/fs/sysfs/inode.c
-@@ -335,6 +335,8 @@ int sysfs_hash_and_remove(struct sysfs_dirent *dir_sd, const void *ns, const cha
- 	sysfs_addrm_start(&acxt, dir_sd);
  
- 	sd = sysfs_find_dirent(dir_sd, ns, name);
-+	if (sd && (sd->s_ns != ns))
-+		sd = NULL;
- 	if (sd)
- 		sysfs_remove_one(&acxt, sd);
- 
+ static int __init ima_iintcache_init(void)
 -- 
 1.7.0.3
 
