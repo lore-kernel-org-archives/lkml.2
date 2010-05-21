@@ -1,64 +1,34 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757359Ab0EUCSe (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 22:18:34 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:46677 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755428Ab0EUCSd (ORCPT
+	id S1753587Ab0EUCmR (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 22:42:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:51394 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753436Ab0EUCmQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 22:18:33 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
-Cc: kosaki.motohiro@jp.fujitsu.com, Shaohua Li <shaohua.li@intel.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.1.00.1005201859260.23122@tigran.mtv.corp.google.com>
-References: <20100521103935.1E56.A69D9226@jp.fujitsu.com> <alpine.DEB.1.00.1005201859260.23122@tigran.mtv.corp.google.com>
-Message-Id: <20100521111658.1E64.A69D9226@jp.fujitsu.com>
+	Thu, 20 May 2010 22:42:16 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:from:date:message-id:subject:to:content-type;
+        b=wB9mzdgUYHJHGbJdMYV6VlwVTz2raM72xqYbHOusd+voUHrrv+ER4wj0YYd75CiHpo
+         5o/qA91pFz4aopGjF3QeHv0P5RNsFHssdcR/OJZJO/k7F6H3t0iX+hH6Nk4yAj9NHAud
+         inDsPaxzVc/KGPaVWiKJ0UmZFX40HKNZW2eug=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Fri, 21 May 2010 11:18:24 +0900 (JST)
+From: Frank Pan <frankpzh@gmail.com>
+Date: Fri, 21 May 2010 10:41:56 +0800
+Message-ID: <AANLkTikqDO7AVVl5KAr7VlWmEJ7jXxWvA6PRs9KG6wTa@mail.gmail.com>
+Subject: Who should I discuss with about framebuffer issues?
+To: torvalds@linux-foundation.org, LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> On Fri, 21 May 2010, KOSAKI Motohiro wrote:
-> > 
-> > > Acked-by: Hugh Dickins <hughd@google.com>
-> > > 
-> > > Thanks - though I don't quite agree with your description: I can't
-> > > see why the lru_cache_add_active_anon() was ever justified - that
-> > > "active" came in along with the separate anon and file LRU lists.
-> > 
-> > If you have any worry, can you please share it? I'll test such workload
-> > and fix the issue if necessary. You are expert than me in this area.
-> 
-> ?? I've acked the patch: my worry is only with the detail of your
-> comments on the history - in my view it was always wrong to put on
-> the active LRU there, and I'm glad that you have now fixed it.
+I found driver/video/fb* is orphan now, I cannot find a maintainer.
+Actually I have some ideas about framebuffer console. Who should I discuss with?
 
-Oops, I misparsed your text. very sorry. I thought you said opposite ;)
+-- 
+Frank Pan
 
-Thanks.
-
-
-> If you really want to test some workload on 2.6.28 to see if it too
-> works better with your fix, I won't stop you - but I'd much prefer
-> you to be applying your mind to 2.6.35 and 2.6.36!
-> 
-> Hugh
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
-
-
-
+Computer Science and Technology
+Tsinghua University
