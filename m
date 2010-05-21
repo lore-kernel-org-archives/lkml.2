@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758508Ab0EUQy5 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:54:57 -0400
-Received: from kroah.org ([198.145.64.141]:39123 "EHLO coco.kroah.org"
+	id S1758510Ab0EUQzN (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:55:13 -0400
+Received: from kroah.org ([198.145.64.141]:39173 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934135Ab0EUQy1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:27 -0400
+	id S934277Ab0EUQyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:39 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
 Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 20/38] kobj: Add basic infrastructure for dealing with namespaces.
-Date: Fri, 21 May 2010 09:53:50 -0700
-Message-Id: <1274460848-11377-20-git-send-email-gregkh@suse.de>
+       "Eric W. Biederman" <ebiederm@aristanetworks.com>
+Subject: [PATCH 34/38] net/sysfs: Fix the bitrot in network device kobject namespace support
+Date: Fri, 21 May 2010 09:54:04 -0700
+Message-Id: <1274460848-11377-34-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -22,327 +22,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Eric W. Biederman <ebiederm@xmission.com>
 
-Move complete knowledge of namespaces into the kobject layer
-so we can use that information when reporting kobjects to
-userspace.
+I had a couple of stupid bugs in:
+netns: Teach network device kobjects which namespace they are in.
 
-Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+- I duplicated the Kconfig for the NET_NS
+- The build was broken when sysfs was not compiled in
+
+The sysfs breakage is because after I moved the operations
+for the sysfs to the kobject layer, to make things cleaner
+I forgot to move the ifdefs.  Opps.
+
+I'm not quite certain how I got introduced a second NET_NS Kconfig,
+but it was probably a 3 way merge somewhere along the way that
+did not notice that the NET_NS Kconfig option had mvoed and thout
+that was a bug.  It probably slipped in because it used to be the
+sysfs patches were the first patches in my network namespace patches.
+Some things just don't go like you would expect.
+
+Neither of these bugs actually affect anything in the common case
+but they should be fixed.
+
+Thanks to Serge for noticing they were present.
+
+Reported-by: Serge E. Hallyn <serue@us.ibm.com>
+Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/base/class.c    |    9 ++++
- drivers/base/core.c     |   77 ++++++++++++++++++++++++++++------
- include/linux/device.h  |    3 +
- include/linux/kobject.h |   26 ++++++++++++
- lib/kobject.c           |  103 +++++++++++++++++++++++++++++++++++++++++++++++
- 5 files changed, 204 insertions(+), 14 deletions(-)
+ net/Kconfig          |    8 --------
+ net/core/net-sysfs.c |    8 +++-----
+ 2 files changed, 3 insertions(+), 13 deletions(-)
 
-diff --git a/drivers/base/class.c b/drivers/base/class.c
-index 9c6a0d6..8e231d0 100644
---- a/drivers/base/class.c
-+++ b/drivers/base/class.c
-@@ -63,6 +63,14 @@ static void class_release(struct kobject *kobj)
- 	kfree(cp);
+diff --git a/net/Kconfig b/net/Kconfig
+index f495320..0d68b40 100644
+--- a/net/Kconfig
++++ b/net/Kconfig
+@@ -45,14 +45,6 @@ config COMPAT_NETLINK_MESSAGES
+ 
+ menu "Networking options"
+ 
+-config NET_NS
+-	bool "Network namespace support"
+-	default n
+-	depends on EXPERIMENTAL && NAMESPACES
+-	help
+-	  Allow user space to create what appear to be multiple instances
+-	  of the network stack.
+-
+ source "net/packet/Kconfig"
+ source "net/unix/Kconfig"
+ source "net/xfrm/Kconfig"
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index b388cda..6881e65 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -469,6 +469,7 @@ static struct attribute_group wireless_group = {
+ 	.attrs = wireless_attrs,
+ };
+ #endif
++#endif /* CONFIG_SYSFS */
+ 
+ #ifdef CONFIG_RPS
+ /*
+@@ -796,11 +797,10 @@ static void net_kobj_ns_exit(struct net *net)
+ 	kobj_ns_exit(KOBJ_NS_TYPE_NET, net);
  }
  
-+static const struct kobj_ns_type_operations *class_child_ns_type(struct kobject *kobj)
-+{
-+	struct class_private *cp = to_class(kobj);
-+	struct class *class = cp->class;
-+
-+	return class->ns_type;
-+}
-+
- static const struct sysfs_ops class_sysfs_ops = {
- 	.show	= class_attr_show,
- 	.store	= class_attr_store,
-@@ -71,6 +79,7 @@ static const struct sysfs_ops class_sysfs_ops = {
- static struct kobj_type class_ktype = {
- 	.sysfs_ops	= &class_sysfs_ops,
- 	.release	= class_release,
-+	.child_ns_type	= class_child_ns_type,
+-static struct pernet_operations sysfs_net_ops = {
++static struct pernet_operations kobj_net_ops = {
+ 	.exit = net_kobj_ns_exit,
  };
  
- /* Hotplug events for classes go to the class class_subsys */
-diff --git a/drivers/base/core.c b/drivers/base/core.c
-index 356dd01..f069991 100644
---- a/drivers/base/core.c
-+++ b/drivers/base/core.c
-@@ -131,9 +131,21 @@ static void device_release(struct kobject *kobj)
- 	kfree(p);
- }
+-#endif /* CONFIG_SYSFS */
  
-+static const void *device_namespace(struct kobject *kobj)
-+{
-+	struct device *dev = to_dev(kobj);
-+	const void *ns = NULL;
-+
-+	if (dev->class && dev->class->ns_type)
-+		ns = dev->class->namespace(dev);
-+
-+	return ns;
-+}
-+
- static struct kobj_type device_ktype = {
- 	.release	= device_release,
- 	.sysfs_ops	= &dev_sysfs_ops,
-+	.namespace	= device_namespace,
- };
- 
- 
-@@ -595,11 +607,59 @@ static struct kobject *virtual_device_parent(struct device *dev)
- 	return virtual_dir;
- }
- 
--static struct kobject *get_device_parent(struct device *dev,
--					 struct device *parent)
-+struct class_dir {
-+	struct kobject kobj;
-+	struct class *class;
-+};
-+
-+#define to_class_dir(obj) container_of(obj, struct class_dir, kobj)
-+
-+static void class_dir_release(struct kobject *kobj)
-+{
-+	struct class_dir *dir = to_class_dir(kobj);
-+	kfree(dir);
-+}
-+
-+static const
-+struct kobj_ns_type_operations *class_dir_child_ns_type(struct kobject *kobj)
+ #ifdef CONFIG_HOTPLUG
+ static int netdev_uevent(struct device *d, struct kobj_uevent_env *env)
+@@ -948,8 +948,6 @@ void netdev_initialize_kobject(struct net_device *net)
+ int netdev_kobject_init(void)
  {
-+	struct class_dir *dir = to_class_dir(kobj);
-+	return dir->class->ns_type;
-+}
-+
-+static struct kobj_type class_dir_ktype = {
-+	.release	= class_dir_release,
-+	.sysfs_ops	= &kobj_sysfs_ops,
-+	.child_ns_type	= class_dir_child_ns_type
-+};
-+
-+static struct kobject *
-+class_dir_create_and_add(struct class *class, struct kobject *parent_kobj)
-+{
-+	struct class_dir *dir;
- 	int retval;
- 
-+	dir = kzalloc(sizeof(*dir), GFP_KERNEL);
-+	if (!dir)
-+		return NULL;
-+
-+	dir->class = class;
-+	kobject_init(&dir->kobj, &class_dir_ktype);
-+
-+	dir->kobj.kset = &class->p->class_dirs;
-+
-+	retval = kobject_add(&dir->kobj, parent_kobj, "%s", class->name);
-+	if (retval < 0) {
-+		kobject_put(&dir->kobj);
-+		return NULL;
-+	}
-+	return &dir->kobj;
-+}
-+
-+
-+static struct kobject *get_device_parent(struct device *dev,
-+					 struct device *parent)
-+{
- 	if (dev->class) {
- 		static DEFINE_MUTEX(gdp_mutex);
- 		struct kobject *kobj = NULL;
-@@ -634,18 +694,7 @@ static struct kobject *get_device_parent(struct device *dev,
- 		}
- 
- 		/* or create a new class-directory at the parent device */
--		k = kobject_create();
--		if (!k) {
--			mutex_unlock(&gdp_mutex);
--			return NULL;
--		}
--		k->kset = &dev->class->p->class_dirs;
--		retval = kobject_add(k, parent_kobj, "%s", dev->class->name);
--		if (retval < 0) {
--			mutex_unlock(&gdp_mutex);
--			kobject_put(k);
--			return NULL;
--		}
-+		k = class_dir_create_and_add(dev->class, parent_kobj);
- 		/* do not emit an uevent for this simple "glue" directory */
- 		mutex_unlock(&gdp_mutex);
- 		return k;
-diff --git a/include/linux/device.h b/include/linux/device.h
-index 6f96191..7bb9f42 100644
---- a/include/linux/device.h
-+++ b/include/linux/device.h
-@@ -202,6 +202,9 @@ struct class {
- 	int (*suspend)(struct device *dev, pm_message_t state);
- 	int (*resume)(struct device *dev);
- 
-+	const struct kobj_ns_type_operations *ns_type;
-+	const void *(*namespace)(struct device *dev);
-+
- 	const struct dev_pm_ops *pm;
- 
- 	struct class_private *p;
-diff --git a/include/linux/kobject.h b/include/linux/kobject.h
-index 3950d3c..d9456f6 100644
---- a/include/linux/kobject.h
-+++ b/include/linux/kobject.h
-@@ -108,6 +108,8 @@ struct kobj_type {
- 	void (*release)(struct kobject *kobj);
- 	const struct sysfs_ops *sysfs_ops;
- 	struct attribute **default_attrs;
-+	const struct kobj_ns_type_operations *(*child_ns_type)(struct kobject *kobj);
-+	const void *(*namespace)(struct kobject *kobj);
- };
- 
- struct kobj_uevent_env {
-@@ -134,6 +136,30 @@ struct kobj_attribute {
- 
- extern const struct sysfs_ops kobj_sysfs_ops;
- 
-+enum kobj_ns_type {
-+	KOBJ_NS_TYPE_NONE = 0,
-+	KOBJ_NS_TYPES
-+};
-+
-+struct sock;
-+struct kobj_ns_type_operations {
-+	enum kobj_ns_type type;
-+	const void *(*current_ns)(void);
-+	const void *(*netlink_ns)(struct sock *sk);
-+	const void *(*initial_ns)(void);
-+};
-+
-+int kobj_ns_type_register(const struct kobj_ns_type_operations *ops);
-+int kobj_ns_type_registered(enum kobj_ns_type type);
-+const struct kobj_ns_type_operations *kobj_child_ns_ops(struct kobject *parent);
-+const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj);
-+
-+const void *kobj_ns_current(enum kobj_ns_type type);
-+const void *kobj_ns_netlink(enum kobj_ns_type type, struct sock *sk);
-+const void *kobj_ns_initial(enum kobj_ns_type type);
-+void kobj_ns_exit(enum kobj_ns_type type, const void *ns);
-+
-+
- /**
-  * struct kset - a set of kobjects of a specific type, belonging to a specific subsystem.
-  *
-diff --git a/lib/kobject.c b/lib/kobject.c
-index 8115eb1..bbb2bb4 100644
---- a/lib/kobject.c
-+++ b/lib/kobject.c
-@@ -850,6 +850,109 @@ struct kset *kset_create_and_add(const char *name,
+ 	kobj_ns_type_register(&net_ns_type_operations);
+-#ifdef CONFIG_SYSFS
+-	register_pernet_subsys(&sysfs_net_ops);
+-#endif
++	register_pernet_subsys(&kobj_net_ops);
+ 	return class_register(&net_class);
  }
- EXPORT_SYMBOL_GPL(kset_create_and_add);
- 
-+
-+static DEFINE_SPINLOCK(kobj_ns_type_lock);
-+static const struct kobj_ns_type_operations *kobj_ns_ops_tbl[KOBJ_NS_TYPES];
-+
-+int kobj_ns_type_register(const struct kobj_ns_type_operations *ops)
-+{
-+	enum kobj_ns_type type = ops->type;
-+	int error;
-+
-+	spin_lock(&kobj_ns_type_lock);
-+
-+	error = -EINVAL;
-+	if (type >= KOBJ_NS_TYPES)
-+		goto out;
-+
-+	error = -EINVAL;
-+	if (type <= KOBJ_NS_TYPE_NONE)
-+		goto out;
-+
-+	error = -EBUSY;
-+	if (kobj_ns_ops_tbl[type])
-+		goto out;
-+
-+	error = 0;
-+	kobj_ns_ops_tbl[type] = ops;
-+
-+out:
-+	spin_unlock(&kobj_ns_type_lock);
-+	return error;
-+}
-+
-+int kobj_ns_type_registered(enum kobj_ns_type type)
-+{
-+	int registered = 0;
-+
-+	spin_lock(&kobj_ns_type_lock);
-+	if ((type > KOBJ_NS_TYPE_NONE) && (type < KOBJ_NS_TYPES))
-+		registered = kobj_ns_ops_tbl[type] != NULL;
-+	spin_unlock(&kobj_ns_type_lock);
-+
-+	return registered;
-+}
-+
-+const struct kobj_ns_type_operations *kobj_child_ns_ops(struct kobject *parent)
-+{
-+	const struct kobj_ns_type_operations *ops = NULL;
-+
-+	if (parent && parent->ktype->child_ns_type)
-+		ops = parent->ktype->child_ns_type(parent);
-+
-+	return ops;
-+}
-+
-+const struct kobj_ns_type_operations *kobj_ns_ops(struct kobject *kobj)
-+{
-+	return kobj_child_ns_ops(kobj->parent);
-+}
-+
-+
-+const void *kobj_ns_current(enum kobj_ns_type type)
-+{
-+	const void *ns = NULL;
-+
-+	spin_lock(&kobj_ns_type_lock);
-+	if ((type > KOBJ_NS_TYPE_NONE) && (type < KOBJ_NS_TYPES) &&
-+	    kobj_ns_ops_tbl[type])
-+		ns = kobj_ns_ops_tbl[type]->current_ns();
-+	spin_unlock(&kobj_ns_type_lock);
-+
-+	return ns;
-+}
-+
-+const void *kobj_ns_netlink(enum kobj_ns_type type, struct sock *sk)
-+{
-+	const void *ns = NULL;
-+
-+	spin_lock(&kobj_ns_type_lock);
-+	if ((type > KOBJ_NS_TYPE_NONE) && (type < KOBJ_NS_TYPES) &&
-+	    kobj_ns_ops_tbl[type])
-+		ns = kobj_ns_ops_tbl[type]->netlink_ns(sk);
-+	spin_unlock(&kobj_ns_type_lock);
-+
-+	return ns;
-+}
-+
-+const void *kobj_ns_initial(enum kobj_ns_type type)
-+{
-+	const void *ns = NULL;
-+
-+	spin_lock(&kobj_ns_type_lock);
-+	if ((type > KOBJ_NS_TYPE_NONE) && (type < KOBJ_NS_TYPES) &&
-+	    kobj_ns_ops_tbl[type])
-+		ns = kobj_ns_ops_tbl[type]->initial_ns();
-+	spin_unlock(&kobj_ns_type_lock);
-+
-+	return ns;
-+}
-+
-+void kobj_ns_exit(enum kobj_ns_type type, const void *ns)
-+{
-+}
-+
-+
- EXPORT_SYMBOL(kobject_get);
- EXPORT_SYMBOL(kobject_put);
- EXPORT_SYMBOL(kobject_del);
 -- 
 1.7.0.3
 
