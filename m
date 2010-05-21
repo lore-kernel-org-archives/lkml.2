@@ -1,55 +1,99 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab0EUAVb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:21:31 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:39914 "EHLO e3.ny.us.ibm.com"
+	id S1757202Ab0EUAWG (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:22:06 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:56075 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754443Ab0EUAV3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:21:29 -0400
-Message-ID: <4BF5D203.7000007@linux.vnet.ibm.com>
-Date: Thu, 20 May 2010 17:21:23 -0700
-From: Corey Ashford <cjashfor@linux.vnet.ibm.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Peter Zijlstra <peterz@infradead.org>
-CC: Lin Ming <ming.m.lin@intel.com>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "Gary.Mohr@Bull.com" <Gary.Mohr@bull.com>,
-       "arjan@linux.intel.com" <arjan@linux.intel.com>,
-       "Zhang, Yanmin" <yanmin_zhang@linux.intel.com>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Russell King <rmk+kernel@arm.linux.org.uk>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>,
-       Will Deacon <will.deacon@arm.com>, Maynard Johnson <mpjohn@us.ibm.com>,
-       Carl Love <carll@us.ibm.com>, "greg@kroah.com" <greg@kroah.com>,
-       Kay Sievers <kay.sievers@vrfy.org>, lkml <linux-kernel@vger.kernel.org>
-Subject: Re: [RFC][PATCH v2 11/11] perf top: demo of how to use the sysfs
- interface
-References: <1274233792.3036.90.camel@localhost> <4BF42B6F.6000009@linux.vnet.ibm.com> <1274318249.3603.135.camel@minggr.sh.intel.com> <4BF4915B.10104@linux.vnet.ibm.com> <1274386126.1674.1637.camel@laptop>
-In-Reply-To: <1274386126.1674.1637.camel@laptop>
-Content-Type: text/plain; charset=UTF-8
+	id S1754991Ab0EUAWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 20:22:03 -0400
+Date: Fri, 21 May 2010 10:21:58 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the kgdb tree
+Message-Id: <20100521102158.bf6df441.sfr@canb.auug.org.au>
+In-Reply-To: <201003242159.25770.dmitry.torokhov@gmail.com>
+References: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
+	<20100325154307.9cdeae10.sfr@canb.auug.org.au>
+	<201003242159.25770.dmitry.torokhov@gmail.com>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi Jason,
 
-
-On 5/20/2010 1:08 PM, Peter Zijlstra wrote:
-> On Wed, 2010-05-19 at 18:33 -0700, Corey Ashford wrote:
->>
->> We also need to take into account event "attributes" - other data that
->> is needed to configure a specific event.  For example, think about a
->> memory controller which has a PMU can count events in a particular
->> memory range; we need to be able to supply the memory range somehow, 
+On Wed, 24 Mar 2010 21:59:25 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
+>
+> On Wednesday 24 March 2010 09:43:07 pm Stephen Rothwell wrote:
+> > Hi Jason, Dmitry,
+> > 
+> > On Tue, 23 Mar 2010 15:04:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> 
+> wrote:
+> > > After merging the kgdb tree, today's linux-next build (x86_64
+> > > allmodconfig) failed like this:
+> > > 
+> > > kernel/debug/kdb/kdb_main.c: In function 'kdb_sr':
+> > > kernel/debug/kdb/kdb_main.c:1822: error: '__sysrq_enabled' undeclared
+> > > (first use in this function)
+> > > 
+> > > Caused by commit ab28988df9667f8dd70c7434c8ca463beb00b300 ("kdb: core for
+> > > kgdb back end (1 of 2)") from the kgdb tree interacting with commit
+> > > edc6e384f9d96e54a6d03068d3b03fa5b56b6449 ("") fromInput: implement SysRq
+> > > as a separate input handler the input tree.
+> > 
+> > I got this again today (I stopped reverting the input tree commits that I
+> > was reverting for another build problem).  The patch below still seems to
+> > work OK.
 > 
-> That's that perf_event_attr is for.
+> Yes, I  of __sysrq_enabled is not global anymore...
 > 
+> I am not sure I like kgdb enabling sysrq functonality on its own, I'd rather
+> export __handle_sysrq that does not check sysrq state...
 
-I think the issue is that what is stuffed into perf_event_attr's fields should be done in a way that userspace tools can figure out via attribute info which is in exported by the kernel via sysfs (or eventfs, etc.)
+The input changes that require change in the kgdb tree are now in Linus'
+tree (I think) so this patch (or something else) should be added to the
+kgdb tree before it is sent to Linus for merging.
 
-- Corey
+Dmitry, any thoughts?
 
+Here is the patch again:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Tue, 23 Mar 2010 14:45:22 +1100
+Subject: [PATCH] kgdb: update for sysrq handling change
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ kernel/debug/kdb/kdb_main.c |    6 ++----
+ 1 files changed, 2 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
+index f1f9309..bad8e63 100644
+--- a/kernel/debug/kdb/kdb_main.c
++++ b/kernel/debug/kdb/kdb_main.c
+@@ -1819,10 +1819,8 @@ static int kdb_sr(int argc, const char **argv)
+ {
+ 	if (argc != 1)
+ 		return KDB_ARGCOUNT;
+-	if (!__sysrq_enabled) {
+-		kdb_printf("Auto activating sysrq\n");
+-		__sysrq_enabled = 1;
+-	}
++
++	sysrq_toggle_support(1);
+ 
+ 	kdb_trap_printk++;
+ 	handle_sysrq(*argv[1], NULL);
+-- 
+1.7.0.2
+
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
