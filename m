@@ -1,45 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755936Ab0EUQNL (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:13:11 -0400
-Received: from cassiel.sirena.org.uk ([80.68.93.111]:35551 "EHLO
-	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758009Ab0EUQNI (ORCPT
+	id S932537Ab0EUQPU (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:15:20 -0400
+Received: from casper.infradead.org ([85.118.1.10]:50145 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755227Ab0EUQPR (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:13:08 -0400
-Date: Fri, 21 May 2010 17:12:46 +0100
-From: Mark Brown <broonie@opensource.wolfsonmicro.com>
-To: Ralf Baechle <ralf@linux-mips.org>
-Cc: John Kacur <jkacur@redhat.com>, linux-kernel@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arndbergmann@googlemail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       "Maciej W. Rozycki" <macro@linux-mips.org>, linux-mips@linux-mips.org,
-       Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
-       Geert Uytterhoeven <geert@linux-m68k.org>,
-       Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: Re: bkl: Pushdowns for sound/oss ?
-Message-ID: <20100521161246.GA31383@sirena.org.uk>
-References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain> <20100521144055.GB13174@linux-mips.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100521144055.GB13174@linux-mips.org>
-X-Cookie: BOFH excuse
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: broonie@sirena.org.uk
-X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
+	Fri, 21 May 2010 12:15:17 -0400
+Subject: Re: [PATCH 0/4] perf: Precise task / softirq / hardirq filtered
+ stats/profiles
+From: Peter Zijlstra <peterz@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Paul Mackerras <paulus@samba.org>
+In-Reply-To: <20100521151230.GA20941@elte.hu>
+References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com>
+	 <20100521151230.GA20941@elte.hu>
+Content-Type: text/plain; charset="UTF-8"
+Date: Fri, 21 May 2010 18:15:13 +0200
+Message-ID: <1274458513.1674.1714.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 03:40:56PM +0100, Ralf Baechle wrote:
-> On Fri, May 21, 2010 at 03:45:04PM +0200, John Kacur wrote:
+On Fri, 2010-05-21 at 17:12 +0200, Ingo Molnar wrote:
+> 'exclusion' is the ABI detail. The feature your patches 
+> implement are to allow 'softirq limited' or 'task-context 
+> limited' or 'hardirq profiling' - which is way cool.
+> 
+> One thing i'd like to see in this feature is for it to 
+> work on pure event counting - i.e. 'perf stat' as well. 
 
-> > sound/oss/sh_dac_audio.c
+Its not really exclusion, all it does is discard samples when in the
+wrong context (which happens to work reasonably well for all the
+swevents, except for the timer ones).
 
-> SH3 specific.
+If you really want to do exclusion you have to disable/enable on *IRQ
+entry/exit, but I guess that gets to be prohibitive on costs.
 
-I believe this either has been or easily can be replaced by a modern
-ASoC driver and so it's probably as easy to drop it as updated it.
+Implementing it shouldn't be too hard, just add some hooks to
+irq_enter() irq_exit() and __do_softirq(). Each such hook should loop
+over all active events and call ->stop/->start.
+
+The only real problem would be poking at the hrtimer events from an
+hrtimer interrupt :-)
+
