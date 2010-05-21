@@ -1,71 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754155Ab0EUMrB (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 08:47:01 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:60011 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753353Ab0EUMq7 (ORCPT
+	id S1753899Ab0EUNFK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 09:05:10 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:41832 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751139Ab0EUNFH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 08:46:59 -0400
-Date: Fri, 21 May 2010 14:46:41 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Hemanth V <hemanthv@ti.com>
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
-       linux-input@vger.kernel.org
-Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
-Message-ID: <20100521124641.GQ30801@buzzloop.caiaq.de>
-References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
- <20100521120347.GP30801@buzzloop.caiaq.de>
- <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
+	Fri, 21 May 2010 09:05:07 -0400
+Date: Fri, 21 May 2010 15:04:17 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       linuxppc-dev list <linuxppc-dev@ozlabs.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux Kernel list <linux-kernel@vger.kernel.org>
+Subject: Re: [git pull] Please pull powerpc.git next branch
+Message-ID: <20100521130417.GB27829@pengutronix.de>
+References: <1274433088.1931.63.camel@pasglop>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
 Content-Disposition: inline
-In-Reply-To: <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1274433088.1931.63.camel@pasglop>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 06:10:00PM +0530, Hemanth V wrote:
-> >On Fri, May 21, 2010 at 05:05:50PM +0530, Hemanth V wrote:
-> >>+ mutex_lock(&ddata->lock);
-> >>+
-> >>+ error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
-> >>+ if (error < 0) {
-> >>+ mutex_unlock(&ddata->lock);
-> >>+ return error;
-> >>+ }
-> >>+
-> >>+ msleep(BH1780_PON_DELAY);
-> >
-> >Hmm, what do you wait for here?
-> 
-> Settling time delay required before lux read out
 
-I thought so, but in fact you're just delaying the next two lines by
-that:
+--O5XBE6gyVG5Rl6Rj
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> >>+ ddata->power_state = val;
-> >>+ mutex_unlock(&ddata->lock);
+> Wolfram Sang (4):
+>       powerpc/pmac: Fix dangling pointers
+>       i2c/mpc: Drop NO_IRQ
+>       i2c/cpm: Drop NO_IRQ
+>       i2c/ibm-iic: Drop NO_IRQ
 
-... which doesn't make sense to me.
+Sorry for the confusion, but the other Ben (Dooks) has pushed those
+NO_IRQ-thigies meanwhile.
 
-I can believe there is need to wait for the value to settle, but I think
-it's the wrong place where you're doing it currently.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-> >>+static int __devinit bh1780_probe(struct i2c_client *client,
-> >>+ const struct i2c_device_id *id)
-> >>+{
-> >>+ int ret;
-> >>+ struct bh1780_data *ddata = NULL;
-> >
-> >The initialization isn't needed.
-> 
-> This is basically added for the first goto error, to prevent
-> any garbage values
+--O5XBE6gyVG5Rl6Rj
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Sorry, you're right. Ignore this comment :)
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-Thanks,
-Daniel
+iEYEARECAAYFAkv2hNEACgkQD27XaX1/VRu60QCgm3W5fvkTNJzcby/If0cSWC9d
+I8EAn1MORnPkXUZ46HFyr5w9P2TDOxaT
+=Ocp+
+-----END PGP SIGNATURE-----
 
+--O5XBE6gyVG5Rl6Rj--
