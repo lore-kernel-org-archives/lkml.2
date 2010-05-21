@@ -1,70 +1,144 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab0EUGiy (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:38:54 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36360 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753209Ab0EUGiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:38:52 -0400
-Date: Fri, 21 May 2010 16:38:44 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Tom Herbert <therbert@google.com>, David Miller <davem@davemloft.net>,
-       <netdev@vger.kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: linux-next: manual merge of the driver-core tree with the net
- tree
-Message-Id: <20100521163844.c702a2b4.sfr@canb.auug.org.au>
-In-Reply-To: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
-References: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ"
+	id S1758178Ab0EUGjI (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:39:08 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:58732 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758167Ab0EUGjD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 02:39:03 -0400
+Date: Fri, 21 May 2010 08:39:00 +0200
+From: Sascha Hauer <s.hauer@pengutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [GIT PULL] Arm i.MX changes
+Message-ID: <20100521063900.GA17272@pengutronix.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+X-Sent-From: Pengutronix Hildesheim
+X-URL: http://www.pengutronix.de/
+X-IRC: #ptxdist @freenode
+X-Accept-Language: de,en
+X-Accept-Content-Type: text/plain
+X-Uptime: 08:35:30 up 25 days, 1 min, 16 users,  load average: 0.69, 0.40,
+	0.41
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: sha@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Hi Linus,
 
-Hi Greg,
+Please pull the following Arm i.MX related changes. They are normally
+going via Russell King, but I missed him closing his tree this time.
 
-On Fri, 21 May 2010 16:21:34 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
-wrote:
->
-> Today's linux-next merge of the driver-core tree got a conflict in
-> net/core/net-sysfs.c between commits
-> 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive Packet Steering")
-> and fec5e652e58fa6017b2c9e06466cb2a6538de5b4 ("rfs: Receive Flow
-> Steering") from the net tree and commits
-> bc28c84244da26bafb0d3bce95ef45212b31c6b8 ("net/sysfs: Fix the bitrot in
-> network device kobject namespace support") and
-> 83dc0fbf37495691219d019ec16b40d8592d2956 ("net: Expose all network
-> devices in a namespaces in sysfs") from the driver-core tree.
->=20
-> I fixed it up (I think - see below) and can carry the fix as necessary.
+Sascha
 
-The net tree has been merged by Linus, so this should be fixable in the
-driver-core tree now.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+The following changes since commit f72caf7e496465182eeda842ac66a5e75404ddf1:
+  Linus Torvalds (1):
+        Merge branch 'for-2.6.35' of git://linux-nfs.org/~bfields/linux
 
---Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ
-Content-Type: application/pgp-signature
+are available in the git repository at:
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+  git://git.pengutronix.de/git/imx/linux-2.6 for-linus
 
-iEYEARECAAYFAkv2KnQACgkQjjKRsyhoI8ykJgCfd5vyX0JpiD9mNzCBu2zsk8/J
-Z7AAn3WkgSXLNe9Um8+K1S4ObxHpDRUe
-=1kmK
------END PGP SIGNATURE-----
+Alberto Panizzo (2):
+      MX3X: Add Keypad device definition for MX3X arch
+      mx31_3ds: Support the keypad situated in the personality board
 
---Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ--
+Amit Kucheria (1):
+      mxc: Change gpt timer code to be more generic by using V2 instead of MX3
+
+Daniel Mack (5):
+      ARM: mx3/lilly1131: add USB support
+      ARM: MXC: mxcmmc: misc cleanups
+      ARM: MXC: mxcmmc: Teach the driver SDIO operations
+      ARM: MXC: mxcmmc: work around a bug in the SDHC busy line handling
+      ARM: mx3: Fix a race condition in mxcmmc
+
+Dinh Nguyen (9):
+      mx5: Add registration of GPIOs for MX5 devices
+      mxc: Update GPIO for USB support on Freescale MX51 Babbage HW
+      mx5: Add USB device definitions for Freescale MX51 Babbage HW
+      mx5: Enable board specific functions for enabling USB host on Babbage
+      mxc: Add generic USB HW initialization for MX51
+      mx5: Add USB to Freescale MX51 defconfig
+      mx5: change usb clock source from pll3 to pll2
+      mx5: enable usb gadget for freescale mx51 babbage board
+      mx5: bring usb phy out of reset on freescale mx51 babbage hw
+
+Ivo Clarysse (2):
+      MXC: mxc_nand: set NFC registers after reset
+      MXC: mxc_nand: support i.MX21
+
+Magnus Lilja (1):
+      MXC: Add USB OTG (device) for i.MX31 PDK (3DS) board.
+
+Philippe Rétornaz (3):
+      mx31moboard: Fix usb PHY reset
+      mx31moboard: Move usb OTG device registration
+      mx31moboard: OTG host support for smartbot board
+
+Valentin Longchamp (1):
+      mx31smartbot: change the config of a gpio
+
+Vladimir Zapolskiy (2):
+      imx3: Add rtc platform device support
+      imx31: add rtc device on litekit board.
+
+Wolfram Sang (6):
+      arm/plat-mxc: Fix forgotten renaming in timer.c
+      arm/mach-mx2/3: Fix watchdog-devices to match the current driver
+      arm/mach-mx3: add watchdog device to Phytec-boards
+      arm/mach-mx2: add watchdog device to Phytec-boards
+      arm/mx25: add watchdog device
+      arm/mx51: add watchdog device
+
+ arch/arm/configs/mx51_defconfig                    |   17 ++-
+ arch/arm/mach-mx2/devices.c                        |    9 +-
+ arch/arm/mach-mx2/mach-pca100.c                    |    1 +
+ arch/arm/mach-mx2/mach-pcm038.c                    |    1 +
+ arch/arm/mach-mx25/devices.c                       |   15 ++
+ arch/arm/mach-mx25/devices.h                       |    1 +
+ arch/arm/mach-mx3/Kconfig                          |    1 +
+ arch/arm/mach-mx3/devices.c                        |   40 +++++-
+ arch/arm/mach-mx3/devices.h                        |    2 +
+ arch/arm/mach-mx3/mach-mx31_3ds.c                  |   87 ++++++++++
+ arch/arm/mach-mx3/mach-mx31lilly.c                 |  145 +++++++++++++++++
+ arch/arm/mach-mx3/mach-mx31moboard.c               |  104 +++++--------
+ arch/arm/mach-mx3/mach-pcm037.c                    |    1 +
+ arch/arm/mach-mx3/mach-pcm043.c                    |    1 +
+ arch/arm/mach-mx3/mx31lite-db.c                    |    1 +
+ arch/arm/mach-mx3/mx31moboard-devboard.c           |    9 +
+ arch/arm/mach-mx3/mx31moboard-marxbot.c            |    8 +
+ arch/arm/mach-mx3/mx31moboard-smartbot.c           |   53 ++++++-
+ arch/arm/mach-mx5/board-mx51_babbage.c             |  167 ++++++++++++++++++++
+ arch/arm/mach-mx5/clock-mx51.c                     |   45 ++++++
+ arch/arm/mach-mx5/devices.c                        |  109 +++++++++++++-
+ arch/arm/mach-mx5/devices.h                        |    4 +
+ arch/arm/plat-mxc/ehci.c                           |  100 ++++++++++++-
+ arch/arm/plat-mxc/gpio.c                           |    5 +-
+ arch/arm/plat-mxc/include/mach/board-mx31moboard.h |    3 +-
+ arch/arm/plat-mxc/include/mach/iomux-mx3.h         |   17 ++
+ arch/arm/plat-mxc/include/mach/iomux-mx51.h        |   34 +++--
+ arch/arm/plat-mxc/include/mach/mxc_ehci.h          |   14 ++-
+ arch/arm/plat-mxc/time.c                           |   46 +++---
+ arch/arm/plat-mxc/tzic.c                           |    4 +-
+ drivers/mmc/core/sdio.c                            |    6 +
+ drivers/mmc/host/mxcmmc.c                          |  114 ++++++++++++--
+ drivers/mtd/nand/mxc_nand.c                        |  125 ++++++++-------
+ drivers/usb/host/ehci-mxc.c                        |    4 +-
+ include/linux/mmc/host.h                           |    3 +
+ 35 files changed, 1097 insertions(+), 199 deletions(-)
+-- 
+Pengutronix e.K.                           |                             |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+Peiner Str. 6-8, 31137 Hildesheim, Germany | Phone: +49-5121-206917-0    |
+Amtsgericht Hildesheim, HRA 2686           | Fax:   +49-5121-206917-5555 |
