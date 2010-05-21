@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934098Ab0EUQwG (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:52:06 -0400
-Received: from kroah.org ([198.145.64.141]:50293 "EHLO coco.kroah.org"
+	id S934176Ab0EUQwY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:52:24 -0400
+Received: from kroah.org ([198.145.64.141]:50355 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934030Ab0EUQwA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:52:00 -0400
+	id S934149Ab0EUQwS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:52:18 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Sonic Zhang <sonic.zhang@analog.com>, Mike Frysinger <vapier@gentoo.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 05/25] serial: bfin_sport_uart: rename early platform driver class string
-Date: Fri, 21 May 2010 09:51:34 -0700
-Message-Id: <1274460714-11277-5-git-send-email-gregkh@suse.de>
+Cc: Christoph Egger <siccegge@cs.fau.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 25/25] serial: Tidy REMOTE_DEBUG
+Date: Fri, 21 May 2010 09:51:54 -0700
+Message-Id: <1274460714-11277-25-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165113.GB11216@kroah.com>
 References: <20100521165113.GB11216@kroah.com>
@@ -20,50 +19,279 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sonic Zhang <sonic.zhang@analog.com>
+From: Christoph Egger <siccegge@cs.fau.de>
 
-Clarifies command line set up for devices between consoles and early
-devices.
+REMOTE_DEBUG does already appear in 2.2 kernel sources but didn't
+appear as a config Option in the initial git import 2.6.12-rc. It's
+currently just used in one single place of the linux kernel and should
+probably be dropped totally
 
-Signed-off-by: Sonic Zhang <sonic.zhang@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/serial/bfin_sport_uart.c |    7 +++++--
- 1 files changed, 5 insertions(+), 2 deletions(-)
+ drivers/char/serial167.c |  223 +---------------------------------------------
+ 1 files changed, 1 insertions(+), 222 deletions(-)
 
-diff --git a/drivers/serial/bfin_sport_uart.c b/drivers/serial/bfin_sport_uart.c
-index 49e7e4f..7925266 100644
---- a/drivers/serial/bfin_sport_uart.c
-+++ b/drivers/serial/bfin_sport_uart.c
-@@ -527,6 +527,8 @@ struct uart_ops sport_uart_ops = {
- static struct sport_uart_port *bfin_sport_uart_ports[BFIN_SPORT_UART_MAX_PORTS];
+diff --git a/drivers/char/serial167.c b/drivers/char/serial167.c
+index 78a62eb..ecbe479 100644
+--- a/drivers/char/serial167.c
++++ b/drivers/char/serial167.c
+@@ -176,23 +176,6 @@ static void config_setup(struct cyclades_port *);
+ static void show_status(int);
+ #endif
  
- #ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
-+#define CLASS_BFIN_SPORT_CONSOLE	"bfin-sport-console"
+-#ifdef CONFIG_REMOTE_DEBUG
+-static void debug_setup(void);
+-void queueDebugChar(int c);
+-int getDebugChar(void);
+-
+-#define DEBUG_PORT	1
+-#define DEBUG_LEN	256
+-
+-typedef struct {
+-	int in;
+-	int out;
+-	unsigned char buf[DEBUG_LEN];
+-} debugq;
+-
+-debugq debugiq;
+-#endif
+-
+ /*
+  * I have my own version of udelay(), as it is needed when initialising
+  * the chip, before the delay loop has been calibrated.  Should probably
+@@ -515,11 +498,6 @@ static irqreturn_t cd2401_tx_interrupt(int irq, void *dev_id)
+ 	/* determine the channel and change to that context */
+ 	channel = (u_short) (base_addr[CyLICR] >> 2);
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-	if (channel == DEBUG_PORT) {
+-		panic("TxInt on debug port!!!");
+-	}
+-#endif
+ 	/* validate the port number (as configured and open) */
+ 	if ((channel < 0) || (NR_PORTS <= channel)) {
+ 		base_addr[CyIER] &= ~(CyTxMpty | CyTxRdy);
+@@ -634,14 +612,6 @@ static irqreturn_t cd2401_rx_interrupt(int irq, void *dev_id)
+ 	info->last_active = jiffies;
+ 	save_cnt = char_count = base_addr[CyRFOC];
+ 
+-#ifdef CONFIG_REMOTE_DEBUG
+-	if (channel == DEBUG_PORT) {
+-		while (char_count--) {
+-			data = base_addr[CyRDR];
+-			queueDebugChar(data);
+-		}
+-	} else
+-#endif
+ 		/* if there is nowhere to put the data, discard it */
+ 	if (info->tty == 0) {
+ 		while (char_count--) {
+@@ -2195,9 +2165,7 @@ static int __init serial167_init(void)
+ 		port_num++;
+ 		info++;
+ 	}
+-#ifdef CONFIG_REMOTE_DEBUG
+-	debug_setup();
+-#endif
 +
- static int __init
- sport_uart_console_setup(struct console *co, char *options)
- {
-@@ -788,7 +790,7 @@ static struct platform_driver sport_uart_driver = {
+ 	ret = request_irq(MVME167_IRQ_SER_ERR, cd2401_rxerr_interrupt, 0,
+ 			  "cd2401_errors", cd2401_rxerr_interrupt);
+ 	if (ret) {
+@@ -2518,193 +2486,4 @@ static int __init serial167_console_init(void)
  
- #ifdef CONFIG_SERIAL_BFIN_SPORT_CONSOLE
- static __initdata struct early_platform_driver early_sport_uart_driver = {
--	.class_str = DRV_NAME,
-+	.class_str = CLASS_BFIN_SPORT_CONSOLE,
- 	.pdrv = &sport_uart_driver,
- 	.requested_id = EARLY_PLATFORM_ID_UNSET,
- };
-@@ -797,7 +799,8 @@ static int __init sport_uart_rs_console_init(void)
- {
- 	early_platform_driver_register(&early_sport_uart_driver, DRV_NAME);
+ console_initcall(serial167_console_init);
  
--	early_platform_driver_probe(DRV_NAME, BFIN_SPORT_UART_MAX_PORTS, 0);
-+	early_platform_driver_probe(CLASS_BFIN_SPORT_CONSOLE,
-+		BFIN_SPORT_UART_MAX_PORTS, 0);
- 
- 	register_console(&sport_uart_console);
- 
+-#ifdef CONFIG_REMOTE_DEBUG
+-void putDebugChar(int c)
+-{
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	unsigned long flags;
+-	volatile u_char sink;
+-	u_char ier;
+-	int port;
+-
+-	local_irq_save(flags);
+-
+-	/* Ensure transmitter is enabled! */
+-
+-	port = DEBUG_PORT;
+-	base_addr[CyCAR] = (u_char) port;
+-	while (base_addr[CyCCR])
+-		;
+-	base_addr[CyCCR] = CyENB_XMTR;
+-
+-	ier = base_addr[CyIER];
+-	base_addr[CyIER] = CyTxMpty;
+-
+-	while (1) {
+-		if (pcc2chip[PccSCCTICR] & 0x20) {
+-			/* We have a Tx int. Acknowledge it */
+-			sink = pcc2chip[PccTPIACKR];
+-			if ((base_addr[CyLICR] >> 2) == port) {
+-				base_addr[CyTDR] = c;
+-				base_addr[CyTEOIR] = 0;
+-				break;
+-			} else
+-				base_addr[CyTEOIR] = CyNOTRANS;
+-		}
+-	}
+-
+-	base_addr[CyIER] = ier;
+-
+-	local_irq_restore(flags);
+-}
+-
+-int getDebugChar()
+-{
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	unsigned long flags;
+-	volatile u_char sink;
+-	u_char ier;
+-	int port;
+-	int i, c;
+-
+-	i = debugiq.out;
+-	if (i != debugiq.in) {
+-		c = debugiq.buf[i];
+-		if (++i == DEBUG_LEN)
+-			i = 0;
+-		debugiq.out = i;
+-		return c;
+-	}
+-	/* OK, nothing in queue, wait in poll loop */
+-
+-	local_irq_save(flags);
+-
+-	/* Ensure receiver is enabled! */
+-
+-	port = DEBUG_PORT;
+-	base_addr[CyCAR] = (u_char) port;
+-#if 0
+-	while (base_addr[CyCCR])
+-		;
+-	base_addr[CyCCR] = CyENB_RCVR;
+-#endif
+-	ier = base_addr[CyIER];
+-	base_addr[CyIER] = CyRxData;
+-
+-	while (1) {
+-		if (pcc2chip[PccSCCRICR] & 0x20) {
+-			/* We have a Rx int. Acknowledge it */
+-			sink = pcc2chip[PccRPIACKR];
+-			if ((base_addr[CyLICR] >> 2) == port) {
+-				int cnt = base_addr[CyRFOC];
+-				while (cnt-- > 0) {
+-					c = base_addr[CyRDR];
+-					if (c == 0)
+-						printk
+-						    ("!! debug char is null (cnt=%d) !!",
+-						     cnt);
+-					else
+-						queueDebugChar(c);
+-				}
+-				base_addr[CyREOIR] = 0;
+-				i = debugiq.out;
+-				if (i == debugiq.in)
+-					panic("Debug input queue empty!");
+-				c = debugiq.buf[i];
+-				if (++i == DEBUG_LEN)
+-					i = 0;
+-				debugiq.out = i;
+-				break;
+-			} else
+-				base_addr[CyREOIR] = CyNOTRANS;
+-		}
+-	}
+-
+-	base_addr[CyIER] = ier;
+-
+-	local_irq_restore(flags);
+-
+-	return (c);
+-}
+-
+-void queueDebugChar(int c)
+-{
+-	int i;
+-
+-	i = debugiq.in;
+-	debugiq.buf[i] = c;
+-	if (++i == DEBUG_LEN)
+-		i = 0;
+-	if (i != debugiq.out)
+-		debugiq.in = i;
+-}
+-
+-static void debug_setup()
+-{
+-	unsigned long flags;
+-	volatile unsigned char *base_addr = (u_char *) BASE_ADDR;
+-	int i, cflag;
+-
+-	cflag = B19200;
+-
+-	local_irq_save(flags);
+-
+-	for (i = 0; i < 4; i++) {
+-		base_addr[CyCAR] = i;
+-		base_addr[CyLICR] = i << 2;
+-	}
+-
+-	debugiq.in = debugiq.out = 0;
+-
+-	base_addr[CyCAR] = DEBUG_PORT;
+-
+-	/* baud rate */
+-	i = cflag & CBAUD;
+-
+-	base_addr[CyIER] = 0;
+-
+-	base_addr[CyCMR] = CyASYNC;
+-	base_addr[CyLICR] = DEBUG_PORT << 2;
+-	base_addr[CyLIVR] = 0x5c;
+-
+-	/* tx and rx baud rate */
+-
+-	base_addr[CyTCOR] = baud_co[i];
+-	base_addr[CyTBPR] = baud_bpr[i];
+-	base_addr[CyRCOR] = baud_co[i] >> 5;
+-	base_addr[CyRBPR] = baud_bpr[i];
+-
+-	/* set line characteristics  according configuration */
+-
+-	base_addr[CySCHR1] = 0;
+-	base_addr[CySCHR2] = 0;
+-	base_addr[CySCRL] = 0;
+-	base_addr[CySCRH] = 0;
+-	base_addr[CyCOR1] = Cy_8_BITS | CyPARITY_NONE;
+-	base_addr[CyCOR2] = 0;
+-	base_addr[CyCOR3] = Cy_1_STOP;
+-	base_addr[CyCOR4] = baud_cor4[i];
+-	base_addr[CyCOR5] = 0;
+-	base_addr[CyCOR6] = 0;
+-	base_addr[CyCOR7] = 0;
+-
+-	write_cy_cmd(base_addr, CyINIT_CHAN);
+-	write_cy_cmd(base_addr, CyENB_RCVR);
+-
+-	base_addr[CyCAR] = DEBUG_PORT;	/* !!! Is this needed? */
+-
+-	base_addr[CyRTPRL] = 2;
+-	base_addr[CyRTPRH] = 0;
+-
+-	base_addr[CyMSVR1] = CyRTS;
+-	base_addr[CyMSVR2] = CyDTR;
+-
+-	base_addr[CyIER] = CyRxData;
+-
+-	local_irq_restore(flags);
+-
+-}				/* debug_setup */
+-
+-#endif
+-
+ MODULE_LICENSE("GPL");
 -- 
 1.7.0.3
 
