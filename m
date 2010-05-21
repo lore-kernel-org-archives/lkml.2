@@ -1,145 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753385Ab0EUJJO (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 05:09:14 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:33491 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751356Ab0EUJJM (ORCPT
+	id S1754729Ab0EUJLa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 05:11:30 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45998 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab0EUJL1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 05:09:12 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=OYjxHETXlGIU0EAgFf4QBaexXWo4LYwssRtq/RF0LNDcEE6KLtPtPPVPlIpfvVK6n3
-         lq7ulkfbqu4UiLAYyrZrPDBVk3tJi0MZZtr3djXdAm5uTG+on8huJi63uOKICYs7+0UJ
-         bfkhtcQ/njbg/a0JE4CE48tZkmTfUfAvFmN3s=
-Subject: [PATCH] intel_menlow: fix memory leaks in error path
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Sujith Thomas <sujith.thomas@intel.com>, Zhang Rui <rui.zhang@intel.com>,
-       Len Brown <len.brown@intel.com>, platform-driver-x86@vger.kernel.org
-Content-Type: text/plain
-Date: Fri, 21 May 2010 17:10:33 +0800
-Message-Id: <1274433033.21567.2.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Fri, 21 May 2010 05:11:27 -0400
+Message-Id: <20100521090710.742809176@chello.nl>
+User-Agent: quilt/0.47-1
+Date: Fri, 21 May 2010 11:02:08 +0200
+From: Peter Zijlstra <a.p.zijlstra@chello.nl>
+To: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [PATCH 07/10] perf: Optimize perf_output_copy
+References: <20100521090201.326791353@chello.nl>
+Content-Disposition: inline; filename=perf-opt-output_copy.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch includes below fixes in error path:
-1. fix a memory leak if device_create_file failed in
-intel_menlow_add_one_attribute
-2. properly free added attributes before return error in
-intel_menlow_register_sensor error handler
-3. properly call acpi_bus_unregister_driver before return error in
-intel_menlow_module_init
+Reduce the clutter in perf_output_copy() by keeping an interator in
+perf_output_handle.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
 ---
- drivers/platform/x86/intel_menlow.c |   33 ++++++++++++++++++++++-----------
- 1 files changed, 22 insertions(+), 11 deletions(-)
+ include/linux/perf_event.h |    3 ++
+ kernel/perf_event.c        |   54 +++++++++++++++++++++------------------------
+ 2 files changed, 29 insertions(+), 28 deletions(-)
 
-diff --git a/drivers/platform/x86/intel_menlow.c b/drivers/platform/x86/intel_menlow.c
-index 2f795ce..eacd5da 100644
---- a/drivers/platform/x86/intel_menlow.c
-+++ b/drivers/platform/x86/intel_menlow.c
-@@ -53,6 +53,8 @@ MODULE_LICENSE("GPL");
- #define MEMORY_ARG_CUR_BANDWIDTH 1
- #define MEMORY_ARG_MAX_BANDWIDTH 0
- 
-+static void intel_menlow_unregister_sensor(void);
-+
- /*
-  * GTHS returning 'n' would mean that [0,n-1] states are supported
-  * In that case max_cstate would be n-1
-@@ -406,8 +408,10 @@ static int intel_menlow_add_one_attribute(char *name, int mode, void *show,
- 	attr->handle = handle;
- 
- 	result = device_create_file(dev, &attr->attr);
--	if (result)
-+	if (result) {
-+		kfree(attr);
- 		return result;
-+	}
- 
- 	mutex_lock(&intel_menlow_attr_lock);
- 	list_add_tail(&attr->node, &intel_menlow_attr_list);
-@@ -431,11 +435,11 @@ static acpi_status intel_menlow_register_sensor(acpi_handle handle, u32 lvl,
- 	/* _TZ must have the AUX0/1 methods */
- 	status = acpi_get_handle(handle, GET_AUX0, &dummy);
- 	if (ACPI_FAILURE(status))
--		goto not_found;
-+		return (status == AE_NOT_FOUND) ? AE_OK : status;
- 
- 	status = acpi_get_handle(handle, SET_AUX0, &dummy);
- 	if (ACPI_FAILURE(status))
--		goto not_found;
-+		return (status == AE_NOT_FOUND) ? AE_OK : status;
- 
- 	result = intel_menlow_add_one_attribute("aux0", 0644,
- 						aux0_show, aux0_store,
-@@ -445,17 +449,19 @@ static acpi_status intel_menlow_register_sensor(acpi_handle handle, u32 lvl,
- 
- 	status = acpi_get_handle(handle, GET_AUX1, &dummy);
- 	if (ACPI_FAILURE(status))
--		goto not_found;
-+		goto aux1_not_found;
- 
- 	status = acpi_get_handle(handle, SET_AUX1, &dummy);
- 	if (ACPI_FAILURE(status))
--		goto not_found;
-+		goto aux1_not_found;
- 
- 	result = intel_menlow_add_one_attribute("aux1", 0644,
- 						aux1_show, aux1_store,
- 						&thermal->device, handle);
--	if (result)
-+	if (result) {
-+		intel_menlow_unregister_sensor();
- 		return AE_ERROR;
-+	}
+Index: linux-2.6/include/linux/perf_event.h
+===================================================================
+--- linux-2.6.orig/include/linux/perf_event.h
++++ linux-2.6/include/linux/perf_event.h
+@@ -806,6 +806,9 @@ struct perf_output_handle {
+ 	unsigned long			head;
+ 	unsigned long			offset;
+ 	unsigned long			wakeup;
++	unsigned long			size;
++	void				*addr;
++	int				page;
+ 	int				nmi;
+ 	int				sample;
+ };
+Index: linux-2.6/kernel/perf_event.c
+===================================================================
+--- linux-2.6.orig/kernel/perf_event.c
++++ linux-2.6/kernel/perf_event.c
+@@ -2960,39 +2960,30 @@ again:
+ void perf_output_copy(struct perf_output_handle *handle,
+ 		      const void *buf, unsigned int len)
+ {
+-	unsigned int pages_mask;
+-	unsigned long offset;
+-	unsigned int size;
+-	void **pages;
+-
+-	offset		= handle->offset;
+-	pages_mask	= handle->data->nr_pages - 1;
+-	pages		= handle->data->data_pages;
+-
+-	do {
+-		unsigned long page_offset;
+-		unsigned long page_size;
+-		int nr;
+-
+-		nr	    = (offset >> PAGE_SHIFT) & pages_mask;
+-		page_size   = 1UL << (handle->data->data_order + PAGE_SHIFT);
+-		page_offset = offset & (page_size - 1);
+-		size	    = min_t(unsigned int, page_size - page_offset, len);
+-
+-		memcpy(pages[nr] + page_offset, buf, size);
+-
+-		len	    -= size;
+-		buf	    += size;
+-		offset	    += size;
+-	} while (len);
+-
+-	handle->offset = offset;
++	handle->offset += len;
  
  	/*
- 	 * create the "dabney_enabled" attribute which means the user app
-@@ -465,14 +471,17 @@ static acpi_status intel_menlow_register_sensor(acpi_handle handle, u32 lvl,
- 	result = intel_menlow_add_one_attribute("bios_enabled", 0444,
- 						bios_enabled_show, NULL,
- 						&thermal->device, handle);
--	if (result)
-+	if (result) {
-+		intel_menlow_unregister_sensor();
- 		return AE_ERROR;
-+	}
- 
-- not_found:
-+ aux1_not_found:
- 	if (status == AE_NOT_FOUND)
- 		return AE_OK;
--	else
--		return status;
+ 	 * Check we didn't copy past our reservation window, taking the
+ 	 * possible unsigned int wrap into account.
+ 	 */
+-	WARN_ON_ONCE(((long)(handle->head - handle->offset)) < 0);
++	if (WARN_ON_ONCE(((long)(handle->head - handle->offset)) < 0))
++		return;
 +
-+	intel_menlow_unregister_sensor();
-+	return status;
++	do {
++		unsigned long size = min(handle->size, len);
++
++		memcpy(handle->addr, buf, size);
++
++		len -= size;
++		handle->addr += size;
++		handle->size -= size;
++		if (!handle->size) {
++			handle->page++;
++			handle->page &= handle->data->nr_pages - 1;
++			handle->addr = handle->data->data_pages[handle->page];
++			handle->size = PAGE_SIZE << handle->data->data_order;
++		}
++	} while (len);
  }
  
- static void intel_menlow_unregister_sensor(void)
-@@ -513,8 +522,10 @@ static int __init intel_menlow_module_init(void)
- 	status = acpi_walk_namespace(ACPI_TYPE_THERMAL, ACPI_ROOT_OBJECT,
- 				     ACPI_UINT32_MAX,
- 				     intel_menlow_register_sensor, NULL, NULL, NULL);
--	if (ACPI_FAILURE(status))
-+	if (ACPI_FAILURE(status)) {
-+		acpi_bus_unregister_driver(&intel_menlow_memory_driver);
- 		return -ENODEV;
-+	}
+ int perf_output_begin(struct perf_output_handle *handle,
+@@ -3058,6 +3049,13 @@ int perf_output_begin(struct perf_output
+ 	if (head - local_read(&data->wakeup) > data->watermark)
+ 		local_add(data->watermark, &data->wakeup);
  
- 	return 0;
- }
--- 
-1.5.4.3
-
++	handle->page = handle->offset >> (PAGE_SHIFT + data->data_order);
++	handle->page &= data->nr_pages - 1;
++	handle->size = handle->offset & ((PAGE_SIZE << data->data_order) - 1);
++	handle->addr = data->data_pages[handle->page];
++	handle->addr += handle->size;
++	handle->size = (PAGE_SIZE << data->data_order) - handle->size;
++
+ 	if (have_lost) {
+ 		lost_event.header.type = PERF_RECORD_LOST;
+ 		lost_event.header.misc = 0;
 
 
