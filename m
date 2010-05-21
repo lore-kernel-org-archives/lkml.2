@@ -1,26 +1,25 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757366Ab0EUCES (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 22:04:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:60059 "EHLO mga02.intel.com"
+	id S1757331Ab0EUCHd (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 22:07:33 -0400
+Received: from mga09.intel.com ([134.134.136.24]:60820 "EHLO mga09.intel.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756945Ab0EUCEQ convert rfc822-to-8bit (ORCPT
+	id S1753163Ab0EUCHc convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 22:04:16 -0400
+	Thu, 20 May 2010 22:07:32 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,274,1272870000"; 
-   d="scan'208,223";a="519939124"
-Date: Fri, 21 May 2010 10:16:57 +0800
+   d="scan'208,223";a="519939961"
+Date: Fri, 21 May 2010 10:19:12 +0800
 From: Feng Tang <feng.tang@intel.com>
 To: Thomas Gleixner <tglx@linutronix.de>
 CC: Jacob Pan <jacob.jun.pan@linux.intel.com>,
        "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       "Du, Alek" <alek.du@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       LKML <linux-kernel@vger.kernel.org>, John Stultz <johnstul@us.ibm.com>,
-       "Brown, Len" <len.brown@intel.com>
-Subject: [PATCH 2/3] x86: unify current 3 similar ways of saving IRQ info
-Message-ID: <20100521101657.461383ce@feng-i7>
+       "Du, Alek" <alek.du@intel.com>, LKML <linux-kernel@vger.kernel.org>,
+       Alessandro Zummo <a.zummo@towertech.it>
+Subject: [PATCH 3/3] x86/mrst: add vrtc driver which serves as a wall clock
+ device
+Message-ID: <20100521101912.18197227@feng-i7>
 In-Reply-To: <alpine.LFD.2.00.1005171102590.3368@localhost.localdomain>
 References: <1273254108-3234-1-git-send-email-jacob.jun.pan@linux.intel.com>
 	<1273254108-3234-8-git-send-email-jacob.jun.pan@linux.intel.com>
@@ -36,226 +35,320 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
->From 9ba7685bfdcaa2a5c40eade388902c478bc46071 Mon Sep 17 00:00:00 2001
+>From 14760d3bf6f77a17400c30258e365c06cbc36661 Mon Sep 17 00:00:00 2001
 From: Feng Tang <feng.tang@intel.com>
-Date: Thu, 20 May 2010 17:40:05 +0800
-Subject: [PATCH 2/3] x86: unify current 3 similar ways of saving IRQ info
+Date: Wed, 24 Mar 2010 10:31:35 +0800
+Subject: [PATCH 3/3] x86/mrst: add vrtc driver which serves as a wall clock device
 
-There are 3 places defining the similar function of saving IRQ
-vector info into mp_irqs[] array: mmparse/acpi/sfi. This patch
-will reduce the redundant code, and make it only one API:
-	void mp_save_irq(struct mpc_intsrc *m);
+Moorestown platform doesn't have a m146818 RTC device like traditional
+x86 PC, but a firmware emulated virtual RTC device(vrtc), which provides
+some basic RTC functions like get/set time. vrtc serves as the only
+wall clock device on Moorestown platform.
 
-Cc: Len Brown <len.brown@intel.com>
+Currently, vrtc init func will be called as arch_initcall() before
+xtime's init. Also move the sfi vrtc table parsing from mrst.c to
+vrtc.c
+
+There will be another general vrtc driver for rtc subsystem
+
 Cc: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Feng Tang <feng.tang@intel.com>
 ---
- arch/x86/include/asm/mpspec.h |    6 ++++++
- arch/x86/kernel/acpi/boot.c   |   32 +++-----------------------------
- arch/x86/kernel/mpparse.c     |   14 +++++++-------
- arch/x86/kernel/mrst.c        |   30 ++----------------------------
- 4 files changed, 18 insertions(+), 64 deletions(-)
+ arch/x86/include/asm/mrst.h |    2 -
+ arch/x86/include/asm/vrtc.h |   24 +++++++
+ arch/x86/kernel/Makefile    |    2 +-
+ arch/x86/kernel/mrst.c      |   45 +-------------
+ arch/x86/kernel/vrtc.c      |  147 +++++++++++++++++++++++++++++++++++++++++++
+ 5 files changed, 173 insertions(+), 47 deletions(-)
+ create mode 100644 arch/x86/include/asm/vrtc.h
+ create mode 100644 arch/x86/kernel/vrtc.c
 
-diff --git a/arch/x86/include/asm/mpspec.h b/arch/x86/include/asm/mpspec.h
-index c82868e..17f4314 100644
---- a/arch/x86/include/asm/mpspec.h
-+++ b/arch/x86/include/asm/mpspec.h
-@@ -42,6 +42,12 @@ extern int quad_local_to_mp_bus_id [NR_CPUS/4][4];
+diff --git a/arch/x86/include/asm/mrst.h b/arch/x86/include/asm/mrst.h
+index 451d30e..fa144f2 100644
+--- a/arch/x86/include/asm/mrst.h
++++ b/arch/x86/include/asm/mrst.h
+@@ -11,9 +11,7 @@
+ #ifndef _ASM_X86_MRST_H
+ #define _ASM_X86_MRST_H
+ extern int pci_mrst_init(void);
+-int __init sfi_parse_mrtc(struct sfi_table_header *table);
  
- #endif /* CONFIG_X86_64 */
+ #define SFI_MTMR_MAX_NUM 8
+-#define SFI_MRTC_MAX	8
  
-+#ifdef CONFIG_X86_IO_APIC
-+void mp_save_irq(struct mpc_intsrc *m);
+ #endif /* _ASM_X86_MRST_H */
+diff --git a/arch/x86/include/asm/vrtc.h b/arch/x86/include/asm/vrtc.h
+new file mode 100644
+index 0000000..fcdfcde
+--- /dev/null
++++ b/arch/x86/include/asm/vrtc.h
+@@ -0,0 +1,24 @@
++#ifndef _MRST_VRTC_H
++#define _MRST_VRTC_H
++
++#define SFI_MRTC_MAX	8
++#define VRTC_IOLEN	1024
++
++#ifdef CONFIG_X86_MRST
++extern unsigned char vrtc_reg_read(unsigned char reg);
++extern void vrtc_reg_write(unsigned char val, unsigned char reg);
++
++extern struct sfi_rtc_table_entry sfi_mrtc_array[];
 +#else
-+static inline void mp_save_irq(struct mpc_intsrc *m) {}
++static inline unsigned char vrtc_reg_read(unsigned char reg)
++{
++	return 0xff;
++}
++
++static inline void vrtc_reg_write(unsigned char val, unsigned char reg)
++{
++	return;
++}
 +#endif
 +
- #if defined(CONFIG_MCA) || defined(CONFIG_EISA)
- extern int mp_bus_id_to_type[MAX_MP_BUSSES];
- #endif
-diff --git a/arch/x86/kernel/acpi/boot.c b/arch/x86/kernel/acpi/boot.c
-index 9a5ed58..8f32fe2 100644
---- a/arch/x86/kernel/acpi/boot.c
-+++ b/arch/x86/kernel/acpi/boot.c
-@@ -923,32 +923,6 @@ static int __init acpi_parse_madt_lapic_entries(void)
- extern int es7000_plat;
- #endif
++#endif
+diff --git a/arch/x86/kernel/Makefile b/arch/x86/kernel/Makefile
+index e77b220..f3fdcbe 100644
+--- a/arch/x86/kernel/Makefile
++++ b/arch/x86/kernel/Makefile
+@@ -104,7 +104,7 @@ obj-$(CONFIG_SCx200)		+= scx200.o
+ scx200-y			+= scx200_32.o
  
--static void assign_to_mp_irq(struct mpc_intsrc *m,
--				    struct mpc_intsrc *mp_irq)
--{
--	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
--}
--
--static int mp_irq_cmp(struct mpc_intsrc *mp_irq,
--				struct mpc_intsrc *m)
--{
--	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
--}
--
--static void save_mp_irq(struct mpc_intsrc *m)
--{
--	int i;
--
--	for (i = 0; i < mp_irq_entries; i++) {
--		if (!mp_irq_cmp(&mp_irqs[i], m))
--			return;
--	}
--
--	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
--	if (++mp_irq_entries == MAX_IRQ_SOURCES)
--		panic("Max # of irq sources exceeded!!\n");
--}
--
- void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
- {
- 	int ioapic;
-@@ -979,7 +953,7 @@ void __init mp_override_legacy_irq(u8 bus_irq, u8 polarity, u8 trigger, u32 gsi)
- 	mp_irq.dstapic = mp_ioapics[ioapic].apicid; /* APIC ID */
- 	mp_irq.dstirq = pin;	/* INTIN# */
+ obj-$(CONFIG_OLPC)		+= olpc.o
+-obj-$(CONFIG_X86_MRST)		+= mrst.o
++obj-$(CONFIG_X86_MRST)		+= mrst.o vrtc.o
  
--	save_mp_irq(&mp_irq);
-+	mp_save_irq(&mp_irq);
- 
- 	isa_irq_to_gsi[bus_irq] = gsi;
- }
-@@ -1054,7 +1028,7 @@ void __init mp_config_acpi_legacy_irqs(void)
- 		mp_irq.srcbusirq = i; /* Identity mapped */
- 		mp_irq.dstirq = pin;
- 
--		save_mp_irq(&mp_irq);
-+		mp_save_irq(&mp_irq);
- 	}
- }
- 
-@@ -1091,7 +1065,7 @@ static int mp_config_acpi_gsi(struct device *dev, u32 gsi, int trigger,
- 	mp_irq.dstapic = mp_ioapics[ioapic].apicid;
- 	mp_irq.dstirq = mp_find_ioapic_pin(ioapic, gsi);
- 
--	save_mp_irq(&mp_irq);
-+	mp_save_irq(&mp_irq);
- #endif
- 	return 0;
- }
-diff --git a/arch/x86/kernel/mpparse.c b/arch/x86/kernel/mpparse.c
-index 5ae5d24..f5491f7 100644
---- a/arch/x86/kernel/mpparse.c
-+++ b/arch/x86/kernel/mpparse.c
-@@ -143,7 +143,7 @@ static void __init print_mp_irq_info(struct mpc_intsrc *mp_irq)
- 		mp_irq->srcbusirq, mp_irq->dstapic, mp_irq->dstirq);
- }
- 
--static void __init assign_to_mp_irq(struct mpc_intsrc *m,
-+static void assign_to_mp_irq(struct mpc_intsrc *m,
- 				    struct mpc_intsrc *mp_irq)
- {
- 	mp_irq->dstapic = m->dstapic;
-@@ -167,7 +167,7 @@ static void __init assign_to_mpc_intsrc(struct mpc_intsrc *mp_irq,
- 	m->dstirq = mp_irq->dstirq;
- }
- 
--static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
-+static int mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
- 					struct mpc_intsrc *m)
- {
- 	if (mp_irq->dstapic != m->dstapic)
-@@ -188,7 +188,8 @@ static int __init mp_irq_mpc_intsrc_cmp(struct mpc_intsrc *mp_irq,
- 	return 0;
- }
- 
--static void __init MP_intsrc_info(struct mpc_intsrc *m)
-+/* Will also be called in acpi/sfi related code */
-+void mp_save_irq(struct mpc_intsrc *m)
- {
- 	int i;
- 
-@@ -206,7 +207,6 @@ static void __init MP_intsrc_info(struct mpc_intsrc *m)
- #else /* CONFIG_X86_IO_APIC */
- static inline void __init MP_bus_info(struct mpc_bus *m) {}
- static inline void __init MP_ioapic_info(struct mpc_ioapic *m) {}
--static inline void __init MP_intsrc_info(struct mpc_intsrc *m) {}
- #endif /* CONFIG_X86_IO_APIC */
- 
- 
-@@ -320,7 +320,7 @@ static int __init smp_read_mpc(struct mpc_table *mpc, unsigned early)
- 			skip_entry(&mpt, &count, sizeof(struct mpc_ioapic));
- 			break;
- 		case MP_INTSRC:
--			MP_intsrc_info((struct mpc_intsrc *)mpt);
-+			mp_save_irq((struct mpc_intsrc *)mpt);
- 			skip_entry(&mpt, &count, sizeof(struct mpc_intsrc));
- 			break;
- 		case MP_LINTSRC:
-@@ -412,13 +412,13 @@ static void __init construct_default_ioirq_mptable(int mpc_default_type)
- 
- 		intsrc.srcbusirq = i;
- 		intsrc.dstirq = i ? i : 2;	/* IRQ0 to INTIN2 */
--		MP_intsrc_info(&intsrc);
-+		mp_save_irq(&intsrc);
- 	}
- 
- 	intsrc.irqtype = mp_ExtINT;
- 	intsrc.srcbusirq = 0;
- 	intsrc.dstirq = 0;	/* 8259A to INTIN0 */
--	MP_intsrc_info(&intsrc);
-+	mp_save_irq(&intsrc);
- }
- 
- 
+ microcode-y				:= microcode_core.o
+ microcode-$(CONFIG_MICROCODE_INTEL)	+= microcode_intel.o
 diff --git a/arch/x86/kernel/mrst.c b/arch/x86/kernel/mrst.c
-index e796448..def416c 100644
+index def416c..fc9268e 100644
 --- a/arch/x86/kernel/mrst.c
 +++ b/arch/x86/kernel/mrst.c
-@@ -33,32 +33,6 @@ struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
- EXPORT_SYMBOL_GPL(sfi_mrtc_array);
- int sfi_mrtc_num;
+@@ -29,10 +29,6 @@ static u32 sfi_mtimer_usage[SFI_MTMR_MAX_NUM];
+ static struct sfi_timer_table_entry sfi_mtimer_array[SFI_MTMR_MAX_NUM];
+ int sfi_mtimer_num;
  
--static inline void assign_to_mp_irq(struct mpc_intsrc *m,
--				    struct mpc_intsrc *mp_irq)
--{
--	memcpy(mp_irq, m, sizeof(struct mpc_intsrc));
--}
--
--static inline int mp_irq_cmp(struct mpc_intsrc *mp_irq,
--				struct mpc_intsrc *m)
--{
--	return memcmp(mp_irq, m, sizeof(struct mpc_intsrc));
--}
--
--static void save_mp_irq(struct mpc_intsrc *m)
--{
--	int i;
--
--	for (i = 0; i < mp_irq_entries; i++) {
--		if (!mp_irq_cmp(&mp_irqs[i], m))
--			return;
--	}
--
--	assign_to_mp_irq(m, &mp_irqs[mp_irq_entries]);
--	if (++mp_irq_entries == MAX_IRQ_SOURCES)
--		panic("Max # of irq sources exceeded!!\n");
--}
+-struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
+-EXPORT_SYMBOL_GPL(sfi_mrtc_array);
+-int sfi_mrtc_num;
 -
  /* parse all the mtimer info to a static mtimer array */
  static int __init sfi_parse_mtmr(struct sfi_table_header *table)
  {
-@@ -92,7 +66,7 @@ static int __init sfi_parse_mtmr(struct sfi_table_header *table)
- 			mp_irq.srcbusirq = pentry->irq;	/* IRQ */
- 			mp_irq.dstapic = MP_APIC_ALL;
- 			mp_irq.dstirq = pentry->irq;
--			save_mp_irq(&mp_irq);
-+			mp_save_irq(&mp_irq);
+@@ -106,41 +102,6 @@ void sfi_free_mtmr(struct sfi_timer_table_entry *mtmr)
  	}
- 
- 	return 0;
-@@ -162,7 +136,7 @@ int __init sfi_parse_mrtc(struct sfi_table_header *table)
- 		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
- 		mp_irq.dstapic = MP_APIC_ALL;
- 		mp_irq.dstirq = pentry->irq;
--		save_mp_irq(&mp_irq);
-+		mp_save_irq(&mp_irq);
- 	}
- 	return 0;
  }
+ 
+-/* parse all the mrtc info to a global mrtc array */
+-int __init sfi_parse_mrtc(struct sfi_table_header *table)
+-{
+-	struct sfi_table_simple *sb;
+-	struct sfi_rtc_table_entry *pentry;
+-	struct mpc_intsrc mp_irq;
+-
+-	int totallen;
+-
+-	sb = (struct sfi_table_simple *)table;
+-	if (!sfi_mrtc_num) {
+-		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
+-						struct sfi_rtc_table_entry);
+-		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
+-		totallen = sfi_mrtc_num * sizeof(*pentry);
+-		memcpy(sfi_mrtc_array, pentry, totallen);
+-	}
+-
+-	printk(KERN_INFO "SFI: RTC info (num = %d):\n", sfi_mrtc_num);
+-	pentry = sfi_mrtc_array;
+-	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
+-		printk(KERN_INFO "RTC[%d]: paddr = 0x%08x, irq = %d\n",
+-			totallen, (u32)pentry->phys_addr, pentry->irq);
+-		mp_irq.type = MP_IOAPIC;
+-		mp_irq.irqtype = mp_INT;
+-		mp_irq.irqflag = 0;
+-		mp_irq.srcbus = 0;
+-		mp_irq.srcbusirq = pentry->irq;	/* IRQ */
+-		mp_irq.dstapic = MP_APIC_ALL;
+-		mp_irq.dstirq = pentry->irq;
+-		mp_save_irq(&mp_irq);
+-	}
+-	return 0;
+-}
+-
+ /*
+  * the secondary clock in Moorestown can be APBT or LAPIC clock, default to
+  * APBT but cmdline option can also override it.
+@@ -174,11 +135,6 @@ void __init mrst_time_init(void)
+ 	apbt_time_init();
+ }
+ 
+-void __init mrst_rtc_init(void)
+-{
+-	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
+-}
+-
+ /*
+  * if we use per cpu apb timer, the bootclock already setup. if we use lapic
+  * timer and one apbt timer for broadcast, we need to set up lapic boot clock.
+@@ -207,6 +163,7 @@ void __init x86_mrst_early_setup(void)
+ 	x86_cpuinit.setup_percpu_clockev = mrst_setup_secondary_clock;
+ 
+ 	x86_platform.calibrate_tsc = mrst_calibrate_tsc;
++
+ 	x86_init.pci.init = pci_mrst_init;
+ 	x86_init.pci.fixup_irqs = x86_init_noop;
+ 
+diff --git a/arch/x86/kernel/vrtc.c b/arch/x86/kernel/vrtc.c
+new file mode 100644
+index 0000000..b113c67
+--- /dev/null
++++ b/arch/x86/kernel/vrtc.c
+@@ -0,0 +1,147 @@
++/*
++ * vrtc.c: Driver for virtual RTC device on Intel MID platform
++ *
++ * (C) Copyright 2010 Intel Corporation
++ *
++ * This program is free software; you can redistribute it and/or
++ * modify it under the terms of the GNU General Public License
++ * as published by the Free Software Foundation; version 2
++ * of the License.
++ *
++ * Note:
++ * VRTC is emulated by system controller firmware, the real HW
++ * RTC is located in the PMIC device. SCU FW shadows PMIC RTC
++ * in a memory mapped IO space that is visible to the host IA
++ * processor.
++ *
++ */
++
++#include <linux/kernel.h>
++#include <linux/init.h>
++#include <linux/sfi.h>
++
++#include <asm/time.h>
++#include <asm/vrtc.h>
++
++static unsigned char __iomem *vrtc_virt_base;
++struct sfi_rtc_table_entry sfi_mrtc_array[SFI_MRTC_MAX];
++EXPORT_SYMBOL_GPL(sfi_mrtc_array);
++static int sfi_mrtc_num;
++
++/* vRTC's registers range from 0x0 to 0xD */
++unsigned char vrtc_reg_read(unsigned char reg)
++{
++	if (unlikely(reg > 0xd || !vrtc_virt_base))
++		return 0xff;
++
++	return __raw_readb(vrtc_virt_base + (reg << 2));
++}
++EXPORT_SYMBOL(vrtc_reg_read);
++
++void vrtc_reg_write(unsigned char val, unsigned char reg)
++{
++	if (unlikely(reg > 0xd || !vrtc_virt_base))
++		return;
++
++	__raw_writeb(val, vrtc_virt_base + (reg << 2));
++}
++EXPORT_SYMBOL(vrtc_reg_write);
++
++static unsigned long vrtc_get_time(void)
++{
++	u8 sec, min, hour, mday, mon;
++	u32 year;
++
++	while ((vrtc_reg_read(RTC_FREQ_SELECT) & RTC_UIP))
++		cpu_relax();
++
++	sec = vrtc_reg_read(RTC_SECONDS);
++	min = vrtc_reg_read(RTC_MINUTES);
++	hour = vrtc_reg_read(RTC_HOURS);
++	mday = vrtc_reg_read(RTC_DAY_OF_MONTH);
++	mon = vrtc_reg_read(RTC_MONTH);
++	year = vrtc_reg_read(RTC_YEAR);
++
++	/* vRTC YEAR reg contains the offset to 1960 */
++	year += 1960;
++
++	pr_debug("vrtc time: %4d-%02d-%02d %02d:%02d:%02d\n",
++		year, mon, mday, hour, min, sec);
++
++	return mktime(year, mon, mday, hour, min, sec);
++}
++
++/* Only care about the minutes and seconds */
++static int vrtc_set_mmss(unsigned long nowtime)
++{
++	int real_sec, real_min;
++	int vrtc_min;
++
++	vrtc_min = vrtc_reg_read(RTC_MINUTES);
++
++	real_sec = nowtime % 60;
++	real_min = nowtime / 60;
++	if (((abs(real_min - vrtc_min) + 15)/30) & 1)
++		real_min += 30;
++	real_min %= 60;
++
++	vrtc_reg_write(real_sec, RTC_SECONDS);
++	vrtc_reg_write(real_min, RTC_MINUTES);
++	return 0;
++}
++
++/* parse all the mrtc info to a global mrtc array */
++static int __init sfi_parse_mrtc(struct sfi_table_header *table)
++{
++	struct sfi_table_simple *sb;
++	struct sfi_rtc_table_entry *pentry;
++	struct mpc_intsrc mp_irq;
++
++	int totallen;
++
++	sb = (struct sfi_table_simple *)table;
++	if (!sfi_mrtc_num) {
++		sfi_mrtc_num = SFI_GET_NUM_ENTRIES(sb,
++						struct sfi_rtc_table_entry);
++		pentry = (struct sfi_rtc_table_entry *)sb->pentry;
++		totallen = sfi_mrtc_num * sizeof(*pentry);
++		memcpy(sfi_mrtc_array, pentry, totallen);
++	}
++
++	pr_info("SFI: RTC info (num = %d):\n", sfi_mrtc_num);
++	pentry = sfi_mrtc_array;
++	for (totallen = 0; totallen < sfi_mrtc_num; totallen++, pentry++) {
++		pr_info("RTC[%d]: paddr = 0x%08x, irq = %d\n",
++			totallen, (u32)pentry->phys_addr, pentry->irq);
++		mp_irq.type = MP_IOAPIC;
++		mp_irq.irqtype = mp_INT;
++		mp_irq.irqflag = 0;
++		mp_irq.srcbus = 0;
++		mp_irq.srcbusirq = pentry->irq;
++		mp_irq.dstapic = MP_APIC_ALL;
++		mp_irq.dstirq = pentry->irq;
++		mp_save_irq(&mp_irq);
++	}
++	return 0;
++}
++
++static int __init vrtc_init(void)
++{
++	unsigned long rtc_paddr;
++
++	sfi_table_parse(SFI_SIG_MRTC, NULL, NULL, sfi_parse_mrtc);
++	if (!sfi_mrtc_num)
++		return -1;
++
++	rtc_paddr = sfi_mrtc_array[0].phys_addr;
++	vrtc_virt_base = ioremap(rtc_paddr, VRTC_IOLEN);
++	if (!vrtc_virt_base)
++		return -1;
++
++	x86_platform.get_wallclock = vrtc_get_time;
++	x86_platform.set_wallclock = vrtc_set_mmss;
++
++	pr_info("vrtc: successfully inited as a wall clock device.\n");
++	return 0;
++}
++arch_initcall(vrtc_init);
 -- 
 1.6.3.3
