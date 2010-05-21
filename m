@@ -1,83 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758518Ab0EUTnS (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 15:43:18 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:40892 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754154Ab0EUTnR (ORCPT
+	id S934198Ab0EUTp0 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 15:45:26 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:31285 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933449Ab0EUTpY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 15:43:17 -0400
-Date: Fri, 21 May 2010 12:43:09 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: frank.rowand@am.sony.com
-Cc: Arjan van de Ven <arjan@infradead.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
- menu governor
-Message-Id: <20100521124309.28e25866.akpm@linux-foundation.org>
-In-Reply-To: <4BF44156.2070807@am.sony.com>
-References: <20100509160242.2e351e6a@infradead.org>
-	<20100509160444.260ca9c9@infradead.org>
-	<4BF44156.2070807@am.sony.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+	Fri, 21 May 2010 15:45:24 -0400
+Date: Fri, 21 May 2010 12:44:47 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+       dri-devel@lists.freedesktop.org
+Subject: Re: [git pull] drm for 2.6.35-rc1 (revised)
+Message-Id: <20100521124447.67e92a7f.randy.dunlap@oracle.com>
+In-Reply-To: <alpine.LFD.2.00.1005211154120.3689@i5.linux-foundation.org>
+References: <alpine.DEB.2.00.1005190310010.1205@skynet.skynet.ie>
+	<alpine.DEB.2.00.1005210718460.16929@skynet.skynet.ie>
+	<alpine.LFD.2.00.1005211154120.3689@i5.linux-foundation.org>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
+X-CT-RefId: str=0001.0A090203.4BF6E2BB.007E:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010 12:51:50 -0700
-Frank Rowand <frank.rowand@am.sony.com> wrote:
+On Fri, 21 May 2010 11:56:39 -0700 (PDT) Linus Torvalds wrote:
 
-> Aplogies if this is a duplicate, my outgoing email seems to have not
-> been working.
 > 
-> On 05/09/10 16:04, Arjan van de Ven wrote:
 > 
-> > +/*
-> > + * Try detecting repeating patterns by keeping track of the last 8
-> > + * intervals, and checking if the standard deviation of that set
-> > + * of points is below a threshold. If it is... then use the
-> > + * average of these 8 points as the estimated value.
-> > + */
-> > +static void detect_repeating_patterns(struct menu_device *data)
-> > +{
-> > +	int i;
-> > +	uint64_t avg = 0;
-> > +	uint64_t stddev = 0; /* contains the square of the std deviation */
-> > +
-> > +	/* first calculate average and standard deviation of the past */
-> > +	for (i = 0; i < INTERVALS; i++)
-> > +		avg += data->intervals[i];
-> > +
-> > +	/* if the avg is beyond the known next tick, it's worthless */
-> > +	if (avg > data->expected_us)
-> > +		return;
-> > +
+> Grrr. Not well tested. On x86, I get several warnings like this:
 > 
-> Should the following division by INTERVALS be moved up 6 lines to before
-> "if (avg > data->expected_us)"?
+> 	drivers/video/fbmem.c: In function ‘fb_do_apertures_overlap’:
+> 	drivers/video/fbmem.c:1494: warning: format ‘%llx’ expects type ‘long long unsigned int’, but argument 2 has type ‘resource_size_t’
+> 
+> Please fix. And please test the thing. 
 
-Quite possibly.
+I sent a patch for this a few days ago.  Below.
 
-> > +	avg = avg / INTERVALS;
-> > +	for (i = 0; i < INTERVALS; i++)
-> > +		stddev += (data->intervals[i] - avg) *
-> > +			  (data->intervals[i] - avg);
-> > +
-> > +	stddev = stddev / INTERVALS;
-> > +
-> > +	/*
-> > +	 * now.. if stddev is small.. then assume we have a
-> > +	 * repeating pattern and predict we keep doing this.
-> > +	 */
-> > +
-> > +	if (avg && stddev < STDDEV_THRESH)
-> > +		data->predicted_us = avg;
-> > +}
+---
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-wakey wakey, Arjan.
+Fix printk formats:
 
+drivers/video/fbmem.c: In function 'fb_do_apertures_overlap':
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 2 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 3 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 4 has type 'resource_size_t'
+drivers/video/fbmem.c:1494: warning: format '%llx' expects type 'long long unsigned int', but argument 5 has type 'resource_size_t'
 
-Also, expected_us is 32-bit and predicted_us is 64-bit.  Was that rational?
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+---
+ drivers/video/fbmem.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+--- linux-next-20100519.orig/drivers/video/fbmem.c
++++ linux-next-20100519/drivers/video/fbmem.c
+@@ -1491,7 +1491,10 @@ static bool fb_do_apertures_overlap(stru
+ 		for (j = 0; j < gena->count; ++j) {
+ 			struct aperture *g = &gena->ranges[j];
+ 			printk(KERN_DEBUG "checking generic (%llx %llx) vs hw (%llx %llx)\n",
+-				g->base, g->size, h->base, h->size);
++				(unsigned long long)g->base,
++				(unsigned long long)g->size,
++				(unsigned long long)h->base,
++				(unsigned long long)h->size);
+ 			if (apertures_overlap(g, h))
+ 				return true;
+ 		}
