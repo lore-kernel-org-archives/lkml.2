@@ -1,36 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755205Ab0EUMYm (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 08:24:42 -0400
-Received: from mail.kwanghua.edu.my ([202.133.107.218]:64731 "EHLO
-	mail.kwanghua.edu.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753899Ab0EUMYl (ORCPT
+	id S1753274Ab0EUMcX (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 08:32:23 -0400
+Received: from mail.avellaneda-ba.gov.ar ([200.71.230.2]:58061 "EHLO
+	ns2.avellaneda-ba.gov.ar" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751139Ab0EUMcW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 08:24:41 -0400
-Message-ID: <20100521194729.nix54aa8a8skwc00@mail.kwanghua.edu.my>
-Date: Fri, 21 May 2010 19:47:29 +0800
-From: Western Union <webmaster@westernunion.com>
-Reply-to: westernounion@w.cn
-To: undisclosed-recipients:;
-Subject: Western Union Charity Foundation
+	Fri, 21 May 2010 08:32:22 -0400
+Message-ID: <28276.41.206.15.1.1274415988.squirrel@41.206.15.1>
+Date: Fri, 21 May 2010 02:26:28 -0200 (FNT)
+Subject: Congratulations - You have won
+From: "MICROSOFT EMAIL PROMOTION" <info.winners@microsoft.com>
+Reply-To: mrivan_nickerson04@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
 MIME-Version: 1.0
-Content-Type: text/plain;
-	charset=UTF-8;
-	DelSp="Yes";
-	format="flowed"
-Content-Disposition: inline
-Content-Transfer-Encoding: 7bit
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.4)
+Content-Type: text/plain;charset=iso-8859-1
+Content-Transfer-Encoding: 8bit
+X-Priority: 3 (Normal)
+Importance: Normal
+To: undisclosed-recipients:;
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Congratulations - You have won
 
-Western Union Charity Foundation has donated $350,000.00 usd to you, contact
-this email: westernounion@w.cn  for more informations or visit our website
-foundation.westernunion.com
+The MICROSOFT EMAIL PROMO TEAM is glad to announce that
+after a successful completion of the PROMO DRAWS held on the
+19th May 2010,your e-mail address,attached to winning
+numbers:(11) (80) (12)(96) (09) (43) won in the Tenth
+lottery category.
+
+You have therefore been approved to claim a total sum of
+£250,000,00 Pounds Sterling in cash credited to REF
+NO:MICRO-L/2009-END10.
+
+All participants were selected through our Microsoft computer
+ballot system drawn from 167,000 Names,as part of our
+International  "E-MAIL" Promotion Program for our prominent
+MS-WORD users all over the world and for the continuous use
+of the internet. You are advised to contact the claims
+processor with the details below via his e-mail address :
+
+NAME:  Ivan Nickerson
+EMAIL: mrivan.nickerson05@yahoo.com.hk
+
+PLEASE NOTE YOU ARE TO SEND THE FOLLOWING INFORMATION TO
+
+CLAIM YOUR PRIZE:
+1.Full Name:... 2.Address:... 3.Phone:... 4.Country:...
+
+5.Sex/Gender:...
 
 
-
-
+YOURS SINCERELY,
+ANASTACIA SHEFFIELD.
 
