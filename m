@@ -1,41 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933530Ab0EUPV0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 11:21:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:57699 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758226Ab0EUPVW (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 11:21:22 -0400
-Date: Fri, 21 May 2010 11:21:22 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Josef Bacik <josef@redhat.com>
-Cc: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, hch@infradead.org,
-       akpm@linux-foundation.org
-Subject: Re: [PATCH 4/6] fs: kill blockdev_direct_IO_no_locking
-Message-ID: <20100521152122.GC16049@infradead.org>
-References: <1274300694-8976-1-git-send-email-josef@redhat.com> <1274300694-8976-4-git-send-email-josef@redhat.com>
+	id S933574Ab0EUPVz (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 11:21:55 -0400
+Received: from kroah.org ([198.145.64.141]:38504 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933117Ab0EUPVx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 11:21:53 -0400
+Date: Fri, 21 May 2010 08:21:41 -0700
+From: Greg KH <greg@kroah.com>
+To: linux-usb@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: 2.6.35 merge window is over for USB
+Message-ID: <20100521152141.GA18603@kroah.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274300694-8976-4-git-send-email-josef@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 04:24:52PM -0400, Josef Bacik wrote:
-> Christoph said he'd rather everybody use __blockdev_direct_IO directly instead
-> of having a bunch of random helper functions, so thats what this patch does.
-> It's a basic change, I've tested it with xfstests on ext4 and xfs.  Thanks,
-> 
-> Signed-off-by: Josef Bacik <josef@redhat.com>
+Hi all,
 
-Ok,
+If you haven't noticed, all of the new features for USB are now merged
+in Linus's tree for the .35 kernel version.  At this point in time, I'm
+only expecting there to be minor bugfixes and new device ids for the .35
+kernel for the USB subsystem.  Anything else, will be gladly accepted by
+me at any time, but note that I will be queueing it up for the .36
+kernel release.
 
+If anyone has any questions, please let me know.
 
-Reviewed-by: Christoph Hellwig <hch@lst.de>
+thanks,
 
+greg k-h
+
+p.s. Yes, this is in direct response to the crazy direct emails that
+people love to send me begging me to take their untested and buggy code
+with the promise of them fixing it up later at some future time.  AMD,
+this means you.
