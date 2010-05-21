@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934299Ab0EUQyo (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:54:44 -0400
-Received: from kroah.org ([198.145.64.141]:39121 "EHLO coco.kroah.org"
+	id S1758505Ab0EUQ4M (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:56:12 -0400
+Received: from kroah.org ([198.145.64.141]:39187 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934249Ab0EUQyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:24 -0400
+	id S934289Ab0EUQyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:43 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: David Zeuthen <davidz@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 17/38] generate "change" uevent for loop device
-Date: Fri, 21 May 2010 09:53:47 -0700
-Message-Id: <1274460848-11377-17-git-send-email-gregkh@suse.de>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 38/38] net: Expose all network devices in a namespaces in sysfs
+Date: Fri, 21 May 2010 09:54:08 -0700
+Message-Id: <1274460848-11377-38-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -19,75 +20,175 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Zeuthen <davidz@redhat.com>
+From: Eric W. Biederman <ebiederm@xmission.com>
 
-Recent udev versions probe loop devices for filesystems meaning that
-the /dev/disk hierarchy may contain useful entries such as
+This reverts commit aaf8cdc34ddba08122f02217d9d684e2f9f5d575.
 
- $ ls -l /dev/disk/by-label/Fedora-12-x86_64-Live
- lrwxrwxrwx 1 root root 11 Mar 11 13:41 /dev/disk/by-label/Fedora-12-x86_64-Live -> ../../loop0
+Drivers like the ipw2100 call device_create_group when they
+are initialized and device_remove_group when they are shutdown.
+Moving them between namespaces deletes their sysfs groups early.
 
-Unfortunately, no "change" uevent is generated when the loop device is
-detached so the symlink persists. Additionally, no "change" uevent is
-guaranteed to be generated when attaching an fd or changing capacity.
-For example,  user space could open the loop device O_RDONLY (in fact,
-recent util-linux-ng does this) so udev's OPTIONS+="watch" machinery may
-not trigger the "change" uevent.
+In particular the following call chain results.
+netdev_unregister_kobject -> device_del -> kobject_del -> sysfs_remove_dir
+With sysfs_remove_dir recursively deleting all of it's subdirectories,
+and nothing adding them back.
 
-This patch ensures that the "change" uevent is generated in all of
-these cases. As a result, the /dev/disk hierarchy works as expected
-for loop devices.
+Ouch!
 
-Signed-off-by: David Zeuthen <davidz@redhat.com>
-Acked-by: Kay Sievers <kay.sievers@vrfy.org>
+Therefore we need to call something that ultimate calls sysfs_mv_dir
+as that sysfs function can move sysfs directories between namespaces
+without deleting their subdirectories or their contents.   Allowing
+us to avoid placing extra boiler plate into every driver that does
+something interesting with sysfs.
+
+Currently the function that provides that capability is device_rename.
+That is the code works without nasty side effects as originally written.
+
+So remove the misguided fix for moving devices between namespaces.  The
+bug in the kobject layer that inspired it has now been recognized and
+fixed.
+
+Signed-off-by: Eric W. Biederman <ebiederm@xmission.com>
+Acked-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/block/loop.c |   10 +++++++++-
- 1 files changed, 9 insertions(+), 1 deletions(-)
+ net/core/dev.c       |   28 +++++-----------------------
+ net/core/net-sysfs.c |   16 +---------------
+ net/core/net-sysfs.h |    1 -
+ 3 files changed, 6 insertions(+), 39 deletions(-)
 
-diff --git a/drivers/block/loop.c b/drivers/block/loop.c
-index 8546d12..a90e83c 100644
---- a/drivers/block/loop.c
-+++ b/drivers/block/loop.c
-@@ -835,6 +835,8 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
+diff --git a/net/core/dev.c b/net/core/dev.c
+index 6c82065..d273e4e 100644
+--- a/net/core/dev.c
++++ b/net/core/dev.c
+@@ -1002,15 +1002,10 @@ int dev_change_name(struct net_device *dev, const char *newname)
+ 		return err;
  
- 	set_capacity(lo->lo_disk, size);
- 	bd_set_size(bdev, size << 9);
-+	/* let user-space know about the new size */
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+ rollback:
+-	/* For now only devices in the initial network namespace
+-	 * are in sysfs.
+-	 */
+-	if (net_eq(net, &init_net)) {
+-		ret = device_rename(&dev->dev, dev->name);
+-		if (ret) {
+-			memcpy(dev->name, oldname, IFNAMSIZ);
+-			return ret;
+-		}
++	ret = device_rename(&dev->dev, dev->name);
++	if (ret) {
++		memcpy(dev->name, oldname, IFNAMSIZ);
++		return ret;
+ 	}
  
- 	set_blocksize(bdev, lo_blocksize);
+ 	write_lock_bh(&dev_base_lock);
+@@ -4994,8 +4989,6 @@ int register_netdevice(struct net_device *dev)
+ 	if (dev->features & NETIF_F_SG)
+ 		dev->features |= NETIF_F_GSO;
  
-@@ -858,6 +860,7 @@ out_clr:
- 	set_capacity(lo->lo_disk, 0);
- 	invalidate_bdev(bdev);
- 	bd_set_size(bdev, 0);
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask);
- 	lo->lo_state = Lo_unbound;
-  out_putf:
-@@ -944,8 +947,11 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
- 	if (bdev)
- 		invalidate_bdev(bdev);
- 	set_capacity(lo->lo_disk, 0);
--	if (bdev)
-+	if (bdev) {
- 		bd_set_size(bdev, 0);
-+		/* let user-space know about this change */
-+		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
-+	}
- 	mapping_set_gfp_mask(filp->f_mapping, gfp);
- 	lo->lo_state = Lo_unbound;
- 	/* This is safe: open() is still holding a reference. */
-@@ -1189,6 +1195,8 @@ static int loop_set_capacity(struct loop_device *lo, struct block_device *bdev)
- 	sz <<= 9;
- 	mutex_lock(&bdev->bd_mutex);
- 	bd_set_size(bdev, sz);
-+	/* let user-space know about the new size */
-+	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
- 	mutex_unlock(&bdev->bd_mutex);
+-	netdev_initialize_kobject(dev);
+-
+ 	ret = call_netdevice_notifiers(NETDEV_POST_INIT, dev);
+ 	ret = notifier_to_errno(ret);
+ 	if (ret)
+@@ -5547,15 +5540,6 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
+ 	if (dev->features & NETIF_F_NETNS_LOCAL)
+ 		goto out;
  
-  out:
+-#ifdef CONFIG_SYSFS
+-	/* Don't allow real devices to be moved when sysfs
+-	 * is enabled.
+-	 */
+-	err = -EINVAL;
+-	if (dev->dev.parent)
+-		goto out;
+-#endif
+-
+ 	/* Ensure the device has been registrered */
+ 	err = -EINVAL;
+ 	if (dev->reg_state != NETREG_REGISTERED)
+@@ -5606,8 +5590,6 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
+ 	dev_uc_flush(dev);
+ 	dev_mc_flush(dev);
+ 
+-	netdev_unregister_kobject(dev);
+-
+ 	/* Actually switch the network namespace */
+ 	dev_net_set(dev, net);
+ 
+@@ -5620,7 +5602,7 @@ int dev_change_net_namespace(struct net_device *dev, struct net *net, const char
+ 	}
+ 
+ 	/* Fixup kobjects */
+-	err = netdev_register_kobject(dev);
++	err = device_rename(&dev->dev, dev->name);
+ 	WARN_ON(err);
+ 
+ 	/* Add the device back in the hashes */
+diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
+index 6881e65..99e7052 100644
+--- a/net/core/net-sysfs.c
++++ b/net/core/net-sysfs.c
+@@ -808,9 +808,6 @@ static int netdev_uevent(struct device *d, struct kobj_uevent_env *env)
+ 	struct net_device *dev = to_net_dev(d);
+ 	int retval;
+ 
+-	if (!net_eq(dev_net(dev), &init_net))
+-		return 0;
+-
+ 	/* pass interface to uevent. */
+ 	retval = add_uevent_var(env, "INTERFACE=%s", dev->name);
+ 	if (retval)
+@@ -869,9 +866,6 @@ void netdev_unregister_kobject(struct net_device * net)
+ 
+ 	kobject_get(&dev->kobj);
+ 
+-	if (!net_eq(dev_net(net), &init_net))
+-		return;
+-
+ #ifdef CONFIG_RPS
+ 	rx_queue_remove_kobjects(net);
+ #endif
+@@ -886,6 +880,7 @@ int netdev_register_kobject(struct net_device *net)
+ 	const struct attribute_group **groups = net->sysfs_groups;
+ 	int error = 0;
+ 
++	device_initialize(dev);
+ 	dev->class = &net_class;
+ 	dev->platform_data = net;
+ 	dev->groups = groups;
+@@ -908,9 +903,6 @@ int netdev_register_kobject(struct net_device *net)
+ #endif
+ #endif /* CONFIG_SYSFS */
+ 
+-	if (!net_eq(dev_net(net), &init_net))
+-		return 0;
+-
+ 	error = device_add(dev);
+ 	if (error)
+ 		return error;
+@@ -939,12 +931,6 @@ void netdev_class_remove_file(struct class_attribute *class_attr)
+ EXPORT_SYMBOL(netdev_class_create_file);
+ EXPORT_SYMBOL(netdev_class_remove_file);
+ 
+-void netdev_initialize_kobject(struct net_device *net)
+-{
+-	struct device *device = &(net->dev);
+-	device_initialize(device);
+-}
+-
+ int netdev_kobject_init(void)
+ {
+ 	kobj_ns_type_register(&net_ns_type_operations);
+diff --git a/net/core/net-sysfs.h b/net/core/net-sysfs.h
+index 14e7524..805555e 100644
+--- a/net/core/net-sysfs.h
++++ b/net/core/net-sysfs.h
+@@ -4,5 +4,4 @@
+ int netdev_kobject_init(void);
+ int netdev_register_kobject(struct net_device *);
+ void netdev_unregister_kobject(struct net_device *);
+-void netdev_initialize_kobject(struct net_device *);
+ #endif
 -- 
 1.7.0.3
 
