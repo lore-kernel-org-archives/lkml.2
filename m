@@ -1,102 +1,469 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755898Ab0EUOcn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 10:32:43 -0400
-Received: from sh.osrg.net ([192.16.179.4]:36681 "EHLO sh.osrg.net"
+	id S1755937Ab0EUOlr (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 10:41:47 -0400
+Received: from bear.ext.ti.com ([192.94.94.41]:49801 "EHLO bear.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752687Ab0EUOcl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 10:32:41 -0400
-Date: Fri, 21 May 2010 23:32:34 +0900 (JST)
-Message-Id: <20100521.233234.82137980.ryusuke@osrg.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       linux-nilfs@vger.kernel.org
-Subject: [GIT PULL] nilfs2 updates for 2.6.35
-From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
-X-Mailer: Mew version 5.2 on Emacs 22.2 / Mule 5.0 (SAKAKI)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (sh.osrg.net [192.16.179.4]); Fri, 21 May 2010 23:32:34 +0900 (JST)
+	id S1755792Ab0EUOlp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 10:41:45 -0400
+From: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>
+To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>,
+       LM Sensors <lm-sensors@lm-sensors.org>
+Date: Fri, 21 May 2010 20:10:50 +0530
+Subject: RE: [RFC] [PATCH] TMP105 : Driver support for the temperature sensor
+Thread-Topic: [RFC] [PATCH] TMP105 : Driver support for the temperature
+ sensor
+Thread-Index: Acr454qKK9H6UMWoQOqdKCo+yj5zCAACRNFw
+Message-ID: <0680EC522D0CC943BC586913CF3768C003B32B3B1A@dbde02.ent.ti.com>
+References: <0680EC522D0CC943BC586913CF3768C003B32B3AC4@dbde02.ent.ti.com>
+ <4BF687A0.4040203@jic23.retrosnub.co.uk>
+ <4BF687DC.7090108@jic23.retrosnub.co.uk>
+In-Reply-To: <4BF687DC.7090108@jic23.retrosnub.co.uk>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
 
-please pull from
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
+> -----Original Message-----
+> From: J.I. Cameron [mailto:jic23@hermes.cam.ac.uk] On Behalf Of Jonathan
+> Cameron
+> Sent: Friday, May 21, 2010 6:47 PM
+> To: Datta, Shubhrajyoti
+> Cc: linux-kernel@vger.kernel.org; linux-omap@vger.kernel.org; linux-
+> input@vger.kernel.org; LM Sensors
+> Subject: Re: [RFC] [PATCH] TMP105 : Driver support for the temperature
+> sensor
+> 
+> cc'ing lm-sensors (where this should have gone, this has nothing to do
+> with input).
+> > On 05/21/10 13:17, Datta, Shubhrajyoti wrote:
+> >>
+> >> Adds the driver support for the TMP105 temperature sensor device. The
+> interface is I2C.The driver supports the read of the temperature values.
+> >>
+> >> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
+> > This device looks at first glance to be pretty similar to the TMP101 as
+> supported
+> > by the lm75 driver.  Would it make more sense to merge this support into
+> that
+> > driver?
+> >
+> > I've not read the data sheets that closely so may have missed something!
+Will look at the datasheet.
+> >
+> > Couple of nitpicks below.
+> >> ---
+> >>  drivers/hwmon/Kconfig  |   10 ++
+> >>  drivers/hwmon/Makefile |    1 +
+> >>  drivers/hwmon/tmp105.c |  326
+> ++++++++++++++++++++++++++++++++++++++++++++++++
+> >>  3 files changed, 337 insertions(+), 0 deletions(-)
+> >>  create mode 100644 drivers/hwmon/tmp105.c
+> >>
+> >> diff --git a/drivers/hwmon/Kconfig b/drivers/hwmon/Kconfig
+> >> index 68cf877..a4a5352 100644
+> >> --- a/drivers/hwmon/Kconfig
+> >> +++ b/drivers/hwmon/Kconfig
+> >> @@ -1076,6 +1076,16 @@ config SENSORS_MC13783_ADC
+> >>          help
+> >>            Support for the A/D converter on MC13783 PMIC.
+> >>
+> >> +config SENSORS_TMP105
+> >> +	tristate "Texas Instruments TMP421 and compatible"
+> >  TMP105 or TMP421?
+> >> +	depends on I2C
+> >> +	help
+> >> +	  If you say yes here you get support for Texas Instruments TMP105
+> >> +	  temperature sensor chips.
+> >> +
+> >> +	  This driver can also be built as a module.  If so, the module
+> >> +	  will be called tmp105.
+> >> +
+> >>  if ACPI
+> >>
+> >>  comment "ACPI drivers"
+> >> diff --git a/drivers/hwmon/Makefile b/drivers/hwmon/Makefile
+> >> index 4bc215c..2c4e7a5 100644
+> >> --- a/drivers/hwmon/Makefile
+> >> +++ b/drivers/hwmon/Makefile
+> >> @@ -99,6 +99,7 @@ obj-$(CONFIG_SENSORS_W83L785TS)	+= w83l785ts.o
+> >>  obj-$(CONFIG_SENSORS_W83L786NG)	+= w83l786ng.o
+> >>  obj-$(CONFIG_SENSORS_WM831X)	+= wm831x-hwmon.o
+> >>  obj-$(CONFIG_SENSORS_WM8350)	+= wm8350-hwmon.o
+> >> +obj-$(CONFIG_SENSORS_TMP105)    += tmp105.o
+> >>
+> >>  ifeq ($(CONFIG_HWMON_DEBUG_CHIP),y)
+> >>  EXTRA_CFLAGS += -DDEBUG
+> >> diff --git a/drivers/hwmon/tmp105.c b/drivers/hwmon/tmp105.c
+> >> new file mode 100644
+> >> index 0000000..8765b11
+> >> --- /dev/null
+> >> +++ b/drivers/hwmon/tmp105.c
+> >> @@ -0,0 +1,326 @@
+> >> +/*
+> >> + * tmp105.c
+> >> + *
+> >> + * TMP105 temperature sensor driver
+> >> + *
+> >> + * Copyright (C) 2010 Texas Instruments
+> >> + *
+> >> + * Author: Shubhrajyoti Datta <a0393217@ti.com>
+> >> + *
+> >> + * This program is free software; you can redistribute it and/or
+> modify it
+> >> + * under the terms of the GNU General Public License version 2 as
+> published by
+> >> + * the Free Software Foundation.
+> >> + *
+> >> + * This program is distributed in the hope that it will be useful,
+> >> + * but WITHOUT ANY WARRANTY; without even the implied warranty of
+> >> + * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+> >> + * GNU General Public License for more details.
+> >> + *
+> >> + * You should have received a copy of the GNU General Public License
+> >> + * along with this program; if not, write to the Free Software
+> >> + * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307
+> USA
+> >> +*/
+> >> +
+> >> +#include <linux/module.h>
+> >> +#include <linux/init.h>
+> >> +#include <linux/i2c.h>
+> >> +#include <linux/kernel.h>
+> >> +#include <linux/hwmon.h>
+> >> +#include <linux/hwmon-sysfs.h>
+> >> +#include <linux/err.h>
+> >> +#include <linux/slab.h>
+> >> +
+> >> +/* Registers */
+> >> +#define		TMP105_TEMP_REG		0x00
+> >> +#define		TMP105_CONF_REG		0x01
+> >> +#define		TMP105_TLOW_REG		0x02
+> >> +#define		TMP105_THIGH_REG	0x03
+> >> +
+> >> +/* Configuration register parameters */
+> >> +#define		TMP105_CONF_SD		0x01
+> >> +#define		TMP105_CONF_TM		0x02
+> >> +#define		TMP105_CONF_POL		0x04
+> >> +#define		TMP105_CONF_F0		0x08
+> >> +#define		TMP105_CONF_F1		0x10
+> >> +#define		TMP105_CONF_R0		0x20
+> >> +#define		TMP105_CONF_R1		0x40
+> >> +#define		TMP105_CONF_OS		0x80
+> >> +
+> >> +#define 	TMP105_I2C_ADDRESS	0x48
+> >> +
+> >> +#define         MAX_TEMP		128
+> >> +#define         MIN_TEMP		-55
+> >> +
+> >> +/* Each client has this additional data */
+> >> +struct tmp105_data {
+> >> +	struct i2c_client *client;
+> >> +	/* mutex for sysfs operations */
+> >> +	struct mutex lock;
+> >> +	struct device *hwmon_dev;
+> >> +	s16 temp[3];
+> >> +	unsigned long last_updated;
+> >> +	u8 configuration_setting;
+> >> +};
+> >> +
+> >> +static const u8 tmp105_reg[] = {
+> >> +	TMP105_TEMP_REG,
+> >> +	TMP105_TLOW_REG,
+> >> +	TMP105_THIGH_REG,
+> >> +};
+> >> +
+> >> +static void tmp105_init_client(struct i2c_client *client);
+> >> +
+> >> +static signed long tmp105_reg_to_mC(s16 val)
+> >> +{
+> >> +	signed long temp_mC;
+> >> +	if (val  & 0x800)
+> >> +		val = val - 0x1000 ;
+> > Stray space.
+Will change it.
+> >
+> >> +	 temp_mC = (val * 64000) / 1024;
+> >> +	 return temp_mC;
+> >> +}
+> >> +
+> >> +static u16 tmp105_C_to_reg(signed long val)
+> >> +{
+> >> +	val =  (val * 1024) / 64000;
+> >> +	if (val < 0)
+> >> +		val = val + 0x1000;
+> >> +	return (u16)val;
+> >> +}
+> >> +
+> >> +static s16 *tmp105_update_device(struct i2c_client *client,
+> >> +						int  index)
+> >> +{
+> >> +	struct tmp105_data *data = i2c_get_clientdata(client);
+> >> +	u8 tmp[2];
+> >> +
+> >> +	mutex_lock(&data->lock);
+> >> +
+> >> +	if (time_after(jiffies, data->last_updated +  HZ/4)) {
+> >> +		i2c_smbus_read_i2c_block_data(client,
+> >> +						tmp105_reg[index], 2, tmp);
+> >> +		data->temp[index] = ((tmp[0] << 4) | ((tmp[1] & 0xF0) >> 4));
+> >> +		printk(KERN_INFO "Raw temperature: %u\n", data->temp[index]);
+> >> +		data->last_updated = jiffies;
+> >> +	}
+> >> +
+> >> +	mutex_unlock(&data->lock);
+> >> +	return data->temp[index] ;
+> >> +}
+> >> +
+> >> +static ssize_t show_temp_value(struct device *dev,
+> >> +			       struct device_attribute *devattr, char *buf)
+> >> +{
+> >> +	struct sensor_device_attribute *sda = to_sensor_dev_attr(devattr);
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	s16 temperature = tmp105_update_device(client , sda->index);
+> >> +	signed long temp_in_mC;
+> >> +
+> >> +	temp_in_mC = tmp105_reg_to_mC(temperature);
+> >> +
+> >> +	return sprintf(buf, "%d\n", temp_in_mC);
+> >> +}
+> >> +
+> >> +static SENSOR_DEVICE_ATTR(temp1_input, S_IRUGO, show_temp_value, NULL
+> , 0);
+> >> +
+> >> +static ssize_t tmp105_set_temp(struct device *dev,
+> >> +				struct device_attribute *attr,
+> >> +				const char *buf, size_t count)
+> >> +{
+> >> +	struct sensor_device_attribute *sda = to_sensor_dev_attr(attr);
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	struct tmp105_data *tmp105 = i2c_get_clientdata(client);
+> >> +	signed long val;
+> >> +	int status = 0;
+> >> +	u16 temp;
+> >> +
+> >> +	if ((strict_strtol(buf, 10, &val) < 0))
+> >> +		return -EINVAL;
+> >> +
+> >> +	SENSORS_LIMIT(val , MIN_TEMP , MAX_TEMP);
+> >> +
+> >> +	mutex_lock(&tmp105->lock);
+> >> +
+> >> +	temp = tmp105_C_to_reg(val);
+> >> +	temp = ((temp & 0xFF0)>> 4) | ((temp & 0xF)<<12);
+> > Random spacing
+Agree.
 
-to receive the following updates from nilfs2 tree.  Mostly cleanups
-and minor fixes.  There are a few minor changes:
+> >
+> >> +
+> >> +	status = i2c_smbus_write_word_data(client, tmp105_reg[sda->index],
+> >> +			temp);
+> >> +
+> >> +	tmp105->temp[sda->index] = temp;
+> >> +	mutex_unlock(&tmp105->lock);
+> >> +	return status ? : count;
+> >> +}
+> >> +
+> >> +static SENSOR_DEVICE_ATTR(temp1_min, S_IWUSR | S_IRUGO,
+> show_temp_value,
+> >> +	tmp105_set_temp, 1);
+> >> +static SENSOR_DEVICE_ATTR(temp1_max, S_IWUSR | S_IRUGO,
+> show_temp_value,
+> >> +	tmp105_set_temp, 2);
+> >> +
+> >> +/* sysfs call */
+> >> +static ssize_t set_configuration(struct device *dev,
+> >> +				struct device_attribute *attr,
+> >> +				const char *buf, size_t count)
+> >> +{
+> >> +	s32 status;
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	struct tmp105_data *data = i2c_get_clientdata(client);
+> >> +	data->configuration_setting = simple_strtoul(buf, NULL, 10);
+> >> +	/* I2C write to the configuration register */
+> >> +	status = i2c_smbus_write_byte_data(client, TMP105_CONF_REG,
+> >> +			data->configuration_setting);
+> > What's status for given you don't take any notice of it?
+Will add appropriate err message 
 
- * A mount option change that makes read-only remount the default of
-   when critical metadata inconsistency was found.
- * Enlarged filesystem label.
- * An extension of log header format in order to ensure that
-   diagnostic tool or fsck obtains checkpoint number from on-disk
-   logs.
+> >
+> >> +	return count;
+> >> +}
+> >> +
+> >> +static ssize_t show_configuration(struct device *dev,
+> >> +				struct device_attribute *attr, char *buf)
+> >> +{
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	struct tmp105_data *data = i2c_get_clientdata(client);
+> >> +	u8 tmp;
+> >> +	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1, &tmp);
+> >> +	data->configuration_setting = tmp;
+> >> +	return sprintf(buf, "%u\n", data->configuration_setting);
+> >> +}
+> >> +static DEVICE_ATTR(configuration, S_IWUSR | S_IRUGO,
+> show_configuration,
+> >> +		set_configuration);
+> >> +
+> >> +
+> >> +static struct attribute *tmp105_attributes[] = {
+> >> +	&dev_attr_configuration.attr,
+> >> +	&sensor_dev_attr_temp1_input.dev_attr.attr,
+> >> +	&sensor_dev_attr_temp1_min.dev_attr.attr,
+> >> +	&sensor_dev_attr_temp1_max.dev_attr.attr,
+> >> +	NULL
+> >> +};
+> >> +
+> >> +static const struct attribute_group tmp105_attr_group = {
+> >> +	.attrs = tmp105_attributes,
+> >> +};
+> >> +
+> >> +static int tmp105_probe(struct i2c_client *client,
+> >> +			 const struct i2c_device_id *id)
+> >> +{
+> >> +	struct tmp105_data *tmp105_data;
+> >> +	int err;
+> >> +
+> >> +	if (!i2c_check_functionality(client->adapter, I2C_FUNC_I2C)) {
+> >> +		dev_dbg(&client->dev, "adapter doesn't support I2C\n");
+> >> +		return -ENODEV;
+> >> +	}
+> >> +
+> >> +	tmp105_data = kzalloc(sizeof(struct tmp105_data), GFP_KERNEL);
+> >> +	if (!tmp105_data) {
+> >> +		err = -ENOMEM;
+> >> +		goto exit;
+> >> +	}
+> >> +	tmp105_data->client = client;
+> >> +
+> >> +	i2c_set_clientdata(client, tmp105_data);
+> >> +	mutex_init(&tmp105_data->lock);
+> >> +
+> >> +	/* Initialize the TMP105 chip */
+> >> +	tmp105_init_client(client);
+> >> +
+> >> +	/* Register sysfs hooks */
+> >> +	err = sysfs_create_group(&client->dev.kobj, &tmp105_attr_group);
+> >> +	if (err)
+> >> +		goto exit_free;
+> >> +	tmp105_data->hwmon_dev = hwmon_device_register(&client->dev);
+> >> +	if (IS_ERR(tmp105_data->hwmon_dev)) {
+> >> +		err = PTR_ERR(tmp105_data->hwmon_dev);
+> >> +		tmp105_data->hwmon_dev = NULL;
+> >> +		goto exit_remove;
+> >> +	}
+> >> +	return 0;
+> >> +
+> >> +exit_remove:
+> >> +	sysfs_remove_group(&client->dev.kobj, &tmp105_attr_group);
+> >> +exit_free:
+> >> +	i2c_set_clientdata(client, NULL);
+> >> +	kfree(tmp105_data);
+> >> +exit:
+> >> +	return err;
+> >> +}
+> >> +
+> >> +static int tmp105_remove(struct i2c_client *client)
+> >> +{
+> >> +	struct tmp105_data *tmp105 = i2c_get_clientdata(client);
+> >> +	hwmon_device_unregister(tmp105->hwmon_dev);
+> >> +
+> >> +	sysfs_remove_group(&client->dev.kobj, &tmp105_attr_group);
+> >> +	i2c_set_clientdata(client, NULL);
+> >> +	kfree(tmp105);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +/* Called when we have found a new TMP105. */
+> >> +static void tmp105_init_client(struct i2c_client *client)
+> >> +{
+> >> +	struct tmp105_data *data = i2c_get_clientdata(client);
+> >> +	data->last_updated = jiffies - HZ;
+> >> +	mutex_init(&data->lock);
+> >> +}
+> >> +
+> >> +static const struct i2c_device_id tmp105_id[] = {
+> >> +	{ "tmp105", 0 },
+> >> +	{ }
+> >> +};
+> >> +
+> >> +#ifdef CONFIG_PM
+> >> +static int tmp105_suspend(struct device *dev)
+> >> +{
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	u8 config_reg;
+> >> +	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1,
+> &config_reg);
+> >> +	config_reg = config_reg | TMP102_CONF_SD;
+> >> +	i2c_smbus_write_byte_data(client, TMP105_CONF_REG, TMP102_CONF_SD);
+> >> +	return 0;
+> >> +}
+> >> +
+> >> +static int tmp105_resume(struct device *dev)
+> >> +{
+> >> +	struct i2c_client *client = to_i2c_client(dev);
+> >> +	i2c_smbus_read_i2c_block_data(client, TMP105_CONF_REG, 1,
+> &config_reg);
+> >> +	config_reg = config_reg & ~TMP102_CONF_SD;
+> >> +	i2c_smbus_write_byte_data(client, TMP105_CONF_REG, TMP102_CONF_SD);
+> >> +}
+> >> +
+> >> +static struct dev_pm_ops tmp105_dev_pm_ops = {
+> >> +	.suspend = tmp105_suspend,
+> >> +	.resume = tmp105_resume,
+> >> +};
+> >> +
+> >> +#define TMP105_DEV_PM_OPS (&tmp105_dev_pm_ops)
+> >> +#else
+> >> +#define TMP105_DEV_PM_OPS NULL
+> >> +#endif /* CONFIG_PM */
+> >> +
+> >> +
+> >> +static struct i2c_driver tmp105_driver = {
+> >> +	.driver = {
+> >> +		.name	= "tmp105",
+> >> +		.owner = THIS_MODULE,
+> >> +		.pm = TMP105_DEV_PM_OPS,
+> >> +	},
+> >> +	.probe		= tmp105_probe,
+> >> +	.remove		= tmp105_remove,
+> >> +	.id_table	= tmp105_id,
+> >> +	.class = I2C_CLASS_HWMON,
+> >> +};
+> >> +
+> >> +static int __init tmp105_init(void)
+> >> +{
+> >> +	return i2c_add_driver(&tmp105_driver);
+> >> +}
+> >> +
+> >> +static void __exit tmp105_exit(void)
+> >> +{
+> >> +	i2c_del_driver(&tmp105_driver);
+> >> +}
+> >> +
+> >> +MODULE_DESCRIPTION("TMP105 driver");
+> >> +MODULE_LICENSE("GPL");
+> >> +
+> >> +module_init(tmp105_init);
+> >> +module_exit(tmp105_exit);
+> >> +
+> >
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel"
+> in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
 
-But no influential change is made.
-
-Thanks,
-
-Ryusuke Konishi
-
---
-The following changes since commit b57f95a38233a2e73b679bea4a5453a1cc2a1cc9:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc7
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/ryusuke/nilfs2.git for-linus
-
-Jiro SEKIBA (1):
-      nilfs2: enlarge s_volume_name member in nilfs_super_block
-
-Li Hong (6):
-      nilfs2: Combine nilfs_btree_alloc_path() and nilfs_btree_init_path()
-      nilfs2: Combine nilfs_btree_release_path() and nilfs_btree_free_path()
-      nilfs2: cleanup multi kmem_cache_{create,destroy} code
-      nilfs2: add a print message after loading nilfs2
-      nilfs2: remove nilfs_segctor_init() in segment.c
-      nilfs2: change sc_timer from a pointer to an embedded one in struct nilfs_sc_info
-
-Qinghuang Feng (1):
-      nilfs2: update comment for struct nilfs_dat_entry
-
-Ryusuke Konishi (15):
-      nilfs2: fix style problems in nilfs2_fs.h
-      nilfs2: change default of 'errors' mount option to 'remount-ro' mode
-      nilfs2: move pointer to super root block into logs
-      nilfs2: move out checksum routines to segment buffer code
-      nilfs2: insert checkpoint number in segment summary header
-      nilfs2: add kernel doc comments to persistent object allocator functions
-      nilfs2: make nilfs_sc_*_ops static
-      nilfs2: add missing endian conversion on super block magic number
-      nilfs2: use checkpoint number instead of timestamp to select super block
-      nilfs2: fix misuse of open_bdev_exclusive/close_bdev_exclusive
-      nilfs2: add missing initialization of s_mode
-      nilfs2: replace MS_VERBOSE with MS_SILENT
-      nilfs2: update comment on deactivate_super at nilfs_get_sb
-      nilfs2: use huge_encode_dev/huge_decode_dev
-      nilfs2: disallow remount of snapshot from/to a regular mount
-
- Documentation/filesystems/nilfs2.txt |    4 +-
- fs/nilfs2/alloc.c                    |  154 ++++++++++++++++++++++++-
- fs/nilfs2/alloc.h                    |    7 +
- fs/nilfs2/btree.c                    |   91 +++------------
- fs/nilfs2/btree.h                    |   23 +++-
- fs/nilfs2/inode.c                    |    4 +-
- fs/nilfs2/recovery.c                 |    2 +
- fs/nilfs2/segbuf.c                   |   70 ++++++-----
- fs/nilfs2/segbuf.h                   |   10 +-
- fs/nilfs2/segment.c                  |  157 ++++++------------------
- fs/nilfs2/segment.h                  |    6 +-
- fs/nilfs2/super.c                    |  218 ++++++++++++++++++----------------
- fs/nilfs2/the_nilfs.c                |   10 +-
- include/linux/nilfs2_fs.h            |   17 ++--
- 14 files changed, 423 insertions(+), 350 deletions(-)
