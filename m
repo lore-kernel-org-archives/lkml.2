@@ -1,54 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753864Ab0EUGgi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:36:38 -0400
-Received: from hera.kernel.org ([140.211.167.34]:51779 "EHLO hera.kernel.org"
+	id S1757834Ab0EUGiy (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:38:54 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:36360 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751864Ab0EUGgg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:36:36 -0400
-Message-ID: <4BF629BB.9000805@kernel.org>
-Date: Fri, 21 May 2010 08:35:39 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Oleg Nesterov <oleg@redhat.com>,
-       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Alan Stern <stern@rowland.harvard.edu>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Ming Lei <tom.leiming@gmail.com>, Wu Fengguang <fengguang.wu@intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/8] PM: Add suspend block api.
-References: <1272429119-12103-1-git-send-email-arve@android.com> <20100430172618.GA9043@redhat.com> <4BF4F31D.8070900@kernel.org> <201005210027.31910.rjw@sisk.pl>
-In-Reply-To: <201005210027.31910.rjw@sisk.pl>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 06:35:42 +0000 (UTC)
+	id S1753209Ab0EUGiw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 02:38:52 -0400
+Date: Fri, 21 May 2010 16:38:44 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Greg KH <greg@kroah.com>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Tom Herbert <therbert@google.com>, David Miller <davem@davemloft.net>,
+       <netdev@vger.kernel.org>, "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: Re: linux-next: manual merge of the driver-core tree with the net
+ tree
+Message-Id: <20100521163844.c702a2b4.sfr@canb.auug.org.au>
+In-Reply-To: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
+References: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+--Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-On 05/21/2010 12:27 AM, Rafael J. Wysocki wrote:
->> Oh, this isn't an issue w/ cmwq.  While frozen all new works are
->> collected into per-cpu delayed worklist and while frozen trustee in
->> charge of the cpu will keep waiting.  Once thawed, trustee will
->> execute all works including the delayed ones unbound to any cpu.
-> 
-> So, does it require any intrusive changes to make it possible to create
-> multithread freezable workqueues?
+Hi Greg,
 
-cmwq itself is quite intrusive changes but w/ cmwq it just takes
-flipping a flag when creating the queue.
+On Fri, 21 May 2010 16:21:34 +1000 Stephen Rothwell <sfr@canb.auug.org.au> =
+wrote:
+>
+> Today's linux-next merge of the driver-core tree got a conflict in
+> net/core/net-sysfs.c between commits
+> 0a9627f2649a02bea165cfd529d7bcb625c2fcad ("rps: Receive Packet Steering")
+> and fec5e652e58fa6017b2c9e06466cb2a6538de5b4 ("rfs: Receive Flow
+> Steering") from the net tree and commits
+> bc28c84244da26bafb0d3bce95ef45212b31c6b8 ("net/sysfs: Fix the bitrot in
+> network device kobject namespace support") and
+> 83dc0fbf37495691219d019ec16b40d8592d2956 ("net: Expose all network
+> devices in a namespaces in sysfs") from the driver-core tree.
+>=20
+> I fixed it up (I think - see below) and can carry the fix as necessary.
 
-Thanks.
+The net tree has been merged by Linus, so this should be fixable in the
+driver-core tree now.
 
--- 
-tejun
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv2KnQACgkQjjKRsyhoI8ykJgCfd5vyX0JpiD9mNzCBu2zsk8/J
+Z7AAn3WkgSXLNe9Um8+K1S4ObxHpDRUe
+=1kmK
+-----END PGP SIGNATURE-----
+
+--Signature=_Fri__21_May_2010_16_38_44_+1000_fHd6_1MLdCRGZTiQ--
