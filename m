@@ -1,162 +1,176 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755440Ab0ETXxp (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 19:53:45 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:16595 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755116Ab0ETXxn (ORCPT
+	id S1755361Ab0EUAG0 (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:06:26 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:52106 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754680Ab0EUAGY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 19:53:43 -0400
-Date: Thu, 20 May 2010 16:52:07 -0700
-From: Joel Becker <Joel.Becker@oracle.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Fasheh <mfasheh@suse.com>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
-Subject: [GIT PULL] ocfs2 updates for 2.6.35
-Message-ID: <20100520235207.GE8335@mail.oracle.com>
-Mail-Followup-To: Linus Torvalds <torvalds@linux-foundation.org>,
-	Mark Fasheh <mfasheh@suse.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	linux-kernel@vger.kernel.org, ocfs2-devel@oss.oracle.com
+	Thu, 20 May 2010 20:06:24 -0400
+Date: Fri, 21 May 2010 01:06:22 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: David Dajun Chen <Dajun.Chen@diasemi.com>
+Cc: linux-kernel@vger.kernel.org, sameo@linux.intel.com
+Subject: Re: [PATCH] MFD of DA9052 Linux device drivers (1/9)
+Message-ID: <20100521000622.GA3110@sirena.org.uk>
+References: <3495EC08FA53E94AAA00CC4743D5BA7E010C20EB@pandora.diasemi.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BF5CB7C.01B9:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <3495EC08FA53E94AAA00CC4743D5BA7E010C20EB@pandora.diasemi.com>
+X-Cookie: Generic Fortune.
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus et al,
-	Here are the ocfs2 updates for 2.6.35.  There are two major
-changes.  Mark added allocation reservations to our node-local
-allocators.  This gets us much more contiguousness when many processes
-are growing files in parallel.  On the other end of contiguousness,
-ocfs2 has had a major limitation since the beginning.  When ocfs2 needs
-new inodes, it has always grown its metadata allocators in contiguous
-hunks. As you might expect, badly fragmented filesystems may be unable
-to add new inodes even when there is plenty of unused space.  Tao and I
-have added discontiguous block groups to fix the problem.
-	There's also various small stuff.  The shortlog is below.  Please
-pull.
+On Wed, May 19, 2010 at 10:16:10AM +0100, David Dajun Chen wrote:
 
-Joel
+> The attached is the MFD part of the device drivers newly developed for
+> DA9052 Power Management IC from Dialog Semiconductor.
 
-The following changes since commit a0fe3cc5d36a5f5b4f60abfe1a4b1caf4a5cce5a:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../dtor/input
+One thing that jumps out at me from this patch is that it seems like
+it'd really benefit from being further split up so that the patch is not
+so very large.  This will make review much easier, usually the larger
+the individual patch the more effort is required to review.  For
+example, the code to add ADC and IRQ support both look like very good
+candidates for being split out of the core patch.  Similarly, the
+headers for things like the RTC would probably be best placed in the
+patch that adds that driver.
 
-are available in the git repository at:
+Addressing some of the issues that have been raised by myself and others
+regarding the use of typedefs and the addition of driver-specific ioctl
+interfaces would also go a long way to making review easier.  Much of
+the code here appears to result from reinventing things that already
+have standard implementations in Linux.
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/jlbec/ocfs2.git upstream-linus
+I'd also suggest using scripts/checkpatch.pl to check for coding style
+issues.
 
-Joel Becker (16):
-      ocfs2: Define data structures for discontiguous block groups.
-      ocfs2: Allocate discontiguous block groups.
-      ocfs2: Pass suballocation results back via a structure.
-      ocfs2: Add suballoc_loc to metadata blocks.
-      ocfs2: ocfs2_claim_suballoc_bits() doesn't need an osb argument.
-      ocfs2: Trim suballocations if they cross discontiguous regions
-      ocfs2: ocfs2_claim_*() don't need an ocfs2_super argument.
-      ocfs2: Return allocated metadata blknos on the ocfs2_suballoc_result.
-      ocfs2: Set suballoc_loc on allocated metadata.
-      ocfs2: Grow discontig block groups in one transaction.
-      ocfs2: Don't relink cluster groups when allocating discontig block groups
-      ocfs2: Make ocfs2_journal_dirty() void.
-      ocfs2: Wrap signal blocking in void functions.
-      ocfs2: Block signals for mkdir/link/symlink/O_CREAT.
-      Merge branch 'discontig-bg' of git://oss.oracle.com/git/tma/linux-2.6 into ocfs2-merge-window
-      ocfs2: Silence a gcc warning.
+> + * DA9052 has a single IRQ line which can be used to indicate 32 various events.
+> + * Event Handler (EH) module has following primary functions.
+> + *
+> + * (1) To receive and acknowledge interrupts from DA9052.
+> + * (2) Extract all events form DA9052 event registers after receiving interrupt.
+> + * (3) To provide a mechanism to register call back for specific events of
+> + *     their interest, and call these call backs when corresponding event occurs.
+> + * (4) To retrive, store and provide TSI data whenever requested by TSI module.
 
-Julia Lawall (2):
-      fs/ocfs2/dlm: Drop memory allocation cast
-      fs/ocfs2/dlm: Use kstrdup
+The best way to handle the interrupt controller in devices like this in
+Linux is through the generic IRQ framework.  This means a lot of the
+event dispatch code is provided for you, gives you diagnostics and
+allows good integration with the rest of the kernel (both for the
+primary IRQ and also for the IRQs generated by GPIOs on the device).
 
-Mark Fasheh (9):
-      ocfs2: allocation reservations
-      ocfs2: use allocation reservations during file write
-      ocfs2: use allocation reservations for directory data
-      ocfs2: allocate btree internal block groups from the global bitmap
-      ocfs2: remove ocfs2_local_alloc_in_range()
-      ocfs2: clean up localalloc mount option size parsing
-      ocfs2: increase the default size of local alloc windows
-      ocfs2: change default reservation window sizes
-      ocfs2: Add dir_resv_level mount option
+Drivers such as 88pm860x and wm831x provide examples of doing this in
+mainline.
 
-Srinivas Eeda (1):
-      o2net: log socket state changes
+> +static void da9052_eh_setup_irq(void)
+> +{
+> +	/* Put your platform and board specific code here */
+> +#if (ARCH_DEPENDENT_DA9052)	
+> +	/* Set up GPI which is connected to nIRQ of DA9052 */
+T> +	s3c_gpio_setpull(DA9052_IRQ_PIN, S3C_GPIO_PULL_UP);
+> +	
+> +	/* Set GPI as LOW LEVEL interrupt source */ 
+> +	set_irq_type(DA9052_IRQ, IRQ_TYPE_LEVEL_LOW);
 
-Sunil Mushran (3):
-      ocfs2/dlm: Make o2dlm domain join/leave messages KERN_NOTICE
-      ocfs2: Make nointr a default mount option
-      ocfs2/dlm: Increase o2dlm lockres hash size
+Use platform data for this - you can provide a callback function which
+will be run when the device is registered which machines can use to do
+any setup that needs to be done when the driver is starting up (or for
+things like this they can just do it in the core machine startup).
 
-Tao Ma (11):
-      ocfs2: Some tiny bug fixes for discontiguous block allocation.
-      ocfs2: ocfs2_group_bitmap_size has to handle old volume.
-      ocfs2: Add ocfs2_gd_is_discontig.
-      ocfs2: Free block to the right block group.
-      ocfs2: Set ac_last_group properly with discontig group.
-      ocfs2: enable discontig block group support.
-      ocfs2: make ocfs2_adjust_resv_from_alloc simple.
-      ocfs2/trivial: Code cleanup for allocation reservation.
-      ocfs2: Make ocfs2_extend_trans() really extend.
-      ocfs2: Reset xattr value size after xa_cleanup_value_truncate().
-      ocfs2: Don't retry xattr set in case value extension fails.
+> +/**
+> + * da9052_eh_restore_irq:Function to free IRQ line which is connected to DA9052 
+> + * @param void	
+> + * @return void
+> + */
+> +static void da9052_eh_restore_irq(void)
+> +{
+> +	/* Put your platform and board specific code here */
+> +	free_irq(DA9052_IRQ, NULL);
 
-Tristan Ye (4):
-      Ocfs2: Optimize ocfs2 truncate to use ocfs2_remove_btree_range() instead.
-      Ocfs2: Fix hole punching to correctly do CoW during cluster zeroing.
-      Ocfs2: Make ocfs2_find_cpos_for_left_leaf() public.
-      Ocfs2: Optimize punching-hole code.
+The IRQ used by the device should be passed in through the standard
+mechanisms for the bus concerned - eg, the .irq field of the I2C board
+info structure.
 
-Wengang Wang (2):
-      ocfs2: print node # when tcp fails
-      ocfs2:dlm: avoid dlm->ast_lock lockres->spinlock dependency break
+> +static irqreturn_t da9052_eh_isr(int irq, void *dev_id)
+> +{	
+> +	/* Schedule work to be done */
+> +	schedule_work(&eh_info.eh_isr_work);
 
- Documentation/filesystems/ocfs2.txt |    7 +
- fs/ocfs2/Makefile                   |    1 +
- fs/ocfs2/alloc.c                    |  908 +++++++++--------------------------
- fs/ocfs2/alloc.h                    |   12 +-
- fs/ocfs2/aops.c                     |    3 +
- fs/ocfs2/cluster/masklog.c          |    1 +
- fs/ocfs2/cluster/masklog.h          |    1 +
- fs/ocfs2/cluster/tcp.c              |    3 +
- fs/ocfs2/dir.c                      |   75 +--
- fs/ocfs2/dlm/dlmast.c               |    8 +-
- fs/ocfs2/dlm/dlmcommon.h            |    4 +-
- fs/ocfs2/dlm/dlmconvert.c           |    4 +-
- fs/ocfs2/dlm/dlmdomain.c            |   28 +-
- fs/ocfs2/dlm/dlmlock.c              |    6 +-
- fs/ocfs2/dlm/dlmmaster.c            |   30 +-
- fs/ocfs2/dlm/dlmrecovery.c          |   27 +-
- fs/ocfs2/dlm/dlmthread.c            |   16 +-
- fs/ocfs2/dlm/dlmunlock.c            |    3 +-
- fs/ocfs2/file.c                     |  215 +++++++--
- fs/ocfs2/inode.c                    |   45 +--
- fs/ocfs2/inode.h                    |    2 +
- fs/ocfs2/journal.c                  |   26 +-
- fs/ocfs2/journal.h                  |   15 +-
- fs/ocfs2/localalloc.c               |  275 ++++++++----
- fs/ocfs2/localalloc.h               |    3 +
- fs/ocfs2/mmap.c                     |   48 +--
- fs/ocfs2/namei.c                    |   91 ++---
- fs/ocfs2/ocfs2.h                    |   22 +
- fs/ocfs2/ocfs2_fs.h                 |  144 +++++-
- fs/ocfs2/quota_global.c             |    4 +-
- fs/ocfs2/quota_local.c              |   50 +--
- fs/ocfs2/refcounttree.c             |   74 ++--
- fs/ocfs2/refcounttree.h             |    4 +-
- fs/ocfs2/reservations.c             |  847 ++++++++++++++++++++++++++++++++
- fs/ocfs2/reservations.h             |  159 ++++++
- fs/ocfs2/resize.c                   |   19 +-
- fs/ocfs2/suballoc.c                 |  688 ++++++++++++++++++---------
- fs/ocfs2/suballoc.h                 |   21 +-
- fs/ocfs2/super.c                    |   88 +++-
- fs/ocfs2/super.h                    |    7 +
- fs/ocfs2/xattr.c                    |  103 ++---
- 41 files changed, 2596 insertions(+), 1491 deletions(-)
- create mode 100644 fs/ocfs2/reservations.c
- create mode 100644 fs/ocfs2/reservations.h
+Use request_threaded_irq() with IRQF_ONESHOT.
+
+> +/**
+> + * da9052_tsi_start_sampling:	Called by TSI driver to indicate start of data
+> + * sampling
+> + * @param void
+> + * @return int status
+> + */
+> +s32 da9052_tsi_start_sampling(void){
+
+This and all the other touchscreen stuff in here almost certainly want
+to be part of your touchscreen driver.
+
+> +/**
+> + * da9052_eh_resume: Power Management support function
+> + * 
+> + * @param *dev   pointer to platform device
+> + * @return s32 status of resume operation
+> + */
+> +static s32 da9052_eh_resume(struct platform_device *dev)
+> +{
+> +	/* Put your resume related operations here */
+> +	printk(KERN_INFO "%s: called\n", __FUNCTION__);
+> +	return (SUCCESS);
+> +}
+
+As with your other similar suspend and resume callbacks if this is
+really needed you should provide platform data based callbacks rather
+than expecting users to modify the driver - remember, people might want
+to submit their boards to mainline.  It would seem very unusual to use
+most if not all of these, though.
+
+> +	depends on MFD_DA9052
+> +config MFD_DA9052_SPI
+> +	bool "SPI"
+> +	select SPI
+> +	select GPIOLIB
+> +	help
+> +	  Say Y  to select SPI serial interface for DA9052 chip
+> +
+> +config MFD_DA9052_I2C
+> +	bool "I2C"
+> +	select I2C
+> +	help
+> +	  Say Y  to select I2C serial interface for DA9052 chip
+
+There should be no reason not to support building both bus types into
+the same kernel.  Quite a few drivers in the kernel provide examples of
+doing this.
+
+> --- linux-2.6.33.2/include/linux/compiler-gcc4.h	2010-04-02 04:02:33.000000000 +0500
+> +++ linux-2.6.33.2_patch/include/linux/compiler-gcc4.h	2010-05-18 15:29:36.000000000 +0500
+> @@ -3,9 +3,19 @@
+>  #endif
+>  
+>  /* GCC 4.1.[01] miscompiles __weak */
+> +#define GCC_VERSION (__GNUC__ * 10000 \
+> +		     + __GNUC_MINOR__ * 100 \
+> +		     + __GNUC_PATCHLEVEL__)
+> +
+
+The changes in here are totally unrelated to this device and should be
+sumbitted separately along with an explanation of the intention.
+
+> +
+> +/* Channel Definations */
+> +#define ADC_VDDOUT					0
+> +#define ADC_ICH						1
+> +#define ADC_TBAT					2
+
+These any many of the other definitions in your headers are likely
+collide with other users - they should be namespaced to avoid this.
