@@ -1,58 +1,180 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758767Ab0EUWjW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 18:39:22 -0400
-Received: from e1.ny.us.ibm.com ([32.97.182.141]:34697 "EHLO e1.ny.us.ibm.com"
+	id S1758761Ab0EUWqV (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 18:46:21 -0400
+Received: from tundra.namei.org ([65.99.196.166]:54336 "EHLO tundra.namei.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758717Ab0EUWjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 18:39:20 -0400
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current
- -git
-From: john stultz <johnstul@us.ibm.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
-References: <201005212343.25184.rjw@sisk.pl>
-	 <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 15:39:11 -0700
-Message-ID: <1274481551.5630.31.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1754616Ab0EUWqT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 18:46:19 -0400
+Date: Sat, 22 May 2010 08:44:58 +1000 (EST)
+From: James Morris <jmorris@namei.org>
+To: linux-security-module@vger.kernel.org
+cc: linux-kernel@vger.kernel.org, lwn@lwn.net, fedora-selinux-list@redhat.com,
+       selinux@tycho.nsa.gov, "C. Craig Ross" <ccr@linuxfoundation.org>,
+       ubuntu-hardened@lists.ubuntu.com, tomoyo-users-en@lists.sourceforge.jp,
+       netfilter-devel@vger.kernel.org, linux-crypto@vger.kernel.org,
+       Audit-ML <linux-audit@redhat.com>, lss-pc@ext.namei.org,
+       gentoo-hardened@gentoo.org
+Subject: [ANN] Linux Security Summit 2010 - Announcement and CFP
+Message-ID: <alpine.LRH.2.00.1005220826560.10931@tundra.namei.org>
+User-Agent: Alpine 2.00 (LRH 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-21 at 15:19 -0700, Linus Torvalds wrote:
-> 
-> On Fri, 21 May 2010, Rafael J. Wysocki wrote:
-> > 
-> > Trying to boot current -git on Acer Ferrari One (64-bit), I get mount errors
-> > for all filesystems telling me that "now = (null) is in the future" and when
-> > run 'date' it says: "date: time <long negative number> is out of range".
-> > 
-> > Any ideas anyone?
-> 
-> No ideas, but apart from the obvious "maybe you can pin it down a bit with 
-> a few bisection compiles", it's almost certainly through the timer tree 
-> merge from Thomas, which included various wall-clock-time changes from 
-> John Stultz & co.
-> 
-> I don't see anything else that would likely affect any wall-clock time, 
-> but who knows..
-> 
-> John, Thomas? Ring any bells?
+==========================================================================
 
-Hrm..  From my queue, I'd probably try reverting the following first:
+                  ANNOUNCEMENT AND CALL FOR PARTICIPATION                
 
-6a867a3|| time: Remove xtime_cache
+                        LINUX SECURITY SUMMIT 2010      
 
-Rafael: I assume 2.6.34 is fine?
+==========================================================================
 
-thanks
--john
+
+DESCRIPTION
+
+  The Linux Security Summit is a technical forum for collaboration
+  between Linux developers, researchers, and end users.  Its primary aim
+  is to foster community efforts in analyzing and solving Linux security
+  challenges.
+
+  The format of the summit will be:
+  
+    * Selected brief presentations
+    * Lightning talks
+    * Q&A panel sessions 
+  
+
+DATES / LOCATION
+
+  The Linux Security Summit for 2010 will be held on the 9th of August in
+  Boston, USA.  It will be co-located with LinuxCon [1], at the
+  Renaissance Boston Waterfront.
+  
+  Note that Linux Security Summit attendees must be registered to attend
+  LinuxCon.  See the LinuxCon site for details on registration, travel,
+  and accommodation.
+  
+    http://events.linuxfoundation.org/events/linuxcon
+
+  The CFP is currently open, and will close on 4th of June (see below).
+  
+  Accepted speakers will be notified by 9th of June.
+
+
+WHO SHOULD ATTEND
+
+  The event is open to all registered LinuxCon attendees.
+  
+  You do not have to be a "security person" to attend -- we're seeking a
+  diverse range of attendees, and welcome the participation of general
+  developers, researchers, operations, and end-users.
+
+  There will be several panel sessions in addition to brief, selected
+  presentations, with a strong focus on discussion.
+
+
+CALL FOR PARTICIPATION
+
+  The program committee currently seeks proposals for:
+
+  Presentations:
+  
+    Brief technical talks in 30 minute slots, including at least 10
+    minutes of discussion (i.e.  the maximum length of the presentation
+    alone is 20 minutes).  Papers are encouraged, and slides should be
+    minimal.
+    
+    Presentation abstracts should be approximately 150 words in length.
+
+
+  Panel discussion topics:
+  
+    If you'd like to see an issue discussed in a Q&A style panel, send it
+    in.  Note that this may result in you volunteering to participate in
+    a panel.
+
+    
+  Topic areas include, but are not limited to:
+  
+    * System hardening
+    * Access control
+    * Cryptography
+    * Integrity control
+    * Hardware security
+    * Networking
+    * Storage
+    * Virtualization
+    * Desktop
+    * Tools
+    * Management
+    * Case studies
+    * Emerging technologies, threats & techniques 
+    
+  Proposals must be submitted before the end of June 4th, 2010.
+  
+  (That's not far away!)
+  
+  Accepted speakers will be notified by June 9th, 2010.
+  
+  We will probably receive more proposals than can be accommodated.  If
+  your talk is not accepted, you may wish to give a lightning talk or
+  raise a topic in a discussion panel.
+  
+  Lightning talks and discussion panel agendas will be coordinated closer
+  to the event on the event mailing list, and on-site.
+
+  Proposals should be submitted in plain text via email to the program
+  committee at:  lss-pc (_at_) ext.namei.org
+
+
+MAILING LIST
+
+  Everyone planning to attend should join the event mailing list:
+  
+     https://ext.namei.org/mailman/listinfo/linux-security-summit
+     
+  Coordination of panel discussions and lightning talks will occur on the
+  list.  Updates and announcements about the event will also be sent to
+  the list.
+  
+
+WEB SITE
+
+  Please also note the Linux Security Summit web site:
+  
+    https://security.wiki.kernel.org/index.php/LinuxSecuritySummit2010  
+ 
+  which will be kept updated with all available information on the event.
+
+
+PROGRAM COMMITTEE
+
+  The Linux Security Summit for 2010 is organized by:
+
+    * James Morris, Red Hat
+    * Serge Hallyn, IBM
+    * Paul Moore, HP
+    * Stephen Smalley, NSA
+    * Joshua Brindle, Tresys
+    * Tetsuo Handa, NTT Data
+    * Herbert Xu, Red Hat
+    * John Johansen, Canonical
+    * Andrew G. Morgan, Google
+    * Kees Cook, Canonical
+    * Casey Schaufler, Smack Project 
+
+  
+  The program committee may be contacted as a group via email:
+
+     lss-pc (_at_) ext.namei.org
+   
+
+REFERENCES  
+
+  [1] LinuxCon: http://events.linuxfoundation.org/events/linuxcon
+
 
 
