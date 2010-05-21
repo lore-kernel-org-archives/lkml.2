@@ -1,110 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755426Ab0EUAjq (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:39:46 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:45908 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753549Ab0EUAjo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:39:44 -0400
-Date: Fri, 21 May 2010 10:39:40 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Greg KH <greg@kroah.com>, Takashi Iwai <tiwai@suse.de>
-Cc: Daniel Mack <daniel@caiaq.de>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: manual merge of the usb tree with the sound tree
-Message-Id: <20100521103940.927764a0.sfr@canb.auug.org.au>
-In-Reply-To: <20100430055914.GA30801@buzzloop.caiaq.de>
-References: <20100430155134.a35db59a.sfr@canb.auug.org.au>
-	<20100430055914.GA30801@buzzloop.caiaq.de>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755329Ab0EUAtN (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:49:13 -0400
+Received: from threatwall.zlynx.org ([199.45.143.218]:34287 "EHLO zlynx.org"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1754890Ab0EUAtM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 20:49:12 -0400
+Message-ID: <4BF5D875.3030900@acm.org>
+Date: Thu, 20 May 2010 18:48:53 -0600
+From: Zan Lynx <zlynx@acm.org>
+User-Agent: Mozilla/5.0 (Macintosh; U; Intel Mac OS X 10.6; en-US; rv:1.9.1.10) Gecko/20100512 Thunderbird/3.0.5
+MIME-Version: 1.0
+To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+CC: lwoodman@redhat.com, LKML <linux-kernel@vger.kernel.org>,
+       linux-mm <linux-mm@kvack.org>, Nick Piggin <npiggin@suse.de>,
+       Jan Kara <jack@suse.cz>
+Subject: Re: RFC: dirty_ratio back to 40%
+References: <4BF51B0A.1050901@redhat.com> <20100521083408.1E36.A69D9226@jp.fujitsu.com>
+In-Reply-To: <20100521083408.1E36.A69D9226@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Envelope-From: zlynx@acm.org
+X-Spam-Id: 20100520/1OFGQ3-0007pE-8Y-linux-kernel@vger.kernel.org:zlynx@acm.org:199.45.143.218
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg, Takashi,
-
-On Fri, 30 Apr 2010 07:59:14 +0200 Daniel Mack <daniel@caiaq.de> wrote:
+On 5/20/10 5:48 PM, KOSAKI Motohiro wrote:
+> Hi
 >
-> On Fri, Apr 30, 2010 at 03:51:34PM +1000, Stephen Rothwell wrote:
-> > Today's linux-next merge of the usb tree got a conflict in
-> > sound/usb/usbaudio.c between commit
-> > e5779998bf8b70e48a6cc208c8b61b33bd6117ea ("ALSA: usb-audio: refactor
-> > code") from the sound tree and commit
-> > 3cc96f50329227fbf34de2459491901b6ee1c98c ("USB: rename usb_buffer_alloc()
-> > and usb_buffer_free() users") from the usb tree.
-> > 
-> > The former moved the relevant code from usbaudio.c to urb.c, so I applied
-> > the changes from the latter to that (see below).
-> 
-> Oops, yes. Ironically, these are both my patches.
-> Thanks for fixing this up, Stephen.
+> CC to Nick and Jan
+>
+>> We've seen multiple performance regressions linked to the lower(20%)
+>> dirty_ratio.  When performing enough IO to overwhelm the background
+>> flush daemons the percent of dirty pagecache memory quickly climbs
+>> to the new/lower dirty_ratio value of 20%.  At that point all writing
+>> processes are forced to stop and write dirty pagecache pages back to disk.
+>> This causes performance regressions in several benchmarks as well as causing
+>> a noticeable overall sluggishness.  We all know that the dirty_ratio is
+>> an integrity vs performance trade-off but the file system journaling
+>> will cover any devastating effects in the event of a system crash.
+>>
+>> Increasing the dirty_ratio to 40% will regain the performance loss seen
+>> in several benchmarks.  Whats everyone think about this???
+>
+> In past, Jan Kara also claim the exactly same thing.
+>
+> 	Subject: [LSF/VM TOPIC] Dynamic sizing of dirty_limit
+> 	Date: Wed, 24 Feb 2010 15:34:42 +0100
+>
+> 	>  (*) We ended up increasing dirty_limit in SLES 11 to 40% as it used to be
+> 	>  with old kernels because customers running e.g. LDAP (using BerkelyDB
+> 	>  heavily) were complaining about performance problems.
+>
+> So, I'd prefer to restore the default rather than both Redhat and SUSE apply exactly
+> same distro specific patch. because we can easily imazine other users will face the same
+> issue in the future.
 
-The sound tree has now been merged int Linus', so this patch needs to be
-applied to the usb tree before it is merged into Linus'.   This patch can
-be applied to Linus' tree right now, as usb_free_coherent() already
-exists there.
+On desktop systems the low dirty limits help maintain interactive feel. 
+Users expect applications that are saving data to be slow. They do not 
+like it when every application in the system randomly comes to a halt 
+because of one program stuffing data up to the dirty limit.
 
-Here is the patch again:
+The cause and effect for the system slowdown is clear when the dirty 
+limit is low. "I saved data and now the system is slow until it is 
+done." When the dirty page ratio is very high, the cause and effect is 
+disconnected. "I was just web surfing and the system came to a halt."
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 30 Apr 2010 14:44:54 +1000
-Subject: [PATCH] sound: fixup for usb_buffer_alloc/free rename
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- sound/usb/urb.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/sound/usb/urb.c b/sound/usb/urb.c
-index 5570a2b..de607d4 100644
---- a/sound/usb/urb.c
-+++ b/sound/usb/urb.c
-@@ -101,7 +101,7 @@ static void release_urb_ctx(struct snd_urb_ctx *u)
- {
- 	if (u->urb) {
- 		if (u->buffer_size)
--			usb_buffer_free(u->subs->dev, u->buffer_size,
-+			usb_free_coherent(u->subs->dev, u->buffer_size,
- 					u->urb->transfer_buffer,
- 					u->urb->transfer_dma);
- 		usb_free_urb(u->urb);
-@@ -154,7 +154,7 @@ void snd_usb_release_substream_urbs(struct snd_usb_substream *subs, int force)
- 		release_urb_ctx(&subs->dataurb[i]);
- 	for (i = 0; i < SYNC_URBS; i++)
- 		release_urb_ctx(&subs->syncurb[i]);
--	usb_buffer_free(subs->dev, SYNC_URBS * 4,
-+	usb_free_coherent(subs->dev, SYNC_URBS * 4,
- 			subs->syncbuf, subs->sync_dma);
- 	subs->syncbuf = NULL;
- 	subs->nurbs = 0;
-@@ -308,8 +308,8 @@ int snd_usb_init_substream_urbs(struct snd_usb_substream *subs,
- 		if (!u->urb)
- 			goto out_of_memory;
- 		u->urb->transfer_buffer =
--			usb_buffer_alloc(subs->dev, u->buffer_size, GFP_KERNEL,
--					 &u->urb->transfer_dma);
-+			usb_alloc_coherent(subs->dev, u->buffer_size,
-+					   GFP_KERNEL, &u->urb->transfer_dma);
- 		if (!u->urb->transfer_buffer)
- 			goto out_of_memory;
- 		u->urb->pipe = subs->datapipe;
-@@ -321,7 +321,7 @@ int snd_usb_init_substream_urbs(struct snd_usb_substream *subs,
- 
- 	if (subs->syncpipe) {
- 		/* allocate and initialize sync urbs */
--		subs->syncbuf = usb_buffer_alloc(subs->dev, SYNC_URBS * 4,
-+		subs->syncbuf = usb_alloc_coherent(subs->dev, SYNC_URBS * 4,
- 						 GFP_KERNEL, &subs->sync_dma);
- 		if (!subs->syncbuf)
- 			goto out_of_memory;
--- 
-1.7.1
-
+I think we should expect server admins to do more tuning than desktop 
+users, so the default limits should stay low in my opinion.
 
 -- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Zan Lynx
+zlynx@acm.org
+
+"Knowledge is Power.  Power Corrupts.  Study Hard.  Be Evil."
