@@ -1,43 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758286Ab0EUPP0 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 11:15:26 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:52325 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758268Ab0EUPPX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 11:15:23 -0400
-Date: Fri, 21 May 2010 11:15:18 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
-       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
-       hch@infradead.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100521151518.GA12752@infradead.org>
-References: <20100512212403.GE3597@localhost.localdomain> <20100513013926.GD27011@dhcp231-156.rdu.redhat.com> <20100514010042.GI13617@dastard> <20100514033057.GL27011@dhcp231-156.rdu.redhat.com> <20100514064145.GJ13617@dastard> <20100514072219.GC4706@laptop>
+	id S1758288Ab0EUPQt (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 11:16:49 -0400
+Received: from kroah.org ([198.145.64.141]:58738 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756183Ab0EUPQr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 11:16:47 -0400
+Date: Fri, 21 May 2010 08:13:23 -0700
+From: Greg KH <greg@kroah.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: David Miller <davem@davemloft.net>, sfr@canb.auug.org.au,
+       linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       therbert@google.com, netdev@vger.kernel.org
+Subject: Re: linux-next: manual merge of the driver-core tree with the net
+ tree
+Message-ID: <20100521151323.GA32573@kroah.com>
+References: <20100521162134.6b6326bd.sfr@canb.auug.org.au>
+ <m1tyq1wy4h.fsf@fess.ebiederm.org>
+ <20100520.235008.97331614.davem@davemloft.net>
+ <m1pr0pwvgk.fsf@fess.ebiederm.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100514072219.GC4706@laptop>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+In-Reply-To: <m1pr0pwvgk.fsf@fess.ebiederm.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Nick, what exactly is the problem with the reserve + allocate design?
+On Fri, May 21, 2010 at 12:43:55AM -0700, Eric W. Biederman wrote:
+> David Miller <davem@davemloft.net> writes:
+> 
+> > From: ebiederm@xmission.com (Eric W. Biederman)
+> > Date: Thu, 20 May 2010 23:46:22 -0700
+> >
+> >> It looks right, except perhaps the RPS code looks like it will cause a
+> >> build failure with sysfs disabled, but that has nothing to do with your
+> >> changes.
+> >
+> > CONFIG_RPS depends upon CONFIG_SMP && CONFIG_SYSFS, so no that build
+> > failure is not possible.
+> 
+> That's the bit I'm missing.  My apologies if I caused any unnecessary worry.
 
-In a delalloc filesystem (which is all those that will care about high
-performance large writes) the write path fundamentally consists of those
-two operations.  Getting rid of the get_blocks mess and replacing it
-with a dedicated operations vector will simplify things a lot.
+I've now fixed this all up in my tree and have pushed it out.
+I'll also go push the patches themselves to Linus later today.
 
-Punching holes is a rather problematic operation, and as mentioned not
-actually implemented for most filesystems - just decrementing counters
-on errors increases the chances that our error handling will actually
-work massively.
+thanks,
 
-
+greg k-h
