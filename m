@@ -1,69 +1,141 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0EUJlu (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 05:41:50 -0400
-Received: from mailout1.w1.samsung.com ([210.118.77.11]:26279 "EHLO
-	mailout1.w1.samsung.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756225Ab0EUJls convert rfc822-to-8bit (ORCPT
+	id S1758202Ab0EUJoa (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 05:44:30 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:38155 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756564Ab0EUJo2 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 05:41:48 -0400
-Date: Fri, 21 May 2010 11:42:18 +0200
-From: =?utf-8?B?TWljaGHFgiBOYXphcmV3aWN6?= <m.nazarewicz@samsung.com>
-Subject: Re: [PATCH 5/8] USB: gadget: f_fs: use usb_string_ids_n()
-In-reply-to: <4BF56AFF.1010406@ru.mvista.com>
-To: Sergei Shtylyov <sshtylyov@mvista.com>
-Cc: linux-usb@vger.kernel.org, Kyungmin Park <kyungmin.park@samsung.com>,
-       Marek Szyprowski <m.szyprowski@samsung.com>,
-       linux-kernel@vger.kernel.org
-Message-id: <op.vc1uksfa7p4s8u@pikus>
-Organization: Samsung Electronics
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8; format=flowed; delsp=yes
-Content-transfer-encoding: 8BIT
-User-Agent: Opera Mail/10.10 (Linux)
-References: <cover.1274187425.git.m.nazarewicz@samsung.com>
- <6577770c2519efd2193ed6454dcd895472bba404.1274187425.git.m.nazarewicz@samsung.com>
- <f888a55a4bd4d631c0d36e8463bb5bbb8e9d7a3d.1274187425.git.m.nazarewicz@samsung.com>
- <d38bd775a3b1c58255e19fda826cae7aa66a0a20.1274187425.git.m.nazarewicz@samsung.com>
- <906519813412e3970e06499f0dbe2823280ed54a.1274187425.git.m.nazarewicz@samsung.com>
- <a2865e8e9c3a9a305833ffea9caaec661082d5cf.1274187425.git.m.nazarewicz@samsung.com>
- <4BF56AFF.1010406@ru.mvista.com>
+	Fri, 21 May 2010 05:44:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=P60BAhVT0IhclJrZfTvY/ZpqwGnfQzxsbWXo+1Mqh1WOAnDzkrOLVdoBuTRS9afjnQ
+         F4gIzDZNV5mfBdszeg+Z0+n55j3nNLCzbKeGCra3V4TeHkgJ6bs6w7aNmkRgg8AVh03q
+         i79bQTZv6FRyRDQCOPGzOldpzsctr37B16dFU=
+Date: Fri, 21 May 2010 11:44:35 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 05/10] perf-record: Share per-cpu buffers
+Message-ID: <20100521094434.GB30108@nowhere>
+References: <20100521090201.326791353@chello.nl> <20100521090710.634824884@chello.nl>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521090710.634824884@chello.nl>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Michal Nazarewicz wrote:
->> @@ -1393,25 +1396,17 @@ static int functionfs_bind(struct ffs_data *ffs, struct usb_composite_dev *cdev)
->>  	ffs->ep0req->complete = ffs_ep0_complete;
->>  	ffs->ep0req->context = ffs;
->>
->> -	/* Get strings identifiers */
->> -	for (count = ffs->strings_count, i = 0; i < count; ++i) {
->> -		struct usb_gadget_strings **lang;
->> -
->> -		int id = usb_string_id(cdev);
->> -		if (unlikely(id < 0)) {
->> -			usb_ep_free_request(cdev->gadget->ep0, ffs->ep0req);
->> -			ffs->ep0req = NULL;
->> -			return id;
->> +	lang = ffs->stringtabs;
->> +	while (*lang) {
->> +		struct usb_string *str = (*lang)->strings;
->> +		int id = first_id;
->> +		for (; str->s; ++id, ++str) {
->> +			str->id = id;
->>  		}
+On Fri, May 21, 2010 at 11:02:06AM +0200, Peter Zijlstra wrote:
+> It seems a waste of space to create a buffer per event, share it per-cpu.
+> 
+> Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+> ---
+>  tools/perf/builtin-record.c |   52 +++++++++++++++++++++++---------------------
+>  1 file changed, 28 insertions(+), 24 deletions(-)
+> 
+> Index: linux-2.6/tools/perf/builtin-record.c
+> ===================================================================
+> --- linux-2.6.orig/tools/perf/builtin-record.c
+> +++ linux-2.6/tools/perf/builtin-record.c
+> @@ -85,7 +85,7 @@ struct mmap_data {
+>  	unsigned int		prev;
+>  };
+>  
+> -static struct mmap_data		*mmap_array[MAX_NR_CPUS][MAX_COUNTERS];
+> +static struct mmap_data		mmap_array[MAX_NR_CPUS];
+>  
+>  static unsigned long mmap_read_head(struct mmap_data *md)
+>  {
+> @@ -380,18 +380,29 @@ try_again:
+>  		if (group && group_fd == -1)
+>  			group_fd = fd[nr_cpu][counter][thread_index];
+>  
+> -		event_array[nr_poll].fd = fd[nr_cpu][counter][thread_index];
+> -		event_array[nr_poll].events = POLLIN;
+> -		nr_poll++;
+> -
+> -		mmap_array[nr_cpu][counter][thread_index].counter = counter;
+> -		mmap_array[nr_cpu][counter][thread_index].prev = 0;
+> -		mmap_array[nr_cpu][counter][thread_index].mask = mmap_pages*page_size - 1;
+> -		mmap_array[nr_cpu][counter][thread_index].base = mmap(NULL, (mmap_pages+1)*page_size,
+> -			PROT_READ|PROT_WRITE, MAP_SHARED, fd[nr_cpu][counter][thread_index], 0);
+> -		if (mmap_array[nr_cpu][counter][thread_index].base == MAP_FAILED) {
+> -			error("failed to mmap with %d (%s)\n", errno, strerror(errno));
+> -			exit(-1);
+> +		if (counter || thread_index) {
+> +			ret = ioctl(fd[nr_cpu][counter][thread_index],
+> +					PERF_EVENT_IOC_SET_OUTPUT,
+> +					fd[nr_cpu][0][0]);
+> +			if (ret) {
+> +				error("failed to set output: %d (%s)\n", errno,
+> +						strerror(errno));
+> +				exit(-1);
+> +			}
+> +		} else {
+> +			mmap_array[nr_cpu].counter = counter;
+> +			mmap_array[nr_cpu].prev = 0;
+> +			mmap_array[nr_cpu].mask = mmap_pages*page_size - 1;
 
-On Thu, 20 May 2010 19:01:51 +0200, Sergei Shtylyov <sshtylyov@mvista.com> wrote:
->     {} not needed here.
 
-Thanks.
 
-I'll wait for some other comments and resend the patchset
-or this single patch or whatever will be appropriate.
+If you do this multiplex per cpu (which I think is a very good thing), you
+should also increase the default value of mmap_pages as it might not be big
+enough anymore.
 
--- 
-Best regards,                                        _     _
-| Humble Liege of Serenely Enlightened Majesty of  o' \,=./ `o
-| Computer Science,  Michał "mina86" Nazarewicz       (o o)
-+----[mina86*mina86.com]---[mina86*jabber.org]----ooO--(_)--Ooo--
+
+
+> +			mmap_array[nr_cpu].base = mmap(NULL, (mmap_pages+1)*page_size,
+> +				PROT_READ|PROT_WRITE, MAP_SHARED, fd[nr_cpu][counter][thread_index], 0);
+> +			if (mmap_array[nr_cpu].base == MAP_FAILED) {
+> +				error("failed to mmap with %d (%s)\n", errno, strerror(errno));
+> +				exit(-1);
+> +			}
+> +
+> +			event_array[nr_poll].fd = fd[nr_cpu][counter][thread_index];
+> +			event_array[nr_poll].events = POLLIN;
+> +			nr_poll++;
+>  		}
+>  
+>  		if (filter != NULL) {
+> @@ -492,16 +503,11 @@ static struct perf_event_header finished
+>  
+>  static void mmap_read_all(void)
+>  {
+> -	int i, counter, thread;
+> +	int i;
+>  
+>  	for (i = 0; i < nr_cpu; i++) {
+> -		for (counter = 0; counter < nr_counters; counter++) {
+> -			for (thread = 0; thread < thread_num; thread++) {
+> -				if (mmap_array[i][counter][thread].base)
+> -					mmap_read(&mmap_array[i][counter][thread]);
+> -			}
+> -
+> -		}
+> +		if (mmap_array[i].base)
+> +			mmap_read(&mmap_array[i]);
+>  	}
+>  
+>  	if (perf_header__has_feat(&session->header, HEADER_TRACE_INFO))
+> @@ -876,9 +882,7 @@ int cmd_record(int argc, const char **ar
+>  	for (i = 0; i < MAX_NR_CPUS; i++) {
+>  		for (j = 0; j < MAX_COUNTERS; j++) {
+>  			fd[i][j] = malloc(sizeof(int)*thread_num);
+> -			mmap_array[i][j] = zalloc(
+> -				sizeof(struct mmap_data)*thread_num);
+> -			if (!fd[i][j] || !mmap_array[i][j])
+> +			if (!fd[i][j])
+>  				return -ENOMEM;
+>  		}
+>  	}
+> 
+> 
+
