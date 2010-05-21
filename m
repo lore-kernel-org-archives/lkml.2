@@ -1,66 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753899Ab0EUNFK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 09:05:10 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:41832 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751139Ab0EUNFH (ORCPT
+	id S1754117Ab0EUNL6 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 09:11:58 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:40614 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753169Ab0EUNL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 09:05:07 -0400
-Date: Fri, 21 May 2010 15:04:17 +0200
-From: Wolfram Sang <w.sang@pengutronix.de>
-To: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>
-Subject: Re: [git pull] Please pull powerpc.git next branch
-Message-ID: <20100521130417.GB27829@pengutronix.de>
-References: <1274433088.1931.63.camel@pasglop>
+	Fri, 21 May 2010 09:11:56 -0400
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="O5XBE6gyVG5Rl6Rj"
-Content-Disposition: inline
-In-Reply-To: <1274433088.1931.63.camel@pasglop>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: wsa@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTilI3RYcybjG7b1juTa3H31ImxQI1-2R_l7q0yc1@mail.gmail.com>
+References: <1274371640.302.5.camel@yio.site> <20100521113449.GM3991@agk-dp.fab.redhat.com> 
+	<AANLkTilI3RYcybjG7b1juTa3H31ImxQI1-2R_l7q0yc1@mail.gmail.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 21 May 2010 15:11:38 +0200
+Message-ID: <AANLkTinQwEqFKAiyAwVPwmzLtUXJkaOdZ0c88O_tfp-1@mail.gmail.com>
+Subject: Re: add devname module aliases to allow module on-demand auto-loading
+To: Alasdair G Kergon <agk@redhat.com>, Kay Sievers <kay.sievers@vrfy.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>,
+       Miklos Szeredi <miklos@szeredi.hu>,
+       Chris Mason <chris.mason@oracle.com>,
+       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+       Ian Kent <raven@themaw.net>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Fri, May 21, 2010 at 13:51, Kay Sievers <kay.sievers@vrfy.org> wrote:
+> On Fri, May 21, 2010 at 13:34, Alasdair G Kergon <agk@redhat.com> wrote:
 
---O5XBE6gyVG5Rl6Rj
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+> There is no harm to make a well-know device node static, it just
+> solves a lot of problems, and also makes it possible to work off of a
+> static /dev.
 
-> Wolfram Sang (4):
->       powerpc/pmac: Fix dangling pointers
->       i2c/mpc: Drop NO_IRQ
->       i2c/cpm: Drop NO_IRQ
->       i2c/ibm-iic: Drop NO_IRQ
+To illustrate:
 
-Sorry for the confusion, but the other Ben (Dooks) has pushed those
-NO_IRQ-thigies meanwhile.
+On my box without this patch:
+  dmsetup version
+  Library version:   1.02.42 (2010-01-14)
+  /proc/misc: No entry for device-mapper found
+  Is device-mapper driver missing from kernel?
+  Failure to communicate with kernel device-mapper driver.
 
---=20
-Pengutronix e.K.                           | Wolfram Sang                |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+And the same box just with this patch, nothing else changed:
+  dmsetup version
+  Library version:   1.02.42 (2010-01-14)
+  Driver version:    4.17.0
 
---O5XBE6gyVG5Rl6Rj
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+But its up to you to care if device-mapper just works, or if there is
+stuff like an init script with modprobe needed to load stuff that
+might never be needed. :)
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
+This is surely not about dynamic vs. static, it is about race-free
+on-demand activation of services and subsystems.
 
-iEYEARECAAYFAkv2hNEACgkQD27XaX1/VRu60QCgm3W5fvkTNJzcby/If0cSWC9d
-I8EAn1MORnPkXUZ46HFyr5w9P2TDOxaT
-=Ocp+
------END PGP SIGNATURE-----
-
---O5XBE6gyVG5Rl6Rj--
+Thanks,
+Kay
