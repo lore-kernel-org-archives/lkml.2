@@ -1,24 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758755Ab0EUWic (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 18:38:32 -0400
-Received: from gate.crashing.org ([63.228.1.57]:60249 "EHLO gate.crashing.org"
+	id S1758767Ab0EUWjW (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 18:39:22 -0400
+Received: from e1.ny.us.ibm.com ([32.97.182.141]:34697 "EHLO e1.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758717Ab0EUWia (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 18:38:30 -0400
-Subject: Re: [git pull] Please pull powerpc.git next branch
-From: Benjamin Herrenschmidt <benh@kernel.crashing.org>
-To: Wolfram Sang <w.sang@pengutronix.de>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       linuxppc-dev list <linuxppc-dev@ozlabs.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel list <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100521130417.GB27829@pengutronix.de>
-References: <1274433088.1931.63.camel@pasglop>
-	 <20100521130417.GB27829@pengutronix.de>
+	id S1758717Ab0EUWjU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 18:39:20 -0400
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current
+ -git
+From: john stultz <johnstul@us.ibm.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
+References: <201005212343.25184.rjw@sisk.pl>
+	 <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 May 2010 08:38:13 +1000
-Message-ID: <1274481493.1931.98.camel@pasglop>
+Date: Fri, 21 May 2010 15:39:11 -0700
+Message-ID: <1274481551.5630.31.camel@localhost.localdomain>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
@@ -26,21 +26,33 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 2010-05-21 at 15:04 +0200, Wolfram Sang wrote:
-> > Wolfram Sang (4):
-> >       powerpc/pmac: Fix dangling pointers
-> >       i2c/mpc: Drop NO_IRQ
-> >       i2c/cpm: Drop NO_IRQ
-> >       i2c/ibm-iic: Drop NO_IRQ
+On Fri, 2010-05-21 at 15:19 -0700, Linus Torvalds wrote:
 > 
-> Sorry for the confusion, but the other Ben (Dooks) has pushed those
-> NO_IRQ-thigies meanwhile.
+> On Fri, 21 May 2010, Rafael J. Wysocki wrote:
+> > 
+> > Trying to boot current -git on Acer Ferrari One (64-bit), I get mount errors
+> > for all filesystems telling me that "now = (null) is in the future" and when
+> > run 'date' it says: "date: time <long negative number> is out of range".
+> > 
+> > Any ideas anyone?
+> 
+> No ideas, but apart from the obvious "maybe you can pin it down a bit with 
+> a few bisection compiles", it's almost certainly through the timer tree 
+> merge from Thomas, which included various wall-clock-time changes from 
+> John Stultz & co.
+> 
+> I don't see anything else that would likely affect any wall-clock time, 
+> but who knows..
+> 
+> John, Thomas? Ring any bells?
 
-That shouldn't be a problem. git or Linus should sort it out easily :-)
-I did a test merge before sending the pull request and there was nothing
-it wouldn't resolve automatically.
+Hrm..  From my queue, I'd probably try reverting the following first:
 
-Cheers,
-Ben.
+6a867a3|| time: Remove xtime_cache
+
+Rafael: I assume 2.6.34 is fine?
+
+thanks
+-john
 
 
