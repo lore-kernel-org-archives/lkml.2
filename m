@@ -1,88 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757334Ab0EUA3U (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:29:20 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:38595 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757254Ab0EUA3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:29:17 -0400
-Date: Fri, 21 May 2010 10:29:13 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: "John W. Linville" <linville@tuxdriver.com>,
-       David Miller <davem@davemloft.net>,
-       Linus <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Helmut Schaa <Helmut.Schaa@gmx.de>,
-       netdev@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the suspend tree
-Message-Id: <20100521102913.ae4e8cd2.sfr@canb.auug.org.au>
-In-Reply-To: <201005080413.24465.rjw@sisk.pl>
-References: <20100507130821.3fb72c9d.sfr@canb.auug.org.au>
-	<201005080413.24465.rjw@sisk.pl>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755203Ab0EUAhD (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:37:03 -0400
+Received: from fgwmail5.fujitsu.co.jp ([192.51.44.35]:50903 "EHLO
+	fgwmail5.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751695Ab0EUAhA (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 20:37:00 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Wu Fengguang <fengguang.wu@intel.com>
+Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
+Cc: kosaki.motohiro@jp.fujitsu.com, "Li, Shaohua" <shaohua.li@intel.com>,
+       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <20100520010032.GC4089@localhost>
+References: <20100519174327.9591.A69D9226@jp.fujitsu.com> <20100520010032.GC4089@localhost>
+Message-Id: <20100521093629.1E44.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Fri, 21 May 2010 09:36:50 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi John, Dave,
-
-On Sat, 8 May 2010 04:13:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
->
-> On Friday 07 May 2010, Stephen Rothwell wrote:
-> > 
-> > After merging the suspend tree, today's linux-next build (x86_64
-> > allmodconfig) failed like this:
-> > 
-> > net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
-> > net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_requirement'
-> > 
-> > Caused by commit 62bad14fc6e0911a99882c261390968977d43283 ("PM QOS
-> > update") from the suspend tree interacting with commit
-> > df13cce53a7b28a81460e6bfc4857e9df4956141 ("mac80211: Improve software
-> > scan timing") from the net tree.
-> > 
-> > I have added the following merge fixup patch and can carry it as
-> > necessary:
+> Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
 > 
-> Thanks a lot, please do so if that's not a problem.
+> The preceding comment "they need to go on the active_anon lru below"
+> also needs update.
 > 
-> Both trees are based on Linus' current and I don't see a good way of fixing
-> this issue in any of them individually.
 
-The suspend tree has been merged into Linus' tree, so this patch is
-needed in the net tree before it is merged (or as part of the merge).
+Thanks. incremental patch is here.
 
-Here is the patch again:
 
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Fri, 7 May 2010 13:02:54 +1000
-Subject: [PATCH] wireless: update for pm_qos_requirement to pm_qos_request rename
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
 ---
- net/mac80211/scan.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ include/linux/swap.h |   10 ----------
+ mm/filemap.c         |    2 +-
+ 2 files changed, 1 insertions(+), 11 deletions(-)
 
-diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
-index e14c441..e1b0be7 100644
---- a/net/mac80211/scan.c
-+++ b/net/mac80211/scan.c
-@@ -510,7 +510,7 @@ static int ieee80211_scan_state_decision(struct ieee80211_local *local,
- 		bad_latency = time_after(jiffies +
- 				ieee80211_scan_get_channel_time(next_chan),
- 				local->leave_oper_channel_time +
--				usecs_to_jiffies(pm_qos_requirement(PM_QOS_NETWORK_LATENCY)));
-+				usecs_to_jiffies(pm_qos_request(PM_QOS_NETWORK_LATENCY)));
+diff --git a/include/linux/swap.h b/include/linux/swap.h
+index 18420a9..4bfd932 100644
+--- a/include/linux/swap.h
++++ b/include/linux/swap.h
+@@ -224,21 +224,11 @@ static inline void lru_cache_add_anon(struct page *page)
+ 	__lru_cache_add(page, LRU_INACTIVE_ANON);
+ }
  
- 		listen_int_exceeded = time_after(jiffies +
- 				ieee80211_scan_get_channel_time(next_chan),
+-static inline void lru_cache_add_active_anon(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_ANON);
+-}
+-
+ static inline void lru_cache_add_file(struct page *page)
+ {
+ 	__lru_cache_add(page, LRU_INACTIVE_FILE);
+ }
+ 
+-static inline void lru_cache_add_active_file(struct page *page)
+-{
+-	__lru_cache_add(page, LRU_ACTIVE_FILE);
+-}
+-
+ /* LRU Isolation modes. */
+ #define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
+ #define ISOLATE_ACTIVE 1	/* Isolate active pages. */
+diff --git a/mm/filemap.c b/mm/filemap.c
+index 023ef61..a57931a 100644
+--- a/mm/filemap.c
++++ b/mm/filemap.c
+@@ -441,7 +441,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
+ 	/*
+ 	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
+ 	 * before shmem_readpage has a chance to mark them as SwapBacked: they
+-	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
++	 * need to go on the anon lru below, and mem_cgroup_cache_charge
+ 	 * (called in add_to_page_cache) needs to know where they're going too.
+ 	 */
+ 	if (mapping_cap_swap_backed(mapping))
 -- 
-1.7.1
+1.6.5.2
 
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+
+
+
+
