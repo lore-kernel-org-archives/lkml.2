@@ -1,101 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758571Ab0EUS6L (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 14:58:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50395 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755871Ab0EUS6J (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 14:58:09 -0400
-Date: Fri, 21 May 2010 11:57:18 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Wu Fengguang <fengguang.wu@intel.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at
- first
-Message-Id: <20100521115718.552d50dd.akpm@linux-foundation.org>
-In-Reply-To: <20100521093629.1E44.A69D9226@jp.fujitsu.com>
-References: <20100519174327.9591.A69D9226@jp.fujitsu.com>
-	<20100520010032.GC4089@localhost>
-	<20100521093629.1E44.A69D9226@jp.fujitsu.com>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1758640Ab0EUS65 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 14:58:57 -0400
+Received: from cantor.suse.de ([195.135.220.2]:53395 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758279Ab0EUS64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 14:58:56 -0400
+Date: Fri, 21 May 2010 20:58:46 +0200
+From: Jan Kara <jack@suse.cz>
+To: Dave Chinner <david@fromorbit.com>
+Cc: Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@suse.de>,
+       Josef Bacik <josef@redhat.com>, linux-fsdevel@vger.kernel.org,
+       chris.mason@oracle.com, hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100521185846.GD10149@quack.suse.cz>
+References: <20100514072219.GC4706@laptop>
+ <20100514083821.GL13617@dastard>
+ <20100518063647.GD2516@laptop>
+ <20100518080503.GF2150@dastard>
+ <20100518104351.GF2516@laptop>
+ <20100518122714.GG2150@dastard>
+ <20100518150912.GI2516@laptop>
+ <20100519235054.GS8120@dastard>
+ <20100520201232.GP3395@quack.suse.cz>
+ <20100520230524.GU8120@dastard>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100520230524.GU8120@dastard>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 09:36:50 +0900 (JST)
-KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com> wrote:
+On Fri 21-05-10 09:05:24, Dave Chinner wrote:
+> On Thu, May 20, 2010 at 10:12:32PM +0200, Jan Kara wrote:
+> >   Hmm, I was thinking about it and I see two options how to get out
+> > of problems:
+> >   a) Filesystems which are not able to handle hole punching will allow
+> >      multipage writes only after EOF (which can be easily undone by
+> >      truncate in case of failure). That should actually cover lots of
+> >      cases we are interested in (I don't expect multipage writes to holes
+> >      to be a common case).
+> 
+> multipage writes to holes is a relatively common operation in the
+> HPC space that XFS is designed for (e.g. calculations on huge sparse
+> matrices), so I'm not really fond of this idea....
+  Well, XFS could still handle them because it is able to do hole punching
+but I get your point.
 
-> > Reviewed-by: Wu Fengguang <fengguang.wu@intel.com>
-> > 
-> > The preceding comment "they need to go on the active_anon lru below"
-> > also needs update.
-> > 
+> >   b) E.g. ext4 can do even without hole punching. It can allocate extent
+> >      as 'unwritten' and when something during the write fails, it just
+> >      leaves the extent allocated and the 'unwritten' flag makes sure that
+> >      any read will see zeros. I suppose that other filesystems that care
+> >      about multipage writes are able to do similar things (e.g. btrfs can
+> >      do the same as far as I remember, I'm not sure about gfs2).
 > 
-> Thanks. incremental patch is here.
-> 
-> 
-> ---
->  include/linux/swap.h |   10 ----------
->  mm/filemap.c         |    2 +-
->  2 files changed, 1 insertions(+), 11 deletions(-)
-> 
-> diff --git a/include/linux/swap.h b/include/linux/swap.h
-> index 18420a9..4bfd932 100644
-> --- a/include/linux/swap.h
-> +++ b/include/linux/swap.h
-> @@ -224,21 +224,11 @@ static inline void lru_cache_add_anon(struct page *page)
->  	__lru_cache_add(page, LRU_INACTIVE_ANON);
->  }
->  
-> -static inline void lru_cache_add_active_anon(struct page *page)
-> -{
-> -	__lru_cache_add(page, LRU_ACTIVE_ANON);
-> -}
-> -
->  static inline void lru_cache_add_file(struct page *page)
->  {
->  	__lru_cache_add(page, LRU_INACTIVE_FILE);
->  }
->  
-> -static inline void lru_cache_add_active_file(struct page *page)
-> -{
-> -	__lru_cache_add(page, LRU_ACTIVE_FILE);
-> -}
+> Allocating multipage writes as unwritten extents turns off delayed
+> allocation and hence we'd lose all the benefits that this gives...
+  Ah, sorry. That was a short-circuit in my brain. But when we do delayed
+I don't see why we should actually do any hole punching... The write needs
+to:
+  a) reserve enough blocks for the write - I don't know about other
+filesystems but for ext4 this means just incrementing a counter.
+  b) copy data page by page
+  c) release part of reservation (i.e. decrement counter) if we actually
+copied less than we originally thought.
 
-Did you intend to remove these two functions?
+  Am I missing something?
 
-They do appear to be unused now, but they still make sense and might be
-used in the future, perhaps.  It's OK to remove them, but I'm wondering
-if it was deliberately included in this patch?
-
-
->  /* LRU Isolation modes. */
->  #define ISOLATE_INACTIVE 0	/* Isolate inactive pages. */
->  #define ISOLATE_ACTIVE 1	/* Isolate active pages. */
-> diff --git a/mm/filemap.c b/mm/filemap.c
-> index 023ef61..a57931a 100644
-> --- a/mm/filemap.c
-> +++ b/mm/filemap.c
-> @@ -441,7 +441,7 @@ int add_to_page_cache_lru(struct page *page, struct address_space *mapping,
->  	/*
->  	 * Splice_read and readahead add shmem/tmpfs pages into the page cache
->  	 * before shmem_readpage has a chance to mark them as SwapBacked: they
-> -	 * need to go on the active_anon lru below, and mem_cgroup_cache_charge
-> +	 * need to go on the anon lru below, and mem_cgroup_cache_charge
->  	 * (called in add_to_page_cache) needs to know where they're going too.
->  	 */
->  	if (mapping_cap_swap_backed(mapping))
-> -- 
-> 1.6.5.2
-> 
-> 
-> 
-> 
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
