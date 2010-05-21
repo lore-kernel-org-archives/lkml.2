@@ -1,131 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753978Ab0EUD2K (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 23:28:10 -0400
-Received: from mga03.intel.com ([143.182.124.21]:39785 "EHLO mga03.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753698Ab0EUD2J convert rfc822-to-8bit (ORCPT
+	id S1754060Ab0EUDfo (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 23:35:44 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:56051 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753659Ab0EUDfn convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 23:28:09 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,275,1272870000"; 
-   d="scan'208";a="279709890"
-Date: Fri, 21 May 2010 11:24:37 +0800
-From: "Du, Alek" <alek.du@intel.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: David Brownell <david-b@pacbell.net>,
-       Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] gpio: add Penwell gpio support
-Message-ID: <20100521112437.1efc88a2@dxy2>
-In-Reply-To: <20100520142821.ed6efd58.akpm@linux-foundation.org>
-References: <20100518154025.4aaff2ee@dxy2>
-	<20100520142821.ed6efd58.akpm@linux-foundation.org>
-Organization: Intel Corp.
-X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+	Thu, 20 May 2010 23:35:43 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=KYxNM7H4ZMPTgq3KWVl6VXZKOxCpNsHyKHA1xTlCQB7VFB6Sez2AZt8EZfQwUJMP15
+         vRfU1ChpazPa+0KTl1NV517S7WvrPp8gjtwTuyHdIcA2eDkoD4vFcOm/VyiP3bX8NCjU
+         pUMhBpMW5fwouv4VyKCfkjdVIcE0kDy+Fh6zI=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <4BF5BC48.6000809@euromail.se>
+References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
+	 <1274213429-22667-2-git-send-email-rydberg@euromail.se>
+	 <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
+	 <4BF4E00A.30206@euromail.se>
+	 <AANLkTinYX96zokFF6Rc-3_gxIrMZmvMS_pw3YdQD6CG4@mail.gmail.com>
+	 <4BF5BC48.6000809@euromail.se>
+Date: Thu, 20 May 2010 20:35:42 -0700
+Message-ID: <AANLkTikwc2fEL_oTzpLtEBM-z8CPymqzIxVoebanT3ih@mail.gmail.com>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 05:28:21 +0800
-Andrew Morton <akpm@linux-foundation.org> wrote:
-
-> On Tue, 18 May 2010 15:40:25 +0800
-> "Du, Alek" <alek.du@intel.com> wrote:
-> 
-> > >From 963f6e83843b0f94f8a5337def6e897ec5bb99bf Mon Sep 17 00:00:00 2001
-> > From: Alek Du <alek.du@intel.com>
-> > Date: Thu, 25 Feb 2010 14:32:46 +0800
-> > Subject: [PATCH] gpio: add Penwell gpio support
-> > 
-> > Intel Penwell chip has two 96 pins GPIO blocks, which are very similiar as
-> > Intel Langwell chip GPIO block, except for pin number difference. This
-> > patch expends the original Langwell GPIO driver to support Penwell's.
-> > 
-> 
-> Has the driver been retested on Moorestown?
-
-Yes, retested with Moorestown platform.
-
-> 
-> > -static int lnw_gpio_get(struct gpio_chip *chip, unsigned offset)
-> > +static inline void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
-> > +			enum GPIO_REG reg_type)
-> >  {
-> >  	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
-> > +	unsigned nreg = chip->ngpio / 32;
-> >  	u8 reg = offset / 32;
-> > -	void __iomem *gplr;
-> > +	void __iomem *ptr;
-> > +
-> > +	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
-> > +	return ptr;
-> > +}
-> 
-> inlining this function was probably the wrong thing to do.  But modern
-> gcc's often just ignore the `inline' and do the right thing anyway.
+On Thu, May 20, 2010 at 3:48 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> I need double check with you although I think I know the answer. From
+>> your explanation and examples so far, I see MT_SLOT is only associated
+>> with one (x,y). Is this true?  If yes, can we eliminate the
+>> requirement for TRACKING_ID? If you think the requirement is
+>> necessary, can you give me an example where missing the TRACKING_ID
+>> would bring issue or confusion?
 >
+> Yes, each slot can only be associated with one (x, y) pair. No, we cannot
+> disregard the tracking id. A slot tracks a single contact for its entire
+> lifetime, during which the tracking id serves no purpose, but the slot cannot
+> tell us when the contact is replaced by a new one. This information is carried
+> by the tracking id.
 
-Yes, as I looked at the assembly code, the function is too big. I should remove "inline".
+Ok, I've made enough noise in this thread. If we change SYN_MT_SLOT to
+ABS_MT_SLOT_ID (or something starting with ABS_ of your choice), I
+have no more questions.
 
-> 
-> > -static struct pci_device_id lnw_gpio_ids[] = {
-> > -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f) },
-> > +static struct pci_device_id lnw_gpio_ids[] = {      /* pin number */
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f), .driver_data = 64 },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f), .driver_data = 96 },
-> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a), .driver_data = 96 },
-> >  	{ 0, }
-> 
-> I suppose we should be using DEFINE_PCI_DEVICE_TABLE() here.
-> 
->
-Yes, here is the incremental patch against previous one (I got the mail said
-the previous one is in mm tree now):
+You can put my reviewed-by in the patch if that counts for anything:
 
->From 47b561649890807a1a66fd8c4b07ded87df485c2 Mon Sep 17 00:00:00 2001
-From: Alek Du <alek.du@intel.com>
-Date: Fri, 21 May 2010 11:16:40 +0800
-Subject: [PATCH] gpio: langwell/penwell gpio driver style fix
+Reviewed-by: Ping Cheng <pingc@wacom.com>
 
-* remove gpio_reg inline, due to the fact the func is too big to inline
-* use standard DEFINE_PCI_DEVICE_TABLE
-
-Signed-off-by: Alek Du <alek.du@intel.com>
----
- drivers/gpio/langwell_gpio.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
-index 0693f71..8383a8d 100644
---- a/drivers/gpio/langwell_gpio.c
-+++ b/drivers/gpio/langwell_gpio.c
-@@ -63,7 +63,7 @@ struct lnw_gpio {
- 	unsigned			irq_base;
- };
- 
--static inline void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
-+static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
- 			enum GPIO_REG reg_type)
- {
- 	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
-@@ -175,7 +175,7 @@ static struct irq_chip lnw_irqchip = {
- 	.set_type	= lnw_irq_type,
- };
- 
--static struct pci_device_id lnw_gpio_ids[] = {      /* pin number */
-+static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f), .driver_data = 64 },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f), .driver_data = 96 },
- 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a), .driver_data = 96 },
--- 
-1.7.0.4
-
-
-
-
-
- 
-
+Ping
