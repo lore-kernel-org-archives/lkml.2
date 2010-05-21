@@ -1,315 +1,415 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754048Ab0EUL2O (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 07:28:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:58479 "EHLO hera.kernel.org"
+	id S1754699Ab0EUL2b (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 07:28:31 -0400
+Received: from hera.kernel.org ([140.211.167.34]:58498 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751637Ab0EUL2M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 07:28:12 -0400
-Date: Fri, 21 May 2010 11:27:37 GMT
-From: tip-bot for Venkatesh Pallipadi <venki@google.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, mingo@elte.hu,
-       venki@google.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       a.p.zijlstra@chello.nl, tglx@linutronix.de, venki@google.com,
+	id S1752896Ab0EUL23 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 07:28:29 -0400
+Date: Fri, 21 May 2010 11:27:55 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
+       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
        mingo@elte.hu
-In-Reply-To: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
-References: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
+       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
+       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
+       mingo@elte.hu
+In-Reply-To: <1274259525.5605.10352.camel@twins>
+References: <1274259525.5605.10352.camel@twins>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:sched/urgent] sched: Avoid side-effect of tickless idle on update_cpu_load
-Message-ID: <tip-4afc7e60ab25b72611771e48ca97b4f0104f77c7@git.kernel.org>
-Git-Commit-ID: 4afc7e60ab25b72611771e48ca97b4f0104f77c7
+Subject: [tip:perf/core] perf, trace: Optimize tracepoints by removing IRQ-disable from perf/tracepoint interaction
+Message-ID: <tip-b7e2ecef92d2e7785e6d76b41e5ba8bcbc45259d@git.kernel.org>
+Git-Commit-ID: b7e2ecef92d2e7785e6d76b41e5ba8bcbc45259d
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 11:27:39 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 11:27:57 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  4afc7e60ab25b72611771e48ca97b4f0104f77c7
-Gitweb:     http://git.kernel.org/tip/4afc7e60ab25b72611771e48ca97b4f0104f77c7
-Author:     Venkatesh Pallipadi <venki@google.com>
-AuthorDate: Mon, 17 May 2010 18:14:43 -0700
+Commit-ID:  b7e2ecef92d2e7785e6d76b41e5ba8bcbc45259d
+Gitweb:     http://git.kernel.org/tip/b7e2ecef92d2e7785e6d76b41e5ba8bcbc45259d
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Wed, 19 May 2010 10:52:27 +0200
 Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 21 May 2010 11:37:17 +0200
+CommitDate: Fri, 21 May 2010 11:37:56 +0200
 
-sched: Avoid side-effect of tickless idle on update_cpu_load
+perf, trace: Optimize tracepoints by removing IRQ-disable from perf/tracepoint interaction
 
-tickless idle has a negative side effect on
-update_cpu_load(), which in turn can affect load
-balancing behavior.
+Improves performance.
 
-update_cpu_load() is supposed to be called every
-tick, to keep track of various load indicies. With
-tickless idle, there are no scheduler ticks called on
-the idle CPUs. Idle CPUs may still do load balancing
-(with idle_load_balance CPU) using the stale
-cpu_load. It will also cause problems when all CPUs
-go idle for a while and become active again. In this
-case loads would not degrade as expected.
-
-This is how rq->nr_load_updates change looks like
-under different conditions:
-
-<cpu_num> <nr_load_updates change>
-All CPUS idle for 10 seconds (HZ=1000)
-0 1621
-10 496
-11 139
-12 875
-13 1672
-14 12
-15 21
-1 1472
-2 2426
-3 1161
-4 2108
-5 1525
-6 701
-7 249
-8 766
-9 1967
-
-One CPU busy rest idle for 10 seconds
-0 10003
-10 601
-11 95
-12 966
-13 1597
-14 114
-15 98
-1 3457
-2 93
-3 6679
-4 1425
-5 1479
-6 595
-7 193
-8 633
-9 1687
-
-All CPUs busy for 10 seconds
-0 10026
-10 10026
-11 10026
-12 10026
-13 10025
-14 10025
-15 10025
-1 10026
-2 10026
-3 10026
-4 10026
-5 10026
-6 10026
-7 10026
-8 10026
-9 10026
-
-That is update_cpu_load works properly only when all
-CPUs are busy. If all are idle, all the CPUs get way
-lower updates. And when few CPUs are busy and rest
-are idle, only busy and ilb CPU does proper updates
-and rest of the idle CPUs will do lower updates.
-
-The patch keeps track of when a last update was done
-and fixes up the load avg based on current time.
-
-On one of my test system SPECjbb with warehouse
-1..numcpus, patch improves throughput numbers by ~1%
-(average of 6 runs). On another test system (with
-different domain hierarchy) there is no noticable
-change in perf.
-
-Signed-off-by: Venkatesh Pallipadi <venki@google.com>
+Acked-by: Frederic Weisbecker <fweisbec@gmail.com>
 Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <AANLkTilLtDWQsAUrIxJ6s04WTgmw9GuOODc5AOrYsaR5@mail.gmail.com>
+Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Steven Rostedt <rostedt@goodmis.org>
+LKML-Reference: <1274259525.5605.10352.camel@twins>
 Signed-off-by: Ingo Molnar <mingo@elte.hu>
 ---
- kernel/sched.c      |  100 ++++++++++++++++++++++++++++++++++++++++++++++++---
- kernel/sched_fair.c |    5 ++-
- 2 files changed, 99 insertions(+), 6 deletions(-)
+ include/linux/ftrace_event.h    |    9 ++---
+ include/trace/ftrace.h          |   17 ++++-----
+ kernel/trace/trace_event_perf.c |   73 +++++++++++++++-----------------------
+ kernel/trace/trace_kprobe.c     |   10 ++---
+ kernel/trace/trace_syscalls.c   |   10 ++---
+ 5 files changed, 47 insertions(+), 72 deletions(-)
 
-diff --git a/kernel/sched.c b/kernel/sched.c
-index 1d93cd0..2d17e3b 100644
---- a/kernel/sched.c
-+++ b/kernel/sched.c
-@@ -502,6 +502,7 @@ struct rq {
- 	unsigned long nr_running;
- 	#define CPU_LOAD_IDX_MAX 5
- 	unsigned long cpu_load[CPU_LOAD_IDX_MAX];
-+	unsigned long last_load_update_tick;
- #ifdef CONFIG_NO_HZ
- 	u64 nohz_stamp;
- 	unsigned char in_nohz_recently;
-@@ -1826,6 +1827,7 @@ static void cfs_rq_set_shares(struct cfs_rq *cfs_rq, unsigned long shares)
- static void calc_load_account_idle(struct rq *this_rq);
- static void update_sysctl(void);
- static int get_update_sysctl_factor(void);
-+static void update_cpu_load(struct rq *this_rq);
+diff --git a/include/linux/ftrace_event.h b/include/linux/ftrace_event.h
+index a9775dd..126071b 100644
+--- a/include/linux/ftrace_event.h
++++ b/include/linux/ftrace_event.h
+@@ -197,20 +197,17 @@ extern void perf_trace_disable(int event_id);
+ extern int ftrace_profile_set_filter(struct perf_event *event, int event_id,
+ 				     char *filter_str);
+ extern void ftrace_profile_free_filter(struct perf_event *event);
+-extern void *
+-perf_trace_buf_prepare(int size, unsigned short type, int *rctxp,
+-			 unsigned long *irq_flags);
++extern void *perf_trace_buf_prepare(int size, unsigned short type,
++				    struct pt_regs *regs, int *rctxp);
  
- static inline void __set_task_cpu(struct task_struct *p, unsigned int cpu)
+ static inline void
+ perf_trace_buf_submit(void *raw_data, int size, int rctx, u64 addr,
+-		       u64 count, unsigned long irq_flags, struct pt_regs *regs,
+-		       void *event)
++		       u64 count, struct pt_regs *regs, void *event)
  {
-@@ -3024,23 +3026,102 @@ static void calc_load_account_active(struct rq *this_rq)
+ 	struct trace_entry *entry = raw_data;
+ 
+ 	perf_tp_event(entry->type, addr, count, raw_data, size, regs, event);
+ 	perf_swevent_put_recursion_context(rctx);
+-	local_irq_restore(irq_flags);
  }
+ #endif
+ 
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 1016b21..f282885 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -768,7 +768,6 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
+ 	struct ftrace_data_offsets_##call __maybe_unused __data_offsets;\
+ 	struct ftrace_raw_##call *entry;				\
+ 	u64 __addr = 0, __count = 1;					\
+-	unsigned long irq_flags;					\
+ 	int __entry_size;						\
+ 	int __data_size;						\
+ 	int rctx;							\
+@@ -781,17 +780,18 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
+ 	if (WARN_ONCE(__entry_size > PERF_MAX_TRACE_SIZE,		\
+ 		      "profile buffer not large enough"))		\
+ 		return;							\
++									\
+ 	entry = (struct ftrace_raw_##call *)perf_trace_buf_prepare(	\
+-		__entry_size, event_call->id, &rctx, &irq_flags);	\
++		__entry_size, event_call->id, __regs, &rctx);		\
+ 	if (!entry)							\
+ 		return;							\
++									\
+ 	tstruct								\
+ 									\
+ 	{ assign; }							\
+ 									\
+ 	perf_trace_buf_submit(entry, __entry_size, rctx, __addr,	\
+-			       __count, irq_flags, __regs, 		\
+-			      event_call->perf_data);			\
++			       __count, __regs, event_call->perf_data);	\
+ }
+ 
+ #undef DEFINE_EVENT
+@@ -799,13 +799,10 @@ perf_trace_templ_##call(struct ftrace_event_call *event_call,		\
+ static notrace void perf_trace_##call(proto)				\
+ {									\
+ 	struct ftrace_event_call *event_call = &event_##call;		\
+-	struct pt_regs *__regs = &get_cpu_var(perf_trace_regs);		\
+-									\
+-	perf_fetch_caller_regs(__regs, 1);				\
+-									\
+-	perf_trace_templ_##template(event_call, __regs, args);		\
++	struct pt_regs __regs;						\
+ 									\
+-	put_cpu_var(perf_trace_regs);					\
++	perf_fetch_caller_regs(&__regs, 1);				\
++	perf_trace_templ_##template(event_call, &__regs, args);		\
+ }
+ 
+ #undef DEFINE_EVENT_PRINT
+diff --git a/kernel/trace/trace_event_perf.c b/kernel/trace/trace_event_perf.c
+index 89b780a..a1304f8 100644
+--- a/kernel/trace/trace_event_perf.c
++++ b/kernel/trace/trace_event_perf.c
+@@ -9,13 +9,9 @@
+ #include <linux/kprobes.h>
+ #include "trace.h"
+ 
+-DEFINE_PER_CPU(struct pt_regs, perf_trace_regs);
+-EXPORT_PER_CPU_SYMBOL_GPL(perf_trace_regs);
+-
+ EXPORT_SYMBOL_GPL(perf_arch_fetch_caller_regs);
+ 
+-static char *perf_trace_buf;
+-static char *perf_trace_buf_nmi;
++static char *perf_trace_buf[4];
  
  /*
-+ * The exact cpuload at various idx values, calculated at every tick would be
-+ * load = (2^idx - 1) / 2^idx * load + 1 / 2^idx * cur_load
-+ *
-+ * If a cpu misses updates for n-1 ticks (as it was idle) and update gets called
-+ * on nth tick when cpu may be busy, then we have:
-+ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-+ * load = (2^idx - 1) / 2^idx) * load + 1 / 2^idx * cur_load
-+ *
-+ * decay_load_missed() below does efficient calculation of
-+ * load = ((2^idx - 1) / 2^idx)^(n-1) * load
-+ * avoiding 0..n-1 loop doing load = ((2^idx - 1) / 2^idx) * load
-+ *
-+ * The calculation is approximated on a 128 point scale.
-+ * degrade_zero_ticks is the number of ticks after which load at any
-+ * particular idx is approximated to be zero.
-+ * degrade_factor is a precomputed table, a row for each load idx.
-+ * Each column corresponds to degradation factor for a power of two ticks,
-+ * based on 128 point scale.
-+ * Example:
-+ * row 2, col 3 (=12) says that the degradation at load idx 2 after
-+ * 8 ticks is 12/128 (which is an approximation of exact factor 3^8/4^8).
-+ *
-+ * With this power of 2 load factors, we can degrade the load n times
-+ * by looking at 1 bits in n and doing as many mult/shift instead of
-+ * n mult/shifts needed by the exact degradation.
-+ */
-+#define DEGRADE_SHIFT		7
-+static const unsigned char
-+		degrade_zero_ticks[CPU_LOAD_IDX_MAX] = {0, 8, 32, 64, 128};
-+static const unsigned char
-+		degrade_factor[CPU_LOAD_IDX_MAX][DEGRADE_SHIFT + 1] = {
-+					{0, 0, 0, 0, 0, 0, 0, 0},
-+					{64, 32, 8, 0, 0, 0, 0, 0},
-+					{96, 72, 40, 12, 1, 0, 0},
-+					{112, 98, 75, 43, 15, 1, 0},
-+					{120, 112, 98, 76, 45, 16, 2} };
-+
-+/*
-+ * Update cpu_load for any missed ticks, due to tickless idle. The backlog
-+ * would be when CPU is idle and so we just decay the old load without
-+ * adding any new load.
-+ */
-+static unsigned long
-+decay_load_missed(unsigned long load, unsigned long missed_updates, int idx)
-+{
-+	int j = 0;
-+
-+	if (!missed_updates)
-+		return load;
-+
-+	if (missed_updates >= degrade_zero_ticks[idx])
-+		return 0;
-+
-+	if (idx == 1)
-+		return load >> missed_updates;
-+
-+	while (missed_updates) {
-+		if (missed_updates % 2)
-+			load = (load * degrade_factor[idx][j]) >> DEGRADE_SHIFT;
-+
-+		missed_updates >>= 1;
-+		j++;
-+	}
-+	return load;
-+}
-+
-+/*
-  * Update rq->cpu_load[] statistics. This function is usually called every
-- * scheduler tick (TICK_NSEC).
-+ * scheduler tick (TICK_NSEC). With tickless idle this will not be called
-+ * every tick. We fix it up based on jiffies.
-  */
- static void update_cpu_load(struct rq *this_rq)
+  * Force it to be aligned to unsigned long to avoid misaligned accesses
+@@ -29,7 +25,6 @@ static int	total_ref_count;
+ 
+ static int perf_trace_event_enable(struct ftrace_event_call *event, void *data)
  {
- 	unsigned long this_load = this_rq->load.weight;
-+	unsigned long curr_jiffies = jiffies;
-+	unsigned long pending_updates;
- 	int i, scale;
+-	char *buf;
+ 	int ret = -ENOMEM;
  
- 	this_rq->nr_load_updates++;
- 
-+	/* Avoid repeated calls on same jiffy, when moving in and out of idle */
-+	if (curr_jiffies == this_rq->last_load_update_tick)
-+		return;
-+
-+	pending_updates = curr_jiffies - this_rq->last_load_update_tick;
-+	this_rq->last_load_update_tick = curr_jiffies;
-+
- 	/* Update our load: */
--	for (i = 0, scale = 1; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
-+	this_rq->cpu_load[0] = this_load; /* Fasttrack for idx 0 */
-+	for (i = 1, scale = 2; i < CPU_LOAD_IDX_MAX; i++, scale += scale) {
- 		unsigned long old_load, new_load;
- 
- 		/* scale is effectively 1 << i now, and >> i divides by scale */
- 
- 		old_load = this_rq->cpu_load[i];
-+		old_load = decay_load_missed(old_load, pending_updates - 1, i);
- 		new_load = this_load;
- 		/*
- 		 * Round up the averaging division if load is increasing. This
-@@ -3048,9 +3129,15 @@ static void update_cpu_load(struct rq *this_rq)
- 		 * example.
- 		 */
- 		if (new_load > old_load)
--			new_load += scale-1;
--		this_rq->cpu_load[i] = (old_load*(scale-1) + new_load) >> i;
-+			new_load += scale - 1;
-+
-+		this_rq->cpu_load[i] = (old_load * (scale - 1) + new_load) >> i;
+ 	if (event->perf_refcount++ > 0) {
+@@ -38,17 +33,16 @@ static int perf_trace_event_enable(struct ftrace_event_call *event, void *data)
  	}
-+}
-+
-+static void update_cpu_load_active(struct rq *this_rq)
-+{
-+	update_cpu_load(this_rq);
  
- 	calc_load_account_active(this_rq);
+ 	if (!total_ref_count) {
+-		buf = (char *)alloc_percpu(perf_trace_t);
+-		if (!buf)
+-			goto fail_buf;
+-
+-		rcu_assign_pointer(perf_trace_buf, buf);
++		char *buf;
++		int i;
+ 
+-		buf = (char *)alloc_percpu(perf_trace_t);
+-		if (!buf)
+-			goto fail_buf_nmi;
++		for (i = 0; i < 4; i++) {
++			buf = (char *)alloc_percpu(perf_trace_t);
++			if (!buf)
++				goto fail_buf;
+ 
+-		rcu_assign_pointer(perf_trace_buf_nmi, buf);
++			rcu_assign_pointer(perf_trace_buf[i], buf);
++		}
+ 	}
+ 
+ 	ret = event->perf_event_enable(event);
+@@ -58,14 +52,15 @@ static int perf_trace_event_enable(struct ftrace_event_call *event, void *data)
+ 		return 0;
+ 	}
+ 
+-fail_buf_nmi:
++fail_buf:
+ 	if (!total_ref_count) {
+-		free_percpu(perf_trace_buf_nmi);
+-		free_percpu(perf_trace_buf);
+-		perf_trace_buf_nmi = NULL;
+-		perf_trace_buf = NULL;
++		int i;
++
++		for (i = 0; i < 4; i++) {
++			free_percpu(perf_trace_buf[i]);
++			perf_trace_buf[i] = NULL;
++		}
+ 	}
+-fail_buf:
+ 	event->perf_refcount--;
+ 
+ 	return ret;
+@@ -91,19 +86,19 @@ int perf_trace_enable(int event_id, void *data)
+ 
+ static void perf_trace_event_disable(struct ftrace_event_call *event)
+ {
+-	char *buf, *nmi_buf;
+-
+ 	if (--event->perf_refcount > 0)
+ 		return;
+ 
+ 	event->perf_event_disable(event);
+ 
+ 	if (!--total_ref_count) {
+-		buf = perf_trace_buf;
+-		rcu_assign_pointer(perf_trace_buf, NULL);
++		char *buf[4];
++		int i;
+ 
+-		nmi_buf = perf_trace_buf_nmi;
+-		rcu_assign_pointer(perf_trace_buf_nmi, NULL);
++		for (i = 0; i < 4; i++) {
++			buf[i] = perf_trace_buf[i];
++			rcu_assign_pointer(perf_trace_buf[i], NULL);
++		}
+ 
+ 		/*
+ 		 * Ensure every events in profiling have finished before
+@@ -111,8 +106,8 @@ static void perf_trace_event_disable(struct ftrace_event_call *event)
+ 		 */
+ 		synchronize_sched();
+ 
+-		free_percpu(buf);
+-		free_percpu(nmi_buf);
++		for (i = 0; i < 4; i++)
++			free_percpu(buf[i]);
+ 	}
  }
-@@ -3438,7 +3525,7 @@ void scheduler_tick(void)
  
- 	raw_spin_lock(&rq->lock);
- 	update_rq_clock(rq);
--	update_cpu_load(rq);
-+	update_cpu_load_active(rq);
- 	curr->sched_class->task_tick(rq, curr, 0);
- 	raw_spin_unlock(&rq->lock);
+@@ -132,47 +127,37 @@ void perf_trace_disable(int event_id)
+ }
  
-@@ -7592,6 +7679,9 @@ void __init sched_init(void)
+ __kprobes void *perf_trace_buf_prepare(int size, unsigned short type,
+-				       int *rctxp, unsigned long *irq_flags)
++				       struct pt_regs *regs, int *rctxp)
+ {
+ 	struct trace_entry *entry;
+ 	char *trace_buf, *raw_data;
+-	int pc, cpu;
++	int pc;
  
- 		for (j = 0; j < CPU_LOAD_IDX_MAX; j++)
- 			rq->cpu_load[j] = 0;
-+
-+		rq->last_load_update_tick = jiffies;
-+
- #ifdef CONFIG_SMP
- 		rq->sd = NULL;
- 		rq->rd = NULL;
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 217e4a9..e91f833 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -3410,9 +3410,12 @@ static void run_rebalance_domains(struct softirq_action *h)
- 			if (need_resched())
- 				break;
+ 	BUILD_BUG_ON(PERF_MAX_TRACE_SIZE % sizeof(unsigned long));
  
-+			rq = cpu_rq(balance_cpu);
-+			raw_spin_lock(&rq->lock);
-+			update_cpu_load(rq);
-+			raw_spin_unlock(&rq->lock);
- 			rebalance_domains(balance_cpu, CPU_IDLE);
+ 	pc = preempt_count();
  
--			rq = cpu_rq(balance_cpu);
- 			if (time_after(this_rq->next_balance, rq->next_balance))
- 				this_rq->next_balance = rq->next_balance;
- 		}
+-	/* Protect the per cpu buffer, begin the rcu read side */
+-	local_irq_save(*irq_flags);
+-
+ 	*rctxp = perf_swevent_get_recursion_context();
+ 	if (*rctxp < 0)
+ 		goto err_recursion;
+ 
+-	cpu = smp_processor_id();
+-
+-	if (in_nmi())
+-		trace_buf = rcu_dereference_sched(perf_trace_buf_nmi);
+-	else
+-		trace_buf = rcu_dereference_sched(perf_trace_buf);
+-
++	trace_buf = rcu_dereference_sched(perf_trace_buf[*rctxp]);
+ 	if (!trace_buf)
+ 		goto err;
+ 
+-	raw_data = per_cpu_ptr(trace_buf, cpu);
++	raw_data = per_cpu_ptr(trace_buf, smp_processor_id());
+ 
+ 	/* zero the dead bytes from align to not leak stack to user */
+ 	memset(&raw_data[size - sizeof(u64)], 0, sizeof(u64));
+ 
+ 	entry = (struct trace_entry *)raw_data;
+-	tracing_generic_entry_update(entry, *irq_flags, pc);
++	tracing_generic_entry_update(entry, regs->flags, pc);
+ 	entry->type = type;
+ 
+ 	return raw_data;
+ err:
+ 	perf_swevent_put_recursion_context(*rctxp);
+ err_recursion:
+-	local_irq_restore(*irq_flags);
+ 	return NULL;
+ }
+ EXPORT_SYMBOL_GPL(perf_trace_buf_prepare);
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index 2d7bf41..20c96de 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1343,7 +1343,6 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 	struct kprobe_trace_entry_head *entry;
+ 	u8 *data;
+ 	int size, __size, i;
+-	unsigned long irq_flags;
+ 	int rctx;
+ 
+ 	__size = sizeof(*entry) + tp->size;
+@@ -1353,7 +1352,7 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 		     "profile buffer not large enough"))
+ 		return;
+ 
+-	entry = perf_trace_buf_prepare(size, call->id, &rctx, &irq_flags);
++	entry = perf_trace_buf_prepare(size, call->id, regs, &rctx);
+ 	if (!entry)
+ 		return;
+ 
+@@ -1362,7 +1361,7 @@ static __kprobes void kprobe_perf_func(struct kprobe *kp,
+ 	for (i = 0; i < tp->nr_args; i++)
+ 		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+-	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, irq_flags, regs, call->perf_data);
++	perf_trace_buf_submit(entry, size, rctx, entry->ip, 1, regs, call->perf_data);
+ }
+ 
+ /* Kretprobe profile handler */
+@@ -1374,7 +1373,6 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 	struct kretprobe_trace_entry_head *entry;
+ 	u8 *data;
+ 	int size, __size, i;
+-	unsigned long irq_flags;
+ 	int rctx;
+ 
+ 	__size = sizeof(*entry) + tp->size;
+@@ -1384,7 +1382,7 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 		     "profile buffer not large enough"))
+ 		return;
+ 
+-	entry = perf_trace_buf_prepare(size, call->id, &rctx, &irq_flags);
++	entry = perf_trace_buf_prepare(size, call->id, regs, &rctx);
+ 	if (!entry)
+ 		return;
+ 
+@@ -1395,7 +1393,7 @@ static __kprobes void kretprobe_perf_func(struct kretprobe_instance *ri,
+ 		call_fetch(&tp->args[i].fetch, regs, data + tp->args[i].offset);
+ 
+ 	perf_trace_buf_submit(entry, size, rctx, entry->ret_ip, 1,
+-			       irq_flags, regs, call->perf_data);
++			      regs, call->perf_data);
+ }
+ 
+ static int probe_perf_enable(struct ftrace_event_call *call)
+diff --git a/kernel/trace/trace_syscalls.c b/kernel/trace/trace_syscalls.c
+index 9eff1a4..a657cef 100644
+--- a/kernel/trace/trace_syscalls.c
++++ b/kernel/trace/trace_syscalls.c
+@@ -438,7 +438,6 @@ static void perf_syscall_enter(struct pt_regs *regs, long id)
+ {
+ 	struct syscall_metadata *sys_data;
+ 	struct syscall_trace_enter *rec;
+-	unsigned long flags;
+ 	int syscall_nr;
+ 	int rctx;
+ 	int size;
+@@ -461,14 +460,14 @@ static void perf_syscall_enter(struct pt_regs *regs, long id)
+ 		return;
+ 
+ 	rec = (struct syscall_trace_enter *)perf_trace_buf_prepare(size,
+-				sys_data->enter_event->id, &rctx, &flags);
++				sys_data->enter_event->id, regs, &rctx);
+ 	if (!rec)
+ 		return;
+ 
+ 	rec->nr = syscall_nr;
+ 	syscall_get_arguments(current, regs, 0, sys_data->nb_args,
+ 			       (unsigned long *)&rec->args);
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, flags, regs,
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs,
+ 			sys_data->enter_event->perf_data);
+ }
+ 
+@@ -511,7 +510,6 @@ static void perf_syscall_exit(struct pt_regs *regs, long ret)
+ {
+ 	struct syscall_metadata *sys_data;
+ 	struct syscall_trace_exit *rec;
+-	unsigned long flags;
+ 	int syscall_nr;
+ 	int rctx;
+ 	int size;
+@@ -537,14 +535,14 @@ static void perf_syscall_exit(struct pt_regs *regs, long ret)
+ 		return;
+ 
+ 	rec = (struct syscall_trace_exit *)perf_trace_buf_prepare(size,
+-				sys_data->exit_event->id, &rctx, &flags);
++				sys_data->exit_event->id, regs, &rctx);
+ 	if (!rec)
+ 		return;
+ 
+ 	rec->nr = syscall_nr;
+ 	rec->ret = syscall_get_return_value(current, regs);
+ 
+-	perf_trace_buf_submit(rec, size, rctx, 0, 1, flags, regs,
++	perf_trace_buf_submit(rec, size, rctx, 0, 1, regs,
+ 			sys_data->exit_event->perf_data);
+ }
+ 
