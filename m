@@ -1,148 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934517Ab0EURHg (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:07:36 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:1027 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934470Ab0EURG2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:06:28 -0400
-From: Josef Bacik <josef@redhat.com>
-To: linux-btrfs@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org, hch@infradead.org,
-       akpm@linux-foundation.org
-Subject: [PATCH 4/6] fs: kill blockdev_direct_IO_no_locking
-Date: Fri, 21 May 2010 13:03:40 -0400
-Message-Id: <1274461422-18433-4-git-send-email-josef@redhat.com>
-In-Reply-To: <1274461422-18433-1-git-send-email-josef@redhat.com>
-References: <1274461422-18433-1-git-send-email-josef@redhat.com>
+	id S934522Ab0EURIK (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:08:10 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:59895 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934445Ab0EURH7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 13:07:59 -0400
+Message-ID: <4BF6BB43.2020405@euromail.se>
+Date: Fri, 21 May 2010 18:56:35 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+CC: Ping Cheng <pinglinux@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
+References: <1274457354-5570-1-git-send-email-rydberg@euromail.se> <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com> <4BF6B673.1080507@euromail.se> <20100521165218.GA26439@core.coreip.homeip.net>
+In-Reply-To: <20100521165218.GA26439@core.coreip.homeip.net>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OFVWc-0006bU-9R.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OFVWc-0006bU-9R d0fcae068c8faa77b934b56e2eb50d77
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Christoph said he'd rather everybody use __blockdev_direct_IO directly instead
-of having a bunch of random helper functions, so thats what this patch does.
-It's a basic change, I've tested it with xfstests on ext4 and xfs.  Thanks,
+Dmitry Torokhov wrote:
+> On Friday 21 May 2010 09:36:03 am Henrik Rydberg wrote:
+>> Ping Cheng wrote:
+>>> Hi Henrik,
+>>>
+>>> Thank you for your quick turnaround. Two minor comments in line.
+>>>
+>>> Ping
+>> Thanks for those, yes, both mistakes. Dmitry, in case you find these last
+>> versions acceptable, perhaps one could change them manually:
+>>
+>> 1. Patch description: s/SYN_MT_SLOT/ABS_SLOT/
+> 
+> Not ABS_MT_SLOT?
 
-Signed-off-by: Josef Bacik <josef@redhat.com>
-Reviewed-by: Christoph Hellwig <hch@lst.de>
----
- fs/block_dev.c              |    5 +++--
- fs/ext4/inode.c             |    8 ++++----
- fs/gfs2/aops.c              |    6 +++---
- fs/ocfs2/aops.c             |    8 +++-----
- fs/xfs/linux-2.6/xfs_aops.c |    7 +++----
- include/linux/fs.h          |    9 ---------
- 6 files changed, 16 insertions(+), 27 deletions(-)
+I wrote an argument for ABS_SLOT in the first patch, in short there is a
+namespace clash I would like to avoid.
 
-diff --git a/fs/block_dev.c b/fs/block_dev.c
-index 6dcee88..0f42cbc 100644
---- a/fs/block_dev.c
-+++ b/fs/block_dev.c
-@@ -172,8 +172,9 @@ blkdev_direct_IO(int rw, struct kiocb *iocb, const struct iovec *iov,
- 	struct file *file = iocb->ki_filp;
- 	struct inode *inode = file->f_mapping->host;
- 
--	return blockdev_direct_IO_no_locking(rw, iocb, inode, I_BDEV(inode),
--				iov, offset, nr_segs, blkdev_get_blocks, NULL);
-+	return __blockdev_direct_IO(rw, iocb, inode, I_BDEV(inode), iov,
-+				    offset, nr_segs, blkdev_get_blocks, NULL,
-+				    NULL, 0);
- }
- 
- int __sync_blockdev(struct block_device *bdev, int wait)
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 81d6054..8f37762 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -3494,10 +3494,10 @@ static ssize_t ext4_ind_direct_IO(int rw, struct kiocb *iocb,
- 
- retry:
- 	if (rw == READ && ext4_should_dioread_nolock(inode))
--		ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
--				 inode->i_sb->s_bdev, iov,
--				 offset, nr_segs,
--				 ext4_get_block, NULL);
-+		ret = __blockdev_direct_IO(rw, iocb, inode,
-+					   inode->i_sb->s_bdev, iov, offset,
-+					   nr_segs, ext4_get_block, NULL, NULL,
-+					   0);
- 	else
- 		ret = blockdev_direct_IO(rw, iocb, inode,
- 				 inode->i_sb->s_bdev, iov,
-diff --git a/fs/gfs2/aops.c b/fs/gfs2/aops.c
-index 0c1d0b8..45b23b0 100644
---- a/fs/gfs2/aops.c
-+++ b/fs/gfs2/aops.c
-@@ -1039,9 +1039,9 @@ static ssize_t gfs2_direct_IO(int rw, struct kiocb *iocb,
- 	if (rv != 1)
- 		goto out; /* dio not valid, fall back to buffered i/o */
- 
--	rv = blockdev_direct_IO_no_locking(rw, iocb, inode, inode->i_sb->s_bdev,
--					   iov, offset, nr_segs,
--					   gfs2_get_block_direct, NULL);
-+	rv = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev,
-+				  iov, offset, nr_segs, gfs2_get_block_direct,
-+				  NULL, NULL, 0);
- out:
- 	gfs2_glock_dq_m(1, &gh);
- 	gfs2_holder_uninit(&gh);
-diff --git a/fs/ocfs2/aops.c b/fs/ocfs2/aops.c
-index 21441dd..f2e53a9 100644
---- a/fs/ocfs2/aops.c
-+++ b/fs/ocfs2/aops.c
-@@ -669,11 +669,9 @@ static ssize_t ocfs2_direct_IO(int rw,
- 	if (i_size_read(inode) <= offset)
- 		return 0;
- 
--	ret = blockdev_direct_IO_no_locking(rw, iocb, inode,
--					    inode->i_sb->s_bdev, iov, offset,
--					    nr_segs,
--					    ocfs2_direct_IO_get_blocks,
--					    ocfs2_dio_end_io);
-+	ret = __blockdev_direct_IO(rw, iocb, inode, inode->i_sb->s_bdev, iov,
-+				   offset, nr_segs, ocfs2_direct_IO_get_blocks,
-+				   ocfs2_dio_end_io, NULL, 0);
- 
- 	mlog_exit(ret);
- 	return ret;
-diff --git a/fs/xfs/linux-2.6/xfs_aops.c b/fs/xfs/linux-2.6/xfs_aops.c
-index 0f8b996..fcc14d8 100644
---- a/fs/xfs/linux-2.6/xfs_aops.c
-+++ b/fs/xfs/linux-2.6/xfs_aops.c
-@@ -1617,10 +1617,9 @@ xfs_vm_direct_IO(
- 	iocb->private = xfs_alloc_ioend(inode, rw == WRITE ?
- 					IOMAP_UNWRITTEN : IOMAP_READ);
- 
--	ret = blockdev_direct_IO_no_locking(rw, iocb, inode, bdev, iov,
--					    offset, nr_segs,
--					    xfs_get_blocks_direct,
--					    xfs_end_io_direct);
-+	ret = __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset, nr_segs,
-+				   xfs_get_blocks_direct, xfs_end_io_direct,
-+				   NULL, 0);
- 
- 	if (unlikely(ret != -EIOCBQUEUED && iocb->private))
- 		xfs_destroy_ioend(iocb->private);
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index f5dc079..5b7a8bd 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2277,15 +2277,6 @@ static inline ssize_t blockdev_direct_IO(int rw, struct kiocb *iocb,
- 				    nr_segs, get_block, end_io, NULL,
- 				    DIO_LOCKING | DIO_SKIP_HOLES);
- }
--
--static inline ssize_t blockdev_direct_IO_no_locking(int rw, struct kiocb *iocb,
--	struct inode *inode, struct block_device *bdev, const struct iovec *iov,
--	loff_t offset, unsigned long nr_segs, get_block_t get_block,
--	dio_iodone_t end_io)
--{
--	return __blockdev_direct_IO(rw, iocb, inode, bdev, iov, offset,
--				    nr_segs, get_block, end_io, NULL, 0);
--}
- #endif
- 
- extern const struct file_operations generic_ro_fops;
--- 
-1.6.6.1
+Henrik
 
