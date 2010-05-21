@@ -1,350 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934288Ab0EURQf (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:16:35 -0400
-Received: from mho-01-ewr.mailhop.org ([204.13.248.71]:50936 "EHLO
-	mho-01-ewr.mailhop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755733Ab0EURQd (ORCPT
+	id S934359Ab0EURWg (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:22:36 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:63199 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933577Ab0EURWe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 13:16:33 -0400
-X-Mail-Handler: MailHop Outbound by DynDNS
-X-Originating-IP: 69.181.193.102
-X-Report-Abuse-To: abuse@dyndns.com (see http://www.dyndns.com/services/mailhop/outbound_abuse.html for abuse reporting information)
-X-MHO-User: U2FsdGVkX19NkGAKoN+4ZD+QrOyH/QKA
-Date: Fri, 21 May 2010 10:16:30 -0700
-From: Tony Lindgren <tony@atomide.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-omap@vger.kernel.org, linux-arm-kernel@lists.infradead.org,
-       linux-kernel@vger.kernel.org
-Subject: [GIT PULL] omap updates for 2.6.35
-Message-ID: <20100521171629.GI30053@atomide.com>
+	Fri, 21 May 2010 13:22:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=WpGLdGsNN7uT1OjBxglNBkPyq6zZ203yINMpGYjJwEFREqeYLepZLwdOwJ73YfZz1g
+         zyqW7+cndinTh2oH5PTrurXVblIdpCkg8S1/ACP4SWWCNP5exR+w86kzzruJVsJfooTO
+         n0T44uHz79M43zKxZReIBnIEBR6RJC6sl8DsM=
+Date: Fri, 21 May 2010 10:22:22 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Ping Cheng <pinglinux@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
+Message-ID: <20100521172222.GB26439@core.coreip.homeip.net>
+References: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
+ <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com>
+ <4BF6B673.1080507@euromail.se>
+ <20100521165218.GA26439@core.coreip.homeip.net>
+ <4BF6BB43.2020405@euromail.se>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BF6BB43.2020405@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Fri, May 21, 2010 at 06:56:35PM +0200, Henrik Rydberg wrote:
+> Dmitry Torokhov wrote:
+> > On Friday 21 May 2010 09:36:03 am Henrik Rydberg wrote:
+> >> Ping Cheng wrote:
+> >>> Hi Henrik,
+> >>>
+> >>> Thank you for your quick turnaround. Two minor comments in line.
+> >>>
+> >>> Ping
+> >> Thanks for those, yes, both mistakes. Dmitry, in case you find these last
+> >> versions acceptable, perhaps one could change them manually:
+> >>
+> >> 1. Patch description: s/SYN_MT_SLOT/ABS_SLOT/
+> > 
+> > Not ABS_MT_SLOT?
+> 
+> I wrote an argument for ABS_SLOT in the first patch, in short there is a
+> namespace clash I would like to avoid.
+> 
 
-Please pull omap updates from:
+Hm, I am not sure I follow that argument. While you are saying that slot
+is not an MT event it is certainly not an ST event either. I would even
+say that slot _is_ an MT event since it signals current "slot" or group
+of MT data to userspace. Am I missing something?
 
-git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
-
-Regards,
-
-Tony
-
-
-The following changes since commit 20c9d2c4ab8243a1c311248232954b2c1da3ba75:
-
-  i2c-omap: add mpu wake up latency constraint in i2c (2010-05-20 00:18:59 +0100)
-
-are available in the git repository at:
-  git://git.kernel.org/pub/scm/linux/kernel/git/tmlind/linux-omap-2.6.git omap-for-linus
-
-Abraham Arce (2):
-      OMAP4: Ethernet: KS8851 Board Support
-      OMAP4: Networking: Defconfig Support
-
-Ajay Kumar Gupta (1):
-      AM35x: fix UI card EHCI port and LCD dependency
-
-Anand Gadiyar (1):
-      omap3: update omap3_defconfig
-
-Ari Kauppi (1):
-      OMAP3: PM: Add milliseconds interface to suspend wakeup timer
-
-Balaji T K (2):
-      omap4: add i2c1 peripherals data
-      omap4: Enable RTC and regulator support
-
-Benoit Cousson (13):
-      OMAP4: hwmod: Replace module & device offsets by absolute clkctrl address
-      OMAP: CM: Move MAX_MODULE_READY_TIME to cm.h
-      OMAP4: hwmod & CM: Implement the omap4_cm_wait_module_ready function
-      OMAP4: hwmod: Replace OCPIF_HAS_IDLEST by HWMOD_NO_IDLEST
-      OMAP: hwmod: Fix wrong pointer iteration in oh->slaves
-      OMAP: hwmod: Remove IS_ERR check with omap_clk_get_by_name return value
-      OMAP: hwmod: Replace WARN by pr_warning if clock lookup failed
-      OMAP: hwmod: Do not exit the iteration if one clock init failed
-      OMAP: hwmod: Rename hwmod name for the MPU
-      OMAP: hwmod: Replace WARN by pr_warning for clockdomain check
-      OMAP4: CM: Remove non-functional registers in ES1.0
-      OMAP4: PRM: Remove MPU internal code name and apply PRCM naming convention
-      OMAP4: PRCM: Remove duplicate definition of base addresses
-
-Charulatha V (1):
-      omap: GPIO: Fix OMAP4 GPIO reg access issues
-
-Chunqiu Wang (1):
-      OMAP3: GPIO: Only enable WAKEUPEN for edge detection GPIOs
-
-Felipe Balbi (1):
-      OMAP1 clock: fix section mismatch on clk_init
-
-Hiroshi DOYU (5):
-      omap iommu: Introduce iteration macro for iotlb entry scan
-      omap iommu: Make CONFIG_OMAP_IOMMU_DEBUG selectable
-      omap iommu: Insert a gap page between IOVMAs against override
-      omap iommu: Exit iteration if no possibility of available area
-      omap iommu: Reject unaligned addresses at setting page table entry
-
-Janusz Krzysztofik (8):
-      omap: add missing FIQ_START definition required forarch/arm/kernel/fiq.c compilation
-      OMAP1: Amstrad Delta: add FIQ handler for serial keyboardport interrupt processing
-      OMAP1: Amstrad Delta: add a handler for processing interruptsgenerated by the FIQ routine
-      OMAP1: Amstrad Delta: update board initialization code forcomplete modem IRQ GPIO line setup
-      OMAP1: Amstrad Delta: use FIQ for processing GPIO interrupts
-      input: serio: add support for Amstrad Delta serial keyboardport
-      omap1: amsdelta: defconfig updates
-      OMAP1: Amstrad Delta: modify defconfig for external keyboardsupport
-
-Jarkko Nikula (3):
-      omap: rx51: Change the TWL4030 VMMC2 voltage constraints andsupply name
-      omap: rx51: Add i2c2 board_info with tlv320aic3x
-      omap: rx51: Add supplies for the tlv320aic3x codec driver
-
-Jason (1):
-      omap3: Add support for OMAP3Stalker boards
-
-Jason Lam (1):
-      omap3: Add OMAP3 Stalker board LK-S defconfig
-
-Kanigeri, Hari (4):
-      omap iommu: renamed omap3-iommu to omap-iommu
-      omap iommu: support for OMAP4
-      omap iommu: missing check for TLB valid entry
-      omap iommu: add TLB preservation support
-
-Kevin Hilman (4):
-      OMAP3: PRCM interrupt: only check and clear enabled PRCM IRQs
-      OMAP2/3: GPIO: generalize prepare for idle
-      OMAP3: GPIO: disable GPIO debounce clocks on idle
-      OMAP: GPIO: remove duplicate debugfs interface
-
-Laine Walker-Avina (1):
-      OMAP3 clock: add support for setting the divider for sys_clkout2 using clk_set_rate
-
-Mika Westerberg (1):
-      OMAP2/3/4: DMA: disable channel interrupts in omap_init_dma()
-
-Mike Chan (2):
-      OMAP3: PM: Enable IO / IO-CHAIN wakeups for PER
-      OMAP3: PM: Remove PER wakeup dependency on CORE.
-
-Paul Walmsley (11):
-      OMAP2 PRCM: convert OMAP2 PRCM macros to the _SHIFT/_MASK suffixes
-      OMAP3 PRCM: convert OMAP3 PRCM macros to the _SHIFT/_MASK suffixes
-      OMAP2+ PRCM: convert remaining PRCM macros to the _SHIFT/_MASK suffixes
-      OMAP3: PM: PM_MPUGRPSEL writes should use GRPSEL macros, not EN macros
-      OMAP2+ clock: remove DEFAULT_RATE clksel_rate flag
-      OMAP2+ clock: clean up clkt_clksel.c
-      OMAP3 clock: rename RATE_IN_343X, RATE_IN_3430ES2 to match reality
-      OMAP3 clock: remove unnecessary duplicate of dpll4_m2_ck, added for 36xx
-      OMAP clock: resolve old checkpatch and CodingStyle issues with plat-omap/clock.c
-      OMAP powerdomain, hwmod, omap_device: add some credits
-      OMAP2 clock: fix recursive spinlock attempt when CONFIG_CPU_FREQ=y
-
-Rajendra Nayak (6):
-      OMAP4: PRCM: Add offset defines for all PRM registers
-      OMAP4: PRCM: Add offset defines for all CM registers
-      OMAP4 clock: Support clk_set_parent
-      OMAP: timers: Fix clock source names for OMAP4
-      OMAP4 powerdomain: Fix pwrsts flags for ALWAYS ON domains
-      OMAP4 powerdomain: Support LOWPOWERSTATECHANGE for powerdomains
-
-Ranjith Lohithakshan (2):
-      OMAP3EVM: Update pad configuration for wakeup enabled pads
-      OMAP3: PM: Enable wakeup from ads7846 touchscreen
-
-Roger Quadros (1):
-      OMAP: RX51: Add "vdds_sdi" supply voltage for SDI
-
-Santosh Shilimkar (2):
-      omap4: Move SOC specific code from board file
-      omap4: Add i2c board support on omap4430 sdp platform
-
-Sriram (6):
-      can: ti_hecc: board specific hookup on AM3517EVM
-      can: ti_hecc: Enable CAN support on AM3517
-      AM35xx EMAC: define submodule offsets
-      AM35xx: Platform specific hookup for EMAC module
-      OMAP3: clock data: Update name string for EMAC clocks
-      AM3517: defconfig update to enable EMAC support
-
-Steve Sakoman (1):
-      omap: Overo: Add support for second ethernet port
-
-Syed Rafiuddin (1):
-      OMAP4: SPI: Fix Driver Kconfig
-
-Tero Kristo (2):
-      OMAP3: GPIO fixes for off-mode
-      OMAP3: GPIO: Removed a couple of unneeded registers from context save/restore
-
-Thomas Weber (2):
-      omap: Devkit8000: Add mux initialization
-      omap: Devkit8000: Update default configuration
-
-Tony Lindgren (20):
-      omap2/3/4: Fix multi.h when omap3 and omap4 are selected without omap2
-      omap: Use a memory address for storing the debug port info instead of UART1 scratchpad
-      omap2/3: Fix DEBUG_LL for omap zoom2/3
-      omap3: Fix compile for board-cm-t35
-      omap3: Remove non-muxable ball entries for 3630
-      omap4: Fix multiboot with CONFIG_PM and CONFIG_ARCH_OMAP3 selected
-      omap2/3/4: Add new boards to omap3_defconfig
-      omap2/3/4: Make omap3_defconfig usable on Nokia boards
-      omap2/3/4: Update PMIC options for TWL and Menelaus chips
-      omap2/3/4: Disable CONFIG_PM_VERBOSE in omap3_defconfig
-      omap2/3/4: Disable CONFIG_FB_OMAP in omap3_defconfig
-      Merge branch 'omap-boards' into omap-for-linus
-      Merge branch 'gpio-2.6.35' of git://git.kernel.org/.../khilman/linux-omap-pm into omap-for-linus
-      Merge branch 'pm-next' of git://git.kernel.org/.../khilman/linux-omap-pm into omap-for-linus
-      Merge branch 'v2.6.34-rc7.iommu' of git://gitorious.org/~doyu/lk/mainline into omap-for-linus
-      omap3: Add stalker board to omap3_defconfig
-      Merge branch 'for_2.6.35' of git://git.pwsan.com/linux-2.6 into omap-for-linus
-      omap: Fix i2c platform init code for omap4
-      omap4: Add support for i2c init
-      Merge branch 'omap4-i2c-init' into omap-for-linus
-
-Vaibhav Hiremath (1):
-      OMAP2/3: Add V4L2 DSS driver support in device.c
-
-Viral Mehta (3):
-      omap2: Add I2C bus 1 initialisation for 2430sdp
-      omap2: Add OHCI USB platform init for 2430 SDP
-      omap2: select ARCH_OMAP_OTG for OMAP2430 SDP
-
-kishore kadiyala (4):
-      omap4: Adds Dummy Interface clock's for MMC controllers
-      omap4: Adding hsmmc support to board file
-      omap4: Adding PBIAS Configuration for MMC1 Controller
-      omap4: Enable HSMMC support
-
-manjugk manjugk (1):
-      omap: DMA: Fix multi-line comments
-
-stanley.miao (3):
-      omap: init the gpio pinmux for mmc
-      omap: hsmmc: fix the hsmmc driver for am3517
-      AM3517: rename the i2c boardinfo to make it more readable
-
- arch/arm/configs/am3517_evm_defconfig            |   92 ++-
- arch/arm/configs/ams_delta_defconfig             |   10 +-
- arch/arm/configs/devkit8000_defconfig            |  157 ++-
- arch/arm/configs/omap3_defconfig                 |  151 ++-
- arch/arm/configs/omap3_stalker_lks_defconfig     | 1691 ++++++++++++++++++++++
- arch/arm/configs/omap_4430sdp_defconfig          |  448 ++++++-
- arch/arm/mach-omap1/Kconfig                      |   10 +
- arch/arm/mach-omap1/Makefile                     |    1 +
- arch/arm/mach-omap1/ams-delta-fiq-handler.S      |  278 ++++
- arch/arm/mach-omap1/ams-delta-fiq.c              |  155 ++
- arch/arm/mach-omap1/board-ams-delta.c            |   18 +-
- arch/arm/mach-omap1/clock.c                      |    2 +-
- arch/arm/mach-omap1/clock.h                      |    2 +-
- arch/arm/mach-omap1/include/mach/ams-delta-fiq.h |   79 +
- arch/arm/mach-omap1/include/mach/debug-macro.S   |   21 +-
- arch/arm/mach-omap2/Kconfig                      |    7 +
- arch/arm/mach-omap2/Makefile                     |   12 +-
- arch/arm/mach-omap2/board-2430sdp.c              |   21 +-
- arch/arm/mach-omap2/board-3430sdp.c              |    1 +
- arch/arm/mach-omap2/board-4430sdp.c              |  360 ++++-
- arch/arm/mach-omap2/board-am3517evm.c            |  166 ++-
- arch/arm/mach-omap2/board-cm-t35.c               |    1 +
- arch/arm/mach-omap2/board-devkit8000.c           |  155 ++
- arch/arm/mach-omap2/board-omap3evm.c             |    6 +-
- arch/arm/mach-omap2/board-omap3stalker.c         |  672 +++++++++
- arch/arm/mach-omap2/board-overo.c                |   14 +-
- arch/arm/mach-omap2/board-rx51-peripherals.c     |   92 +-
- arch/arm/mach-omap2/board-zoom-debugboard.c      |    2 +-
- arch/arm/mach-omap2/board-zoom2.c                |    4 +-
- arch/arm/mach-omap2/board-zoom3.c                |    4 +-
- arch/arm/mach-omap2/clkt2xxx_apll.c              |    4 +-
- arch/arm/mach-omap2/clkt2xxx_virt_prcm_set.c     |   17 +-
- arch/arm/mach-omap2/clkt_clksel.c                |  472 ++++---
- arch/arm/mach-omap2/clock.c                      |    9 +
- arch/arm/mach-omap2/clock.h                      |   11 +-
- arch/arm/mach-omap2/clock2420_data.c             |   50 +-
- arch/arm/mach-omap2/clock2430_data.c             |   54 +-
- arch/arm/mach-omap2/clock3xxx_data.c             |  412 +++----
- arch/arm/mach-omap2/clock44xx_data.c             |    5 +
- arch/arm/mach-omap2/clock_common_data.c          |   12 +-
- arch/arm/mach-omap2/clockdomain.c                |    4 +-
- arch/arm/mach-omap2/clockdomains44xx.h           |    4 +-
- arch/arm/mach-omap2/cm-regbits-24xx.h            |  236 ++--
- arch/arm/mach-omap2/cm-regbits-34xx.h            |  222 ++--
- arch/arm/mach-omap2/cm.c                         |    3 -
- arch/arm/mach-omap2/cm.h                         |   16 +-
- arch/arm/mach-omap2/cm44xx.h                     |  301 ++++-
- arch/arm/mach-omap2/cm4xxx.c                     |   54 +-
- arch/arm/mach-omap2/control.c                    |    7 +-
- arch/arm/mach-omap2/devices.c                    |   37 +
- arch/arm/mach-omap2/hsmmc.c                      |  120 ++-
- arch/arm/mach-omap2/include/mach/am35xx.h        |   20 +-
- arch/arm/mach-omap2/include/mach/debug-macro.S   |   15 +-
- arch/arm/mach-omap2/include/mach/omap4-common.h  |   26 +
- arch/arm/mach-omap2/io.c                         |    9 +
- arch/arm/mach-omap2/iommu2.c                     |    6 +-
- arch/arm/mach-omap2/mux34xx.c                    |   86 --
- arch/arm/mach-omap2/omap-iommu.c                 |  157 ++
- arch/arm/mach-omap2/omap-smp.c                   |    2 +-
- arch/arm/mach-omap2/omap3-iommu.c                |  105 --
- arch/arm/mach-omap2/omap4-common.c               |   72 +
- arch/arm/mach-omap2/omap_hwmod.c                 |  121 +-
- arch/arm/mach-omap2/omap_hwmod_2420_data.c       |    2 +-
- arch/arm/mach-omap2/omap_hwmod_2430_data.c       |    2 +-
- arch/arm/mach-omap2/omap_hwmod_3xxx_data.c       |    2 +-
- arch/arm/mach-omap2/pm-debug.c                   |    3 +
- arch/arm/mach-omap2/pm.h                         |    1 +
- arch/arm/mach-omap2/pm24xx.c                     |  130 +-
- arch/arm/mach-omap2/pm34xx.c                     |  259 ++--
- arch/arm/mach-omap2/powerdomain.c                |   56 +-
- arch/arm/mach-omap2/powerdomains44xx.h           |   23 +-
- arch/arm/mach-omap2/prcm-common.h                |  164 +--
- arch/arm/mach-omap2/prcm.c                       |    4 +-
- arch/arm/mach-omap2/prm-regbits-24xx.h           |  120 +-
- arch/arm/mach-omap2/prm-regbits-34xx.h           |  360 +++---
- arch/arm/mach-omap2/prm.h                        |   22 +-
- arch/arm/mach-omap2/prm44xx.h                    |  389 +++++-
- arch/arm/plat-omap/Kconfig                       |    9 +-
- arch/arm/plat-omap/clock.c                       |   25 +-
- arch/arm/plat-omap/common.c                      |    3 -
- arch/arm/plat-omap/dma.c                         |   45 +-
- arch/arm/plat-omap/dmtimer.c                     |    4 +-
- arch/arm/plat-omap/gpio.c                        |  236 ++--
- arch/arm/plat-omap/i2c.c                         |   98 +-
- arch/arm/plat-omap/include/plat/clock.h          |   14 +-
- arch/arm/plat-omap/include/plat/common.h         |    3 -
- arch/arm/plat-omap/include/plat/control.h        |   20 +
- arch/arm/plat-omap/include/plat/gpio.h           |    4 +-
- arch/arm/plat-omap/include/plat/irqs.h           |    4 +
- arch/arm/plat-omap/include/plat/mmc.h            |    4 +
- arch/arm/plat-omap/include/plat/multi.h          |   16 +-
- arch/arm/plat-omap/include/plat/omap44xx.h       |    4 +
- arch/arm/plat-omap/include/plat/omap_hwmod.h     |   16 +-
- arch/arm/plat-omap/include/plat/powerdomain.h    |    7 +
- arch/arm/plat-omap/include/plat/serial.h         |   16 +-
- arch/arm/plat-omap/include/plat/uncompress.h     |   44 +-
- arch/arm/plat-omap/iommu.c                       |  101 +-
- arch/arm/plat-omap/iovmm.c                       |    9 +-
- arch/arm/plat-omap/omap_device.c                 |    4 +-
- arch/arm/plat-omap/sram.c                        |   16 +-
- drivers/input/serio/Kconfig                      |   16 +
- drivers/input/serio/Makefile                     |    1 +
- drivers/input/serio/ams_delta_serio.c            |  177 +++
- drivers/spi/Kconfig                              |    6 +-
- 104 files changed, 7514 insertions(+), 2226 deletions(-)
- create mode 100644 arch/arm/configs/omap3_stalker_lks_defconfig
- create mode 100644 arch/arm/mach-omap1/ams-delta-fiq-handler.S
- create mode 100644 arch/arm/mach-omap1/ams-delta-fiq.c
- create mode 100644 arch/arm/mach-omap1/include/mach/ams-delta-fiq.h
- create mode 100644 arch/arm/mach-omap2/board-omap3stalker.c
- create mode 100644 arch/arm/mach-omap2/include/mach/omap4-common.h
- create mode 100644 arch/arm/mach-omap2/omap-iommu.c
- delete mode 100644 arch/arm/mach-omap2/omap3-iommu.c
- create mode 100644 arch/arm/mach-omap2/omap4-common.c
- create mode 100644 drivers/input/serio/ams_delta_serio.c
+-- 
+Dmitry
