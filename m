@@ -1,49 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757473Ab0EUOsJ (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 10:48:09 -0400
-Received: from bamako.nerim.net ([62.4.17.28]:63220 "EHLO bamako.nerim.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756214Ab0EUOsA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 10:48:00 -0400
-Date: Fri, 21 May 2010 16:47:57 +0200
-From: Jean Delvare <khali@linux-fr.org>
-To: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
-Cc: "Datta, Shubhrajyoti" <shubhrajyoti@ti.com>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       LM Sensors <lm-sensors@lm-sensors.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-input@vger.kernel.org" <linux-input@vger.kernel.org>
-Subject: Re: [RFC] [PATCH] TMP105 : Driver support for the  temperature
- sensor
-Message-ID: <20100521164757.50186c8f@hyperion.delvare>
-In-Reply-To: <4BF687DC.7090108@jic23.retrosnub.co.uk>
-References: <0680EC522D0CC943BC586913CF3768C003B32B3AC4@dbde02.ent.ti.com>
-	<4BF687A0.4040203@jic23.retrosnub.co.uk>
-	<4BF687DC.7090108@jic23.retrosnub.co.uk>
-X-Mailer: Claws Mail 3.5.0 (GTK+ 2.14.4; i586-suse-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757602Ab0EUOuo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 10:50:44 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:52719 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755793Ab0EUOum (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 10:50:42 -0400
+Date: Fri, 21 May 2010 16:50:23 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Hemanth V <hemanthv@ti.com>
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org,
+       linux-input@vger.kernel.org
+Subject: Re: [RFC] [PATCH] misc : ROHM BH1780GLI Ambient light sensor Driver
+Message-ID: <20100521145023.GT30801@buzzloop.caiaq.de>
+References: <31752.10.24.255.17.1274441750.squirrel@dbdmail.itg.ti.com>
+ <20100521120347.GP30801@buzzloop.caiaq.de>
+ <035e01caf8e2$bb7b5580$LocalHost@wipblrx0099946>
+ <20100521124641.GQ30801@buzzloop.caiaq.de>
+ <03b301caf8ee$4dc484b0$LocalHost@wipblrx0099946>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <03b301caf8ee$4dc484b0$LocalHost@wipblrx0099946>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 14:17:16 +0100, Jonathan Cameron wrote:
-> cc'ing lm-sensors (where this should have gone, this has nothing to do with input).
-> > On 05/21/10 13:17, Datta, Shubhrajyoti wrote:
+On Fri, May 21, 2010 at 07:32:50PM +0530, Hemanth V wrote:
+> >On Fri, May 21, 2010 at 06:10:00PM +0530, Hemanth V wrote:
+> >>>On Fri, May 21, 2010 at 05:05:50PM +0530, Hemanth V wrote:
+> >>>>+ mutex_lock(&ddata->lock);
+> >>>>+
+> >>>>+ error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
+> >>>>+ if (error < 0) {
+> >>>>+ mutex_unlock(&ddata->lock);
+> >>>>+ return error;
+> >>>>+ }
+> >>>>+
+> >>>>+ msleep(BH1780_PON_DELAY);
+> >>>
+> >>>Hmm, what do you wait for here?
 > >>
-> >> Adds the driver support for the TMP105 temperature sensor device. The interface is I2C.The driver supports the read of the temperature values.
-> >>
-> >> Signed-off-by: Shubhrajyoti D <shubhrajyoti@ti.com>
-> > This device looks at first glance to be pretty similar to the TMP101 as supported
-> > by the lm75 driver.  Would it make more sense to merge this support into that
-> > driver?
-> > 
-> > I've not read the data sheets that closely so may have missed something!
+> >>Settling time delay required before lux read out
+> >
+> >I thought so, but in fact you're just delaying the next two lines by
+> >that:
+> >
+> >>>>+ ddata->power_state = val;
+> >>>>+ mutex_unlock(&ddata->lock);
+> >
+> >... which doesn't make sense to me.
+> >
+> >I can believe there is need to wait for the value to settle, but I think
+> >it's the wrong place where you're doing it currently.
+> >
+> 
+> I could move it one line down,  but not really release the mutex.
+> Which other place would you suggest.
 
-We also have a brand new driver for the TMP102, so it might be worth
-comparing with that one too.
+Ah, you just need to wait for the power register to take effect. I
+didn't get it, sorry. I tought the delay was supposed to be inbetween
+the write of one register and the read of another.
 
--- 
-Jean Delvare
+So that all looks sane to me then. Once the other minor things are
+fixed, feel free to add my
+
+  Reviewed-by: Daniel Mack <daniel@caiaq.de>
+
+Thanks,
+Daniel
+
