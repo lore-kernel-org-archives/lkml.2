@@ -1,74 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757489Ab0EULbI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 07:31:08 -0400
-Received: from hera.kernel.org ([140.211.167.34]:32881 "EHLO hera.kernel.org"
+	id S1754313Ab0EULfP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 07:35:15 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:55786 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752801Ab0EULbF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 07:31:05 -0400
-Date: Fri, 21 May 2010 11:30:33 GMT
-From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: linux-kernel@vger.kernel.org, paulus@samba.org, acme@redhat.com,
-       hpa@zytor.com, mingo@redhat.com, a.p.zijlstra@chello.nl, efault@gmx.de,
-       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-       mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, acme@redhat.com, paulus@samba.org,
-       linux-kernel@vger.kernel.org, a.p.zijlstra@chello.nl, efault@gmx.de,
-       fweisbec@gmail.com, rostedt@goodmis.org, tglx@linutronix.de,
-       mingo@elte.hu
-In-Reply-To: <20100521090710.904944001@chello.nl>
-References: <20100521090710.904944001@chello.nl>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] perf: Optimize perf_tp_event_match()
-Message-ID: <tip-580d607cd666dfabfc1c7b0fb08c8ac690c7c87f@git.kernel.org>
-Git-Commit-ID: 580d607cd666dfabfc1c7b0fb08c8ac690c7c87f
-X-Mailer: tip-git-log-daemon
+	id S1753058Ab0EULfM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 07:35:12 -0400
+Date: Fri, 21 May 2010 12:34:49 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Kay Sievers <kay.sievers@vrfy.org>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>,
+       Miklos Szeredi <miklos@szeredi.hu>,
+       Chris Mason <chris.mason@oracle.com>,
+       Alasdair G Kergon <agk@redhat.com>,
+       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+       Ian Kent <raven@themaw.net>
+Subject: Re: add devname module aliases to allow module on-demand
+	auto-loading
+Message-ID: <20100521113449.GM3991@agk-dp.fab.redhat.com>
+Mail-Followup-To: Alasdair G Kergon <agk@redhat.com>,
+	Kay Sievers <kay.sievers@vrfy.org>,
+	linux-kernel <linux-kernel@vger.kernel.org>,
+	Greg Kroah-Hartman <gregkh@suse.de>,
+	"David S. Miller" <davem@davemloft.net>,
+	Miklos Szeredi <miklos@szeredi.hu>,
+	Chris Mason <chris.mason@oracle.com>,
+	Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+	Ian Kent <raven@themaw.net>
+References: <1274371640.302.5.camel@yio.site>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Fri, 21 May 2010 11:30:34 +0000 (UTC)
+In-Reply-To: <1274371640.302.5.camel@yio.site>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  580d607cd666dfabfc1c7b0fb08c8ac690c7c87f
-Gitweb:     http://git.kernel.org/tip/580d607cd666dfabfc1c7b0fb08c8ac690c7c87f
-Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
-AuthorDate: Thu, 20 May 2010 20:54:31 +0200
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Fri, 21 May 2010 11:38:00 +0200
+On Thu, May 20, 2010 at 06:07:20PM +0200, Kay Sievers wrote:
+> This adds:
+>   alias: devname:<name>
+> to some common kernel modules, which will allow the on-demand loading
+> of the kernel module when the device node is accessed.
 
-perf: Optimize perf_tp_event_match()
-
-Since we know tracepoints come from kernel context,
-avoid conditionals that try and establish that very
-fact.
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Arnaldo Carvalho de Melo <acme@redhat.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Paul Mackerras <paulus@samba.org>
-Cc: Mike Galbraith <efault@gmx.de>
-Cc: Steven Rostedt <rostedt@goodmis.org>
-LKML-Reference: <20100521090710.904944001@chello.nl>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- kernel/perf_event.c |    5 ++++-
- 1 files changed, 4 insertions(+), 1 deletions(-)
-
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index d25c864..e099650 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -4496,7 +4496,10 @@ static int perf_tp_event_match(struct perf_event *event,
- 				struct perf_sample_data *data,
- 				struct pt_regs *regs)
- {
--	if (perf_exclude_event(event, regs))
-+	/*
-+	 * All tracepoints are from kernel-space.
-+	 */
-+	if (event->attr.exclude_kernel)
- 		return 0;
+I don't see any need for this for device-mapper: please leave dm out of this.
  
- 	if (!perf_tp_filter_match(event, data))
+> Ideally all these modules would be compiled-in, 
+
+Why do you think that?  Currently that's a matter for the user/distro to
+decide!  IMHO It's really not for the kernel to force a policy like this on its
+users.  If that's what you think, why does your patch instead not go the whole
+way and refuse to allow these items even to be compiled as modules?
+
+> but distros seems too
+> much in love with their modularization that we need to cover the common
+> cases with this new facility. It will allow us to remove a bunch of pretty
+> useless init scripts and modprobes from init scripts.
+
+Again, I don't see why this needs any kernel changes.  If this was 
+important, any distro could deal with it itself trivially without needing
+a kernel patch.
+ 
+Nack for the dm part of this from my point of view as it removes flexibility
+with a 'one size fits all' approach that introduces a fixed minor number
+into a dynamic world.
+
+Alasdair
+
