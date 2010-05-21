@@ -1,12 +1,12 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab0EUP4d (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 11:56:33 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:33623 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753774Ab0EUP4b (ORCPT
+	id S933612Ab0EUP4f (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 11:56:35 -0400
+Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:35217 "EHLO
+	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1758290Ab0EUP4d (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 11:56:31 -0400
+	Fri, 21 May 2010 11:56:33 -0400
 From: "Henrik Rydberg" <rydberg@euromail.se>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
@@ -15,266 +15,287 @@ Cc: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
        Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
        Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>,
        Henrik Rydberg <rydberg@euromail.se>
-Subject: [PATCH 1/2] input: mt: Introduce MT event slots (rev 4)
-Date: Fri, 21 May 2010 17:55:53 +0200
-Message-Id: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
+Subject: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
+Date: Fri, 21 May 2010 17:55:54 +0200
+Message-Id: <1274457354-5570-2-git-send-email-rydberg@euromail.se>
 X-Mailer: git-send-email 1.6.3.3
+In-Reply-To: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
+References: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
 X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OFUa5-00047L-3k.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OFUa5-00047L-3k d435603490b24ea8f4771670b868706b
+X-Scan-Result: No virus found in message 1OFUaF-0002WZ-8J.
+X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OFUaF-0002WZ-8J e29ef0fe0533c13987517e1050dd2178
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-With the rapidly increasing number of intelligent multi-contact and
-multi-user devices, the need to send digested, filtered information
-from a set of different sources within the same device is imminent.
-This patch adds the concept of slots to the MT protocol. The slots
-enumerate a set of identified sources, such that all MT events
-can be passed independently and selectively per identified source.
+This patch adds documentation for the SYN_MT_SLOT event and gives
+examples of how to use the event slot protocol.
 
-The protocol works like this: Instead of sending a SYN_MT_REPORT
-event immediately after the contact data, one sends an ABS_SLOT
-event immediately before the contact data. The input core will only
-emit events for slots with modified MT events. It is assumed that
-the same slot is used for the duration of an initiated contact.
-
+Reviewed-by: Ping Cheng <pingc@wacom.com>
 Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
 ---
-Revision 4 incorporates the following changes:
-	 - Change SYN_MT_SLOT to ABS_SLOT
-	 - Set up the ABS_SLOT abs parameters in input_mt_create_slots()
-	 - The last_slot variable is removed, using abs[ABS_SLOT] instead.
+Revision 3 incorporates the following changes:
+	 - SYN_MT_SLOT changed to ABS_SLOT
+	 - Elaboration on the usage of tracking id
+	 - Minor typo, thanks to Fernando Carrijo
 
-The earlier suggestion was to change SYN_MT_SLOT to ABS_MT_SLOT, but
-it creates an unfortunate name clash, since the slot selection is not
-an MT event in itself. Using the name ABS_SLOT seems approriate, even if
-it is treated specially in the input core.
+ Documentation/input/multi-touch-protocol.txt |  204 ++++++++++++++++++--------
+ 1 files changed, 140 insertions(+), 64 deletions(-)
 
- drivers/input/input.c |   91 ++++++++++++++++++++++++++++++++++++++++++------
- include/linux/input.h |   26 ++++++++++++++
- 2 files changed, 105 insertions(+), 12 deletions(-)
-
-diff --git a/drivers/input/input.c b/drivers/input/input.c
-index 9c79bd5..4d2050f 100644
---- a/drivers/input/input.c
-+++ b/drivers/input/input.c
-@@ -34,9 +34,9 @@ MODULE_LICENSE("GPL");
- #define INPUT_DEVICES	256
+diff --git a/Documentation/input/multi-touch-protocol.txt b/Documentation/input/multi-touch-protocol.txt
+index c0fc1c7..54fffe0 100644
+--- a/Documentation/input/multi-touch-protocol.txt
++++ b/Documentation/input/multi-touch-protocol.txt
+@@ -6,31 +6,146 @@ Multi-touch (MT) Protocol
+ Introduction
+ ------------
  
- /*
-- * EV_ABS events which should not be cached are listed here.
-+ * EV_ABS events which should be filtered on a per-slot basis are listed here.
-  */
--static unsigned int input_abs_bypass_init_data[] __initdata = {
-+static unsigned int input_mt_abs_map_init_data[] __initdata = {
- 	ABS_MT_TOUCH_MAJOR,
- 	ABS_MT_TOUCH_MINOR,
- 	ABS_MT_WIDTH_MAJOR,
-@@ -48,9 +48,8 @@ static unsigned int input_abs_bypass_init_data[] __initdata = {
- 	ABS_MT_BLOB_ID,
- 	ABS_MT_TRACKING_ID,
- 	ABS_MT_PRESSURE,
--	0
- };
--static unsigned long input_abs_bypass[BITS_TO_LONGS(ABS_CNT)];
-+static unsigned char input_mt_abs_map[ABS_CNT];
- 
- static LIST_HEAD(input_dev_list);
- static LIST_HEAD(input_handler_list);
-@@ -181,6 +180,26 @@ static void input_stop_autorepeat(struct input_dev *dev)
- #define INPUT_PASS_TO_DEVICE	2
- #define INPUT_PASS_TO_ALL	(INPUT_PASS_TO_HANDLERS | INPUT_PASS_TO_DEVICE)
- 
-+static void input_mt_handle_abs_event(struct input_dev *dev,
-+				      unsigned int code, int value)
-+{
-+	if (dev->mt) {
-+		struct input_mt_slot *mtslot = &dev->mt[dev->slot];
-+		unsigned int mtcode = input_mt_abs_map[code] - 1;
-+		int old = mtslot->abs[mtcode];
-+		value = input_defuzz_abs_event(value, old, dev->absfuzz[code]);
-+		if (value == old)
-+			return;
-+		mtslot->abs[mtcode] = value;
-+	}
-+	dev->sync = 0;
-+	if (dev->slot != dev->abs[ABS_SLOT]) {
-+		dev->abs[ABS_SLOT] = dev->slot;
-+		input_pass_event(dev, EV_ABS, ABS_SLOT, dev->slot);
-+	}
-+	input_pass_event(dev, EV_ABS, code, value);
-+}
+-In order to utilize the full power of the new multi-touch devices, a way to
+-report detailed finger data to user space is needed. This document
+-describes the multi-touch (MT) protocol which allows kernel drivers to
+-report details for an arbitrary number of fingers.
++In order to utilize the full power of the new multi-touch and multi-user
++devices, a way to report detailed data from multiple contacts, i.e.,
++objects in direct contact with the device surface, is needed.  This
++document describes the multi-touch (MT) protocol which allows kernel
++drivers to report details for an arbitrary number of contacts.
 +
- static void input_handle_event(struct input_dev *dev,
- 			       unsigned int type, unsigned int code, int value)
- {
-@@ -235,11 +254,17 @@ static void input_handle_event(struct input_dev *dev,
- 	case EV_ABS:
- 		if (is_event_supported(code, dev->absbit, ABS_MAX)) {
- 
--			if (test_bit(code, input_abs_bypass)) {
--				disposition = INPUT_PASS_TO_HANDLERS;
-+			if (code == ABS_SLOT) {
-+				if (value >= 0 && value < dev->mtsize)
-+					dev->slot = value;
- 				break;
- 			}
- 
-+			if (input_mt_abs_map[code]) {
-+				input_mt_handle_abs_event(dev, code, value);
-+				return;
-+			}
++The protocol is divided into two types, depending on the capabilities of the
++hardware. For devices handling anonymous contacts (type A), the protocol
++describes how to send the raw data for all contacts to the receiver. For
++devices capable of tracking identifiable contacts (type B), the protocol
++describes how to send updates for individual contacts via event slots.
 +
- 			value = input_defuzz_abs_event(value,
- 					dev->abs[code], dev->absfuzz[code]);
- 
-@@ -1278,6 +1303,7 @@ static void input_dev_release(struct device *device)
- 	struct input_dev *dev = to_input_dev(device);
- 
- 	input_ff_destroy(dev);
-+	input_mt_destroy_slots(dev);
- 	kfree(dev);
- 
- 	module_put(THIS_MODULE);
-@@ -1518,6 +1544,46 @@ void input_free_device(struct input_dev *dev)
- EXPORT_SYMBOL(input_free_device);
- 
- /**
-+ * input_mt_create_slots() - create MT input slots
-+ * @dev: input device supporting MT events and finger tracking
-+ * @max_slots: maximum number of slots supported by the device
-+ *
-+ * This function allocates all necessary memory for MT slot handling
-+ * in the input device, and adds ABS_SLOT to the device capabilities.
-+ */
-+int input_mt_create_slots(struct input_dev *dev, int max_slots)
-+{
-+	struct input_mt_slot *mt;
 +
-+	if (max_slots <= 0)
-+		return 0;
-+	mt = kzalloc(max_slots * sizeof(struct input_mt_slot), GFP_KERNEL);
-+	if (!mt)
-+		return -ENOMEM;
++Protocol Usage
++--------------
 +
-+	dev->mt = mt;
-+	dev->mtsize = max_slots;
-+	input_set_abs_params(dev, ABS_SLOT, 0, max_slots - 1, 0, 0);
-+	return 0;
-+}
-+EXPORT_SYMBOL(input_mt_create_slots);
++Contact details are sent sequentially as separate packets of ABS_MT
++events. Only the ABS_MT events are recognized as part of a contact
++packet. Since these events are ignored by current single-touch (ST)
++applications, the MT protocol can be implemented on top of the ST protocol
++in an existing driver.
 +
-+/**
-+ * input_mt_destroy_slots() - frees the MT slots of the input device
-+ * @dev: input device with allocated MT slots
-+ *
-+ * This function is only needed in error path as the input core will
-+ * automatically free the MT slots when the device is destroyed.
-+ */
-+void input_mt_destroy_slots(struct input_dev *dev)
-+{
-+	kfree(dev->mt);
-+	dev->mt = NULL;
-+	dev->mtsize = 0;
-+}
-+EXPORT_SYMBOL(input_mt_destroy_slots);
++Drivers for type A devices mark the end of a packet by calling the
++input_mt_sync() function, which generates a SYN_MT_REPORT event. This
++instructs the receiver to accept the data for the current contact and
++prepare to receive another. Drivers for type B devices mark the beginning
++of a packet by calling the input_mt_slot() function with a slot as
++argument, which generates an ABS_SLOT event. This instructs the receiver
++to prepare for updates of the given slot.
 +
-+/**
-  * input_set_capability - mark device as capable of a certain event
-  * @dev: device that is capable of emitting or accepting event
-  * @type: type of the event (EV_KEY, EV_REL, etc...)
-@@ -1926,19 +1992,20 @@ static const struct file_operations input_fops = {
- 	.open = input_open_file,
- };
++The end of a multi-touch transfer is marked by calling the usual
++input_sync() function. This instructs the receiver to act upon events
++accumulated since last EV_SYN/SYN_REPORT and prepare to receive a new set
++of events/packets.
++
++The main difference between the raw type A protocol and the higher level
++type B slot protocol lies in the usage of identifiable contacts. The slot
++protocol requires the use of the ABS_MT_TRACKING_ID, either provided by the
++hardware of computed from the raw data [5].
++
++For type A devices, the kernel driver should generate an arbitrary
++enumeration of the set of anonymous contacts currently on the surface. The
++order in which the packets appear in the event stream is not important.
++Event filtering and finger tracking is left to user space [3].
++
++For type B devices, the kernel driver should associate a slot with each
++identified contact, and use that slot to propagate changes for the contact.
++Creation, replacement and destruction of contacts is achieved by modifying
++the ABS_MT_TRACKING_ID of the associated slot.  A tracking id within the
++specified value range is interpreted as a contact, all other values are
++interpreted as an unused slot.  A tracking id not previously present is
++considered new, and a tracking id no longer present is considered removed.
++Since only changes are propagated, the full state of each initiated contact
++has to reside in the receiving end.  Upon receiving an MT event, one simply
++updates the appropriate attribute of the current slot.
++
++
++Protocol Example A
++------------------
++
++Here is what a minimal event sequence for a two-contact touch would look
++like for a type A device:
++
++   ABS_MT_POSITION_X x[0]
++   ABS_MT_POSITION_Y y[0]
++   SYN_MT_REPORT
++   ABS_MT_POSITION_X x[1]
++   ABS_MT_POSITION_Y y[1]
++   SYN_MT_REPORT
++   SYN_REPORT
  
--static void __init input_init_abs_bypass(void)
-+static void __init input_mt_init_maps(void)
- {
--	const unsigned int *p;
++The sequence after moving one of the contacts looks exactly the same; the
++raw data for all present contacts are sent between every synchronization
++with SYN_REPORT.
+ 
+-Usage
+------
++Here is the sequence after lifting the first contact:
++
++   ABS_MT_POSITION_X x[1]
++   ABS_MT_POSITION_Y y[1]
++   SYN_MT_REPORT
++   SYN_REPORT
++
++And here is the sequence after lifting the second contact:
++
++   SYN_MT_REPORT
++   SYN_REPORT
++
++If the driver reports one of BTN_TOUCH or ABS_PRESSURE in addition to the
++ABS_MT events, the last SYN_MT_REPORT event may be omitted. Otherwise, the
++last SYN_REPORT will be dropped by the input core, resulting in no
++zero-contact event reaching userland.
+ 
+-Anonymous finger details are sent sequentially as separate packets of ABS
+-events. Only the ABS_MT events are recognized as part of a finger
+-packet. The end of a packet is marked by calling the input_mt_sync()
+-function, which generates a SYN_MT_REPORT event. This instructs the
+-receiver to accept the data for the current finger and prepare to receive
+-another. The end of a multi-touch transfer is marked by calling the usual
+-input_sync() function. This instructs the receiver to act upon events
+-accumulated since last EV_SYN/SYN_REPORT and prepare to receive a new
+-set of events/packets.
++
++Protocol Example B
++------------------
++
++Here is what a minimal event sequence for a two-contact touch would look
++like for a type B device:
++
++   ABS_SLOT 0
++   ABS_MT_TRACKING_ID 45
++   ABS_MT_POSITION_X x[0]
++   ABS_MT_POSITION_Y y[0]
++   ABS_SLOT 1
++   ABS_MT_TRACKING_ID 46
++   ABS_MT_POSITION_X x[1]
++   ABS_MT_POSITION_Y y[1]
++   SYN_REPORT
++
++Here is the sequence after moving contact 45 in the x direction:
++
++   ABS_SLOT 0
++   ABS_MT_POSITION_X x[0]
++   SYN_REPORT
++
++Here is the sequence after lifting the contact in slot 0:
++
++   ABS_MT_TRACKING_ID 0
++   SYN_REPORT
++
++The slot being modified is already 0, so the ABS_SLOT is omitted.  The
++message removes the association of slot 0 with contact 45, thereby
++destroying contact 45 and freeing slot 0 to be reused for another contact.
++
++Finally, here is the sequence after lifting the second contact:
++
++   ABS_SLOT 1
++   ABS_MT_TRACKING_ID 0
++   SYN_REPORT
++
++
++Event Usage
++-----------
+ 
+ A set of ABS_MT events with the desired properties is defined. The events
+ are divided into categories, to allow for partial implementation.  The
+ minimum set consists of ABS_MT_POSITION_X and ABS_MT_POSITION_Y, which
+-allows for multiple fingers to be tracked.  If the device supports it, the
++allows for multiple contacts to be tracked.  If the device supports it, the
+ ABS_MT_TOUCH_MAJOR and ABS_MT_WIDTH_MAJOR may be used to provide the size
+-of the contact area and approaching finger, respectively.
++of the contact area and approaching contact, respectively.
+ 
+ The TOUCH and WIDTH parameters have a geometrical interpretation; imagine
+ looking through a window at someone gently holding a finger against the
+@@ -41,56 +156,26 @@ ABS_MT_TOUCH_MAJOR, the diameter of the outer region is
+ ABS_MT_WIDTH_MAJOR. Now imagine the person pressing the finger harder
+ against the glass. The inner region will increase, and in general, the
+ ratio ABS_MT_TOUCH_MAJOR / ABS_MT_WIDTH_MAJOR, which is always smaller than
+-unity, is related to the finger pressure. For pressure-based devices,
++unity, is related to the contact pressure. For pressure-based devices,
+ ABS_MT_PRESSURE may be used to provide the pressure on the contact area
+ instead.
+ 
+-In addition to the MAJOR parameters, the oval shape of the finger can be
++In addition to the MAJOR parameters, the oval shape of the contact can be
+ described by adding the MINOR parameters, such that MAJOR and MINOR are the
+ major and minor axis of an ellipse. Finally, the orientation of the oval
+ shape can be describe with the ORIENTATION parameter.
+ 
+ The ABS_MT_TOOL_TYPE may be used to specify whether the touching tool is a
+-finger or a pen or something else.  Devices with more granular information
++contact or a pen or something else.  Devices with more granular information
+ may specify general shapes as blobs, i.e., as a sequence of rectangular
+ shapes grouped together by an ABS_MT_BLOB_ID. Finally, for the few devices
+ that currently support it, the ABS_MT_TRACKING_ID event may be used to
+-report finger tracking from hardware [5].
++report contact tracking from hardware [5].
+ 
+-Here is what a minimal event sequence for a two-finger touch would look
+-like:
 -
--	for (p = input_abs_bypass_init_data; *p; p++)
--		input_abs_bypass[BIT_WORD(*p)] |= BIT_MASK(*p);
-+	int i;
-+	BUILD_BUG_ON(MT_ABS_SIZE != (typeof(input_mt_abs_map[0]))MT_ABS_SIZE);
-+	BUILD_BUG_ON(ARRAY_SIZE(input_mt_abs_map_init_data) > MT_ABS_SIZE);
-+	for (i = 0; i < ARRAY_SIZE(input_mt_abs_map_init_data); i++)
-+		input_mt_abs_map[input_mt_abs_map_init_data[i]] = i + 1;
- }
+-   ABS_MT_POSITION_X
+-   ABS_MT_POSITION_Y
+-   SYN_MT_REPORT
+-   ABS_MT_POSITION_X
+-   ABS_MT_POSITION_Y
+-   SYN_MT_REPORT
+-   SYN_REPORT
+-
+-Here is the sequence after lifting one of the fingers:
+-
+-   ABS_MT_POSITION_X
+-   ABS_MT_POSITION_Y
+-   SYN_MT_REPORT
+-   SYN_REPORT
+-
+-And here is the sequence after lifting the remaining finger:
+-
+-   SYN_MT_REPORT
+-   SYN_REPORT
+-
+-If the driver reports one of BTN_TOUCH or ABS_PRESSURE in addition to the
+-ABS_MT events, the last SYN_MT_REPORT event may be omitted. Otherwise, the
+-last SYN_REPORT will be dropped by the input core, resulting in no
+-zero-finger event reaching userland.
  
- static int __init input_init(void)
- {
- 	int err;
+ Event Semantics
+ ---------------
  
--	input_init_abs_bypass();
-+	input_mt_init_maps();
+-The word "contact" is used to describe a tool which is in direct contact
+-with the surface. A finger, a pen or a rubber all classify as contacts.
+-
+ ABS_MT_TOUCH_MAJOR
  
- 	err = class_register(&input_class);
- 	if (err) {
-diff --git a/include/linux/input.h b/include/linux/input.h
-index 7ed2251..064e0af 100644
---- a/include/linux/input.h
-+++ b/include/linux/input.h
-@@ -693,6 +693,7 @@ struct input_absinfo {
- #define ABS_TOOL_WIDTH		0x1c
- #define ABS_VOLUME		0x20
- #define ABS_MISC		0x28
-+#define ABS_SLOT		0x29
+ The length of the major axis of the contact. The length should be given in
+@@ -192,20 +277,11 @@ finger along the X axis (1).
+ Finger Tracking
+ ---------------
  
- #define ABS_MT_TOUCH_MAJOR	0x30	/* Major axis of touching ellipse */
- #define ABS_MT_TOUCH_MINOR	0x31	/* Minor axis (omit if circular) */
-@@ -1080,6 +1081,9 @@ struct ff_effect {
-  * @sync: set to 1 when there were no new events since last EV_SYNC
-  * @abs: current values for reports from absolute axes
-  * @rep: current values for autorepeat parameters (delay, rate)
-+ * @mt: array of MT slots
-+ * @mtsize: number of allocated MT slots
-+ * @slot: current MT slot
-  * @key: reflects current state of device's keys/buttons
-  * @led: reflects current state of device's LEDs
-  * @snd: reflects current state of sound effects
-@@ -1157,6 +1161,10 @@ struct input_dev {
- 	int abs[ABS_MAX + 1];
- 	int rep[REP_MAX + 1];
+-The kernel driver should generate an arbitrary enumeration of the set of
+-anonymous contacts currently on the surface. The order in which the packets
+-appear in the event stream is not important.
+-
+ The process of finger tracking, i.e., to assign a unique trackingID to each
+-initiated contact on the surface, is left to user space; preferably the
+-multi-touch X driver [3]. In that driver, the trackingID stays the same and
+-unique until the contact vanishes (when the finger leaves the surface). The
+-problem of assigning a set of anonymous fingers to a set of identified
+-fingers is a euclidian bipartite matching problem at each event update, and
+-relies on a sufficiently rapid update rate.
+-
+-There are a few devices that support trackingID in hardware. User space can
+-make use of these native identifiers to reduce bandwidth and cpu usage.
++initiated contact on the surface, is a Euclidian Bipartite Matching
++problem.  At each event synchronization, the set of actual contacts are
++matched to the set of contacts from the previous synchronization. A full
++implementation can be found in [3].
  
-+	struct input_mt_slot *mt;
-+	int mtsize;
-+	int slot;
-+
- 	unsigned long key[BITS_TO_LONGS(KEY_CNT)];
- 	unsigned long led[BITS_TO_LONGS(LED_CNT)];
- 	unsigned long snd[BITS_TO_LONGS(SND_CNT)];
-@@ -1405,6 +1413,11 @@ static inline void input_mt_sync(struct input_dev *dev)
- 	input_event(dev, EV_SYN, SYN_MT_REPORT, 0);
- }
  
-+static inline void input_mt_slot(struct input_dev *dev, int slot)
-+{
-+	input_event(dev, EV_ABS, ABS_SLOT, slot);
-+}
-+
- void input_set_capability(struct input_dev *dev, unsigned int type, unsigned int code);
- 
- static inline void input_set_abs_params(struct input_dev *dev, int axis, int min, int max, int fuzz, int flat)
-@@ -1484,5 +1497,18 @@ int input_ff_erase(struct input_dev *dev, int effect_id, struct file *file);
- int input_ff_create_memless(struct input_dev *dev, void *data,
- 		int (*play_effect)(struct input_dev *, void *, struct ff_effect *));
- 
-+#define MT_ABS_SIZE 11
-+
-+/**
-+ * struct input_mt_slot - represents the state of an input MT slot
-+ * @abs: current values of ABS_MT axes for this slot
-+ */
-+struct input_mt_slot {
-+	int abs[MT_ABS_SIZE];
-+};
-+
-+int input_mt_create_slots(struct input_dev *dev, int max_slots);
-+void input_mt_destroy_slots(struct input_dev *dev);
-+
- #endif
- #endif
+ Gestures
 -- 
 1.6.3.3
 
