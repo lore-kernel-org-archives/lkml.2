@@ -1,43 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab0EUJkv (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 05:40:51 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:60165 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754545Ab0EUJku (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 05:40:50 -0400
-Date: Fri, 21 May 2010 11:40:47 +0200
-From: Jens Axboe <axboe@kernel.dk>
-To: Konstantin Khlebnikov <khlebnikov@openvz.org>
-Cc: linux-kernel@vger.kernel.org, Dmitry Monakhov <dmonakhov@openvz.org>
-Subject: Re: [PATCH 1/2] cfq-iosched: remove dead_key from cfq_io_context
-Message-ID: <20100521094047.GB11217@kernel.dk>
-References: <20100520192134.19366.88949.stgit@zurg>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100520192134.19366.88949.stgit@zurg>
+	id S1757653Ab0EUJk7 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 05:40:59 -0400
+Received: from e23smtp07.au.ibm.com ([202.81.31.140]:35765 "EHLO
+	e23smtp07.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752727Ab0EUJk4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 05:40:56 -0400
+Content-Type: text/plain; charset=UTF-8
+Cc: fweisbec <fweisbec@gmail.com>, mingo <mingo@elte.hu>,
+       rostedt <rostedt@goodmis.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/14] tracing: add compat syscall support v3
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Jason Baron <jbaron@redhat.com>
+In-reply-to: <cover.1268749695.git.jbaron@redhat.com>
+References: <cover.1268749695.git.jbaron@redhat.com>
+Date: Fri, 21 May 2010 19:40:21 +1000
+Message-Id: <1274433809-sup-5031@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20 2010, Konstantin Khlebnikov wrote:
-> Remove ->dead_key field from cfq_io_context to shrink its size to 128 bytes.
-> (64 bytes for 32-bit hosts)
-> 
-> Use lower bit in ->key as dead-mark, instead of moving key to separate field.
-> After this for dead cfq_io_context we got cic->key != cfqd automatically.
-> Thus, io_context's last-hit cache should work without changing.
-> 
-> Now to check ->key for non-dead state compare it with cfqd,
-> instead of checking ->key for non-null value as it was before.
-> 
-> Plus remove obsolete race protection in cfq_cic_lookup.
-> This race gone after v2.6.24-1728-g4ac845a
+Hi Jason,
 
-This, and the second patch, look really good. How much testing have you
-done with it?
+I'm currently in the process of implementing syscall tracepoints for
+PowerPC, and a considerable amount of my work is going to end up
+requiring these patches of yours. I've reviewed and tested your patches
+(and spent a good chunk of time rebasing them on top of
+tip/tracing/core) and they all seem pretty good.
 
--- 
-Jens Axboe
+I *particularly* like the way in which they prevent ftrace syscalls from
+reporting that sys_swapoff was constantly firing on x86_64 kernels with
+a 32bit userspace ;)
 
+Anyway, I'm just wondering if you have an ETA for the v4 patchset to
+address the remaining issues that Frederic raised so that they can be
+merged.
+
+Cheers,
+-Ian
+
+Excerpts from Jason Baron's message of Wed Mar 17 04:46:08 +1100 2010:
+> Hi,
+> 
+> Re-post to add infrastructure for compat syscall event tracing support. This
+> patch series also adds x86_64 arch specific support as an example consumer
+> of the new infrastructure.
+> 
+> Arches can request compat syscall tracing by setting: 
+> __HAVE_ARCH_FTRACE_COMPAT_SYSCALLS, if CONFIG_COMPAT and CONFIG_FTRACE_SYSCALLS
+> are set. Arches then need to implement the following interfaces:
+> 
+> 1) int is_compat_task(void);
+>   - most arches seem to have this already
+> 2) unsigned long arch_compat_syscall_addr(int nr);
+>   - returns a pointer to the compat syscall entry corresponding to syscall 'nr'
+> 3) int NR_syscalls_compat;
+>   - number of entries in the compat syscall table.
