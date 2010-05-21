@@ -1,128 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933429Ab0EUGxY (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:53:24 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:63202 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753803Ab0EUGxU (ORCPT
+	id S1758200Ab0EUG7i (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:59:38 -0400
+Received: from nessie.weebeastie.net ([220.233.7.36]:36658 "EHLO
+	bunyip.billabong.weebeastie.net" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1751219Ab0EUG7h (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:53:20 -0400
-Date: Fri, 21 May 2010 09:49:25 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: ext David Brownell <david-b@pacbell.net>
-Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
-Message-ID: <20100521064925.GF925@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <20100520194509.GB10739@sirena.org.uk>
- <598314.1671.qm@web180305.mail.gq1.yahoo.com>
+	Fri, 21 May 2010 02:59:37 -0400
+Date: Fri, 21 May 2010 16:59:33 +1000
+From: CaT <cat@zip.com.au>
+To: linux-kernel@vger.kernel.org, ccaulfie@redhat.com, teigland@redhat.com,
+       cluster-devel@redhat.com
+Subject: 2.6.34: dlm: possible circular locking dependency detected
+Message-ID: <20100521065933.GH2657@zip.com.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <598314.1671.qm@web180305.mail.gq1.yahoo.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 21 May 2010 06:51:50.0888 (UTC) FILETIME=[17194680:01CAF8B2]
-X-Nokia-AV: Clean
+Organisation: Furball Inc.
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 12:50:41AM +0200, ext David Brownell wrote:
->
->> This would be generally useful for embedded systems,
->> especially where the interrupt concerned is a wake source.
->>  It allows drivers to avoid
->> spurious interrupts from noisy sources so if the hardware
->> supports it
->> the driver can avoid having to explicitly wait for the
->> signal to become
->> stable and software has to cope with fewer events.
->
->True.
->
->Not all GPIOs have hardware debounce though, so offering this
->capability sort of begs the question of where/how to provide a
->software debounce mechanism too...
+Trying to use OCFS2 over drbd on kernel 2.6.34 (both nodes) and in
+trying to use it across both I got the following on the initial
+node I prepared. Please shout for more info.
 
-how about adding a flag for supported features and if that hardware 
-doesn't support we simply return, or fallback to software emulation if 
-chosen by the user. Something like the feature flags for the i2c bus 
-drivers.
-
-I mean something like:
-
-diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
-index 95f92b0..ae03f6f 100644
---- a/arch/arm/plat-omap/gpio.c
-+++ b/arch/arm/plat-omap/gpio.c
-@@ -1855,6 +1855,7 @@ static int __init _omap_gpio_init(void)
-                 bank->chip.get = gpio_get;
-                 bank->chip.direction_output = gpio_output;
-                 bank->chip.set_debounce = gpio_debounce;
-+               bank->chip->flags = GPIO_FLAG_DEBOUNCE;
-                 bank->chip.set = gpio_set;
-                 bank->chip.to_irq = gpio_2irq;
-                 if (bank_is_mpuio(bank)) {
-diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
-index cd85fd1..ed1ed74 100644
---- a/drivers/gpio/gpiolib.c
-+++ b/drivers/gpio/gpiolib.c
-@@ -1461,9 +1461,14 @@ int gpio_set_debounce(unsigned gpio, unsigned debounce)
-  
-         spin_lock_irqsave(&gpio_lock, flags);
-  
-+       chip = desc->chip;
-+       if (!(chip->flags & GPIO_FLAG_DEBOUNCE)) {
-+               spin_unlock_irqrestore(&gpio_lock, flags);
-+               return 0;
-+       }
-+
-         if (!gpio_is_valid(gpio))
-                 goto fail;
--       chip = desc->chip;
-         if (!chip || !chip->set || !chip->set_debounce)
-                 goto fail;
-         gpio -= chip->base;
-diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
-index ce3eb87..26c0aa2 100644
---- a/include/asm-generic/gpio.h
-+++ b/include/asm-generic/gpio.h
-@@ -32,6 +32,8 @@ struct device;
-  struct seq_file;
-  struct module;
-  
-+#define GPIO_FLAG_DEBOUNCE     (1 << 0)
-+
-  /**
-   * struct gpio_chip - abstract a GPIO controller
-   * @label: for diagnostics
-@@ -61,6 +63,7 @@ struct module;
-   *      names for the GPIOs in this chip. Any entry in the array
-   *      may be NULL if there is no alias for the GPIO, however the
-   *      array must be @ngpio entries long.
-+ * @flags: a bitmap for supported features by that particular gpio chip.
-   *
-   * A gpio_chip can help platforms abstract various sources of GPIOs so
-   * they can all be accessed through a common programing interface.
-@@ -104,6 +107,7 @@ struct gpio_chip {
-         char                    **names;
-         unsigned                can_sleep:1;
-         unsigned                exported:1;
-+       unsigned                flags;
-  };
-  
-  extern const char *gpiochip_is_requested(struct gpio_chip *chip,
-
-that could be used later for adding debounce emulation for chips that 
-doesn't support hw debouncing.
+[81409.510188] o2net: connected to node monkeynut (num 0) at 10.y.y.y:x
+[81459.237087] ocfs2_dlm: Node 0 joins domain A064327F6A5C49E39DA35032B3484154
+[81459.237092] ocfs2_dlm: Nodes in domain ("A064327F6A5C49E39DA35032B3484154"): 0 1
+[81459.321394]
+[81459.321395] =======================================================
+[81459.321515] [ INFO: possible circular locking dependency detected ]
+[81459.321592] 2.6.34-x.20100520-164221 #5
+[81459.321651] -------------------------------------------------------
+[81459.321715] dlm_thread/610 is trying to acquire lock:
+[81459.321777]  (&(&dlm->ast_lock)->rlock){+.+...}, at: [<ffffffff81264768>] dlm_queue_bast+0x8e/0x1b9
+[81459.322000]
+[81459.322000] but task is already holding lock:
+[81459.322137]  (&(&res->spinlock)->rlock){+.+...}, at: [<ffffffff8125093f>] dlm_thread+0x7aa/0x169b
+[81459.322360]
+[81459.322361] which lock already depends on the new lock.
+[81459.322361]
+[81459.322533]
+[81459.322534] the existing dependency chain (in reverse order) is:
+[81459.322648]
+[81459.322648] -> #1 (&(&res->spinlock)->rlock){+.+...}:
+[81459.322883]        [<ffffffff81092845>] __lock_acquire+0x1433/0x17a8
+[81459.322992]        [<ffffffff81092c84>] lock_acquire+0xca/0xf6
+[81459.323090]        [<ffffffff8161dd02>] _raw_spin_lock+0x2c/0x38
+[81459.323193]        [<ffffffff812ff89d>] _atomic_dec_and_lock+0x41/0x64
+[81459.323294]        [<ffffffff8125a79c>] dlm_lockres_release_ast+0x29/0x9f
+[81459.323429]        [<ffffffff812513e2>] dlm_thread+0x124d/0x169b
+[81459.323531]        [<ffffffff81080dc2>] kthread+0x7d/0x85
+[81459.323649]        [<ffffffff8102eee4>] kernel_thread_helper+0x4/0x10
+[81459.323758]
+[81459.323758] -> #0 (&(&dlm->ast_lock)->rlock){+.+...}:
+[81459.324007]        [<ffffffff8109256a>] __lock_acquire+0x1158/0x17a8
+[81459.324112]        [<ffffffff81092c84>] lock_acquire+0xca/0xf6
+[81459.324218]        [<ffffffff8161dd02>] _raw_spin_lock+0x2c/0x38
+[81459.324326]        [<ffffffff81264768>] dlm_queue_bast+0x8e/0x1b9
+[81459.324431]        [<ffffffff81250f21>] dlm_thread+0xd8c/0x169b
+[81459.324534]        [<ffffffff81080dc2>] kthread+0x7d/0x85
+[81459.324682]        [<ffffffff8102eee4>] kernel_thread_helper+0x4/0x10
+[81459.324785]
+[81459.324786] other info that might help us debug this:
+[81459.324786]
+[81459.324971] 1 lock held by dlm_thread/610:
+[81459.325031]  #0:  (&(&res->spinlock)->rlock){+.+...}, at: [<ffffffff8125093f>] dlm_thread+0x7aa/0x169b
+[81459.325276]
+[81459.325276] stack backtrace:
+[81459.325383] Pid: 610, comm: dlm_thread Not tainted 2.6.34-x.20100520-164221 #5
+[81459.325461] Call Trace:
+[81459.325520]  [<ffffffff81090eaf>] print_circular_bug+0xc0/0xd1
+[81459.325579]  [<ffffffff8109256a>] __lock_acquire+0x1158/0x17a8
+[81459.325643]  [<ffffffff81092c84>] lock_acquire+0xca/0xf6
+[81459.325706]  [<ffffffff81264768>] ? dlm_queue_bast+0x8e/0x1b9
+[81459.325767]  [<ffffffff8161dd02>] _raw_spin_lock+0x2c/0x38
+[81459.325844]  [<ffffffff81264768>] ? dlm_queue_bast+0x8e/0x1b9
+[81459.325938]  [<ffffffff81264768>] dlm_queue_bast+0x8e/0x1b9
+[81459.326003]  [<ffffffff81250f21>] dlm_thread+0xd8c/0x169b
+[81459.326081]  [<ffffffff81081226>] ? autoremove_wake_function+0x0/0x38
+[81459.326148]  [<ffffffff81250195>] ? dlm_thread+0x0/0x169b
+[81459.326211]  [<ffffffff81080dc2>] kthread+0x7d/0x85
+[81459.326274]  [<ffffffff8102eee4>] kernel_thread_helper+0x4/0x10
+[81459.326339]  [<ffffffff8161e710>] ? restore_args+0x0/0x30
+[81459.326402]  [<ffffffff81080d45>] ? kthread+0x0/0x85
+[81459.326463]  [<ffffffff8102eee0>] ? kernel_thread_helper+0x0/0x10
 
 -- 
-balbi
-
-DefectiveByDesign.org
+  "A search of his car uncovered pornography, a homemade sex aid, women's 
+  stockings and a Jack Russell terrier."
+    - http://www.news.com.au/story/0%2C27574%2C24675808-421%2C00.html
