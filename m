@@ -1,99 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757202Ab0EUAWG (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:22:06 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56075 "EHLO smtps.tip.net.au"
+	id S1757206Ab0EUA3A (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:29:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:45616 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab0EUAWD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:22:03 -0400
-Date: Fri, 21 May 2010 10:21:58 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-Message-Id: <20100521102158.bf6df441.sfr@canb.auug.org.au>
-In-Reply-To: <201003242159.25770.dmitry.torokhov@gmail.com>
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
-	<20100325154307.9cdeae10.sfr@canb.auug.org.au>
-	<201003242159.25770.dmitry.torokhov@gmail.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754608Ab0EUA26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 20:28:58 -0400
+Date: Fri, 21 May 2010 02:27:40 +0200
+From: Andrea Arcangeli <aarcange@redhat.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
+Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
+ the wrong VMA information
+Message-ID: <20100521002740.GB5733@random.random>
+References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
+ <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
+ <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
+ <20100505145620.GP20979@csn.ul.ie>
+ <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
+ <20100505155454.GT20979@csn.ul.ie>
+ <20100505161319.GQ5835@random.random>
+ <1273086685.1642.252.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1273086685.1642.252.camel@laptop>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Jason,
-
-On Wed, 24 Mar 2010 21:59:25 -0700 Dmitry Torokhov <dmitry.torokhov@gmail.com> wrote:
->
-> On Wednesday 24 March 2010 09:43:07 pm Stephen Rothwell wrote:
-> > Hi Jason, Dmitry,
+On Wed, May 05, 2010 at 09:11:25PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-05 at 18:13 +0200, Andrea Arcangeli wrote:
+> > On Wed, May 05, 2010 at 04:54:54PM +0100, Mel Gorman wrote:
+> > > I'm still thinking of the ordering but one possibility would be to use a mutex
 > > 
-> > On Tue, 23 Mar 2010 15:04:43 +1100 Stephen Rothwell <sfr@canb.auug.org.au> 
-> wrote:
-> > > After merging the kgdb tree, today's linux-next build (x86_64
-> > > allmodconfig) failed like this:
-> > > 
-> > > kernel/debug/kdb/kdb_main.c: In function 'kdb_sr':
-> > > kernel/debug/kdb/kdb_main.c:1822: error: '__sysrq_enabled' undeclared
-> > > (first use in this function)
-> > > 
-> > > Caused by commit ab28988df9667f8dd70c7434c8ca463beb00b300 ("kdb: core for
-> > > kgdb back end (1 of 2)") from the kgdb tree interacting with commit
-> > > edc6e384f9d96e54a6d03068d3b03fa5b56b6449 ("") fromInput: implement SysRq
-> > > as a separate input handler the input tree.
-> > 
-> > I got this again today (I stopped reverting the input tree commits that I
-> > was reverting for another build problem).  The patch below still seems to
-> > work OK.
+> > I can't take mutex in split_huge_page... so I'd need to use an other solution.
 > 
-> Yes, I  of __sysrq_enabled is not global anymore...
-> 
-> I am not sure I like kgdb enabling sysrq functonality on its own, I'd rather
-> export __handle_sysrq that does not check sysrq state...
+> So how's that going to work out for my make anon_vma->lock a mutex
+> patches?
 
-The input changes that require change in the kgdb tree are now in Linus'
-tree (I think) so this patch (or something else) should be added to the
-kgdb tree before it is sent to Linus for merging.
+If you're interested I can include your patchset after memory
+compaction in aa.git, far from the ideal path for merging but ideal if
+you want to test together with the full thing (memory compaction,
+split_huge_page as you wondered just above etc..) and hopefully give
+it more testing.
 
-Dmitry, any thoughts?
-
-Here is the patch again:
-
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-Date: Tue, 23 Mar 2010 14:45:22 +1100
-Subject: [PATCH] kgdb: update for sysrq handling change
-
-Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
----
- kernel/debug/kdb/kdb_main.c |    6 ++----
- 1 files changed, 2 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/debug/kdb/kdb_main.c b/kernel/debug/kdb/kdb_main.c
-index f1f9309..bad8e63 100644
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1819,10 +1819,8 @@ static int kdb_sr(int argc, const char **argv)
- {
- 	if (argc != 1)
- 		return KDB_ARGCOUNT;
--	if (!__sysrq_enabled) {
--		kdb_printf("Auto activating sysrq\n");
--		__sysrq_enabled = 1;
--	}
-+
-+	sysrq_toggle_support(1);
- 
- 	kdb_trap_printk++;
- 	handle_sysrq(*argv[1], NULL);
--- 
-1.7.0.2
-
-
--- 
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Note: I'm not sure if it's the right way to go, in fact I'm quite
+skeptical, not because it won't work, but ironically the main reason
+I'm interested is to close the XPMEM requirements the right way (not
+with page pins and deferred async invalidates), as long as we've users
+asking for rescheduling in mmu notifier methods this is the only way
+to go. Initially I thought it had to be a build time option, but
+seeing you doing it by default and for totally different reasons, I'm
+slightly more optimistic it can be the default and surely XPMEM will
+love it... the fact these locks are smarter helps a lot too.
