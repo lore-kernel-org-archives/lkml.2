@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934368Ab0EURAk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 13:00:40 -0400
-Received: from kroah.org ([198.145.64.141]:39108 "EHLO coco.kroah.org"
+	id S934379Ab0EURBD (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:01:03 -0400
+Received: from kroah.org ([198.145.64.141]:39078 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934238Ab0EUQyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:20 -0400
+	id S934228Ab0EUQyS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:18 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Dmitry Torokhov <dtor@mail.ru>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 13/38] firmware loader: rely on driver core to create class attribute
-Date: Fri, 21 May 2010 09:53:43 -0700
-Message-Id: <1274460848-11377-13-git-send-email-gregkh@suse.de>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 10/38] drivers/base: Convert dev->sem to mutex
+Date: Fri, 21 May 2010 09:53:40 -0700
+Message-Id: <1274460848-11377-10-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -20,111 +19,123 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+From: Thomas Gleixner <tglx@linutronix.de>
 
-Do not create 'timeout' attribute manually, let driver core do it for us.
-This also ensures that attribute is cleaned up properly.
+The semaphore is semantically a mutex. Convert it to a real mutex and
+fix up a few places where code was relying on semaphore.h to be included
+by device.h, as well as the users of the trylock function, as that value
+is now reversed.
 
-Signed-off-by: Dmitry Torokhov <dtor@mail.ru>
+Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/firmware_class.c |   59 ++++++++++++++++------------------------
- 1 files changed, 24 insertions(+), 35 deletions(-)
+ drivers/base/core.c                              |    3 +--
+ drivers/net/mlx4/mlx4.h                          |    1 +
+ drivers/staging/comedi/drivers/quatech_daqp_cs.c |    1 +
+ drivers/usb/core/usb.c                           |    2 +-
+ include/linux/device.h                           |    9 ++++-----
+ 5 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index d45d1e1..d351e77 100644
---- a/drivers/base/firmware_class.c
-+++ b/drivers/base/firmware_class.c
-@@ -101,9 +101,26 @@ firmware_timeout_store(struct class *class,
- 	return count;
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index e11c8c3..cf507a7 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -20,7 +20,6 @@
+ #include <linux/notifier.h>
+ #include <linux/genhd.h>
+ #include <linux/kallsyms.h>
+-#include <linux/semaphore.h>
+ #include <linux/mutex.h>
+ #include <linux/async.h>
+ 
+@@ -559,7 +558,7 @@ void device_initialize(struct device *dev)
+ 	dev->kobj.kset = devices_kset;
+ 	kobject_init(&dev->kobj, &device_ktype);
+ 	INIT_LIST_HEAD(&dev->dma_pools);
+-	init_MUTEX(&dev->sem);
++	mutex_init(&dev->mutex);
+ 	spin_lock_init(&dev->devres_lock);
+ 	INIT_LIST_HEAD(&dev->devres_head);
+ 	device_pm_init(dev);
+diff --git a/drivers/net/mlx4/mlx4.h b/drivers/net/mlx4/mlx4.h
+index bc72d6e..13343e8 100644
+--- a/drivers/net/mlx4/mlx4.h
++++ b/drivers/net/mlx4/mlx4.h
+@@ -40,6 +40,7 @@
+ #include <linux/mutex.h>
+ #include <linux/radix-tree.h>
+ #include <linux/timer.h>
++#include <linux/semaphore.h>
+ #include <linux/workqueue.h>
+ 
+ #include <linux/mlx4/device.h>
+diff --git a/drivers/staging/comedi/drivers/quatech_daqp_cs.c b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
+index 1786db2..8b274b7 100644
+--- a/drivers/staging/comedi/drivers/quatech_daqp_cs.c
++++ b/drivers/staging/comedi/drivers/quatech_daqp_cs.c
+@@ -48,6 +48,7 @@ Devices: [Quatech] DAQP-208 (daqp), DAQP-308
+ */
+ 
+ #include "../comedidev.h"
++#include <linux/semaphore.h>
+ 
+ #include <pcmcia/cs_types.h>
+ #include <pcmcia/cs.h>
+diff --git a/drivers/usb/core/usb.c b/drivers/usb/core/usb.c
+index 397b678..5ae14f6 100644
+--- a/drivers/usb/core/usb.c
++++ b/drivers/usb/core/usb.c
+@@ -573,7 +573,7 @@ int usb_lock_device_for_reset(struct usb_device *udev,
+ 			iface->condition == USB_INTERFACE_UNBOUND))
+ 		return -EINTR;
+ 
+-	while (usb_trylock_device(udev) != 0) {
++	while (!usb_trylock_device(udev)) {
+ 
+ 		/* If we can't acquire the lock after waiting one second,
+ 		 * we're probably deadlocked */
+diff --git a/include/linux/device.h b/include/linux/device.h
+index 241b96b..6f96191 100644
+--- a/include/linux/device.h
++++ b/include/linux/device.h
+@@ -22,7 +22,6 @@
+ #include <linux/types.h>
+ #include <linux/module.h>
+ #include <linux/pm.h>
+-#include <linux/semaphore.h>
+ #include <asm/atomic.h>
+ #include <asm/device.h>
+ 
+@@ -404,7 +403,7 @@ struct device {
+ 	const char		*init_name; /* initial name of the device */
+ 	struct device_type	*type;
+ 
+-	struct semaphore	sem;	/* semaphore to synchronize calls to
++	struct mutex		mutex;	/* mutex to synchronize calls to
+ 					 * its driver.
+ 					 */
+ 
+@@ -514,17 +513,17 @@ static inline bool device_async_suspend_enabled(struct device *dev)
+ 
+ static inline void device_lock(struct device *dev)
+ {
+-	down(&dev->sem);
++	mutex_lock(&dev->mutex);
  }
  
--static CLASS_ATTR(timeout, 0644, firmware_timeout_show, firmware_timeout_store);
-+static struct class_attribute firmware_class_attrs[] = {
-+	__ATTR(timeout, S_IWUSR | S_IRUGO,
-+		firmware_timeout_show, firmware_timeout_store),
-+	__ATTR_NULL
-+};
- 
--static void fw_dev_release(struct device *dev);
-+static void fw_dev_release(struct device *dev)
-+{
-+	struct firmware_priv *fw_priv = dev_get_drvdata(dev);
-+	int i;
-+
-+	for (i = 0; i < fw_priv->nr_pages; i++)
-+		__free_page(fw_priv->pages[i]);
-+	kfree(fw_priv->pages);
-+	kfree(fw_priv->fw_id);
-+	kfree(fw_priv);
-+	kfree(dev);
-+
-+	module_put(THIS_MODULE);
-+}
- 
- static int firmware_uevent(struct device *dev, struct kobj_uevent_env *env)
+ static inline int device_trylock(struct device *dev)
  {
-@@ -121,6 +138,7 @@ static int firmware_uevent(struct device *dev, struct kobj_uevent_env *env)
- 
- static struct class firmware_class = {
- 	.name		= "firmware",
-+	.class_attrs	= firmware_class_attrs,
- 	.dev_uevent	= firmware_uevent,
- 	.dev_release	= fw_dev_release,
- };
-@@ -370,21 +388,6 @@ static struct bin_attribute firmware_attr_data_tmpl = {
- 	.write = firmware_data_write,
- };
- 
--static void fw_dev_release(struct device *dev)
--{
--	struct firmware_priv *fw_priv = dev_get_drvdata(dev);
--	int i;
--
--	for (i = 0; i < fw_priv->nr_pages; i++)
--		__free_page(fw_priv->pages[i]);
--	kfree(fw_priv->pages);
--	kfree(fw_priv->fw_id);
--	kfree(fw_priv);
--	kfree(dev);
--
--	module_put(THIS_MODULE);
--}
--
- static void
- firmware_class_timeout(u_long data)
- {
-@@ -689,26 +692,12 @@ request_firmware_nowait(
- 	return 0;
+-	return down_trylock(&dev->sem);
++	return mutex_trylock(&dev->mutex);
  }
  
--static int __init
--firmware_class_init(void)
-+static int __init firmware_class_init(void)
+ static inline void device_unlock(struct device *dev)
  {
--	int error;
--	error = class_register(&firmware_class);
--	if (error) {
--		printk(KERN_ERR "%s: class_register failed\n", __func__);
--		return error;
--	}
--	error = class_create_file(&firmware_class, &class_attr_timeout);
--	if (error) {
--		printk(KERN_ERR "%s: class_create_file failed\n",
--		       __func__);
--		class_unregister(&firmware_class);
--	}
--	return error;
--
-+	return class_register(&firmware_class);
+-	up(&dev->sem);
++	mutex_unlock(&dev->mutex);
  }
--static void __exit
--firmware_class_exit(void)
-+
-+static void __exit firmware_class_exit(void)
- {
- 	class_unregister(&firmware_class);
- }
+ 
+ void driver_init(void);
 -- 
 1.7.0.3
 
