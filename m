@@ -1,18 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758510Ab0EUQzN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:55:13 -0400
-Received: from kroah.org ([198.145.64.141]:39173 "EHLO coco.kroah.org"
+	id S934328Ab0EUQzH (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:55:07 -0400
+Received: from kroah.org ([198.145.64.141]:39155 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934277Ab0EUQyj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:39 -0400
+	id S934117Ab0EUQye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:34 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Eric W. Biederman" <ebiederm@aristanetworks.com>
-Subject: [PATCH 34/38] net/sysfs: Fix the bitrot in network device kobject namespace support
-Date: Fri, 21 May 2010 09:54:04 -0700
-Message-Id: <1274460848-11377-34-git-send-email-gregkh@suse.de>
+Cc: "Eric W. Biederman" <ebiederm@aristanetworks.com>,
+       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 28/38] sysfs: Remove usage of S_BIAS to avoid merge conflict with the vfs tree
+Date: Fri, 21 May 2010 09:53:58 -0700
+Message-Id: <1274460848-11377-28-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -20,92 +20,56 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@xmission.com>
+From: Eric W. Biederman <ebiederm@aristanetworks.com>
 
-I had a couple of stupid bugs in:
-netns: Teach network device kobjects which namespace they are in.
+In Al's latest vfs tree the code is reworked and S_BIAS has been removed.
 
-- I duplicated the Kconfig for the NET_NS
-- The build was broken when sysfs was not compiled in
+It turns out that checking to see if a super block is in the
+middle of an unmount in sysfs_exit_ns is unnecessary because we
+remove the super_block from the s_supers/s_instances list before
+struct sysfs_super_info pointed to by sb->s_fs_info is freed.
 
-The sysfs breakage is because after I moved the operations
-for the sysfs to the kobject layer, to make things cleaner
-I forgot to move the ifdefs.  Opps.
+For now just delete the unnecessary check to see if a superblock is in the
+middle of an unmount, it isn't necessary with or without Al's changes
+and it just causes a needless conflict.
 
-I'm not quite certain how I got introduced a second NET_NS Kconfig,
-but it was probably a 3 way merge somewhere along the way that
-did not notice that the NET_NS Kconfig option had mvoed and thout
-that was a bug.  It probably slipped in because it used to be the
-sysfs patches were the first patches in my network namespace patches.
-Some things just don't go like you would expect.
-
-Neither of these bugs actually affect anything in the common case
-but they should be fixed.
-
-Thanks to Serge for noticing they were present.
-
-Reported-by: Serge E. Hallyn <serue@us.ibm.com>
+Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Al Viro <viro@zeniv.linux.org.uk>
 Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
-Acked-by: David S. Miller <davem@davemloft.net>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- net/Kconfig          |    8 --------
- net/core/net-sysfs.c |    8 +++-----
- 2 files changed, 3 insertions(+), 13 deletions(-)
+ fs/sysfs/mount.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/net/Kconfig b/net/Kconfig
-index f495320..0d68b40 100644
---- a/net/Kconfig
-+++ b/net/Kconfig
-@@ -45,14 +45,6 @@ config COMPAT_NETLINK_MESSAGES
- 
- menu "Networking options"
- 
--config NET_NS
--	bool "Network namespace support"
--	default n
--	depends on EXPERIMENTAL && NAMESPACES
--	help
--	  Allow user space to create what appear to be multiple instances
--	  of the network stack.
--
- source "net/packet/Kconfig"
- source "net/unix/Kconfig"
- source "net/xfrm/Kconfig"
-diff --git a/net/core/net-sysfs.c b/net/core/net-sysfs.c
-index b388cda..6881e65 100644
---- a/net/core/net-sysfs.c
-+++ b/net/core/net-sysfs.c
-@@ -469,6 +469,7 @@ static struct attribute_group wireless_group = {
- 	.attrs = wireless_attrs,
- };
- #endif
-+#endif /* CONFIG_SYSFS */
- 
- #ifdef CONFIG_RPS
- /*
-@@ -796,11 +797,10 @@ static void net_kobj_ns_exit(struct net *net)
- 	kobj_ns_exit(KOBJ_NS_TYPE_NET, net);
- }
- 
--static struct pernet_operations sysfs_net_ops = {
-+static struct pernet_operations kobj_net_ops = {
- 	.exit = net_kobj_ns_exit,
- };
- 
--#endif /* CONFIG_SYSFS */
- 
- #ifdef CONFIG_HOTPLUG
- static int netdev_uevent(struct device *d, struct kobj_uevent_env *env)
-@@ -948,8 +948,6 @@ void netdev_initialize_kobject(struct net_device *net)
- int netdev_kobject_init(void)
+diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
+index 1afa32b..281c0c9 100644
+--- a/fs/sysfs/mount.c
++++ b/fs/sysfs/mount.c
+@@ -138,6 +138,9 @@ static void sysfs_kill_sb(struct super_block *sb)
  {
- 	kobj_ns_type_register(&net_ns_type_operations);
--#ifdef CONFIG_SYSFS
--	register_pernet_subsys(&sysfs_net_ops);
--#endif
-+	register_pernet_subsys(&kobj_net_ops);
- 	return class_register(&net_class);
+ 	struct sysfs_super_info *info = sysfs_info(sb);
+ 
++	/* Remove the superblock from fs_supers/s_instances
++	 * so we can't find it, before freeing sysfs_super_info.
++	 */
+ 	kill_anon_super(sb);
+ 	kfree(info);
  }
+@@ -156,9 +159,11 @@ void sysfs_exit_ns(enum kobj_ns_type type, const void *ns)
+ 	spin_lock(&sb_lock);
+ 	list_for_each_entry(sb, &sysfs_fs_type.fs_supers, s_instances) {
+ 		struct sysfs_super_info *info = sysfs_info(sb);
+-		/* Ignore superblocks that are in the process of unmounting */
+-		if (sb->s_count <= S_BIAS)
+-			continue;
++		/*
++		 * If we see a superblock on the fs_supers/s_instances
++		 * list the unmount has not completed and sb->s_fs_info
++		 * points to a valid struct sysfs_super_info.
++		 */
+ 		/* Ignore superblocks with the wrong ns */
+ 		if (info->ns[type] != ns)
+ 			continue;
 -- 
 1.7.0.3
 
