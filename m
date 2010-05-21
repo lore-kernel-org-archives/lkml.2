@@ -1,61 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757206Ab0EUA3A (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:29:00 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:45616 "EHLO mx1.redhat.com"
+	id S1757334Ab0EUA3U (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 20:29:20 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:38595 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754608Ab0EUA26 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:28:58 -0400
-Date: Fri, 21 May 2010 02:27:40 +0200
-From: Andrea Arcangeli <aarcange@redhat.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Mel Gorman <mel@csn.ul.ie>, Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linux-MM <linux-mm@kvack.org>, LKML <linux-kernel@vger.kernel.org>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux.com>, Rik van Riel <riel@redhat.com>
-Subject: Re: [PATCH 1/2] mm,migration: Prevent rmap_walk_[anon|ksm] seeing
- the wrong VMA information
-Message-ID: <20100521002740.GB5733@random.random>
-References: <1273065281-13334-1-git-send-email-mel@csn.ul.ie>
- <1273065281-13334-2-git-send-email-mel@csn.ul.ie>
- <alpine.LFD.2.00.1005050729000.5478@i5.linux-foundation.org>
- <20100505145620.GP20979@csn.ul.ie>
- <alpine.LFD.2.00.1005050815060.5478@i5.linux-foundation.org>
- <20100505155454.GT20979@csn.ul.ie>
- <20100505161319.GQ5835@random.random>
- <1273086685.1642.252.camel@laptop>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1273086685.1642.252.camel@laptop>
+	id S1757254Ab0EUA3R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 20:29:17 -0400
+Date: Fri, 21 May 2010 10:29:13 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: "John W. Linville" <linville@tuxdriver.com>,
+       David Miller <davem@davemloft.net>,
+       Linus <torvalds@linux-foundation.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Helmut Schaa <Helmut.Schaa@gmx.de>,
+       netdev@vger.kernel.org
+Subject: Re: linux-next: build failure after merge of the suspend tree
+Message-Id: <20100521102913.ae4e8cd2.sfr@canb.auug.org.au>
+In-Reply-To: <201005080413.24465.rjw@sisk.pl>
+References: <20100507130821.3fb72c9d.sfr@canb.auug.org.au>
+	<201005080413.24465.rjw@sisk.pl>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 05, 2010 at 09:11:25PM +0200, Peter Zijlstra wrote:
-> On Wed, 2010-05-05 at 18:13 +0200, Andrea Arcangeli wrote:
-> > On Wed, May 05, 2010 at 04:54:54PM +0100, Mel Gorman wrote:
-> > > I'm still thinking of the ordering but one possibility would be to use a mutex
+Hi John, Dave,
+
+On Sat, 8 May 2010 04:13:24 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+>
+> On Friday 07 May 2010, Stephen Rothwell wrote:
 > > 
-> > I can't take mutex in split_huge_page... so I'd need to use an other solution.
+> > After merging the suspend tree, today's linux-next build (x86_64
+> > allmodconfig) failed like this:
+> > 
+> > net/mac80211/scan.c: In function 'ieee80211_scan_state_decision':
+> > net/mac80211/scan.c:510: error: implicit declaration of function 'pm_qos_requirement'
+> > 
+> > Caused by commit 62bad14fc6e0911a99882c261390968977d43283 ("PM QOS
+> > update") from the suspend tree interacting with commit
+> > df13cce53a7b28a81460e6bfc4857e9df4956141 ("mac80211: Improve software
+> > scan timing") from the net tree.
+> > 
+> > I have added the following merge fixup patch and can carry it as
+> > necessary:
 > 
-> So how's that going to work out for my make anon_vma->lock a mutex
-> patches?
+> Thanks a lot, please do so if that's not a problem.
+> 
+> Both trees are based on Linus' current and I don't see a good way of fixing
+> this issue in any of them individually.
 
-If you're interested I can include your patchset after memory
-compaction in aa.git, far from the ideal path for merging but ideal if
-you want to test together with the full thing (memory compaction,
-split_huge_page as you wondered just above etc..) and hopefully give
-it more testing.
+The suspend tree has been merged into Linus' tree, so this patch is
+needed in the net tree before it is merged (or as part of the merge).
 
-Note: I'm not sure if it's the right way to go, in fact I'm quite
-skeptical, not because it won't work, but ironically the main reason
-I'm interested is to close the XPMEM requirements the right way (not
-with page pins and deferred async invalidates), as long as we've users
-asking for rescheduling in mmu notifier methods this is the only way
-to go. Initially I thought it had to be a build time option, but
-seeing you doing it by default and for totally different reasons, I'm
-slightly more optimistic it can be the default and surely XPMEM will
-love it... the fact these locks are smarter helps a lot too.
+Here is the patch again:
+
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+Date: Fri, 7 May 2010 13:02:54 +1000
+Subject: [PATCH] wireless: update for pm_qos_requirement to pm_qos_request rename
+
+Signed-off-by: Stephen Rothwell <sfr@canb.auug.org.au>
+---
+ net/mac80211/scan.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/net/mac80211/scan.c b/net/mac80211/scan.c
+index e14c441..e1b0be7 100644
+--- a/net/mac80211/scan.c
++++ b/net/mac80211/scan.c
+@@ -510,7 +510,7 @@ static int ieee80211_scan_state_decision(struct ieee80211_local *local,
+ 		bad_latency = time_after(jiffies +
+ 				ieee80211_scan_get_channel_time(next_chan),
+ 				local->leave_oper_channel_time +
+-				usecs_to_jiffies(pm_qos_requirement(PM_QOS_NETWORK_LATENCY)));
++				usecs_to_jiffies(pm_qos_request(PM_QOS_NETWORK_LATENCY)));
+ 
+ 		listen_int_exceeded = time_after(jiffies +
+ 				ieee80211_scan_get_channel_time(next_chan),
+-- 
+1.7.1
+
+-- 
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
