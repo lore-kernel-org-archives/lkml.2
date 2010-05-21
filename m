@@ -1,89 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934362Ab0EUSom (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 14:44:42 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49946 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934253Ab0EUSol (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 14:44:41 -0400
-Date: Fri, 21 May 2010 20:44:29 +0200
-From: Jan Kara <jack@suse.cz>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: Re: [PULL REQUEST] Ext2, ext3, and quota updates for 2.6.35-rc1
-Message-ID: <20100521184428.GC10149@quack.suse.cz>
-References: <20100521174658.GA10149@quack.suse.cz>
+	id S934337Ab0EUSwT (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 14:52:19 -0400
+Received: from mail-yw0-f180.google.com ([209.85.211.180]:41985 "EHLO
+	mail-yw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755871Ab0EUSwS convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 14:52:18 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100521174658.GA10149@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100521182325.GO3991@agk-dp.fab.redhat.com>
+References: <1274371640.302.5.camel@yio.site> <AANLkTilI3RYcybjG7b1juTa3H31ImxQI1-2R_l7q0yc1@mail.gmail.com> 
+	<AANLkTinQwEqFKAiyAwVPwmzLtUXJkaOdZ0c88O_tfp-1@mail.gmail.com> 
+	<201005211909.29326.knikanth@suse.de> <AANLkTimGBgpqB7HEZrecv7uEis6L8b5Yv7jfD6iv_f4J@mail.gmail.com> 
+	<20100521182325.GO3991@agk-dp.fab.redhat.com>
+From: Kay Sievers <kay.sievers@vrfy.org>
+Date: Fri, 21 May 2010 20:51:49 +0200
+Message-ID: <AANLkTimuciWfkVwn7dKVeKL38WpMiCvgAxGx4ngAankW@mail.gmail.com>
+Subject: Re: add devname module aliases to allow module on-demand auto-loading
+To: Kay Sievers <kay.sievers@vrfy.org>, Nikanth Karthikesan <knikanth@suse.de>,
+       Peter Rajnoha <prajnoha@redhat.com>, Milan Broz <mbroz@redhat.com>,
+       Alasdair G Kergon <agk@redhat.com>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>,
+       Miklos Szeredi <miklos@szeredi.hu>,
+       Chris Mason <chris.mason@oracle.com>,
+       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+       Ian Kent <raven@themaw.net>, dm-devel@redhat.com
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri 21-05-10 19:46:58, Jan Kara wrote:
-> 
->   Hello Linus,
-> 
->   could you please pull from
-> 
-> git://git.kernel.org/pub/scm/linux/kernel/git/jack/linux-fs-2.6.git for_linus
-> 
->   to get the changes below? The big chunks are BKL removal from ext2, OCFS2
-> quota locking fixes, and some quota cleanups from Christoph (I have some
-> more of them pending but I got to testing them properly only today and thus
-> I want to leave the final version in linux-next at least over the weekend
-> before pushing them...).
-  Oops, I've just found a bug in one of my ocfs2 fixes. I've fixed that up
-so the new diffstat is here:
+On Fri, May 21, 2010 at 20:23, Alasdair G Kergon <agk@redhat.com> wrote:
+> On Fri, May 21, 2010 at 03:55:21PM +0200, Kay Sievers wrote:
+>> On Fri, May 21, 2010 at 15:39, Nikanth Karthikesan <knikanth@suse.de> wrote:
+>> > On Friday 21 May 2010 18:41:38 Kay Sievers wrote:
+>> >> On Fri, May 21, 2010 at 13:51, Kay Sievers <kay.sievers@vrfy.org> wrote:
+>> >> > On Fri, May 21, 2010 at 13:34, Alasdair G Kergon <agk@redhat.com> wrote:
+>> >> >
+>> >> > There is no harm to make a well-know device node static, it just
+>> >> > solves a lot of problems, and also makes it possible to work off of a
+>> >> > static /dev.
+>
+> Well until now we've tried to make everything possible treat device numbers as
+> dynamic, so I'd like to see some compelling logic behind the change.
 
- Documentation/filesystems/ext3.txt |   15 ++-
- fs/ext2/balloc.c                   |    6 +
- fs/ext2/ialloc.c                   |    9 +-
- fs/ext2/inode.c                    |    7 +-
- fs/ext2/super.c                    |   99 +++++------
- fs/ext2/xattr.c                    |    2 +
- fs/ext3/balloc.c                   |    6 +
- fs/ext3/fsync.c                    |   20 +--
- fs/ext3/inode.c                    |    2 +-
- fs/ext3/super.c                    |   77 +++++---
- fs/ext4/inode.c                    |    2 +-
- fs/gfs2/quota.c                    |   12 +-
- fs/jbd/commit.c                    |    8 +-
- fs/jbd/journal.c                   |   33 ++++
- fs/jfs/file.c                      |    2 +-
- fs/ocfs2/dlmglue.c                 |    3 +-
- fs/ocfs2/file.c                    |   21 +--
- fs/ocfs2/quota.h                   |   12 +-
- fs/ocfs2/quota_global.c            |  347 +++++++++++++++++++++---------------
- fs/ocfs2/quota_local.c             |  133 +++++++-------
- fs/ocfs2/super.c                   |   12 ++-
- fs/quota/dquot.c                   |  275 +++++++++++++++++-----------
- fs/quota/quota.c                   |   63 +++++--
- fs/quota/quota_tree.c              |   50 +++---
- fs/quota/quota_tree.h              |    6 +
- fs/quota/quota_v1.c                |    4 +-
- fs/quota/quota_v2.c                |    6 +-
- fs/reiserfs/inode.c                |    3 +-
- fs/udf/file.c                      |    2 +-
- fs/ufs/inode.c                     |    2 +-
- fs/ufs/namei.c                     |    2 +-
- fs/ufs/symlink.c                   |    8 +
- fs/ufs/truncate.c                  |   10 +-
- fs/ufs/ufs.h                       |    2 +
- fs/xfs/linux-2.6/xfs_quotaops.c    |    8 +-
- fs/xfs/quota/xfs_qm_syscalls.c     |   10 +-
- include/linux/dqblk_xfs.h          |    9 +
- include/linux/ext2_fs_sb.h         |    9 +
- include/linux/jbd.h                |    3 +-
- include/linux/quota.h              |   48 ++++--
- include/linux/quotaops.h           |   15 ++-
- 41 files changed, 836 insertions(+), 527 deletions(-)
+It's a well known single-instance device, and the static assignment
+solves a few problems with on-demand subsystem activation (which is
+the new fashion :)) and makes it possible to hide the
+compiled-in/modular issues we see, and have no proper solution for it.
 
-Sorry for the confusion.
+>> >> To illustrate:
+>> >>
+>> >> On my box without this patch:
+>> >>   dmsetup version
+>> >>   Library version:   1.02.42 (2010-01-14)
+>> >>   /proc/misc: No entry for device-mapper found
+>> >>   Is device-mapper driver missing from kernel?
+>> >>   Failure to communicate with kernel device-mapper driver.
+>
+> (Curiously this is not an issue I remember anyone raising with me as a problem
+> before.)
 
-								Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+Because distros go the easy and stupid way and just load everything
+they configured as a module. :) That is something to solve, or at
+least avoid and hide a bit.
+
+> So what concepts are at stake here.
+> The module is available to the kernel but has not been loaded.
+> Some users do not need the module, so it should not be loaded by default.
+> Users who *do* need it would like it to get loaded automatically.
+
+Yes. Like many other things too. Ideally we just hide as much as we
+can that stuff is a module and not compiled-in.
+
+> The matter under discussion is what mechanism to use to load it automatically.
+>
+> The unique information is the module name so the mechanism should
+> ideally be tied directly to that.  Anything wanting to use dm already
+> knows that name.  The character device only becomes available later,
+> after the module is loaded, and userspace obtains it from /proc/misc.
+>
+> The modprobe mechanism is tied to the name, so we should really look for
+> a solution based on that in the first instance.
+>
+> A related matter - not yet mentioned or discussed between us - is how
+> the /dev/mapper/control node gets created and what it should be called,
+> as that name obviously goes against the udev standard of placing
+> everything in a flat /dev namespace with kernel-based names (so
+> something like '/dev/miscNNN' in this case) and creating symlinks from
+> the traditional filesystem locations like /dev/mapper/control.
+
+The kernel itself creates /dev/mapper/control today. And if devtmpfs
+is not used (all recent released or upcoming distro releases depend on
+it) the kernel will supply this name to udev, and udev will create it.
+
+> Currently libdevmapper creates /dev/mapper/control as required based on
+> /proc/misc.  Presumably we should now hand that over to udev as a
+> special case of the way we transferred the entries for the actual
+> devices with similar waiting & notification.
+
+It like this already for a while. But it's all in the kernel, and is
+race free regarding the module loading, At the moment modprobe comes
+back, we are sure the node exists.
+
+> Currently tools (not libdevmapper) take responsibility for checking and
+> autoloading.  E.g. lvm issues modprobes to autoload dm target modules.
+> (The kernel does also handle this but lvm doesn't use it because
+> it wants to know earlier that the operation would fail to avoid more
+> complex error-handling code.)
+
+That's what this is about. The kernel will block the process that
+accesses /dev/mapper/control until it is loaded. No need to sync
+anything or then, or handle complex error cases.
+
+> So I think we should first try to make an extension of the existing
+> mechanisms work.  Everything is keyed off a single piece of information,
+> the module name, shared between userspace and kernel.
+
+I think its all covered with this patch. :) But if yo have any better
+idea, let us know.
+
+Thanks,
+Kay
