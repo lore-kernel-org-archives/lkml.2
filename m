@@ -1,22 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934227Ab0EUQyR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:54:17 -0400
-Received: from kroah.org ([198.145.64.141]:39072 "EHLO coco.kroah.org"
+	id S934374Ab0EURAv (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 13:00:51 -0400
+Received: from kroah.org ([198.145.64.141]:39104 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934196Ab0EUQyL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:11 -0400
+	id S934234Ab0EUQyU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:20 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: David Woodhouse <David.Woodhouse@intel.com>,
-       Johannes Berg <johannes@sipsolutions.net>,
-       Ming Lei <tom.leiming@gmail.com>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Tomas Winkler <tomas.winkler@intel.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 02/38] firmware_class: fix memory leak - free allocated pages
-Date: Fri, 21 May 2010 09:53:32 -0700
-Message-Id: <1274460848-11377-2-git-send-email-gregkh@suse.de>
+Cc: Johannes Berg <johannes.berg@intel.com>,
+       Kay Sievers <kay.sievers@vrfy.org>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 12/38] firmware class: export nowait to userspace
+Date: Fri, 21 May 2010 09:53:42 -0700
+Message-Id: <1274460848-11377-12-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -24,114 +20,102 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Woodhouse <David.Woodhouse@intel.com>
+From: Johannes Berg <johannes.berg@intel.com>
 
-fix memory leak introduced by the patch 6e03a201bbe:
-firmware: speed up request_firmware()
+When we use request_firmware_nowait(), userspace may
+not want to answer negatively right away when for
+example it is answering from an initrd only, but
+with request_firmware() it has to in order to not
+delay the kernel boot until the request times out.
 
-1. vfree won't release pages there were allocated explicitly and mapped
-using vmap. The memory has to be vunmap-ed and the pages needs
-to be freed explicitly
+This allows userspace to differentiate between the
+two in order to be able to reply negatively to async
+requests only when all filesystems have been mounted
+and have been checked for the requested firmware file.
 
-2. page array is moved into the 'struct
-firmware' so that we can free it from release_firmware()
-and not only in fw_dev_release()
-
-The fix doesn't break the firmware load speed.
-
-Cc: Johannes Berg <johannes@sipsolutions.net>
-Cc: Ming Lei <tom.leiming@gmail.com>
-Cc: Catalin Marinas <catalin.marinas@arm.com>
-Singed-off-by: Kay Sievers <kay.sievers@vrfy.org>
-Signed-off-by: David Woodhouse <David.Woodhouse@intel.com>
-Signed-off-by: Tomas Winkler <tomas.winkler@intel.com>
+Signed-off-by: Johannes Berg <johannes.berg@intel.com>
+Cc: Kay Sievers <kay.sievers@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- drivers/base/firmware_class.c |   26 ++++++++++++++++++++------
- include/linux/firmware.h      |    1 +
- 2 files changed, 21 insertions(+), 6 deletions(-)
+ drivers/base/firmware_class.c |   16 +++++++++++-----
+ 1 files changed, 11 insertions(+), 5 deletions(-)
 
 diff --git a/drivers/base/firmware_class.c b/drivers/base/firmware_class.c
-index 985da11..4c70b91 100644
+index 8e6c62b..d45d1e1 100644
 --- a/drivers/base/firmware_class.c
 +++ b/drivers/base/firmware_class.c
-@@ -130,6 +130,17 @@ static ssize_t firmware_loading_show(struct device *dev,
- 	return sprintf(buf, "%d\n", loading);
- }
- 
-+static void firmware_free_data(const struct firmware *fw)
-+{
-+	int i;
-+	vunmap(fw->data);
-+	if (fw->pages) {
-+		for (i = 0; i < PFN_UP(fw->size); i++)
-+			__free_page(fw->pages[i]);
-+		kfree(fw->pages);
-+	}
-+}
-+
- /* Some architectures don't have PAGE_KERNEL_RO */
- #ifndef PAGE_KERNEL_RO
- #define PAGE_KERNEL_RO PAGE_KERNEL
-@@ -162,21 +173,21 @@ static ssize_t firmware_loading_store(struct device *dev,
- 			mutex_unlock(&fw_lock);
- 			break;
- 		}
--		vfree(fw_priv->fw->data);
--		fw_priv->fw->data = NULL;
-+		firmware_free_data(fw_priv->fw);
-+		memset(fw_priv->fw, 0, sizeof(struct firmware));
-+		/* If the pages are not owned by 'struct firmware' */
- 		for (i = 0; i < fw_priv->nr_pages; i++)
- 			__free_page(fw_priv->pages[i]);
- 		kfree(fw_priv->pages);
- 		fw_priv->pages = NULL;
- 		fw_priv->page_array_size = 0;
- 		fw_priv->nr_pages = 0;
--		fw_priv->fw->size = 0;
- 		set_bit(FW_STATUS_LOADING, &fw_priv->status);
- 		mutex_unlock(&fw_lock);
- 		break;
- 	case 0:
- 		if (test_bit(FW_STATUS_LOADING, &fw_priv->status)) {
--			vfree(fw_priv->fw->data);
-+			vunmap(fw_priv->fw->data);
- 			fw_priv->fw->data = vmap(fw_priv->pages,
- 						 fw_priv->nr_pages,
- 						 0, PAGE_KERNEL_RO);
-@@ -184,7 +195,10 @@ static ssize_t firmware_loading_store(struct device *dev,
- 				dev_err(dev, "%s: vmap() failed\n", __func__);
- 				goto err;
- 			}
--			/* Pages will be freed by vfree() */
-+			/* Pages are now owned by 'struct firmware' */
-+			fw_priv->fw->pages = fw_priv->pages;
-+			fw_priv->pages = NULL;
-+
- 			fw_priv->page_array_size = 0;
- 			fw_priv->nr_pages = 0;
- 			complete(&fw_priv->completion);
-@@ -578,7 +592,7 @@ release_firmware(const struct firmware *fw)
- 			if (fw->data == builtin->data)
- 				goto free_fw;
- 		}
--		vfree(fw->data);
-+		firmware_free_data(fw);
- 	free_fw:
- 		kfree(fw);
- 	}
-diff --git a/include/linux/firmware.h b/include/linux/firmware.h
-index 043811f..53d1e6c 100644
---- a/include/linux/firmware.h
-+++ b/include/linux/firmware.h
-@@ -12,6 +12,7 @@
- struct firmware {
- 	size_t size;
- 	const u8 *data;
-+	struct page **pages;
+@@ -50,6 +50,7 @@ struct firmware_priv {
+ 	int page_array_size;
+ 	const char *vdata;
+ 	struct timer_list timeout;
++	bool nowait;
  };
  
- struct device;
+ #ifdef CONFIG_FW_LOADER
+@@ -112,6 +113,8 @@ static int firmware_uevent(struct device *dev, struct kobj_uevent_env *env)
+ 		return -ENOMEM;
+ 	if (add_uevent_var(env, "TIMEOUT=%i", loading_timeout))
+ 		return -ENOMEM;
++	if (add_uevent_var(env, "ASYNC=%d", fw_priv->nowait))
++		return -ENOMEM;
+ 
+ 	return 0;
+ }
+@@ -441,7 +444,7 @@ error_kfree:
+ 
+ static int fw_setup_device(struct firmware *fw, struct device **dev_p,
+ 			   const char *fw_name, struct device *device,
+-			   int uevent)
++			   int uevent, bool nowait)
+ {
+ 	struct device *f_dev;
+ 	struct firmware_priv *fw_priv;
+@@ -457,6 +460,8 @@ static int fw_setup_device(struct firmware *fw, struct device **dev_p,
+ 
+ 	fw_priv = dev_get_drvdata(f_dev);
+ 
++	fw_priv->nowait = nowait;
++
+ 	fw_priv->fw = fw;
+ 	sysfs_bin_attr_init(&fw_priv->attr_data);
+ 	retval = sysfs_create_bin_file(&f_dev->kobj, &fw_priv->attr_data);
+@@ -484,7 +489,7 @@ out:
+ 
+ static int
+ _request_firmware(const struct firmware **firmware_p, const char *name,
+-		 struct device *device, int uevent)
++		 struct device *device, int uevent, bool nowait)
+ {
+ 	struct device *f_dev;
+ 	struct firmware_priv *fw_priv;
+@@ -516,7 +521,8 @@ _request_firmware(const struct firmware **firmware_p, const char *name,
+ 	if (uevent)
+ 		dev_dbg(device, "firmware: requesting %s\n", name);
+ 
+-	retval = fw_setup_device(firmware, &f_dev, name, device, uevent);
++	retval = fw_setup_device(firmware, &f_dev, name, device,
++				 uevent, nowait);
+ 	if (retval)
+ 		goto error_kfree_fw;
+ 
+@@ -573,7 +579,7 @@ request_firmware(const struct firmware **firmware_p, const char *name,
+                  struct device *device)
+ {
+         int uevent = 1;
+-        return _request_firmware(firmware_p, name, device, uevent);
++        return _request_firmware(firmware_p, name, device, uevent, false);
+ }
+ 
+ /**
+@@ -619,7 +625,7 @@ request_firmware_work_func(void *arg)
+ 		return 0;
+ 	}
+ 	ret = _request_firmware(&fw, fw_work->name, fw_work->device,
+-		fw_work->uevent);
++		fw_work->uevent, true);
+ 
+ 	fw_work->cont(fw, fw_work->context);
+ 
 -- 
 1.7.0.3
 
