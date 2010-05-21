@@ -1,61 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754898Ab0EUNXP (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 09:23:15 -0400
-Received: from n71.bullet.mail.sp1.yahoo.com ([98.136.44.36]:22062 "HELO
-	n71.bullet.mail.sp1.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1753874Ab0EUNXN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 09:23:13 -0400
-X-Yahoo-Newman-Property: ymail-3
-X-Yahoo-Newman-Id: 775812.87556.bm@omp119.mail.gq1.yahoo.com
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=pacbell.net;
-  h=Message-ID:X-YMail-OSG:Received:X-Mailer:Date:From:Subject:To:Cc:In-Reply-To:MIME-Version:Content-Type;
-  b=oFS9ShUi8SzPmY1fPbVWzSZD3hoIfUFTVyZryln2tP5MHQ+9b1eGF1Anh+5VWVESrTVJL73vxk4U5COWATc9dEzHfk+22fGEt44e/wTkWE3DF6hnSl2b3NSnbgF2EGMrIPdXwXhew9LaZ+yed+SNbqTo95Yfgm92a4XvZxQHG/s=;
-Message-ID: <663067.14695.qm@web180316.mail.gq1.yahoo.com>
-X-YMail-OSG: qoSqrZkVM1mCD_FLOmOU8KHG7csY8p2zDP5xoYN4TOJBtHS
- csaXTRE2fWGtkYarvkVf_9qeAI23KDnfuDintYoeTXA3L1IvAUVUITF3Nws1
- K3v9XTgYx6TM7P_KrKz2LPeIZCcY0Y3oCO48_iMXwbWaV2D3CAxhTRyCHbMy
- 32kLLBEz.EnIkI_qTz3W2lK5ijWsFdEpNaCeEXBsOyiAIV_jYlQLJosJso_e
- KsHG4Gy3S2tChStG43K54Mlixkk0Wm2OttHMjeiegSYux3_2Pwkn2XMLK4Tw
- tHW6WHdElInPgia3yXw--
-X-Mailer: YahooMailClassic/11.0.8 YahooMailWebService/0.8.103.269680
-Date: Fri, 21 May 2010 06:23:12 -0700 (PDT)
-From: David Brownell <david-b@pacbell.net>
-Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
-To: felipe.balbi@nokia.com
-Cc: "Balbi Felipe \(Nokia-D/Helsinki\)" <felipe.balbi@nokia.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <20100521064925.GF925@nokia.com>
+	id S1755500Ab0EUNYe (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 09:24:34 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26417 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754666Ab0EUNYc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 09:24:32 -0400
+Date: Fri, 21 May 2010 09:24:07 -0400
+From: Jason Baron <jbaron@redhat.com>
+To: Ian Munsie <imunsie@au1.ibm.com>
+Cc: fweisbec <fweisbec@gmail.com>, mingo <mingo@elte.hu>,
+       rostedt <rostedt@goodmis.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 00/14] tracing: add compat syscall support v3
+Message-ID: <20100521132405.GA2109@redhat.com>
+References: <cover.1268749695.git.jbaron@redhat.com>
+ <1274433809-sup-5031@au1.ibm.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274433809-sup-5031@au1.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> > Not all GPIOs have hardware debounce though, so
-> offering this
-> > capability sort of begs the question of where/how to
-> provide a software debounce mechanism too...
+On Fri, May 21, 2010 at 07:40:21PM +1000, Ian Munsie wrote:
+> Hi Jason,
 > 
-> how about adding a flag for supported features and if that
-> hardware doesn't support we simply return,
+> I'm currently in the process of implementing syscall tracepoints for
+> PowerPC, and a considerable amount of my work is going to end up
+> requiring these patches of yours. I've reviewed and tested your patches
+> (and spent a good chunk of time rebasing them on top of
+> tip/tracing/core) and they all seem pretty good.
+> 
+> I *particularly* like the way in which they prevent ftrace syscalls from
+> reporting that sys_swapoff was constantly firing on x86_64 kernels with
+> a 32bit userspace ;)
+> 
+> Anyway, I'm just wondering if you have an ETA for the v4 patchset to
+> address the remaining issues that Frederic raised so that they can be
+> merged.
+> 
+> Cheers,
+> -Ian
+> 
 
-Presense of a debounce method would suffice when gpiolib is
-in use (vs direct implementation of the API provided by gpiolib).
+hi Ian,
 
+I think the main issue left was that I am using the same meta data for
+both the 32-bit and 64-bit table entries, when they reference the same
+syscall. for example, for x86 both the compat and underlying 64-bit
+kernel reference 'sys_rename'. Thus, i am pointing both perf events at
+the same meta data. Frederic was saying they need to be separate. I'm
+not sure i completely understand why, since the 32-bit are just sign
+extended to 64-bit in this case. Frederic, perhaps, you can explain this
+a bit more for me?
 
-> or fallback to
-> software emulation if chosen by the user. 
+thanks,
 
-ISTR that if you look back to the original discussion about
-GPIO debouncing, you will find such a software implementation;
-and maybe such an integration ... 
-
-
+-Jason
