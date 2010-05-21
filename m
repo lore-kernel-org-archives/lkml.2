@@ -1,133 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932391Ab0EUGxI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:53:08 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33772 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758173Ab0EUGxF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:53:05 -0400
-Message-ID: <15504.10.24.255.17.1274424784.squirrel@dbdmail.itg.ti.com>
-Date: Fri, 21 May 2010 12:23:04 +0530 (IST)
-Subject: [RFC ] [PATCH  V2  2/2] Platform changes for CMA3000
-From: "Hemanth V" <hemanthv@ti.com>
-To: linux-input@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S933429Ab0EUGxY (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:53:24 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:63202 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753803Ab0EUGxU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 02:53:20 -0400
+Date: Fri, 21 May 2010 09:49:25 +0300
+From: Felipe Balbi <felipe.balbi@nokia.com>
+To: ext David Brownell <david-b@pacbell.net>
+Cc: "Balbi Felipe (Nokia-D/Helsinki)" <felipe.balbi@nokia.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH 1/5] gpiolib: introduce set_debounce method
+Message-ID: <20100521064925.GF925@nokia.com>
+Reply-To: felipe.balbi@nokia.com
+References: <20100520194509.GB10739@sirena.org.uk>
+ <598314.1671.qm@web180305.mail.gq1.yahoo.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+Content-Type: text/plain; charset=iso-8859-1; format=flowed
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <598314.1671.qm@web180305.mail.gq1.yahoo.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-OriginalArrivalTime: 21 May 2010 06:51:50.0888 (UTC) FILETIME=[17194680:01CAF8B2]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hemanth V <hemanthv@ti.com>
-Date: Thu, 20 May 2010 20:33:03 +0530
-Subject: [PATCH] Platform changes for CMA3000 Accelerometer driver
+On Fri, May 21, 2010 at 12:50:41AM +0200, ext David Brownell wrote:
+>
+>> This would be generally useful for embedded systems,
+>> especially where the interrupt concerned is a wake source.
+>>  It allows drivers to avoid
+>> spurious interrupts from noisy sources so if the hardware
+>> supports it
+>> the driver can avoid having to explicitly wait for the
+>> signal to become
+>> stable and software has to cope with fewer events.
+>
+>True.
+>
+>Not all GPIOs have hardware debounce though, so offering this
+>capability sort of begs the question of where/how to provide a
+>software debounce mechanism too...
 
+how about adding a flag for supported features and if that hardware 
+doesn't support we simply return, or fallback to software emulation if 
+chosen by the user. Something like the feature flags for the i2c bus 
+drivers.
 
-Signed-off-by: Hemanth V <hemanthv@ti.com>
----
- arch/arm/mach-omap2/board-4430sdp.c |   37 ++++++++++++++++++++++++++++++++++-
- 1 files changed, 36 insertions(+), 1 deletions(-)
+I mean something like:
 
-diff --git a/arch/arm/mach-omap2/board-4430sdp.c b/arch/arm/mach-omap2/board-4430sdp.c
-index 3005558..b5b3d0b 100755
---- a/arch/arm/mach-omap2/board-4430sdp.c
-+++ b/arch/arm/mach-omap2/board-4430sdp.c
-@@ -19,9 +19,11 @@
- #include <linux/gpio.h>
- #include <linux/usb/otg.h>
- #include <linux/i2c/twl.h>
-+#include <linux/i2c/cma3000.h>
- #include <linux/regulator/machine.h>
- #include <linux/spi/spi.h>
- #include <linux/input.h>
-+#include <linux/interrupt.h>
- #include <linux/input/matrix_keypad.h>
- #include <linux/input/sfh7741.h>
-
-@@ -66,6 +68,8 @@ static struct platform_device sdp4430_proximity_device = {
- 	},
- };
-
-+#define OMAP4_CMA3000ACCL_GPIO		186
+diff --git a/arch/arm/plat-omap/gpio.c b/arch/arm/plat-omap/gpio.c
+index 95f92b0..ae03f6f 100644
+--- a/arch/arm/plat-omap/gpio.c
++++ b/arch/arm/plat-omap/gpio.c
+@@ -1855,6 +1855,7 @@ static int __init _omap_gpio_init(void)
+                 bank->chip.get = gpio_get;
+                 bank->chip.direction_output = gpio_output;
+                 bank->chip.set_debounce = gpio_debounce;
++               bank->chip->flags = GPIO_FLAG_DEBOUNCE;
+                 bank->chip.set = gpio_set;
+                 bank->chip.to_irq = gpio_2irq;
+                 if (bank_is_mpuio(bank)) {
+diff --git a/drivers/gpio/gpiolib.c b/drivers/gpio/gpiolib.c
+index cd85fd1..ed1ed74 100644
+--- a/drivers/gpio/gpiolib.c
++++ b/drivers/gpio/gpiolib.c
+@@ -1461,9 +1461,14 @@ int gpio_set_debounce(unsigned gpio, unsigned debounce)
+  
+         spin_lock_irqsave(&gpio_lock, flags);
+  
++       chip = desc->chip;
++       if (!(chip->flags & GPIO_FLAG_DEBOUNCE)) {
++               spin_unlock_irqrestore(&gpio_lock, flags);
++               return 0;
++       }
 +
- static int sdp4430_keymap[] = {
- 	KEY(0, 0, KEY_E),
- 	KEY(0, 1, KEY_R),
-@@ -575,6 +579,18 @@ static struct twl4030_platform_data sdp4430_twldata = {
- 	.vaux3		= &sdp4430_vaux3,
- };
-
-+static struct cma3000_platform_data cma3000_platform_data = {
-+	.fuzz_x = 25,
-+	.fuzz_y = 25,
-+	.fuzz_z = 25,
-+	.g_range = CMARANGE_8G,
-+	.mode = CMAMODE_MOTDET,
-+	.mdthr = 0x8,
-+	.mdfftmr = 0x33,
-+	.ffthr = 0x8,
-+	.irqflags = IRQF_TRIGGER_HIGH,
-+};
+         if (!gpio_is_valid(gpio))
+                 goto fail;
+-       chip = desc->chip;
+         if (!chip || !chip->set || !chip->set_debounce)
+                 goto fail;
+         gpio -= chip->base;
+diff --git a/include/asm-generic/gpio.h b/include/asm-generic/gpio.h
+index ce3eb87..26c0aa2 100644
+--- a/include/asm-generic/gpio.h
++++ b/include/asm-generic/gpio.h
+@@ -32,6 +32,8 @@ struct device;
+  struct seq_file;
+  struct module;
+  
++#define GPIO_FLAG_DEBOUNCE     (1 << 0)
 +
- static struct i2c_board_info __initdata sdp4430_i2c_boardinfo[] = {
- 	{
- 		I2C_BOARD_INFO("twl6030", 0x48),
-@@ -598,6 +614,14 @@ static struct i2c_board_info __initdata sdp4430_i2c_3_boardinfo[] = {
- 	},
- };
+  /**
+   * struct gpio_chip - abstract a GPIO controller
+   * @label: for diagnostics
+@@ -61,6 +63,7 @@ struct module;
+   *      names for the GPIOs in this chip. Any entry in the array
+   *      may be NULL if there is no alias for the GPIO, however the
+   *      array must be @ngpio entries long.
++ * @flags: a bitmap for supported features by that particular gpio chip.
+   *
+   * A gpio_chip can help platforms abstract various sources of GPIOs so
+   * they can all be accessed through a common programing interface.
+@@ -104,6 +107,7 @@ struct gpio_chip {
+         char                    **names;
+         unsigned                can_sleep:1;
+         unsigned                exported:1;
++       unsigned                flags;
+  };
+  
+  extern const char *gpiochip_is_requested(struct gpio_chip *chip,
 
-+static struct i2c_board_info __initdata sdp4430_i2c_4_boardinfo[] = {
-+	{
-+		I2C_BOARD_INFO("cma3000_accl", 0x1c),
-+		.platform_data = &cma3000_platform_data,
-+		.irq = OMAP_GPIO_IRQ(OMAP4_CMA3000ACCL_GPIO),
-+	},
-+};
-+
- static int __init omap4_i2c_init(void)
- {
- 	/* Phoenix Audio IC needs I2C1 to start with 400 KHz and less */
-@@ -607,7 +631,8 @@ static int __init omap4_i2c_init(void)
- 				ARRAY_SIZE(sdp4430_i2c_2_boardinfo));
- 	omap_register_i2c_bus(3, 400, sdp4430_i2c_3_boardinfo,
- 				ARRAY_SIZE(sdp4430_i2c_3_boardinfo));
--	omap_register_i2c_bus(4, 400, NULL, 0);
-+	omap_register_i2c_bus(4, 400, sdp4430_i2c_4_boardinfo,
-+				ARRAY_SIZE(sdp4430_i2c_4_boardinfo));
- 	return 0;
- }
+that could be used later for adding debounce emulation for chips that 
+doesn't support hw debouncing.
 
-@@ -661,6 +686,15 @@ fail1:
- 	gpio_free(OMAP4_SFH7741_SENSOR_OUTPUT_GPIO);
- }
-
-+static void omap_cma3000accl_init(void)
-+{
-+	if (gpio_request(OMAP4_CMA3000ACCL_GPIO, "Accelerometer") < 0) {
-+		pr_err("Accelerometer GPIO request failed\n");
-+		return;
-+	}
-+	gpio_direction_input(OMAP4_CMA3000ACCL_GPIO);
-+}
-+
- static void __init omap_4430sdp_init(void)
- {
- 	int status;
-@@ -686,6 +720,7 @@ static void __init omap_4430sdp_init(void)
- 				ARRAY_SIZE(sdp4430_spi_board_info));
- 	}
- 	omap_sfh7741prox_init();
-+	omap_cma3000accl_init();
- }
-
- static void __init omap_4430sdp_map_io(void)
 -- 
-1.5.6.3
+balbi
 
-
-
+DefectiveByDesign.org
