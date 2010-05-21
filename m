@@ -1,69 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758155Ab0EUITi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 04:19:38 -0400
-Received: from smtp.gentoo.org ([140.211.166.183]:40275 "EHLO smtp.gentoo.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754105Ab0EUITf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 04:19:35 -0400
-From: Mike Frysinger <vapier@gentoo.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, Wim Van Sebroeck <wim@iguana.be>,
-       uclinux-dist-devel@blackfin.uclinux.org
-Subject: [PATCH] [WATCHDOG] bfin: use new common Blackfin watchdog header
-Date: Fri, 21 May 2010 04:23:28 -0400
-Message-Id: <1274430208-15087-1-git-send-email-vapier@gentoo.org>
-X-Mailer: git-send-email 1.7.1
-In-Reply-To: <1268150860-28011-1-git-send-email-vapier@gentoo.org>
-References: <1268150860-28011-1-git-send-email-vapier@gentoo.org>
+	id S1754338Ab0EUIWu (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 04:22:50 -0400
+Received: from mga12.intel.com ([143.182.124.36]:24143 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753133Ab0EUIWr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 04:22:47 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,277,1272870000"; 
+   d="scan'208";a="279775008"
+Message-ID: <4BF642BB.2020402@linux.intel.com>
+Date: Fri, 21 May 2010 16:22:19 +0800
+From: minskey guo <chaohong_guo@linux.intel.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
+       prarit@redhat.com, andi.kleen@intel.com, linux-kernel@vger.kernel.org,
+       minskey guo <chaohong.guo@intel.com>, Tejun Heo <tj@kernel.org>,
+       stable@kernel.org
+Subject: Re: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
+References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>	<20100520134359.fdfb397e.akpm@linux-foundation.org>	<20100521105512.0c2cf254.sfr@canb.auug.org.au> <20100521134424.45e0ee36.kamezawa.hiroyu@jp.fujitsu.com>
+In-Reply-To: <20100521134424.45e0ee36.kamezawa.hiroyu@jp.fujitsu.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
----
-Andrew: could you pick this up ?  it was posted a few months ago ...
 
- drivers/watchdog/bfin_wdt.c |   19 +------------------
- 1 files changed, 1 insertions(+), 18 deletions(-)
+>>>> --- a/mm/percpu.c
+>>>> +++ b/mm/percpu.c
+>>>> @@ -714,13 +714,29 @@ static int pcpu_alloc_pages(struct pcpu_chunk *chunk,
+>>>
+>>> In linux-next, Tejun has gone and moved pcpu_alloc_pages() into the new
+>>> mm/percpu-vm.c.  So either
+>>
+>> This has gone into Linus' tree today ...
+>>
+>
+> Hmm, a comment here.
+>
+> Recently, Lee Schermerhorn developed
+>
+>   numa-introduce-numa_mem_id-effective-local-memory-node-id-fix2.patch
+>
+> Then, you can use cpu_to_mem() instead of cpu_to_node() to find the
+> nearest available node.
+> I don't check cpu_to_mem() is synchronized with NUMA hotplug but
+> using cpu_to_mem() rather than adding
+> =
+>
+> +			if ((nid == -1) ||
+> +			    !(node_zonelist(nid, GFP_KERNEL)->_zonerefs->zone))
+> +				nid = numa_node_id();
+> +
+> ==
+>
+> is better.
 
-diff --git a/drivers/watchdog/bfin_wdt.c b/drivers/watchdog/bfin_wdt.c
-index 9c7ccd1..9042a95 100644
---- a/drivers/watchdog/bfin_wdt.c
-+++ b/drivers/watchdog/bfin_wdt.c
-@@ -23,6 +23,7 @@
- #include <linux/interrupt.h>
- #include <linux/uaccess.h>
- #include <asm/blackfin.h>
-+#include <asm/bfin_watchdog.h>
- 
- #define stamp(fmt, args...) \
- 	pr_debug("%s:%i: " fmt "\n", __func__, __LINE__, ## args)
-@@ -49,24 +50,6 @@
- # define bfin_write_WDOG_STAT(x) bfin_write_WDOGA_STAT(x)
- #endif
- 
--/* Bit in SWRST that indicates boot caused by watchdog */
--#define SWRST_RESET_WDOG 0x4000
--
--/* Bit in WDOG_CTL that indicates watchdog has expired (WDR0) */
--#define WDOG_EXPIRED 0x8000
--
--/* Masks for WDEV field in WDOG_CTL register */
--#define ICTL_RESET   0x0
--#define ICTL_NMI     0x2
--#define ICTL_GPI     0x4
--#define ICTL_NONE    0x6
--#define ICTL_MASK    0x6
--
--/* Masks for WDEN field in WDOG_CTL register */
--#define WDEN_MASK    0x0FF0
--#define WDEN_ENABLE  0x0000
--#define WDEN_DISABLE 0x0AD0
--
- /* some defaults */
- #define WATCHDOG_TIMEOUT 20
- 
--- 
-1.7.1
+
+Yes.  I can use cpu_to_mem().  only some little difference during
+CPU online:  1st cpu within memoryless node gets memory from current
+node or the node to which the cpu0 belongs,
+
+
+But I have a question about the patch:
+
+    numa-slab-use-numa_mem_id-for-slab-local-memory-node.patch,
+
+
+
+
+@@ -2968,9 +2991,23 @@ static int __build_all_zonelists(void *d
+...
+
+-	for_each_possible_cpu(cpu)
++	for_each_possible_cpu(cpu) {
+		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
+...
+
++#ifdef CONFIG_HAVE_MEMORYLESS_NODES
++ 	if (cpu_online(cpu))
++		cpu_to_mem(cpu) = local_memory_node(cpu_to_node(cpu));
++#endif
+
+
+Look at the last two lines, suppose that memory is onlined before CPUs,
+where will cpu_to_mem(cpu) be set to the right nodeid for the last
+onlined cpu ?  Does that CPU always get memory from the node including 
+cpu0 for slab allocator where cpu_to_mem() is used ?
+
+
+
+thanks,
+-minskey
+
+
 
