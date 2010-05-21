@@ -1,79 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933631Ab0EUPvN (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 11:51:13 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49137 "EHLO mx1.suse.de"
+	id S1758310Ab0EUPy1 (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 11:54:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:59736 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933612Ab0EUPvL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 11:51:11 -0400
-Date: Fri, 21 May 2010 17:50:59 +0200
-From: Jan Kara <jack@suse.cz>
-To: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: lwoodman@redhat.com, LKML <linux-kernel@vger.kernel.org>,
-       linux-mm <linux-mm@kvack.org>, Nick Piggin <npiggin@suse.de>,
-       Jan Kara <jack@suse.cz>
-Subject: Re: RFC: dirty_ratio back to 40%
-Message-ID: <20100521155059.GB3412@quack.suse.cz>
-References: <4BF51B0A.1050901@redhat.com>
- <20100521083408.1E36.A69D9226@jp.fujitsu.com>
+	id S1754258Ab0EUPy0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 11:54:26 -0400
+Date: Fri, 21 May 2010 17:51:52 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Roland McGrath <roland@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 0/2] misc: don't use sig->count
+Message-ID: <20100521155152.GA14694@redhat.com>
+References: <20100323144836.GA10420@redhat.com> <22494.1274436496@redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100521083408.1E36.A69D9226@jp.fujitsu.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <22494.1274436496@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-  Hi,
+On 05/21, David Howells wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > According to grep, get_nr_threads() becomes the only user of sig->count.
+>
+> Are these two patches going upstream in this window?
 
-On Fri 21-05-10 08:48:57, KOSAKI Motohiro wrote:
-> CC to Nick and Jan
-  Thanks.
+We should ask Andrew.
 
-> > We've seen multiple performance regressions linked to the lower(20%)
-> > dirty_ratio.  When performing enough IO to overwhelm the background  
-> > flush daemons the percent of dirty pagecache memory quickly climbs 
-> > to the new/lower dirty_ratio value of 20%.  At that point all writing 
-> > processes are forced to stop and write dirty pagecache pages back to disk.  
-> > This causes performance regressions in several benchmarks as well as causing
-> > a noticeable overall sluggishness.  We all know that the dirty_ratio is
-> > an integrity vs performance trade-off but the file system journaling
-> > will cover any devastating effects in the event of a system crash.
-> > 
-> > Increasing the dirty_ratio to 40% will regain the performance loss seen
-> > in several benchmarks.  Whats everyone think about this???
-> 
-> In past, Jan Kara also claim the exactly same thing.
-> 
-> 	Subject: [LSF/VM TOPIC] Dynamic sizing of dirty_limit
-> 	Date: Wed, 24 Feb 2010 15:34:42 +0100
-> 
-> 	> (*) We ended up increasing dirty_limit in SLES 11 to 40% as it used to be
-> 	> with old kernels because customers running e.g. LDAP (using BerkelyDB
-> 	> heavily) were complaining about performance problems.
-> 
-> So, I'd prefer to restore the default rather than both Redhat and SUSE apply exactly
-> same distro specific patch. because we can easily imazine other users will face the same
-> issue in the future.
-> 
-> 	Acked-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-> 
-> Nick, Jan, if the above is too old and your distro have been dropped the patch, please
-> correct me.
-  No, SLE11 SP1 still has a patch that increases dirty_ratio to 40. But on
-the other hand I agree with Zan that for desktop, 40% of memory for dirty
-data is a lot these days and takes a long time to write out (it could
-easily be 30s - 1m). On a desktop the memory is much better used as
-a read-only pagecache or for memory hungry apps like Firefox or Acrobat
-Reader.  So I believe for a desktop the current setting (20) is a better
-choice. So until we find a way how to dynamically size the dirty limit, we
-have to decide whether we want to have a default setting for a server or
-for a desktop... Personally, I don't care very much and I feel my time
-would be better spent thinking about dynamic limit sizing rather than
-arguing what is better default ;).
+But personally I'd like to see them in 2.6.35. These changes allows
+us to do more cleanups/improvements.
 
-									Honza
--- 
-Jan Kara <jack@suse.cz>
-SUSE Labs, CR
+As for sizeof(int) added to signal_struct. I still hope we can kill
+this "int nr_threads" later. Even if not, with these changes we can
+move, say, ->group_leader from task_struct to signal_struct and kill
+signal->leader_pid.
+
+Oleg.
+
