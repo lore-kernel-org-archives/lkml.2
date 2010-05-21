@@ -1,81 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753819Ab0EUD0W (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 23:26:22 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:47742 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752889Ab0EUD0V (ORCPT
+	id S1753978Ab0EUD2K (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 23:28:10 -0400
+Received: from mga03.intel.com ([143.182.124.21]:39785 "EHLO mga03.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753698Ab0EUD2J convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 23:26:21 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=oWMiw4uSBAIKlBhzSdn+dH39Xy34oX0Mjrz58lFN6zK0nuaf/VsS5t1nxVqFdIPonW
-         rTqlOgMkrLEvPH/etE4zjsh2QGTUb8oCs3JFBrWCLUh7UILRWOBYLSoDRpucBnYMlCUY
-         f5NZR/MgxsgLUXpNCbWTrXh9L6zhwwmhkmIs4=
-Subject: Re: Transparent Hugepage Support #25
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: Andrea Arcangeli <aarcange@redhat.com>
-Cc: linux-mm@kvack.org, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, Marcelo Tosatti <mtosatti@redhat.com>,
-       Adam Litke <agl@us.ibm.com>, Avi Kivity <avi@redhat.com>,
-       Izik Eidus <ieidus@redhat.com>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>,
-       Nick Piggin <npiggin@suse.de>, Rik van Riel <riel@redhat.com>,
-       Mel Gorman <mel@csn.ul.ie>, Dave Hansen <dave@linux.vnet.ibm.com>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       Ingo Molnar <mingo@elte.hu>, Mike Travis <travis@sgi.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Chris Wright <chrisw@sous-sol.org>, bpicco@redhat.com,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       "Michael S. Tsirkin" <mst@redhat.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Johannes Weiner <hannes@cmpxchg.org>,
-       Daisuke Nishimura <nishimura@mxp.nes.nec.co.jp>,
-       Chris Mason <chris.mason@oracle.com>, Borislav Petkov <bp@alien8.de>
-In-Reply-To: <20100521000539.GA5733@random.random>
-References: <20100521000539.GA5733@random.random>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 05:26:13 +0200
-Message-ID: <1274412373.4977.8.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Thu, 20 May 2010 23:28:09 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,275,1272870000"; 
+   d="scan'208";a="279709890"
+Date: Fri, 21 May 2010 11:24:37 +0800
+From: "Du, Alek" <alek.du@intel.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: David Brownell <david-b@pacbell.net>,
+       Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] gpio: add Penwell gpio support
+Message-ID: <20100521112437.1efc88a2@dxy2>
+In-Reply-To: <20100520142821.ed6efd58.akpm@linux-foundation.org>
+References: <20100518154025.4aaff2ee@dxy2>
+	<20100520142821.ed6efd58.akpm@linux-foundation.org>
+Organization: Intel Corp.
+X-Mailer: Claws Mail 3.7.4 (GTK+ 2.20.0; i486-pc-linux-gnu)
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le vendredi 21 mai 2010 à 02:05 +0200, Andrea Arcangeli a écrit :
-> If you're running scientific applications, JVM or large gcc builds
-> (see attached patch for gcc), and you want to run from 2.5% faster for
-> kernel build (on bare metal), or 8% faster in translate.o of qemu (on
-> bare metal), 15% faster or more with virt and Intel EPT/ AMD NPT
-> (depending on the workload), you should apply and run the transparent
-> hugepage support on your systems.
+On Fri, 21 May 2010 05:28:21 +0800
+Andrew Morton <akpm@linux-foundation.org> wrote:
+
+> On Tue, 18 May 2010 15:40:25 +0800
+> "Du, Alek" <alek.du@intel.com> wrote:
 > 
-> Awesome results have already been posted on lkml, if you test and
-> benchmark it, please provide any positive/negative real-life result on
-> lkml (or privately to me if you prefer). The more testing the better.
+> > >From 963f6e83843b0f94f8a5337def6e897ec5bb99bf Mon Sep 17 00:00:00 2001
+> > From: Alek Du <alek.du@intel.com>
+> > Date: Thu, 25 Feb 2010 14:32:46 +0800
+> > Subject: [PATCH] gpio: add Penwell gpio support
+> > 
+> > Intel Penwell chip has two 96 pins GPIO blocks, which are very similiar as
+> > Intel Langwell chip GPIO block, except for pin number difference. This
+> > patch expends the original Langwell GPIO driver to support Penwell's.
+> > 
 > 
+> Has the driver been retested on Moorestown?
 
-Interesting !
+Yes, retested with Moorestown platform.
 
-Did you tried to change alloc_large_system_hash() to use hugepages for
-very large allocations ? We currently use vmalloc() on NUMA machines...
+> 
+> > -static int lnw_gpio_get(struct gpio_chip *chip, unsigned offset)
+> > +static inline void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
+> > +			enum GPIO_REG reg_type)
+> >  {
+> >  	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
+> > +	unsigned nreg = chip->ngpio / 32;
+> >  	u8 reg = offset / 32;
+> > -	void __iomem *gplr;
+> > +	void __iomem *ptr;
+> > +
+> > +	ptr = (void __iomem *)(lnw->reg_base + reg_type * nreg * 4 + reg * 4);
+> > +	return ptr;
+> > +}
+> 
+> inlining this function was probably the wrong thing to do.  But modern
+> gcc's often just ignore the `inline' and do the right thing anyway.
+>
 
-Dentry cache hash table entries: 2097152 (order: 12, 16777216 bytes)
-Inode-cache hash table entries: 1048576 (order: 11, 8388608 bytes)
-IP route cache hash table entries: 524288 (order: 10, 4194304 bytes)
-TCP established hash table entries: 524288 (order: 11, 8388608 bytes)
+Yes, as I looked at the assembly code, the function is too big. I should remove "inline".
+
+> 
+> > -static struct pci_device_id lnw_gpio_ids[] = {
+> > -	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f) },
+> > +static struct pci_device_id lnw_gpio_ids[] = {      /* pin number */
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f), .driver_data = 64 },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f), .driver_data = 96 },
+> > +	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a), .driver_data = 96 },
+> >  	{ 0, }
+> 
+> I suppose we should be using DEFINE_PCI_DEVICE_TABLE() here.
+> 
+>
+Yes, here is the incremental patch against previous one (I got the mail said
+the previous one is in mm tree now):
+
+>From 47b561649890807a1a66fd8c4b07ded87df485c2 Mon Sep 17 00:00:00 2001
+From: Alek Du <alek.du@intel.com>
+Date: Fri, 21 May 2010 11:16:40 +0800
+Subject: [PATCH] gpio: langwell/penwell gpio driver style fix
+
+* remove gpio_reg inline, due to the fact the func is too big to inline
+* use standard DEFINE_PCI_DEVICE_TABLE
+
+Signed-off-by: Alek Du <alek.du@intel.com>
+---
+ drivers/gpio/langwell_gpio.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/gpio/langwell_gpio.c b/drivers/gpio/langwell_gpio.c
+index 0693f71..8383a8d 100644
+--- a/drivers/gpio/langwell_gpio.c
++++ b/drivers/gpio/langwell_gpio.c
+@@ -63,7 +63,7 @@ struct lnw_gpio {
+ 	unsigned			irq_base;
+ };
+ 
+-static inline void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
++static void __iomem *gpio_reg(struct gpio_chip *chip, unsigned offset,
+ 			enum GPIO_REG reg_type)
+ {
+ 	struct lnw_gpio *lnw = container_of(chip, struct lnw_gpio, chip);
+@@ -175,7 +175,7 @@ static struct irq_chip lnw_irqchip = {
+ 	.set_type	= lnw_irq_type,
+ };
+ 
+-static struct pci_device_id lnw_gpio_ids[] = {      /* pin number */
++static DEFINE_PCI_DEVICE_TABLE(lnw_gpio_ids) = {   /* pin number */
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x080f), .driver_data = 64 },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081f), .driver_data = 96 },
+ 	{ PCI_DEVICE(PCI_VENDOR_ID_INTEL, 0x081a), .driver_data = 96 },
+-- 
+1.7.0.4
 
 
-0xffffc90000003000-0xffffc90001004000 16781312 alloc_large_system_hash+0x1d8/0x280 pages=4096 vmalloc vpages N0=2048 N1=2048
-0xffffc9000100f000-0xffffc90001810000 8392704 alloc_large_system_hash+0x1d8/0x280 pages=2048 vmalloc vpages N0=1024 N1=1024
-0xffffc90005882000-0xffffc90005c83000 4198400 alloc_large_system_hash+0x1d8/0x280 pages=1024 vmalloc vpages N0=512 N1=512
-0xffffc90005c84000-0xffffc90006485000 8392704 alloc_large_system_hash+0x1d8/0x280 pages=2048 vmalloc vpages N0=1024 N1=1024
 
 
+
+ 
 
