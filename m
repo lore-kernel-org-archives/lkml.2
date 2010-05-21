@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934328Ab0EUQzH (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:55:07 -0400
-Received: from kroah.org ([198.145.64.141]:39155 "EHLO coco.kroah.org"
+	id S934299Ab0EUQyo (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:54:44 -0400
+Received: from kroah.org ([198.145.64.141]:39121 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934117Ab0EUQye (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:34 -0400
+	id S934249Ab0EUQyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:24 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: "Eric W. Biederman" <ebiederm@aristanetworks.com>,
-       Al Viro <viro@zeniv.linux.org.uk>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 28/38] sysfs: Remove usage of S_BIAS to avoid merge conflict with the vfs tree
-Date: Fri, 21 May 2010 09:53:58 -0700
-Message-Id: <1274460848-11377-28-git-send-email-gregkh@suse.de>
+Cc: David Zeuthen <davidz@redhat.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 17/38] generate "change" uevent for loop device
+Date: Fri, 21 May 2010 09:53:47 -0700
+Message-Id: <1274460848-11377-17-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -20,56 +19,75 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Eric W. Biederman <ebiederm@aristanetworks.com>
+From: David Zeuthen <davidz@redhat.com>
 
-In Al's latest vfs tree the code is reworked and S_BIAS has been removed.
+Recent udev versions probe loop devices for filesystems meaning that
+the /dev/disk hierarchy may contain useful entries such as
 
-It turns out that checking to see if a super block is in the
-middle of an unmount in sysfs_exit_ns is unnecessary because we
-remove the super_block from the s_supers/s_instances list before
-struct sysfs_super_info pointed to by sb->s_fs_info is freed.
+ $ ls -l /dev/disk/by-label/Fedora-12-x86_64-Live
+ lrwxrwxrwx 1 root root 11 Mar 11 13:41 /dev/disk/by-label/Fedora-12-x86_64-Live -> ../../loop0
 
-For now just delete the unnecessary check to see if a superblock is in the
-middle of an unmount, it isn't necessary with or without Al's changes
-and it just causes a needless conflict.
+Unfortunately, no "change" uevent is generated when the loop device is
+detached so the symlink persists. Additionally, no "change" uevent is
+guaranteed to be generated when attaching an fd or changing capacity.
+For example,  user space could open the loop device O_RDONLY (in fact,
+recent util-linux-ng does this) so udev's OPTIONS+="watch" machinery may
+not trigger the "change" uevent.
 
-Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Al Viro <viro@zeniv.linux.org.uk>
-Signed-off-by: Eric W. Biederman <ebiederm@aristanetworks.com>
+This patch ensures that the "change" uevent is generated in all of
+these cases. As a result, the /dev/disk hierarchy works as expected
+for loop devices.
+
+Signed-off-by: David Zeuthen <davidz@redhat.com>
+Acked-by: Kay Sievers <kay.sievers@vrfy.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- fs/sysfs/mount.c |   11 ++++++++---
- 1 files changed, 8 insertions(+), 3 deletions(-)
+ drivers/block/loop.c |   10 +++++++++-
+ 1 files changed, 9 insertions(+), 1 deletions(-)
 
-diff --git a/fs/sysfs/mount.c b/fs/sysfs/mount.c
-index 1afa32b..281c0c9 100644
---- a/fs/sysfs/mount.c
-+++ b/fs/sysfs/mount.c
-@@ -138,6 +138,9 @@ static void sysfs_kill_sb(struct super_block *sb)
- {
- 	struct sysfs_super_info *info = sysfs_info(sb);
+diff --git a/drivers/block/loop.c b/drivers/block/loop.c
+index 8546d12..a90e83c 100644
+--- a/drivers/block/loop.c
++++ b/drivers/block/loop.c
+@@ -835,6 +835,8 @@ static int loop_set_fd(struct loop_device *lo, fmode_t mode,
  
-+	/* Remove the superblock from fs_supers/s_instances
-+	 * so we can't find it, before freeing sysfs_super_info.
-+	 */
- 	kill_anon_super(sb);
- 	kfree(info);
- }
-@@ -156,9 +159,11 @@ void sysfs_exit_ns(enum kobj_ns_type type, const void *ns)
- 	spin_lock(&sb_lock);
- 	list_for_each_entry(sb, &sysfs_fs_type.fs_supers, s_instances) {
- 		struct sysfs_super_info *info = sysfs_info(sb);
--		/* Ignore superblocks that are in the process of unmounting */
--		if (sb->s_count <= S_BIAS)
--			continue;
-+		/*
-+		 * If we see a superblock on the fs_supers/s_instances
-+		 * list the unmount has not completed and sb->s_fs_info
-+		 * points to a valid struct sysfs_super_info.
-+		 */
- 		/* Ignore superblocks with the wrong ns */
- 		if (info->ns[type] != ns)
- 			continue;
+ 	set_capacity(lo->lo_disk, size);
+ 	bd_set_size(bdev, size << 9);
++	/* let user-space know about the new size */
++	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+ 
+ 	set_blocksize(bdev, lo_blocksize);
+ 
+@@ -858,6 +860,7 @@ out_clr:
+ 	set_capacity(lo->lo_disk, 0);
+ 	invalidate_bdev(bdev);
+ 	bd_set_size(bdev, 0);
++	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+ 	mapping_set_gfp_mask(mapping, lo->old_gfp_mask);
+ 	lo->lo_state = Lo_unbound;
+  out_putf:
+@@ -944,8 +947,11 @@ static int loop_clr_fd(struct loop_device *lo, struct block_device *bdev)
+ 	if (bdev)
+ 		invalidate_bdev(bdev);
+ 	set_capacity(lo->lo_disk, 0);
+-	if (bdev)
++	if (bdev) {
+ 		bd_set_size(bdev, 0);
++		/* let user-space know about this change */
++		kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
++	}
+ 	mapping_set_gfp_mask(filp->f_mapping, gfp);
+ 	lo->lo_state = Lo_unbound;
+ 	/* This is safe: open() is still holding a reference. */
+@@ -1189,6 +1195,8 @@ static int loop_set_capacity(struct loop_device *lo, struct block_device *bdev)
+ 	sz <<= 9;
+ 	mutex_lock(&bdev->bd_mutex);
+ 	bd_set_size(bdev, sz);
++	/* let user-space know about the new size */
++	kobject_uevent(&disk_to_dev(bdev->bd_disk)->kobj, KOBJ_CHANGE);
+ 	mutex_unlock(&bdev->bd_mutex);
+ 
+  out:
 -- 
 1.7.0.3
 
