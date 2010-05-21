@@ -1,356 +1,1103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758176Ab0EUGv3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 02:51:29 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:51131 "EHLO smtps.tip.net.au"
+	id S1758193Ab0EUGxB (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 02:53:01 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33769 "EHLO comal.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753294Ab0EUGv0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 02:51:26 -0400
-Date: Fri, 21 May 2010 16:51:19 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: linux-next@vger.kernel.org
-Cc: LKML <linux-kernel@vger.kernel.org>
-Subject: linux-next: Tree for May 21
-Message-Id: <20100521165119.6481ca42.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__21_May_2010_16_51_19_+1000_7hQmqC7lajjP_j8K"
+	id S1753803Ab0EUGw6 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 02:52:58 -0400
+Message-ID: <15445.10.24.255.17.1274424777.squirrel@dbdmail.itg.ti.com>
+Date: Fri, 21 May 2010 12:22:57 +0530 (IST)
+Subject: [RFC] [PATCH V2 1/2] input: CMA3000 Accelerometer driver
+From: "Hemanth V" <hemanthv@ti.com>
+To: linux-input@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+User-Agent: SquirrelMail/1.4.3a
+X-Mailer: SquirrelMail/1.4.3a
+MIME-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_May_2010_16_51_19_+1000_7hQmqC7lajjP_j8K
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Hemanth V <hemanthv@ti.com>
+Date: Thu, 20 May 2010 20:18:17 +0530
+Subject: [PATCH] input: CMA3000 Accelerometer Driver
 
-Hi all,
+This patch adds support for CMA3000 Tri-axis accelerometer, which
+supports Motion detect, Measurement and Free fall modes.
+CMA3000 supports both I2C/SPI bus for communication, currently the
+driver supports I2C based communication.
 
-We are in the merge window again.  I remind you all not to add stuff for
-2.6.36 to your linux-next trees until after 2.6.35-rc1.
+Driver reports acceleration data through input subsystem and supports
+sysfs for configuration changes.
 
-Changes since 20100520:
+This is V2 of patch, which fixes open source review comments
 
-Dropped trees: tmio-mmc (long unresolved conflicts and unable to fetch)
-	hwlat (at the maintainer's request)
+Signed-off-by: Hemanth V <hemanthv@ti.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+---
+ Documentation/input/cma3000_d0x.txt  |  112 ++++++
+ drivers/input/misc/Kconfig           |    7 +
+ drivers/input/misc/Makefile          |    1 +
+ drivers/input/misc/cma3000_d0x.c     |  633 ++++++++++++++++++++++++++++++++++
+ drivers/input/misc/cma3000_d0x.h     |   46 +++
+ drivers/input/misc/cma3000_d0x_i2c.c |  136 ++++++++
+ include/linux/i2c/cma3000.h          |   60 ++++
+ 7 files changed, 995 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/input/cma3000_d0x.txt
+ create mode 100644 drivers/input/misc/cma3000_d0x.c
+ create mode 100644 drivers/input/misc/cma3000_d0x.h
+ create mode 100644 drivers/input/misc/cma3000_d0x_i2c.c
+ create mode 100644 include/linux/i2c/cma3000.h
 
-My fixes tree contains:
-      sound: fixup for usb_buffer_alloc/free rename
-      v4l-dvb: update gfp/slab.h includes
-      arm: update gfp/slab.h includes
-      davinci: update gfp/slab.h includes
+diff --git a/Documentation/input/cma3000_d0x.txt b/Documentation/input/cma3000_d0x.txt
+new file mode 100644
+index 0000000..29ab6b7
+--- /dev/null
++++ b/Documentation/input/cma3000_d0x.txt
+@@ -0,0 +1,112 @@
++Kernel driver for CMA3000-D0x
++============================
++
++Supported chips:
++* VTI CMA3000-D0x
++Datasheet:
++  CMA3000-D0X Product Family Specification 8281000A.02.pdf
++
++Author: Hemanth V <hemanthv@ti.com>
++
++
++Description
++-----------
++CMA3000 Tri-axis accelerometer supports Motion detect, Measurement and
++Free fall modes.
++
++Motion Detect Mode: Its the low power mode where interrupts are generated only
++when motion exceeds the defined thresholds.
++
++Measurement Mode: This mode is used to read the acceleration data on X,Y,Z
++axis and supports 400, 100, 40 Hz sample frequency.
++
++Free fall Mode: This mode is intented to save system resources.
++
++Threshold values: Chip supports defining threshold values for above modes
++which includes time and g value. Refer product specifications for more details.
++
++CMA3000 supports both I2C/SPI bus for communication, currently the driver
++supports I2C based communication.
++
++Driver reports acceleration data through input subsystem and supports sysfs
++for configuration changes. It generates ABS_MISC event with value 1 when
++free fall is detected.
++
++Platform data need to be configured for initial default values.
++
++Platform Data
++-------------
++fuzz_x: Noise on X Axis
++
++fuzz_y: Noise on Y Axis
++
++fuzz_z: Noise on Z Axis
++
++g_range: G range in milli g i.e 2000 or 8000
++
++mode: Default Operating mode
++
++mdthr: Motion detect threshold value
++
++mdfftmr: Motion detect and free fall time value
++
++ffthr: Free fall threshold value
++
++Input Interface
++--------------
++Input driver version is 1.0.0
++Input device ID: bus 0x18 vendor 0x0 product 0x0 version 0x0
++Input device name: "cma3000-acclerometer"
++Supported events:
++  Event type 0 (Sync)
++  Event type 3 (Absolute)
++    Event code 0 (X)
++      Value     47
++      Min    -8000
++      Max     8000
++      Fuzz     200
++    Event code 1 (Y)
++      Value    -28
++      Min    -8000
++      Max     8000
++      Fuzz     200
++    Event code 2 (Z)
++      Value    905
++      Min    -8000
++      Max     8000
++      Fuzz     200
++    Event code 40 (Misc)
++      Value      0
++      Min        0
++      Max        1
++  Event type 4 (Misc)
++
++Sysfs entries
++-------------
++
++mode:
++	0: power down mode
++	1: 100 Hz Measurement mode
++	2: 400 Hz Measurement mode
++	3: 40 Hz Measurement mode
++	4: Motion Detect mode (default)
++	5: 100 Hz Free fall mode
++	6: 40 Hz Free fall mode
++	7: Power off mode
++
++grange:
++	2000: 2000 mg or 2G Range
++	8000: 8000 mg or 8G Range
++
++mdthr:
++	X: X * 71mg (8G Range)
++	X: X * 18mg (2G Range)
++
++mdfftmr:
++	X: (X & 0x70) * 100 ms (MDTMR)
++	   (X & 0x0F) * 2.5 ms (FFTMR 400 Hz)
++	   (X & 0x0F) * 10 ms  (FFTMR 100 Hz)
++
++ffthr:
++       X: (X >> 2) * 18mg (2G Range)
++       X: (X & 0x0F) * 71 mg (8G Range)
+diff --git a/drivers/input/misc/Kconfig b/drivers/input/misc/Kconfig
+index 1cf25ee..043ee8d 100755
+--- a/drivers/input/misc/Kconfig
++++ b/drivers/input/misc/Kconfig
+@@ -340,4 +340,11 @@
+ 	  To compile this driver as a module, choose M here: the
+ 	  module will be called pcap_keys.
 
-The samsung tree lost its conflicts.
++config INPUT_CMA3000_I2C
++	bool "VTI CMA3000 Tri-axis accelerometer"
++	depends on I2C && SYSFS
++	help
++	  Say Y here if you want to use VTI CMA3000 Accelerometer
++	  through I2C interface.
++
+ endif
+diff --git a/drivers/input/misc/Makefile b/drivers/input/misc/Makefile
+index 07ee237..011161d 100644
+--- a/drivers/input/misc/Makefile
++++ b/drivers/input/misc/Makefile
+@@ -32,3 +32,4 @@
+ obj-$(CONFIG_INPUT_WISTRON_BTNS)	+= wistron_btns.o
+ obj-$(CONFIG_INPUT_WM831X_ON)		+= wm831x-on.o
+ obj-$(CONFIG_INPUT_YEALINK)		+= yealink.o
++obj-$(CONFIG_INPUT_CMA3000_I2C)		+= cma3000_d0x.o cma3000_d0x_i2c.o
+diff --git a/drivers/input/misc/cma3000_d0x.c b/drivers/input/misc/cma3000_d0x.c
+new file mode 100644
+index 0000000..812c464
+--- /dev/null
++++ b/drivers/input/misc/cma3000_d0x.c
+@@ -0,0 +1,633 @@
++/*
++ * cma3000_d0x.c
++ * VTI CMA3000_D0x Accelerometer driver
++ *	Supports I2C/SPI interfaces
++ *
++ * Copyright (C) 2010 Texas Instruments
++ * Author: Hemanth V <hemanthv@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/interrupt.h>
++#include <linux/delay.h>
++#include <linux/input.h>
++#include <linux/platform_device.h>
++#include <linux/i2c/cma3000.h>
++
++#include "cma3000_d0x.h"
++
++#define CMA3000_WHOAMI      0x00
++#define CMA3000_REVID       0x01
++#define CMA3000_CTRL        0x02
++#define CMA3000_STATUS      0x03
++#define CMA3000_RSTR        0x04
++#define CMA3000_INTSTATUS   0x05
++#define CMA3000_DOUTX       0x06
++#define CMA3000_DOUTY       0x07
++#define CMA3000_DOUTZ       0x08
++#define CMA3000_MDTHR       0x09
++#define CMA3000_MDFFTMR     0x0A
++#define CMA3000_FFTHR       0x0B
++
++#define CMA3000_RANGE2G    (1 << 7)
++#define CMA3000_RANGE8G    (0 << 7)
++#define CMA3000_BUSI2C     (0 << 4)
++#define CMA3000_MODEMASK   (7 << 1)
++#define CMA3000_GRANGEMASK (1 << 7)
++
++#define CMA3000_STATUS_PERR    1
++#define CMA3000_INTSTATUS_FFDET (1 << 2)
++
++/* Settling time delay in ms */
++#define CMA3000_SETDELAY    30
++
++/* Delay for clearing interrupt in us */
++#define CMA3000_INTDELAY    44
++
++
++/*
++ * Bit weights in mg for bit 0, other bits need
++ * multipy factor 2^n. Eight bit is the sign bit.
++ */
++#define BIT_TO_2G  18
++#define BIT_TO_8G  71
++
++/*
++ * Conversion for each of the eight modes to g, depending
++ * on G range i.e 2G or 8G. Some modes always operate in
++ * 8G.
++ */
++
++static int mode_to_mg[8][2] = {
++	{0, 0},
++	{BIT_TO_8G, BIT_TO_2G},
++	{BIT_TO_8G, BIT_TO_2G},
++	{BIT_TO_8G, BIT_TO_8G},
++	{BIT_TO_8G, BIT_TO_8G},
++	{BIT_TO_8G, BIT_TO_2G},
++	{BIT_TO_8G, BIT_TO_2G},
++	{0, 0},
++};
++
++static ssize_t cma3000_show_attr_mode(struct device *dev,
++				     struct device_attribute *attr,
++				     char *buf)
++{
++	uint8_t mode;
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++
++	mode = cma3000_read(data, CMA3000_CTRL, "ctrl");
++	if (mode < 0)
++		return mode;
++
++	return sprintf(buf, "%d\n", (mode & CMA3000_MODEMASK) >> 1);
++}
++
++static ssize_t cma3000_store_attr_mode(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++	unsigned long val;
++	int error;
++	uint8_t ctrl;
++
++	error = strict_strtoul(buf, 0, &val);
++	if (error)
++		goto err_op3_failed;
++
++	if (val < CMAMODE_DEFAULT || val > CMAMODE_POFF) {
++		error = -EINVAL;
++		goto err_op3_failed;
++	}
++
++	mutex_lock(&data->mutex);
++	val &= (CMA3000_MODEMASK >> 1);
++	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
++	if (ctrl < 0) {
++		error = ctrl;
++		goto err_op2_failed;
++	}
++
++	ctrl &= ~CMA3000_MODEMASK;
++	ctrl |= (val << 1);
++	data->pdata.mode = val;
++	disable_irq(data->client->irq);
++
++	error = cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
++	if (error < 0)
++		goto err_op1_failed;
++
++	/* Settling time delay required after mode change */
++	msleep(CMA3000_SETDELAY);
++
++	enable_irq(data->client->irq);
++	mutex_unlock(&data->mutex);
++	return count;
++
++err_op1_failed:
++	enable_irq(data->client->irq);
++err_op2_failed:
++	mutex_unlock(&data->mutex);
++err_op3_failed:
++	return error;
++}
++
++static ssize_t cma3000_show_attr_grange(struct device *dev,
++				       struct device_attribute *attr,
++				       char *buf)
++{
++	uint8_t mode;
++	int g_range;
++
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++
++	mode = cma3000_read(data, CMA3000_CTRL, "ctrl");
++	if (mode < 0)
++		return mode;
++
++	g_range = (mode & CMA3000_GRANGEMASK) ? CMARANGE_2G : CMARANGE_8G;
++	return sprintf(buf, "%d\n", g_range);
++}
++
++static ssize_t cma3000_store_attr_grange(struct device *dev,
++				     struct device_attribute *attr,
++				     const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++	unsigned long val;
++	int error, g_range, fuzz_x, fuzz_y, fuzz_z;
++	uint8_t ctrl;
++
++	error = strict_strtoul(buf, 0, &val);
++	if (error)
++		goto err_op3_failed;
++
++	mutex_lock(&data->mutex);
++	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
++	if (ctrl < 0) {
++		error = ctrl;
++		goto err_op2_failed;
++	}
++
++	ctrl &= ~CMA3000_GRANGEMASK;
++
++	if (val == CMARANGE_2G) {
++		ctrl |= CMA3000_RANGE2G;
++		data->pdata.g_range = CMARANGE_2G;
++	} else if (val == CMARANGE_8G) {
++		ctrl |= CMA3000_RANGE8G;
++		data->pdata.g_range = CMARANGE_8G;
++	} else {
++		error = -EINVAL;
++		goto err_op2_failed;
++	}
++
++	g_range = data->pdata.g_range;
++	fuzz_x = data->pdata.fuzz_x;
++	fuzz_y = data->pdata.fuzz_y;
++	fuzz_z = data->pdata.fuzz_z;
++
++	disable_irq(data->client->irq);
++	error = cma3000_set(data, CMA3000_CTRL, ctrl, "ctrl");
++	if (error < 0)
++		goto err_op1_failed;
++
++	input_set_abs_params(data->input_dev, ABS_X, -g_range,
++				g_range, fuzz_x, 0);
++	input_set_abs_params(data->input_dev, ABS_Y, -g_range,
++				g_range, fuzz_y, 0);
++	input_set_abs_params(data->input_dev, ABS_Z, -g_range,
++				g_range, fuzz_z, 0);
++
++	enable_irq(data->client->irq);
++	mutex_unlock(&data->mutex);
++	return count;
++
++err_op1_failed:
++	enable_irq(data->client->irq);
++err_op2_failed:
++	mutex_unlock(&data->mutex);
++err_op3_failed:
++	return error;
++}
++
++static ssize_t cma3000_show_attr_mdthr(struct device *dev,
++				      struct device_attribute *attr,
++				      char *buf)
++{
++	uint8_t mode;
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++
++	mode = cma3000_read(data, CMA3000_MDTHR, "mdthr");
++	if (mode < 0)
++		return mode;
++
++	return sprintf(buf, "%d\n", mode);
++}
++
++static ssize_t cma3000_store_attr_mdthr(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++	unsigned long val;
++	int error;
++
++	error = strict_strtoul(buf, 0, &val);
++	if (error)
++		return error;
++
++	mutex_lock(&data->mutex);
++	data->pdata.mdthr = val;
++	disable_irq(data->client->irq);
++	error = cma3000_set(data, CMA3000_MDTHR, val, "mdthr");
++	enable_irq(data->client->irq);
++	mutex_unlock(&data->mutex);
++
++	/* If there was error during write, return error */
++	if (error < 0)
++		return error;
++	else
++		return count;
++}
++
++static ssize_t cma3000_show_attr_mdfftmr(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	uint8_t mode;
++
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++
++	mode = cma3000_read(data, CMA3000_MDFFTMR, "mdfftmr");
++	if (mode < 0)
++		return mode;
++
++	return sprintf(buf, "%d\n", mode);
++}
++
++static ssize_t cma3000_store_attr_mdfftmr(struct device *dev,
++					struct device_attribute *attr,
++					const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++	unsigned long val;
++	int error;
++
++	error = strict_strtoul(buf, 0, &val);
++	if (error)
++		return error;
++
++	mutex_lock(&data->mutex);
++	data->pdata.mdfftmr = val;
++	disable_irq(data->client->irq);
++	error = cma3000_set(data, CMA3000_MDFFTMR, val, "mdthr");
++	enable_irq(data->client->irq);
++	mutex_unlock(&data->mutex);
++
++	/* If there was error during write, return error */
++	if (error < 0)
++		return error;
++	else
++		return count;
++}
++
++static ssize_t cma3000_show_attr_ffthr(struct device *dev,
++					struct device_attribute *attr,
++					char *buf)
++{
++	uint8_t mode;
++
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++
++	mode = cma3000_read(data, CMA3000_FFTHR, "ffthr");
++	if (mode < 0)
++		return mode;
++
++	return sprintf(buf, "%d\n", mode);
++}
++
++static ssize_t cma3000_store_attr_ffthr(struct device *dev,
++				       struct device_attribute *attr,
++				       const char *buf, size_t count)
++{
++	struct platform_device *pdev = to_platform_device(dev);
++	struct cma3000_accl_data *data = platform_get_drvdata(pdev);
++	unsigned long val;
++	int error;
++
++	error = strict_strtoul(buf, 0, &val);
++	if (error)
++		return error;
++
++	mutex_lock(&data->mutex);
++	data->pdata.ffthr = val;
++	disable_irq(data->client->irq);
++	error = cma3000_set(data, CMA3000_FFTHR, val, "mdthr");
++	enable_irq(data->client->irq);
++	mutex_unlock(&data->mutex);
++
++	/* If there was error during write, return error */
++	if (error < 0)
++		return error;
++	else
++		return count;
++}
++
++static DEVICE_ATTR(mode, S_IWUSR | S_IRUGO,
++		cma3000_show_attr_mode, cma3000_store_attr_mode);
++
++static DEVICE_ATTR(grange, S_IWUSR | S_IRUGO,
++		cma3000_show_attr_grange, cma3000_store_attr_grange);
++
++static DEVICE_ATTR(mdthr, S_IWUSR | S_IRUGO,
++		cma3000_show_attr_mdthr, cma3000_store_attr_mdthr);
++
++static DEVICE_ATTR(mdfftmr, S_IWUSR | S_IRUGO,
++		cma3000_show_attr_mdfftmr, cma3000_store_attr_mdfftmr);
++
++static DEVICE_ATTR(ffthr, S_IWUSR | S_IRUGO,
++		cma3000_show_attr_ffthr, cma3000_store_attr_ffthr);
++
++
++static struct attribute *cma_attrs[] = {
++	&dev_attr_mode.attr,
++	&dev_attr_grange.attr,
++	&dev_attr_mdthr.attr,
++	&dev_attr_mdfftmr.attr,
++	&dev_attr_ffthr.attr,
++	NULL,
++};
++
++static struct attribute_group cma3000_attr_group = {
++	.attrs = cma_attrs,
++};
++
++static void decode_mg(struct cma3000_accl_data *data, int *datax,
++				int *datay, int *dataz)
++{
++	/* Data in 2's complement, convert to mg */
++	*datax = (((s8)(*datax)) * (data->bit_to_mg));
++	*datay = (((s8)(*datay)) * (data->bit_to_mg));
++	*dataz = (((s8)(*dataz)) * (data->bit_to_mg));
++}
++
++static irqreturn_t cma3000_thread_irq(int irq, void *dev_id)
++{
++	struct cma3000_accl_data *data = dev_id;
++	int  datax, datay, dataz;
++	u8 ctrl, mode, range, intr_status;
++
++	intr_status = cma3000_read(data, CMA3000_INTSTATUS, "interrupt status");
++	if (intr_status < 0)
++		return IRQ_NONE;
++
++	/* Check if free fall is detected, report immediately */
++	if (intr_status & CMA3000_INTSTATUS_FFDET) {
++		input_report_abs(data->input_dev, ABS_MISC, 1);
++		input_sync(data->input_dev);
++	} else {
++		input_report_abs(data->input_dev, ABS_MISC, 0);
++	}
++
++	datax = cma3000_read(data, CMA3000_DOUTX, "X");
++	datay = cma3000_read(data, CMA3000_DOUTY, "Y");
++	dataz = cma3000_read(data, CMA3000_DOUTZ, "Z");
++
++	ctrl = cma3000_read(data, CMA3000_CTRL, "ctrl");
++	mode = (ctrl & CMA3000_MODEMASK) >> 1;
++	range = (ctrl & CMA3000_GRANGEMASK) >> 7;
++
++	data->bit_to_mg = mode_to_mg[mode][range];
++
++	/* Interrupt not for this device */
++	if (data->bit_to_mg == 0)
++		return IRQ_NONE;
++
++	/* Decode register values to milli g */
++	decode_mg(data, &datax, &datay, &dataz);
++
++	input_report_abs(data->input_dev, ABS_X, datax);
++	input_report_abs(data->input_dev, ABS_Y, datay);
++	input_report_abs(data->input_dev, ABS_Z, dataz);
++	input_sync(data->input_dev);
++
++	return IRQ_HANDLED;
++}
++
++static int cma3000_reset(struct cma3000_accl_data *data)
++{
++	int ret;
++
++	/* Reset sequence */
++	cma3000_set(data, CMA3000_RSTR, 0x02, "Reset");
++	cma3000_set(data, CMA3000_RSTR, 0x0A, "Reset");
++	cma3000_set(data, CMA3000_RSTR, 0x04, "Reset");
++
++	/* Settling time delay */
++	mdelay(10);
++
++	ret = cma3000_read(data, CMA3000_STATUS, "Status");
++	if (ret < 0) {
++		dev_err(&data->client->dev, "Reset failed\n");
++		return ret;
++	} else if (ret & CMA3000_STATUS_PERR) {
++		dev_err(&data->client->dev, "Parity Error\n");
++		return -EIO;
++	} else {
++		return 0;
++	}
++}
++
++int cma3000_poweron(struct cma3000_accl_data *data)
++{
++	uint8_t ctrl = 0, mdthr, mdfftmr, ffthr, mode;
++	int g_range, ret;
++
++	g_range = data->pdata.g_range;
++	mode = data->pdata.mode;
++	mdthr = data->pdata.mdthr;
++	mdfftmr = data->pdata.mdfftmr;
++	ffthr = data->pdata.ffthr;
++
++	if (mode < CMAMODE_DEFAULT || mode > CMAMODE_POFF) {
++		data->pdata.mode = CMAMODE_MOTDET;
++		mode = data->pdata.mode;
++		dev_info(&data->client->dev,
++			"Invalid mode specified, assuming Motion Detect\n");
++	}
++
++	if (g_range == CMARANGE_2G) {
++		ctrl = (mode << 1) | CMA3000_RANGE2G;
++	} else if (g_range == CMARANGE_8G) {
++		ctrl = (mode << 1) | CMA3000_RANGE8G;
++	} else {
++		dev_info(&data->client->dev,
++			"Invalid G range specified, assuming 8G\n");
++		ctrl = (mode << 1) | CMA3000_RANGE8G;
++		data->pdata.g_range = CMARANGE_8G;
++	}
++#ifdef CONFIG_INPUT_CMA3000_I2C
++	ctrl |= CMA3000_BUSI2C;
++#endif
++
++	cma3000_set(data, CMA3000_MDTHR, mdthr, "Motion Detect Threshold");
++	cma3000_set(data, CMA3000_MDFFTMR, mdfftmr, "Time register");
++	cma3000_set(data, CMA3000_FFTHR, ffthr, "Free fall threshold");
++	ret = cma3000_set(data, CMA3000_CTRL, ctrl, "Mode setting");
++	if (ret < 0)
++		return -EIO;
++
++	mdelay(CMA3000_SETDELAY);
++
++	return 0;
++}
++
++int cma3000_poweroff(struct cma3000_accl_data *data)
++{
++	int ret;
++
++	ret = cma3000_set(data, CMA3000_CTRL, CMAMODE_POFF, "Mode setting");
++	mdelay(CMA3000_SETDELAY);
++
++	return ret;
++}
++
++int cma3000_init(struct cma3000_accl_data *data)
++{
++	int ret = 0, fuzz_x, fuzz_y, fuzz_z, g_range;
++	uint32_t irqflags;
++
++	if (data->client->dev.platform_data == NULL) {
++		dev_err(&data->client->dev, "platform data not found\n");
++		goto err_op2_failed;
++	}
++
++	memcpy(&(data->pdata), data->client->dev.platform_data,
++		sizeof(struct cma3000_platform_data));
++
++	ret = cma3000_reset(data);
++	if (ret)
++		goto err_op2_failed;
++
++	ret = cma3000_read(data, CMA3000_REVID, "Revid");
++	if (ret < 0)
++		goto err_op2_failed;
++
++	pr_info("CMA3000 Acclerometer : Revision %x\n", ret);
++
++	/* Bring it out of default power down state */
++	ret = cma3000_poweron(data);
++	if (ret < 0)
++		goto err_op2_failed;
++
++	fuzz_x = data->pdata.fuzz_x;
++	fuzz_y = data->pdata.fuzz_y;
++	fuzz_z = data->pdata.fuzz_z;
++	g_range = data->pdata.g_range;
++	irqflags = data->pdata.irqflags;
++
++	data->input_dev = input_allocate_device();
++	if (data->input_dev == NULL) {
++		ret = -ENOMEM;
++		dev_err(&data->client->dev,
++			"Failed to allocate input device\n");
++		goto err_op2_failed;
++	}
++
++	data->input_dev->name = "cma3000-acclerometer";
++
++#ifdef CONFIG_INPUT_CMA3000_I2C
++	data->input_dev->id.bustype = BUS_I2C;
++#endif
++
++	 __set_bit(EV_ABS, data->input_dev->evbit);
++	 __set_bit(EV_MSC, data->input_dev->evbit);
++
++	input_set_abs_params(data->input_dev, ABS_X, -g_range,
++				g_range, fuzz_x, 0);
++	input_set_abs_params(data->input_dev, ABS_Y, -g_range,
++				g_range, fuzz_y, 0);
++	input_set_abs_params(data->input_dev, ABS_Z, -g_range,
++				g_range, fuzz_z, 0);
++	input_set_abs_params(data->input_dev, ABS_MISC, 0,
++				1, 0, 0);
++
++	ret = input_register_device(data->input_dev);
++	if (ret) {
++		dev_err(&data->client->dev,
++			"Unable to register input device\n");
++		goto err_op2_failed;
++	}
++
++	mutex_init(&data->mutex);
++
++	if (data->client->irq) {
++		ret = request_threaded_irq(data->client->irq, NULL,
++					cma3000_thread_irq,
++					irqflags | IRQF_ONESHOT,
++					data->client->name, data);
++
++		if (ret < 0) {
++			dev_err(&data->client->dev,
++				"request_threaded_irq failed\n");
++			goto err_op1_failed;
++		}
++	}
++
++	ret = sysfs_create_group(&data->client->dev.kobj, &cma3000_attr_group);
++	if (ret) {
++		dev_err(&data->client->dev,
++			"failed to create sysfs entries\n");
++		goto err_op1_failed;
++	}
++	return 0;
++
++err_op1_failed:
++	mutex_destroy(&data->mutex);
++	input_unregister_device(data->input_dev);
++err_op2_failed:
++	if (data != NULL) {
++		if (data->input_dev != NULL)
++			input_free_device(data->input_dev);
++	}
++
++	return ret;
++}
++
++int cma3000_exit(struct cma3000_accl_data *data)
++{
++	int ret;
++
++	ret = cma3000_poweroff(data);
++
++	if (data->client->irq)
++		free_irq(data->client->irq, data);
++
++	mutex_destroy(&data->mutex);
++	input_unregister_device(data->input_dev);
++	input_free_device(data->input_dev);
++	sysfs_remove_group(&data->client->dev.kobj, &cma3000_attr_group);
++	return ret;
++}
+diff --git a/drivers/input/misc/cma3000_d0x.h b/drivers/input/misc/cma3000_d0x.h
+new file mode 100644
+index 0000000..12a8faf
+--- /dev/null
++++ b/drivers/input/misc/cma3000_d0x.h
+@@ -0,0 +1,46 @@
++/*
++ * cma3000_d0x.h
++ * VTI CMA3000_D0x Accelerometer driver
++ *
++ * Copyright (C) 2010 Texas Instruments
++ * Author: Hemanth V <hemanthv@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef INPUT_CMA3000_H
++#define INPUT_CMA3000_H
++
++#include <linux/i2c.h>
++#include <linux/input.h>
++
++struct cma3000_accl_data {
++#ifdef CONFIG_INPUT_CMA3000_I2C
++	struct i2c_client *client;
++#endif
++	struct input_dev *input_dev;
++	struct cma3000_platform_data pdata;
++
++	/* mutex for sysfs operations */
++	struct mutex mutex;
++	int bit_to_mg;
++};
++
++int cma3000_set(struct cma3000_accl_data *, u8, u8, char *);
++int cma3000_read(struct cma3000_accl_data *, u8, char *);
++int cma3000_init(struct cma3000_accl_data *);
++int cma3000_exit(struct cma3000_accl_data *);
++int cma3000_poweron(struct cma3000_accl_data *);
++int cma3000_poweroff(struct cma3000_accl_data *);
++
++#endif
+diff --git a/drivers/input/misc/cma3000_d0x_i2c.c b/drivers/input/misc/cma3000_d0x_i2c.c
+new file mode 100644
+index 0000000..41f845c
+--- /dev/null
++++ b/drivers/input/misc/cma3000_d0x_i2c.c
+@@ -0,0 +1,136 @@
++/*
++ * cma3000_d0x_i2c.c
++ *
++ * Implements I2C interface for VTI CMA300_D0x Accelerometer driver
++ *
++ * Copyright (C) 2010 Texas Instruments
++ * Author: Hemanth V <hemanthv@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#include <linux/module.h>
++#include <linux/slab.h>
++#include <linux/i2c.h>
++#include <linux/i2c/cma3000.h>
++#include "cma3000_d0x.h"
++
++int cma3000_set(struct cma3000_accl_data *accl, u8 reg, u8 val, char *msg)
++{
++	int ret = i2c_smbus_write_byte_data(accl->client, reg, val);
++	if (ret < 0)
++		dev_err(&accl->client->dev,
++			"i2c_smbus_write_byte_data failed (%s)\n", msg);
++	return ret;
++}
++
++int cma3000_read(struct cma3000_accl_data *accl, u8 reg, char *msg)
++{
++	int ret = i2c_smbus_read_byte_data(accl->client, reg);
++	if (ret < 0)
++		dev_err(&accl->client->dev,
++			"i2c_smbus_read_byte_data failed (%s)\n", msg);
++	return ret;
++}
++
++static int __devinit cma3000_accl_probe(struct i2c_client *client,
++					const struct i2c_device_id *id)
++{
++	int ret;
++	struct cma3000_accl_data *data = NULL;
++
++	data = kzalloc(sizeof(*data), GFP_KERNEL);
++	if (data == NULL) {
++		ret = -ENOMEM;
++		goto err_op_failed;
++	}
++
++	data->client = client;
++	i2c_set_clientdata(client, data);
++
++	ret = cma3000_init(data);
++	if (ret)
++		goto err_op_failed;
++
++	return 0;
++
++err_op_failed:
++
++	if (data != NULL)
++		kfree(data);
++
++	return ret;
++}
++
++static int __devexit cma3000_accl_remove(struct i2c_client *client)
++{
++	struct cma3000_accl_data *data = i2c_get_clientdata(client);
++	int ret;
++
++	ret = cma3000_exit(data);
++	i2c_set_clientdata(client, NULL);
++	kfree(data);
++
++	return ret;
++}
++
++#ifdef CONFIG_PM
++static int cma3000_accl_suspend(struct i2c_client *client, pm_message_t mesg)
++{
++	struct cma3000_accl_data *data = i2c_get_clientdata(client);
++
++	return cma3000_poweroff(data);
++}
++
++static int cma3000_accl_resume(struct i2c_client *client)
++{
++	struct cma3000_accl_data *data = i2c_get_clientdata(client);
++
++	return cma3000_poweron(data);
++}
++#endif
++
++static const struct i2c_device_id cma3000_id[] = {
++	{ "cma3000_accl", 0 },
++	{ },
++};
++
++static struct i2c_driver cma3000_accl_driver = {
++	.probe		= cma3000_accl_probe,
++	.remove		= cma3000_accl_remove,
++	.id_table	= cma3000_id,
++#ifdef CONFIG_PM
++	.suspend	= cma3000_accl_suspend,
++	.resume		= cma3000_accl_resume,
++#endif
++	.driver = {
++		.name = "cma3000_accl"
++	},
++};
++
++static int __init cma3000_accl_init(void)
++{
++	return i2c_add_driver(&cma3000_accl_driver);
++}
++
++static void __exit cma3000_accl_exit(void)
++{
++	i2c_del_driver(&cma3000_accl_driver);
++}
++
++module_init(cma3000_accl_init);
++module_exit(cma3000_accl_exit);
++
++MODULE_DESCRIPTION("CMA3000-D0x Accelerometer Driver");
++MODULE_LICENSE("GPL");
++MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
+diff --git a/include/linux/i2c/cma3000.h b/include/linux/i2c/cma3000.h
+new file mode 100644
+index 0000000..50aa3fc
+--- /dev/null
++++ b/include/linux/i2c/cma3000.h
+@@ -0,0 +1,60 @@
++/*
++ * cma3000.h
++ * VTI CMA300_Dxx Accelerometer driver
++ *
++ * Copyright (C) 2010 Texas Instruments
++ * Author: Hemanth V <hemanthv@ti.com>
++ *
++ * This program is free software; you can redistribute it and/or modify it
++ * under the terms of the GNU General Public License version 2 as published by
++ * the Free Software Foundation.
++ *
++ * This program is distributed in the hope that it will be useful, but WITHOUT
++ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
++ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
++ * more details.
++ *
++ * You should have received a copy of the GNU General Public License along with
++ * this program.  If not, see <http://www.gnu.org/licenses/>.
++ */
++
++#ifndef _LINUX_CMA3000_I2C_H
++#define _LINUX_CMA3000_I2C_H
++
++#define CMAMODE_DEFAULT    0
++#define CMAMODE_MEAS100    1
++#define CMAMODE_MEAS400    2
++#define CMAMODE_MEAS40     3
++#define CMAMODE_MOTDET     4
++#define CMAMODE_FF100      5
++#define CMAMODE_FF400      6
++#define CMAMODE_POFF       7
++
++#define CMARANGE_2G   2000
++#define CMARANGE_8G   8000
++
++/**
++ * struct cma3000_i2c_platform_data - CMA3000 Platform data
++ * @fuzz_x: Noise on X Axis
++ * @fuzz_y: Noise on Y Axis
++ * @fuzz_z: Noise on Z Axis
++ * @g_range: G range in milli g i.e 2000 or 8000
++ * @mode: Operating mode
++ * @mdthr: Motion detect threshold value
++ * @mdfftmr: Motion detect and free fall time value
++ * @ffthr: Free fall threshold value
++ */
++
++struct cma3000_platform_data {
++	int fuzz_x;
++	int fuzz_y;
++	int fuzz_z;
++	int g_range;
++	uint8_t  mode;
++	uint8_t  mdthr;
++	uint8_t  mdfftmr;
++	uint8_t  ffthr;
++	uint32_t  irqflags;
++};
++
++#endif
+-- 
+1.5.6.3
 
-I reverted a (the only) commit from the ecryptfs tree as a later commit
-is in the vfs tree.
 
-The v4l-dvb tree lost its build failure.
 
-The input tree lost its conflict.
-
-The pcmcia tree lost its conflicts.
-
-The alacrity tree lost its conflicts.
-
-The driver-core tree lost its build failures but gained a conflict against
-the net tree.
-
-----------------------------------------------------------------------------
-
-I have created today's linux-next tree at
-git://git.kernel.org/pub/scm/linux/kernel/git/next/linux-next.git
-(patches at http://www.kernel.org/pub/linux/kernel/v2.6/next/ ).  If you
-are tracking the linux-next tree using git, you should not use "git pull"
-to do so as that will try to merge the new linux-next release with the
-old one.  You should use "git fetch" as mentioned in the FAQ on the wiki
-(see below).
-
-You can see which trees have been included by looking in the Next/Trees
-file in the source.  There are also quilt-import.log and merge.log files
-in the Next directory.  Between each merge, the tree was built with
-a ppc64_defconfig for powerpc and an allmodconfig for x86_64. After the
-final fixups (if any), it is also built with powerpc allnoconfig (32 and
-64 bit), ppc44x_defconfig and allyesconfig (minus
-CONFIG_PROFILE_ALL_BRANCHES - this fails its final link) and i386, sparc
-and sparc64 defconfig. These builds also have
-CONFIG_ENABLE_WARN_DEPRECATED, CONFIG_ENABLE_MUST_CHECK and
-CONFIG_DEBUG_INFO disabled when necessary.
-
-Below is a summary of the state of the merge.
-
-We are up to 162 trees (counting Linus' and 22 trees of patches pending
-for Linus' tree), more are welcome (even if they are currently empty).
-Thanks to those who have contributed, and to those who haven't, please do.
-
-Status of my local build tests will be at
-http://kisskb.ellerman.id.au/linux-next .  If maintainers want to give
-advice about cross compilers/configs that work, we are always open to add
-more builds.
-
-Thanks to Jan Dittmer for adding the linux-next tree to his build tests
-at http://l4x.org/k/ , the guys at http://test.kernel.org/ and Randy
-Dunlap for doing many randconfig builds.
-
-There is a wiki covering stuff to do with linux-next at
-http://linux.f-seidel.de/linux-next/pmwiki/ .  Thanks to Frank Seidel.
-
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-
-$ git checkout master
-$ git reset --hard stable
-Merging origin/master
-Merging fixes/fixes
-Merging arm-current/master
-Merging m68k-current/for-linus
-Merging powerpc-merge/merge
-Merging sparc-current/master
-Merging scsi-rc-fixes/master
-Merging net-current/master
-Merging sound-current/for-linus
-Merging pci-current/for-linus
-Merging wireless-current/master
-Merging kbuild-current/for-linus
-Merging quilt/driver-core.current
-Merging quilt/tty.current
-Merging quilt/usb.current
-Merging quilt/staging.current
-Merging cpufreq-current/fixes
-Merging input-current/for-linus
-Merging md-current/for-linus
-Merging audit-current/for-linus
-Merging crypto-current/master
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging ide-curent/master
-Merging dwmw2/master
-Merging gcl-current/merge
-Merging arm/devel
-Merging davinci/davinci-next
-Merging i.MX/for-next
-Merging msm/for-next
-Merging omap/for-next
-CONFLICT (content): Merge conflict in arch/arm/mach-omap2/devices.c
-Merging pxa/for-next
-Merging samsung/next-samsung
-Merging avr32/avr32-arch
-Merging blackfin/for-linus
-Merging cris/for-next
-Merging ia64/test
-Merging m68k/for-next
-Merging m68knommu/for-next
-Merging microblaze/next
-Merging mips/mips-for-linux-next
-CONFLICT (content): Merge conflict in arch/mips/oprofile/op_model_loongson2=
-.c
-Merging parisc/next
-Merging powerpc/next
-Merging 4xx/next
-Merging 52xx-and-virtex/next
-Merging galak/next
-Merging s390/features
-Merging sh/master
-Merging genesis/master
-Merging sparc/master
-Merging xtensa/master
-Merging ceph/for-next
-Merging cifs/master
-Merging configfs/linux-next
-Merging ecryptfs/next
-[master a73eeb8] Revert "ecryptfs: disallow ecryptfs as underlying filesyst=
-em"
-Merging ext3/for_next
-Merging ext4/next
-Merging fatfs/master
-Merging fuse/for-next
-Merging gfs2/master
-Merging jfs/next
-Merging logfs/master
-Merging nfs/linux-next
-Merging nfsd/nfsd-next
-Merging nilfs2/for-next
-Merging ocfs2/linux-next
-Applying: ocfs2: update gfp/slab.h includes
-Merging squashfs/master
-Merging udf/for_next
-Merging v9fs/for-next
-Merging ubifs/linux-next
-Merging xfs/master
-Merging vfs/for-next
-Merging pci/linux-next
-Merging hid/for-next
-Merging quilt/i2c
-Merging bjdooks-i2c/next-i2c
-CONFLICT (content): Merge conflict in arch/arm/plat-omap/i2c.c
-Merging quilt/jdelvare-hwmon
-Merging quilt/kernel-doc
-Merging v4l-dvb/master
-Merging kbuild/for-next
-Merging kconfig/for-next
-Merging ide/master
-Merging libata/NEXT
-Merging infiniband/for-next
-Merging acpi/test
-Applying: acpi: update gfp/slab.h includes
-Merging ieee1394/for-next
-Merging ubi/linux-next
-Merging kvm/linux-next
-Merging dlm/next
-Merging ibft/master
-Merging scsi/master
-Merging async_tx/next
-Merging net/master
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in drivers/net/pcmcia/3c589_cs.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/orinoco_=
-cs.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/orinoco/spectrum=
-_cs.c
-Applying: wireless: update for pm_qos_requirement to pm_qos_request rename
-Applying: wireless: update gfp/slab.h includes
-Merging wireless/master
-Merging mtd/master
-CONFLICT (content): Merge conflict in drivers/mtd/maps/pcmciamtd.c
-Merging crypto/master
-Merging sound/for-next
-Merging cpufreq/next
-Merging quilt/rr
-CONFLICT (content): Merge conflict in drivers/net/virtio_net.c
-CONFLICT (content): Merge conflict in drivers/net/wireless/libertas_tf/if_u=
-sb.c
-Merging mmc/next
-Merging input/next
-Merging lsm/for-next
-Merging block/for-next
-CONFLICT (content): Merge conflict in fs/ext3/fsync.c
-CONFLICT (content): Merge conflict in fs/ext4/fsync.c
-CONFLICT (content): Merge conflict in fs/fs-writeback.c
-CONFLICT (content): Merge conflict in fs/super.c
-Merging quilt/device-mapper
-Merging embedded/master
-Merging firmware/master
-Merging pcmcia/master
-Merging battery/master
-Merging leds/for-mm
-Merging backlight/for-mm
-Merging kgdb/kgdb-next
-Applying: kgdb: update for sysrq handling change
-Merging slab/for-next
-Merging uclinux/for-next
-Merging md/for-next
-CONFLICT (content): Merge conflict in drivers/md/md.c
-Merging mfd/for-next
-CONFLICT (content): Merge conflict in drivers/dma/Makefile
-CONFLICT (add/add): Merge conflict in drivers/dma/timb_dma.c
-Merging hdlc/hdlc-next
-Merging drm/drm-next
-Merging viafb/viafb-next
-Merging voltage/for-next
-Merging security-testing/next
-Merging lblnet/master
-Merging agp/agp-next
-Merging uwb/for-upstream
-Merging watchdog/master
-Merging bdev/master
-Merging dwmw2-iommu/master
-Merging cputime/cputime
-Merging osd/linux-next
-Merging jc_docs/docs-next
-Merging nommu/master
-Merging trivial/for-next
-Merging audit/for-next
-Merging quilt/aoe
-Merging suspend/linux-next
-Merging bluetooth/master
-Merging fsnotify/for-next
-CONFLICT (delete/modify): fs/notify/inotify/inotify.c deleted in fsnotify/f=
-or-next and modified in HEAD. Version HEAD of fs/notify/inotify/inotify.c l=
-eft in tree.
-$ git rm -f fs/notify/inotify/inotify.c
-Applying: fsnotify: update gfp/slab.h includes
-Merging irda/for-next
-CONFLICT (content): Merge conflict in drivers/net/irda/irda-usb.c
-Merging drbd/for-jens
-Merging catalin/for-next
-Merging alacrity/linux-next
-Merging i7core_edac/linux_next
-Merging devicetree/next-devicetree
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-cpm.c
-CONFLICT (content): Merge conflict in drivers/i2c/busses/i2c-mpc.c
-CONFLICT (content): Merge conflict in drivers/net/gianfar.c
-CONFLICT (content): Merge conflict in drivers/serial/mpc52xx_uart.c
-Applying: fixup arch/powerpc/kernel/vio.c
-Merging spi/next-spi
-Merging omap_dss2/for-next
-Merging tip/auto-latest
-CONFLICT (content): Merge conflict in Documentation/feature-removal-schedul=
-e.txt
-CONFLICT (content): Merge conflict in kernel/Makefile
-Merging edac-amd/for-next
-Merging oprofile/for-next
-Merging percpu/for-next
-Merging workqueues/for-next
-Merging sfi/sfi-test
-Merging asm-generic/next
-Merging hwpoison/hwpoison
-Merging sysctl/master
-Merging bkl-core/bkl/core
-Merging bkl-procfs/bkl/procfs
-Merging bkl-ioctl/bkl/ioctl
-Merging quilt/driver-core
-CONFLICT (content): Merge conflict in drivers/base/platform.c
-CONFLICT (content): Merge conflict in net/core/net-sysfs.c
-Applying: md: fixup for sysfs_get_dirent API change
-Merging quilt/tty
-CONFLICT (content): Merge conflict in include/linux/tty.h
-Merging quilt/usb
-CONFLICT (content): Merge conflict in drivers/input/tablet/acecad.c
-CONFLICT (content): Merge conflict in drivers/input/tablet/kbtab.c
-CONFLICT (content): Merge conflict in drivers/input/tablet/wacom_sys.c
-CONFLICT (content): Merge conflict in drivers/media/video/gspca/gspca.c
-CONFLICT (delete/modify): sound/usb/usbaudio.c deleted in HEAD and modified=
- in quilt/usb. Version quilt/usb of sound/usb/usbaudio.c left in tree.
-$ git rm -f sound/usb/usbaudio.c
-Merging staging-next/staging-next
-CONFLICT (rename/modify): Merge conflict in drivers/staging/hv/hv.c
-CONFLICT (delete/modify): drivers/staging/arlan/arlan-main.c deleted in sta=
-ging-next/staging-next and modified in HEAD. Version HEAD of drivers/stagin=
-g/arlan/arlan-main.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/comedi/drivers/cb_das=
-16_cs.c
-CONFLICT (content): Merge conflict in drivers/staging/cx25821/cx25821-alsa.c
-CONFLICT (content): Merge conflict in drivers/staging/dt3155/dt3155_drv.c
-CONFLICT (delete/modify): drivers/staging/netwave/netwave_cs.c deleted in s=
-taging-next/staging-next and modified in HEAD. Version HEAD of drivers/stag=
-ing/netwave/netwave_cs.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/rtl8187se/r8180_core.c
-CONFLICT (delete/modify): drivers/staging/wavelan/wavelan.c deleted in stag=
-ing-next/staging-next and modified in HEAD. Version HEAD of drivers/staging=
-/wavelan/wavelan.c left in tree.
-CONFLICT (delete/modify): drivers/staging/wavelan/wavelan_cs.c deleted in s=
-taging-next/staging-next and modified in HEAD. Version HEAD of drivers/stag=
-ing/wavelan/wavelan_cs.c left in tree.
-CONFLICT (content): Merge conflict in drivers/staging/wlags49_h2/wl_cs.c
-$ git rm -f drivers/staging/arlan/arlan-main.c drivers/staging/netwave/netw=
-ave_cs.c drivers/staging/wavelan/wavelan.c drivers/staging/wavelan/wavelan_=
-cs.c
-Applying: hid: fix hid-roccat-kone for bin_attr API change
-Merging slabh/slabh
-Merging scsi-post-merge/master
-
---Signature=_Fri__21_May_2010_16_51_19_+1000_7hQmqC7lajjP_j8K
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv2LWcACgkQjjKRsyhoI8yLbQCgvNxRObuSawT2AxHfqnOAwlsu
-1cQAoIEVzR9Vqa9NOJi+uAHC9R0XFi2H
-=AHAq
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_May_2010_16_51_19_+1000_7hQmqC7lajjP_j8K--
