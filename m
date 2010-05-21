@@ -1,47 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758491Ab0EUQJn (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:09:43 -0400
-Received: from mga09.intel.com ([134.134.136.24]:57070 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934007Ab0EUQJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:09:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,279,1272870000"; 
-   d="scan'208";a="623699894"
-Subject: Re: [PATCH 0/2] tmpfs: Improve tmpfs scalability
-From: Tim Chen <tim.c.chen@linux.intel.com>
-To: Hugh Dickins <hughd@google.com>
-Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.DEB.1.00.1005201837040.21050@tigran.mtv.corp.google.com>
-References: <1274225666.31973.8949.camel@mudge.jf.intel.com>
-	 <alpine.DEB.1.00.1005201837040.21050@tigran.mtv.corp.google.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Fri, 21 May 2010 09:07:47 -0700
-Message-ID: <1274458067.31973.8955.camel@mudge.jf.intel.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
-Content-Transfer-Encoding: 7bit
+	id S1755936Ab0EUQNL (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:13:11 -0400
+Received: from cassiel.sirena.org.uk ([80.68.93.111]:35551 "EHLO
+	cassiel.sirena.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758009Ab0EUQNI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:13:08 -0400
+Date: Fri, 21 May 2010 17:12:46 +0100
+From: Mark Brown <broonie@opensource.wolfsonmicro.com>
+To: Ralf Baechle <ralf@linux-mips.org>
+Cc: John Kacur <jkacur@redhat.com>, linux-kernel@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arndbergmann@googlemail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       "Maciej W. Rozycki" <macro@linux-mips.org>, linux-mips@linux-mips.org,
+       Paul Mundt <lethal@linux-sh.org>, linux-sh@vger.kernel.org,
+       Geert Uytterhoeven <geert@linux-m68k.org>,
+       Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org
+Subject: Re: bkl: Pushdowns for sound/oss ?
+Message-ID: <20100521161246.GA31383@sirena.org.uk>
+References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain> <20100521144055.GB13174@linux-mips.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521144055.GB13174@linux-mips.org>
+X-Cookie: BOFH excuse
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: broonie@sirena.org.uk
+X-SA-Exim-Scanned: No (on cassiel.sirena.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 2010-05-20 at 18:55 -0700, Hugh Dickins wrote:
+On Fri, May 21, 2010 at 03:40:56PM +0100, Ralf Baechle wrote:
+> On Fri, May 21, 2010 at 03:45:04PM +0200, John Kacur wrote:
 
-> 
-> Interesting, thank you - I'll take a look, but not this week.
-> 
-> I do hope you're using Aim7 just as an example: you know that mounting
-> tmpfs with nr_blocks=0,nr_inodes=0 skips those shmem_sb_info updates
-> altogether?  Mounting in such a way should be fine for getting better
-> numbers out of Aim7; but yes, there are reallife uses for tmpfs which
-> are safer with the nr_blocks,nr_inodes limits.
-> 
+> > sound/oss/sh_dac_audio.c
 
-Yes, Aim7 was provided as an example to illustrate the locking
-bottleneck when blocks limit are imposed.
+> SH3 specific.
 
-Tim
-
-
+I believe this either has been or easily can be replaced by a modern
+ASoC driver and so it's probably as easy to drop it as updated it.
