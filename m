@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934244Ab0EUQyW (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 12:54:22 -0400
-Received: from kroah.org ([198.145.64.141]:39074 "EHLO coco.kroah.org"
+	id S1758538Ab0EUQ7z (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 12:59:55 -0400
+Received: from kroah.org ([198.145.64.141]:39118 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934214Ab0EUQyM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 12:54:12 -0400
+	id S934245Ab0EUQyX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 12:54:23 -0400
 From: Greg Kroah-Hartman <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org
-Cc: NeilBrown <neilb@suse.de>, Greg Kroah-Hartman <gregkh@suse.de>
-Subject: [PATCH 03/38] kref: remove kref_set
-Date: Fri, 21 May 2010 09:53:33 -0700
-Message-Id: <1274460848-11377-3-git-send-email-gregkh@suse.de>
+Cc: Hugh Daschbach <hdasch@broadcom.com>, Greg Kroah-Hartman <gregkh@suse.de>
+Subject: [PATCH 16/38] Driver core: Protect device shutdown from hot unplug events.
+Date: Fri, 21 May 2010 09:53:46 -0700
+Message-Id: <1274460848-11377-16-git-send-email-gregkh@suse.de>
 X-Mailer: git-send-email 1.7.0.3
 In-Reply-To: <20100521165106.GA11216@kroah.com>
 References: <20100521165106.GA11216@kroah.com>
@@ -19,116 +19,65 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: NeilBrown <neilb@suse.de>
+From: Hugh Daschbach <hdasch@broadcom.com>
 
-Of the three uses of kref_set in the kernel:
+While device_shutdown() walks through devices_kset to shutdown all
+devices, device unplug events may race to shutdown individual devices.
+Specifically, sd_shutdown(), on behalf of fc_starget_delete(), has
+been observed deleting devices during device_shutdown()'s list
+traversal.  So we factor out list_for_each_entry_safe_reverse(...) in
+favor of while (!list_empty(...)).
 
- One really should be kref_put as the code is letting go of a
-    reference,
- Two really should be kref_init because the kref is being
-    initialised.
-
-This suggests that making kref_set available encourages bad code.
-So fix the three uses and remove kref_set completely.
-
-Signed-off-by: NeilBrown <neilb@suse.de>
-Acked-by: Mimi Zohar <zohar@us.ibm.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
+Signed-off-by: Hugh Daschbach <hdasch@broadcom.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 ---
- include/linux/kref.h              |    1 -
- kernel/user_namespace.c           |    4 ++--
- lib/kref.c                        |   15 ++-------------
- security/integrity/ima/ima_iint.c |    4 ++--
- 4 files changed, 6 insertions(+), 18 deletions(-)
+ drivers/base/core.c |   25 ++++++++++++++++++++++---
+ 1 files changed, 22 insertions(+), 3 deletions(-)
 
-diff --git a/include/linux/kref.h b/include/linux/kref.h
-index baf4b9e..6cc38fc 100644
---- a/include/linux/kref.h
-+++ b/include/linux/kref.h
-@@ -21,7 +21,6 @@ struct kref {
- 	atomic_t refcount;
- };
- 
--void kref_set(struct kref *kref, int num);
- void kref_init(struct kref *kref);
- void kref_get(struct kref *kref);
- int kref_put(struct kref *kref, void (*release) (struct kref *kref));
-diff --git a/kernel/user_namespace.c b/kernel/user_namespace.c
-index 076c7c8..b2d70d3 100644
---- a/kernel/user_namespace.c
-+++ b/kernel/user_namespace.c
-@@ -54,8 +54,8 @@ int create_user_ns(struct cred *new)
- #endif
- 	/* tgcred will be cleared in our caller bc CLONE_THREAD won't be set */
- 
--	/* alloc_uid() incremented the userns refcount.  Just set it to 1 */
--	kref_set(&ns->kref, 1);
-+	/* root_user holds a reference to ns, our reference can be dropped */
-+	put_user_ns(ns);
- 
- 	return 0;
- }
-diff --git a/lib/kref.c b/lib/kref.c
-index 6d19f69..d3d227a 100644
---- a/lib/kref.c
-+++ b/lib/kref.c
-@@ -16,23 +16,13 @@
- #include <linux/slab.h>
- 
- /**
-- * kref_set - initialize object and set refcount to requested number.
-- * @kref: object in question.
-- * @num: initial reference counter
-- */
--void kref_set(struct kref *kref, int num)
--{
--	atomic_set(&kref->refcount, num);
--	smp_mb();
--}
--
--/**
-  * kref_init - initialize object.
-  * @kref: object in question.
+diff --git a/drivers/base/core.c b/drivers/base/core.c
+index 4c5be85..356dd01 100644
+--- a/drivers/base/core.c
++++ b/drivers/base/core.c
+@@ -1734,10 +1734,25 @@ EXPORT_SYMBOL_GPL(device_move);
   */
- void kref_init(struct kref *kref)
+ void device_shutdown(void)
  {
--	kref_set(kref, 1);
-+	atomic_set(&kref->refcount, 1);
-+	smp_mb();
- }
+-	struct device *dev, *devn;
++	struct device *dev;
++
++	spin_lock(&devices_kset->list_lock);
++	/*
++	 * Walk the devices list backward, shutting down each in turn.
++	 * Beware that device unplug events may also start pulling
++	 * devices offline, even as the system is shutting down.
++	 */
++	while (!list_empty(&devices_kset->list)) {
++		dev = list_entry(devices_kset->list.prev, struct device,
++				kobj.entry);
++		get_device(dev);
++		/*
++		 * Make sure the device is off the kset list, in the
++		 * event that dev->*->shutdown() doesn't remove it.
++		 */
++		list_del_init(&dev->kobj.entry);
++		spin_unlock(&devices_kset->list_lock);
  
- /**
-@@ -72,7 +62,6 @@ int kref_put(struct kref *kref, void (*release)(struct kref *kref))
- 	return 0;
- }
- 
--EXPORT_SYMBOL(kref_set);
- EXPORT_SYMBOL(kref_init);
- EXPORT_SYMBOL(kref_get);
- EXPORT_SYMBOL(kref_put);
-diff --git a/security/integrity/ima/ima_iint.c b/security/integrity/ima/ima_iint.c
-index 2dc2d65..7625b85 100644
---- a/security/integrity/ima/ima_iint.c
-+++ b/security/integrity/ima/ima_iint.c
-@@ -94,7 +94,7 @@ void iint_free(struct kref *kref)
- 		       iint->opencount);
- 		iint->opencount = 0;
+-	list_for_each_entry_safe_reverse(dev, devn, &devices_kset->list,
+-				kobj.entry) {
+ 		if (dev->bus && dev->bus->shutdown) {
+ 			dev_dbg(dev, "shutdown\n");
+ 			dev->bus->shutdown(dev);
+@@ -1745,6 +1760,10 @@ void device_shutdown(void)
+ 			dev_dbg(dev, "shutdown\n");
+ 			dev->driver->shutdown(dev);
+ 		}
++		put_device(dev);
++
++		spin_lock(&devices_kset->list_lock);
  	}
--	kref_set(&iint->refcount, 1);
-+	kref_init(&iint->refcount);
- 	kmem_cache_free(iint_cache, iint);
++	spin_unlock(&devices_kset->list_lock);
+ 	async_synchronize_full();
  }
- 
-@@ -133,7 +133,7 @@ static void init_once(void *foo)
- 	iint->readcount = 0;
- 	iint->writecount = 0;
- 	iint->opencount = 0;
--	kref_set(&iint->refcount, 1);
-+	kref_init(&iint->refcount);
- }
- 
- static int __init ima_iintcache_init(void)
 -- 
 1.7.0.3
 
