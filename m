@@ -1,66 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757254Ab0EUAzV (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 20 May 2010 20:55:21 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:53476 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754991Ab0EUAzU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 20 May 2010 20:55:20 -0400
-Date: Fri, 21 May 2010 10:55:12 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: minskey guo <chaohong_guo@linux.intel.com>, linux-mm@kvack.org,
-       prarit@redhat.com, andi.kleen@intel.com, linux-kernel@vger.kernel.org,
-       minskey guo <chaohong.guo@intel.com>, Tejun Heo <tj@kernel.org>,
-       stable@kernel.org
-Subject: Re: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
-Message-Id: <20100521105512.0c2cf254.sfr@canb.auug.org.au>
-In-Reply-To: <20100520134359.fdfb397e.akpm@linux-foundation.org>
-References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
-	<20100520134359.fdfb397e.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Fri__21_May_2010_10_55_12_+1000_dmKoVdhhBYvCft9A"
+	id S1755124Ab0EUBIw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 20 May 2010 21:08:52 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:45605 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752508Ab0EUBIv (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 20 May 2010 21:08:51 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Russ Anderson <rja@sgi.com>,
+       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Stephane Eranian <eranian@google.com>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [PATCH 1/2] perf record: remove unneeded gettimeofday() call
+Date: Thu, 20 May 2010 22:08:40 -0300
+Message-Id: <1274404121-6115-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274404121-6115-1-git-send-email-acme@infradead.org>
+References: <1274404121-6115-1-git-send-email-acme@infradead.org>
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Fri__21_May_2010_10_55_12_+1000_dmKoVdhhBYvCft9A
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+From: Russ Anderson <rja@sgi.com>
 
-Hi Andrew,
+Perf record repeatedly calls gettimeofday() which adds noise to the performance
+measurements.  Since gettimeofday() is only used for the error printf, delete
+it.
 
-On Thu, 20 May 2010 13:43:59 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> > --- a/mm/percpu.c
-> > +++ b/mm/percpu.c
-> > @@ -714,13 +714,29 @@ static int pcpu_alloc_pages(struct pcpu_chunk *ch=
-unk,
->=20
-> In linux-next, Tejun has gone and moved pcpu_alloc_pages() into the new
-> mm/percpu-vm.c.  So either
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Stephane Eranian <eranian@google.com>
+LKML-Reference: <20100518225240.GC25589@sgi.com>
+Signed-off-by: Russ Anderson <rja@sgi.com>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-record.c |   17 +----------------
+ 1 files changed, 1 insertions(+), 16 deletions(-)
 
-This has gone into Linus' tree today ...
+diff --git a/tools/perf/builtin-record.c b/tools/perf/builtin-record.c
+index 66b8ecd..e672269 100644
+--- a/tools/perf/builtin-record.c
++++ b/tools/perf/builtin-record.c
+@@ -65,9 +65,6 @@ static bool			multiplex			=  false;
+ static int			multiplex_fd			=     -1;
+ 
+ static long			samples				=      0;
+-static struct timeval		last_read;
+-static struct timeval		this_read;
+-
+ static u64			bytes_written			=      0;
+ 
+ static struct pollfd		*event_array;
+@@ -147,8 +144,6 @@ static void mmap_read(struct mmap_data *md)
+ 	void *buf;
+ 	int diff;
+ 
+-	gettimeofday(&this_read, NULL);
+-
+ 	/*
+ 	 * If we're further behind than half the buffer, there's a chance
+ 	 * the writer will bite our tail and mess up the samples under us.
+@@ -159,23 +154,13 @@ static void mmap_read(struct mmap_data *md)
+ 	 */
+ 	diff = head - old;
+ 	if (diff < 0) {
+-		struct timeval iv;
+-		unsigned long msecs;
+-
+-		timersub(&this_read, &last_read, &iv);
+-		msecs = iv.tv_sec*1000 + iv.tv_usec/1000;
+-
+-		fprintf(stderr, "WARNING: failed to keep up with mmap data."
+-				"  Last read %lu msecs ago.\n", msecs);
+-
++		fprintf(stderr, "WARNING: failed to keep up with mmap data\n");
+ 		/*
+ 		 * head points to a known good entry, start there.
+ 		 */
+ 		old = head;
+ 	}
+ 
+-	last_read = this_read;
+-
+ 	if (old != head)
+ 		samples++;
+ 
+-- 
+1.6.2.5
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Fri__21_May_2010_10_55_12_+1000_dmKoVdhhBYvCft9A
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEUEARECAAYFAkv12fAACgkQjjKRsyhoI8xHmQCUDkmYehloK9dIzgnFGC9c0USU
-8QCfYkwGEe1GPduhl33b6nKkAJ+qW1c=
-=hYuv
------END PGP SIGNATURE-----
-
---Signature=_Fri__21_May_2010_10_55_12_+1000_dmKoVdhhBYvCft9A--
