@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab0EVI0w (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:26:52 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:60801 "EHLO mgw2.diku.dk"
+	id S1756537Ab0EVI1L (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:27:11 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60808 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755831Ab0EVI0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:26:48 -0400
-Date: Sat, 22 May 2010 10:26:42 +0200 (CEST)
+	id S1755798Ab0EVI1I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:27:08 -0400
+Date: Sat, 22 May 2010 10:27:02 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 26/27] drivers/isdn: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221026230.13021@ask.diku.dk>
+Subject: [PATCH 27/27] drivers/staging/dream/camera: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221026430.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,101 +54,76 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/isdn/i4l/isdn_ppp.c |   11 +++--------
- drivers/isdn/pcbit/drv.c    |   10 +++-------
- drivers/isdn/sc/ioctl.c     |   23 ++++++-----------------
- 3 files changed, 12 insertions(+), 32 deletions(-)
+ drivers/staging/dream/camera/msm_vfe8x.c |   45 ++++++++-----------------------
+ 1 file changed, 12 insertions(+), 33 deletions(-)
 
-diff --git a/drivers/isdn/i4l/isdn_ppp.c b/drivers/isdn/i4l/isdn_ppp.c
-index f37b8f6..8c46bae 100644
---- a/drivers/isdn/i4l/isdn_ppp.c
-+++ b/drivers/isdn/i4l/isdn_ppp.c
-@@ -449,14 +449,9 @@ static int get_filter(void __user *arg, struct sock_filter **p)
+diff --git a/drivers/staging/dream/camera/msm_vfe8x.c b/drivers/staging/dream/camera/msm_vfe8x.c
+index e61fdba..d87d56f 100644
+--- a/drivers/staging/dream/camera/msm_vfe8x.c
++++ b/drivers/staging/dream/camera/msm_vfe8x.c
+@@ -644,17 +644,10 @@ static int vfe_config(struct msm_vfe_cfg_cmd *cmd, void *data)
+ 		if (!axid)
+ 			return -EFAULT;
  
- 	/* uprog.len is unsigned short, so no overflow here */
- 	len = uprog.len * sizeof(struct sock_filter);
--	code = kmalloc(len, GFP_KERNEL);
--	if (code == NULL)
--		return -ENOMEM;
+-		axio =
+-			kmalloc(sizeof(struct vfe_cmd_axi_output_config),
+-				GFP_ATOMIC);
+-		if (!axio)
+-			return -ENOMEM;
 -
--	if (copy_from_user(code, uprog.filter, len)) {
--		kfree(code);
--		return -EFAULT;
--	}
-+	code = memdup_user(uprog.filter, len);
-+	if (IS_ERR(code))
-+		return PTR_ERR(code);
- 
- 	err = sk_chk_filter(code, uprog.len);
- 	if (err) {
-diff --git a/drivers/isdn/pcbit/drv.c b/drivers/isdn/pcbit/drv.c
-index 123c1d6..1507d2e 100644
---- a/drivers/isdn/pcbit/drv.c
-+++ b/drivers/isdn/pcbit/drv.c
-@@ -411,14 +411,10 @@ static int pcbit_writecmd(const u_char __user *buf, int len, int driver, int cha
- 			return -EINVAL;
- 		}
- 
--		cbuf = kmalloc(len, GFP_KERNEL);
--		if (!cbuf)
--			return -ENOMEM;
-+		cbuf = memdup_user(buf, len);
-+		if (IS_ERR(cbuf))
-+			return PTR_ERR(cbuf);
- 
--		if (copy_from_user(cbuf, buf, len)) {
--			kfree(cbuf);
+-		if (copy_from_user(axio, (void __user *)(vfecmd.value),
+-			sizeof(struct vfe_cmd_axi_output_config))) {
+-			kfree(axio);
 -			return -EFAULT;
 -		}
- 		memcpy_toio(dev->sh_mem, cbuf, len);
- 		kfree(cbuf);
- 		return len;
-diff --git a/drivers/isdn/sc/ioctl.c b/drivers/isdn/sc/ioctl.c
-index 1081091..43c5dc3 100644
---- a/drivers/isdn/sc/ioctl.c
-+++ b/drivers/isdn/sc/ioctl.c
-@@ -215,19 +215,13 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: DCBIOSETSPID: ioctl received\n",
- 				sc_adapter[card]->devicename);
++		axio = memdup_user((void __user *)(vfecmd.value),
++				   sizeof(struct vfe_cmd_axi_output_config));
++		if (IS_ERR(axio))
++			return PTR_ERR(axio);
  
--		spid = kmalloc(SCIOC_SPIDSIZE, GFP_KERNEL);
--		if(!spid) {
--			kfree(rcvmsg);
+ 		vfe_config_axi(OUTPUT_1, axid, axio);
+ 		vfe_axi_output_config(axio);
+@@ -669,17 +662,10 @@ static int vfe_config(struct msm_vfe_cfg_cmd *cmd, void *data)
+ 		if (!axid)
+ 			return -EFAULT;
+ 
+-		axio =
+-			kmalloc(sizeof(struct vfe_cmd_axi_output_config),
+-				GFP_ATOMIC);
+-		if (!axio)
 -			return -ENOMEM;
--		}
 -
- 		/*
- 		 * Get the spid from user space
- 		 */
--		if (copy_from_user(spid, data->dataptr, SCIOC_SPIDSIZE)) {
-+		spid = memdup_user(data->dataptr, SCIOC_SPIDSIZE);
-+		if (IS_ERR(spid)) {
- 			kfree(rcvmsg);
--			kfree(spid);
+-		if (copy_from_user(axio, (void __user *)(vfecmd.value),
+-				sizeof(struct vfe_cmd_axi_output_config))) {
+-			kfree(axio);
 -			return -EFAULT;
-+			return PTR_ERR(spid);
- 		}
- 
- 		pr_debug("%s: SCIOCSETSPID: setting channel %d spid to %s\n", 
-@@ -296,18 +290,13 @@ int sc_ioctl(int card, scs_ioctl *data)
- 		pr_debug("%s: SCIOSETDN: ioctl received\n",
- 				sc_adapter[card]->devicename);
- 
--		dn = kmalloc(SCIOC_DNSIZE, GFP_KERNEL);
--		if (!dn) {
--			kfree(rcvmsg);
--			return -ENOMEM;
 -		}
- 		/*
- 		 * Get the spid from user space
- 		 */
--		if (copy_from_user(dn, data->dataptr, SCIOC_DNSIZE)) {
-+		dn = memdup_user(data->dataptr, SCIOC_DNSIZE);
-+		if (IS_ERR(dn)) {
- 			kfree(rcvmsg);
--			kfree(dn);
--			return -EFAULT;
-+			return PTR_ERR(dn);
- 		}
++		axio = memdup_user((void __user *)(vfecmd.value),
++				   sizeof(struct vfe_cmd_axi_output_config));
++		if (IS_ERR(axio))
++			return PTR_ERR(axio);
  
- 		pr_debug("%s: SCIOCSETDN: setting channel %d dn to %s\n", 
+ 		vfe_config_axi(OUTPUT_2, axid, axio);
+ 
+@@ -694,17 +680,10 @@ static int vfe_config(struct msm_vfe_cfg_cmd *cmd, void *data)
+ 		if (!axid)
+ 			return -EFAULT;
+ 
+-		axio =
+-			kmalloc(sizeof(struct vfe_cmd_axi_output_config),
+-				GFP_ATOMIC);
+-		if (!axio)
+-			return -ENOMEM;
+-
+-		if (copy_from_user(axio, (void __user *)(vfecmd.value),
+-			sizeof(struct vfe_cmd_axi_output_config))) {
+-			kfree(axio);
+-			return -EFAULT;
+-		}
++		axio = memdup_user((void __user *)(vfecmd.value),
++				   sizeof(struct vfe_cmd_axi_output_config));
++		if (IS_ERR(axio))
++			return PTR_ERR(axio);
+ 
+ 		vfe_config_axi(OUTPUT_1_AND_2,
+ 			axid, axio);
