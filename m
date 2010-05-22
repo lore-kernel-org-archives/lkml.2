@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab0EVA2I (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 20:28:08 -0400
-Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:58417 "EHLO
+	id S932791Ab0EVAbn (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 20:31:43 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:36542 "EHLO
 	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756586Ab0EVA2F (ORCPT
+	with ESMTP id S932767Ab0EVAbm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 20:28:05 -0400
-Date: Sat, 22 May 2010 10:27:59 +1000
+	Fri, 21 May 2010 20:31:42 -0400
+Date: Sat, 22 May 2010 10:31:38 +1000
 From: Dave Chinner <david@fromorbit.com>
-To: Jan Kara <jack@suse.cz>
-Cc: Nick Piggin <npiggin@suse.de>, Josef Bacik <josef@redhat.com>,
+To: Josef Bacik <josef@redhat.com>
+Cc: Jan Kara <jack@suse.cz>, Nick Piggin <npiggin@suse.de>,
        linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
        hch@infradead.org, akpm@linux-foundation.org,
        linux-kernel@vger.kernel.org
 Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100522002759.GA8120@dastard>
+Message-ID: <20100522003138.GB8120@dastard>
 References: <20100514083821.GL13617@dastard>
  <20100518063647.GD2516@laptop>
  <20100518080503.GF2150@dastard>
@@ -25,19 +25,20 @@ References: <20100514083821.GL13617@dastard>
  <20100519235054.GS8120@dastard>
  <20100520201232.GP3395@quack.suse.cz>
  <20100520230524.GU8120@dastard>
- <20100521185846.GD10149@quack.suse.cz>
+ <20100521135054.GN32248@dhcp231-156.rdu.redhat.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100521185846.GD10149@quack.suse.cz>
+In-Reply-To: <20100521135054.GN32248@dhcp231-156.rdu.redhat.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 08:58:46PM +0200, Jan Kara wrote:
-> On Fri 21-05-10 09:05:24, Dave Chinner wrote:
+On Fri, May 21, 2010 at 09:50:54AM -0400, Josef Bacik wrote:
+> On Fri, May 21, 2010 at 09:05:24AM +1000, Dave Chinner wrote:
 > > On Thu, May 20, 2010 at 10:12:32PM +0200, Jan Kara wrote:
+> > > On Thu 20-05-10 09:50:54, Dave Chinner wrote:
 > > >   b) E.g. ext4 can do even without hole punching. It can allocate extent
 > > >      as 'unwritten' and when something during the write fails, it just
 > > >      leaves the extent allocated and the 'unwritten' flag makes sure that
@@ -47,41 +48,26 @@ On Fri, May 21, 2010 at 08:58:46PM +0200, Jan Kara wrote:
 > > 
 > > Allocating multipage writes as unwritten extents turns off delayed
 > > allocation and hence we'd lose all the benefits that this gives...
->   Ah, sorry. That was a short-circuit in my brain. But when we do delayed
-> I don't see why we should actually do any hole punching... The write needs
-> to:
->   a) reserve enough blocks for the write - I don't know about other
-> filesystems but for ext4 this means just incrementing a counter.
->   b) copy data page by page
->   c) release part of reservation (i.e. decrement counter) if we actually
-> copied less than we originally thought.
+> >
 > 
->   Am I missing something?
+> I just realized we have another problem, the mmap_sem/page_lock deadlock.
+> Currently BTRFS is susceptible to this, since we don't prefault any of the pages
+> in yet.  If we're going to do multi-page writes we're going to need to have a
+> way to fault in all of the iovec's at once, so when we do the
+> pagefault_disable() copy pagefault_enable() we don't just end up copying the
+> first iovec.  Nick have you done something like this already?
 
-Possibly. Delayed allocation is made up of two parts - space
-reservation and recording the regions of delayed allocation in an
-extent tree, page/bufferhead state or both.
+I have patches that already do this, but the big issue is that it is
+inhernetly racy. The prefaulting does not guarantee that by the time
+we disable page faults that the prefaulted page has not already been
+reclaimed. Basically we have to design for EFAULT occurring because
+even pre-faultig does not prevent it from occurring.
 
-In XFS, these two steps happen in the same get_blocks call, but the
-result of that is we have to truncate/punch delayed allocate extents
-out just like normal extents if we are not going to use them. Hence
-a reserve/allocate interface allows us to split the operation -
-reserve ensures we have space for the delayed allocation, allocate
-inserts the delayed extents into the inode extent tree for later
-real allocation during writeback. Hence the unreserve call can
-simply be accounting - it has no requirement to punch out delayed
-extents that may have already been allocated, just do work on
-counters.
+> If not I assume
+> I can just loop through all the iovec's and call fault_in_pages_readable on all
+> of them and be good to go right?  Thanks,
 
-btrfs already has this split design - it reserves space, does the
-copy, then marks the extent ranges as delalloc once the copy has
-succeeded, otherwise it simply unreserves the unused space.
-
-Once again, I don't know if ext4 does this internal delayed
-allocation extent tracking or whether it just uses page state to
-track those extents, but it would probably still have to use the
-allocate call to mark all the pages/bufferheads as delalloc so
-that uneserve didn't have to do any extra work.
+That's effectively what I've done, but it's still no guarantee.
 
 Cheers,
 
