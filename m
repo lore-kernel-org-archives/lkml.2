@@ -1,72 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758730Ab0EVVS4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 17:18:56 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58970 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758082Ab0EVVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 17:18:54 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
-Date: Sat, 22 May 2010 23:20:01 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain> <201005222255.27301.rjw@sisk.pl>
-In-Reply-To: <201005222255.27301.rjw@sisk.pl>
+	id S1758809Ab0EVV0G (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 17:26:06 -0400
+Received: from eddie.linux-mips.org ([78.24.191.182]:33805 "EHLO
+	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758716Ab0EVV0E (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 17:26:04 -0400
+Date: Sat, 22 May 2010 22:26:00 +0100 (BST)
+From: "Maciej W. Rozycki" <macro@linux-mips.org>
+To: Ralf Baechle <ralf@linux-mips.org>
+cc: John Kacur <jkacur@redhat.com>, linux-kernel@vger.kernel.org,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Arnd Bergmann <arndbergmann@googlemail.com>,
+       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
+       linux-mips@linux-mips.org, Paul Mundt <lethal@linux-sh.org>,
+       linux-sh@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
+       Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org
+Subject: Re: bkl: Pushdowns for sound/oss ?
+In-Reply-To: <20100521154659.GA2346@linux-mips.org>
+Message-ID: <alpine.LFD.2.00.1005222158340.4344@eddie.linux-mips.org>
+References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain> <20100521144055.GB13174@linux-mips.org> <alpine.LFD.2.00.1005211613200.4344@eddie.linux-mips.org> <20100521154659.GA2346@linux-mips.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005222320.01506.rjw@sisk.pl>
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 May 2010, Rafael J. Wysocki wrote:
-> On Saturday 22 May 2010, Thomas Gleixner wrote:
-> > On Sat, 22 May 2010, Thomas Gleixner wrote:
-> > 
-> > > On Sat, 22 May 2010, Rafael J. Wysocki wrote:
-> > > > On Saturday 22 May 2010, Thomas Gleixner wrote:
-> > > > 
-> > > > > Also which clocksource is used ?
-> > > > 
-> > > > hpet
-> > > 
-> > > Hmm, there is only one hpet related commit sin .34:  30a564be9d
-> > > and I can hardly see how this should be related.
-> > 
-> > Does the problem persist if you disable HPET on the kernel command line ?
-> 
-> I didn't try that, but I bisected it in the meantime which lead to:
-> 
-> commit 64ce4c2f5252f25798117fa80a027993163d6d84
-> Author: John Stultz <johnstul@us.ibm.com>
-> Date:   Thu Mar 11 14:04:47 2010 -0800
-> 
->     time: Clean up warp_clock()
-> 
->     warp_clock() currently accesses timekeeping internal state directly, which
->     is unnecessary.  Convert it to use the proper timekeeping interfaces.
-> 
->     Signed-off-by: John Stultz <johnstul@us.ibm.com>
->     Cc: Ingo Molnar <mingo@elte.hu>
->     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> 
-> So I don't think it's an hpet issue. :-)
-> 
-> I'm now going to revert that commit and see what happens.
+On Fri, 21 May 2010, Ralf Baechle wrote:
 
-After reverting commit 64ce4c2f above things work again.
+> I've patched up what there to build without warnings but that doesn't
+> make any less ugly or wrong.  I'm trying to motivate a few folks to
+> offload the work from you; until that has happened it might be nice if this
+> driver would stick around as some form of documentation.
 
-To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
-Remove xtime_cache), but since the symptoms continued to apprear after
-reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
-on this box.
+ The driver is of less use as an OSS module than it would be with ALSA.  
+It only offers one sample rate of 48kHz (that is the native frequency of 
+the codec) and my experience is 44.1kHz or its aliquots are what most 
+pieces of OSS client software expect (at least such that is not capable of 
+resampling itself).
 
-Thanks,
-Rafael
+ I'm not sure it makes a lot of sense to keep this piece around -- the 
+kernel repositories are not meant to lose their history IIUC, so the 
+driver will be available from an older revision for the foreseeable future 
+anyway.  This has happened to other drivers too, even those that were of 
+actual interest to people.
+
+> As for the grandchildren - is there something I haven't heared of yet?  :)
+
+ Me neither, but I've thought I could perhaps borrow some from a friend or 
+suchlike and consider the matter ticked off. ;)
+
+  Maciej
