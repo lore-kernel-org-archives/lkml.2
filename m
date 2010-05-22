@@ -1,55 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758809Ab0EVV0G (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 17:26:06 -0400
-Received: from eddie.linux-mips.org ([78.24.191.182]:33805 "EHLO
-	eddie.linux-mips.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758716Ab0EVV0E (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 17:26:04 -0400
-Date: Sat, 22 May 2010 22:26:00 +0100 (BST)
-From: "Maciej W. Rozycki" <macro@linux-mips.org>
-To: Ralf Baechle <ralf@linux-mips.org>
-cc: John Kacur <jkacur@redhat.com>, linux-kernel@vger.kernel.org,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Arnd Bergmann <arndbergmann@googlemail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       linux-mips@linux-mips.org, Paul Mundt <lethal@linux-sh.org>,
-       linux-sh@vger.kernel.org, Geert Uytterhoeven <geert@linux-m68k.org>,
-       Roman Zippel <zippel@linux-m68k.org>, linux-m68k@vger.kernel.org
-Subject: Re: bkl: Pushdowns for sound/oss ?
-In-Reply-To: <20100521154659.GA2346@linux-mips.org>
-Message-ID: <alpine.LFD.2.00.1005222158340.4344@eddie.linux-mips.org>
-References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain> <20100521144055.GB13174@linux-mips.org> <alpine.LFD.2.00.1005211613200.4344@eddie.linux-mips.org> <20100521154659.GA2346@linux-mips.org>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932107Ab0EVVfv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 17:35:51 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58989 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758082Ab0EVVfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 17:35:50 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: LKML <linux-kernel@vger.kernel.org>
+Subject: [git head f4b87dee9] BUG: using smp_processor_id() in preemptible (VFS-related)
+Date: Sat, 22 May 2010 23:36:59 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Al Viro <viro@zeniv.linux.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Eric Paris <eparis@redhat.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: Text/Plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005222337.00039.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010, Ralf Baechle wrote:
+Hi,
 
-> I've patched up what there to build without warnings but that doesn't
-> make any less ugly or wrong.  I'm trying to motivate a few folks to
-> offload the work from you; until that has happened it might be nice if this
-> driver would stick around as some form of documentation.
+I get this every time on boot with current -git:
 
- The driver is of less use as an OSS module than it would be with ALSA.  
-It only offers one sample rate of 48kHz (that is the native frequency of 
-the codec) and my experience is 44.1kHz or its aliquots are what most 
-pieces of OSS client software expect (at least such that is not capable of 
-resampling itself).
+[    6.906133] EXT4-fs (sda7): mounted filesystem with ordered data mode
+[    7.014359] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+[    7.020570] caller is dqstats_inc+0x19/0x2c
+[    7.026658] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+[    7.032792] Call Trace:
+[    7.038859]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+[    7.045025]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+[    7.051201]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+[    7.057349]  [<ffffffff810eccfa>] ? __shrink_dcache_sb+0x284/0x293
+[    7.063574]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+[    7.069730]  [<ffffffff810fc552>] sync_filesystem+0x36/0x4c
+[    7.075867]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+[    7.081960]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+[    7.088039]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+[    7.094086]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+[    7.100085]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+[    7.124208] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+[    7.130307] caller is dqstats_inc+0x19/0x2c
+[    7.136386] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+[    7.142512] Call Trace:
+[    7.148629]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+[    7.154846]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+[    7.161019]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+[    7.167171]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+[    7.173364]  [<ffffffff810fc563>] sync_filesystem+0x47/0x4c
+[    7.179522]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+[    7.185616]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+[    7.191663]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+[    7.197626]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+[    7.203493]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+[   11.643596] udev: starting version 153
 
- I'm not sure it makes a lot of sense to keep this piece around -- the 
-kernel repositories are not meant to lose their history IIUC, so the 
-driver will be available from an older revision for the foreseeable future 
-anyway.  This has happened to other drivers too, even those that were of 
-actual interest to people.
+This is after reverting commit a7cf4145b (anon_inode: set S_IFREG on the
+anon_inode) that the system is not really useable with.
 
-> As for the grandchildren - is there something I haven't heared of yet?  :)
-
- Me neither, but I've thought I could perhaps borrow some from a friend or 
-suchlike and consider the matter ticked off. ;)
-
-  Maciej
+Thanks,
+Rafael
