@@ -1,147 +1,137 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755702Ab0EVQth (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 12:49:37 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:42187 "EHLO mx2.netapp.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752021Ab0EVQtg convert rfc822-to-8bit (ORCPT
+	id S1755740Ab0EVQ5B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 12:57:01 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:63682 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752021Ab0EVQ46 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 12:49:36 -0400
-X-IronPort-AV: E=Sophos;i="4.53,283,1272870000"; 
-   d="scan'208";a="365398500"
-Subject: Re: Possible NFS bug in 2.6.34...
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Stuart Sheldon <stu@actusa.net>
-Cc: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org
-In-Reply-To: <4BF803F2.2010506@actusa.net>
-References: <4BF72D34.60701@actusa.net>
-	 <1274544580.4860.73.camel@heimdal.trondhjem.org>
-	 <4BF803F2.2010506@actusa.net>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Sat, 22 May 2010 12:49:33 -0400
-Message-ID: <1274546973.4860.78.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
-X-OriginalArrivalTime: 22 May 2010 16:49:34.0729 (UTC) FILETIME=[C206DF90:01CAF9CE]
+	Sat, 22 May 2010 12:56:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=CySWw13d9RjgUfdpV2nCbPaf566oXsopc7L/zhDEBJARN08ib+ZTXJJcGVvrqIHBpE
+         rODkbnM07vs1B4D5rtsYUJch/TiD/cSwJtk2LrM8Gzpxj4K46ayzq3IC/jCj+Jte34ez
+         Cc9tbOTcu/hrjML32ow0wYDebg3t7adfLj2fA=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
+       John Kacur <jkacur@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Frederic Lassabe <frederic.lassabe@gmail.com>
+Subject: [GIT PULL] Bkl ioctl pushdowns for 2.6.35-rc1
+Date: Sat, 22 May 2010 18:57:05 +0200
+Message-Id: <1274547426-25937-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-22 at 09:18 -0700, Stuart Sheldon wrote: 
-> -----BEGIN PGP SIGNED MESSAGE-----
-> Hash: SHA256
-> 
-> On 05/22/2010 09:09 AM, Trond Myklebust wrote:
-> > Do you see any more NFS traffic to the server when the above hang
-> > occurs? I'm wondering if we don't need something like the following
-> > patch.
-> > 
-> > Cheers
-> >   Trond 
-> > --------------------------------------------------------------------------------
-> > From 0b574497e05f62fd49cfe26f1b97e3669525446c Mon Sep 17 00:00:00 2001
-> > From: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Date: Sat, 22 May 2010 11:49:19 -0400
-> > Subject: [PATCH] NFS: Ensure that we mark the inode as dirty if we exit early from commit
-> > 
-> > If we exit from nfs_commit_inode() without ensuring that the COMMIT rpc
-> > call has been completed, we must re-mark the inode as dirty. Otherwise,
-> > future calls to sync_inode() with the WB_SYNC_ALL flag set will fail to
-> > ensure that the data is on the disk.
-> > 
-> > Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-> > Cc: stable@kernel.org
-> > ---
-> >  fs/nfs/write.c |   13 +++++++++++--
-> >  1 files changed, 11 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-> > index 3aea3ca..b8a6d7a 100644
-> > --- a/fs/nfs/write.c
-> > +++ b/fs/nfs/write.c
-> > @@ -1386,7 +1386,7 @@ static int nfs_commit_inode(struct inode *inode, int how)
-> >  	int res = 0;
-> >  
-> >  	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
-> > -		goto out;
-> > +		goto out_mark_dirty;
-> >  	spin_lock(&inode->i_lock);
-> >  	res = nfs_scan_commit(inode, &head, 0, 0);
-> >  	spin_unlock(&inode->i_lock);
-> > @@ -1398,9 +1398,18 @@ static int nfs_commit_inode(struct inode *inode, int how)
-> >  			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
-> >  					nfs_wait_bit_killable,
-> >  					TASK_KILLABLE);
-> > +		else
-> > +			goto out_mark_dirty;
-> >  	} else
-> >  		nfs_commit_clear_lock(NFS_I(inode));
-> > -out:
-> > +	return res;
-> > +	/* Note: If we exit without ensuring that the commit is complete,
-> > +	 * we must mark the inode as dirty. Otherwise, future calls to
-> > +	 * sync_inode() with the WB_SYNC_ALL flag set will fail to ensure
-> > +	 * that the data is on the disk.
-> > +	 */
-> > +out_mark_dirty:
-> > +	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
-> >  	return res;
-> >  }
-> >  
-> 
-> Trond,
-> 
-> When it occurred, it continues to throw those errors in the log, and all
-> access to the NFS mount stalled until I hard reset the client system.
-> 
-> Do you want me to apply the patch and see if I can recreate the condition?
+Linus,
 
-Yes, please do. Could you also apply the following debugging patch on
-top of the above one, and see if the WARN_ON() triggers when both
-patches are applied?
+Please pull the bkl/ioctl branch that can be found at:
 
-Cheers
-  Trond 
-------------------------------------------------------------------------------------------------
->From 9883e35957468987f4338525c1d800d637bc05b7 Mon Sep 17 00:00:00 2001
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date: Sat, 22 May 2010 10:46:41 -0400
-Subject: [PATCH 2/2] NFS: debugging code for nfs_wb_page()
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	bkl/ioctl
 
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+There are still some pushdowns left, pending for tests or in discussion.
+I guess ioctl will die for the next merge window.
+
+Thanks,
+	Frederic
 ---
- fs/nfs/write.c |    9 +++++++++
- 1 files changed, 9 insertions(+), 0 deletions(-)
 
-diff --git a/fs/nfs/write.c b/fs/nfs/write.c
-index b8a6d7a..0558fab 100644
---- a/fs/nfs/write.c
-+++ b/fs/nfs/write.c
-@@ -1519,12 +1519,21 @@ int nfs_wb_page(struct inode *inode, struct page *page)
- 	int ret;
- 
- 	while(PagePrivate(page)) {
-+		unsigned dirty;
-+		int syncing;
-+
- 		wait_on_page_writeback(page);
- 		if (clear_page_dirty_for_io(page)) {
- 			ret = nfs_writepage_locked(page, &wbc);
- 			if (ret < 0)
- 				goto out_error;
-+			continue;
- 		}
-+
-+		dirty = inode->i_state & I_DIRTY;
-+		syncing = inode->i_state & I_SYNC;
-+		WARN_ON(!syncing && !dirty && PagePrivate(page));
-+
- 		ret = sync_inode(inode, &wbc);
- 		if (ret < 0)
- 			goto out_error;
--- 
-1.7.0.1
+Arnd Bergmann (9):
+      hfsplus: Push down BKL into ioctl function
+      sn_hwperf: Kill BKL usage
+      um/mmapper: Remove BKL usage
+      coda/psdev: Remove BKL from ioctl function
+      smbfs: Push down BKL into ioctl function
+      dvb: Push down BKL into ioctl functions
+      scsi: Push down BKL into ioctl functions
+      isdn: Push down BKL into ioctl functions
+      drivers: Push down BKL into various drivers
+
+Frederic Weisbecker (4):
+      autofs4: Pushdown the bkl from ioctl
+      sunrpc: Pushdown the bkl from ioctl
+      sunrpc: Pushdown the bkl from sunrpc cache ioctl
+      uml: Pushdown the bkl from harddog_kern ioctl
+
+John Kacur (4):
+      coda: BKL ioctl pushdown
+      coda: Clean-up whitespace problems in pioctl.c
+      ncpfs: BKL ioctl pushdown
+      uml: Convert to unlocked_ioctls to remove implicit BKL
 
 
+ arch/ia64/sn/kernel/sn2/sn_hwperf.c         |    9 +---
+ arch/um/drivers/harddog_kern.c              |   18 +++++-
+ arch/um/drivers/hostaudio_kern.c            |    8 ++--
+ arch/um/drivers/mmapper_kern.c              |    5 +-
+ drivers/char/apm-emulation.c                |    8 ++-
+ drivers/char/applicom.c                     |   13 +++--
+ drivers/char/ds1620.c                       |   16 +++++-
+ drivers/char/dtlk.c                         |   15 +++---
+ drivers/char/generic_nvram.c                |   17 +++++-
+ drivers/char/genrtc.c                       |   16 +++++-
+ drivers/char/hpet.c                         |   14 +++--
+ drivers/char/ipmi/ipmi_devintf.c            |   26 +++++++--
+ drivers/char/ipmi/ipmi_watchdog.c           |   17 +++++-
+ drivers/char/nvram.c                        |   10 +++-
+ drivers/char/nwflash.c                      |    7 ++-
+ drivers/char/raw.c                          |   42 ++++++++------
+ drivers/hwmon/fschmd.c                      |    9 ++--
+ drivers/hwmon/w83793.c                      |   10 ++--
+ drivers/input/misc/hp_sdc_rtc.c             |   34 ++++++++----
+ drivers/isdn/capi/capi.c                    |   17 +++++-
+ drivers/isdn/i4l/isdn_common.c              |   18 +++++-
+ drivers/isdn/mISDN/timerdev.c               |   10 ++--
+ drivers/macintosh/nvram.c                   |    2 +-
+ drivers/macintosh/via-pmu.c                 |   17 +++++-
+ drivers/media/dvb/dvb-core/dmxdev.c         |   31 ++++++++---
+ drivers/media/dvb/dvb-core/dvb_ca_en50221.c |   17 ++++--
+ drivers/media/dvb/dvb-core/dvb_frontend.c   |   30 +++++-----
+ drivers/media/dvb/dvb-core/dvb_net.c        |   15 ++++--
+ drivers/media/dvb/dvb-core/dvbdev.c         |   17 ++++--
+ drivers/media/dvb/dvb-core/dvbdev.h         |   11 ++---
+ drivers/media/dvb/firewire/firedtv-ci.c     |    5 +-
+ drivers/media/dvb/ttpci/av7110.c            |    4 +-
+ drivers/media/dvb/ttpci/av7110_av.c         |    8 ++--
+ drivers/media/dvb/ttpci/av7110_ca.c         |    5 +-
+ drivers/mtd/mtdchar.c                       |   19 +++++--
+ drivers/pcmcia/pcmcia_ioctl.c               |   17 +++++-
+ drivers/rtc/rtc-m41t80.c                    |   16 +++++-
+ drivers/sbus/char/openprom.c                |   44 +++++++++-------
+ drivers/scsi/3w-9xxx.c                      |   10 +++-
+ drivers/scsi/3w-sas.c                       |    8 ++-
+ drivers/scsi/3w-xxxx.c                      |   11 +++-
+ drivers/scsi/aacraid/linit.c                |   11 +++-
+ drivers/scsi/dpt_i2o.c                      |   20 ++++++-
+ drivers/scsi/gdth.c                         |   20 +++++--
+ drivers/scsi/megaraid.c                     |   20 ++++++-
+ drivers/scsi/megaraid.h                     |    3 +-
+ drivers/scsi/megaraid/megaraid_mm.c         |   22 ++++++--
+ drivers/scsi/osst.c                         |   14 ++++--
+ drivers/scsi/sg.c                           |   17 +++++-
+ drivers/usb/mon/mon_bin.c                   |   23 ++++++--
+ drivers/usb/mon/mon_stat.c                  |    3 +-
+ fs/autofs4/root.c                           |   22 ++++++--
+ fs/coda/pioctl.c                            |   76 ++++++++++++++------------
+ fs/coda/psdev.c                             |    5 +-
+ fs/hfsplus/dir.c                            |    2 +-
+ fs/hfsplus/hfsplus_fs.h                     |    3 +-
+ fs/hfsplus/inode.c                          |    2 +-
+ fs/hfsplus/ioctl.c                          |   12 +++-
+ fs/ncpfs/dir.c                              |    2 +-
+ fs/ncpfs/file.c                             |    2 +-
+ fs/ncpfs/ioctl.c                            |   27 ++++++----
+ fs/smbfs/dir.c                              |    2 +-
+ fs/smbfs/file.c                             |    2 +-
+ fs/smbfs/ioctl.c                            |   10 ++--
+ fs/smbfs/proto.h                            |    2 +-
+ include/linux/ncp_fs.h                      |    2 +-
+ net/sunrpc/cache.c                          |   13 ++++-
+ net/sunrpc/rpc_pipe.c                       |   18 +++++-
+ 68 files changed, 669 insertions(+), 312 deletions(-)
