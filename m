@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753594Ab0EVITa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:19:30 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:60221 "EHLO mgw1.diku.dk"
+	id S1753789Ab0EVITs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:19:48 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:33806 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753677Ab0EVITX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:19:23 -0400
-Date: Sat, 22 May 2010 10:19:17 +0200 (CEST)
+	id S1753595Ab0EVITl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:19:41 -0400
+Date: Sat, 22 May 2010 10:19:36 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 3/27] fs/btrfs: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221018590.13021@ask.diku.dk>
+To: Joseph Chan <JosephChan@via.com.tw>, Scott Fang <ScottFang@viatech.com.cn>,
+       linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 4/27] drivers/video/via: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221019180.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,46 +55,28 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- fs/btrfs/ioctl.c |   20 ++++++--------------
- 1 file changed, 6 insertions(+), 14 deletions(-)
+ drivers/video/via/viafbdev.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
-index 97a9783..5301d78 100644
---- a/fs/btrfs/ioctl.c
-+++ b/fs/btrfs/ioctl.c
-@@ -1096,14 +1096,10 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
+diff --git a/drivers/video/via/viafbdev.c b/drivers/video/via/viafbdev.c
+index 2bc40e6..1082541 100644
+--- a/drivers/video/via/viafbdev.c
++++ b/drivers/video/via/viafbdev.c
+@@ -578,14 +578,9 @@ static int viafb_ioctl(struct fb_info *info, u_int cmd, u_long arg)
+ 		break;
  
--	args = kmalloc(sizeof(*args), GFP_KERNEL);
--	if (!args)
--		return -ENOMEM;
-+	args = memdup_user(argp, sizeof(*args));
-+	if (IS_ERR(args))
-+		return PTR_ERR(args);
- 
--	if (copy_from_user(args, argp, sizeof(*args))) {
--		kfree(args);
--		return -EFAULT;
--	}
- 	inode = fdentry(file)->d_inode;
- 	ret = search_ioctl(inode, args);
- 	if (ret == 0 && copy_to_user(argp, args, sizeof(*args)))
-@@ -1211,14 +1207,10 @@ static noinline int btrfs_ioctl_ino_lookup(struct file *file,
- 	if (!capable(CAP_SYS_ADMIN))
- 		return -EPERM;
- 
--	args = kmalloc(sizeof(*args), GFP_KERNEL);
--	if (!args)
--		return -ENOMEM;
-+	args = memdup_user(argp, sizeof(*args));
-+	if (IS_ERR(args))
-+		return PTR_ERR(args);
- 
--	if (copy_from_user(args, argp, sizeof(*args))) {
--		kfree(args);
--		return -EFAULT;
--	}
- 	inode = fdentry(file)->d_inode;
- 
- 	if (args->treeid == 0)
+ 	case VIAFB_SET_GAMMA_LUT:
+-		viafb_gamma_table = kmalloc(256 * sizeof(u32), GFP_KERNEL);
+-		if (!viafb_gamma_table)
+-			return -ENOMEM;
+-		if (copy_from_user(viafb_gamma_table, argp,
+-				256 * sizeof(u32))) {
+-			kfree(viafb_gamma_table);
+-			return -EFAULT;
+-		}
++		viafb_gamma_table = memdup_user(argp, 256 * sizeof(u32));
++		if (IS_ERR(viafb_gamma_table))
++			return PTR_ERR(viafb_gamma_table);
+ 		viafb_set_gamma_table(viafb_bpp, viafb_gamma_table);
+ 		kfree(viafb_gamma_table);
+ 		break;
