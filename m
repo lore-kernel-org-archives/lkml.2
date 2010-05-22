@@ -1,72 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755336Ab0EVOzX (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:55:23 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51910 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754189Ab0EVOzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:55:18 -0400
-Date: Sat, 22 May 2010 18:54:01 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Roland McGrath <roland@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Cc: Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org,
-       David Howells <dhowells@redhat.com>
-Subject: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage of
-	child->mm
-Message-ID: <20100522165401.GB19573@redhat.com>
-References: <1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755016Ab0EVPKv (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 11:10:51 -0400
+Received: from sinclair.provo.novell.com ([137.65.248.137]:35981 "EHLO
+	sinclair.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754194Ab0EVPKs convert rfc822-to-8bit (ORCPT
+	<rfc822;groupwise-ksrinivasan@novell.com:5:1>);
+	Sat, 22 May 2010 11:10:48 -0400
+Message-Id: <4BF79F9402000030000859D7@sinclair.provo.novell.com>
+X-Mailer: Novell GroupWise Internet Agent 8.0.1 
+Date: Sat, 22 May 2010 09:10:44 -0600
+From: "Ky Srinivasan" <ksrinivasan@novell.com>
+To: "Greg KH" <gregkh@suse.de>
+Cc: "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+       "Haiyang Zhang" <haiyangz@microsoft.com>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel
+	 initialization
+References: <1FB5E1D5CA062146B38059374562DF7266B8AE7C@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100521201228.GA6712@suse.de>
+ <4BF696FA0200003000085968@sinclair.provo.novell.com>
+ <20100521205527.GB9594@suse.de>
+In-Reply-To: <20100521205527.GB9594@suse.de>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 8BIT
 Content-Disposition: inline
-In-Reply-To: <20100522165320.GA19573@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Now that Mike Frysinger unified the FDPIC ptrace code, we can fix
-the unsafe usage of child->mm in ptrace_request(PTRACE_GETFDPIC).
 
-We have the reference to task_struct, and ptrace_check_attach()
-verified the tracee is stopped. But nothing can protect from
-SIGKILL after that, we must not assume child->mm != NULL.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
----
+>>> On 5/21/2010 at  4:55 PM, in message <20100521205527.GB9594@suse.de>, Greg KH
+<gregkh@suse.de> wrote: 
+> On Fri, May 21, 2010 at 02:21:46PM -0600, Ky Srinivasan wrote:
+>> 
+>> 
+>> >>> On 5/21/2010 at  4:12 PM, in message <20100521201228.GA6712@suse.de>, Greg KH
+>> <gregkh@suse.de> wrote: 
+>> > On Fri, May 21, 2010 at 07:58:26PM +0000, Haiyang Zhang wrote:
+>> >> From: Haiyang Zhang <haiyangz@microsoft.com>
+>> >> 
+>> >> Subject: staging: hv: Fix race condition on IC channel initialization
+>> >> There is a possible race condition when hv_utils starts to load immediately
+>> >> after hv_vmbus is loading - null pointer error could happen.
+>> >> This patch added an atomic counter to ensure all channels are ready before
+>> >> vmbus_init() returns. So another module won't have any uninitialized 
+>> > channel.
+>> > 
+>> > Better, but not quite ready...
+>> > 
+>> >> +/* Counter of IC channels initialized */
+>> >> +atomic_t hv_utils_initcnt = ATOMIC_INIT(0);
+>> > 
+>> > This doesn't need to be an atomic variable, does it really?
+>> > 
+>> > Why not have a simple bool variable "vmbus_initialized" or something.
+>> > It starts out as false, and then turns true when you are up and ready.
+>> > Then provide a function that tests it:
+>> > 	bool hv_vmbus_ready(void)
+>> > 	{
+>> > 		return vmbus_initialized
+>> > 	}
+>> > 	EXPORT_SYMBOL_GPL(hv_vmbus_ready);
+>> I agree with Greg; I would go a step further and deal with this issue
+>> as part of loading the bus driver. After all, we already have
+>> dependencies established for various LIC drivers  on the bus driver.
+>> The fact that even after the bus driver is loaded we cannot reliably
+>> load other drivers implies that there is an additional dependency that
+>> is not currently being handled. Why can't we ensure that the bus
+>> driver is fully initialized before we are done with loading the bus
+>> driver.
+> 
+> Um, I think that is what this patch fixes :)
+> 
+> It just doesn't do it in a way that I think is very good...
+Ok, my mistake. When I saw hv_vmbus_ready function being exported, I was under the impression each of the drivers that depend on the bus driver to check if the bus driver was properly initialized.
 
- kernel/ptrace.c |   10 ++++++++--
- 1 file changed, 8 insertions(+), 2 deletions(-)
+Regards,
 
---- 34-rc1/kernel/ptrace.c~PTRACE_FDPIC	2010-05-22 18:04:47.000000000 +0200
-+++ 34-rc1/kernel/ptrace.c	2010-05-22 18:35:35.000000000 +0200
-@@ -598,18 +598,24 @@ int ptrace_request(struct task_struct *c
- 
- #ifdef CONFIG_BINFMT_ELF_FDPIC
- 	case PTRACE_GETFDPIC: {
-+		struct mm_struct *mm = get_task_mm(child);
- 		unsigned long tmp = 0;
- 
-+		ret = -ESRCH;
-+		if (!mm)
-+			break;
-+
- 		switch (addr) {
- 		case PTRACE_GETFDPIC_EXEC:
--			tmp = child->mm->context.exec_fdpic_loadmap;
-+			tmp = mm->context.exec_fdpic_loadmap;
- 			break;
- 		case PTRACE_GETFDPIC_INTERP:
--			tmp = child->mm->context.interp_fdpic_loadmap;
-+			tmp = mm->context.interp_fdpic_loadmap;
- 			break;
- 		default:
- 			break;
- 		}
-+		mmput(mm);
- 
- 		ret = put_user(tmp, (unsigned long __user *) data);
- 		break;
+K. Y
+> 
+> thanks,
+> 
+> greg k-h
+
 
