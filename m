@@ -1,65 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756171Ab0EVRkv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 13:40:51 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50044 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755873Ab0EVRku (ORCPT
+	id S1756977Ab0EVRp3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 13:45:29 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:41023 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755938Ab0EVRpZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 13:40:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:cc:content-type;
-        b=tZUzyKxliXme1tiNz1XkEevKYZVH09OPEV1f8I7F60zYZQCvMtbQxuTlK2nqAYSrsN
-         n9AYCIpMwvzDYLrgk+M6bbOTi3/nwdzZaY1Z8qq+L4yHXv475J9JD5WIpwo5kpEd+mce
-         gmRTnh7eI/11vZZTnjr3IjsN9nlRcpIGFGgi4=
+	Sat, 22 May 2010 13:45:25 -0400
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
+Subject: [PATCH 1/3] perf report: Don't start the TUI if -D is used
+Date: Sat, 22 May 2010 14:45:10 -0300
+Message-Id: <1274550312-16600-2-git-send-email-acme@infradead.org>
+X-Mailer: git-send-email 1.6.2.5
+In-Reply-To: <1274550312-16600-1-git-send-email-acme@infradead.org>
+References: <1274550312-16600-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-Date: Sat, 22 May 2010 12:40:48 -0500
-Message-ID: <AANLkTilzm9jrQpBGxqhwFt-BqB04-dYEBQmdNpb5Xb15@mail.gmail.com>
-Subject: [GIT PULL] 9p file system changes for merge window
-From: Eric Van Hensbergen <ericvh@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: V9FS Developers <v9fs-developer@lists.sourceforge.net>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8bit
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit d515e86e639890b33a09390d062b0831664f04a2:
-  Linus Torvalds (1):
-        Merge branch 'for_linus' of git://git.kernel.org/.../jack/linux-udf-2.6
+From: Arnaldo Carvalho de Melo <acme@redhat.com>
 
-are available in the git repository at:
+One day we'll have support for the "dump raw trace in ASCII" in the TUI
+frontend, but till then, use the tty code.
 
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/ericvh/v9fs.git for-linus
+Reported-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Frédéric Weisbecker <fweisbec@gmail.com>
+Cc: Mike Galbraith <efault@gmx.de>
+Cc: Paul Mackerras <paulus@samba.org>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: Stephane Eranian <eranian@google.com>
+Cc: Tom Zanussi <tzanussi@gmail.com>
+LKML-Reference: <new-submission>
+Signed-off-by: Arnaldo Carvalho de Melo <acme@redhat.com>
+---
+ tools/perf/builtin-report.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-Aneesh Kumar K.V (1):
-      fs/9p: Make sure we properly instantiate dentry.
+diff --git a/tools/perf/builtin-report.c b/tools/perf/builtin-report.c
+index a7b8760..2c39bd3 100644
+--- a/tools/perf/builtin-report.c
++++ b/tools/perf/builtin-report.c
+@@ -484,7 +484,9 @@ int cmd_report(int argc, const char **argv, const char *prefix __used)
+ {
+ 	argc = parse_options(argc, argv, options, report_usage, 0);
+ 
+-	if (strcmp(input_name, "-") != 0)
++	if (dump_trace)
++		setup_pager();
++	else if (strcmp(input_name, "-") != 0)
+ 		setup_browser();
+ 	/*
+ 	 * Only in the newt browser we are doing integrated annotation,
+-- 
+1.6.2.5
 
-Dan Carpenter (1):
-      9p: cleanup: remove unneeded assignment
-
-Sripathi Kodi (4):
-      9p: VFS switches for 9p2000.L: protocol and client changes
-      9p: VFS switches for 9p2000.L: VFS switches
-      9p: add 9P2000.L statfs operation
-      9p: add 9P2000.L rename operation
-
-Venkateswararao Jujjuri (2):
-      9p: Add mksock support
-      9p: Optimize TCREATE by eliminating a redundant fid clone.
-
- fs/9p/v9fs_vfs.h        |    2 +
- fs/9p/vfs_dir.c         |    8 ++++
- fs/9p/vfs_file.c        |   11 +++++
- fs/9p/vfs_inode.c       |  107 ++++++++++++++++++++++++++++++++++------------
- fs/9p/vfs_super.c       |   55 +++++++++++++++++++++++-
- include/net/9p/9p.h     |   33 ++++++++++++++
- include/net/9p/client.h |    2 +
- net/9p/client.c         |   70 ++++++++++++++++++++++++++++++-
- net/9p/protocol.c       |    6 ++-
- 9 files changed, 261 insertions(+), 33 deletions(-)
-
-    Thanks,
-         -eric
