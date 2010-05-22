@@ -1,56 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753003Ab0EVDh3 (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 23:37:29 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:38281 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751931Ab0EVDh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 23:37:27 -0400
-Message-ID: <4BF7507F.20805@zytor.com>
-Date: Fri, 21 May 2010 20:33:19 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: Brian Bloniarz <bmb@athenacr.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+	id S1753684Ab0EVDkO (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 23:40:14 -0400
+Received: from fgwmail6.fujitsu.co.jp ([192.51.44.36]:44518 "EHLO
+	fgwmail6.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751931Ab0EVDkM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 23:40:12 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Roland McGrath <roland@redhat.com>
+Subject: Re: [PATCH] linux/elfcore.h: hide kernel functions
+Cc: kosaki.motohiro@jp.fujitsu.com, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
-In-Reply-To: <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <20100522031650.D564B49A4D@magilla.sf.frob.com>
+References: <20100522031650.D564B49A4D@magilla.sf.frob.com>
+Message-Id: <20100522123923.1E83.A69D9226@jp.fujitsu.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset="US-ASCII"
 Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sat, 22 May 2010 12:40:03 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/2010 07:03 PM, john stultz wrote:
+> The declarations for elf_core_extra_phdrs() et al got added on the
+> wrong side of #ifdef __KERNEL__ in linux/elfcore.h so they leak into
+> the user header copy and we get a warning at build time about it.
 > 
-> Yea, the relative instability of the tsc calibration at boot is an
-> issue for folks who want very very precise timekeeping immediately
-> after a reboot.
-> 
-> I proposed a solution to this awhile back via a boot option users
-> could use to specify the tsc_khz freq, so it would be consistent from
-> boot to boot. See: https://patchwork.kernel.org/patch/22492/
-> 
-> It didn't really go anywhere due to a lack of public interest.
-> However, if you're interested in playing with it, I can try to revive
-> the patch.
-> 
+> Signed-off-by: Roland McGrath <roland@redhat.com>
 
-The point about NTP is a very good one; with NTP you *really* want what
-you're adjusting to be directly related to the crystal oscillator -- as
-what it is; precision over accuracy as NTP takes care of accuracy but
-not precision.
+Ah, good. this one kill annoying warnings.
+Thanks.
+	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
 
-	-hpa
 
--- 
-H. Peter Anvin, Intel Open Source Technology Center
-I work for Intel.  I don't speak on their behalf.
+> ---
+>  include/linux/elfcore.h |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/include/linux/elfcore.h b/include/linux/elfcore.h
+> index e687bc3..394a3e0 100644
+> --- a/include/linux/elfcore.h
+> +++ b/include/linux/elfcore.h
+> @@ -150,8 +150,6 @@ static inline int elf_core_copy_task_xfpregs(struct task_struct *t, elf_fpxregse
+>  }
+>  #endif
+>  
+> -#endif /* __KERNEL__ */
+> -
+>  /*
+>   * These functions parameterize elf_core_dump in fs/binfmt_elf.c to write out
+>   * extra segments containing the gate DSO contents.  Dumping its
+> @@ -168,4 +166,6 @@ extern int
+>  elf_core_write_extra_data(struct file *file, size_t *size, unsigned long limit);
+>  extern size_t elf_core_extra_data_size(void);
+>  
+> +#endif /* __KERNEL__ */
+> +
+>  #endif /* _LINUX_ELFCORE_H */
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
+
+
 
