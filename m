@@ -1,48 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757834Ab0EVSIN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 14:08:13 -0400
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:34326 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755931Ab0EVSIM (ORCPT
+	id S1755714Ab0EVSJD (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 14:09:03 -0400
+Received: from smtp-03.mandic.com.br ([200.225.81.143]:40021 "EHLO
+	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754735Ab0EVSJA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 14:08:12 -0400
-Message-ID: <4BF81D87.6010506@cesarb.net>
-Date: Sat, 22 May 2010 15:08:07 -0300
+	Sat, 22 May 2010 14:09:00 -0400
 From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
 To: linux-mm@kvack.org
-CC: linux-kernel@vger.kernel.org
-Subject: [PATCH 0/3] mm: Swap checksum
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Cc: linux-kernel@vger.kernel.org, Cesar Eduardo Barros <cesarb@cesarb.net>
+Subject: [PATCH 1/3] mm/swapfile.c: better messages for swap_info_get
+Date: Sat, 22 May 2010 15:08:49 -0300
+Message-Id: <1274551731-4534-1-git-send-email-cesarb@cesarb.net>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <4BF81D87.6010506@cesarb.net>
+References: <4BF81D87.6010506@cesarb.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add support for checksumming the swap pages written to disk, using the
-same checksum as btrfs (crc32c). Since the contents of the swap do not
-matter after a shutdown, the checksum is kept in memory only.
+swap_info_get() is used for more than swap_free().
 
-Note that this code does not checksum the software suspend image.
+Use "swap_info_get:" instead of "swap_free:" in the error messages.
 
-Cesar Eduardo Barros (3):
-       mm/swapfile.c: better messages for swap_info_get
-       kernel/power/swap.c: do not use end_swap_bio_read
-       mm: Swap checksum
+Signed-off-by: Cesar Eduardo Barros <cesarb@cesarb.net>
+---
+ mm/swapfile.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-  include/linux/swap.h |   31 +++++++-
-  kernel/power/swap.c  |   21 +++++-
-  mm/Kconfig           |   22 +++++
-  mm/Makefile          |    1 +
-  mm/page_io.c         |   92 ++++++++++++++++++--
-  mm/swapcsum.c        |   94 +++++++++++++++++++++
-  mm/swapfile.c        |  186 ++++++++++++++++++++++++++++++++++++++++--
-  7 files changed, 429 insertions(+), 18 deletions(-)
-  create mode 100644 mm/swapcsum.c
-
+diff --git a/mm/swapfile.c b/mm/swapfile.c
+index 6cd0a8f..af7d499 100644
+--- a/mm/swapfile.c
++++ b/mm/swapfile.c
+@@ -522,16 +522,16 @@ static struct swap_info_struct *swap_info_get(swp_entry_t entry)
+ 	return p;
+ 
+ bad_free:
+-	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_offset, entry.val);
++	printk(KERN_ERR "swap_info_get: %s%08lx\n", Unused_offset, entry.val);
+ 	goto out;
+ bad_offset:
+-	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_offset, entry.val);
++	printk(KERN_ERR "swap_info_get: %s%08lx\n", Bad_offset, entry.val);
+ 	goto out;
+ bad_device:
+-	printk(KERN_ERR "swap_free: %s%08lx\n", Unused_file, entry.val);
++	printk(KERN_ERR "swap_info_get: %s%08lx\n", Unused_file, entry.val);
+ 	goto out;
+ bad_nofile:
+-	printk(KERN_ERR "swap_free: %s%08lx\n", Bad_file, entry.val);
++	printk(KERN_ERR "swap_info_get: %s%08lx\n", Bad_file, entry.val);
+ out:
+ 	return NULL;
+ }
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+1.6.6.1
+
