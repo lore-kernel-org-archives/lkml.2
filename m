@@ -1,60 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753318Ab0EVJe1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 05:34:27 -0400
-Received: from LION.seas.upenn.edu ([158.130.12.194]:51428 "EHLO
-	lion.seas.upenn.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752275Ab0EVJeZ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 05:34:25 -0400
-Message-ID: <4BF7A4E8.3050806@seas.upenn.edu>
-Date: Sat, 22 May 2010 05:33:28 -0400
-From: Rafi Rubin <rafi@seas.upenn.edu>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100411 Icedove/3.0.4
+	id S1753709Ab0EVJjw (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 05:39:52 -0400
+Received: from mx01.sz.bfs.de ([194.94.69.103]:51408 "EHLO mx01.sz.bfs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752275Ab0EVJju (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 05:39:50 -0400
+Message-ID: <4BF7A65D.1070501@bfs.de>
+Date: Sat, 22 May 2010 11:39:41 +0200
+From: walter harms <wharms@bfs.de>
+Reply-To: wharms@bfs.de
+User-Agent: Thunderbird 2.0.0.24 (X11/20100302)
 MIME-Version: 1.0
-To: Henrik Rydberg <rydberg@euromail.se>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
-References: <1274457354-5570-1-git-send-email-rydberg@euromail.se> <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com> <4BF6B673.1080507@euromail.se> <20100521165218.GA26439@core.coreip.homeip.net> <4BF6BB43.2020405@euromail.se> <20100521172222.GB26439@core.coreip.homeip.net> <4BF6C303.7030804@euromail.se> <20100521174140.GA23155@core.coreip.homeip.net> <4BF6C7B6.2020008@euromail.se>
-In-Reply-To: <4BF6C7B6.2020008@euromail.se>
-X-Enigmail-Version: 1.0.1
+To: Julia Lawall <julia@diku.dk>
+CC: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
+       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 10/27] drivers/infiniband/core: Use memdup_user
+References: <Pine.LNX.4.64.1005221021030.13021@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005221021030.13021@ask.diku.dk>
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/21/10 13:49, Henrik Rydberg wrote:
-> Dmitry Torokhov wrote:
->>
->> I guess this is where our disconnect lies as when I am looking at the
->> event names I view all *_MT_* events as related to the multitouch
->> protocol handling.
->>
+
+
+Julia Lawall schrieb:
+> From: Julia Lawall <julia@diku.dk>
 > 
-> Yes. It is true that slot control is MT related, but I am looking at this from
-> the perspective of future expansions like KEY_MT,  KEY_REL, and such, finding a
-> way to signal to user space which events are handled via slots. If we had
-> ABS_MT_SLOT, we would most likely get applications which store ABS_MT_SLOT as an
-> attribute of the slot together with ABS_MT_POSITION_X, ABS_MT_TOUCH_MAJOR, etc,
-> which is just not right. So the proposal is ABS_SLOT. May we have your verdict,
-> please. :-)
+> Use memdup_user when user data is immediately copied into the
+> allocated region.
 > 
-> Henrik
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
 > 
+> // <smpl>
+> @@
+> expression from,to,size,flag;
+> position p;
+> identifier l1,l2;
+> @@
+> 
+> -  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
+> +  to = memdup_user(from,size);
+>    if (
+> -      to==NULL
+> +      IS_ERR(to)
+>                  || ...) {
+>    <+... when != goto l1;
+> -  -ENOMEM
+> +  PTR_ERR(to)
+>    ...+>
+>    }
+> -  if (copy_from_user(to, from, size) != 0) {
+> -    <+... when != goto l2;
+> -    -EFAULT
+> -    ...+>
+> -  }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/infiniband/core/ucm.c |   11 +++--------
+>  1 file changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/infiniband/core/ucm.c b/drivers/infiniband/core/ucm.c
+> index 4647484..08f948d 100644
+> --- a/drivers/infiniband/core/ucm.c
+> +++ b/drivers/infiniband/core/ucm.c
+> @@ -706,14 +706,9 @@ static int ib_ucm_alloc_data(const void **dest, u64 src, u32 len)
+>  	if (!len)
+>  		return 0;
+>  
+> -	data = kmalloc(len, GFP_KERNEL);
+> -	if (!data)
+> -		return -ENOMEM;
+> -
+> -	if (copy_from_user(data, (void __user *)(unsigned long)src, len)) {
+> -		kfree(data);
+> -		return -EFAULT;
+> -	}
+> +	data = memdup_user((void __user *)(unsigned long)src, len);
+> +	if (IS_ERR(data))
+> +		return PTR_ERR(data);
+>  
+>  	*dest = data;
+>  	return 0;
+> --
 
-How many fingers can type on cap of a key?
+This cast look strange, can it happen that (unsigned long)<(u64) ?
+(is there a 32bit infiniband) ?
 
-(sorry, couldn't resist).
+just my 2 cents,
+ wh
 
 
-Seems to me like part of the problem here is still the overlap between tracking
-id and slot id.
 
-Rafi
+
