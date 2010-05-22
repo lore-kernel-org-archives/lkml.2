@@ -1,75 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755539Ab0EVXcq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 19:32:46 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:58538 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753556Ab0EVXcp (ORCPT
+	id S1755559Ab0EVX4D (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 19:56:03 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:58819 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755516Ab0EVX4A (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 19:32:45 -0400
-Date: Sat, 22 May 2010 16:30:40 -0400
-From: Andrew Morton <akpm@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Eric Paris <eparis@redhat.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
-       Jan Kara <jack@ucw.cz>
-Subject: Re: [git head f4b87dee9] BUG: using smp_processor_id() in
- preemptible (VFS-related)
-Message-Id: <20100522163040.42bbde9d.akpm@linux-foundation.org>
-In-Reply-To: <201005222337.00039.rjw@sisk.pl>
-References: <201005222337.00039.rjw@sisk.pl>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Sat, 22 May 2010 19:56:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=YrZUd8L162M7pd7uxsGCp9z+zrvoA2J5GUx249a3bXzj5dvUdHi3o3F/ajMHR4Aqb5
+         C/6NEP13p3+6cuI2is51tf63K//MuHVBdBrfGcbo35ccojUYQ7im3lI+inYpD/I/+hIg
+         HF8Hs3AsmX6sCIJFsl/inwUQbLbnYpWo2Dw3w=
+Date: Sat, 22 May 2010 16:53:32 -0700
+From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
+To: =?utf-8?B?0KLQuNC80L7RhNC10Lkg0KLRgNC+0YTQuNC80L7Qsg==?= 
+	<tumoxep@gmail.com>
+Cc: gregkh@suse.de, lieb@canonical.com, more.andres@gmail.com,
+       forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: fix brace coding style issue in
+ 80211mgr.c This is a patch to the 80211mgr.c file that fixes up a brace
+ warning found by the checkpatch.pl tool Signed-off-by: Timofey Trofimov
+ <tumoxep@gmail.com>
+Message-ID: <20100522235331.GA27828@fujitsu>
+References: <1274546574-8338-1-git-send-email-tumoxep@gmail.com>
+ <20100522173510.GA26310@fujitsu>
+ <AANLkTilS9UjF6jbsqtsZBlTkv_s4ayfu5GfW5_51tOzT@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTilS9UjF6jbsqtsZBlTkv_s4ayfu5GfW5_51tOzT@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 May 2010 23:36:59 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+Hey,
 
-> Hi,
-> 
-> I get this every time on boot with current -git:
-> 
-> [    6.906133] EXT4-fs (sda7): mounted filesystem with ordered data mode
-> [    7.014359] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
-> [    7.020570] caller is dqstats_inc+0x19/0x2c
-> [    7.026658] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
-> [    7.032792] Call Trace:
-> [    7.038859]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
-> [    7.045025]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
-> [    7.051201]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
-> [    7.057349]  [<ffffffff810eccfa>] ? __shrink_dcache_sb+0x284/0x293
-> [    7.063574]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
-> [    7.069730]  [<ffffffff810fc552>] sync_filesystem+0x36/0x4c
-> [    7.075867]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
-> [    7.081960]  [<ffffffff810f4359>] do_mount+0x251/0x78a
-> [    7.088039]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
-> [    7.094086]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
-> [    7.100085]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
-> [    7.124208] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
-> [    7.130307] caller is dqstats_inc+0x19/0x2c
-> [    7.136386] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
-> [    7.142512] Call Trace:
-> [    7.148629]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
-> [    7.154846]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
-> [    7.161019]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
-> [    7.167171]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
-> [    7.173364]  [<ffffffff810fc563>] sync_filesystem+0x47/0x4c
-> [    7.179522]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
-> [    7.185616]  [<ffffffff810f4359>] do_mount+0x251/0x78a
-> [    7.191663]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
-> [    7.197626]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
-> [    7.203493]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
-> [   11.643596] udev: starting version 153
-> 
-> This is after reverting commit a7cf4145b (anon_inode: set S_IFREG on the
-> anon_inode) that the system is not really useable with.
+On Sat, May 22, 2010 at 09:52:25PM +0400, Тимофей Трофимов wrote:
+> Hi, Charles. I understand what I did wrong and never will make this
+> mistake  mistake again. I really thought that I write this. Sorry.
+> P.S. This is my first patch. Does I need to resend it?
 
-Caused by "quota: Make quota stat accounting lockless".
+I think you should try to resend it, at least to get the subject line
+and body correct, you can try that by sending it only to yourself first.
 
-Guys, the code this patch adds utterly duplicates the interface
-provided by include/linux/percpu_counter.h, only the quota code does it
-wrongly and badly.  Please, can we use the nice library code?
+I should also point out that the discussion should remain on the
+corresponding mailing lists.
+
+-- 
+Charles Clément
+
