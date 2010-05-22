@@ -1,67 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754751Ab0EVLRs (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 07:17:48 -0400
-Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:34379 "EHLO
-	imedia.com.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754795Ab0EVLRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 07:17:44 -0400
-X-Antivirus-MYDOMAIN-Mail-From: drfungch@yahoo.com.hk via imedia.com.my
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.043959 secs Process 29387)
-Message-ID: <87e6574b42000d76876aa129f5141e83.squirrel@mail.pemuda.com.my>
-Date: Sat, 22 May 2010 19:15:12 +0800 (MYT)
-Subject: REPLY ME....
-From: "Dr Raymond Kuo Fung Chien" <drfungch@yahoo.com.hk>
-Reply-To: drfungch2020@yahoo.com.hk
-User-Agent: SquirrelMail/1.4.17
+	id S1755315Ab0EVMMR (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 08:12:17 -0400
+Received: from palinux.external.hp.com ([192.25.206.14]:48804 "EHLO
+	mail.parisc-linux.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754153Ab0EVMMN (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 08:12:13 -0400
+Date: Sat, 22 May 2010 06:12:12 -0600
+From: Matthew Wilcox <matthew@wil.cx>
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>
+Cc: linux-pci@vger.kernel.org, linux1394-devel@lists.sourceforge.net,
+       linux-kernel@vger.kernel.org, David Woodhouse <dwmw2@infradead.org>
+Subject: Re: DMAR:[fault reason 02] Present bit in context entry is clear
+	(firewire-ohci)
+Message-ID: <20100522121212.GQ10452@parisc-linux.org>
+References: <4BF7B147.9020502@s5r6.in-berlin.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
-To: unlisted-recipients:; (no To-header on input)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF7B147.9020502@s5r6.in-berlin.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Sat, May 22, 2010 at 12:26:15PM +0200, Stefan Richter wrote:
+> Hi,
+> 
+> I came across a report of the subject message.  What does it mean; what
+> type of bug should be look for?
+> 
+> https://bugzilla.redhat.com/show_bug.cgi?id=587178
+> >>>
+> firewire_ohci 0000:04:00.4: PCI INT C -> GSI 16 (level, low) -> IRQ 16
+> firewire_ohci 0000:04:00.4: setting latency timer to 64
+> firewire_ohci: Added fw-ohci device 0000:04:00.4, OHCI version 1.0
+> DRHD: handling fault status reg 2
+> DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
+> DMAR:[fault reason 02] Present bit in context entry is clear
+> DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
+> DMAR:[fault reason 02] Present bit in context entry is clear
+> DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
+> DMAR:[fault reason 02] Present bit in context entry is clear
+> <<<
+> 
+> The log sounds as if this happens during from-device DMA of 04:00.4 into
+> a consistent buffer, yet the fault is logged for device 04:00.0.  The
+> log is from a Dell M4500.  The devices are, according to a web search,
+> 04:00.0 CardBus bridge [0607]: Ricoh Co Ltd Device [1180:e476] (rev 02)
+> 04:00.4 FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd Device [1180:e832]
+> (rev 03) (prog-if 10)
 
+I would guess that the DMAR can't distinguish between the different
+devices behind the Cardbus bridge.  Adding Dave Woodhouse.
 
-
-Dear Friend,
-
-I am Dr Raymond Kuo Fung CHIEN Executive Director and Chief Financial
-Officer of the operations of the Hang Seng Bank Ltd.
-Befor the U.S and Iraqi war our client Mr.Fayez A Mohammed a business
-merchant made a fixed deposit of USD30 Million for 2Yrs
-
-where i was the only one that knew about his deposits.
-
-Upon maturity during the war in 2003,Fayez,his wife and only daugther died
-in a bomb blast that hits His Resident.
-Investigations showed that he didnt declear any next of kin.As a
-foreigner,I want you to stand as the next of kin to claim
-
-the fund because soon the fund will be claimed by my government if no one
-comes for it.
-
-I have an attorney that will prepare all the documents to back you up as
-the next of kin to Mr.Fayez A.Mohammed.Plz let me
-
-know your willingness so that i can provide you with more details of this
-transaction.
-
-contact me on email: drrayfung@9.cn
-
-
-
-1. Full name and Age
-
-2. Occupation
-
-3. Private/office phone number
-
-4. Current residential address
-
-Kind Regards,
-Dr Raymond Kuo Fung CHIEN.
-
+-- 
+Matthew Wilcox				Intel Open Source Technology Centre
+"Bill, look, we understand that you're interested in selling us this
+operating system, but compare it to ours.  We can't possibly take such
+a retrograde step."
