@@ -1,60 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758365Ab0EVUoK (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 16:44:10 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:62739 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039Ab0EVUoH (ORCPT
+	id S1758394Ab0EVUoa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 16:44:30 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:48828 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758284Ab0EVUo1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 16:44:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=eM3n7DY7MkcC++PEZnixHHkXmO8uLNVto9jXny317OTT3h48E3ZHpnvxoVasSy0LaX
-         /LSZQoQPHiN4ofRs+wDu0JGPXJJhMISbH1ZhPLZtyVb+dd0JkJU6tINh/2Ppc+VED7OL
-         XoziNGeT7AI1AAX8mQ7nUf7nAIt7x3NBhq06k=
-Date: Sat, 22 May 2010 22:43:42 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Sjur Braendeland <sjur.brandeland@stericsson.com>
-Cc: Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
-       netdev@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [patch] caif: remove unneeded null check in caif_connect()
-Message-ID: <20100522204342.GV22515@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Sjur Braendeland <sjur.brandeland@stericsson.com>,
-	Eric Dumazet <eric.dumazet@gmail.com>,
-	"David S. Miller" <davem@davemloft.net>,
-	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
-	kernel-janitors@vger.kernel.org
+	Sat, 22 May 2010 16:44:27 -0400
+Date: Sat, 22 May 2010 21:44:26 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: walt <w41ter@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: [2.6.34-git8][regression] massive polling problems with udevd
+ and other processes
+Message-ID: <20100522204426.GO31073@ZenIV.linux.org.uk>
+References: <201005221535.38939.shawn.starr@rogers.com>
+ <4BF83CBF.8080300@gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <4BF83CBF.8080300@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-We already dereferenced uaddr towards the start of the function when we
-checked that "uaddr->sa_family != AF_CAIF".  Both the check here and the
-earlier check were added in bece7b2398d0: "caif: Rewritten socket
-implementation".  Before that patch, we assumed that we recieved a valid
-pointer for uaddr, and based on that, I have removed this check.
+On Sat, May 22, 2010 at 01:21:19PM -0700, walt wrote:
+> On 05/22/2010 12:35 PM, Shawn Starr wrote:
+> >Just built today's snapshot from linus's tree and have problems with udev
+> >using 100% cpu and KDE processes also pegging cpus.
+> >
+> >This is with Fedora 13 + snapshot kernel from git.
+> >
+> >Anyone else noticing this?
+> 
+> Yes, just bisected it to this:
+> 
+> commit a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d
+> Author: Eric Paris <eparis@>
+> Date:   Fri May 14 11:44:10 2010 -0400
+> 
+>     anon_inode: set S_IFREG on the anon_inode
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Cute...  Frankly, I'd be fine with just reverting that one and teaching
+selinux to STFU.  However, I wonder what specifically is getting polled.
+Which anon_inode users?
 
-diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
-index c3a70c5..bd67bb3 100644
---- a/net/caif/caif_socket.c
-+++ b/net/caif/caif_socket.c
-@@ -890,8 +890,7 @@ static int caif_connect(struct socket *sock, struct sockaddr *uaddr,
- 	sk_stream_kill_queues(&cf_sk->sk);
- 
- 	err = -EINVAL;
--	if (addr_len != sizeof(struct sockaddr_caif) ||
--		!uaddr)
-+	if (addr_len != sizeof(struct sockaddr_caif))
- 		goto out;
- 
- 	memcpy(&cf_sk->conn_req.sockaddr, uaddr,
+Does anybody have strace handy?
