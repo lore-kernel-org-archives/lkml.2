@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753610Ab0EVITL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:19:11 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:60205 "EHLO mgw1.diku.dk"
+	id S1753594Ab0EVITa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:19:30 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:60221 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752481Ab0EVITE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:19:04 -0400
-Date: Sat, 22 May 2010 10:18:59 +0200 (CEST)
+	id S1753677Ab0EVITX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:19:23 -0400
+Date: Sat, 22 May 2010 10:19:17 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Paul Mackerras <paulus@samba.org>, linux-ppp@vger.kernel.org,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 2/27] drivers/net: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221018350.13021@ask.diku.dk>
+To: Chris Mason <chris.mason@oracle.com>, linux-btrfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 3/27] fs/btrfs: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221018590.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -55,28 +54,46 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/ppp_generic.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ fs/btrfs/ioctl.c |   20 ++++++--------------
+ 1 file changed, 6 insertions(+), 14 deletions(-)
 
-diff --git a/drivers/net/ppp_generic.c b/drivers/net/ppp_generic.c
-index 5441688..da7943d 100644
---- a/drivers/net/ppp_generic.c
-+++ b/drivers/net/ppp_generic.c
-@@ -539,14 +539,9 @@ static int get_filter(void __user *arg, struct sock_filter **p)
- 	}
+diff --git a/fs/btrfs/ioctl.c b/fs/btrfs/ioctl.c
+index 97a9783..5301d78 100644
+--- a/fs/btrfs/ioctl.c
++++ b/fs/btrfs/ioctl.c
+@@ -1096,14 +1096,10 @@ static noinline int btrfs_ioctl_tree_search(struct file *file,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 	len = uprog.len * sizeof(struct sock_filter);
--	code = kmalloc(len, GFP_KERNEL);
--	if (code == NULL)
+-	args = kmalloc(sizeof(*args), GFP_KERNEL);
+-	if (!args)
 -		return -ENOMEM;
--
--	if (copy_from_user(code, uprog.filter, len)) {
--		kfree(code);
++	args = memdup_user(argp, sizeof(*args));
++	if (IS_ERR(args))
++		return PTR_ERR(args);
+ 
+-	if (copy_from_user(args, argp, sizeof(*args))) {
+-		kfree(args);
 -		return -EFAULT;
 -	}
-+	code = memdup_user(uprog.filter, len);
-+	if (IS_ERR(code))
-+		return PTR_ERR(code);
+ 	inode = fdentry(file)->d_inode;
+ 	ret = search_ioctl(inode, args);
+ 	if (ret == 0 && copy_to_user(argp, args, sizeof(*args)))
+@@ -1211,14 +1207,10 @@ static noinline int btrfs_ioctl_ino_lookup(struct file *file,
+ 	if (!capable(CAP_SYS_ADMIN))
+ 		return -EPERM;
  
- 	err = sk_chk_filter(code, uprog.len);
- 	if (err) {
+-	args = kmalloc(sizeof(*args), GFP_KERNEL);
+-	if (!args)
+-		return -ENOMEM;
++	args = memdup_user(argp, sizeof(*args));
++	if (IS_ERR(args))
++		return PTR_ERR(args);
+ 
+-	if (copy_from_user(args, argp, sizeof(*args))) {
+-		kfree(args);
+-		return -EFAULT;
+-	}
+ 	inode = fdentry(file)->d_inode;
+ 
+ 	if (args->treeid == 0)
