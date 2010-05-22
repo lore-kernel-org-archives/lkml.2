@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755916Ab0EVRdM (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 13:33:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58675 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753819Ab0EVRdL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 13:33:11 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
-Date: Sat, 22 May 2010 19:34:09 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005221429360.3368@localhost.localdomain> <alpine.LFD.2.00.1005221616310.3368@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005221616310.3368@localhost.localdomain>
+	id S1755985Ab0EVRhm (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 13:37:42 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:64884 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755789Ab0EVRhl (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 13:37:41 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=wm/Cd//KdZk/oUr/4aUyqEPNQjVfG341e96YoC9twK0N71s/alBlwgIBkRSGFMMucu
+         qifc9MrF7CBJR38m9T38WCJxDEjYlL8u49PTCh+RRpK/I9OkFIR0A+aKnXKq0S27QDtQ
+         zZZHp3thNeG79qw5SO1Hhfo1SG2lSlxcCF8UE=
+Date: Sat, 22 May 2010 10:35:12 -0700
+From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
+To: Timofey Trofimov <tumoxep@gmail.com>
+Cc: gregkh@suse.de, lieb@canonical.com, more.andres@gmail.com,
+       forest@alittletooquiet.net, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: fix brace coding style issue in
+ 80211mgr.c This is a patch to the 80211mgr.c file that fixes up a brace
+ warning found by the checkpatch.pl tool Signed-off-by: Timofey Trofimov
+ <tumoxep@gmail.com>
+Message-ID: <20100522173510.GA26310@fujitsu>
+References: <1274546574-8338-1-git-send-email-tumoxep@gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005221934.09705.rjw@sisk.pl>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+In-Reply-To: <1274546574-8338-1-git-send-email-tumoxep@gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 May 2010, Thomas Gleixner wrote:
-> On Sat, 22 May 2010, Thomas Gleixner wrote:
-> > On Fri, 21 May 2010, Linus Torvalds wrote:
-> > > On Fri, 21 May 2010, Rafael J. Wysocki wrote:
-> > > > 
-> > > > Trying to boot current -git on Acer Ferrari One (64-bit), I get mount errors
-> > > > for all filesystems telling me that "now = (null) is in the future" and when
-> > > > run 'date' it says: "date: time <long negative number> is out of range".
-> > > > 
-> > > > Any ideas anyone?
-> > > 
-> > > No ideas, but apart from the obvious "maybe you can pin it down a bit with 
-> > > a few bisection compiles", it's almost certainly through the timer tree 
-> > > merge from Thomas, which included various wall-clock-time changes from 
-> > > John Stultz & co.
-> > > 
-> > > I don't see anything else that would likely affect any wall-clock time, 
-> > > but who knows..
-> > > 
-> > > John, Thomas? Ring any bells?
-> > 
-> > Went through the pile and nothing stands out.
-> > 
-> > The system has an AMD X2 with the jinxed C1E, so I'd rather suspect
-> > that we managed to break C1E again.
-> > 
-> > Just tried to boot -git on my X2 machine and it does not come
-> > up. Investigating.
+Hello Timofey,
+
+I think the message you send should have the Signed-off-by in the body,
+as well as the long description of the patch.
+
+On Sat, May 22, 2010 at 08:42:54PM +0400, Timofey Trofimov wrote:
+> ---
+>  drivers/staging/vt6656/80211mgr.c |  514 ++++++++++++++++++-------------------
+>  1 files changed, 251 insertions(+), 263 deletions(-)
 > 
-> Second boot worked, I love heisenbugs. :(
-> 
-> Rafael, can you check whether the C1E idle is selected.
+> diff --git a/drivers/staging/vt6656/80211mgr.c b/drivers/staging/vt6656/80211mgr.c
+> index f24dc55..7236019 100644
+> --- a/drivers/staging/vt6656/80211mgr.c
+> +++ b/drivers/staging/vt6656/80211mgr.c
+> @@ -67,8 +67,8 @@
+>  
+>  /*---------------------  Static Variables  --------------------------*/
+>  
+> -static int          msglevel                =MSG_LEVEL_INFO;
+> -//static int          msglevel                =MSG_LEVEL_DEBUG;
+> +static int          msglevel                = MSG_LEVEL_INFO;
+> +/*static int          msglevel                =MSG_LEVEL_DEBUG;*/
+>  /*---------------------  Static Functions  --------------------------*/
 
-Can you please remind me how I can check that?
+Here, even if the code is commented you could add the extra space, in
+case the code is uncommented later.
 
-> Also which clocksource is used ?
-
-hpet
-
-Thanks,
-Rafael
+Charles.
