@@ -1,62 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754723Ab0EVOSb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:18:31 -0400
-Received: from www.tglx.de ([62.245.132.106]:56057 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753725Ab0EVOS3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:18:29 -0400
-Date: Sat, 22 May 2010 16:18:09 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: "Rafael J. Wysocki" <rjw@sisk.pl>, John Stultz <johnstul@us.ibm.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current
- -git
-In-Reply-To: <alpine.LFD.2.00.1005221429360.3368@localhost.localdomain>
-Message-ID: <alpine.LFD.2.00.1005221616310.3368@localhost.localdomain>
-References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org> <alpine.LFD.2.00.1005221429360.3368@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1754291Ab0EVOVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:21:55 -0400
+Received: from 31.mail-out.ovh.net ([213.186.62.10]:59211 "HELO
+	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1753012Ab0EVOVx (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 10:21:53 -0400
+Message-ID: <4BF7E87C.7090603@example.com>
+Date: Sat, 22 May 2010 16:21:48 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com> <4BF7E769.1090102@gmail.com>
+In-Reply-To: <4BF7E769.1090102@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 16752546190168781128
+X-Ovh-Remote: 95.49.242.247 (afji247.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 May 2010, Thomas Gleixner wrote:
-> On Fri, 21 May 2010, Linus Torvalds wrote:
-> > On Fri, 21 May 2010, Rafael J. Wysocki wrote:
-> > > 
-> > > Trying to boot current -git on Acer Ferrari One (64-bit), I get mount errors
-> > > for all filesystems telling me that "now = (null) is in the future" and when
-> > > run 'date' it says: "date: time <long negative number> is out of range".
-> > > 
-> > > Any ideas anyone?
-> > 
-> > No ideas, but apart from the obvious "maybe you can pin it down a bit with 
-> > a few bisection compiles", it's almost certainly through the timer tree 
-> > merge from Thomas, which included various wall-clock-time changes from 
-> > John Stultz & co.
-> > 
-> > I don't see anything else that would likely affect any wall-clock time, 
-> > but who knows..
-> > 
-> > John, Thomas? Ring any bells?
-> 
-> Went through the pile and nothing stands out.
-> 
-> The system has an AMD X2 with the jinxed C1E, so I'd rather suspect
-> that we managed to break C1E again.
-> 
-> Just tried to boot -git on my X2 machine and it does not come
-> up. Investigating.
+On 22.05.2010 16:17, Justin P. Mattock wrote:
+> On 05/22/2010 07:04 AM, Piotr Hosowicz wrote:
+>> On 22.05.2010 15:44, Justin P. Mattock wrote:
+>>
+>>> what about strace make
+>>> (maybe will give you info)
+>>
+>> May be I'll try like that if the problem persists. I will produce tons
+>> of output I believe :-(
+>>
+>
+>
+> yeah it does,
+> you can always send the
+> output to a file i.g.
+> strace -o filename make
+> anything at this point though
+> to see what is crapping out
 
-Second boot worked, I love heisenbugs. :(
+In this case it fails in the modules phase and I think I would redirect 
+outpit with tee because I'd like to see the progress.
 
-Rafael, can you check whether the C1E idle is selected. Also which
-clocksource is used ?
+Regards,
 
-Thanks,
+Piotr Hosowicz
 
-	tglx
+-- 
+Zatrzymuje siê samochód na sejmowym parkingu. Podchodzi do niego 
+ochroniarz i mówi:
+- Pan tu parkuje?! Tu Sejm ... Ministrowie, politycy, pos³owiei ...
+- Dziêki, w³±czê alarm.
+NP: Alice In Chains - All Secrets Known
+NB: 2.6.34-20100521-1728
