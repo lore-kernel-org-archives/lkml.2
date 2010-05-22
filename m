@@ -1,94 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932547Ab0EVAVK (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 20:21:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:58095 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756586Ab0EVAVE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 20:21:04 -0400
-Date: Sat, 22 May 2010 10:20:48 +1000
-From: Neil Brown <neilb@suse.de>
-To: Greg KH <greg@kroah.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>,
-       Benjamin Thery <benjamin.thery@bull.net>, Sage Weil <sage@newdream.net>
-Subject: Re: linux-next: build failure after merge of the staging-next tree
-Message-ID: <20100522102048.3923b197@notabene.brown>
-In-Reply-To: <20100521233655.GD31430@kroah.com>
-References: <20100430155205.a4171034.sfr@canb.auug.org.au>
-	<20100430144340.GD1824@kroah.com>
-	<20100518153020.06d5a602@notabene.brown>
-	<20100521233655.GD31430@kroah.com>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932626Ab0EVA2I (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 20:28:08 -0400
+Received: from bld-mail13.adl6.internode.on.net ([150.101.137.98]:58417 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1756586Ab0EVA2F (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 20:28:05 -0400
+Date: Sat, 22 May 2010 10:27:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Nick Piggin <npiggin@suse.de>, Josef Bacik <josef@redhat.com>,
+       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
+       hch@infradead.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100522002759.GA8120@dastard>
+References: <20100514083821.GL13617@dastard>
+ <20100518063647.GD2516@laptop>
+ <20100518080503.GF2150@dastard>
+ <20100518104351.GF2516@laptop>
+ <20100518122714.GG2150@dastard>
+ <20100518150912.GI2516@laptop>
+ <20100519235054.GS8120@dastard>
+ <20100520201232.GP3395@quack.suse.cz>
+ <20100520230524.GU8120@dastard>
+ <20100521185846.GD10149@quack.suse.cz>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521185846.GD10149@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 16:36:55 -0700
-Greg KH <greg@kroah.com> wrote:
-
-> On Tue, May 18, 2010 at 03:30:20PM +1000, Neil Brown wrote:
-> > On Fri, 30 Apr 2010 07:43:40 -0700
-> > Greg KH <greg@kroah.com> wrote:
+On Fri, May 21, 2010 at 08:58:46PM +0200, Jan Kara wrote:
+> On Fri 21-05-10 09:05:24, Dave Chinner wrote:
+> > On Thu, May 20, 2010 at 10:12:32PM +0200, Jan Kara wrote:
+> > >   b) E.g. ext4 can do even without hole punching. It can allocate extent
+> > >      as 'unwritten' and when something during the write fails, it just
+> > >      leaves the extent allocated and the 'unwritten' flag makes sure that
+> > >      any read will see zeros. I suppose that other filesystems that care
+> > >      about multipage writes are able to do similar things (e.g. btrfs can
+> > >      do the same as far as I remember, I'm not sure about gfs2).
 > > 
-> > > On Fri, Apr 30, 2010 at 03:52:05PM +1000, Stephen Rothwell wrote:
-> > > > Hi Greg,
-> > > > 
-> > > > After merging the staging-next tree, today's linux-next build (x86_64
-> > > > allmodconfig) failed like this:
-> > > > 
-> > > > drivers/md/md.c: In function 'level_store':
-> > > > drivers/md/md.c:3029: error: too few arguments to function 'sysfs_get_dirent'
-> > > > 
-> > > > Caused by commit 262f8e4937e7b4a587923ca3c039a184668f49ec ("sysfs:
-> > > > Implement sysfs tagged directory support") from the driver-core tree
-> > > > interacting with commit fecc531e3cc0de60514d326c7d82f1075ed55888 ("md:
-> > > > manage redundancy group in sysfs when changing level") from the md.
-> > > > 
-> > > > I have applied this fixup patch for today and can carry it as necessary.
-> > > > 
-> > > > [This could have been avoided, of course, by creating a new API (maybe
-> > > > sysfs_get_dirent_tagged) and implementing the old API in terms of that].
-> > > 
-> > > Thanks for the fixup.
-> > 
-> > hi Greg,
-> >  I'm assuming that you will submit you patch queue to Linus first, then I
-> >  will create a merge which fixes this issue and ask Linus to pull that - so
-> >  everything is all still bisectable without me rebasing.
-> > 
-> >  If you are OK with that, please let me know when you have submitted your
-> >  queue..  I'll try to keep and eye open, but I might miss it...
+> > Allocating multipage writes as unwritten extents turns off delayed
+> > allocation and hence we'd lose all the benefits that this gives...
+>   Ah, sorry. That was a short-circuit in my brain. But when we do delayed
+> I don't see why we should actually do any hole punching... The write needs
+> to:
+>   a) reserve enough blocks for the write - I don't know about other
+> filesystems but for ext4 this means just incrementing a counter.
+>   b) copy data page by page
+>   c) release part of reservation (i.e. decrement counter) if we actually
+> copied less than we originally thought.
 > 
-> The drivercore queue is now in Linus's tree.
+>   Am I missing something?
 
-Thanks Greg.
-I've created a merge which resolves the sysfs_get_dirent issue and sent Linus
-a pull request.
+Possibly. Delayed allocation is made up of two parts - space
+reservation and recording the regions of delayed allocation in an
+extent tree, page/bufferhead state or both.
 
-> 
-> Oh, you missed a kref_set() usage in the tree as well, you might want to
-> fix that up also.
+In XFS, these two steps happen in the same get_blocks call, but the
+result of that is we have to truncate/punch delayed allocate extents
+out just like normal extents if we are not going to use them. Hence
+a reserve/allocate interface allows us to split the operation -
+reserve ensures we have space for the delayed allocation, allocate
+inserts the delayed extents into the inode extent tree for later
+real allocation during writeback. Hence the unreserve call can
+simply be accounting - it has no requirement to punch out delayed
+extents that may have already been allocated, just do work on
+counters.
 
-That would be the one in fs/ceph ??
-Sage knows about that and presumably has a fix queued.
-  http://lkml.org/lkml/2010/3/17/224
+btrfs already has this split design - it reserves space, does the
+copy, then marks the extent ranges as delalloc once the copy has
+succeeded, otherwise it simply unreserves the unused space.
 
-Thanks,
-NeilBrown
+Once again, I don't know if ext4 does this internal delayed
+allocation extent tracking or whether it just uses page state to
+track those extents, but it would probably still have to use the
+allocate call to mark all the pages/bufferheads as delalloc so
+that uneserve didn't have to do any extra work.
 
+Cheers,
 
-
-> 
-> thanks,
-> 
-> greg k-h
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-next" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
