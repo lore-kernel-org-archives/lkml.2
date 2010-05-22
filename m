@@ -1,137 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755740Ab0EVQ5B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 12:57:01 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:63682 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752021Ab0EVQ46 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 12:56:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
-        b=CySWw13d9RjgUfdpV2nCbPaf566oXsopc7L/zhDEBJARN08ib+ZTXJJcGVvrqIHBpE
-         rODkbnM07vs1B4D5rtsYUJch/TiD/cSwJtk2LrM8Gzpxj4K46ayzq3IC/jCj+Jte34ez
-         Cc9tbOTcu/hrjML32ow0wYDebg3t7adfLj2fA=
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Arnd Bergmann <arnd@arndb.de>,
-       John Kacur <jkacur@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Frederic Lassabe <frederic.lassabe@gmail.com>
-Subject: [GIT PULL] Bkl ioctl pushdowns for 2.6.35-rc1
-Date: Sat, 22 May 2010 18:57:05 +0200
-Message-Id: <1274547426-25937-1-git-send-regression-fweisbec@gmail.com>
-X-Mailer: git-send-regression
-X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
+	id S1754235Ab0EVRGK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 13:06:10 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:45350 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752643Ab0EVRGF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 13:06:05 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: uclinux-dist-devel@blackfin.uclinux.org
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH 00/30] Blackfin updates for 2.6.35
+Date: Sat, 22 May 2010 13:10:02 -0400
+Message-Id: <1274548202-7869-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+Largely bug fixes and extended debugging support here.  Extended simulator
+support has led to optional pseudo insns in the Blackfin kernel.
 
-Please pull the bkl/ioctl branch that can be found at:
+Cliff Cai (1):
+  Blackfin: mark MUSB VRSEL as active high for appropriate boards
 
-git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
-	bkl/ioctl
+FUJITA Tomonori (1):
+  Blackfin: set ARCH_KMALLOC_MINALIGN
 
-There are still some pushdowns left, pending for tests or in discussion.
-I guess ioctl will die for the next merge window.
+Graf Yang (2):
+  Blackfin: SMP: add flush_tlb_kernel_range stub
+  Blackfin: allow NMI watchdog to be used w/RETN as a scratch reg
 
-Thanks,
-	Frederic
----
+Joe Perches (1):
+  Blackfin: SMP: fix continuation lines
 
-Arnd Bergmann (9):
-      hfsplus: Push down BKL into ioctl function
-      sn_hwperf: Kill BKL usage
-      um/mmapper: Remove BKL usage
-      coda/psdev: Remove BKL from ioctl function
-      smbfs: Push down BKL into ioctl function
-      dvb: Push down BKL into ioctl functions
-      scsi: Push down BKL into ioctl functions
-      isdn: Push down BKL into ioctl functions
-      drivers: Push down BKL into various drivers
+Michael Hennerich (2):
+  Blackfin: punt Blackfin-specific GPIO wakeup API
+  Blackfin: fix typo in BF537 IRQ comment
 
-Frederic Weisbecker (4):
-      autofs4: Pushdown the bkl from ioctl
-      sunrpc: Pushdown the bkl from ioctl
-      sunrpc: Pushdown the bkl from sunrpc cache ioctl
-      uml: Pushdown the bkl from harddog_kern ioctl
+Mike Frysinger (10):
+  Blackfin: drop unused bad_page pages and move zero_page to the bss
+  Blackfin: cleanup style/comments/etc... in paging_init()
+  Blackfin: punt duplicated CAN MMRs
+  Blackfin: kgdb: pass up the CC register instead of a 0 stub
+  Blackfin: bf537-minotaur: fix build errors due to header changes
+  Blackfin: SIC: cut down on IAR MMR reads a bit
+  Blackfin: isram: clean up ITEST_COMMAND macro and improve the
+    selftests
+  Blackfin: another year of changes (update copyright in boot log)
+  Blackfin: use atomic kmalloc in L1 alloc so it too can be atomic
+  Blackfin: unify duplicate MEM_MT48LC32M8A2_75 kconfig options
 
-John Kacur (4):
-      coda: BKL ioctl pushdown
-      coda: Clean-up whitespace problems in pioctl.c
-      ncpfs: BKL ioctl pushdown
-      uml: Convert to unlocked_ioctls to remove implicit BKL
+Robin Getz (12):
+  Blackfin: split kernel/traps.c
+  Blackfin: remove CONFIG_DEBUG_VERBOSE from trace.c
+  Blackfin: print out the faulting insn in the trace output
+  Blackfin: make hardware trace output a little more useful
+  Blackfin: add support for the DBGA (debug assert) pseudo insn
+  Blackfin: change the BUG opcode to an unused 16-bit opcode
+  Blackfin: add support for the DBG (debug output) pseudo insn
+  Blackfin: support all possible registers in the pseudo instructions
+  Blackfin: show the whole accumulator in the pseudo DBG insn
+  Blackfin: handle HW errors in the new "FAULT" printing code
+  Blackfin: move string functions to normal lib/ assembly
+  Blackfin: optimize strncpy a bit
 
+Wolfram Sang (1):
+  Blackfin: acvilon: fix timeout usage for I2C
 
- arch/ia64/sn/kernel/sn2/sn_hwperf.c         |    9 +---
- arch/um/drivers/harddog_kern.c              |   18 +++++-
- arch/um/drivers/hostaudio_kern.c            |    8 ++--
- arch/um/drivers/mmapper_kern.c              |    5 +-
- drivers/char/apm-emulation.c                |    8 ++-
- drivers/char/applicom.c                     |   13 +++--
- drivers/char/ds1620.c                       |   16 +++++-
- drivers/char/dtlk.c                         |   15 +++---
- drivers/char/generic_nvram.c                |   17 +++++-
- drivers/char/genrtc.c                       |   16 +++++-
- drivers/char/hpet.c                         |   14 +++--
- drivers/char/ipmi/ipmi_devintf.c            |   26 +++++++--
- drivers/char/ipmi/ipmi_watchdog.c           |   17 +++++-
- drivers/char/nvram.c                        |   10 +++-
- drivers/char/nwflash.c                      |    7 ++-
- drivers/char/raw.c                          |   42 ++++++++------
- drivers/hwmon/fschmd.c                      |    9 ++--
- drivers/hwmon/w83793.c                      |   10 ++--
- drivers/input/misc/hp_sdc_rtc.c             |   34 ++++++++----
- drivers/isdn/capi/capi.c                    |   17 +++++-
- drivers/isdn/i4l/isdn_common.c              |   18 +++++-
- drivers/isdn/mISDN/timerdev.c               |   10 ++--
- drivers/macintosh/nvram.c                   |    2 +-
- drivers/macintosh/via-pmu.c                 |   17 +++++-
- drivers/media/dvb/dvb-core/dmxdev.c         |   31 ++++++++---
- drivers/media/dvb/dvb-core/dvb_ca_en50221.c |   17 ++++--
- drivers/media/dvb/dvb-core/dvb_frontend.c   |   30 +++++-----
- drivers/media/dvb/dvb-core/dvb_net.c        |   15 ++++--
- drivers/media/dvb/dvb-core/dvbdev.c         |   17 ++++--
- drivers/media/dvb/dvb-core/dvbdev.h         |   11 ++---
- drivers/media/dvb/firewire/firedtv-ci.c     |    5 +-
- drivers/media/dvb/ttpci/av7110.c            |    4 +-
- drivers/media/dvb/ttpci/av7110_av.c         |    8 ++--
- drivers/media/dvb/ttpci/av7110_ca.c         |    5 +-
- drivers/mtd/mtdchar.c                       |   19 +++++--
- drivers/pcmcia/pcmcia_ioctl.c               |   17 +++++-
- drivers/rtc/rtc-m41t80.c                    |   16 +++++-
- drivers/sbus/char/openprom.c                |   44 +++++++++-------
- drivers/scsi/3w-9xxx.c                      |   10 +++-
- drivers/scsi/3w-sas.c                       |    8 ++-
- drivers/scsi/3w-xxxx.c                      |   11 +++-
- drivers/scsi/aacraid/linit.c                |   11 +++-
- drivers/scsi/dpt_i2o.c                      |   20 ++++++-
- drivers/scsi/gdth.c                         |   20 +++++--
- drivers/scsi/megaraid.c                     |   20 ++++++-
- drivers/scsi/megaraid.h                     |    3 +-
- drivers/scsi/megaraid/megaraid_mm.c         |   22 ++++++--
- drivers/scsi/osst.c                         |   14 ++++--
- drivers/scsi/sg.c                           |   17 +++++-
- drivers/usb/mon/mon_bin.c                   |   23 ++++++--
- drivers/usb/mon/mon_stat.c                  |    3 +-
- fs/autofs4/root.c                           |   22 ++++++--
- fs/coda/pioctl.c                            |   76 ++++++++++++++------------
- fs/coda/psdev.c                             |    5 +-
- fs/hfsplus/dir.c                            |    2 +-
- fs/hfsplus/hfsplus_fs.h                     |    3 +-
- fs/hfsplus/inode.c                          |    2 +-
- fs/hfsplus/ioctl.c                          |   12 +++-
- fs/ncpfs/dir.c                              |    2 +-
- fs/ncpfs/file.c                             |    2 +-
- fs/ncpfs/ioctl.c                            |   27 ++++++----
- fs/smbfs/dir.c                              |    2 +-
- fs/smbfs/file.c                             |    2 +-
- fs/smbfs/ioctl.c                            |   10 ++--
- fs/smbfs/proto.h                            |    2 +-
- include/linux/ncp_fs.h                      |    2 +-
- net/sunrpc/cache.c                          |   13 ++++-
- net/sunrpc/rpc_pipe.c                       |   18 +++++-
- 68 files changed, 669 insertions(+), 312 deletions(-)
+ arch/blackfin/Kconfig                              |   61 +-
+ arch/blackfin/Kconfig.debug                        |   11 +-
+ arch/blackfin/include/asm/bfin-global.h            |    6 +
+ arch/blackfin/include/asm/bug.h                    |    7 +-
+ arch/blackfin/include/asm/cache.h                  |    2 +
+ arch/blackfin/include/asm/gpio.h                   |   22 +-
+ arch/blackfin/include/asm/pgtable.h                |    3 +-
+ arch/blackfin/include/asm/pseudo_instructions.h    |   18 +
+ arch/blackfin/include/asm/string.h                 |  113 +---
+ arch/blackfin/include/asm/tlbflush.h               |    1 +
+ arch/blackfin/include/asm/trace.h                  |    7 +
+ arch/blackfin/kernel/Makefile                      |    5 +-
+ arch/blackfin/kernel/bfin_gpio.c                   |  131 +---
+ arch/blackfin/kernel/bfin_ksyms.c                  |   12 +
+ arch/blackfin/kernel/dumpstack.c                   |  174 ++++
+ arch/blackfin/kernel/exception.c                   |   45 +
+ arch/blackfin/kernel/kgdb.c                        |    2 +-
+ arch/blackfin/kernel/pseudodgb.c                   |  191 ++++
+ arch/blackfin/kernel/setup.c                       |    4 +-
+ arch/blackfin/kernel/sys_bfin.c                    |   23 +
+ arch/blackfin/kernel/trace.c                       |  981 ++++++++++++++++++++
+ arch/blackfin/kernel/traps.c                       |  900 ++-----------------
+ arch/blackfin/lib/memset.S                         |    1 +
+ arch/blackfin/lib/strcmp.S                         |   43 +
+ arch/blackfin/lib/strcmp.c                         |   19 -
+ arch/blackfin/lib/strcpy.S                         |   35 +
+ arch/blackfin/lib/strcpy.c                         |   19 -
+ arch/blackfin/lib/strncmp.S                        |   52 +
+ arch/blackfin/lib/strncmp.c                        |   18 -
+ arch/blackfin/lib/strncpy.S                        |   85 ++
+ arch/blackfin/lib/strncpy.c                        |   19 -
+ arch/blackfin/mach-bf527/boards/cm_bf527.c         |    4 +
+ arch/blackfin/mach-bf527/boards/ezbrd.c            |    4 +
+ arch/blackfin/mach-bf527/boards/ezkit.c            |    4 +
+ arch/blackfin/mach-bf537/boards/minotaur.c         |    3 +-
+ arch/blackfin/mach-bf537/include/mach/defBF534.h   |  622 -------------
+ arch/blackfin/mach-bf537/include/mach/irq.h        |    2 +-
+ arch/blackfin/mach-bf538/include/mach/defBF539.h   |  621 -------------
+ arch/blackfin/mach-bf548/boards/cm_bf548.c         |    4 +
+ arch/blackfin/mach-bf548/boards/ezkit.c            |    4 +
+ .../mach-bf548/include/mach/defBF54x_base.h        |  671 -------------
+ arch/blackfin/mach-bf561/boards/acvilon.c          |    3 +-
+ arch/blackfin/mach-common/ints-priority.c          |   42 +-
+ arch/blackfin/mach-common/pm.c                     |   24 -
+ arch/blackfin/mach-common/smp.c                    |    4 +-
+ arch/blackfin/mm/init.c                            |   60 +-
+ arch/blackfin/mm/isram-driver.c                    |   94 +-
+ arch/blackfin/mm/sram-alloc.c                      |    3 +-
+ 48 files changed, 1938 insertions(+), 3241 deletions(-)
+ create mode 100644 arch/blackfin/include/asm/pseudo_instructions.h
+ create mode 100644 arch/blackfin/kernel/dumpstack.c
+ create mode 100644 arch/blackfin/kernel/exception.c
+ create mode 100644 arch/blackfin/kernel/pseudodgb.c
+ create mode 100644 arch/blackfin/kernel/trace.c
+ create mode 100644 arch/blackfin/lib/strcmp.S
+ delete mode 100644 arch/blackfin/lib/strcmp.c
+ create mode 100644 arch/blackfin/lib/strcpy.S
+ delete mode 100644 arch/blackfin/lib/strcpy.c
+ create mode 100644 arch/blackfin/lib/strncmp.S
+ delete mode 100644 arch/blackfin/lib/strncmp.c
+ create mode 100644 arch/blackfin/lib/strncpy.S
+ delete mode 100644 arch/blackfin/lib/strncpy.c
+
