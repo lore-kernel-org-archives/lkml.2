@@ -1,85 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755317Ab0EVPVP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 11:21:15 -0400
-Received: from sinclair.provo.novell.com ([137.65.248.137]:36224 "EHLO
-	sinclair.provo.novell.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab0EVPVN convert rfc822-to-8bit (ORCPT
-	<rfc822;groupwise-ksrinivasan@novell.com:5:1>);
-	Sat, 22 May 2010 11:21:13 -0400
-Message-Id: <4BF7A20602000030000859E3@sinclair.provo.novell.com>
-X-Mailer: Novell GroupWise Internet Agent 8.0.1 
-Date: Sat, 22 May 2010 09:21:10 -0600
-From: "Ky Srinivasan" <ksrinivasan@novell.com>
-To: "Haiyang Zhang" <haiyangz@microsoft.com>, "Greg KH" <gregkh@suse.de>
-Cc: "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>
-Subject: RE: [PATCH 1/1] staging: hv: Fix race condition on IC channel
-	 initialization
-References: <1FB5E1D5CA062146B38059374562DF7266B8AE7C@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100521201228.GA6712@suse.de>
- <1FB5E1D5CA062146B38059374562DF7266B8B5F2@TK5EX14MBXC128.redmond.corp.microsoft.com>
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8B5F2@TK5EX14MBXC128.redmond.corp.microsoft.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-Content-Disposition: inline
+	id S1755335Ab0EVP2B (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 11:28:01 -0400
+Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50562 "EHLO
+	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754614Ab0EVP17 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 11:27:59 -0400
+From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+To: "J. Bruce Fields" <bfields@fieldses.org>
+Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
+       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
+       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
+       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V11 1/9] exportfs: Return the minimum required handle size
+In-Reply-To: <20100521221516.GD13227@fieldses.org>
+References: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274340938-29628-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100521221516.GD13227@fieldses.org>
+User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
+Date: Sat, 22 May 2010 20:57:50 +0530
+Message-ID: <87y6fc2byh.fsf@linux.vnet.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
->>> On 5/21/2010 at  6:07 PM, in message
-<1FB5E1D5CA062146B38059374562DF7266B8B5F2@TK5EX14MBXC128.redmond.corp.microsoft.
-om>, Haiyang Zhang <haiyangz@microsoft.com> wrote: 
->>  From: Greg KH [mailto:gregkh@suse.de]
->> > +/* Counter of IC channels initialized */
->> > +atomic_t hv_utils_initcnt = ATOMIC_INIT(0);
->> 
->> This doesn't need to be an atomic variable, does it really?
->> 
->> Why not have a simple bool variable "vmbus_initialized" or something.
->> It starts out as false, and then turns true when you are up and ready.
->> Then provide a function that tests it:
->> 	bool hv_vmbus_ready(void)
->> 	{
->> 		return vmbus_initialized
->> 	}
->> 	EXPORT_SYMBOL_GPL(hv_vmbus_ready);
->> 
->> 
->> this turns into a simple function call, again, never needing to know
->> about message types or any other mess.
+On Fri, 21 May 2010 18:15:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> On Thu, May 20, 2010 at 01:05:30PM +0530, Aneesh Kumar K.V wrote:
+> > The exportfs encode handle function should return the minimum required
+> > handle size. This helps user to find out the handle size by passing 0
+> > handle size in the first step and then redoing to the call again with
+> > the returned handle size value.
 > 
-> This looks good. I will add the hv_vmbus_ready() function. It doesn't even 
-> have to be exported symbol, because it's only used in vmbus module to ensure 
+> The encode_fh() interface is a little confusing.  (Not your fault,
+> really, mainly it's the return value (and the special use of 255) that I
+> always find odd.)
 > 
-> all channels are ready before vmbus_init() returns. Other modules won't get 
-> a 
-> chance to see uninitialized channels after hv_vmbus is loaded.
+> But maybe it would help to have a little more documention in the
+> export_encode_fh() kerneldoc comment and/or in
+> Documentation/filesystems/nfs/Exporting?
 > 
-> Also, I'll cleanup the printk in hv_utils load/unload.
-> 
-> Regarding the atomic variable -- the channel offer processing function is 
-> triggered by interrupts from host -- should we be concerned about "counter++" 
-> racing with each other in two interrupts happening around the same time?
-You would need to protect the increment, if interrupts are going to come in on any cpu and update the counter. While in your current implementation interrupts are only delivered on cpu0, it is still  probably good to deal with the more general case and protect the counter.
 
-On a slightly different note, why don't you make the synchronization more explicit than what you currently have: Rather than polling the variable in a loop, why don't you put that context to sleep and the interrupt context that updates the count would be responsible for issuing the wakeup when the conditions are appropriate - when all channels are initialized.
+Kernel documentation says 
 
-Regards,
+ * encode_fh:
+ *    @encode_fh should store in the file handle fragment @fh (using at most
+ *    @max_len bytes) information that can be used by @decode_fh to recover the
+ *    file refered to by the &struct dentry @de.  If the @connectable flag is
+ *    set, the encode_fh() should store sufficient information so that a good
+ *    attempt can be made to find not only the file but also it's place in the
+ *    filesystem.   This typically means storing a reference to de->d_parent in
+ *    the filehandle fragment.  encode_fh() should return the number of bytes
+ *    stored or a negative error code such as %-ENOSPC
+ *
 
-K. Y 
-> 
-> Thanks,
-> 
-> - Haiyang
-> 
-> _______________________________________________
-> Virtualization mailing list
-> Virtualization@lists.linux-foundation.org
-> https://lists.linux-foundation.org/mailman/listinfo/virtualization
+Clearly the file system encode_fh is not returning the correct return
+values. Should i fix the kernel to follow the documentation or should
+the kernel documentation should be fixed. I would prefer code, because
+the documentation look more easy/clear to follow that returning value 255.
 
-
+-aneesh
