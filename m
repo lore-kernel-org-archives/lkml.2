@@ -1,60 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753059Ab0EVHRn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 03:17:43 -0400
-Received: from mx3.wp.pl ([212.77.101.7]:14838 "EHLO mx3.wp.pl"
+	id S1753460Ab0EVHoJ (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 03:44:09 -0400
+Received: from ferdi.naasa.net ([87.106.227.76]:36560 "EHLO ferdi.naasa.net"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752034Ab0EVHRm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 03:17:42 -0400
-X-Greylist: delayed 399 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 May 2010 03:17:42 EDT
-Date: Sat, 22 May 2010 09:13:40 +0200
-From: Krzysztof Helt <krzysztof.h1@wp.pl>
-To: Clemens Ladisch <clemens@ladisch.de>
-Cc: Ralf Baechle <ralf@linux-mips.org>, linux-kernel@vger.kernel.org,
-       Arnd Bergmann <arndbergmann@googlemail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@elte.hu>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: bkl: Pushdowns for sound/oss ?
-Message-Id: <20100522091340.9524d962.krzysztof.h1@wp.pl>
-In-Reply-To: <4BF6A7A6.9080807@ladisch.de>
-References: <alpine.LFD.2.00.1005211536330.25348@localhost.localdomain>
-	<20100521144055.GB13174@linux-mips.org>
-	<4BF6A7A6.9080807@ladisch.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.14.7; i686-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-WP-AV: skaner antywirusowy poczty Wirtualnej Polski S. A.
-X-WP-SPAM: NO 0000000 [IWM0]                               
+	id S1752928Ab0EVHoE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 03:44:04 -0400
+From: Joerg Platte <lists@naasa.net>
+Reply-To: jplatte@naasa.net
+To: =?utf-8?q?C=C3=A9dric_Godin?= <cedric@belbone.be>
+Subject: Re: drm regression on resume with -rc7 (bisected to 797fd5b9dad12a100c81b5782573a41259728cb1)
+Date: Sat, 22 May 2010 09:43:55 +0200
+User-Agent: KMail/1.13.3 (Linux/2.6.34; KDE/4.4.3; i686; ; )
+Cc: Marek =?utf-8?q?Ol=C5=A1=C3=A1k?= <maraeo@gmail.com>,
+       dri-devel@lists.sourceforge.net,
+       Linux Kernel <linux-kernel@vger.kernel.org>,
+       Dave Airlie <airlied@redhat.com>
+References: <4BEB0EE6.1060002@belbone.be> <201005182006.45798.lists@naasa.net> <4BF6D347.9000107@belbone.be>
+In-Reply-To: <4BF6D347.9000107@belbone.be>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8bit
+Message-Id: <201005220943.56567.lists@naasa.net>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 17:32:54 +0200
-Clemens Ladisch <clemens@ladisch.de> wrote:
+Am Friday, 21. May 2010 schrieb Cédric Godin:
+Hi,
 
-> Ralf Baechle wrote:
-> > On Fri, May 21, 2010 at 03:45:04PM +0200, John Kacur wrote:
-> > > sound/oss/msnd_pinnacle.c
-> > 
-> > Random weirdo ISA sound card.  Probably only ever tested on x86 and will
-> > have the chances
+> Yes, now there is a patch thanks to Jerome Glisse. I tested 
+it and it's
+> working here.
+> Maybe you could test it too ?
 > 
-> This has since been replaced with an ALSA driver, so we can basically
-> just kill the OSS driver off at this point.  Krzystof?
-> 
+> https://bugzilla.kernel.org/attachment.cgi?id=26484
 
-I have tested/developed the ALSA driver on the Pinnacle card - I have such a card so
-I can retest and fix the ALSA driver at any moment.
+I tested the patch and it works! Thank you for the link to the 
+patch!
 
-The driver is supposed to handle the Classic model as well but I am not aware anybody tested
-the ALSA driver on this model.
-
-IMO, we can remove the OSS driver - one can look into the git to find the old source if needed.
-
-I am looking to people who have the old ISA cards for OSS drivers not converted 
-into the ALSA. I can convert these drivers if these people are willing to test or donate the
-hardware.
-
-Regards,
-Krzysztof
+regards,
+Jörg
