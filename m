@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754085Ab0EVIUz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:20:55 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:60291 "EHLO mgw1.diku.dk"
+	id S1753837Ab0EVIVN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:21:13 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:60308 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753914Ab0EVIUt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:20:49 -0400
-Date: Sat, 22 May 2010 10:20:44 +0200 (CEST)
+	id S1753852Ab0EVIVI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:21:08 -0400
+Date: Sat, 22 May 2010 10:21:02 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Chirag Kantharia <chirag.kantharia@hp.com>, iss_storagedev@hp.com,
+To: Mauro Carvalho Chehab <mchehab@infradead.org>, linux-media@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 8/27] drivers/block: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221020260.13021@ask.diku.dk>
+Subject: [PATCH 9/27] drivers/media: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221020440.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,7 +21,7 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 From: Julia Lawall <julia@diku.dk>
 
 Use memdup_user when user data is immediately copied into the
-allocated region.  Some checkpatch cleanups in nearby code.
+allocated region.
 
 The semantic patch that makes this change is as follows:
 (http://coccinelle.lip6.fr/)
@@ -54,57 +54,53 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/block/cpqarray.c |   32 ++++++++++----------------------
- 1 file changed, 10 insertions(+), 22 deletions(-)
+ drivers/media/dvb/dvb-core/dvb_demux.c |   10 +++-------
+ drivers/media/video/dabusb.c           |   13 ++++---------
+ 2 files changed, 7 insertions(+), 16 deletions(-)
 
-diff --git a/drivers/block/cpqarray.c b/drivers/block/cpqarray.c
-index 91d1163..7e40462 100644
---- a/drivers/block/cpqarray.c
-+++ b/drivers/block/cpqarray.c
-@@ -1225,17 +1225,11 @@ static int ida_ctlr_ioctl(ctlr_info_t *h, int dsk, ida_ioctl_t *io)
- 	/* Pre submit processing */
- 	switch(io->cmd) {
- 	case PASSTHRU_A:
--		p = kmalloc(io->sg[0].size, GFP_KERNEL);
--		if (!p) 
--		{ 
--			error = -ENOMEM; 
--			cmd_free(h, c, 0); 
--			return(error);
+diff --git a/drivers/media/dvb/dvb-core/dvb_demux.c b/drivers/media/dvb/dvb-core/dvb_demux.c
+index 977ddba..4a88a3e 100644
+--- a/drivers/media/dvb/dvb-core/dvb_demux.c
++++ b/drivers/media/dvb/dvb-core/dvb_demux.c
+@@ -1130,13 +1130,9 @@ static int dvbdmx_write(struct dmx_demux *demux, const char __user *buf, size_t
+ 	if ((!demux->frontend) || (demux->frontend->source != DMX_MEMORY_FE))
+ 		return -EINVAL;
+ 
+-	p = kmalloc(count, GFP_USER);
+-	if (!p)
+-		return -ENOMEM;
+-	if (copy_from_user(p, buf, count)) {
+-		kfree(p);
+-		return -EFAULT;
+-	}
++	p = memdup_user(buf, count);
++	if (IS_ERR(p))
++		return PTR_ERR(p);
+ 	if (mutex_lock_interruptible(&dvbdemux->mutex)) {
+ 		kfree(p);
+ 		return -ERESTARTSYS;
+diff --git a/drivers/media/video/dabusb.c b/drivers/media/video/dabusb.c
+index 0f50508..5b176bd 100644
+--- a/drivers/media/video/dabusb.c
++++ b/drivers/media/video/dabusb.c
+@@ -706,16 +706,11 @@ static long dabusb_ioctl (struct file *file, unsigned int cmd, unsigned long arg
+ 	switch (cmd) {
+ 
+ 	case IOCTL_DAB_BULK:
+-		pbulk = kmalloc(sizeof (bulk_transfer_t), GFP_KERNEL);
++		pbulk = memdup_user((void __user *)arg,
++				    sizeof(bulk_transfer_t));
+ 
+-		if (!pbulk) {
+-			ret = -ENOMEM;
+-			break;
 -		}
--		if (copy_from_user(p, io->sg[0].addr, io->sg[0].size)) {
--			kfree(p);
--			cmd_free(h, c, 0); 
--			return -EFAULT;
-+		p = memdup_user(io->sg[0].addr, io->sg[0].size);
-+		if (IS_ERR(p)) {
-+			error = PTR_ERR(p);
-+			cmd_free(h, c, 0);
-+			return error;
+-
+-		if (copy_from_user (pbulk, (void __user *) arg, sizeof (bulk_transfer_t))) {
+-			ret = -EFAULT;
+-			kfree (pbulk);
++		if (IS_ERR(pbulk)) {
++			ret = PTR_ERR(pbulk);
+ 			break;
  		}
- 		c->req.hdr.blk = pci_map_single(h->pci_dev, &(io->c), 
- 				sizeof(ida_ioctl_t), 
-@@ -1266,18 +1260,12 @@ static int ida_ctlr_ioctl(ctlr_info_t *h, int dsk, ida_ioctl_t *io)
- 	case DIAG_PASS_THRU:
- 	case COLLECT_BUFFER:
- 	case WRITE_FLASH_ROM:
--		p = kmalloc(io->sg[0].size, GFP_KERNEL);
--		if (!p) 
-- 		{ 
--                        error = -ENOMEM; 
--                        cmd_free(h, c, 0);
--                        return(error);
-+		p = memdup_user(io->sg[0].addr, io->sg[0].size);
-+		if (IS_ERR(p)) {
-+			error = PTR_ERR(p);
-+			cmd_free(h, c, 0);
-+			return error;
-                 }
--		if (copy_from_user(p, io->sg[0].addr, io->sg[0].size)) {
--			kfree(p);
--                        cmd_free(h, c, 0);
--			return -EFAULT;
--		}
- 		c->req.sg[0].size = io->sg[0].size;
- 		c->req.sg[0].addr = pci_map_single(h->pci_dev, p, 
- 			c->req.sg[0].size, PCI_DMA_BIDIRECTIONAL); 
+ 
