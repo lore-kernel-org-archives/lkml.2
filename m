@@ -1,215 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754224Ab0EVKEa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 06:04:30 -0400
-Received: from mamba.nagafix.co.uk ([194.145.196.68]:58856 "EHLO
-	mail.nagafix.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1751852Ab0EVKE1 (ORCPT
+	id S1754296Ab0EVKVr (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 06:21:47 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:36959 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab0EVKVp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 06:04:27 -0400
-X-Greylist: delayed 614 seconds by postgrey-1.27 at vger.kernel.org; Sat, 22 May 2010 06:04:27 EDT
-Message-ID: <4BF7A9BD.6070806@nagafix.co.uk>
-Date: Sat, 22 May 2010 16:54:05 +0700
-From: Antoine Martin <antoine@nagafix.co.uk>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
-       hugh.dickins@tiscali.co.uk
-Subject: large IO over loop mount can cause one CPU to block in wait state
- (was: KVM repeatable hang...)
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	Sat, 22 May 2010 06:21:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=iEJrmvrCqZKCBWon1qaHdf4YYp25EjiOWK3/K1KPdB4S3BVKjpStpfQnQFv5Xm0VKL
+         vYunYSLZ3KT9MfJklkVOdhnSfv+eFG2XTUlmzSw+1gX49lP297KGThi6GEGSAToDwgR/
+         L4WU4uyeeb3Qb4WQxBG/lk7FlmwZNvkLni26o=
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, Minchan Kim <minchan.kim@gmail.com>,
+       Nick Piggin <npiggin@suse.de>
+Subject: [PATCH 1/2] Clean up alloc_vmap_area
+Date: Sat, 22 May 2010 19:21:34 +0900
+Message-Id: <52219510083a624ff3d60d5671f826c33f8ef23c.1274522869.git.minchan.kim@gmail.com>
+X-Mailer: git-send-email 1.7.0.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This may be related to
-"Re: PROBLEM: oom killer and swap weirdness on 2.6.3* kernels"
-http://lkml.org/lkml/2010/5/21/387
+This patch cleans up procedure of finding empty address range.
 
-And also:
-" Re: Gentoo guest with smp: emerge freeze while recompile world"
-http://www.mail-archive.com/kvm@vger.kernel.org/msg34629.html
+Now alloc_vmap_area would be rather complicated due to finding
+empty range wihtin [vstart,vend]
 
-As both the symptom and the way to trigger the problem are similar.
-I originally posted this to KVM ML as the problem was only occurring on 
-virtual machines at the time (IMO because they have less RAM).
+This divides vmap_area procedure following as.
 
-Cheers
-Antoine
+alloc_vmap_area
+        __get_first_vmap_area <-- get first vmap_area in range
+        __get_vmap_area_addr <-- get address from first vmap_area
+        __insert_vmap_area <-- add vmap_area into rbtree
 
+This patch should not change behavior.
 
--------- Original Message --------
-Subject: 	Re: repeatable hang with loop mount and heavy IO in guest (now 
-in host - not KVM then..)
-Date: 	Fri, 21 May 2010 16:38:41 +0700
-From: 	Antoine Martin <antoine@nagafix.co.uk>
-To: 	Michael Tokarev <mjt@tls.msk.ru>
-CC: 	kvm@vger.kernel.org
+Cc: Nick Piggin <npiggin@suse.de>
+Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
+---
+ mm/vmalloc.c |   98 +++++++++++++++++++++++++++++++++++++--------------------
+ 1 files changed, 63 insertions(+), 35 deletions(-)
 
-
-
-On 02/27/2010 12:38 AM, Antoine Martin wrote:
->>>    1   0   0  98   0   1|   0     0 |  66B  354B|   0     0 |  30    11
->>>    1   1   0  98   0   0|   0     0 |  66B  354B|   0     0 |  29    11
->>>   From that point onwards, nothing will happen.
->>>  The host has disk IO to spare... So what is it waiting for??
->>  Moved to an AMD64 host. No effect.
->>  Disabled swap before running the test. No effect.
->>  Moved the guest to a fully up-to-date FC12 server
->>  (2.6.31.6-145.fc12.x86_64), no effect.
-[snip]
-
-Well, well. I've just hit the exact same bug on another *host* (not a
-guest this time), running stock Fedora 12.
-So this isn't a kvm bug after all. Definitely a loop+ext(4?) bug.
-Looks like you need a pretty big loop mounted partition to trigger it.
-(bigger than available ram?)
-
-This is what triggered it on a quad amd system with 8Gb of ram, software
-raid-1 partition:
-mount -o loop 2GB.dd source
-dd if=/dev/zero of=8GB.dd bs=1048576 count=8192
-mkfs.ext4 -f 8GB.dd
-mount -o loop 8GB.dd dest
-rsync -rplogtD source/* dest/
-umount source
-umount dest
-^ this is where it hangs (for over 10 minutes), I then tried to issue a 'sync' from another
-terminal, which also hung.
-It took more than 10 minutes to settle itself, during that time one CPU
-was stuck in wait state. Apart from that the box is mostly idle.
-dstat reported almost no IO at the time (<1MB/s)
-I assume dstat reports page write back like any other disk IO?
-That raid partition does ~60MB/s, so writing back 8GB shouldn't take much more than a couple of minutes. (that's even assuming it would have to write back the whole 8GB at umount time - which should not be the case)
-
-Cheers
-Antoine
-
-Here's the hung trace:
-INFO: task umount:526 blocked for more than 120 seconds.
-"echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-umount        D 0000000000000002     0   526  32488 0x00000000
-  ffff880140f9fc88 0000000000000086 ffff880008e3c228 ffffffff810d5fd9
-  ffff880140f9fc28 ffff880140f9fcd8 ffff880140f9ffd8 ffff880140f9ffd8
-  ffff88021b5e03d8 000000000000f980 0000000000015740 ffff88021b5e03d8
-Call Trace:
-  [<ffffffff810d5fd9>] ? sync_page+0x0/0x4a
-  [<ffffffff81046fbd>] ? __enqueue_entity+0x7b/0x7d
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff8113a055>] bdi_sched_wait+0xe/0x12
-  [<ffffffff814549f0>] __wait_on_bit+0x48/0x7b
-  [<ffffffff8102649f>] ? native_smp_send_reschedule+0x5c/0x5e
-  [<ffffffff81454a91>] out_of_line_wait_on_bit+0x6e/0x79
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff810748dc>] ? wake_bit_function+0x0/0x33
-  [<ffffffff8113ad0b>] wait_on_bit.clone.1+0x1e/0x20
-  [<ffffffff8113ad71>] bdi_sync_writeback+0x64/0x6b
-  [<ffffffff8113ad9a>] sync_inodes_sb+0x22/0xec
-  [<ffffffff8113e547>] __sync_filesystem+0x4e/0x77
-  [<ffffffff8113e71d>] sync_filesystem+0x4b/0x4f
-  [<ffffffff8111d6d9>] generic_shutdown_super+0x27/0xc9
-  [<ffffffff8111d7a2>] kill_block_super+0x27/0x3f
-  [<ffffffff8111ded7>] deactivate_super+0x56/0x6b
-  [<ffffffff81134262>] mntput_no_expire+0xb4/0xec
-  [<ffffffff8113482a>] sys_umount+0x2d5/0x304
-  [<ffffffff81458133>] ? do_page_fault+0x270/0x2a0
-  [<ffffffff81011d32>] system_call_fastpath+0x16/0x1b
-INFO: task umount:526 blocked for more than 120 seconds.
-"echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-umount        D 0000000000000002     0   526  32488 0x00000000
-  ffff880140f9fc88 0000000000000086 ffff880008e3c228 ffffffff810d5fd9
-  ffff880140f9fc28 ffff880140f9fcd8 ffff880140f9ffd8 ffff880140f9ffd8
-  ffff88021b5e03d8 000000000000f980 0000000000015740 ffff88021b5e03d8
-Call Trace:
-  [<ffffffff810d5fd9>] ? sync_page+0x0/0x4a
-  [<ffffffff81046fbd>] ? __enqueue_entity+0x7b/0x7d
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff8113a055>] bdi_sched_wait+0xe/0x12
-  [<ffffffff814549f0>] __wait_on_bit+0x48/0x7b
-  [<ffffffff8102649f>] ? native_smp_send_reschedule+0x5c/0x5e
-  [<ffffffff81454a91>] out_of_line_wait_on_bit+0x6e/0x79
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff810748dc>] ? wake_bit_function+0x0/0x33
-  [<ffffffff8113ad0b>] wait_on_bit.clone.1+0x1e/0x20
-  [<ffffffff8113ad71>] bdi_sync_writeback+0x64/0x6b
-  [<ffffffff8113ad9a>] sync_inodes_sb+0x22/0xec
-  [<ffffffff8113e547>] __sync_filesystem+0x4e/0x77
-  [<ffffffff8113e71d>] sync_filesystem+0x4b/0x4f
-  [<ffffffff8111d6d9>] generic_shutdown_super+0x27/0xc9
-  [<ffffffff8111d7a2>] kill_block_super+0x27/0x3f
-  [<ffffffff8111ded7>] deactivate_super+0x56/0x6b
-  [<ffffffff81134262>] mntput_no_expire+0xb4/0xec
-  [<ffffffff8113482a>] sys_umount+0x2d5/0x304
-  [<ffffffff81458133>] ? do_page_fault+0x270/0x2a0
-  [<ffffffff81011d32>] system_call_fastpath+0x16/0x1b
-INFO: task umount:526 blocked for more than 120 seconds.
-"echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-umount        D 0000000000000002     0   526  32488 0x00000000
-  ffff880140f9fc88 0000000000000086 ffff880008e3c228 ffffffff810d5fd9
-  ffff880140f9fc28 ffff880140f9fcd8 ffff880140f9ffd8 ffff880140f9ffd8
-  ffff88021b5e03d8 000000000000f980 0000000000015740 ffff88021b5e03d8
-Call Trace:
-  [<ffffffff810d5fd9>] ? sync_page+0x0/0x4a
-  [<ffffffff81046fbd>] ? __enqueue_entity+0x7b/0x7d
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff8113a055>] bdi_sched_wait+0xe/0x12
-  [<ffffffff814549f0>] __wait_on_bit+0x48/0x7b
-  [<ffffffff8102649f>] ? native_smp_send_reschedule+0x5c/0x5e
-  [<ffffffff81454a91>] out_of_line_wait_on_bit+0x6e/0x79
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff810748dc>] ? wake_bit_function+0x0/0x33
-  [<ffffffff8113ad0b>] wait_on_bit.clone.1+0x1e/0x20
-  [<ffffffff8113ad71>] bdi_sync_writeback+0x64/0x6b
-  [<ffffffff8113ad9a>] sync_inodes_sb+0x22/0xec
-  [<ffffffff8113e547>] __sync_filesystem+0x4e/0x77
-  [<ffffffff8113e71d>] sync_filesystem+0x4b/0x4f
-  [<ffffffff8111d6d9>] generic_shutdown_super+0x27/0xc9
-  [<ffffffff8111d7a2>] kill_block_super+0x27/0x3f
-  [<ffffffff8111ded7>] deactivate_super+0x56/0x6b
-  [<ffffffff81134262>] mntput_no_expire+0xb4/0xec
-  [<ffffffff8113482a>] sys_umount+0x2d5/0x304
-  [<ffffffff81458133>] ? do_page_fault+0x270/0x2a0
-  [<ffffffff81011d32>] system_call_fastpath+0x16/0x1b
-INFO: task umount:526 blocked for more than 120 seconds.
-"echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-umount        D 0000000000000002     0   526  32488 0x00000000
-  ffff880140f9fc88 0000000000000086 ffff880008e3c228 ffffffff810d5fd9
-  ffff880140f9fc28 ffff880140f9fcd8 ffff880140f9ffd8 ffff880140f9ffd8
-  ffff88021b5e03d8 000000000000f980 0000000000015740 ffff88021b5e03d8
-Call Trace:
-  [<ffffffff810d5fd9>] ? sync_page+0x0/0x4a
-  [<ffffffff81046fbd>] ? __enqueue_entity+0x7b/0x7d
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff8113a055>] bdi_sched_wait+0xe/0x12
-  [<ffffffff814549f0>] __wait_on_bit+0x48/0x7b
-  [<ffffffff8102649f>] ? native_smp_send_reschedule+0x5c/0x5e
-  [<ffffffff81454a91>] out_of_line_wait_on_bit+0x6e/0x79
-  [<ffffffff8113a047>] ? bdi_sched_wait+0x0/0x12
-  [<ffffffff810748dc>] ? wake_bit_function+0x0/0x33
-  [<ffffffff8113ad0b>] wait_on_bit.clone.1+0x1e/0x20
-  [<ffffffff8113ad71>] bdi_sync_writeback+0x64/0x6b
-  [<ffffffff8113ad9a>] sync_inodes_sb+0x22/0xec
-  [<ffffffff8113e547>] __sync_filesystem+0x4e/0x77
-  [<ffffffff8113e71d>] sync_filesystem+0x4b/0x4f
-  [<ffffffff8111d6d9>] generic_shutdown_super+0x27/0xc9
-  [<ffffffff8111d7a2>] kill_block_super+0x27/0x3f
-  [<ffffffff8111ded7>] deactivate_super+0x56/0x6b
-  [<ffffffff81134262>] mntput_no_expire+0xb4/0xec
-  [<ffffffff8113482a>] sys_umount+0x2d5/0x304
-  [<ffffffff81458133>] ? do_page_fault+0x270/0x2a0
-  [<ffffffff81011d32>] system_call_fastpath+0x16/0x1b
-INFO: task sync:741 blocked for more than 120 seconds.
-"echo 0>  /proc/sys/kernel/hung_task_timeout_secs" disables this message.
-sync          D 0000000000000000     0   741    552 0x00000000
-  ffff88003c31fed8 0000000000000086 0000000000000000 ffff8801b7472ec0
-  ffff88003c31fe38 0000000000000246 ffff88003c31ffd8 ffff88003c31ffd8
-  ffff8801b7473298 000000000000f980 0000000000015740 ffff8801b7473298
-Call Trace:
-  [<ffffffff81455a2e>] __down_read+0x92/0xaa
-  [<ffffffff814550e1>] down_read+0x31/0x35
-  [<ffffffff8113e5f6>] sync_filesystems+0x86/0xf6
-  [<ffffffff8113e6b6>] sys_sync+0x17/0x33
-  [<ffffffff81011d32>] system_call_fastpath+0x16/0x1b
-
+diff --git a/mm/vmalloc.c b/mm/vmalloc.c
+index ae00746..651d1c1 100644
+--- a/mm/vmalloc.c
++++ b/mm/vmalloc.c
+@@ -320,6 +320,63 @@ static void __insert_vmap_area(struct vmap_area *va)
+ static void purge_vmap_area_lazy(void);
+ 
+ /*
++ * find first vmap_area in [addr, addr + size]
++ */
++static struct vmap_area *__get_first_vmap_area(struct rb_node *n, unsigned long addr, 
++					unsigned size)
++{
++	struct vmap_area *first = NULL;
++
++	do {
++		struct vmap_area *tmp;
++		tmp = rb_entry(n, struct vmap_area, rb_node);
++		if (tmp->va_end >= addr) {
++			if (!first && tmp->va_start < addr + size)
++				first = tmp;
++			n = n->rb_left;
++		} else {
++			first = tmp;
++			n = n->rb_right;
++		}
++	} while (n);
++
++	if (!first)
++		goto found;
++
++	if (first->va_end < addr) {
++		n = rb_next(&first->rb_node);
++		if (n)
++			first = rb_entry(n, struct vmap_area, rb_node);
++		else
++			first = NULL;						
++	}
++found:
++	return first;
++}
++
++/*
++ * Find empty range addr from first vmap_area.
++ * Return 0 if it find empty range. Otherwise, return 1.
++ */
++static int __get_vmap_area_addr(struct vmap_area *first, 
++				unsigned long *addr, unsigned long size, 
++				unsigned long vend, unsigned long align)
++{
++	struct rb_node *n;
++
++	while (*addr + size > first->va_start && *addr + size <= vend) {
++		*addr = ALIGN(first->va_end + PAGE_SIZE, align);
++		if (*addr + size - 1 < *addr)
++			return 1;
++
++		n = rb_next(&first->rb_node);
++		if (!n)
++			break;
++		first = rb_entry(n, struct vmap_area, rb_node);
++	}
++	return 0;
++}
++/*
+  * Allocate a region of KVA of the specified size and alignment, within the
+  * vstart and vend.
+  */
+@@ -351,43 +408,14 @@ retry:
+ 	/* XXX: could have a last_hole cache */
+ 	n = vmap_area_root.rb_node;
+ 	if (n) {
+-		struct vmap_area *first = NULL;
+-
+-		do {
+-			struct vmap_area *tmp;
+-			tmp = rb_entry(n, struct vmap_area, rb_node);
+-			if (tmp->va_end >= addr) {
+-				if (!first && tmp->va_start < addr + size)
+-					first = tmp;
+-				n = n->rb_left;
+-			} else {
+-				first = tmp;
+-				n = n->rb_right;
+-			}
+-		} while (n);
+-
++		int ret;
++		struct vmap_area *first = __get_first_vmap_area(n, addr, size);
+ 		if (!first)
+ 			goto found;
+-
+-		if (first->va_end < addr) {
+-			n = rb_next(&first->rb_node);
+-			if (n)
+-				first = rb_entry(n, struct vmap_area, rb_node);
+-			else
+-				goto found;
+-		}
+-
+-		while (addr + size > first->va_start && addr + size <= vend) {
+-			addr = ALIGN(first->va_end + PAGE_SIZE, align);
+-			if (addr + size - 1 < addr)
+-				goto overflow;
+-
+-			n = rb_next(&first->rb_node);
+-			if (n)
+-				first = rb_entry(n, struct vmap_area, rb_node);
+-			else
+-				goto found;
+-		}
++		
++		ret = __get_vmap_area_addr(first, &addr, size, vend, align);
++		if (ret == VMAP_AREA_OVERFLOW)
++			goto overflow;
+ 	}
+ found:
+ 	if (addr + size > vend) {
+-- 
+1.7.0.5
 
