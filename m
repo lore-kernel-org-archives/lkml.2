@@ -1,43 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757726Ab0EVR7A (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 13:59:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58724 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755859Ab0EVR64 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 13:58:56 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Borislav Petkov <bp@alien8.de>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
-Date: Sat, 22 May 2010 20:00:15 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <201005212343.25184.rjw@sisk.pl> <201005221934.09705.rjw@sisk.pl> <20100522175221.GA26778@liondog.tnic>
-In-Reply-To: <20100522175221.GA26778@liondog.tnic>
+	id S1757834Ab0EVSIN (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 14:08:13 -0400
+Received: from smtp-01.mandic.com.br ([200.225.81.132]:34326 "EHLO
+	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755931Ab0EVSIM (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 14:08:12 -0400
+Message-ID: <4BF81D87.6010506@cesarb.net>
+Date: Sat, 22 May 2010 15:08:07 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
+To: linux-mm@kvack.org
+CC: linux-kernel@vger.kernel.org
+Subject: [PATCH 0/3] mm: Swap checksum
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005222000.15826.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Saturday 22 May 2010, Borislav Petkov wrote:
-> From: "Rafael J. Wysocki" <rjw@sisk.pl>
-> Date: Sat, May 22, 2010 at 07:34:09PM +0200
-> 
-> > > Rafael, can you check whether the C1E idle is selected.
-> > 
-> > Can you please remind me how I can check that?
-> 
-> look for
-> 
-> "using C1E aware idle routine"
+Add support for checksumming the swap pages written to disk, using the
+same checksum as btrfs (crc32c). Since the contents of the swap do not
+matter after a shutdown, the checksum is kept in memory only.
 
-Yes, it prints that.
+Note that this code does not checksum the software suspend image.
 
-Rafael
+Cesar Eduardo Barros (3):
+       mm/swapfile.c: better messages for swap_info_get
+       kernel/power/swap.c: do not use end_swap_bio_read
+       mm: Swap checksum
+
+  include/linux/swap.h |   31 +++++++-
+  kernel/power/swap.c  |   21 +++++-
+  mm/Kconfig           |   22 +++++
+  mm/Makefile          |    1 +
+  mm/page_io.c         |   92 ++++++++++++++++++--
+  mm/swapcsum.c        |   94 +++++++++++++++++++++
+  mm/swapfile.c        |  186 ++++++++++++++++++++++++++++++++++++++++--
+  7 files changed, 429 insertions(+), 18 deletions(-)
+  create mode 100644 mm/swapcsum.c
+
+-- 
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
