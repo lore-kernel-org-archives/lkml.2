@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754249Ab0EVKBF (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 06:01:05 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:49559 "EHLO mgw2.diku.dk"
+	id S1754519Ab0EVKBj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 06:01:39 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:49569 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753084Ab0EVKBB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 06:01:01 -0400
-Date: Sat, 22 May 2010 12:00:56 +0200 (CEST)
+	id S1754054Ab0EVKBf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 06:01:35 -0400
+Date: Sat, 22 May 2010 12:01:30 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+To: Roman Zippel <zippel@linux-m68k.org>, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 6/8] mm: Use ERR_CAST
-Message-ID: <Pine.LNX.4.64.1005221200380.13021@ask.diku.dk>
+Subject: [PATCH 8/8] fs/affs: Use ERR_CAST
+Message-ID: <Pine.LNX.4.64.1005221201150.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -50,18 +50,18 @@ expression x;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- mm/vmalloc.c |    2 +-
+ fs/affs/namei.c |    2 +-
  1 file changed, 1 insertion(+), 1 deletion(-)
 
-diff -u -p a/mm/vmalloc.c b/mm/vmalloc.c
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -732,7 +732,7 @@ static struct vmap_block *new_vmap_block
- 					node, gfp_mask);
- 	if (unlikely(IS_ERR(va))) {
- 		kfree(vb);
--		return ERR_PTR(PTR_ERR(va));
-+		return ERR_CAST(va);
+diff -u -p a/fs/affs/namei.c b/fs/affs/namei.c
+--- a/fs/affs/namei.c
++++ b/fs/affs/namei.c
+@@ -224,7 +224,7 @@ affs_lookup(struct inode *dir, struct de
+ 		affs_brelse(bh);
+ 		inode = affs_iget(sb, ino);
+ 		if (IS_ERR(inode))
+-			return ERR_PTR(PTR_ERR(inode));
++			return ERR_CAST(inode);
  	}
- 
- 	err = radix_tree_preload(gfp_mask);
+ 	dentry->d_op = AFFS_SB(sb)->s_flags & SF_INTL ? &affs_intl_dentry_operations : &affs_dentry_operations;
+ 	d_add(dentry, inode);
