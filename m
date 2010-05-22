@@ -1,20 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755759Ab0EVIY4 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:24:56 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:34997 "EHLO mgw1.diku.dk"
+	id S1755791Ab0EVIZL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:25:11 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:60773 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752978Ab0EVIYw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:24:52 -0400
-Date: Sat, 22 May 2010 10:24:47 +0200 (CEST)
+	id S1755767Ab0EVIZI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:25:08 -0400
+Date: Sat, 22 May 2010 10:25:03 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Ursula Braun <ursula.braun@de.ibm.com>,
-       Frank Blaschka <blaschka@linux.vnet.ibm.com>, linux390@de.ibm.com,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>, linux-s390@vger.kernel.org,
+To: "David S. Miller" <davem@davemloft.net>, linux-ide@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 20/27] drivers/s390/net: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221024220.13021@ask.diku.dk>
+Subject: [PATCH 21/27] drivers/ide: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221024470.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -57,29 +54,27 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/s390/net/qeth_core_main.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/ide/ide-taskfile.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/s390/net/qeth_core_main.c b/drivers/s390/net/qeth_core_main.c
-index 13ef46b..8b48fbd 100644
---- a/drivers/s390/net/qeth_core_main.c
-+++ b/drivers/s390/net/qeth_core_main.c
-@@ -3764,15 +3764,10 @@ int qeth_snmp_command(struct qeth_card *card, char __user *udata)
- 	/* skip 4 bytes (data_len struct member) to get req_len */
- 	if (copy_from_user(&req_len, udata + sizeof(int), sizeof(int)))
- 		return -EFAULT;
--	ureq = kmalloc(req_len+sizeof(struct qeth_snmp_ureq_hdr), GFP_KERNEL);
--	if (!ureq) {
-+	ureq = memdup_user(udata, req_len + sizeof(struct qeth_snmp_ureq_hdr));
-+	if (IS_ERR(ureq)) {
- 		QETH_DBF_TEXT(TRACE, 2, "snmpnome");
+diff --git a/drivers/ide/ide-taskfile.c b/drivers/ide/ide-taskfile.c
+index 67fb735..34b9872 100644
+--- a/drivers/ide/ide-taskfile.c
++++ b/drivers/ide/ide-taskfile.c
+@@ -480,13 +480,9 @@ int ide_taskfile_ioctl(ide_drive_t *drive, unsigned long arg)
+ 	u16 nsect		= 0;
+ 	char __user *buf = (char __user *)arg;
+ 
+-	req_task = kzalloc(tasksize, GFP_KERNEL);
+-	if (req_task == NULL)
 -		return -ENOMEM;
--	}
--	if (copy_from_user(ureq, udata,
--			req_len + sizeof(struct qeth_snmp_ureq_hdr))) {
--		kfree(ureq);
+-	if (copy_from_user(req_task, buf, tasksize)) {
+-		kfree(req_task);
 -		return -EFAULT;
-+		return PTR_ERR(ureq);
- 	}
- 	qinfo.udata_len = ureq->hdr.data_len;
- 	qinfo.udata = kzalloc(qinfo.udata_len, GFP_KERNEL);
+-	}
++	req_task = memdup_user(buf, tasksize);
++	if (IS_ERR(req_task))
++		return PTR_ERR(req_task);
+ 
+ 	taskout = req_task->out_size;
+ 	taskin  = req_task->in_size;
