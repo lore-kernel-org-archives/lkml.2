@@ -1,72 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758782Ab0EVVQY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 17:16:24 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:40936 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755773Ab0EVVQX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 17:16:23 -0400
-Message-ID: <4BF84989.3020004@euromail.se>
-Date: Sat, 22 May 2010 23:15:53 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1758730Ab0EVVS4 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 17:18:56 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58970 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758082Ab0EVVSy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 17:18:54 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Gleixner <tglx@linutronix.de>, John Stultz <johnstul@us.ibm.com>
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
+Date: Sat, 22 May 2010 23:20:01 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain> <201005222255.27301.rjw@sisk.pl>
+In-Reply-To: <201005222255.27301.rjw@sisk.pl>
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Rafi Rubin <rafi@seas.upenn.edu>, Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
-References: <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com> <4BF6B673.1080507@euromail.se> <20100521165218.GA26439@core.coreip.homeip.net> <4BF6BB43.2020405@euromail.se> <20100521172222.GB26439@core.coreip.homeip.net> <4BF6C303.7030804@euromail.se> <20100521174140.GA23155@core.coreip.homeip.net> <4BF6C7B6.2020008@euromail.se> <4BF7A4E8.3050806@seas.upenn.edu> <4BF7B438.8000001@euromail.se> <20100522201637.GC30464@core.coreip.homeip.net>
-In-Reply-To: <20100522201637.GC30464@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OFw31-000244-Bg.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OFw31-000244-Bg 4ea6bd26111485390d7aaa8c99b70697
+Message-Id: <201005222320.01506.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> On Sat, May 22, 2010 at 12:38:48PM +0200, Henrik Rydberg wrote:
->> Rafi Rubin wrote:
->>> On 05/21/10 13:49, Henrik Rydberg wrote:
->>>> Dmitry Torokhov wrote:
->>>>> I guess this is where our disconnect lies as when I am looking at the
->>>>> event names I view all *_MT_* events as related to the multitouch
->>>>> protocol handling.
->>>>>
->>>> Yes. It is true that slot control is MT related, but I am looking at this from
->>>> the perspective of future expansions like KEY_MT,  KEY_REL, and such, finding a
->>>> way to signal to user space which events are handled via slots. If we had
->>>> ABS_MT_SLOT, we would most likely get applications which store ABS_MT_SLOT as an
->>>> attribute of the slot together with ABS_MT_POSITION_X, ABS_MT_TOUCH_MAJOR, etc,
->>>> which is just not right. So the proposal is ABS_SLOT. May we have your verdict,
->>>> please. :-)
->>>>
->>>> Henrik
->>>>
->>> How many fingers can type on cap of a key?
->> It depends on the size of the key, does it not. :-)
->>
->> Getting serious, it is anyone's guess what will happen next, but I was picturing
->> a table, with a large multitouch screen and buttons along the side of the table.
->> Sure, we can do "ABS_BTN_0", "ABS_BTN_1", etc, but with slots in place, it seems
->> more natural to use something like "ABS_MT_BTN_X". While at it, REL_MT event
->> makes sense for those touchscreen techniques which register changes, like
->> acoustic pulse recognition.
->>
+On Saturday 22 May 2010, Rafael J. Wysocki wrote:
+> On Saturday 22 May 2010, Thomas Gleixner wrote:
+> > On Sat, 22 May 2010, Thomas Gleixner wrote:
+> > 
+> > > On Sat, 22 May 2010, Rafael J. Wysocki wrote:
+> > > > On Saturday 22 May 2010, Thomas Gleixner wrote:
+> > > > 
+> > > > > Also which clocksource is used ?
+> > > > 
+> > > > hpet
+> > > 
+> > > Hmm, there is only one hpet related commit sin .34:  30a564be9d
+> > > and I can hardly see how this should be related.
+> > 
+> > Does the problem persist if you disable HPET on the kernel command line ?
 > 
-> While I could see relative MT events I do not understand the need for
-> slotted key events. We already allow pressing multiple keys at once and
-> if a device has 2 separate keys with the same event - they either should
-> be treated as one logical key or 2 separate input devices.
+> I didn't try that, but I bisected it in the meantime which lead to:
 > 
+> commit 64ce4c2f5252f25798117fa80a027993163d6d84
+> Author: John Stultz <johnstul@us.ibm.com>
+> Date:   Thu Mar 11 14:04:47 2010 -0800
+> 
+>     time: Clean up warp_clock()
+> 
+>     warp_clock() currently accesses timekeeping internal state directly, which
+>     is unnecessary.  Convert it to use the proper timekeeping interfaces.
+> 
+>     Signed-off-by: John Stultz <johnstul@us.ibm.com>
+>     Cc: Ingo Molnar <mingo@elte.hu>
+>     Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+>     Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+> 
+> So I don't think it's an hpet issue. :-)
+> 
+> I'm now going to revert that commit and see what happens.
 
-Understood.
+After reverting commit 64ce4c2f above things work again.
 
-Henrik
+To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
+Remove xtime_cache), but since the symptoms continued to apprear after
+reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
+on this box.
+
+Thanks,
+Rafael
