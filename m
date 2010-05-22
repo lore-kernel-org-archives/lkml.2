@@ -1,44 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754649Ab0EVOHo (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:07:44 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:41451 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753807Ab0EVOHn (ORCPT
+	id S1753995Ab0EVOPP (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:15:15 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:63384 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752901Ab0EVOPK (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:07:43 -0400
-Date: Sat, 22 May 2010 15:07:41 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Prarit Bhargava <prarit@redhat.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org,
-       phillip@lougher.demon.co.uk, alain@knaff.lu, hpa@zytor.com
-Subject: Re: [PATCH]: bunzip2: Fix warning in get_next_block()
-Message-ID: <20100522140741.GM31073@ZenIV.linux.org.uk>
-References: <20100522135933.28675.17356.sendpatchset@prarit.bos.redhat.com>
+	Sat, 22 May 2010 10:15:10 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:subject
+         :content-type:content-transfer-encoding;
+        b=dFrYuOG4HdyhwFAViHe07stuyKhOYwXw3N5w74r2xojWx48FeZJwKrChGIczaUquhy
+         32F6YzDOsYblWaU7152pNHfDzyQKcEDz+R3+BoxH85E6SCLNUNjSNMUmLFmT83om1cnb
+         nkN6xSTKX5mbRTob9xzMc/AgZ6iHt0P2RCgK8=
+Message-ID: <4BF7E6EC.7010505@gmail.com>
+Date: Sat, 22 May 2010 22:15:08 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100522135933.28675.17356.sendpatchset@prarit.bos.redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: [PATCH] NUC900: add maintainer entries for Wan ZongShun.
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 10:04:07AM -0400, Prarit Bhargava wrote:
-> Fix checkstack compile warning in get_next_block():
-> 
-> lib/decompress_bunzip2.c: In function `get_next_block':
-> lib/decompress_bunzip2.c:511: warning: the frame size of 1920 bytes is larger than 1024 bytes
- 
->  	int dbufCount, nextSym, dbufSize, groupCount, selector,
-> -		i, j, k, t, runPos, symCount, symTotal, nSelectors,
-> -		byteCount[256];
-> -	unsigned char uc, symToByte[256], mtfSymbol[256], *selectors;
-> +		i, j, k, t, runPos, symCount, symTotal, nSelectors;
-> +	static int byteCount[256];
-> +	unsigned char uc, *selectors;
-> +	static unsigned char symToByte[256], mtfSymbol[256];
->  	unsigned int *dbuf, origPtr;
+Dear Andrew,
 
-Um...  Some details might be useful, starting with "why can't that function
-be called from several processes at once"...
+I want to add some files entries in MAINTAINER files
+for Winbond/Nuvoton ARM platform.
+
+Could you help me merge this patch?
+
+Thanks a lot.
+
+>From 4e5326dbfbfdad58eb2c333df91c15993bce6c47 Mon Sep 17 00:00:00 2001
+From: zswan <zswan@zswan-marvell.(none)>
+Date: Sat, 22 May 2010 21:56:26 +0800
+Subject: [PATCH] add maintainer file entries
+
+---
+ MAINTAINERS |   12 ++++++++++++
+ 1 files changed, 12 insertions(+), 0 deletions(-)
+
+diff --git a/MAINTAINERS b/MAINTAINERS
+index d329b05..d6b3777 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -970,6 +970,18 @@ M:	Wan ZongShun <mcuos.com@gmail.com>
+ L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+ W:	http://www.mcuos.com
+ S:	Maintained
++F:	arch/arm/mach-w90x900/
++F:	arch/arm/mach-nuc93x/
++F:	drivers/input/keyboard/w90p910_keypad.c
++F:	drivers/input/touchscreen/w90p910_ts.c
++F:	drivers/watchdog/nuc900_wdt.c
++F:	drivers/net/arm/w90p910_ether.c
++F:	drivers/mtd/nand/w90p910_nand.c
++F:	drivers/rtc/rtc-nuc900.c
++F:	drivers/spi/spi_nuc900.c
++F:	drivers/usb/host/ehci-w90x900.c
++F:	drivers/video/nuc900fb.c
++F:	drivers/sound/soc/nuc900/
+
+ ARM/U300 MACHINE SUPPORT
+ M:	Linus Walleij <linus.walleij@stericsson.com>
+-- 
+1.6.3.3
