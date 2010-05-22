@@ -1,60 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753259Ab0EUXqc (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 19:46:32 -0400
-Received: from p01c11o149.mxlogic.net ([208.65.144.72]:38239 "EHLO
-	p01c11o149.mxlogic.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751722Ab0EUXqa convert rfc822-to-8bit (ORCPT
+	id S935124Ab0EVAEk (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 20:04:40 -0400
+Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47153 "EHLO
+	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S935098Ab0EVAEg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 19:46:30 -0400
-X-MXL-Hash: 4bf71b566a7065ed-6b4fbfc810870b087c338179bb2fd721e59fdb10
-X-MXL-Hash: 4bf71b527d7f0d23-269d66ffe5dfc6af0071d04424ee1f14441e1474
-From: H Hartley Sweeten <hartleys@visionengravers.com>
-To: Greg KH <greg@kroah.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       linux-mtd <linux-mtd@lists.infradead.org>,
-       "linux-pci@vger.kernel.org" <linux-pci@vger.kernel.org>,
-       David Woodhouse <dwmw2@infradead.org>,
-       "jbarnes@virtuousgeek.org" <jbarnes@virtuousgeek.org>
-Date: Fri, 21 May 2010 18:46:20 -0500
-Subject: RE: [PATCH] pcm551.c: use pci_ids.h defines
-Thread-Topic: [PATCH] pcm551.c: use pci_ids.h defines
-Thread-Index: Acr5P3VjHdBkzqzNSKS1YgjSDyo09gAADXiA
-Message-ID: <0D753D10438DA54287A00B0270842697636F3238BB@AUSP01VMBX24.collaborationhost.net>
-References: <0D753D10438DA54287A00B0270842697636F3238A0@AUSP01VMBX24.collaborationhost.net>
- <20100521234232.GA31672@kroah.com>
-In-Reply-To: <20100521234232.GA31672@kroah.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Fri, 21 May 2010 20:04:36 -0400
+X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
+From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
+Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
+       "Li, Shaohua" <shaohua.li@intel.com>,
+       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
+In-Reply-To: <20100521115718.552d50dd.akpm@linux-foundation.org>
+References: <20100521093629.1E44.A69D9226@jp.fujitsu.com> <20100521115718.552d50dd.akpm@linux-foundation.org>
+Message-Id: <20100522085421.1E72.A69D9226@jp.fujitsu.com>
 MIME-Version: 1.0
-X-Spam: [F=0.2000000000; CM=0.500; S=0.200(2010051701)]
-X-MAIL-FROM: <hartleys@visionengravers.com>
-X-SOURCE-IP: [216.166.12.180]
-X-AnalysisOut: [v=1.0 c=1 a=YsVMvEm0jmgA:10 a=ood2b7iyd8MA:10 a=VphdPIyG4k]
-X-AnalysisOut: [EA:10 a=kj9zAlcOel0A:10 a=38uLcFpo6nJaFUi5eYvXHw==:17 a=MC]
-X-AnalysisOut: [SRAonWMXcn6uiOnNkA:9 a=EB9_izpNaY5GG7NwAjqQ23ca_ZwA:4 a=Cj]
-X-AnalysisOut: [uIK1q_8ugA:10]
+Content-Type: text/plain; charset="US-ASCII"
+Content-Transfer-Encoding: 7bit
+X-Mailer: Becky! ver. 2.50.07 [ja]
+Date: Sat, 22 May 2010 09:04:30 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Friday, May 21, 2010 4:43 PM, Greg KH wrote:
-> On Fri, May 21, 2010 at 06:24:01PM -0500, H Hartley Sweeten wrote:
->> Move the DEVICE id to pci_ids.h and then use the VENDOR/DEVICE ids provided
->> in pci_ids.h instead of creating local ids.
->
-> Did you read the comment at the top of the pci_ids.h file saying not to
-> do this?  Just use the vendor id that is already in the pci_ids.h file
-> in the driver, but leave the device id in the driver itself.
+> > -static inline void lru_cache_add_active_anon(struct page *page)
+> > -{
+> > -	__lru_cache_add(page, LRU_ACTIVE_ANON);
+> > -}
+> > -
+> >  static inline void lru_cache_add_file(struct page *page)
+> >  {
+> >  	__lru_cache_add(page, LRU_INACTIVE_FILE);
+> >  }
+> >  
+> > -static inline void lru_cache_add_active_file(struct page *page)
+> > -{
+> > -	__lru_cache_add(page, LRU_ACTIVE_FILE);
+> > -}
+> 
+> Did you intend to remove these two functions?
 
-Oops.. My bad, sorry.
+This is for applying Hannes's commnet.
 
-Please ignore this patch (and the other two).
+> They do appear to be unused now, but they still make sense and might be
+> used in the future, perhaps.  
 
-Regards,
-Hartley
+Personally, I don't like the strategy that anyone without me might
+use this function in the future. because It often never come.
+
+> It's OK to remove them, but I'm wondering
+> if it was deliberately included in this patch?
+
+Makes sense.
+OK, please drop current patch at once. I'll post V2.
+
+
+
