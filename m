@@ -1,63 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935124Ab0EVAEk (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 20:04:40 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:47153 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935098Ab0EVAEg (ORCPT
+	id S935165Ab0EVAGA (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 20:06:00 -0400
+Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:52113 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S935072Ab0EVAF4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 20:04:36 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [PATCH] tmpfs: Insert tmpfs cache pages to inactive list at first
-Cc: kosaki.motohiro@jp.fujitsu.com, Wu Fengguang <fengguang.wu@intel.com>,
-       "Li, Shaohua" <shaohua.li@intel.com>,
-       Johannes Weiner <hannes@cmpxchg.org>, Rik van Riel <riel@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Hugh Dickins <hughd@google.com>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>
-In-Reply-To: <20100521115718.552d50dd.akpm@linux-foundation.org>
-References: <20100521093629.1E44.A69D9226@jp.fujitsu.com> <20100521115718.552d50dd.akpm@linux-foundation.org>
-Message-Id: <20100522085421.1E72.A69D9226@jp.fujitsu.com>
+	Fri, 21 May 2010 20:05:56 -0400
+Date: Sat, 22 May 2010 10:05:51 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Jan Kara <jack@suse.cz>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
+Subject: Re: [PULL REQUEST] Ext2, ext3, and quota updates for 2.6.35-rc1
+Message-ID: <20100522000551.GY8120@dastard>
+References: <20100521174658.GA10149@quack.suse.cz>
+ <20100521184428.GC10149@quack.suse.cz>
+ <alpine.LFD.2.00.1005211146160.3689@i5.linux-foundation.org>
+ <20100521192456.GE10149@quack.suse.cz>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Sat, 22 May 2010 09:04:30 +0900 (JST)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100521192456.GE10149@quack.suse.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > -static inline void lru_cache_add_active_anon(struct page *page)
-> > -{
-> > -	__lru_cache_add(page, LRU_ACTIVE_ANON);
-> > -}
-> > -
-> >  static inline void lru_cache_add_file(struct page *page)
-> >  {
-> >  	__lru_cache_add(page, LRU_INACTIVE_FILE);
-> >  }
-> >  
-> > -static inline void lru_cache_add_active_file(struct page *page)
-> > -{
-> > -	__lru_cache_add(page, LRU_ACTIVE_FILE);
-> > -}
+On Fri, May 21, 2010 at 09:24:56PM +0200, Jan Kara wrote:
+> On Fri 21-05-10 11:50:15, Linus Torvalds wrote:
+> > 
+> > 
+> > On Fri, 21 May 2010, Jan Kara wrote:
+> > >
+> > >   Oops, I've just found a bug in one of my ocfs2 fixes. I've fixed that up
+> > > so the new diffstat is here:
+> > 
+> > I already pulled your previous version.
+>   OK, I'll push the fix separately.
 > 
-> Did you intend to remove these two functions?
+> > And btw, Jan, I'm getting pretty upset with your apparently cavalier 
+> > attitude to filesystems. We've had several bugs lately for some quota or 
+> > filesystem "cleanups", which in at least one case caused corrupted 
+> > filesystems etc.
+>   That ext3 bug was nasty I agree :( I'm now pushing some quota tests to
+> XFSQA and setup a machine that runs them. So that should improve a test
+> coverage...
 
-This is for applying Hannes's commnet.
+The other thing is that all the tests in xfstests can be run with
+quota enabled to exercise the code rather than test for correctness.
+This is done by running like:
 
-> They do appear to be unused now, but they still make sense and might be
-> used in the future, perhaps.  
+# MOUNT_OPTIONS="-o usrquota,grpquota" ./check -g auto
 
-Personally, I don't like the strategy that anyone without me might
-use this function in the future. because It often never come.
+And that makes all the tests run with user and group quotas enabled
+for XFS. However, we might need a bit of help in the mount paths for
+filesystems that require a quotaon command before they will run
+all the generic tests with quotas enabled.
 
-> It's OK to remove them, but I'm wondering
-> if it was deliberately included in this patch?
+Cheers,
 
-Makes sense.
-OK, please drop current patch at once. I'll post V2.
-
-
-
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
