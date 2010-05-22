@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755951Ab0EVI0Q (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:26:16 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:60785 "EHLO mgw2.diku.dk"
+	id S1756007Ab0EVI0c (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:26:32 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:35075 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753088Ab0EVI0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:26:09 -0400
-Date: Sat, 22 May 2010 10:26:04 +0200 (CEST)
+	id S1755831Ab0EVI02 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:26:28 -0400
+Date: Sat, 22 May 2010 10:26:22 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Kevin Curtis <kevin.curtis@farsite.co.uk>, netdev@vger.kernel.org,
+To: David Brownell <dbrownell@users.sourceforge.net>,
+       Greg Kroah-Hartman <gregkh@suse.de>, linux-usb@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 24/27] drivers/net/wan: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221025450.13021@ask.diku.dk>
+Subject: [PATCH 25/27] drivers/usb/gadget: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221026050.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,31 +55,27 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/wan/farsync.c |   14 ++++----------
- 1 file changed, 4 insertions(+), 10 deletions(-)
+ drivers/usb/gadget/inode.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/net/wan/farsync.c b/drivers/net/wan/farsync.c
-index e087b9a..43b7727 100644
---- a/drivers/net/wan/farsync.c
-+++ b/drivers/net/wan/farsync.c
-@@ -2038,16 +2038,10 @@ fst_ioctl(struct net_device *dev, struct ifreq *ifr, int cmd)
+diff --git a/drivers/usb/gadget/inode.c b/drivers/usb/gadget/inode.c
+index de8a838..63fc171 100644
+--- a/drivers/usb/gadget/inode.c
++++ b/drivers/usb/gadget/inode.c
+@@ -1867,13 +1867,9 @@ dev_config (struct file *fd, const char __user *buf, size_t len, loff_t *ptr)
+ 	buf += 4;
+ 	length -= 4;
  
- 		/* Now copy the data to the card. */
+-	kbuf = kmalloc (length, GFP_KERNEL);
+-	if (!kbuf)
+-		return -ENOMEM;
+-	if (copy_from_user (kbuf, buf, length)) {
+-		kfree (kbuf);
+-		return -EFAULT;
+-	}
++	kbuf = memdup_user(buf, length);
++	if (IS_ERR(kbuf))
++		return PTR_ERR(kbuf);
  
--		buf = kmalloc(wrthdr.size, GFP_KERNEL);
--		if (!buf)
--			return -ENOMEM;
--
--		if (copy_from_user(buf,
--				   ifr->ifr_data + sizeof (struct fstioc_write),
--				   wrthdr.size)) {
--			kfree(buf);
--			return -EFAULT;
--		}
-+		buf = memdup_user(ifr->ifr_data + sizeof(struct fstioc_write),
-+				  wrthdr.size);
-+		if (IS_ERR(buf))
-+			return PTR_ERR(buf);
- 
- 		memcpy_toio(card->mem + wrthdr.offset, buf, wrthdr.size);
- 		kfree(buf);
+ 	spin_lock_irq (&dev->lock);
+ 	value = -EINVAL;
