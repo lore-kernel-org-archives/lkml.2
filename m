@@ -1,84 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab0EVUQq (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 16:16:46 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:64581 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755773Ab0EVUQo (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 16:16:44 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=XIsfe7B6QSR50edkA644yLiu+NvCcdPcj4BaY/oHlYPgF9Q1Ns/3aXdjt/nfqZNf/F
-         evZAZ0LZMWX8sqw0wb73IML8PD3wG+E7C1E2rj0BWoSAXunvXsIIYbigVSxMDkpdODGq
-         Mm0ugdS8m8Uc+CZmTIpuu8ryM6Tl13QhwiEp4=
-Date: Sat, 22 May 2010 13:16:38 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Rafi Rubin <rafi@seas.upenn.edu>, Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
-Message-ID: <20100522201637.GC30464@core.coreip.homeip.net>
-References: <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com>
- <4BF6B673.1080507@euromail.se>
- <20100521165218.GA26439@core.coreip.homeip.net>
- <4BF6BB43.2020405@euromail.se>
- <20100521172222.GB26439@core.coreip.homeip.net>
- <4BF6C303.7030804@euromail.se>
- <20100521174140.GA23155@core.coreip.homeip.net>
- <4BF6C7B6.2020008@euromail.se>
- <4BF7A4E8.3050806@seas.upenn.edu>
- <4BF7B438.8000001@euromail.se>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF7B438.8000001@euromail.se>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	id S1758270Ab0EVUVa (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 16:21:30 -0400
+Received: from lo.gmane.org ([80.91.229.12]:56974 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757978Ab0EVUV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 16:21:28 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: walt <w41ter@gmail.com>
+Subject: Re: [2.6.34-git8][regression] massive polling problems with udevd
+ and other processes
+Date: Sat, 22 May 2010 13:21:19 -0700
+Message-ID: <4BF83CBF.8080300@gmail.com>
+References: <201005221535.38939.shawn.starr@rogers.com>
+Mime-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: adsl-69-234-199-35.dsl.irvnca.pacbell.net
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.3a5pre) Gecko/20100522 Thunderbird/3.2a1pre
+In-Reply-To: <201005221535.38939.shawn.starr@rogers.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 12:38:48PM +0200, Henrik Rydberg wrote:
-> Rafi Rubin wrote:
-> > On 05/21/10 13:49, Henrik Rydberg wrote:
-> >> Dmitry Torokhov wrote:
-> >>> I guess this is where our disconnect lies as when I am looking at the
-> >>> event names I view all *_MT_* events as related to the multitouch
-> >>> protocol handling.
-> >>>
-> >> Yes. It is true that slot control is MT related, but I am looking at this from
-> >> the perspective of future expansions like KEY_MT,  KEY_REL, and such, finding a
-> >> way to signal to user space which events are handled via slots. If we had
-> >> ABS_MT_SLOT, we would most likely get applications which store ABS_MT_SLOT as an
-> >> attribute of the slot together with ABS_MT_POSITION_X, ABS_MT_TOUCH_MAJOR, etc,
-> >> which is just not right. So the proposal is ABS_SLOT. May we have your verdict,
-> >> please. :-)
-> >>
-> >> Henrik
-> >>
-> > 
-> > How many fingers can type on cap of a key?
-> 
-> It depends on the size of the key, does it not. :-)
-> 
-> Getting serious, it is anyone's guess what will happen next, but I was picturing
-> a table, with a large multitouch screen and buttons along the side of the table.
-> Sure, we can do "ABS_BTN_0", "ABS_BTN_1", etc, but with slots in place, it seems
-> more natural to use something like "ABS_MT_BTN_X". While at it, REL_MT event
-> makes sense for those touchscreen techniques which register changes, like
-> acoustic pulse recognition.
-> 
+On 05/22/2010 12:35 PM, Shawn Starr wrote:
+> Just built today's snapshot from linus's tree and have problems with udev
+> using 100% cpu and KDE processes also pegging cpus.
+>
+> This is with Fedora 13 + snapshot kernel from git.
+>
+> Anyone else noticing this?
 
-While I could see relative MT events I do not understand the need for
-slotted key events. We already allow pressing multiple keys at once and
-if a device has 2 separate keys with the same event - they either should
-be treated as one logical key or 2 separate input devices.
+Yes, just bisected it to this:
 
--- 
-Dmitry
+commit a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d
+Author: Eric Paris <eparis@>
+Date:   Fri May 14 11:44:10 2010 -0400
+
+     anon_inode: set S_IFREG on the anon_inode
+
+     anon_inode_mkinode() sets inode->i_mode = S_IRUSR | S_IWUSR;  This means
+     that (inode->i_mode & S_IFMT) == 0.  This trips up some SELinux code that
+     needs to determine if a given inode is a regular file, a directory, etc.
+     The easiest solution is to just make sure that the anon_inode also sets
+     S_IFREG.
+
+     Signed-off-by: Eric Paris <eparis@>
+     Signed-off-by: Al Viro <viro@>
+
+udevd is busy polling anon_inode:
+
+COMMAND PID USER   FD   TYPE             DEVICE SIZE/OFF    NODE NAME
+udevd   695 root  txt    REG               8,21   117632 1523956 /sbin/udevd
+udevd   695 root  mem    REG               8,21    51528 1234821 /lib64/libnss_files-2.11.1.so
+udevd   695 root  mem    REG               8,21    43376 2052251 /lib64/libnss_nis-2.11.1.so
+udevd   695 root  mem    REG               8,21    88880 2052264 /lib64/libnsl-2.11.1.so
+udevd   695 root  mem    REG               8,21    31432 1234823 /lib64/libnss_compat-2.11.1.so
+udevd   695 root  mem    REG               8,21  1399984 1234830 /lib64/libc-2.11.1.so
+udevd   695 root  mem    REG               8,21   128424 1234829 /lib64/ld-2.11.1.so
+udevd   695 root    0u   CHR                1,3      0t0     147 /dev/null
+udevd   695 root    1u   CHR                1,3      0t0     147 /dev/null
+udevd   695 root    2u   CHR                1,3      0t0     147 /dev/null
+udevd   695 root    3u   REG               0,14     1133    1670 /dev/.udev/queue.bin
+udevd   695 root    4u  unix 0xffff88011f2b3c80      0t0     274 socket
+udevd   695 root    5u  sock                0,5      0t0     275 can't identify protocol
+udevd   695 root    6r   REG                0,8        0      17 anon_inode
+udevd   695 root    7u   REG                0,8        0      17 anon_inode
+udevd   695 root    8u  unix 0xffff88011f2b3980      0t0     276 socket
+udevd   695 root    9u  unix 0xffff88011f2b3680      0t0     277 socket
+
+poll([{fd=4, events=POLLIN}, {fd=5, events=POLLIN}, {fd=6, events=POLLIN}, {fd=7, events=POLLIN}, {fd=8, events=POLLIN}], 5, -1) = 1 ([{fd=6, revents=POLLIN}])
+
