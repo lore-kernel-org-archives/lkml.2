@@ -1,82 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755528Ab0EVXZi (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 19:25:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:19797 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755006Ab0EVXZg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 19:25:36 -0400
-Subject: Re: [2.6.34-git8][regression] massive polling problems with udevd
- and  other processes
-From: Eric Paris <eparis@redhat.com>
-To: Eric Paris <eparis@parisplace.org>
-Cc: Al Viro <viro@zeniv.linux.org.uk>, walt <w41ter@gmail.com>,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <AANLkTimffWnIjHIEW54AoVxiALEoFkJZJJ7u57ZChDuy@mail.gmail.com>
-References: <201005221535.38939.shawn.starr@rogers.com>
-	 <4BF83CBF.8080300@gmail.com> <20100522204426.GO31073@ZenIV.linux.org.uk>
-	 <AANLkTimffWnIjHIEW54AoVxiALEoFkJZJJ7u57ZChDuy@mail.gmail.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 May 2010 19:25:31 -0400
-Message-ID: <1274570731.2810.45.camel@localhost>
+	id S1755539Ab0EVXcq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 19:32:46 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:58538 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753556Ab0EVXcp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 19:32:45 -0400
+Date: Sat, 22 May 2010 16:30:40 -0400
+From: Andrew Morton <akpm@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Eric Paris <eparis@redhat.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
+       Jan Kara <jack@ucw.cz>
+Subject: Re: [git head f4b87dee9] BUG: using smp_processor_id() in
+ preemptible (VFS-related)
+Message-Id: <20100522163040.42bbde9d.akpm@linux-foundation.org>
+In-Reply-To: <201005222337.00039.rjw@sisk.pl>
+References: <201005222337.00039.rjw@sisk.pl>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-22 at 18:59 -0400, Eric Paris wrote:
-> On Sat, May 22, 2010 at 4:44 PM, Al Viro <viro@zeniv.linux.org.uk> wrote:
-> > On Sat, May 22, 2010 at 01:21:19PM -0700, walt wrote:
-> >> On 05/22/2010 12:35 PM, Shawn Starr wrote:
-> >> >Just built today's snapshot from linus's tree and have problems with udev
-> >> >using 100% cpu and KDE processes also pegging cpus.
-> >> >
-> >> >This is with Fedora 13 + snapshot kernel from git.
-> >> >
-> >> >Anyone else noticing this?
-> >>
-> >> Yes, just bisected it to this:
-> >>
-> >> commit a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d
-> >> Author: Eric Paris <eparis@>
-> >> Date:   Fri May 14 11:44:10 2010 -0400
-> >>
-> >>     anon_inode: set S_IFREG on the anon_inode
-> >
-> > Cute...  Frankly, I'd be fine with just reverting that one and teaching
-> > selinux to STFU.  However, I wonder what specifically is getting polled.
-> > Which anon_inode users?
+On Sat, 22 May 2010 23:36:59 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+
+> Hi,
 > 
-> On my system udev has both inotify and signalfd open.  He's asking for
-> more of the strace.  If the ONLY thing that udev is doing is polling
-> with no other syscalls at all it's a udev problem (although maybe one
-> where we have to maintain bug for bug compatibility.
+> I get this every time on boot with current -git:
 > 
-> Can you show us a more lines of strace context and the output of ls -l
-> /proc/$PID/fd ?  That should give us a better idea what udev is doing
-> and which anon_inode we are dealing with.
+> [    6.906133] EXT4-fs (sda7): mounted filesystem with ordered data mode
+> [    7.014359] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+> [    7.020570] caller is dqstats_inc+0x19/0x2c
+> [    7.026658] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+> [    7.032792] Call Trace:
+> [    7.038859]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+> [    7.045025]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+> [    7.051201]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+> [    7.057349]  [<ffffffff810eccfa>] ? __shrink_dcache_sb+0x284/0x293
+> [    7.063574]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+> [    7.069730]  [<ffffffff810fc552>] sync_filesystem+0x36/0x4c
+> [    7.075867]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+> [    7.081960]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+> [    7.088039]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+> [    7.094086]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+> [    7.100085]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+> [    7.124208] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+> [    7.130307] caller is dqstats_inc+0x19/0x2c
+> [    7.136386] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+> [    7.142512] Call Trace:
+> [    7.148629]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+> [    7.154846]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+> [    7.161019]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+> [    7.167171]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+> [    7.173364]  [<ffffffff810fc563>] sync_filesystem+0x47/0x4c
+> [    7.179522]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+> [    7.185616]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+> [    7.191663]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+> [    7.197626]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+> [    7.203493]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+> [   11.643596] udev: starting version 153
+> 
+> This is after reverting commit a7cf4145b (anon_inode: set S_IFREG on the
+> anon_inode) that the system is not really useable with.
 
-I'm wondering if this isn't a udev bug brought on by the combination of:
+Caused by "quota: Make quota stat accounting lockless".
 
-commit c44dcc56d2b5c79ba3063d20f76e5347e2e418f6
-Author: Al Viro <viro@zeniv.linux.org.uk>
-Date:   Thu Feb 11 02:24:46 2010 -0500
-
-    switch inotify_user to anon_inode
-    
-    Signed-off-by: Al Viro <viro@zeniv.linux.org.uk
-
-and a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d (the commit in question).
-Before c44dcc56 the inotify inode would have been an S_IFDIR and maybe
-for that reason wouldn't have made it into the udev polling set?  The
-inotify inode would have been nothing after c44dcc56 (obviously) and now
-that it is S_IFREG maybe udev is putting it in the polling set for some
-reason....
-
-I'm feeling like this is a udev bug, but the only fix is going to be to
-revert and paper over anything else that has problems with
-(mode & S_IFMNT) == 0
-
--Eric
-
+Guys, the code this patch adds utterly duplicates the interface
+provided by include/linux/percpu_counter.h, only the quota code does it
+wrongly and badly.  Please, can we use the nice library code?
