@@ -1,65 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935723Ab0EVBtR (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 21 May 2010 21:49:17 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:14200 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S935712Ab0EVBtP convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 21 May 2010 21:49:15 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=E8W3NhdO8EyxMAjGWmcboXzA7L9dRehm7cjHri2yYlvVMfK0dYOciIxOI3pap9EN2
-	2yoPFU2Sg5Wls9NFzaq/g==
-MIME-Version: 1.0
-In-Reply-To: <31783.1274282492@redhat.com>
-References: <1274135154-24082-1-git-send-email-walken@google.com>
-	 <1274135154-24082-11-git-send-email-walken@google.com>
-	 <31783.1274282492@redhat.com>
-Date: Fri, 21 May 2010 18:49:10 -0700
-Message-ID: <AANLkTilBIZ71S2cO1NNe_30yzXdWtfkQoFcl44ktFiVb@mail.gmail.com>
-Subject: Re: [PATCH 10/10] Use down_read_critical() for /sys/<pid>/exe and 
-	/sys/<pid>/maps files
-From: Michel Lespinasse <walken@google.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	id S935719Ab0EVCAP (ORCPT <rfc822;w@1wt.eu>);
+	Fri, 21 May 2010 22:00:15 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:54750 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S935688Ab0EVCAM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Fri, 21 May 2010 22:00:12 -0400
+Date: Sat, 22 May 2010 12:00:03 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Dave Airlie <airlied@linux.ie>, linux-kernel@vger.kernel.org,
+       dri-devel@lists.freedesktop.org
+Subject: Re: [git pull] drm for 2.6.35-rc1 (revised)
+Message-Id: <20100522120003.ee53af22.sfr@canb.auug.org.au>
+In-Reply-To: <alpine.LFD.2.00.1005211154120.3689@i5.linux-foundation.org>
+References: <alpine.DEB.2.00.1005190310010.1205@skynet.skynet.ie>
+	<alpine.DEB.2.00.1005210718460.16929@skynet.skynet.ie>
+	<alpine.LFD.2.00.1005211154120.3689@i5.linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Sat__22_May_2010_12_00_03_+1000_t7wWGKA7eBKEqBSB"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 8:21 AM, David Howells <dhowells@redhat.com> wrote:
-> However...  I'm not certain that giving a process that's accessing
-> /proc/pid/maps priority over a second process that may be trying to do mmap or
-> page fault or something internally is a good idea.
+--Signature=_Sat__22_May_2010_12_00_03_+1000_t7wWGKA7eBKEqBSB
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
+
+Hi Linus,
+
+On Fri, 21 May 2010 11:56:39 -0700 (PDT) Linus Torvalds <torvalds@linux-fou=
+ndation.org> wrote:
 >
-> It would be useful if you made clearer what you're actually measuring from
-> /proc/pid/maps...
+> I suspect we should have some "new warnings are errors" thing for=20
+> linux-next, so that people can't do this.
 
-This is relatively large software; I don't actually have a complete
-view of it myself.
-However some of the things it does include the following:
+I do attempt to report new warnings but they are often hard to spot among
+all the "may be used uninitialised" rubbish of an X86_64 allmodconfig
+build.  Also, sometimes people ignore me, of course. :-(
 
-- The cluster management software tracks ownership of sysv shm
-segments, potentially deleting them if they have been abandoned.
-/proc/<pid>/maps files are used as an input to these decisions.
+That being said, I did not get the mentioned warning for either an i386
+or x86_64 allmodconfig build - I wonder why not?  Compiler differences?
+Config differences? (See
+http://kisskb.ellerman.id.au/kisskb/buildresult/2617918/ and
+http://kisskb.ellerman.id.au/kisskb/buildresult/2617928/).
 
-- There is a separate module making numa aware decisions based on
-/proc/<pid>/numa_maps information. This drives decisions such as
-moving data between nodes (we have not been pushing the corresponding
-kernel patches yet). Using down_read_critical() here would be
-desirable too, but not as critical as for other parts of the system
-(numa awareness is not the biggest worry when machines get under
-enough memory pressure that reading numa_maps starts blocking).
+Ah, I did get it for an i386 defconfig build
+(http://kisskb.ellerman.id.au/kisskb/buildresult/2617930/).
 
--- 
-Michel "Walken" Lespinasse
-A program is never fully debugged until the last user dies.
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Sat__22_May_2010_12_00_03_+1000_t7wWGKA7eBKEqBSB
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv3OqMACgkQjjKRsyhoI8zoSACeNClaVWiWJN/o3NQlO6oyPpmD
+428AoJgxK1IjqP16MGlRuOS7GUEXjjs2
+=PMIl
+-----END PGP SIGNATURE-----
+
+--Signature=_Sat__22_May_2010_12_00_03_+1000_t7wWGKA7eBKEqBSB--
