@@ -1,62 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755335Ab0EVP2B (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 11:28:01 -0400
-Received: from e28smtp02.in.ibm.com ([122.248.162.2]:50562 "EHLO
-	e28smtp02.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754614Ab0EVP17 (ORCPT
+	id S1755329Ab0EVPt0 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 11:49:26 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:39690 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752248Ab0EVPtW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 11:27:59 -0400
-From: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
-To: "J. Bruce Fields" <bfields@fieldses.org>
-Cc: hch@infradead.org, viro@zeniv.linux.org.uk, adilger@sun.com,
-       corbet@lwn.net, serue@us.ibm.com, neilb@suse.de, hooanon05@yahoo.co.jp,
-       linux-fsdevel@vger.kernel.org, sfrench@us.ibm.com,
-       philippe.deniel@CEA.FR, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -V11 1/9] exportfs: Return the minimum required handle size
-In-Reply-To: <20100521221516.GD13227@fieldses.org>
-References: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <1274340938-29628-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com> <20100521221516.GD13227@fieldses.org>
-User-Agent: Notmuch/ (http://notmuchmail.org) Emacs/24.0.50.1 (i686-pc-linux-gnu)
-Date: Sat, 22 May 2010 20:57:50 +0530
-Message-ID: <87y6fc2byh.fsf@linux.vnet.ibm.com>
+	Sat, 22 May 2010 11:49:22 -0400
+Date: Sat, 22 May 2010 08:52:51 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: torvalds@linux-foundation.org, linux-kernel@vger.kernel.org
+cc: ceph-devel@vger.kernel.org
+Subject: [GIT PULL] Ceph updates for 2.6.35-rc1
+Message-ID: <Pine.LNX.4.64.1005211517270.18940@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 18:15:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
-> On Thu, May 20, 2010 at 01:05:30PM +0530, Aneesh Kumar K.V wrote:
-> > The exportfs encode handle function should return the minimum required
-> > handle size. This helps user to find out the handle size by passing 0
-> > handle size in the first step and then redoing to the call again with
-> > the returned handle size value.
-> 
-> The encode_fh() interface is a little confusing.  (Not your fault,
-> really, mainly it's the return value (and the special use of 255) that I
-> always find odd.)
-> 
-> But maybe it would help to have a little more documention in the
-> export_encode_fh() kerneldoc comment and/or in
-> Documentation/filesystems/nfs/Exporting?
-> 
+Hi Linus,
 
-Kernel documentation says 
+Please pull the following Ceph updates for 2.6.35 from
 
- * encode_fh:
- *    @encode_fh should store in the file handle fragment @fh (using at most
- *    @max_len bytes) information that can be used by @decode_fh to recover the
- *    file refered to by the &struct dentry @de.  If the @connectable flag is
- *    set, the encode_fh() should store sufficient information so that a good
- *    attempt can be made to find not only the file but also it's place in the
- *    filesystem.   This typically means storing a reference to de->d_parent in
- *    the filehandle fragment.  encode_fh() should return the number of bytes
- *    stored or a negative error code such as %-ENOSPC
- *
+  git://git.kernel.org/pub/scm/linux/kernel/git/sage/ceph-client.git for-linus
 
-Clearly the file system encode_fh is not returning the correct return
-values. Should i fix the kernel to follow the documentation or should
-the kernel documentation should be fixed. I would prefer code, because
-the documentation look more easy/clear to follow that returning value 255.
+There is a lot of code cleanup, a handful of bug fixes, some improvement 
+in the MDS reconnect process, a (backward compatible) protocol 
+improvement, and some improvement in the way memory is preallocated to 
+avoid ENOMEM at awkward times.
 
--aneesh
+Thanks!
+sage
+
+---
+
+Cheng Renquan (2):
+      ceph: handle kzalloc() failure
+      ceph: use ceph_sb_to_client instead of ceph_client
+
+Dan Carpenter (3):
+      ceph: cleanup: remove dead code
+      ceph: d_obtain_alias() returns ERR_PTR()
+      ceph: cleanup: remove unused assignement
+
+Henry C Chang (1):
+      ceph: listxattr should compare version by >=
+
+Huang Weiyi (1):
+      ceph: remove unused #includes
+
+Julia Lawall (1):
+      ceph: Use kzalloc
+
+Sage Weil (45):
+      ceph: clean up mds reply, error handling
+      ceph: fix race between aborted requests and fill_trace
+      ceph: invalidate affected dentry leases on aborted requests
+      ceph: simplify page setup for incoming data
+      ceph: reduce build_path debug output
+      ceph: fix theoretically possible double-put on connection
+      ceph: clean up statfs
+      ceph: drop unnecessary msgpool for mon_client auth_reply
+      ceph: drop unnecessary msgpool for mon_client subscribe_ack
+      ceph: rewrite msgpool using mempool_t
+      ceph: make ceph_msg_new return NULL on failure; clean up, fix callers
+      ceph: simplify ceph_msg_new
+      ceph: clean up connection reset
+      ceph: wait for both monmap and osdmap when opening session
+      ceph: osdtimeout=0 for now timeout
+      ceph: include auth method in error messages
+      ceph: fix memory leak due to possible dentry init race
+      ceph: name msgpools; useful error messages
+      ceph: close messenger race
+      ceph: fix xattr dangling pointer / double free
+      ceph: set next_offset on readdir finish
+      ceph: skip set_dentry_offset work if directory not I_COMPLETE
+      ceph: don't clobber i_max_offset on already complete dir
+      ceph: set dn offset when spliced
+      ceph: clean up mount options, ->show_options()
+      ceph: adjust masked struct_v variable names
+      ceph: skip mds sync on forced unmount
+      ceph: name bdi ceph-%d instead of major:minor
+      ceph: clean up cap release loop vs spinlock
+      ceph: drop src address(es) from message header [new protocol feature]
+      ceph: dicard cap releases on mds restart
+      ceph: only send cap releases when mds is OPEN|HUNG
+      ceph: wait for mds OPEN reply to indicate reconnect success
+      ceph: clean up send_mds_reconnect interface
+      ceph: attempt mds reconnect if mds closes our session
+      ceph: throw out dirty caps metadata, data on session teardown
+      ceph: use ceph. prefix for virtual xattrs
+      ceph: resync headers with userland
+      ceph: save peer feature bits in connection structure
+      ceph: cope with out of order (unsafe after safe) mds reply
+      ceph: use common helper for aborted dir request invalidation
+      ceph: cleanup pool op strings
+      ceph: specify max_bytes on readdir replies
+      ceph: avoid resending queued message to monitor
+      ceph: reuse mon subscribe message instead of allocated anew
+
+Stephen Rothwell (1):
+      ceph: update for removal of kref_set
+
+Tobias Klauser (1):
+      ceph: Storage class should be before const qualifier
+
+Yehuda Sadeh (4):
+      ceph: use __page_cache_alloc and add_to_page_cache_lru
+      ceph: wake up mount thread when getting osdmap
+      ceph: make mon client statfs handling more generic
+      ceph: all allocation functions should get gfp_mask
+
+ fs/ceph/addr.c         |   11 +-
+ fs/ceph/auth.c         |    9 +-
+ fs/ceph/auth.h         |    2 +
+ fs/ceph/auth_none.c    |    1 +
+ fs/ceph/auth_x.c       |   19 ++-
+ fs/ceph/caps.c         |   24 ++--
+ fs/ceph/ceph_fs.h      |   62 +++++++-
+ fs/ceph/ceph_strings.c |   16 ++-
+ fs/ceph/debugfs.c      |   13 +-
+ fs/ceph/dir.c          |   45 ++++--
+ fs/ceph/export.c       |   14 +-
+ fs/ceph/file.c         |   16 +-
+ fs/ceph/inode.c        |   97 +++++++------
+ fs/ceph/ioctl.c        |    2 +-
+ fs/ceph/mds_client.c   |  385 +++++++++++++++++++++++++++++------------------
+ fs/ceph/mds_client.h   |    6 +-
+ fs/ceph/messenger.c    |   91 +++++-------
+ fs/ceph/messenger.h    |   10 +-
+ fs/ceph/mon_client.c   |  257 +++++++++++++++++++--------------
+ fs/ceph/mon_client.h   |   27 ++--
+ fs/ceph/msgpool.c      |  180 ++++-------------------
+ fs/ceph/msgpool.h      |   12 +-
+ fs/ceph/msgr.h         |   21 +++-
+ fs/ceph/osd_client.c   |   98 +++++--------
+ fs/ceph/pagelist.c     |    2 +-
+ fs/ceph/rados.h        |   23 +++-
+ fs/ceph/snap.c         |    2 +-
+ fs/ceph/super.c        |  125 ++++++++++------
+ fs/ceph/super.h        |   30 ++--
+ fs/ceph/xattr.c        |   35 ++---
+ 30 files changed, 876 insertions(+), 759 deletions(-)
