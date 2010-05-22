@@ -1,17 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755642Ab0EVIXB (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:23:01 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:44724 "EHLO mgw2.diku.dk"
+	id S1754722Ab0EVIXS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:23:18 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44730 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab0EVIWz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:22:55 -0400
-Date: Sat, 22 May 2010 10:22:49 +0200 (CEST)
+	id S1755456Ab0EVIXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:23:13 -0400
+Date: Sat, 22 May 2010 10:23:08 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: David Woodhouse <dwmw2@infradead.org>, linux-mtd@lists.infradead.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 15/27] drivers/mtd: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221022350.13021@ask.diku.dk>
+To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 16/27] drivers/char/applicom.c: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221022500.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,28 +53,28 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/mtd/mtdchar.c |   11 +++--------
+ drivers/char/applicom.c |   11 +++--------
  1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/mtd/mtdchar.c b/drivers/mtd/mtdchar.c
-index 000d65e..91c8013 100644
---- a/drivers/mtd/mtdchar.c
-+++ b/drivers/mtd/mtdchar.c
-@@ -404,14 +404,9 @@ static int mtd_do_writeoob(struct file *file, struct mtd_info *mtd,
- 	if (ops.ooboffs && ops.ooblen > (mtd->oobsize - ops.ooboffs))
- 		return -EINVAL;
+diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
+index 63313a3..f4ae0e0 100644
+--- a/drivers/char/applicom.c
++++ b/drivers/char/applicom.c
+@@ -703,14 +703,9 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+ 	/* In general, the device is only openable by root anyway, so we're not
+ 	   particularly concerned that bogus ioctls can flood the console. */
  
--	ops.oobbuf = kmalloc(length, GFP_KERNEL);
--	if (!ops.oobbuf)
+-	adgl = kmalloc(sizeof(struct st_ram_io), GFP_KERNEL);
+-	if (!adgl)
 -		return -ENOMEM;
 -
--	if (copy_from_user(ops.oobbuf, ptr, length)) {
--		kfree(ops.oobbuf);
+-	if (copy_from_user(adgl, argp, sizeof(struct st_ram_io))) {
+-		kfree(adgl);
 -		return -EFAULT;
 -	}
-+	ops.oobbuf = memdup_user(ptr, length);
-+	if (IS_ERR(ops.oobbuf))
-+		return PTR_ERR(ops.oobbuf);
++	adgl = memdup_user(argp, sizeof(struct st_ram_io));
++	if (IS_ERR(adgl))
++		return PTR_ERR(adgl);
  
- 	start &= ~((uint64_t)mtd->oobsize - 1);
- 	ret = mtd->write_oob(mtd, start, &ops);
+ 	lock_kernel();	
+ 	IndexCard = adgl->num_card-1;
