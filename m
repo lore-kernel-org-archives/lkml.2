@@ -1,56 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753932Ab0EVK03 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 06:26:29 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:60818 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751475Ab0EVK00 (ORCPT
+	id S1754238Ab0EVKbf (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 06:31:35 -0400
+Received: from ringil.hengli.com.au ([216.59.3.182]:47601 "EHLO
+	arnor.apana.org.au" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753744Ab0EVKbd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 06:26:26 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4BF7B147.9020502@s5r6.in-berlin.de>
-Date: Sat, 22 May 2010 12:26:15 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+	Sat, 22 May 2010 06:31:33 -0400
+Date: Sat, 22 May 2010 20:31:02 +1000
+From: Herbert Xu <herbert@gondor.hengli.com.au>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "michael-dev@fami-braun.de"@ogre.sisk.pl,
+       David Miller <davem@davemloft.net>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [Bug #15601] [BUG] SLOB breaks Crypto
+Message-ID: <20100522103102.GA11788@gondor.apana.org.au>
+References: <10aqDnTJcLO.A.mLE.48y5LB@chimera> <HqroMXsT-CJ.A.qYG.f_y5LB@chimera> <AANLkTikXPfDVhwsUMr5yDpsvgk06QrMFXpG22k8T0ydi@mail.gmail.com>
 MIME-Version: 1.0
-To: linux-pci@vger.kernel.org
-CC: linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-Subject: DMAR:[fault reason 02] Present bit in context entry is clear (firewire-ohci)
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikXPfDVhwsUMr5yDpsvgk06QrMFXpG22k8T0ydi@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, May 22, 2010 at 01:22:57PM +0300, Pekka Enberg wrote:
+> On Mon, May 10, 2010 at 12:17 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> > This message has been generated automatically as a part of a summary report
+> > of recent regressions.
+> >
+> > The following bug entry is on the current list of known regressions
+> > from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> > know (either way).
+> >
+> >
+> > Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15601
+> > Subject         : [BUG] SLOB breaks Crypto
+> > Submitter       : michael-dev@fami-braun.de
+> > Date            : 2010-03-15 13:39 (56 days old)
+> > Message-ID      : <4B9E38AF.70309@fami-braun.de>
+> > References      : http://marc.info/?l=linux-kernel&m=126866044724539&w=2
+> 
+> Herbert, David, Matt, this bug should be fixed by the following two
+> commits, right?
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=18eb8ea6ee4cc9ed39b45f95b734f523bcfb586b
+> 
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=273fca0ecad9305247043815e185d1bfd04047d4
 
-I came across a report of the subject message.  What does it mean; what
-type of bug should be look for?
+Yes.
 
-https://bugzilla.redhat.com/show_bug.cgi?id=587178
->>>
-firewire_ohci 0000:04:00.4: PCI INT C -> GSI 16 (level, low) -> IRQ 16
-firewire_ohci 0000:04:00.4: setting latency timer to 64
-firewire_ohci: Added fw-ohci device 0000:04:00.4, OHCI version 1.0
-DRHD: handling fault status reg 2
-DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-DMAR:[fault reason 02] Present bit in context entry is clear
-DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-DMAR:[fault reason 02] Present bit in context entry is clear
-DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-DMAR:[fault reason 02] Present bit in context entry is clear
-<<<
-
-The log sounds as if this happens during from-device DMA of 04:00.4 into
-a consistent buffer, yet the fault is logged for device 04:00.0.  The
-log is from a Dell M4500.  The devices are, according to a web search,
-04:00.0 CardBus bridge [0607]: Ricoh Co Ltd Device [1180:e476] (rev 02)
-04:00.4 FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd Device [1180:e832]
-(rev 03) (prog-if 10)
-
-Thanks for any hint,
+Thanks!
 -- 
-Stefan Richter
--=====-==-=- -=-= =-==-
-http://arcgraph.de/sr/
+Visit Openswan at http://www.openswan.org/
+Email: Herbert Xu ~{PmV>HI~} <herbert@gondor.apana.org.au>
+Home Page: http://gondor.apana.org.au/~herbert/
+PGP Key: http://gondor.apana.org.au/~herbert/pubkey.txt
