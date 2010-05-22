@@ -1,76 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754474Ab0EVIVn (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:21:43 -0400
-Received: from courier.cs.helsinki.fi ([128.214.9.1]:48364 "EHLO
-	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753852Ab0EVIVj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:21:39 -0400
-Date: Sat, 22 May 2010 11:21:36 +0300 (EEST)
-From: Pekka J Enberg <penberg@cs.helsinki.fi>
-To: torvalds@linux-foundation.org
-cc: cl@linux-foundation.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org
-Subject: [GIT PULL] SLAB fixes for 2.6.35-rc0
-Message-ID: <alpine.DEB.2.00.1005221119020.4737@melkki.cs.helsinki.fi>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-Mime-Version: 1.0
-Content-Type: text/plain; format=flowed; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	id S1754808Ab0EVIVz (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:21:55 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:60342 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754649Ab0EVIVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:21:51 -0400
+Date: Sat, 22 May 2010 10:21:45 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
+       "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
+       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 11/27] drivers/i2c: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221021270.13021@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+From: Julia Lawall <julia@diku.dk>
 
-It's been a rather quiet cycle this time for slab. The most interesting 
-bits here are SLAB memory hotplug support from David Rientjes and slab 
-minimum alignment cleanups from David Woodhouse. There are also some slab 
-debugging code fixes from Shiyong Li and Eric Dumazet.
+Use memdup_user when user data is immediately copied into the allocated
+region.  Note that in the second case, the ++i is no longer necessary, as
+the last value is already freed if needed by the call to memdup_user.
 
-                         Pekka
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-The following changes since commit f4b87dee923342505e1ddba8d34ce9de33e75050:
-   Randy Dunlap (1):
-         fbmem: avoid printk format warning with 32-bit resources
+// <smpl>
+@@
+expression from,to,size,flag;
+position p;
+identifier l1,l2;
+@@
 
-are available in the git repository at:
+-  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
++  to = memdup_user(from,size);
+   if (
+-      to==NULL
++      IS_ERR(to)
+                 || ...) {
+   <+... when != goto l1;
+-  -ENOMEM
++  PTR_ERR(to)
+   ...+>
+   }
+-  if (copy_from_user(to, from, size) != 0) {
+-    <+... when != goto l2;
+-    -EFAULT
+-    ...+>
+-  }
+// </smpl>
 
-   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git slab-for-linus
+Signed-off-by: Julia Lawall <julia@diku.dk>
 
-David Rientjes (1):
-       slab: add memory hotplug support
+---
+ drivers/i2c/i2c-dev.c |   22 ++++++----------------
+ 1 file changed, 6 insertions(+), 16 deletions(-)
 
-David Woodhouse (4):
-       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
-       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slob_def.h>
-       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slub_def.h>
-       crypto: Use ARCH_KMALLOC_MINALIGN for CRYPTO_MINALIGN now that it's exposed
-
-Eric Dumazet (1):
-       slub: Potential stack overflow
-
-Joe Perches (1):
-       slab: Fix continuation lines
-
-Minchan Kim (1):
-       slub: Use alloc_pages_exact_node() for page allocation
-
-Pekka Enberg (1):
-       Merge branches 'slab/align', 'slab/cleanups', 'slab/fixes', 'slab/memhotadd' and 'slub/fixes' into slab-for-linus
-
-Shiyong Li (1):
-       slab: Fix missing DEBUG_SLAB last user
-
-Xiaotian Feng (1):
-       slub: __kmalloc_node_track_caller should trace kmalloc_large_node case
-
-  include/linux/crypto.h   |    6 --
-  include/linux/slab_def.h |   24 ++++++
-  include/linux/slob_def.h |    8 ++
-  include/linux/slub_def.h |    8 ++
-  mm/slab.c                |  198 +++++++++++++++++++++++++++++++---------------
-  mm/slob.c                |    8 --
-  mm/slub.c                |   46 ++++++-----
-  7 files changed, 200 insertions(+), 98 deletions(-)
+diff --git a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
+index e0694e4..03e9ef8 100644
+--- a/drivers/i2c/i2c-dev.c
++++ b/drivers/i2c/i2c-dev.c
+@@ -167,13 +167,9 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
+ 	if (count > 8192)
+ 		count = 8192;
+ 
+-	tmp = kmalloc(count, GFP_KERNEL);
+-	if (tmp == NULL)
+-		return -ENOMEM;
+-	if (copy_from_user(tmp, buf, count)) {
+-		kfree(tmp);
+-		return -EFAULT;
+-	}
++	tmp = memdup_user(buf, count);
++	if (IS_ERR(tmp))
++		return PTR_ERR(tmp);
+ 
+ 	pr_debug("i2c-dev: i2c-%d writing %zu bytes.\n",
+ 		iminor(file->f_path.dentry->d_inode), count);
+@@ -247,15 +243,9 @@ static noinline int i2cdev_ioctl_rdrw(struct i2c_client *client,
+ 			break;
+ 		}
+ 		data_ptrs[i] = (u8 __user *)rdwr_pa[i].buf;
+-		rdwr_pa[i].buf = kmalloc(rdwr_pa[i].len, GFP_KERNEL);
+-		if (rdwr_pa[i].buf == NULL) {
+-			res = -ENOMEM;
+-			break;
+-		}
+-		if (copy_from_user(rdwr_pa[i].buf, data_ptrs[i],
+-				   rdwr_pa[i].len)) {
+-				++i; /* Needs to be kfreed too */
+-				res = -EFAULT;
++		rdwr_pa[i].buf = memdup_user(data_ptrs[i], rdwr_pa[i].len);
++		if (IS_ERR(rdwr_pa[i].buf)) {
++			res = PTR_ERR(rdwr_pa[i].buf);
+ 			break;
+ 		}
+ 	}
