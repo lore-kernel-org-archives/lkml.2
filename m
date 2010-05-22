@@ -1,56 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753522Ab0EVIR0 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:17:26 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40515 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752994Ab0EVIRX (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:17:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=FWMksuP0EeLB8sg6L5vfoe7boQsYKsLBCcZIJ3UNb0tmopF11PSQ1D/E03DaqzzhaG
-         NTQRlhWrqEkzD4SS8cmRNW64JWwQfoRnOZrhEz3RMSgfnuit/ixUpHb8CSkQqxgjPcp6
-         iMmdEYQ+cc24Sbf2NYNc58fttyQUdHbPmVdVk=
+	id S1753258Ab0EVISn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:18:43 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:60181 "EHLO mgw1.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752334Ab0EVISk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:18:40 -0400
+Date: Sat, 22 May 2010 10:18:34 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Oliver Hartkopp <socketcan@hartkopp.net>,
+       Urs Thuermann <urs.thuermann@volkswagen.de>,
+       "David S. Miller" <davem@davemloft.net>,
+       socketcan-core@lists.berlios.de, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 1/27] net/can: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221018130.13021@ask.diku.dk>
 MIME-Version: 1.0
-In-Reply-To: <20100521200139.30e60c62@virtuousgeek.org>
-References: <20100521144859.0a5b18c9@virtuousgeek.org>
-	 <alpine.LFD.2.00.1005211709330.3689@i5.linux-foundation.org>
-	 <alpine.LFD.2.00.1005211859030.3689@i5.linux-foundation.org>
-	 <20100521200139.30e60c62@virtuousgeek.org>
-Date: Sat, 22 May 2010 11:17:20 +0300
-X-Google-Sender-Auth: 76PtiBeWcB-EIOxjEL3lQtMsAbk
-Message-ID: <AANLkTimP_vAumk5qEawTjUU1nbqBzP0iq03Y-34xCpRa@mail.gmail.com>
-Subject: Re: [git pull] PCI changes
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Jesse Barnes <jbarnes@virtuousgeek.org>
-Cc: Linus Torvalds <torvalds@linux-foundation.org>, linux-pci@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 6:01 AM, Jesse Barnes <jbarnes@virtuousgeek.org> wrote:
-> On Fri, 21 May 2010 18:59:58 -0700 (PDT)
-> Linus Torvalds <torvalds@linux-foundation.org> wrote:
->
->>
->>
->> On Fri, 21 May 2010, Linus Torvalds wrote:
->> >
->> > I think the "not verified" is also because you actually didn't push it
->> > out..
->> >
->> > I'm getting "Already up-to-date".
->> >
->> > Or is it in some magic branch that you didn't actually mention at all?
->>
->> Ahh. It's in "linux-next". Not "for-linus" or "master".
->
-> Yeah sorry, I had pushed but it hadn't mirrored yet...
+From: Julia Lawall <julia@diku.dk>
 
-You can use "git request-pull" against master.kernel.org to avoid the
-mirroring problem.
+Use memdup_user when user data is immediately copied into the
+allocated region.
+
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression from,to,size,flag;
+position p;
+identifier l1,l2;
+@@
+
+-  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
++  to = memdup_user(from,size);
+   if (
+-      to==NULL
++      IS_ERR(to)
+                 || ...) {
+   <+... when != goto l1;
+-  -ENOMEM
++  PTR_ERR(to)
+   ...+>
+   }
+-  if (copy_from_user(to, from, size) != 0) {
+-    <+... when != goto l2;
+-    -EFAULT
+-    ...+>
+-  }
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ net/can/raw.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
+
+diff --git a/net/can/raw.c b/net/can/raw.c
+index da99cf1..ccfe633 100644
+--- a/net/can/raw.c
++++ b/net/can/raw.c
+@@ -436,14 +436,9 @@ static int raw_setsockopt(struct socket *sock, int level, int optname,
+ 
+ 		if (count > 1) {
+ 			/* filter does not fit into dfilter => alloc space */
+-			filter = kmalloc(optlen, GFP_KERNEL);
+-			if (!filter)
+-				return -ENOMEM;
+-
+-			if (copy_from_user(filter, optval, optlen)) {
+-				kfree(filter);
+-				return -EFAULT;
+-			}
++			filter = memdup_user(optval, optlen);
++			if (IS_ERR(filter))
++				return PTR_ERR(filter);
+ 		} else if (count == 1) {
+ 			if (copy_from_user(&sfilter, optval, sizeof(sfilter)))
+ 				return -EFAULT;
