@@ -1,82 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753996Ab0EVIVf (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:21:35 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:60329 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753417Ab0EVIVc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:21:32 -0400
-Date: Sat, 22 May 2010 10:21:27 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Roland Dreier <rolandd@cisco.com>, Sean Hefty <sean.hefty@intel.com>,
-       Hal Rosenstock <hal.rosenstock@gmail.com>, linux-rdma@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 10/27] drivers/infiniband/core: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221021030.13021@ask.diku.dk>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1754474Ab0EVIVn (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:21:43 -0400
+Received: from courier.cs.helsinki.fi ([128.214.9.1]:48364 "EHLO
+	mail.cs.helsinki.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753852Ab0EVIVj (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:21:39 -0400
+Date: Sat, 22 May 2010 11:21:36 +0300 (EEST)
+From: Pekka J Enberg <penberg@cs.helsinki.fi>
+To: torvalds@linux-foundation.org
+cc: cl@linux-foundation.org, akpm@linux-foundation.org,
+       linux-kernel@vger.kernel.org, linux-mm@kvack.org
+Subject: [GIT PULL] SLAB fixes for 2.6.35-rc0
+Message-ID: <alpine.DEB.2.00.1005221119020.4737@melkki.cs.helsinki.fi>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+Mime-Version: 1.0
+Content-Type: text/plain; format=flowed; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+Hi Linus,
 
-Use memdup_user when user data is immediately copied into the
-allocated region.
+It's been a rather quiet cycle this time for slab. The most interesting 
+bits here are SLAB memory hotplug support from David Rientjes and slab 
+minimum alignment cleanups from David Woodhouse. There are also some slab 
+debugging code fixes from Shiyong Li and Eric Dumazet.
 
-The semantic patch that makes this change is as follows:
-(http://coccinelle.lip6.fr/)
+                         Pekka
 
-// <smpl>
-@@
-expression from,to,size,flag;
-position p;
-identifier l1,l2;
-@@
+The following changes since commit f4b87dee923342505e1ddba8d34ce9de33e75050:
+   Randy Dunlap (1):
+         fbmem: avoid printk format warning with 32-bit resources
 
--  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
-+  to = memdup_user(from,size);
-   if (
--      to==NULL
-+      IS_ERR(to)
-                 || ...) {
-   <+... when != goto l1;
--  -ENOMEM
-+  PTR_ERR(to)
-   ...+>
-   }
--  if (copy_from_user(to, from, size) != 0) {
--    <+... when != goto l2;
--    -EFAULT
--    ...+>
--  }
-// </smpl>
+are available in the git repository at:
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+   ssh://master.kernel.org/pub/scm/linux/kernel/git/penberg/slab-2.6.git slab-for-linus
 
----
- drivers/infiniband/core/ucm.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+David Rientjes (1):
+       slab: add memory hotplug support
 
-diff --git a/drivers/infiniband/core/ucm.c b/drivers/infiniband/core/ucm.c
-index 4647484..08f948d 100644
---- a/drivers/infiniband/core/ucm.c
-+++ b/drivers/infiniband/core/ucm.c
-@@ -706,14 +706,9 @@ static int ib_ucm_alloc_data(const void **dest, u64 src, u32 len)
- 	if (!len)
- 		return 0;
- 
--	data = kmalloc(len, GFP_KERNEL);
--	if (!data)
--		return -ENOMEM;
--
--	if (copy_from_user(data, (void __user *)(unsigned long)src, len)) {
--		kfree(data);
--		return -EFAULT;
--	}
-+	data = memdup_user((void __user *)(unsigned long)src, len);
-+	if (IS_ERR(data))
-+		return PTR_ERR(data);
- 
- 	*dest = data;
- 	return 0;
+David Woodhouse (4):
+       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slab_def.h>
+       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slob_def.h>
+       mm: Move ARCH_SLAB_MINALIGN and ARCH_KMALLOC_MINALIGN to <linux/slub_def.h>
+       crypto: Use ARCH_KMALLOC_MINALIGN for CRYPTO_MINALIGN now that it's exposed
+
+Eric Dumazet (1):
+       slub: Potential stack overflow
+
+Joe Perches (1):
+       slab: Fix continuation lines
+
+Minchan Kim (1):
+       slub: Use alloc_pages_exact_node() for page allocation
+
+Pekka Enberg (1):
+       Merge branches 'slab/align', 'slab/cleanups', 'slab/fixes', 'slab/memhotadd' and 'slub/fixes' into slab-for-linus
+
+Shiyong Li (1):
+       slab: Fix missing DEBUG_SLAB last user
+
+Xiaotian Feng (1):
+       slub: __kmalloc_node_track_caller should trace kmalloc_large_node case
+
+  include/linux/crypto.h   |    6 --
+  include/linux/slab_def.h |   24 ++++++
+  include/linux/slob_def.h |    8 ++
+  include/linux/slub_def.h |    8 ++
+  mm/slab.c                |  198 +++++++++++++++++++++++++++++++---------------
+  mm/slob.c                |    8 --
+  mm/slub.c                |   46 ++++++-----
+  7 files changed, 200 insertions(+), 98 deletions(-)
