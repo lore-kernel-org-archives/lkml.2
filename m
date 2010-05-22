@@ -1,236 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754584Ab0EVKV7 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 06:21:59 -0400
-Received: from mail-pz0-f185.google.com ([209.85.222.185]:58301 "EHLO
-	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753833Ab0EVKV5 (ORCPT
+	id S1754420Ab0EVKXE (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 06:23:04 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:55794 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753833Ab0EVKXA convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 06:21:57 -0400
+	Sat, 22 May 2010 06:23:00 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:references;
-        b=LtmOC6ZU3HCKfB1eL+nH5Mur/sDmVj82e4kJdVwWxGFOFwSJMuXhm/ylDNwNLh2jD6
-         V6CPAlNsezfj5Udn4A5RCHar8mvNGewQR3HtRL6lrjY3QtMkjRkiPHSLnqTsPuOaLkg2
-         w6bm1gO0arBx9CTz8p21EU7dmPvOlPz5nfI7Q=
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Steven Whitehouse <swhiteho@redhat.com>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Minchan Kim <minchan.kim@gmail.com>,
-       Nick Piggin <npiggin@suse.de>
-Subject: [PATCH 2/2] cache last free vmap_area to avoid restarting beginning
-Date: Sat, 22 May 2010 19:21:35 +0900
-Message-Id: <cd3012337e8cbf420626ed65ab10771f729c888a.1274522869.git.minchan.kim@gmail.com>
-X-Mailer: git-send-email 1.7.0.5
-In-Reply-To: <52219510083a624ff3d60d5671f826c33f8ef23c.1274522869.git.minchan.kim@gmail.com>
-References: <52219510083a624ff3d60d5671f826c33f8ef23c.1274522869.git.minchan.kim@gmail.com>
-In-Reply-To: <52219510083a624ff3d60d5671f826c33f8ef23c.1274522869.git.minchan.kim@gmail.com>
-References: <52219510083a624ff3d60d5671f826c33f8ef23c.1274522869.git.minchan.kim@gmail.com>
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=EaRYTU9SpFlPz2s4ZJQjqbOnKEdrN4JqoSh0BRnp7JKFEaC293AjhzHDalPlUqd+6i
+         ndmHcvP0FsiPb1IfTuUPUh+DWlCGlTmKjA4Qe4TNIXYILfq0uu+vryE1F1Be3eBtJ6zm
+         9wh34H0T6Byp05bePrTbPL7TApRHK7kiuWkPk=
+MIME-Version: 1.0
+In-Reply-To: <HqroMXsT-CJ.A.qYG.f_y5LB@chimera>
+References: <10aqDnTJcLO.A.mLE.48y5LB@chimera>
+	 <HqroMXsT-CJ.A.qYG.f_y5LB@chimera>
+Date: Sat, 22 May 2010 13:22:57 +0300
+X-Google-Sender-Auth: mr7PhDQPgBvAmo6wgiPQO50vjT4
+Message-ID: <AANLkTikXPfDVhwsUMr5yDpsvgk06QrMFXpG22k8T0ydi@mail.gmail.com>
+Subject: Re: [Bug #15601] [BUG] SLOB breaks Crypto
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Kernel Testers List <kernel-testers@vger.kernel.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       "michael-dev@fami-braun.de"@ogre.sisk.pl,
+       David Miller <davem@davemloft.net>, Matt Mackall <mpm@selenic.com>,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch is improved version to fix my TODO list which is suggested by Nick.
+On Mon, May 10, 2010 at 12:17 AM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
+> This message has been generated automatically as a part of a summary report
+> of recent regressions.
+>
+> The following bug entry is on the current list of known regressions
+> from 2.6.33.  Please verify if it still should be listed and let the tracking team
+> know (either way).
+>
+>
+> Bug-Entry       : http://bugzilla.kernel.org/show_bug.cgi?id=15601
+> Subject         : [BUG] SLOB breaks Crypto
+> Submitter       : michael-dev@fami-braun.de
+> Date            : 2010-03-15 13:39 (56 days old)
+> Message-ID      : <4B9E38AF.70309@fami-braun.de>
+> References      : http://marc.info/?l=linux-kernel&m=126866044724539&w=2
 
-- invalidating the cache in the case of vstart being decreased.
-- Don't unconditionally reset the cache to the last vm area freed,
- because you might have a higher area freed after a lower area. Only
- reset if the freed area is lower.
-- Do keep a cached hole size, so smaller lookups can restart a full
- search.
+Herbert, David, Matt, this bug should be fixed by the following two
+commits, right?
 
-And it's based on Nick's version.
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=18eb8ea6ee4cc9ed39b45f95b734f523bcfb586b
 
-Steven. Could you test this patch on your machine?
-
-== CUT HERE ==
-
-Steven Whitehouse reported that GFS2 had a regression about vmalloc.
-He measured some test module to compare vmalloc speed on the two cases.
-
-1. lazy TLB flush
-2. disable lazy TLB flush by hard coding
-
-1)
-vmalloc took 148798983 us
-vmalloc took 151664529 us
-vmalloc took 152416398 us
-vmalloc took 151837733 us
-
-2)
-vmalloc took 15363634 us
-vmalloc took 15358026 us
-vmalloc took 15240955 us
-vmalloc took 15402302 us
-
-You can refer test module and Steven's patch
-with https://bugzilla.redhat.com/show_bug.cgi?id=581459.
-
-The cause is that lazy TLB flush can delay release vmap_area.
-OTOH, To find free vmap_area is always started from beginnig of rbnode.
-So before lazy TLB flush happens, searching free vmap_area could take
-long time.
-
-Steven's experiment can do 9 times faster than old.
-But Always disable lazy TLB flush is not good.
-
-This patch caches next free vmap_area to accelerate.
-In my test case, following as.
-
-The result is following as.
-
-1) vanilla
-elapsed time
-vmalloc took 49121724 us
-vmalloc took 50675245 us
-vmalloc took 48987711 us
-vmalloc took 54232479 us
-vmalloc took 50258117 us
-vmalloc took 49424859 us
-
-3) Steven's patch
-elapsed time
-vmalloc took 11363341 us
-vmalloc took 12798868 us
-vmalloc took 13247942 us
-vmalloc took 11434647 us
-vmalloc took 13221733 us
-vmalloc took 12134019 us
-
-2) my patch(vmap cache)
-elapsed time
-vmalloc took 5110283 us
-vmalloc took 5148300 us
-vmalloc took 5043622 us
-vmalloc took 5093772 us
-vmalloc took 5039565 us
-vmalloc took 5079503 us
-
-Signed-off-by: Nick Piggin <npiggin@suse.de>
-Signed-off-by: Minchan Kim <minchan.kim@gmail.com>
----
- mm/vmalloc.c |   61 ++++++++++++++++++++++++++++++++++++++++++++++-----------
- 1 files changed, 49 insertions(+), 12 deletions(-)
-
-diff --git a/mm/vmalloc.c b/mm/vmalloc.c
-index 651d1c1..23f714f 100644
---- a/mm/vmalloc.c
-+++ b/mm/vmalloc.c
-@@ -262,8 +262,13 @@ struct vmap_area {
- };
- 
- static DEFINE_SPINLOCK(vmap_area_lock);
--static struct rb_root vmap_area_root = RB_ROOT;
- static LIST_HEAD(vmap_area_list);
-+static struct rb_root vmap_area_root = RB_ROOT;
-+
-+static struct rb_node *free_vmap_cache;
-+static unsigned long cached_hole_size;
-+static unsigned long cached_start;
-+
- static unsigned long vmap_area_pcpu_hole;
- 
- static struct vmap_area *__find_vmap_area(unsigned long addr)
-@@ -345,8 +350,11 @@ static struct vmap_area *__get_first_vmap_area(struct rb_node *n, unsigned long
- 
- 	if (first->va_end < addr) {
- 		n = rb_next(&first->rb_node);
--		if (n)
-+		if (n) {
- 			first = rb_entry(n, struct vmap_area, rb_node);
-+			if (addr + cached_hole_size < first->va_start)
-+				cached_hole_size = first->va_start - addr;
-+		}
- 		else
- 			first = NULL;						
- 	}
-@@ -365,6 +373,9 @@ static int __get_vmap_area_addr(struct vmap_area *first,
- 	struct rb_node *n;
- 
- 	while (*addr + size > first->va_start && *addr + size <= vend) {
-+		if (*addr + cached_hole_size < first->va_start)
-+			cached_hole_size = first->va_start - *addr;
-+
- 		*addr = ALIGN(first->va_end + PAGE_SIZE, align);
- 		if (*addr + size - 1 < *addr)
- 			return 1;
-@@ -385,7 +396,7 @@ static struct vmap_area *alloc_vmap_area(unsigned long size,
- 				unsigned long vstart, unsigned long vend,
- 				int node, gfp_t gfp_mask)
- {
--	struct vmap_area *va;
-+	struct vmap_area *va, *first = NULL;
- 	struct rb_node *n;
- 	unsigned long addr;
- 	int purged = 0;
-@@ -405,18 +416,28 @@ retry:
- 	if (addr + size - 1 < addr)
- 		goto overflow;
- 
--	/* XXX: could have a last_hole cache */
--	n = vmap_area_root.rb_node;
--	if (n) {
--		int ret;
--		struct vmap_area *first = __get_first_vmap_area(n, addr, size);
-+        if (size <= cached_hole_size || addr < cached_start) {
-+                cached_hole_size = 0; 
-+                cached_start = addr;
-+                free_vmap_cache = NULL;
-+        }  
-+
-+	/* find starting point for our search */
-+	if (free_vmap_cache) {
-+		first = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+		addr = ALIGN(first->va_end + PAGE_SIZE, align);
-+	}
-+	else {
-+		n = vmap_area_root.rb_node;
-+		if (!n)
-+			goto found;
-+
-+		first = __get_first_vmap_area(n, addr, size);
- 		if (!first)
- 			goto found;
--		
--		ret = __get_vmap_area_addr(first, &addr, size, vend, align);
--		if (ret == VMAP_AREA_OVERFLOW)
--			goto overflow;
- 	}
-+	if (__get_vmap_area_addr(first, &addr, size, vend, align))
-+		goto overflow;
- found:
- 	if (addr + size > vend) {
- overflow:
-@@ -440,6 +461,7 @@ overflow:
- 	va->va_end = addr + size;
- 	va->flags = 0;
- 	__insert_vmap_area(va);
-+	free_vmap_cache = &va->rb_node;
- 	spin_unlock(&vmap_area_lock);
- 
- 	return va;
-@@ -455,6 +477,21 @@ static void rcu_free_va(struct rcu_head *head)
- static void __free_vmap_area(struct vmap_area *va)
- {
- 	BUG_ON(RB_EMPTY_NODE(&va->rb_node));
-+	if (free_vmap_cache) {
-+		if (va->va_end < cached_start) {
-+			cached_hole_size = 0;
-+			cached_start = 0;
-+			free_vmap_cache = NULL;
-+		} else {
-+			struct vmap_area *cache;
-+			cache = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+			if (va->va_start <= cache->va_start) {
-+				free_vmap_cache = rb_prev(&va->rb_node);
-+				cache = rb_entry(free_vmap_cache, struct vmap_area, rb_node);
-+			}
-+		}
-+	}
-+
- 	rb_erase(&va->rb_node, &vmap_area_root);
- 	RB_CLEAR_NODE(&va->rb_node);
- 	list_del_rcu(&va->list);
--- 
-1.7.0.5
-
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commitdiff;h=273fca0ecad9305247043815e185d1bfd04047d4
