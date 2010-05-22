@@ -1,104 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754555Ab0EVOYb (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:24:31 -0400
-Received: from cantor.suse.de ([195.135.220.2]:47449 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753012Ab0EVOY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:24:29 -0400
-Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
-From: James Bottomley <James.Bottomley@suse.de>
-To: Julia Lawall <julia@diku.dk>
-Cc: Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
-References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
+	id S1754892Ab0EVOqq (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:46:46 -0400
+Received: from adelie.canonical.com ([91.189.90.139]:55505 "EHLO
+	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753807Ab0EVOqn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 10:46:43 -0400
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol
+ (rev3)
+From: Chase Douglas <chase.douglas@canonical.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Rafi Rubin <rafi@seas.upenn.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Ping Cheng <pinglinux@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Michael Poole <mdpoole@troilus.org>
+In-Reply-To: <4BF7B438.8000001@euromail.se>
+References: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
+	 <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com>
+	 <4BF6B673.1080507@euromail.se>
+	 <20100521165218.GA26439@core.coreip.homeip.net>
+	 <4BF6BB43.2020405@euromail.se>
+	 <20100521172222.GB26439@core.coreip.homeip.net>
+	 <4BF6C303.7030804@euromail.se>
+	 <20100521174140.GA23155@core.coreip.homeip.net>
+	 <4BF6C7B6.2020008@euromail.se> <4BF7A4E8.3050806@seas.upenn.edu>
+	 <4BF7B438.8000001@euromail.se>
 Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 May 2010 09:24:23 -0500
-Message-ID: <1274538263.4410.38.camel@mulgrave.site>
+Date: Sat, 22 May 2010 10:46:22 -0400
+Message-ID: <1274539582.13705.132.camel@cndougla-ubuntu>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-22 at 10:22 +0200, Julia Lawall wrote:
-> From: Julia Lawall <julia@diku.dk>
-> 
-> Use memdup_user when user data is immediately copied into the
-> allocated region.
-> 
-> The semantic patch that makes this change is as follows:
-> (http://coccinelle.lip6.fr/)
-> 
-> // <smpl>
-> @@
-> expression from,to,size,flag;
-> position p;
-> identifier l1,l2;
-> @@
-> 
-> -  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
-> +  to = memdup_user(from,size);
->    if (
-> -      to==NULL
-> +      IS_ERR(to)
->                  || ...) {
->    <+... when != goto l1;
-> -  -ENOMEM
-> +  PTR_ERR(to)
->    ...+>
->    }
-> -  if (copy_from_user(to, from, size) != 0) {
-> -    <+... when != goto l2;
-> -    -EFAULT
-> -    ...+>
-> -  }
-> // </smpl>
-> 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  drivers/scsi/sg.c |   11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
-> 
-> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
-> index ef752b2..277ace6 100644
-> --- a/drivers/scsi/sg.c
-> +++ b/drivers/scsi/sg.c
-> @@ -1676,14 +1676,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
->  		int len, size = sizeof(struct sg_iovec) * iov_count;
->  		struct iovec *iov;
->  
-> -		iov = kmalloc(size, GFP_ATOMIC);
-> -		if (!iov)
-> -			return -ENOMEM;
-> -
-> -		if (copy_from_user(iov, hp->dxferp, size)) {
-> -			kfree(iov);
-> -			return -EFAULT;
-> -		}
-> +		iov = memdup_user(hp->dxferp, size);
-> +		if (IS_ERR(iov))
-> +			return PTR_ERR(iov);
+On Sat, 2010-05-22 at 12:38 +0200, Henrik Rydberg wrote:
+> Getting serious, it is anyone's guess what will happen next, but I was picturing
+> a table, with a large multitouch screen and buttons along the side of the table.
+> Sure, we can do "ABS_BTN_0", "ABS_BTN_1", etc, but with slots in place, it seems
+> more natural to use something like "ABS_MT_BTN_X". While at it, REL_MT event
+> makes sense for those touchscreen techniques which register changes, like
+> acoustic pulse recognition.
 
-This type of transformation has really no value at all.  The code you're
-proposing to replace is already correct.  I'm fairly ambivalent on
-patterned APIs anyway but I accept they're useful way to prevent new
-code getting it wrong. However, it's completely bogus to force
-replacement of correctly functioning code throughout the kernel (unless
-you're going to argue that everyone who tries to copy from user into a
-kmalloc space does a cut and paste from sg?)
+Shouldn't this be handled in userspace? I don't think we want to be
+quirking drivers for instances where the same touchscreen is overlaid on
+buttons in some cases, but not in others. If we don't quirk, we'd need
+some mechanism to tell the driver about such buttons.
 
-Of infinitely greater service would be finding any places where the
-pattern is being incorrectly used.
-
-So, if Doug wants to take this as a prettify of sg, I'm happy, but if
-not, I don't really want to see this again.
-
-Thanks,
-
-James
-
+-- Chase
 
