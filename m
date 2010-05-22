@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754505Ab0EVKje (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 06:39:34 -0400
-Received: from ch-smtp03.sth.basefarm.net ([80.76.149.214]:36436 "EHLO
-	ch-smtp03.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754114Ab0EVKjc (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 06:39:32 -0400
-Message-ID: <4BF7B438.8000001@euromail.se>
-Date: Sat, 22 May 2010 12:38:48 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	id S1754726Ab0EVLRj (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 07:17:39 -0400
+Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:34192 "EHLO
+	imedia.com.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754153Ab0EVLRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 07:17:34 -0400
+X-Antivirus-MYDOMAIN-Mail-From: drfungch@yahoo.com.hk via imedia.com.my
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.043887 secs Process 29374)
+Message-ID: <5d8a737b73a2d3115b3791f88b65d32e.squirrel@mail.pemuda.com.my>
+Date: Sat, 22 May 2010 19:15:12 +0800 (MYT)
+Subject: REPLY ME....
+From: "Dr Raymond Kuo Fung Chien" <drfungch@yahoo.com.hk>
+Reply-To: drfungch2020@yahoo.com.hk
+User-Agent: SquirrelMail/1.4.17
 MIME-Version: 1.0
-To: Rafi Rubin <rafi@seas.upenn.edu>
-CC: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev3)
-References: <1274457354-5570-1-git-send-email-rydberg@euromail.se> <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com> <4BF6B673.1080507@euromail.se> <20100521165218.GA26439@core.coreip.homeip.net> <4BF6BB43.2020405@euromail.se> <20100521172222.GB26439@core.coreip.homeip.net> <4BF6C303.7030804@euromail.se> <20100521174140.GA23155@core.coreip.homeip.net> <4BF6C7B6.2020008@euromail.se> <4BF7A4E8.3050806@seas.upenn.edu>
-In-Reply-To: <4BF7A4E8.3050806@seas.upenn.edu>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OFm6e-0004bg-BK.
-X-Scan-Signature: ch-smtp03.sth.basefarm.net 1OFm6e-0004bg-BK 776e95666eeba61277c87aad566a6cb2
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7BIT
+X-Priority: 3 (Normal)
+Importance: Normal
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Rafi Rubin wrote:
-> On 05/21/10 13:49, Henrik Rydberg wrote:
->> Dmitry Torokhov wrote:
->>> I guess this is where our disconnect lies as when I am looking at the
->>> event names I view all *_MT_* events as related to the multitouch
->>> protocol handling.
->>>
->> Yes. It is true that slot control is MT related, but I am looking at this from
->> the perspective of future expansions like KEY_MT,  KEY_REL, and such, finding a
->> way to signal to user space which events are handled via slots. If we had
->> ABS_MT_SLOT, we would most likely get applications which store ABS_MT_SLOT as an
->> attribute of the slot together with ABS_MT_POSITION_X, ABS_MT_TOUCH_MAJOR, etc,
->> which is just not right. So the proposal is ABS_SLOT. May we have your verdict,
->> please. :-)
->>
->> Henrik
->>
-> 
-> How many fingers can type on cap of a key?
 
-It depends on the size of the key, does it not. :-)
 
-Getting serious, it is anyone's guess what will happen next, but I was picturing
-a table, with a large multitouch screen and buttons along the side of the table.
-Sure, we can do "ABS_BTN_0", "ABS_BTN_1", etc, but with slots in place, it seems
-more natural to use something like "ABS_MT_BTN_X". While at it, REL_MT event
-makes sense for those touchscreen techniques which register changes, like
-acoustic pulse recognition.
 
-> Seems to me like part of the problem here is still the overlap between tracking
-> id and slot id.
+Dear Friend,
 
-Would you care to elaborate?
+I am Dr Raymond Kuo Fung CHIEN Executive Director and Chief Financial
+Officer of the operations of the Hang Seng Bank Ltd.
+Befor the U.S and Iraqi war our client Mr.Fayez A Mohammed a business
+merchant made a fixed deposit of USD30 Million for 2Yrs
 
-Cheers,
-Henrik
+where i was the only one that knew about his deposits.
+
+Upon maturity during the war in 2003,Fayez,his wife and only daugther died
+in a bomb blast that hits His Resident.
+Investigations showed that he didnt declear any next of kin.As a
+foreigner,I want you to stand as the next of kin to claim
+
+the fund because soon the fund will be claimed by my government if no one
+comes for it.
+
+I have an attorney that will prepare all the documents to back you up as
+the next of kin to Mr.Fayez A.Mohammed.Plz let me
+
+know your willingness so that i can provide you with more details of this
+transaction.
+
+contact me on email: drrayfung@9.cn
+
+
+
+1. Full name and Age
+
+2. Occupation
+
+3. Private/office phone number
+
+4. Current residential address
+
+Kind Regards,
+Dr Raymond Kuo Fung CHIEN.
 
