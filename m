@@ -1,66 +1,104 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754291Ab0EVOVz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:21:55 -0400
-Received: from 31.mail-out.ovh.net ([213.186.62.10]:59211 "HELO
-	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753012Ab0EVOVx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:21:53 -0400
-Message-ID: <4BF7E87C.7090603@example.com>
-Date: Sat, 22 May 2010 16:21:48 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
-MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: What's up with wireless drivers?
-References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com> <4BF7E769.1090102@gmail.com>
-In-Reply-To: <4BF7E769.1090102@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 16752546190168781128
-X-Ovh-Remote: 95.49.242.247 (afji247.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S1754555Ab0EVOYb (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:24:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:47449 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753012Ab0EVOY3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 10:24:29 -0400
+Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
+From: James Bottomley <James.Bottomley@suse.de>
+To: Julia Lawall <julia@diku.dk>
+Cc: Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+In-Reply-To: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
+References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sat, 22 May 2010 09:24:23 -0500
+Message-ID: <1274538263.4410.38.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2010 16:17, Justin P. Mattock wrote:
-> On 05/22/2010 07:04 AM, Piotr Hosowicz wrote:
->> On 22.05.2010 15:44, Justin P. Mattock wrote:
->>
->>> what about strace make
->>> (maybe will give you info)
->>
->> May be I'll try like that if the problem persists. I will produce tons
->> of output I believe :-(
->>
->
->
-> yeah it does,
-> you can always send the
-> output to a file i.g.
-> strace -o filename make
-> anything at this point though
-> to see what is crapping out
+On Sat, 2010-05-22 at 10:22 +0200, Julia Lawall wrote:
+> From: Julia Lawall <julia@diku.dk>
+> 
+> Use memdup_user when user data is immediately copied into the
+> allocated region.
+> 
+> The semantic patch that makes this change is as follows:
+> (http://coccinelle.lip6.fr/)
+> 
+> // <smpl>
+> @@
+> expression from,to,size,flag;
+> position p;
+> identifier l1,l2;
+> @@
+> 
+> -  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
+> +  to = memdup_user(from,size);
+>    if (
+> -      to==NULL
+> +      IS_ERR(to)
+>                  || ...) {
+>    <+... when != goto l1;
+> -  -ENOMEM
+> +  PTR_ERR(to)
+>    ...+>
+>    }
+> -  if (copy_from_user(to, from, size) != 0) {
+> -    <+... when != goto l2;
+> -    -EFAULT
+> -    ...+>
+> -  }
+> // </smpl>
+> 
+> Signed-off-by: Julia Lawall <julia@diku.dk>
+> 
+> ---
+>  drivers/scsi/sg.c |   11 +++--------
+>  1 file changed, 3 insertions(+), 8 deletions(-)
+> 
+> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+> index ef752b2..277ace6 100644
+> --- a/drivers/scsi/sg.c
+> +++ b/drivers/scsi/sg.c
+> @@ -1676,14 +1676,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
+>  		int len, size = sizeof(struct sg_iovec) * iov_count;
+>  		struct iovec *iov;
+>  
+> -		iov = kmalloc(size, GFP_ATOMIC);
+> -		if (!iov)
+> -			return -ENOMEM;
+> -
+> -		if (copy_from_user(iov, hp->dxferp, size)) {
+> -			kfree(iov);
+> -			return -EFAULT;
+> -		}
+> +		iov = memdup_user(hp->dxferp, size);
+> +		if (IS_ERR(iov))
+> +			return PTR_ERR(iov);
 
-In this case it fails in the modules phase and I think I would redirect 
-outpit with tee because I'd like to see the progress.
+This type of transformation has really no value at all.  The code you're
+proposing to replace is already correct.  I'm fairly ambivalent on
+patterned APIs anyway but I accept they're useful way to prevent new
+code getting it wrong. However, it's completely bogus to force
+replacement of correctly functioning code throughout the kernel (unless
+you're going to argue that everyone who tries to copy from user into a
+kmalloc space does a cut and paste from sg?)
 
-Regards,
+Of infinitely greater service would be finding any places where the
+pattern is being incorrectly used.
 
-Piotr Hosowicz
+So, if Doug wants to take this as a prettify of sg, I'm happy, but if
+not, I don't really want to see this again.
 
--- 
-Zatrzymuje siê samochód na sejmowym parkingu. Podchodzi do niego 
-ochroniarz i mówi:
-- Pan tu parkuje?! Tu Sejm ... Ministrowie, politycy, pos³owiei ...
-- Dziêki, w³±czê alarm.
-NP: Alice In Chains - All Secrets Known
-NB: 2.6.34-20100521-1728
+Thanks,
+
+James
+
+
