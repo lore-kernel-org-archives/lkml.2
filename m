@@ -1,76 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758270Ab0EVUVa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 16:21:30 -0400
-Received: from lo.gmane.org ([80.91.229.12]:56974 "EHLO lo.gmane.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757978Ab0EVUV2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 16:21:28 -0400
-X-Injected-Via-Gmane: http://gmane.org/
-To: linux-kernel@vger.kernel.org
-connect(): No such file or directory
-From: walt <w41ter@gmail.com>
-Subject: Re: [2.6.34-git8][regression] massive polling problems with udevd
- and other processes
-Date: Sat, 22 May 2010 13:21:19 -0700
-Message-ID: <4BF83CBF.8080300@gmail.com>
-References: <201005221535.38939.shawn.starr@rogers.com>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Complaints-To: usenet@dough.gmane.org
-X-Gmane-NNTP-Posting-Host: adsl-69-234-199-35.dsl.irvnca.pacbell.net
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.3a5pre) Gecko/20100522 Thunderbird/3.2a1pre
-In-Reply-To: <201005221535.38939.shawn.starr@rogers.com>
+	id S1758365Ab0EVUoK (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 16:44:10 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:62739 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758039Ab0EVUoH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 16:44:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=eM3n7DY7MkcC++PEZnixHHkXmO8uLNVto9jXny317OTT3h48E3ZHpnvxoVasSy0LaX
+         /LSZQoQPHiN4ofRs+wDu0JGPXJJhMISbH1ZhPLZtyVb+dd0JkJU6tINh/2Ppc+VED7OL
+         XoziNGeT7AI1AAX8mQ7nUf7nAIt7x3NBhq06k=
+Date: Sat, 22 May 2010 22:43:42 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Sjur Braendeland <sjur.brandeland@stericsson.com>
+Cc: Eric Dumazet <eric.dumazet@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       netdev@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [patch] caif: remove unneeded null check in caif_connect()
+Message-ID: <20100522204342.GV22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Sjur Braendeland <sjur.brandeland@stericsson.com>,
+	Eric Dumazet <eric.dumazet@gmail.com>,
+	"David S. Miller" <davem@davemloft.net>,
+	linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/22/2010 12:35 PM, Shawn Starr wrote:
-> Just built today's snapshot from linus's tree and have problems with udev
-> using 100% cpu and KDE processes also pegging cpus.
->
-> This is with Fedora 13 + snapshot kernel from git.
->
-> Anyone else noticing this?
+We already dereferenced uaddr towards the start of the function when we
+checked that "uaddr->sa_family != AF_CAIF".  Both the check here and the
+earlier check were added in bece7b2398d0: "caif: Rewritten socket
+implementation".  Before that patch, we assumed that we recieved a valid
+pointer for uaddr, and based on that, I have removed this check.
 
-Yes, just bisected it to this:
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-commit a7cf4145bb86aaf85d4d4d29a69b50b688e2e49d
-Author: Eric Paris <eparis@>
-Date:   Fri May 14 11:44:10 2010 -0400
-
-     anon_inode: set S_IFREG on the anon_inode
-
-     anon_inode_mkinode() sets inode->i_mode = S_IRUSR | S_IWUSR;  This means
-     that (inode->i_mode & S_IFMT) == 0.  This trips up some SELinux code that
-     needs to determine if a given inode is a regular file, a directory, etc.
-     The easiest solution is to just make sure that the anon_inode also sets
-     S_IFREG.
-
-     Signed-off-by: Eric Paris <eparis@>
-     Signed-off-by: Al Viro <viro@>
-
-udevd is busy polling anon_inode:
-
-COMMAND PID USER   FD   TYPE             DEVICE SIZE/OFF    NODE NAME
-udevd   695 root  txt    REG               8,21   117632 1523956 /sbin/udevd
-udevd   695 root  mem    REG               8,21    51528 1234821 /lib64/libnss_files-2.11.1.so
-udevd   695 root  mem    REG               8,21    43376 2052251 /lib64/libnss_nis-2.11.1.so
-udevd   695 root  mem    REG               8,21    88880 2052264 /lib64/libnsl-2.11.1.so
-udevd   695 root  mem    REG               8,21    31432 1234823 /lib64/libnss_compat-2.11.1.so
-udevd   695 root  mem    REG               8,21  1399984 1234830 /lib64/libc-2.11.1.so
-udevd   695 root  mem    REG               8,21   128424 1234829 /lib64/ld-2.11.1.so
-udevd   695 root    0u   CHR                1,3      0t0     147 /dev/null
-udevd   695 root    1u   CHR                1,3      0t0     147 /dev/null
-udevd   695 root    2u   CHR                1,3      0t0     147 /dev/null
-udevd   695 root    3u   REG               0,14     1133    1670 /dev/.udev/queue.bin
-udevd   695 root    4u  unix 0xffff88011f2b3c80      0t0     274 socket
-udevd   695 root    5u  sock                0,5      0t0     275 can't identify protocol
-udevd   695 root    6r   REG                0,8        0      17 anon_inode
-udevd   695 root    7u   REG                0,8        0      17 anon_inode
-udevd   695 root    8u  unix 0xffff88011f2b3980      0t0     276 socket
-udevd   695 root    9u  unix 0xffff88011f2b3680      0t0     277 socket
-
-poll([{fd=4, events=POLLIN}, {fd=5, events=POLLIN}, {fd=6, events=POLLIN}, {fd=7, events=POLLIN}, {fd=8, events=POLLIN}], 5, -1) = 1 ([{fd=6, revents=POLLIN}])
-
+diff --git a/net/caif/caif_socket.c b/net/caif/caif_socket.c
+index c3a70c5..bd67bb3 100644
+--- a/net/caif/caif_socket.c
++++ b/net/caif/caif_socket.c
+@@ -890,8 +890,7 @@ static int caif_connect(struct socket *sock, struct sockaddr *uaddr,
+ 	sk_stream_kill_queues(&cf_sk->sk);
+ 
+ 	err = -EINVAL;
+-	if (addr_len != sizeof(struct sockaddr_caif) ||
+-		!uaddr)
++	if (addr_len != sizeof(struct sockaddr_caif))
+ 		goto out;
+ 
+ 	memcpy(&cf_sk->conn_req.sockaddr, uaddr,
