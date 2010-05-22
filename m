@@ -1,47 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754213Ab0EVOEh (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:04:37 -0400
-Received: from 31.mail-out.ovh.net ([213.186.62.10]:50384 "HELO
-	31.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1753142Ab0EVOEf (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:04:35 -0400
-Message-ID: <4BF7E470.6080409@example.com>
-Date: Sat, 22 May 2010 16:04:32 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	id S1754308Ab0EVOFd (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:05:33 -0400
+Received: from www.tglx.de ([62.245.132.106]:50574 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753519Ab0EVOFc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 10:05:32 -0400
+Date: Sat, 22 May 2010 16:05:03 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: "Rafael J. Wysocki" <rjw@sisk.pl>, John Stultz <johnstul@us.ibm.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current
+ -git
+In-Reply-To: <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
+Message-ID: <alpine.LFD.2.00.1005221429360.3368@localhost.localdomain>
+References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005211515460.3689@i5.linux-foundation.org>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: What's up with wireless drivers?
-References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com>
-In-Reply-To: <4BF7DFDA.3000604@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 16460938113403482440
-X-Ovh-Remote: 95.49.242.247 (afji247.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2010 15:44, Justin P. Mattock wrote:
+On Fri, 21 May 2010, Linus Torvalds wrote:
+> On Fri, 21 May 2010, Rafael J. Wysocki wrote:
+> > 
+> > Trying to boot current -git on Acer Ferrari One (64-bit), I get mount errors
+> > for all filesystems telling me that "now = (null) is in the future" and when
+> > run 'date' it says: "date: time <long negative number> is out of range".
+> > 
+> > Any ideas anyone?
+> 
+> No ideas, but apart from the obvious "maybe you can pin it down a bit with 
+> a few bisection compiles", it's almost certainly through the timer tree 
+> merge from Thomas, which included various wall-clock-time changes from 
+> John Stultz & co.
+> 
+> I don't see anything else that would likely affect any wall-clock time, 
+> but who knows..
+> 
+> John, Thomas? Ring any bells?
 
-> what about strace make
-> (maybe will give you info)
+Went through the pile and nothing stands out.
 
-May be I'll try like that if the problem persists. I will produce tons 
-of output I believe :-(
+The system has an AMD X2 with the jinxed C1E, so I'd rather suspect
+that we managed to break C1E again.
 
--- 
-Na przyjêciu ch³opak pyta blondynkê:
-- Czy mogê ciê prosiæ do walca?
-- Zg³upia³e¶? To ju¿ nie mia³e¶ czym przyjechaæ?
-NP: Chickenfoot - Oh Yeah
-NB: 2.6.34-20100521-1728
+Just tried to boot -git on my X2 machine and it does not come
+up. Investigating.
+
+Thanks,
+
+	tglx
