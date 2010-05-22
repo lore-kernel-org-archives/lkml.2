@@ -1,19 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0EVIVz (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:21:55 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:60342 "EHLO mgw1.diku.dk"
+	id S1755048Ab0EVIWL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:22:11 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44712 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754649Ab0EVIVv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:21:51 -0400
-Date: Sat, 22 May 2010 10:21:45 +0200 (CEST)
+	id S1754191Ab0EVIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:22:06 -0400
+Date: Sat, 22 May 2010 10:22:00 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: "Jean Delvare (PC drivers, core)" <khali@linux-fr.org>,
-       "Ben Dooks (em, bedded platforms)" <ben-linux@fluff.org>,
-       linux-i2c@vger.kernel.org, linux-kernel@vger.kernel.org,
+To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
+       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
        kernel-janitors@vger.kernel.org
-Subject: [PATCH 11/27] drivers/i2c: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221021270.13021@ask.diku.dk>
+Subject: [PATCH 12/27] drivers/ieee1394: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,9 +21,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Use memdup_user when user data is immediately copied into the allocated
-region.  Note that in the second case, the ++i is no longer necessary, as
-the last value is already freed if needed by the call to memdup_user.
+Use memdup_user when user data is immediately copied into the
+allocated region.
 
 The semantic patch that makes this change is as follows:
 (http://coccinelle.lip6.fr/)
@@ -57,46 +55,28 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/i2c/i2c-dev.c |   22 ++++++----------------
- 1 file changed, 6 insertions(+), 16 deletions(-)
+ drivers/ieee1394/video1394.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/i2c/i2c-dev.c b/drivers/i2c/i2c-dev.c
-index e0694e4..03e9ef8 100644
---- a/drivers/i2c/i2c-dev.c
-+++ b/drivers/i2c/i2c-dev.c
-@@ -167,13 +167,9 @@ static ssize_t i2cdev_write(struct file *file, const char __user *buf,
- 	if (count > 8192)
- 		count = 8192;
+diff --git a/drivers/ieee1394/video1394.c b/drivers/ieee1394/video1394.c
+index a42bd68..a77483b 100644
+--- a/drivers/ieee1394/video1394.c
++++ b/drivers/ieee1394/video1394.c
+@@ -1045,14 +1045,9 @@ static long video1394_ioctl(struct file *file,
+ 			if (get_user(qv, &p->packet_sizes))
+ 				return -EFAULT;
  
--	tmp = kmalloc(count, GFP_KERNEL);
--	if (tmp == NULL)
--		return -ENOMEM;
--	if (copy_from_user(tmp, buf, count)) {
--		kfree(tmp);
--		return -EFAULT;
--	}
-+	tmp = memdup_user(buf, count);
-+	if (IS_ERR(tmp))
-+		return PTR_ERR(tmp);
+-			psizes = kmalloc(buf_size, GFP_KERNEL);
+-			if (!psizes)
+-				return -ENOMEM;
+-
+-			if (copy_from_user(psizes, qv, buf_size)) {
+-				kfree(psizes);
+-				return -EFAULT;
+-			}
++			psizes = memdup_user(qv, buf_size);
++			if (IS_ERR(psizes))
++				return PTR_ERR(psizes);
+ 		}
  
- 	pr_debug("i2c-dev: i2c-%d writing %zu bytes.\n",
- 		iminor(file->f_path.dentry->d_inode), count);
-@@ -247,15 +243,9 @@ static noinline int i2cdev_ioctl_rdrw(struct i2c_client *client,
- 			break;
- 		}
- 		data_ptrs[i] = (u8 __user *)rdwr_pa[i].buf;
--		rdwr_pa[i].buf = kmalloc(rdwr_pa[i].len, GFP_KERNEL);
--		if (rdwr_pa[i].buf == NULL) {
--			res = -ENOMEM;
--			break;
--		}
--		if (copy_from_user(rdwr_pa[i].buf, data_ptrs[i],
--				   rdwr_pa[i].len)) {
--				++i; /* Needs to be kfreed too */
--				res = -EFAULT;
-+		rdwr_pa[i].buf = memdup_user(data_ptrs[i], rdwr_pa[i].len);
-+		if (IS_ERR(rdwr_pa[i].buf)) {
-+			res = PTR_ERR(rdwr_pa[i].buf);
- 			break;
- 		}
- 	}
+ 		spin_lock_irqsave(&d->lock,flags);
