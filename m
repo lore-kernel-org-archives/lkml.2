@@ -1,18 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755048Ab0EVIWL (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:22:11 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:44712 "EHLO mgw2.diku.dk"
+	id S1755313Ab0EVIW1 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:22:27 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:34876 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754191Ab0EVIWG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:22:06 -0400
-Date: Sat, 22 May 2010 10:22:00 +0200 (CEST)
+	id S1754729Ab0EVIWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:22:23 -0400
+Date: Sat, 22 May 2010 10:22:17 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>,
-       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 12/27] drivers/ieee1394: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>
+To: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 13/27] fs/autofs4: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221022010.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -21,8 +20,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Use memdup_user when user data is immediately copied into the
-allocated region.
+Use memdup_user when user data is immediately copied into the allocated
+region.  Elimination of the variable ads, which is no longer useful.
 
 The semantic patch that makes this change is as follows:
 (http://coccinelle.lip6.fr/)
@@ -55,28 +54,37 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/ieee1394/video1394.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ fs/autofs4/dev-ioctl.c |   13 ++-----------
+ 1 file changed, 2 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/ieee1394/video1394.c b/drivers/ieee1394/video1394.c
-index a42bd68..a77483b 100644
---- a/drivers/ieee1394/video1394.c
-+++ b/drivers/ieee1394/video1394.c
-@@ -1045,14 +1045,9 @@ static long video1394_ioctl(struct file *file,
- 			if (get_user(qv, &p->packet_sizes))
- 				return -EFAULT;
+diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
+index d29b7f6..33d8fc6 100644
+--- a/fs/autofs4/dev-ioctl.c
++++ b/fs/autofs4/dev-ioctl.c
+@@ -95,7 +95,7 @@ static int check_dev_ioctl_version(int cmd, struct autofs_dev_ioctl *param)
+  */
+ static struct autofs_dev_ioctl *copy_dev_ioctl(struct autofs_dev_ioctl __user *in)
+ {
+-	struct autofs_dev_ioctl tmp, *ads;
++	struct autofs_dev_ioctl tmp;
  
--			psizes = kmalloc(buf_size, GFP_KERNEL);
--			if (!psizes)
--				return -ENOMEM;
+ 	if (copy_from_user(&tmp, in, sizeof(tmp)))
+ 		return ERR_PTR(-EFAULT);
+@@ -103,16 +103,7 @@ static struct autofs_dev_ioctl *copy_dev_ioctl(struct autofs_dev_ioctl __user *i
+ 	if (tmp.size < sizeof(tmp))
+ 		return ERR_PTR(-EINVAL);
+ 
+-	ads = kmalloc(tmp.size, GFP_KERNEL);
+-	if (!ads)
+-		return ERR_PTR(-ENOMEM);
 -
--			if (copy_from_user(psizes, qv, buf_size)) {
--				kfree(psizes);
--				return -EFAULT;
--			}
-+			psizes = memdup_user(qv, buf_size);
-+			if (IS_ERR(psizes))
-+				return PTR_ERR(psizes);
- 		}
+-	if (copy_from_user(ads, in, tmp.size)) {
+-		kfree(ads);
+-		return ERR_PTR(-EFAULT);
+-	}
+-
+-	return ads;
++	return memdup_user(in, tmp.size);
+ }
  
- 		spin_lock_irqsave(&d->lock,flags);
+ static inline void free_dev_ioctl(struct autofs_dev_ioctl *param)
