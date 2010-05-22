@@ -1,76 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757999Ab0EVSk5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 14:40:57 -0400
-Received: from casper.infradead.org ([85.118.1.10]:58308 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756511Ab0EVSky (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 14:40:54 -0400
-Subject: Re: DMAR:[fault reason 02] Present bit in context entry is clear
- (firewire-ohci)
-From: David Woodhouse <dwmw2@infradead.org>
-To: Matthew Wilcox <matthew@wil.cx>, jbarnes@virtuousgeek.org
-Cc: Stefan Richter <stefanr@s5r6.in-berlin.de>, linux-pci@vger.kernel.org,
-       linux1394-devel@lists.sourceforge.net, linux-kernel@vger.kernel.org
-In-Reply-To: <20100522121212.GQ10452@parisc-linux.org>
-References: <4BF7B147.9020502@s5r6.in-berlin.de>
-	 <20100522121212.GQ10452@parisc-linux.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 May 2010 19:40:43 +0100
-Message-ID: <1274553643.11551.17300.camel@macbook.infradead.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
-Content-Transfer-Encoding: 7bit
-X-SRS-Rewrite: SMTP reverse-path rewritten from <dwmw2@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+	id S1757991Ab0EVTAW (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 15:00:22 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:52705 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757916Ab0EVTAN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 15:00:13 -0400
+From: Borislav Petkov <bp@alien8.de>
+To: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lin Ming <ming.m.lin@intel.com>
+Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
+Subject: [RFC PATCH 0/2] perf: persistent events prototype
+Date: Sat, 22 May 2010 21:00:04 +0200
+Message-Id: <1274554806-28216-1-git-send-email-bp@alien8.de>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-22 at 06:12 -0600, Matthew Wilcox wrote:
-> On Sat, May 22, 2010 at 12:26:15PM +0200, Stefan Richter wrote:
-> > Hi,
-> > 
-> > I came across a report of the subject message.  What does it mean; what
-> > type of bug should be look for?
-> > 
-> > https://bugzilla.redhat.com/show_bug.cgi?id=587178
-> > >>>
-> > firewire_ohci 0000:04:00.4: PCI INT C -> GSI 16 (level, low) -> IRQ 16
-> > firewire_ohci 0000:04:00.4: setting latency timer to 64
-> > firewire_ohci: Added fw-ohci device 0000:04:00.4, OHCI version 1.0
-> > DRHD: handling fault status reg 2
-> > DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-> > DMAR:[fault reason 02] Present bit in context entry is clear
-> > DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-> > DMAR:[fault reason 02] Present bit in context entry is clear
-> > DMAR:[DMA Read] Request device [04:00.0] fault addr fffff000
-> > DMAR:[fault reason 02] Present bit in context entry is clear
-> > <<<
-> > 
-> > The log sounds as if this happens during from-device DMA of 04:00.4 into
-> > a consistent buffer, yet the fault is logged for device 04:00.0.  The
-> > log is from a Dell M4500.  The devices are, according to a web search,
-> > 04:00.0 CardBus bridge [0607]: Ricoh Co Ltd Device [1180:e476] (rev 02)
-> > 04:00.4 FireWire (IEEE 1394) [0c00]: Ricoh Co Ltd Device [1180:e832]
-> > (rev 03) (prog-if 10)
-> 
-> I would guess that the DMAR can't distinguish between the different
-> devices behind the Cardbus bridge.  Adding Dave Woodhouse.
+Hi,
 
-Yeah, the DMAR looks at the source-id in the PCIe transactions, and it
-sounds like those are all 04:00.0. But we've probably set up the DMAR to
-allow the transactions from 04:00.4, and then it naturally faults when a
-"different" device actually ends up doing the transaction.
+here is my first stab at persistent events. And since it is a first one,
+there's no special tricks but simply all subsystems which init before
+perf and have declared static tracepoints, simply mark some of them as
+persistent and perf enables them when inits.
 
-If you make the pci_find_upstream_pcie_bridge() function do the
-appropriate thing for this device, does it then work as expected?
+I haven't tested this yet and will do so when I get to work next week
+but I'm sending it out now so that I can get your thoughts on this and
+whether this is an agreeable direction I'm taking.
 
-Whether that's a _sane_ thing to do or not is possibly more of a Jesse
-question...
+Couple of yet unresolved issues I see with this:
 
--- 
-David Woodhouse                            Open Source Technology Centre
-David.Woodhouse@intel.com                              Intel Corporation
+* persistent events are enabled unconditionally on all cpus and while
+this makes sense for MCEs tracing, do we still want to be flexible here
+and supply a cpumask instead?
 
+* what happens if there's no consumer for the traced data, the easiest
+would be to do nothing and let it get truncated in the trace buffer with
+newer data overwriting the oldest sample?
+
+* what about other events, and most importantly, what about hw events
+for which we take a PMU and want to make them persistent at the
+same time and it so happens that after making a couple of events
+persistent, we run out of PMUs and make the perf tool almost useless
+since persistent events are hogging all the hardware resources?
+
+* btw, perf and ftrace really need to get married :)
+
+/me ducks now...
+
+Thanks.
