@@ -1,67 +1,105 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932107Ab0EVVfv (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 17:35:51 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:58989 "EHLO ogre.sisk.pl"
+	id S932145Ab0EVVpS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 17:45:18 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54154 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758082Ab0EVVfu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 17:35:50 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: LKML <linux-kernel@vger.kernel.org>
-Subject: [git head f4b87dee9] BUG: using smp_processor_id() in preemptible (VFS-related)
-Date: Sat, 22 May 2010 23:36:59 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: Al Viro <viro@zeniv.linux.org.uk>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Eric Paris <eparis@redhat.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="us-ascii"
+	id S1758808Ab0EVVpQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 17:45:16 -0400
+Date: Sun, 23 May 2010 07:44:53 +1000
+From: Neil Brown <neilb@suse.de>
+To: "Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com>
+Cc: "J. Bruce Fields" <bfields@fieldses.org>, hch@infradead.org,
+       viro@zeniv.linux.org.uk, adilger@sun.com, corbet@lwn.net,
+       serue@us.ibm.com, hooanon05@yahoo.co.jp, linux-fsdevel@vger.kernel.org,
+       sfrench@us.ibm.com, philippe.deniel@CEA.FR,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -V11 1/9] exportfs: Return the minimum required handle
+ size
+Message-ID: <20100523074453.773532b9@notabene.brown>
+In-Reply-To: <87y6fc2byh.fsf@linux.vnet.ibm.com>
+References: <1274340938-29628-1-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<1274340938-29628-2-git-send-email-aneesh.kumar@linux.vnet.ibm.com>
+	<20100521221516.GD13227@fieldses.org>
+	<87y6fc2byh.fsf@linux.vnet.ibm.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005222337.00039.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Sat, 22 May 2010 20:57:50 +0530
+"Aneesh Kumar K. V" <aneesh.kumar@linux.vnet.ibm.com> wrote:
 
-I get this every time on boot with current -git:
+> On Fri, 21 May 2010 18:15:16 -0400, "J. Bruce Fields" <bfields@fieldses.org> wrote:
+> > On Thu, May 20, 2010 at 01:05:30PM +0530, Aneesh Kumar K.V wrote:
+> > > The exportfs encode handle function should return the minimum required
+> > > handle size. This helps user to find out the handle size by passing 0
+> > > handle size in the first step and then redoing to the call again with
+> > > the returned handle size value.
+> > 
+> > The encode_fh() interface is a little confusing.  (Not your fault,
+> > really, mainly it's the return value (and the special use of 255) that I
+> > always find odd.)
+> > 
+> > But maybe it would help to have a little more documention in the
+> > export_encode_fh() kerneldoc comment and/or in
+> > Documentation/filesystems/nfs/Exporting?
+> > 
+> 
+> Kernel documentation says 
+> 
+>  * encode_fh:
+>  *    @encode_fh should store in the file handle fragment @fh (using at most
+>  *    @max_len bytes) information that can be used by @decode_fh to recover the
+>  *    file refered to by the &struct dentry @de.  If the @connectable flag is
+>  *    set, the encode_fh() should store sufficient information so that a good
+>  *    attempt can be made to find not only the file but also it's place in the
+>  *    filesystem.   This typically means storing a reference to de->d_parent in
+>  *    the filehandle fragment.  encode_fh() should return the number of bytes
+>  *    stored or a negative error code such as %-ENOSPC
+>  *
+> 
+> Clearly the file system encode_fh is not returning the correct return
+> values. Should i fix the kernel to follow the documentation or should
+> the kernel documentation should be fixed. I would prefer code, because
+> the documentation look more easy/clear to follow that returning value 255.
+>
 
-[    6.906133] EXT4-fs (sda7): mounted filesystem with ordered data mode
-[    7.014359] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
-[    7.020570] caller is dqstats_inc+0x19/0x2c
-[    7.026658] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
-[    7.032792] Call Trace:
-[    7.038859]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
-[    7.045025]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
-[    7.051201]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
-[    7.057349]  [<ffffffff810eccfa>] ? __shrink_dcache_sb+0x284/0x293
-[    7.063574]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
-[    7.069730]  [<ffffffff810fc552>] sync_filesystem+0x36/0x4c
-[    7.075867]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
-[    7.081960]  [<ffffffff810f4359>] do_mount+0x251/0x78a
-[    7.088039]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
-[    7.094086]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
-[    7.100085]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
-[    7.124208] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
-[    7.130307] caller is dqstats_inc+0x19/0x2c
-[    7.136386] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
-[    7.142512] Call Trace:
-[    7.148629]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
-[    7.154846]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
-[    7.161019]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
-[    7.167171]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
-[    7.173364]  [<ffffffff810fc563>] sync_filesystem+0x47/0x4c
-[    7.179522]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
-[    7.185616]  [<ffffffff810f4359>] do_mount+0x251/0x78a
-[    7.191663]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
-[    7.197626]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
-[    7.203493]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
-[   11.643596] udev: starting version 153
+The documentation is wrong in that it never returns the number of bytes.
+The number of bytes is stored back in the 'max_len' by-reference argument.
+The return value is a 'type' which is stored in the 4th byte of the
+filehandle.
 
-This is after reverting commit a7cf4145b (anon_inode: set S_IFREG on the
-anon_inode) that the system is not really useable with.
+Error return is by a magic type number (255) simply because it is easier if
+this is stored temporarily in fb_fileid_type which is __u8.  However it
+doesn't need to be stored there.
+code like
+		_fh_update(fhp, fhp->fh_export, dentry);
+		if (fhp->fh_handle.fh_fileid_type == 255)
+			return nfserr_opnotsupp;
 
-Thanks,
-Rafael
+could be changed to
+		err = _fh_update(fhp, fhp->fh_export, dentry);
+		if (err < 0)
+			return nfserr_opnotsupp;
+
+
+and _fh_update could be changed from
+		fhp->fh_handle.fh_fileid_type =
+			exportfs_encode_fh(dentry, fid, &maxsize, subtreecheck);
+to
+		type = exportfs_encode_fh(dentry, fid, &maxsize, subtreecheck);
+		if (type == 255) type = -ENOSPC; /* temp until filesystems changed*/
+		if (type > 0)
+			fhp-.fh_filehandle.fh_fileid_type = type;
+		...
+		return type;
+
+
+And the documentation should be changed to report how the size is returned
+and that the return value is a type, or an error.
+
+NeilBrown
