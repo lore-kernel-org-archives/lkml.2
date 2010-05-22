@@ -1,81 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758390Ab0EVUwt (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 16:52:49 -0400
-Received: from adelie.canonical.com ([91.189.90.139]:37626 "EHLO
-	adelie.canonical.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758039Ab0EVUws (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 16:52:48 -0400
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol
- (rev3)
-From: Chase Douglas <chase.douglas@canonical.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Rafi Rubin <rafi@seas.upenn.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Ping Cheng <pinglinux@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-In-Reply-To: <4BF818A6.6000801@euromail.se>
-References: <1274457354-5570-1-git-send-email-rydberg@euromail.se>
-	 <AANLkTikBWzgRmso0oQNXcTxeExdKZORXYbIwK9CcMl85@mail.gmail.com>
-	 <4BF6B673.1080507@euromail.se>
-	 <20100521165218.GA26439@core.coreip.homeip.net>
-	 <4BF6BB43.2020405@euromail.se>
-	 <20100521172222.GB26439@core.coreip.homeip.net>
-	 <4BF6C303.7030804@euromail.se>
-	 <20100521174140.GA23155@core.coreip.homeip.net>
-	 <4BF6C7B6.2020008@euromail.se> <4BF7A4E8.3050806@seas.upenn.edu>
-	 <4BF7B438.8000001@euromail.se> <1274539582.13705.132.camel@cndougla-ubuntu>
-	 <4BF818A6.6000801@euromail.se>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sat, 22 May 2010 16:52:29 -0400
-Message-ID: <1274561549.20881.8.camel@mini>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758382Ab0EVUyS (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 16:54:18 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:58943 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755473Ab0EVUyR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 16:54:17 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Thomas Gleixner <tglx@linutronix.de>
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
+Date: Sat, 22 May 2010 22:55:27 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005222020570.3368@localhost.localdomain> <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain>
+In-Reply-To: <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005222255.27301.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 2010-05-22 at 19:47 +0200, Henrik Rydberg wrote:
-> Chase Douglas wrote:
-> > On Sat, 2010-05-22 at 12:38 +0200, Henrik Rydberg wrote:
-> >> Getting serious, it is anyone's guess what will happen next, but I was picturing
-> >> a table, with a large multitouch screen and buttons along the side of the table.
-> >> Sure, we can do "ABS_BTN_0", "ABS_BTN_1", etc, but with slots in place, it seems
-> >> more natural to use something like "ABS_MT_BTN_X". While at it, REL_MT event
-> >> makes sense for those touchscreen techniques which register changes, like
-> >> acoustic pulse recognition.
+On Saturday 22 May 2010, Thomas Gleixner wrote:
+> On Sat, 22 May 2010, Thomas Gleixner wrote:
 > 
-> s/ABS/KEY/
-> 
+> > On Sat, 22 May 2010, Rafael J. Wysocki wrote:
+> > > On Saturday 22 May 2010, Thomas Gleixner wrote:
+> > > 
+> > > > Also which clocksource is used ?
+> > > 
+> > > hpet
 > > 
-> > Shouldn't this be handled in userspace? I don't think we want to be
-> > quirking drivers for instances where the same touchscreen is overlaid on
-> > buttons in some cases, but not in others. If we don't quirk, we'd need
-> > some mechanism to tell the driver about such buttons.
+> > Hmm, there is only one hpet related commit sin .34:  30a564be9d
+> > and I can hardly see how this should be related.
 > 
-> Perhaps you would like to clarify what "this" means here, and how you arrive at
-> quirking drivers.
+> Does the problem persist if you disable HPET on the kernel command line ?
 
-I'm arriving rather late to the conversation, so this could be a matter
-of me not understanding everything. What I thought you were proposing is
-something like what I have on my Nexus One: an MT area encompassing a
-touchscreen and extending to an area of four "buttons" off the bottom of
-the screen. I was thinking that interactions with these buttons would
-trigger the KEY_MT_BTN events you mentioned. However, if thats the case
-then the driver needs to know of these buttons, so we've gone from a
-dumb touchscreen driver to a driver that must be aware of regions of the
-screen where there are buttons. This is where I think it would be better
-to have a userspace application (X?) understand the properties of the
-screen to know exactly what a touch means, instead of trying to
-interpret it inside the kernel.
+I didn't try that, but I bisected it in the meantime which lead to:
 
-If this isn't what you meant, then feel free to ignore me :).
+commit 64ce4c2f5252f25798117fa80a027993163d6d84
+Author: John Stultz <johnstul@us.ibm.com>
+Date:   Thu Mar 11 14:04:47 2010 -0800
 
--- Chase
+    time: Clean up warp_clock()
 
+    warp_clock() currently accesses timekeeping internal state directly, which
+    is unnecessary.  Convert it to use the proper timekeeping interfaces.
+
+    Signed-off-by: John Stultz <johnstul@us.ibm.com>
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+So I don't think it's an hpet issue. :-)
+
+I'm now going to revert that commit and see what happens.
+
+Thanks,
+Rafael
