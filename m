@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755736Ab0EVIX5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:23:57 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:34946 "EHLO mgw1.diku.dk"
+	id S1755741Ab0EVIY3 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:24:29 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44742 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753797Ab0EVIXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:23:54 -0400
-Date: Sat, 22 May 2010 10:23:49 +0200 (CEST)
+	id S1753197Ab0EVIY0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:24:26 -0400
+Date: Sat, 22 May 2010 10:24:21 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 18/27] drivers/message/i2o/i2o_config.c: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221023270.13021@ask.diku.dk>
+Subject: [PATCH 19/27] drivers/telephony/ixj.c: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221023490.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -53,28 +53,35 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/message/i2o/i2o_config.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/telephony/ixj.c |   15 ++++-----------
+ 1 file changed, 4 insertions(+), 11 deletions(-)
 
-diff --git a/drivers/message/i2o/i2o_config.c b/drivers/message/i2o/i2o_config.c
-index d33693c..c4b117f 100644
---- a/drivers/message/i2o/i2o_config.c
-+++ b/drivers/message/i2o/i2o_config.c
-@@ -186,14 +186,9 @@ static int i2o_cfg_parms(unsigned long arg, unsigned int type)
- 	if (!dev)
- 		return -ENXIO;
- 
--	ops = kmalloc(kcmd.oplen, GFP_KERNEL);
--	if (!ops)
+diff --git a/drivers/telephony/ixj.c b/drivers/telephony/ixj.c
+index e89304c..b53deee 100644
+--- a/drivers/telephony/ixj.c
++++ b/drivers/telephony/ixj.c
+@@ -5879,20 +5879,13 @@ out:
+ static int ixj_build_filter_cadence(IXJ *j, IXJ_FILTER_CADENCE __user * cp)
+ {
+ 	IXJ_FILTER_CADENCE *lcp;
+-	lcp = kmalloc(sizeof(IXJ_FILTER_CADENCE), GFP_KERNEL);
+-	if (lcp == NULL) {
++	lcp = memdup_user(cp, sizeof(IXJ_FILTER_CADENCE));
++	if (IS_ERR(lcp)) {
+ 		if(ixjdebug & 0x0001) {
+-			printk(KERN_INFO "Could not allocate memory for cadence\n");
++			printk(KERN_INFO "Could not allocate memory for cadence or could not copy cadence to kernel\n");
+ 		}
 -		return -ENOMEM;
--
--	if (copy_from_user(ops, kcmd.opbuf, kcmd.oplen)) {
--		kfree(ops);
++		return PTR_ERR(lcp);
+         }
+-	if (copy_from_user(lcp, cp, sizeof(IXJ_FILTER_CADENCE))) {
+-		if(ixjdebug & 0x0001) {
+-			printk(KERN_INFO "Could not copy cadence to kernel\n");
+-		}
+-		kfree(lcp);
 -		return -EFAULT;
 -	}
-+	ops = memdup_user(kcmd.opbuf, kcmd.oplen);
-+	if (IS_ERR(ops))
-+		return PTR_ERR(ops);
- 
- 	/*
- 	 * It's possible to have a _very_ large table
+ 	if (lcp->filter > 5) {
+ 		if(ixjdebug & 0x0001) {
+ 			printk(KERN_INFO "Cadence out of range\n");
