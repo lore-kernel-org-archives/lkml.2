@@ -1,41 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755123Ab0EVOt5 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:49:57 -0400
-Received: from kroah.org ([198.145.64.141]:54792 "EHLO coco.kroah.org"
+	id S1755305Ab0EVOuI (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:50:08 -0400
+Received: from kroah.org ([198.145.64.141]:54798 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753974Ab0EVOty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1754705Ab0EVOty (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Sat, 22 May 2010 10:49:54 -0400
-Date: Sat, 22 May 2010 07:49:16 -0700
+Date: Sat, 22 May 2010 07:49:42 -0700
 From: Greg KH <greg@kroah.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: Re: linux-next: build warning after merge of the final tree
- (Linus' tree related)
-Message-ID: <20100522144916.GA4269@kroah.com>
-References: <20100522164644.43846a3c.sfr@canb.auug.org.au>
+To: Neil Brown <neilb@suse.de>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org,
+       "Eric W. Biederman" <ebiederm@xmission.com>,
+       Benjamin Thery <benjamin.thery@bull.net>, Sage Weil <sage@newdream.net>
+Subject: Re: linux-next: build failure after merge of the staging-next tree
+Message-ID: <20100522144942.GB4269@kroah.com>
+References: <20100430155205.a4171034.sfr@canb.auug.org.au>
+ <20100430144340.GD1824@kroah.com>
+ <20100518153020.06d5a602@notabene.brown>
+ <20100521233655.GD31430@kroah.com>
+ <20100522102048.3923b197@notabene.brown>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100522164644.43846a3c.sfr@canb.auug.org.au>
+In-Reply-To: <20100522102048.3923b197@notabene.brown>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 04:46:44PM +1000, Stephen Rothwell wrote:
-> Hi Greg,
+On Sat, May 22, 2010 at 10:20:48AM +1000, Neil Brown wrote:
+> On Fri, 21 May 2010 16:36:55 -0700
+> Greg KH <greg@kroah.com> wrote:
 > 
-> After merging the final tree, today's linux-next build (powerpc
-> allnoconfig) produced this warning:
+> > On Tue, May 18, 2010 at 03:30:20PM +1000, Neil Brown wrote:
+> > > On Fri, 30 Apr 2010 07:43:40 -0700
+> > > Greg KH <greg@kroah.com> wrote:
+> > > 
+> > > > On Fri, Apr 30, 2010 at 03:52:05PM +1000, Stephen Rothwell wrote:
+> > > > > Hi Greg,
+> > > > > 
+> > > > > After merging the staging-next tree, today's linux-next build (x86_64
+> > > > > allmodconfig) failed like this:
+> > > > > 
+> > > > > drivers/md/md.c: In function 'level_store':
+> > > > > drivers/md/md.c:3029: error: too few arguments to function 'sysfs_get_dirent'
+> > > > > 
+> > > > > Caused by commit 262f8e4937e7b4a587923ca3c039a184668f49ec ("sysfs:
+> > > > > Implement sysfs tagged directory support") from the driver-core tree
+> > > > > interacting with commit fecc531e3cc0de60514d326c7d82f1075ed55888 ("md:
+> > > > > manage redundancy group in sysfs when changing level") from the md.
+> > > > > 
+> > > > > I have applied this fixup patch for today and can carry it as necessary.
+> > > > > 
+> > > > > [This could have been avoided, of course, by creating a new API (maybe
+> > > > > sysfs_get_dirent_tagged) and implementing the old API in terms of that].
+> > > > 
+> > > > Thanks for the fixup.
+> > > 
+> > > hi Greg,
+> > >  I'm assuming that you will submit you patch queue to Linus first, then I
+> > >  will create a merge which fixes this issue and ask Linus to pull that - so
+> > >  everything is all still bisectable without me rebasing.
+> > > 
+> > >  If you are OK with that, please let me know when you have submitted your
+> > >  queue..  I'll try to keep and eye open, but I might miss it...
+> > 
+> > The drivercore queue is now in Linus's tree.
 > 
-> lib/kobject_uevent.c:86: warning: 'kobj_bcast_filter' defined but not used
-> 
-> Introduced by commit 5f71a29629b4717445f8b7f5fb8f50c2d262b68e ("kobj:
-> Send hotplug events in the proper namespace") from Linus' tree.
+> Thanks Greg.
+> I've created a merge which resolves the sysfs_get_dirent issue and sent Linus
+> a pull request.
 
-Thanks, someone already sent me a patch for this and I'll queue it up
-next week.
+wonderful.
+
+> > Oh, you missed a kref_set() usage in the tree as well, you might want to
+> > fix that up also.
+> 
+> That would be the one in fs/ceph ??
+> Sage knows about that and presumably has a fix queued.
+>   http://lkml.org/lkml/2010/3/17/224
+
+Ah, yes, I thought I had remembered something about that.
 
 greg k-h
