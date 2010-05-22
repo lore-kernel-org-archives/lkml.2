@@ -1,16 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754722Ab0EVIXS (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:23:18 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:44730 "EHLO mgw2.diku.dk"
+	id S1754119Ab0EVIXg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:23:36 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44734 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755456Ab0EVIXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:23:13 -0400
-Date: Sat, 22 May 2010 10:23:08 +0200 (CEST)
+	id S1755710Ab0EVIXb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:23:31 -0400
+Date: Sat, 22 May 2010 10:23:26 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
 To: linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 16/27] drivers/char/applicom.c: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221022500.13021@ask.diku.dk>
+Subject: [PATCH 17/27] drivers/char/vt.c: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221023090.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -53,28 +53,27 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/char/applicom.c |   11 +++--------
- 1 file changed, 3 insertions(+), 8 deletions(-)
+ drivers/char/vt.c |   10 +++-------
+ 1 file changed, 3 insertions(+), 7 deletions(-)
 
-diff --git a/drivers/char/applicom.c b/drivers/char/applicom.c
-index 63313a3..f4ae0e0 100644
---- a/drivers/char/applicom.c
-+++ b/drivers/char/applicom.c
-@@ -703,14 +703,9 @@ static long ac_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
- 	/* In general, the device is only openable by root anyway, so we're not
- 	   particularly concerned that bogus ioctls can flood the console. */
- 
--	adgl = kmalloc(sizeof(struct st_ram_io), GFP_KERNEL);
--	if (!adgl)
+diff --git a/drivers/char/vt.c b/drivers/char/vt.c
+index bd1d116..7cdb6ee 100644
+--- a/drivers/char/vt.c
++++ b/drivers/char/vt.c
+@@ -3967,13 +3967,9 @@ static int con_font_set(struct vc_data *vc, struct console_font_op *op)
+ 	font.charcount = op->charcount;
+ 	font.height = op->height;
+ 	font.width = op->width;
+-	font.data = kmalloc(size, GFP_KERNEL);
+-	if (!font.data)
 -		return -ENOMEM;
--
--	if (copy_from_user(adgl, argp, sizeof(struct st_ram_io))) {
--		kfree(adgl);
+-	if (copy_from_user(font.data, op->data, size)) {
+-		kfree(font.data);
 -		return -EFAULT;
 -	}
-+	adgl = memdup_user(argp, sizeof(struct st_ram_io));
-+	if (IS_ERR(adgl))
-+		return PTR_ERR(adgl);
- 
- 	lock_kernel();	
- 	IndexCard = adgl->num_card-1;
++	font.data = memdup_user(op->data, size);
++	if (IS_ERR(font.data))
++		return PTR_ERR(font.data);
+ 	acquire_console_sem();
+ 	if (vc->vc_sw->con_font_set)
+ 		rc = vc->vc_sw->con_font_set(vc, &font, op->flags);
