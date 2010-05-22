@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754726Ab0EVLRj (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 07:17:39 -0400
-Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:34192 "EHLO
+	id S1754751Ab0EVLRs (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 07:17:48 -0400
+Received: from 69-64-69-152.dedicated.abac.net ([69.64.69.152]:34379 "EHLO
 	imedia.com.my" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754153Ab0EVLRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 07:17:34 -0400
+	id S1754795Ab0EVLRo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 07:17:44 -0400
 X-Antivirus-MYDOMAIN-Mail-From: drfungch@yahoo.com.hk via imedia.com.my
-X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.043887 secs Process 29374)
-Message-ID: <5d8a737b73a2d3115b3791f88b65d32e.squirrel@mail.pemuda.com.my>
+X-Antivirus-MYDOMAIN: 1.25-st-qms (Clear:RC:1(127.0.0.1):. Processed in 0.043959 secs Process 29387)
+Message-ID: <87e6574b42000d76876aa129f5141e83.squirrel@mail.pemuda.com.my>
 Date: Sat, 22 May 2010 19:15:12 +0800 (MYT)
 Subject: REPLY ME....
 From: "Dr Raymond Kuo Fung Chien" <drfungch@yahoo.com.hk>
