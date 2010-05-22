@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753919Ab0EVIUV (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:20:21 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:44693 "EHLO mgw2.diku.dk"
+	id S1753593Ab0EVIUh (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:20:37 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:60263 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753580Ab0EVIUP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:20:15 -0400
-Date: Sat, 22 May 2010 10:20:10 +0200 (CEST)
+	id S1753652Ab0EVIUb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:20:31 -0400
+Date: Sat, 22 May 2010 10:20:26 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Divy Le Ray <divy@chelsio.com>, netdev@vger.kernel.org,
+To: Mike McLagan <mike.mclagan@linux.org>, netdev@vger.kernel.org,
        linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 6/27] drivers/net/cxgb3: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221019530.13021@ask.diku.dk>
+Subject: [PATCH 7/27] drivers/net/wan: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221020110.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -54,29 +54,28 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/net/cxgb3/cxgb3_main.c |   12 +++---------
- 1 file changed, 3 insertions(+), 9 deletions(-)
+ drivers/net/wan/sdla.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/net/cxgb3/cxgb3_main.c b/drivers/net/cxgb3/cxgb3_main.c
-index e3f1b85..066fd5b 100644
---- a/drivers/net/cxgb3/cxgb3_main.c
-+++ b/drivers/net/cxgb3/cxgb3_main.c
-@@ -2311,15 +2311,9 @@ static int cxgb_extension_ioctl(struct net_device *dev, void __user *useraddr)
- 		if (copy_from_user(&t, useraddr, sizeof(t)))
- 			return -EFAULT;
- 		/* Check t.len sanity ? */
--		fw_data = kmalloc(t.len, GFP_KERNEL);
--		if (!fw_data)
--			return -ENOMEM;
--
--		if (copy_from_user
--			(fw_data, useraddr + sizeof(t), t.len)) {
--			kfree(fw_data);
+diff --git a/drivers/net/wan/sdla.c b/drivers/net/wan/sdla.c
+index 43ae6f4..258efc2 100644
+--- a/drivers/net/wan/sdla.c
++++ b/drivers/net/wan/sdla.c
+@@ -1211,14 +1211,9 @@ static int sdla_xfer(struct net_device *dev, struct sdla_mem __user *info, int r
+ 	}
+ 	else
+ 	{
+-		temp = kmalloc(mem.len, GFP_KERNEL);
+-		if (!temp)
+-			return(-ENOMEM);
+-		if(copy_from_user(temp, mem.data, mem.len))
+-		{
+-			kfree(temp);
 -			return -EFAULT;
 -		}
-+		fw_data = memdup_user(useraddr + sizeof(t), t.len);
-+		if (IS_ERR(fw_data))
-+			return PTR_ERR(fw_data);
- 
- 		ret = t3_load_fw(adapter, fw_data, t.len);
- 		kfree(fw_data);
++		temp = memdup_user(mem.data, mem.len);
++		if (IS_ERR(temp))
++			return PTR_ERR(temp);
+ 		sdla_write(dev, mem.addr, temp, mem.len);
+ 		kfree(temp);
+ 	}
