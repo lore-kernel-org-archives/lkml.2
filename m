@@ -1,17 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755313Ab0EVIW1 (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 04:22:27 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:34876 "EHLO mgw1.diku.dk"
+	id S1755624Ab0EVIWo (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 04:22:44 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:44718 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754729Ab0EVIWX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 04:22:23 -0400
-Date: Sat, 22 May 2010 10:22:17 +0200 (CEST)
+	id S1754665Ab0EVIWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 04:22:39 -0400
+Date: Sat, 22 May 2010 10:22:34 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Ian Kent <raven@themaw.net>, autofs@linux.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 13/27] fs/autofs4: Use memdup_user
-Message-ID: <Pine.LNX.4.64.1005221022010.13021@ask.diku.dk>
+To: Doug Gilbert <dgilbert@interlog.com>,
+       "James E.J. Bottomley" <James.Bottomley@suse.de>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 14/27] drivers/scsi: Use memdup_user
+Message-ID: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,8 +22,8 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Use memdup_user when user data is immediately copied into the allocated
-region.  Elimination of the variable ads, which is no longer useful.
+Use memdup_user when user data is immediately copied into the
+allocated region.
 
 The semantic patch that makes this change is as follows:
 (http://coccinelle.lip6.fr/)
@@ -54,37 +56,28 @@ identifier l1,l2;
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- fs/autofs4/dev-ioctl.c |   13 ++-----------
- 1 file changed, 2 insertions(+), 11 deletions(-)
+ drivers/scsi/sg.c |   11 +++--------
+ 1 file changed, 3 insertions(+), 8 deletions(-)
 
-diff --git a/fs/autofs4/dev-ioctl.c b/fs/autofs4/dev-ioctl.c
-index d29b7f6..33d8fc6 100644
---- a/fs/autofs4/dev-ioctl.c
-+++ b/fs/autofs4/dev-ioctl.c
-@@ -95,7 +95,7 @@ static int check_dev_ioctl_version(int cmd, struct autofs_dev_ioctl *param)
-  */
- static struct autofs_dev_ioctl *copy_dev_ioctl(struct autofs_dev_ioctl __user *in)
- {
--	struct autofs_dev_ioctl tmp, *ads;
-+	struct autofs_dev_ioctl tmp;
+diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+index ef752b2..277ace6 100644
+--- a/drivers/scsi/sg.c
++++ b/drivers/scsi/sg.c
+@@ -1676,14 +1676,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
+ 		int len, size = sizeof(struct sg_iovec) * iov_count;
+ 		struct iovec *iov;
  
- 	if (copy_from_user(&tmp, in, sizeof(tmp)))
- 		return ERR_PTR(-EFAULT);
-@@ -103,16 +103,7 @@ static struct autofs_dev_ioctl *copy_dev_ioctl(struct autofs_dev_ioctl __user *i
- 	if (tmp.size < sizeof(tmp))
- 		return ERR_PTR(-EINVAL);
- 
--	ads = kmalloc(tmp.size, GFP_KERNEL);
--	if (!ads)
--		return ERR_PTR(-ENOMEM);
+-		iov = kmalloc(size, GFP_ATOMIC);
+-		if (!iov)
+-			return -ENOMEM;
 -
--	if (copy_from_user(ads, in, tmp.size)) {
--		kfree(ads);
--		return ERR_PTR(-EFAULT);
--	}
--
--	return ads;
-+	return memdup_user(in, tmp.size);
- }
+-		if (copy_from_user(iov, hp->dxferp, size)) {
+-			kfree(iov);
+-			return -EFAULT;
+-		}
++		iov = memdup_user(hp->dxferp, size);
++		if (IS_ERR(iov))
++			return PTR_ERR(iov);
  
- static inline void free_dev_ioctl(struct autofs_dev_ioctl *param)
+ 		len = iov_length(iov, iov_count);
+ 		if (hp->dxfer_len < len) {
