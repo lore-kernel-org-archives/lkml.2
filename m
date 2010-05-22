@@ -1,73 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753995Ab0EVOPP (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 10:15:15 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:63384 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752901Ab0EVOPK (ORCPT
+	id S1754488Ab0EVORL (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 10:17:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:40262 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753725Ab0EVORI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 10:15:10 -0400
+	Sat, 22 May 2010 10:17:08 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:subject
-         :content-type:content-transfer-encoding;
-        b=dFrYuOG4HdyhwFAViHe07stuyKhOYwXw3N5w74r2xojWx48FeZJwKrChGIczaUquhy
-         32F6YzDOsYblWaU7152pNHfDzyQKcEDz+R3+BoxH85E6SCLNUNjSNMUmLFmT83om1cnb
-         nkN6xSTKX5mbRTob9xzMc/AgZ6iHt0P2RCgK8=
-Message-ID: <4BF7E6EC.7010505@gmail.com>
-Date: Sat, 22 May 2010 22:15:08 +0800
-From: Wan ZongShun <mcuos.com@gmail.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=mFo7di6DY/XWB2qSA9omKWuAxYugGYbmAk3TF++gQ0/ngF8KE6UiJ6BPnz85brRMtD
+         Oj6GPddFaHlD8NEhIqtbt42je/e81xOsigZ2Gm4o3d+oe6MdnZPO7jjU2cs5ERfkMfup
+         344JElq+k6FZQAJ69BmjznykmBcC1H0NvVjLs=
+Message-ID: <4BF7E769.1090102@gmail.com>
+Date: Sat, 22 May 2010 07:17:13 -0700
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
 MIME-Version: 1.0
-To: LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: [PATCH] NUC900: add maintainer entries for Wan ZongShun.
-Content-Type: text/plain; charset=GB2312
+To: piotr@hosowicz.com
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com>
+In-Reply-To: <4BF7E470.6080409@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dear Andrew,
+On 05/22/2010 07:04 AM, Piotr Hosowicz wrote:
+> On 22.05.2010 15:44, Justin P. Mattock wrote:
+>
+>> what about strace make
+>> (maybe will give you info)
+>
+> May be I'll try like that if the problem persists. I will produce tons
+> of output I believe :-(
+>
 
-I want to add some files entries in MAINTAINER files
-for Winbond/Nuvoton ARM platform.
 
-Could you help me merge this patch?
+yeah it does,
+you can always send the
+output to a file i.g.
+strace -o filename make
+anything at this point though
+to see what is crapping out
 
-Thanks a lot.
-
->From 4e5326dbfbfdad58eb2c333df91c15993bce6c47 Mon Sep 17 00:00:00 2001
-From: zswan <zswan@zswan-marvell.(none)>
-Date: Sat, 22 May 2010 21:56:26 +0800
-Subject: [PATCH] add maintainer file entries
-
----
- MAINTAINERS |   12 ++++++++++++
- 1 files changed, 12 insertions(+), 0 deletions(-)
-
-diff --git a/MAINTAINERS b/MAINTAINERS
-index d329b05..d6b3777 100644
---- a/MAINTAINERS
-+++ b/MAINTAINERS
-@@ -970,6 +970,18 @@ M:	Wan ZongShun <mcuos.com@gmail.com>
- L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
- W:	http://www.mcuos.com
- S:	Maintained
-+F:	arch/arm/mach-w90x900/
-+F:	arch/arm/mach-nuc93x/
-+F:	drivers/input/keyboard/w90p910_keypad.c
-+F:	drivers/input/touchscreen/w90p910_ts.c
-+F:	drivers/watchdog/nuc900_wdt.c
-+F:	drivers/net/arm/w90p910_ether.c
-+F:	drivers/mtd/nand/w90p910_nand.c
-+F:	drivers/rtc/rtc-nuc900.c
-+F:	drivers/spi/spi_nuc900.c
-+F:	drivers/usb/host/ehci-w90x900.c
-+F:	drivers/video/nuc900fb.c
-+F:	drivers/sound/soc/nuc900/
-
- ARM/U300 MACHINE SUPPORT
- M:	Linus Walleij <linus.walleij@stericsson.com>
--- 
-1.6.3.3
+Justin P. Mattock
