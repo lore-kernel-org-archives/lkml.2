@@ -1,77 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755486Ab0EVQ2n (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 12:28:43 -0400
-Received: from casper.infradead.org ([85.118.1.10]:45635 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753543Ab0EVQ2k convert rfc822-to-8bit (ORCPT
+	id S1755607Ab0EVQ36 (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 12:29:58 -0400
+Received: from elasmtp-kukur.atl.sa.earthlink.net ([209.86.89.65]:43335 "EHLO
+	elasmtp-kukur.atl.sa.earthlink.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752703Ab0EVQ3z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 12:28:40 -0400
-Date: Sat, 22 May 2010 09:31:56 -0700
-From: Arjan van de Ven <arjan@infradead.org>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: frank.rowand@am.sony.com,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 2/2] cpuidle: Add a repeating pattern detector to the
- menu governor
-Message-ID: <20100522093156.406eacd5@infradead.org>
-In-Reply-To: <20100521124309.28e25866.akpm@linux-foundation.org>
-References: <20100509160242.2e351e6a@infradead.org>
-	<20100509160444.260ca9c9@infradead.org>
-	<4BF44156.2070807@am.sony.com>
-	<20100521124309.28e25866.akpm@linux-foundation.org>
-Organization: Intel
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.16.6; i586-redhat-linux-gnu)
+	Sat, 22 May 2010 12:29:55 -0400
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=dk20050327; d=peoplepc.com;
+  b=RUDTJX+cPY/aWiW1gW4hXN65wdEnFU+DBcXRW1/Zz8ThVL3uXoBZLThFKYWjqMk8;
+  h=Message-ID:Date:From:Reply-To:Subject:Mime-Version:Content-Type:Content-Transfer-Encoding:X-Mailer:X-ELNK-Trace:X-Originating-IP;
+Message-ID: <14950716.1274545656436.JavaMail.root@elwamui-cypress.atl.sa.earthlink.net>
+Date: Sat, 22 May 2010 12:27:36 -0400 (EDT)
+From: Luo Jang <guertler@peoplepc.com>
+Reply-To: Luo Jang <luojang02@yahoo.com.hk>
+Subject: MAIL DETAILS.
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8BIT
-X-SRS-Rewrite: SMTP reverse-path rewritten from <arjan@infradead.org> by casper.infradead.org
-	See http://www.infradead.org/rpr.html
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-Mailer: EarthLink Zoo Mail 1.0
+X-ELNK-Trace: 6d16f6794eb522a4c243118408b92c23b529ceed56090e2ba0d4b58806e66c5868b4289d569d30e1350badd9bab72f9c350badd9bab72f9c350badd9bab72f9c
+X-Originating-IP: 209.86.224.32
+To: unlisted-recipients:; (no To-header on input)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 21 May 2010 12:43:09 -0700
-Andrew Morton <akpm@linux-foundation.org> wrote:
-> > Should the following division by INTERVALS be moved up 6 lines to
-> > before "if (avg > data->expected_us)"?
-> 
-> Quite possibly.
 
->From 7350a9007eee802eaa9e4c1878dd5a2ea4d6f7f9 Mon Sep 17 00:00:00 2001
-From: Arjan van de Ven <arjan@linux.intel.com>
-Date: Sat, 22 May 2010 09:29:29 -0700
-Subject: [PATCH] cpuidle: fix bug in the pattern detector as reported by Frank Rowand
 
-Frank Rowand found a bug in the new pattern detector code where
-the average value was looked at before the sum of values got divided
-by the number of samples.
+Dear Intending Partner,
 
-Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
-CC: akpm@linux-foundation.org
-CC: frank.rowand@am.sony.com
----
- drivers/cpuidle/governors/menu.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+My names are Luo Jang; I'm an Account Officer with (BOC) Bank of China, United Kingdom. I need you a foreigner to assist in transferring the money below. Please, read this Letter to understand what this business is about.
 
-diff --git a/drivers/cpuidle/governors/menu.c b/drivers/cpuidle/governors/menu.c
-index f3d4783..52ff8aa 100644
---- a/drivers/cpuidle/governors/menu.c
-+++ b/drivers/cpuidle/governors/menu.c
-@@ -205,12 +205,12 @@ static void detect_repeating_patterns(struct menu_device *data)
- 	/* first calculate average and standard deviation of the past */
- 	for (i = 0; i < INTERVALS; i++)
- 		avg += data->intervals[i];
-+	avg = avg / INTERVALS;
- 
- 	/* if the avg is beyond the known next tick, it's worthless */
- 	if (avg > data->expected_us)
- 		return;
- 
--	avg = avg / INTERVALS;
- 	for (i = 0; i < INTERVALS; i++)
- 		stddev += (data->intervals[i] - avg) *
- 			  (data->intervals[i] - avg);
--- 
-1.6.2.5
+Let me know if I can trust you so that I will funish you with detail of project thank you.
 
+Jang
+
+________________________________________
+PeoplePC Online
+A better way to Internet
+http://www.peoplepc.com
