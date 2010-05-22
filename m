@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757151Ab0EVSWN (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 14:22:13 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:33908 "EHLO
-	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754077Ab0EVSWJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 14:22:09 -0400
-From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org
-Subject: [git pull] fatfs-2.6 patches
-Date: Sun, 23 May 2010 03:22:04 +0900
-Message-ID: <87fx1jbxv7.fsf@devron.myhome.or.jp>
-User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+	id S1757815Ab0EVS0O (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 14:26:14 -0400
+Received: from www.tglx.de ([62.245.132.106]:56843 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755432Ab0EVS0J (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 14:26:09 -0400
+Date: Sat, 22 May 2010 20:25:57 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       John Stultz <johnstul@us.ibm.com>, LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current
+ -git
+In-Reply-To: <201005221934.09705.rjw@sisk.pl>
+Message-ID: <alpine.LFD.2.00.1005222020570.3368@localhost.localdomain>
+References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005221429360.3368@localhost.localdomain> <alpine.LFD.2.00.1005221616310.3368@localhost.localdomain> <201005221934.09705.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Please pull from
+On Sat, 22 May 2010, Rafael J. Wysocki wrote:
+> On Saturday 22 May 2010, Thomas Gleixner wrote:
+> 
+> > Also which clocksource is used ?
+> 
+> hpet
 
-    git://git.kernel.org/pub/scm/linux/kernel/git/hirofumi/fatfs-2.6.git master
+Hmm, there is only one hpet related commit sin .34:  30a564be9d
+and I can hardly see how this should be related.
 
-to get these changes:
+Thanks,
 
-Andy Shevchenko (1):
-      fat: use pack_hex_byte() instead of custom one
+	tglx
 
-Arnd Bergmann (1):
-      fat: convert to unlocked_ioctl
-
-OGAWA Hirofumi (1):
-      fat: Cleanup nls_unload() usage
-
- fs/fat/dir.c   |   28 ++++++++++++----------------
- fs/fat/fat.h   |    4 ++--
- fs/fat/file.c  |   19 ++++++++++++++++---
- fs/fat/inode.c |    6 ++----
- 4 files changed, 32 insertions(+), 25 deletions(-)
-
-Thanks.
--- 
-OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
