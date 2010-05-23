@@ -1,120 +1,100 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755250Ab0EWVVH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 17:21:07 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:58142 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753593Ab0EWVVD (ORCPT
+	id S1755451Ab0EWVkZ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 17:40:25 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:55249 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754973Ab0EWVkX (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 17:21:03 -0400
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current
- -git
-From: john stultz <johnstul@us.ibm.com>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
-References: <201005212343.25184.rjw@sisk.pl>
-	 <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain>
-	 <201005222255.27301.rjw@sisk.pl> <201005222320.01506.rjw@sisk.pl>
-	 <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Sun, 23 May 2010 14:20:58 -0700
-Message-ID: <1274649658.1932.13.camel@work-vm>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Sun, 23 May 2010 17:40:23 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:x-x-sender:to:subject:message-id:user-agent:mime-version
+         :content-type;
+        b=MBj8u6drQLKyYSl6ghWVyMl0j+nbceWRY1m/0UttLNyS3z26We3G0vzbDd00U2AU55
+         4Yd+uW7xlS0mL/SIBfW4nIiO+dUm7Wc9JEm2Tv8bWKJZTdnSiCsu5ziifkqn1awA7X+a
+         YhCRd6F2wkc4q8JuVoVEkQWDSGlO/ecLf6q4Y=
+Date: Sun, 23 May 2010 17:40:04 -0400 (EDT)
+From: Parag Warudkar <parag.lkml@gmail.com>
+X-X-Sender: parag@parag-laptop
+To: linux-kernel@vger.kernel.org
+Subject: UML broken for CONFIG_SLAB
+Message-ID: <alpine.DEB.2.00.1005231149100.605@parag-laptop>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, 2010-05-23 at 08:40 +0200, Thomas Gleixner wrote:
-> On Sat, 22 May 2010, Rafael J. Wysocki wrote:
-> > After reverting commit 64ce4c2f above things work again.
-> > 
-> > To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
-> > Remove xtime_cache), but since the symptoms continued to apprear after
-> > reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
-> > on this box.
-> 
-> I assume the cmos clock of this machine is not on UTC, right ? Does
-> the patch below fix the issue ?
+UML seems to be badly broken 2.6.34 onwards - leading to random segfaults.
 
-Oof. Thanks for catching that. 
+Reading symbols from /home/parag/devel/kernel/linux-2.6-um/linux...done.
+(gdb) r
+Starting program: /home/parag/devel/kernel/linux-2.6-um/linux 
+Checking that ptrace can change system call numbers...OK
+Checking syscall emulation patch for ptrace...OK
+Checking advanced syscall emulation patch for ptrace...OK
+Checking for tmpfs mount on /dev/shm...OK
+Checking PROT_EXEC mmap in /dev/shm/...OK
+Checking for the skas3 patch in the host:
+  - /proc/mm...not found: No such file or directory
+  - PTRACE_FAULTINFO...not found
+  - PTRACE_LDT...not found
+UML running in SKAS0 mode
+Core dump limits :
+        soft - 0
+        hard - NONE
 
+Program received signal SIGSEGV, Segmentation fault.
+0x000000006007823f in alloc_kmemlist (cachep=0x61c00f40, limit=<value 
+optimized out>, batchcount=<value optimized out>, shared=<value optimized 
+out>, gfp=208) at mm/slab.c:3861
+3861                    l3->free_limit = (1 + nr_cpus_node(node)) *
+(gdb) 
 
-> @John: Can you please check the other users of timespec_add_safe() in
-> timekeeping as well ?
+(gdb) bt
+#0  0x000000006007823f in alloc_kmemlist (cachep=0x61c00f40, limit=<value 
+optimized out>, batchcount=<value optimized out>, shared=<value optimized 
+out>, gfp=208) at mm/slab.c:3861
+#1  do_tune_cpucache (cachep=0x61c00f40, limit=<value optimized out>, 
+batchcount=<value optimized out>, shared=<value optimized out>, gfp=208) 
+at mm/slab.c:3943
+#2  0x00000000600783be in enable_cpucache (cachep=0x61c00f40, 
+gfp=1639983680) at mm/slab.c:3993
+#3  0x000000006016e43d in setup_cpu_cache (cachep=0x61c00f40, gfp=208) at 
+mm/slab.c:2017
+#4  0x0000000060078797 in kmem_cache_create (name=0x601c80b6 
+"idr_layer_cache", size=<value optimized out>, align=<value optimized 
+out>, flags=262144, ctor=<value optimized out>)
+    at mm/slab.c:2351
+#5  0x000000006000982c in idr_init_cache () at lib/idr.c:676
+#6  0x00000000600015df in start_kernel () at init/main.c:658
 
-So monotonic_to_bootbased() looks ok, as total_sleep_time should always
-be positive. 
+This one I tried to debug and something weird seems to be going on -
 
-timekeeping_resume() also looks ok, since it we make sure the delta
-between the resume time and the suspend time is positive.
+mm/slab.c:3849 does a l3 = kmalloc_node(...), which *seems* to be 
+returning NULL but the check on next line - if (!l3) doesn't seem to be 
+succeeding.
 
-That said, it may be worth open coding the:
-	set_normalized_timespec(&ret, a.tv_sec + b.tv_sec, 
-				a.tv_nsec + b.tv_nsec);
+Finally it seems to happily dereference l3 (0x40 offsets etc.) up until 
+dereferencing free_limit at which point it explodes.
 
-just so we don't have similar mix ups in the future, since
-timespec_add_safe is just such a reassuring and comforting name :)
+A very few times it goes a little further and explodes at 
 
+fsck from util-linux-ng 2.16
+ROOT: clean, 18550/65536 files, 106443/262144 blocks
 
+Program received signal SIGSEGV, Segmentation fault.
+0x00000000600effb7 in cfq_close_cooperator (cfqd=0x7fcbe000, 
+cur_cfqq=0x7ff81bb0) at block/cfq-iosched.c:1801
+1801            if (cfq_class_rt(cfqq) != cfq_class_rt(cur_cfqq))
+(gdb) p cfqq
+$1 = (struct cfq_queue *) 0x0
+(gdb) p cur_cfqq 
+$2 = (struct cfq_queue *) 0x7ff81bb0
+(gdb) 
 
-> Thanks,
-> 
-> 	tglx
-> 
-> ---------->
-> Subject: timekeeping: Fix timezone update
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Sun, 23 May 2010 08:14:45 +0200
-> 
-> commit 64ce4c2f (time: Clean up warp_clock()) breaks the timezone
-> update in a very subtle way. To avoid the direct access to timekeeping
-> internals it adds the timezone delta to the current time with
-> timespec_add_safe(). This works nicely when the timezone delta is > 0.
-> If timezone delta is < 0 then the wrap check in timespec_add_safe()
-> triggers and timespec_add_safe() returns TIME_MAX and screws up
-> timekeeping completely. 
-> 
-> This is not surprising as the comment above timespec_add_safe() says:
->     It's assumed that both values are valid (>= 0)
-> 
-> The function was created to avoid overflow issues when adding the
-> select() timeout to current time, where the above applies.
-> 
-> Add the timezone seconds adjustment directly.
-> 
-> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>\
+This is with CONFIG_SLAB=y.
 
-Acked-by: John Stultz <johnstul@us.ibm.com>
-
-> ---
->  kernel/time.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6/kernel/time.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/time.c
-> +++ linux-2.6/kernel/time.c
-> @@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct tim
->   */
->  static inline void warp_clock(void)
->  {
-> -	struct timespec delta, adjust;
-> -	delta.tv_sec = sys_tz.tz_minuteswest * 60;
-> -	delta.tv_nsec = 0;
-> -	adjust = timespec_add_safe(current_kernel_time(), delta);
-> +	struct timespec adjust;
-> +
-> +	adjust = current_kernel_time();
-> +	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
->  	do_settimeofday(&adjust);
->  }
-> 
-
-
+Parag
