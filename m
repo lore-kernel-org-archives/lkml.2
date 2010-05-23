@@ -1,108 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754540Ab0EWRcq (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 13:32:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36861 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab0EWRcp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 13:32:45 -0400
-Date: Sun, 23 May 2010 20:28:21 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
-	ring itself
-Message-ID: <20100523172821.GA14948@redhat.com>
-References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au> <20100523153134.GA14646@redhat.com> <4BF94CAD.5010504@redhat.com> <20100523155132.GA14733@redhat.com> <4BF951BE.1010402@redhat.com>
+	id S1754704Ab0EWRpA (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 13:45:00 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:39431 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab0EWRo6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 13:44:58 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=Wd16Fe0PWyYEjkxP15WqXoLKi0J+4B7LtxDTZSYY9ry1io+CenyhxIaLnMuPxNtPl6
+         Kfk3fdj73RojIDELhEmN3SAQbRdtNO+Q+AEGp4MGGsN72g7Jn9b+vPkiWAqyw4qPaOFA
+         8bhO35rPGxqLzyz+gS8AcWQQ8EdRL8lr1emFo=
+From: Maciej Rutecki <maciej.rutecki@gmail.com>
+Reply-To: maciej.rutecki@gmail.com
+To: Xavier Gnata <xavier.gnata@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       lenb@kernel.org
+Subject: Re: Sony vaio serie F PCIe PME service failure.
+Date: Sun, 23 May 2010 19:44:50 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
+Cc: linux-acpi@vger.kernel.org
+References: <4BF6FEA4.1050406@gmail.com>
+In-Reply-To: <4BF6FEA4.1050406@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF951BE.1010402@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+Content-Type: Text/Plain;
+  charset="utf-8"
+Content-Transfer-Encoding: 8BIT
+Message-Id: <201005231944.51135.maciej.rutecki@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 07:03:10PM +0300, Avi Kivity wrote:
-> On 05/23/2010 06:51 PM, Michael S. Tsirkin wrote:
->>>
->>>> So locked version seems to be faster than unlocked,
->>>> and share/unshare not to matter?
->>>>
->>>>        
->>> May be due to the processor using the LOCK operation as a hint to
->>> reserve the cacheline for a bit.
->>>      
->> Maybe we should use atomics on index then?
->>    
->
-> This should only be helpful if you access the cacheline several times in  
-> a row.  That's not the case in virtio (or here).
->
-> I think the problem is that LOCKSHARE and SHARE are not symmetric, so  
-> they can't be directly compared.
->
->> OK, after adding mb in code patch will be sent separately,
->> the test works for my workstation. locked is still fastest,
->> unshared sometimes shows wins and sometimes loses over shared.
->>
->> [root@qus19 ~]# ./cachebounce share 0 1
->> CPU 0: share cacheline: 6638521 usec
->> CPU 1: share cacheline: 6638478 usec
->>    
->
-> 66 ns? nice.
->
->> [root@qus19 ~]# ./cachebounce share 0 2
->> CPU 0: share cacheline: 14529198 usec
->> CPU 2: share cacheline: 14529156 usec
->>    
->
-> 140 ns, not too bad.  I hope I'm not misinterpreting the results.
->
-> -- 
-> error compiling committee.c: too many arguments to function
+(Add CC)
 
+2.6.33.* works OK?
 
-Here's another box: here the fastest option
-is shared, slowest unshared, lock is in the middle.
+On piątek, 21 maja 2010 o 23:44:04 Xavier Gnata wrote:
+> Hi,
+> 
+> I get that during the boot of the vaio VPCF11M1E using unpatched 2.6.34
+> from kernel.org:
+> 
+> [    2.047242] pcieport 0000:00:01.0: Failed to receive control of PCIe
+> PME service: ACPI _OSC failed
+> [    2.047249] pcie_pme: probe of 0000:00:01.0:pcie01 failed with error -13
+> [    2.047418] pcieport 0000:00:1c.0: Failed to receive control of PCIe
+> PME service: ACPI _OSC failed
+> [    2.047424] pcie_pme: probe of 0000:00:1c.0:pcie01 failed with error -13
+> [    2.047589] pcieport 0000:00:1c.1: Failed to receive control of PCIe
+> PME service: ACPI _OSC failed
+> [    2.047595] pcie_pme: probe of 0000:00:1c.1:pcie01 failed with error -13
+> [    2.047759] pcieport 0000:00:1c.2: Failed to receive control of PCIe
+> PME service: ACPI _OSC failed
+> [    2.047764] pcie_pme: probe of 0000:00:1c.2:pcie01 failed with error -13
+> [    2.047928] pcieport 0000:00:1c.5: Failed to receive control of PCIe
+> PME service: ACPI _OSC failed
+> [    2.047933] pcie_pme: probe of 0000:00:1c.5:pcie01 failed with error -13
+> 
+> for i in /sys/bus/pnp/devices/*; do echo $i; cat $i/id; done
+> returns :
+> 
+> /sys/bus/pnp/devices/00:00
+> PNP0a08
+> PNP0a03
+> /sys/bus/pnp/devices/00:01
+> PNP0200
+> /sys/bus/pnp/devices/00:02
+> INT0800
+> /sys/bus/pnp/devices/00:03
+> PNP0103
+> /sys/bus/pnp/devices/00:04
+> PNP0c04
+> /sys/bus/pnp/devices/00:05
+> PNP0c02
+> /sys/bus/pnp/devices/00:06
+> PNP0b00
+> /sys/bus/pnp/devices/00:07
+> PNP0303
+> /sys/bus/pnp/devices/00:08
+> SNY9011
+> PNP0f13
+> /sys/bus/pnp/devices/00:09
+> PNP0c02
+> /sys/bus/pnp/devices/00:0a
+> PNP0a03
+> 
+> 
+> Everthing looks fine except these messages during the boot.
+> Any clue about what's going wrong? (maybe nothing...)
+> I don't use any special boot options:
+> GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
+> 
+> Xavier
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> 
 
-
-
-[root@virtlab16 testring]# sh run 0 2
-CPU 2: share cacheline: 3304728 usec
-CPU 0: share cacheline: 3304784 usec
-CPU 0: unshare cacheline: 6283248 usec
-CPU 2: unshare cacheline: 6283224 usec
-CPU 2: lockshare cacheline: 4018567 usec
-CPU 0: lockshare cacheline: 4018609 usec
-
-
-CPU 2: lockunshare cacheline: 4041791 usec
-CPU 0: lockunshare cacheline: 4041832 usec
-[root@virtlab16 testring]# 
-[root@virtlab16 testring]# 
-[root@virtlab16 testring]# 
-[root@virtlab16 testring]# sh run 0 1
-CPU 1: share cacheline: 8306326 usec
-CPU 0: share cacheline: 8306324 usec
-CPU 0: unshare cacheline: 19571697 usec
-CPU 1: unshare cacheline: 19571578 usec
-CPU 0: lockshare cacheline: 11281566 usec
-CPU 1: lockshare cacheline: 11281424 usec
-CPU 0: lockunshare cacheline: 11276093 usec
-CPU 1: lockunshare cacheline: 11275957 usec
-
-
-[root@virtlab16 testring]# sh run 0 3
-CPU 0: share cacheline: 8288335 usec
-CPU 3: share cacheline: 8288334 usec
-CPU 0: unshare cacheline: 19107202 usec
-CPU 3: unshare cacheline: 19107139 usec
-CPU 0: lockshare cacheline: 11238915 usec
-CPU 3: lockshare cacheline: 11238848 usec
-CPU 3: lockunshare cacheline: 11132134 usec
-CPU 0: lockunshare cacheline: 11132249 usec
-
+-- 
+Maciej Rutecki
+http://www.maciek.unixy.pl
