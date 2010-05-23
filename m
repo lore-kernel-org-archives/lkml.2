@@ -1,68 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754059Ab0EWPHx (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 11:07:53 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:51160 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752865Ab0EWPHv convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 11:07:51 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=uZmeSePFtxHe2QayWUI9fRzZ82t9dqdCXOVpFpfqAnBigxX1U5Z923LamB8lKD5HB+
-         ePVWoS5tJhTPc6UFYqdlCRp2tCRbpHFFiQlKeDaCIVe6YobIs/ZOulrIGdYPt55sLeoP
-         pDI9kSRfVkGRc8R0Qjn3VC8TrRRVZp56+zxUg=
+	id S1752306Ab0EWPTy (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 11:19:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3944 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751040Ab0EWPTw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 11:19:52 -0400
+Message-ID: <4BF94792.5030405@redhat.com>
+Date: Sun, 23 May 2010 18:19:46 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <20100523141300.GD950@n2100.arm.linux.org.uk>
-References: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com>
-	 <20100523123801.GC950@n2100.arm.linux.org.uk>
-	 <AANLkTikRp0EHxshKYq39p18ymoRNAtyHrNm3yq6A49-r@mail.gmail.com>
-	 <20100523141300.GD950@n2100.arm.linux.org.uk>
-Date: Sun, 23 May 2010 23:07:50 +0800
-Message-ID: <AANLkTinV9Na9zxYMIfTr893Ynnc0YOk2B6uPKEa9s4R1@mail.gmail.com>
-Subject: Re: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
-From: Ming Lei <tom.leiming@gmail.com>
-To: Russell King - ARM Linux <linux@arm.linux.org.uk>
-Cc: linux-arm-kernel@lists.infradead.org, linux-embedded@vger.kernel.org,
-       a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm: Swap checksum
+References: <4BF81D87.6010506@cesarb.net> <1274551731-4534-3-git-send-email-cesarb@cesarb.net>
+In-Reply-To: <1274551731-4534-3-git-send-email-cesarb@cesarb.net>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/23 Russell King - ARM Linux <linux@arm.linux.org.uk>:
-> On Sun, May 23, 2010 at 09:44:20PM +0800, Ming Lei wrote:
->> 2010/5/23 Russell King - ARM Linux <linux@arm.linux.org.uk>:
->> >>  ENTRY(ret_to_user)
->> >>  ret_slow_syscall:
->> >> -     disable_irq                             @ disable interrupts
->> >> +     disable_irq_notrace                             @ disable interrupts
->> >
->> > I think this one does need to be traced - the pending work functions are
->> > all C code which could call back into lockdep.
->>
->> If there are pending works, schedule will be called to give cpu to it,
->> I wonder why the work function to be scheduled will be run with irq
->> disabled. Seems we should enable irq again before calling schedule,
->> not sure.
+On 05/22/2010 09:08 PM, Cesar Eduardo Barros wrote:
+> Add support for checksumming the swap pages written to disk, using the
+> same checksum as btrfs (crc32c). Since the contents of the swap do not
+> matter after a shutdown, the checksum is kept in memory only.
 >
-> No.  I'm talking about things like do_notify_resume().
+> Note that this code does not checksum the software suspend image.
 >
-> I think the above should be left as-is, so that as far as lockdep is
-> concerned, IRQs are off while userspace runs.  What happens between
-> returning to userspace and re-entering the kernel has no bearing what
-> so ever on lockdep.
 >
+>
+>   #define SWAP_FLAG_PREFER	0x8000	/* set if swap priority specified */
+>   #define SWAP_FLAG_PRIO_MASK	0x7fff
+> @@ -180,6 +183,10 @@ struct swap_info_struct {
+>   	struct swap_extent *curr_swap_extent;
+>   	struct swap_extent first_swap_extent;
+>   	struct block_device *bdev;	/* swap device or bdev of swap file */
+> +#ifdef CONFIG_SWAP_CHECKSUM
+> +	unsigned short *csum_count;	/* usage count of a csum page */
+> +	u32 **csum;			/* vmalloc'ed array of swap csums */
+> +#endif
+>   	struct file *swap_file;		/* seldom referenced */
+>   	unsigned int old_block_size;	/* seldom referenced */
+>   };
+>    
 
-Oh, trace_ret_hardirqs_on has to be added before returning to user-space to
-remove the warning, like x86 and mips. If you agree, I'd like to post
-a new version
-patch.
+On 64-bit, we may be able to store the checksum in the pte, if the swap 
+device is small enough.
 
-Thanks,
+If we take the trouble to touch the page, we may as well compare it 
+against zero, and if so drop it instead of swapping it out.
 
 -- 
-Lei Ming
+error compiling committee.c: too many arguments to function
+
