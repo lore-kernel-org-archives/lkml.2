@@ -1,67 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755592Ab0EWW7A (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 18:59:00 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:60531 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755387Ab0EWW67 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 18:58:59 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: "John W. Linville" <linville@tuxdriver.com>
-Subject: Re: [linux-pm] [Regression][git head f4b87dee9] ath9k doesn't work correctly after resume from suspend to RAM
-Date: Mon, 24 May 2010 00:59:57 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: linux-pm@lists.linux-foundation.org, linux-wireless@vger.kernel.org,
-       "Luis R. Rodriguez" <mcgrof@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Daniel Yingqiang Ma <yma.cool@gmail.com>,
-       David Miller <davem@davemloft.net>
-References: <201005222353.26920.rjw@sisk.pl> <201005230013.37578.rjw@sisk.pl> <201005232120.16814.rjw@sisk.pl>
-In-Reply-To: <201005232120.16814.rjw@sisk.pl>
+	id S1755611Ab0EWXCJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 19:02:09 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:45738 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755387Ab0EWXCH convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 19:02:07 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=U2smcdoSbwKvUQf7mbym5KMkCGHNV8AWo1hsQs8X/gm8pdKBXZfYqY+Jw7EFLNjYt3
+         RgHLDqt6cwGKeWGVTyfKRjvYJHpdM8ExQ1dVnHnycqvZfHOl2L3BgM6QMATMR4D+V9zb
+         JdzARe1aT7CdUURUCsIByTB5OSV25apTBXrqs=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005240059.57921.rjw@sisk.pl>
+In-Reply-To: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
+References: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
+Date: Sun, 23 May 2010 16:02:05 -0700
+X-Google-Sender-Auth: KIap7V9hsMQX4Mvj1rFYKogTMbA
+Message-ID: <AANLkTikmdqceeWNYGm7ZTI64pixtkVWBbpWEtajZGHA1@mail.gmail.com>
+Subject: Re: [PATCH] DMAENGINE: DMA40 U8500 platform configuration
+From: Dan Williams <dan.j.williams@intel.com>
+To: Russell King <rmk@arm.linux.org.uk>
+Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
+       STEricsson_nomadik_linux@list.st.com
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 May 2010, Rafael J. Wysocki wrote:
-> On Sunday 23 May 2010, Rafael J. Wysocki wrote:
-> > On Saturday 22 May 2010, Rafael J. Wysocki wrote:
-> > > Hi,
-> > > 
-> > > With current -git on Acer Ferrari One the ath9k driver doesn't seem to work
-> > > after resume from suspend to RAM.  NetworkManager seems to think that it works,
-> > > but it doesn't really connect with the AP and doesn't try to obtain an IP
-> > > address.
-> > 
-> > Sorry, this was incorrect.  It actually tries to obtain an IP address, but
-> > fails.  Apparently, it can't obtain the address without being reloaded.
-> 
-> iwlagn also has problems after resume from suspend to RAM (tested on
-> Toshiba Portege R500).  In this case resume works once, but then the next
-> attempt to suspend fails (I had to reboot the box every time that happened).
-> 
-> If iwlagn is unloaded, it is possible to suspend and resume the system
-> arbitrary number of times, but then iwlagn doesn't work when its reloaded
-> (it doesn't detect wireless networks).
+On Thu, May 20, 2010 at 12:49 AM, Linus Walleij
+<linus.walleij@stericsson.com> wrote:
+> This completes the DMA40 support with the platform-specific
+> configuration for U8500/DB8500.
+>
+> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
+> Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
+> Reviewed-by: Alessandro Rubini <rubini@unipv.it>
+> Cc: STEricsson_nomadik_linux@list.st.com
+> ---
+> Dan, now that Russells depending patches from the ARM tree have
+> been merged to Linus' (Torvalds) tree, do you think it's possible
+> to also push this DMA40 platform data through the async_tx tree?
+> This is the final version of it.
+> ---
+>  arch/arm/mach-ux500/clock.c                    |    2 +-
+>  arch/arm/mach-ux500/cpu-db8500.c               |    4 +
+>  arch/arm/mach-ux500/devices-db8500.c           |  219 ++++++++++++++++++++++++
+>  arch/arm/mach-ux500/include/mach/db8500-regs.h |   12 ++
+>  arch/arm/mach-ux500/include/mach/devices.h     |    3 +
+>  arch/arm/mach-ux500/ste-dma40-db8500.h         |  154 +++++++++++++++++
+>  6 files changed, 393 insertions(+), 1 deletions(-)
+>  create mode 100644 arch/arm/mach-ux500/ste-dma40-db8500.h
+>
 
-Reverting
+Russell, I will be sending one more pull request for this merge window
+and plan to include this with your acked-by.  It finishes off the
+support for the dma40 driver.
 
-commit 03ceedea972a82d343fa5c2528b3952fa9e615d5
-Author: Daniel Yingqiang Ma <yma.cool@gmail.com>
-Date:   Tue Apr 13 15:12:07 2010 +0800
+There are two straggling patches that cross depended on the arm and
+dmaengine trees.
 
-    ath9k: Group Key fix for VAPs
+Jassi Brar (1):
+      DMA: PL330: Add dma api driver
 
-also fixes the resume issue with iwlagn.
+Linus Walleij (1):
+      DMAENGINE: DMA40 U8500 platform configuration
 
-So, please revert.
+ arch/arm/mach-ux500/clock.c                    |    2 +-
+ arch/arm/mach-ux500/cpu-db8500.c               |    4 +
+ arch/arm/mach-ux500/devices-db8500.c           |  219 ++++++
+ arch/arm/mach-ux500/include/mach/db8500-regs.h |   12 +
+ arch/arm/mach-ux500/include/mach/devices.h     |    3 +
+ arch/arm/mach-ux500/ste-dma40-db8500.h         |  154 +++++
+ drivers/dma/Kconfig                            |    9 +
+ drivers/dma/Makefile                           |    1 +
+ drivers/dma/pl330.c                            |  866 ++++++++++++++++++++++++
+ include/linux/amba/pl330.h                     |   45 ++
+ 10 files changed, 1314 insertions(+), 1 deletions(-)
+ create mode 100644 arch/arm/mach-ux500/ste-dma40-db8500.h
+ create mode 100644 drivers/dma/pl330.c
+ create mode 100644 include/linux/amba/pl330.h
 
-Thanks,
-Rafael
+--
+Dan
