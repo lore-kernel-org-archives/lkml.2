@@ -1,63 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754563Ab0EWNPV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 09:15:21 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46172 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754424Ab0EWNPS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 09:15:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=k6mwktvb7INOA5E+pVr04p8Nbpsv2hmsXRNCWbd0Aoy4zk3Ruis1VJFoFi+HyQrX4h
-         qDYTzR0xzGsCysWXVH+2QL4m24Fx76T83XIhJiOhyWcApyOAw2GZYc0f/H4Alay9K4fA
-         ZemLLK5baZO3oNbA3JhGH0Gtu1e3j+Okn5WW8=
+	id S1754649Ab0EWNPo (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 09:15:44 -0400
+Received: from mga11.intel.com ([192.55.52.93]:6977 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754468Ab0EWNPm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 09:15:42 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,285,1272870000"; 
+   d="scan'208";a="801095892"
+From: "Shi, Alex" <alex.shi@intel.com>
+To: Pekka Enberg <penberg@cs.helsinki.fi>,
+       "Duyck, Alexander H" <alexander.h.duyck@intel.com>
+CC: "cl@linux.com" <cl@linux.com>, "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "yanmin_zhang@linux.intel.com" <yanmin_zhang@linux.intel.com>,
+       "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "rjw@sisk.pl" <rjw@sisk.pl>
+Date: Sun, 23 May 2010 21:15:36 +0800
+Subject: RE: [PATCH v2] slub: move kmem_cache_node into it's own cacheline
+Thread-Topic: [PATCH v2] slub: move kmem_cache_node into it's own cacheline
+Thread-Index: Acr5ictHNdxgKk5gSFyDaOJ/tCu8fQA8BVHg
+Message-ID: <6E3BC7F7C9A4BF4286DD4C043110F30B0B596908DB@shsmsx502.ccr.corp.intel.com>
+References: <20100521214135.23902.55360.stgit@gitlad.jf.intel.com>
+ <4BF79761.5000402@cs.helsinki.fi>
+In-Reply-To: <4BF79761.5000402@cs.helsinki.fi>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="gb2312"
 MIME-Version: 1.0
-In-Reply-To: <alpine.OSX.2.00.1004161206300.271@localhost>
-References: <l2k10f740e81004151234t3004275az36e7873493067a8a@mail.gmail.com>
-	 <alpine.OSX.2.00.1004161206300.271@localhost>
-Date: Sun, 23 May 2010 15:15:16 +0200
-X-Google-Sender-Auth: Ei9AePAK3gnr1uOy_Ank2NugPsY
-Message-ID: <AANLkTikexlmuunBQ-ydNaD8fkKcLmrsfJSEgvyMJdNqU@mail.gmail.com>
-Subject: Re: [PATCH] net: mac8390 - Sort out memory/MMIO accesses and casts 
-	(was: Re: drivers/net/mac8390.c: Remove useless memcpy casting)
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Finn Thain <fthain@telegraphics.com.au>
-Cc: Joe Perches <joe@perches.com>, "David S. Miller" <davem@davemloft.net>,
-       netdev@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       "Linux/m68k" <linux-m68k@vger.kernel.org>
-Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4NDGAaS019611
 
-On Fri, Apr 16, 2010 at 04:14, Finn Thain <fthain@telegraphics.com.au> wrote:
-> On Thu, 15 Apr 2010, Geert Uytterhoeven wrote:
->> On Mon, Mar 8, 2010 at 18:16, Joe Perches <joe@perches.com> wrote:
->> > Thanks, I'll submit a patch to fix it by tomorrow or so.
->>
->> It hasn't been fixed yet.
->
-> Thanks for taking care of this, Geert.
->
->> But here's a better solution. I do not have the hardware to test it,
->> though. Finn, does it {look OK,work}?
->
-> It looks fine. I can't test it right now, but I will do so when I get the
-> opportunity.
+sure. glad to a fix on this! 
+ 
 
-Any news from the test front?
+-----Original Message-----
+From: Pekka Enberg [mailto:penberg@cs.helsinki.fi] 
+Sent: 2010Äê5ÔÂ22ÈÕ 16:36
+To: Duyck, Alexander H
+Cc: cl@linux.com; linux-mm@kvack.org; Shi, Alex; yanmin_zhang@linux.intel.com; akpm@linux-foundation.org; linux-kernel@vger.kernel.org; rjw@sisk.pl
+Subject: Re: [PATCH v2] slub: move kmem_cache_node into it's own cacheline
 
-Gr{oetje,eeting}s,
+Alexander Duyck wrote:
+> This patch is meant to improve the performance of SLUB by moving the 
+> local kmem_cache_node lock into it's own cacheline separate from kmem_cache.
+> This is accomplished by simply removing the local_node when NUMA is enabled.
+> 
+> On my system with 2 nodes I saw around a 5% performance increase w/ 
+> hackbench times dropping from 6.2 seconds to 5.9 seconds on average.  
+> I suspect the performance gain would increase as the number of nodes 
+> increases, but I do not have the data to currently back that up.
+> 
+> Signed-off-by: Alexander Duyck <alexander.h.duyck@intel.com>
 
-						Geert
+Thanks for the fix, Alexander!
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+Yanmin and Alex, can I have your Tested-by or Acked-by please so we can close "[Bug #15713] hackbench regression due to commit 9dfc6e68bfe6e" 
+after this patch is merged?
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+			Pekka
+ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
