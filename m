@@ -1,91 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753676Ab0EWQA5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 12:00:57 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:12337 "EHLO mx1.redhat.com"
+	id S1753891Ab0EWQDw (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 12:03:52 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:15563 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752581Ab0EWQAz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 12:00:55 -0400
-Date: Sun, 23 May 2010 18:56:05 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
+	id S1753274Ab0EWQDv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 12:03:51 -0400
+Message-ID: <4BF951BE.1010402@redhat.com>
+Date: Sun, 23 May 2010 19:03:10 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: "Michael S. Tsirkin" <mst@redhat.com>
+CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
        virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
        qemu-devel@nongnu.org
 Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
-	ring itself
-Message-ID: <20100523155605.GB14733@redhat.com>
-References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005201438.17010.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+ ring itself
+References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au> <20100523153134.GA14646@redhat.com> <4BF94CAD.5010504@redhat.com> <20100523155132.GA14733@redhat.com>
+In-Reply-To: <20100523155132.GA14733@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 02:38:16PM +0930, Rusty Russell wrote:
-> On Thu, 20 May 2010 02:31:50 pm Rusty Russell wrote:
-> > On Wed, 19 May 2010 05:36:42 pm Avi Kivity wrote:
-> > > > Note that this is a exclusive->shared->exclusive bounce only, too.
-> > > >    
-> > > 
-> > > A bounce is a bounce.
-> > 
-> > I tried to measure this to show that you were wrong, but I was only able
-> > to show that you're right.  How annoying.  Test code below.
-> 
-> This time for sure!
+On 05/23/2010 06:51 PM, Michael S. Tsirkin wrote:
+>>
+>>> So locked version seems to be faster than unlocked,
+>>> and share/unshare not to matter?
+>>>
+>>>        
+>> May be due to the processor using the LOCK operation as a hint to
+>> reserve the cacheline for a bit.
+>>      
+> Maybe we should use atomics on index then?
+>    
 
-The share option does not work on some
-boxes unless I apply the following:
-essentially, this adds mb() after each write
-and before read. It seems to make sense to
-me: we must update our counter before we
-wanit for another side.
+This should only be helpful if you access the cacheline several times in 
+a row.  That's not the case in virtio (or here).
 
-diff --git a/cachebounce.c b/cachebounce.c
-index 0387027..ebe5a37 100644
---- a/cachebounce.c
-+++ b/cachebounce.c
-@@ -77,6 +77,7 @@ int main(int argc, char *argv[])
- 				count++;
- 				counter->cacheline1 = count;
- 				count++;
-+				__sync_synchronize();
- 			}
- 			break;
- 		case UNSHARE:
-@@ -86,6 +87,7 @@ int main(int argc, char *argv[])
- 				count++;
- 				counter->cacheline2 = count;
- 				count++;
-+				__sync_synchronize();
- 			}
- 			break;
- 		case LOCKSHARE:
-@@ -98,6 +100,7 @@ int main(int argc, char *argv[])
- 			break;
- 		case LOCKUNSHARE:
- 			while (count < MAX_BOUNCES) {
-+				__sync_synchronize();
- 				/* Spin waiting for other side to change it. */
- 				while (counter->cacheline1 != count);
- 				__sync_val_compare_and_swap(&counter->cacheline2, count, count+1);
-@@ -115,6 +118,7 @@ int main(int argc, char *argv[])
- 				count++;
- 				counter->cacheline1 = count;
- 				count++;
-+				__sync_synchronize();
- 			}
- 			break;
- 		case UNSHARE:
-@@ -124,6 +128,7 @@ int main(int argc, char *argv[])
- 				count++;
- 				counter->cacheline1 = count;
- 				count++;
-+				__sync_synchronize();
- 			}
- 			break;
- 		case LOCKSHARE:
+I think the problem is that LOCKSHARE and SHARE are not symmetric, so 
+they can't be directly compared.
+
+> OK, after adding mb in code patch will be sent separately,
+> the test works for my workstation. locked is still fastest,
+> unshared sometimes shows wins and sometimes loses over shared.
+>
+> [root@qus19 ~]# ./cachebounce share 0 1
+> CPU 0: share cacheline: 6638521 usec
+> CPU 1: share cacheline: 6638478 usec
+>    
+
+66 ns? nice.
+
+> [root@qus19 ~]# ./cachebounce share 0 2
+> CPU 0: share cacheline: 14529198 usec
+> CPU 2: share cacheline: 14529156 usec
+>    
+
+140 ns, not too bad.  I hope I'm not misinterpreting the results.
+
+-- 
+error compiling committee.c: too many arguments to function
+
