@@ -1,88 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755191Ab0EWVRV (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 17:17:21 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:57292 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754059Ab0EWVRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 17:17:20 -0400
-Date: Sun, 23 May 2010 23:17:17 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Markus <M4rkusXXL@web.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: BUG: unable to handle kernel paging request
-Message-ID: <20100523211717.GD1408@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Markus <M4rkusXXL@web.de>,
-	linux-kernel@vger.kernel.org
-References: <201005231829.32106.M4rkusXXL@web.de>
- <20100523183851.GA20229@liondog.tnic>
- <201005232244.41977.M4rkusXXL@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201005232244.41977.M4rkusXXL@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755250Ab0EWVVH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 17:21:07 -0400
+Received: from e34.co.us.ibm.com ([32.97.110.152]:58142 "EHLO
+	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753593Ab0EWVVD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 17:21:03 -0400
+Subject: Re: [Regression] Negative time on Acer Ferrari One with current
+ -git
+From: john stultz <johnstul@us.ibm.com>
+To: Thomas Gleixner <tglx@linutronix.de>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
+References: <201005212343.25184.rjw@sisk.pl>
+	 <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain>
+	 <201005222255.27301.rjw@sisk.pl> <201005222320.01506.rjw@sisk.pl>
+	 <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 May 2010 14:20:58 -0700
+Message-ID: <1274649658.1932.13.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus <M4rkusXXL@web.de>
-Date: Sun, May 23, 2010 at 10:44:41PM +0200
+On Sun, 2010-05-23 at 08:40 +0200, Thomas Gleixner wrote:
+> On Sat, 22 May 2010, Rafael J. Wysocki wrote:
+> > After reverting commit 64ce4c2f above things work again.
+> > 
+> > To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
+> > Remove xtime_cache), but since the symptoms continued to apprear after
+> > reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
+> > on this box.
+> 
+> I assume the cmos clock of this machine is not on UTC, right ? Does
+> the patch below fix the issue ?
 
-> It is 0000000001912178.
-> http://img256.imageshack.us/img256/4370/shotn.gif
-
-True story, the fact that this value is not what it is expected to be
-judging from the code it happens might actually be a clue:
-
-[64112.502507] Code: 8b bf b0 00 00 00 31 ed 48 8d 50 f0 48 85 c0 48 0f 45 ea 48 85 ff 74 10 48 89 ee e8 8d d3 ff ff 85 c0 0f 8e c5 00 00 00 48 89 eb <49> 8b bd b8 00 00 00 48 85 ff 74 10 48 89 ee e8 6e d3 ff ff 85
-All code
-========
-   0:   8b bf b0 00 00 00       mov    0xb0(%rdi),%edi
-   6:   31 ed                   xor    %ebp,%ebp
-   8:   48 8d 50 f0             lea    -0x10(%rax),%rdx
-   c:   48 85 c0                test   %rax,%rax
-   f:   48 0f 45 ea             cmovne %rdx,%rbp
-  13:   48 85 ff                test   %rdi,%rdi
-  16:   74 10                   je     0x28
-  18:   48 89 ee                mov    %rbp,%rsi
-  1b:   e8 8d d3 ff ff          callq  0xffffffffffffd3ad
-  20:   85 c0                   test   %eax,%eax
-  22:   0f 8e c5 00 00 00       jle    0xed
-  28:   48 89 eb                mov    %rbp,%rbx
-  2b:*  49 8b bd b8 00 00 00    mov    0xb8(%r13),%rdi     <-- trapping instruction
-  32:   48 85 ff                test   %rdi,%rdi
-  35:   74 10                   je     0x47
-  37:   48 89 ee                mov    %rbp,%rsi
-  3a:   e8 6e d3 ff ff          callq  0xffffffffffffd3ad
-  3f:   85                      .byte 0x85
-
-Code starting with the faulting instruction
-===========================================
-   0:   49 8b bd b8 00 00 00    mov    0xb8(%r13),%rdi
-   7:   48 85 ff                test   %rdi,%rdi
-   a:   74 10                   je     0x1c
-   c:   48 89 ee                mov    %rbp,%rsi
-   f:   e8 6e d3 ff ff          callq  0xffffffffffffd382
-  14:   85                      .byte 0x85
+Oof. Thanks for catching that. 
 
 
-and %r13 contains 00000000019129c0 in the register snapshot. Hmm...
+> @John: Can you please check the other users of timespec_add_safe() in
+> timekeeping as well ?
 
-> Serial console is no option, but this "netconsole"-thing looks
-> promising. I'll set that up and try to catch the next one with this.
+So monotonic_to_bootbased() looks ok, as total_sleep_time should always
+be positive. 
 
-That'll help. Also let me make sure: Is this a vanilla kernel or are
-there any distribution patches on top of it? I see it says 2.6.34-gentoo
-but just in case. If it is not a vanilla kernel please try a vanilla one
-from kernel.org.
+timekeeping_resume() also looks ok, since it we make sure the delta
+between the resume time and the suspend time is positive.
 
-Also, please send the whole dmesg of the system, there might be
-something suspicious there and also the output of 'cat /proc/cpuinfo'
-and 'dmidecode', the last one run as root.
+That said, it may be worth open coding the:
+	set_normalized_timespec(&ret, a.tv_sec + b.tv_sec, 
+				a.tv_nsec + b.tv_nsec);
 
-Thanks.
+just so we don't have similar mix ups in the future, since
+timespec_add_safe is just such a reassuring and comforting name :)
 
--- 
-Regards/Gruss,
-    Boris.
+
+
+> Thanks,
+> 
+> 	tglx
+> 
+> ---------->
+> Subject: timekeeping: Fix timezone update
+> From: Thomas Gleixner <tglx@linutronix.de>
+> Date: Sun, 23 May 2010 08:14:45 +0200
+> 
+> commit 64ce4c2f (time: Clean up warp_clock()) breaks the timezone
+> update in a very subtle way. To avoid the direct access to timekeeping
+> internals it adds the timezone delta to the current time with
+> timespec_add_safe(). This works nicely when the timezone delta is > 0.
+> If timezone delta is < 0 then the wrap check in timespec_add_safe()
+> triggers and timespec_add_safe() returns TIME_MAX and screws up
+> timekeeping completely. 
+> 
+> This is not surprising as the comment above timespec_add_safe() says:
+>     It's assumed that both values are valid (>= 0)
+> 
+> The function was created to avoid overflow issues when adding the
+> select() timeout to current time, where the above applies.
+> 
+> Add the timezone seconds adjustment directly.
+> 
+> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
+> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>\
+
+Acked-by: John Stultz <johnstul@us.ibm.com>
+
+> ---
+>  kernel/time.c |    8 ++++----
+>  1 file changed, 4 insertions(+), 4 deletions(-)
+> 
+> Index: linux-2.6/kernel/time.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/time.c
+> +++ linux-2.6/kernel/time.c
+> @@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct tim
+>   */
+>  static inline void warp_clock(void)
+>  {
+> -	struct timespec delta, adjust;
+> -	delta.tv_sec = sys_tz.tz_minuteswest * 60;
+> -	delta.tv_nsec = 0;
+> -	adjust = timespec_add_safe(current_kernel_time(), delta);
+> +	struct timespec adjust;
+> +
+> +	adjust = current_kernel_time();
+> +	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+>  	do_settimeofday(&adjust);
+>  }
+> 
+
+
