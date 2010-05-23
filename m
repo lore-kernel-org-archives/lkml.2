@@ -1,53 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754807Ab0EWSI4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 14:08:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:27688 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753108Ab0EWSIz (ORCPT
+	id S1754927Ab0EWSP1 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 14:15:27 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:51917 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753234Ab0EWSP0 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 14:08:55 -0400
-Date: Sun, 23 May 2010 11:07:51 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: linux-kernel@vger.kernel.org
-Cc: akpm@linux-foundation.org, Roald Frederickx <roald.frederickx@gmail.com>
-Subject: [PATCH -mmotm] compal-laptop: uses hwmon interfaces, depends on
- HWMON
-Message-Id: <20100523110751.73c760a7.randy.dunlap@oracle.com>
-In-Reply-To: <201005212333.o4LNXu2P008079@imap1.linux-foundation.org>
-References: <201005212333.o4LNXu2P008079@imap1.linux-foundation.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+	Sun, 23 May 2010 14:15:26 -0400
+Subject: Re: [PATCH 1/2] perf: Add persistent events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <1274554806-28216-2-git-send-email-bp@alien8.de>
+References: <1274554806-28216-1-git-send-email-bp@alien8.de>
+	 <1274554806-28216-2-git-send-email-bp@alien8.de>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 May 2010 20:15:13 +0200
+Message-ID: <1274638513.1674.1727.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BF96F2D.0116:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Sat, 2010-05-22 at 21:00 +0200, Borislav Petkov wrote:
+> Register and enable events marked as persistent right after perf events
+> has initialized.
+> 
+> Not-yet-signed-off-by: Borislav Petkov <bp@alien8.de>
 
-compal-laptop uses hwmon interfaces, so it should depend on HWMON.
+Nah, this is totally wrong.
 
-compal-laptop.c:(.devinit.text+0x4071f): undefined reference to `hwmon_device_register'
-compal-laptop.c:(.devexit.text+0x6ec0): undefined reference to `hwmon_device_unregister'
+A persistent event would simply be a regular event, but created by the
+kernel and not tied to a file-desc's lifetime.
 
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Roald Frederickx <roald.frederickx@gmail.com>
----
- drivers/platform/x86/Kconfig |    1 +
- 1 file changed, 1 insertion(+)
 
---- mmotm-2010-0521-1605.orig/drivers/platform/x86/Kconfig
-+++ mmotm-2010-0521-1605/drivers/platform/x86/Kconfig
-@@ -181,6 +181,7 @@ config COMPAL_LAPTOP
- 	depends on ACPI
- 	depends on BACKLIGHT_CLASS_DEVICE
- 	depends on RFKILL
-+	depends on HWMON
- 	---help---
- 	  This is a driver for laptops built by Compal:
- 
+
