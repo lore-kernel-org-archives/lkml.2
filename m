@@ -1,74 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755643Ab0EWBOa (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 21:14:30 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:58616 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1751193Ab0EWBO2 (ORCPT
+	id S1755940Ab0EWCRY (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 22:17:24 -0400
+Received: from mail-yw0-f180.google.com ([209.85.211.180]:55982 "EHLO
+	mail-yw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755675Ab0EWCRW convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 21:14:28 -0400
-X-Sasl-enc: Tz7cXFWw4uNQqSw3CyRN41FojPsWOdqVNoQ1DRVlZLGp 1274577267
-Message-ID: <4BF87EBE.80008@imap.cc>
-Date: Sun, 23 May 2010 03:02:54 +0200
-From: Tilman Schmidt <tilman@imap.cc>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.9.1.9) Gecko/20100317 SUSE/3.0.4-1.1.1 Thunderbird/3.0.4
+	Sat, 22 May 2010 22:17:22 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=Dn2S77izP6Iz+vHYdre9Yas9eGBPU7eHw+VvriIpswCsKO01jaDM+DP8vMalLKdC4m
+         WrhxoThJib+zaUJEBgARx2yBnAVbTdbWbeu3YIa2zcyCj6kYQff7IWzRdUX6DhgPn/tO
+         DjsBifs6u46NPU+vtoe7X31m4WA3NYr6bKQUc=
 MIME-Version: 1.0
-To: David Miller <davem@davemloft.net>
-CC: isdn@linux-pingi.de, hjlipp@web.de, keil@b1-systems.de,
-       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 0/7] ISDN patches for 2.6.35
-References: <20100522-patch-gigaset-00.tilman@imap.cc> <20100522.174318.197930599.davem@davemloft.net>
-In-Reply-To: <20100522.174318.197930599.davem@davemloft.net>
-X-Enigmail-Version: 1.0.1
-Content-Type: multipart/signed; micalg=pgp-sha1;
- protocol="application/pgp-signature";
- boundary="------------enigBCE673A4039BA12414C7A2D5"
+In-Reply-To: <1269567614-26995-1-git-send-email-henne@nachtwindheim.de>
+References: <1269567614-26995-1-git-send-email-henne@nachtwindheim.de>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Sat, 22 May 2010 22:17:02 -0400
+Message-ID: <AANLkTimWhBfb4yiq8CEmrEoJpaNOEnTUihaRWaUTVV_N@mail.gmail.com>
+Subject: Re: [PATCH] mfd: section cleanup of 88pm860x driver
+To: Henrik Kretzschmar <henne@nachtwindheim.de>
+Cc: Samuel Ortiz <sameo@linux.intel.com>,
+       Haojian Zhuang <haojian.zhuang@marvell.com>,
+       Dmitry Torokhov <dtor@mail.ru>, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is an OpenPGP/MIME signed message (RFC 2440 and 3156)
---------------enigBCE673A4039BA12414C7A2D5
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: quoted-printable
+On Thu, Mar 25, 2010 at 21:40, Henrik Kretzschmar wrote:
+_device_init(struct pm860x_chip *chip,
+> -                             struct pm860x_platform_data *pdata);
+> -extern void pm860x_device_exit(struct pm860x_chip *chip);
+> +                             struct pm860x_platform_data *pdata) __devinit ;
+> +extern void pm860x_device_exit(struct pm860x_chip *chip) __devexit ;
+>
+>  #endif /* __LINUX_MFD_88PM860X_H */
 
-Am 23.05.2010 02:43 schrieb David Miller:
-> What the heck about "no more cleanups or new features for networking"
-> do you not understand?
-
-Sorry, I must have missed the posting where you wrote this. I just
-came back from a short holiday to find ~5k unread postings in LKML,
-including the announcement of 2.6.34, and I guess I inadvertently
-deleted the message you're referring to above.
-
-> I'm willing to take bug fixes only at this point so you'll need to
-> respin this series.
-
-Will do.
-
-Regards,
-Tilman
-
---=20
-Tilman Schmidt                    E-Mail: tilman@imap.cc
-Bonn, Germany
-Diese Nachricht besteht zu 100% aus wiederverwerteten Bits.
-Unge=F6ffnet mindestens haltbar bis: (siehe R=FCckseite)
-
-
---------------enigBCE673A4039BA12414C7A2D5
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: OpenPGP digital signature
-Content-Disposition: attachment; filename="signature.asc"
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v2.0.12 (GNU/Linux)
-Comment: Using GnuPG with SUSE - http://enigmail.mozdev.org/
-
-iEYEARECAAYFAkv4fr4ACgkQQ3+did9BuFuXzwCdGU1XmhH4sTpUk9VSsXkg79sr
-uYkAnA1xJG+1nQ6Zu7bdrdyvS3aiqGpF
-=saBw
------END PGP SIGNATURE-----
-
---------------enigBCE673A4039BA12414C7A2D5--
+i took a second look and noticed that this hunk is useless.  as long
+as the func definitions have proper markings, the prototypes wrt
+section markings here is irrelevant.  plus, you add a spurious space
+before the semicolon.
+-mike
