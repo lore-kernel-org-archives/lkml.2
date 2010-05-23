@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753405Ab0EWGlJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 02:41:09 -0400
-Received: from www.tglx.de ([62.245.132.106]:37021 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753029Ab0EWGlF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 02:41:05 -0400
-Date: Sun, 23 May 2010 08:40:55 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: John Stultz <johnstul@us.ibm.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current
- -git
-In-Reply-To: <201005222320.01506.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
-References: <201005212343.25184.rjw@sisk.pl> <alpine.LFD.2.00.1005222032080.3368@localhost.localdomain> <201005222255.27301.rjw@sisk.pl> <201005222320.01506.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S1753459Ab0EWGwU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 02:52:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42610 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753098Ab0EWGwR convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 02:52:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=d5+NUduW9uldaYq6DgCaycKrK1FQZoo2LCRRQHT60/zJA8VpNxaj9rr4hgiiIaTZNe
+         6YwzTeNoqNVAlZxBWB6YL80bTc1XXQ5PrdXQ58woUZKfJ4vFdnOcuXi71fdboPZz0F7u
+         YfbQgahPhZvf9YXvCxcNqF/FHRHbGIyMzAK+s=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <1274567437-2818-2-git-send-email-rydberg@euromail.se>
+References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>
+	 <1274567437-2818-2-git-send-email-rydberg@euromail.se>
+Date: Sat, 22 May 2010 23:52:17 -0700
+Message-ID: <AANLkTinyVk0cHpsI6ZfMmxqGI7C_jM-BcYiaue185kBA@mail.gmail.com>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev4)
+From: Ping Cheng <pinglinux@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, 22 May 2010, Rafael J. Wysocki wrote:
-> After reverting commit 64ce4c2f above things work again.
-> 
-> To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
-> Remove xtime_cache), but since the symptoms continued to apprear after
-> reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
-> on this box.
+The fool is smiling like a fool now :).
 
-I assume the cmos clock of this machine is not on UTC, right ? Does
-the patch below fix the issue ?
+Ping
 
-@John: Can you please check the other users of timespec_add_safe() in
-timekeeping as well ?
+BTW, I didn't receive the updated "[PATCH 1/2] input: mt: Introduce MT
+event slots (rev 5)".  Maybe gmail filtered the file for me?
 
-Thanks,
-
-	tglx
-
----------->
-Subject: timekeeping: Fix timezone update
-From: Thomas Gleixner <tglx@linutronix.de>
-Date: Sun, 23 May 2010 08:14:45 +0200
-
-commit 64ce4c2f (time: Clean up warp_clock()) breaks the timezone
-update in a very subtle way. To avoid the direct access to timekeeping
-internals it adds the timezone delta to the current time with
-timespec_add_safe(). This works nicely when the timezone delta is > 0.
-If timezone delta is < 0 then the wrap check in timespec_add_safe()
-triggers and timespec_add_safe() returns TIME_MAX and screws up
-timekeeping completely. 
-
-This is not surprising as the comment above timespec_add_safe() says:
-    It's assumed that both values are valid (>= 0)
-
-The function was created to avoid overflow issues when adding the
-select() timeout to current time, where the above applies.
-
-Add the timezone seconds adjustment directly.
-
-Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
----
- kernel/time.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
-
-Index: linux-2.6/kernel/time.c
-===================================================================
---- linux-2.6.orig/kernel/time.c
-+++ linux-2.6/kernel/time.c
-@@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct tim
-  */
- static inline void warp_clock(void)
- {
--	struct timespec delta, adjust;
--	delta.tv_sec = sys_tz.tz_minuteswest * 60;
--	delta.tv_nsec = 0;
--	adjust = timespec_add_safe(current_kernel_time(), delta);
-+	struct timespec adjust;
-+
-+	adjust = current_kernel_time();
-+	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
- 	do_settimeofday(&adjust);
- }
- 
+On Sat, May 22, 2010 at 3:30 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
+> This patch adds documentation for the ABS_MT_SLOT event and gives
+> examples of how to use the event slot protocol.
+>
+> Reviewed-by: Ping Cheng <pingc@wacom.com>
+> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
+> ---
+> Revision 4 incorporates the following changes:
+>         - Rename the slot event to ABS_MT_SLOT to keep all MT-related events
+>           in the same namespace.
+>         - Fix typo, thanks to Ping Cheng.
