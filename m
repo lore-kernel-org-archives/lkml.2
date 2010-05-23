@@ -1,44 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755988Ab0EWCmg (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 22:42:36 -0400
-Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:40780 "EHLO
-	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755678Ab0EWCme (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 22:42:34 -0400
-Message-ID: <4BF8957A.9090506@lougher.demon.co.uk>
-Date: Sun, 23 May 2010 03:39:54 +0100
-From: Phillip Lougher <phillip@lougher.demon.co.uk>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Stephen Hemminger <shemminger@vyatta.com>
-Subject: Re: linux-next: build warning after merge of the squashfs tree
-References: <20100522163042.13478ac4.sfr@canb.auug.org.au>
-In-Reply-To: <20100522163042.13478ac4.sfr@canb.auug.org.au>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S1756005Ab0EWCpO (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 22:45:14 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:55922 "EHLO smtp.gentoo.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755678Ab0EWCpM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sat, 22 May 2010 22:45:12 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-usb@vger.kernel.org, Felipe Balbi <felipe.balbi@nokia.com>
+Cc: Cliff Cai <cliff.cai@analog.com>, uclinux-dist-devel@blackfin.uclinux.org,
+       stable@kernel.org, stable-review@kernel.org,
+       linux-kernel@vger.kernel.org, Ian Jeffray <ian@jeffray.co.uk>
+Subject: [PATCH] USB: musb: fix Blackfin building after power updates
+Date: Sat, 22 May 2010 22:49:08 -0400
+Message-Id: <1274582948-11499-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stephen Rothwell wrote:
-> Hi Phillip,
-> 
-> After merging the squashfs tree, today's linux-next build (x86_64
-> allmodconfig) produced this warning:
-> 
-> fs/squashfs/super.c: In function 'squashfs_fill_super':
-> fs/squashfs/super.c:265: warning: assignment from incompatible pointer type
-> 
-> Introduced by commit 67f66cc6c728de183d9d43c243cb163c1ebd8e04 ("squashfs:
-> add new extended inode types") from the squashfs tree interacting with
-> commit bb4354538eb7b92f32cfedbad68c7be266c0b467 ("fs: xattr_handler table
-> should be const") from Linus' tree.
+From: Ian Jeffray <ian@jeffray.co.uk>
 
-Fixed.  Thanks.
+The new MUSB power code needs musb_read_txhubport() to return a value (so
+stub it as 0 like the other Blackfin hub funcs).  It also needs new helper
+functions for saving/restoring context, so change the apparently unused
+musb_platform_{suspend,resume} to musb_platform_{save,restore}_context in
+the Blackfin code.
 
-Phillip
+Signed-off-by: Ian Jeffray <ian@jeffray.co.uk>
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+Note: this is for 2.6.34.x and 2.6.35
+Note: i believe this is what we want, but Cliff is free to correct me ;)
+
+ drivers/usb/musb/blackfin.c  |   12 ++++++++++++
+ drivers/usb/musb/musb_regs.h |    3 ++-
+ 2 files changed, 14 insertions(+), 1 deletions(-)
+
+diff --git a/drivers/usb/musb/blackfin.c b/drivers/usb/musb/blackfin.c
+index b611420..b5f1d17 100644
+--- a/drivers/usb/musb/blackfin.c
++++ b/drivers/usb/musb/blackfin.c
+@@ -392,6 +392,18 @@ int __init musb_platform_init(struct musb *musb, void *board_data)
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_PM
++void musb_platform_save_context(struct musb *musb,
++			struct musb_context_registers *musb_context)
++{
++}
++
++void musb_platform_restore_context(struct musb *musb,
++			struct musb_context_registers *musb_context)
++{
++}
++#endif
++
+ int musb_platform_exit(struct musb *musb)
+ {
+ 
+diff --git a/drivers/usb/musb/musb_regs.h b/drivers/usb/musb/musb_regs.h
+index 2442675..5a727c5 100644
+--- a/drivers/usb/musb/musb_regs.h
++++ b/drivers/usb/musb/musb_regs.h
+@@ -633,8 +633,9 @@ static inline u8  musb_read_txhubaddr(void __iomem *mbase, u8 epnum)
+ 	return 0;
+ }
+ 
+-static inline void  musb_read_txhubport(void __iomem *mbase, u8 epnum)
++static inline u8 musb_read_txhubport(void __iomem *mbase, u8 epnum)
+ {
++	return 0;
+ }
+ 
+ #endif /* CONFIG_BLACKFIN */
+-- 
+1.7.1
 
