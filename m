@@ -1,40 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753450Ab0EWJJG (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 05:09:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:40175 "EHLO hera.kernel.org"
+	id S1753700Ab0EWJKJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 05:10:09 -0400
+Received: from mx3.mail.elte.hu ([157.181.1.138]:57692 "EHLO mx3.mail.elte.hu"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751796Ab0EWJJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 05:09:03 -0400
-Message-ID: <4BF8F0A4.5060608@kernel.org>
-Date: Sun, 23 May 2010 11:08:52 +0200
-From: Tejun Heo <tj@kernel.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1752865Ab0EWJKG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 05:10:06 -0400
+Date: Sun, 23 May 2010 11:09:39 +0200
+From: Ingo Molnar <mingo@elte.hu>
+To: Arnaldo Carvalho de Melo <acme@infradead.org>
+Cc: linux-kernel@vger.kernel.org, Arnaldo Carvalho de Melo <acme@redhat.com>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/3] perf annotate improvements, report fix
+Message-ID: <20100523090939.GD25524@elte.hu>
+References: <1274550312-16600-1-git-send-email-acme@infradead.org>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: peterz@infradead.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCHSET sched/core] sched: prepare for cmwq
-References: <1273747705-7829-1-git-send-email-tj@kernel.org> <4BF1CD92.9030800@kernel.org> <4BF689DD.2090306@kernel.org> <20100523090544.GB25524@elte.hu>
-In-Reply-To: <20100523090544.GB25524@elte.hu>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 May 2010 09:08:54 +0000 (UTC)
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274550312-16600-1-git-send-email-acme@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-ELTE-SpamScore: -2.0
+X-ELTE-SpamLevel: 
+X-ELTE-SpamCheck: no
+X-ELTE-SpamVersion: ELTE 2.0 
+X-ELTE-SpamCheck-Details: score=-2.0 required=5.9 tests=BAYES_00 autolearn=no SpamAssassin version=3.2.5
+	-2.0 BAYES_00               BODY: Bayesian spam probability is 0 to 1%
+	[score: 0.0002]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello, Ingo.
 
-On 05/23/2010 11:05 AM, Ingo Molnar wrote:
-> IIRC these changes are for some sort of speedup for btrfs, 
-> right?
+* Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
 
-Eh.... What are you talking about?  These are for cmwq.  The "must
-unify scheduler notification hooks", "nah, if always enabled, go with
-hard coded hooks" stuff.
+> From: Arnaldo Carvalho de Melo <acme@redhat.com>
+> 
+> Hi Ingo,
+> 
+>         Please pull from:
+> 
+> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+> 
+> Regards,
+> 
+> - Arnaldo
+> 
+> Arnaldo Carvalho de Melo (3):
+>   perf report: Don't start the TUI if -D is used
+>   perf tui: Remove annotate from popup menu after failure
+>   perf annotate: Add TUI interface
+> 
+>  tools/perf/builtin-annotate.c |   61 ++++++++++++++++++++++++++++++-----------
+>  tools/perf/util/hist.c        |   13 +++-----
+>  tools/perf/util/hist.h        |   10 +++++++
+>  tools/perf/util/newt.c        |   61 ++++++++++++++++++++++++++++-------------
+>  tools/perf/util/util.h        |   15 +++++++++-
+>  5 files changed, 116 insertions(+), 44 deletions(-)
 
-Thanks.
+Pulled, thanks Arnaldo!
 
--- 
-tejun
+	Ingo
