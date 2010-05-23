@@ -1,89 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755611Ab0EWXCJ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 19:02:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:45738 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755387Ab0EWXCH convert rfc822-to-8bit (ORCPT
+	id S1755643Ab0EWXQ2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 19:16:28 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:47920 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755606Ab0EWXQ1 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 19:02:07 -0400
+	Sun, 23 May 2010 19:16:27 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=U2smcdoSbwKvUQf7mbym5KMkCGHNV8AWo1hsQs8X/gm8pdKBXZfYqY+Jw7EFLNjYt3
-         RgHLDqt6cwGKeWGVTyfKRjvYJHpdM8ExQ1dVnHnycqvZfHOl2L3BgM6QMATMR4D+V9zb
-         JdzARe1aT7CdUURUCsIByTB5OSV25apTBXrqs=
+        h=date:from:x-x-sender:to:subject:message-id:mime-version
+         :content-type;
+        b=CYLKVhvhyoI/gE7fQTZe+490JOpbUGbNBxN6qc8EARZD8Z2iT2vHFxTSGUr6xqLReR
+         l2hhbJydR4fuMPA8gnwydJ7dK6VJhNMw8tPcgIXKrt6ybHcZFrx+eKxEJCANQOjNJTN+
+         5Un7EZNLfRhN5qIBoYthKnjG5Izi5o2zfOKqg=
+Date: Mon, 24 May 2010 07:16:24 +0800 (SGT)
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+X-X-Sender: root@boston.corp.fedex.com
+To: Johannes Berg <johannes.berg@intel.com>,
+       Arjan van de Ven <arjan@linux.intel.com>,
+       "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Frans Pop <elendil@planet.nl>,
+       "Chatre, Reinette" <reinette.chatre@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Subject: Re: Wireless IBSS on Linux-2.6.34 broken by commit
+ 3bbb9ec946428b96657126768f65487a48dd090c
+Message-ID: <Pine.LNX.4.64.1005240710460.3159@boston.corp.fedex.com>
 MIME-Version: 1.0
-In-Reply-To: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
-References: <1274341759-13086-1-git-send-email-linus.walleij@stericsson.com>
-Date: Sun, 23 May 2010 16:02:05 -0700
-X-Google-Sender-Auth: KIap7V9hsMQX4Mvj1rFYKogTMbA
-Message-ID: <AANLkTikmdqceeWNYGm7ZTI64pixtkVWBbpWEtajZGHA1@mail.gmail.com>
-Subject: Re: [PATCH] DMAENGINE: DMA40 U8500 platform configuration
-From: Dan Williams <dan.j.williams@intel.com>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: Linus Walleij <linus.walleij@stericsson.com>, linux-kernel@vger.kernel.org,
-       STEricsson_nomadik_linux@list.st.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 12:49 AM, Linus Walleij
-<linus.walleij@stericsson.com> wrote:
-> This completes the DMA40 support with the platform-specific
-> configuration for U8500/DB8500.
+
+Mon, May 24, 2010 at 5:25 AM, Arjan van de Ven <arjan@linux.intel.com> 
+wrote:
+>>> can you try, instead do the following, in the apply_slack() function:
+>>>
+>>> just before the return expires_limit; do
+>>>
+>>> if (expires_limit<  expires)
+>>> # # #expires_limit = expires;
+>>
+>> This doesn't work.
+>>
+>>
+>>> if that does not fix it, a second thought:
+>>> add, after the first if (timer->slack<  0)
+>>>
+>>> if (timer->slack<  0&&  expires<  jiffies)
+>>> # # # #expires_limit = expires;
+>>
+>> This works.
 >
-> Signed-off-by: Linus Walleij <linus.walleij@stericsson.com>
-> Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-> Reviewed-by: Alessandro Rubini <rubini@unipv.it>
-> Cc: STEricsson_nomadik_linux@list.st.com
-> ---
-> Dan, now that Russells depending patches from the ARM tree have
-> been merged to Linus' (Torvalds) tree, do you think it's possible
-> to also push this DMA40 platform data through the async_tx tree?
-> This is the final version of it.
-> ---
->  arch/arm/mach-ux500/clock.c                    |    2 +-
->  arch/arm/mach-ux500/cpu-db8500.c               |    4 +
->  arch/arm/mach-ux500/devices-db8500.c           |  219 ++++++++++++++++++++++++
->  arch/arm/mach-ux500/include/mach/db8500-regs.h |   12 ++
->  arch/arm/mach-ux500/include/mach/devices.h     |    3 +
->  arch/arm/mach-ux500/ste-dma40-db8500.h         |  154 +++++++++++++++++
->  6 files changed, 393 insertions(+), 1 deletions(-)
->  create mode 100644 arch/arm/mach-ux500/ste-dma40-db8500.h
+> hmm ok so the wireless stack sets a timer way back in the past
+> ok that's technically legal.
 >
+> how about
+>
+> expires_limit = expires;
+>
+> if (timer->slack > -1)
+>        expires_limit = expires + timer->slack;
+> else if (time_after(expires, jiffies))
+>        expires_limit = expires + (expires - jiffies)/256;
+>
+> can you test such a thing and send a patch?
+> (it has my Acked-By: either way)
 
-Russell, I will be sending one more pull request for this merge window
-and plan to include this with your acked-by.  It finishes off the
-support for the dma40 driver.
 
-There are two straggling patches that cross depended on the arm and
-dmaengine trees.
+Arjan,
 
-Jassi Brar (1):
-      DMA: PL330: Add dma api driver
+Tested and working. Here's the patch. Thanks for the fix!
 
-Linus Walleij (1):
-      DMAENGINE: DMA40 U8500 platform configuration
+Jeff
 
- arch/arm/mach-ux500/clock.c                    |    2 +-
- arch/arm/mach-ux500/cpu-db8500.c               |    4 +
- arch/arm/mach-ux500/devices-db8500.c           |  219 ++++++
- arch/arm/mach-ux500/include/mach/db8500-regs.h |   12 +
- arch/arm/mach-ux500/include/mach/devices.h     |    3 +
- arch/arm/mach-ux500/ste-dma40-db8500.h         |  154 +++++
- drivers/dma/Kconfig                            |    9 +
- drivers/dma/Makefile                           |    1 +
- drivers/dma/pl330.c                            |  866 ++++++++++++++++++++++++
- include/linux/amba/pl330.h                     |   45 ++
- 10 files changed, 1314 insertions(+), 1 deletions(-)
- create mode 100644 arch/arm/mach-ux500/ste-dma40-db8500.h
- create mode 100644 drivers/dma/pl330.c
- create mode 100644 include/linux/amba/pl330.h
 
---
-Dan
+
+--- a/kernel/timer.c.org	2010-05-24 07:09:04.000000000 +0800
++++ a/kernel/timer.c	2010-05-24 07:05:22.000000000 +0800
+@@ -750,9 +750,11 @@
+  	unsigned long expires_limit, mask;
+  	int bit;
+
+-	expires_limit = expires + timer->slack;
++	expires_limit = expires;
+
+-	if (timer->slack < 0) /* auto slack: use 0.4% */
++	if (timer->slack > -1)
++		expires_limit = expires + timer->slack;
++	else if (time_after(expires, jiffies)) /* auto slack: use 0.4% */
+  		expires_limit = expires + (expires - jiffies)/256;
+
+  	mask = expires ^ expires_limit;
+
+
