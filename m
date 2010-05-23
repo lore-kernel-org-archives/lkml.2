@@ -1,63 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753959Ab0EWK1J (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 06:27:09 -0400
-Received: from gateway.crfreenet.org ([81.92.146.254]:54533 "EHLO
-	mail.crfreenet.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752044Ab0EWK1F (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 06:27:05 -0400
-X-Greylist: delayed 1387 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 May 2010 06:27:05 EDT
-Date: Sun, 23 May 2010 12:09:53 +0200
-From: Ondrej Zajicek <santiago@crfreenet.org>
-To: Ondrej Zary <linux@rainbow-software.org>
-Cc: Kernel development list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH] [resend] s3fb: add support for S3 Trio3D/1X/2X
-Message-ID: <20100523100953.GA14111@localhost>
-References: <201005231200.08299.linux@rainbow-software.org>
+	id S1754190Ab0EWK1Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 06:27:16 -0400
+Received: from hera.kernel.org ([140.211.167.34]:52975 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754061Ab0EWK1N (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 06:27:13 -0400
+Message-ID: <4BF902F3.7030405@kernel.org>
+Date: Sun, 23 May 2010 12:26:59 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: multipart/signed; micalg=pgp-sha1;
-	protocol="application/pgp-signature"; boundary="+QahgC5+KEYLbs62"
-Content-Disposition: inline
-In-Reply-To: <201005231200.08299.linux@rainbow-software.org>
-X-Operating-System: Debian GNU/Linux 4.0 (Etch)
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: Ingo Molnar <mingo@elte.hu>
+CC: peterz@infradead.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCHSET sched/core] sched: prepare for cmwq
+References: <1273747705-7829-1-git-send-email-tj@kernel.org> <4BF1CD92.9030800@kernel.org> <4BF689DD.2090306@kernel.org> <20100523090544.GB25524@elte.hu> <4BF8F0A4.5060608@kernel.org> <20100523091306.GE25524@elte.hu> <4BF8F46A.1060407@kernel.org> <20100523102024.GA20869@elte.hu>
+In-Reply-To: <20100523102024.GA20869@elte.hu>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 May 2010 10:27:02 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hello, Ingo.
 
---+QahgC5+KEYLbs62
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/23/2010 12:20 PM, Ingo Molnar wrote:
+> Not exclusive to btrfs of course, but IIRC one of the examples given
+> in one of those threads was btrfs scalability, right?
 
-On Sun, May 23, 2010 at 12:00:04PM +0200, Ondrej Zary wrote:
-> Add support for S3 Trio3D/1X (86C360) and S3 Trio3D/2X (86C362 and 86C368)
-> cards to s3fb driver. Tested with 86C362 AGP and 86C368 PCI&AGP.
->=20
-> Signed-off-by: Ondrej Zary <linux@rainbow-software.org>
+Hmmm... I don't think so.  If btrfs ever was mentioned, it must have
+been pretty tangential.  Nothing rings a bell to me.
 
-Acked-by: Ondrej Zajicek <santiago@crfreenet.org>
+> In case it's not obvious, i'm trying to find a tangible improvement
+> to examine. No need to resend stuff, do you have a link to that old
+> performance measurement by any chance?
 
---=20
-Elen sila lumenn' omentielvo
+Sure.
 
-Ondrej 'SanTiago' Zajicek (email: santiago@crfreenet.org)
-OpenPGP encrypted e-mails preferred (KeyID 0x11DEADC3, wwwkeys.pgp.net)
-"To err is human -- to blame it on a computer is even more so."
+ http://thread.gmane.org/gmane.linux.kernel/939353
 
---+QahgC5+KEYLbs62
-Content-Type: application/pgp-signature; name="signature.asc"
-Content-Description: Digital signature
-Content-Disposition: inline
+Thanks.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.9 (GNU/Linux)
-
-iEYEARECAAYFAkv4/vEACgkQw1GB2RHercPMmACfesdEjeJGhukLk+JlQRVkZ+Kp
-0ZEAn2cLJmyr5bks10Hy+n5PC0aGh0lE
-=HgJA
------END PGP SIGNATURE-----
-
---+QahgC5+KEYLbs62--
+-- 
+tejun
