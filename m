@@ -1,103 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754793Ab0EWRrK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 13:47:10 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57954 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754008Ab0EWRrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 13:47:09 -0400
-Date: Sun, 23 May 2010 19:47:06 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: mtk.manpages@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100523174706.GP23411@kernel.dk>
-References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
+	id S1754857Ab0EWRvF (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 13:51:05 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:61429 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754444Ab0EWRvC (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 13:51:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=e6DDvArUShljZXb7j1DC/EFJ/I4/eJwDuIyAtj2KLW5Qb73gbfiO5EDQ/iQP6aS/yi
+         IL1NQS+7TS/FUk7B1JoQdcCKZru281Jd9W1Byz1VO5hGxBpEKtC2MN/KGVuKjqj2/RIn
+         H2TQi9MxQ0e4s+YsrgZYVDfcsKehl82JRWNDw=
+Message-ID: <4BF96B00.5060905@gmail.com>
+Date: Sun, 23 May 2010 19:50:56 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.5pre) Gecko/20100430 SUSE/3.1b2-7.4 Thunderbird/3.1b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
+To: piotr@hosowicz.com
+CC: "Justin P. Mattock" <justinmattock@gmail.com>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com> <4BF7E769.1090102@gmail.com> <4BF93392.7010803@example.com>
+In-Reply-To: <4BF93392.7010803@example.com>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23 2010, Michael Kerrisk wrote:
-> On Sun, May 23, 2010 at 9:09 AM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> > On Sun, May 23 2010, Michael Kerrisk wrote:
-> >> On Sun, May 23, 2010 at 4:38 AM, Andrew Morton
-> >> <akpm@linux-foundation.org> wrote:
-> >> > On Sun, 23 May 2010 07:30:01 +0200 Michael Kerrisk <mtk.manpages@gmail.com> wrote:
-> >> >
-> >> >> Hi all,
-> >> >>
-> >> >> I see that this patch has hit Linus's git, so some questions
-> >> >>
-> >> >> On Wed, May 19, 2010 at 6:49 PM, Linus Torvalds
-> >> >> <torvalds@linux-foundation.org> wrote:
-> >> >> >
-> >> >> >
-> >> >> > On Wed, 19 May 2010, Miklos Szeredi wrote:
-> >> >> >>
-> >> >> >> One issue I see is that it's possible to grow pipes indefinitely.
-> >> >> >> Should this be restricted to privileged users?
-> >> >> >
-> >> >> > Yes. But perhaps only if it grows past the default (or perhaps "default*2"
-> >> >> > or similar). That way a normal user could shrink the pipe buffers, and
-> >> >> > then grow them again if he wants to.
-> >> >> >
-> >> >> > Oh, and I think you need to also require that there be at least two
-> >> >> > buffers. Otherwise we can't guarantee POSIX behavior, I think.
-> >> >>
-> >> >> Is there any documentation (e.g., a man-pages patch) for these changes?
-> >> >>
-> >> >> The argument of the fcntl() operations is expressed in pages. I take
-> >> >> it that this means that the semantics of the argument will very
-> >> >> depending on the system page size? So for example, 2 on x86 will mean
-> >> >> 8192 bytes, but will mean 32768 of ia64? That seems very weird. (And
-> >> >> what about architectures where the page size is switchable?) Such
-> >> >> changes in semantics should not be silent for the use, IMO.
-> >> >
-> >> > Well, there is getpagesize().  But I agree - this interface is just
-> >> > asking (x86) people to write non-portable code.
-> >> >
-> >> > otoh, if the arg was in bytes, they'd just hard-code "8192".  They're
-> >> > clever like that.
-> >> >
-> >> > But we have gone to some lengths to avoid exposing things like
-> >> > PAGE_SIZE and HZ in procfs, so it makes sense to take the same approach
-> >> > to syscalls.
-> >>
-> >> Quite. All of the other memory-related APIs that I can think of
-> >> require the user to express the info in bytes. (mlock(),
-> >> remap_file_pages(), mmap(), mremap(), mprotect(), shmget(), and so
-> >> on). Not doing the same for this interface is needlessly inconsistent.
-> >> And while there will be the silly users you mention above, smart users
-> >> will know how to do the right thing with a consistently designed
-> >> interface.
-> >
-> > We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
-> > in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
-> > power of 2 in pages. So the question is if that makes the API cleaner,
-> > passing in number of pages but returning bytes? Or pass in bytes all
-> > around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
-> > pages if need be. Then it would return a size at least what was passed
-> > in, or error.
-> 
-> I'd recommend this: Pass it in and out in bytes. Don't round to a
-> power of 2. Require the user to know what they are doing. Give an
-> error if the user doesn't supply a power-of-2 * page-size for
-> F_SETPIPE_SZ. (Again, consider the case of architectures  with
-> switchable page sizes.)
+On 05/23/2010 03:54 PM, Piotr Hosowicz wrote:
+> And they had built flawlessly. But main build with make-kpkg
+> kernel_image nevertheless still fails. I don;t know what to do. I don't
+> want to do those strace's, because it will take awfully long.
 
-But is there much point in erroring on an incorrect size? If the
-application says "I need at least 120kb of space in there", kernel
-returns "OK, you got 128kb". Would returning -1/EINVAL for that case
-really make a better API? Doesn't seem like it to me.
+Why don't you just look at the actual error which is likely somewhere
+above because of parallel build? And when you are posting outputs, first
+switch your locale to en so that we can parse the output.
 
 -- 
-Jens Axboe
-
+js
