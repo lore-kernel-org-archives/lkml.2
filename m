@@ -1,47 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab0EWCRY (ORCPT <rfc822;w@1wt.eu>);
-	Sat, 22 May 2010 22:17:24 -0400
-Received: from mail-yw0-f180.google.com ([209.85.211.180]:55982 "EHLO
-	mail-yw0-f180.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755675Ab0EWCRW convert rfc822-to-8bit (ORCPT
+	id S1755988Ab0EWCmg (ORCPT <rfc822;w@1wt.eu>);
+	Sat, 22 May 2010 22:42:36 -0400
+Received: from lon1-post-2.mail.demon.net ([195.173.77.149]:40780 "EHLO
+	lon1-post-2.mail.demon.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755678Ab0EWCme (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sat, 22 May 2010 22:17:22 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=Dn2S77izP6Iz+vHYdre9Yas9eGBPU7eHw+VvriIpswCsKO01jaDM+DP8vMalLKdC4m
-         WrhxoThJib+zaUJEBgARx2yBnAVbTdbWbeu3YIa2zcyCj6kYQff7IWzRdUX6DhgPn/tO
-         DjsBifs6u46NPU+vtoe7X31m4WA3NYr6bKQUc=
+	Sat, 22 May 2010 22:42:34 -0400
+Message-ID: <4BF8957A.9090506@lougher.demon.co.uk>
+Date: Sun, 23 May 2010 03:39:54 +0100
+From: Phillip Lougher <phillip@lougher.demon.co.uk>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-In-Reply-To: <1269567614-26995-1-git-send-email-henne@nachtwindheim.de>
-References: <1269567614-26995-1-git-send-email-henne@nachtwindheim.de>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Sat, 22 May 2010 22:17:02 -0400
-Message-ID: <AANLkTimWhBfb4yiq8CEmrEoJpaNOEnTUihaRWaUTVV_N@mail.gmail.com>
-Subject: Re: [PATCH] mfd: section cleanup of 88pm860x driver
-To: Henrik Kretzschmar <henne@nachtwindheim.de>
-Cc: Samuel Ortiz <sameo@linux.intel.com>,
-       Haojian Zhuang <haojian.zhuang@marvell.com>,
-       Dmitry Torokhov <dtor@mail.ru>, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+CC: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Stephen Hemminger <shemminger@vyatta.com>
+Subject: Re: linux-next: build warning after merge of the squashfs tree
+References: <20100522163042.13478ac4.sfr@canb.auug.org.au>
+In-Reply-To: <20100522163042.13478ac4.sfr@canb.auug.org.au>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, Mar 25, 2010 at 21:40, Henrik Kretzschmar wrote:
-_device_init(struct pm860x_chip *chip,
-> -                             struct pm860x_platform_data *pdata);
-> -extern void pm860x_device_exit(struct pm860x_chip *chip);
-> +                             struct pm860x_platform_data *pdata) __devinit ;
-> +extern void pm860x_device_exit(struct pm860x_chip *chip) __devexit ;
->
->  #endif /* __LINUX_MFD_88PM860X_H */
+Stephen Rothwell wrote:
+> Hi Phillip,
+> 
+> After merging the squashfs tree, today's linux-next build (x86_64
+> allmodconfig) produced this warning:
+> 
+> fs/squashfs/super.c: In function 'squashfs_fill_super':
+> fs/squashfs/super.c:265: warning: assignment from incompatible pointer type
+> 
+> Introduced by commit 67f66cc6c728de183d9d43c243cb163c1ebd8e04 ("squashfs:
+> add new extended inode types") from the squashfs tree interacting with
+> commit bb4354538eb7b92f32cfedbad68c7be266c0b467 ("fs: xattr_handler table
+> should be const") from Linus' tree.
 
-i took a second look and noticed that this hunk is useless.  as long
-as the func definitions have proper markings, the prototypes wrt
-section markings here is irrelevant.  plus, you add a spurious space
-before the semicolon.
--mike
+Fixed.  Thanks.
+
+Phillip
+
