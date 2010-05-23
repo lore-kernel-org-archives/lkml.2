@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752100Ab0EWHJU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 03:09:20 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:48252 "EHLO kernel.dk"
+	id S1752452Ab0EWHL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 03:11:28 -0400
+Received: from smtp.gentoo.org ([140.211.166.183]:55536 "EHLO smtp.gentoo.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751074Ab0EWHJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 03:09:19 -0400
-Date: Sun, 23 May 2010 09:09:18 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: mtk.manpages@gmail.com
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+	id S1751122Ab0EWHLZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 03:11:25 -0400
+From: Mike Frysinger <vapier@gentoo.org>
+To: linux-fbdev@vger.kernel.org, Andrew Morton <akpm@linux-foundation.org>,
        linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100523070917.GO23411@kernel.dk>
-References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
+Cc: uclinux-dist-devel@blackfin.uclinux.org
+Subject: [PATCH] fbdev: bfin-t350mcqb-fb: avoid unused warnings in backlight code
+Date: Sun, 23 May 2010 03:15:23 -0400
+Message-Id: <1274598923-12688-1-git-send-email-vapier@gentoo.org>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23 2010, Michael Kerrisk wrote:
-> On Sun, May 23, 2010 at 4:38 AM, Andrew Morton
-> <akpm@linux-foundation.org> wrote:
-> > On Sun, 23 May 2010 07:30:01 +0200 Michael Kerrisk <mtk.manpages@gmail.com> wrote:
-> >
-> >> Hi all,
-> >>
-> >> I see that this patch has hit Linus's git, so some questions
-> >>
-> >> On Wed, May 19, 2010 at 6:49 PM, Linus Torvalds
-> >> <torvalds@linux-foundation.org> wrote:
-> >> >
-> >> >
-> >> > On Wed, 19 May 2010, Miklos Szeredi wrote:
-> >> >>
-> >> >> One issue I see is that it's possible to grow pipes indefinitely.
-> >> >> Should this be restricted to privileged users?
-> >> >
-> >> > Yes. But perhaps only if it grows past the default (or perhaps "default*2"
-> >> > or similar). That way a normal user could shrink the pipe buffers, and
-> >> > then grow them again if he wants to.
-> >> >
-> >> > Oh, and I think you need to also require that there be at least two
-> >> > buffers. Otherwise we can't guarantee POSIX behavior, I think.
-> >>
-> >> Is there any documentation (e.g., a man-pages patch) for these changes?
-> >>
-> >> The argument of the fcntl() operations is expressed in pages. I take
-> >> it that this means that the semantics of the argument will very
-> >> depending on the system page size? So for example, 2 on x86 will mean
-> >> 8192 bytes, but will mean 32768 of ia64? That seems very weird. (And
-> >> what about architectures where the page size is switchable?) Such
-> >> changes in semantics should not be silent for the use, IMO.
-> >
-> > Well, there is getpagesize().  But I agree - this interface is just
-> > asking (x86) people to write non-portable code.
-> >
-> > otoh, if the arg was in bytes, they'd just hard-code "8192".  They're
-> > clever like that.
-> >
-> > But we have gone to some lengths to avoid exposing things like
-> > PAGE_SIZE and HZ in procfs, so it makes sense to take the same approach
-> > to syscalls.
-> 
-> Quite. All of the other memory-related APIs that I can think of
-> require the user to express the info in bytes. (mlock(),
-> remap_file_pages(), mmap(), mremap(), mprotect(), shmget(), and so
-> on). Not doing the same for this interface is needlessly inconsistent.
-> And while there will be the silly users you mention above, smart users
-> will know how to do the right thing with a consistently designed
-> interface.
+The current backlight code is stubbed out, so the new props changes added
+some warnings about unused label/prop.
 
-We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
-in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
-power of 2 in pages. So the question is if that makes the API cleaner,
-passing in number of pages but returning bytes? Or pass in bytes all
-around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
-pages if need be. Then it would return a size at least what was passed
-in, or error.
+Signed-off-by: Mike Frysinger <vapier@gentoo.org>
+---
+ drivers/video/bfin-t350mcqb-fb.c |    7 ++++---
+ 1 files changed, 4 insertions(+), 3 deletions(-)
 
+diff --git a/drivers/video/bfin-t350mcqb-fb.c b/drivers/video/bfin-t350mcqb-fb.c
+index c2ec3dc..7a50272 100644
+--- a/drivers/video/bfin-t350mcqb-fb.c
++++ b/drivers/video/bfin-t350mcqb-fb.c
+@@ -420,7 +420,9 @@ static irqreturn_t bfin_t350mcqb_irq_error(int irq, void *dev_id)
+ 
+ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
+ {
++#ifndef NO_BL_SUPPORT
+ 	struct backlight_properties props;
++#endif
+ 	struct bfin_t350mcqbfb_info *info;
+ 	struct fb_info *fbinfo;
+ 	int ret;
+@@ -550,7 +552,8 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
+ 		printk(KERN_ERR DRIVER_NAME
+ 			": unable to register backlight.\n");
+ 		ret = -EINVAL;
+-		goto out9;
++		unregister_framebuffer(fbinfo);
++		goto out8;
+ 	}
+ 
+ 	lcd_dev = lcd_device_register(DRIVER_NAME, NULL, &bfin_lcd_ops);
+@@ -559,8 +562,6 @@ static int __devinit bfin_t350mcqb_probe(struct platform_device *pdev)
+ 
+ 	return 0;
+ 
+-out9:
+-	unregister_framebuffer(fbinfo);
+ out8:
+ 	free_irq(info->irq, info);
+ out7:
 -- 
-Jens Axboe
+1.7.1
 
