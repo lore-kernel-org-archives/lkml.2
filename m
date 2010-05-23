@@ -1,88 +1,128 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752941Ab0EWPgF (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 11:36:05 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:49919 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751224Ab0EWPgC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 11:36:02 -0400
-Date: Sun, 23 May 2010 18:31:34 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Cc: Avi Kivity <avi@redhat.com>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
-	ring itself
-Message-ID: <20100523153134.GA14646@redhat.com>
-References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au>
+	id S1753427Ab0EWPgq (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 11:36:46 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:43126 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752232Ab0EWPgp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 11:36:45 -0400
+Message-ID: <4BF94B89.2050101@panasas.com>
+Date: Sun, 23 May 2010 18:36:41 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005201438.17010.rusty@rustcorp.com.au>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Julia Lawall <julia@diku.dk>, Doug Gilbert <dgilbert@interlog.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
+References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk> <1274538263.4410.38.camel@mulgrave.site>
+In-Reply-To: <1274538263.4410.38.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 May 2010 15:36:44.0048 (UTC) FILETIME=[BF4FA100:01CAFA8D]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 02:38:16PM +0930, Rusty Russell wrote:
-> On Thu, 20 May 2010 02:31:50 pm Rusty Russell wrote:
-> > On Wed, 19 May 2010 05:36:42 pm Avi Kivity wrote:
-> > > > Note that this is a exclusive->shared->exclusive bounce only, too.
-> > > >    
-> > > 
-> > > A bounce is a bounce.
-> > 
-> > I tried to measure this to show that you were wrong, but I was only able
-> > to show that you're right.  How annoying.  Test code below.
+On 05/22/2010 05:24 PM, James Bottomley wrote:
+> On Sat, 2010-05-22 at 10:22 +0200, Julia Lawall wrote:
+>> From: Julia Lawall <julia@diku.dk>
+>>
+>> Use memdup_user when user data is immediately copied into the
+>> allocated region.
+>>
+>> The semantic patch that makes this change is as follows:
+>> (http://coccinelle.lip6.fr/)
+>>
+>> // <smpl>
+>> @@
+>> expression from,to,size,flag;
+>> position p;
+>> identifier l1,l2;
+>> @@
+>>
+>> -  to = \(kmalloc@p\|kzalloc@p\)(size,flag);
+>> +  to = memdup_user(from,size);
+>>    if (
+>> -      to==NULL
+>> +      IS_ERR(to)
+>>                  || ...) {
+>>    <+... when != goto l1;
+>> -  -ENOMEM
+>> +  PTR_ERR(to)
+>>    ...+>
+>>    }
+>> -  if (copy_from_user(to, from, size) != 0) {
+>> -    <+... when != goto l2;
+>> -    -EFAULT
+>> -    ...+>
+>> -  }
+>> // </smpl>
+>>
+>> Signed-off-by: Julia Lawall <julia@diku.dk>
+>>
+>> ---
+>>  drivers/scsi/sg.c |   11 +++--------
+>>  1 file changed, 3 insertions(+), 8 deletions(-)
+>>
+>> diff --git a/drivers/scsi/sg.c b/drivers/scsi/sg.c
+>> index ef752b2..277ace6 100644
+>> --- a/drivers/scsi/sg.c
+>> +++ b/drivers/scsi/sg.c
+>> @@ -1676,14 +1676,9 @@ static int sg_start_req(Sg_request *srp, unsigned char *cmd)
+>>  		int len, size = sizeof(struct sg_iovec) * iov_count;
+>>  		struct iovec *iov;
+>>  
+>> -		iov = kmalloc(size, GFP_ATOMIC);
+>> -		if (!iov)
+>> -			return -ENOMEM;
+>> -
+>> -		if (copy_from_user(iov, hp->dxferp, size)) {
+>> -			kfree(iov);
+>> -			return -EFAULT;
+>> -		}
+>> +		iov = memdup_user(hp->dxferp, size);
+>> +		if (IS_ERR(iov))
+>> +			return PTR_ERR(iov);
 > 
-> This time for sure!
+> This type of transformation has really no value at all.  The code you're
+> proposing to replace is already correct.  I'm fairly ambivalent on
+> patterned APIs anyway but I accept they're useful way to prevent new
+> code getting it wrong. However, it's completely bogus to force
+> replacement of correctly functioning code throughout the kernel (unless
+> you're going to argue that everyone who tries to copy from user into a
+> kmalloc space does a cut and paste from sg?)
+> 
+> Of infinitely greater service would be finding any places where the
+> pattern is being incorrectly used.
+> 
 
+It looks like it is not done 100% kosher and calling memdup_user should
+be better.
 
-What do you see?
-On my laptop:
-	[mst@tuck testring]$ ./rusty1 share 0 1
-	CPU 1: share cacheline: 2820410 usec
-	CPU 0: share cacheline: 2823441 usec
-	[mst@tuck testring]$ ./rusty1 unshare 0 1
-	CPU 0: unshare cacheline: 2783014 usec
-	CPU 1: unshare cacheline: 2782951 usec
-	[mst@tuck testring]$ ./rusty1 lockshare 0 1
-	CPU 1: lockshare cacheline: 1888495 usec
-	CPU 0: lockshare cacheline: 1888544 usec
-	[mst@tuck testring]$ ./rusty1 lockunshare 0 1
-	CPU 0: lockunshare cacheline: 1889854 usec
-	CPU 1: lockunshare cacheline: 1889804 usec
-So locked version seems to be faster than unlocked,
-and share/unshare not to matter?
+- For 1 memdup_user does a GFP_KERNEL with a comment on how copy_from_user
+  would eventually sleep, so what's the point of GFP_ATOMIC?
+  If this is by design then it surly calls for a comment that explains.
+  (I would like to know)
 
-same on a workstation:
-[root@qus19 ~]# ./rusty1 unshare 0 1
-CPU 0: unshare cacheline: 6037002 usec
-CPU 1: unshare cacheline: 6036977 usec
-[root@qus19 ~]# ./rusty1 lockunshare 0 1
-CPU 1: lockunshare cacheline: 5734362 usec
-CPU 0: lockunshare cacheline: 5734389 usec
-[root@qus19 ~]# ./rusty1 lockshare 0 1
-CPU 1: lockshare cacheline: 5733537 usec
-CPU 0: lockshare cacheline: 5733564 usec
+- 2nd kmalloc_track_caller is called which is more appropriate here by
+  a small margin, No?
 
-using another pair of CPUs gives a more drastic
-results:
+Just my $0.017
+Boaz
 
-[root@qus19 ~]# ./rusty1 lockshare 0 2
-CPU 2: lockshare cacheline: 4226990 usec
-CPU 0: lockshare cacheline: 4227038 usec
-[root@qus19 ~]# ./rusty1 lockunshare 0 2
-CPU 0: lockunshare cacheline: 4226707 usec
-CPU 2: lockunshare cacheline: 4226662 usec
-[root@qus19 ~]# ./rusty1 unshare 0 2
-CPU 0: unshare cacheline: 14815048 usec
-CPU 2: unshare cacheline: 14815006 usec
+> So, if Doug wants to take this as a prettify of sg, I'm happy, but if
+> not, I don't really want to see this again.
+> 
+> Thanks,
+> 
+> James
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
 
-
-The share test seems to never finish on the
-workstation. I am debugging this.
-
--- 
-MST
