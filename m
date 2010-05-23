@@ -1,79 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754684Ab0EaV4d (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 31 May 2010 17:56:33 -0400
-Received: from mondschein.lichtvoll.de ([194.150.191.11]:35742 "EHLO
-	mail.lichtvoll.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751973Ab0EaV4c (ORCPT
+	id S1751587Ab0EWE6Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 00:58:16 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:38184 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751143Ab0EWE6P (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 31 May 2010 17:56:32 -0400
-From: Martin Steigerwald <Martin@lichtvoll.de>
-To: Jerome Glisse <glisse@freedesktop.org>
-Subject: Re: [stable]  please consider drm radeon kms agp release
-Date: Mon, 31 May 2010 23:56:26 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33.2-tp42-toi-3.1-lowmem-free-991-992-04964-gf00c7ec-dirty; KDE/4.4.3; i686; ; )
-Cc: Greg KH <greg@kroah.com>, stable@kernel.org,
-       Alex Deucher <alexdeucher@gmail.com>, linux-kernel@vger.kernel.org
-References: <201005311642.49843.Martin@lichtvoll.de> <20100531170234.GA14235@kroah.com> <20100531193815.GD2413@barney.localdomain> (sfid-20100531_234701_618602_70447610)
-In-Reply-To: <20100531193815.GD2413@barney.localdomain>
+	Sun, 23 May 2010 00:58:15 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:date:message-id:subject:from:to:content-type;
+        b=LxBFkiJE2QiAoB4aqaQfe4/D99uojlaz6VK9pQcpmGgQ07XiWHV5ELYXeTumUQCoKw
+         nfY4TK6sEPJqypqbwpw1usdrsmDa8OOl636Uy5lFA70bNtKWYG9FfJZr/Mekxx91fZ5Q
+         5mFm/0wWgHuADTTZbQ2AmbxULbRFDBODDxdsY=
 MIME-Version: 1.0
-Content-Type: multipart/signed;
-  boundary="nextPart1628120.qDnFc0Bigu";
-  protocol="application/pgp-signature";
-  micalg=pgp-sha1
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005312356.27299.Martin@lichtvoll.de>
+Date: Sun, 23 May 2010 12:58:14 +0800
+Message-ID: <AANLkTikg6BEFCC-vwn3K96ZI-uiErg4SO8V701SWNkn0@mail.gmail.com>
+Subject: Wireless IBSS on Linux-2.6.34 broken by commit 3bbb9ec946428b96657126768f65487a48dd090c
+From: Jeff Chua <jeff.chua.linux@gmail.com>
+To: Arjan van de Ven <arjan@linux.intel.com>, johnstul@us.ibm.com,
+       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Intel Linux Wireless <ilw@linux.intel.com>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Frans Pop <elendil@planet.nl>, Johannes Berg <johannes.berg@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       lkml <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---nextPart1628120.qDnFc0Bigu
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: quoted-printable
+Wireless IBSS on Linux-2.6.34 is broken. Reverting commit
+3bbb9ec946428b96657126768f65487a48dd090c makes it work again. This was
+tested by bisecting the kernel.
 
-Am Montag 31 Mai 2010 schrieb Jerome Glisse:
-> On Mon, May 31, 2010 at 10:02:34AM -0700, Greg KH wrote:
-> > On Mon, May 31, 2010 at 04:42:41PM +0200, Martin Steigerwald wrote:
-> > > Hi Greg, hi stable kernel team,
-> > >=20
-> > > Please consider the attached patch from J=E9r=F4me Glisse. It fixes d=
-rm
-> > > radeon KMS after coming out from a snapshot cycle [1] - no matter
-> > > whether I use userspace software suspend or TuxOnIce.
-> > >=20
-> > > Verified on my notebook ThinkPad T42 and by cedric, the reporter of
-> > > above bug.
-> >=20
-> > Which stable kernel release do you want to see this patch in?  .27,
-> > .32, .33, or .34?  Yeah, there's a lot active at the moment :(
-> >=20
-> > thanks,
-> >=20
-> > greg k-h
->=20
-> 2.6.34 sorry if i wasn't clear when ccing stable while sending patch
-> for 2.6.35.
+I'm using 6200 AGN ...
 
-Yeah forgot to mention it also, in 2.6.33 it works. In 2.6.35 its fixed. So=
-=20
-it applies for 2.6.34.
+cfg80211: Calling CRDA to update world regulatory domain
+iwlagn: Intel(R) Wireless WiFi Link AGN driver for Linux, in-tree:
+iwlagn: Copyright(c) 2003-2010 Intel Corporation
+iwlagn 0000:02:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+iwlagn 0000:02:00.0: setting latency timer to 64
+iwlagn 0000:02:00.0: Detected Intel(R) Centrino(R) Advanced-N 6200 AGN, REV=0x74
+iwlagn 0000:02:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels
+iwlagn 0000:02:00.0: irq 46 for MSI/MSI-X
+iwlagn 0000:02:00.0: loaded firmware version 9.193.4.1 build 19710
+
+
+
+So, where should the fix be?
+
+
+Here's the commit ...
+
+3bbb9ec946428b96657126768f65487a48dd090c is the first bad commit
+commit 3bbb9ec946428b96657126768f65487a48dd090c
+Author: Arjan van de Ven <arjan@linux.intel.com>
+Date:   Thu Mar 11 14:04:36 2010 -0800
+
+    timers: Introduce the concept of timer slack for legacy timers
+
+    While HR timers have had the concept of timer slack for quite some time
+    now, the legacy timers lacked this concept, and had to make do with
+    round_jiffies() and friends.
+
+    Timer slack is important for power management; grouping timers reduces the
+    number of wakeups which in turn reduces power consumption.
+
+    This patch introduces timer slack to the legacy timers using the following
+    pieces:
+    * A slack field in the timer struct
+    * An api (set_timer_slack) that callers can use to set explicit timer slack
+    * A default slack of 0.4% of the requested delay for callers that do not set
+      any explicit slack
+    * Rounding code that is part of mod_timer() that tries to
+      group timers around jiffies values every 'power of two'
+      (so quick timers will group around every 2, but longer timers
+      will group around every 4, 8, 16, 32 etc)
+
+    Signed-off-by: Arjan van de Ven <arjan@linux.intel.com>
+    Cc: johnstul@us.ibm.com
+    Cc: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+
+
 
 Thanks,
-=2D-=20
-Martin 'Helios' Steigerwald - http://www.Lichtvoll.de
-GPG: 03B0 0D6C 0040 0710 4AFA  B82F 991B EAAC A599 84C7
-
---nextPart1628120.qDnFc0Bigu
-Content-Type: application/pgp-signature; name=signature.asc 
-Content-Description: This is a digitally signed message part.
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEABECAAYFAkwEMIsACgkQmRvqrKWZhMcFNgCgqVDIJhoVgGaQ36G5MreruC8F
-CpwAoKuj5WSi6brxhRnHYhDj+bZyt+GB
-=FgOb
------END PGP SIGNATURE-----
-
---nextPart1628120.qDnFc0Bigu--
+Jeff.
