@@ -1,62 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754029Ab0EWJ0S (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 05:26:18 -0400
-Received: from hera.kernel.org ([140.211.167.34]:57378 "EHLO hera.kernel.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753839Ab0EWJ0Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 05:26:16 -0400
-Date: Sun, 23 May 2010 09:25:45 GMT
-From: tip-bot for Akinobu Mita <akinobu.mita@gmail.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com, pq@iki.fi,
-       akinobu.mita@gmail.com, tglx@linutronix.de, mingo@elte.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       pq@iki.fi, tglx@linutronix.de, akinobu.mita@gmail.com, mingo@elte.hu
-In-Reply-To: <1274140110-5841-1-git-send-email-akinobu.mita@gmail.com>
-References: <1274140110-5841-1-git-send-email-akinobu.mita@gmail.com>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:perf/core] x86/mmiotrace: Remove redundant instruction prefix checks
-Message-ID: <tip-841bca1393d315d79077f272c2918423e36dc364@git.kernel.org>
-Git-Commit-ID: 841bca1393d315d79077f272c2918423e36dc364
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Sun, 23 May 2010 09:25:46 +0000 (UTC)
+	id S1754045Ab0EWJ2Q (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 05:28:16 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:47216 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753872Ab0EWJ2J (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 05:28:09 -0400
+Subject: Re: [PATCH v2] Make sure timers have migrated before killing
+ migration_thread
+From: Peter Zijlstra <peterz@infradead.org>
+To: Mike Galbraith <efault@gmx.de>
+Cc: "Amit K. Arora" <aarora@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org,
+       Thomas Gleixner <tglx@linutronix.de>
+In-Reply-To: <1274605638.9340.25.camel@marge.simson.net>
+References: <20100519090557.GA15237@amitarora.in.ibm.com>
+	 <1274261515.5605.10423.camel@twins>
+	 <20100519121356.GB15237@amitarora.in.ibm.com>
+	 <1274340483.5605.13161.camel@twins>
+	 <1274605638.9340.25.camel@marge.simson.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 May 2010 11:13:06 +0200
+Message-ID: <1274605986.1674.1719.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  841bca1393d315d79077f272c2918423e36dc364
-Gitweb:     http://git.kernel.org/tip/841bca1393d315d79077f272c2918423e36dc364
-Author:     Akinobu Mita <akinobu.mita@gmail.com>
-AuthorDate: Tue, 18 May 2010 08:48:30 +0900
-Committer:  Ingo Molnar <mingo@elte.hu>
-CommitDate: Sun, 23 May 2010 11:02:43 +0200
+On Sun, 2010-05-23 at 11:07 +0200, Mike Galbraith wrote:
+> On Thu, 2010-05-20 at 09:28 +0200, Peter Zijlstra wrote:
+> > On Wed, 2010-05-19 at 17:43 +0530, Amit K. Arora wrote:
+> > > Alternate Solution considered : Another option considered was to
+> > > increase the priority of the hrtimer cpu offline notifier, such that it
+> > > gets to run before scheduler's migration cpu offline notifier. In this
+> > > way we are sure that the timers will get migrated before migration_call
+> > > tries to kill migration_thread. But, this can have some non-obvious
+> > > implications, suggested Srivatsa.
+> > 
+> > 
+> > > On Wed, May 19, 2010 at 11:31:55AM +0200, Peter Zijlstra wrote:
+> > > > The other problem is more urgent though, CPU_POST_DEAD runs outside of
+> > > > the hotplug lock and thus the above becomes a race where we could
+> > > > possible kill off the migration thread of a newly brought up cpu:
+> > > > 
+> > > >  cpu0 - down 2
+> > > >  cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
+> > > >  cpu0 - post_down 2 - frees the migration thread -- oops!
+> > > 
+> > > Ok. So, how about adding a check in CPU_UP_PREPARE event handling too ?
+> > > The cpuset_lock will synchronize, and thus avoid race between killing of
+> > > migration_thread in up_prepare and post_dead events. 
+> > > 
+> > > Here is the updated patch. If you don't like this one too, do you mind
+> > > suggesting an alternate approach to tackle the problem ? Thanks !
+> > 
+> > Right, so this isn't pretty at all..
+> 
+> Since the problem seems to stem from interfering with a critical thread,
+> how about create a SCHED_SYSTEM_CRITICAL flag ala SCHED_RESET_ON_FORK?
+> 
+> Not particularly beautiful, and completely untested (well, it compiles).
 
-x86/mmiotrace: Remove redundant instruction prefix checks
+Nah, I'd rather we pull the migration thread out of SCHED_FIFO and
+either schedule it explicit or add a sched_class for it. We need to do
+that anyway once we go play with SCHED_DEADLINE.
 
-Get rid of the duplicated entries in prefix_codes[]
-to eliminate redundant checks by skip_prefix().
+But it would be very nice if we could simply order the timer and task
+migration bits so that the whole problem doesn't exist in the first
+place.
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Acked-by: Pekka Paalanen <pq@iki.fi>
-LKML-Reference: <1274140110-5841-1-git-send-email-akinobu.mita@gmail.com>
-Signed-off-by: Ingo Molnar <mingo@elte.hu>
----
- arch/x86/mm/pf_in.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
-
-diff --git a/arch/x86/mm/pf_in.c b/arch/x86/mm/pf_in.c
-index df3d5c8..308e325 100644
---- a/arch/x86/mm/pf_in.c
-+++ b/arch/x86/mm/pf_in.c
-@@ -34,7 +34,7 @@
- /* IA32 Manual 3, 2-1 */
- static unsigned char prefix_codes[] = {
- 	0xF0, 0xF2, 0xF3, 0x2E, 0x36, 0x3E, 0x26, 0x64,
--	0x65, 0x2E, 0x3E, 0x66, 0x67
-+	0x65, 0x66, 0x67
- };
- /* IA32 Manual 3, 3-432*/
- static unsigned int reg_rop[] = {
