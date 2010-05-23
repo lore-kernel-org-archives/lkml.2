@@ -1,83 +1,190 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753947Ab0EWLYp (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 07:24:45 -0400
-Received: from gimli.pxnet.com ([195.227.45.7]:56623 "EHLO mail.pxnet.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754005Ab0EWLY1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 07:24:27 -0400
-X-Greylist: delayed 663 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 May 2010 07:24:23 EDT
-From: Tilman Schmidt <tilman@imap.cc>
-Subject: [PATCH 2/2] isdn/gigaset: remove dummy CAPI method implementations
-To: Karsten Keil <isdn@linux-pingi.de>, David Miller <davem@davemloft.net>
-CC: Hansjoerg Lipp <hjlipp@web.de>, Karsten Keil <keil@b1-systems.de>,
-       i4ldeveloper@listserv.isdn4linux.de, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Message-ID: <20100523-patch-gigaset-02.tilman@imap.cc>
-In-Reply-To: <20100523-patch-gigaset-00.tilman@imap.cc>
-References: <20100523-patch-gigaset-00.tilman@imap.cc>
-Date: Sun, 23 May 2010 13:02:38 +0200 (CEST)
-X-Spam-Score: -0.898 () AWL,BAYES_20,RDNS_NONE
+	id S1753948Ab0EWLtH (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 07:49:07 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:47166 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753469Ab0EWLtD (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 07:49:03 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=DdJaGkt27pwBWCMLgJZl+um1gYq3xYcpVcoxyV0xKzAM3sl11WEzU0dvccwMFjFB0K
+         Qa1wmTUXLenVvPTXkD3QFSWBvEiqn/ZK5ntKj/3YPXS2dySq1QVqGgX1jijniIj3wJN8
+         3jSIxhGTNe2e43Kp6TeQU2YdptWABn75/FBNY=
+From: tom.leiming@gmail.com
+To: linux@arm.linux.org.uk
+Cc: linux-arm-kernel@lists.infradead.org, linux-embedded@vger.kernel.org,
+       a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
+       Ming Lei <tom.leiming@gmail.com>
+Subject: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
+Date: Sun, 23 May 2010 19:48:48 +0800
+Message-Id: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com>
+X-Mailer: git-send-email 1.6.2.5
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dummy implementations for the optional CAPI controller operations
-load_firmware and reset_ctr can cause userspace callers to hang
-indefinitely. It's better not to implement them at all.
+From: Ming Lei <tom.leiming@gmail.com>
 
-Impact: bugfix
-Signed-off-by: Tilman Schmidt <tilman@imap.cc>
+This patch fixes the 'unannotated irqs-on' lockdep warning[1]:
+
+This patch introduces macro of trace_ret_hardirqs_on, which will
+call trace_hardirqs_on if I flag in the stored CPSR is zero.
+
+In the path of returning to user-space, the patch replaces disable_irq
+with disable_irq_notrace in ret_to_user to avoid the 'unannotated irqs-on'
+lockdep warning since hardirqs is always enabled before returning to user.
+
+In the path of returning to kernel-space, the patch still replaces
+disable_irq with disable_irq_notrace in __xxx_svc handler and adds
+trace_hardirqs_on before calling svc_exit to trace the possible hardirqs on
+event for avoiding the possible 'unannotated irqs-on' lockdep warning.
+
+The patch not only fixes the warning[1] to make lockdep usable on ARM,
+but also improves the efficiency if lockdep is enabled:
+
+	- remove one calling for asm_trace_hardirqs_on before returning
+to user-space
+	- convert asm_trace_hardirqs_on to trace_hardirqs_on in the
+path of returning to kernel space from exception and __only__ call it if
+harirqs will be enabled before returning.
+
+[1]
+	CPU: Testing write buffer coherency: ok
+	------------[ cut here ]------------
+	WARNING: at kernel/lockdep.c:3145 check_flags+0xcc/0x1dc()
+	Modules linked in:
+	[<c0035120>] (unwind_backtrace+0x0/0xf8) from [<c0355374>] (dump_stack+0x20/0x24)
+	[<c0355374>] (dump_stack+0x20/0x24) from [<c0060c04>] (warn_slowpath_common+0x58/0x70)
+	[<c0060c04>] (warn_slowpath_common+0x58/0x70) from [<c0060c3c>] (warn_slowpath_null+0x20/0x24)
+	[<c0060c3c>] (warn_slowpath_null+0x20/0x24) from [<c008f224>] (check_flags+0xcc/0x1dc)
+	[<c008f224>] (check_flags+0xcc/0x1dc) from [<c00945dc>] (lock_acquire+0x50/0x140)
+	[<c00945dc>] (lock_acquire+0x50/0x140) from [<c0358434>] (_raw_spin_lock+0x50/0x88)
+	[<c0358434>] (_raw_spin_lock+0x50/0x88) from [<c00fd114>] (set_task_comm+0x2c/0x60)
+	[<c00fd114>] (set_task_comm+0x2c/0x60) from [<c007e184>] (kthreadd+0x30/0x108)
+	[<c007e184>] (kthreadd+0x30/0x108) from [<c0030104>] (kernel_thread_exit+0x0/0x8)
+	---[ end trace 1b75b31a2719ed1c ]---
+	possible reason: unannotated irqs-on.
+	irq event stamp: 3
+	hardirqs last  enabled at (2): [<c0059bb0>] finish_task_switch+0x48/0xb0
+	hardirqs last disabled at (3): [<c002f0b0>] ret_slow_syscall+0xc/0x1c
+	softirqs last  enabled at (0): [<c005f3e0>] copy_process+0x394/0xe5c
+	softirqs last disabled at (0): [<(null)>] (null)
+
+Signed-off-by: Ming Lei <tom.leiming@gmail.com>
 ---
- drivers/isdn/gigaset/capi.c |   28 ++--------------------------
- 1 files changed, 2 insertions(+), 26 deletions(-)
+ arch/arm/kernel/entry-armv.S   |   31 +++++++++++++++++--------------
+ arch/arm/kernel/entry-common.S |    2 +-
+ arch/arm/kernel/entry-header.S |    7 +++++++
+ 3 files changed, 25 insertions(+), 15 deletions(-)
 
-diff --git a/drivers/isdn/gigaset/capi.c b/drivers/isdn/gigaset/capi.c
-index 964a55f..e72f86b 100644
---- a/drivers/isdn/gigaset/capi.c
-+++ b/drivers/isdn/gigaset/capi.c
-@@ -933,30 +933,6 @@ void gigaset_isdn_stop(struct cardstate *cs)
-  */
+diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
+index 7ee48e7..42d33cf 100644
+--- a/arch/arm/kernel/entry-armv.S
++++ b/arch/arm/kernel/entry-armv.S
+@@ -204,13 +204,15 @@ __dabt_svc:
+ 	@
+ 	@ IRQs off again before pulling preserved data off the stack
+ 	@
+-	disable_irq
++	disable_irq_notrace
  
- /*
-- * load firmware
-- */
--static int gigaset_load_firmware(struct capi_ctr *ctr, capiloaddata *data)
--{
--	struct cardstate *cs = ctr->driverdata;
--
--	/* AVM specific operation, not needed for Gigaset -- ignore */
--	dev_notice(cs->dev, "load_firmware ignored\n");
--
--	return 0;
--}
--
--/*
-- * reset (deactivate) controller
-- */
--static void gigaset_reset_ctr(struct capi_ctr *ctr)
--{
--	struct cardstate *cs = ctr->driverdata;
--
--	/* AVM specific operation, not needed for Gigaset -- ignore */
--	dev_notice(cs->dev, "reset_ctr ignored\n");
--}
--
--/*
-  * register CAPI application
+ 	@
+ 	@ restore SPSR and restart the instruction
++	@ trace possible hardirqs on event before returning
+ 	@
+-	ldr	r2, [sp, #S_PSR]
+-	svc_exit r2				@ return from exception
++	ldr	r4, [sp, #S_PSR]
++	trace_ret_hardirqs_on r4
++	svc_exit r4				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__dabt_svc)
+ 
+@@ -235,10 +237,7 @@ __irq_svc:
+ 	blne	svc_preempt
+ #endif
+ 	ldr	r4, [sp, #S_PSR]		@ irqs are already disabled
+-#ifdef CONFIG_TRACE_IRQFLAGS
+-	tst	r4, #PSR_I_BIT
+-	bleq	trace_hardirqs_on
+-#endif
++	trace_ret_hardirqs_on r4
+ 	svc_exit r4				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__irq_svc)
+@@ -291,13 +290,15 @@ __und_svc:
+ 	@
+ 	@ IRQs off again before pulling preserved data off the stack
+ 	@
+-1:	disable_irq
++1:	disable_irq_notrace
+ 
+ 	@
+ 	@ restore SPSR and restart the instruction
++	@ trace possible hardirqs on event before returning
+ 	@
+-	ldr	r2, [sp, #S_PSR]		@ Get SVC cpsr
+-	svc_exit r2				@ return from exception
++	ldr	r4, [sp, #S_PSR]		@ Get SVC cpsr
++	trace_ret_hardirqs_on r4
++	svc_exit r4				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__und_svc)
+ 
+@@ -327,13 +328,15 @@ __pabt_svc:
+ 	@
+ 	@ IRQs off again before pulling preserved data off the stack
+ 	@
+-	disable_irq
++	disable_irq_notrace
+ 
+ 	@
+ 	@ restore SPSR and restart the instruction
+-	@
+-	ldr	r2, [sp, #S_PSR]
+-	svc_exit r2				@ return from exception
++	@ trace possible hardirqs on event before returning
++	@	
++	ldr	r4, [sp, #S_PSR]
++	trace_ret_hardirqs_on r4
++	svc_exit r4				@ return from exception
+  UNWIND(.fnend		)
+ ENDPROC(__pabt_svc)
+ 
+diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
+index 2c1db77..ed471a7 100644
+--- a/arch/arm/kernel/entry-common.S
++++ b/arch/arm/kernel/entry-common.S
+@@ -58,7 +58,7 @@ work_resched:
   */
- static void gigaset_register_appl(struct capi_ctr *ctr, u16 appl,
-@@ -2213,8 +2189,8 @@ int gigaset_isdn_regdev(struct cardstate *cs, const char *isdnid)
- 	iif->ctr.driverdata    = cs;
- 	strncpy(iif->ctr.name, isdnid, sizeof(iif->ctr.name));
- 	iif->ctr.driver_name   = "gigaset";
--	iif->ctr.load_firmware = gigaset_load_firmware;
--	iif->ctr.reset_ctr     = gigaset_reset_ctr;
-+	iif->ctr.load_firmware = NULL;
-+	iif->ctr.reset_ctr     = NULL;
- 	iif->ctr.register_appl = gigaset_register_appl;
- 	iif->ctr.release_appl  = gigaset_release_appl;
- 	iif->ctr.send_message  = gigaset_send_message;
+ ENTRY(ret_to_user)
+ ret_slow_syscall:
+-	disable_irq				@ disable interrupts
++	disable_irq_notrace				@ disable interrupts
+ 	ldr	r1, [tsk, #TI_FLAGS]
+ 	tst	r1, #_TIF_WORK_MASK
+ 	bne	work_pending
+diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
+index d93f976..ac51ce3 100644
+--- a/arch/arm/kernel/entry-header.S
++++ b/arch/arm/kernel/entry-header.S
+@@ -30,6 +30,13 @@
+ #error "Please fix"
+ #endif
+ 
++	.macro trace_ret_hardirqs_on, rspsr
++#ifdef CONFIG_TRACE_IRQFLAGS
++	tst 	\rspsr, #PSR_I_BIT
++	bleq	trace_hardirqs_on
++#endif
++	.endm
++
+ 	.macro	zero_fp
+ #ifdef CONFIG_FRAME_POINTER
+ 	mov	fp, #0
 -- 
-1.6.5.3.298.g39add
+1.6.2.5
 
