@@ -1,99 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754686Ab0EWNUM (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 09:20:12 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:59858 "EHLO ogre.sisk.pl"
+	id S1754710Ab0EWNUf (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 09:20:35 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:59865 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754468Ab0EWNUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 09:20:07 -0400
+	id S1754540Ab0EWNUd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 09:20:33 -0400
 From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Thomas Gleixner <tglx@linutronix.de>
-Subject: Re: [Regression] Negative time on Acer Ferrari One with current -git
-Date: Sun, 23 May 2010 15:21:02 +0200
+To: Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [git head f4b87dee9] BUG: using smp_processor_id() in preemptible (VFS-related)
+Date: Sun, 23 May 2010 15:21:59 +0200
 User-Agent: KMail/1.12.4 (Linux/2.6.34-rjw; KDE/4.3.5; x86_64; ; )
-Cc: John Stultz <johnstul@us.ibm.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Al Viro <viro@zeniv.linux.org.uk>,
        Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <201005212343.25184.rjw@sisk.pl> <201005222320.01506.rjw@sisk.pl> <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005230815220.3368@localhost.localdomain>
+       Eric Paris <eparis@redhat.com>, Dmitry Monakhov <dmonakhov@openvz.org>,
+       Jan Kara <jack@ucw.cz>
+References: <201005222337.00039.rjw@sisk.pl> <20100522163040.42bbde9d.akpm@linux-foundation.org>
+In-Reply-To: <20100522163040.42bbde9d.akpm@linux-foundation.org>
 MIME-Version: 1.0
 Content-Type: Text/Plain;
   charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005231521.02817.rjw@sisk.pl>
+Message-Id: <201005231521.59703.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sunday 23 May 2010, Thomas Gleixner wrote:
-> On Sat, 22 May 2010, Rafael J. Wysocki wrote:
-> > After reverting commit 64ce4c2f above things work again.
+On Saturday 22 May 2010, Andrew Morton wrote:
+> On Sat, 22 May 2010 23:36:59 +0200 "Rafael J. Wysocki" <rjw@sisk.pl> wrote:
+> 
+> > Hi,
 > > 
-> > To be precise, I reverted both commit 64ce4c2f and commit 6a867a3 (time: 
-> > Remove xtime_cache), but since the symptoms continued to apprear after
-> > reverting the latter alone, it's quite clear that commit 64ce4c2f breaks things
-> > on this box.
+> > I get this every time on boot with current -git:
+> > 
+> > [    6.906133] EXT4-fs (sda7): mounted filesystem with ordered data mode
+> > [    7.014359] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+> > [    7.020570] caller is dqstats_inc+0x19/0x2c
+> > [    7.026658] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+> > [    7.032792] Call Trace:
+> > [    7.038859]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+> > [    7.045025]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+> > [    7.051201]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+> > [    7.057349]  [<ffffffff810eccfa>] ? __shrink_dcache_sb+0x284/0x293
+> > [    7.063574]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+> > [    7.069730]  [<ffffffff810fc552>] sync_filesystem+0x36/0x4c
+> > [    7.075867]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+> > [    7.081960]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+> > [    7.088039]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+> > [    7.094086]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+> > [    7.100085]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+> > [    7.124208] BUG: using smp_processor_id() in preemptible [00000000] code: mount/1501
+> > [    7.130307] caller is dqstats_inc+0x19/0x2c
+> > [    7.136386] Pid: 1501, comm: mount Not tainted 2.6.34-tst #25
+> > [    7.142512] Call Trace:
+> > [    7.148629]  [<ffffffff8117c12b>] debug_smp_processor_id+0xcb/0xdc
+> > [    7.154846]  [<ffffffff8111dfb5>] dqstats_inc+0x19/0x2c
+> > [    7.161019]  [<ffffffff81120fac>] vfs_quota_sync+0x144/0x210
+> > [    7.167171]  [<ffffffff810fc48d>] __sync_filesystem+0x3a/0x7e
+> > [    7.173364]  [<ffffffff810fc563>] sync_filesystem+0x47/0x4c
+> > [    7.179522]  [<ffffffff810deef0>] do_remount_sb+0x65/0x13c
+> > [    7.185616]  [<ffffffff810f4359>] do_mount+0x251/0x78a
+> > [    7.191663]  [<ffffffff810f2c3e>] ? copy_mount_options+0xda/0x146
+> > [    7.197626]  [<ffffffff810f4911>] sys_mount+0x7f/0xb8
+> > [    7.203493]  [<ffffffff81002aeb>] system_call_fastpath+0x16/0x1b
+> > [   11.643596] udev: starting version 153
+> > 
+> > This is after reverting commit a7cf4145b (anon_inode: set S_IFREG on the
+> > anon_inode) that the system is not really useable with.
 > 
-> I assume the cmos clock of this machine is not on UTC, right ?
+> Caused by "quota: Make quota stat accounting lockless".
 
-Yup.
+FWIW, reverting that commit fixes the issue.
 
-> Does the patch below fix the issue ?
-
-Yes, it does, thanks!
-
-> @John: Can you please check the other users of timespec_add_safe() in
-> timekeeping as well ?
-> 
-> Thanks,
-> 
-> 	tglx
-> 
-> ---------->
-> Subject: timekeeping: Fix timezone update
-> From: Thomas Gleixner <tglx@linutronix.de>
-> Date: Sun, 23 May 2010 08:14:45 +0200
-> 
-> commit 64ce4c2f (time: Clean up warp_clock()) breaks the timezone
-> update in a very subtle way. To avoid the direct access to timekeeping
-> internals it adds the timezone delta to the current time with
-> timespec_add_safe(). This works nicely when the timezone delta is > 0.
-> If timezone delta is < 0 then the wrap check in timespec_add_safe()
-> triggers and timespec_add_safe() returns TIME_MAX and screws up
-> timekeeping completely. 
-> 
-> This is not surprising as the comment above timespec_add_safe() says:
->     It's assumed that both values are valid (>= 0)
-> 
-> The function was created to avoid overflow issues when adding the
-> select() timeout to current time, where the above applies.
-> 
-> Add the timezone seconds adjustment directly.
-> 
-> Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
-> ---
->  kernel/time.c |    8 ++++----
->  1 file changed, 4 insertions(+), 4 deletions(-)
-> 
-> Index: linux-2.6/kernel/time.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/time.c
-> +++ linux-2.6/kernel/time.c
-> @@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct tim
->   */
->  static inline void warp_clock(void)
->  {
-> -	struct timespec delta, adjust;
-> -	delta.tv_sec = sys_tz.tz_minuteswest * 60;
-> -	delta.tv_nsec = 0;
-> -	adjust = timespec_add_safe(current_kernel_time(), delta);
-> +	struct timespec adjust;
-> +
-> +	adjust = current_kernel_time();
-> +	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
->  	do_settimeofday(&adjust);
->  }
-
+Thanks,
 Rafael
