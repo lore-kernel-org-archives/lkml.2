@@ -1,45 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754808Ab0EWOD5 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 10:03:57 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59664 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754654Ab0EWODz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 10:03:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=IlVyIdWsQp47sGq7zE/53XsyBenuUBM/rjZOo3DjpGENjSMLoTVGc8sO2JMJAoDgb3
-         Ae2TqXJ+LZs2PghDzMMDsGTp2XKGGNut4PXSF80yfjt5hbQi6rsOrE6cXrrhUsTZCWQQ
-         uhBEa1NK5X5DmYB46RRVHTY8cavJdEpkQciO8=
-Date: Sun, 23 May 2010 23:03:48 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 0/3] mm: Swap checksum
-Message-ID: <20100523140348.GA10843@barrios-desktop>
-References: <4BF81D87.6010506@cesarb.net>
+	id S1754841Ab0EWOL2 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 10:11:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:35215 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754654Ab0EWOL0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 10:11:26 -0400
+Message-ID: <4BF9378B.4080703@redhat.com>
+Date: Sun, 23 May 2010 17:11:23 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF81D87.6010506@cesarb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: Re: [PATCH 2/2] KVM: MMU: allow more page become unsync at getting
+ sp time
+References: <4BF91C34.6020904@cn.fujitsu.com> <4BF91C82.8050308@cn.fujitsu.com>
+In-Reply-To: <4BF91C82.8050308@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 03:08:07PM -0300, Cesar Eduardo Barros wrote:
-> Add support for checksumming the swap pages written to disk, using the
-> same checksum as btrfs (crc32c). Since the contents of the swap do not
-> matter after a shutdown, the checksum is kept in memory only.
-> 
-> Note that this code does not checksum the software suspend image.
-We have been used swap pages without checksum.
+On 05/23/2010 03:16 PM, Xiao Guangrong wrote:
+> Allow more page become asynchronous at getting sp time, if need create new
+> shadow page for gfn but it not allow unsync(level>  1), we should unsync all
+> gfn's unsync page
+>
+>
+>
+> +/* @gfn should be write-protected at the call site */
+> +static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+> +{
+> +	struct hlist_head *bucket;
+> +	struct kvm_mmu_page *s;
+> +	struct hlist_node *node, *n;
+> +	unsigned index;
+> +	bool flush = false;
+> +
+> +	index = kvm_page_table_hashfn(gfn);
+> +	bucket =&vcpu->kvm->arch.mmu_page_hash[index];
+> +	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
+>    
 
-First of all, Could you explain why you need checksum on swap pages?
-Do you see any problem which swap pages are broken?
+role.direct, role.invalid?
 
-I could miss your claim at old disucussion thread in LKML.
+Well, role.direct cannot be unsync.  But that's not something we want to 
+rely on.
+
+This patch looks good too.
+
+Some completely unrelated ideas:
+
+- replace mmu_zap_page() calls in __kvm_sync_page() by setting 
+role.invalid instead.  This reduces problems with the hash list being 
+modified while we manipulate it.
+- add a for_each_shadow_page_direct() { ... } and 
+for_each_shadow_page_indirect() { ... } to replace the 
+hlist_for_each_entry_safe()s.
+- add kvm_tlb_gather() to reduce IPIs from kvm_mmu_zap_page()
+- clear spte.accessed on speculative sptes (for example from invlpg) so 
+the swapper won't keep them in ram unnecessarily
+
+Again, completely unrelated to this patch set, just wrong them down so I 
+don't forget them and to get your opinion.
+
+-- 
+error compiling committee.c: too many arguments to function
+
