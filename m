@@ -1,122 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754750Ab0EWNvd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 09:51:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:46389 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754308Ab0EWNvb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 09:51:31 -0400
-Message-ID: <4BF932DD.5070900@redhat.com>
-Date: Sun, 23 May 2010 16:51:25 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1754775Ab0EWNyd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 09:54:33 -0400
+Received: from 63.mail-out.ovh.net ([91.121.185.56]:50773 "HELO
+	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754362Ab0EWNyc (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 09:54:32 -0400
+Message-ID: <4BF93392.7010803@example.com>
+Date: Sun, 23 May 2010 15:54:26 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-To: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 1/2] KVM: MMU: allow more page become unsync at gfn mapping
- time
-References: <4BF91C34.6020904@cn.fujitsu.com>
-In-Reply-To: <4BF91C34.6020904@cn.fujitsu.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+       "John W. Linville" <linville@tuxdriver.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: What's up with wireless drivers?
+References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com> <4BF7E769.1090102@gmail.com>
+In-Reply-To: <4BF7E769.1090102@gmail.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 3716595594526093640
+X-Ovh-Remote: 83.24.90.195 (dni195.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2010 03:14 PM, Xiao Guangrong wrote:
-> In current code, shadow page can become asynchronous only if one
-> shadow page for a gfn, this rule is too strict, in fact, we can
-> let all last mapping page(i.e, it's the pte page) become unsync,
-> and sync them at invlpg or flush tlb time.
+On 22.05.2010 16:17, Justin P. Mattock wrote:
+> On 05/22/2010 07:04 AM, Piotr Hosowicz wrote:
+>> On 22.05.2010 15:44, Justin P. Mattock wrote:
+>>
+>>> what about strace make
+>>> (maybe will give you info)
+>>
+>> May be I'll try like that if the problem persists. I will produce tons
+>> of output I believe :-(
+>>
 >
-> This patch allow more page become asynchronous at gfn mapping time
 >
->
-> +
-> +static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
->   {
-> -	unsigned index;
->   	struct hlist_head *bucket;
->   	struct kvm_mmu_page *s;
->   	struct hlist_node *node, *n;
-> +	unsigned index;
->
-> -	index = kvm_page_table_hashfn(sp->gfn);
-> +	index = kvm_page_table_hashfn(gfn);
->   	bucket =&vcpu->kvm->arch.mmu_page_hash[index];
-> -	/* don't unsync if pagetable is shadowed with multiple roles */
-> +
->   	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
-> -		if (s->gfn != sp->gfn || s->role.direct)
-> +		if (s->gfn != gfn || s->role.direct || s->unsync)
->   			continue;
->    
+> yeah it does,
+> you can always send the
+> output to a file i.g.
+> strace -o filename make
+> anything at this point though
+> to see what is crapping out
 
-role.invalid?
+I did not try it yet, but I update the source through git and tested:
 
-> -		if (s->role.word != sp->role.word)
-> -			return 1;
-> +		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
-> +		__kvm_unsync_page(vcpu, s);
->   	}
-> -	trace_kvm_mmu_unsync_page(sp);
-> -	++vcpu->kvm->stat.mmu_unsync;
-> -	sp->unsync = 1;
-> -
-> -	kvm_mmu_mark_parents_unsync(sp);
-> -
-> -	mmu_convert_notrap(sp);
-> -	return 0;
->   }
->
->   static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
->   				  bool can_unsync)
->   {
-> -	struct kvm_mmu_page *shadow;
-> +	unsigned index;
-> +	struct hlist_head *bucket;
-> +	struct kvm_mmu_page *s;
-> +	struct hlist_node *node, *n;
-> +	bool need_unsync = false;
-> +
-> +	index = kvm_page_table_hashfn(gfn);
-> +	bucket =&vcpu->kvm->arch.mmu_page_hash[index];
-> +	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
-> +		if (s->gfn != gfn || s->role.direct)
-> +			continue;
->
-> -	shadow = kvm_mmu_lookup_page(vcpu->kvm, gfn);
-> -	if (shadow) {
-> -		if (shadow->role.level != PT_PAGE_TABLE_LEVEL)
-> +		if (s->role.level != PT_PAGE_TABLE_LEVEL)
->   			return 1;
->    
+make M=drivers/net/wireless modules
 
-role.invalid?
+And they had built flawlessly. But main build with make-kpkg 
+kernel_image nevertheless still fails. I don;t know what to do. I don't 
+want to do those strace's, because it will take awfully long.
 
-> -		if (shadow->unsync)
-> -			return 0;
-> -		if (can_unsync&&  oos_shadow)
-> -			return kvm_unsync_page(vcpu, shadow);
-> -		return 1;
-> +
-> +		if (!need_unsync&&  !s->unsync) {
-> +			if (!can_unsync || !oos_shadow)
-> +				return 1;
-> +			need_unsync = true;
-> +		}
->   	}
-> +	if (need_unsync)
-> +		kvm_unsync_pages(vcpu, gfn);
->   	return 0;
->   }
->
->    
+Regards,
 
-Looks good, I'm just uncertain about role.invalid handling.  What's the 
-reasoning here?
+Piotr Hosowicz
 
 -- 
-error compiling committee.c: too many arguments to function
-
+Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
+- Ile metrów ma kilometr?
+- Trzy.
+NP: Slash - Ghost (Feat. Ian Astbury)
+NB: 2.6.34-20100521-1728
