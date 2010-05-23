@@ -1,84 +1,88 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754830Ab0EWUoo (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 16:44:44 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:55026 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754047Ab0EWUon (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 16:44:43 -0400
-From: Markus <M4rkusXXL@web.de>
-To: linux-kernel@vger.kernel.org
+	id S1755191Ab0EWVRV (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 17:17:21 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:57292 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754059Ab0EWVRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 17:17:20 -0400
+Date: Sun, 23 May 2010 23:17:17 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Markus <M4rkusXXL@web.de>
+Cc: linux-kernel@vger.kernel.org
 Subject: Re: BUG: unable to handle kernel paging request
-Date: Sun, 23 May 2010 22:44:41 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33.2-gentoo-r1-ck1; KDE/4.4.3; x86_64; ; )
-Cc: Borislav Petkov <bp@alien8.de>
-References: <201005231829.32106.M4rkusXXL@web.de> <20100523183851.GA20229@liondog.tnic>
-In-Reply-To: <20100523183851.GA20229@liondog.tnic>
+Message-ID: <20100523211717.GD1408@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Markus <M4rkusXXL@web.de>,
+	linux-kernel@vger.kernel.org
+References: <201005231829.32106.M4rkusXXL@web.de>
+ <20100523183851.GA20229@liondog.tnic>
+ <201005232244.41977.M4rkusXXL@web.de>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005232244.41977.M4rkusXXL@web.de>
-X-Provags-ID: V01U2FsdGVkX1/HmQwKWw9G2vg4pFK3QeMYoCc03mvYc/62MvqM
-	EUPufs/nTouej5dZDSDW24QfDiVKKyWbu+o5HxcH7Vru+e3EL1
-	VLRfkdqAg=
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <201005232244.41977.M4rkusXXL@web.de>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi!
+From: Markus <M4rkusXXL@web.de>
+Date: Sun, May 23, 2010 at 10:44:41PM +0200
 
-It is 0000000001912178.
-http://img256.imageshack.us/img256/4370/shotn.gif
+> It is 0000000001912178.
+> http://img256.imageshack.us/img256/4370/shotn.gif
 
-Serial console is no option, but this "netconsole"-thing looks 
-promising. I'll set that up and try to catch the next one with this.
+True story, the fact that this value is not what it is expected to be
+judging from the code it happens might actually be a clue:
 
-Thanks, so far
+[64112.502507] Code: 8b bf b0 00 00 00 31 ed 48 8d 50 f0 48 85 c0 48 0f 45 ea 48 85 ff 74 10 48 89 ee e8 8d d3 ff ff 85 c0 0f 8e c5 00 00 00 48 89 eb <49> 8b bd b8 00 00 00 48 85 ff 74 10 48 89 ee e8 6e d3 ff ff 85
+All code
+========
+   0:   8b bf b0 00 00 00       mov    0xb0(%rdi),%edi
+   6:   31 ed                   xor    %ebp,%ebp
+   8:   48 8d 50 f0             lea    -0x10(%rax),%rdx
+   c:   48 85 c0                test   %rax,%rax
+   f:   48 0f 45 ea             cmovne %rdx,%rbp
+  13:   48 85 ff                test   %rdi,%rdi
+  16:   74 10                   je     0x28
+  18:   48 89 ee                mov    %rbp,%rsi
+  1b:   e8 8d d3 ff ff          callq  0xffffffffffffd3ad
+  20:   85 c0                   test   %eax,%eax
+  22:   0f 8e c5 00 00 00       jle    0xed
+  28:   48 89 eb                mov    %rbp,%rbx
+  2b:*  49 8b bd b8 00 00 00    mov    0xb8(%r13),%rdi     <-- trapping instruction
+  32:   48 85 ff                test   %rdi,%rdi
+  35:   74 10                   je     0x47
+  37:   48 89 ee                mov    %rbp,%rsi
+  3a:   e8 6e d3 ff ff          callq  0xffffffffffffd3ad
+  3f:   85                      .byte 0x85
 
-Markus
+Code starting with the faulting instruction
+===========================================
+   0:   49 8b bd b8 00 00 00    mov    0xb8(%r13),%rdi
+   7:   48 85 ff                test   %rdi,%rdi
+   a:   74 10                   je     0x1c
+   c:   48 89 ee                mov    %rbp,%rsi
+   f:   e8 6e d3 ff ff          callq  0xffffffffffffd382
+  14:   85                      .byte 0x85
 
-> From: Markus <M4rkusXXL@web.de>
-> Date: Sun, May 23, 2010 at 06:29:32PM +0200
-> 
-> > Hello!
-> > 
-> > I have a system running, now its running a 2.6.34 but it also
-> > happend with 2.6.33.x and 2.6.32.x.
-> > I hit a BUG and the whole system hang. I had to reboot and the
-> > console was to small to show the full BUG.
-> > But now I got the framebuffer setup and could write the following
-> > dump down (by hand, so there might be some typos or so, I have a
-> > "screenshot" if you have a specific question)
-> > 
-> > The system is a amd64 phenom X4 with 2 x 4GB non-ECC RAM and a
-> > raid6 for / and a data-partition as well as a raid1 for swap.
-> > I ran memtest86+ 4.0 and it showed no errors for two passes.
-> > 
-> > An hour before that BUG I saw a lot of async-processes.
-> > It happens round about once a day, will check if its the same or
-> > similar the next time.
-> > 
-> > But any hints are greatly appreciated! (How to solve or how to get
-> > needed informations.)
-> > 
-> > Thanks,
-> > Markus
-> > 
-> > PS: Please CC me.
-> > 
-> > 
-> > [64112.493940] BUG: unable to handle kernel paging request at
-> > 0000000001912178
-> 
-> Ok, I'm looking at that oops and am trying to follow what happens but
-> in order for all to fit the 0000000001912178 value above should
-> actually be 0000000001912a78, if I'm not mistaken.
-> 
-> Can you please check if that's the case or send me that screenshot
-> you mention above. Better yet, can you catch that oops over a serial
-> console or a netconsole or similar?
-> 
-> Thanks.
 
+and %r13 contains 00000000019129c0 in the register snapshot. Hmm...
+
+> Serial console is no option, but this "netconsole"-thing looks
+> promising. I'll set that up and try to catch the next one with this.
+
+That'll help. Also let me make sure: Is this a vanilla kernel or are
+there any distribution patches on top of it? I see it says 2.6.34-gentoo
+but just in case. If it is not a vanilla kernel please try a vanilla one
+from kernel.org.
+
+Also, please send the whole dmesg of the system, there might be
+something suspicious there and also the output of 'cat /proc/cpuinfo'
+and 'dmidecode', the last one run as root.
+
+Thanks.
+
+-- 
+Regards/Gruss,
+    Boris.
