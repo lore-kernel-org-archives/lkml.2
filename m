@@ -1,200 +1,179 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab0EWRHN (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 13:07:13 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:39321 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753817Ab0EWRHL (ORCPT
+	id S1754492Ab0EWRUg (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 13:20:36 -0400
+Received: from internal.actusa.net ([208.83.100.16]:56634 "EHLO
+	internal.actusa.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754008Ab0EWRUe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 13:07:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:x-x-sender:to:subject:message-id:mime-version
-         :content-type;
-        b=vj/jGzqL+egvciMWiowotoq/Sbz7K9wfnPy5hggjgsMkGLZXrwcM4G78rHLif3mYr7
-         N2yvWum/3Pv4H71Iy5n1gSeYDB8bG9HLC4tdxBsN/rcYu1bxoe7oqHKHgVRp3pRFYVQX
-         +NQTSrILA9gfIK6Y0twvJPyhtm9qxqVNhr5zs=
-Date: Mon, 24 May 2010 01:07:13 +0800 (SGT)
-From: Jeff Chua <jeff.chua.linux@gmail.com>
-X-X-Sender: root@boston.corp.fedex.com
-To: Johannes Berg <johannes.berg@intel.com>,
-       Arjan van de Ven <arjan@linux.intel.com>,
-       "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Frans Pop <elendil@planet.nl>,
-       ", Chatre, Reinette" <reinette.chatre@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-Subject: Re: Wireless IBSS on Linux-2.6.34 broken by commit
- 3bbb9ec946428b96657126768f65487a48dd090c
-Message-ID: <Pine.LNX.4.64.1005240053470.2649@boston.corp.fedex.com>
+	Sun, 23 May 2010 13:20:34 -0400
+Message-ID: <4BF963DB.1090908@actusa.net>
+Date: Sun, 23 May 2010 10:20:27 -0700
+From: Stuart Sheldon <stu@actusa.net>
+User-Agent: Mozilla-Thunderbird 2.0.0.24 (X11/20100328)
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII; format=flowed
+To: Trond Myklebust <Trond.Myklebust@netapp.com>
+CC: linux-kernel@vger.kernel.org, linux-nfs@vger.kernel.org,
+       Stuart Sheldon <stu@actusa.net>
+Subject: Re: Possible NFS bug in 2.6.34...
+References: <4BF72D34.60701@actusa.net>	 <1274544580.4860.73.camel@heimdal.trondhjem.org>	 <4BF803F2.2010506@actusa.net> <1274546973.4860.78.camel@heimdal.trondhjem.org>
+In-Reply-To: <1274546973.4860.78.camel@heimdal.trondhjem.org>
+X-Enigmail-Version: 0.96.0
+OpenPGP: id=C3252192;
+	url=http://www.actusa.net/~stu/StuartSheldon.asc
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+-----BEGIN PGP SIGNED MESSAGE-----
+Hash: SHA256
 
-On Sun, May 23, 2010 at 5:49 PM, Johannes Berg <johannes.berg@intel.com> 
-wrote:
-> On Sun, 2010-05-23 at 05:58 +0100, Jeff Chua wrote:
->> Wireless IBSS on Linux-2.6.34 is broken. Reverting commit
->> 3bbb9ec946428b96657126768f65487a48dd090c makes it work again. This was
->> tested by bisecting the kernel.
+Trond Myklebust wrote:
+> On Sat, 2010-05-22 at 09:18 -0700, Stuart Sheldon wrote: 
+>> -----BEGIN PGP SIGNED MESSAGE-----
+>> Hash: SHA256
+>>
+>> On 05/22/2010 09:09 AM, Trond Myklebust wrote:
+>>> Do you see any more NFS traffic to the server when the above hang
+>>> occurs? I'm wondering if we don't need something like the following
+>>> patch.
+>>>
+>>> Cheers
+>>>   Trond 
+>>> --------------------------------------------------------------------------------
+>>> From 0b574497e05f62fd49cfe26f1b97e3669525446c Mon Sep 17 00:00:00 2001
+>>> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+>>> Date: Sat, 22 May 2010 11:49:19 -0400
+>>> Subject: [PATCH] NFS: Ensure that we mark the inode as dirty if we exit early from commit
+>>>
+>>> If we exit from nfs_commit_inode() without ensuring that the COMMIT rpc
+>>> call has been completed, we must re-mark the inode as dirty. Otherwise,
+>>> future calls to sync_inode() with the WB_SYNC_ALL flag set will fail to
+>>> ensure that the data is on the disk.
+>>>
+>>> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+>>> Cc: stable@kernel.org
+>>> ---
+>>>  fs/nfs/write.c |   13 +++++++++++--
+>>>  1 files changed, 11 insertions(+), 2 deletions(-)
+>>>
+>>> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+>>> index 3aea3ca..b8a6d7a 100644
+>>> --- a/fs/nfs/write.c
+>>> +++ b/fs/nfs/write.c
+>>> @@ -1386,7 +1386,7 @@ static int nfs_commit_inode(struct inode *inode, int how)
+>>>  	int res = 0;
+>>>  
+>>>  	if (!nfs_commit_set_lock(NFS_I(inode), may_wait))
+>>> -		goto out;
+>>> +		goto out_mark_dirty;
+>>>  	spin_lock(&inode->i_lock);
+>>>  	res = nfs_scan_commit(inode, &head, 0, 0);
+>>>  	spin_unlock(&inode->i_lock);
+>>> @@ -1398,9 +1398,18 @@ static int nfs_commit_inode(struct inode *inode, int how)
+>>>  			wait_on_bit(&NFS_I(inode)->flags, NFS_INO_COMMIT,
+>>>  					nfs_wait_bit_killable,
+>>>  					TASK_KILLABLE);
+>>> +		else
+>>> +			goto out_mark_dirty;
+>>>  	} else
+>>>  		nfs_commit_clear_lock(NFS_I(inode));
+>>> -out:
+>>> +	return res;
+>>> +	/* Note: If we exit without ensuring that the commit is complete,
+>>> +	 * we must mark the inode as dirty. Otherwise, future calls to
+>>> +	 * sync_inode() with the WB_SYNC_ALL flag set will fail to ensure
+>>> +	 * that the data is on the disk.
+>>> +	 */
+>>> +out_mark_dirty:
+>>> +	__mark_inode_dirty(inode, I_DIRTY_DATASYNC);
+>>>  	return res;
+>>>  }
+>>>  
+>> Trond,
+>>
+>> When it occurred, it continues to throw those errors in the log, and all
+>> access to the NFS mount stalled until I hard reset the client system.
+>>
+>> Do you want me to apply the patch and see if I can recreate the condition?
+> 
+> Yes, please do. Could you also apply the following debugging patch on
+> top of the above one, and see if the WARN_ON() triggers when both
+> patches are applied?
+> 
+> Cheers
+>   Trond 
+> ------------------------------------------------------------------------------------------------
+> From 9883e35957468987f4338525c1d800d637bc05b7 Mon Sep 17 00:00:00 2001
+> From: Trond Myklebust <Trond.Myklebust@netapp.com>
+> Date: Sat, 22 May 2010 10:46:41 -0400
+> Subject: [PATCH 2/2] NFS: debugging code for nfs_wb_page()
+> 
+> Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+> ---
+>  fs/nfs/write.c |    9 +++++++++
+>  1 files changed, 9 insertions(+), 0 deletions(-)
+> 
+> diff --git a/fs/nfs/write.c b/fs/nfs/write.c
+> index b8a6d7a..0558fab 100644
+> --- a/fs/nfs/write.c
+> +++ b/fs/nfs/write.c
+> @@ -1519,12 +1519,21 @@ int nfs_wb_page(struct inode *inode, struct page *page)
+>  	int ret;
+>  
+>  	while(PagePrivate(page)) {
+> +		unsigned dirty;
+> +		int syncing;
+> +
+>  		wait_on_page_writeback(page);
+>  		if (clear_page_dirty_for_io(page)) {
+>  			ret = nfs_writepage_locked(page, &wbc);
+>  			if (ret < 0)
+>  				goto out_error;
+> +			continue;
+>  		}
+> +
+> +		dirty = inode->i_state & I_DIRTY;
+> +		syncing = inode->i_state & I_SYNC;
+> +		WARN_ON(!syncing && !dirty && PagePrivate(page));
+> +
+>  		ret = sync_inode(inode, &wbc);
+>  		if (ret < 0)
+>  			goto out_error;
 
+The problem seems to be fixed with this, but I'm not seeing / don't know
+where to find the 'WARN_ON' messages. If they are suppose to be in the
+syslog, then there weren't any.
 
-Arjan, Johannes,
+I'm rolling back to the unpatched kernel to verify that I can still
+reproduce the problem natively.
 
-Here's the demsg with debug enabled ...
+Will follow up on Monday.
 
-
-1) with bad commit reverted ...
-
-2010-05-23T21:24:23.656671+08:00 boston kernel: cfg80211: Calling CRDA to 
-update world regulatory domain
-2010-05-23T21:24:23.720182+08:00 boston kernel: iwlagn: Intel(R) Wireless 
-WiFi Link AGN driver for Linux, in-tree:
-2010-05-23T21:24:23.720211+08:00 boston kernel: iwlagn: Copyright(c) 
-2003-2010 Intel Corporation
-2010-05-23T21:24:23.720215+08:00 boston kernel: iwlagn 0000:02:00.0: PCI 
-INT A -> GSI 16 (level, low) -> IRQ 16
-2010-05-23T21:24:23.720218+08:00 boston kernel: iwlagn 0000:02:00.0: 
-setting latency timer to 64
-2010-05-23T21:24:23.720222+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Detected Intel(R) Centrino(R) Advanced-N 6200 AGN, REV=0x74
-2010-05-23T21:24:23.732171+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Tunable channels: 13 802.11bg, 24 802.11a channels
-2010-05-23T21:24:23.732181+08:00 boston kernel: iwlagn 0000:02:00.0: irq 
-46 for MSI/MSI-X
-2010-05-23T21:24:23.820182+08:00 boston kernel: iwlagn 0000:02:00.0: 
-loaded firmware version 9.193.4.1 build 19710
-2010-05-23T21:24:23.848169+08:00 boston kernel: phy0: Selected rate 
-control algorithm 'iwl-agn-rs'
-2010-05-23T21:24:24.335667+08:00 boston kernel: phy0: device now idle
-2010-05-23T21:24:24.340162+08:00 boston kernel: phy0: device no longer 
-idle - in use
-2010-05-23T21:24:24.384668+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:24.384678+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:24.384682+08:00 boston kernel: wlan0: Trigger new scan to 
-find an IBSS to join
-2010-05-23T21:24:24.400170+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:24.400187+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:26.687669+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:26.687691+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:26.687695+08:00 boston kernel: wlan0: Trigger new scan to 
-find an IBSS to join
-2010-05-23T21:24:26.707658+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:26.707666+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:28.703660+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:28.703668+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:30.703668+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:30.703687+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:30.703691+08:00 boston kernel: wlan0: Trigger new scan to 
-find an IBSS to join
-2010-05-23T21:24:30.723659+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:30.723666+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:32.703664+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:24:32.703675+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:24:32.703679+08:00 boston kernel: wlan0: Creating new IBSS 
-network, BSSID 06:a5:c6:42:20:80
-2010-05-23T21:24:32.712163+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Unable to find TIM Element in beacon
-2010-05-23T21:24:32.712172+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Unable to find TIM Element in beacon
-
-
-
-2) Still with bad-commit in the kernel
-
-2010-05-23T21:47:28.498041+08:00 boston kernel: cfg80211: Calling CRDA to 
-update world regulatory domain
-2010-05-23T21:47:28.535052+08:00 boston kernel: iwlagn: Intel(R) Wireless 
-WiFi Link AGN driver for Linux, in-tree:
-2010-05-23T21:47:28.535078+08:00 boston kernel: iwlagn: Copyright(c) 
-2003-2010 Intel Corporation
-2010-05-23T21:47:28.535082+08:00 boston kernel: iwlagn 0000:02:00.0: PCI 
-INT A -> GSI 16 (level, low) -> IRQ 16
-2010-05-23T21:47:28.535085+08:00 boston kernel: iwlagn 0000:02:00.0: 
-setting latency timer to 64
-2010-05-23T21:47:28.535089+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Detected Intel(R) Centrino(R) Advanced-N 6200 AGN, REV=0x74
-2010-05-23T21:47:28.551036+08:00 boston kernel: iwlagn 0000:02:00.0: 
-Tunable channels: 13 802.11bg, 24 802.11a channels
-2010-05-23T21:47:28.551048+08:00 boston kernel: iwlagn 0000:02:00.0: irq 
-46 for MSI/MSI-X
-2010-05-23T21:47:28.571054+08:00 boston kernel: iwlagn 0000:02:00.0: 
-loaded firmware version 9.193.4.1 build 19710
-2010-05-23T21:47:28.574286+08:00 boston kernel: phy0: Selected rate 
-control algorithm 'iwl-agn-rs'
-2010-05-23T21:47:29.406045+08:00 boston kernel: phy0: device now idle
-2010-05-23T21:47:29.413564+08:00 boston kernel: phy0: device no longer 
-idle - in use
-2010-05-23T21:47:29.486081+08:00 boston kernel: wlan0: sta_find_ibss 
-(active_ibss=0)
-2010-05-23T21:47:29.486099+08:00 boston kernel:   did not try to join ibss
-2010-05-23T21:47:29.486103+08:00 boston kernel: wlan0: Trigger new scan to 
-find an IBSS to join
-
-
-
-So, the difference are these messages when it's working ...
-
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: Trigger new scan to find an IBSS to join
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: Trigger new scan to find an IBSS to join
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: Trigger new scan to find an IBSS to join
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: sta_find_ibss (active_ibss=0)
-     did not try to join ibss
-wlan0: Creating new IBSS network, BSSID 62:c8:0e:ff:7e:69
-iwlagn 0000:02:00.0: Unable to find TIM Element in beacon
-iwlagn 0000:02:00.0: Unable to find TIM Element in beacon
+Stu
 
 
+- --
+If you took all the girls I knew When I was single And brought
+them all together for one night I know theyd never match My sweet
+imagination And everything looks worse in black and white
+               -- Paul Simon - "Kodachrome Lyrics"
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-I modified one line in the bad commit to set the default "timer->slack = 
-0" and that fixed the problem of IBSS not working. Below is the patch.
-
-I don't know how this impacts others, but it seems better to default to 
-the previous behavior rather than introducing "slacks" that other 
-subsystems are not just ready to handle.
-
-
-Thanks,
-Jeff
-
-diff --git a/kernel/timer.c b/kernel/timer.c
---- a/kernel/timer.c
-+++ b/kernel/timer.c
-@@ -549,7 +567,7 @@ static void __init_timer(struct timer_list *timer,
-   {
-   	timer->entry.next = NULL;
-   	timer->base = __raw_get_cpu_var(tvec_bases);
--	timer->slack = -1;
-+	timer->slack = 0;
-   #ifdef CONFIG_TIMER_STATS
-   	timer->start_site = NULL;
-   	timer->start_pid = -1;
+iQIcBAEBCAAGBQJL+WPYAAoJEFKVLITDJSGSU0sP/jdJt9NiliGFJ0IB3I4Pt6o/
+aHI5wzWWG8Uxzn5UXBumEp79hWXZ8D79kLZ4L8zh9/9hpi8rbExz1ci9IJmjU1LW
+qWQVDqmv36uKX9YUzmj8d4505G0Czf9BkU6vsOy4elZ4pAy/Q9EXKFVS5mtirO7u
+9FeYJebvbhvdICJTaLDbryugpxWYV6P6bGVglowdbqVWBnKo5QXevWnm6s3Lc1Jd
+girpqkQ2f4NddfeW1TbITtBr0bEPYuhK4s4XMdWiYIHNIaRSBJDF5Hlues8LWxu2
+++4xz1G7n/K59hRBRX+giBGaSXXl/GSGib87RfwSCrg5qEytNbSRKQX0WuFFxARS
+tTbU+zwDpUF7SSvYJZGDh2EEPr2QNfOVCCxVmf1Oe4JAs0OJku1z1ReKpr+CoZg2
+lgIFl59bPBNjMcx8GNynnJgTW1IMXWsM8UpTpiAfwTpffXaW3YEH2V855Px9Mkqt
+ONuvCll3CWEbwdmisWqvqRAix7oHNh4VMnDOTfb1eYf5ytw5mLfxZaznXhwL8FjE
+pUvHZG4TRMUENjucs38dvwx4Vx63DEdxMSK5C0GpdsI16xh0hMKa3ohWaVtSgwIE
+Emf1HU2G0vdxl+zMI1IyerNp1T+oxu1rr7eOYWzl3HO8bQc+9ua7yCntpni/c7Dz
+Ge8hUPZTZAVmFRRy9zBO
+=2+R2
+-----END PGP SIGNATURE-----
