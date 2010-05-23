@@ -1,44 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754211Ab0EWJtd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 05:49:33 -0400
-Received: from mga01.intel.com ([192.55.52.88]:43818 "EHLO mga01.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750838Ab0EWJtc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 05:49:32 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,285,1272870000"; 
-   d="scan'208";a="801071827"
-Subject: Re: Wireless IBSS on Linux-2.6.34 broken by commit
- 3bbb9ec946428b96657126768f65487a48dd090c
-From: Johannes Berg <johannes.berg@intel.com>
-To: Jeff Chua <jeff.chua.linux@gmail.com>
-Cc: Arjan van de Ven <arjan@linux.intel.com>,
-       "johnstul@us.ibm.com" <johnstul@us.ibm.com>,
-       Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Intel Linux Wireless <ilw@linux.intel.com>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Frans Pop <elendil@planet.nl>,
-       "Chatre, Reinette" <reinette.chatre@intel.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       lkml <linux-kernel@vger.kernel.org>
-In-Reply-To: <AANLkTikg6BEFCC-vwn3K96ZI-uiErg4SO8V701SWNkn0@mail.gmail.com>
-References: <AANLkTikg6BEFCC-vwn3K96ZI-uiErg4SO8V701SWNkn0@mail.gmail.com>
-Date: Sun, 23 May 2010 11:49:26 +0200
-Message-ID: <1274608166.4090.2.camel@jlt3.sipsolutions.net>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 
-Content-Type: text/plain; charset="utf-8"
+	id S1754155Ab0EWJzt (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 05:55:49 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:23133 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753610Ab0EWJzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 05:55:47 -0400
+Message-ID: <4BF8FBA0.3000801@panasas.com>
+Date: Sun, 23 May 2010 12:55:44 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>,
+       open-osd <osd-dev@open-osd.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>
+Subject: [GIT-PULL] exofs: 2.6.35 merge window changes
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 23 May 2010 09:55:46.0206 (UTC) FILETIME=[1D7CABE0:01CAFA5E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4N9nsaS018770
 
-On Sun, 2010-05-23 at 05:58 +0100, Jeff Chua wrote:> Wireless IBSS on Linux-2.6.34 is broken. Reverting commit> 3bbb9ec946428b96657126768f65487a48dd090c makes it work again. This was> tested by bisecting the kernel.> > I'm using 6200 AGN ...> > cfg80211: Calling CRDA to update world regulatory domain> iwlagn: Intel(R) Wireless WiFi Link AGN driver for Linux, in-tree:> iwlagn: Copyright(c) 2003-2010 Intel Corporation> iwlagn 0000:02:00.0: PCI INT A -> GSI 16 (level, low) -> IRQ 16> iwlagn 0000:02:00.0: setting latency timer to 64> iwlagn 0000:02:00.0: Detected Intel(R) Centrino(R) Advanced-N 6200 AGN, REV=0x74> iwlagn 0000:02:00.0: Tunable channels: 13 802.11bg, 24 802.11a channels> iwlagn 0000:02:00.0: irq 46 for MSI/MSI-X> iwlagn 0000:02:00.0: loaded firmware version 9.193.4.1 build 19710> > > > So, where should the fix be?> > > Here's the commit ...> > 3bbb9ec946428b96657126768f65487a48dd090c is the first bad commit> commit 3bbb9ec946428b96657126768f65487a48dd090c> Author: Arjan van de Ven <arjan@linux.intel.com>> Date:   Thu Mar 11 14:04:36 2010 -0800> >     timers: Introduce the concept of timer slack for legacy timers
-This is odd -- as Arjan said more logging would be good, if you canenable mac80211 IBSS debug (though in one case we had recently that_fixed_ the issue unfortunately) -- it's under the mac80211 debug menuKconfig.
-FWIW, I don't know about anything in mac80211 that would be timersensitive?
-johannes
----------------------------------------------------------------------Intel GmbHDornacher Strasse 185622 Feldkirchen/Muenchen GermanySitz der Gesellschaft: Feldkirchen bei MuenchenGeschaeftsfuehrer: Douglas Lusk, Peter Gleissner, Hannes SchwadererRegistergericht: Muenchen HRB 47456 Ust.-IdNr.VAT Registration No.: DE129385895Citibank Frankfurt (BLZ 502 109 00) 600119052
-This e-mail and any attachments may contain confidential material forthe sole use of the intended recipient(s). Any review or distributionby others is strictly prohibited. If you are not the intendedrecipient, please contact the sender and delete all copies.ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éİ¶¥Šwÿº{.nÇ+‰·¥Š{±şG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŠİ¢j"ú¶m§ÿÿ¾«şG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+The following changes since "Linus 2.6.34" are available in the git
+repository at:
+
+  git://git.open-osd.org/linux-open-osd.git for-linus
+
+Boaz Harrosh (1):
+      exofs: Add default address_space_operations
+
+Dan Carpenter (1):
+      exofs: confusion between kmap() and kmap_atomic() api
+
+ fs/exofs/dir.c   |    2 +-
+ fs/exofs/inode.c |   30 ++++++++++++++++++++++++++++++
+ 2 files changed, 31 insertions(+), 1 deletions(-)
+
+Very boring merge window for exofs. One cc:stable patch and another touch-base
+maintenance patch. Most of the effort was spent on Testing and the surrounding
+environment. The big enhancements are kept for future merges.
+
+Thanks
+Boaz
