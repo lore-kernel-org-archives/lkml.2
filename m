@@ -1,65 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754841Ab0EWXvl (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 19:51:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7547 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752306Ab0EWXvk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 19:51:40 -0400
-Date: Sun, 23 May 2010 19:59:30 -0400
-From: Josef Bacik <josef@redhat.com>
-To: Shi Weihua <shiwh@cn.fujitsu.com>
-Cc: Josef Bacik <josef@redhat.com>, linux-btrfs@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       hch@infradead.org, akpm@linux-foundation.org
-Subject: Re: [PATCH 6/6] Btrfs: do aio_write instead of write
-Message-ID: <20100523235930.GA25333@dhcp231-156.rdu.redhat.com>
-References: <1274461422-18433-1-git-send-email-josef@redhat.com> <1274461422-18433-6-git-send-email-josef@redhat.com> <4BF8E7F8.50800@cn.fujitsu.com>
+	id S1755623Ab0EWX7x (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 19:59:53 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:58480 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754190Ab0EWX7v (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 19:59:51 -0400
+Date: Mon, 24 May 2010 08:59:40 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-sh@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [GIT PULL] sh updates for 2.6.35-rc1, part 2.
+Message-ID: <20100523235939.GB19552@linux-sh.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BF8E7F8.50800@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 04:31:52PM +0800, Shi Weihua wrote:
-> at 2010-5-22 1:03, Josef Bacik wrote:
-> > In order for AIO to work, we need to implement aio_write.  This patch converts
-> > our btrfs_file_write to btrfs_aio_write.  I've tested this with xfstests and
-> > nothing broke, and the AIO stuff magically started working.  Thanks,
-> 
-> But xfstests's case 198(source: src/aio-dio-regress/aiodio_sparse2.c) still failed, 
-> following message outputted.
-> --------------------
-> AIO write offset 0 expected 65536 got -22
-> AIO write offset 5242880 expected 65536 got -22
-> AIO write offset 10485760 expected 65536 got -22
-> AIO write offset 15728640 expected 65536 got -22
-> AIO write offset 20971520 expected 65536 got -22
-> AIO write offset 31457280 expected 65536 got -22
-> AIO write offset 36700160 expected 65536 got -22
-> AIO write offset 41943040 expected 65536 got -22
-> AIO write offset 47185920 expected 65536 got -22
-> AIO write offset 52428800 expected 65536 got -22
-> AIO write offset 57671680 expected 65536 got -22
-> AIO write offset 62914560 expected 65536 got -22
-> AIO write offset 73400320 expected 65536 got -22
-> AIO write offset 78643200 expected 65536 got -22
-> non one buffer at buf[0] => 0x00,00,00,00
-> non-one read at offset 0
-> *** WARNING *** /tmp/aaaa has not been unlinked; if you don't rm it manually first, it may influence the next run
-> -------------------- 
-> 
-> generic_file_direct_write()(in btrfs_file_aio_write(), fs/btrfs/file.c) returned -22, 
-> maybe it's useful for your analysing.
+Please pull from:
 
-Yes, change that testcase to run -a 4096 and it will run fine.  Because BTRFS
-doesn't pass in a bdev to __blockdev_direct_IO it doesn't do 512 byte aligned
-IO, just blocksize aligned IO.  I will fix that at some later point, but its a
-little tricky since we have to figure out which bdev has the largest alignment
-(in case we have a 4k sector device and a 512 byte sector device in the same
-volume).  Thanks,
+	master.kernel.org:/pub/scm/linux/kernel/git/lethal/sh-2.6.git
 
-Josef
+Which contains:
+
+Andrea Gelmini (1):
+      arch/sh/lib/strlen.S: Checkpatch cleanup
+
+Guennadi Liakhovetski (20):
+      sh: add Video Output Unit and AK8813 video encoder support on ecovec
+      sh: add Video Output Unit (VOU) and AK8813 TV-encoder support to ms7724se
+      sh: define DMA slaves per CPU type, remove now redundant header
+      sh: add DMA slaves for two SDHI controllers to sh7722
+      sh: add DMA slave definitions to sh7724
+      mmc: prepare tmio_mmc for passing of DMA configuration from the MFD cell
+      sh: prepare the SDHI MFD driver to pass DMA configuration to tmio_mmc.c
+      mmc: add DMA support to tmio_mmc driver, when used on SuperH
+      sh: Add SDHI DMA support to ecovec
+      sh: Add SDHI DMA support to ms7724se
+      sh: Add SDHI DMA support to kfr2r09
+      sh: Add SDHI DMA support to migor
+      tmio: add a platform flag to disable card write-protection detection
+      mfd: pass platform flags down to the tmio_mmc driver
+      sh: disable SD-card write-protection detection on kfr2r09
+      mmc: let MFD's provide supported Vdd card voltages to tmio_mmc
+      sh: allow platforms to specify SD-card supported voltages
+      sh: fix Oops in the serial SCI driver
+      sh: prevent the DMA driver from unloading, while in use
+      sh: guard cookie consistency across termination in the DMA driver
+
+Huang Weiyi (1):
+      sh: remove duplicated #include
+
+Paul Mundt (3):
+      sh: fix up the dwarf unwinder build for MODULES=n.
+      sh: fix up sh7786 dmaengine build.
+      sh: fix up sh7785lcr_32bit_defconfig.
+
+ arch/sh/boards/mach-ecovec24/setup.c      |   87 +++++++-
+ arch/sh/boards/mach-kfr2r09/setup.c       |   11 +
+ arch/sh/boards/mach-migor/setup.c         |    9 +
+ arch/sh/boards/mach-se/7724/setup.c       |  107 ++++++++-
+ arch/sh/configs/sh7785lcr_32bit_defconfig |  273 +++++++++++++---------
+ arch/sh/include/asm/dmaengine.h           |   34 ---
+ arch/sh/include/asm/siu.h                 |    2 -
+ arch/sh/include/cpu-sh4/cpu/sh7722.h      |   15 ++
+ arch/sh/include/cpu-sh4/cpu/sh7724.h      |   19 ++
+ arch/sh/kernel/cpu/sh4a/clock-sh7786.c    |    1 -
+ arch/sh/kernel/cpu/sh4a/setup-sh7722.c    |   11 +-
+ arch/sh/kernel/cpu/sh4a/setup-sh7724.c    |   88 +++++++-
+ arch/sh/kernel/cpu/sh4a/setup-sh7780.c    |    3 +-
+ arch/sh/kernel/cpu/sh4a/setup-sh7785.c    |    2 +-
+ arch/sh/kernel/cpu/sh4a/setup-sh7786.c    |    2 +-
+ arch/sh/kernel/dwarf.c                    |    4 +
+ arch/sh/lib/strlen.S                      |    2 +-
+ drivers/dma/shdma.c                       |    5 +
+ drivers/mfd/Kconfig                       |    6 +
+ drivers/mfd/sh_mobile_sdhi.c              |   28 ++-
+ drivers/mmc/host/tmio_mmc.c               |  367 ++++++++++++++++++++++++++---
+ drivers/mmc/host/tmio_mmc.h               |   13 +
+ drivers/serial/sh-sci.c                   |    5 +-
+ include/linux/mfd/sh_mobile_sdhi.h        |    6 +
+ include/linux/mfd/tmio.h                  |   11 +
+ sound/soc/sh/siu.h                        |    3 +-
+ sound/soc/sh/siu_pcm.c                    |    9 +-
+ 27 files changed, 916 insertions(+), 207 deletions(-)
+ delete mode 100644 arch/sh/include/asm/dmaengine.h
