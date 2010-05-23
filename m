@@ -1,70 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754775Ab0EWNyd (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 09:54:33 -0400
-Received: from 63.mail-out.ovh.net ([91.121.185.56]:50773 "HELO
-	63.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1754362Ab0EWNyc (ORCPT
+	id S1754808Ab0EWOD5 (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 10:03:57 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59664 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754654Ab0EWODz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 09:54:32 -0400
-Message-ID: <4BF93392.7010803@example.com>
-Date: Sun, 23 May 2010 15:54:26 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	Sun, 23 May 2010 10:03:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=IlVyIdWsQp47sGq7zE/53XsyBenuUBM/rjZOo3DjpGENjSMLoTVGc8sO2JMJAoDgb3
+         Ae2TqXJ+LZs2PghDzMMDsGTp2XKGGNut4PXSF80yfjt5hbQi6rsOrE6cXrrhUsTZCWQQ
+         uhBEa1NK5X5DmYB46RRVHTY8cavJdEpkQciO8=
+Date: Sun, 23 May 2010 23:03:48 +0900
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/3] mm: Swap checksum
+Message-ID: <20100523140348.GA10843@barrios-desktop>
+References: <4BF81D87.6010506@cesarb.net>
 MIME-Version: 1.0
-To: "Justin P. Mattock" <justinmattock@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-       "John W. Linville" <linville@tuxdriver.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: What's up with wireless drivers?
-References: <4BF6F2E4.5030800@example.com>	<20100521210729.GC2495@tuxdriver.com>	<4BF6F959.5040401@example.com>	<4BF6FBB0.6060407@example.com> <20100521151203.f94c1d3e.rdunlap@xenotime.net> <4BF7073A.4090506@example.com> <4BF7986C.4030505@example.com> <4BF7D185.2040705@example.com> <4BF7D86B.3020204@example.com> <4BF7DDAA.1080307@gmail.com> <4BF7DEE7.9010801@example.com> <4BF7DFDA.3000604@gmail.com> <4BF7E470.6080409@example.com> <4BF7E769.1090102@gmail.com>
-In-Reply-To: <4BF7E769.1090102@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 3716595594526093640
-X-Ovh-Remote: 83.24.90.195 (dni195.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF81D87.6010506@cesarb.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 22.05.2010 16:17, Justin P. Mattock wrote:
-> On 05/22/2010 07:04 AM, Piotr Hosowicz wrote:
->> On 22.05.2010 15:44, Justin P. Mattock wrote:
->>
->>> what about strace make
->>> (maybe will give you info)
->>
->> May be I'll try like that if the problem persists. I will produce tons
->> of output I believe :-(
->>
->
->
-> yeah it does,
-> you can always send the
-> output to a file i.g.
-> strace -o filename make
-> anything at this point though
-> to see what is crapping out
+On Sat, May 22, 2010 at 03:08:07PM -0300, Cesar Eduardo Barros wrote:
+> Add support for checksumming the swap pages written to disk, using the
+> same checksum as btrfs (crc32c). Since the contents of the swap do not
+> matter after a shutdown, the checksum is kept in memory only.
+> 
+> Note that this code does not checksum the software suspend image.
+We have been used swap pages without checksum.
 
-I did not try it yet, but I update the source through git and tested:
+First of all, Could you explain why you need checksum on swap pages?
+Do you see any problem which swap pages are broken?
 
-make M=drivers/net/wireless modules
-
-And they had built flawlessly. But main build with make-kpkg 
-kernel_image nevertheless still fails. I don;t know what to do. I don't 
-want to do those strace's, because it will take awfully long.
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- Ile metrów ma kilometr?
-- Trzy.
-NP: Slash - Ghost (Feat. Ian Astbury)
-NB: 2.6.34-20100521-1728
+I could miss your claim at old disucussion thread in LKML.
