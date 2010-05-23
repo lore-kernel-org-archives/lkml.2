@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753459Ab0EWGwU (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 02:52:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:42610 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753098Ab0EWGwR convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 02:52:17 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=d5+NUduW9uldaYq6DgCaycKrK1FQZoo2LCRRQHT60/zJA8VpNxaj9rr4hgiiIaTZNe
-         6YwzTeNoqNVAlZxBWB6YL80bTc1XXQ5PrdXQ58woUZKfJ4vFdnOcuXi71fdboPZz0F7u
-         YfbQgahPhZvf9YXvCxcNqF/FHRHbGIyMzAK+s=
+	id S1752100Ab0EWHJU (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 03:09:20 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:48252 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751074Ab0EWHJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 03:09:19 -0400
+Date: Sun, 23 May 2010 09:09:18 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: mtk.manpages@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+Message-ID: <20100523070917.GO23411@kernel.dk>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
 MIME-Version: 1.0
-In-Reply-To: <1274567437-2818-2-git-send-email-rydberg@euromail.se>
-References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>
-	 <1274567437-2818-2-git-send-email-rydberg@euromail.se>
-Date: Sat, 22 May 2010 23:52:17 -0700
-Message-ID: <AANLkTinyVk0cHpsI6ZfMmxqGI7C_jM-BcYiaue185kBA@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev4)
-From: Ping Cheng <pinglinux@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The fool is smiling like a fool now :).
+On Sun, May 23 2010, Michael Kerrisk wrote:
+> On Sun, May 23, 2010 at 4:38 AM, Andrew Morton
+> <akpm@linux-foundation.org> wrote:
+> > On Sun, 23 May 2010 07:30:01 +0200 Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+> >
+> >> Hi all,
+> >>
+> >> I see that this patch has hit Linus's git, so some questions
+> >>
+> >> On Wed, May 19, 2010 at 6:49 PM, Linus Torvalds
+> >> <torvalds@linux-foundation.org> wrote:
+> >> >
+> >> >
+> >> > On Wed, 19 May 2010, Miklos Szeredi wrote:
+> >> >>
+> >> >> One issue I see is that it's possible to grow pipes indefinitely.
+> >> >> Should this be restricted to privileged users?
+> >> >
+> >> > Yes. But perhaps only if it grows past the default (or perhaps "default*2"
+> >> > or similar). That way a normal user could shrink the pipe buffers, and
+> >> > then grow them again if he wants to.
+> >> >
+> >> > Oh, and I think you need to also require that there be at least two
+> >> > buffers. Otherwise we can't guarantee POSIX behavior, I think.
+> >>
+> >> Is there any documentation (e.g., a man-pages patch) for these changes?
+> >>
+> >> The argument of the fcntl() operations is expressed in pages. I take
+> >> it that this means that the semantics of the argument will very
+> >> depending on the system page size? So for example, 2 on x86 will mean
+> >> 8192 bytes, but will mean 32768 of ia64? That seems very weird. (And
+> >> what about architectures where the page size is switchable?) Such
+> >> changes in semantics should not be silent for the use, IMO.
+> >
+> > Well, there is getpagesize().  But I agree - this interface is just
+> > asking (x86) people to write non-portable code.
+> >
+> > otoh, if the arg was in bytes, they'd just hard-code "8192".  They're
+> > clever like that.
+> >
+> > But we have gone to some lengths to avoid exposing things like
+> > PAGE_SIZE and HZ in procfs, so it makes sense to take the same approach
+> > to syscalls.
+> 
+> Quite. All of the other memory-related APIs that I can think of
+> require the user to express the info in bytes. (mlock(),
+> remap_file_pages(), mmap(), mremap(), mprotect(), shmget(), and so
+> on). Not doing the same for this interface is needlessly inconsistent.
+> And while there will be the silly users you mention above, smart users
+> will know how to do the right thing with a consistently designed
+> interface.
 
-Ping
+We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
+in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
+power of 2 in pages. So the question is if that makes the API cleaner,
+passing in number of pages but returning bytes? Or pass in bytes all
+around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
+pages if need be. Then it would return a size at least what was passed
+in, or error.
 
-BTW, I didn't receive the updated "[PATCH 1/2] input: mt: Introduce MT
-event slots (rev 5)".  Maybe gmail filtered the file for me?
+-- 
+Jens Axboe
 
-On Sat, May 22, 2010 at 3:30 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> This patch adds documentation for the ABS_MT_SLOT event and gives
-> examples of how to use the event slot protocol.
->
-> Reviewed-by: Ping Cheng <pingc@wacom.com>
-> Signed-off-by: Henrik Rydberg <rydberg@euromail.se>
-> ---
-> Revision 4 incorporates the following changes:
->         - Rename the slot event to ABS_MT_SLOT to keep all MT-related events
->           in the same namespace.
->         - Fix typo, thanks to Ping Cheng.
