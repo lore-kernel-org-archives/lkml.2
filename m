@@ -1,107 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754704Ab0EWRpA (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 13:45:00 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:39431 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754008Ab0EWRo6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 13:44:58 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:reply-to:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=Wd16Fe0PWyYEjkxP15WqXoLKi0J+4B7LtxDTZSYY9ry1io+CenyhxIaLnMuPxNtPl6
-         Kfk3fdj73RojIDELhEmN3SAQbRdtNO+Q+AEGp4MGGsN72g7Jn9b+vPkiWAqyw4qPaOFA
-         8bhO35rPGxqLzyz+gS8AcWQQ8EdRL8lr1emFo=
-From: Maciej Rutecki <maciej.rutecki@gmail.com>
-Reply-To: maciej.rutecki@gmail.com
-To: Xavier Gnata <xavier.gnata@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       lenb@kernel.org
-Subject: Re: Sony vaio serie F PCIe PME service failure.
-Date: Sun, 23 May 2010 19:44:50 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34; KDE/4.3.4; i686; ; )
-Cc: linux-acpi@vger.kernel.org
-References: <4BF6FEA4.1050406@gmail.com>
-In-Reply-To: <4BF6FEA4.1050406@gmail.com>
+	id S1754793Ab0EWRrK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 13:47:10 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:57954 "EHLO kernel.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754008Ab0EWRrJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 13:47:09 -0400
+Date: Sun, 23 May 2010 19:47:06 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: mtk.manpages@gmail.com
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+Message-ID: <20100523174706.GP23411@kernel.dk>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005231944.51135.maciej.rutecki@gmail.com>
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-(Add CC)
+On Sun, May 23 2010, Michael Kerrisk wrote:
+> On Sun, May 23, 2010 at 9:09 AM, Jens Axboe <jens.axboe@oracle.com> wrote:
+> > On Sun, May 23 2010, Michael Kerrisk wrote:
+> >> On Sun, May 23, 2010 at 4:38 AM, Andrew Morton
+> >> <akpm@linux-foundation.org> wrote:
+> >> > On Sun, 23 May 2010 07:30:01 +0200 Michael Kerrisk <mtk.manpages@gmail.com> wrote:
+> >> >
+> >> >> Hi all,
+> >> >>
+> >> >> I see that this patch has hit Linus's git, so some questions
+> >> >>
+> >> >> On Wed, May 19, 2010 at 6:49 PM, Linus Torvalds
+> >> >> <torvalds@linux-foundation.org> wrote:
+> >> >> >
+> >> >> >
+> >> >> > On Wed, 19 May 2010, Miklos Szeredi wrote:
+> >> >> >>
+> >> >> >> One issue I see is that it's possible to grow pipes indefinitely.
+> >> >> >> Should this be restricted to privileged users?
+> >> >> >
+> >> >> > Yes. But perhaps only if it grows past the default (or perhaps "default*2"
+> >> >> > or similar). That way a normal user could shrink the pipe buffers, and
+> >> >> > then grow them again if he wants to.
+> >> >> >
+> >> >> > Oh, and I think you need to also require that there be at least two
+> >> >> > buffers. Otherwise we can't guarantee POSIX behavior, I think.
+> >> >>
+> >> >> Is there any documentation (e.g., a man-pages patch) for these changes?
+> >> >>
+> >> >> The argument of the fcntl() operations is expressed in pages. I take
+> >> >> it that this means that the semantics of the argument will very
+> >> >> depending on the system page size? So for example, 2 on x86 will mean
+> >> >> 8192 bytes, but will mean 32768 of ia64? That seems very weird. (And
+> >> >> what about architectures where the page size is switchable?) Such
+> >> >> changes in semantics should not be silent for the use, IMO.
+> >> >
+> >> > Well, there is getpagesize().  But I agree - this interface is just
+> >> > asking (x86) people to write non-portable code.
+> >> >
+> >> > otoh, if the arg was in bytes, they'd just hard-code "8192".  They're
+> >> > clever like that.
+> >> >
+> >> > But we have gone to some lengths to avoid exposing things like
+> >> > PAGE_SIZE and HZ in procfs, so it makes sense to take the same approach
+> >> > to syscalls.
+> >>
+> >> Quite. All of the other memory-related APIs that I can think of
+> >> require the user to express the info in bytes. (mlock(),
+> >> remap_file_pages(), mmap(), mremap(), mprotect(), shmget(), and so
+> >> on). Not doing the same for this interface is needlessly inconsistent.
+> >> And while there will be the silly users you mention above, smart users
+> >> will know how to do the right thing with a consistently designed
+> >> interface.
+> >
+> > We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
+> > in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
+> > power of 2 in pages. So the question is if that makes the API cleaner,
+> > passing in number of pages but returning bytes? Or pass in bytes all
+> > around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
+> > pages if need be. Then it would return a size at least what was passed
+> > in, or error.
+> 
+> I'd recommend this: Pass it in and out in bytes. Don't round to a
+> power of 2. Require the user to know what they are doing. Give an
+> error if the user doesn't supply a power-of-2 * page-size for
+> F_SETPIPE_SZ. (Again, consider the case of architectures  with
+> switchable page sizes.)
 
-2.6.33.* works OK?
-
-On piÄ…tek, 21 maja 2010 o 23:44:04 Xavier Gnata wrote:
-> Hi,
-> 
-> I get that during the boot of the vaio VPCF11M1E using unpatched 2.6.34
-> from kernel.org:
-> 
-> [    2.047242] pcieport 0000:00:01.0: Failed to receive control of PCIe
-> PME service: ACPI _OSC failed
-> [    2.047249] pcie_pme: probe of 0000:00:01.0:pcie01 failed with error -13
-> [    2.047418] pcieport 0000:00:1c.0: Failed to receive control of PCIe
-> PME service: ACPI _OSC failed
-> [    2.047424] pcie_pme: probe of 0000:00:1c.0:pcie01 failed with error -13
-> [    2.047589] pcieport 0000:00:1c.1: Failed to receive control of PCIe
-> PME service: ACPI _OSC failed
-> [    2.047595] pcie_pme: probe of 0000:00:1c.1:pcie01 failed with error -13
-> [    2.047759] pcieport 0000:00:1c.2: Failed to receive control of PCIe
-> PME service: ACPI _OSC failed
-> [    2.047764] pcie_pme: probe of 0000:00:1c.2:pcie01 failed with error -13
-> [    2.047928] pcieport 0000:00:1c.5: Failed to receive control of PCIe
-> PME service: ACPI _OSC failed
-> [    2.047933] pcie_pme: probe of 0000:00:1c.5:pcie01 failed with error -13
-> 
-> for i in /sys/bus/pnp/devices/*; do echo $i; cat $i/id; done
-> returns :
-> 
-> /sys/bus/pnp/devices/00:00
-> PNP0a08
-> PNP0a03
-> /sys/bus/pnp/devices/00:01
-> PNP0200
-> /sys/bus/pnp/devices/00:02
-> INT0800
-> /sys/bus/pnp/devices/00:03
-> PNP0103
-> /sys/bus/pnp/devices/00:04
-> PNP0c04
-> /sys/bus/pnp/devices/00:05
-> PNP0c02
-> /sys/bus/pnp/devices/00:06
-> PNP0b00
-> /sys/bus/pnp/devices/00:07
-> PNP0303
-> /sys/bus/pnp/devices/00:08
-> SNY9011
-> PNP0f13
-> /sys/bus/pnp/devices/00:09
-> PNP0c02
-> /sys/bus/pnp/devices/00:0a
-> PNP0a03
-> 
-> 
-> Everthing looks fine except these messages during the boot.
-> Any clue about what's going wrong? (maybe nothing...)
-> I don't use any special boot options:
-> GRUB_CMDLINE_LINUX_DEFAULT="quiet splash"
-> 
-> Xavier
-> 
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-acpi" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> 
+But is there much point in erroring on an incorrect size? If the
+application says "I need at least 120kb of space in there", kernel
+returns "OK, you got 128kb". Would returning -1/EINVAL for that case
+really make a better API? Doesn't seem like it to me.
 
 -- 
-Maciej Rutecki
-http://www.maciek.unixy.pl
+Jens Axboe
+
