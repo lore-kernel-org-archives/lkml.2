@@ -1,71 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755329Ab0EWSi4 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 14:38:56 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:45396 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755053Ab0EWSiz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 14:38:55 -0400
-Date: Sun, 23 May 2010 20:38:51 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Markus <M4rkusXXL@web.de>
-Cc: lkml <linux-kernel@vger.kernel.org>
-Subject: Re: BUG: unable to handle kernel paging request
-Message-ID: <20100523183851.GA20229@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>, Markus <M4rkusXXL@web.de>,
-	lkml <linux-kernel@vger.kernel.org>
-References: <201005231829.32106.M4rkusXXL@web.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <201005231829.32106.M4rkusXXL@web.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755292Ab0EWSlL (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 14:41:11 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52744 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755119Ab0EWSlJ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 14:41:09 -0400
+Subject: Re: [PATCH 1/2] perf: Add persistent events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Borislav Petkov <bp@alien8.de>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100523183353.GB1408@liondog.tnic>
+References: <1274554806-28216-1-git-send-email-bp@alien8.de>
+	 <1274554806-28216-2-git-send-email-bp@alien8.de>
+	 <1274638513.1674.1727.camel@laptop>  <20100523183353.GB1408@liondog.tnic>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 May 2010 20:40:47 +0200
+Message-ID: <1274640047.1674.1731.camel@laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus <M4rkusXXL@web.de>
-Date: Sun, May 23, 2010 at 06:29:32PM +0200
+On Sun, 2010-05-23 at 20:33 +0200, Borislav Petkov wrote:
+> From: Peter Zijlstra <peterz@infradead.org>
+> Date: Sun, May 23, 2010 at 08:15:13PM +0200
+> 
+> > On Sat, 2010-05-22 at 21:00 +0200, Borislav Petkov wrote:
+> > > Register and enable events marked as persistent right after perf events
+> > > has initialized.
+> > > 
+> > > Not-yet-signed-off-by: Borislav Petkov <bp@alien8.de>
+> > 
+> > Nah, this is totally wrong.
+> > 
+> > A persistent event would simply be a regular event, but created by the
+> > kernel and not tied to a file-desc's lifetime.
+> 
+> So you're saying the trace_mce_record() tracepoint for example should
+> be created completely internally in the kernel and cease to be a
+> tracepoint? Will it still be able to be selected by perf -e?
 
-> Hello!
-> 
-> I have a system running, now its running a 2.6.34 but it also happend 
-> with 2.6.33.x and 2.6.32.x.
-> I hit a BUG and the whole system hang. I had to reboot and the console 
-> was to small to show the full BUG.
-> But now I got the framebuffer setup and could write the following dump 
-> down (by hand, so there might be some typos or so, I have a "screenshot" 
-> if you have a specific question)
-> 
-> The system is a amd64 phenom X4 with 2 x 4GB non-ECC RAM and a raid6 for 
-> / and a data-partition as well as a raid1 for swap.
-> I ran memtest86+ 4.0 and it showed no errors for two passes.
-> 
-> An hour before that BUG I saw a lot of async-processes.
-> It happens round about once a day, will check if its the same or similar 
-> the next time.
-> 
-> But any hints are greatly appreciated! (How to solve or how to get 
-> needed informations.)
-> 
-> Thanks,
-> Markus
-> 
-> PS: Please CC me.
-> 
-> 
-> [64112.493940] BUG: unable to handle kernel paging request at 0000000001912178
+No, it should be a regular tracepoint as far as tracepoints are
+concerned.
 
-Ok, I'm looking at that oops and am trying to follow what happens but in
-order for all to fit the 0000000001912178 value above should actually be
-0000000001912a78, if I'm not mistaken.
+But the only thing persistence should add is an instance of a
+perf_event, it should not modify either the perf_event nor the
+tracepoint code.
 
-Can you please check if that's the case or send me that screenshot you
-mention above. Better yet, can you catch that oops over a serial console
-or a netconsole or similar?
-
-Thanks.
-
--- 
-Regards/Gruss,
-    Boris.
