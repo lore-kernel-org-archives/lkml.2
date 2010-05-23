@@ -1,99 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755726Ab0EWXrt (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 19:47:49 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59933 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755622Ab0EWXrr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 19:47:47 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=grKqOLJPlZy+QVNncZeTo36BEoRFJlHi/nxJvlQqJfgh0YsPYms0XwKByjdHFw4EOe
-         7vi1ydt2aQgMuUFqMRxVVwdADCJSL0LPAJTCvbzdqGuEcDiLHbzSB+aVgBz3kcWv4f4V
-         eQqklQl6q0gks+MkFMJQH0nY1p4fUsYeRa90o=
-MIME-Version: 1.0
-In-Reply-To: <4BF9ABC7.9090208@euromail.se>
-References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>
-	 <1274567437-2818-2-git-send-email-rydberg@euromail.se>
-	 <20100523102413.2fee3f4c.rdunlap@xenotime.net>
-	 <4BF9ABC7.9090208@euromail.se>
-Date: Sun, 23 May 2010 16:47:47 -0700
-Message-ID: <AANLkTimQIIPiah962ar_TRZvJZpqCFvh-KLXxakbUHmZ@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev4)
-From: Ping Cheng <pinglinux@gmail.com>
-To: Henrik Rydberg <rydberg@euromail.se>
-Cc: Randy Dunlap <rdunlap@xenotime.net>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1754649Ab0EWXtJ (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 19:49:09 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:30648 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752306Ab0EWXtH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 19:49:07 -0400
+Subject: Re: [2.6.34-git8][regression] massive polling problems with udevd
+ and  other processes
+From: Eric Paris <eparis@redhat.com>
+To: Alessandro Suardi <alessandro.suardi@gmail.com>
+Cc: Eric Paris <eparis@parisplace.org>, Al Viro <viro@zeniv.linux.org.uk>,
+       walt <w41ter@gmail.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <AANLkTimnJ2FJtvVJxRHHEr99td7aNCpdpQT9F461Z3IU@mail.gmail.com>
+References: <201005221535.38939.shawn.starr@rogers.com>
+	 <4BF83CBF.8080300@gmail.com> <20100522204426.GO31073@ZenIV.linux.org.uk>
+	 <AANLkTimffWnIjHIEW54AoVxiALEoFkJZJJ7u57ZChDuy@mail.gmail.com>
+	 <1274570731.2810.45.camel@localhost>
+	 <AANLkTimnJ2FJtvVJxRHHEr99td7aNCpdpQT9F461Z3IU@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Sun, 23 May 2010 19:49:01 -0400
+Message-ID: <1274658541.2810.58.camel@localhost>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 3:27 PM, Henrik Rydberg <rydberg@euromail.se> wrote:
-> Randy Dunlap wrote:
-> [...]
->>> +Protocol Usage
->>> +--------------
->>> +
->>> +Contact details are sent sequentially as separate packets of ABS_MT
->>> +events. Only the ABS_MT events are recognized as part of a contact
->>> +packet. Since these events are ignored by current single-touch (ST)
->>> +applications, the MT protocol can be implemented on top of the ST protocol
->>> +in an existing driver.
->>> +
->>> +Drivers for type A devices mark the end of a packet by calling the
->>
->> end?
+On Sun, 2010-05-23 at 22:20 +0200, Alessandro Suardi wrote:
+> On Sun, May 23, 2010 at 1:25 AM, Eric Paris <eparis@redhat.com> wrote:
 
-Since Randy brought this question up, I feel the urge to say
-something.  I know there are X drivers and clients using the type A
-format so I am not suggesting that we need to change this format.
+> > I'm feeling like this is a udev bug, but the only fix is going to be to
+> > revert and paper over anything else that has problems with
+> > (mode & S_IFMNT) == 0
+> >
+> > -Eric
 
-What I am thinking is that we only need one SYN_ call for both _MT_
-and regular data combined, which is a call to input_sync() at the end
-of the whole packet. The SYN_MT_ can be replaced by the following
-example, which I think is more "client-friendly". This solution is
-based on the fact that the major difference between type A and type B
-is whether we need to filter the data or not:
+> [root@duff ~]# cat udevd.proc.pid.fd.out
+> lr-x------. 1 root root 64 2010-05-23 22:15 6 -> anon_inode:inotify
+> lrwx------. 1 root root 64 2010-05-23 22:15 7 -> anon_inode:[signalfd]
 
-ABS_MT_RANDOM 0
-ABS_MT_POSITION_X x[0]
-ABS_MT_POSITION_Y y[0]
-ABS_MT_ RANDOM 1
-ABS_MT_POSITION_X x[1]
-ABS_MT_POSITION_Y y[1]
-SYN_REPORT
+> [root@duff ~]# head -30 udevd.strace.log
+> Process 1734 attached - interrupt to quit
+> poll([{fd=4, events=POLLIN}, {fd=5, events=POLLIN}, {fd=6, events=POLLIN}, {fd=7, events=POLLIN}, {fd=8, events=POLLIN}], 5, 3000) = 1 ([{fd=6, revents=POLLIN}])
+> ioctl(6, FIONREAD, [0])                 = 0
 
-input_set_abs_params(input_dev, ABS_MT_RANDOM, 0, 2, 0, 0);
+Well at least I see what is wrong.  Before the change ioctl(FIONREAD)
+would go down this code path:
 
-would tell the clients that they can expect two random touches.
+sys_ioctl()
+  do_vfs_ioctl()
+    vfs_ioctl()
+      filp->f_ops->ioctl()
+        inotify_ioctl()
+          returns the answer.
 
+After the change we instead get:
 
->>> +The end of a multi-touch transfer is marked by calling the usual
->>
->> The end method is done for Types A and B, right?
->
-> How about this line instead?
->
-> All drivers mark the end of a multi-touch transfer by calling the usual
+sys_ioctl()
+  do_vfs_ioctl()
+    file_ioctl()
+      which would return put_user(i_size_read(inode) - filp->f_pos, p)
 
-If we use ABS_MT_RANDOM, there would be only one SYN_ event for the
-whole packet at the end, regardless of what kind of data is included
-before the SYN_ event.
+If there is no rule that all inodes must be of a known S_IFMNT then I
+guess the best fix is to just revert and I'll fix up the symptoms.  If
+there is such an unwritten rule (which seems perfectly reasonable) we
+can either special case the anon_inode to push FIONREAD down to
+vfs_ioctl or move FIONREAD down to vfs_ioctl and force everyone else to
+implement it.
 
-Basically, ABS_MT_RANDOM indicates a non-filtered and non-tracked MT_
-event; ABS_MT_SLOT indicates a filtered and tracked MT_ event/slot.
+Al?  Maybe you have better ideas?
 
-With all this said, I don't have a preference for type A since I do
-not need it for my driver. Just to be active in the group if you
-wonder if there is any positive rationale :).
+-Eric
 
-Ping
