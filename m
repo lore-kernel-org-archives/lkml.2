@@ -1,190 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753948Ab0EWLtH (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 07:49:07 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:47166 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753469Ab0EWLtD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 07:49:03 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=DdJaGkt27pwBWCMLgJZl+um1gYq3xYcpVcoxyV0xKzAM3sl11WEzU0dvccwMFjFB0K
-         Qa1wmTUXLenVvPTXkD3QFSWBvEiqn/ZK5ntKj/3YPXS2dySq1QVqGgX1jijniIj3wJN8
-         3jSIxhGTNe2e43Kp6TeQU2YdptWABn75/FBNY=
-From: tom.leiming@gmail.com
-To: linux@arm.linux.org.uk
-Cc: linux-arm-kernel@lists.infradead.org, linux-embedded@vger.kernel.org,
-       a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org,
-       Ming Lei <tom.leiming@gmail.com>
-Subject: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
-Date: Sun, 23 May 2010 19:48:48 +0800
-Message-Id: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com>
-X-Mailer: git-send-email 1.6.2.5
+	id S1754238Ab0EWMSC (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 08:18:02 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55049 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1753929Ab0EWMSA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 08:18:00 -0400
+Message-ID: <4BF91C34.6020904@cn.fujitsu.com>
+Date: Sun, 23 May 2010 20:14:44 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: [PATCH 1/2] KVM: MMU: allow more page become unsync at gfn mapping
+ time
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Ming Lei <tom.leiming@gmail.com>
+In current code, shadow page can become asynchronous only if one
+shadow page for a gfn, this rule is too strict, in fact, we can
+let all last mapping page(i.e, it's the pte page) become unsync,
+and sync them at invlpg or flush tlb time.
 
-This patch fixes the 'unannotated irqs-on' lockdep warning[1]:
+This patch allow more page become asynchronous at gfn mapping time 
 
-This patch introduces macro of trace_ret_hardirqs_on, which will
-call trace_hardirqs_on if I flag in the stored CPSR is zero.
-
-In the path of returning to user-space, the patch replaces disable_irq
-with disable_irq_notrace in ret_to_user to avoid the 'unannotated irqs-on'
-lockdep warning since hardirqs is always enabled before returning to user.
-
-In the path of returning to kernel-space, the patch still replaces
-disable_irq with disable_irq_notrace in __xxx_svc handler and adds
-trace_hardirqs_on before calling svc_exit to trace the possible hardirqs on
-event for avoiding the possible 'unannotated irqs-on' lockdep warning.
-
-The patch not only fixes the warning[1] to make lockdep usable on ARM,
-but also improves the efficiency if lockdep is enabled:
-
-	- remove one calling for asm_trace_hardirqs_on before returning
-to user-space
-	- convert asm_trace_hardirqs_on to trace_hardirqs_on in the
-path of returning to kernel space from exception and __only__ call it if
-harirqs will be enabled before returning.
-
-[1]
-	CPU: Testing write buffer coherency: ok
-	------------[ cut here ]------------
-	WARNING: at kernel/lockdep.c:3145 check_flags+0xcc/0x1dc()
-	Modules linked in:
-	[<c0035120>] (unwind_backtrace+0x0/0xf8) from [<c0355374>] (dump_stack+0x20/0x24)
-	[<c0355374>] (dump_stack+0x20/0x24) from [<c0060c04>] (warn_slowpath_common+0x58/0x70)
-	[<c0060c04>] (warn_slowpath_common+0x58/0x70) from [<c0060c3c>] (warn_slowpath_null+0x20/0x24)
-	[<c0060c3c>] (warn_slowpath_null+0x20/0x24) from [<c008f224>] (check_flags+0xcc/0x1dc)
-	[<c008f224>] (check_flags+0xcc/0x1dc) from [<c00945dc>] (lock_acquire+0x50/0x140)
-	[<c00945dc>] (lock_acquire+0x50/0x140) from [<c0358434>] (_raw_spin_lock+0x50/0x88)
-	[<c0358434>] (_raw_spin_lock+0x50/0x88) from [<c00fd114>] (set_task_comm+0x2c/0x60)
-	[<c00fd114>] (set_task_comm+0x2c/0x60) from [<c007e184>] (kthreadd+0x30/0x108)
-	[<c007e184>] (kthreadd+0x30/0x108) from [<c0030104>] (kernel_thread_exit+0x0/0x8)
-	---[ end trace 1b75b31a2719ed1c ]---
-	possible reason: unannotated irqs-on.
-	irq event stamp: 3
-	hardirqs last  enabled at (2): [<c0059bb0>] finish_task_switch+0x48/0xb0
-	hardirqs last disabled at (3): [<c002f0b0>] ret_slow_syscall+0xc/0x1c
-	softirqs last  enabled at (0): [<c005f3e0>] copy_process+0x394/0xe5c
-	softirqs last disabled at (0): [<(null)>] (null)
-
-Signed-off-by: Ming Lei <tom.leiming@gmail.com>
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
 ---
- arch/arm/kernel/entry-armv.S   |   31 +++++++++++++++++--------------
- arch/arm/kernel/entry-common.S |    2 +-
- arch/arm/kernel/entry-header.S |    7 +++++++
- 3 files changed, 25 insertions(+), 15 deletions(-)
+ arch/x86/kvm/mmu.c |   81 +++++++++++++++++++++++----------------------------
+ 1 files changed, 37 insertions(+), 44 deletions(-)
 
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 7ee48e7..42d33cf 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -204,13 +204,15 @@ __dabt_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--	disable_irq
-+	disable_irq_notrace
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 97c5217..1c558ba 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1168,26 +1168,6 @@ static int mmu_unsync_walk(struct kvm_mmu_page *sp,
+ 	return __mmu_unsync_walk(sp, pvec);
+ }
  
- 	@
- 	@ restore SPSR and restart the instruction
-+	@ trace possible hardirqs on event before returning
- 	@
--	ldr	r2, [sp, #S_PSR]
--	svc_exit r2				@ return from exception
-+	ldr	r4, [sp, #S_PSR]
-+	trace_ret_hardirqs_on r4
-+	svc_exit r4				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__dabt_svc)
+-static struct kvm_mmu_page *kvm_mmu_lookup_page(struct kvm *kvm, gfn_t gfn)
+-{
+-	unsigned index;
+-	struct hlist_head *bucket;
+-	struct kvm_mmu_page *sp;
+-	struct hlist_node *node;
+-
+-	pgprintk("%s: looking for gfn %lx\n", __func__, gfn);
+-	index = kvm_page_table_hashfn(gfn);
+-	bucket = &kvm->arch.mmu_page_hash[index];
+-	hlist_for_each_entry(sp, node, bucket, hash_link)
+-		if (sp->gfn == gfn && !sp->role.direct
+-		    && !sp->role.invalid) {
+-			pgprintk("%s: found role %x\n",
+-				 __func__, sp->role.word);
+-			return sp;
+-		}
+-	return NULL;
+-}
+-
+ static void kvm_unlink_unsync_page(struct kvm *kvm, struct kvm_mmu_page *sp)
+ {
+ 	WARN_ON(!sp->unsync);
+@@ -1757,47 +1737,60 @@ u8 kvm_get_guest_memory_type(struct kvm_vcpu *vcpu, gfn_t gfn)
+ }
+ EXPORT_SYMBOL_GPL(kvm_get_guest_memory_type);
  
-@@ -235,10 +237,7 @@ __irq_svc:
- 	blne	svc_preempt
- #endif
- 	ldr	r4, [sp, #S_PSR]		@ irqs are already disabled
--#ifdef CONFIG_TRACE_IRQFLAGS
--	tst	r4, #PSR_I_BIT
--	bleq	trace_hardirqs_on
--#endif
-+	trace_ret_hardirqs_on r4
- 	svc_exit r4				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__irq_svc)
-@@ -291,13 +290,15 @@ __und_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--1:	disable_irq
-+1:	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
-+	@ trace possible hardirqs on event before returning
- 	@
--	ldr	r2, [sp, #S_PSR]		@ Get SVC cpsr
--	svc_exit r2				@ return from exception
-+	ldr	r4, [sp, #S_PSR]		@ Get SVC cpsr
-+	trace_ret_hardirqs_on r4
-+	svc_exit r4				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__und_svc)
- 
-@@ -327,13 +328,15 @@ __pabt_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--	disable_irq
-+	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
--	@
--	ldr	r2, [sp, #S_PSR]
--	svc_exit r2				@ return from exception
-+	@ trace possible hardirqs on event before returning
-+	@	
-+	ldr	r4, [sp, #S_PSR]
-+	trace_ret_hardirqs_on r4
-+	svc_exit r4				@ return from exception
-  UNWIND(.fnend		)
- ENDPROC(__pabt_svc)
- 
-diff --git a/arch/arm/kernel/entry-common.S b/arch/arm/kernel/entry-common.S
-index 2c1db77..ed471a7 100644
---- a/arch/arm/kernel/entry-common.S
-+++ b/arch/arm/kernel/entry-common.S
-@@ -58,7 +58,7 @@ work_resched:
-  */
- ENTRY(ret_to_user)
- ret_slow_syscall:
--	disable_irq				@ disable interrupts
-+	disable_irq_notrace				@ disable interrupts
- 	ldr	r1, [tsk, #TI_FLAGS]
- 	tst	r1, #_TIF_WORK_MASK
- 	bne	work_pending
-diff --git a/arch/arm/kernel/entry-header.S b/arch/arm/kernel/entry-header.S
-index d93f976..ac51ce3 100644
---- a/arch/arm/kernel/entry-header.S
-+++ b/arch/arm/kernel/entry-header.S
-@@ -30,6 +30,13 @@
- #error "Please fix"
- #endif
- 
-+	.macro trace_ret_hardirqs_on, rspsr
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	tst 	\rspsr, #PSR_I_BIT
-+	bleq	trace_hardirqs_on
-+#endif
-+	.endm
+-static int kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
++static void __kvm_unsync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
++{
++	trace_kvm_mmu_unsync_page(sp);
++	++vcpu->kvm->stat.mmu_unsync;
++	sp->unsync = 1;
 +
- 	.macro	zero_fp
- #ifdef CONFIG_FRAME_POINTER
- 	mov	fp, #0
++	kvm_mmu_mark_parents_unsync(sp);
++	mmu_convert_notrap(sp);
++}
++
++static void kvm_unsync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
+ {
+-	unsigned index;
+ 	struct hlist_head *bucket;
+ 	struct kvm_mmu_page *s;
+ 	struct hlist_node *node, *n;
++	unsigned index;
+ 
+-	index = kvm_page_table_hashfn(sp->gfn);
++	index = kvm_page_table_hashfn(gfn);
+ 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
+-	/* don't unsync if pagetable is shadowed with multiple roles */
++
+ 	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
+-		if (s->gfn != sp->gfn || s->role.direct)
++		if (s->gfn != gfn || s->role.direct || s->unsync)
+ 			continue;
+-		if (s->role.word != sp->role.word)
+-			return 1;
++		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
++		__kvm_unsync_page(vcpu, s);
+ 	}
+-	trace_kvm_mmu_unsync_page(sp);
+-	++vcpu->kvm->stat.mmu_unsync;
+-	sp->unsync = 1;
+-
+-	kvm_mmu_mark_parents_unsync(sp);
+-
+-	mmu_convert_notrap(sp);
+-	return 0;
+ }
+ 
+ static int mmu_need_write_protect(struct kvm_vcpu *vcpu, gfn_t gfn,
+ 				  bool can_unsync)
+ {
+-	struct kvm_mmu_page *shadow;
++	unsigned index;
++	struct hlist_head *bucket;
++	struct kvm_mmu_page *s;
++	struct hlist_node *node, *n;
++	bool need_unsync = false;
++
++	index = kvm_page_table_hashfn(gfn);
++	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
++	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
++		if (s->gfn != gfn || s->role.direct)
++			continue;
+ 
+-	shadow = kvm_mmu_lookup_page(vcpu->kvm, gfn);
+-	if (shadow) {
+-		if (shadow->role.level != PT_PAGE_TABLE_LEVEL)
++		if (s->role.level != PT_PAGE_TABLE_LEVEL)
+ 			return 1;
+-		if (shadow->unsync)
+-			return 0;
+-		if (can_unsync && oos_shadow)
+-			return kvm_unsync_page(vcpu, shadow);
+-		return 1;
++
++		if (!need_unsync && !s->unsync) {
++			if (!can_unsync || !oos_shadow)
++				return 1;
++			need_unsync = true;
++		}
+ 	}
++	if (need_unsync)
++		kvm_unsync_pages(vcpu, gfn);
+ 	return 0;
+ }
+ 
 -- 
-1.6.2.5
+1.6.1.2
 
