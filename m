@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932626Ab0EXXXu (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:23:50 -0400
-Received: from kroah.org ([198.145.64.141]:59337 "EHLO coco.kroah.org"
+	id S932986Ab0EXX0A (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:26:00 -0400
+Received: from kroah.org ([198.145.64.141]:59508 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932293Ab0EXXXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:30 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:13 2010
-Message-Id: <20100524231813.825754602@clark.site>
+	id S932645Ab0EXXXy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:54 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:16 2010
+Message-Id: <20100524231816.335905608@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:19 -0700
+Date: Mon, 24 May 2010 16:15:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Robin Holt <holt@sgi.com>, Stefani Seibold <stefani@seibold.net>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Michal Simek <monstr@monstr.eu>, Ingo Molnar <mingo@elte.hu>
-Subject: [07/39] revert "procfs: provide stack information for threads" and its fixup commits
+       David Howells <dhowells@redhat.com>
+Subject: [35/39] CacheFiles: Fix error handling in cachefiles_determine_cache_security()
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,179 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Robin Holt <holt@sgi.com>
+From: David Howells <dhowells@redhat.com>
 
-commit 34441427aab4bdb3069a4ffcda69a99357abcb2e upstream.
+commit 7ac512aa8237c43331ffaf77a4fd8b8d684819ba upstream.
 
-Originally, commit d899bf7b ("procfs: provide stack information for
-threads") attempted to introduce a new feature for showing where the
-threadstack was located and how many pages are being utilized by the
-stack.
+cachefiles_determine_cache_security() is expected to return with a
+security override in place.  However, if set_create_files_as() fails, we
+fail to do this.  In this case, we should just reinstate the security
+override that was set by the caller.
 
-Commit c44972f1 ("procfs: disable per-task stack usage on NOMMU") was
-applied to fix the NO_MMU case.
+Furthermore, if set_create_files_as() fails, we should dispose of the
+new credentials we were in the process of creating.
 
-Commit 89240ba0 ("x86, fs: Fix x86 procfs stack information for threads on
-64-bit") was applied to fix a bug in ia32 executables being loaded.
-
-Commit 9ebd4eba7 ("procfs: fix /proc/<pid>/stat stack pointer for kernel
-threads") was applied to fix a bug which had kernel threads printing a
-userland stack address.
-
-Commit 1306d603f ('proc: partially revert "procfs: provide stack
-information for threads"') was then applied to revert the stack pages
-being used to solve a significant performance regression.
-
-This patch nearly undoes the effect of all these patches.
-
-The reason for reverting these is it provides an unusable value in
-field 28.  For x86_64, a fork will result in the task->stack_start
-value being updated to the current user top of stack and not the stack
-start address.  This unpredictability of the stack_start value makes
-it worthless.  That includes the intended use of showing how much stack
-space a thread has.
-
-Other architectures will get different values.  As an example, ia64
-gets 0.  The do_fork() and copy_process() functions appear to treat the
-stack_start and stack_size parameters as architecture specific.
-
-I only partially reverted c44972f1 ("procfs: disable per-task stack usage
-on NOMMU") .  If I had completely reverted it, I would have had to change
-mm/Makefile only build pagewalk.o when CONFIG_PROC_PAGE_MONITOR is
-configured.  Since I could not test the builds without significant effort,
-I decided to not change mm/Makefile.
-
-I only partially reverted 89240ba0 ("x86, fs: Fix x86 procfs stack
-information for threads on 64-bit") .  I left the KSTK_ESP() change in
-place as that seemed worthwhile.
-
-Signed-off-by: Robin Holt <holt@sgi.com>
-Cc: Stefani Seibold <stefani@seibold.net>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-Cc: Michal Simek <monstr@monstr.eu>
-Cc: Ingo Molnar <mingo@elte.hu>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: David Howells <dhowells@redhat.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- Documentation/filesystems/proc.txt |    3 +--
- fs/compat.c                        |    2 --
- fs/exec.c                          |    2 --
- fs/proc/array.c                    |    3 +--
- fs/proc/task_mmu.c                 |   19 -------------------
- include/linux/sched.h              |    1 -
- kernel/fork.c                      |    2 --
- 7 files changed, 2 insertions(+), 30 deletions(-)
+ fs/cachefiles/security.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/Documentation/filesystems/proc.txt
-+++ b/Documentation/filesystems/proc.txt
-@@ -308,7 +308,7 @@ address           perms offset  dev   in
- 08049000-0804a000 rw-p 00001000 03:00 8312       /opt/test
- 0804a000-0806b000 rw-p 00000000 00:00 0          [heap]
- a7cb1000-a7cb2000 ---p 00000000 00:00 0
--a7cb2000-a7eb2000 rw-p 00000000 00:00 0          [threadstack:001ff4b4]
-+a7cb2000-a7eb2000 rw-p 00000000 00:00 0
- a7eb2000-a7eb3000 ---p 00000000 00:00 0
- a7eb3000-a7ed5000 rw-p 00000000 00:00 0
- a7ed5000-a8008000 r-xp 00000000 03:00 4222       /lib/libc.so.6
-@@ -344,7 +344,6 @@ is not associated with a file:
-  [stack]                  = the stack of the main process
-  [vdso]                   = the "virtual dynamic shared object",
-                             the kernel system call handler
-- [threadstack:xxxxxxxx]   = the stack of the thread, xxxxxxxx is the stack size
- 
-  or if empty, the mapping is anonymous.
- 
---- a/fs/compat.c
-+++ b/fs/compat.c
-@@ -1530,8 +1530,6 @@ int compat_do_execve(char * filename,
- 	if (retval < 0)
- 		goto out;
- 
--	current->stack_start = current->mm->start_stack;
--
- 	/* execve succeeded */
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
---- a/fs/exec.c
-+++ b/fs/exec.c
-@@ -1386,8 +1386,6 @@ int do_execve(char * filename,
- 	if (retval < 0)
- 		goto out;
- 
--	current->stack_start = current->mm->start_stack;
--
- 	/* execve succeeded */
- 	current->fs->in_exec = 0;
- 	current->in_execve = 0;
---- a/fs/proc/array.c
-+++ b/fs/proc/array.c
-@@ -82,7 +82,6 @@
- #include <linux/pid_namespace.h>
- #include <linux/ptrace.h>
- #include <linux/tracehook.h>
--#include <linux/swapops.h>
- 
- #include <asm/pgtable.h>
- #include <asm/processor.h>
-@@ -494,7 +493,7 @@ static int do_task_stat(struct seq_file
- 		rsslim,
- 		mm ? mm->start_code : 0,
- 		mm ? mm->end_code : 0,
--		(permitted && mm) ? task->stack_start : 0,
-+		(permitted && mm) ? mm->start_stack : 0,
- 		esp,
- 		eip,
- 		/* The signal information here is obsolete.
---- a/fs/proc/task_mmu.c
-+++ b/fs/proc/task_mmu.c
-@@ -243,25 +243,6 @@ static void show_map_vma(struct seq_file
- 				} else if (vma->vm_start <= mm->start_stack &&
- 					   vma->vm_end >= mm->start_stack) {
- 					name = "[stack]";
--				} else {
--					unsigned long stack_start;
--					struct proc_maps_private *pmp;
--
--					pmp = m->private;
--					stack_start = pmp->task->stack_start;
--
--					if (vma->vm_start <= stack_start &&
--					    vma->vm_end >= stack_start) {
--						pad_len_spaces(m, len);
--						seq_printf(m,
--						 "[threadstack:%08lx]",
--#ifdef CONFIG_STACK_GROWSUP
--						 vma->vm_end - stack_start
--#else
--						 stack_start - vma->vm_start
--#endif
--						);
--					}
- 				}
- 			} else {
- 				name = "[vdso]";
---- a/include/linux/sched.h
-+++ b/include/linux/sched.h
-@@ -1560,7 +1560,6 @@ struct task_struct {
- 	/* bitmask of trace recursion */
- 	unsigned long trace_recursion;
- #endif /* CONFIG_TRACING */
--	unsigned long stack_start;
- #ifdef CONFIG_CGROUP_MEM_RES_CTLR /* memcg uses this to do batch job */
- 	struct memcg_batch_info {
- 		int do_batch;	/* incremented when batch uncharge started */
---- a/kernel/fork.c
-+++ b/kernel/fork.c
-@@ -1134,8 +1134,6 @@ static struct task_struct *copy_process(
- 
- 	p->bts = NULL;
- 
--	p->stack_start = stack_start;
--
- 	/* Perform scheduler related setup. Assign this task to a CPU. */
- 	sched_fork(p, clone_flags);
- 
+--- a/fs/cachefiles/security.c
++++ b/fs/cachefiles/security.c
+@@ -77,6 +77,8 @@ static int cachefiles_check_cache_dir(st
+ /*
+  * check the security details of the on-disk cache
+  * - must be called with security override in force
++ * - must return with a security override in force - even in the case of an
++ *   error
+  */
+ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+ 					struct dentry *root,
+@@ -99,6 +101,8 @@ int cachefiles_determine_cache_security(
+ 	 * which create files */
+ 	ret = set_create_files_as(new, root->d_inode);
+ 	if (ret < 0) {
++		abort_creds(new);
++		cachefiles_begin_secure(cache, _saved_cred);
+ 		_leave(" = %d [cfa]", ret);
+ 		return ret;
+ 	}
 
 
