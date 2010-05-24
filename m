@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756336Ab0EXWiM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:38:12 -0400
-Received: from kroah.org ([198.145.64.141]:35965 "EHLO coco.kroah.org"
+	id S1758506Ab0EXWli (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:41:38 -0400
+Received: from kroah.org ([198.145.64.141]:42336 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab0EXWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:10 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:14 2010
-Message-Id: <20100524223014.353004217@clark.site>
+	id S1757150Ab0EXWiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:18 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
+Message-Id: <20100524223016.208581966@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:27:57 -0700
+Date: Mon, 24 May 2010 15:28:06 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [01/24] ALSA: mixart: range checking proc file
+       linux-fsdevel@vger.kernel.org,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +28,84 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
 
-commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-The original code doesn't take into consideration that the value of
-MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
-unsigned value for "count".
+commit 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 upstream.
 
-Also I moved the check that read size is a multiple of 4 bytes below
-the code that adjusts "count".
+If no_nrwrite_index_update is set we don't update nr_to_write and
+address space writeback_index in write_cache_pages.  This change
+enables a file system to skip these updates in write_cache_pages and do
+them in the writepages() callback.  This patch will be followed by an
+ext4 patch that make use of these new flags.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-fsdevel@vger.kernel.org
+[dev@jaysonking.com: Modified the patch to account for subsequent changes in mainline being cherry-picked earlier for 2.6.27.y.]
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ include/linux/writeback.h |    9 +++++++++
+ mm/page-writeback.c       |   14 +++++++++-----
+ 2 files changed, 18 insertions(+), 5 deletions(-)
 
---- a/sound/pci/mixart/mixart.c
-+++ b/sound/pci/mixart/mixart.c
-@@ -1160,13 +1160,15 @@ static long snd_mixart_BA0_read(struct s
- 				unsigned long count, unsigned long pos)
- {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -62,6 +62,15 @@ struct writeback_control {
+ 	unsigned for_writepages:1;	/* This is a writepages() call */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+ 	unsigned more_io:1;		/* more io to be dispatched */
++	/*
++	 * write_cache_pages() won't update wbc->nr_to_write and
++	 * mapping->writeback_index if no_nrwrite_index_update
++	 * is set.  write_cache_pages() may write more than we
++	 * requested and we want to make sure nr_to_write and
++	 * writeback_index are updated in a consistent manner
++	 * so we use a single control to update them
++	 */
++	unsigned no_nrwrite_index_update:1;
+ };
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos >= MIXART_BA0_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA0_SIZE)
--		count = (long)(MIXART_BA0_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
-+	maxsize = MIXART_BA0_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
- }
-@@ -1179,13 +1181,15 @@ static long snd_mixart_BA1_read(struct s
- 				unsigned long count, unsigned long pos)
- {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+ /*
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -878,6 +878,7 @@ int write_cache_pages(struct address_spa
+ 	pgoff_t done_index;
+ 	int cycled;
+ 	int range_whole = 0;
++	long nr_to_write = wbc->nr_to_write;
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos > MIXART_BA1_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA1_SIZE)
--		count = (long)(MIXART_BA1_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
-+	maxsize = MIXART_BA1_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
+ 	if (wbc->nonblocking && bdi_write_congested(bdi)) {
+ 		wbc->encountered_congestion = 1;
+@@ -985,9 +986,9 @@ continue_unlock:
+ 				}
+  			}
+ 
+-			if (wbc->nr_to_write > 0) {
+-				wbc->nr_to_write--;
+-				if (wbc->nr_to_write == 0 &&
++			if (nr_to_write > 0) {
++				nr_to_write--;
++				if (nr_to_write == 0 &&
+ 				    wbc->sync_mode == WB_SYNC_NONE) {
+ 					/*
+ 					 * We stop writing back only if we are
+@@ -1024,8 +1025,11 @@ continue_unlock:
+ 		end = writeback_index - 1;
+ 		goto retry;
+ 	}
+-	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
+-		mapping->writeback_index = done_index;
++	if (!wbc->no_nrwrite_index_update) {
++		if (wbc->range_cyclic || (range_whole && nr_to_write > 0))
++			mapping->writeback_index = done_index;
++		wbc->nr_to_write = nr_to_write;
++	}
+ 
+ 	return ret;
  }
 
 
