@@ -1,105 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755124Ab0EXJdo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 05:33:44 -0400
-Received: from cantor.suse.de ([195.135.220.2]:41202 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752956Ab0EXJdn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 05:33:43 -0400
-Date: Mon, 24 May 2010 19:33:36 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Jan Kara <jack@suse.cz>
-Cc: Dave Chinner <david@fromorbit.com>, Josef Bacik <josef@redhat.com>,
-       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
-       hch@infradead.org, akpm@linux-foundation.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100524093336.GY2516@laptop>
-References: <20100518080503.GF2150@dastard>
- <20100518104351.GF2516@laptop>
- <20100518122714.GG2150@dastard>
- <20100518150912.GI2516@laptop>
- <20100519235054.GS8120@dastard>
- <20100520201232.GP3395@quack.suse.cz>
- <20100520230524.GU8120@dastard>
- <20100521185846.GD10149@quack.suse.cz>
- <20100522002759.GA8120@dastard>
- <20100524092034.GA3287@quack.suse.cz>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100524092034.GA3287@quack.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754735Ab0EXJgl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 05:36:41 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:32664 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755192Ab0EXJgi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 05:36:38 -0400
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: Alexander Shishkin <virtuoso@slind.org>,
+       Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
+       linux-crypto@vger.kernel.org
+Subject: [RFC][PATCH] crypto: disable tests when they are not enabled
+Date: Mon, 24 May 2010 12:35:24 +0300
+Message-Id: <1274693724-23831-1-git-send-email-virtuoso@slind.org>
+X-Mailer: git-send-email 1.7.1.1.g15764
+X-OriginalArrivalTime: 24 May 2010 09:35:57.0331 (UTC) FILETIME=[83467E30:01CAFB24]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:20:34AM +0200, Jan Kara wrote:
-> On Sat 22-05-10 10:27:59, Dave Chinner wrote:
-> > On Fri, May 21, 2010 at 08:58:46PM +0200, Jan Kara wrote:
-> > > On Fri 21-05-10 09:05:24, Dave Chinner wrote:
-> > > > On Thu, May 20, 2010 at 10:12:32PM +0200, Jan Kara wrote:
-> > > > >   b) E.g. ext4 can do even without hole punching. It can allocate extent
-> > > > >      as 'unwritten' and when something during the write fails, it just
-> > > > >      leaves the extent allocated and the 'unwritten' flag makes sure that
-> > > > >      any read will see zeros. I suppose that other filesystems that care
-> > > > >      about multipage writes are able to do similar things (e.g. btrfs can
-> > > > >      do the same as far as I remember, I'm not sure about gfs2).
-> > > > 
-> > > > Allocating multipage writes as unwritten extents turns off delayed
-> > > > allocation and hence we'd lose all the benefits that this gives...
-> > >   Ah, sorry. That was a short-circuit in my brain. But when we do delayed
-> > > I don't see why we should actually do any hole punching... The write needs
-> > > to:
-> > >   a) reserve enough blocks for the write - I don't know about other
-> > > filesystems but for ext4 this means just incrementing a counter.
-> > >   b) copy data page by page
-> > >   c) release part of reservation (i.e. decrement counter) if we actually
-> > > copied less than we originally thought.
-> > > 
-> > >   Am I missing something?
-> > 
-> > Possibly. Delayed allocation is made up of two parts - space
-> > reservation and recording the regions of delayed allocation in an
-> > extent tree, page/bufferhead state or both.
->   Yes. Ext4 records the info about delayed allocation only in buffer
-> heads.
-> 
-> > In XFS, these two steps happen in the same get_blocks call, but the
-> > result of that is we have to truncate/punch delayed allocate extents
-> > out just like normal extents if we are not going to use them. Hence
-> > a reserve/allocate interface allows us to split the operation -
-> > reserve ensures we have space for the delayed allocation, allocate
-> > inserts the delayed extents into the inode extent tree for later
-> > real allocation during writeback. Hence the unreserve call can
-> > simply be accounting - it has no requirement to punch out delayed
-> > extents that may have already been allocated, just do work on
-> > counters.
-> > 
-> > btrfs already has this split design - it reserves space, does the
-> > copy, then marks the extent ranges as delalloc once the copy has
-> > succeeded, otherwise it simply unreserves the unused space.
-> > 
-> > Once again, I don't know if ext4 does this internal delayed
-> > allocation extent tracking or whether it just uses page state to
-> > track those extents, but it would probably still have to use the
-> > allocate call to mark all the pages/bufferheads as delalloc so
-> > that uneserve didn't have to do any extra work.
->   Yes, exactly. I just wanted to point out that AFAICS ext4 can implement
-> proper error recovery without a need for 'punch' operation. So after all
-> Nick's copy page-by-page should be plausible at least for ext4.
+Don't compile in and don't schedule cryptomanager's tests when
+CONFIG_CRYPTO_TESTS is not set. This saves quite some time during
+kernel initialization.
 
-Great. AFAIKS, any filesystem that does not leak uninitialized data
-on IO error or crash when allocating writeback cache over holes
-should already have enough information to recover properly from
-short-copy type of error today.
+Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
+CC: Herbert Xu <herbert@gondor.apana.org.au>
+CC: linux-kernel@vger.kernel.org
+CC: linux-crypto@vger.kernel.org
+---
+ crypto/algboss.c |    4 ++++
+ crypto/testmgr.c |   14 ++++++++++++++
+ 2 files changed, 18 insertions(+), 0 deletions(-)
 
-Otherwise, an IO error or crash seems like quite a similar problem
-from the point of view of the filesystem. Now perhaps it can be
-recovered only in a fsck type operation which is far too expensive
-to do in a normal error path, which sounds like XFS.
-
-So possibly we could have 2 APIs, one for filesystems like XFS, but
-I don't think we should penalise ones like ext4 which can handle
-this situation.
+diff --git a/crypto/algboss.c b/crypto/algboss.c
+index c3c196b..4814a44 100644
+--- a/crypto/algboss.c
++++ b/crypto/algboss.c
+@@ -206,6 +206,7 @@ err:
+ 	return NOTIFY_OK;
+ }
+ 
++#ifdef CONFIG_CRYPTO_TEST
+ static int cryptomgr_test(void *data)
+ {
+ 	struct crypto_test_param *param = data;
+@@ -266,6 +267,7 @@ err_put_module:
+ err:
+ 	return NOTIFY_OK;
+ }
++#endif /* CONFIG_CRYPTO_TEST */
+ 
+ static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
+ 			    void *data)
+@@ -273,8 +275,10 @@ static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
+ 	switch (msg) {
+ 	case CRYPTO_MSG_ALG_REQUEST:
+ 		return cryptomgr_schedule_probe(data);
++#ifdef CONFIG_CRYPTO_TEST
+ 	case CRYPTO_MSG_ALG_REGISTER:
+ 		return cryptomgr_schedule_test(data);
++#endif
+ 	}
+ 
+ 	return NOTIFY_DONE;
+diff --git a/crypto/testmgr.c b/crypto/testmgr.c
+index 5c8aaa0..3529484 100644
+--- a/crypto/testmgr.c
++++ b/crypto/testmgr.c
+@@ -22,6 +22,17 @@
+ #include <crypto/rng.h>
+ 
+ #include "internal.h"
++
++#ifndef CONFIG_CRYPTO_TEST
++
++/* a perfect nop */
++int alg_test(const char *driver, const char *alg, u32 type, u32 mask)
++{
++	return 0;
++}
++
++#else
++
+ #include "testmgr.h"
+ 
+ /*
+@@ -2530,4 +2541,7 @@ notest:
+ non_fips_alg:
+ 	return -EINVAL;
+ }
++
++#endif
++
+ EXPORT_SYMBOL_GPL(alg_test);
+-- 
+1.7.1.1.g15764
 
