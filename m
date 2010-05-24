@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933013Ab0EXX05 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:26:57 -0400
-Received: from kroah.org ([198.145.64.141]:59497 "EHLO coco.kroah.org"
+	id S932458Ab0EXX1b (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:27:31 -0400
+Received: from kroah.org ([198.145.64.141]:59465 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932650Ab0EXXXx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:53 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:16 2010
-Message-Id: <20100524231816.160574085@clark.site>
+	id S932619Ab0EXXXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:49 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:15 2010
+Message-Id: <20100524231815.798139777@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:45 -0700
+Date: Mon, 24 May 2010 16:15:41 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
-       Reinette Chatre <reinette.chatre@intel.com>
-Subject: [33/39] iwlwifi: check for aggregation frame and queue
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [29/39] x86, amd: Check X86_FEATURE_OSVW bit before accessing OSVW MSRs
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,96 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
 
-commit 45d427001b5eec03cecaacddb53c73af46bb263e upstream.
+commit f01487119dda3d9f58c9729c7361ecc50a61c188 upstream.
 
-Error checking for aggregation frames should go into aggregation queue,
-if aggregation queue not available, use legacy queue instead.
-Also make sure the aggregation queue is available to activate,
-if driver and mac80211 is out-of-sync, try to disable the queue and
-sync-up with mac80211.
+If host CPU is exposed to a guest the OSVW MSRs are not guaranteed
+to be present and a GP fault occurs. Thus checking the feature flag is
+essential.
 
-Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
-Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100427101348.GC4489@alberich.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   15 ++++++++++++++-
- drivers/net/wireless/iwlwifi/iwl-tx.c     |   18 ++++++++++++------
- 2 files changed, 26 insertions(+), 7 deletions(-)
+ arch/x86/kernel/process.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-agn-rs.c
-@@ -298,10 +298,23 @@ static void rs_tl_turn_on_agg_for_tid(st
- 				      struct iwl_lq_sta *lq_data, u8 tid,
- 				      struct ieee80211_sta *sta)
- {
-+	int ret;
-+
- 	if (rs_tl_get_load(lq_data, tid) > IWL_AGG_LOAD_THRESHOLD) {
- 		IWL_DEBUG_HT(priv, "Starting Tx agg: STA: %pM tid: %d\n",
- 				sta->addr, tid);
--		ieee80211_start_tx_ba_session(sta, tid);
-+		ret = ieee80211_start_tx_ba_session(sta, tid);
-+		if (ret == -EAGAIN) {
-+			/*
-+			 * driver and mac80211 is out of sync
-+			 * this might be cause by reloading firmware
-+			 * stop the tx ba session here
-+			 */
-+			IWL_DEBUG_HT(priv, "Fail start Tx agg on tid: %d\n",
-+				tid);
-+			ret = ieee80211_stop_tx_ba_session(sta, tid,
-+						WLAN_BACK_INITIATOR);
-+		}
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -539,11 +539,13 @@ static int __cpuinit check_c1e_idle(cons
+ 		 * check OSVW bit for CPUs that are not affected
+ 		 * by erratum #400
+ 		 */
+-		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
+-		if (val >= 2) {
+-			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
+-			if (!(val & BIT(1)))
+-				goto no_c1e_idle;
++		if (cpu_has(c, X86_FEATURE_OSVW)) {
++			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
++			if (val >= 2) {
++				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
++				if (!(val & BIT(1)))
++					goto no_c1e_idle;
++			}
+ 		}
+ 		return 1;
  	}
- }
- 
---- a/drivers/net/wireless/iwlwifi/iwl-tx.c
-+++ b/drivers/net/wireless/iwlwifi/iwl-tx.c
-@@ -821,8 +821,10 @@ int iwl_tx_skb(struct iwl_priv *priv, st
- 		hdr->seq_ctrl |= cpu_to_le16(seq_number);
- 		seq_number += 0x10;
- 		/* aggregation is on for this <sta,tid> */
--		if (info->flags & IEEE80211_TX_CTL_AMPDU)
-+		if (info->flags & IEEE80211_TX_CTL_AMPDU &&
-+		    priv->stations[sta_id].tid[tid].agg.state == IWL_AGG_ON) {
- 			txq_id = priv->stations[sta_id].tid[tid].agg.txq_id;
-+		}
- 	}
- 
- 	txq = &priv->txq[txq_id];
-@@ -1347,7 +1349,7 @@ int iwl_tx_agg_stop(struct iwl_priv *pri
- {
- 	int tx_fifo_id, txq_id, sta_id, ssn = -1;
- 	struct iwl_tid_data *tid_data;
--	int ret, write_ptr, read_ptr;
-+	int write_ptr, read_ptr;
- 	unsigned long flags;
- 
- 	if (!ra) {
-@@ -1399,13 +1401,17 @@ int iwl_tx_agg_stop(struct iwl_priv *pri
- 	priv->stations[sta_id].tid[tid].agg.state = IWL_AGG_OFF;
- 
- 	spin_lock_irqsave(&priv->lock, flags);
--	ret = priv->cfg->ops->lib->txq_agg_disable(priv, txq_id, ssn,
-+	/*
-+	 * the only reason this call can fail is queue number out of range,
-+	 * which can happen if uCode is reloaded and all the station
-+	 * information are lost. if it is outside the range, there is no need
-+	 * to deactivate the uCode queue, just return "success" to allow
-+	 *  mac80211 to clean up it own data.
-+	 */
-+	priv->cfg->ops->lib->txq_agg_disable(priv, txq_id, ssn,
- 						   tx_fifo_id);
- 	spin_unlock_irqrestore(&priv->lock, flags);
- 
--	if (ret)
--		return ret;
--
- 	ieee80211_stop_tx_ba_cb_irqsafe(priv->vif, ra, tid);
- 
- 	return 0;
 
 
