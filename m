@@ -1,52 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757225Ab0EXWIS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:08:18 -0400
-Received: from mga02.intel.com ([134.134.136.20]:8804 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756007Ab0EXWIR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:08:17 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,294,1272870000"; 
-   d="scan'208";a="520842892"
-Subject: Re: iwl3945 bug in 2.6.34
-From: reinette chatre <reinette.chatre@intel.com>
-To: Satish Eerpini <eerpini@gmail.com>
-Cc: linux-kernel <linux-kernel@vger.kernel.org>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>
-In-Reply-To: <1274726029.2091.15160.camel@rchatre-DESK>
-References: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
-	 <1274726029.2091.15160.camel@rchatre-DESK>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 May 2010 15:08:16 -0700
-Message-ID: <1274738896.2091.15438.camel@rchatre-DESK>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1757275Ab0EXWQJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:16:09 -0400
+Received: from mo-p00-ob.rzone.de ([81.169.146.161]:36736 "EHLO
+	mo-p00-ob.rzone.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756007Ab0EXWQI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:16:08 -0400
+X-RZG-AUTH: :P2EQZWCpfu+qG7CngxMFH1J+3aIibppu0283ogF9SEP3jBthh6QSMg==
+X-RZG-CLASS-ID: mo00
+Date: Tue, 25 May 2010 00:04:28 +0200
+From: Olaf Hering <olaf@aepfle.de>
+To: Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+Subject: [PATCH RT] fix undefined references to kernel_sem
+Message-ID: <20100524220428.GA17771@aepfle.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 11:33 -0700, reinette chatre wrote:
-> On Sat, 2010-05-22 at 23:25 -0700, Satish Eerpini wrote:
-> 
-> > No probe response from AP 00:1b:da:2a:a1:53 after 500ms, disconnecting.
-> > iwl3945 0000:10:00.0: Error sending REPLY_RXON: time out after 500ms.
-> > iwl3945 0000:10:00.0: Error setting new configuration (-110).
-> > iwl3945 0000:10:00.0: Error sending REPLY_RXON: time out after 500ms.
-> > iwl3945 0000:10:00.0: Error setting new configuration (-110).
-> 
-> This did not use to be an issue with 3945 and unfortunately we do not
-> know what is triggering it now. Please try the "Enable stuck queue
-> detection on 3945" patch that is attached to
-> http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=1834 as a
-> workaround.
+protect kernel_sem access with CONFIG_LOCK_KERNEL
+lib/kernel_lock.c is compiled conditionally.
 
-Actually, sorry, but that patch will not work on 2.6.34 since the
-feature it enables is not present there - it will be in 2.6.35 though.
-To enable the feature in 2.6.34 will take some more backporting effort
-that I'm looking into now.
+Signed-off-by: Olaf Hering <olaf@aepfle.de>
 
-Reinette
+---
+ init/main.c      |    4 ++++
+ kernel/lockdep.c |    2 ++
+ 2 files changed, 6 insertions(+)
 
-
+--- linux-2.6.33-rt.orig/init/main.c
++++ linux-2.6.33-rt/init/main.c
+@@ -629,9 +629,13 @@ asmlinkage void __init start_kernel(void
+ 		 * the lockdep state, so release the one known lock and
+ 		 * acquire it again after the self-test is done.
+ 		 */
++#ifdef CONFIG_LOCK_KERNEL
+ 		mutex_release(&kernel_sem.dep_map, 1, _THIS_IP_);
++#endif
+ 		locking_selftest();
++#ifdef CONFIG_LOCK_KERNEL
+ 		mutex_acquire(&kernel_sem.dep_map, 0, 0, _THIS_IP_);
++#endif
+ 	}
+ 
+ #ifdef CONFIG_BLK_DEV_INITRD
+--- linux-2.6.33-rt.orig/kernel/lockdep.c
++++ linux-2.6.33-rt/kernel/lockdep.c
+@@ -3608,8 +3608,10 @@ void lockdep_init(void)
+ 	for (i = 0; i < CHAINHASH_SIZE; i++)
+ 		INIT_LIST_HEAD(chainhash_table + i);
+ 
++#ifdef CONFIG_LOCK_KERNEL
+ 	/* Hack alert ! */
+ 	lockdep_set_novalidate_class(&kernel_sem);
++#endif
+ 
+ 	lockdep_initialized = 1;
+ }
