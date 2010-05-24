@@ -1,60 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754459Ab0EYHre (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:47:34 -0400
-Received: from cantor.suse.de ([195.135.220.2]:46202 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751790Ab0EYHrc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:47:32 -0400
-Date: Tue, 25 May 2010 09:47:31 +0200 (CEST)
-From: Jiri Kosina <jkosina@suse.cz>
-To: Stefan Achatz <erazor_de@users.sourceforge.net>
-Cc: iceberg <iceberg@ispras.ru>, Alexey Dobriyan <adobriyan@gmail.com>,
-       Tejun Heo <tj@kernel.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] HID: Removed unused variable from hidraw_read
-In-Reply-To: <1274301670.22226.4.camel@localhost>
-Message-ID: <alpine.LNX.2.00.1005250947210.28092@pobox.suse.cz>
-References: <1274301670.22226.4.camel@localhost>
-User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+	id S1754943Ab0EYHvp (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:51:45 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:41157 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1753247Ab0EYHvn (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 03:51:43 -0400
+Date: Mon, 24 May 2010 23:24:23 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
+Subject: Re: Deadlock in NFSv4 in all kernels
+Message-ID: <20100524212422.GA1286@ucw.cz>
+References: <20100507153920.GP28167@ics.muni.cz>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100507153920.GP28167@ics.muni.cz>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 19 May 2010, Stefan Achatz wrote:
+Hi!
 
-> Removed unused variable from hidraw_read.
+> I encountered the following problem. We use short expiration time for
+> kerberos contexts created by rpc.gssd (some patches were included in mainline
+> nfs-utils). In particular, we use 120secs expiration time.
 > 
-> Signed-off-by: Stefan Achatz <erazor_de@users.sourceforge.net>
-> ---
->  drivers/hid/hidraw.c |    2 --
->  1 files changed, 0 insertions(+), 2 deletions(-)
+> Now, I run application that eats 80% of available RAM. Then I run 10 parallel
+> dd processes that write data into NFS4 volume with sec=krb5.
 > 
-> diff --git a/drivers/hid/hidraw.c b/drivers/hid/hidraw.c
-> index 6eadf1a..bfe1e26 100644
-> --- a/drivers/hid/hidraw.c
-> +++ b/drivers/hid/hidraw.c
-> @@ -46,7 +46,6 @@ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count,
->  {
->  	struct hidraw_list *list = file->private_data;
->  	int ret = 0, len;
-> -	char *report;
->  	DECLARE_WAITQUEUE(wait, current);
->  
->  	mutex_lock(&list->read_mutex);
-> @@ -84,7 +83,6 @@ static ssize_t hidraw_read(struct file *file, char __user *buffer, size_t count,
->  		if (ret)
->  			goto out;
->  
-> -		report = list->buffer[list->tail].value;
->  		len = list->buffer[list->tail].len > count ?
->  			count : list->buffer[list->tail].len;
->  
+> As soon as the kerberos context expires (i.e., up to 120 secs), the whole
+> system gets stuck in do_page_fault and succesive functions. It is because
+> there is no free memory in kernel, all free memory is used as cache for NFS4
+> (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
+> anything as it is missing valid context. NFS contacts rpc.gssd to provide
+> a renewed context, the rpc.gssd does not provide the context as it needs some memory
+> to scan /tmp for a ticket. I.e., it deadlocks.
+> 
+> Longer context expiration time is no real solution as it only makes the
+> deadlock less often. 
+> 
+> Any ideas what can be done here? (Please cc me.) We could preallocate some
+> memory in rpc.gssd and use mlockall but not sure whether this proctects also
+> kernel malloc for things related to rpc.gssd and context creation (new file
+> descriptors and so on). 
+> 
+> This is seen in 2.6.32 kernel but most probably this is related to all kernel
+> versions.
 
-Applied, good catch. Thanks,
+Seems like pretty fundamental problem in nfs :-(. Limiting writeback
+caches for nfs, so that system has enough memory to perform rpc calls
+with the rest might do the trick, but...
 
 -- 
-Jiri Kosina
-SUSE Labs, Novell Inc.
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
