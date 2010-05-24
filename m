@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758519Ab0EXWkz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:40:55 -0400
-Received: from kroah.org ([198.145.64.141]:42363 "EHLO coco.kroah.org"
+	id S1758248Ab0EXWiT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:38:19 -0400
+Received: from kroah.org ([198.145.64.141]:42327 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758266Ab0EXWiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:21 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:17 2010
-Message-Id: <20100524223017.043009998@clark.site>
+	id S1755430Ab0EXWiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:17 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
+Message-Id: <20100524223015.837791747@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:09 -0700
+Date: Mon, 24 May 2010 15:28:05 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Oleg Nesterov <oleg@redhat.com>,
-       "Eric W. Biederman" <ebiederm@xmission.com>
-Subject: [13/24] tty: release_one_tty() forgets to put pids
+       linux-fsdevel@vger.kernel.org,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [09/24] vfs: Remove the range_cont writeback mode.
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,35 +28,47 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Oleg Nesterov <oleg@redhat.com>
 
-commit 6da8d866d0d39e9509ff826660f6a86a6757c966 upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-release_one_tty(tty) can be called when tty still has a reference
-to pgrp/session. In this case we leak the pid.
+commit 74baaaaec8b4f22e1ae279f5ecca4ff705b28912 upstream.
 
-Signed-off-by: Oleg Nesterov <oleg@redhat.com>
-Reported-by: Catalin Marinas <catalin.marinas@arm.com>
-Reported-and-tested-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Acked-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Ext4 was the only user of range_cont writeback mode and ext4 switched
+to a different method. So remove the range_cont mode which is not used
+in the kernel.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+CC: linux-fsdevel@vger.kernel.org
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tty_io.c |    2 ++
- 1 file changed, 2 insertions(+)
+ include/linux/writeback.h |    1 -
+ mm/page-writeback.c       |    2 --
+ 2 files changed, 3 deletions(-)
 
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -1893,6 +1893,8 @@ static void release_one_tty(struct tty_s
- 	list_del_init(&tty->tty_files);
- 	file_list_unlock();
+--- a/include/linux/writeback.h
++++ b/include/linux/writeback.h
+@@ -62,7 +62,6 @@ struct writeback_control {
+ 	unsigned for_writepages:1;	/* This is a writepages() call */
+ 	unsigned range_cyclic:1;	/* range_start is cyclic */
+ 	unsigned more_io:1;		/* more io to be dispatched */
+-	unsigned range_cont:1;
+ };
  
-+	put_pid(tty->pgrp);
-+	put_pid(tty->session);
- 	free_tty_struct(tty);
+ /*
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -1027,8 +1027,6 @@ continue_unlock:
+ 	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
+ 		mapping->writeback_index = done_index;
+ 
+-	if (wbc->range_cont)
+-		wbc->range_start = index << PAGE_CACHE_SHIFT;
+ 	return ret;
  }
- 
+ EXPORT_SYMBOL(write_cache_pages);
 
 
