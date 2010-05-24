@@ -1,47 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758785Ab0EXXmM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:42:12 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:54897 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758575Ab0EXXmK (ORCPT
+	id S932355Ab0EXXoL (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:44:11 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:57524 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758689Ab0EXXoH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:42:10 -0400
-Date: Tue, 25 May 2010 01:42:21 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: john stultz <johnstul@us.ibm.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, Brian Bloniarz <bmb@athenacr.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+	Mon, 24 May 2010 19:44:07 -0400
+Date: Tue, 25 May 2010 00:44:04 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-Message-ID: <20100524234221.GA5907@gargoyle.fritz.box>
-References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com> <ce764b91-11b0-44a5-9cf9-96977652bbd5@default> <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com> <1274733566.2954.73.camel@localhost.localdomain> <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default> <1274743836.2954.104.camel@localhost.localdomain>
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100524234404.GU31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+ <20100524115903.GP31073@ZenIV.linux.org.uk>
+ <20100524155031.GQ31073@ZenIV.linux.org.uk>
+ <1274718082.10795.31.camel@heimdal.trondhjem.org>
+ <20100524164736.GR31073@ZenIV.linux.org.uk>
+ <1274720791.10795.50.camel@heimdal.trondhjem.org>
+ <20100524190828.GS31073@ZenIV.linux.org.uk>
+ <1274735612.4030.16.camel@heimdal.trondhjem.org>
+ <20100524230109.GT31073@ZenIV.linux.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274743836.2954.104.camel@localhost.localdomain>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <20100524230109.GT31073@ZenIV.linux.org.uk>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > As more and more systems become dependent on clocksource==tsc
-> > and more and more people assume nanosecond-class measurements
-> > are relatively accurate, I'd expect the accuracy of tsc_khz
-> > to become more important.  While desktop users might bristle
-> > at an extra second of boot delay, I'll bet many server
-> > farm administrators would gladly pay that upfront cost
-> > if they know an option exists.
+On Tue, May 25, 2010 at 12:01:09AM +0100, Al Viro wrote:
+> Client question: what stops you from stack overflows in that area?  Call
+> chains you've got are *deep*, and I really wonder what happens if you
+> hit a referral point while traversing nested symlink, get pathname
+> resolution (already several levels into recursion) call ->follow_link(),
+> bounce down through nfs_do_refmount/nfs_follow_referral/try_location/
+> vfs_kern_mount/nfs4_referral_get_sb/nfs_follow_remote_path into
+> vfs_path_lookup, which will cheerfully add a few more loops like that.
 > 
-> Maybe something like a tsc_long_calibration=1 option would allow for
-> this?  
+> Sure, the *total* nesting depth through symlinks is still limited by 8, but
+> that pile of stack frames is _MUCH_ fatter than what we normally have in
+> pathname resolution.  You've suddenly added ~60 extra stack frames to the
+> worst-case stack footprint of the pathname resolution.  Don't try that
+> on sparc64, boys and girls, it won't be happy with attempt to carve ~12Kb
+> extra out of its kernel stack...  In fact, it's worse than just ~60 stack
+> frames - several will contain (on-stack) struct nameidata in them, which
+> very definitely will _not_ fit into the minimal stack frame.  It's about
+> 160 bytes extra, for each of those (up to 7).
 
-On a system with synchronized TSC and multiple cores you could also simply do 
-a longer calibration on another core in the background after a quick "fast
-calibration"
+Actually, just what will happen if you have a referral that would eventually
+resolve to a directory you have no permissions to access?  AFAICS, you'll
+end up trying it on all alternates, since nfs_follow_referral() will cheerfully
+keep trying one variant after another, getting -EACCES from each.  Worse,
+if there are nested referrals in it, you'll get all sequences of alternates
+tried before you give up.
 
--Andi
+..o*O(at least it's merely exponential; Ackermann would be even more fun)
