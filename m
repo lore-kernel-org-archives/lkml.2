@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756974Ab0EXL7M (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 07:59:12 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:42138 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab0EXL7K (ORCPT
+	id S1756984Ab0EXMVk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 08:21:40 -0400
+Received: from filtteri6.pp.htv.fi ([213.243.153.189]:51348 "EHLO
+	filtteri6.pp.htv.fi" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756892Ab0EXMVj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 07:59:10 -0400
-Date: Mon, 24 May 2010 12:59:03 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100524115903.GP31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
+	Mon, 24 May 2010 08:21:39 -0400
+Date: Mon, 24 May 2010 15:20:50 +0300
+From: Alexander Shishkin <virtuoso@slind.org>
+To: Herbert Xu <herbert@gondor.hengli.com.au>
+Cc: linux-kernel@vger.kernel.org, linux-crypto@vger.kernel.org
+Subject: Re: [RFC][PATCH] crypto: disable tests when they are not enabled
+Message-ID: <20100524122050.GB27432@shisha.kicks-ass.net>
+References: <1274693724-23831-1-git-send-email-virtuoso@slind.org>
+ <20100524112726.GB29848@gondor.apana.org.au>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100524165756.2cfa54c4@notabene.brown>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100524112726.GB29848@gondor.apana.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 04:57:56PM +1000, Neil Brown wrote:
+On Mon, May 24, 2010 at 09:27:26 +1000, Herbert Xu wrote:
+> On Mon, May 24, 2010 at 12:35:24PM +0300, Alexander Shishkin wrote:
+> > Don't compile in and don't schedule cryptomanager's tests when
+> > CONFIG_CRYPTO_TESTS is not set. This saves quite some time during
+> > kernel initialization.
 > 
-> Commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5 broke FS_REVAL_DOT semantics.
-> 
-> In particular, before this patch, the command
->    ls -l
-> in an NFS mounted directory would always check if the directory on the server
-> had changed and if so would flush and refill the pagecache for the dir.
-> After this patch, the same "ls -l" will repeatedly return stale date until
-> the cached attributes for the directory time out.
-> 
-> The following patch fixes this by ensuring the d_revalidate is called by
-> do_last when "." is being looked-up.
-> link_path_walk has already called d_revalidate, but in that case LOOKUP_OPEN
-> is not set so nfs_lookup_verify_inode chooses not to do any validation.
-> 
-> The following patch restores the original behaviour.
-> 
-> Cc: stable@kernel.org
-> Signed-off-by: NeilBrown <neilb@suse.de>
+> You're disabling the self-testing infrastructure.  This is not
+> the same thing as the tcrypt module.
 
-Applied, but I really don't like the way you do it; note that e.g. foo/bar/.
-gets that revalidation as well, for no good reason.  If anything, shouldn't
-we handle that thing in the _beginning_ of pathname resolution, not in
-the end?  For now it'd do, and it's a genuine regression, but...
+It is my intention to disable these tests since in my running them at
+every boot doesn't add any value. I thought about adding a separate
+Kconfig option for that, too. I want to make sure it's a sensible thing
+to do.
 
-BTW, here's a question for nfs client folks: is it true that for any two
-pathnames on _client_ resolving to pairs (mnt1, dentry) and (mnt2, dentry)
-resp., nfs_devname(mnt1, dentry, ...) and nfs_devname(mnt2, dentry, ...)
-should yield the strings that do not differ past the ':' (i.e. that the
-only possible difference is going to be in spelling the server name)?
+> Is this for fast booting?
+
+Yes, it saves ~180 miliseconds for me at prng_mod_init(), for example.
+
+Regards,
+--
+Alex
