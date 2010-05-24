@@ -1,48 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756537Ab0EXHGN (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 03:06:13 -0400
-Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45763 "EHLO
-	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756372Ab0EXHGL (ORCPT
+	id S1756375Ab0EXHLX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:11:23 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:51437
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753393Ab0EXHLV (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 03:06:11 -0400
-Content-Type: text/plain; charset=UTF-8
-Cc: fweisbec <fweisbec@gmail.com>, mingo <mingo@elte.hu>,
-       rostedt <rostedt@goodmis.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       laijs <laijs@cn.fujitsu.com>, lizf <lizf@cn.fujitsu.com>,
-       hpa <hpa@zytor.com>, tglx <tglx@linutronix.de>,
-       mhiramat <mhiramat@redhat.com>,
-       "heiko.carstens" <heiko.carstens@de.ibm.com>,
-       benh <benh@kernel.crashing.org>, davem <davem@davemloft.net>,
-       lethal <lethal@linux-sh.org>, schwidefsky <schwidefsky@de.ibm.com>,
-       brueckner <brueckner@linux.vnet.ibm.com>,
-       "tony.luck" <tony.luck@intel.com>
-Subject: Re: [PATCH 07/14] syscalls: add ARCH_COMPAT_SYSCALL_DEFINE()
-From: Ian Munsie <imunsie@au1.ibm.com>
-To: Jason Baron <jbaron@redhat.com>
-In-reply-to: <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
-References: <cover.1268749695.git.jbaron@redhat.com> <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
-Date: Mon, 24 May 2010 17:05:42 +1000
-Message-Id: <1274684482-sup-7551@au1.ibm.com>
-User-Agent: Sup/0.11
-Content-Transfer-Encoding: 8bit
+	Mon, 24 May 2010 03:11:21 -0400
+Date: Mon, 24 May 2010 00:11:30 -0700 (PDT)
+Message-Id: <20100524.001130.04664737.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, linux-ide@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] IDE
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Excerpts from Jason Baron's message of Wed Mar 17 04:46:42 +1100 2010:
-<snip>
-> +    SYSCALL_METADATA(syscall, compat_sys_##sname, x);    \
-> +    asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
-> +#else
-> +#define COMPAT_SYSCALL_DEFINEx(x, sname, ...)            \
 
-I think that should be:
-#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)
+A few bug fixes, a comment typo fix, etc.  Ie. nothing really
+interesting, as it should be, for a subsystem in deep
+maintainence mode.
 
-To avoid breaking archs without compat syscalls.
+Please pull, thanks a lot!
 
-Cheers,
--Ian
+The following changes since commit 8777c793d6a24c7f3adf52b1b1086e9706de4589:
+  Linus Torvalds (1):
+        Merge branch 'for-linus' of git://git.kernel.org/.../tj/wq
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/ide-2.6.git master
+
+Sergei Shtylyov (4):
+      ide: fix comment typo in ide.h
+      pdc202xx_old: wire test_irq() method for PDC2026x
+      pdc202xx_old: ignore "FIFO empty" bit in test_irq() method
+      cmd640: fix kernel oops in test_irq() method
+
+Yegor Yefremov (1):
+      IDE: pass IRQ flags to the IDE core
+
+ drivers/ide/cmd640.c       |    6 ++----
+ drivers/ide/ide_platform.c |    1 +
+ drivers/ide/pdc202xx_old.c |    5 +++--
+ include/linux/ide.h        |    4 ++--
+ 4 files changed, 8 insertions(+), 8 deletions(-)
