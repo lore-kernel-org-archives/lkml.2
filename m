@@ -1,22 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932209Ab0EXXOt (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:14:49 -0400
-Received: from kroah.org ([198.145.64.141]:36414 "EHLO coco.kroah.org"
+	id S1759140Ab0EXXK1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:10:27 -0400
+Received: from kroah.org ([198.145.64.141]:36555 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758968Ab0EXXJX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:23 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
-Message-Id: <20100524230350.326578430@clark.site>
+	id S1759074Ab0EXXJl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:41 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
+Message-Id: <20100524230352.184913803@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:43 -0700
+Date: Mon, 24 May 2010 16:00:04 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Paul Mackerras <paulus@samba.org>,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>
-Subject: [11/34] powerpc/perf_event: Fix oops due to perf_event_do_pending call
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Ming Lei <tom.leiming@gmail.com>, linux-wireless@vger.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Subject: [32/34] Revert "ath9k: fix lockdep warning when unloading module" on stable kernels
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,234 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Paul Mackerras <paulus@samba.org>
 
-commit 0fe1ac48bef018bed896307cd12f6ca9b5e704ab upstream.
+Johannes' patch 34e8950 titled:
 
-Anton Blanchard found that large POWER systems would occasionally
-crash in the exception exit path when profiling with perf_events.
-The symptom was that an interrupt would occur late in the exit path
-when the MSR[RI] (recoverable interrupt) bit was clear.  Interrupts
-should be hard-disabled at this point but they were enabled.  Because
-the interrupt was not recoverable the system panicked.
+	mac80211: allow station add/remove to sleep
 
-The reason is that the exception exit path was calling
-perf_event_do_pending after hard-disabling interrupts, and
-perf_event_do_pending will re-enable interrupts.
+changed the way mac80211 adds and removes peers. The new
+sta_add() / sta_remove() callbacks allowed the driver callbacks
+to sleep. Johannes also ported ath9k to use sta_add() / sta_remove()
+via the patch 4ca7786 titled:
 
-The simplest and cleanest fix for this is to use the same mechanism
-that 32-bit powerpc does, namely to cause a self-IPI by setting the
-decrementer to 1.  This means we can remove the tests in the exception
-exit path and raw_local_irq_restore.
+	ath9k: convert to new station add/remove callbacks
 
-This also makes sure that the call to perf_event_do_pending from
-timer_interrupt() happens within irq_enter/irq_exit.  (Note that
-calling perf_event_do_pending from timer_interrupt does not mean that
-there is a possible 1/HZ latency; setting the decrementer to 1 ensures
-that the timer interrupt will happen immediately, i.e. within one
-timebase tick, which is a few nanoseconds or 10s of nanoseconds.)
+but this patch forgot to address a change in locking issue which
+Ming Lei eventually found on his 2.6.33-wl #12 build. The 2.6.33-wl
+build includes code for the 802.11 subsystem for 2.6.34 though so did
+already have the above two patches (ath9k_sta_remove() on his trace),
+the 2.6.33 kernel did not however have these two patches. Ming eventually
+cured his lockdep warnign via the patch a9f042c titled:
 
-Signed-off-by: Paul Mackerras <paulus@samba.org>
-Signed-off-by: Benjamin Herrenschmidt <benh@kernel.crashing.org>
+	ath9k: fix lockdep warning when unloading module
+
+This went in to 2.6.34 and although it was not marked as a stable
+fix it did get trickled down and applied on both 2.6.33 and 2.6.32.
+
+In review, the culprits:
+
+	mac80211: allow station add/remove to sleep
+git describe --contains 34e895075e21be3e21e71d6317440d1ee7969ad0
+v2.6.34-rc1~233^2~49^2~107
+
+	ath9k: convert to new station add/remove callbacks
+git describe --contains 4ca778605cfec53d8a689f0b57babb93b030c784
+v2.6.34-rc1~233^2~49^2~10
+
+	ath9k: fix lockdep warning when unloading module
+
+This last one trickled down to 2.6.33 (OK), 2.6.33 (invalid) and 2.6.32 (invalid).
+
+git describe --contains a9f042cbe5284f34ccff15f3084477e11b39b17b
+v2.6.34-rc2~48^2~77^2~7
+git describe --contains 0524bcfa80f1fffb4e1fe18a0a28900869a58a7c
+v2.6.33.2~125
+git describe --contains 0dcc9985f34aef3c60bffab3dfc7f7ba3748f35a
+v2.6.32.11~79
+
+The patch titled "ath9k: fix lockdep warning when unloading module"
+should be reverted on both 2.6.33 and 2.6.32 as it is invalid and
+actually ended up causing the following warning:
+
+ADDRCONF(NETDEV_CHANGE): wlan31: link becomes ready
+phy0: WMM queue=2 aci=0 acm=0 aifs=3 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94
+phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47
+phy0: device now idle
+------------[ cut here ]------------
+WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x7b/0xa0()
+Hardware name: 7660A14
+Modules linked in: ath9k(-) mac80211 ath cfg80211 <whatever-bleh-etc>
+Pid: 2003, comm: rmmod Not tainted 2.6.32.11 #6
+Call Trace:
+ [<ffffffff8105d178>] warn_slowpath_common+0x78/0xb0
+ [<ffffffff8105d1bf>] warn_slowpath_null+0xf/0x20
+ [<ffffffff81063f8b>] local_bh_enable_ip+0x7b/0xa0
+ [<ffffffff815121e4>] _spin_unlock_bh+0x14/0x20
+ [<ffffffffa034aea5>] ath_tx_node_cleanup+0x185/0x1b0 [ath9k]
+ [<ffffffffa0345597>] ath9k_sta_notify+0x57/0xb0 [ath9k]
+ [<ffffffffa02ac51a>] __sta_info_unlink+0x15a/0x260 [mac80211]
+ [<ffffffffa02ac658>] sta_info_unlink+0x38/0x60 [mac80211]
+ [<ffffffffa02b3fbe>] ieee80211_set_disassoc+0x1ae/0x210 [mac80211]
+ [<ffffffffa02b42d9>] ieee80211_mgd_deauth+0x109/0x110 [mac80211]
+ [<ffffffffa02ba409>] ieee80211_deauth+0x19/0x20 [mac80211]
+ [<ffffffffa028160e>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
+ [<ffffffff81118540>] ? init_object+0x50/0x90
+ [<ffffffffa0285429>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
+ [<ffffffffa027125f>] cfg80211_netdev_notifier_call+0x10f/0x450 [cfg80211]
+ [<ffffffff81514ca7>] notifier_call_chain+0x47/0x90
+ [<ffffffff8107f501>] raw_notifier_call_chain+0x11/0x20
+ [<ffffffff81442d66>] call_netdevice_notifiers+0x16/0x20
+ [<ffffffff8144352d>] dev_close+0x4d/0xa0
+ [<ffffffff814439a8>] rollback_registered+0x48/0x120
+ [<ffffffff81443a9d>] unregister_netdevice+0x1d/0x70
+ [<ffffffffa02b6cc4>] ieee80211_remove_interfaces+0x84/0xc0 [mac80211]
+ [<ffffffffa02aa072>] ieee80211_unregister_hw+0x42/0xf0 [mac80211]
+ [<ffffffffa0347bde>] ath_detach+0x8e/0x180 [ath9k]
+ [<ffffffffa0347ce1>] ath_cleanup+0x11/0x50 [ath9k]
+ [<ffffffffa0351a2c>] ath_pci_remove+0x1c/0x20 [ath9k]
+ [<ffffffff8129d712>] pci_device_remove+0x32/0x60
+ [<ffffffff81332373>] __device_release_driver+0x53/0xb0
+ [<ffffffff81332498>] driver_detach+0xc8/0xd0
+ [<ffffffff81331405>] bus_remove_driver+0x85/0xe0
+ [<ffffffff81332a5a>] driver_unregister+0x5a/0x90
+ [<ffffffff8129da00>] pci_unregister_driver+0x40/0xb0
+ [<ffffffffa03518d0>] ath_pci_exit+0x10/0x20 [ath9k]
+ [<ffffffffa0353cd5>] ath9k_exit+0x9/0x2a [ath9k]
+ [<ffffffff81092838>] sys_delete_module+0x1a8/0x270
+ [<ffffffff8107ebe9>] ? up_read+0x9/0x10
+ [<ffffffff81011f82>] system_call_fastpath+0x16/0x1b
+---[ end trace fad957019ffdd40b ]---
+phy0: Removed STA 00:22:6b:56:fd:e8
+phy0: Destroyed STA 00:22:6b:56:fd:e8
+wlan31: deauthenticating from 00:22:6b:56:fd:e8 by local choice (reason=3)
+ath9k 0000:16:00.0: PCI INT A disabled
+
+The original lockdep fixed an issue where due to the new changes
+the driver was not disabling the bottom halves but it is incorrect
+to do this on the older kernels since IRQs are already disabled.
+
+Cc: Ming Lei <tom.leiming@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/powerpc/include/asm/hw_irq.h |   38 ------------------------
- arch/powerpc/kernel/asm-offsets.c |    1 
- arch/powerpc/kernel/entry_64.S    |    9 -----
- arch/powerpc/kernel/irq.c         |    6 ---
- arch/powerpc/kernel/time.c        |   60 ++++++++++++++++++++++++++++++--------
- 5 files changed, 48 insertions(+), 66 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/arch/powerpc/include/asm/hw_irq.h
-+++ b/arch/powerpc/include/asm/hw_irq.h
-@@ -135,43 +135,5 @@ static inline int irqs_disabled_flags(un
-  */
- struct irq_chip;
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2190,7 +2190,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 		if (ATH_TXQ_SETUP(sc, i)) {
+ 			txq = &sc->tx.txq[i];
  
--#ifdef CONFIG_PERF_EVENTS
--
--#ifdef CONFIG_PPC64
--static inline unsigned long test_perf_event_pending(void)
--{
--	unsigned long x;
--
--	asm volatile("lbz %0,%1(13)"
--		: "=r" (x)
--		: "i" (offsetof(struct paca_struct, perf_event_pending)));
--	return x;
--}
--
--static inline void set_perf_event_pending(void)
--{
--	asm volatile("stb %0,%1(13)" : :
--		"r" (1),
--		"i" (offsetof(struct paca_struct, perf_event_pending)));
--}
--
--static inline void clear_perf_event_pending(void)
--{
--	asm volatile("stb %0,%1(13)" : :
--		"r" (0),
--		"i" (offsetof(struct paca_struct, perf_event_pending)));
--}
--#endif /* CONFIG_PPC64 */
--
--#else  /* CONFIG_PERF_EVENTS */
--
--static inline unsigned long test_perf_event_pending(void)
--{
--	return 0;
--}
--
--static inline void clear_perf_event_pending(void) {}
--#endif /* CONFIG_PERF_EVENTS */
--
- #endif	/* __KERNEL__ */
- #endif	/* _ASM_POWERPC_HW_IRQ_H */
---- a/arch/powerpc/kernel/asm-offsets.c
-+++ b/arch/powerpc/kernel/asm-offsets.c
-@@ -133,7 +133,6 @@ int main(void)
- 	DEFINE(PACAKMSR, offsetof(struct paca_struct, kernel_msr));
- 	DEFINE(PACASOFTIRQEN, offsetof(struct paca_struct, soft_enabled));
- 	DEFINE(PACAHARDIRQEN, offsetof(struct paca_struct, hard_enabled));
--	DEFINE(PACAPERFPEND, offsetof(struct paca_struct, perf_event_pending));
- 	DEFINE(PACACONTEXTID, offsetof(struct paca_struct, context.id));
- #ifdef CONFIG_PPC_MM_SLICES
- 	DEFINE(PACALOWSLICESPSIZE, offsetof(struct paca_struct,
---- a/arch/powerpc/kernel/entry_64.S
-+++ b/arch/powerpc/kernel/entry_64.S
-@@ -556,15 +556,6 @@ ALT_FW_FTR_SECTION_END_IFCLR(FW_FEATURE_
- 2:
- 	TRACE_AND_RESTORE_IRQ(r5);
+-			spin_lock_bh(&txq->axq_lock);
++			spin_lock(&txq->axq_lock);
  
--#ifdef CONFIG_PERF_EVENTS
--	/* check paca->perf_event_pending if we're enabling ints */
--	lbz	r3,PACAPERFPEND(r13)
--	and.	r3,r3,r5
--	beq	27f
--	bl	.perf_event_do_pending
--27:
--#endif /* CONFIG_PERF_EVENTS */
--
- 	/* extract EE bit and use it to restore paca->hard_enabled */
- 	ld	r3,_MSR(r1)
- 	rldicl	r4,r3,49,63		/* r0 = (r3 >> 15) & 1 */
---- a/arch/powerpc/kernel/irq.c
-+++ b/arch/powerpc/kernel/irq.c
-@@ -53,7 +53,6 @@
- #include <linux/bootmem.h>
- #include <linux/pci.h>
- #include <linux/debugfs.h>
--#include <linux/perf_event.h>
+ 			list_for_each_entry_safe(ac,
+ 					ac_tmp, &txq->axq_acq, list) {
+@@ -2211,7 +2211,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 				}
+ 			}
  
- #include <asm/uaccess.h>
- #include <asm/system.h>
-@@ -138,11 +137,6 @@ notrace void raw_local_irq_restore(unsig
+-			spin_unlock_bh(&txq->axq_lock);
++			spin_unlock(&txq->axq_lock);
+ 		}
  	}
- #endif /* CONFIG_PPC_STD_MMU_64 */
- 
--	if (test_perf_event_pending()) {
--		clear_perf_event_pending();
--		perf_event_do_pending();
--	}
--
- 	/*
- 	 * if (get_paca()->hard_enabled) return;
- 	 * But again we need to take care that gcc gets hard_enabled directly
---- a/arch/powerpc/kernel/time.c
-+++ b/arch/powerpc/kernel/time.c
-@@ -530,25 +530,60 @@ void __init iSeries_time_init_early(void
  }
- #endif /* CONFIG_PPC_ISERIES */
- 
--#if defined(CONFIG_PERF_EVENTS) && defined(CONFIG_PPC32)
--DEFINE_PER_CPU(u8, perf_event_pending);
-+#ifdef CONFIG_PERF_EVENTS
- 
--void set_perf_event_pending(void)
-+/*
-+ * 64-bit uses a byte in the PACA, 32-bit uses a per-cpu variable...
-+ */
-+#ifdef CONFIG_PPC64
-+static inline unsigned long test_perf_event_pending(void)
- {
--	get_cpu_var(perf_event_pending) = 1;
--	set_dec(1);
--	put_cpu_var(perf_event_pending);
-+	unsigned long x;
-+
-+	asm volatile("lbz %0,%1(13)"
-+		: "=r" (x)
-+		: "i" (offsetof(struct paca_struct, perf_event_pending)));
-+	return x;
- }
- 
-+static inline void set_perf_event_pending_flag(void)
-+{
-+	asm volatile("stb %0,%1(13)" : :
-+		"r" (1),
-+		"i" (offsetof(struct paca_struct, perf_event_pending)));
-+}
-+
-+static inline void clear_perf_event_pending(void)
-+{
-+	asm volatile("stb %0,%1(13)" : :
-+		"r" (0),
-+		"i" (offsetof(struct paca_struct, perf_event_pending)));
-+}
-+
-+#else /* 32-bit */
-+
-+DEFINE_PER_CPU(u8, perf_event_pending);
-+
-+#define set_perf_event_pending_flag()	__get_cpu_var(perf_event_pending) = 1
- #define test_perf_event_pending()	__get_cpu_var(perf_event_pending)
- #define clear_perf_event_pending()	__get_cpu_var(perf_event_pending) = 0
- 
--#else  /* CONFIG_PERF_EVENTS && CONFIG_PPC32 */
-+#endif /* 32 vs 64 bit */
-+
-+void set_perf_event_pending(void)
-+{
-+	preempt_disable();
-+	set_perf_event_pending_flag();
-+	set_dec(1);
-+	preempt_enable();
-+}
-+
-+#else  /* CONFIG_PERF_EVENTS */
- 
- #define test_perf_event_pending()	0
- #define clear_perf_event_pending()
- 
--#endif /* CONFIG_PERF_EVENTS && CONFIG_PPC32 */
-+#endif /* CONFIG_PERF_EVENTS */
- 
- /*
-  * For iSeries shared processors, we have to let the hypervisor
-@@ -576,10 +611,6 @@ void timer_interrupt(struct pt_regs * re
- 	set_dec(DECREMENTER_MAX);
- 
- #ifdef CONFIG_PPC32
--	if (test_perf_event_pending()) {
--		clear_perf_event_pending();
--		perf_event_do_pending();
--	}
- 	if (atomic_read(&ppc_n_lost_interrupts) != 0)
- 		do_IRQ(regs);
- #endif
-@@ -597,6 +628,11 @@ void timer_interrupt(struct pt_regs * re
- 
- 	calculate_steal_time();
- 
-+	if (test_perf_event_pending()) {
-+		clear_perf_event_pending();
-+		perf_event_do_pending();
-+	}
-+
- #ifdef CONFIG_PPC_ISERIES
- 	if (firmware_has_feature(FW_FEATURE_ISERIES))
- 		get_lppaca()->int_dword.fields.decr_int = 0;
 
 
