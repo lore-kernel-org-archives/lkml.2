@@ -1,61 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab0EXXwO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:52:14 -0400
-Received: from e31.co.us.ibm.com ([32.97.110.149]:41827 "EHLO
-	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932103Ab0EXXwN convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:52:13 -0400
-Message-ID: <20100524195200.etvygryty8g0gswc@imap.linux.ibm.com>
-Date: Mon, 24 May 2010 19:52:00 -0400
-From: Corinna Schultz <cschultz@linux.vnet.ibm.com>
-To: linux-kernel@vger.kernel.org
-Cc: mingo@elte.hu, djwong@linux.vnet.ibm.com
-Subject: Re: [PATCH] calgary: Increase the maximum PHB bus number
+	id S932676Ab0EXXzz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:55:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:7599 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932166Ab0EXXzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:55:54 -0400
+Date: Mon, 24 May 2010 19:55:44 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] dm: lookup devices by path with name_to_dev_t
+Message-ID: <20100524235544.GB7204@redhat.com>
+References: <1274294304-30606-1-git-send-email-wad@chromium.org>
+ <1274294304-30606-3-git-send-email-wad@chromium.org>
+ <20100524115737.GY3991@agk-dp.fab.redhat.com>
+ <AANLkTik8F43_4SRkH7XpfX5CTQ-xQ_8f3_yJTjDqSulU@mail.gmail.com>
+ <20100524150729.GZ3991@agk-dp.fab.redhat.com>
+ <AANLkTinlgQ5Br4vyjgvNKtHD4F3mZKwoz3siYCQyReAl@mail.gmail.com>
+ <20100524233552.GA7204@redhat.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII;
-	DelSp=Yes	format=flowed
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-Content-Transfer-Encoding: 7BIT
-User-Agent: Internet Messaging Program (IMP) H3 (4.1.3)
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100524233552.GA7204@redhat.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Apr 06, 2010, Darrick J. Wong wrote:
-> On Thu, Feb 18, 2010 at 10:37:50AM -0800, Darrick J. Wong wrote:
-> > On Wed, Dec 09, 2009 at 11:03:46AM +0200, Muli Ben-Yehuda wrote:
-> > > On Tue, Dec 08, 2009 at 04:59:01PM -0800, Darrick J. Wong wrote:
-> > > > > > -#define MAX_NUM_OF_PHBS		 		 8 /* how many PHBs in total? */
-> > > > -#define MAX_NUM_CHASSIS		 		 8 /* max number of chassis */
-> > > > -/* MAX_PHB_BUS_NUM is the maximal possible dev->bus->number */
-> > > > -#define MAX_PHB_BUS_NUM		 		 (MAX_NUM_OF_PHBS * MAX_NUM_CHASSIS * 2)
-> > > > +/*
-> > > > +   The maximum PHB bus number.
-> > > > +   x3950M2 (rare): 8 chassis, 48 PHBs per chassis = 384
-> > > > +   x3950M2: 4 chassis, 48 PHBs per chassis        = 192
-> > > > +   x3950 (PCIE): 8 chassis, 32 PHBs per chassis   = 256
-> > > > +   x3950 (PCIX): 8 chassis, 16 PHBs per chassis   = 128
-> > > > +*/
-> > > > +#define MAX_PHB_BUS_NUM		 		 384
-> > > > +
-> > > >  #define PHBS_PER_CALGARY		 4
-> > > > > We'll end up wasting a few bytes on small systems, but I don't think
-> > > it's enough to matter on these fairly large systems. As far as I'm
-> > > concerned, patch is fine.
-> > > > > Acked-by: Muli Ben-Yehuda <muli@il.ibm.com>
-> > > Hmm... has this patch been queued up by anyone for the .34 merge
-> > window?
-> Still not in 2.6.34-rc3.  Are there any objections to this patch?  I've not
-> heard any complaints since my original posting... or did it simply  
-> get lost in
-> the noise?
+On Mon, May 24 2010 at  7:35pm -0400,
+Mike Snitzer <snitzer@redhat.com> wrote:
 
-This patch still hasn't been picked up by a maintainer.
+> On Mon, May 24 2010 at 12:35pm -0400,
+> Will Drewry <wad@chromium.org> wrote:
+> 
+> > On Mon, May 24, 2010 at 10:07 AM, Alasdair G Kergon <agk@redhat.com> wrote:
+> > > On Mon, May 24, 2010 at 09:44:07AM -0500, Will Drewry wrote:
+> > >> fwiw, the only reason for the copy was because |path| is a
+> > >> const in the function but not when passed to name_to_dev_t.
+> > >> I wasn't sure what the preferred practice was so I just duped
+> > >> the data needed.
+> > >
+> > > Well check that it is treated as 'const' and send a separate patch to
+> > > the maintainer to add const, perhaps?  If it isn't const (why would
+> > > that be?), then yes we'd need to copy it.
+> > 
+> > I'll cross-check the code again and send a patch out if it looks like
+> > it is const-safe.
+> 
+> Also, it would see that name_to_dev_t is EXPORT_SYMBOL?
 
-Are there any objections?
+Bleh, I typed that way too quick:
+Also, it would seem that name_to_dev_t is _not_ EXPORT_SYMBOL?
 
--Corinna Schultz
-IBM LTC
-
+Regards,
+Mike
