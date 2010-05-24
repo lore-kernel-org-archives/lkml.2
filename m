@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757133Ab0EXPRR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 11:17:17 -0400
-Received: from e34.co.us.ibm.com ([32.97.110.152]:53111 "EHLO
-	e34.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab0EXPRQ (ORCPT
+	id S1757123Ab0EXPTv (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 11:19:51 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:53570 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752208Ab0EXPTu convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 11:17:16 -0400
-Date: Mon, 24 May 2010 20:46:55 +0530
-From: Srivatsa Vaddagiri <vatsa@in.ibm.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: "Amit K. Arora" <aarora@linux.vnet.ibm.com>, tj@kernel.org,
-       Ingo Molnar <mingo@elte.hu>, Gautham R Shenoy <ego@in.ibm.com>,
-       Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Make sure timers have migrated before killing
- migration_thread
-Message-ID: <20100524151655.GF13808@linux.vnet.ibm.com>
-Reply-To: vatsa@in.ibm.com
-References: <20100519090557.GA15237@amitarora.in.ibm.com>
- <1274261515.5605.10423.camel@twins>
- <20100524095951.GA17680@amitarora.in.ibm.com>
- <1274707726.5605.31932.camel@twins>
+	Mon, 24 May 2010 11:19:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=LqYmz8BjQrOCXcXu7/rbZzBMXG7i5du/CftQ5pX5aup1R2r78xLcxP5uRIBdqi57jH
+         xjYV9NmRovE7QB+NZtKLUInSvG8puhUYxA8A0UWkxvivS3Dq8UKXsWG2cjkOFT6zYVAR
+         NowgOkWvNBDrhm0Uwli88tb6Q34Cpx3JJ2wZA=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274707726.5605.31932.camel@twins>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100524144539.GE21117@n2100.arm.linux.org.uk>
+References: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com>
+	 <AANLkTikRp0EHxshKYq39p18ymoRNAtyHrNm3yq6A49-r@mail.gmail.com>
+	 <20100523141300.GD950@n2100.arm.linux.org.uk>
+	 <AANLkTinV9Na9zxYMIfTr893Ynnc0YOk2B6uPKEa9s4R1@mail.gmail.com>
+	 <20100523194746.GE950@n2100.arm.linux.org.uk>
+	 <20100524112355.18424622@tom-lei>
+	 <20100524071921.GA17528@n2100.arm.linux.org.uk>
+	 <20100524101416.GA21117@n2100.arm.linux.org.uk>
+	 <20100524222033.12b25f2a@tom-lei>
+	 <20100524144539.GE21117@n2100.arm.linux.org.uk>
+Date: Mon, 24 May 2010 23:19:48 +0800
+Message-ID: <AANLkTikGwEVtnGb5KdJb0GzWDpu-zk9bWwa3JAgwy1v3@mail.gmail.com>
+Subject: Re: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
+From: Ming Lei <tom.leiming@gmail.com>
+To: Russell King - ARM Linux <linux@arm.linux.org.uk>
+Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
+       linux-arm-kernel@lists.infradead.org, a.p.zijlstra@chello.nl
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 03:28:45PM +0200, Peter Zijlstra wrote:
-> On Mon, 2010-05-24 at 15:29 +0530, Amit K. Arora wrote:
-> > since _cpu_up() and _cpu_down() can never run in
-> > parallel, because of cpu_add_remove_lock. 
-> 
-> Ah indeed. I guess your initial patch works then. 
+2010/5/24 Russell King - ARM Linux <linux@arm.linux.org.uk>:
+> which needs to be redone with a little more understanding, like the
+> following patch.  Note: you will need the previous patch as well,
+> which is separate because it addresses a *different* issue.
 
-One thing I found surprising was that a cpu's rt-bandwidth renewal could be
-dependant on another cpu's (rt-bandwidth) timer firing ontime. In this case, we
-had migration/23 pulled over to CPU0 and we hung later waiting for migration/23
-to exit. migration/23 was not exiting because it could not run on CPU0 (as
-CPU0's rt-bandwidth had expired). This situation remained forever. I would have
-expected CPU0's bandwidth to have been renewed independent of some timer on
-CPU23 to fire - maybe I am missing something not obvious in the code?
+OK, the two patches do fix the 'unannotated irqs-on' lockdep warning.
 
-- vatsa
+Thanks,
+
+-- 
+Lei Ming
