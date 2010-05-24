@@ -1,111 +1,162 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932069Ab0EXQVj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 12:21:39 -0400
-Received: from relay1.sgi.com ([192.48.179.29]:48277 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757721Ab0EXQVg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 12:21:36 -0400
-Date: Mon, 24 May 2010 11:21:24 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Andi Kleen <andi@firstfloor.org>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Borislav Petkov <bp@amd64.org>, "Luck, Tony" <tony.luck@intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       "Young, Brent" <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>, rja@sgi.com
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100524162124.GB7145@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <4BF2392A.9040409@jp.fujitsu.com> <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <20100519090323.GA18073@basil.fritz.box>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100519090323.GA18073@basil.fritz.box>
-User-Agent: Mutt/1.4.2.2i
+	id S932083Ab0EXQeK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 12:34:10 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:53001 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757244Ab0EXQeH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 12:34:07 -0400
+From: Will Drewry <wad@chromium.org>
+To: dm-devel@redhat.com
+Cc: agk@redhat.com, snitzer@redhat.com, linux-kernel@vger.kernel.org,
+       Will Drewry <wad@chromium.org>
+Subject: [PATCH 1/2] dm: ensure dm_table_complete() completes a table for use
+Date: Mon, 24 May 2010 11:33:27 -0500
+Message-Id: <1274718808-11194-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1274294304-30606-1-git-send-email-wad@chromium.org>
+References: <1274294304-30606-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 11:03:24AM +0200, Andi Kleen wrote:
-> Hi Eric,
-> 
-> > I'm not ready to believe the average person that is running linux
-> > is too stupid to understand the difference between a hardware
-> > error and a software error.
-> 
-> Experience disagrees with you (that is not sure about average,
-> but at least there's a significant portion) 
-> 
-> Also again today there are other reasons for it.
+This patchset breaks up the patch linked below:
+  https://patchwork.kernel.org/patch/101026/
 
-I agree with Andi.  While there are a wire range of users, the
-vast majority know little about the hardware they are running
-on.  Even in commercial settings, where users/admins are better
-educated, there is little time to do detailed error analysis.
+This change unifies the various checks and finalization that occurs on a
+table prior to use.  By doing so, it allows table construction without
+traversing the dm-ioctl interface.
 
-The more errors are detected/analyzed/corrected/recovered, the
-better it is for everyone.
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ drivers/md/dm-ioctl.c |   34 ---------------------------------
+ drivers/md/dm-table.c |   50 ++++++++++++++++++++++++++++++++++++++++++++++++-
+ 2 files changed, 49 insertions(+), 35 deletions(-)
 
+diff --git a/drivers/md/dm-ioctl.c b/drivers/md/dm-ioctl.c
+index d7500e1..dfde391 100644
+--- a/drivers/md/dm-ioctl.c
++++ b/drivers/md/dm-ioctl.c
+@@ -1112,28 +1112,9 @@ static int populate_table(struct dm_table *table,
+ 		next = spec->next;
+ 	}
  
-> > > Really to do anything useful with them you need trends
-> > > and automatic actions (like predictive page offlining)
-> > 
-> > Not at all, and I don't have a clue where you start thinking
-> > predictive page offlining makes the least bit of sense.  Broken
-> > or even weak bits are rarely the common reason for ECC errors.
-> 
-> There are various studies that disagree with you on that.
-
-Having the infrastructure to automatically off-line pages
-is a good thing.  The details of where to set the predictive
-threshold likely will be hardware specific (different DIMM
-types failing at different rates).  It needs to be adjustable.
-
-> > > A log isn't really a good format for that
-> > 
-> > A log is a fine format for realizing you have a problem.  A
-> 
-> A low steady rate of corrected errors on a large system
-> is expected.  In fact if you look at the memory error log.
-> of a large system (towards TBs) it nearly always has some 
-> memory related events.
-
-Yes, there are certainly examples of that.  
-
-> In this case a log is not really useful. What you need
-> is useful thresholds and a good summary.
-
-The larger the system the more important a good summary is.
-
-> > - Errors that occur frequently. That is broken hardware of one time or
-> >   another.  I want to know about that so I can schedule down time to replace
-> >   my memory before I get an uncorrected ECC error.  Errors of this kind
-> >   are likely happening frequently enough as to impact performance.
-> 
-> Same issue here: if something is truly broken it floods
-> you with errors.
-> 
-> First this costs a lot of time to process and it does not 
-> actually tell you anything useful because most errors in a flood
-> are similar.
-> 
-> Basically you don't care if you have 100 or 1000 errors, 
-> and you definitely don't want all the of the errors filling up
-> your disk and using up your CPU.
-> 
-> Again a threshold with an action is much more useful here.
-
-Yes, good points.
-
+-	r = dm_table_set_type(table);
+-	if (r) {
+-		DMWARN("unable to set table type");
+-		return r;
+-	}
+-
+ 	return dm_table_complete(table);
+ }
+ 
+-static int table_prealloc_integrity(struct dm_table *t,
+-				    struct mapped_device *md)
+-{
+-	struct list_head *devices = dm_table_get_devices(t);
+-	struct dm_dev_internal *dd;
+-
+-	list_for_each_entry(dd, devices, list)
+-		if (bdev_get_integrity(dd->dm_dev.bdev))
+-			return blk_integrity_register(dm_disk(md), NULL);
+-
+-	return 0;
+-}
+-
+ static int table_load(struct dm_ioctl *param, size_t param_size)
+ {
+ 	int r;
+@@ -1155,21 +1136,6 @@ static int table_load(struct dm_ioctl *param, size_t param_size)
+ 		goto out;
+ 	}
+ 
+-	r = table_prealloc_integrity(t, md);
+-	if (r) {
+-		DMERR("%s: could not register integrity profile.",
+-		      dm_device_name(md));
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+-	r = dm_table_alloc_md_mempools(t);
+-	if (r) {
+-		DMWARN("unable to allocate mempools for this table");
+-		dm_table_destroy(t);
+-		goto out;
+-	}
+-
+ 	down_write(&_hash_lock);
+ 	hc = dm_get_mdptr(md);
+ 	if (!hc || hc->md != md) {
+diff --git a/drivers/md/dm-table.c b/drivers/md/dm-table.c
+index 9924ea2..ef6a3ab 100644
+--- a/drivers/md/dm-table.c
++++ b/drivers/md/dm-table.c
+@@ -900,7 +900,7 @@ static int setup_indexes(struct dm_table *t)
+ /*
+  * Builds the btree to index the map.
+  */
+-int dm_table_complete(struct dm_table *t)
++int dm_table_build_index(struct dm_table *t)
+ {
+ 	int r = 0;
+ 	unsigned int leaf_nodes;
+@@ -919,6 +919,54 @@ int dm_table_complete(struct dm_table *t)
+ 	return r;
+ }
+ 
++/*
++ * Register the mapped device for blk_integrity support if
++ * the underlying devices support it.
++ */
++static int dm_table_prealloc_integrity(struct dm_table *t, struct mapped_device *md)
++{
++	struct list_head *devices = dm_table_get_devices(t);
++	struct dm_dev_internal *dd;
++
++	list_for_each_entry(dd, devices, list)
++		if (bdev_get_integrity(dd->dm_dev.bdev))
++			return blk_integrity_register(dm_disk(md), NULL);
++
++	return 0;
++}
++
++/*
++ * Prepares the table for use by building the indices,
++ * setting the type, and allocating mempools.
++ */
++int dm_table_complete(struct dm_table *t)
++{
++	int r = 0;
++	r = dm_table_set_type(t);
++	if (r) {
++		DMERR("unable to set table type");
++		return r;
++	}
++
++	r = dm_table_build_index(t);
++	if (r) {
++		DMERR("unable to build btrees");
++		return r;
++	}
++
++	r = dm_table_prealloc_integrity(t, t->md);
++	if (r) {
++		DMERR("could not register integrity profile.");
++		return r;
++	}
++
++	r = dm_table_alloc_md_mempools(t);
++	if (r) {
++		DMERR("unable to allocate mempools");
++	}
++	return r;
++}
++
+ static DEFINE_MUTEX(_event_lock);
+ void dm_table_event_callback(struct dm_table *t,
+ 			     void (*fn)(void *), void *context)
 -- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+1.7.0.4
+
