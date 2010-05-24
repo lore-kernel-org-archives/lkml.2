@@ -1,46 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757246Ab0EXPuk (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 11:50:40 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:49766 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757180Ab0EXPui (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 11:50:38 -0400
-Date: Mon, 24 May 2010 16:50:31 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Neil Brown <neilb@suse.de>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100524155031.GQ31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
- <20100524115903.GP31073@ZenIV.linux.org.uk>
-MIME-Version: 1.0
+	id S1757210Ab0EXPz0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 11:55:26 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:52884 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753011Ab0EXPzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 11:55:25 -0400
+Date: Mon, 24 May 2010 10:55:06 -0500
+From: Russ Anderson <rja@sgi.com>
+To: Tony Luck <tony.luck@gmail.com>
+Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
+       Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       "Young, Brent" <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>, rja@sgi.com
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100524155506.GA7145@sgi.com>
+Reply-To: Russ Anderson <rja@sgi.com>
+References: <4BF2392A.9040409@jp.fujitsu.com> <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <AANLkTilxFZygP7YJybluPxtdxVGqWeqR4g7CRr8EEocW@mail.gmail.com>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100524115903.GP31073@ZenIV.linux.org.uk>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTilxFZygP7YJybluPxtdxVGqWeqR4g7CRr8EEocW@mail.gmail.com>
+User-Agent: Mutt/1.4.2.2i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 12:59:03PM +0100, Al Viro wrote:
+On Wed, May 19, 2010 at 10:30:17AM -0700, Tony Luck wrote:
+> 
+> We are still in the dark ages for memory errors where the OS
+> is expected to look at all the errors and figure out whether they
+> represent any kind of meaningful pattern that requires some
+> action to replace h/w components.
 
-> BTW, here's a question for nfs client folks: is it true that for any two
-> pathnames on _client_ resolving to pairs (mnt1, dentry) and (mnt2, dentry)
-> resp., nfs_devname(mnt1, dentry, ...) and nfs_devname(mnt2, dentry, ...)
-> should yield the strings that do not differ past the ':' (i.e. that the
-> only possible difference is going to be in spelling the server name)?
+ia64 is good at detecting & recovering from memory uncorrectable
+errors.  x86 is significantly behind, due to historically not
+being able to recover from uncorrectable memory errors.  
 
-Actually, there's a related one: suppose we have two mounts from the same
-server, with the same flags, etc., ending up sharing a dentry on client.
-What will we get from GETATTR asking for fs_locations, in fs_root field?
+ia64 had the Intel defined MCA Spec which defined the interaction
+between SAL and the kernel.  x86 does not have a similar well
+defined way of how errors should be handled.  It would be 
+good to agree on how the errors should be handled.
 
-Can an nfs4 server e.g. have /x/y being a symlink that resolves to /a/b and
-allow mounting of both /x/y/c and /a/b/c?  Which path would it return to
-client that has mounted both, walked to some referral point and called
-nfs_do_refmount(), triggering nfs4_proc_fs_locations()?
+> -Tony
 
-Trond, Neil?
+-- 
+Russ Anderson, OS RAS/Partitioning Project Lead  
+SGI - Silicon Graphics Inc          rja@sgi.com
