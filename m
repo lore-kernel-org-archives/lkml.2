@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758051Ab0EXUdO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 16:33:14 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5582 "EHLO
+	id S1758086Ab0EXUdR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 16:33:17 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:52620 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757077Ab0EXUb6 (ORCPT
+	with ESMTP id S1757030Ab0EXUb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 May 2010 16:31:58 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
 	references:x-system-of-record;
-	b=ZYXfl4iCgm7hS8CbBdur1hRTJM5sJvRqi3od1xIIM1cglObDai7+TbaEQRFTquSGJ
-	TwfWLI781YDQf2EJmU6AQ==
+	b=r+NAds4BVfw8t77+0Q9nLFr1nRWwLGV4PcEgglQ2mmGzY7WnDyJKHwTi9vxomYo+x
+	sm4TLoMTuzKl9CVhXwuYw==
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -19,11 +19,10 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
-       David Howells <dhowells@redhat.com>
-Subject: [PATCH 09/11] rwsem: down_read_critical infrastructure support
-Date: Mon, 24 May 2010 13:31:19 -0700
-Message-Id: <1274733081-4623-10-git-send-email-walken@google.com>
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+Subject: [PATCH 11/11] Use down_read_critical() for /proc/<pid>/exe and /proc/<pid>/maps files
+Date: Mon, 24 May 2010 13:31:21 -0700
+Message-Id: <1274733081-4623-12-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1274733081-4623-1-git-send-email-walken@google.com>
 References: <1274733081-4623-1-git-send-email-walken@google.com>
@@ -32,113 +31,151 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add rwsem_down_read_unfair_failed() function in the non-generic rwsem
-library code, similar to  rwsem_down_read_failed() except that blocked
-threads are placed at the head of the queue.
+This helps in the following situation:
+- Thread A takes a page fault while reading or writing memory.
+  do_page_fault() acquires the mmap_sem for read and blocks on disk
+  (either reading the page from file, or hitting swap) for a long time.
+- Thread B does an mmap call and blocks trying to acquire the mmap_sem
+  for write
+- Thread C is a monitoring process trying to read every /proc/pid/maps
+  in the system. This requires acquiring the mmap_sem for read. Thread C
+  blocks behind B, waiting for A to release the rwsem.  If thread C
+  could be allowed to run in parallel with A, it would probably get done
+  long before thread A's disk access completes, thus not actually slowing
+  down thread B.
 
-Make the waiter type an enumeration rather than a bitmask.
+Test results with down_read_critical_test (10 seconds):
+
+2.6.33.3:
+threadA completes ~600 faults
+threadB completes ~300 mmap/munmap cycles
+threadC completes ~600 /proc/pid/maps reads
+
+2.6.33.3 + down_read_critical:
+threadA completes ~600 faults
+threadB completes ~300 mmap/munmap cycles
+threadC completes ~160000 /proc/pid/maps reads
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
-Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- lib/rwsem.c |   40 +++++++++++++++++++++++++++++++---------
- 1 files changed, 31 insertions(+), 9 deletions(-)
+ fs/proc/base.c          |    4 ++--
+ fs/proc/task_mmu.c      |   24 +++++++++++++++++-------
+ include/linux/proc_fs.h |    1 +
+ 3 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/lib/rwsem.c b/lib/rwsem.c
-index f236d7c..72454f4 100644
---- a/lib/rwsem.c
-+++ b/lib/rwsem.c
-@@ -28,12 +28,16 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
+diff --git a/fs/proc/base.c b/fs/proc/base.c
+index 8418fcc..9201762 100644
+--- a/fs/proc/base.c
++++ b/fs/proc/base.c
+@@ -1367,11 +1367,11 @@ struct file *get_mm_exe_file(struct mm_struct *mm)
  
- EXPORT_SYMBOL(__init_rwsem);
- 
-+enum rwsem_waiter_type {
-+	RWSEM_WAITING_FOR_WRITE,
-+	RWSEM_WAITING_FOR_READ,
-+	RWSEM_WAITING_FOR_UNFAIR_READ
-+};
-+
- struct rwsem_waiter {
- 	struct list_head list;
- 	struct task_struct *task;
--	unsigned int flags;
--#define RWSEM_WAITING_FOR_READ	0x00000001
--#define RWSEM_WAITING_FOR_WRITE	0x00000002
-+	enum rwsem_waiter_type type;
- };
- 
- /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
-@@ -63,7 +67,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
- 	signed long oldcount, woken, loop, adjustment;
- 
- 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
--	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
-+	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
- 		goto readers_only;
- 
- 	if (wake_type == RWSEM_WAKE_READ_OWNED)
-@@ -132,10 +136,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
- 		waiter = list_entry(waiter->list.next,
- 					struct rwsem_waiter, list);
- 
--	} while (waiter->flags & RWSEM_WAITING_FOR_READ);
-+	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
- 
- 	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
--	if (waiter->flags & RWSEM_WAITING_FOR_READ)
-+	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
- 		/* hit end of list above */
- 		adjustment -= RWSEM_WAITING_BIAS;
- 
-@@ -171,7 +175,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
-  */
- static struct rw_semaphore __sched *
- rwsem_down_failed_common(struct rw_semaphore *sem,
--			 unsigned int flags, signed long adjustment)
-+			 enum rwsem_waiter_type type, signed long adjustment)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk = current;
-@@ -182,12 +186,16 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
- 	/* set up my own style of waitqueue */
- 	spin_lock_irq(&sem->wait_lock);
- 	waiter.task = tsk;
--	waiter.flags = flags;
-+	waiter.type = type;
- 	get_task_struct(tsk);
- 
- 	if (list_empty(&sem->wait_list))
- 		adjustment += RWSEM_WAITING_BIAS;
--	list_add_tail(&waiter.list, &sem->wait_list);
-+
-+	if (type == RWSEM_WAITING_FOR_UNFAIR_READ)
-+		list_add(&waiter.list, &sem->wait_list);
-+	else
-+		list_add_tail(&waiter.list, &sem->wait_list);
- 
- 	/* we're now waiting on the lock, but no longer actively locking */
- 	count = rwsem_atomic_update(adjustment, sem);
-@@ -229,6 +237,20 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
- 					-RWSEM_ACTIVE_READ_BIAS);
+ 	/* We need mmap_sem to protect against races with removal of
+ 	 * VM_EXECUTABLE vmas */
+-	down_read(&mm->mmap_sem);
++	down_read_critical(&mm->mmap_sem);
+ 	exe_file = mm->exe_file;
+ 	if (exe_file)
+ 		get_file(exe_file);
+-	up_read(&mm->mmap_sem);
++	up_read_critical(&mm->mmap_sem);
+ 	return exe_file;
  }
  
-+#ifdef __HAVE_DOWN_READ_UNFAIR
-+
-+/*
-+ * wait for the read lock to be granted - skip waiting threads
-+ */
-+asmregparm struct rw_semaphore __sched *
-+rwsem_down_read_unfair_failed(struct rw_semaphore *sem)
-+{
-+	return rwsem_down_failed_common(sem, RWSEM_WAITING_FOR_UNFAIR_READ,
-+					-RWSEM_ACTIVE_READ_BIAS);
-+}
-+
-+#endif
-+
- /*
-  * wait for the write lock to be granted
-  */
+diff --git a/fs/proc/task_mmu.c b/fs/proc/task_mmu.c
+index 47f5b14..83f9353 100644
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -89,7 +89,10 @@ static void vma_stop(struct proc_maps_private *priv, struct vm_area_struct *vma)
+ {
+ 	if (vma && vma != priv->tail_vma) {
+ 		struct mm_struct *mm = vma->vm_mm;
+-		up_read(&mm->mmap_sem);
++		if (priv->critical)
++			up_read_critical(&mm->mmap_sem);
++		else
++			up_read(&mm->mmap_sem);
+ 		mmput(mm);
+ 	}
+ }
+@@ -123,7 +126,10 @@ static void *m_start(struct seq_file *m, loff_t *pos)
+ 	mm = mm_for_maps(priv->task);
+ 	if (!mm)
+ 		return NULL;
+-	down_read(&mm->mmap_sem);
++	if (priv->critical)
++		down_read_critical(&mm->mmap_sem);
++	else
++		down_read(&mm->mmap_sem);
+ 
+ 	tail_vma = get_gate_vma(priv->task);
+ 	priv->tail_vma = tail_vma;
+@@ -156,7 +162,10 @@ out:
+ 
+ 	/* End of vmas has been reached */
+ 	m->version = (tail_vma != NULL)? 0: -1UL;
+-	up_read(&mm->mmap_sem);
++	if (priv->critical)
++		up_read_critical(&mm->mmap_sem);
++	else
++		up_read(&mm->mmap_sem);
+ 	mmput(mm);
+ 	return tail_vma;
+ }
+@@ -185,13 +194,14 @@ static void m_stop(struct seq_file *m, void *v)
+ }
+ 
+ static int do_maps_open(struct inode *inode, struct file *file,
+-			const struct seq_operations *ops)
++			const struct seq_operations *ops, int critical)
+ {
+ 	struct proc_maps_private *priv;
+ 	int ret = -ENOMEM;
+ 	priv = kzalloc(sizeof(*priv), GFP_KERNEL);
+ 	if (priv) {
+ 		priv->pid = proc_pid(inode);
++		priv->critical = critical;
+ 		ret = seq_open(file, ops);
+ 		if (!ret) {
+ 			struct seq_file *m = file->private_data;
+@@ -282,7 +292,7 @@ static const struct seq_operations proc_pid_maps_op = {
+ 
+ static int maps_open(struct inode *inode, struct file *file)
+ {
+-	return do_maps_open(inode, file, &proc_pid_maps_op);
++	return do_maps_open(inode, file, &proc_pid_maps_op, 1);
+ }
+ 
+ const struct file_operations proc_maps_operations = {
+@@ -432,7 +442,7 @@ static const struct seq_operations proc_pid_smaps_op = {
+ 
+ static int smaps_open(struct inode *inode, struct file *file)
+ {
+-	return do_maps_open(inode, file, &proc_pid_smaps_op);
++	return do_maps_open(inode, file, &proc_pid_smaps_op, 0);
+ }
+ 
+ const struct file_operations proc_smaps_operations = {
+@@ -808,7 +818,7 @@ static const struct seq_operations proc_pid_numa_maps_op = {
+ 
+ static int numa_maps_open(struct inode *inode, struct file *file)
+ {
+-	return do_maps_open(inode, file, &proc_pid_numa_maps_op);
++	return do_maps_open(inode, file, &proc_pid_numa_maps_op, 0);
+ }
+ 
+ const struct file_operations proc_numa_maps_operations = {
+diff --git a/include/linux/proc_fs.h b/include/linux/proc_fs.h
+index 379eaed..66785e7 100644
+--- a/include/linux/proc_fs.h
++++ b/include/linux/proc_fs.h
+@@ -291,6 +291,7 @@ struct proc_maps_private {
+ 	struct task_struct *task;
+ #ifdef CONFIG_MMU
+ 	struct vm_area_struct *tail_vma;
++	int critical;
+ #endif
+ };
+ 
 -- 
 1.7.0.1
 
