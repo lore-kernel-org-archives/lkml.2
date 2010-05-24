@@ -1,68 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933005Ab0EXX2S (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:28:18 -0400
-Received: from kroah.org ([198.145.64.141]:59442 "EHLO coco.kroah.org"
+	id S932313Ab0EXXX0 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:23:26 -0400
+Received: from kroah.org ([198.145.64.141]:59297 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932602Ab0EXXXq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:46 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:15 2010
-Message-Id: <20100524231815.446220688@clark.site>
+	id S932264Ab0EXXXZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:13 2010
+Message-Id: <20100524231813.301575947@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:37 -0700
+Date: Mon, 24 May 2010 16:15:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Pavel Emelyanov <xemul@openvz.org>, Eric Paris <eparis@redhat.com>
-Subject: [25/39] inotify: dont leak user struct on inotify release
+       =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
+       Eric Dumazet <eric.dumazet@gmail.com>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: [01/39] ipv4: udp: fix short packet and bad checksum logging
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Pavel Emelyanov <xemul@openvz.org>
 
-commit b3b38d842fa367d862b83e7670af4e0fd6a80fc0 upstream.
+From: Bjørn Mork <bjorn@mork.no>
 
-inotify_new_group() receives a get_uid-ed user_struct and saves the
-reference on group->inotify_data.user.  The problem is that free_uid() is
-never called on it.
+commit ccc2d97cb7c798e785c9f198de243e2b59f7073b upstream.
 
-Issue seem to be introduced by 63c882a0 (inotify: reimplement inotify
-using fsnotify) after 2.6.30.
+commit 2783ef23 moved the initialisation of saddr and daddr after
+pskb_may_pull() to avoid a potential data corruption.  Unfortunately
+also placing it after the short packet and bad checksum error paths,
+where these variables are used for logging.  The result is bogus
+output like
 
-Signed-off-by: Pavel Emelyanov <xemul@openvz.org>
-Eric Paris <eparis@parisplace.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Eric Paris <eparis@redhat.com>
+[92238.389505] UDP: short packet: From 2.0.0.0:65535 23715/178 to 0.0.0.0:65535
+
+Moving the saddr and daddr initialisation above the error paths, while still
+keeping it after the pskb_may_pull() to keep the fix from commit 2783ef23.
+
+Signed-off-by: Bjørn Mork <bjorn@mork.no>
+Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
+Signed-off-by: David S. Miller <davem@davemloft.net>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/notify/inotify/inotify_fsnotify.c |    2 ++
- 1 file changed, 2 insertions(+)
+ net/ipv4/udp.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
 
---- a/fs/notify/inotify/inotify_fsnotify.c
-+++ b/fs/notify/inotify/inotify_fsnotify.c
-@@ -28,6 +28,7 @@
- #include <linux/path.h> /* struct path */
- #include <linux/slab.h> /* kmem_* */
- #include <linux/types.h>
-+#include <linux/sched.h>
+--- a/net/ipv4/udp.c
++++ b/net/ipv4/udp.c
+@@ -1527,6 +1527,9 @@ int __udp4_lib_rcv(struct sk_buff *skb,
  
- #include "inotify.h"
+ 	uh   = udp_hdr(skb);
+ 	ulen = ntohs(uh->len);
++	saddr = ip_hdr(skb)->saddr;
++	daddr = ip_hdr(skb)->daddr;
++
+ 	if (ulen > skb->len)
+ 		goto short_packet;
  
-@@ -146,6 +147,7 @@ static void inotify_free_group_priv(stru
- 	idr_for_each(&group->inotify_data.idr, idr_callback, group);
- 	idr_remove_all(&group->inotify_data.idr);
- 	idr_destroy(&group->inotify_data.idr);
-+	free_uid(group->inotify_data.user);
- }
+@@ -1540,9 +1543,6 @@ int __udp4_lib_rcv(struct sk_buff *skb,
+ 	if (udp4_csum_init(skb, uh, proto))
+ 		goto csum_error;
  
- void inotify_free_event_priv(struct fsnotify_event_private_data *fsn_event_priv)
+-	saddr = ip_hdr(skb)->saddr;
+-	daddr = ip_hdr(skb)->daddr;
+-
+ 	if (rt->rt_flags & (RTCF_BROADCAST|RTCF_MULTICAST))
+ 		return __udp4_lib_mcast_deliver(net, skb, uh,
+ 				saddr, daddr, udptable);
 
 
