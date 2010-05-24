@@ -1,65 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758188Ab0EXSQz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:16:55 -0400
-Received: from mail-bw0-f46.google.com ([209.85.214.46]:51872 "EHLO
-	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757702Ab0EXSQx (ORCPT
+	id S1758032Ab0EXSRn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:17:43 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:37780 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752982Ab0EXSRl (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:16:53 -0400
+	Mon, 24 May 2010 14:17:41 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
-         :subject:to:cc:content-type;
-        b=U2Q2Nvnoy4plDY25bdlDrUkmbZiXU6Q7Kx2zI2bYvqHGVy/BtwbiPckmQv0giFQ24l
-         DAVG9PIp1O1gWhtfVbtLyG0J+35zuTzSX4Y8GGfrklX2Ywbd75lt6esLekT5b+XB+GPY
-         3hxBsYFVooMnIT1M0wcw6Ys8vj5j74CA5lCTM=
-MIME-Version: 1.0
-Reply-To: mtk.manpages@gmail.com
-In-Reply-To: <87d3wlw4mf.fsf@devron.myhome.or.jp>
-References: <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> 
-	<AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> 
-	<20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> 
-	<20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> 
-	<20100524070416.GQ23411@kernel.dk> <87bpc54u9w.fsf@devron.myhome.or.jp> 
-	<20100524171522.GT23411@kernel.dk> <87d3wlw4mf.fsf@devron.myhome.or.jp>
-From: Michael Kerrisk <mtk.manpages@googlemail.com>
-Date: Mon, 24 May 2010 20:16:31 +0200
-Message-ID: <AANLkTikkFusUJ3hBtv_tYFZKvluv19RsDahziDIFWkpd@mail.gmail.com>
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=ah7KQlZPRXGqQuE+d9tMl+4DYtCpk1CD97phdxk/KLmRGT36hAPa5WhtW3QNspwW6d
+         WcBae4lJbP0WyxbPQeov7dcxPD4338Ges3QNyAM0CmCBrAyXJN461pggKC1fDz94khFC
+         w3INTJwR0HQX6oABfE2A1k8wdfi7T/RZ2XqPI=
+Date: Mon, 24 May 2010 11:17:35 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Jason Wessel <jason.wessel@windriver.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
        linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Subject: Re: linux-next: build failure after merge of the kgdb tree
+Message-ID: <20100524181735.GC6033@core.coreip.homeip.net>
+References: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
+ <20100325154307.9cdeae10.sfr@canb.auug.org.au>
+ <201003242159.25770.dmitry.torokhov@gmail.com>
+ <20100521102158.bf6df441.sfr@canb.auug.org.au>
+ <4BF5D8AF.6010408@windriver.com>
+ <20100521110938.7bbbbf59.sfr@canb.auug.org.au>
+ <20100521012340.GA12372@core.coreip.homeip.net>
+ <4BF5E1D6.1090607@windriver.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF5E1D6.1090607@windriver.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 8:12 PM, OGAWA Hirofumi
-<hirofumi@mail.parknet.co.jp> wrote:
-> Jens Axboe <jens.axboe@oracle.com> writes:
+On Thu, May 20, 2010 at 08:28:54PM -0500, Jason Wessel wrote:
+> On 05/20/2010 08:23 PM, Dmitry Torokhov wrote:
+> > On Fri, May 21, 2010 at 11:09:38AM +1000, Stephen Rothwell wrote:
+> >> Hi Jason,
+> >>
+> >> On Thu, 20 May 2010 19:49:51 -0500 Jason Wessel <jason.wessel@windriver.com> wrote:
+> >>> Before brute force toggling it, it seems we should check the value and
+> >>> restore it after the execution of handle_sysrq().
+> >> Indeed, at the time I couldn't find an easy way to do that.
+> >>
+> >>> I'll have to look and see if there is an access function for this.
+> >> Great, thanks.
+> > 
+> > I would not mind re-exporting sysrq_on() again.
+> > 
+> 
+> We could but I don't know that you need to.
+> 
+> Would you be willing to sign off on a change like the one below
+> Dmitry?  If so then I'll push it into kgdb-next.
+> 
+> It is as simple as making the return from sysrq_toggle_support a bit
+> more meaningful.
 >
->>> > Isn't that pretty much what I described?
->>>
->>> Yes, probably. Well, 120kb was still multiple of page size. :)
->>
->> It is, but 120KB/page_size is not (which is the power-of-2 of interest
->> here).
->
-> Um... I have no interest whether rounded-up-size is power-of-2 or
-> not. Because it is implementation detail.
->
-> Anyway, we agreed with "in bytes" and "at least"? If so, I'm happy with
-> it, and I'm sorry if I was just noise.
 
-I thought it was good input!
+I do not think it is a very good idea... What if some other process
+enales SysRq in the mean time. Do we really need to force SysRq on
+or off? Maybe we should export __handle_sysrq() instead?
 
-
+Also, I think I need to add locking in sysrq_toggle_support(), which
+will make it unsuitable for using in kdb handler, won't it?
 
 -- 
-Michael Kerrisk
-Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
-Author of "The Linux Programming Interface" http://blog.man7.org/
+Dmitry
