@@ -1,90 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab0EXVNm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 17:13:42 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:38703 "EHLO mail-out2.uio.no"
+	id S1758035Ab0EXVVU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 17:21:20 -0400
+Received: from crca.org.au ([74.207.252.120]:52369 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757704Ab0EXVNk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 17:13:40 -0400
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100524190828.GS31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
-	 <20100524115903.GP31073@ZenIV.linux.org.uk>
-	 <20100524155031.GQ31073@ZenIV.linux.org.uk>
-	 <1274718082.10795.31.camel@heimdal.trondhjem.org>
-	 <20100524164736.GR31073@ZenIV.linux.org.uk>
-	 <1274720791.10795.50.camel@heimdal.trondhjem.org>
-	 <20100524190828.GS31073@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 May 2010 17:13:32 -0400
-Message-ID: <1274735612.4030.16.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+	id S1757804Ab0EXVVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 17:21:19 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BFAEDC9.1010707@crca.org.au>
+Date: Tue, 25 May 2010 07:21:13 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Pavel Machek <pavel@ucw.cz>
+CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       linux-pm <linux-pm@lists.linux-foundation.org>,
+       Matt Reimer <mattjreimer@gmail.com>
+Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
+ userspace is frozen?
+References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org> <4BF0F3FF.2010603@crca.org.au> <201005172235.37824.rjw@sisk.pl> <4BF1C86B.8000203@crca.org.au> <20100524190206.GL1292@ucw.cz>
+In-Reply-To: <20100524190206.GL1292@ucw.cz>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 11 sum msgs/h 1 total rcpts 338 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 88CAA902B451ACC5D0B57E6DE6030A0D098A0D87
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 170 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 20:08 +0100, Al Viro wrote: 
-> On Mon, May 24, 2010 at 01:06:31PM -0400, Trond Myklebust wrote:
-> 
-> > I believe that the answer is that most filehandle types include an
-> > encoding of the inode number of the export directory. In other words, as
-> > long as '/a' and '/b' are different directories, then they will result
-> > in the generation of different filehandles for /a/x and /b/x.
-> > 
-> > It seems that is not always the case, though. According to the
-> > definition of mk_fsid(), it looks as if the 'FSID_UUID8' and
-> > 'FSID_UUID16' filehandle types only encode the uuid of the filesystem,
-> > and have no inode information. They will therefore not be able to
-> > distinguish between an export through '/a' or '/b'.
-> > 
-> > Neil, Bruce am I right?
-> 
-> Er?  On server:
-> 
-> mount -t ext2 /dev/sdb1 /srv/nfs4
-> mount -t ext2 /dev/sda1 /srv/nfs4/a
-> mount -t ext2 /dev/sda1 /srv/nfs4/b
-> 
-> after that /srv/nfs4/a and /srv/nfs4/b will have the *same* inode, nevermind
-> the inode number.  I really mean the same filesystem mounted twice; if you
-> want to include inumber of mountpoint into fsid, fine, turn the above into
-> 
-> mount -t ext2 /dev/sdb1 /srv/nfs4
-> mount -t ext2 /dev/sda1 /srv/nfs4/a
-> mount -t ext2 /dev/sda1 /srv/nfs4/b
-> mount -t ext2 /dev/sda3 /srv/nfs4/a/z
-> mount -t ext2 /dev/sda3 /srv/nfs4/b/z
-> 
-> At that point you have the same fs (ext2 from sda3) mounted on /srv/nfs4/a/z
-> and /srv/nfs4/b/z, with the same directory inode overmounted by it in both
-> mountpoints.  Suppose your referral point is on /a/z/x and /b/z/x resp. and
-> see the question upthread...
+Hi.
 
-Sorry... I misunderstood you.
+On 25/05/10 05:02, Pavel Machek wrote:
+>
+>>>> - We're dealing with the symptom, not the cause. Almost always a bad idea.
+>>>
+>>> I very much prefer to have a fix for a symptom than no fix at all, which is the
+>>> realistic alternative in this case.
+>>>
+>>> So, I think we should merge the patch and if someone finds the root cause
+>>> at one point in future, then we can just use the *right* approach instead of
+>>> the present one.
+>>>
+>>> The problem is real and people in the field are affected by it, so if you don't
+>>> have a working alternative patch, please just let go.
+>>
+>> I'm not denying that the problem is real. What I am concerned about
+>> is finding a real solution, not just putting a sticky plaster over
+>> the wound. It seems to me to be much wiser to deal with the issue
+>> properly now instead of doing extra work later to diagnose what
+>> might be a harder to reproduce symptom of the same problem. I'd
+>> happily put the time in now myself, but I simply don't have the time
+>> this week.
+>>
+>> Would it be possible to apply the patch, adding some sort of new tag
+>> that can be used to say "This needs further attention", perhaps
+>> including an enduring reference to this conversation. Later, the
+>> 'real' fix could include another special tag that says "Proper fix
+>> for the symptom addressed in commit 5e94f810"?
+>
+> WARN_ON() whenever patch triggers?
 
-In cases like the above, then the default behaviour of the server would
-be to assign the same filehandles to those mount points. The
-administrator can, however, make them different by choosing to use the
-'fsid' mount option to manually assign different fsids to the different
-export points.
+I suppose that would do. I was thinking of a more generic git tag that 
+could perhaps be searched for later, but .. okay.
 
-If not, then the client will automatically group these things in the
-same superblock, so like the server, it too is supposed to share the
-same inode for these different objects. It will then use
-d_obtain_alias() to get a root dentry for that inode (see
-nfs4_get_root()).
-
-Cheers
-  Trond
-
+Nigel
