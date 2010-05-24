@@ -1,53 +1,107 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751416Ab0EXEeB (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 00:34:01 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:42728 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750733Ab0EXEeA (ORCPT
+	id S1750978Ab0EXEnr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 00:43:47 -0400
+Received: from mail-bw0-f46.google.com ([209.85.214.46]:44995 "EHLO
+	mail-bw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1749667Ab0EXEnp convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 00:34:00 -0400
+	Mon, 24 May 2010 00:43:45 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type;
-        b=sX3GwpEkT4SG3SBRCYm2d4HVsBNjaGy3UoQsTUonubZwogQDn8m81bvv0E+NzuWwaA
-         VeyC3pNFAiFOZ9KeNh8b4pSnzgH+D2GnMLYkPosj1hnHZ/N6zhqLRLJoOYJje1lrQDuA
-         bAJvmpZ7DzI9ohvUKnFdfpbcp5DuwN5CI0Adg=
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:from:date:message-id
+         :subject:to:cc:content-type:content-transfer-encoding;
+        b=HG+nmaopB1cvB9E90dHF/vl56gKxymKbBAcf+HjXYt2zh4h+MSJiSgdLuPfz5bq4QC
+         dx0LU5sUy5QyMmYEcec25bupCzmW44ARV9i0U42O2Ta8LX0cbs9q7IEIP3+LRuzxwEVZ
+         OOn5lyu+D5By92FvC+2jva/OjeqrdhUNtWGTY=
 MIME-Version: 1.0
-In-Reply-To: <20100522165401.GB19573@redhat.com>
-References: <1266280229-18469-1-git-send-email-vapier@gentoo.org> 
-	<1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> 
-	<20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> 
-	<20100522165401.GB19573@redhat.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Mon, 24 May 2010 00:33:38 -0400
-Message-ID: <AANLkTinCtKiXjz08FI6EDUKWgLRDd64UVgDawhonZr__@mail.gmail.com>
-Subject: Re: [Uclinux-dist-devel] [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix 
-	the unsafe usage of child->mm
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
+Reply-To: mtk.manpages@gmail.com
+In-Reply-To: <87632e846m.fsf@devron.myhome.or.jp>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> 
+	<AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> 
+	<20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> 
+	<20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> 
+	<20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp>
+From: Michael Kerrisk <mtk.manpages@googlemail.com>
+Date: Mon, 24 May 2010 06:43:22 +0200
+Message-ID: <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com>
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: Jens Axboe <jens.axboe@oracle.com>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org
-Content-Type: text/plain; charset=UTF-8
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22, 2010 at 12:54, Oleg Nesterov wrote:
-> Now that Mike Frysinger unified the FDPIC ptrace code, we can fix
-> the unsafe usage of child->mm in ptrace_request(PTRACE_GETFDPIC).
+On Mon, May 24, 2010 at 3:43 AM, OGAWA Hirofumi
+<hirofumi@mail.parknet.co.jp> wrote:
+> Jens Axboe <jens.axboe@oracle.com> writes:
 >
-> We have the reference to task_struct, and ptrace_check_attach()
-> verified the tracee is stopped. But nothing can protect from
-> SIGKILL after that, we must not assume child->mm != NULL.
+>>> > We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
+>>> > in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
+>>> > power of 2 in pages. So the question is if that makes the API cleaner,
+>>> > passing in number of pages but returning bytes? Or pass in bytes all
+>>> > around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
+>>> > pages if need be. Then it would return a size at least what was passed
+>>> > in, or error.
+>
+> I really think "power of 2 in pages" is simply current implementation
+> detail, not detail of pipe API.
 
-gdb still works with FDPIC apps after this, so presumably it works
-fine :).  ive added it to the Blackfin tree to get more testing on our
-side (not that i'll be pushing it out or anything).
+That's a good point.
 
-thanks!
--mike
+>>> I'd recommend this: Pass it in and out in bytes. Don't round to a
+>>> power of 2. Require the user to know what they are doing. Give an
+>>> error if the user doesn't supply a power-of-2 * page-size for
+>>> F_SETPIPE_SZ. (Again, consider the case of architectures  with
+>>> switchable page sizes.)
+>>
+>> But is there much point in erroring on an incorrect size? If the
+>> application says "I need at least 120kb of space in there", kernel
+>> returns "OK, you got 128kb". Would returning -1/EINVAL for that case
+>> really make a better API? Doesn't seem like it to me.
+>
+> FWIW, my first impression of this was setsockopt(SO_RCV/SNDBUF) of unix
+> socket. Well, API itself wouldn't say "at least this size" or "exactly
+> this size", so, in here, important thing is consistency of interfaces, I
+> think. (And the both is sane API at least for me if those had
+> consistency in the system.)
+>
+> Well, so how about set/get in bytes, and kernel will set "at least
+> specified size" actually like setsockopt(SO_RCV/SNDBUF)?
+
+The "at least" idea makes sense. So, I'd change my recommendation to:
+
+Pass the buffer size in and out in bytes (for consistency with other
+APIs). Round the input (F_SETPIPE_SZ) value up as required by the
+implementation. For the output (F_GETPIPE_SZ) value do one of the
+following:
+a) Return the value given on input.
+b) Return the rounded up value actually used by the kernel.
+
+I suspect (b) might be more useful: if an application cares enough
+about pipe size to want to change it, then at least some such
+applications might care to know exactly the size that the kernel used.
+(And: I can't see any downside to (b).)
+
+One other comment about the interface. We have
+
+                if (!capable(CAP_SYS_ADMIN) && arg > pipe_max_pages)
+                        return -EINVAL;
+
+The usual error on a capability denied is EPERM. Please change.
+
+Cheers,
+
+Michael
+
+
+-- 
+Michael Kerrisk
+Linux man-pages maintainer; http://www.kernel.org/doc/man-pages/
+Author of "The Linux Programming Interface" http://blog.man7.org/
