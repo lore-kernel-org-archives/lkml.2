@@ -1,174 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758672Ab0EXXHO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:07:14 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55309 "EHLO hera.kernel.org"
+	id S1758728Ab0EXXHc (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:07:32 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55325 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758367Ab0EXXHM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:07:12 -0400
-Date: Mon, 24 May 2010 23:06:48 GMT
-From: tip-bot for Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       yinghai@kernel.org, jbohac@novell.com, kerstin.jonsson@ericsson.com,
-       ebiederm@xmission.com, akpm@linux-foundation.org,
-       suresh.b.siddha@intel.com, trenn@suse.de, tglx@linutronix.de,
-       hpa@linux.intel.com, avi@redhat.com
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       jbohac@novell.com, yinghai@kernel.org, kerstin.jonsson@ericsson.com,
-       ebiederm@xmission.com, akpm@linux-foundation.org,
-       suresh.b.siddha@intel.com, trenn@suse.de, tglx@linutronix.de,
-       hpa@linux.intel.com, avi@redhat.com
-In-Reply-To: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
-References: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
+	id S1758405Ab0EXXHa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:07:30 -0400
+Date: Mon, 24 May 2010 23:07:07 GMT
+From: tip-bot for Julia Lawall <julia@diku.dk>
+Cc: linux-kernel@vger.kernel.org, julia@diku.dk, hpa@zytor.com,
+       mingo@redhat.com, akpm@linux-foundation.org, tglx@linutronix.de,
+       hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, julia@diku.dk,
+       linux-kernel@vger.kernel.org, akpm@linux-foundation.org,
+       tglx@linutronix.de, hpa@linux.intel.com
+In-Reply-To: <201005241913.o4OJDG3R010871@imap1.linux-foundation.org>
+References: <201005241913.o4OJDG3R010871@imap1.linux-foundation.org>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, apic: ack all pending irqs when crashed/on kexec
-Message-ID: <tip-8c3ba8d049247dc06b6dcee1711a11b26647aa44@git.kernel.org>
-Git-Commit-ID: 8c3ba8d049247dc06b6dcee1711a11b26647aa44
+Subject: [tip:x86/urgent] arch/x86/pci: use kasprintf
+Message-ID: <tip-b46fc5f235be04a7f77fb2af1d8cb809889c25c1@git.kernel.org>
+Git-Commit-ID: b46fc5f235be04a7f77fb2af1d8cb809889c25c1
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 24 May 2010 23:06:49 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 24 May 2010 23:07:10 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  8c3ba8d049247dc06b6dcee1711a11b26647aa44
-Gitweb:     http://git.kernel.org/tip/8c3ba8d049247dc06b6dcee1711a11b26647aa44
-Author:     Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-AuthorDate: Mon, 24 May 2010 12:13:15 -0700
+Commit-ID:  b46fc5f235be04a7f77fb2af1d8cb809889c25c1
+Gitweb:     http://git.kernel.org/tip/b46fc5f235be04a7f77fb2af1d8cb809889c25c1
+Author:     Julia Lawall <julia@diku.dk>
+AuthorDate: Mon, 24 May 2010 12:13:16 -0700
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 24 May 2010 13:31:35 -0700
+CommitDate: Mon, 24 May 2010 13:31:45 -0700
 
-x86, apic: ack all pending irqs when crashed/on kexec
+arch/x86/pci: use kasprintf
 
-When the SMP kernel decides to crash_kexec() the local APICs may have
-pending interrupts in their vector tables.
+kasprintf combines kmalloc and sprintf, and takes care of the size
+calculation itself.
 
-The setup routine for the local APIC has a deficient mechanism for
-clearing these interrupts, it only handles interrupts that has already
-been dispatched to the local core for servicing (the ISR register) safely,
-it doesn't consider lower prioritized queued interrupts stored in the IRR
-register.
+The semantic patch that makes this change is as follows:
+(http://coccinelle.lip6.fr/)
 
-If you have more than one pending interrupt within the same 32 bit word in
-the LAPIC vector table registers you may find yourself entering the IO
-APIC setup with pending interrupts left in the LAPIC.  This is a situation
-for wich the IO APIC setup is not prepared.  Depending of what/which
-interrupt vector/vectors are stuck in the APIC tables your system may show
-various degrees of malfunctioning.  That was the reason why the
-check_timer() failed in our system, the timer interrupts was blocked by
-pending interrupts from the old kernel when routed trough the IO APIC.
+// <smpl>
+@@
+expression a,flag;
+expression list args;
+statement S;
+@@
 
-Additional comment from Jiri Bohac:
-==============
-If this should go into stable release,
-I'd add some kind of limit on the number of iterations, just to be safe from
-hard to debug lock-ups:
+  a =
+-  \(kmalloc\|kzalloc\)(...,flag)
++  kasprintf(flag,args)
+  <... when != a
+  if (a == NULL || ...) S
+  ...>
+- sprintf(a,args);
+// </smpl>
 
-+if (loops++  > MAX_LOOPS) {
-+        printk("LAPIC pending clean-up")
-+        break;
-+}
- while (queued);
-
-with MAX_LOOPS something like 1E9 this would leave plenty of time for the
-pending IRQs to be cleared and would and still cause at most a second of delay
-if the loop were to lock-up for whatever reason.
-
-[trenn@suse.de:
-
-V2: Use tsc if avail to bail out after 1 sec due to possible virtual
-    apic_read calls which may take rather long (suggested by: Avi Kivity
-    <avi@redhat.com>) If no tsc is available bail out quickly after
-    cpu_khz, if we broke out too early and still have irqs pending (which
-    should never happen?) we still get a WARN_ON...
-
-V3: - Fixed indentation -> checkpatch clean
-    - max_loops must be signed
-
-V4: - Fix typo, mixed up tsc and ntsc in first rdtscll() call
-
-V5: Adjust WARN_ON() condition to also catch error in cpu_has_tsc case]
-
-Cc: <jbohac@novell.com>
-Cc: Yinghai Lu <yinghai@kernel.org>
-Cc: Kerstin Jonsson <kerstin.jonsson@ericsson.com>
-Cc: Avi Kivity <avi@redhat.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
-Tested-by: Eric W. Biederman <ebiederm@xmission.com>
-Signed-off-by: Thomas Renninger <trenn@suse.de>
-LKML-Reference: <201005241913.o4OJDGWM010865@imap1.linux-foundation.org>
+Signed-off-by: Julia Lawall <julia@diku.dk>
+LKML-Reference: <201005241913.o4OJDG3R010871@imap1.linux-foundation.org>
 Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/apic/apic.c |   41 +++++++++++++++++++++++++++++++++--------
- 1 files changed, 33 insertions(+), 8 deletions(-)
+ arch/x86/pci/acpi.c |    3 +--
+ 1 files changed, 1 insertions(+), 2 deletions(-)
 
-diff --git a/arch/x86/kernel/apic/apic.c b/arch/x86/kernel/apic/apic.c
-index e5a4a1e..c02cc69 100644
---- a/arch/x86/kernel/apic/apic.c
-+++ b/arch/x86/kernel/apic/apic.c
-@@ -51,6 +51,7 @@
- #include <asm/smp.h>
- #include <asm/mce.h>
- #include <asm/kvm_para.h>
-+#include <asm/tsc.h>
+diff --git a/arch/x86/pci/acpi.c b/arch/x86/pci/acpi.c
+index 31930fd..7c0ad63 100644
+--- a/arch/x86/pci/acpi.c
++++ b/arch/x86/pci/acpi.c
+@@ -207,10 +207,9 @@ get_current_resources(struct acpi_device *device, int busnum,
+ 	if (!info.res)
+ 		goto res_alloc_fail;
  
- unsigned int num_processors;
+-	info.name = kmalloc(16, GFP_KERNEL);
++	info.name = kasprintf(GFP_KERNEL, "PCI Bus %04x:%02x", domain, busnum);
+ 	if (!info.name)
+ 		goto name_alloc_fail;
+-	sprintf(info.name, "PCI Bus %04x:%02x", domain, busnum);
  
-@@ -1151,8 +1152,13 @@ static void __cpuinit lapic_setup_esr(void)
-  */
- void __cpuinit setup_local_APIC(void)
- {
--	unsigned int value;
--	int i, j;
-+	unsigned int value, queued;
-+	int i, j, acked = 0;
-+	unsigned long long tsc = 0, ntsc;
-+	long long max_loops = cpu_khz;
-+
-+	if (cpu_has_tsc)
-+		rdtscll(tsc);
- 
- 	if (disable_apic) {
- 		arch_disable_smp_support();
-@@ -1204,13 +1210,32 @@ void __cpuinit setup_local_APIC(void)
- 	 * the interrupt. Hence a vector might get locked. It was noticed
- 	 * for timer irq (vector 0x31). Issue an extra EOI to clear ISR.
- 	 */
--	for (i = APIC_ISR_NR - 1; i >= 0; i--) {
--		value = apic_read(APIC_ISR + i*0x10);
--		for (j = 31; j >= 0; j--) {
--			if (value & (1<<j))
--				ack_APIC_irq();
-+	do {
-+		queued = 0;
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--)
-+			queued |= apic_read(APIC_IRR + i*0x10);
-+
-+		for (i = APIC_ISR_NR - 1; i >= 0; i--) {
-+			value = apic_read(APIC_ISR + i*0x10);
-+			for (j = 31; j >= 0; j--) {
-+				if (value & (1<<j)) {
-+					ack_APIC_irq();
-+					acked++;
-+				}
-+			}
- 		}
--	}
-+		if (acked > 256) {
-+			printk(KERN_ERR "LAPIC pending interrupts after %d EOI\n",
-+			       acked);
-+			break;
-+		}
-+		if (cpu_has_tsc) {
-+			rdtscll(ntsc);
-+			max_loops = (cpu_khz << 10) - (ntsc - tsc);
-+		} else
-+			max_loops--;
-+	} while (queued && max_loops > 0);
-+	WARN_ON(max_loops <= 0);
- 
- 	/*
- 	 * Now that we are all set up, enable the APIC
+ 	info.res_num = 0;
+ 	acpi_walk_resources(device->handle, METHOD_NAME__CRS, setup_resource,
