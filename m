@@ -1,71 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933335Ab0EXXcY (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:32:24 -0400
-Received: from tx2ehsobe003.messaging.microsoft.com ([65.55.88.13]:12694 "EHLO
-	TX2EHSOBE006.bigfish.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932264Ab0EXXcM (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:32:12 -0400
-X-SpamScore: -32
-X-BigFish: VPS-32(zz1432P1453M98dN936eM9371Pzz1202hzzz2fh2a8h61h)
-X-Spam-TCS-SCL: 0:0
-Message-ID: <4BFB0C77.2030904@am.sony.com>
-Date: Mon, 24 May 2010 16:32:07 -0700
-From: Tim Bird <tim.bird@am.sony.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S932328Ab0EXXgT (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:36:19 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43348 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932177Ab0EXXgR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:36:17 -0400
+Date: Mon, 24 May 2010 19:35:52 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Will Drewry <wad@chromium.org>
+Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 3/3] dm: lookup devices by path with name_to_dev_t
+Message-ID: <20100524233552.GA7204@redhat.com>
+References: <1274294304-30606-1-git-send-email-wad@chromium.org>
+ <1274294304-30606-3-git-send-email-wad@chromium.org>
+ <20100524115737.GY3991@agk-dp.fab.redhat.com>
+ <AANLkTik8F43_4SRkH7XpfX5CTQ-xQ_8f3_yJTjDqSulU@mail.gmail.com>
+ <20100524150729.GZ3991@agk-dp.fab.redhat.com>
+ <AANLkTinlgQ5Br4vyjgvNKtHD4F3mZKwoz3siYCQyReAl@mail.gmail.com>
 MIME-Version: 1.0
-To: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Subject: Re: FUNCTION_TRACER: can it be used to trace early bootup functions
-References: <06EE497F774E482693005209CB740D6A@rainbow>
-In-Reply-To: <06EE497F774E482693005209CB740D6A@rainbow>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 7bit
-X-Reverse-DNS: mail7.fw-bc.sony.com
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinlgQ5Br4vyjgvNKtHD4F3mZKwoz3siYCQyReAl@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2010 11:55 PM, Iram Shahzad wrote:
-> Hi
+On Mon, May 24 2010 at 12:35pm -0400,
+Will Drewry <wad@chromium.org> wrote:
+
+> On Mon, May 24, 2010 at 10:07 AM, Alasdair G Kergon <agk@redhat.com> wrote:
+> > On Mon, May 24, 2010 at 09:44:07AM -0500, Will Drewry wrote:
+> >> fwiw, the only reason for the copy was because |path| is a
+> >> const in the function but not when passed to name_to_dev_t.
+> >> I wasn't sure what the preferred practice was so I just duped
+> >> the data needed.
+> >
+> > Well check that it is treated as 'const' and send a separate patch to
+> > the maintainer to add const, perhaps?  If it isn't const (why would
+> > that be?), then yes we'd need to copy it.
 > 
-> I would like to know whether the Kernel Function Tracer
-> (kernel/trace/trace_functions) be used to trace early kernel
-> bootup functions starting from start_kernel?
-> My arch is ARM, by the way.
->
-> 
-> I have done some trials but it doesn't seem to trace early
-> bootup functions. I even made it the default tracer replacing
-> the nop tracer, but still it doesn't give me trace from
-> start_kernel.
-> 
-> Looking at the source code, it seems to me that it starts
-> recording data only after its own initialization. So does it
-> mean that by design it does not support early tracing?
-By design, the trace code is initialized during
-initcall processing.  This means you miss all initialization
-up to this point in the kernel.
+> I'll cross-check the code again and send a patch out if it looks like
+> it is const-safe.
 
-Measuring this on my own ARM platforms, I have found that
-this results in missing about the first 50 milliseconds
-of kernel initialization (from start_kernel() to the
-tracer initialization).  For me, this is not a big
-problem.  Note that you can't measure the period
-of time from start_kernel() to whenever the ARM memory
-and clocks are initialized.
+Also, it would see that name_to_dev_t is EXPORT_SYMBOL?
 
-IMHO the best way to measure stuff between the end
-of bootloader and tracer initialization is with an
-external tracer, like http://elinux.org/Grabserial
-and using CONFIG_DEBUG_LL, and your own calls to
-printascii() on ARM.
- -- Tim
-
-=============================
-Tim Bird
-Architecture Group Chair, CE Linux Forum
-Senior Staff Engineer, Sony Network Entertainment
-=============================
-
+Mike
