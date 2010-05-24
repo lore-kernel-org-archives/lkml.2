@@ -1,69 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932158Ab0EXXS1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:18:27 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:50808 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758557Ab0EXXS0 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:18:26 -0400
+	id S932250Ab0EXXTA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:19:00 -0400
+Received: from kroah.org ([198.145.64.141]:33897 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758557Ab0EXXS7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:18:59 -0400
+Date: Mon, 24 May 2010 16:18:40 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/39] 2.6.33.5-stable review
+Message-ID: <20100524231840.GA17857@kroah.com>
 MIME-Version: 1.0
-Message-ID: <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default>
-Date: Mon, 24 May 2010 16:16:26 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: john stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>
-Cc: Brian Bloniarz <bmb@athenacr.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com>
- <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
- <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
- <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com>
- <1274733566.2954.73.camel@localhost.localdomain>
- <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com
- 1274741362.2954.80.camel@localhost.localdomain>
-In-Reply-To: <1274741362.2954.80.camel@localhost.localdomain>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090201.4BFB092E.000B:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: john stultz [mailto:johnstul@us.ibm.com]
-> Also, you don't really need extra accuracy, you just need it to be the
-> same from boot to boot. NTP keeps the correction factor persistent from
-> boot to boot via the drift file. The boot argument is just trying to
-> save the time (possibly hours depending on ntp config) after a reboot
-> for NTP to correct for the new error introduced by calibration.
+---- NOTE ----
+I have only included patches that were released in kernels up to the
+2.6.34 release.  Nothing that was requested to be in a stable release
+that showed up in Linus's tree _after_ 2.6.34 has been included here, I
+had to draw the line somewhere.
+--------------
 
-I was assuming that extra accuracy would decrease the ntp
-convergence time by about the same factor (5-6 bits of extra
-accuracy would decrease ntp convergence time by 32-64x).
-Is that an incorrect assumption?
+This is the start of the stable review cycle for the 2.6.33.5
+release.  There are 39 patches in this series, all will be posted as a
+response to this one.  If anyone has any issues with these being
+applied, please let us know.  If anyone is a maintainer of the proper
+subsystem, and wants to add a Signed-off-by: line to the patch, please
+respond with it.
 
-> From: H. Peter Anvin [mailto:hpa@zytor.com]
-> A longer sample would make sense if the goal is to freeze it into a
-> kernel command line variable, but the real question is how many people
-> would actually do that (and how many people would then suffer problems
-> because they upgraded their CPU/mobo and got massive failures on post-
-> boot.)
+Responses should be made by Wed May 26, 22:00:00 UTC 2010
+Anything received after that time might be too late.
 
-Not sure why upgraded mobo's would fail due to a longer sample?
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.33.5-rc1.gz
+and the diffstat can be found below.
 
-As more and more systems become dependent on clocksource==tsc
-and more and more people assume nanosecond-class measurements
-are relatively accurate, I'd expect the accuracy of tsc_khz
-to become more important.  While desktop users might bristle
-at an extra second of boot delay, I'll bet many server
-farm administrators would gladly pay that upfront cost
-if they know an option exists.
+thanks,
+
+greg k-h
+
+ Documentation/filesystems/proc.txt        |    3 +-
+ Makefile                                  |    2 +-
+ arch/powerpc/include/asm/hw_irq.h         |   38 --------
+ arch/powerpc/kernel/asm-offsets.c         |    1 -
+ arch/powerpc/kernel/entry_64.S            |    9 --
+ arch/powerpc/kernel/irq.c                 |    6 -
+ arch/powerpc/kernel/time.c                |   60 ++++++++++---
+ arch/s390/kernel/ptrace.c                 |    5 +-
+ arch/x86/include/asm/k8.h                 |    5 +
+ arch/x86/kernel/cpu/intel_cacheinfo.c     |    4 +
+ arch/x86/kernel/process.c                 |   12 ++-
+ crypto/authenc.c                          |   16 ++-
+ drivers/acpi/sleep.c                      |   90 +------------------
+ drivers/char/tty_io.c                     |    1 +
+ drivers/gpu/drm/i915/i915_drv.c           |    4 +-
+ drivers/gpu/drm/i915/i915_drv.h           |    4 +
+ drivers/gpu/drm/i915/i915_gem.c           |  145 ++++++++++++++++++++++++++---
+ drivers/gpu/drm/i915/i915_irq.c           |    8 +-
+ drivers/gpu/drm/i915/i915_reg.h           |   11 ++
+ drivers/gpu/drm/i915/intel_display.c      |    2 +-
+ drivers/hwmon/hp_accel.c                  |    2 +-
+ drivers/mmc/host/atmel-mci.c              |   14 ++-
+ drivers/net/wireless/ath/ath9k/xmit.c     |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-4965.c   |    5 +
+ drivers/net/wireless/iwlwifi/iwl-5000.c   |    5 +
+ drivers/net/wireless/iwlwifi/iwl-agn-rs.c |   15 +++-
+ drivers/net/wireless/iwlwifi/iwl-tx.c     |   18 +++-
+ drivers/s390/block/dasd.c                 |   17 ++--
+ drivers/serial/imx.c                      |   10 ++-
+ drivers/video/bfin-t350mcqb-fb.c          |   15 ++--
+ fs/btrfs/ioctl.c                          |    5 +
+ fs/cachefiles/security.c                  |    4 +
+ fs/cifs/cifsglob.h                        |    1 +
+ fs/cifs/inode.c                           |   21 ++++-
+ fs/compat.c                               |    2 -
+ fs/exec.c                                 |    2 -
+ fs/nilfs2/super.c                         |    1 +
+ fs/notify/inotify/inotify_fsnotify.c      |    2 +
+ fs/notify/inotify/inotify_user.c          |    9 +-
+ fs/proc/array.c                           |    3 +-
+ fs/proc/task_mmu.c                        |   19 ----
+ include/asm-generic/dma-mapping-common.h  |    4 +-
+ include/linux/sched.h                     |    1 -
+ kernel/fork.c                             |    2 -
+ kernel/profile.c                          |    4 +-
+ mm/hugetlb.c                              |    2 +-
+ net/ipv4/udp.c                            |    6 +-
+ security/min_addr.c                       |    2 +-
+ sound/pci/hda/hda_intel.c                 |    1 +
+ sound/pci/hda/patch_conexant.c            |    7 +-
+ sound/pci/hda/patch_realtek.c             |    1 -
+ sound/pci/hda/patch_sigmatel.c            |    6 +-
+ sound/pci/ice1712/maya44.c                |    6 +-
+ sound/pci/oxygen/xonar_cs43xx.c           |    3 +
+ 54 files changed, 372 insertions(+), 273 deletions(-)
