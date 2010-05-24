@@ -1,78 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758761Ab0EXXIJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:08:09 -0400
-Received: from hera.kernel.org ([140.211.167.34]:55360 "EHLO hera.kernel.org"
+	id S1759131Ab0EXXKG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:10:06 -0400
+Received: from kroah.org ([198.145.64.141]:36563 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758378Ab0EXXIG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:08:06 -0400
-Date: Mon, 24 May 2010 23:07:45 GMT
-From: tip-bot for Gabor Gombas <gombasg@digikabel.hu>
-Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
-       hpa@linux.intel.com, gombasg@digikabel.hu
-Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       akpm@linux-foundation.org, stable@kernel.org, tglx@linutronix.de,
-       hpa@linux.intel.com, gombasg@digikabel.hu
-In-Reply-To: <201005241913.o4OJDIMM010877@imap1.linux-foundation.org>
-References: <201005241913.o4OJDIMM010877@imap1.linux-foundation.org>
-To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, setup: Phoenix BIOS fixup is needed on Dell Inspiron Mini 1012
-Message-ID: <tip-3d6e77a3ddb8e4156b89f4273ff8c7d37abaf781@git.kernel.org>
-Git-Commit-ID: 3d6e77a3ddb8e4156b89f4273ff8c7d37abaf781
-X-Mailer: tip-git-log-daemon
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 24 May 2010 23:07:47 +0000 (UTC)
+	id S1759080Ab0EXXJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:42 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
+Message-Id: <20100524230352.273110922@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 16:00:05 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Herbert Xu <herbert@gondor.hengli.com.au>
+Subject: [33/34] crypto: authenc - Add EINPROGRESS check
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  3d6e77a3ddb8e4156b89f4273ff8c7d37abaf781
-Gitweb:     http://git.kernel.org/tip/3d6e77a3ddb8e4156b89f4273ff8c7d37abaf781
-Author:     Gabor Gombas <gombasg@digikabel.hu>
-AuthorDate: Mon, 24 May 2010 12:13:18 -0700
-Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Mon, 24 May 2010 13:33:14 -0700
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-x86, setup: Phoenix BIOS fixup is needed on Dell Inspiron Mini 1012
+------------------
 
-The low-memory corruption checker triggers during suspend/resume, so we
-need to reserve the low 64k.  Don't be fooled that the BIOS identifies
-itself as "Dell Inc.", it's still Phoenix BIOS.
+From: Herbert Xu <herbert@gondor.apana.org.au>
 
-[ hpa: I think we blacklist almost every BIOS in existence.  We should
-either change this to a whitelist or just make it unconditional. ]
+commit 180ce7e81030e1ef763d58f97f9ab840ff57d848 upstream.
 
-Signed-off-by: Gabor Gombas <gombasg@digikabel.hu>
-LKML-Reference: <201005241913.o4OJDIMM010877@imap1.linux-foundation.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
-Cc: <stable@kernel.org>
+When Steffen originally wrote the authenc async hash patch, he
+correctly had EINPROGRESS checks in place so that we did not invoke
+the original completion handler with it.
+
+Unfortuantely I told him to remove it before the patch was applied.
+
+As only MAY_BACKLOG request completion handlers are required to
+handle EINPROGRESS completions, those checks are really needed.
+
+This patch restores them.
+
+Reported-by: Sebastian Andrzej Siewior <sebastian@breakpoint.cc>
+Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- arch/x86/kernel/setup.c |   11 +++++++++++
- 1 files changed, 11 insertions(+), 0 deletions(-)
+ crypto/authenc.c |   16 +++++++++++-----
+ 1 file changed, 11 insertions(+), 5 deletions(-)
 
-diff --git a/arch/x86/kernel/setup.c b/arch/x86/kernel/setup.c
-index e802989..b4ae4ac 100644
---- a/arch/x86/kernel/setup.c
-+++ b/arch/x86/kernel/setup.c
-@@ -676,6 +676,17 @@ static struct dmi_system_id __initdata bad_bios_dmi_table[] = {
- 			DMI_MATCH(DMI_BOARD_NAME, "DG45FC"),
- 		},
- 	},
-+	/*
-+	 * The Dell Inspiron Mini 1012 has DMI_BIOS_VENDOR = "Dell Inc.", so
-+	 * match on the product name.
-+	 */
-+	{
-+		.callback = dmi_low_memory_corruption,
-+		.ident = "Phoenix BIOS",
-+		.matches = {
-+			DMI_MATCH(DMI_PRODUCT_NAME, "Inspiron 1012"),
-+		},
-+	},
- #endif
- 	{}
+--- a/crypto/authenc.c
++++ b/crypto/authenc.c
+@@ -46,6 +46,12 @@ struct authenc_request_ctx {
+ 	char tail[];
  };
+ 
++static void authenc_request_complete(struct aead_request *req, int err)
++{
++	if (err != -EINPROGRESS)
++		aead_request_complete(req, err);
++}
++
+ static int crypto_authenc_setkey(struct crypto_aead *authenc, const u8 *key,
+ 				 unsigned int keylen)
+ {
+@@ -142,7 +148,7 @@ static void authenc_geniv_ahash_update_d
+ 				 crypto_aead_authsize(authenc), 1);
+ 
+ out:
+-	aead_request_complete(req, err);
++	authenc_request_complete(req, err);
+ }
+ 
+ static void authenc_geniv_ahash_done(struct crypto_async_request *areq, int err)
+@@ -208,7 +214,7 @@ static void authenc_verify_ahash_update_
+ 	err = crypto_ablkcipher_decrypt(abreq);
+ 
+ out:
+-	aead_request_complete(req, err);
++	authenc_request_complete(req, err);
+ }
+ 
+ static void authenc_verify_ahash_done(struct crypto_async_request *areq,
+@@ -245,7 +251,7 @@ static void authenc_verify_ahash_done(st
+ 	err = crypto_ablkcipher_decrypt(abreq);
+ 
+ out:
+-	aead_request_complete(req, err);
++	authenc_request_complete(req, err);
+ }
+ 
+ static u8 *crypto_authenc_ahash_fb(struct aead_request *req, unsigned int flags)
+@@ -379,7 +385,7 @@ static void crypto_authenc_encrypt_done(
+ 		err = crypto_authenc_genicv(areq, iv, 0);
+ 	}
+ 
+-	aead_request_complete(areq, err);
++	authenc_request_complete(areq, err);
+ }
+ 
+ static int crypto_authenc_encrypt(struct aead_request *req)
+@@ -418,7 +424,7 @@ static void crypto_authenc_givencrypt_do
+ 		err = crypto_authenc_genicv(areq, greq->giv, 0);
+ 	}
+ 
+-	aead_request_complete(areq, err);
++	authenc_request_complete(areq, err);
+ }
+ 
+ static int crypto_authenc_givencrypt(struct aead_givcrypt_request *req)
+
+
