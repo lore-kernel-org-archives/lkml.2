@@ -1,77 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758817Ab0EXXJR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:17 -0400
-Received: from kroah.org ([198.145.64.141]:36356 "EHLO coco.kroah.org"
+	id S1758793Ab0EXXJE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:09:04 -0400
+Received: from kroah.org ([198.145.64.141]:36350 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758798Ab0EXXJO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:14 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:49 2010
-Message-Id: <20100524230349.439835687@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:33 -0700
+	id S1758242Ab0EXXJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:03 -0400
+Date: Mon, 24 May 2010 16:04:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       =?ISO-8859-15?q?Bj=C3=B8rn=20Mork?= <bjorn@mork.no>,
-       Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: [01/34] ipv4: udp: fix short packet and bad checksum logging
-In-Reply-To: <20100524230418.GA12770@kroah.com>
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/34] 2.6.32.14-stable review
+Message-ID: <20100524230418.GA12770@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.34-stable review patch.  If anyone has any objections, please let us know.
+---- NOTE ----
+I have only included patches that were released in kernels up to the
+2.6.34 release.  Nothing that was requested to be in a stable release
+that showed up in Linus's tree _after_ 2.6.34 has been included here, I
+had to draw the line somewhere.
+--------------
 
-------------------
+This is the start of the stable review cycle for the 2.6.32.14 release.
+There are 34 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-From: Bjørn Mork <bjorn@mork.no>
+Responses should be made by Wed May 26, 22:00:00 UTC 2010
+Anything received after that time might be too late.
 
-commit ccc2d97cb7c798e785c9f198de243e2b59f7073b upstream.
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.14-rc1.gz
+and the diffstat can be found below.
 
-commit 2783ef23 moved the initialisation of saddr and daddr after
-pskb_may_pull() to avoid a potential data corruption.  Unfortunately
-also placing it after the short packet and bad checksum error paths,
-where these variables are used for logging.  The result is bogus
-output like
+thanks,
 
-[92238.389505] UDP: short packet: From 2.0.0.0:65535 23715/178 to 0.0.0.0:65535
+greg k-h
 
-Moving the saddr and daddr initialisation above the error paths, while still
-keeping it after the pskb_may_pull() to keep the fix from commit 2783ef23.
-
-Signed-off-by: Bjørn Mork <bjorn@mork.no>
-Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-Signed-off-by: David S. Miller <davem@davemloft.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- net/ipv4/udp.c |    6 +++---
- 1 file changed, 3 insertions(+), 3 deletions(-)
-
---- a/net/ipv4/udp.c
-+++ b/net/ipv4/udp.c
-@@ -1292,6 +1292,9 @@ int __udp4_lib_rcv(struct sk_buff *skb,
- 
- 	uh   = udp_hdr(skb);
- 	ulen = ntohs(uh->len);
-+	saddr = ip_hdr(skb)->saddr;
-+	daddr = ip_hdr(skb)->daddr;
-+
- 	if (ulen > skb->len)
- 		goto short_packet;
- 
-@@ -1305,9 +1308,6 @@ int __udp4_lib_rcv(struct sk_buff *skb,
- 	if (udp4_csum_init(skb, uh, proto))
- 		goto csum_error;
- 
--	saddr = ip_hdr(skb)->saddr;
--	daddr = ip_hdr(skb)->daddr;
--
- 	if (rt->rt_flags & (RTCF_BROADCAST|RTCF_MULTICAST))
- 		return __udp4_lib_mcast_deliver(net, skb, uh,
- 				saddr, daddr, udptable);
-
-
+ Documentation/filesystems/proc.txt       |    5 +-
+ Makefile                                 |    2 +-
+ arch/parisc/kernel/pci.c                 |    7 +--
+ arch/powerpc/include/asm/hw_irq.h        |   38 ------------
+ arch/powerpc/kernel/asm-offsets.c        |    1 -
+ arch/powerpc/kernel/entry_64.S           |    9 ---
+ arch/powerpc/kernel/irq.c                |    6 --
+ arch/powerpc/kernel/time.c               |   60 +++++++++++++++----
+ arch/s390/kernel/ptrace.c                |    5 +-
+ arch/x86/include/asm/k8.h                |    5 ++
+ arch/x86/kernel/cpu/intel_cacheinfo.c    |    4 +
+ arch/x86/kernel/process.c                |   12 ++--
+ crypto/authenc.c                         |   16 ++++--
+ drivers/acpi/sleep.c                     |   90 +-----------------------------
+ drivers/hwmon/hp_accel.c                 |    2 +-
+ drivers/mmc/host/atmel-mci.c             |   14 +++--
+ drivers/net/wireless/ath/ath9k/xmit.c    |    4 +-
+ drivers/net/wireless/iwlwifi/iwl-4965.c  |    5 ++
+ drivers/net/wireless/iwlwifi/iwl-5000.c  |    5 ++
+ drivers/net/wireless/p54/eeprom.c        |   31 ++++++----
+ drivers/scsi/megaraid/megaraid_sas.c     |   18 +++++-
+ drivers/serial/imx.c                     |   10 +++-
+ drivers/video/bfin-t350mcqb-fb.c         |   15 +++--
+ fs/btrfs/ioctl.c                         |    5 ++
+ fs/cachefiles/security.c                 |    4 +
+ fs/cifs/cifsglob.h                       |    1 +
+ fs/cifs/inode.c                          |   21 ++++++-
+ fs/compat.c                              |    2 -
+ fs/exec.c                                |    2 -
+ fs/nilfs2/super.c                        |    1 +
+ fs/notify/inotify/inotify_fsnotify.c     |    2 +
+ fs/notify/inotify/inotify_user.c         |    9 ++-
+ fs/proc/array.c                          |   92 +-----------------------------
+ fs/proc/task_mmu.c                       |   19 ------
+ include/asm-generic/dma-mapping-common.h |    4 +-
+ include/linux/sched.h                    |    1 -
+ kernel/fork.c                            |    2 -
+ kernel/profile.c                         |    4 +-
+ mm/hugetlb.c                             |    2 +-
+ net/ipv4/udp.c                           |    6 +-
+ security/min_addr.c                      |    2 +-
+ sound/pci/hda/hda_intel.c                |    1 +
+ sound/pci/hda/patch_conexant.c           |    7 +-
+ sound/pci/ice1712/maya44.c               |    6 +-
+ 44 files changed, 212 insertions(+), 345 deletions(-)
