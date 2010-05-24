@@ -1,96 +1,271 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755874Ab0EXCex (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 22:34:53 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:54751 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1754251Ab0EXCev (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 22:34:51 -0400
-Message-ID: <4BF9E50B.6010205@cn.fujitsu.com>
-Date: Mon, 24 May 2010 10:31:39 +0800
-From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1755940Ab0EXCfK (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 22:35:10 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58664 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755912Ab0EXCfB convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 22:35:01 -0400
 MIME-Version: 1.0
-To: Avi Kivity <avi@redhat.com>
-CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
-       KVM list <kvm@vger.kernel.org>
-Subject: Re: [PATCH 2/2] KVM: MMU: allow more page become unsync at getting
- sp time
-References: <4BF91C34.6020904@cn.fujitsu.com> <4BF91C82.8050308@cn.fujitsu.com> <4BF9378B.4080703@redhat.com>
-In-Reply-To: <4BF9378B.4080703@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+In-Reply-To: <1274266017-18660-1-git-send-email-daniel@caiaq.de>
+References: <20100519103448.GH5202@pengutronix.de>
+	 <1274266017-18660-1-git-send-email-daniel@caiaq.de>
+Date: Sun, 23 May 2010 22:34:59 -0400
+Message-ID: <AANLkTikffmoWofbIo2h6zw-VW5aKEH8T_b0vMfKdo3KJ@mail.gmail.com>
+Subject: Re: [PATCH] drivers/media/dvb/dvb-usb/dib0700: fix return values
+From: Devin Heitmueller <dheitmueller@kernellabs.com>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+       linux-media@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 19, 2010 at 6:46 AM, Daniel Mack <daniel@caiaq.de> wrote:
+> Propagte correct error values instead of returning -1 which just means
+> -EPERM ("Permission denied")
+>
+> While at it, also fix some coding style violations.
+>
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
+> Cc: linux-media@vger.kernel.org
+> ---
+>  drivers/media/dvb/dvb-usb/dib0700_core.c |   82 +++++++++++++++--------------
+>  1 files changed, 42 insertions(+), 40 deletions(-)
+>
+> diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
+> index 4f961d2..45aec3a 100644
+> --- a/drivers/media/dvb/dvb-usb/dib0700_core.c
+> +++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
+> @@ -53,7 +53,7 @@ static int dib0700_ctrl_wr(struct dvb_usb_device *d, u8 *tx, u8 txlen)
+>        int status;
+>
+>        deb_data(">>> ");
+> -       debug_dump(tx,txlen,deb_data);
+> +       debug_dump(tx, txlen, deb_data);
+>
+>        status = usb_control_msg(d->udev, usb_sndctrlpipe(d->udev,0),
+>                tx[0], USB_TYPE_VENDOR | USB_DIR_OUT, 0, 0, tx, txlen,
+> @@ -98,7 +98,7 @@ int dib0700_ctrl_rd(struct dvb_usb_device *d, u8 *tx, u8 txlen, u8 *rx, u8 rxlen
+>                deb_info("ep 0 read error (status = %d)\n",status);
+>
+>        deb_data("<<< ");
+> -       debug_dump(rx,rxlen,deb_data);
+> +       debug_dump(rx, rxlen, deb_data);
+>
+>        return status; /* length in case of success */
+>  }
+> @@ -106,28 +106,29 @@ int dib0700_ctrl_rd(struct dvb_usb_device *d, u8 *tx, u8 txlen, u8 *rx, u8 rxlen
+>  int dib0700_set_gpio(struct dvb_usb_device *d, enum dib07x0_gpios gpio, u8 gpio_dir, u8 gpio_val)
+>  {
+>        u8 buf[3] = { REQUEST_SET_GPIO, gpio, ((gpio_dir & 0x01) << 7) | ((gpio_val & 0x01) << 6) };
+> -       return dib0700_ctrl_wr(d,buf,3);
+> +       return dib0700_ctrl_wr(d, buf, sizeof(buf));
+>  }
+>
+>  static int dib0700_set_usb_xfer_len(struct dvb_usb_device *d, u16 nb_ts_packets)
+>  {
+> -    struct dib0700_state *st = d->priv;
+> -    u8 b[3];
+> -    int ret;
+> -
+> -    if (st->fw_version >= 0x10201) {
+> -       b[0] = REQUEST_SET_USB_XFER_LEN;
+> -       b[1] = (nb_ts_packets >> 8)&0xff;
+> -       b[2] = nb_ts_packets & 0xff;
+> -
+> -       deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
+> -
+> -       ret = dib0700_ctrl_wr(d, b, 3);
+> -    } else {
+> -       deb_info("this firmware does not allow to change the USB xfer len\n");
+> -       ret = -EIO;
+> -    }
+> -    return ret;
+> +       struct dib0700_state *st = d->priv;
+> +       u8 b[3];
+> +       int ret;
+> +
+> +       if (st->fw_version >= 0x10201) {
+> +               b[0] = REQUEST_SET_USB_XFER_LEN;
+> +               b[1] = (nb_ts_packets >> 8) & 0xff;
+> +               b[2] = nb_ts_packets & 0xff;
+> +
+> +               deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
+> +
+> +               ret = dib0700_ctrl_wr(d, b, 3);
+> +       } else {
+> +               deb_info("this firmware does not allow to change the USB xfer len\n");
+> +               ret = -EIO;
+> +       }
+> +
+> +       return ret;
+>  }
+>
+>  /*
+> @@ -178,7 +179,8 @@ static int dib0700_i2c_xfer_new(struct i2c_adapter *adap, struct i2c_msg *msg,
+>                        value = ((en_start << 7) | (en_stop << 6) |
+>                                 (msg[i].len & 0x3F)) << 8 | i2c_dest;
+>                        /* I2C ctrl + FE bus; */
+> -                       index = ((gen_mode<<6)&0xC0) | ((bus_mode<<4)&0x30);
+> +                       index = ((gen_mode << 6) & 0xC0) |
+> +                               ((bus_mode << 4) & 0x30);
+>
+>                        result = usb_control_msg(d->udev,
+>                                                 usb_rcvctrlpipe(d->udev, 0),
+> @@ -198,11 +200,12 @@ static int dib0700_i2c_xfer_new(struct i2c_adapter *adap, struct i2c_msg *msg,
+>                } else {
+>                        /* Write request */
+>                        buf[0] = REQUEST_NEW_I2C_WRITE;
+> -                       buf[1] = (msg[i].addr << 1);
+> +                       buf[1] = msg[i].addr << 1;
+>                        buf[2] = (en_start << 7) | (en_stop << 6) |
+>                                (msg[i].len & 0x3F);
+>                        /* I2C ctrl + FE bus; */
+> -                       buf[3] = ((gen_mode<<6)&0xC0) | ((bus_mode<<4)&0x30);
+> +                       buf[3] = ((gen_mode << 6) & 0xC0) |
+> +                                ((bus_mode << 4) & 0x30);
+>                        /* The Actual i2c payload */
+>                        memcpy(&buf[4], msg[i].buf, msg[i].len);
+>
+> @@ -240,7 +243,7 @@ static int dib0700_i2c_xfer_legacy(struct i2c_adapter *adap,
+>
+>        for (i = 0; i < num; i++) {
+>                /* fill in the address */
+> -               buf[1] = (msg[i].addr << 1);
+> +               buf[1] = msg[i].addr << 1;
+>                /* fill the buffer */
+>                memcpy(&buf[2], msg[i].buf, msg[i].len);
+>
+> @@ -368,7 +371,8 @@ int dib0700_download_firmware(struct usb_device *udev, const struct firmware *fw
+>        u8 buf[260];
+>
+>        while ((ret = dvb_usb_get_hexline(fw, &hx, &pos)) > 0) {
+> -               deb_fwdata("writing to address 0x%08x (buffer: 0x%02x %02x)\n",hx.addr, hx.len, hx.chk);
+> +               deb_fwdata("writing to address 0x%08x (buffer: 0x%02x %02x)\n",
+> +                               hx.addr, hx.len, hx.chk);
+>
+>                buf[0] = hx.len;
+>                buf[1] = (hx.addr >> 8) & 0xff;
+> @@ -408,16 +412,16 @@ int dib0700_download_firmware(struct usb_device *udev, const struct firmware *fw
+>                                  REQUEST_GET_VERSION,
+>                                  USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
+>                                  b, sizeof(b), USB_CTRL_GET_TIMEOUT);
+> -       fw_version = (b[8] << 24)  | (b[9] << 16)  | (b[10] << 8) | b[11];
+> +       fw_version = (b[8] << 24) | (b[9] << 16) | (b[10] << 8) | b[11];
+>
+>        /* set the buffer size - DVB-USB is allocating URB buffers
+>         * only after the firwmare download was successful */
+>        for (i = 0; i < dib0700_device_count; i++) {
+>                for (adap_num = 0; adap_num < dib0700_devices[i].num_adapters;
+>                                adap_num++) {
+> -                       if (fw_version >= 0x10201)
+> +                       if (fw_version >= 0x10201) {
+>                                dib0700_devices[i].adapter[adap_num].stream.u.bulk.buffersize = 188*nb_packet_buffer_size;
+> -                       else {
+> +                       } else {
+>                                /* for fw version older than 1.20.1,
+>                                 * the buffersize has to be n times 512 */
+>                                dib0700_devices[i].adapter[adap_num].stream.u.bulk.buffersize = ((188*nb_packet_buffer_size+188/2)/512)*512;
+> @@ -453,7 +457,7 @@ int dib0700_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
+>        if (st->disable_streaming_master_mode == 1)
+>                b[2] = 0x00;
+>        else
+> -               b[2] = (0x01 << 4); /* Master mode */
+> +               b[2] = 0x01 << 4; /* Master mode */
+>
+>        b[3] = 0x00;
+>
+> @@ -466,7 +470,7 @@ int dib0700_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
+>
+>        b[2] |= st->channel_state;
+>
+> -       deb_info("data for streaming: %x %x\n",b[1],b[2]);
+> +       deb_info("data for streaming: %x %x\n", b[1], b[2]);
+>
+>        return dib0700_ctrl_wr(adap->dev, b, 4);
+>  }
+> @@ -631,7 +635,7 @@ resubmit:
+>  int dib0700_rc_setup(struct dvb_usb_device *d)
+>  {
+>        struct dib0700_state *st = d->priv;
+> -       u8 rc_setup[3] = {REQUEST_SET_RC, dvb_usb_dib0700_ir_proto, 0};
+> +       u8 rc_setup[3] = { REQUEST_SET_RC, dvb_usb_dib0700_ir_proto, 0 };
+>        struct urb *purb;
+>        int ret;
+>        int i;
+> @@ -640,10 +644,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+>                return 0;
+>
+>        /* Set the IR mode */
+> -       i = dib0700_ctrl_wr(d, rc_setup, 3);
+> -       if (i<0) {
+> +       i = dib0700_ctrl_wr(d, rc_setup, sizeof(rc_setup));
+> +       if (i < 0) {
+>                err("ir protocol setup failed");
+> -               return -1;
+> +               return i;
+>        }
+>
+>        if (st->fw_version < 0x10200)
+> @@ -653,14 +657,14 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+>        purb = usb_alloc_urb(0, GFP_KERNEL);
+>        if (purb == NULL) {
+>                err("rc usb alloc urb failed\n");
+> -               return -1;
+> +               return -ENOMEM;
+>        }
+>
+>        purb->transfer_buffer = kzalloc(RC_MSG_SIZE_V1_20, GFP_KERNEL);
+>        if (purb->transfer_buffer == NULL) {
+>                err("rc kzalloc failed\n");
+>                usb_free_urb(purb);
+> -               return -1;
+> +               return -ENOMEM;
+>        }
+>
+>        purb->status = -EINPROGRESS;
+> @@ -669,12 +673,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
+>                          dib0700_rc_urb_completion, d);
+>
+>        ret = usb_submit_urb(purb, GFP_ATOMIC);
+> -       if (ret != 0) {
+> +       if (ret)
+>                err("rc submit urb failed\n");
+> -               return -1;
+> -       }
+>
+> -       return 0;
+> +       return ret;
+>  }
+>
+>  static int dib0700_probe(struct usb_interface *intf,
+> --
+> 1.7.1
 
+Hello Daniel,
 
-Avi Kivity wrote:
-> On 05/23/2010 03:16 PM, Xiao Guangrong wrote:
->> Allow more page become asynchronous at getting sp time, if need create
->> new
->> shadow page for gfn but it not allow unsync(level>  1), we should
->> unsync all
->> gfn's unsync page
->>
->>
->>
->> +/* @gfn should be write-protected at the call site */
->> +static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
->> +{
->> +    struct hlist_head *bucket;
->> +    struct kvm_mmu_page *s;
->> +    struct hlist_node *node, *n;
->> +    unsigned index;
->> +    bool flush = false;
->> +
->> +    index = kvm_page_table_hashfn(gfn);
->> +    bucket =&vcpu->kvm->arch.mmu_page_hash[index];
->> +    hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
->>    
-> 
-> role.direct, role.invalid?
+I am not against any of these changes in principle, but you should not
+be mixing functional changes with codingstyle fixes.  It results in a
+situation where as a reviewer I have to scrutinize every line *very*
+closely to determine whether it's an actual change or just a
+codingstyle fix.
 
-We only handle unsync pages here, and 'role.direct' or 'role.invalid'
-pages can't become unsync.
-
-> 
-> Well, role.direct cannot be unsync.  But that's not something we want to
-> rely on.
-
-While we mark the unsync page, we have filtered out the 'role.direct' pages,
-so, i think we not need worry 'role.direct' here. :-)
-
-> 
-> This patch looks good too.
-> 
-> Some completely unrelated ideas:
-> 
-> - replace mmu_zap_page() calls in __kvm_sync_page() by setting
-> role.invalid instead.  This reduces problems with the hash list being
-> modified while we manipulate it.
-> - add a for_each_shadow_page_direct() { ... } and
-> for_each_shadow_page_indirect() { ... } to replace the
-> hlist_for_each_entry_safe()s.
-
-Actually, i have introduced for_each_gfn_sp() to cleanup it in my private
-development. :-)
-
-> - add kvm_tlb_gather() to reduce IPIs from kvm_mmu_zap_page()
-> - clear spte.accessed on speculative sptes (for example from invlpg) so
-> the swapper won't keep them in ram unnecessarily
-
-I also noticed this problem
-
-> 
-> Again, completely unrelated to this patch set, just wrong them down so I
-> don't forget them and to get your opinion.
-> 
-
-Your ideas are very valuable, and i'll do those if you are not free :-)
+In other words, split this into two patches.
 
 Thanks,
-Xiao
 
+Devin
 
+-- 
+Devin J. Heitmueller - Kernel Labs
+http://www.kernellabs.com
