@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757827Ab0EXUc5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 16:32:57 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:5589 "EHLO
+	id S1758051Ab0EXUdO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 16:33:14 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:5582 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757133Ab0EXUb7 (ORCPT
+	with ESMTP id S1757077Ab0EXUb6 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 16:31:59 -0400
+	Mon, 24 May 2010 16:31:58 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
 	references:x-system-of-record;
-	b=fpRp6OUlbMm/J8yAhTa3Tg05IHRA0TtNpvfgKNnorMX1YOAEQMvanYR0rVrOPtyMc
-	MjA+//icObi4bymyqVUQQ==
+	b=ZYXfl4iCgm7hS8CbBdur1hRTJM5sJvRqi3od1xIIM1cglObDai7+TbaEQRFTquSGJ
+	TwfWLI781YDQf2EJmU6AQ==
 From: Michel Lespinasse <walken@google.com>
 To: Linus Torvalds <torvalds@linux-foundation.org>,
        David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
@@ -19,10 +19,11 @@ To: Linus Torvalds <torvalds@linux-foundation.org>,
 Cc: LKML <linux-kernel@vger.kernel.org>,
        Andrew Morton <akpm@linux-foundation.org>,
        Mike Waychison <mikew@google.com>,
-       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
-Subject: [PATCH 08/11] generic rwsem: implement down_read_critical() / up_read_critical()
-Date: Mon, 24 May 2010 13:31:18 -0700
-Message-Id: <1274733081-4623-9-git-send-email-walken@google.com>
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
+       David Howells <dhowells@redhat.com>
+Subject: [PATCH 09/11] rwsem: down_read_critical infrastructure support
+Date: Mon, 24 May 2010 13:31:19 -0700
+Message-Id: <1274733081-4623-10-git-send-email-walken@google.com>
 X-Mailer: git-send-email 1.7.0.1
 In-Reply-To: <1274733081-4623-1-git-send-email-walken@google.com>
 References: <1274733081-4623-1-git-send-email-walken@google.com>
@@ -31,176 +32,113 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add down_read_critical() / up_read_critical() API.
+Add rwsem_down_read_unfair_failed() function in the non-generic rwsem
+library code, similar to  rwsem_down_read_failed() except that blocked
+threads are placed at the head of the queue.
 
-down_read_critical() is similar to down_read() with the following changes:
-- when the rwsem is read owned with queued writers, down_read_critical()
-  callers are allowed to acquire the rwsem for read without queueing;
-- when the rwsem is write owned, down_read_critical() callers get queued in
-  front of threads trying to acquire the rwsem by other means.
-- caller can't sleep until releasing lock with up_read_critical(),
-  and preemption is disabled for that time.
+Make the waiter type an enumeration rather than a bitmask.
 
 Signed-off-by: Michel Lespinasse <walken@google.com>
+Signed-off-by: David Howells <dhowells@redhat.com>
 ---
- include/linux/rwsem-spinlock.h |   10 +++++++++-
- include/linux/rwsem.h          |   12 ++++++++++++
- kernel/rwsem.c                 |   35 +++++++++++++++++++++++++++++++++++
- lib/rwsem-spinlock.c           |   10 +++++++---
- 4 files changed, 63 insertions(+), 4 deletions(-)
+ lib/rwsem.c |   40 +++++++++++++++++++++++++++++++---------
+ 1 files changed, 31 insertions(+), 9 deletions(-)
 
-diff --git a/include/linux/rwsem-spinlock.h b/include/linux/rwsem-spinlock.h
-index bdfcc25..67631c3 100644
---- a/include/linux/rwsem-spinlock.h
-+++ b/include/linux/rwsem-spinlock.h
-@@ -60,7 +60,9 @@ do {								\
- 	__init_rwsem((sem), #sem, &__key);			\
- } while (0)
+diff --git a/lib/rwsem.c b/lib/rwsem.c
+index f236d7c..72454f4 100644
+--- a/lib/rwsem.c
++++ b/lib/rwsem.c
+@@ -28,12 +28,16 @@ void __init_rwsem(struct rw_semaphore *sem, const char *name,
  
--extern void __down_read(struct rw_semaphore *sem);
-+#define __HAVE_DOWN_READ_UNFAIR
-+
-+extern void __down_read_internal(struct rw_semaphore *sem, int unfair);
- extern int __down_read_trylock(struct rw_semaphore *sem);
- extern void __down_write(struct rw_semaphore *sem);
- extern void __down_write_nested(struct rw_semaphore *sem, int subclass);
-@@ -70,5 +72,11 @@ extern void __up_write(struct rw_semaphore *sem);
- extern void __downgrade_write(struct rw_semaphore *sem);
- extern int rwsem_is_locked(struct rw_semaphore *sem);
+ EXPORT_SYMBOL(__init_rwsem);
  
-+static inline void __down_read(struct rw_semaphore *sem)
-+	{ __down_read_internal(sem, 0); }
++enum rwsem_waiter_type {
++	RWSEM_WAITING_FOR_WRITE,
++	RWSEM_WAITING_FOR_READ,
++	RWSEM_WAITING_FOR_UNFAIR_READ
++};
 +
-+static inline void __down_read_unfair(struct rw_semaphore *sem)
-+	{ __down_read_internal(sem, 1); }
-+
- #endif /* __KERNEL__ */
- #endif /* _LINUX_RWSEM_SPINLOCK_H */
-diff --git a/include/linux/rwsem.h b/include/linux/rwsem.h
-index efd348f..76fd8f4 100644
---- a/include/linux/rwsem.h
-+++ b/include/linux/rwsem.h
-@@ -28,6 +28,13 @@ struct rw_semaphore;
- extern void down_read(struct rw_semaphore *sem);
+ struct rwsem_waiter {
+ 	struct list_head list;
+ 	struct task_struct *task;
+-	unsigned int flags;
+-#define RWSEM_WAITING_FOR_READ	0x00000001
+-#define RWSEM_WAITING_FOR_WRITE	0x00000002
++	enum rwsem_waiter_type type;
+ };
  
- /*
-+ * lock for reading in critical section
-+ *
-+ * locker skips waiting threads, but can't block until up_read_critical()
-+ */
-+extern void down_read_critical(struct rw_semaphore *sem);
+ /* Wake types for __rwsem_do_wake().  Note that RWSEM_WAKE_NO_ACTIVE and
+@@ -63,7 +67,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 	signed long oldcount, woken, loop, adjustment;
+ 
+ 	waiter = list_entry(sem->wait_list.next, struct rwsem_waiter, list);
+-	if (!(waiter->flags & RWSEM_WAITING_FOR_WRITE))
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		goto readers_only;
+ 
+ 	if (wake_type == RWSEM_WAKE_READ_OWNED)
+@@ -132,10 +136,10 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+ 		waiter = list_entry(waiter->list.next,
+ 					struct rwsem_waiter, list);
+ 
+-	} while (waiter->flags & RWSEM_WAITING_FOR_READ);
++	} while (waiter->type != RWSEM_WAITING_FOR_WRITE);
+ 
+ 	adjustment = woken * RWSEM_ACTIVE_READ_BIAS;
+-	if (waiter->flags & RWSEM_WAITING_FOR_READ)
++	if (waiter->type != RWSEM_WAITING_FOR_WRITE)
+ 		/* hit end of list above */
+ 		adjustment -= RWSEM_WAITING_BIAS;
+ 
+@@ -171,7 +175,7 @@ __rwsem_do_wake(struct rw_semaphore *sem, int wake_type)
+  */
+ static struct rw_semaphore __sched *
+ rwsem_down_failed_common(struct rw_semaphore *sem,
+-			 unsigned int flags, signed long adjustment)
++			 enum rwsem_waiter_type type, signed long adjustment)
+ {
+ 	struct rwsem_waiter waiter;
+ 	struct task_struct *tsk = current;
+@@ -182,12 +186,16 @@ rwsem_down_failed_common(struct rw_semaphore *sem,
+ 	/* set up my own style of waitqueue */
+ 	spin_lock_irq(&sem->wait_lock);
+ 	waiter.task = tsk;
+-	waiter.flags = flags;
++	waiter.type = type;
+ 	get_task_struct(tsk);
+ 
+ 	if (list_empty(&sem->wait_list))
+ 		adjustment += RWSEM_WAITING_BIAS;
+-	list_add_tail(&waiter.list, &sem->wait_list);
++
++	if (type == RWSEM_WAITING_FOR_UNFAIR_READ)
++		list_add(&waiter.list, &sem->wait_list);
++	else
++		list_add_tail(&waiter.list, &sem->wait_list);
+ 
+ 	/* we're now waiting on the lock, but no longer actively locking */
+ 	count = rwsem_atomic_update(adjustment, sem);
+@@ -229,6 +237,20 @@ rwsem_down_read_failed(struct rw_semaphore *sem)
+ 					-RWSEM_ACTIVE_READ_BIAS);
+ }
+ 
++#ifdef __HAVE_DOWN_READ_UNFAIR
 +
 +/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- extern int down_read_trylock(struct rw_semaphore *sem);
-@@ -48,6 +55,11 @@ extern int down_write_trylock(struct rw_semaphore *sem);
- extern void up_read(struct rw_semaphore *sem);
- 
- /*
-+ * release a read lock acquired with down_read_critical()
++ * wait for the read lock to be granted - skip waiting threads
 + */
-+extern void up_read_critical(struct rw_semaphore *sem);
++asmregparm struct rw_semaphore __sched *
++rwsem_down_read_unfair_failed(struct rw_semaphore *sem)
++{
++	return rwsem_down_failed_common(sem, RWSEM_WAITING_FOR_UNFAIR_READ,
++					-RWSEM_ACTIVE_READ_BIAS);
++}
 +
-+/*
-  * release a write lock
-  */
- extern void up_write(struct rw_semaphore *sem);
-diff --git a/kernel/rwsem.c b/kernel/rwsem.c
-index cae050b..7c34174 100644
---- a/kernel/rwsem.c
-+++ b/kernel/rwsem.c
-@@ -13,6 +13,10 @@
- #include <asm/system.h>
- #include <asm/atomic.h>
- 
-+#ifndef __HAVE_DOWN_READ_UNFAIR
-+# define __down_read_unfair(sem) __down_read(sem)
 +#endif
 +
  /*
-  * lock for reading
+  * wait for the write lock to be granted
   */
-@@ -27,6 +31,23 @@ void __sched down_read(struct rw_semaphore *sem)
- EXPORT_SYMBOL(down_read);
- 
- /*
-+ * lock for reading in critical section
-+ *
-+ * locker skips waiting threads, but can't block until up_read_critical()
-+ */
-+void __sched down_read_critical(struct rw_semaphore *sem)
-+{
-+	might_sleep();
-+	rwsem_acquire_read(&sem->dep_map, 0, 0, _RET_IP_);
-+
-+	LOCK_CONTENDED(sem, __down_read_trylock, __down_read_unfair);
-+
-+	preempt_disable();
-+}
-+
-+EXPORT_SYMBOL(down_read_critical);
-+
-+/*
-  * trylock for reading -- returns 1 if successful, 0 if contention
-  */
- int down_read_trylock(struct rw_semaphore *sem)
-@@ -80,6 +101,20 @@ void up_read(struct rw_semaphore *sem)
- EXPORT_SYMBOL(up_read);
- 
- /*
-+ * release a read lock acquired with down_read_critical()
-+ */
-+void up_read_critical(struct rw_semaphore *sem)
-+{
-+	rwsem_release(&sem->dep_map, 1, _RET_IP_);
-+
-+	__up_read(sem);
-+
-+	preempt_enable();
-+}
-+
-+EXPORT_SYMBOL(up_read_critical);
-+
-+/*
-  * release a write lock
-  */
- void up_write(struct rw_semaphore *sem)
-diff --git a/lib/rwsem-spinlock.c b/lib/rwsem-spinlock.c
-index ffc9fc7..b2fd5fb 100644
---- a/lib/rwsem-spinlock.c
-+++ b/lib/rwsem-spinlock.c
-@@ -139,7 +139,7 @@ __rwsem_wake_one_writer(struct rw_semaphore *sem)
- /*
-  * get a read lock on the semaphore
-  */
--void __sched __down_read(struct rw_semaphore *sem)
-+void __sched __down_read_internal(struct rw_semaphore *sem, int unfair)
- {
- 	struct rwsem_waiter waiter;
- 	struct task_struct *tsk;
-@@ -147,7 +147,7 @@ void __sched __down_read(struct rw_semaphore *sem)
- 
- 	spin_lock_irqsave(&sem->wait_lock, flags);
- 
--	if (sem->activity >= 0 && list_empty(&sem->wait_list)) {
-+	if (sem->activity >= 0 && (unfair || list_empty(&sem->wait_list))) {
- 		/* granted */
- 		sem->activity++;
- 		spin_unlock_irqrestore(&sem->wait_lock, flags);
-@@ -162,7 +162,11 @@ void __sched __down_read(struct rw_semaphore *sem)
- 	waiter.flags = RWSEM_WAITING_FOR_READ;
- 	get_task_struct(tsk);
- 
--	list_add_tail(&waiter.list, &sem->wait_list);
-+	if (unfair) {
-+		list_add(&waiter.list, &sem->wait_list);
-+	} else {
-+		list_add_tail(&waiter.list, &sem->wait_list);
-+	}
- 
- 	/* we don't need to touch the semaphore struct anymore */
- 	spin_unlock_irqrestore(&sem->wait_lock, flags);
 -- 
 1.7.0.1
 
