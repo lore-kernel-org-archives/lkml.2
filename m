@@ -1,67 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756072Ab0EXTCS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 15:02:18 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40440 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1753733Ab0EXTCQ (ORCPT
+	id S1756178Ab0EXTDM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 15:03:12 -0400
+Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:20269 "EHLO
+	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab0EXTDL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 15:02:16 -0400
-Date: Mon, 24 May 2010 21:02:07 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Nigel Cunningham <ncunningham@crca.org.au>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       Matt Reimer <mattjreimer@gmail.com>
-Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
- userspace is frozen?
-Message-ID: <20100524190206.GL1292@ucw.cz>
-References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org>
- <4BF0F3FF.2010603@crca.org.au>
- <201005172235.37824.rjw@sisk.pl>
- <4BF1C86B.8000203@crca.org.au>
+	Mon, 24 May 2010 15:03:11 -0400
+X-IronPort-AV: E=Sophos;i="4.53,292,1272844800"; 
+   d="scan'208";a="62267"
+Date: Mon, 24 May 2010 20:06:57 +0100
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+X-X-Sender: sstabellini@kaball-desktop
+To: Boris Derzhavets <bderzhavets@yahoo.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
+       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
+Subject: Re: [Xen-devel] [PATCH 0 of 12] PV on HVM Xen
+In-Reply-To: <596969.543.qm@web56103.mail.re3.yahoo.com>
+Message-ID: <alpine.DEB.2.00.1005242006360.25605@kaball-desktop>
+References: <596969.543.qm@web56103.mail.re3.yahoo.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF1C86B.8000203@crca.org.au>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="US-ASCII"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-> >>- We're dealing with the symptom, not the cause. Almost always a bad idea.
-> >
-> >I very much prefer to have a fix for a symptom than no fix at all, which is the
-> >realistic alternative in this case.
-> >
-> >So, I think we should merge the patch and if someone finds the root cause
-> >at one point in future, then we can just use the *right* approach instead of
-> >the present one.
-> >
-> >The problem is real and people in the field are affected by it, so if you don't
-> >have a working alternative patch, please just let go.
+On Mon, 24 May 2010, Boris Derzhavets wrote:
+> > In order to be able to use VIRQ_TIMER and to improve performances you
+> > need a patch to Xen to implement the vector callback mechanism
+> > for event channel delivery.
 > 
-> I'm not denying that the problem is real. What I am concerned about
-> is finding a real solution, not just putting a sticky plaster over
-> the wound. It seems to me to be much wiser to deal with the issue
-> properly now instead of doing extra work later to diagnose what
-> might be a harder to reproduce symptom of the same problem. I'd
-> happily put the time in now myself, but I simply don't have the time
-> this week.
+> Where to get it ?
 > 
-> Would it be possible to apply the patch, adding some sort of new tag
-> that can be used to say "This needs further attention", perhaps
-> including an enduring reference to this conversation. Later, the
-> 'real' fix could include another special tag that says "Proper fix
-> for the symptom addressed in commit 5e94f810"?
 
-WARN_ON() whenever patch triggers?
+It is this one:
 
+http://lists.xensource.com/archives/html/xen-devel/2010-05/msg00875.html
 
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
