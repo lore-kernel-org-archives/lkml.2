@@ -1,98 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758297Ab0EXWtv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:49:51 -0400
-Received: from e36.co.us.ibm.com ([32.97.110.154]:59202 "EHLO
-	e36.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756844Ab0EXWtu (ORCPT
+	id S1758531Ab0EXWvK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:51:10 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38851 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757802Ab0EXWvI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:49:50 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: john stultz <johnstul@us.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Brian Bloniarz <bmb@athenacr.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BFAFE17.8060105@zytor.com>
-References: <4BF58B59.7080901@athenacr.com>
-	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
-	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
-	 <1274727116.2954.5.camel@localhost.localdomain>
-	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
-	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 May 2010 15:49:22 -0700
-Message-ID: <1274741362.2954.80.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 May 2010 18:51:08 -0400
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: felipe.balbi@nokia.com,
+       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "linux-pm\@lists.linux-foundation.org" 
+	<linux-pm@lists.linux-foundation.org>,
+       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 8)
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005240246.55043.rjw@sisk.pl> <20100524043224.GA31700@nokia.com>
+	<201005242049.18920.rjw@sisk.pl>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Mon, 24 May 2010 15:51:05 -0700
+In-Reply-To: <201005242049.18920.rjw@sisk.pl> (Rafael J. Wysocki's message of "Mon\, 24 May 2010 20\:49\:18 +0200")
+Message-ID: <87wrusvrqe.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 15:30 -0700, H. Peter Anvin wrote:
-> On 05/24/2010 03:04 PM, Dan Magenheimer wrote:
-> >>> Is that still the case?  I thought newer versions of NTP could deal
-> >> with
-> >>> large values.  Inaccuracies of way more than 500 ppm are everyday.
-> >>
-> >> That's scary.
-> >>
-> >> Yea, in the kernel the ntp freq correction tops out at 500ppm. Almost
-> >> all the systems I see tend to fall in the +/- 200ppm range (if there's
-> >> not something terribly wrong with the hardware).
-> >>
-> >> So maybe things aren't so bad out there? Or is that wishful thinking?
-> > 
-> > Since Brian's concern is at boot-time at which point there is no
-> > network or ntp, and assuming that it would be unwise to vary tsc_khz
-> > dynamically on a clocksource==tsc machine (is it?), would optionally
-> > lengthening the TSC<->PIT calibration beyond 25ms result in a more
-> > consistent tsc_khz between boots?  Or is the relative instability
-> > an unavoidable result of skew between the PIT and the fixed constant
-> > PIT_TICK_RATE combined with algorithmic/arithmetic error?  Or is
-> > the jitter of the (spread-spectrum) TSC too extreme?  Or ???
-> > 
-> > If better more consistent calibration is possible, offering
-> > that as an optional kernel parameter seems better than specifying
-> > a fixed tsc_khz (stamped or user-specified) which may or may
-> > not be ignored due to "too different from measured tsc_khz".
-> > Even an (*optional*) extra second or two of boot time might
-> > be perfectly OK if it resulted in an additional five or six
-> > bits of tsc_khz precision.
-> > 
-> > Thoughts, Brian?
-> 
-> Making the calibration time longer should give a more precise result,
-> but of course at the expense of longer boot time.
-> 
-> A longer sample would make sense if the goal is to freeze it into a
-> kernel command line variable, but the real question is how many people
-> would actually do that (and how many people would then suffer problems
-> because they upgraded their CPU/mobo and got massive failures on post-boot.)
+"Rafael J. Wysocki" <rjw@sisk.pl> writes:
 
-I'll admit its a feature for a minority of users. Probably why its not
-included. 
+> On Monday 24 May 2010, Felipe Balbi wrote:
+>> On Mon, May 24, 2010 at 02:46:54AM +0200, ext Rafael J. Wysocki wrote:
+>> >On Saturday 22 May 2010, Arve Hjønnevåg wrote:
+>> >> This patch series adds a suspend-block api that provides the same
+>> >> functionality as the android wakelock api. This version adds a
+>> >> delay before suspending again if no suspend blockers were used
+>> >> during the last suspend attempt.
+>> >
+>> >Patches [1-6/8] applied to suspend-2.6/linux-next
+>> 
+>> funny thing is that even without sorting out the concerns plenty of 
+>> developers had on the other thread, this series is still taken. What's 
+>> the point in dicussing/reviewing the patches then ?
+>
+> I don't think the concerns you're referring to can be solved out.  
+> Some people just don't like the whole idea and I don't think there's
+> any way we can improve the patches to make them happy.  The only
+> "solution" they would be satisfied with would simply be rejecting
+> the feature altogether, although there are no practically viable
+> alternatives known to me.
 
-And the upgraded system issue was something I tried to address by using
-the calibrated value if it was off by some unreasonable amount, however
-folks protested that, figuring since if its explicitly stated kernel
-should not override it (ie: for the use case of where the calibration is
-broken and folks want to force the value).
+I'm not sure who the "some people" you're referring to are, but I'll
+assume I'm included in that group.
 
-Also, you don't really need extra accuracy, you just need it to be the
-same from boot to boot. NTP keeps the correction factor persistent from
-boot to boot via the drift file. The boot argument is just trying to
-save the time (possibly hours depending on ntp config) after a reboot
-for NTP to correct for the new error introduced by calibration.
+I don't think this is a fair characterization of the objections, nor
+do I think "rejecting the feature altogether" is the only satisfactory
+answer.  Speaking for myself, I find the idea of being able to suspend
+while idle a valid objective, and certainly see the usefulness of it
+for embedded systems.  I'm also an owner and user of an Android phone,
+so I am certainly not out just to make life difficult for Android.
 
-thanks
--john
+The primary objection is not the end goal, but rather the
+implementation.  In particular, the problematic redefintion of what it
+means to be idle, or "not doing work that's immediately useful to the
+user" to use the phrase from the changelog (where "useful" is still
+not defined.)
 
+This (re)definition completely bypasses all current idle
+infrastructure based on timers, scheduler, etc. and makes "usefulness"
+defined in terms of who holds suspend blockers.  This of course will
+lead to a scattering of suspend blockers into any drivers/subsystems
+considered "useful", which by looking through current Android kernels
+is many of them.
 
-
-
+Kevin
