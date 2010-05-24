@@ -1,73 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752700Ab0ENEMh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:12:37 -0400
-Received: from mga09.intel.com ([134.134.136.24]:10285 "EHLO mga09.intel.com"
+	id S1759160Ab0EXXKu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:10:50 -0400
+Received: from kroah.org ([198.145.64.141]:36544 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751914Ab0ENELl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:11:41 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,226,1272870000"; 
-   d="scan'208";a="517825365"
-Date: Fri, 14 May 2010 12:11:36 +0800
-From: Wu Fengguang <fengguang.wu@intel.com>
-To: Haicheng Li <haicheng.li@linux.intel.com>
-Cc: "akpm@linux-foundation.org" <akpm@linux-foundation.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, "x86@kernel.org" <x86@kernel.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       David Rientjes <rientjes@google.com>, Alex Chiang <achiang@hp.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "ak@linux.intel.co" <ak@linux.intel.co>,
-       "shaohui.zheng@linux.intel.com" <shaohui.zheng@linux.intel.com>
-Subject: Re: [RFC, 3/7] NUMA hotplug emulator
-Message-ID: <20100514041136.GA12020@localhost>
-References: <20100513114835.GD2169@shaohui>
- <4BECC418.2080602@linux.intel.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BECC418.2080602@linux.intel.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758689Ab0EXXJk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
+Message-Id: <20100524230352.098168879@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 16:00:03 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jens Axboe <jens.axboe@oracle.com>
+Subject: [31/34] nilfs2: fix sync silent failure
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Pls. replace it with following code:
-> 
-> +#ifdef CONFIG_NODE_HOTPLUG_EMU
-> +static ssize_t store_nodes_probe(struct sysdev_class *class,
-> +                                 struct sysdev_class_attribute *attr,
-> +                                 const char *buf, size_t count)
-> +{
-> +       long nid;
-> +       int ret;
-> +
-> +       ret = strict_strtol(buf, 0, &nid);
-> +       if (ret == -EINVAL)
-> +               return ret;
-> +
-> +       ret = hotadd_hidden_nodes(nid);
-> +       if (!ret)
-> +               return count;
-> +       else
-> +               return -EIO;
-> +}
-> +#endif
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-How about this?
+------------------
 
-       err = strict_strtol(buf, 0, &nid);
-       if (err < 0)
-               return err;
+From: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
 
-       err = hotadd_hidden_nodes(nid);
-       if (err < 0)
-               return err;
+commit 973bec34bfc1bc2465646181653d67f767d418c8 upstream.
 
-       return count;
+As of 32a88aa1, __sync_filesystem() will return 0 if s_bdi is not set.
+And nilfs does not set s_bdi anywhere.  I noticed this problem by the
+warning introduced by the recent commit 5129a469 ("Catch filesystem
+lacking s_bdi").
 
-Thanks,
-Fengguang
+ WARNING: at fs/super.c:959 vfs_kern_mount+0xc5/0x14e()
+ Hardware name: PowerEdge 2850
+ Modules linked in: nilfs2 loop tpm_tis tpm tpm_bios video shpchp pci_hotplug output dcdbas
+ Pid: 3773, comm: mount.nilfs2 Not tainted 2.6.34-rc6-debug #38
+ Call Trace:
+  [<c1028422>] warn_slowpath_common+0x60/0x90
+  [<c102845f>] warn_slowpath_null+0xd/0x10
+  [<c1095936>] vfs_kern_mount+0xc5/0x14e
+  [<c1095a03>] do_kern_mount+0x32/0xbd
+  [<c10a811e>] do_mount+0x671/0x6d0
+  [<c1073794>] ? __get_free_pages+0x1f/0x21
+  [<c10a684f>] ? copy_mount_options+0x2b/0xe2
+  [<c107b634>] ? strndup_user+0x48/0x67
+  [<c10a81de>] sys_mount+0x61/0x8f
+  [<c100280c>] sysenter_do_call+0x12/0x32
+
+This ensures to set s_bdi for nilfs and fixes the sync silent failure.
+
+Signed-off-by: Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>
+Acked-by: Jens Axboe <jens.axboe@oracle.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/nilfs2/super.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/fs/nilfs2/super.c
++++ b/fs/nilfs2/super.c
+@@ -781,6 +781,7 @@ nilfs_fill_super(struct super_block *sb,
+ 	sb->s_export_op = &nilfs_export_ops;
+ 	sb->s_root = NULL;
+ 	sb->s_time_gran = 1;
++	sb->s_bdi = nilfs->ns_bdi;
+ 
+ 	if (!nilfs_loaded(nilfs)) {
+ 		err = load_nilfs(nilfs, sbi);
+
+
