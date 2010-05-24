@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756239Ab0EXHFy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 03:05:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44161 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752364Ab0EXHFx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 03:05:53 -0400
-Date: Mon, 24 May 2010 09:05:52 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: mtk.manpages@gmail.com
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100524070552.GR23411@kernel.dk>
-References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com>
+	id S1756537Ab0EXHGN (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:06:13 -0400
+Received: from e23smtp01.au.ibm.com ([202.81.31.143]:45763 "EHLO
+	e23smtp01.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756372Ab0EXHGL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 03:06:11 -0400
+Content-Type: text/plain; charset=UTF-8
+Cc: fweisbec <fweisbec@gmail.com>, mingo <mingo@elte.hu>,
+       rostedt <rostedt@goodmis.org>,
+       linux-kernel <linux-kernel@vger.kernel.org>,
+       laijs <laijs@cn.fujitsu.com>, lizf <lizf@cn.fujitsu.com>,
+       hpa <hpa@zytor.com>, tglx <tglx@linutronix.de>,
+       mhiramat <mhiramat@redhat.com>,
+       "heiko.carstens" <heiko.carstens@de.ibm.com>,
+       benh <benh@kernel.crashing.org>, davem <davem@davemloft.net>,
+       lethal <lethal@linux-sh.org>, schwidefsky <schwidefsky@de.ibm.com>,
+       brueckner <brueckner@linux.vnet.ibm.com>,
+       "tony.luck" <tony.luck@intel.com>
+Subject: Re: [PATCH 07/14] syscalls: add ARCH_COMPAT_SYSCALL_DEFINE()
+From: Ian Munsie <imunsie@au1.ibm.com>
+To: Jason Baron <jbaron@redhat.com>
+In-reply-to: <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
+References: <cover.1268749695.git.jbaron@redhat.com> <cbd14095e98f80fd05d3e8e76111572072e565bc.1268749695.git.jbaron@redhat.com>
+Date: Mon, 24 May 2010 17:05:42 +1000
+Message-Id: <1274684482-sup-7551@au1.ibm.com>
+User-Agent: Sup/0.11
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> The "at least" idea makes sense. So, I'd change my recommendation to:
-> 
-> Pass the buffer size in and out in bytes (for consistency with other
-> APIs). Round the input (F_SETPIPE_SZ) value up as required by the
-> implementation. For the output (F_GETPIPE_SZ) value do one of the
-> following:
-> a) Return the value given on input.
-> b) Return the rounded up value actually used by the kernel.
-> 
-> I suspect (b) might be more useful: if an application cares enough
-> about pipe size to want to change it, then at least some such
-> applications might care to know exactly the size that the kernel used.
-> (And: I can't see any downside to (b).)
+Excerpts from Jason Baron's message of Wed Mar 17 04:46:42 +1100 2010:
+<snip>
+> +    SYSCALL_METADATA(syscall, compat_sys_##sname, x);    \
+> +    asmlinkage long syscall(__SC_DECL##x(__VA_ARGS__))
+> +#else
+> +#define COMPAT_SYSCALL_DEFINEx(x, sname, ...)            \
 
-b definitely, since it's the real size (plus then we don't have to track
-the passed in size).
+I think that should be:
+#define COMPAT_SYSCALL_DEFINEx(x, syscall, sname, ...)
 
-> One other comment about the interface. We have
-> 
->                 if (!capable(CAP_SYS_ADMIN) && arg > pipe_max_pages)
->                         return -EINVAL;
-> 
-> The usual error on a capability denied is EPERM. Please change.
+To avoid breaking archs without compat syscalls.
 
-Right, that looks like a thinko.
-
-I'll submit a patch changing it to bytes and the agreed API and fix this
--Eerror. Thanks for your comments and suggestions!
-
--- 
-Jens Axboe
-
+Cheers,
+-Ian
