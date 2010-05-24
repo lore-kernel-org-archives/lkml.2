@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932708Ab0EXX1q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:27:46 -0400
-Received: from kroah.org ([198.145.64.141]:59459 "EHLO coco.kroah.org"
+	id S932626Ab0EXXXu (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:23:50 -0400
+Received: from kroah.org ([198.145.64.141]:59337 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932612Ab0EXXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:48 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:15 2010
-Message-Id: <20100524231815.713224572@clark.site>
+	id S932293Ab0EXXXa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:30 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:13 2010
+Message-Id: <20100524231813.825754602@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:40 -0700
+Date: Mon, 24 May 2010 16:15:19 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Frank Arnold <frank.arnold@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Subject: [28/39] x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
+       Robin Holt <holt@sgi.com>, Stefani Seibold <stefani@seibold.net>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Michal Simek <monstr@monstr.eu>, Ingo Molnar <mingo@elte.hu>
+Subject: [07/39] revert "procfs: provide stack information for threads" and its fixup commits
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,102 +27,179 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Frank Arnold <frank.arnold@amd.com>
+From: Robin Holt <holt@sgi.com>
 
-commit 7f284d3cc96e02468a42e045f77af11e5ff8b095 upstream.
+commit 34441427aab4bdb3069a4ffcda69a99357abcb2e upstream.
 
-When running a quest kernel on xen we get:
+Originally, commit d899bf7b ("procfs: provide stack information for
+threads") attempted to introduce a new feature for showing where the
+threadstack was located and how many pages are being utilized by the
+stack.
 
-BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
-IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
-PGD 0
-Oops: 0000 [#1] SMP
-last sysfs file:
-CPU 0
-Modules linked in:
+Commit c44972f1 ("procfs: disable per-task stack usage on NOMMU") was
+applied to fix the NO_MMU case.
 
-Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
-RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
-2ca/0x3df
-RSP: 0018:ffff880002203e08  EFLAGS: 00010046
-RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
-RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
-RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
-R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
-R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
-FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
-CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
-CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
-DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
-DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
-Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
-Stack:
- ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
-<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
-<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
-Call Trace:
- <IRQ>
- [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
- [<ffffffff81059140>] ? mod_timer+0x23/0x25
- [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
- [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
- [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
- [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
- [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
- [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
- [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
- [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
- [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
- <EOI>
- [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
- [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
- [<ffffffff810114eb>] ? default_idle+0x36/0x53
- [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
- [<ffffffff81423a9a>] rest_init+0x7e/0x80
- [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
- [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
- [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
-Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
- 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
- ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
-RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
- RSP <ffff880002203e08>
-CR2: 0000000000000038
----[ end trace a7919e7f17c0a726 ]---
+Commit 89240ba0 ("x86, fs: Fix x86 procfs stack information for threads on
+64-bit") was applied to fix a bug in ia32 executables being loaded.
 
-The L3 cache index disable feature of AMD CPUs has to be disabled if the
-kernel is running as guest on top of a hypervisor because northbridge
-devices are not available to the guest. Currently, this fixes a boot
-crash on top of Xen. In the future this will become an issue on KVM as
-well.
+Commit 9ebd4eba7 ("procfs: fix /proc/<pid>/stat stack pointer for kernel
+threads") was applied to fix a bug which had kernel threads printing a
+userland stack address.
 
-Check if northbridge devices are present and do not enable the feature
-if there are none.
+Commit 1306d603f ('proc: partially revert "procfs: provide stack
+information for threads"') was then applied to revert the stack pages
+being used to solve a significant performance regression.
 
-[ hpa: backported to 2.6.34 ]
+This patch nearly undoes the effect of all these patches.
 
-Signed-off-by: Frank Arnold <frank.arnold@amd.com>
-LKML-Reference: <1271945222-5283-3-git-send-email-bp@amd64.org>
-Acked-by: Borislav Petkov <borislav.petkov@amd.com>
-Signed-off-by: H. Peter Anvin <hpa@zytor.com>
+The reason for reverting these is it provides an unusable value in
+field 28.  For x86_64, a fork will result in the task->stack_start
+value being updated to the current user top of stack and not the stack
+start address.  This unpredictability of the stack_start value makes
+it worthless.  That includes the intended use of showing how much stack
+space a thread has.
+
+Other architectures will get different values.  As an example, ia64
+gets 0.  The do_fork() and copy_process() functions appear to treat the
+stack_start and stack_size parameters as architecture specific.
+
+I only partially reverted c44972f1 ("procfs: disable per-task stack usage
+on NOMMU") .  If I had completely reverted it, I would have had to change
+mm/Makefile only build pagewalk.o when CONFIG_PROC_PAGE_MONITOR is
+configured.  Since I could not test the builds without significant effort,
+I decided to not change mm/Makefile.
+
+I only partially reverted 89240ba0 ("x86, fs: Fix x86 procfs stack
+information for threads on 64-bit") .  I left the KSTK_ESP() change in
+place as that seemed worthwhile.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: Stefani Seibold <stefani@seibold.net>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
- 1 file changed, 4 insertions(+)
+ Documentation/filesystems/proc.txt |    3 +--
+ fs/compat.c                        |    2 --
+ fs/exec.c                          |    2 --
+ fs/proc/array.c                    |    3 +--
+ fs/proc/task_mmu.c                 |   19 -------------------
+ include/linux/sched.h              |    1 -
+ kernel/fork.c                      |    2 --
+ 7 files changed, 2 insertions(+), 30 deletions(-)
 
---- a/arch/x86/kernel/cpu/intel_cacheinfo.c
-+++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
-@@ -338,6 +338,10 @@ amd_check_l3_disable(int index, struct _
- 	     (boot_cpu_data.x86_mask  < 0x1)))
- 		return;
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -308,7 +308,7 @@ address           perms offset  dev   in
+ 08049000-0804a000 rw-p 00001000 03:00 8312       /opt/test
+ 0804a000-0806b000 rw-p 00000000 00:00 0          [heap]
+ a7cb1000-a7cb2000 ---p 00000000 00:00 0
+-a7cb2000-a7eb2000 rw-p 00000000 00:00 0          [threadstack:001ff4b4]
++a7cb2000-a7eb2000 rw-p 00000000 00:00 0
+ a7eb2000-a7eb3000 ---p 00000000 00:00 0
+ a7eb3000-a7ed5000 rw-p 00000000 00:00 0
+ a7ed5000-a8008000 r-xp 00000000 03:00 4222       /lib/libc.so.6
+@@ -344,7 +344,6 @@ is not associated with a file:
+  [stack]                  = the stack of the main process
+  [vdso]                   = the "virtual dynamic shared object",
+                             the kernel system call handler
+- [threadstack:xxxxxxxx]   = the stack of the thread, xxxxxxxx is the stack size
  
-+	/* not in virtualized environments */
-+	if (num_k8_northbridges == 0)
-+		return;
-+
- 	this_leaf->can_disable = true;
- 	this_leaf->l3_indices  = amd_calc_l3_indices();
- }
+  or if empty, the mapping is anonymous.
+ 
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1530,8 +1530,6 @@ int compat_do_execve(char * filename,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	current->stack_start = current->mm->start_stack;
+-
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1386,8 +1386,6 @@ int do_execve(char * filename,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	current->stack_start = current->mm->start_stack;
+-
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -82,7 +82,6 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/ptrace.h>
+ #include <linux/tracehook.h>
+-#include <linux/swapops.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/processor.h>
+@@ -494,7 +493,7 @@ static int do_task_stat(struct seq_file
+ 		rsslim,
+ 		mm ? mm->start_code : 0,
+ 		mm ? mm->end_code : 0,
+-		(permitted && mm) ? task->stack_start : 0,
++		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
+ 		/* The signal information here is obsolete.
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -243,25 +243,6 @@ static void show_map_vma(struct seq_file
+ 				} else if (vma->vm_start <= mm->start_stack &&
+ 					   vma->vm_end >= mm->start_stack) {
+ 					name = "[stack]";
+-				} else {
+-					unsigned long stack_start;
+-					struct proc_maps_private *pmp;
+-
+-					pmp = m->private;
+-					stack_start = pmp->task->stack_start;
+-
+-					if (vma->vm_start <= stack_start &&
+-					    vma->vm_end >= stack_start) {
+-						pad_len_spaces(m, len);
+-						seq_printf(m,
+-						 "[threadstack:%08lx]",
+-#ifdef CONFIG_STACK_GROWSUP
+-						 vma->vm_end - stack_start
+-#else
+-						 stack_start - vma->vm_start
+-#endif
+-						);
+-					}
+ 				}
+ 			} else {
+ 				name = "[vdso]";
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1560,7 +1560,6 @@ struct task_struct {
+ 	/* bitmask of trace recursion */
+ 	unsigned long trace_recursion;
+ #endif /* CONFIG_TRACING */
+-	unsigned long stack_start;
+ #ifdef CONFIG_CGROUP_MEM_RES_CTLR /* memcg uses this to do batch job */
+ 	struct memcg_batch_info {
+ 		int do_batch;	/* incremented when batch uncharge started */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1134,8 +1134,6 @@ static struct task_struct *copy_process(
+ 
+ 	p->bts = NULL;
+ 
+-	p->stack_start = stack_start;
+-
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+ 	sched_fork(p, clone_flags);
+ 
 
 
