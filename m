@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759001Ab0EXXJ3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:29 -0400
-Received: from kroah.org ([198.145.64.141]:36426 "EHLO coco.kroah.org"
+	id S932192Ab0EXXOJ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:14:09 -0400
+Received: from kroah.org ([198.145.64.141]:36421 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758733Ab0EXXJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1758979Ab0EXXJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 May 2010 19:09:24 -0400
 X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
-Message-Id: <20100524230350.507930895@clark.site>
+Message-Id: <20100524230350.417271635@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:45 -0700
+Date: Mon, 24 May 2010 15:59:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Valentin Longchamp <valentin.longchamp@epfl.ch>,
-       Wolfram Sang <w.sang@pengutronix.de>
-Subject: [13/34] serial: imx.c: fix CTS trigger level lower to avoid lost chars
+       Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [12/34] cifs: guard against hardlinking directories
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +25,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Valentin Longchamp <valentin.longchamp@epfl.ch>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 1c5250d6163dac28be3afabdfb6c723f107051b7 upstream.
+commit 3d69438031b00c601c991ab447cafb7d5c3c59a6 upstream.
 
-The imx CTS trigger level is left at its reset value that is 32
-chars. Since the RX FIFO has 32 entries, when CTS is raised, the
-FIFO already is full. However, some serial port devices first empty
-their TX FIFO before stopping when CTS is raised, resulting in lost
-chars.
+When we made serverino the default, we trusted that the field sent by the
+server in the "uniqueid" field was actually unique. It turns out that it
+isn't reliably so.
 
-This patch sets the trigger level lower so that other chars arrive
-after CTS is raised, there is still room for 16 of them.
+Samba, in particular, will just put the st_ino in the uniqueid field when
+unix extensions are enabled. When a share spans multiple filesystems, it's
+quite possible that there will be collisions. This is a server bug, but
+when the inodes in question are a directory (as is often the case) and
+there is a collision with the root inode of the mount, the result is a
+kernel panic on umount.
 
-Signed-off-by: Valentin Longchamp<valentin.longchamp@epfl.ch>
-Tested-by: Philippe Rétornaz<philippe.retornaz@epfl.ch>
-Acked-by: Wolfram Sang<w.sang@pengutronix.de>
+Fix this by checking explicitly for directory inodes with the same
+uniqueid. If that is the case, then we can assume that using server inode
+numbers will be a problem and that they should be disabled.
+
+Fixes Samba bugzilla 7407
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-and-Tested-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/imx.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ fs/cifs/cifsglob.h |    1 +
+ fs/cifs/inode.c    |   21 +++++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/drivers/serial/imx.c
-+++ b/drivers/serial/imx.c
-@@ -119,7 +119,8 @@
- #define  MX2_UCR3_RXDMUXSEL	 (1<<2)  /* RXD Muxed Input Select, on mx2/mx3 */
- #define  UCR3_INVT  	 (1<<1)  /* Inverted Infrared transmission */
- #define  UCR3_BPEN  	 (1<<0)  /* Preset registers enable */
--#define  UCR4_CTSTL_32   (32<<10) /* CTS trigger level (32 chars) */
-+#define  UCR4_CTSTL_SHF  10      /* CTS trigger level shift */
-+#define  UCR4_CTSTL_MASK 0x3F    /* CTS trigger is 6 bits wide */
- #define  UCR4_INVR  	 (1<<9)  /* Inverted infrared reception */
- #define  UCR4_ENIRI 	 (1<<8)  /* Serial infrared interrupt enable */
- #define  UCR4_WKEN  	 (1<<7)  /* Wake interrupt enable */
-@@ -590,6 +591,9 @@ static int imx_setup_ufcr(struct imx_por
- 	return 0;
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -499,6 +499,7 @@ struct dfs_info3_param {
+ #define CIFS_FATTR_DFS_REFERRAL		0x1
+ #define CIFS_FATTR_DELETE_PENDING	0x2
+ #define CIFS_FATTR_NEED_REVAL		0x4
++#define CIFS_FATTR_INO_COLLISION	0x8
+ 
+ struct cifs_fattr {
+ 	u32		cf_flags;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -610,6 +610,16 @@ cifs_find_inode(struct inode *inode, voi
+ 	if (CIFS_I(inode)->uniqueid != fattr->cf_uniqueid)
+ 		return 0;
+ 
++	/*
++	 * uh oh -- it's a directory. We can't use it since hardlinked dirs are
++	 * verboten. Disable serverino and return it as if it were found, the
++	 * caller can discard it, generate a uniqueid and retry the find
++	 */
++	if (S_ISDIR(inode->i_mode) && !list_empty(&inode->i_dentry)) {
++		fattr->cf_flags |= CIFS_FATTR_INO_COLLISION;
++		cifs_autodisable_serverino(CIFS_SB(inode->i_sb));
++	}
++
+ 	return 1;
  }
  
-+/* half the RX buffer size */
-+#define CTSTL 16
-+
- static int imx_startup(struct uart_port *port)
- {
- 	struct imx_port *sport = (struct imx_port *)port;
-@@ -606,6 +610,10 @@ static int imx_startup(struct uart_port
- 	if (USE_IRDA(sport))
- 		temp |= UCR4_IRSC;
+@@ -629,15 +639,22 @@ cifs_iget(struct super_block *sb, struct
+ 	unsigned long hash;
+ 	struct inode *inode;
  
-+	/* set the trigger level for CTS */
-+	temp &= ~(UCR4_CTSTL_MASK<<  UCR4_CTSTL_SHF);
-+	temp |= CTSTL<<  UCR4_CTSTL_SHF;
-+
- 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
++retry_iget5_locked:
+ 	cFYI(1, ("looking for uniqueid=%llu", fattr->cf_uniqueid));
  
- 	if (USE_IRDA(sport)) {
+ 	/* hash down to 32-bits on 32-bit arch */
+ 	hash = cifs_uniqueid_to_ino_t(fattr->cf_uniqueid);
+ 
+ 	inode = iget5_locked(sb, hash, cifs_find_inode, cifs_init_inode, fattr);
+-
+-	/* we have fattrs in hand, update the inode */
+ 	if (inode) {
++		/* was there a problematic inode number collision? */
++		if (fattr->cf_flags & CIFS_FATTR_INO_COLLISION) {
++			iput(inode);
++			fattr->cf_uniqueid = iunique(sb, ROOT_I);
++			fattr->cf_flags &= ~CIFS_FATTR_INO_COLLISION;
++			goto retry_iget5_locked;
++		}
++
+ 		cifs_fattr_to_inode(inode, fattr);
+ 		if (sb->s_flags & MS_NOATIME)
+ 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
 
 
