@@ -1,63 +1,210 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932247Ab0EXXoJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:44:09 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:56872 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757176Ab0EXXoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:44:05 -0400
+	id S932615Ab0EXXqg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:46:36 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:15710 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932301Ab0EXXqe (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:46:34 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=fxwb5ICPEbsWhsGZVRYzob8ExyLXrAk9N8NJ03oZJDi7JW8DkSQc56hz+M3atvCKx
+	eYRZQxontpGV7zPbwZWgQ==
+Date: Mon, 24 May 2010 16:46:24 -0700 (PDT)
+From: Hugh Dickins <hughd@google.com>
+X-X-Sender: hugh@sister.anvils
+To: Greg KH <gregkh@suse.de>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Tharindu Rukshan Bamunuarachchi <btharindu@gmail.com>,
+       linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: TMPFS over NFSv4
+In-Reply-To: <20100524110903.72524853@lxorguk.ukuu.org.uk>
+Message-ID: <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
+References: <AANLkTik47c6l3y8CdJ-hUCd2h3SRSb3qAtRovWryb8_p@mail.gmail.com> <alpine.LSU.2.00.1005211344440.7369@sister.anvils> <AANLkTil7I6q4wdLgmwZdRN6hb9LVVagN_7oGTIVNDhUk@mail.gmail.com> <AANLkTilMQjZaUom2h_aFgU6WB83IGH-VVKTg-CJD-_ZZ@mail.gmail.com>
+ <20100524110903.72524853@lxorguk.ukuu.org.uk>
+User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Oleg Nesterov <oleg@redhat.com>
-X-Fcc: ~/Mail/linus
-Cc: David Howells <dhowells@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage
-	of child->mm
-In-Reply-To: Oleg Nesterov's message of  Monday, 24 May 2010 17:14:45 +0200 <20100524151445.GA6393@redhat.com>
-References: <20100522165401.GB19573@redhat.com>
-	<1266280229-18469-1-git-send-email-vapier@gentoo.org>
-	<1274431345-22366-1-git-send-email-vapier@gentoo.org>
-	<20100521162659.GA16193@redhat.com>
-	<20100521183512.4477F40476@magilla.sf.frob.com>
-	<20100522165320.GA19573@redhat.com>
-	<25539.1274711817@redhat.com>
-	<20100524151445.GA6393@redhat.com>
-X-Shopping-List: (1) Capricious secretion intrusions
-   (2) Hierarchical stone impositions
-   (3) Petulant sugar
-Message-Id: <20100524234250.F158849A56@magilla.sf.frob.com>
-Date: Mon, 24 May 2010 16:42:50 -0700 (PDT)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> You mean, pass it to arch_ptrace() ?
+Hi Greg,
+
+On Mon, 24 May 2010, Alan Cox wrote:
+> On Mon, 24 May 2010 02:57:30 -0700
+> Hugh Dickins <hughd@google.com> wrote:
+> > On Mon, May 24, 2010 at 2:26 AM, Tharindu Rukshan Bamunuarachchi
+> > <btharindu@gmail.com> wrote:
+> > > thankx a lot Hugh ... I will try this out ... (bit harder patch
+> > > already patched SLES kernel :-p ) ....
+> > 
+> > If patch conflicts are a problem, you really only need to put in the
+> > two-liner patch to mm/mmap.c: Alan was seeking perfection in
+> > the rest of the patch, but you can get away without it.
+> > 
+> > >
+> > > BTW, what does Alan means by "strict overcommit" ?
+> > 
+> > Ah, that phrase, yes, it's a nonsense, but many of us do say it by mistake.
+> > Alan meant to say "strict no-overcommit".
 > 
-> grep, grep, grep. I guess I understand you. We have more unsafe code
-> like this in arch/*/kernel/ptrace.c. Of course, it can be fixed without
-> doing get_task_mm() in sys_ptrace(), but perhaps it would be more clean
-> to do what you suggest.
+> No I always meant to say 'strict overcommit'. It avoids excess negatives
+> and "no noovercommit" discussions.
 > 
-> Roland, what do you think?
+> I guess 'strict overcommit control' would have been clearer 8)
+> 
+> Alan
 
-The mm pointer is only used by these uncommon ptrace operations that exist
-only in certain unusual arch's (and they're all ill-advised old arch ptrace
-ABI additions, at that).  It doesn't seem wise to pay the overhead for
-get_task_mm()/mmput() on every ptrace call, 99.44% of which don't use it
-(and 100% on 90% of machines).
+I see we've just missed 2.6.27.47-rc1, but if there's to be an -rc2,
+please include Alan's 2.6.28 oops fix below: which Tharindu appears
+to be needing - just now discussed on linux-mm and linux-nfs.
+Failing that, please queue it up for 2.6.27.48.
 
-If you were to make any change to the signature of arch_ptrace() it should
-be one big change to use a struct ptrace_params or suchlike, also passed
-down to ptrace_request().  Then any future needs to pass around more
-information won't require changing the code in all the arch code that
-doesn't look at the new parameter.
-
+Or if you'd prefer a smaller patch for -stable, then just the mm/mmap.c
+part of it should suffice: I think it's fair to say that the rest of the
+patch was more precautionary - as Alan describes, for catching other bugs,
+so good for an ongoing development tree, but not necessarily in -stable.
+(However, Alan may disagree - I've already misrepresented him once here!)
 
 Thanks,
-Roland
+Hugh
+
+commit 731572d39fcd3498702eda4600db4c43d51e0b26
+Author: Alan Cox <alan@redhat.com>
+Date:   Wed Oct 29 14:01:20 2008 -0700
+
+    nfsd: fix vm overcommit crash
+    
+    Junjiro R.  Okajima reported a problem where knfsd crashes if you are
+    using it to export shmemfs objects and run strict overcommit.  In this
+    situation the current->mm based modifier to the overcommit goes through a
+    NULL pointer.
+    
+    We could simply check for NULL and skip the modifier but we've caught
+    other real bugs in the past from mm being NULL here - cases where we did
+    need a valid mm set up (eg the exec bug about a year ago).
+    
+    To preserve the checks and get the logic we want shuffle the checking
+    around and add a new helper to the vm_ security wrappers
+    
+    Also fix a current->mm reference in nommu that should use the passed mm
+    
+    [akpm@linux-foundation.org: coding-style fixes]
+    [akpm@linux-foundation.org: fix build]
+    Reported-by: Junjiro R. Okajima <hooanon05@yahoo.co.jp>
+    Acked-by: James Morris <jmorris@namei.org>
+    Signed-off-by: Alan Cox <alan@redhat.com>
+    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+
+diff --git a/include/linux/security.h b/include/linux/security.h
+index f5c4a51..c13f1ce 100644
+--- a/include/linux/security.h
++++ b/include/linux/security.h
+@@ -1585,6 +1585,7 @@ int security_syslog(int type);
+ int security_settime(struct timespec *ts, struct timezone *tz);
+ int security_vm_enough_memory(long pages);
+ int security_vm_enough_memory_mm(struct mm_struct *mm, long pages);
++int security_vm_enough_memory_kern(long pages);
+ int security_bprm_alloc(struct linux_binprm *bprm);
+ void security_bprm_free(struct linux_binprm *bprm);
+ void security_bprm_apply_creds(struct linux_binprm *bprm, int unsafe);
+@@ -1820,6 +1821,11 @@ static inline int security_vm_enough_memory(long pages)
+ 	return cap_vm_enough_memory(current->mm, pages);
+ }
+ 
++static inline int security_vm_enough_memory_kern(long pages)
++{
++	return cap_vm_enough_memory(current->mm, pages);
++}
++
+ static inline int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
+ {
+ 	return cap_vm_enough_memory(mm, pages);
+diff --git a/mm/mmap.c b/mm/mmap.c
+index 74f4d15..de14ac2 100644
+--- a/mm/mmap.c
++++ b/mm/mmap.c
+@@ -175,7 +175,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 
+ 	/* Don't let a single process grow too big:
+ 	   leave 3% of the size of this process for other processes */
+-	allowed -= mm->total_vm / 32;
++	if (mm)
++		allowed -= mm->total_vm / 32;
+ 
+ 	/*
+ 	 * cast `allowed' as a signed long because vm_committed_space
+diff --git a/mm/nommu.c b/mm/nommu.c
+index 2696b24..7695dc8 100644
+--- a/mm/nommu.c
++++ b/mm/nommu.c
+@@ -1454,7 +1454,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
+ 
+ 	/* Don't let a single process grow too big:
+ 	   leave 3% of the size of this process for other processes */
+-	allowed -= current->mm->total_vm / 32;
++	if (mm)
++		allowed -= mm->total_vm / 32;
+ 
+ 	/*
+ 	 * cast `allowed' as a signed long because vm_committed_space
+diff --git a/mm/shmem.c b/mm/shmem.c
+index d38d7e6..0ed0752 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -161,8 +161,8 @@ static inline struct shmem_sb_info *SHMEM_SB(struct super_block *sb)
+  */
+ static inline int shmem_acct_size(unsigned long flags, loff_t size)
+ {
+-	return (flags & VM_ACCOUNT)?
+-		security_vm_enough_memory(VM_ACCT(size)): 0;
++	return (flags & VM_ACCOUNT) ?
++		security_vm_enough_memory_kern(VM_ACCT(size)) : 0;
+ }
+ 
+ static inline void shmem_unacct_size(unsigned long flags, loff_t size)
+@@ -179,8 +179,8 @@ static inline void shmem_unacct_size(unsigned long flags, loff_t size)
+  */
+ static inline int shmem_acct_block(unsigned long flags)
+ {
+-	return (flags & VM_ACCOUNT)?
+-		0: security_vm_enough_memory(VM_ACCT(PAGE_CACHE_SIZE));
++	return (flags & VM_ACCOUNT) ?
++		0 : security_vm_enough_memory_kern(VM_ACCT(PAGE_CACHE_SIZE));
+ }
+ 
+ static inline void shmem_unacct_blocks(unsigned long flags, long pages)
+diff --git a/security/security.c b/security/security.c
+index 255b085..c0acfa7 100644
+--- a/security/security.c
++++ b/security/security.c
+@@ -198,14 +198,23 @@ int security_settime(struct timespec *ts, struct timezone *tz)
+ 
+ int security_vm_enough_memory(long pages)
+ {
++	WARN_ON(current->mm == NULL);
+ 	return security_ops->vm_enough_memory(current->mm, pages);
+ }
+ 
+ int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
+ {
++	WARN_ON(mm == NULL);
+ 	return security_ops->vm_enough_memory(mm, pages);
+ }
+ 
++int security_vm_enough_memory_kern(long pages)
++{
++	/* If current->mm is a kernel thread then we will pass NULL,
++	   for this specific case that is fine */
++	return security_ops->vm_enough_memory(current->mm, pages);
++}
++
+ int security_bprm_alloc(struct linux_binprm *bprm)
+ {
+ 	return security_ops->bprm_alloc_security(bprm);
