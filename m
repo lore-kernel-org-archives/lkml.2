@@ -1,111 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758506Ab0EXWli (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:41:38 -0400
-Received: from kroah.org ([198.145.64.141]:42336 "EHLO coco.kroah.org"
+	id S1758605Ab0EXWlk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:41:40 -0400
+Received: from kroah.org ([198.145.64.141]:42333 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757150Ab0EXWiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757057Ab0EXWiS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 May 2010 18:38:18 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
-Message-Id: <20100524223016.208581966@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:06 -0700
+Date: Mon, 24 May 2010 15:35:44 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
-In-Reply-To: <20100524223544.GA13721@kroah.com>
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
+Subject: [00/24] 2.6.27.47-stable review
+Message-ID: <20100524223544.GA13721@kroah.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+This is the start of the stable review cycle for the 2.6.27.47 release.
+There are 24 patches in this series, all will be posted as a response to
+this one.  If anyone has any issues with these being applied, please let
+us know.  If anyone is a maintainer of the proper subsystem, and wants
+to add a Signed-off-by: line to the patch, please respond with it.
 
-------------------
+Responses should be made by Wed May 26, 22:00:00 UTC 2010
+Anything received after that time might be too late.
 
+The whole patch series can be found in one patch at:
+	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.47-rc1.gz
+and the diffstat can be found below.
 
-From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+thanks,
 
-commit 17bc6c30cf6bfffd816bdc53682dd46fc34a2cf4 upstream.
-
-If no_nrwrite_index_update is set we don't update nr_to_write and
-address space writeback_index in write_cache_pages.  This change
-enables a file system to skip these updates in write_cache_pages and do
-them in the writepages() callback.  This patch will be followed by an
-ext4 patch that make use of these new flags.
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-CC: linux-fsdevel@vger.kernel.org
-[dev@jaysonking.com: Modified the patch to account for subsequent changes in mainline being cherry-picked earlier for 2.6.27.y.]
-Signed-off-by: Jayson R. King <dev@jaysonking.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- include/linux/writeback.h |    9 +++++++++
- mm/page-writeback.c       |   14 +++++++++-----
- 2 files changed, 18 insertions(+), 5 deletions(-)
-
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -62,6 +62,15 @@ struct writeback_control {
- 	unsigned for_writepages:1;	/* This is a writepages() call */
- 	unsigned range_cyclic:1;	/* range_start is cyclic */
- 	unsigned more_io:1;		/* more io to be dispatched */
-+	/*
-+	 * write_cache_pages() won't update wbc->nr_to_write and
-+	 * mapping->writeback_index if no_nrwrite_index_update
-+	 * is set.  write_cache_pages() may write more than we
-+	 * requested and we want to make sure nr_to_write and
-+	 * writeback_index are updated in a consistent manner
-+	 * so we use a single control to update them
-+	 */
-+	unsigned no_nrwrite_index_update:1;
- };
- 
- /*
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -878,6 +878,7 @@ int write_cache_pages(struct address_spa
- 	pgoff_t done_index;
- 	int cycled;
- 	int range_whole = 0;
-+	long nr_to_write = wbc->nr_to_write;
- 
- 	if (wbc->nonblocking && bdi_write_congested(bdi)) {
- 		wbc->encountered_congestion = 1;
-@@ -985,9 +986,9 @@ continue_unlock:
- 				}
-  			}
- 
--			if (wbc->nr_to_write > 0) {
--				wbc->nr_to_write--;
--				if (wbc->nr_to_write == 0 &&
-+			if (nr_to_write > 0) {
-+				nr_to_write--;
-+				if (nr_to_write == 0 &&
- 				    wbc->sync_mode == WB_SYNC_NONE) {
- 					/*
- 					 * We stop writing back only if we are
-@@ -1024,8 +1025,11 @@ continue_unlock:
- 		end = writeback_index - 1;
- 		goto retry;
- 	}
--	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
--		mapping->writeback_index = done_index;
-+	if (!wbc->no_nrwrite_index_update) {
-+		if (wbc->range_cyclic || (range_whole && nr_to_write > 0))
-+			mapping->writeback_index = done_index;
-+		wbc->nr_to_write = nr_to_write;
-+	}
- 
- 	return ret;
- }
+greg k-h
 
 
+ Makefile                             |    2 +-
+ arch/x86/kernel/process.c            |    6 +-
+ drivers/acpi/processor_idle.c        |   13 +-
+ drivers/ata/libata-eh.c              |    6 +-
+ drivers/char/tty_io.c                |    2 +
+ drivers/i2c/i2c-core.c               |   24 ++-
+ drivers/scsi/megaraid/megaraid_sas.c |   18 ++-
+ drivers/usb/core/inode.c             |    4 +-
+ fs/ext4/balloc.c                     |   88 ++++++++--
+ fs/ext4/ext4.h                       |   13 ++
+ fs/ext4/ext4_sb.h                    |    1 +
+ fs/ext4/inode.c                      |  314 ++++++++++++++++++++++++----------
+ fs/ext4/mballoc.c                    |   39 +++--
+ fs/ext4/super.c                      |    8 +-
+ fs/nfs/client.c                      |    2 +
+ fs/nfs/dir.c                         |    2 +
+ fs/nfsd/nfs4xdr.c                    |    8 +-
+ include/linux/percpu_counter.h       |   12 +-
+ include/linux/writeback.h            |   10 +-
+ kernel/time/clockevents.c            |   16 +-
+ kernel/time/tick-broadcast.c         |    7 +-
+ kernel/trace/trace.c                 |    2 +-
+ lib/percpu_counter.c                 |    8 +-
+ mm/page-writeback.c                  |   16 +-
+ net/sunrpc/svc_xprt.c                |   25 ++-
+ sound/pci/mixart/mixart.c            |   24 ++-
+ 26 files changed, 467 insertions(+), 203 deletions(-)
