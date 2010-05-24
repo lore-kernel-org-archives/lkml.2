@@ -1,49 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757739Ab0EXRfy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 13:35:54 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:43879 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752982Ab0EXRfx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 13:35:53 -0400
-Date: Mon, 24 May 2010 19:35:51 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: mtk.manpages@gmail.com
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100524173551.GU23411@kernel.dk>
-References: <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com>
+	id S1758148Ab0EXRop (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 13:44:45 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:34536
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757721Ab0EXRoo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 13:44:44 -0400
+Date: Mon, 24 May 2010 10:44:50 -0700 (PDT)
+Message-Id: <20100524.104450.178799105.davem@davemloft.net>
+To: Tristram.Ha@Micrel.Com
+Cc: ben@simtec.co.uk, netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       x0066660@ti.com, s-jan@ti.com
+Subject: Re: [PATCH 2.6.34-rc6] net: Improve ks8851 snl transmit performance
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <14385191E87B904DBD836449AA30269D6DF528@MORGANITE.micrel.com>
+References: <14385191E87B904DBD836449AA30269D021A64@MORGANITE.micrel.com>
+	<20100516.002607.84408834.davem@davemloft.net>
+	<14385191E87B904DBD836449AA30269D6DF528@MORGANITE.micrel.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24 2010, Michael Kerrisk wrote:
-> > Right, that looks like a thinko.
-> >
-> > I'll submit a patch changing it to bytes and the agreed API and fix this
-> > -Eerror. Thanks for your comments and suggestions!
-> 
-> Thanks. And of course you are welcome. (Please CC linux-api@vger on
-> this patche (and all patches that change the API/ABI.)
+From: "Ha, Tristram" <Tristram.Ha@Micrel.Com>
+Date: Mon, 24 May 2010 10:28:40 -0700
 
-The first change is this:
+> As the socket buffer is accepted by the lowest level network driver and
+> reaches the end of its life, I think using one of its variables
+> temporarily does not cause any harm.
 
-http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
-
-and the one dealing with the pages vs bytes API is this:
-
-http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
-
-Not tested yet, will do so before sending in of course.
-
--- 
-Jens Axboe
-
+The packet can be referenced by packet sniffers and other entities in
+the kernel.
