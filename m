@@ -1,15 +1,16 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756773Ab0EXHqK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 03:46:10 -0400
-Received: from mail.parknet.co.jp ([210.171.160.6]:53455 "EHLO
+	id S1756785Ab0EXHtn (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:49:43 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:44643 "EHLO
 	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753278Ab0EXHqI (ORCPT
+	with ESMTP id S1752672Ab0EXHtm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 03:46:08 -0400
+	Mon, 24 May 2010 03:49:42 -0400
 From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+To: mtk.manpages@gmail.com
+Cc: Jens Axboe <jens.axboe@oracle.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
        Linus Torvalds <torvalds@linux-foundation.org>,
        Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
@@ -24,10 +25,11 @@ References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu>
 	<20100523174706.GP23411@kernel.dk>
 	<87632e846m.fsf@devron.myhome.or.jp>
 	<20100524070416.GQ23411@kernel.dk>
-Date: Mon, 24 May 2010 16:46:03 +0900
-In-Reply-To: <20100524070416.GQ23411@kernel.dk> (Jens Axboe's message of "Mon,
-	24 May 2010 09:04:16 +0200")
-Message-ID: <87bpc54u9w.fsf@devron.myhome.or.jp>
+	<AANLkTikwTa16lDh87zkI-L9SaI9jG1_eqZuo4z7dj2qP@mail.gmail.com>
+Date: Mon, 24 May 2010 16:49:40 +0900
+In-Reply-To: <AANLkTikwTa16lDh87zkI-L9SaI9jG1_eqZuo4z7dj2qP@mail.gmail.com>
+	(Michael Kerrisk's message of "Mon, 24 May 2010 09:28:54 +0200")
+Message-ID: <877hmt4u3v.fsf@devron.myhome.or.jp>
 User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
@@ -35,32 +37,13 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jens Axboe <jens.axboe@oracle.com> writes:
+Michael Kerrisk <mtk.manpages@googlemail.com> writes:
 
->> >> I'd recommend this: Pass it in and out in bytes. Don't round to a
->> >> power of 2. Require the user to know what they are doing. Give an
->> >> error if the user doesn't supply a power-of-2 * page-size for
->> >> F_SETPIPE_SZ. (Again, consider the case of architectures  with
->> >> switchable page sizes.)
->> >
->> > But is there much point in erroring on an incorrect size? If the
->> > application says "I need at least 120kb of space in there", kernel
->> > returns "OK, you got 128kb". Would returning -1/EINVAL for that case
->> > really make a better API? Doesn't seem like it to me.
->> 
->> FWIW, my first impression of this was setsockopt(SO_RCV/SNDBUF) of unix
->> socket. Well, API itself wouldn't say "at least this size" or "exactly
->> this size", so, in here, important thing is consistency of interfaces, I
->> think. (And the both is sane API at least for me if those had
->> consistency in the system.)
->> 
->> Well, so how about set/get in bytes, and kernel will set "at least
->> specified size" actually like setsockopt(SO_RCV/SNDBUF)?
->
-> Isn't that pretty much what I described?
+> Actually, SO_*BUF is pretty weird. It returns double what was
+> supplied. It's not simply a matter of rounding up: it always doubles
+> what was supplied.
 
-Yes, probably. Well, 120kb was still multiple of page size. :)
-
-Thanks.
+Yes. However, well, I'm feeling it also is implementation detail of "at
+least". :)
 -- 
 OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
