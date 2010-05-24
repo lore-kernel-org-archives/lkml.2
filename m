@@ -1,48 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756198Ab0EXHUD (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 03:20:03 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:58402 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756085Ab0EXHUA (ORCPT
+	id S1756178Ab0EXHWi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:22:38 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:40021
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1755808Ab0EXHWh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 03:20:00 -0400
-Date: Mon, 24 May 2010 08:19:21 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-arm-kernel@lists.infradead.org, linux-embedded@vger.kernel.org,
-       a.p.zijlstra@chello.nl, linux-kernel@vger.kernel.org
-Subject: Re: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
-Message-ID: <20100524071921.GA17528@n2100.arm.linux.org.uk>
-References: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com> <20100523123801.GC950@n2100.arm.linux.org.uk> <AANLkTikRp0EHxshKYq39p18ymoRNAtyHrNm3yq6A49-r@mail.gmail.com> <20100523141300.GD950@n2100.arm.linux.org.uk> <AANLkTinV9Na9zxYMIfTr893Ynnc0YOk2B6uPKEa9s4R1@mail.gmail.com> <20100523194746.GE950@n2100.arm.linux.org.uk> <20100524112355.18424622@tom-lei>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100524112355.18424622@tom-lei>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Mon, 24 May 2010 03:22:37 -0400
+Date: Mon, 24 May 2010 00:22:47 -0700 (PDT)
+Message-Id: <20100524.002247.76114229.davem@davemloft.net>
+To: ruirui.r.yang@tieto.com
+Cc: mostrows@earthlink.net, linux-kernel@vger.kernel.org,
+       hidave.darkstar@gmail.com
+Subject: Re: [PATCH] pppoe: initilize pppoe_pernet before usage
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <201005241519.47159.ruirui.r.yang@tieto.com>
+References: <201005241519.47159.ruirui.r.yang@tieto.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:23:55AM +0800, Ming Lei wrote:
-> On Sun, 23 May 2010 20:47:46 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> > Moreover, I put to you that it's utterly pointless - and a waste of
-> > CPU time - telling lockdep about the IRQ masking when an exception
-> 
-> Yes, the patch still tries to remove the pointless trace of IRQ masking,
-> such as: replace disable_irq with disable_irq_notrace.
-> 
-> > occurs, and it's also pointless telling lockdep about the IRQ
-> > unmasking when we resume userspace.
-> 
-> Even it is pointless, but if lockdep doesn't see the IRQ unmasking, the 
-> warning "unannotated irqs-on" will be triggered and lockdep doe not work
-> any longer, so we have to remove the warning to make lockdep workable on
-> ARM, could you agree on it?  It is the main purpose of the patch.
+From: Yang Ruirui <ruirui.r.yang@tieto.com>
+Date: Mon, 24 May 2010 15:19:46 +0800
 
-I'm sorry, I think we have a communication issue; you're not understanding
-the points that I'm making.  I feel I'm wasting my time trying to explain
-it.
+> ifconfig eth0 down in my kvm guest cause following oops, it's due to pppoe_net in
+> pppoe_flush_dev is not initilized:
 
-I'm not merging your patch as-is because I believe it to be wrong.
+I have this fix in my net-2.6 tree already.
+
+Thanks!
