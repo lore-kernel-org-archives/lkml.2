@@ -1,46 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756822Ab0EXIXQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 04:23:16 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:57106 "EHLO song.cn.fujitsu.com"
+	id S1756833Ab0EXIXe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 04:23:34 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:53055 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1756136Ab0EXIXN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 04:23:13 -0400
-Message-ID: <4BFA37FC.1000709@cn.fujitsu.com>
-Date: Mon, 24 May 2010 16:25:32 +0800
+	id S1756136Ab0EXIXc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 04:23:32 -0400
+Message-ID: <4BFA3808.5080203@cn.fujitsu.com>
+Date: Mon, 24 May 2010 16:25:44 +0800
 From: Li Zefan <lizf@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-To: "Theodore Ts'o" <tytso@mit.edu>
-CC: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: [PATCH] ext4: Add a missing trace hook
+To: Eric Anholt <eric@anholt.net>
+CC: airlied@linux.ie, chris@chris-wilson.co.uk,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.sourceforge.net
+Subject: [PATCH] drm/i915: Convert more trace events to DEFINE_EVENT
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f8ec9d6837241865cf99bed97bb99f4399fd5a03 added a
-trace event ext4_da_release_space, but didn't add some
-corresponding trace hook.
+Convert i915_gem_object_clflush to DEFINE_EVENT, and save ~0.5K:
+
+   text    data     bss     dec     hex filename
+  13204    2732      12   15948    3e4c i915_trace_points.o.orig
+  12668    2732      12   15412    3c34 i915_trace_points.o
+
+No change in functionality.
 
 Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 ---
- fs/ext4/inode.c |    1 +
- 1 files changed, 1 insertions(+), 0 deletions(-)
+ drivers/gpu/drm/i915/i915_trace.h |   24 +++++++-----------------
+ 1 files changed, 7 insertions(+), 17 deletions(-)
 
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 81d6054..b71f883 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1910,6 +1910,7 @@ static void ext4_da_release_space(struct inode *inode, int to_free)
+diff --git a/drivers/gpu/drm/i915/i915_trace.h b/drivers/gpu/drm/i915/i915_trace.h
+index 9e4c45f..fab2176 100644
+--- a/drivers/gpu/drm/i915/i915_trace.h
++++ b/drivers/gpu/drm/i915/i915_trace.h
+@@ -53,23 +53,6 @@ TRACE_EVENT(i915_gem_object_bind,
+ 		      __entry->obj, __entry->gtt_offset)
+ );
  
- 	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+-TRACE_EVENT(i915_gem_object_clflush,
+-
+-	    TP_PROTO(struct drm_gem_object *obj),
+-
+-	    TP_ARGS(obj),
+-
+-	    TP_STRUCT__entry(
+-			     __field(struct drm_gem_object *, obj)
+-			     ),
+-
+-	    TP_fast_assign(
+-			   __entry->obj = obj;
+-			   ),
+-
+-	    TP_printk("obj=%p", __entry->obj)
+-);
+-
+ TRACE_EVENT(i915_gem_object_change_domain,
  
-+	trace_ext4_da_release_space(inode, to_free);
- 	if (unlikely(to_free > ei->i_reserved_data_blocks)) {
- 		/*
- 		 * if there aren't enough reserved blocks, then the
+ 	    TP_PROTO(struct drm_gem_object *obj, uint32_t old_read_domains, uint32_t old_write_domain),
+@@ -132,6 +115,13 @@ DECLARE_EVENT_CLASS(i915_gem_object,
+ 	    TP_printk("obj=%p", __entry->obj)
+ );
+ 
++DEFINE_EVENT(i915_gem_object, i915_gem_object_clflush,
++
++	    TP_PROTO(struct drm_gem_object *obj),
++
++	    TP_ARGS(obj)
++);
++
+ DEFINE_EVENT(i915_gem_object, i915_gem_object_unbind,
+ 
+ 	    TP_PROTO(struct drm_gem_object *obj),
 -- 
 1.6.3
 
