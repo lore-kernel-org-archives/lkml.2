@@ -1,95 +1,135 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752370Ab0ENEnh (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:43:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:30445 "EHLO mx1.redhat.com"
+	id S1759091Ab0EXXJo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:09:44 -0400
+Received: from kroah.org ([198.145.64.141]:36518 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751898Ab0ENEnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:43:35 -0400
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
-From: Roland McGrath <roland@redhat.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86: Use .cfi_sections
-X-Fcc: ~/Mail/linus
-Emacs: no job too big... no job.
-Message-Id: <20100514044303.A6FE7400BE@magilla.sf.frob.com>
-Date: Thu, 13 May 2010 21:43:03 -0700 (PDT)
+	id S1759048Ab0EXXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:36 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
+Message-Id: <20100524230351.748291415@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 15:59:59 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Larry Finger <Larry.Finger@lwfinger.net>,
+       Christian Lamparter <chunkeey@web.de>,
+       "John W. Linville" <linville@tuxdriver.com>
+Subject: [27/34] p54: disable channels with incomplete calibration data sets
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The following changes since commit 6a251b0ab67989f468f4cb65179e0cf40cf8c295:
-  Linus Torvalds (1):
-        Merge branch 'for-linus' of git://git.kernel.org/.../sameo/mfd-2.6
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-are available in the git repository at:
+------------------
 
-  git://git.kernel.org/pub/scm/linux/kernel/git/frob/linux-2.6-roland.git x86/cfi
+From: Christian Lamparter <chunkeey@googlemail.com>
 
-Roland McGrath (1):
-      x86: Use .cfi_sections
+commit 93a59d7527147e3656664aa3179f8d19de256081 upstream.
 
- arch/x86/Makefile             |    5 +++--
- arch/x86/include/asm/dwarf2.h |   12 ++++++++++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
+James Grossmann [1] reported that p54 spews out confusing
+messages instead of preventing the mayhem from happening.
 
+the reason is that "p54: generate channel list dynamically"
+is not perfect. It didn't discard incomplete channel data
+sets and therefore p54 advertised to support them as well.
 
-Thanks,
-Roland
+[1]: http://marc.info/?l=linux-wireless&m=125699830215890
+
+Cc: Larry Finger <Larry.Finger@lwfinger.net>
+Reported-by: James Grossmann <cctsurf@gmail.com>
+Signed-off-by: Christian Lamparter <chunkeey@web.de>
+Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
-[PATCH] x86: Use .cfi_sections
+ drivers/net/wireless/p54/eeprom.c |   31 +++++++++++++++++++------------
+ 1 file changed, 19 insertions(+), 12 deletions(-)
 
-The newer assemblers support the .cfi_sections directive so we can put
-the CFI from .S files into the .debug_frame section that is preserved
-in unstripped vmlinux and in separate debuginfo, rather than the
-.eh_frame section that is now discarded by vmlinux.lds.S.
-
-Signed-off-by: Roland McGrath <roland@redhat.com>
----
- arch/x86/Makefile             |    5 +++--
- arch/x86/include/asm/dwarf2.h |   12 ++++++++++++
- 2 files changed, 15 insertions(+), 2 deletions(-)
-
-diff --git a/arch/x86/Makefile b/arch/x86/Makefile
-index 0a43dc5..8aa1b59 100644
---- a/arch/x86/Makefile
-+++ b/arch/x86/Makefile
-@@ -95,8 +95,9 @@ sp-$(CONFIG_X86_64) := rsp
- cfi := $(call as-instr,.cfi_startproc\n.cfi_rel_offset $(sp-y)$(comma)0\n.cfi_endproc,-DCONFIG_AS_CFI=1)
- # is .cfi_signal_frame supported too?
- cfi-sigframe := $(call as-instr,.cfi_startproc\n.cfi_signal_frame\n.cfi_endproc,-DCONFIG_AS_CFI_SIGNAL_FRAME=1)
--KBUILD_AFLAGS += $(cfi) $(cfi-sigframe)
--KBUILD_CFLAGS += $(cfi) $(cfi-sigframe)
-+cfi-sections := $(call as-instr,.cfi_sections .debug_frame,-DCONFIG_AS_CFI_SECTIONS=1)
-+KBUILD_AFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections)
-+KBUILD_CFLAGS += $(cfi) $(cfi-sigframe) $(cfi-sections)
+--- a/drivers/net/wireless/p54/eeprom.c
++++ b/drivers/net/wireless/p54/eeprom.c
+@@ -126,7 +126,7 @@ static int p54_generate_band(struct ieee
+ 	int ret = -ENOMEM;
  
- LDFLAGS := -m elf_$(UTS_MACHINE)
+ 	if ((!list->entries) || (!list->band_channel_num[band]))
+-		return 0;
++		return -EINVAL;
  
-diff --git a/arch/x86/include/asm/dwarf2.h b/arch/x86/include/asm/dwarf2.h
-index ae6253a..733f7e9 100644
---- a/arch/x86/include/asm/dwarf2.h
-+++ b/arch/x86/include/asm/dwarf2.h
-@@ -34,6 +34,18 @@
- #define CFI_SIGNAL_FRAME
- #endif
+ 	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
+ 	if (!tmp)
+@@ -158,6 +158,7 @@ static int p54_generate_band(struct ieee
+ 			       (list->channels[i].data & CHAN_HAS_CURVE ? "" :
+ 				" [curve data]"),
+ 			       list->channels[i].index, list->channels[i].freq);
++			continue;
+ 		}
  
-+#if defined(CONFIG_AS_CFI_SECTIONS) && defined(__ASSEMBLY__)
-+	/*
-+	 * Emit CFI data in .debug_frame sections, not .eh_frame sections.
-+	 * The latter we currently just discard since we don't do DWARF
-+	 * unwinding at runtime.  So only the offline DWARF information is
-+	 * useful to anyone.  Note we should not use this directive if this
-+	 * file is used in the vDSO assembly, or if vmlinux.lds.S gets
-+	 * changed so it doesn't discard .eh_frame.
-+	 */
-+	.cfi_sections .debug_frame
-+#endif
+ 		tmp->channels[j].band = list->channels[i].band;
+@@ -165,7 +166,16 @@ static int p54_generate_band(struct ieee
+ 		j++;
+ 	}
+ 
+-	tmp->n_channels = list->band_channel_num[band];
++	if (j == 0) {
++		printk(KERN_ERR "%s: Disabling totally damaged %s band.\n",
++		       wiphy_name(dev->wiphy), (band == IEEE80211_BAND_2GHZ) ?
++		       "2 GHz" : "5 GHz");
 +
- #else
++		ret = -ENODATA;
++		goto err_out;
++	}
++
++	tmp->n_channels = j;
+ 	old = priv->band_table[band];
+ 	priv->band_table[band] = tmp;
+ 	if (old) {
+@@ -228,13 +238,13 @@ static int p54_generate_channel_lists(st
+ 	struct p54_common *priv = dev->priv;
+ 	struct p54_channel_list *list;
+ 	unsigned int i, j, max_channel_num;
+-	int ret = -ENOMEM;
++	int ret = 0;
+ 	u16 freq;
  
- /*
+ 	if ((priv->iq_autocal_len != priv->curve_data->entries) ||
+ 	    (priv->iq_autocal_len != priv->output_limit->entries))
+-		printk(KERN_ERR "%s: EEPROM is damaged... you may not be able"
+-				"to use all channels with this device.\n",
++		printk(KERN_ERR "%s: Unsupported or damaged EEPROM detected. "
++				"You may not be able to use all channels.\n",
+ 				wiphy_name(dev->wiphy));
+ 
+ 	max_channel_num = max_t(unsigned int, priv->output_limit->entries,
+@@ -243,8 +253,10 @@ static int p54_generate_channel_lists(st
+ 				priv->curve_data->entries);
+ 
+ 	list = kzalloc(sizeof(*list), GFP_KERNEL);
+-	if (!list)
++	if (!list) {
++		ret = -ENOMEM;
+ 		goto free;
++	}
+ 
+ 	list->max_entries = max_channel_num;
+ 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
+@@ -282,13 +294,8 @@ static int p54_generate_channel_lists(st
+ 	     p54_compare_channels, NULL);
+ 
+ 	for (i = 0, j = 0; i < IEEE80211_NUM_BANDS; i++) {
+-		if (list->band_channel_num[i]) {
+-			ret = p54_generate_band(dev, list, i);
+-			if (ret)
+-				goto free;
+-
++		if (p54_generate_band(dev, list, i) == 0)
+ 			j++;
+-		}
+ 	}
+ 	if (j == 0) {
+ 		/* no useable band available. */
+
+
