@@ -1,58 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752197Ab0EXF1o (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 01:27:44 -0400
-Received: from ozlabs.org ([203.10.76.45]:56564 "EHLO ozlabs.org"
+	id S1752023Ab0EXF1m (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 01:27:42 -0400
+Received: from ozlabs.org ([203.10.76.45]:56563 "EHLO ozlabs.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751360Ab0EXF1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1751244Ab0EXF1l (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Mon, 24 May 2010 01:27:41 -0400
-Date: Mon, 24 May 2010 14:29:58 +1000
+Date: Mon, 24 May 2010 15:27:35 +1000
 From: Paul Mackerras <paulus@samba.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] perf, trace: Remove IRQ-disable from
- perf/tracepoint interaction
-Message-ID: <20100524042958.GA10628@drongo>
-References: <20100521090201.326791353@chello.nl>
- <20100521090710.419716197@chello.nl>
- <20100523121159.GB3194@brick.ozlabs.ibm.com>
- <1274638587.1674.1729.camel@laptop>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: linux-kernel@vger.kernel.org
+Subject: [PATCH] tracing, powerpc: Add data parameter to powerpc-specific
+ tracepoints
+Message-ID: <20100524052735.GB10628@drongo>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274638587.1674.1729.camel@laptop>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 08:16:27PM +0200, Peter Zijlstra wrote:
+Commit 38516ab5 ("tracing: Let tracepoints have data passed to
+tracepoint callbacks") added a void *data parameter to tracing
+callbacks and to the {un,}register_trace_* functions, requiring all
+tracepoint callback functions to have the extra void * parameter.
 
-> On Sun, 2010-05-23 at 22:11 +1000, Paul Mackerras wrote:
-> > This is breaking on powerpc -- we don't have a "flags" element in
-> > struct pt_regs.  What is it trying to do?  Get the interrupt enable
-> > state, as local_irq_save(flags) would provide?
-> 
-> Yes, I fouled that up.
-> 
-> On x86 perf_arch_fetch_caller_regs() stores pt_regs::flags, which is the
-> same as used in local_save_flags().
-> 
-> So to avoid another local_save_flags() for the ftrace code, I wanted to
-> reuse it, and totally forgot the !x86 side of things.
-> 
-> Possibly we could remove the local_save_flags() from the
-> perf_arch_fetch_caller_regs() as I'm not sure we actually use
-> pt_regs::flags (Frederic?) and leave the ftrace thing to use
-> local_save_flags().
-> 
-> Something like:
+This adds the void *data parameter to the tracepoints in the pSeries
+hypervisor call code.  Without this, hvCall_inst.c fails to compile
+with tracing enabled.
 
-Yes, that works -- at least, it compiles and seems to run. :)
+Signed-off-by: Paul Mackerras <paulus@samba.org>
+---
+ arch/powerpc/platforms/pseries/hvCall_inst.c |   13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
 
-Acked-by: Paul Mackerras <paulus@samba.org>
-
-Paul.
+diff --git a/arch/powerpc/platforms/pseries/hvCall_inst.c b/arch/powerpc/platforms/pseries/hvCall_inst.c
+index 1fefae7..9d03ef5 100644
+--- a/arch/powerpc/platforms/pseries/hvCall_inst.c
++++ b/arch/powerpc/platforms/pseries/hvCall_inst.c
+@@ -102,7 +102,8 @@ static const struct file_operations hcall_inst_seq_fops = {
+ #define CPU_NAME_BUF_SIZE	32
+ 
+ 
+-static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
++static void probe_hcall_entry(void *data, unsigned long opcode,
++			      unsigned long *args)
+ {
+ 	struct hcall_stats *h;
+ 
+@@ -114,8 +115,8 @@ static void probe_hcall_entry(unsigned long opcode, unsigned long *args)
+ 	h->purr_start = mfspr(SPRN_PURR);
+ }
+ 
+-static void probe_hcall_exit(unsigned long opcode, unsigned long retval,
+-			     unsigned long *retbuf)
++static void probe_hcall_exit(void *data, unsigned long opcode,
++			     unsigned long retval, unsigned long *retbuf)
+ {
+ 	struct hcall_stats *h;
+ 
+@@ -140,11 +141,11 @@ static int __init hcall_inst_init(void)
+ 	if (!firmware_has_feature(FW_FEATURE_LPAR))
+ 		return 0;
+ 
+-	if (register_trace_hcall_entry(probe_hcall_entry))
++	if (register_trace_hcall_entry(probe_hcall_entry, NULL))
+ 		return -EINVAL;
+ 
+-	if (register_trace_hcall_exit(probe_hcall_exit)) {
+-		unregister_trace_hcall_entry(probe_hcall_entry);
++	if (register_trace_hcall_exit(probe_hcall_exit, NULL)) {
++		unregister_trace_hcall_entry(probe_hcall_entry, NULL);
+ 		return -EINVAL;
+ 	}
+ 
