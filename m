@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758589Ab0EXWji (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:39:38 -0400
-Received: from kroah.org ([198.145.64.141]:42401 "EHLO coco.kroah.org"
+	id S1758519Ab0EXWkz (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:40:55 -0400
+Received: from kroah.org ([198.145.64.141]:42363 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758443Ab0EXWi0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:26 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:19 2010
-Message-Id: <20100524223018.775277255@clark.site>
+	id S1758266Ab0EXWiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:21 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:17 2010
+Message-Id: <20100524223017.043009998@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:15 -0700
+Date: Mon, 24 May 2010 15:28:09 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: [19/24] nfs d_revalidate() is too trigger-happy with d_drop()
+       Oleg Nesterov <oleg@redhat.com>,
+       "Eric W. Biederman" <ebiederm@xmission.com>
+Subject: [13/24] tty: release_one_tty() forgets to put pids
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,37 +26,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Al Viro <viro@ZenIV.linux.org.uk>
+From: Oleg Nesterov <oleg@redhat.com>
 
-commit d9e80b7de91db05c1c4d2e5ebbfd70b3b3ba0e0f upstream.
+commit 6da8d866d0d39e9509ff826660f6a86a6757c966 upstream.
 
-If dentry found stale happens to be a root of disconnected tree, we
-can't d_drop() it; its d_hash is actually part of s_anon and d_drop()
-would simply hide it from shrink_dcache_for_umount(), leading to
-all sorts of fun, including busy inodes on umount and oopsen after
-that.
+release_one_tty(tty) can be called when tty still has a reference
+to pgrp/session. In this case we leak the pid.
 
-Bug had been there since at least 2006 (commit c636eb already has it),
-so it's definitely -stable fodder.
-
-Signed-off-by: Al Viro <viro@zeniv.linux.org.uk>
+Signed-off-by: Oleg Nesterov <oleg@redhat.com>
+Reported-by: Catalin Marinas <catalin.marinas@arm.com>
+Reported-and-tested-by: Tetsuo Handa <penguin-kernel@I-love.SAKURA.ne.jp>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Acked-by: Eric W. Biederman <ebiederm@xmission.com>
 Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/dir.c |    2 ++
+ drivers/char/tty_io.c |    2 ++
  1 file changed, 2 insertions(+)
 
---- a/fs/nfs/dir.c
-+++ b/fs/nfs/dir.c
-@@ -826,6 +826,8 @@ out_zap_parent:
- 		/* If we have submounts, don't unhash ! */
- 		if (have_submounts(dentry))
- 			goto out_valid;
-+		if (dentry->d_flags & DCACHE_DISCONNECTED)
-+			goto out_valid;
- 		shrink_dcache_parent(dentry);
- 	}
- 	d_drop(dentry);
+--- a/drivers/char/tty_io.c
++++ b/drivers/char/tty_io.c
+@@ -1893,6 +1893,8 @@ static void release_one_tty(struct tty_s
+ 	list_del_init(&tty->tty_files);
+ 	file_list_unlock();
+ 
++	put_pid(tty->pgrp);
++	put_pid(tty->session);
+ 	free_tty_struct(tty);
+ }
+ 
 
 
