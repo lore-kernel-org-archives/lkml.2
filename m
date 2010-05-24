@@ -1,33 +1,32 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756050Ab0EXS5s (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:57:48 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:33173 "EHLO
+	id S1756116Ab0EXS6K (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:58:10 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:33199 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1756023Ab0EXS5q (ORCPT
+	by vger.kernel.org with ESMTP id S1755611Ab0EXS6I (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:57:46 -0400
-Date: Mon, 24 May 2010 20:57:35 +0200
+	Mon, 24 May 2010 14:58:08 -0400
+Date: Mon, 24 May 2010 20:57:54 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: James Kosin <james.kosin.04@cnu.edu>, linux-kernel@vger.kernel.org
-Subject: Re: [linux-pm] [PATCH 1/8] PM: Add suspend block api.
-Message-ID: <20100524185735.GC1292@ucw.cz>
-References: <eGToe-3b9-5@gated-at.bofh.it>
- <eGUaB-4mU-1@gated-at.bofh.it>
- <eGUtX-4Kd-3@gated-at.bofh.it>
- <eGWvL-7Fy-1@gated-at.bofh.it>
- <eGWFt-7S7-17@gated-at.bofh.it>
- <eGWP9-8jH-17@gated-at.bofh.it>
- <4BE37DDD.8000402@cox.net>
- <p2jd6200be21005061953y497b0766k15123f69ff7db630@mail.gmail.com>
- <4BE38290.6040404@cnu.edu>
- <g2rd6200be21005062010s1a490b3dref465f5df64b8f7@mail.gmail.com>
+To: Matthew Garrett <mjg@redhat.com>
+Cc: Kevin Hilman <khilman@deeprootsystems.com>,
+       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
+       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100524185754.GD1292@ucw.cz>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+ <87wrvl5479.fsf@deeprootsystems.com>
+ <20100503215028.GB18910@srcf.ucam.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <g2rd6200be21005062010s1a490b3dref465f5df64b8f7@mail.gmail.com>
+In-Reply-To: <20100503215028.GB18910@srcf.ucam.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -35,43 +34,38 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> >>> Tony,
-> >>> Wouldn't this be handled by the idle task, or task manager?
-> >>>
-> >>> When all tasks are suspended and not doing anything that should be the
-> >>> first clue that a real suspend cycle could be attempted.
-> >>>
-> >>>
-> >> One if the benefit we get from using suspend is that an unprivileged
-> >> app that does not have access to suspend blockers cannot prevent
-> >> suspend. You lose this advantage if you trigger suspend only from the
-> >> idle task.
-> >>
-> >>
-> > If the process (privileged or unprivileged) doesn't want to suspend, why
-> > not just provide an interface to allow suspend to be turned off at the
-> > user level.  This could block the suspend cycle in itself, and you
-> > shouldn't need fine grained off/on cycles.  If an application really
-> > needs the system not to suspend then they (the user) should know the
-> > consequences and power requirements for such a task.
-> >
-> > I didn't say it had to be only from the idle task; but, that is the most
-> > logical place.  If the other threads are not idle then they really
-> > require work and will most likely already have a bock on the suspend anyway.
+> I agree that the runtime scenario is a far more appealing one from an 
+> aesthetic standpoint, but so far we don't have a very compelling 
+> argument for dealing with the starting and stopping of userspace. The 
+> use-cases that Google have provided are valid and they have an 
+> implementation that addresses them, and while we're unable to provide an 
+> alternative that provides the same level of functionality I think we're 
+> in a poor position to prevent this from going in.
 
-> I think you missed my point. Unprivileged processes should not be
-> allowed to prevent suspend.
+Uhuh?
 
-Currently, we do not suspend automatically, and not suspending when
-*anything* is running is clearly backwards compatible....
+"We have this ugly code here, but it works and we don't have better
+one, so lets merge it"?
 
- If suspend is disallowed, application doing while(1); will consume
-more power than the one doing sleep(1) so.... I'm not sure how much
-sense such "security policy" makes.
+I don't really like this line of reasoning. I would not want to judge
+wakelocks here, but... "it works, merge it" should not be used as
+argument.
 
-Anyway, for android use case, maybe you could have something like
-ksuspendd, and adjust its priority? That way, you could have tasks
-below the priority of ksuspendd, and those would not block suspend.
+And btw I do have wakelock-less implementation of autosleep, that only
+sleeped the machine when nothing was ready to run. It was called
+"sleepy linux". Should I dig it out?
+
+Major difference was that it only sleeped the machine when it was
+absolutely certain machine is idle and no timers are close to firing
+-- needing elimination or at least markup of all short timers. It
+erred on side of not sleeping the machine when it would break
+something.
+
+Still I believe it is better design than wakelocks -- that need
+markup/fixes to all places where machine must not sleep -- effectively
+sleeping the machine too often than fixing stuff with wakelocks all
+over kernel and userspace...
+								Pavel
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
