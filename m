@@ -1,46 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757673Ab0EXQCf (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 12:02:35 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:34445 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756326Ab0EXQCe (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 12:02:34 -0400
-Date: Mon, 24 May 2010 18:02:15 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: linux-kernel@vger.kernel.org, Wolfram Sang <w.sang@pengutronix.de>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Jiri Slaby <jslaby@suse.cz>,
-       Devin Heitmueller <dheitmueller@kernellabs.com>,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH] drivers/media/dvb/dvb-usb/dib0700: CodingStyle fixes
-Message-ID: <20100524160215.GN30801@buzzloop.caiaq.de>
-References: <AANLkTimSMLPf697B831bEyiSaeKgcOlKPmnu-0EXuqtX@mail.gmail.com>
- <1274714585-20544-1-git-send-email-daniel@caiaq.de>
- <20100524155624.GA3182@core.coreip.homeip.net>
-MIME-Version: 1.0
+	id S1757763Ab0EXQGr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 12:06:47 -0400
+Received: from lo.gmane.org ([80.91.229.12]:49565 "EHLO lo.gmane.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757739Ab0EXQGq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 12:06:46 -0400
+X-Injected-Via-Gmane: http://gmane.org/
+To: linux-kernel@vger.kernel.org
+connect(): No such file or directory
+From: Orion Poplawski <orion@cora.nwra.com>
+Subject: Clock jumps
+Date: Mon, 24 May 2010 16:06:32 +0000 (UTC)
+Message-ID: <loom.20100524T171038-56@post.gmane.org>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100524155624.GA3182@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Transfer-Encoding: 7bit
+X-Complaints-To: usenet@dough.gmane.org
+X-Gmane-NNTP-Posting-Host: sea.gmane.org
+User-Agent: Loom/3.14 (http://gmane.org/)
+X-Loom-IP: 65.44.101.162 (Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.2.3) Gecko/20100403 Fedora/3.6.3-4.fc13 Firefox/3.6.3)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 08:56:24AM -0700, Dmitry Torokhov wrote:
-> On Mon, May 24, 2010 at 05:23:05PM +0200, Daniel Mack wrote:
-> > Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> > Cc: Wolfram Sang <w.sang@pengutronix.de>
-> > Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> > Cc: Jiri Slaby <jslaby@suse.cz>
-> > Cc: Dmitry Torokhov <dtor@mail.ru>
-> > Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
-> > Cc: linux-media@vger.kernel.org
-> 
-> Not sure how I got on the list but chnages look good to me.
+I have a KVM virtual machine running 2.6.33.4-95.fc13.x86_64 on a CentOS 5.5
+host whose clock jumps about 8-12 hours a couple times a day.  I have no idea
+what is causing it.  Fedora 12 and Centos 5.5 KVM machines run fine on the same
+host.  Is there any debugging I can enable to see what is jumping the clock?
 
-get_maintainer.pl :)
+kvm-clock: cpu 0, msr 0:1ba4741, boot clock
+kvm-clock: cpu 0, msr 0:1e15741, primary cpu clock
+Switching to clocksource kvm-clock
+rtc_cmos 00:01: setting system clock to 2010-05-20 16:59:48 UTC (1274374788)
 
-Daniel
+Thanks,
+
+ Orion
+
