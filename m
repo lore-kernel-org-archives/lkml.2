@@ -1,303 +1,197 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758070Ab0EXSYI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:24:08 -0400
-Received: from smtp02.citrix.com ([66.165.176.63]:62764 "EHLO
+	id S1758284Ab0EXSYS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:24:18 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:22517 "EHLO
 	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757738Ab0EXSYG (ORCPT
+	with ESMTP id S1758161Ab0EXSYL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:24:06 -0400
+	Mon, 24 May 2010 14:24:11 -0400
 X-IronPort-AV: E=Sophos;i="4.53,292,1272859200"; 
-   d="scan'208";a="98432017"
+   d="scan'208";a="98432031"
 From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
 To: linux-kernel@vger.kernel.org
 Cc: xen-devel@lists.xensource.com, Don Dutile <ddutile@redhat.com>,
        Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
        Jeremy Fitzhardinge <jeremy@goop.org>,
-       Sheng Yang <sheng@linux.intel.com>,
        Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Subject: [PATCH 03/11] evtchn delivery on HVM
-Date: Mon, 24 May 2010 19:27:29 +0100
-Message-Id: <1274725657-1149-3-git-send-email-stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 07/11] Allow xen platform pci device to be compiled as a module
+Date: Mon, 24 May 2010 19:27:33 +0100
+Message-Id: <1274725657-1149-7-git-send-email-stefano.stabellini@eu.citrix.com>
 X-Mailer: git-send-email 1.5.4.3
 In-Reply-To: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
 References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
-X-OriginalArrivalTime: 24 May 2010 18:24:04.0706 (UTC) FILETIME=[4A6C3420:01CAFB6E]
+X-OriginalArrivalTime: 24 May 2010 18:24:10.0941 (UTC) FILETIME=[4E2396D0:01CAFB6E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Sheng Yang <sheng@linux.intel.com>
-
-Set the callback to receive evtchns from Xen, using the
-callback vector delivery mechanism.
-
-The traditional way for receiving event channel notifications from Xen
-is interrupts from the platform PCI device.
-The callback vector is a newer alternative that allow us to receive
-notifications on any vcpu and doesn't need any PCI support.
-Besides it is possible to avoid any interaction with the emulated lapic
-even though at the moment we are still going through the IPI vector.
-
 Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-Signed-off-by: Sheng Yang <sheng@linux.intel.com>
 ---
- arch/x86/xen/enlighten.c         |   29 ++++++++++++++++
- arch/x86/xen/xen-ops.h           |    2 +
- drivers/xen/events.c             |   69 ++++++++++++++++++++++++++++++++++----
- include/xen/events.h             |    5 +++
- include/xen/hvm.h                |    6 +++
- include/xen/interface/features.h |    3 ++
- 6 files changed, 107 insertions(+), 7 deletions(-)
+ drivers/xen/events.c              |    1 +
+ drivers/xen/grant-table.c         |   20 +++++++++++---------
+ drivers/xen/manage.c              |    1 +
+ drivers/xen/platform-pci.c        |    3 +++
+ drivers/xen/xenbus/xenbus_probe.c |    1 +
+ include/xen/grant_table.h         |    3 +++
+ 6 files changed, 20 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-index c1f6545..ed34b30 100644
---- a/arch/x86/xen/enlighten.c
-+++ b/arch/x86/xen/enlighten.c
-@@ -11,6 +11,7 @@
-  * Jeremy Fitzhardinge <jeremy@xensource.com>, XenSource Inc, 2007
-  */
- 
-+#include <linux/cpu.h>
- #include <linux/kernel.h>
- #include <linux/init.h>
- #include <linux/smp.h>
-@@ -38,6 +39,7 @@
- #include <xen/interface/memory.h>
- #include <xen/features.h>
- #include <xen/page.h>
-+#include <xen/hvm.h>
- #include <xen/hvc-console.h>
- 
- #include <asm/paravirt.h>
-@@ -78,6 +80,9 @@ struct shared_info xen_dummy_shared_info;
- 
- void *xen_initial_gdt;
- 
-+__read_mostly int xen_have_vector_callback;
-+EXPORT_SYMBOL_GPL(xen_have_vector_callback);
-+
- /*
-  * Point at some empty memory to start with. We map the real shared_info
-  * page as soon as fixmap is up and running.
-@@ -1278,6 +1283,24 @@ static void __init init_shared_info(void)
- 	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
- }
- 
-+static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
-+				    unsigned long action, void *hcpu)
-+{
-+	int cpu = (long)hcpu;
-+	switch (action) {
-+	case CPU_UP_PREPARE:
-+		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
-+		break;
-+	default:
-+		break;
-+	}
-+	return NOTIFY_OK;
-+}
-+
-+static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
-+	.notifier_call	= xen_hvm_cpu_notify,
-+};
-+
- void __init xen_guest_init(void)
- {
- 	int r;
-@@ -1291,4 +1314,10 @@ void __init xen_guest_init(void)
- 		return;
- 
- 	init_shared_info();
-+
-+	if (xen_feature(XENFEAT_hvm_callback_vector))
-+		xen_have_vector_callback = 1;
-+	register_cpu_notifier(&xen_hvm_cpu_notifier);
-+	have_vcpu_info_placement = 0;
-+	x86_init.irqs.intr_init = xen_init_IRQ;
- }
-diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
-index f9153a3..0d0e0e6 100644
---- a/arch/x86/xen/xen-ops.h
-+++ b/arch/x86/xen/xen-ops.h
-@@ -38,6 +38,8 @@ void xen_enable_sysenter(void);
- void xen_enable_syscall(void);
- void xen_vcpu_restore(void);
- 
-+void xen_callback_vector(void);
-+
- void __init xen_build_dynamic_phys_to_machine(void);
- 
- void xen_init_irq_ops(void);
 diff --git a/drivers/xen/events.c b/drivers/xen/events.c
-index db8f506..8b68fc4 100644
+index c6f561d..e6dd8ba 100644
 --- a/drivers/xen/events.c
 +++ b/drivers/xen/events.c
-@@ -36,10 +36,14 @@
- #include <asm/xen/hypercall.h>
- #include <asm/xen/hypervisor.h>
- 
-+#include <xen/xen.h>
-+#include <xen/hvm.h>
- #include <xen/xen-ops.h>
- #include <xen/events.h>
- #include <xen/interface/xen.h>
- #include <xen/interface/event_channel.h>
-+#include <xen/interface/hvm/hvm_op.h>
-+#include <xen/interface/hvm/params.h>
- 
- /*
-  * This lock protects updates to the following mapping and reference-count
-@@ -617,17 +621,13 @@ static DEFINE_PER_CPU(unsigned, xed_nesting_count);
-  * a bitset of words which contain pending event bits.  The second
-  * level is a bitset of pending events themselves.
-  */
--void xen_evtchn_do_upcall(struct pt_regs *regs)
-+static void __xen_evtchn_do_upcall(void)
+@@ -697,6 +697,7 @@ void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
  {
- 	int cpu = get_cpu();
--	struct pt_regs *old_regs = set_irq_regs(regs);
- 	struct shared_info *s = HYPERVISOR_shared_info;
- 	struct vcpu_info *vcpu_info = __get_cpu_var(xen_vcpu);
-  	unsigned count;
- 
--	exit_idle();
--	irq_enter();
--
- 	do {
- 		unsigned long pending_words;
- 
-@@ -667,10 +667,26 @@ void xen_evtchn_do_upcall(struct pt_regs *regs)
- 	} while(count != 1);
- 
- out:
-+
-+	put_cpu();
-+}
-+
-+void xen_evtchn_do_upcall(struct pt_regs *regs)
-+{
-+	struct pt_regs *old_regs = set_irq_regs(regs);
-+
-+	exit_idle();
-+	irq_enter();
-+
-+	__xen_evtchn_do_upcall();
-+
- 	irq_exit();
- 	set_irq_regs(old_regs);
-+}
- 
--	put_cpu();
-+void xen_hvm_evtchn_do_upcall(struct pt_regs *regs)
-+{
-+	__xen_evtchn_do_upcall();
+ 	__xen_evtchn_do_upcall();
  }
++EXPORT_SYMBOL_GPL(xen_hvm_evtchn_do_upcall);
  
  /* Rebind a new event channel to an existing irq. */
-@@ -933,6 +949,40 @@ static struct irq_chip xen_dynamic_chip __read_mostly = {
- 	.retrigger	= retrigger_dynirq,
- };
+ void rebind_evtchn_irq(int evtchn, int irq)
+diff --git a/drivers/xen/grant-table.c b/drivers/xen/grant-table.c
+index 4c959a5..64bcad1 100644
+--- a/drivers/xen/grant-table.c
++++ b/drivers/xen/grant-table.c
+@@ -61,7 +61,8 @@ static unsigned int boot_max_nr_grant_frames;
+ static int gnttab_free_count;
+ static grant_ref_t gnttab_free_head;
+ static DEFINE_SPINLOCK(gnttab_list_lock);
+-static unsigned long hvm_pv_resume_frames;
++unsigned long xen_hvm_resume_frames;
++EXPORT_SYMBOL_GPL(xen_hvm_resume_frames);
  
-+int xen_set_callback_via(uint64_t via)
-+{
-+	struct xen_hvm_param a;
-+	a.domid = DOMID_SELF;
-+	a.index = HVM_PARAM_CALLBACK_IRQ;
-+	a.value = via;
-+	return HYPERVISOR_hvm_op(HVMOP_set_param, &a);
-+}
-+EXPORT_SYMBOL_GPL(xen_set_callback_via);
-+
-+void do_hvm_pv_evtchn_intr(void)
-+{
-+	xen_hvm_evtchn_do_upcall(get_irq_regs());
-+}
-+
-+/* the callback vector mechanism is a newer alternative way of receiving
-+ * event channel notifications from Xen: we can receive vector callbacks
-+ * on any vcpus and we don't need any PCI or IO APIC support */
-+void xen_callback_vector(void)
-+{
-+	int rc;
-+	uint64_t callback_via;
-+	if (xen_have_vector_callback) {
-+		callback_via = HVM_CALLBACK_VECTOR(X86_PLATFORM_IPI_VECTOR);
-+		rc = xen_set_callback_via(callback_via);
-+		if (rc) {
-+			printk(KERN_ERR "request for callback vector failed\n");
-+			xen_have_vector_callback = 0;
-+			return;
-+		}
-+		x86_platform_ipi_callback = do_hvm_pv_evtchn_intr;
-+	}
-+}
-+
- void __init xen_init_IRQ(void)
- {
- 	int i;
-@@ -947,5 +997,10 @@ void __init xen_init_IRQ(void)
- 	for (i = 0; i < NR_EVENT_CHANNELS; i++)
- 		mask_evtchn(i);
+ static struct grant_entry *shared;
  
--	irq_ctx_init(smp_processor_id());
-+	if (xen_hvm_domain()) {
-+		xen_callback_vector();
-+		native_init_IRQ();
-+	} else {
-+		irq_ctx_init(smp_processor_id());
-+	}
- }
-diff --git a/include/xen/events.h b/include/xen/events.h
-index e68d59a..a3375f7 100644
---- a/include/xen/events.h
-+++ b/include/xen/events.h
-@@ -56,4 +56,9 @@ void xen_poll_irq(int irq);
- /* Determine the IRQ which is bound to an event channel */
- unsigned irq_from_evtchn(unsigned int evtchn);
- 
-+extern int xen_have_vector_callback;
-+int xen_set_callback_via(uint64_t via);
-+void xen_evtchn_do_upcall(struct pt_regs *regs);
-+void xen_hvm_evtchn_do_upcall(struct pt_regs *regs);
-+
- #endif	/* _XEN_EVENTS_H */
-diff --git a/include/xen/hvm.h b/include/xen/hvm.h
-index 6b0d418..d0cf7a6 100644
---- a/include/xen/hvm.h
-+++ b/include/xen/hvm.h
-@@ -3,6 +3,7 @@
- #define XEN_HVM_H__
- 
- #include <xen/interface/hvm/params.h>
-+#include <asm/xen/hypercall.h>
- 
- static inline int hvm_get_parameter(int idx, uint64_t *value)
- {
-@@ -21,4 +22,9 @@ static inline int hvm_get_parameter(int idx, uint64_t *value)
-        return r;
+@@ -436,7 +437,7 @@ static unsigned int __max_nr_grant_frames(void)
+ 	return query.max_nr_frames;
  }
  
-+#define HVM_CALLBACK_VIA_TYPE_VECTOR 0x2
-+#define HVM_CALLBACK_VIA_TYPE_SHIFT 56
-+#define HVM_CALLBACK_VECTOR(x) (((uint64_t)HVM_CALLBACK_VIA_TYPE_VECTOR)<<\
-+                               HVM_CALLBACK_VIA_TYPE_SHIFT | (x))
-+
- #endif /* XEN_HVM_H__ */
-diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-index f51b641..8ab08b9 100644
---- a/include/xen/interface/features.h
-+++ b/include/xen/interface/features.h
-@@ -41,6 +41,9 @@
- /* x86: Does this Xen host support the MMU_PT_UPDATE_PRESERVE_AD hypercall? */
- #define XENFEAT_mmu_pt_update_preserve_ad  5
+-static inline unsigned int max_nr_grant_frames(void)
++unsigned int gnttab_max_nr_grant_frames(void)
+ {
+ 	unsigned int xen_max = __max_nr_grant_frames();
  
-+/* x86: Does this Xen host support the HVM callback vector type? */
-+#define XENFEAT_hvm_callback_vector        8
-+
- #define XENFEAT_NR_SUBMAPS 1
+@@ -444,6 +445,7 @@ static inline unsigned int max_nr_grant_frames(void)
+ 		return boot_max_nr_grant_frames;
+ 	return xen_max;
+ }
++EXPORT_SYMBOL_GPL(gnttab_max_nr_grant_frames);
  
- #endif /* __XEN_PUBLIC_FEATURES_H__ */
+ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ {
+@@ -464,7 +466,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 			xatp.domid = DOMID_SELF;
+ 			xatp.idx = i;
+ 			xatp.space = XENMAPSPACE_grant_table;
+-			xatp.gpfn = (hvm_pv_resume_frames >> PAGE_SHIFT) + i;
++			xatp.gpfn = (xen_hvm_resume_frames >> PAGE_SHIFT) + i;
+ 			rc = HYPERVISOR_memory_op(XENMEM_add_to_physmap, &xatp);
+ 			if (rc != 0) {
+ 				printk(KERN_WARNING
+@@ -492,7 +494,7 @@ static int gnttab_map(unsigned int start_idx, unsigned int end_idx)
+ 
+ 	BUG_ON(rc || setup.status);
+ 
+-	rc = arch_gnttab_map_shared(frames, nr_gframes, max_nr_grant_frames(),
++	rc = arch_gnttab_map_shared(frames, nr_gframes, gnttab_max_nr_grant_frames(),
+ 				    &shared);
+ 	BUG_ON(rc);
+ 
+@@ -505,16 +507,15 @@ int gnttab_resume(void)
+ {
+ 	unsigned int max_nr_gframes;
+ 
+-	max_nr_gframes = max_nr_grant_frames();
++	max_nr_gframes = gnttab_max_nr_grant_frames();
+ 	if (max_nr_gframes < nr_grant_frames)
+ 		return -ENOSYS;
+ 
+ 	if (xen_pv_domain())
+ 		return gnttab_map(0, nr_grant_frames - 1);
+ 
+-	if (!hvm_pv_resume_frames) {
+-		hvm_pv_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+-		shared = ioremap(hvm_pv_resume_frames, PAGE_SIZE * max_nr_gframes);
++	if (!shared) {
++		shared = ioremap(xen_hvm_resume_frames, PAGE_SIZE * max_nr_gframes);
+ 		if (shared == NULL) {
+ 			printk(KERN_WARNING
+ 					"Fail to ioremap gnttab share frames\n");
+@@ -541,7 +542,7 @@ static int gnttab_expand(unsigned int req_entries)
+ 	cur = nr_grant_frames;
+ 	extra = ((req_entries + (GREFS_PER_GRANT_FRAME-1)) /
+ 		 GREFS_PER_GRANT_FRAME);
+-	if (cur + extra > max_nr_grant_frames())
++	if (cur + extra > gnttab_max_nr_grant_frames())
+ 		return -ENOSPC;
+ 
+ 	rc = gnttab_map(cur, cur + extra - 1);
+@@ -599,6 +600,7 @@ int gnttab_init(void)
+ 	kfree(gnttab_list);
+ 	return -ENOMEM;
+ }
++EXPORT_SYMBOL_GPL(gnttab_init);
+ 
+ static int __devinit __gnttab_init(void)
+ {
+diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+index 0716ba6..f5162e4 100644
+--- a/drivers/xen/manage.c
++++ b/drivers/xen/manage.c
+@@ -307,5 +307,6 @@ int xen_setup_shutdown_event(void)
+ 
+ 	return 0;
+ }
++EXPORT_SYMBOL_GPL(xen_setup_shutdown_event);
+ 
+ subsys_initcall(__setup_shutdown_event);
+diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+index 70395c9..07c821c 100644
+--- a/drivers/xen/platform-pci.c
++++ b/drivers/xen/platform-pci.c
+@@ -106,6 +106,7 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
+ 	int i, ret;
+ 	long ioaddr, iolen;
+ 	long mmio_addr, mmio_len;
++	unsigned int max_nr_gframes;
+ 
+ 	i = pci_enable_device(pdev);
+ 	if (i)
+@@ -153,6 +154,8 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
+ 		}
+ 	}
+ 
++	max_nr_gframes = gnttab_max_nr_grant_frames();
++	xen_hvm_resume_frames = alloc_xen_mmio(PAGE_SIZE * max_nr_gframes);
+ 	ret = gnttab_init();
+ 	if (ret)
+ 		goto out;
+diff --git a/drivers/xen/xenbus/xenbus_probe.c b/drivers/xen/xenbus/xenbus_probe.c
+index dc6ed06..cf971da 100644
+--- a/drivers/xen/xenbus/xenbus_probe.c
++++ b/drivers/xen/xenbus/xenbus_probe.c
+@@ -864,6 +864,7 @@ int xenbus_probe_init(void)
+   out_error:
+ 	return err;
+ }
++EXPORT_SYMBOL_GPL(xenbus_probe_init);
+ 
+ postcore_initcall(__xenbus_probe_init);
+ 
+diff --git a/include/xen/grant_table.h b/include/xen/grant_table.h
+index 811cda5..2a58ee0 100644
+--- a/include/xen/grant_table.h
++++ b/include/xen/grant_table.h
+@@ -113,6 +113,9 @@ int arch_gnttab_map_shared(unsigned long *frames, unsigned long nr_gframes,
+ void arch_gnttab_unmap_shared(struct grant_entry *shared,
+ 			      unsigned long nr_gframes);
+ 
++extern unsigned long xen_hvm_resume_frames;
++unsigned int gnttab_max_nr_grant_frames(void);
++
+ #define gnttab_map_vaddr(map) ((void *)(map.host_virt_addr))
+ 
+ #endif /* __ASM_GNTTAB_H__ */
 -- 
 1.5.4.3
 
