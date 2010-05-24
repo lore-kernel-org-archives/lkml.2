@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758301Ab0EXWm0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:42:26 -0400
-Received: from kroah.org ([198.145.64.141]:36008 "EHLO coco.kroah.org"
+	id S1756336Ab0EXWiM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:38:12 -0400
+Received: from kroah.org ([198.145.64.141]:35965 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751593Ab0EXWiQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:16 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:15 2010
-Message-Id: <20100524223015.458788652@clark.site>
+	id S1751593Ab0EXWiK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:10 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:14 2010
+Message-Id: <20100524223014.353004217@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:03 -0700
+Date: Mon, 24 May 2010 15:27:57 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Theodore Tso" <tytso@mit.edu>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Mingming Cao <cmm@us.ibm.com>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [07/24] ext4: Retry block allocation if we have free blocks left
+       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [01/24] ALSA: mixart: range checking proc file
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,197 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Dan Carpenter <error27@gmail.com>
 
-From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
 
-commit df22291ff0fde0d350cf15dac3e5cc33ac528875 upstream.
+The original code doesn't take into consideration that the value of
+MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
+unsigned value for "count".
 
-When we truncate files, the meta-data blocks released are not reused
-untill we commit the truncate transaction.  That means delayed get_block
-request will return ENOSPC even if we have free blocks left.  Force a
-journal commit and retry block allocation if we get ENOSPC with free
-blocks left.
+Also I moved the check that read size is a multiple of 4 bytes below
+the code that adjusts "count".
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Mingming Cao <cmm@us.ibm.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Jayson R. King <dev@jaysonking.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/ext4/inode.c |   81 +++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 57 insertions(+), 24 deletions(-)
+ sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
 
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1661,6 +1661,7 @@ struct mpage_da_data {
- 	struct writeback_control *wbc;
- 	int io_done;
- 	long pages_written;
-+	int retval;
- };
- 
- /*
-@@ -1858,6 +1859,24 @@ static void ext4_da_block_invalidatepage
- 	return;
- }
- 
-+static void ext4_print_free_blocks(struct inode *inode)
-+{
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	printk(KERN_EMERG "Total free blocks count %lld\n",
-+			ext4_count_free_blocks(inode->i_sb));
-+	printk(KERN_EMERG "Free/Dirty block details\n");
-+	printk(KERN_EMERG "free_blocks=%lld\n",
-+			percpu_counter_sum(&sbi->s_freeblocks_counter));
-+	printk(KERN_EMERG "dirty_blocks=%lld\n",
-+			percpu_counter_sum(&sbi->s_dirtyblocks_counter));
-+	printk(KERN_EMERG "Block reservation details\n");
-+	printk(KERN_EMERG "i_reserved_data_blocks=%lu\n",
-+			EXT4_I(inode)->i_reserved_data_blocks);
-+	printk(KERN_EMERG "i_reserved_meta_blocks=%lu\n",
-+			EXT4_I(inode)->i_reserved_meta_blocks);
-+	return;
-+}
-+
- /*
-  * mpage_da_map_blocks - go through given space
-  *
-@@ -1872,7 +1891,7 @@ static int  mpage_da_map_blocks(struct m
- 	int err = 0;
- 	struct buffer_head new;
- 	struct buffer_head *lbh = &mpd->lbh;
--	sector_t next = lbh->b_blocknr;
-+	sector_t next;
- 
- 	/*
- 	 * We consider only non-mapped and non-allocated blocks
-@@ -1882,6 +1901,7 @@ static int  mpage_da_map_blocks(struct m
- 	new.b_state = lbh->b_state;
- 	new.b_blocknr = 0;
- 	new.b_size = lbh->b_size;
-+	next = lbh->b_blocknr;
- 	/*
- 	 * If we didn't accumulate anything
- 	 * to write simply return
-@@ -1898,6 +1918,13 @@ static int  mpage_da_map_blocks(struct m
- 		 */
- 		if (err == -EAGAIN)
- 			return 0;
-+
-+		if (err == -ENOSPC &&
-+				ext4_count_free_blocks(mpd->inode->i_sb)) {
-+			mpd->retval = err;
-+			return 0;
-+		}
-+
- 		/*
- 		 * get block failure will cause us
- 		 * to loop in writepages. Because
-@@ -1915,8 +1942,7 @@ static int  mpage_da_map_blocks(struct m
- 		printk(KERN_EMERG "This should not happen.!! "
- 					"Data will be lost\n");
- 		if (err == -ENOSPC) {
--			printk(KERN_CRIT "Total free blocks count %lld\n",
--				ext4_count_free_blocks(mpd->inode->i_sb));
-+			ext4_print_free_blocks(mpd->inode);
- 		}
- 		/* invlaidate all the pages */
- 		ext4_da_block_invalidatepages(mpd, next,
-@@ -2141,39 +2167,36 @@ static int __mpage_da_writepage(struct p
-  */
- static int mpage_da_writepages(struct address_space *mapping,
- 			       struct writeback_control *wbc,
--			       get_block_t get_block)
-+			       struct mpage_da_data *mpd)
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -1160,13 +1160,15 @@ static long snd_mixart_BA0_read(struct s
+ 				unsigned long count, unsigned long pos)
  {
--	struct mpage_da_data mpd;
- 	long to_write;
- 	int ret;
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
  
--	if (!get_block)
-+	if (!mpd->get_block)
- 		return generic_writepages(mapping, wbc);
- 
--	mpd.wbc = wbc;
--	mpd.inode = mapping->host;
--	mpd.lbh.b_size = 0;
--	mpd.lbh.b_state = 0;
--	mpd.lbh.b_blocknr = 0;
--	mpd.first_page = 0;
--	mpd.next_page = 0;
--	mpd.get_block = get_block;
--	mpd.io_done = 0;
--	mpd.pages_written = 0;
-+	mpd->lbh.b_size = 0;
-+	mpd->lbh.b_state = 0;
-+	mpd->lbh.b_blocknr = 0;
-+	mpd->first_page = 0;
-+	mpd->next_page = 0;
-+	mpd->io_done = 0;
-+	mpd->pages_written = 0;
-+	mpd->retval = 0;
- 
- 	to_write = wbc->nr_to_write;
- 
--	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, &mpd);
-+	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, mpd);
- 
- 	/*
- 	 * Handle last extent of pages
- 	 */
--	if (!mpd.io_done && mpd.next_page != mpd.first_page) {
--		if (mpage_da_map_blocks(&mpd) == 0)
--			mpage_da_submit_io(&mpd);
-+	if (!mpd->io_done && mpd->next_page != mpd->first_page) {
-+		if (mpage_da_map_blocks(mpd) == 0)
-+			mpage_da_submit_io(mpd);
- 	}
- 
--	wbc->nr_to_write = to_write - mpd.pages_written;
-+	wbc->nr_to_write = to_write - mpd->pages_written;
- 	return ret;
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos >= MIXART_BA0_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA0_SIZE)
+-		count = (long)(MIXART_BA0_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
++	maxsize = MIXART_BA0_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
  }
- 
-@@ -2420,6 +2443,7 @@ static int ext4_da_writepages(struct add
+@@ -1179,13 +1181,15 @@ static long snd_mixart_BA1_read(struct s
+ 				unsigned long count, unsigned long pos)
  {
- 	handle_t *handle = NULL;
- 	loff_t range_start = 0;
-+	struct mpage_da_data mpd;
- 	struct inode *inode = mapping->host;
- 	int needed_blocks, ret = 0, nr_to_writebump = 0;
- 	long to_write, pages_skipped = 0;
-@@ -2467,6 +2491,9 @@ static int ext4_da_writepages(struct add
- 	range_start =  wbc->range_start;
- 	pages_skipped = wbc->pages_skipped;
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
  
-+	mpd.wbc = wbc;
-+	mpd.inode = mapping->host;
-+
- restart_loop:
- 	to_write = wbc->nr_to_write;
- 	while (!ret && to_write > 0) {
-@@ -2502,11 +2529,17 @@ restart_loop:
- 				goto out_writepages;
- 			}
- 		}
--
- 		to_write -= wbc->nr_to_write;
--		ret = mpage_da_writepages(mapping, wbc,
--					  ext4_da_get_block_write);
-+
-+		mpd.get_block = ext4_da_get_block_write;
-+		ret = mpage_da_writepages(mapping, wbc, &mpd);
-+
- 		ext4_journal_stop(handle);
-+
-+		if (mpd.retval == -ENOSPC)
-+			jbd2_journal_force_commit_nested(sbi->s_journal);
-+
-+		/* reset the retry count */
- 		if (ret == MPAGE_DA_EXTENT_TAIL) {
- 			/*
- 			 * got one extent now try with
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos > MIXART_BA1_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA1_SIZE)
+-		count = (long)(MIXART_BA1_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
++	maxsize = MIXART_BA1_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
 
 
