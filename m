@@ -1,81 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758531Ab0EXWvK (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:51:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38851 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757802Ab0EXWvI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:51:08 -0400
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: felipe.balbi@nokia.com,
-       Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "linux-pm\@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       "linux-kernel\@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 8)
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<201005240246.55043.rjw@sisk.pl> <20100524043224.GA31700@nokia.com>
-	<201005242049.18920.rjw@sisk.pl>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Mon, 24 May 2010 15:51:05 -0700
-In-Reply-To: <201005242049.18920.rjw@sisk.pl> (Rafael J. Wysocki's message of "Mon\, 24 May 2010 20\:49\:18 +0200")
-Message-ID: <87wrusvrqe.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1758700Ab0EXWvV (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:51:21 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:9603 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758623Ab0EXWvS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:51:18 -0400
+Subject: Re: [PATCH -next] nouveau: fix acpi_lid_open undefined
+From: Dave Airlie <airlied@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Matthew Garrett <mjg@redhat.com>, Stephen Rothwell <sfr@canb.auug.org.au>,
+       LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+       linux-next@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>
+In-Reply-To: <4BFA8A71.4080900@oracle.com>
+References: <20100522170459.4c89723d.sfr@canb.auug.org.au>
+	 <20100523170040.3c4aa87c.randy.dunlap@oracle.com>
+	 <20100524125628.GA14278@srcf.ucam.org> <4BFA84EF.7070609@oracle.com>
+	 <20100524135940.GA15892@srcf.ucam.org>  <4BFA8A71.4080900@oracle.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 08:47:35 +1000
+Message-ID: <1274741255.3416.1.camel@clockmaker-el6>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-"Rafael J. Wysocki" <rjw@sisk.pl> writes:
+On Mon, 2010-05-24 at 07:17 -0700, Randy Dunlap wrote:
+> On 05/24/10 06:59, Matthew Garrett wrote:
+> > On Mon, May 24, 2010 at 06:53:51AM -0700, Randy Dunlap wrote:
+> >> On 05/24/10 05:56, Matthew Garrett wrote:
+> >>> Won't this result in a behavioural difference? The desirable outcome is 
+> >>
+> >> It could, yes.
+> >>
+> >>> that that configuration be impossible, not for that configuration to 
+> >>> build but be buggy.
+> >>
+> >> so nouveau should depend on (or select, if ACPI is enabled) ACPI_BUTTON?
+> > 
+> > There's an argument that it doesn't need to depend on it, but if button 
+> > is a module then nouveau has to be. Except the inverse isn't true. 
+> > Kconfig is hard, let's weep gently.
+> 
+> Maybe Dave can weep with us when he is back at work...
 
-> On Monday 24 May 2010, Felipe Balbi wrote:
->> On Mon, May 24, 2010 at 02:46:54AM +0200, ext Rafael J. Wysocki wrote:
->> >On Saturday 22 May 2010, Arve Hjønnevåg wrote:
->> >> This patch series adds a suspend-block api that provides the same
->> >> functionality as the android wakelock api. This version adds a
->> >> delay before suspending again if no suspend blockers were used
->> >> during the last suspend attempt.
->> >
->> >Patches [1-6/8] applied to suspend-2.6/linux-next
->> 
->> funny thing is that even without sorting out the concerns plenty of 
->> developers had on the other thread, this series is still taken. What's 
->> the point in dicussing/reviewing the patches then ?
->
-> I don't think the concerns you're referring to can be solved out.  
-> Some people just don't like the whole idea and I don't think there's
-> any way we can improve the patches to make them happy.  The only
-> "solution" they would be satisfied with would simply be rejecting
-> the feature altogether, although there are no practically viable
-> alternatives known to me.
+Yeah I've had problems like this a few times lately with the drm, I'm
+torn between just adding select all over the place, or assuming someone
+sane is configuring the kernel.
 
-I'm not sure who the "some people" you're referring to are, but I'll
-assume I'm included in that group.
+I'm sort of erring on the someone sane is configuring the kernel just
+because Linus's objects to "default y" things seems to point at that we
+can't really give pointers to the people who haven't done it before. So
+I'm quite happy to leave it having different behaviour depending on the
+configuration and simply ignoring bug reports from incompetents.
 
-I don't think this is a fair characterization of the objections, nor
-do I think "rejecting the feature altogether" is the only satisfactory
-answer.  Speaking for myself, I find the idea of being able to suspend
-while idle a valid objective, and certainly see the usefulness of it
-for embedded systems.  I'm also an owner and user of an Android phone,
-so I am certainly not out just to make life difficult for Android.
+Dave.
 
-The primary objection is not the end goal, but rather the
-implementation.  In particular, the problematic redefintion of what it
-means to be idle, or "not doing work that's immediately useful to the
-user" to use the phrase from the changelog (where "useful" is still
-not defined.)
 
-This (re)definition completely bypasses all current idle
-infrastructure based on timers, scheduler, etc. and makes "usefulness"
-defined in terms of who holds suspend blockers.  This of course will
-lead to a scattering of suspend blockers into any drivers/subsystems
-considered "useful", which by looking through current Android kernels
-is many of them.
-
-Kevin
