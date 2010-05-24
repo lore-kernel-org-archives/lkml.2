@@ -1,22 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932713Ab0EXXYA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:24:00 -0400
-Received: from kroah.org ([198.145.64.141]:59402 "EHLO coco.kroah.org"
+	id S932667Ab0EXXXy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:23:54 -0400
+Received: from kroah.org ([198.145.64.141]:59384 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932506Ab0EXXXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:40 -0400
+	id S932406Ab0EXXXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:37 -0400
 X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:14 2010
-Message-Id: <20100524231814.903892807@clark.site>
+Message-Id: <20100524231814.547878097@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:31 -0700
+Date: Mon, 24 May 2010 16:15:27 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Valentin Longchamp <valentin.longchamp@epfl.ch>,
-       Wolfram Sang <w.sang@pengutronix.de>
-Subject: [19/39] serial: imx.c: fix CTS trigger level lower to avoid lost chars
+       Gerald Schaefer <gerald.schaefer@de.ibm.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>
+Subject: [15/39] [S390] ptrace: fix return value of do_syscall_trace_enter()
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,60 +26,49 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Valentin Longchamp <valentin.longchamp@epfl.ch>
+From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
 
-commit 1c5250d6163dac28be3afabdfb6c723f107051b7 upstream.
+commit 545c174d1f093a462b4bb9131b23d5ea72a600e1 upstream.
 
-The imx CTS trigger level is left at its reset value that is 32
-chars. Since the RX FIFO has 32 entries, when CTS is raised, the
-FIFO already is full. However, some serial port devices first empty
-their TX FIFO before stopping when CTS is raised, resulting in lost
-chars.
+strace may change the system call number, so regs->gprs[2] must not
+be read before tracehook_report_syscall_entry(). This fixes a bug
+where "strace -f" will hang after a vfork().
 
-This patch sets the trigger level lower so that other chars arrive
-after CTS is raised, there is still room for 16 of them.
-
-Signed-off-by: Valentin Longchamp<valentin.longchamp@epfl.ch>
-Tested-by: Philippe Rétornaz<philippe.retornaz@epfl.ch>
-Acked-by: Wolfram Sang<w.sang@pengutronix.de>
+Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/serial/imx.c |   10 +++++++++-
- 1 file changed, 9 insertions(+), 1 deletion(-)
+ arch/s390/kernel/ptrace.c |    5 ++---
+ 1 file changed, 2 insertions(+), 3 deletions(-)
 
---- a/drivers/serial/imx.c
-+++ b/drivers/serial/imx.c
-@@ -119,7 +119,8 @@
- #define  MX2_UCR3_RXDMUXSEL	 (1<<2)  /* RXD Muxed Input Select, on mx2/mx3 */
- #define  UCR3_INVT  	 (1<<1)  /* Inverted Infrared transmission */
- #define  UCR3_BPEN  	 (1<<0)  /* Preset registers enable */
--#define  UCR4_CTSTL_32   (32<<10) /* CTS trigger level (32 chars) */
-+#define  UCR4_CTSTL_SHF  10      /* CTS trigger level shift */
-+#define  UCR4_CTSTL_MASK 0x3F    /* CTS trigger is 6 bits wide */
- #define  UCR4_INVR  	 (1<<9)  /* Inverted infrared reception */
- #define  UCR4_ENIRI 	 (1<<8)  /* Serial infrared interrupt enable */
- #define  UCR4_WKEN  	 (1<<7)  /* Wake interrupt enable */
-@@ -590,6 +591,9 @@ static int imx_setup_ufcr(struct imx_por
- 	return 0;
+--- a/arch/s390/kernel/ptrace.c
++++ b/arch/s390/kernel/ptrace.c
+@@ -640,7 +640,7 @@ long compat_arch_ptrace(struct task_stru
+ 
+ asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
+ {
+-	long ret;
++	long ret = 0;
+ 
+ 	/* Do the secure computing check first. */
+ 	secure_computing(regs->gprs[2]);
+@@ -649,7 +649,6 @@ asmlinkage long do_syscall_trace_enter(s
+ 	 * The sysc_tracesys code in entry.S stored the system
+ 	 * call number to gprs[2].
+ 	 */
+-	ret = regs->gprs[2];
+ 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
+ 	    (tracehook_report_syscall_entry(regs) ||
+ 	     regs->gprs[2] >= NR_syscalls)) {
+@@ -671,7 +670,7 @@ asmlinkage long do_syscall_trace_enter(s
+ 				    regs->gprs[2], regs->orig_gpr2,
+ 				    regs->gprs[3], regs->gprs[4],
+ 				    regs->gprs[5]);
+-	return ret;
++	return ret ?: regs->gprs[2];
  }
  
-+/* half the RX buffer size */
-+#define CTSTL 16
-+
- static int imx_startup(struct uart_port *port)
- {
- 	struct imx_port *sport = (struct imx_port *)port;
-@@ -606,6 +610,10 @@ static int imx_startup(struct uart_port
- 	if (USE_IRDA(sport))
- 		temp |= UCR4_IRSC;
- 
-+	/* set the trigger level for CTS */
-+	temp &= ~(UCR4_CTSTL_MASK<<  UCR4_CTSTL_SHF);
-+	temp |= CTSTL<<  UCR4_CTSTL_SHF;
-+
- 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
- 
- 	if (USE_IRDA(sport)) {
+ asmlinkage void do_syscall_trace_exit(struct pt_regs *regs)
 
 
