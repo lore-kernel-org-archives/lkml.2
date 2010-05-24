@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758009Ab0EXRGU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 13:06:20 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59769 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757833Ab0EXRGT (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 13:06:19 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=NeIZ8wudqcvyJIjOA3ZwQ4G9CdH4B55AQzuNosh6bwO4EOXiR/wIep+bqHUX9rt5Pn
-         4r7OuS0zj6NCzzf73NVnRkQbYN4iJTblGOD3YEVpSEQfY95EF20Ne/oB3XFC8wkI/sNY
-         pHxg+VyxZi+fosuenQPB7sZZKkrDpd4DPuHN0=
-MIME-Version: 1.0
-In-Reply-To: <20100524155901.GB3182@core.coreip.homeip.net>
-References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
-	 <1274213429-22667-2-git-send-email-rydberg@euromail.se>
-	 <20100519023727.GA21030@barra.bne.redhat.com>
-	 <4BF3D59E.1070801@euromail.se>
-	 <20100520001323.GA28116@barra.bne.redhat.com>
-	 <4BF51188.3090608@euromail.se> <20100524045855.GC16369@barra>
-	 <AANLkTimTChXjbDL0NAxoNu-Ld7AGDezfsvIHwjKuKt1A@mail.gmail.com>
-	 <20100524155901.GB3182@core.coreip.homeip.net>
-Date: Mon, 24 May 2010 10:06:15 -0700
-Message-ID: <AANLkTin9ahtqL7jrUP4C0zF9-P3rUg7ktN93-hcqdDnj@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
-From: Ping Cheng <pinglinux@gmail.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Peter Hutterer <peter.hutterer@who-t.net>,
-       Henrik Rydberg <rydberg@euromail.se>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758030Ab0EXRGl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 13:06:41 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:45970 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757833Ab0EXRGk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 13:06:40 -0400
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100524164736.GR31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+	 <20100524115903.GP31073@ZenIV.linux.org.uk>
+	 <20100524155031.GQ31073@ZenIV.linux.org.uk>
+	 <1274718082.10795.31.camel@heimdal.trondhjem.org>
+	 <20100524164736.GR31073@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 May 2010 13:06:31 -0400
+Message-ID: <1274720791.10795.50.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 10 sum msgs/h 2 total rcpts 332 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 1B264915D3FFA5A843A708DBDB5503FDD21A8FCD
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 169 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 8:59 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Sun, May 23, 2010 at 11:07:27PM -0700, Ping Cheng wrote:
->> On Sun, May 23, 2010 at 9:58 PM, Peter Hutterer
->> <peter.hutterer@who-t.net> wrote:
->> >> > And yes, you could add it once we find it's an issue, but by then someone
->> >> > has already spent time to work around this. And when you then start sending
->> >> > slot events all the time, you admit that writing the workaround was just a
->> >> > time waster :)
->> >>
->> >> Work around what, exactly?
->> >
->> > I was referring to having a protocol where processes has to ignore contacts
->> > already down until they've been there when a contact was pressed (and your
->> > comment that if this becomes an issue it could be added lateron).
->> > Now, the ignoring part needs to be written (this is the "workaround"
->> > referred to above). if you're planning to add it later, we need to cater for
->> > that part as well then, having two implementations depending on the kernel
->> > versions.
->> >
->> > but this is just for clarification, it's a moot point anyway given that
->> > button events have the same behaviour.
->>
->> This topic is outside of the _MT_ protocol discussion.
->>
->> However, it is indeed an issue with all filtered input events, both
->> for MT and regular ones.
->>
->> I think we need to add an ioctl to enable user land driver/client to
->> signal the kernel driver to send all events without filtering, just
->> once. Hot-plugged devices and X driver starts after user has contacted
->> with the device are two examples that the client would miss filtered
->> events.
->>
->> Dmitry, do you think it is a valid suggestion?
->>
->
-> What about using EVIOCGKEY/EVIOCGSW/EVIOCGABS?
+On Mon, 2010-05-24 at 17:47 +0100, Al Viro wrote: 
+> On Mon, May 24, 2010 at 12:21:22PM -0400, Trond Myklebust wrote:
+> > > Can an nfs4 server e.g. have /x/y being a symlink that resolves to /a/b and
+> > > allow mounting of both /x/y/c and /a/b/c?  Which path would it return to
+> > > client that has mounted both, walked to some referral point and called
+> > > nfs_do_refmount(), triggering nfs4_proc_fs_locations()?
+> > > 
+> > > Trond, Neil?
+> > 
+> > When mounting /x/y/c in your example above, the NFSv4 protocol requires
+> > the client itself to resolve the symlink, and then walk down /a/b/c
+> > (looking up component by component), so it will in practice not see
+> > anything other than /a/b/c.
+> > 
+> > If it walks down to a referral, and then calls nfs_do_refmount, it will
+> > do the same thing: obtain a path /e/f/g on the new server, and then walk
+> > down that component by component while resolving any symlinks and/or
+> > referrals that it crosses in the process.
+> 
+> Ho-hum...  What happens if the same fs is mounted twice on server?  I.e.
+> have ext2 from /dev/sda1 mounted on /a and /b on server, then on the client
+> do mount -t nfs foo:/a /tmp/a; mount -t nfs foo:/b /tmp/b.  Which path
+> would we get from GETATTR with fs_locations requested, if we do it for
+> /tmp/a/x and /tmp/b/x resp.?  Dentry will be the same, since fsid would
+> match.
+> 
+> Or would the server refuse to export things that way?
 
-Those EVIOCs only give us the static values (max/min/supported keys,
-etc.).  We need their dynamic input data here, the actual x, y,
-button, pressure, etc. Am I missing something about those EVIOs?
 
-Ping
+I believe that the answer is that most filehandle types include an
+encoding of the inode number of the export directory. In other words, as
+long as '/a' and '/b' are different directories, then they will result
+in the generation of different filehandles for /a/x and /b/x.
+
+It seems that is not always the case, though. According to the
+definition of mk_fsid(), it looks as if the 'FSID_UUID8' and
+'FSID_UUID16' filehandle types only encode the uuid of the filesystem,
+and have no inode information. They will therefore not be able to
+distinguish between an export through '/a' or '/b'.
+
+Neil, Bruce am I right?
+
+Cheers
+  Trond
+
