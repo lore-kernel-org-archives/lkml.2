@@ -1,74 +1,237 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758032Ab0EXSRn (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:17:43 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37780 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752982Ab0EXSRl (ORCPT
+	id S1757748Ab0EXSYF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:24:05 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:62764 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0EXSYD (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:17:41 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=ah7KQlZPRXGqQuE+d9tMl+4DYtCpk1CD97phdxk/KLmRGT36hAPa5WhtW3QNspwW6d
-         WcBae4lJbP0WyxbPQeov7dcxPD4338Ges3QNyAM0CmCBrAyXJN461pggKC1fDz94khFC
-         w3INTJwR0HQX6oABfE2A1k8wdfi7T/RZ2XqPI=
-Date: Mon, 24 May 2010 11:17:35 -0700
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-Message-ID: <20100524181735.GC6033@core.coreip.homeip.net>
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au>
- <20100325154307.9cdeae10.sfr@canb.auug.org.au>
- <201003242159.25770.dmitry.torokhov@gmail.com>
- <20100521102158.bf6df441.sfr@canb.auug.org.au>
- <4BF5D8AF.6010408@windriver.com>
- <20100521110938.7bbbbf59.sfr@canb.auug.org.au>
- <20100521012340.GA12372@core.coreip.homeip.net>
- <4BF5E1D6.1090607@windriver.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF5E1D6.1090607@windriver.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+	Mon, 24 May 2010 14:24:03 -0400
+X-IronPort-AV: E=Sophos;i="4.53,292,1272859200"; 
+   d="scan'208";a="98432005"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, Don Dutile <ddutile@redhat.com>,
+       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>,
+       Sheng Yang <sheng@linux.intel.com>,
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 01/11] Add support for hvm_op
+Date: Mon, 24 May 2010 19:27:27 +0100
+Message-Id: <1274725657-1149-1-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.5.4.3
+In-Reply-To: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
+X-OriginalArrivalTime: 24 May 2010 18:24:00.0956 (UTC) FILETIME=[482FFFC0:01CAFB6E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 20, 2010 at 08:28:54PM -0500, Jason Wessel wrote:
-> On 05/20/2010 08:23 PM, Dmitry Torokhov wrote:
-> > On Fri, May 21, 2010 at 11:09:38AM +1000, Stephen Rothwell wrote:
-> >> Hi Jason,
-> >>
-> >> On Thu, 20 May 2010 19:49:51 -0500 Jason Wessel <jason.wessel@windriver.com> wrote:
-> >>> Before brute force toggling it, it seems we should check the value and
-> >>> restore it after the execution of handle_sysrq().
-> >> Indeed, at the time I couldn't find an easy way to do that.
-> >>
-> >>> I'll have to look and see if there is an access function for this.
-> >> Great, thanks.
-> > 
-> > I would not mind re-exporting sysrq_on() again.
-> > 
-> 
-> We could but I don't know that you need to.
-> 
-> Would you be willing to sign off on a change like the one below
-> Dmitry?  If so then I'll push it into kgdb-next.
-> 
-> It is as simple as making the return from sysrq_toggle_support a bit
-> more meaningful.
->
+From: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
 
-I do not think it is a very good idea... What if some other process
-enales SysRq in the mean time. Do we really need to force SysRq on
-or off? Maybe we should export __handle_sysrq() instead?
+Signed-off-by: Jeremy Fitzhardinge <jeremy.fitzhardinge@citrix.com>
+Signed-off-by: Sheng Yang <sheng@linux.intel.com>
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ arch/x86/include/asm/xen/hypercall.h |    6 ++
+ include/xen/hvm.h                    |   24 +++++++++
+ include/xen/interface/hvm/hvm_op.h   |   35 ++++++++++++
+ include/xen/interface/hvm/params.h   |   95 ++++++++++++++++++++++++++++++++++
+ 4 files changed, 160 insertions(+), 0 deletions(-)
+ create mode 100644 include/xen/hvm.h
+ create mode 100644 include/xen/interface/hvm/hvm_op.h
+ create mode 100644 include/xen/interface/hvm/params.h
 
-Also, I think I need to add locking in sysrq_toggle_support(), which
-will make it unsuitable for using in kdb handler, won't it?
-
+diff --git a/arch/x86/include/asm/xen/hypercall.h b/arch/x86/include/asm/xen/hypercall.h
+index 9c371e4..7fda040 100644
+--- a/arch/x86/include/asm/xen/hypercall.h
++++ b/arch/x86/include/asm/xen/hypercall.h
+@@ -417,6 +417,12 @@ HYPERVISOR_nmi_op(unsigned long op, unsigned long arg)
+ 	return _hypercall2(int, nmi_op, op, arg);
+ }
+ 
++static inline unsigned long __must_check
++HYPERVISOR_hvm_op(int op, void *arg)
++{
++       return _hypercall2(unsigned long, hvm_op, op, arg);
++}
++
+ static inline void
+ MULTI_fpu_taskswitch(struct multicall_entry *mcl, int set)
+ {
+diff --git a/include/xen/hvm.h b/include/xen/hvm.h
+new file mode 100644
+index 0000000..6b0d418
+--- /dev/null
++++ b/include/xen/hvm.h
+@@ -0,0 +1,24 @@
++/* Simple wrappers around HVM functions */
++#ifndef XEN_HVM_H__
++#define XEN_HVM_H__
++
++#include <xen/interface/hvm/params.h>
++
++static inline int hvm_get_parameter(int idx, uint64_t *value)
++{
++       struct xen_hvm_param xhv;
++       int r;
++
++       xhv.domid = DOMID_SELF;
++       xhv.index = idx;
++       r = HYPERVISOR_hvm_op(HVMOP_get_param, &xhv);
++       if (r < 0) {
++               printk(KERN_ERR "cannot get hvm parameter %d: %d.\n",
++                      idx, r);
++               return r;
++       }
++       *value = xhv.value;
++       return r;
++}
++
++#endif /* XEN_HVM_H__ */
+diff --git a/include/xen/interface/hvm/hvm_op.h b/include/xen/interface/hvm/hvm_op.h
+new file mode 100644
+index 0000000..73c8c7e
+--- /dev/null
++++ b/include/xen/interface/hvm/hvm_op.h
+@@ -0,0 +1,35 @@
++/*
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef __XEN_PUBLIC_HVM_HVM_OP_H__
++#define __XEN_PUBLIC_HVM_HVM_OP_H__
++
++/* Get/set subcommands: the second argument of the hypercall is a
++ * pointer to a xen_hvm_param struct. */
++#define HVMOP_set_param           0
++#define HVMOP_get_param           1
++struct xen_hvm_param {
++    domid_t  domid;    /* IN */
++    uint32_t index;    /* IN */
++    uint64_t value;    /* IN/OUT */
++};
++DEFINE_GUEST_HANDLE_STRUCT(xen_hvm_param);
++
++#endif /* __XEN_PUBLIC_HVM_HVM_OP_H__ */
+diff --git a/include/xen/interface/hvm/params.h b/include/xen/interface/hvm/params.h
+new file mode 100644
+index 0000000..1888d8c
+--- /dev/null
++++ b/include/xen/interface/hvm/params.h
+@@ -0,0 +1,95 @@
++/*
++ * Permission is hereby granted, free of charge, to any person obtaining a copy
++ * of this software and associated documentation files (the "Software"), to
++ * deal in the Software without restriction, including without limitation the
++ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
++ * sell copies of the Software, and to permit persons to whom the Software is
++ * furnished to do so, subject to the following conditions:
++ *
++ * The above copyright notice and this permission notice shall be included in
++ * all copies or substantial portions of the Software.
++ *
++ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
++ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
++ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
++ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
++ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
++ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
++ * DEALINGS IN THE SOFTWARE.
++ */
++
++#ifndef __XEN_PUBLIC_HVM_PARAMS_H__
++#define __XEN_PUBLIC_HVM_PARAMS_H__
++
++#include "hvm_op.h"
++
++/*
++ * Parameter space for HVMOP_{set,get}_param.
++ */
++
++/*
++ * How should CPU0 event-channel notifications be delivered?
++ * val[63:56] == 0: val[55:0] is a delivery GSI (Global System Interrupt).
++ * val[63:56] == 1: val[55:0] is a delivery PCI INTx line, as follows:
++ *                  Domain = val[47:32], Bus  = val[31:16],
++ *                  DevFn  = val[15: 8], IntX = val[ 1: 0]
++ * val[63:56] == 2: val[7:0] is a vector number.
++ * If val == 0 then CPU0 event-channel notifications are not delivered.
++ */
++#define HVM_PARAM_CALLBACK_IRQ 0
++
++#define HVM_PARAM_STORE_PFN    1
++#define HVM_PARAM_STORE_EVTCHN 2
++
++#define HVM_PARAM_PAE_ENABLED  4
++
++#define HVM_PARAM_IOREQ_PFN    5
++
++#define HVM_PARAM_BUFIOREQ_PFN 6
++
++/*
++ * Set mode for virtual timers (currently x86 only):
++ *  delay_for_missed_ticks (default):
++ *   Do not advance a vcpu's time beyond the correct delivery time for
++ *   interrupts that have been missed due to preemption. Deliver missed
++ *   interrupts when the vcpu is rescheduled and advance the vcpu's virtual
++ *   time stepwise for each one.
++ *  no_delay_for_missed_ticks:
++ *   As above, missed interrupts are delivered, but guest time always tracks
++ *   wallclock (i.e., real) time while doing so.
++ *  no_missed_ticks_pending:
++ *   No missed interrupts are held pending. Instead, to ensure ticks are
++ *   delivered at some non-zero rate, if we detect missed ticks then the
++ *   internal tick alarm is not disabled if the VCPU is preempted during the
++ *   next tick period.
++ *  one_missed_tick_pending:
++ *   Missed interrupts are collapsed together and delivered as one 'late tick'.
++ *   Guest time always tracks wallclock (i.e., real) time.
++ */
++#define HVM_PARAM_TIMER_MODE   10
++#define HVMPTM_delay_for_missed_ticks    0
++#define HVMPTM_no_delay_for_missed_ticks 1
++#define HVMPTM_no_missed_ticks_pending   2
++#define HVMPTM_one_missed_tick_pending   3
++
++/* Boolean: Enable virtual HPET (high-precision event timer)? (x86-only) */
++#define HVM_PARAM_HPET_ENABLED 11
++
++/* Identity-map page directory used by Intel EPT when CR0.PG=0. */
++#define HVM_PARAM_IDENT_PT     12
++
++/* Device Model domain, defaults to 0. */
++#define HVM_PARAM_DM_DOMAIN    13
++
++/* ACPI S state: currently support S0 and S3 on x86. */
++#define HVM_PARAM_ACPI_S_STATE 14
++
++/* TSS used on Intel when CR0.PE=0. */
++#define HVM_PARAM_VM86_TSS     15
++
++/* Boolean: Enable aligning all periodic vpts to reduce interrupts */
++#define HVM_PARAM_VPT_ALIGN    16
++
++#define HVM_NR_PARAMS          17
++
++#endif /* __XEN_PUBLIC_HVM_PARAMS_H__ */
 -- 
-Dmitry
+1.5.4.3
+
