@@ -1,48 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757682Ab0EXUeO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 16:34:14 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37502 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756336Ab0EXUeL (ORCPT
+	id S1756371Ab0EXUjj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 16:39:39 -0400
+Received: from e32.co.us.ibm.com ([32.97.110.150]:47012 "EHLO
+	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753733Ab0EXUjh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 16:34:11 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=VIIxifab7UsWXv/rNDUN3E0T0tJ3RT0g1/yKijQnfxr4lba/fCDHsmINk2f2WNuHDP
-         1RxebZHaHxeswuqISOpH+fX56dDtA1vpoRKRqlDZBc4J/aeiG1+jlpx0BEIUUOAVSXu7
-         +UT7M7XTrUrykdRPvi2r8qEntppPIAz+lng2Y=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Jason Wessel <jason.wessel@windriver.com>
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-Date: Mon, 24 May 2010 13:34:03 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32.12-115.fc12.x86_64; KDE/4.4.2; x86_64; ; )
-Cc: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
+	Mon, 24 May 2010 16:39:37 -0400
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Brian Bloniarz <bmb@athenacr.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
        linux-kernel@vger.kernel.org
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au> <20100524181735.GC6033@core.coreip.homeip.net> <4BFADBC1.9000802@windriver.com>
-In-Reply-To: <4BFADBC1.9000802@windriver.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+In-Reply-To: <4BFADF9D.9050209@zytor.com>
+References: <4BF58B59.7080901@athenacr.com AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 May 2010 13:39:26 -0700
+Message-ID: <1274733566.2954.73.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005241334.04277.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Monday 24 May 2010 01:04:17 pm Jason Wessel wrote:
-> On 05/24/2010 01:17 PM, Dmitry Torokhov wrote:
-> > Do we really need to force SysRq on or off? Maybe we should export
-> > __handle_sysrq() instead?
+On Mon, 2010-05-24 at 13:20 -0700, H. Peter Anvin wrote:
+> On 05/24/2010 11:51 AM, john stultz wrote:
+> > 
+> > Hmmm. That could be an option for newer cpus that I wouldn't oppose.
+> > 
+> > While Peter is correct that the stamped value is probably not very
+> > accurate, atleast it would be constant from boot to boot, and NTP's
+> > calculated drift value would be correct. 
+> > 
+> > We'd need a check to make sure its not way off, since NTP will give up
+> > if its outside 500ppm.  So as long as its close to the calibrated value,
+> > we probably could use it.
+> > 
 > 
-> It seems cleanest to export __handle_sysrq() if that is ok?
+> Is that still the case?  I thought newer versions of NTP could deal with
+> large values.  Inaccuracies of way more than 500 ppm are everyday.
 
-Yes, I think this is the best option. Please feel free to merge through
-your tree.
+That's scary. 
 
-Thanks.
+Yea, in the kernel the ntp freq correction tops out at 500ppm. Almost
+all the systems I see tend to fall in the +/- 200ppm range (if there's
+not something terribly wrong with the hardware).
 
--- 
-Dmitry
+So maybe things aren't so bad out there? Or is that wishful thinking?
+
+thanks
+-john
+
+
