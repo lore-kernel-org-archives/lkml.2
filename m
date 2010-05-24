@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932654Ab0EXX3b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:29:31 -0400
-Received: from kroah.org ([198.145.64.141]:59407 "EHLO coco.kroah.org"
+	id S932738Ab0EXX3e (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:29:34 -0400
+Received: from kroah.org ([198.145.64.141]:59397 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932516Ab0EXXXl (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:41 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:15 2010
-Message-Id: <20100524231814.995659071@clark.site>
+	id S932478Ab0EXXXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:40 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:14 2010
+Message-Id: <20100524231814.813743264@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:32 -0700
+Date: Mon, 24 May 2010 16:15:30 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Alan Cox <alan@linux.intel.com>, Arnd Bergmann <arnd@arndb.de>
-Subject: [20/39] tty: Fix unbalanced BKL handling in error path
+       Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
+Subject: [18/39] cifs: guard against hardlinking directories
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,35 +25,90 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Alan Cox <alan@linux.intel.com>
+From: Jeff Layton <jlayton@redhat.com>
 
-commit 77945febbe60a69e9dcab7f49d33a1aa1e436973 upstream.
+commit 3d69438031b00c601c991ab447cafb7d5c3c59a6 upstream.
 
-Arnd noted:
+When we made serverino the default, we trusted that the field sent by the
+server in the "uniqueid" field was actually unique. It turns out that it
+isn't reliably so.
 
-After the "retry_open:" label, we first get the tty_mutex
-and then the BKL. However a the end of tty_open, we jump
-back to retry_open with the BKL still held. If we run into
-this case, the tty_open function will be left with the BKL
-still held.
+Samba, in particular, will just put the st_ino in the uniqueid field when
+unix extensions are enabled. When a share spans multiple filesystems, it's
+quite possible that there will be collisions. This is a server bug, but
+when the inodes in question are a directory (as is often the case) and
+there is a collision with the root inode of the mount, the result is a
+kernel panic on umount.
 
-Signed-off-by: Alan Cox <alan@linux.intel.com>
-Acked-by: Arnd Bergmann <arnd@arndb.de>
+Fix this by checking explicitly for directory inodes with the same
+uniqueid. If that is the case, then we can assume that using server inode
+numbers will be a problem and that they should be disabled.
+
+Fixes Samba bugzilla 7407
+
+Signed-off-by: Jeff Layton <jlayton@redhat.com>
+Reviewed-and-Tested-by: Suresh Jayaraman <sjayaraman@suse.de>
+Signed-off-by: Steve French <sfrench@us.ibm.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/char/tty_io.c |    1 +
- 1 file changed, 1 insertion(+)
+ fs/cifs/cifsglob.h |    1 +
+ fs/cifs/inode.c    |   21 +++++++++++++++++++--
+ 2 files changed, 20 insertions(+), 2 deletions(-)
 
---- a/drivers/char/tty_io.c
-+++ b/drivers/char/tty_io.c
-@@ -1875,6 +1875,7 @@ got_driver:
- 		 */
- 		if (filp->f_op == &hung_up_tty_fops)
- 			filp->f_op = &tty_fops;
-+		unlock_kernel();
- 		goto retry_open;
- 	}
- 	unlock_kernel();
+--- a/fs/cifs/cifsglob.h
++++ b/fs/cifs/cifsglob.h
+@@ -500,6 +500,7 @@ struct dfs_info3_param {
+ #define CIFS_FATTR_DFS_REFERRAL		0x1
+ #define CIFS_FATTR_DELETE_PENDING	0x2
+ #define CIFS_FATTR_NEED_REVAL		0x4
++#define CIFS_FATTR_INO_COLLISION	0x8
+ 
+ struct cifs_fattr {
+ 	u32		cf_flags;
+--- a/fs/cifs/inode.c
++++ b/fs/cifs/inode.c
+@@ -610,6 +610,16 @@ cifs_find_inode(struct inode *inode, voi
+ 	if (CIFS_I(inode)->uniqueid != fattr->cf_uniqueid)
+ 		return 0;
+ 
++	/*
++	 * uh oh -- it's a directory. We can't use it since hardlinked dirs are
++	 * verboten. Disable serverino and return it as if it were found, the
++	 * caller can discard it, generate a uniqueid and retry the find
++	 */
++	if (S_ISDIR(inode->i_mode) && !list_empty(&inode->i_dentry)) {
++		fattr->cf_flags |= CIFS_FATTR_INO_COLLISION;
++		cifs_autodisable_serverino(CIFS_SB(inode->i_sb));
++	}
++
+ 	return 1;
+ }
+ 
+@@ -629,15 +639,22 @@ cifs_iget(struct super_block *sb, struct
+ 	unsigned long hash;
+ 	struct inode *inode;
+ 
++retry_iget5_locked:
+ 	cFYI(1, ("looking for uniqueid=%llu", fattr->cf_uniqueid));
+ 
+ 	/* hash down to 32-bits on 32-bit arch */
+ 	hash = cifs_uniqueid_to_ino_t(fattr->cf_uniqueid);
+ 
+ 	inode = iget5_locked(sb, hash, cifs_find_inode, cifs_init_inode, fattr);
+-
+-	/* we have fattrs in hand, update the inode */
+ 	if (inode) {
++		/* was there a problematic inode number collision? */
++		if (fattr->cf_flags & CIFS_FATTR_INO_COLLISION) {
++			iput(inode);
++			fattr->cf_uniqueid = iunique(sb, ROOT_I);
++			fattr->cf_flags &= ~CIFS_FATTR_INO_COLLISION;
++			goto retry_iget5_locked;
++		}
++
+ 		cifs_fattr_to_inode(inode, fattr);
+ 		if (sb->s_flags & MS_NOATIME)
+ 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
 
 
