@@ -1,69 +1,147 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754654Ab0EXBEQ (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 21:04:16 -0400
-Received: from fgwmail7.fujitsu.co.jp ([192.51.44.37]:38877 "EHLO
-	fgwmail7.fujitsu.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751835Ab0EXBEP (ORCPT
+	id S1754896Ab0EXBEk (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 21:04:40 -0400
+Received: from mga11.intel.com ([192.55.52.93]:39729 "EHLO mga11.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754139Ab0EXBEi convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 21:04:15 -0400
-X-SecurityPolicyCheck-FJ: OK by FujitsuOutboundMailChecker v1.3.1
-From: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
-To: Julia Lawall <julia@diku.dk>
-Subject: Re: [PATCH 5/27] mm: Use memdup_user
-Cc: kosaki.motohiro@jp.fujitsu.com, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-In-Reply-To: <Pine.LNX.4.64.1005221019370.13021@ask.diku.dk>
-References: <Pine.LNX.4.64.1005221019370.13021@ask.diku.dk>
-Message-Id: <20100524095902.1E92.A69D9226@jp.fujitsu.com>
+	Sun, 23 May 2010 21:04:38 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,287,1272870000"; 
+   d="scan'208";a="801176656"
+From: "Guo, Chaohong" <chaohong.guo@intel.com>
+To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>,
+       minskey guo <chaohong_guo@linux.intel.com>
+CC: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       "linux-mm@kvack.org" <linux-mm@kvack.org>,
+       "prarit@redhat.com" <prarit@redhat.com>,
+       "Kleen, Andi" <andi.kleen@intel.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Tejun Heo <tj@kernel.org>, "stable@kernel.org" <stable@kernel.org>
+Date: Mon, 24 May 2010 09:03:53 +0800
+Subject: RE: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
+Thread-Topic: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
+Thread-Index: Acr46JW+82ku8mFMRielxLNahzyEDAB84fmw
+Message-ID: <CF2F38D4AE21BB4CB845318E4C5ECB671E790500@shsmsx501.ccr.corp.intel.com>
+References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
+	 <20100520134359.fdfb397e.akpm@linux-foundation.org>
+	 <20100521105512.0c2cf254.sfr@canb.auug.org.au>
+	 <20100521134424.45e0ee36.kamezawa.hiroyu@jp.fujitsu.com>
+	 <4BF642BB.2020402@linux.intel.com>
+	 <20100521173940.8f130205.kamezawa.hiroyu@jp.fujitsu.com>
+	 <4BF64E79.4010401@linux.intel.com>
+ <1274448107.9131.87.camel@useless.americas.hpqcorp.net>
+In-Reply-To: <1274448107.9131.87.camel@useless.americas.hpqcorp.net>
+Accept-Language: zh-CN, en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+x-cr-hashedpuzzle: A5ZX ET6k FcUg IcW9 WCfy p8j4 rDVO zWC8 4BI4 48oa
+ AA1WoQ== ABWE8g== AC97ow== ADqqTw== AD/CVw==
+ AIeRbw==;10;YQBrAHAAbQBAAGwAaQBuAHUAeAAtAGYAbwB1AG4AZABhAHQAaQBvAG4ALgBvAHIAZwA7AGMAaABhAG8AaABvAG4AZwBfAGcAdQBvAEAAbABpAG4AdQB4AC4AaQBuAHQAZQBsAC4AYwBvAG0AOwBrAGEAbQBlAHoAYQB3AGEALgBoAGkAcgBvAHkAdQBAAGoAcAAuAGYAdQBqAGkAdABzAHUALgBjAG8AbQA7AGwAZQBlAC4AcwBjAGgAZQByAG0AZQByAGgAbwByAG4AQABoAHAALgBjAG8AbQA7AGwAaQBuAHUAeAAtAGsAZQByAG4AZQBsAEAAdgBnAGUAcgAuAGsAZQByAG4AZQBsAC4AbwByAGcAOwBsAGkAbgB1AHgALQBtAG0AQABrAHYAYQBjAGsALgBvAHIAZwA7AHAAcgBhAHIAaQB0AEAAcgBlAGQAaABhAHQALgBjAG8AbQA7AHMAZgByAEAAYwBhAG4AYgAuAGEAdQB1AGcALgBvAHIAZwAuAGEAdQA7AHMAdABhAGIAbABlAEAAawBlAHIAbgBlAGwALgBvAHIAZwA7AHQAagBAAGsAZQByAG4AZQBsAC4AbwByAGcA;Sosha1_v1;7;{A6CB7DFD-3FFB-42DD-A5FF-511DAEA107D0};YwBoAGEAbwBoAG8AbgBnAC4AZwB1AG8AQABpAG4AdABlAGwALgBjAG8AbQA=;Mon,
+ 24 May 2010 01:03:53
+ GMT;UgBFADoAIABbAFAAQQBUAEMASABdACAAbwBuAGwAaQBuAGUAIABDAFAAVQAgAGIAZQBmAG8AcgBlACAAbQBlAG0AbwByAHkAIABmAGEAaQBsAGUAZAAgAGkAbgAgAHAAYwBwAHUAXwBhAGwAbABvAGMAXwBwAGEAZwBlAHMAKAApAA==
+x-cr-puzzleid: {A6CB7DFD-3FFB-42DD-A5FF-511DAEA107D0}
+acceptlanguage: zh-CN, en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
-Content-Transfer-Encoding: 7bit
-X-Mailer: Becky! ver. 2.50.07 [ja]
-Date: Mon, 24 May 2010 10:04:10 +0900 (JST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Signed-off-by: Julia Lawall <julia@diku.dk>
-> 
-> ---
->  mm/util.c |   11 +++--------
->  1 file changed, 3 insertions(+), 8 deletions(-)
-> 
-> diff --git a/mm/util.c b/mm/util.c
-> index f5712e8..4735ea4 100644
-> --- a/mm/util.c
-> +++ b/mm/util.c
-> @@ -225,15 +225,10 @@ char *strndup_user(const char __user *s, long n)
->  	if (length > n)
->  		return ERR_PTR(-EINVAL);
->  
-> -	p = kmalloc(length, GFP_KERNEL);
-> +	p = memdup_user(s, length);
-
-memdup? Why can't we use strnlen_user() and legitimate length copy?
 
 
->  
-> -	if (!p)
-> -		return ERR_PTR(-ENOMEM);
-> -
-> -	if (copy_from_user(p, s, length)) {
-> -		kfree(p);
-> -		return ERR_PTR(-EFAULT);
-> -	}
-> +	if (IS_ERR(p))
-> +		return p;
->  
->  	p[length - 1] = '\0';
->  
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+>> >>
+>> >>
+>> >> @@ -2968,9 +2991,23 @@ static int __build_all_zonelists(void *d
+>> >> ...
+>> >>
+>> >> -	for_each_possible_cpu(cpu)
+>> >> +	for_each_possible_cpu(cpu) {
+>> >> 		setup_pageset(&per_cpu(boot_pageset, cpu), 0);
+>> >> ...
+>> >>
+>> >> +#ifdef CONFIG_HAVE_MEMORYLESS_NODES
+>> >> + 	if (cpu_online(cpu))
+>> >> +		cpu_to_mem(cpu) = local_memory_node(cpu_to_node(cpu));
+>> >> +#endif
+>>
+>> Look at the above code,  int __build_all_zonelists(),  cpu_to_mem(cpu)
+>> is set only when cpu is onlined.  Suppose that a node with local memory,
+>> all memory segments are onlined first, and then,  cpus within that node
+>> are onlined one by one,  in this case,  where does the cpu_to_mem(cpu)
+>> for the last cpu get its value ?
+>
+>Minskey:
+>
+>As I mentioned to Kame-san, x86 does not define
+>CONFIG_HAVE_MEMORYLESS_NODES, so this code is not compiled for that
+>arch.  If x86 did support memoryless nodes--i.e., did not hide them and
+>reassign the cpus to other nodes, as is the case for ia64--then we could
+>have on-line cpus associated with memoryless nodes.  The code above is
+>in __build_all_zonelists() so that in the case where we add memory to a
+>previously memoryless node, we re-evaluate the "local memory node" for
+>all online cpus.
+>
+>For cpu hotplug--again, if x86 supports memoryless nodes--we'll need to
+>add a similar chunk to the path where we set up the cpu_to_node map for
+>a hotplugged cpu.  See, for example, the call to set_numa_mem() in
+>smp_callin() in arch/ia64/kernel/smpboot.c. 
 
 
+Yeah, that's what I am looking for. 
+
+
+
+ But currently, I don't
+>think you can use the numa_mem_id()/cpu_to_mem() interfaces for your
+>purpose.  I suppose you could change page_alloc.c to compile
+>local_memory_node() #if defined(CONFIG_HAVE_MEMORYLESS_NODES) ||
+>defined
+>(CPU_HOTPLUG) and use that function to find the nearest memory.  It
+>should return a valid node after zonelists have been rebuilt.
+>
+>Does that make sense?
+
+Yes, besides,  I need to find a place in hotplug path to call set_numa_mem()
+just as you mentioned for ia64 platform.  Is my understanding right ?
+
+
+
+
+Thanks,
+-minskey
+
+
+
+
+
+
+
+
+>
+>Lee
+>>
+>>
+>> >
+>> > So, cpu_to_node(cpu) for possible cpus will have NUMA_NO_NODE(-1)
+>> > or the number of the nearest node.
+>> >
+>> > IIUC, if SRAT is not broken, all pxm has its own node_id.
+>>
+>> Thank you very much for the info,  I have been thinking why node_id
+>> is (-1) in some cases.
+>>
+>>
+>> -minskey
+>>
+>> --
+>> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+>> the body to majordomo@kvack.org.  For more info on Linux MM,
+>> see: http://www.linux-mm.org/ .
+>> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
