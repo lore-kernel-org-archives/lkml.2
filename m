@@ -1,78 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933023Ab0EXX1N (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:27:13 -0400
-Received: from kroah.org ([198.145.64.141]:59491 "EHLO coco.kroah.org"
+	id S932640Ab0EXXar (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:30:47 -0400
+Received: from e2.ny.us.ibm.com ([32.97.182.142]:36385 "EHLO e2.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932636Ab0EXXXw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:52 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:16 2010
-Message-Id: <20100524231816.071942512@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:44 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Robert Hooker <sarvatt@ubuntu.com>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>, Eric Anholt <eric@anholt.net>
-Subject: [32/39] drm/i915: Disable FBC on 915GM and 945GM.
-In-Reply-To: <20100524231840.GA17857@kroah.com>
+	id S932395Ab0EXXao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:30:44 -0400
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Bloniarz <bmb@athenacr.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default>
+References: <4BF58B59.7080901@athenacr.com>
+	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com>
+	 <1274733566.2954.73.camel@localhost.localdomain>
+	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default>
+	 <4BFAFE17.8060105@zytor.com 1274741362.2954.80.camel@localhost.localdomain>
+	 <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 May 2010 16:30:36 -0700
+Message-ID: <1274743836.2954.104.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, 2010-05-24 at 16:16 -0700, Dan Magenheimer wrote:
+> > From: john stultz [mailto:johnstul@us.ibm.com]
+> > Also, you don't really need extra accuracy, you just need it to be the
+> > same from boot to boot. NTP keeps the correction factor persistent from
+> > boot to boot via the drift file. The boot argument is just trying to
+> > save the time (possibly hours depending on ntp config) after a reboot
+> > for NTP to correct for the new error introduced by calibration.
+> 
+> I was assuming that extra accuracy would decrease the ntp
+> convergence time by about the same factor (5-6 bits of extra
+> accuracy would decrease ntp convergence time by 32-64x).
+> Is that an incorrect assumption?
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Sorry, this is sort of mixing points. I was saying you don't need more
+accuracy (as opposed to what H. Peter mentioned below) when setting the
+tsc_khz= option I proposed. Since it will be constant from boot to boot,
+and thus will reduce the ntp convergence time.
 
-------------------
-From: Robert Hooker <sarvatt@ubuntu.com>
+However, without such a boot option, more accuracy from an increased
+calibration time would help. However, the tradeoff of a longer boot time
+is one not many will probably want.
 
-commit 8d06a1e1e9c69244f08beb7d17146483f9dcd120 upstream.
 
-It is causing hangs after a suspend/resume cycle with the default
-powersave=1 module option on these chipsets since 2.6.32-rc.
+> > From: H. Peter Anvin [mailto:hpa@zytor.com]
+> > A longer sample would make sense if the goal is to freeze it into a
+> > kernel command line variable, but the real question is how many people
+> > would actually do that (and how many people would then suffer problems
+> > because they upgraded their CPU/mobo and got massive failures on post-
+> > boot.)
+> 
+> Not sure why upgraded mobo's would fail due to a longer sample?
 
-BugLink: http://bugs.launchpad.net/bugs/492392
-Signed-off-by: Robert Hooker <sarvatt@ubuntu.com>
-Acked-by: Jesse Barnes <jbarnes@virtuousgeek.org>
-Signed-off-by: Eric Anholt <eric@anholt.net>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+Again, this is mixing the discussion. The concern was users of a
+tsc_khz= boot option might have problems when they upgrade, as the
+actual TSC freq might not match what was specified at boot.
 
----
- drivers/gpu/drm/i915/i915_drv.c      |    4 ++--
- drivers/gpu/drm/i915/intel_display.c |    2 +-
- 2 files changed, 3 insertions(+), 3 deletions(-)
+> As more and more systems become dependent on clocksource==tsc
+> and more and more people assume nanosecond-class measurements
+> are relatively accurate, I'd expect the accuracy of tsc_khz
+> to become more important.  While desktop users might bristle
+> at an extra second of boot delay, I'll bet many server
+> farm administrators would gladly pay that upfront cost
+> if they know an option exists.
 
---- a/drivers/gpu/drm/i915/i915_drv.c
-+++ b/drivers/gpu/drm/i915/i915_drv.c
-@@ -79,14 +79,14 @@ const static struct intel_device_info in
- 	.is_i915g = 1, .is_i9xx = 1, .cursor_needs_physical = 1,
- };
- const static struct intel_device_info intel_i915gm_info = {
--	.is_i9xx = 1,  .is_mobile = 1, .has_fbc = 1,
-+	.is_i9xx = 1,  .is_mobile = 1,
- 	.cursor_needs_physical = 1,
- };
- const static struct intel_device_info intel_i945g_info = {
- 	.is_i9xx = 1, .has_hotplug = 1, .cursor_needs_physical = 1,
- };
- const static struct intel_device_info intel_i945gm_info = {
--	.is_i945gm = 1, .is_i9xx = 1, .is_mobile = 1, .has_fbc = 1,
-+	.is_i945gm = 1, .is_i9xx = 1, .is_mobile = 1,
- 	.has_hotplug = 1, .cursor_needs_physical = 1,
- };
- 
---- a/drivers/gpu/drm/i915/intel_display.c
-+++ b/drivers/gpu/drm/i915/intel_display.c
-@@ -4683,7 +4683,7 @@ static void intel_init_display(struct dr
- 			dev_priv->display.fbc_enabled = g4x_fbc_enabled;
- 			dev_priv->display.enable_fbc = g4x_enable_fbc;
- 			dev_priv->display.disable_fbc = g4x_disable_fbc;
--		} else if (IS_I965GM(dev) || IS_I945GM(dev) || IS_I915GM(dev)) {
-+		} else if (IS_I965GM(dev)) {
- 			dev_priv->display.fbc_enabled = i8xx_fbc_enabled;
- 			dev_priv->display.enable_fbc = i8xx_enable_fbc;
- 			dev_priv->display.disable_fbc = i8xx_disable_fbc;
+Maybe something like a tsc_long_calibration=1 option would allow for
+this?  
 
+However, I really do like the idea of pulling the stamped value from the
+MSR and if its close to what we quickly calibrated, use that.
+
+thanks
+-john
 
