@@ -1,83 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756194Ab0EXG6K (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 02:58:10 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:33515 "EHLO mx2.suse.de"
+	id S1756223Ab0EXG7Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 02:59:16 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:32988 "EHLO mail.skyhub.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753473Ab0EXG6H (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 02:58:07 -0400
-Date: Mon, 24 May 2010 16:57:56 +1000
-From: Neil Brown <neilb@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100524165756.2cfa54c4@notabene.brown>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1756162Ab0EXG7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 02:59:15 -0400
+Date: Mon, 24 May 2010 08:59:09 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Jacek J <69rydzyk69@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: CPU #1 not responding Problem
+Message-ID: <20100524065909.GA21310@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Jacek J <69rydzyk69@gmail.com>, linux-kernel@vger.kernel.org
+References: <AANLkTinHkcWaHs8Hf6zvRjftC5hPkpHbC2LTaz-h4TJ3@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <AANLkTinHkcWaHs8Hf6zvRjftC5hPkpHbC2LTaz-h4TJ3@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+From: Jacek J <69rydzyk69@gmail.com>
+Date: Mon, May 24, 2010 at 12:14:49AM +0200
 
-Commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5 broke FS_REVAL_DOT semantics.
+Hi,
 
-In particular, before this patch, the command
-   ls -l
-in an NFS mounted directory would always check if the directory on the server
-had changed and if so would flush and refill the pagecache for the dir.
-After this patch, the same "ls -l" will repeatedly return stale date until
-the cached attributes for the directory time out.
+> sometimes (very rarely), when I boot my machine, I get messages that
+> some cores are not responding (#0, #,1 #,2). #3 is responding and
+> system boots with one core. After reboot it boots fine with all 4
+> cores. My CPU is Phenom II X940, I use archlinux.
 
-The following patch fixes this by ensuring the d_revalidate is called by
-do_last when "." is being looked-up.
-link_path_walk has already called d_revalidate, but in that case LOOKUP_OPEN
-is not set so nfs_lookup_verify_inode chooses not to do any validation.
+what kernel are you using? Can we see the dmesg of the time when the
+cores are not responding? Can you try reproducing this with a vanilla
+kernel from kernel.org.
 
-The following patch restores the original behaviour.
+Thanks.
 
-Cc: stable@kernel.org
-Signed-off-by: NeilBrown <neilb@suse.de>
-
----
-As an aside the whole "FS_REVAL_DOT" concept seems deeply flawed to me.
-The apparent purpose for d_revalidate is to ensure that the given name in the
-given directory still points to the given inode.  For '.' this is pointless
-as '.' in a given directory has a very well defined and unchangeable value.
-
-It seems that d_revalidate is also used to update the cached attributes for
-the target as well.  While that is reasonable side effect it seems wrong to
-expect it as is the basis for FS_REVAL_DOT.
-
-Surely ->open should perform any final validation of cached attributes.
-
-NeilBrown
-
-(Yes, I have posted this before but I didn't seem to be getting any real
-progress, so I split this more obviously correct patch out from the other
-less obvious one relating to mountpoints.  Once I succeed with this I'll try
-again with the other).
-
-diff --git a/fs/namei.c b/fs/namei.c
-index 48e1f60..868d0cb 100644
---- a/fs/namei.c
-+++ b/fs/namei.c
-@@ -1621,6 +1621,7 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 	case LAST_DOTDOT:
- 		follow_dotdot(nd);
- 		dir = nd->path.dentry;
-+	case LAST_DOT:
- 		if (nd->path.mnt->mnt_sb->s_type->fs_flags & FS_REVAL_DOT) {
- 			if (!dir->d_op->d_revalidate(dir, nd)) {
- 				error = -ESTALE;
-@@ -1628,7 +1629,6 @@ static struct file *do_last(struct nameidata *nd, struct path *path,
- 			}
- 		}
- 		/* fallthrough */
--	case LAST_DOT:
- 	case LAST_ROOT:
- 		if (open_flag & O_CREAT)
- 			goto exit;
+-- 
+Regards/Gruss,
+    Boris.
