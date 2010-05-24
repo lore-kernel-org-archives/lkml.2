@@ -1,21 +1,22 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932192Ab0EXXOJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:14:09 -0400
-Received: from kroah.org ([198.145.64.141]:36421 "EHLO coco.kroah.org"
+	id S1759058Ab0EXXM1 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:12:27 -0400
+Received: from kroah.org ([198.145.64.141]:36467 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758979Ab0EXXJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
-Message-Id: <20100524230350.417271635@clark.site>
+	id S1759008Ab0EXXJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:31 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
+Message-Id: <20100524230351.224349120@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:44 -0700
+Date: Mon, 24 May 2010 15:59:53 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [12/34] cifs: guard against hardlinking directories
+       Andreas Herrmann <andreas.herrmann3@amd.com>,
+       "H. Peter Anvin" <hpa@linux.intel.com>
+Subject: [21/34] x86, amd: Check X86_FEATURE_OSVW bit before accessing OSVW MSRs
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +26,43 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jeff Layton <jlayton@redhat.com>
+From: Andreas Herrmann <herrmann.der.user@googlemail.com>
 
-commit 3d69438031b00c601c991ab447cafb7d5c3c59a6 upstream.
+commit f01487119dda3d9f58c9729c7361ecc50a61c188 upstream.
 
-When we made serverino the default, we trusted that the field sent by the
-server in the "uniqueid" field was actually unique. It turns out that it
-isn't reliably so.
+If host CPU is exposed to a guest the OSVW MSRs are not guaranteed
+to be present and a GP fault occurs. Thus checking the feature flag is
+essential.
 
-Samba, in particular, will just put the st_ino in the uniqueid field when
-unix extensions are enabled. When a share spans multiple filesystems, it's
-quite possible that there will be collisions. This is a server bug, but
-when the inodes in question are a directory (as is often the case) and
-there is a collision with the root inode of the mount, the result is a
-kernel panic on umount.
-
-Fix this by checking explicitly for directory inodes with the same
-uniqueid. If that is the case, then we can assume that using server inode
-numbers will be a problem and that they should be disabled.
-
-Fixes Samba bugzilla 7407
-
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-and-Tested-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
+LKML-Reference: <20100427101348.GC4489@alberich.amd.com>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsglob.h |    1 +
- fs/cifs/inode.c    |   21 +++++++++++++++++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ arch/x86/kernel/process.c |   12 +++++++-----
+ 1 file changed, 7 insertions(+), 5 deletions(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -499,6 +499,7 @@ struct dfs_info3_param {
- #define CIFS_FATTR_DFS_REFERRAL		0x1
- #define CIFS_FATTR_DELETE_PENDING	0x2
- #define CIFS_FATTR_NEED_REVAL		0x4
-+#define CIFS_FATTR_INO_COLLISION	0x8
- 
- struct cifs_fattr {
- 	u32		cf_flags;
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -610,6 +610,16 @@ cifs_find_inode(struct inode *inode, voi
- 	if (CIFS_I(inode)->uniqueid != fattr->cf_uniqueid)
- 		return 0;
- 
-+	/*
-+	 * uh oh -- it's a directory. We can't use it since hardlinked dirs are
-+	 * verboten. Disable serverino and return it as if it were found, the
-+	 * caller can discard it, generate a uniqueid and retry the find
-+	 */
-+	if (S_ISDIR(inode->i_mode) && !list_empty(&inode->i_dentry)) {
-+		fattr->cf_flags |= CIFS_FATTR_INO_COLLISION;
-+		cifs_autodisable_serverino(CIFS_SB(inode->i_sb));
-+	}
-+
- 	return 1;
- }
- 
-@@ -629,15 +639,22 @@ cifs_iget(struct super_block *sb, struct
- 	unsigned long hash;
- 	struct inode *inode;
- 
-+retry_iget5_locked:
- 	cFYI(1, ("looking for uniqueid=%llu", fattr->cf_uniqueid));
- 
- 	/* hash down to 32-bits on 32-bit arch */
- 	hash = cifs_uniqueid_to_ino_t(fattr->cf_uniqueid);
- 
- 	inode = iget5_locked(sb, hash, cifs_find_inode, cifs_init_inode, fattr);
--
--	/* we have fattrs in hand, update the inode */
- 	if (inode) {
-+		/* was there a problematic inode number collision? */
-+		if (fattr->cf_flags & CIFS_FATTR_INO_COLLISION) {
-+			iput(inode);
-+			fattr->cf_uniqueid = iunique(sb, ROOT_I);
-+			fattr->cf_flags &= ~CIFS_FATTR_INO_COLLISION;
-+			goto retry_iget5_locked;
-+		}
-+
- 		cifs_fattr_to_inode(inode, fattr);
- 		if (sb->s_flags & MS_NOATIME)
- 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -459,11 +459,13 @@ static int __cpuinit check_c1e_idle(cons
+ 		 * check OSVW bit for CPUs that are not affected
+ 		 * by erratum #400
+ 		 */
+-		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
+-		if (val >= 2) {
+-			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
+-			if (!(val & BIT(1)))
+-				goto no_c1e_idle;
++		if (cpu_has(c, X86_FEATURE_OSVW)) {
++			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
++			if (val >= 2) {
++				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
++				if (!(val & BIT(1)))
++					goto no_c1e_idle;
++			}
+ 		}
+ 		return 1;
+ 	}
 
 
