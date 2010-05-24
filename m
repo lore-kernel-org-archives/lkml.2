@@ -1,78 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757008Ab0EXNNl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 09:13:41 -0400
-Received: from mail-pz0-f189.google.com ([209.85.222.189]:46239 "EHLO
-	mail-pz0-f189.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753047Ab0EXNNk (ORCPT
+	id S1757039Ab0EXN32 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 09:29:28 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:56079 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756997Ab0EXN31 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 09:13:40 -0400
-X-Greylist: delayed 453 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 May 2010 09:13:39 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=wVVp+nigDH1/73xnKc623TcnWogHyYstuXiE0bxANTGtIQpW9B2k6aYbwecJuwo1Zw
-         DeHO2qgp+/OSrVDwLmp9o8VOB6uohjy6ehAQdACR/68UDkVWuewKL7dTNadf/C8ikncu
-         lJJWFGl96tGNd01XIPKK3VNJOOThVGaZ1ht9Q=
-From: Akinobu Mita <akinobu.mita@gmail.com>
-To: linux-kernel@vger.kernel.org
-Cc: Akinobu Mita <akinobu.mita@gmail.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>, x86@kernel.org
-Subject: [PATCH] x86/mm: remove unused DBG() macro
-Date: Mon, 24 May 2010 22:04:51 +0900
-Message-Id: <1274706291-13554-1-git-send-email-akinobu.mita@gmail.com>
-X-Mailer: git-send-email 1.6.0.6
+	Mon, 24 May 2010 09:29:27 -0400
+Subject: Re: [PATCH] Make sure timers have migrated before killing
+ migration_thread
+From: Peter Zijlstra <peterz@infradead.org>
+To: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
+Cc: tj@kernel.org, Ingo Molnar <mingo@elte.hu>,
+       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100524095951.GA17680@amitarora.in.ibm.com>
+References: <20100519090557.GA15237@amitarora.in.ibm.com>
+	 <1274261515.5605.10423.camel@twins>
+	 <20100524095951.GA17680@amitarora.in.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 May 2010 15:28:45 +0200
+Message-ID: <1274707726.5605.31932.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-DBG() macro for CONFIG_DEBUG_PER_CPU_MAPS is unused.
+On Mon, 2010-05-24 at 15:29 +0530, Amit K. Arora wrote:
+> since _cpu_up() and _cpu_down() can never run in
+> parallel, because of cpu_add_remove_lock. 
 
-Signed-off-by: Akinobu Mita <akinobu.mita@gmail.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: x86@kernel.org
----
- arch/x86/kernel/setup_percpu.c |    6 ------
- arch/x86/mm/numa.c             |    6 ------
- 2 files changed, 0 insertions(+), 12 deletions(-)
+Ah indeed. I guess your initial patch works then. 
 
-diff --git a/arch/x86/kernel/setup_percpu.c b/arch/x86/kernel/setup_percpu.c
-index ef6370b..3627998 100644
---- a/arch/x86/kernel/setup_percpu.c
-+++ b/arch/x86/kernel/setup_percpu.c
-@@ -21,12 +21,6 @@
- #include <asm/cpu.h>
- #include <asm/stackprotector.h>
- 
--#ifdef CONFIG_DEBUG_PER_CPU_MAPS
--# define DBG(fmt, ...) pr_dbg(fmt, ##__VA_ARGS__)
--#else
--# define DBG(fmt, ...) do { if (0) pr_dbg(fmt, ##__VA_ARGS__); } while (0)
--#endif
--
- DEFINE_PER_CPU(int, cpu_number);
- EXPORT_PER_CPU_SYMBOL(cpu_number);
- 
-diff --git a/arch/x86/mm/numa.c b/arch/x86/mm/numa.c
-index 550df48..787c52c 100644
---- a/arch/x86/mm/numa.c
-+++ b/arch/x86/mm/numa.c
-@@ -3,12 +3,6 @@
- #include <linux/module.h>
- #include <linux/bootmem.h>
- 
--#ifdef CONFIG_DEBUG_PER_CPU_MAPS
--# define DBG(x...) printk(KERN_DEBUG x)
--#else
--# define DBG(x...)
--#endif
--
- /*
-  * Which logical CPUs are on which nodes
-  */
--- 
-1.6.0.6
 
