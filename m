@@ -1,69 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756921Ab0EXLbQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 07:31:16 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:46323 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756831Ab0EXLbP (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 07:31:15 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=RqbvD+s6+ITPp7dS2r9Gy03QOWT+obXSqgVwEkxy5+B/zm1vfdAQ3Be/UsfccwI6JT
-         xzR50kA21Mf1X2IQr5U2y4vaAzSQ18BMaGNOklshqOxRYOV+apKdEzlZMYPdoBQPsFUT
-         Vd6WZAFdLXP2SChiPsHDWWSfLsue+DVpKF06o=
-Date: Mon, 24 May 2010 13:31:09 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Paul Mackerras <paulus@samba.org>, Ingo Molnar <mingo@elte.hu>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 01/10] perf, trace: Remove IRQ-disable from
-	perf/tracepoint interaction
-Message-ID: <20100524113104.GA5325@nowhere>
-References: <20100521090201.326791353@chello.nl> <20100521090710.419716197@chello.nl> <20100523121159.GB3194@brick.ozlabs.ibm.com> <1274638587.1674.1729.camel@laptop>
+	id S1756889Ab0EXLiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 07:38:25 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62826 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755542Ab0EXLiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 07:38:24 -0400
+Date: Mon, 24 May 2010 12:38:16 +0100
+From: Alasdair G Kergon <agk@redhat.com>
+To: Will Drewry <wad@chromium.org>, dm-devel@redhat.com,
+       linux-kernel@vger.kernel.org, snitzer@redhat.com
+Subject: Re: [dm-devel] [PATCH v3 3/3] dm: lookup devices by path with
+	name_to_dev_t
+Message-ID: <20100524113815.GX3991@agk-dp.fab.redhat.com>
+Mail-Followup-To: Will Drewry <wad@chromium.org>, dm-devel@redhat.com,
+	linux-kernel@vger.kernel.org, snitzer@redhat.com
+References: <1274294304-30606-1-git-send-email-wad@chromium.org> <1274294304-30606-3-git-send-email-wad@chromium.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274638587.1674.1729.camel@laptop>
+In-Reply-To: <1274294304-30606-3-git-send-email-wad@chromium.org>
+Organization: Red Hat UK Ltd. Registered in England and Wales, number
+	03798903. Registered Office: Amberley Place, 107-111 Peascod
+	Street, Windsor, Berkshire, SL4 1TE.
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 08:16:27PM +0200, Peter Zijlstra wrote:
-> On Sun, 2010-05-23 at 22:11 +1000, Paul Mackerras wrote:
-> > On Fri, May 21, 2010 at 11:02:02AM +0200, Peter Zijlstra wrote:
-> > 
-> > >  	entry = (struct trace_entry *)raw_data;
-> > > -	tracing_generic_entry_update(entry, *irq_flags, pc);
-> > > +	tracing_generic_entry_update(entry, regs->flags, pc);
-> > >  	entry->type = type;
-> > 
-> > This is breaking on powerpc -- we don't have a "flags" element in
-> > struct pt_regs.  What is it trying to do?  Get the interrupt enable
-> > state, as local_irq_save(flags) would provide?
+On Wed, May 19, 2010 at 01:38:24PM -0500, Will Drewry wrote:
+> Replace major:minor parsing with name_to_dev_t.  This
+> maintains the current functionality (as the code was the same),
+> but adds support for the hexadecimal dev as well as device lookup
+> before the root filesystem is available.  The latter is the motivation
+> for this change.
 > 
-> Yes, I fouled that up.
-> 
-> On x86 perf_arch_fetch_caller_regs() stores pt_regs::flags, which is the
-> same as used in local_save_flags().
-> 
-> So to avoid another local_save_flags() for the ftrace code, I wanted to
-> reuse it, and totally forgot the !x86 side of things.
-> 
-> Possibly we could remove the local_save_flags() from the
-> perf_arch_fetch_caller_regs() as I'm not sure we actually use
-> pt_regs::flags (Frederic?) and leave the ftrace thing to use
-> local_save_flags().
+> It still falls back to lookup_bdev() for cases where the inode
+> on disk provides more information than the name (and the path exceeds
+> the length handled by name_to_dev_t).
+ 
+I'll apply this, but anyone debugging problems in future should note the
+functional change here: the standard in-kernel device names will now take
+precedence over the inodes in /dev if the two don't match and this might
+confuse people.  As it's technically an interface change, I'll bump
+the version number so userspace can detect this if it ever needs to.
 
-
-It was an anticipation for further uses. But since further are not
-appearing, you can safely remove it.
-
-
-Thanks.
+Alasdair
 
