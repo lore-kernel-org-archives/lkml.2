@@ -1,82 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756120Ab0EXGl3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 02:41:29 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17083 "EHLO mx1.redhat.com"
+	id S1756116Ab0EXGoa (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 02:44:30 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:32994 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752498Ab0EXGl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 02:41:28 -0400
-Message-ID: <4BFA1F92.2080802@redhat.com>
-Date: Mon, 24 May 2010 09:41:22 +0300
-From: Avi Kivity <avi@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
+	id S1755757Ab0EXGo2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 02:44:28 -0400
+Date: Mon, 24 May 2010 12:13:40 +0530
+From: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: Srivatsa Vaddagiri <vatsa@in.ibm.com>, Gautham R Shenoy <ego@in.ibm.com>,
+       Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Make sure timers have migrated before killing
+	migration_thread
+Message-ID: <20100524064340.GA7534@amitarora.in.ibm.com>
+References: <20100519090557.GA15237@amitarora.in.ibm.com> <1274261515.5605.10423.camel@twins> <20100519121356.GB15237@amitarora.in.ibm.com> <1274340483.5605.13161.camel@twins>
 MIME-Version: 1.0
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 3/3] mm: Swap checksum
-References: <4BF81D87.6010506@cesarb.net> <1274551731-4534-3-git-send-email-cesarb@cesarb.net> <4BF94792.5030405@redhat.com> <4BF97AC2.1040505@cesarb.net>
-In-Reply-To: <4BF97AC2.1040505@cesarb.net>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274340483.5605.13161.camel@twins>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2010 09:58 PM, Cesar Eduardo Barros wrote:
-> Em 23-05-2010 12:19, Avi Kivity escreveu:
->> On 64-bit, we may be able to store the checksum in the pte, if the swap
->> device is small enough.
->
-> Which pte? 
+On Thu, May 20, 2010 at 09:28:03AM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-19 at 17:43 +0530, Amit K. Arora wrote:
+> > Alternate Solution considered : Another option considered was to
+> > increase the priority of the hrtimer cpu offline notifier, such that it
+> > gets to run before scheduler's migration cpu offline notifier. In this
+> > way we are sure that the timers will get migrated before migration_call
+> > tries to kill migration_thread. But, this can have some non-obvious
+> > implications, suggested Srivatsa.
+> 
+> 
+> > On Wed, May 19, 2010 at 11:31:55AM +0200, Peter Zijlstra wrote:
+> > > The other problem is more urgent though, CPU_POST_DEAD runs outside of
+> > > the hotplug lock and thus the above becomes a race where we could
+> > > possible kill off the migration thread of a newly brought up cpu:
+> > > 
+> > >  cpu0 - down 2
+> > >  cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
+> > >  cpu0 - post_down 2 - frees the migration thread -- oops!
+> > 
+> > Ok. So, how about adding a check in CPU_UP_PREPARE event handling too ?
+> > The cpuset_lock will synchronize, and thus avoid race between killing of
+> > migration_thread in up_prepare and post_dead events. 
+> > 
+> > Here is the updated patch. If you don't like this one too, do you mind
+> > suggesting an alternate approach to tackle the problem ? Thanks !
+> 
+> Right, so this isn't pretty at all..
+> 
+> Ingo, the comment near the migration_notifier says that migration_call
+> should happen before all else, but can you see anything that would break
+> if we let the timer migration happen first?
+> 
+> Thomas?
 
-All of them.
+Hello Ingo, Thomas,
 
-> Correct me if I am wrong, but I do not think all pages written to the 
-> swap have exactly one pte pointing to them. And I have not looked at 
-> the shmem.c code yet, but does it even use ptes?
+Do you see any potential problems with migrating the timers before
+the migration_call ?
 
-Well, the ptes need the swap address written into them, so they are 
-already found and updated somehow.  All that's needed is to update the 
-value written to also include the checksum.
-
-> It might be possible (find all ptes and write the 32-bit checksum to 
-> them, do something else for shmem, have two different code paths for 
-> small/large swapfiles), but I do not know if the memory savings are 
-> worth the extra complexity (especially the need for two separate code 
-> paths).
-
-Certainly not at first, but later it may be worthwhile.
-
->
->> If we take the trouble to touch the page, we may as well compare it
->> against zero, and if so drop it instead of swapping it out.
->
-> The problem with this is that the page is touched deep inside the 
-> crc32c code, which might even be using hardware instructions 
-> (crc32c-intel). So we would need to read it two times to compare 
-> against zero.
-
-The second read is very cheap since the page is already in cache.  Also, 
-we fail early when any word is nonzero, so usually the compare exits 
-quickly.
-
->
-> One possibility could be to compare the full page against zero only if 
-> its crc is a specific value (the crc32c of a page full of zeros). This 
-> would not be too slow (we would be wasting time only when we have a 
-> very high probability of saving much more time), and not need to touch 
-> the crc32c code at all. I would only have to look at how this messes 
-> up the state tracking (i.e. how to make it track the fact that, 
-> instead of getting written out, this is now a zeroed page).
-
-Instead of returning a swap pte to be written to the page tables, return 
-a zeroed pte.
-
-
-> Other than that, it seems a good idea.
->
-
-
--- 
-Do not meddle in the internals of kernels, for they are subtle and quick to panic.
-
+Thanks!
+--
+Regards,
+Amit Arora
