@@ -1,99 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755552Ab0EXUE0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 16:04:26 -0400
-Received: from mail.windriver.com ([147.11.1.11]:55631 "EHLO
-	mail.windriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752909Ab0EXUEY (ORCPT
+	id S1756046Ab0EXUEi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 16:04:38 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:51919 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755726Ab0EXUEe convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 16:04:24 -0400
-Message-ID: <4BFADBC1.9000802@windriver.com>
-Date: Mon, 24 May 2010 15:04:17 -0500
-From: Jason Wessel <jason.wessel@windriver.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Mon, 24 May 2010 16:04:34 -0400
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: linux-next: build failure after merge of the kgdb tree
-References: <20100323150443.608ad7f0.sfr@canb.auug.org.au> <20100325154307.9cdeae10.sfr@canb.auug.org.au> <201003242159.25770.dmitry.torokhov@gmail.com> <20100521102158.bf6df441.sfr@canb.auug.org.au> <4BF5D8AF.6010408@windriver.com> <20100521110938.7bbbbf59.sfr@canb.auug.org.au> <20100521012340.GA12372@core.coreip.homeip.net> <4BF5E1D6.1090607@windriver.com> <20100524181735.GC6033@core.coreip.homeip.net>
-In-Reply-To: <20100524181735.GC6033@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 24 May 2010 20:04:18.0317 (UTC) FILETIME=[4AD06BD0:01CAFB7C]
+Message-ID: <1b84523f-a7df-4d6a-870f-b684bd012230@default>
+Date: Mon, 24 May 2010 13:02:34 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: chris.mason@oracle.com, akpm@linux-foundation.org, adilger@sun.com,
+       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
+       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
+       jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
+       npiggin@suse.de, dave.mccracken@oracle.com, riel@redhat.com
+Subject: RE: Cleancache [PATCH 2/7] (was Transcendent Memory): core files
+References: <20100422132809.GA27302@ca-server1.us.oracle.com
+ 20100514231815.GY30031@ZenIV.linux.org.uk>
+In-Reply-To: <20100514231815.GY30031@ZenIV.linux.org.uk>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BFADBB7.0086:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2010 01:17 PM, Dmitry Torokhov wrote:
+> From: Al Viro [mailto:viro@ZenIV.linux.org.uk]
+> Subject: Re: Cleancache [PATCH 2/7] (was Transcendent Memory): core files
 
-> Do we really need to force SysRq on or off? Maybe we should export
-> __handle_sysrq() instead?
+Hi Al!
 
+Thanks for the feedback!  Sorry for the delayed response.
 
-It seems cleanest to export __handle_sysrq() if that is ok?
+> ...again, use sane types...
 
-> Also, I think I need to add locking in sysrq_toggle_support(), which
-> will make it unsuitable for using in kdb handler, won't it?
+Good point.  Will fix types for next rev (using size_t, ino_t,
+and pgoff_t).
+
+> > +	int (*get_page)(int, unsigned long, unsigned long, struct page *);
 > 
+> Ugh.  First of all, presumably you have some structure behind that
+> index, don't you?  Might be a better way to do it.
 
-Any kind of locking would provide another opportunity to deadlock the
-debugger.  It is probably worth noting that any of the sysrq
-operations have the possibility to dead lock the system depending on
-what type of exception was taken.  The idea is that you can use kdb in
-one of these fatal exceptions and additionally run sysrq when you
-might not have otherwise been able to before because the keyboard
-handler was dead after a call to panic() for example.  At the point it
-in time that it hangs there, the system was dead anyway. :-)
+Not quite sure what you mean here.  The index is really
+just part of a unique handle for cleancache to identify
+the (page of) data.
 
+> What's more, use of ->i_ino is simply wrong.  How stable do you want that
+> to be and how much do you want it to outlive struct address_space in question?
+> From my reading of your code, it doesn't outlive that anyway, so...
 
---------------
+Unless I misunderstand your point, no, the inode never outlives
+the address space because the specification requires the kernel
+to ensure coherency; if the inode were about to outlive the
+address space, the cleancache_flush operations must be invoked
+(and I think the patch covers all the necessary cases).
 
-From: Jason Wessel <jason.wessel@windriver.com>
-Subject: [PATCH] sysrq,kdb: Use __handle_sysrq() for kdb's sysrq function
+> The third one is pgoff_t; again, use sane types, _if_ you actually want
+> the argument #3 at all - it can be derived from struct page you are
+> passing there as well.
 
-The kdb code should not toggle the sysrq state in case an end user
-wants to try and resume the normal kernel execution.
+I thought it best to declare the _ops so that the struct page
+is opaque to the "backend" (driver).  The kernel-side ("frontend")
+defines the handle and ensures coherency, so the backend shouldn't
+be allowed to derive or muck with the three-tuple passed by the
+kernel. In the existing (Xen tmem) driver, the only operation
+performed on the struct page parameter is page_to_pfn().  OTOH,
+I could go one step further and pass a pfn_t instead of a
+struct page, since it is really only the physical page frame that
+the backend needs to know about and (synchronously) read/write from/to.
 
-Signed-off-by: Jason Wessel <jason.wessel@windriver.com>
+Thoughts?
 
----
- drivers/char/sysrq.c        |    2 +-
- include/linux/sysrq.h       |    1 +
- kernel/debug/kdb/kdb_main.c |    3 +--
- 3 files changed, 3 insertions(+), 3 deletions(-)
+Thanks again!
+Dan
 
---- a/drivers/char/sysrq.c
-+++ b/drivers/char/sysrq.c
-@@ -493,7 +493,7 @@ static void __sysrq_put_key_op(int key, 
-                 sysrq_key_table[i] = op_p;
- }
- 
--static void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
-+void __handle_sysrq(int key, struct tty_struct *tty, int check_mask)
- {
- 	struct sysrq_key_op *op_p;
- 	int orig_log_level;
---- a/include/linux/sysrq.h
-+++ b/include/linux/sysrq.h
-@@ -45,6 +45,7 @@ struct sysrq_key_op {
-  */
- 
- void handle_sysrq(int key, struct tty_struct *tty);
-+void __handle_sysrq(int key, struct tty_struct *tty, int check_mask);
- int register_sysrq_key(int key, struct sysrq_key_op *op);
- int unregister_sysrq_key(int key, struct sysrq_key_op *op);
- struct sysrq_key_op *__sysrq_get_key_op(int key);
---- a/kernel/debug/kdb/kdb_main.c
-+++ b/kernel/debug/kdb/kdb_main.c
-@@ -1820,9 +1820,8 @@ static int kdb_sr(int argc, const char *
- {
- 	if (argc != 1)
- 		return KDB_ARGCOUNT;
--	sysrq_toggle_support(1);
- 	kdb_trap_printk++;
--	handle_sysrq(*argv[1], NULL);
-+	__handle_sysrq(*argv[1], NULL, 0);
- 	kdb_trap_printk--;
- 
- 	return 0;
