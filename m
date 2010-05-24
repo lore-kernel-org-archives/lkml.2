@@ -1,24 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758248Ab0EXWiT (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:38:19 -0400
-Received: from kroah.org ([198.145.64.141]:42327 "EHLO coco.kroah.org"
+	id S932089Ab0EXWjG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:39:06 -0400
+Received: from kroah.org ([198.145.64.141]:42412 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755430Ab0EXWiR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:17 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
-Message-Id: <20100524223015.837791747@clark.site>
+	id S1758508Ab0EXWi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:28 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:19 2010
+Message-Id: <20100524223019.267153185@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:05 -0700
+Date: Mon, 24 May 2010 15:28:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [09/24] vfs: Remove the range_cont writeback mode.
+       Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>
+Subject: [21/24] i2c: Fix probing of FSC hardware monitoring chips
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,47 +25,69 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
+From: Jean Delvare <khali@linux-fr.org>
 
-From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+commit b1d4b390ea4bb480e65974ce522a04022608a8df upstream.
 
-commit 74baaaaec8b4f22e1ae279f5ecca4ff705b28912 upstream.
+Some FSC hardware monitoring chips (Syleus at least) doesn't like
+quick writes we typically use to probe for I2C chips. Use a regular
+byte read instead for the address they live at (0x73). These are the
+only known chips living at this address on PC systems.
 
-Ext4 was the only user of range_cont writeback mode and ext4 switched
-to a different method. So remove the range_cont mode which is not used
-in the kernel.
+For clarity, this fix should not be needed for kernels 2.6.30 and
+later, as we started instantiating the hwmon devices explicitly based
+on DMI data. Still, this fix is valuable in the following two cases:
+* Support for recent FSC chips on older kernels. The DMI-based device
+  instantiation is more difficult to backport than the device support
+  itself.
+* Case where the DMI-based device instantiation fails, whatever the
+  reason. We fall back to probing in that case, so it should work.
 
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-CC: linux-fsdevel@vger.kernel.org
-Signed-off-by: Jayson R. King <dev@jaysonking.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+This fixes kernel bug #15634:
+https://bugzilla.kernel.org/show_bug.cgi?id=15634
+
+Signed-off-by: Jean Delvare <khali@linux-fr.org>
+Acked-by: Hans de Goede <hdegoede@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
----
- include/linux/writeback.h |    1 -
- mm/page-writeback.c       |    2 --
- 2 files changed, 3 deletions(-)
 
---- a/include/linux/writeback.h
-+++ b/include/linux/writeback.h
-@@ -62,7 +62,6 @@ struct writeback_control {
- 	unsigned for_writepages:1;	/* This is a writepages() call */
- 	unsigned range_cyclic:1;	/* range_start is cyclic */
- 	unsigned more_io:1;		/* more io to be dispatched */
--	unsigned range_cont:1;
- };
+---
+ drivers/i2c/i2c-core.c |   24 +++++++++++++++++-------
+ 1 file changed, 17 insertions(+), 7 deletions(-)
+
+--- a/drivers/i2c/i2c-core.c
++++ b/drivers/i2c/i2c-core.c
+@@ -1269,14 +1269,24 @@ static int i2c_detect_address(struct i2c
  
- /*
---- a/mm/page-writeback.c
-+++ b/mm/page-writeback.c
-@@ -1027,8 +1027,6 @@ continue_unlock:
- 	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
- 		mapping->writeback_index = done_index;
+ 	/* Make sure there is something at this address, unless forced */
+ 	if (kind < 0) {
+-		if (i2c_smbus_xfer(adapter, addr, 0, 0, 0,
+-				   I2C_SMBUS_QUICK, NULL) < 0)
+-			return 0;
++		if (addr == 0x73 && (adapter->class & I2C_CLASS_HWMON)) {
++			/* Special probe for FSC hwmon chips */
++			union i2c_smbus_data dummy;
  
--	if (wbc->range_cont)
--		wbc->range_start = index << PAGE_CACHE_SHIFT;
- 	return ret;
- }
- EXPORT_SYMBOL(write_cache_pages);
+-		/* prevent 24RF08 corruption */
+-		if ((addr & ~0x0f) == 0x50)
+-			i2c_smbus_xfer(adapter, addr, 0, 0, 0,
+-				       I2C_SMBUS_QUICK, NULL);
++			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_READ, 0,
++					   I2C_SMBUS_BYTE_DATA, &dummy) < 0)
++				return 0;
++		} else {
++			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_WRITE, 0,
++					   I2C_SMBUS_QUICK, NULL) < 0)
++				return 0;
++
++			/* Prevent 24RF08 corruption */
++			if ((addr & ~0x0f) == 0x50)
++				i2c_smbus_xfer(adapter, addr, 0,
++					       I2C_SMBUS_WRITE, 0,
++					       I2C_SMBUS_QUICK, NULL);
++		}
+ 	}
+ 
+ 	/* Finally call the custom detection function */
 
 
