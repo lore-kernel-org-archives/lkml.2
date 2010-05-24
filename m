@@ -1,27 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756157Ab0EXTAc (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 15:00:32 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:40333 "EHLO
+	id S1756198Ab0EXTAt (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 15:00:49 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:40345 "EHLO
 	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755611Ab0EXTAa (ORCPT
+	by vger.kernel.org with ESMTP id S1755611Ab0EXTAs (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 15:00:30 -0400
-Date: Mon, 24 May 2010 21:00:21 +0200
+	Mon, 24 May 2010 15:00:48 -0400
+Date: Mon, 24 May 2010 21:00:38 +0200
 From: Pavel Machek <pavel@ucw.cz>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Kernel Testers List <kernel-testers@vger.kernel.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Marcel Holtmann <marcel@holtmann.org>
-Subject: Re: [Bug #15717] bluetooth oops
-Message-ID: <20100524190021.GG1292@ucw.cz>
-References: <JzEGxUyyQHG.A.ZtH.YHJ4LB@chimera>
- <8VO9AsMlpMD.A.gu.AJJ4LB@chimera>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: Arnd Bergmann <arnd@arndb.de>, linux-kernel@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, Frederic Weisbecker <fweisbec@gmail.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       John Kacur <jkacur@redhat.com>, Al Viro <viro@zeniv.linux.org.uk>,
+       Ingo Molnar <mingo@elte.hu>
+Subject: Re: [PATCH 10/13] tty: untangle locking of wait_until_sent
+Message-ID: <20100524190038.GH1292@ucw.cz>
+References: <1273012433-6125-1-git-send-email-arnd@arndb.de>
+ <1273012433-6125-11-git-send-email-arnd@arndb.de>
+ <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <8VO9AsMlpMD.A.gu.AJJ4LB@chimera>
+In-Reply-To: <20100505205905.3c87b403@lxorguk.ukuu.org.uk>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -29,25 +32,18 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 Hi!
 
-> This message has been generated automatically as a part of a summary report
-> of recent regressions.
+> >  net/irda/ircomm/ircomm_tty.c  |    2 +-
 > 
-> The following bug entry is on the current list of known regressions
-> from 2.6.33.  Please verify if it still should be listed and let the tracking team
-> know (either way).
+> Semi-defunct at best
 > 
+> This makes me think that now might be a good time to consign the broken
+> crap to the bitbucket unless someone stands up with hardware and who
+> wants to maintain it.
 
-This one happened really often in the early -rcS, now I have not seen
-it for a while. Maybe it is fixed.
-
-> Bug-Entry	: http://bugzilla.kernel.org/show_bug.cgi?id=15717
-> Subject		: bluetooth oops
-> Submitter	: Pavel Machek <pavel@ucw.cz>
-> Date		: 2010-03-14 20:14 (52 days old)
-> Message-ID	: <20100314201434.GE22059@elf.ucw.cz>
-> References	: http://marc.info/?l=linux-kernel&m=126859771528426&w=4
-> Handled-By	: Marcel Holtmann <marcel@holtmann.org>
-
+ircomm_tty is fairly common hardware, afaict, it is just not used
+often. Main use case would be backup of your phone numbers, afaict.
+It would be good to keep it for once-in-a-blue-moon use...
+									Pavel
 
 -- 
 (english) http://www.livejournal.com/~pavelmachek
