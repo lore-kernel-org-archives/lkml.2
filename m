@@ -1,57 +1,205 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752817Ab0ENEzl (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:55:41 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:40237 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751976Ab0ENEzj (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:55:39 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=p1Y4TSGXAxCWtl1m2axVPmeScS3UUUJfIxvLwDFt1ffLrjydt/KAgIeRy+CYoCjb6M
-         5kj5yDkkbG5Aqt+jGd7pq9taS8+rJptxrhpYYQtbXRY5JZg64WyRCTWtAPk4I2f/kjgl
-         17gNn2bcOJf9TWEAJDzLmESL1kboj8pn0k6sg=
-MIME-Version: 1.0
-In-Reply-To: <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
-References: <4BEC7A84.3010503@gmail.com>
-	 <AANLkTim7B5z76zJ33by6SGMgSy1gZF6qiwhEhAQ3NUtG@mail.gmail.com>
-Date: Fri, 14 May 2010 07:55:37 +0300
-X-Google-Sender-Auth: 2516PaLVnr5hFqB81ulk7vfqXuU
-Message-ID: <AANLkTim7fnKebMoEu1DjD3S-15ZqlTUez3Lpp0wGVJQ6@mail.gmail.com>
-Subject: Re: ath9k: BUG kmalloc-8192: Poison overwritten
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: "Justin P. Mattock" <justinmattock@gmail.com>,
-       linux-wireless@vger.kernel.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1759215Ab0EXXLi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:11:38 -0400
+Received: from kroah.org ([198.145.64.141]:36502 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759039Ab0EXXJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
+Message-Id: <20100524230351.574939849@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 15:59:57 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Robin Holt <holt@sgi.com>, Stefani Seibold <stefani@seibold.net>,
+       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       Michal Simek <monstr@monstr.eu>, Ingo Molnar <mingo@elte.hu>
+Subject: [25/34] revert "procfs: provide stack information for threads" and its fixup commits
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Luis,
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-On Fri, May 14, 2010 at 2:01 AM, Luis R. Rodriguez
-<lrodriguez@atheros.com> wrote:
-> On Thu, May 13, 2010 at 3:17 PM, Justin P. Mattock
-> <justinmattock@gmail.com> wrote:
->> not sure what this is, but while at a convention
->> I was trying to access the internet and(below is
->> full dmesg) this showed up.
->>
->> After receiving this, I sat and tried to re-create
->> my steps to reproduce but had no luck(was even going
->> todo a bisect n the spot if I could re-create).
->
-> OK this stuff is hard to reproduce it seems.. you have an Atheros
-> AR5418 MAC/BB Rev:2 AR5133 RF Rev:81, what kconfig option do you use
-> to get the poison stuff? I am just surprised we haven't seen it
-> ourselves yet. Let me make sure all of us get this kconfig option
-> enabled.
+------------------
 
-CONFIG_SLUB_DEBUG and then either CONFIG_SLUB_DEBUG_ON or pass
-'slub_debug' as kernel parameter.
+From: Robin Holt <holt@sgi.com>
+
+commit 34441427aab4bdb3069a4ffcda69a99357abcb2e upstream.
+
+Originally, commit d899bf7b ("procfs: provide stack information for
+threads") attempted to introduce a new feature for showing where the
+threadstack was located and how many pages are being utilized by the
+stack.
+
+Commit c44972f1 ("procfs: disable per-task stack usage on NOMMU") was
+applied to fix the NO_MMU case.
+
+Commit 89240ba0 ("x86, fs: Fix x86 procfs stack information for threads on
+64-bit") was applied to fix a bug in ia32 executables being loaded.
+
+Commit 9ebd4eba7 ("procfs: fix /proc/<pid>/stat stack pointer for kernel
+threads") was applied to fix a bug which had kernel threads printing a
+userland stack address.
+
+Commit 1306d603f ('proc: partially revert "procfs: provide stack
+information for threads"') was then applied to revert the stack pages
+being used to solve a significant performance regression.
+
+This patch nearly undoes the effect of all these patches.
+
+The reason for reverting these is it provides an unusable value in
+field 28.  For x86_64, a fork will result in the task->stack_start
+value being updated to the current user top of stack and not the stack
+start address.  This unpredictability of the stack_start value makes
+it worthless.  That includes the intended use of showing how much stack
+space a thread has.
+
+Other architectures will get different values.  As an example, ia64
+gets 0.  The do_fork() and copy_process() functions appear to treat the
+stack_start and stack_size parameters as architecture specific.
+
+I only partially reverted c44972f1 ("procfs: disable per-task stack usage
+on NOMMU") .  If I had completely reverted it, I would have had to change
+mm/Makefile only build pagewalk.o when CONFIG_PROC_PAGE_MONITOR is
+configured.  Since I could not test the builds without significant effort,
+I decided to not change mm/Makefile.
+
+I only partially reverted 89240ba0 ("x86, fs: Fix x86 procfs stack
+information for threads on 64-bit") .  I left the KSTK_ESP() change in
+place as that seemed worthwhile.
+
+Signed-off-by: Robin Holt <holt@sgi.com>
+Cc: Stefani Seibold <stefani@seibold.net>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+Cc: Michal Simek <monstr@monstr.eu>
+Cc: Ingo Molnar <mingo@elte.hu>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ Documentation/filesystems/proc.txt |    3 +--
+ fs/compat.c                        |    2 --
+ fs/exec.c                          |    2 --
+ fs/proc/array.c                    |    3 +--
+ fs/proc/task_mmu.c                 |   19 -------------------
+ include/linux/sched.h              |    1 -
+ kernel/fork.c                      |    2 --
+ 7 files changed, 2 insertions(+), 30 deletions(-)
+
+--- a/Documentation/filesystems/proc.txt
++++ b/Documentation/filesystems/proc.txt
+@@ -307,7 +307,7 @@ address           perms offset  dev   in
+ 08049000-0804a000 rw-p 00001000 03:00 8312       /opt/test
+ 0804a000-0806b000 rw-p 00000000 00:00 0          [heap]
+ a7cb1000-a7cb2000 ---p 00000000 00:00 0
+-a7cb2000-a7eb2000 rw-p 00000000 00:00 0          [threadstack:001ff4b4]
++a7cb2000-a7eb2000 rw-p 00000000 00:00 0
+ a7eb2000-a7eb3000 ---p 00000000 00:00 0
+ a7eb3000-a7ed5000 rw-p 00000000 00:00 0
+ a7ed5000-a8008000 r-xp 00000000 03:00 4222       /lib/libc.so.6
+@@ -343,7 +343,6 @@ is not associated with a file:
+  [stack]                  = the stack of the main process
+  [vdso]                   = the "virtual dynamic shared object",
+                             the kernel system call handler
+- [threadstack:xxxxxxxx]   = the stack of the thread, xxxxxxxx is the stack size
+ 
+  or if empty, the mapping is anonymous.
+ 
+--- a/fs/compat.c
++++ b/fs/compat.c
+@@ -1532,8 +1532,6 @@ int compat_do_execve(char * filename,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	current->stack_start = current->mm->start_stack;
+-
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+--- a/fs/exec.c
++++ b/fs/exec.c
+@@ -1379,8 +1379,6 @@ int do_execve(char * filename,
+ 	if (retval < 0)
+ 		goto out;
+ 
+-	current->stack_start = current->mm->start_stack;
+-
+ 	/* execve succeeded */
+ 	current->fs->in_exec = 0;
+ 	current->in_execve = 0;
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -82,7 +82,6 @@
+ #include <linux/pid_namespace.h>
+ #include <linux/ptrace.h>
+ #include <linux/tracehook.h>
+-#include <linux/swapops.h>
+ 
+ #include <asm/pgtable.h>
+ #include <asm/processor.h>
+@@ -482,7 +481,7 @@ static int do_task_stat(struct seq_file
+ 		rsslim,
+ 		mm ? mm->start_code : 0,
+ 		mm ? mm->end_code : 0,
+-		(permitted && mm) ? task->stack_start : 0,
++		(permitted && mm) ? mm->start_stack : 0,
+ 		esp,
+ 		eip,
+ 		/* The signal information here is obsolete.
+--- a/fs/proc/task_mmu.c
++++ b/fs/proc/task_mmu.c
+@@ -243,25 +243,6 @@ static void show_map_vma(struct seq_file
+ 				} else if (vma->vm_start <= mm->start_stack &&
+ 					   vma->vm_end >= mm->start_stack) {
+ 					name = "[stack]";
+-				} else {
+-					unsigned long stack_start;
+-					struct proc_maps_private *pmp;
+-
+-					pmp = m->private;
+-					stack_start = pmp->task->stack_start;
+-
+-					if (vma->vm_start <= stack_start &&
+-					    vma->vm_end >= stack_start) {
+-						pad_len_spaces(m, len);
+-						seq_printf(m,
+-						 "[threadstack:%08lx]",
+-#ifdef CONFIG_STACK_GROWSUP
+-						 vma->vm_end - stack_start
+-#else
+-						 stack_start - vma->vm_start
+-#endif
+-						);
+-					}
+ 				}
+ 			} else {
+ 				name = "[vdso]";
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -1541,7 +1541,6 @@ struct task_struct {
+ 	/* bitmask of trace recursion */
+ 	unsigned long trace_recursion;
+ #endif /* CONFIG_TRACING */
+-	unsigned long stack_start;
+ };
+ 
+ /* Future-safe accessor for struct task_struct's cpus_allowed. */
+--- a/kernel/fork.c
++++ b/kernel/fork.c
+@@ -1123,8 +1123,6 @@ static struct task_struct *copy_process(
+ 
+ 	p->bts = NULL;
+ 
+-	p->stack_start = stack_start;
+-
+ 	/* Perform scheduler related setup. Assign this task to a CPU. */
+ 	sched_fork(p, clone_flags);
+ 
+
+
