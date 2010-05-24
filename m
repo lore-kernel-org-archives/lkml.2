@@ -1,145 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757993Ab0EXWCm (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:02:42 -0400
-Received: from kroah.org ([198.145.64.141]:46910 "EHLO coco.kroah.org"
+	id S1756850Ab0EXWCY (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:02:24 -0400
+Received: from kroah.org ([198.145.64.141]:46895 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756964Ab0EXWCZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:02:25 -0400
-Date: Mon, 24 May 2010 14:52:16 -0700
+	id S1756007Ab0EXWCX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:02:23 -0400
+Date: Mon, 24 May 2010 14:40:29 -0700
 From: Greg KH <greg@kroah.com>
-To: "Luis R. Rodriguez" <lrodriguez@atheros.com>
-Cc: stable@kernel.org, Ming Lei <tom.leiming@gmail.com>,
-       linux-wireless@vger.kernel.org, linux-kernel@vger.kernel.org,
-       "John W. Linville" <linville@tuxdriver.com>,
-       Johannes Berg <johannes@sipsolutions.net>
-Subject: Re: [stable] [PATCH] Revert "ath9k: fix lockdep warning when
- unloading module" on stable kernels
-Message-ID: <20100524215216.GJ16655@kroah.com>
-References: <1274304829-14367-1-git-send-email-lrodriguez@atheros.com>
+To: Andrey Vagin <avagin@openvz.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Pavel Emelyanov <xemul@openvz.org>, Oleg Nesterov <oleg@tv-sign.ru>,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: [stable] [PATCH 1/2] posix_timer: separate timer_cleanup from
+ timer_del
+Message-ID: <20100524214029.GG16655@kroah.com>
+References: <1273843731-12595-1-git-send-email-avagin@openvz.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274304829-14367-1-git-send-email-lrodriguez@atheros.com>
+In-Reply-To: <1273843731-12595-1-git-send-email-avagin@openvz.org>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 05:33:49PM -0400, Luis R. Rodriguez wrote:
-> Johannes' patch 34e8950 titled:
-> 
-> 	mac80211: allow station add/remove to sleep
-> 
-> changed the way mac80211 adds and removes peers. The new
-> sta_add() / sta_remove() callbacks allowed the driver callbacks
-> to sleep. Johannes also ported ath9k to use sta_add() / sta_remove()
-> via the patch 4ca7786 titled:
-> 
-> 	ath9k: convert to new station add/remove callbacks
-> 
-> but this patch forgot to address a change in locking issue which
-> Ming Lei eventually found on his 2.6.33-wl #12 build. The 2.6.33-wl
-> build includes code for the 802.11 subsystem for 2.6.34 though so did
-> already have the above two patches (ath9k_sta_remove() on his trace),
-> the 2.6.33 kernel did not however have these two patches. Ming eventually
-> cured his lockdep warnign via the patch a9f042c titled:
-> 
-> 	ath9k: fix lockdep warning when unloading module
-> 
-> This went in to 2.6.34 and although it was not marked as a stable
-> fix it did get trickled down and applied on both 2.6.33 and 2.6.32.
-> 
-> In review, the culprits:
-> 
-> 	mac80211: allow station add/remove to sleep
-> git describe --contains 34e895075e21be3e21e71d6317440d1ee7969ad0
-> v2.6.34-rc1~233^2~49^2~107
-> 
-> 	ath9k: convert to new station add/remove callbacks
-> git describe --contains 4ca778605cfec53d8a689f0b57babb93b030c784
-> v2.6.34-rc1~233^2~49^2~10
-> 
-> 	ath9k: fix lockdep warning when unloading module
-> 
-> This last one trickled down to 2.6.33 (OK), 2.6.33 (invalid) and 2.6.32 (invalid).
-> 
-> git describe --contains a9f042cbe5284f34ccff15f3084477e11b39b17b
-> v2.6.34-rc2~48^2~77^2~7
-> git describe --contains 0524bcfa80f1fffb4e1fe18a0a28900869a58a7c
-> v2.6.33.2~125
-> git describe --contains 0dcc9985f34aef3c60bffab3dfc7f7ba3748f35a
-> v2.6.32.11~79
-> 
-> The patch titled "ath9k: fix lockdep warning when unloading module"
-> should be reverted on both 2.6.33 and 2.6.32 as it is invalid and
-> actually ended up causing the following warning:
-> 
-> ADDRCONF(NETDEV_CHANGE): wlan31: link becomes ready
-> phy0: WMM queue=2 aci=0 acm=0 aifs=3 cWmin=15 cWmax=1023 txop=0
-> phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0
-> phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94
-> phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47
-> phy0: device now idle
-> ------------[ cut here ]------------
-> WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x7b/0xa0()
-> Hardware name: 7660A14
-> Modules linked in: ath9k(-) mac80211 ath cfg80211 <whatever-bleh-etc>
-> Pid: 2003, comm: rmmod Not tainted 2.6.32.11 #6
-> Call Trace:
->  [<ffffffff8105d178>] warn_slowpath_common+0x78/0xb0
->  [<ffffffff8105d1bf>] warn_slowpath_null+0xf/0x20
->  [<ffffffff81063f8b>] local_bh_enable_ip+0x7b/0xa0
->  [<ffffffff815121e4>] _spin_unlock_bh+0x14/0x20
->  [<ffffffffa034aea5>] ath_tx_node_cleanup+0x185/0x1b0 [ath9k]
->  [<ffffffffa0345597>] ath9k_sta_notify+0x57/0xb0 [ath9k]
->  [<ffffffffa02ac51a>] __sta_info_unlink+0x15a/0x260 [mac80211]
->  [<ffffffffa02ac658>] sta_info_unlink+0x38/0x60 [mac80211]
->  [<ffffffffa02b3fbe>] ieee80211_set_disassoc+0x1ae/0x210 [mac80211]
->  [<ffffffffa02b42d9>] ieee80211_mgd_deauth+0x109/0x110 [mac80211]
->  [<ffffffffa02ba409>] ieee80211_deauth+0x19/0x20 [mac80211]
->  [<ffffffffa028160e>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
->  [<ffffffff81118540>] ? init_object+0x50/0x90
->  [<ffffffffa0285429>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
->  [<ffffffffa027125f>] cfg80211_netdev_notifier_call+0x10f/0x450 [cfg80211]
->  [<ffffffff81514ca7>] notifier_call_chain+0x47/0x90
->  [<ffffffff8107f501>] raw_notifier_call_chain+0x11/0x20
->  [<ffffffff81442d66>] call_netdevice_notifiers+0x16/0x20
->  [<ffffffff8144352d>] dev_close+0x4d/0xa0
->  [<ffffffff814439a8>] rollback_registered+0x48/0x120
->  [<ffffffff81443a9d>] unregister_netdevice+0x1d/0x70
->  [<ffffffffa02b6cc4>] ieee80211_remove_interfaces+0x84/0xc0 [mac80211]
->  [<ffffffffa02aa072>] ieee80211_unregister_hw+0x42/0xf0 [mac80211]
->  [<ffffffffa0347bde>] ath_detach+0x8e/0x180 [ath9k]
->  [<ffffffffa0347ce1>] ath_cleanup+0x11/0x50 [ath9k]
->  [<ffffffffa0351a2c>] ath_pci_remove+0x1c/0x20 [ath9k]
->  [<ffffffff8129d712>] pci_device_remove+0x32/0x60
->  [<ffffffff81332373>] __device_release_driver+0x53/0xb0
->  [<ffffffff81332498>] driver_detach+0xc8/0xd0
->  [<ffffffff81331405>] bus_remove_driver+0x85/0xe0
->  [<ffffffff81332a5a>] driver_unregister+0x5a/0x90
->  [<ffffffff8129da00>] pci_unregister_driver+0x40/0xb0
->  [<ffffffffa03518d0>] ath_pci_exit+0x10/0x20 [ath9k]
->  [<ffffffffa0353cd5>] ath9k_exit+0x9/0x2a [ath9k]
->  [<ffffffff81092838>] sys_delete_module+0x1a8/0x270
->  [<ffffffff8107ebe9>] ? up_read+0x9/0x10
->  [<ffffffff81011f82>] system_call_fastpath+0x16/0x1b
-> ---[ end trace fad957019ffdd40b ]---
-> phy0: Removed STA 00:22:6b:56:fd:e8
-> phy0: Destroyed STA 00:22:6b:56:fd:e8
-> wlan31: deauthenticating from 00:22:6b:56:fd:e8 by local choice (reason=3)
-> ath9k 0000:16:00.0: PCI INT A disabled
-> 
-> The original lockdep fixed an issue where due to the new changes
-> the driver was not disabling the bottom halves but it is incorrect
-> to do this on the older kernels since IRQs are already disabled.
-> 
-> Cc: Ming Lei <tom.leiming@gmail.com>
-> Cc: Johannes Berg <johannes@sipsolutions.net>
-> Cc: John W. Linville <linville@tuxdriver.com>
+On Fri, May 14, 2010 at 05:28:50PM +0400, Andrey Vagin wrote:
+> Signed-off-by: Andrey Vagin <avagin@openvz.org>
+> ---
+>  include/linux/posix-timers.h |    2 ++
+>  kernel/posix-cpu-timers.c    |   13 ++++++++++---
+>  kernel/posix-timers.c        |    4 ++++
 
-For some reason, you never signed-off on this patch, why?  Care to send
-me a "Signed-off-by:" line so I can add it?
+I have no idea why this is for the -stable kernels, do you?
+
+Please, just put a:
+	Cc: stable <stable@kernel.org>
+in the signed-off-by area of the patch, so that way I will be notified
+when it goes into Linus's tree, not before, which just wastes my time...
 
 thanks,
 
