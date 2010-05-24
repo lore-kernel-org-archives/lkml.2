@@ -1,101 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754735Ab0EXJgl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 05:36:41 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:32664 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755192Ab0EXJgi (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 05:36:38 -0400
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org
-Subject: [RFC][PATCH] crypto: disable tests when they are not enabled
-Date: Mon, 24 May 2010 12:35:24 +0300
-Message-Id: <1274693724-23831-1-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.1.1.g15764
-X-OriginalArrivalTime: 24 May 2010 09:35:57.0331 (UTC) FILETIME=[83467E30:01CAFB24]
-X-Nokia-AV: Clean
+	id S1755707Ab0EXJtQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 05:49:16 -0400
+Received: from n9-vm0.bullet.mail.in.yahoo.com ([202.86.4.193]:35224 "HELO
+	n9-vm0.bullet.mail.in.yahoo.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with SMTP id S1753603Ab0EXJtP convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 05:49:15 -0400
+X-Yahoo-Newman-Property: ymail-3
+X-Yahoo-Newman-Id: 83089.93071.bm@omp105.mail.in2.yahoo.com
+DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
+  s=s1024; d=yahoo.com;
+  h=Message-ID:X-YMail-OSG:Received:X-Mailer:References:Date:From:Subject:To:In-Reply-To:MIME-Version:Content-Type:Content-Transfer-Encoding;
+  b=vctVhrIIFWHis+72tyzAZLmdy66BuGgb7SDxzpzsU2bdmGb7+C2qZGv5RRccBRtYCLd/xPgXVsA8rJOpZF350jHJv+3uv7rSSdyUxN46Qa0A0H6AM13Yz/eiI6WmZjmydasWqzDFjIRenMJkdgChRmiokIca6tpEOFGsfEXh/LM=;
+Message-ID: <8269.56017.qm@web95620.mail.in.yahoo.com>
+X-YMail-OSG: iNaEU0sVM1kThNniWSEe4MUEVOnI7iUwPaekGjKEEVQ8LI1
+ NComDPuf7_TfWTz4hcVPXYEsxw2.X0gQTOpVNIYvz.S4qsajsK6T_EUPvW8B
+ aODM.wfTiqdB2GB1dr32HwgagOEuhXXl3cYzr8Ygqvjg5TSx1W7CJEY70gHf
+ XkwsRD1TzW30ls7wVi_8jgHbRVLRs6SYm3acN
+X-Mailer: YahooMailRC/374.4 YahooMailWebService/0.8.103.269680
+References: <214673.68504.qm@web95620.mail.in.yahoo.com>
+Date: Mon, 24 May 2010 15:19:12 +0530 (IST)
+From: Oza Oza <ozaoza1982@yahoo.com>
+Subject: [PROPOSAL] NMI & register clash handling infrastructure
+To: linux-kernel@vger.kernel.org
+In-Reply-To: <214673.68504.qm@web95620.mail.in.yahoo.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Don't compile in and don't schedule cryptomanager's tests when
-CONFIG_CRYPTO_TESTS is not set. This saves quite some time during
-kernel initialization.
+Hi,
 
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: linux-kernel@vger.kernel.org
-CC: linux-crypto@vger.kernel.org
----
- crypto/algboss.c |    4 ++++
- crypto/testmgr.c |   14 ++++++++++++++
- 2 files changed, 18 insertions(+), 0 deletions(-)
 
-diff --git a/crypto/algboss.c b/crypto/algboss.c
-index c3c196b..4814a44 100644
---- a/crypto/algboss.c
-+++ b/crypto/algboss.c
-@@ -206,6 +206,7 @@ err:
- 	return NOTIFY_OK;
- }
- 
-+#ifdef CONFIG_CRYPTO_TEST
- static int cryptomgr_test(void *data)
- {
- 	struct crypto_test_param *param = data;
-@@ -266,6 +267,7 @@ err_put_module:
- err:
- 	return NOTIFY_OK;
- }
-+#endif /* CONFIG_CRYPTO_TEST */
- 
- static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
- 			    void *data)
-@@ -273,8 +275,10 @@ static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
- 	switch (msg) {
- 	case CRYPTO_MSG_ALG_REQUEST:
- 		return cryptomgr_schedule_probe(data);
-+#ifdef CONFIG_CRYPTO_TEST
- 	case CRYPTO_MSG_ALG_REGISTER:
- 		return cryptomgr_schedule_test(data);
-+#endif
- 	}
- 
- 	return NOTIFY_DONE;
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 5c8aaa0..3529484 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -22,6 +22,17 @@
- #include <crypto/rng.h>
- 
- #include "internal.h"
-+
-+#ifndef CONFIG_CRYPTO_TEST
-+
-+/* a perfect nop */
-+int alg_test(const char *driver, const char *alg, u32 type, u32 mask)
-+{
-+	return 0;
-+}
-+
-+#else
-+
- #include "testmgr.h"
- 
- /*
-@@ -2530,4 +2541,7 @@ notest:
- non_fips_alg:
- 	return -EINVAL;
- }
-+
-+#endif
-+
- EXPORT_SYMBOL_GPL(alg_test);
--- 
-1.7.1.1.g15764
+
+This is my first post to the group, please excuse me, If I unknowingly miss to follow writing ethics.
+
+Proposal/Need: 
+
+I was working on providing accurate process usage support, and writing a kernel module, 
+I configured cpu-core-unhalted-event and configured LVT (local vector table) with NMI (non-maskable interrupt), and surprisingly Oprofile stopped working, 
+Then I realized, that set_nmi_call back just overwrites nmi_callback function pointer. 
+
+My proposal/idea/thinking is; 
+have a kernel module which accepts NMI registration from any kernel component, and providing support to the the any kernel service which basically need to service NMI.
+It may not only supports this, but also can provide central infrastructure which has capabilities such as granting MSR (model specific register) access to the the modules, which may avoid potential clash of MSRs (e.g. two modules are trying to configure same MSR), control NMI registration-unregisteration events etc..
+
+I am not sure, whether this is a good idea or bad idea, but I thought it adds flexibility and some value addition in kernel, 
+and I find this place precisely right to post this idea. 
+
+Any feedback/suggestions/additions would be appreciated. 
+
+Regards,
+Oza.
+
+
+
 
