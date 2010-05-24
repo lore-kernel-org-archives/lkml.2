@@ -1,61 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754597Ab0EXBOD (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 21:14:03 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:56920 "EHLO song.cn.fujitsu.com"
-	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1751835Ab0EXBOA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 21:14:00 -0400
-Message-ID: <4BF9D265.70008@cn.fujitsu.com>
-Date: Mon, 24 May 2010 09:12:05 +0800
-From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	id S1754813Ab0EXBTM (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 21:19:12 -0400
+Received: from bld-mail15.adl6.internode.on.net ([150.101.137.100]:45236 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751835Ab0EXBTL (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 21:19:11 -0400
+Date: Mon, 24 May 2010 11:19:07 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Roman Kononov <roman@binarylife.net>
+Cc: xfs@oss.sgi.com, linux-kernel@vger.kernel.org
+Subject: Re: WARNING in xfs_lwr.c, xfs_write()
+Message-ID: <20100524011907.GC12087@dastard>
+References: <20100523002023.41f5a5c8@aaa.pulp.binarylife.net>
+ <20100523101856.GL2150@dastard>
+ <20100523092344.0fcaab42@aaa.pulp.binarylife.net>
 MIME-Version: 1.0
-To: Vivek Goyal <vgoyal@redhat.com>
-CC: Jens Axboe <jens.axboe@oracle.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace	backlogged
- group status
-References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com>
-In-Reply-To: <20100521131751.GA15302@redhat.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100523092344.0fcaab42@aaa.pulp.binarylife.net>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Vivek Goyal wrote:
-> On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
->> Hi,
->>
->> This series implements three new interfaces to keep track of tranferred bytes,
->> elapsing time and io rate since group getting backlogged. If the group dequeues
->> from service tree, these three interfaces will reset and shows zero.
+On Sun, May 23, 2010 at 09:23:44AM -0500, Roman Kononov wrote:
+> On 2010-05-23, 20:18:56 +1000, Dave Chinner <david@fromorbit.com> wrote:
+> > You've got some workload that is mixing direct IO writes with some
+> > form of buffered or mmap IO on the same file and they are racing.
+> > Mixing different types of IO on the one inode is also known as A
+> > Really Bad Idea because there is no guarantee of coherency between
+> > them....
+> > 
+> > Can you find out what the application is triggering this?
 > 
-> Hi Gui,
-> 
-> Can you give some details regarding how this functionality is useful? Why
-> would somebody be interested in only in stats of till group was
-> backlogged and not in total stats?
-> 
-> Groups can come and go so fast and these stats will reset so many times
-> that I am not able to visualize how these stats will be useful.
+> This is severely modified Postgresql, which does mix direct IO with
+> buffered one.
 
-Hi Vivek,
+I hope you keep plenty of backups, then...
 
-Currently, we assign weight to a group, but user still doesn't know how fast the
-group runs. With io rate interface, users can check the rate of a group at any
-moment, or to determine whether the weight assigned to a group is enough.
-bytes and time interface is just for debug purpose.
+> You say "they are racing". Do you mean that this can cause file system
+> corruption?
 
-Thanks,
-Gui
+... because it's Not filesystem corruption you need to be worried
+about, it's *silent data corruption* that these races can cause.
 
-> 
-> Thanks
-> Vivek
-> 
->> Thanks
->> Gui
-> 
-> 
+> Doest it simply warn that direct user data races with
+> buffered user data and one of them wins?
+
+Yes, that's right. No guarantee of who wins is given, though.
+
+> This warning "taints" the kernel.
+
+Yup, the application is doing something dangerous, and this warning
+is there to let us know that the data corruption is the user's
+fault, not the filesystem...
+
+> Should it be safe to do different types of IOs on different
+> non-overlapping 4-KiB-aligned regions of the same file (I am unsure
+> if this is what the application really does)?
+
+Yes, it should be safe, but the kernel code can't know whether this
+is true or not - there are no specific interlocks with direct IO to
+prevent concurrent buffered IO to the same region while a direct IO
+is in progress. XFS does best effort attempts to maintain coherency
+does not provide any guarantees, hence the warning when known race
+conditions are tripped.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
