@@ -1,38 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751280Ab0ENELV (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:11:21 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52482 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750804Ab0ENELU (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:11:20 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: [PATCH 0/8] Suspend block api (version 7)
-Date: Thu, 13 May 2010 21:11:05 -0700
-Message-Id: <1273810273-3039-1-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S932137Ab0EXXOE (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:14:04 -0400
+Received: from kroah.org ([198.145.64.141]:36433 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758983Ab0EXXJZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:25 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
+Message-Id: <20100524230350.595491347@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 15:59:46 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Takashi Iwai <tiwai@suse.de>
+Subject: [14/34] ALSA: ice1724 - Fix ESI Maya44 capture source control
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch series adds a suspend-block api that provides the same
-functionality as the android wakelock api. This version has some
-changes from, or requested by, Rafael. The most notable changes are:
-- DEFINE_SUSPEND_BLOCKER and suspend_blocker_register have been added
-  for statically allocated suspend blockers. 
-- suspend_blocker_destroy is now called suspend_blocker_unregister
-- The user space mandatory _INIT ioctl has been replaced with an
-  optional _SET_NAME ioctl.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-I kept the ack and reviewed by tags on two of the patches even though
-there were a few cosmetic changes.
+------------------
 
---
-Arve Hjønnevåg <arve@android.com>
+From: Takashi Iwai <tiwai@suse.de>
+
+commit 8213466596bf10b75887754773ee13c10cf86f5c upstream.
+
+The capture source control of maya44 was wrongly coded with the bit
+shift instead of the bit mask.  Also, the slot for line-in was
+wrongly assigned (slot 5 instead of 4).
+
+Reported-by: Alex Chernyshoff <alexdsp@gmail.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ sound/pci/ice1712/maya44.c |    6 +++---
+ 1 file changed, 3 insertions(+), 3 deletions(-)
+
+--- a/sound/pci/ice1712/maya44.c
++++ b/sound/pci/ice1712/maya44.c
+@@ -347,7 +347,7 @@ static int maya_gpio_sw_put(struct snd_k
+ 
+ /* known working input slots (0-4) */
+ #define MAYA_LINE_IN	1	/* in-2 */
+-#define MAYA_MIC_IN	4	/* in-5 */
++#define MAYA_MIC_IN	3	/* in-4 */
+ 
+ static void wm8776_select_input(struct snd_maya44 *chip, int idx, int line)
+ {
+@@ -393,8 +393,8 @@ static int maya_rec_src_put(struct snd_k
+ 	int changed;
+ 
+ 	mutex_lock(&chip->mutex);
+-	changed = maya_set_gpio_bits(chip->ice, GPIO_MIC_RELAY,
+-				     sel ? GPIO_MIC_RELAY : 0);
++	changed = maya_set_gpio_bits(chip->ice, 1 << GPIO_MIC_RELAY,
++				     sel ? (1 << GPIO_MIC_RELAY) : 0);
+ 	wm8776_select_input(chip, 0, sel ? MAYA_MIC_IN : MAYA_LINE_IN);
+ 	mutex_unlock(&chip->mutex);
+ 	return changed;
+
 
