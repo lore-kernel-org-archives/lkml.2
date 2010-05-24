@@ -1,45 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756223Ab0EXG7Q (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 02:59:16 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:32988 "EHLO mail.skyhub.de"
+	id S1756336Ab0EXHET (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:04:19 -0400
+Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:44447 "EHLO kernel.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756162Ab0EXG7P (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 02:59:15 -0400
-Date: Mon, 24 May 2010 08:59:09 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacek J <69rydzyk69@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: CPU #1 not responding Problem
-Message-ID: <20100524065909.GA21310@liondog.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacek J <69rydzyk69@gmail.com>, linux-kernel@vger.kernel.org
-References: <AANLkTinHkcWaHs8Hf6zvRjftC5hPkpHbC2LTaz-h4TJ3@mail.gmail.com>
+	id S1753393Ab0EXHES (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 03:04:18 -0400
+Date: Mon, 24 May 2010 09:04:16 +0200
+From: Jens Axboe <jens.axboe@oracle.com>
+To: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+Cc: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+Message-ID: <20100524070416.GQ23411@kernel.dk>
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> <AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> <20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTinHkcWaHs8Hf6zvRjftC5hPkpHbC2LTaz-h4TJ3@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <87632e846m.fsf@devron.myhome.or.jp>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacek J <69rydzyk69@gmail.com>
-Date: Mon, May 24, 2010 at 12:14:49AM +0200
+On Mon, May 24 2010, OGAWA Hirofumi wrote:
+> Jens Axboe <jens.axboe@oracle.com> writes:
+> 
+> >> > We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
+> >> > in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
+> >> > power of 2 in pages. So the question is if that makes the API cleaner,
+> >> > passing in number of pages but returning bytes? Or pass in bytes all
+> >> > around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
+> >> > pages if need be. Then it would return a size at least what was passed
+> >> > in, or error.
+> 
+> I really think "power of 2 in pages" is simply current implementation
+> detail, not detail of pipe API.
 
-Hi,
+Completely agree, one more reason more to make that dependency exposed
+in the API.
 
-> sometimes (very rarely), when I boot my machine, I get messages that
-> some cores are not responding (#0, #,1 #,2). #3 is responding and
-> system boots with one core. After reboot it boots fine with all 4
-> cores. My CPU is Phenom II X940, I use archlinux.
+> >> I'd recommend this: Pass it in and out in bytes. Don't round to a
+> >> power of 2. Require the user to know what they are doing. Give an
+> >> error if the user doesn't supply a power-of-2 * page-size for
+> >> F_SETPIPE_SZ. (Again, consider the case of architectures  with
+> >> switchable page sizes.)
+> >
+> > But is there much point in erroring on an incorrect size? If the
+> > application says "I need at least 120kb of space in there", kernel
+> > returns "OK, you got 128kb". Would returning -1/EINVAL for that case
+> > really make a better API? Doesn't seem like it to me.
+> 
+> FWIW, my first impression of this was setsockopt(SO_RCV/SNDBUF) of unix
+> socket. Well, API itself wouldn't say "at least this size" or "exactly
+> this size", so, in here, important thing is consistency of interfaces, I
+> think. (And the both is sane API at least for me if those had
+> consistency in the system.)
+> 
+> Well, so how about set/get in bytes, and kernel will set "at least
+> specified size" actually like setsockopt(SO_RCV/SNDBUF)?
 
-what kernel are you using? Can we see the dmesg of the time when the
-cores are not responding? Can you try reproducing this with a vanilla
-kernel from kernel.org.
-
-Thanks.
+Isn't that pretty much what I described?
 
 -- 
-Regards/Gruss,
-    Boris.
+Jens Axboe
+
