@@ -1,53 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757958Ab0EXQgE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 12:36:04 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:21079 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757244Ab0EXQgB convert rfc822-to-8bit (ORCPT
+	id S1757704Ab0EXQrk (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 12:47:40 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:41700 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752482Ab0EXQrj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 12:36:01 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:sender:in-reply-to:references:date:
-	x-google-sender-auth:message-id:subject:from:to:content-type:
-	content-transfer-encoding:x-system-of-record;
-	b=ddTYNbrlSdPl4M3XaueENwyuI3bAmKtsF0hK0Ba7qmFGw2rP7J1yQYTA/IqYS2qui
-	9hnSTqTyyba6mH63hihZg==
+	Mon, 24 May 2010 12:47:39 -0400
+Date: Mon, 24 May 2010 17:47:36 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Neil Brown <neilb@suse.de>, Chuck Lever <chuck.lever@oracle.com>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100524164736.GR31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+ <20100524115903.GP31073@ZenIV.linux.org.uk>
+ <20100524155031.GQ31073@ZenIV.linux.org.uk>
+ <1274718082.10795.31.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
-In-Reply-To: <20100524150729.GZ3991@agk-dp.fab.redhat.com>
-References: <1274294304-30606-1-git-send-email-wad@chromium.org>
-	<1274294304-30606-3-git-send-email-wad@chromium.org>
-	<20100524115737.GY3991@agk-dp.fab.redhat.com>
-	<AANLkTik8F43_4SRkH7XpfX5CTQ-xQ_8f3_yJTjDqSulU@mail.gmail.com>
-	<20100524150729.GZ3991@agk-dp.fab.redhat.com>
-Date: Mon, 24 May 2010 11:35:57 -0500
-X-Google-Sender-Auth: 2rcLpPQrO8bvEgLiH1Pg1VKH4IU
-Message-ID: <AANLkTinlgQ5Br4vyjgvNKtHD4F3mZKwoz3siYCQyReAl@mail.gmail.com>
-Subject: Re: [dm-devel] [PATCH v3 3/3] dm: lookup devices by path with 
-	name_to_dev_t
-From: Will Drewry <wad@chromium.org>
-To: Will Drewry <wad@chromium.org>, dm-devel@redhat.com,
-       linux-kernel@vger.kernel.org, snitzer@redhat.com
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274718082.10795.31.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 10:07 AM, Alasdair G Kergon <agk@redhat.com> wrote:
-> On Mon, May 24, 2010 at 09:44:07AM -0500, Will Drewry wrote:
->> fwiw, the only reason for the copy was because |path| is a
->> const in the function but not when passed to name_to_dev_t.
->> I wasn't sure what the preferred practice was so I just duped
->> the data needed.
->
-> Well check that it is treated as 'const' and send a separate patch to
-> the maintainer to add const, perhaps?  If it isn't const (why would
-> that be?), then yes we'd need to copy it.
+On Mon, May 24, 2010 at 12:21:22PM -0400, Trond Myklebust wrote:
+> > Can an nfs4 server e.g. have /x/y being a symlink that resolves to /a/b and
+> > allow mounting of both /x/y/c and /a/b/c?  Which path would it return to
+> > client that has mounted both, walked to some referral point and called
+> > nfs_do_refmount(), triggering nfs4_proc_fs_locations()?
+> > 
+> > Trond, Neil?
+> 
+> When mounting /x/y/c in your example above, the NFSv4 protocol requires
+> the client itself to resolve the symlink, and then walk down /a/b/c
+> (looking up component by component), so it will in practice not see
+> anything other than /a/b/c.
+> 
+> If it walks down to a referral, and then calls nfs_do_refmount, it will
+> do the same thing: obtain a path /e/f/g on the new server, and then walk
+> down that component by component while resolving any symlinks and/or
+> referrals that it crosses in the process.
 
-I'll cross-check the code again and send a patch out if it looks like
-it is const-safe.
+Ho-hum...  What happens if the same fs is mounted twice on server?  I.e.
+have ext2 from /dev/sda1 mounted on /a and /b on server, then on the client
+do mount -t nfs foo:/a /tmp/a; mount -t nfs foo:/b /tmp/b.  Which path
+would we get from GETATTR with fs_locations requested, if we do it for
+/tmp/a/x and /tmp/b/x resp.?  Dentry will be the same, since fsid would
+match.
 
-thanks,
-will
+Or would the server refuse to export things that way?
