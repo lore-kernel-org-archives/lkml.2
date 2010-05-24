@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933117Ab0EXXcJ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:32:09 -0400
-Received: from kroah.org ([198.145.64.141]:59313 "EHLO coco.kroah.org"
+	id S932817Ab0EXXbd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:31:33 -0400
+Received: from kroah.org ([198.145.64.141]:59331 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932264Ab0EXXX0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:26 -0400
+	id S932352Ab0EXXX3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:13 2010
-Message-Id: <20100524231813.479206354@clark.site>
+Message-Id: <20100524231813.739249079@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:15 -0700
+Date: Mon, 24 May 2010 16:15:18 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Michael Hennerich <michael.hennerich@analog.com>,
-       Mike Frysinger <vapier@gentoo.org>
-Subject: [03/39] fbdev: bfin-t350mcqb-fb: fix fbmem allocation with blanking lines
+       Stefan Lippers-Hollmann <s.l-h@gmx.de>, Takashi Iwai <tiwai@suse.de>
+Subject: [06/39] ALSA: Revert "ALSA: hda/realtek: quirk for D945GCLF2 mainboard"
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,61 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Michael Hennerich <michael.hennerich@analog.com>
+From: Stefan Lippers-Hollmann <s.l-h@gmx.de>
 
-commit de145b44b95b9d3212a82d1c0f29b09778ef33c5 upstream.
+commit 482c45331519524e4aeaf8a9084a445500822b85 upstream.
 
-The current allocation does not include the memory required for blanking
-lines.  So avoid memory corruption when multiple devices are using the DMA
-memory near each other.
+This reverts commit 7aee67466536bbf8bb44a95712c848a61c5a0acd.
 
-Signed-off-by: Michael Hennerich <michael.hennerich@analog.com>
-Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+As it doesn't seem to be universally valid for all mainboard revisions of
+the D945GCLF2 and breaks snd-hda-intel/ snd-hda-codec-realtek on the Intel
+Corporation "D945GCLF2" (LF94510J.86A.0229.2009.0729.0209) mainboard.
+
+00:1b.0 Audio device [0403]: Intel Corporation N10/ICH 7 Family High Definition Audio Controller [8086:27d8] (rev 01)
+
+Signed-off-by: Stefan Lippers-Hollmann <s.l-h@gmx.de>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/video/bfin-t350mcqb-fb.c |   15 ++++++++-------
- 1 file changed, 8 insertions(+), 7 deletions(-)
+ sound/pci/hda/patch_realtek.c |    1 -
+ 1 file changed, 1 deletion(-)
 
---- a/drivers/video/bfin-t350mcqb-fb.c
-+++ b/drivers/video/bfin-t350mcqb-fb.c
-@@ -515,9 +515,9 @@ static int __devinit bfin_t350mcqb_probe
- 	fbinfo->fbops = &bfin_t350mcqb_fb_ops;
- 	fbinfo->flags = FBINFO_FLAG_DEFAULT;
- 
--	info->fb_buffer =
--	    dma_alloc_coherent(NULL, fbinfo->fix.smem_len, &info->dma_handle,
--			       GFP_KERNEL);
-+	info->fb_buffer = dma_alloc_coherent(NULL, fbinfo->fix.smem_len +
-+				ACTIVE_VIDEO_MEM_OFFSET,
-+				&info->dma_handle, GFP_KERNEL);
- 
- 	if (NULL == info->fb_buffer) {
- 		printk(KERN_ERR DRIVER_NAME
-@@ -587,8 +587,8 @@ out7:
- out6:
- 	fb_dealloc_cmap(&fbinfo->cmap);
- out4:
--	dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
--			  info->dma_handle);
-+	dma_free_coherent(NULL, fbinfo->fix.smem_len + ACTIVE_VIDEO_MEM_OFFSET,
-+			 info->fb_buffer, info->dma_handle);
- out3:
- 	framebuffer_release(fbinfo);
- out2:
-@@ -611,8 +611,9 @@ static int __devexit bfin_t350mcqb_remov
- 	free_irq(info->irq, info);
- 
- 	if (info->fb_buffer != NULL)
--		dma_free_coherent(NULL, fbinfo->fix.smem_len, info->fb_buffer,
--				  info->dma_handle);
-+		dma_free_coherent(NULL, fbinfo->fix.smem_len +
-+			ACTIVE_VIDEO_MEM_OFFSET, info->fb_buffer,
-+			info->dma_handle);
- 
- 	fb_dealloc_cmap(&fbinfo->cmap);
+--- a/sound/pci/hda/patch_realtek.c
++++ b/sound/pci/hda/patch_realtek.c
+@@ -17348,7 +17348,6 @@ static struct snd_pci_quirk alc662_cfg_t
+ 					ALC662_3ST_6ch_DIG),
+ 	SND_PCI_QUIRK_MASK(0x1854, 0xf000, 0x2000, "ASUS H13-200x",
+ 			   ALC663_ASUS_H13),
+-	SND_PCI_QUIRK(0x8086, 0xd604, "Intel mobo", ALC662_3ST_2ch_DIG),
+ 	{}
+ };
  
 
 
