@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab0EXWjG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:39:06 -0400
-Received: from kroah.org ([198.145.64.141]:42412 "EHLO coco.kroah.org"
+	id S1758535Ab0EXWkQ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:40:16 -0400
+Received: from kroah.org ([198.145.64.141]:42386 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758508Ab0EXWi2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:19 2010
-Message-Id: <20100524223019.267153185@clark.site>
+	id S1758296Ab0EXWiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:23 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:18 2010
+Message-Id: <20100524223017.910661964@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:17 -0700
+Date: Mon, 24 May 2010 15:28:12 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>
-Subject: [21/24] i2c: Fix probing of FSC hardware monitoring chips
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk, dsterba@novell.com,
+       seto.hidetoshi@jp.fujitsu.com, suresh.b.siddha@intel.com,
+       Nagananda.Chumbalkar@hp.com, jdelvare@novell.com, tglx@linutronix.de,
+       Thomas Renninger <trenn@suse.de>
+Subject: [16/24] clockevent: Prevent dead lock on clockevents_lock
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +27,235 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Jean Delvare <khali@linux-fr.org>
 
-commit b1d4b390ea4bb480e65974ce522a04022608a8df upstream.
+From: Suresh Siddha <suresh.b.siddha@intel.com>
 
-Some FSC hardware monitoring chips (Syleus at least) doesn't like
-quick writes we typically use to probe for I2C chips. Use a regular
-byte read instead for the address they live at (0x73). These are the
-only known chips living at this address on PC systems.
+This is a merge of two mainline commits, intended
+for stable@kernel.org submission for 2.6.27 kernel.
 
-For clarity, this fix should not be needed for kernels 2.6.30 and
-later, as we started instantiating the hwmon devices explicitly based
-on DMI data. Still, this fix is valuable in the following two cases:
-* Support for recent FSC chips on older kernels. The DMI-based device
-  instantiation is more difficult to backport than the device support
-  itself.
-* Case where the DMI-based device instantiation fails, whatever the
-  reason. We fall back to probing in that case, so it should work.
+commit f833bab87fca5c3ce13778421b1365845843b976
+and
 
-This fixes kernel bug #15634:
-https://bugzilla.kernel.org/show_bug.cgi?id=15634
+commit 918aae42aa9b611a3663b16ae849fdedc67c2292
+Changelog of both:
 
-Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+    Currently clockevents_notify() is called with interrupts enabled at
+    some places and interrupts disabled at some other places.
+
+    This results in a deadlock in this scenario.
+
+    cpu A holds clockevents_lock in clockevents_notify() with irqs enabled
+    cpu B waits for clockevents_lock in clockevents_notify() with irqs disabled
+    cpu C doing set_mtrr() which will try to rendezvous of all the cpus.
+
+    This will result in C and A come to the rendezvous point and waiting
+    for B. B is stuck forever waiting for the spinlock and thus not
+    reaching the rendezvous point.
+
+    Fix the clockevents code so that clockevents_lock is taken with
+    interrupts disabled and thus avoid the above deadlock.
+
+    Also call lapic_timer_propagate_broadcast() on the destination cpu so
+    that we avoid calling smp_call_function() in the clockevents notifier
+    chain.
+
+    This issue left us wondering if we need to change the MTRR rendezvous
+    logic to use stop machine logic (instead of smp_call_function) or add
+    a check in spinlock debug code to see if there are other spinlocks
+    which gets taken under both interrupts enabled/disabled conditions.
+
+    Signed-off-by: Suresh Siddha <suresh.b.siddha@intel.com>
+    Cc: "Brown Len" <len.brown@intel.com>
+    Cc: stable@kernel.org
+    LKML-Reference: <1250544899.2709.210.camel@sbs-t61.sc.intel.com>
+    Signed-off-by: Thomas Gleixner <tglx@linutronix.de>
+
+    I got following warning on ia64 box:
+      In function 'acpi_processor_power_verify':
+      642: warning: passing argument 2 of 'smp_call_function_single' from
+      incompatible pointer type
+
+    This smp_call_function_single() was introduced by a commit
+    f833bab87fca5c3ce13778421b1365845843b976:
+
+    The problem is that the lapic_timer_propagate_broadcast() has 2 versions:
+    One is real code that modified in the above commit, and the other is NOP
+    code that used when !ARCH_APICTIMER_STOPS_ON_C3:
+
+      static void lapic_timer_propagate_broadcast(struct acpi_processor *pr) { }
+
+    So I got warning because of !ARCH_APICTIMER_STOPS_ON_C3.
+
+    We really want to do nothing here on !ARCH_APICTIMER_STOPS_ON_C3, so
+    modify lapic_timer_propagate_broadcast() of real version to use
+    smp_call_function_single() in it.
+
+    Signed-off-by: Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>
+    Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
+    Signed-off-by: Len Brown <len.brown@intel.com>
+
+Signed-off-by: Thomas Renninger <trenn@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 
 ---
- drivers/i2c/i2c-core.c |   24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ arch/x86/kernel/process.c     |    6 +-----
+ drivers/acpi/processor_idle.c |   13 ++++++++++---
+ kernel/time/clockevents.c     |   16 ++++++++++------
+ kernel/time/tick-broadcast.c  |    7 +++----
+ 4 files changed, 24 insertions(+), 18 deletions(-)
 
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1269,14 +1269,24 @@ static int i2c_detect_address(struct i2c
+--- a/arch/x86/kernel/process.c
++++ b/arch/x86/kernel/process.c
+@@ -283,16 +283,12 @@ static void c1e_idle(void)
+ 		if (!cpu_isset(cpu, c1e_mask)) {
+ 			cpu_set(cpu, c1e_mask);
+ 			/*
+-			 * Force broadcast so ACPI can not interfere. Needs
+-			 * to run with interrupts enabled as it uses
+-			 * smp_function_call.
++			 * Force broadcast so ACPI can not interfere.
+ 			 */
+-			local_irq_enable();
+ 			clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_FORCE,
+ 					   &cpu);
+ 			printk(KERN_INFO "Switch to broadcast mode on CPU%d\n",
+ 			       cpu);
+-			local_irq_disable();
+ 		}
+ 		clockevents_notify(CLOCK_EVT_NOTIFY_BROADCAST_ENTER, &cpu);
  
- 	/* Make sure there is something at this address, unless forced */
- 	if (kind < 0) {
--		if (i2c_smbus_xfer(adapter, addr, 0, 0, 0,
--				   I2C_SMBUS_QUICK, NULL) < 0)
--			return 0;
-+		if (addr == 0x73 && (adapter->class & I2C_CLASS_HWMON)) {
-+			/* Special probe for FSC hwmon chips */
-+			union i2c_smbus_data dummy;
+--- a/drivers/acpi/processor_idle.c
++++ b/drivers/acpi/processor_idle.c
+@@ -317,8 +317,9 @@ static void acpi_timer_check_state(int s
+ 		pr->power.timer_broadcast_on_state = state;
+ }
  
--		/* prevent 24RF08 corruption */
--		if ((addr & ~0x0f) == 0x50)
--			i2c_smbus_xfer(adapter, addr, 0, 0, 0,
--				       I2C_SMBUS_QUICK, NULL);
-+			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_READ, 0,
-+					   I2C_SMBUS_BYTE_DATA, &dummy) < 0)
-+				return 0;
-+		} else {
-+			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_WRITE, 0,
-+					   I2C_SMBUS_QUICK, NULL) < 0)
-+				return 0;
+-static void acpi_propagate_timer_broadcast(struct acpi_processor *pr)
++static void __lapic_timer_propagate_broadcast(void *arg)
+ {
++	struct acpi_processor *pr = (struct acpi_processor *) arg;
+ 	unsigned long reason;
+ 
+ 	reason = pr->power.timer_broadcast_on_state < INT_MAX ?
+@@ -327,6 +328,12 @@ static void acpi_propagate_timer_broadca
+ 	clockevents_notify(reason, &pr->id);
+ }
+ 
++static void lapic_timer_propagate_broadcast(struct acpi_processor *pr)
++{
++	smp_call_function_single(pr->id, __lapic_timer_propagate_broadcast,
++				 (void *)pr, 1);
++}
 +
-+			/* Prevent 24RF08 corruption */
-+			if ((addr & ~0x0f) == 0x50)
-+				i2c_smbus_xfer(adapter, addr, 0,
-+					       I2C_SMBUS_WRITE, 0,
-+					       I2C_SMBUS_QUICK, NULL);
-+		}
+ /* Power(C) State timer broadcast control */
+ static void acpi_state_timer_broadcast(struct acpi_processor *pr,
+ 				       struct acpi_processor_cx *cx,
+@@ -347,7 +354,7 @@ static void acpi_state_timer_broadcast(s
+ 
+ static void acpi_timer_check_state(int state, struct acpi_processor *pr,
+ 				   struct acpi_processor_cx *cstate) { }
+-static void acpi_propagate_timer_broadcast(struct acpi_processor *pr) { }
++static void lapic_timer_propagate_broadcast(struct acpi_processor *pr) { }
+ static void acpi_state_timer_broadcast(struct acpi_processor *pr,
+ 				       struct acpi_processor_cx *cx,
+ 				       int broadcast)
+@@ -1177,7 +1184,7 @@ static int acpi_processor_power_verify(s
+ 			working++;
  	}
  
- 	/* Finally call the custom detection function */
+-	acpi_propagate_timer_broadcast(pr);
++	lapic_timer_propagate_broadcast(pr);
+ 
+ 	return (working);
+ }
+--- a/kernel/time/clockevents.c
++++ b/kernel/time/clockevents.c
+@@ -124,11 +124,12 @@ int clockevents_program_event(struct clo
+  */
+ int clockevents_register_notifier(struct notifier_block *nb)
+ {
++	unsigned long flags;
+ 	int ret;
+ 
+-	spin_lock(&clockevents_lock);
++	spin_lock_irqsave(&clockevents_lock, flags);
+ 	ret = raw_notifier_chain_register(&clockevents_chain, nb);
+-	spin_unlock(&clockevents_lock);
++	spin_unlock_irqrestore(&clockevents_lock, flags);
+ 
+ 	return ret;
+ }
+@@ -165,6 +166,8 @@ static void clockevents_notify_released(
+  */
+ void clockevents_register_device(struct clock_event_device *dev)
+ {
++	unsigned long flags;
++
+ 	BUG_ON(dev->mode != CLOCK_EVT_MODE_UNUSED);
+ 	/*
+ 	 * A nsec2cyc multiplicator of 0 is invalid and we'd crash
+@@ -175,13 +178,13 @@ void clockevents_register_device(struct
+ 		WARN_ON(1);
+ 	}
+ 
+-	spin_lock(&clockevents_lock);
++	spin_lock_irqsave(&clockevents_lock, flags);
+ 
+ 	list_add(&dev->list, &clockevent_devices);
+ 	clockevents_do_notify(CLOCK_EVT_NOTIFY_ADD, dev);
+ 	clockevents_notify_released();
+ 
+-	spin_unlock(&clockevents_lock);
++	spin_unlock_irqrestore(&clockevents_lock, flags);
+ }
+ 
+ /*
+@@ -228,8 +231,9 @@ void clockevents_exchange_device(struct
+ void clockevents_notify(unsigned long reason, void *arg)
+ {
+ 	struct list_head *node, *tmp;
++	unsigned long flags;
+ 
+-	spin_lock(&clockevents_lock);
++	spin_lock_irqsave(&clockevents_lock, flags);
+ 	clockevents_do_notify(reason, arg);
+ 
+ 	switch (reason) {
+@@ -244,7 +248,7 @@ void clockevents_notify(unsigned long re
+ 	default:
+ 		break;
+ 	}
+-	spin_unlock(&clockevents_lock);
++	spin_unlock_irqrestore(&clockevents_lock, flags);
+ }
+ EXPORT_SYMBOL_GPL(clockevents_notify);
+ #endif
+--- a/kernel/time/tick-broadcast.c
++++ b/kernel/time/tick-broadcast.c
+@@ -205,11 +205,11 @@ static void tick_handle_periodic_broadca
+  * Powerstate information: The system enters/leaves a state, where
+  * affected devices might stop
+  */
+-static void tick_do_broadcast_on_off(void *why)
++static void tick_do_broadcast_on_off(unsigned long *reason)
+ {
+ 	struct clock_event_device *bc, *dev;
+ 	struct tick_device *td;
+-	unsigned long flags, *reason = why;
++	unsigned long flags;
+ 	int cpu, bc_stopped;
+ 
+ 	spin_lock_irqsave(&tick_broadcast_lock, flags);
+@@ -276,8 +276,7 @@ void tick_broadcast_on_off(unsigned long
+ 		printk(KERN_ERR "tick-broadcast: ignoring broadcast for "
+ 		       "offline CPU #%d\n", *oncpu);
+ 	else
+-		smp_call_function_single(*oncpu, tick_do_broadcast_on_off,
+-					 &reason, 1);
++		tick_do_broadcast_on_off(&reason);
+ }
+ 
+ /*
 
 
