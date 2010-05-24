@@ -1,20 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759104Ab0EXXJw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:52 -0400
-Received: from kroah.org ([198.145.64.141]:36570 "EHLO coco.kroah.org"
+	id S1759064Ab0EXXJj (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:09:39 -0400
+Received: from kroah.org ([198.145.64.141]:36524 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759083Ab0EXXJm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:42 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
-Message-Id: <20100524230352.365900919@clark.site>
+	id S1758689Ab0EXXJh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:37 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
+Message-Id: <20100524230351.837063978@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:00:06 -0700
+Date: Mon, 24 May 2010 16:00:00 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org, Greg KH <greg@kroah.com>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [34/34] Revert "parisc: Set PCI CLS early in boot."
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       David Howells <dhowells@redhat.com>
+Subject: [28/34] CacheFiles: Fix error handling in cachefiles_determine_cache_security()
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -24,57 +25,45 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-This reverts the following patch, which shouldn't have been applied
-to the .32 stable tree as it causes problems.
+From: David Howells <dhowells@redhat.com>
 
+commit 7ac512aa8237c43331ffaf77a4fd8b8d684819ba upstream.
 
-  commit 5fd4514bb351b5ecb0da3692fff70741e5ed200c upstream.
+cachefiles_determine_cache_security() is expected to return with a
+security override in place.  However, if set_create_files_as() fails, we
+fail to do this.  In this case, we should just reinstate the security
+override that was set by the caller.
 
-  Set the PCI CLS early in the boot process to prevent
-  device failures. In pcibios_set_master use the new
-  pci_cache_line_size instead of a hard-coded value.
+Furthermore, if set_create_files_as() fails, we should dispose of the
+new credentials we were in the process of creating.
 
-  Signed-off-by: Carlos O'Donell <carlos@codesourcery.com>
-  Reviewed-by: Grant Grundler <grundler@google.com>
-  Signed-off-by: Kyle McMartin <kyle@redhat.com>
-  Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
-
+Signed-off-by: David Howells <dhowells@redhat.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/parisc/kernel/pci.c |    7 ++-----
- 1 file changed, 2 insertions(+), 5 deletions(-)
+ fs/cachefiles/security.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/parisc/kernel/pci.c
-+++ b/arch/parisc/kernel/pci.c
-@@ -18,6 +18,7 @@
- 
- #include <asm/io.h>
- #include <asm/system.h>
-+#include <asm/cache.h>		/* for L1_CACHE_BYTES */
- #include <asm/superio.h>
- 
- #define DEBUG_RESOURCES 0
-@@ -122,10 +123,6 @@ static int __init pcibios_init(void)
- 	} else {
- 		printk(KERN_WARNING "pci_bios != NULL but init() is!\n");
+--- a/fs/cachefiles/security.c
++++ b/fs/cachefiles/security.c
+@@ -77,6 +77,8 @@ static int cachefiles_check_cache_dir(st
+ /*
+  * check the security details of the on-disk cache
+  * - must be called with security override in force
++ * - must return with a security override in force - even in the case of an
++ *   error
+  */
+ int cachefiles_determine_cache_security(struct cachefiles_cache *cache,
+ 					struct dentry *root,
+@@ -99,6 +101,8 @@ int cachefiles_determine_cache_security(
+ 	 * which create files */
+ 	ret = set_create_files_as(new, root->d_inode);
+ 	if (ret < 0) {
++		abort_creds(new);
++		cachefiles_begin_secure(cache, _saved_cred);
+ 		_leave(" = %d [cfa]", ret);
+ 		return ret;
  	}
--
--	/* Set the CLS for PCI as early as possible. */
--	pci_cache_line_size = pci_dfl_cache_line_size;
--
- 	return 0;
- }
- 
-@@ -174,7 +171,7 @@ void pcibios_set_master(struct pci_dev *
- 	** upper byte is PCI_LATENCY_TIMER.
- 	*/
- 	pci_write_config_word(dev, PCI_CACHE_LINE_SIZE,
--			      (0x80 << 8) | pci_cache_line_size);
-+				(0x80 << 8) | (L1_CACHE_BYTES / sizeof(u32)));
- }
- 
- 
 
 
