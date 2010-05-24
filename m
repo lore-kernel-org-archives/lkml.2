@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758581Ab0EXWjZ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:39:25 -0400
-Received: from kroah.org ([198.145.64.141]:42406 "EHLO coco.kroah.org"
+	id S932131Ab0EXWjy (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:39:54 -0400
+Received: from kroah.org ([198.145.64.141]:42392 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758501Ab0EXWi1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:27 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:19 2010
-Message-Id: <20100524223019.071166051@clark.site>
+	id S1758310Ab0EXWiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:18 2010
+Message-Id: <20100524223018.243139350@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:16 -0700
+Date: Mon, 24 May 2010 15:28:13 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Chuck Lever <chuck.lever@oracle.com>,
-       Trond Myklebust <Trond.Myklebust@netapp.com>
-Subject: [20/24] NFS: rsize and wsize settings ignored on v4 mounts
+       "J. Bruce Fields" <bfields@citi.umich.edu>
+Subject: [17/24] nfsd4: bug in read_buf
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,37 +25,58 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Chuck Lever <chuck.lever@oracle.com>
+From: Neil Brown <neilb@suse.de>
 
-commit 356e76b855bdbfd8d1c5e75bcf0c6bf0dfe83496 upstream.
+commit 2bc3c1179c781b359d4f2f3439cb3df72afc17fc upstream.
 
-NFSv4 mounts ignore the rsize and wsize mount options, and always use
-the default transfer size for both.  This seems to be because all
-NFSv4 mounts are now cloned, and the cloning logic doesn't copy the
-rsize and wsize settings from the parent nfs_server.
+When read_buf is called to move over to the next page in the pagelist
+of an NFSv4 request, it sets argp->end to essentially a random
+number, certainly not an address within the page which argp->p now
+points to.  So subsequent calls to READ_BUF will think there is much
+more than a page of spare space (the cast to u32 ensures an unsigned
+comparison) so we can expect to fall off the end of the second
+page.
 
-I tested Fedora's 2.6.32.11-99 and it seems to have this problem as
-well, so I'm guessing that .33, .32, and perhaps older kernels have
-this issue as well.
+We never encountered thsi in testing because typically the only
+operations which use more than two pages are write-like operations,
+which have their own decoding logic.  Something like a getattr after a
+write may cross a page boundary, but it would be very unusual for it to
+cross another boundary after that.
 
-Signed-off-by: Chuck Lever <chuck.lever@oracle.com>
-Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfs/client.c |    2 ++
- 1 file changed, 2 insertions(+)
+ fs/nfsd/nfs4xdr.c |    8 ++++----
+ 1 file changed, 4 insertions(+), 4 deletions(-)
 
---- a/fs/nfs/client.c
-+++ b/fs/nfs/client.c
-@@ -826,6 +826,8 @@ out_error:
- static void nfs_server_copy_userdata(struct nfs_server *target, struct nfs_server *source)
- {
- 	target->flags = source->flags;
-+	target->rsize = source->rsize;
-+	target->wsize = source->wsize;
- 	target->acregmin = source->acregmin;
- 	target->acregmax = source->acregmax;
- 	target->acdirmin = source->acdirmin;
+--- a/fs/nfsd/nfs4xdr.c
++++ b/fs/nfsd/nfs4xdr.c
+@@ -179,10 +179,10 @@ static __be32 *read_buf(struct nfsd4_com
+ 	argp->p = page_address(argp->pagelist[0]);
+ 	argp->pagelist++;
+ 	if (argp->pagelen < PAGE_SIZE) {
+-		argp->end = p + (argp->pagelen>>2);
++		argp->end = argp->p + (argp->pagelen>>2);
+ 		argp->pagelen = 0;
+ 	} else {
+-		argp->end = p + (PAGE_SIZE>>2);
++		argp->end = argp->p + (PAGE_SIZE>>2);
+ 		argp->pagelen -= PAGE_SIZE;
+ 	}
+ 	memcpy(((char*)p)+avail, argp->p, (nbytes - avail));
+@@ -1115,10 +1115,10 @@ nfsd4_decode_compound(struct nfsd4_compo
+ 			argp->p = page_address(argp->pagelist[0]);
+ 			argp->pagelist++;
+ 			if (argp->pagelen < PAGE_SIZE) {
+-				argp->end = p + (argp->pagelen>>2);
++				argp->end = argp->p + (argp->pagelen>>2);
+ 				argp->pagelen = 0;
+ 			} else {
+-				argp->end = p + (PAGE_SIZE>>2);
++				argp->end = argp->p + (PAGE_SIZE>>2);
+ 				argp->pagelen -= PAGE_SIZE;
+ 			}
+ 		}
 
 
