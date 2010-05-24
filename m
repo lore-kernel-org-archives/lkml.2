@@ -1,45 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab0EXX0T (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:26:19 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:60520 "EHLO mx2.suse.de"
+	id S932771Ab0EXXYK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:24:10 -0400
+Received: from kroah.org ([198.145.64.141]:59481 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932534Ab0EXX0M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:26:12 -0400
-Date: Mon, 24 May 2010 16:26:00 -0700
+	id S932630Ab0EXXXv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:51 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:16 2010
+Message-Id: <20100524231815.976531072@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 16:15:43 -0700
 From: Greg KH <gregkh@suse.de>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Borislav Petkov <borislav.petkov@amd.com>
-Subject: Re: [19/34] x86, k8: Fix build error when K8_NB is disabled
-Message-ID: <20100524232600.GA18139@suse.de>
-References: <20100524230351.044290356@clark.site>
- <4BFB0825.4090003@zytor.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFB0825.4090003@zytor.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>,
+       AmenophisIII <AmenophisIII@gmx.at>, Takashi Iwai <tiwai@suse.de>
+Subject: [31/39] ALSA: hda - New Intel HDA controller
+In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 04:13:41PM -0700, H. Peter Anvin wrote:
-> On 05/24/2010 03:59 PM, Greg KH wrote:
-> > 2.6.34-stable review patch.  If anyone has any objections, please let us know.
-> > 
-> > ------------------
-> > 
-> > From: Borislav Petkov <borislav.petkov@amd.com>
-> > 
-> > commit ade029e2aaacc8965a548b0b0f80c5bee97ffc68 upstream.
-> > 
-> 
-> Objection only that this is already in 2.6.34.
 
-Same thing here, sorry, I should have said .32.
+2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
-too many kernel versions...
+------------------
+From: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
 
-greg k-h
+commit c602c8ad45d6ee6ad91fc544513cc96f70790983 upstream.
+
+Added a PCI controller id on new Dell laptops.
+
+Signed-off-by: Vitaliy Kulikov <Vitaliy.Kulikov@idt.com>
+Cc: AmenophisIII <AmenophisIII@gmx.at>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ sound/pci/hda/hda_intel.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+--- a/sound/pci/hda/hda_intel.c
++++ b/sound/pci/hda/hda_intel.c
+@@ -2718,6 +2718,7 @@ static struct pci_device_id azx_ids[] =
+ 	{ PCI_DEVICE(0x8086, 0x3a6e), .driver_data = AZX_DRIVER_ICH },
+ 	/* PCH */
+ 	{ PCI_DEVICE(0x8086, 0x3b56), .driver_data = AZX_DRIVER_ICH },
++	{ PCI_DEVICE(0x8086, 0x3b57), .driver_data = AZX_DRIVER_ICH },
+ 	/* CPT */
+ 	{ PCI_DEVICE(0x8086, 0x1c20), .driver_data = AZX_DRIVER_PCH },
+ 	/* SCH */
+
+
