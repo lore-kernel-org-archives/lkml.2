@@ -1,79 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756039Ab0EXGh2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 02:37:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:38087 "EHLO mx1.redhat.com"
+	id S1756120Ab0EXGl3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 02:41:29 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17083 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755451Ab0EXGh1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 02:37:27 -0400
-Message-ID: <4BFA1E91.8060706@redhat.com>
-Date: Mon, 24 May 2010 09:37:05 +0300
+	id S1752498Ab0EXGl2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 02:41:28 -0400
+Message-ID: <4BFA1F92.2080802@redhat.com>
+Date: Mon, 24 May 2010 09:41:22 +0300
 From: Avi Kivity <avi@redhat.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: "Michael S. Tsirkin" <mst@redhat.com>
-CC: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
- ring itself
-References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au> <20100523153134.GA14646@redhat.com> <4BF94CAD.5010504@redhat.com> <20100523155132.GA14733@redhat.com> <4BF951BE.1010402@redhat.com> <20100523163039.GC14733@redhat.com>
-In-Reply-To: <20100523163039.GC14733@redhat.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm: Swap checksum
+References: <4BF81D87.6010506@cesarb.net> <1274551731-4534-3-git-send-email-cesarb@cesarb.net> <4BF94792.5030405@redhat.com> <4BF97AC2.1040505@cesarb.net>
+In-Reply-To: <4BF97AC2.1040505@cesarb.net>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2010 07:30 PM, Michael S. Tsirkin wrote:
+On 05/23/2010 09:58 PM, Cesar Eduardo Barros wrote:
+> Em 23-05-2010 12:19, Avi Kivity escreveu:
+>> On 64-bit, we may be able to store the checksum in the pte, if the swap
+>> device is small enough.
 >
->    
->>> Maybe we should use atomics on index then?
->>>
->>>        
->> This should only be helpful if you access the cacheline several times in
->> a row.  That's not the case in virtio (or here).
->>      
-> So why does it help?
->    
+> Which pte? 
 
-We actually do access the cacheline several times in a row here (but not 
-in virtio?):
+All of them.
 
-> 		case SHARE:
-> 			while (count<  MAX_BOUNCES) {
-> 				/* Spin waiting for other side to change it. */
-> 				while (counter->cacheline1 != count);
->    
+> Correct me if I am wrong, but I do not think all pages written to the 
+> swap have exactly one pte pointing to them. And I have not looked at 
+> the shmem.c code yet, but does it even use ptes?
 
-Broadcast a read request.
+Well, the ptes need the swap address written into them, so they are 
+already found and updated somehow.  All that's needed is to update the 
+value written to also include the checksum.
 
-> 				count++;
-> 				counter->cacheline1 = count;
->    
+> It might be possible (find all ptes and write the 32-bit checksum to 
+> them, do something else for shmem, have two different code paths for 
+> small/large swapfiles), but I do not know if the memory savings are 
+> worth the extra complexity (especially the need for two separate code 
+> paths).
 
-Broadcast an invalidate request.
+Certainly not at first, but later it may be worthwhile.
 
-> 				count++;
-> 			}
-> 			break;
 >
-> 		case LOCKSHARE:
-> 			while (count<  MAX_BOUNCES) {
-> 				/* Spin waiting for other side to change it. */
-> 				while (__sync_val_compare_and_swap(&counter->cacheline1, count, count+1)
-> 				       != count);
->    
+>> If we take the trouble to touch the page, we may as well compare it
+>> against zero, and if so drop it instead of swapping it out.
+>
+> The problem with this is that the page is touched deep inside the 
+> crc32c code, which might even be using hardware instructions 
+> (crc32c-intel). So we would need to read it two times to compare 
+> against zero.
 
-Broadcast a 'read for ownership' request.
+The second read is very cheap since the page is already in cache.  Also, 
+we fail early when any word is nonzero, so usually the compare exits 
+quickly.
 
-> 				count += 2;
-> 			}
-> 			break;
->    
+>
+> One possibility could be to compare the full page against zero only if 
+> its crc is a specific value (the crc32c of a page full of zeros). This 
+> would not be too slow (we would be wasting time only when we have a 
+> very high probability of saving much more time), and not need to touch 
+> the crc32c code at all. I would only have to look at how this messes 
+> up the state tracking (i.e. how to make it track the fact that, 
+> instead of getting written out, this is now a zeroed page).
 
-So RMW should certainly by faster using single-instruction RMW 
-operations (or using prefetchw).
+Instead of returning a swap pte to be written to the page tables, return 
+a zeroed pte.
+
+
+> Other than that, it seems a good idea.
+>
+
 
 -- 
 Do not meddle in the internals of kernels, for they are subtle and quick to panic.
