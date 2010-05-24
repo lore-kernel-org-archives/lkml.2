@@ -1,40 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753900Ab0EXSn6 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:43:58 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:53691 "EHLO mx2.suse.de"
+	id S1754735Ab0EXSoF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:44:05 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:53698 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751050Ab0EXSn5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:43:57 -0400
-Date: Mon, 24 May 2010 11:41:29 -0700
+	id S1751050Ab0EXSoB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 14:44:01 -0400
+Date: Mon, 24 May 2010 11:42:54 -0700
 From: Greg KH <gregkh@suse.de>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: Greg KH <greg@kroah.com>, Alexander Kurz <linux@blala.de>,
-       Randy Dunlap <randy.dunlap@oracle.com>,
-       Frank Mori Hess <fmhess@users.sourceforge.net>,
-       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
-       Dominik Brodowski <linux@dominikbrodowski.net>,
-       Ian Abbott <abbotti@mev.co.uk>
-Subject: Re: [PATCH] staging/comedi: new Kconfig and Makefiles, drivers
- grouped by bustype.
-Message-ID: <20100524184129.GC8291@suse.de>
-References: <alpine.DEB.1.10.1005081218220.5727@blala.de>
- <20100514190142.GA2505@kroah.com>
- <4BFA4F52.1090004@ge.com>
+To: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
+Cc: =?utf-8?B?0KLQuNC80L7RhNC10Lkg0KLRgNC+0YTQuNC80L7Qsg==?= 
+	<tumoxep@gmail.com>,
+       lieb@canonical.com, more.andres@gmail.com, forest@alittletooquiet.net,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vt6656: fix brace coding style issue in
+ 80211mgr.c This is a patch to the 80211mgr.c file that fixes up a brace
+ warning found by the checkpatch.pl tool Signed-off-by: Timofey Trofimov
+ <tumoxep@gmail.com>
+Message-ID: <20100524184254.GD8291@suse.de>
+References: <1274546574-8338-1-git-send-email-tumoxep@gmail.com>
+ <20100522173510.GA26310@fujitsu>
+ <AANLkTilS9UjF6jbsqtsZBlTkv_s4ayfu5GfW5_51tOzT@mail.gmail.com>
+ <20100522235331.GA27828@fujitsu>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
-In-Reply-To: <4BFA4F52.1090004@ge.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100522235331.GA27828@fujitsu>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:05:06AM +0100, Martyn Welch wrote:
-> Even if there are a few dependencies missing, it seems like a step forward.
+On Sat, May 22, 2010 at 04:53:32PM -0700, Charles Clément wrote:
+> Hey,
+> 
+> On Sat, May 22, 2010 at 09:52:25PM +0400, Тимофей Трофимов wrote:
+> > Hi, Charles. I understand what I did wrong and never will make this
+> > mistake  mistake again. I really thought that I write this. Sorry.
+> > P.S. This is my first patch. Does I need to resend it?
+> 
+> I think you should try to resend it, at least to get the subject line
+> and body correct, you can try that by sending it only to yourself first.
 
-Yes it is, that's why it is now in Linus's tree for inclusion in the .35
-release :)
+It's ok, it's a common mistake combined with a bug in git-format-patch.
+I can handle this just fine, don't worry about it.
 
 thanks,
 
