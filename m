@@ -1,107 +1,85 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752795Ab0ENENI (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:13:08 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:52482 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751405Ab0ENELg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:11:36 -0400
-From: =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>
-To: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
-       =?UTF-8?q?Arve=20Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Tejun Heo <tj@kernel.org>
-Subject: [PATCH 4/8] PM: suspend_block: Add debugfs file
-Date: Thu, 13 May 2010 21:11:09 -0700
-Message-Id: <1273810273-3039-5-git-send-email-arve@android.com>
-X-Mailer: git-send-email 1.6.5.1
-In-Reply-To: <1273810273-3039-4-git-send-email-arve@android.com>
-References: <1273810273-3039-1-git-send-email-arve@android.com>
- <1273810273-3039-2-git-send-email-arve@android.com>
- <1273810273-3039-3-git-send-email-arve@android.com>
- <1273810273-3039-4-git-send-email-arve@android.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+	id S1759001Ab0EXXJ3 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:09:29 -0400
+Received: from kroah.org ([198.145.64.141]:36426 "EHLO coco.kroah.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758733Ab0EXXJY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
+Message-Id: <20100524230350.507930895@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 15:59:45 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Valentin Longchamp <valentin.longchamp@epfl.ch>,
+       Wolfram Sang <w.sang@pengutronix.de>
+Subject: [13/34] serial: imx.c: fix CTS trigger level lower to avoid lost chars
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Report active and inactive suspend blockers in
-/sys/kernel/debug/suspend_blockers.
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-Signed-off-by: Arve Hjønnevåg <arve@android.com>
+------------------
+
+From: Valentin Longchamp <valentin.longchamp@epfl.ch>
+
+commit 1c5250d6163dac28be3afabdfb6c723f107051b7 upstream.
+
+The imx CTS trigger level is left at its reset value that is 32
+chars. Since the RX FIFO has 32 entries, when CTS is raised, the
+FIFO already is full. However, some serial port devices first empty
+their TX FIFO before stopping when CTS is raised, resulting in lost
+chars.
+
+This patch sets the trigger level lower so that other chars arrive
+after CTS is raised, there is still room for 16 of them.
+
+Signed-off-by: Valentin Longchamp<valentin.longchamp@epfl.ch>
+Tested-by: Philippe Rétornaz<philippe.retornaz@epfl.ch>
+Acked-by: Wolfram Sang<w.sang@pengutronix.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
 ---
- kernel/power/opportunistic_suspend.c |   43 +++++++++++++++++++++++++++++++++-
- 1 files changed, 42 insertions(+), 1 deletions(-)
+ drivers/serial/imx.c |   10 +++++++++-
+ 1 file changed, 9 insertions(+), 1 deletion(-)
 
-diff --git a/kernel/power/opportunistic_suspend.c b/kernel/power/opportunistic_suspend.c
-index acc1651..c2dad76 100644
---- a/kernel/power/opportunistic_suspend.c
-+++ b/kernel/power/opportunistic_suspend.c
-@@ -17,6 +17,7 @@
- #include <linux/module.h>
- #include <linux/rtc.h>
- #include <linux/suspend.h>
-+#include <linux/debugfs.h>
- 
- #include "power.h"
- 
-@@ -138,7 +139,8 @@ EXPORT_SYMBOL(suspend_blocker_register);
- /**
-  * suspend_blocker_init - Initialize a suspend blocker's name and register it.
-  * @blocker: Suspend blocker to initialize.
-- * @name:    The name of the suspend blocker to show in debug messages.
-+ * @name:    The name of the suspend blocker to show in debug messages and
-+ *	     /sys/kernel/debug/suspend_blockers.
-  *
-  * The suspend blocker struct and name must not be freed before calling
-  * suspend_blocker_unregister().
-@@ -282,3 +284,42 @@ void __init opportunistic_suspend_init(void)
- 	suspend_blocker_register(&main_suspend_blocker);
- 	suspend_block(&main_suspend_blocker);
+--- a/drivers/serial/imx.c
++++ b/drivers/serial/imx.c
+@@ -119,7 +119,8 @@
+ #define  MX2_UCR3_RXDMUXSEL	 (1<<2)  /* RXD Muxed Input Select, on mx2/mx3 */
+ #define  UCR3_INVT  	 (1<<1)  /* Inverted Infrared transmission */
+ #define  UCR3_BPEN  	 (1<<0)  /* Preset registers enable */
+-#define  UCR4_CTSTL_32   (32<<10) /* CTS trigger level (32 chars) */
++#define  UCR4_CTSTL_SHF  10      /* CTS trigger level shift */
++#define  UCR4_CTSTL_MASK 0x3F    /* CTS trigger is 6 bits wide */
+ #define  UCR4_INVR  	 (1<<9)  /* Inverted infrared reception */
+ #define  UCR4_ENIRI 	 (1<<8)  /* Serial infrared interrupt enable */
+ #define  UCR4_WKEN  	 (1<<7)  /* Wake interrupt enable */
+@@ -590,6 +591,9 @@ static int imx_setup_ufcr(struct imx_por
+ 	return 0;
  }
+ 
++/* half the RX buffer size */
++#define CTSTL 16
 +
-+static struct dentry *suspend_blocker_stats_dentry;
+ static int imx_startup(struct uart_port *port)
+ {
+ 	struct imx_port *sport = (struct imx_port *)port;
+@@ -606,6 +610,10 @@ static int imx_startup(struct uart_port
+ 	if (USE_IRDA(sport))
+ 		temp |= UCR4_IRSC;
+ 
++	/* set the trigger level for CTS */
++	temp &= ~(UCR4_CTSTL_MASK<<  UCR4_CTSTL_SHF);
++	temp |= CTSTL<<  UCR4_CTSTL_SHF;
 +
-+static int suspend_blocker_stats_show(struct seq_file *m, void *unused)
-+{
-+	unsigned long irqflags;
-+	struct suspend_blocker *blocker;
-+
-+	seq_puts(m, "name\tactive\n");
-+	spin_lock_irqsave(&list_lock, irqflags);
-+	list_for_each_entry(blocker, &inactive_blockers, link)
-+		seq_printf(m, "\"%s\"\t0\n", blocker->name);
-+	list_for_each_entry(blocker, &active_blockers, link)
-+		seq_printf(m, "\"%s\"\t1\n", blocker->name);
-+	spin_unlock_irqrestore(&list_lock, irqflags);
-+	return 0;
-+}
-+
-+static int suspend_blocker_stats_open(struct inode *inode, struct file *file)
-+{
-+	return single_open(file, suspend_blocker_stats_show, NULL);
-+}
-+
-+static const struct file_operations suspend_blocker_stats_fops = {
-+	.owner = THIS_MODULE,
-+	.open = suspend_blocker_stats_open,
-+	.read = seq_read,
-+	.llseek = seq_lseek,
-+	.release = single_release,
-+};
-+
-+static int __init suspend_blocker_debugfs_init(void)
-+{
-+	suspend_blocker_stats_dentry = debugfs_create_file("suspend_blockers",
-+			S_IRUGO, NULL, NULL, &suspend_blocker_stats_fops);
-+	return 0;
-+}
-+
-+postcore_initcall(suspend_blocker_debugfs_init);
--- 
-1.6.5.1
+ 	writel(temp & ~UCR4_DREN, sport->port.membase + UCR4);
+ 
+ 	if (USE_IRDA(sport)) {
+
 
