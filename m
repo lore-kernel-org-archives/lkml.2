@@ -1,40 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758114Ab0EXWcp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:32:45 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:35531 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757226Ab0EXWco (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:32:44 -0400
-Date: Tue, 25 May 2010 00:32:21 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Greg KH <gregkh@suse.de>,
-       Kay Sievers <kay.sievers@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Regression] Commit "power_supply: Use attribute groups"
- breaks KDE battery monitor on openSUSE 11.3 M6
-Message-ID: <20100524223221.GQ30801@buzzloop.caiaq.de>
-References: <201005250028.24687.rjw@sisk.pl>
+	id S1756833Ab0EXWeg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:34:36 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:38961 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751593Ab0EXWef (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:34:35 -0400
+Message-ID: <4BFAFE17.8060105@zytor.com>
+Date: Mon, 24 May 2010 15:30:47 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005250028.24687.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+CC: john stultz <johnstul@us.ibm.com>, Brian Bloniarz <bmb@athenacr.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com> <ce764b91-11b0-44a5-9cf9-96977652bbd5@default> <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain> <3ec7f284-1507-47fb-b5a2-eea29f68c627@default>
+In-Reply-To: <3ec7f284-1507-47fb-b5a2-eea29f68c627@default>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 12:28:24AM +0200, Rafael J. Wysocki wrote:
-> Your commit 5f487cd34f4337f9bc27ca19da72a39d1b0a0ab4 (power_supply: Use
-> attribute groups) unfortunately breaks KDE 4.4's battery monitor from openSUSE
-> 11.3 Milestone 6 on my Acer Ferrari One.  Apparently, the battery monitor can't
-> access the sysfs battery attributes with this commit applied.
+On 05/24/2010 03:04 PM, Dan Magenheimer wrote:
+>>> Is that still the case?  I thought newer versions of NTP could deal
+>> with
+>>> large values.  Inaccuracies of way more than 500 ppm are everyday.
+>>
+>> That's scary.
+>>
+>> Yea, in the kernel the ntp freq correction tops out at 500ppm. Almost
+>> all the systems I see tend to fall in the +/- 200ppm range (if there's
+>> not something terribly wrong with the hardware).
+>>
+>> So maybe things aren't so bad out there? Or is that wishful thinking?
+> 
+> Since Brian's concern is at boot-time at which point there is no
+> network or ntp, and assuming that it would be unwise to vary tsc_khz
+> dynamically on a clocksource==tsc machine (is it?), would optionally
+> lengthening the TSC<->PIT calibration beyond 25ms result in a more
+> consistent tsc_khz between boots?  Or is the relative instability
+> an unavoidable result of skew between the PIT and the fixed constant
+> PIT_TICK_RATE combined with algorithmic/arithmetic error?  Or is
+> the jitter of the (spread-spectrum) TSC too extreme?  Or ???
+> 
+> If better more consistent calibration is possible, offering
+> that as an optional kernel parameter seems better than specifying
+> a fixed tsc_khz (stamped or user-specified) which may or may
+> not be ignored due to "too different from measured tsc_khz".
+> Even an (*optional*) extra second or two of boot time might
+> be perfectly OK if it resulted in an additional five or six
+> bits of tsc_khz precision.
+> 
+> Thoughts, Brian?
 
-Can you still see the attributes in sysfs? What are their properties?
+Making the calibration time longer should give a more precise result,
+but of course at the expense of longer boot time.
 
-Thanks,
-Daniel
+A longer sample would make sense if the goal is to freeze it into a
+kernel command line variable, but the real question is how many people
+would actually do that (and how many people would then suffer problems
+because they upgraded their CPU/mobo and got massive failures on post-boot.)
+
+	-hpa
