@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932139Ab0EXSZy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:25:54 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:45560 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758307Ab0EXSZv (ORCPT
+	id S1758269Ab0EXS0P (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:26:15 -0400
+Received: from smtp02.citrix.com ([66.165.176.63]:21720 "EHLO
+	SMTP02.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757905Ab0EXSYG (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:25:51 -0400
-Date: Mon, 24 May 2010 20:26:03 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Russ Anderson <rja@sgi.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       "Luck, Tony" <tony.luck@intel.com>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       "Young, Brent" <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100524182603.GA3429@gargoyle.fritz.box>
-References: <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <20100519090323.GA18073@basil.fritz.box> <20100524162124.GB7145@sgi.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100524162124.GB7145@sgi.com>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+	Mon, 24 May 2010 14:24:06 -0400
+X-IronPort-AV: E=Sophos;i="4.53,292,1272859200"; 
+   d="scan'208";a="98432021"
+From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+To: linux-kernel@vger.kernel.org
+Cc: xen-devel@lists.xensource.com, Don Dutile <ddutile@redhat.com>,
+       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
+       Jeremy Fitzhardinge <jeremy@goop.org>,
+       Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Subject: [PATCH 04/11] Fix find_unbound_irq in presence of ioapic irqs.
+Date: Mon, 24 May 2010 19:27:30 +0100
+Message-Id: <1274725657-1149-4-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Mailer: git-send-email 1.5.4.3
+In-Reply-To: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
+X-OriginalArrivalTime: 24 May 2010 18:24:06.0175 (UTC) FILETIME=[4B4C5AF0:01CAFB6E]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Having the infrastructure to automatically off-line pages
-> is a good thing.  The details of where to set the predictive
+Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+---
+ drivers/xen/events.c |   11 ++++++++++-
+ 1 files changed, 10 insertions(+), 1 deletions(-)
 
-It's already there with a modern mcelog in daemon mode 
-and a recent kernel that supports soft offlining.
+diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+index 8b68fc4..1356fa2 100644
+--- a/drivers/xen/events.c
++++ b/drivers/xen/events.c
+@@ -339,9 +339,18 @@ static int find_unbound_irq(void)
+ 	int irq;
+ 	struct irq_desc *desc;
+ 
+-	for (irq = 0; irq < nr_irqs; irq++)
++	for (irq = 0; irq < nr_irqs; irq++) {
++		desc = irq_to_desc(irq);
++		/* only 0->15 have init'd desc; handle irq > 16 */
++		if (desc == NULL)
++			break;
++		if (desc->chip == &no_irq_chip)
++			break;
++		if (desc->chip != &xen_dynamic_chip)
++			continue;
+ 		if (irq_info[irq].type == IRQT_UNBOUND)
+ 			break;
++	}
+ 
+ 	if (irq == nr_irqs)
+ 		panic("No available IRQ to bind to: increase nr_irqs!\n");
+-- 
+1.5.4.3
 
-> threshold likely will be hardware specific (different DIMM
-> types failing at different rates).  It needs to be adjustable.
-
-The current default in mcelog is 10 corrected errors per 24h
-per 4k page or 1 uncorrected error on the page (if your CPU
-supports recovering from that).  It is on by default. 
-
-You can configure it to be different if you want.
-
--Andi
