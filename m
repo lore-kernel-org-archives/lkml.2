@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759186Ab0EXXLF (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:11:05 -0400
-Received: from kroah.org ([198.145.64.141]:36534 "EHLO coco.kroah.org"
+	id S1759227Ab0EXXNi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:13:38 -0400
+Received: from kroah.org ([198.145.64.141]:36438 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759059Ab0EXXJj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:39 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:52 2010
-Message-Id: <20100524230352.012983722@clark.site>
+	id S1758990Ab0EXXJ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:26 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
+Message-Id: <20100524230350.686078117@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:00:02 -0700
+Date: Mon, 24 May 2010 15:59:47 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Kees Cook <kees.cook@canonical.com>, Serge Hallyn <serue@us.ibm.com>,
-       James Morris <jmorris@namei.org>
-Subject: [30/34] mmap_min_addr check CAP_SYS_RAWIO only for write
+       Daniel T Chen <crimsun@ubuntu.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [15/34] ALSA: hda: Fix 0 dB for Lenovo models using Conexant CX20549 (Venice)
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +25,39 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Kees Cook <kees.cook@canonical.com>
+From: Daniel T Chen <crimsun@ubuntu.com>
 
-commit 4ae69e6b718589abe97c9625ccbb1e0bc95a8c0e upstream.
+commit 0ebf9e3692d640917fb792a7494d05e1f5b1058f upstream.
 
-Redirecting directly to lsm, here's the patch discussed on lkml:
-http://lkml.org/lkml/2010/4/22/219
+Reference: http://mailman.alsa-project.org/pipermail/alsa-devel/2010-May/027525.html
 
-The mmap_min_addr value is useful information for an admin to see without
-being root ("is my system vulnerable to kernel NULL pointer attacks?") and
-its setting is trivially easy for an attacker to determine by calling
-mmap() in PAGE_SIZE increments starting at 0, so trying to keep it private
-has no value.
+As reported on the mailing list, we also need to cap to the 0 dB offset
+for Lenovo models, else the sound will be distorted.
 
-Only require CAP_SYS_RAWIO if changing the value, not reading it.
-
-Comment from Serge :
-
-  Me, I like to write my passwords with light blue pen on dark blue
-  paper, pasted on my window - if you're going to get my password, you're
-  gonna get a headache.
-
-Signed-off-by: Kees Cook <kees.cook@canonical.com>
-Acked-by: Serge Hallyn <serue@us.ibm.com>
-Signed-off-by: James Morris <jmorris@namei.org>
-(cherry picked from commit 822cceec7248013821d655545ea45d1c6a9d15b3)
+Reported-and-Tested-by: Tim Starling <tstarling@wikimedia.org>
+Signed-off-by: Daniel T Chen <crimsun@ubuntu.com>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
---- a/security/min_addr.c
-+++ b/security/min_addr.c
-@@ -33,7 +33,7 @@ int mmap_min_addr_handler(struct ctl_table *table, int write,
- {
- 	int ret;
- 
--	if (!capable(CAP_SYS_RAWIO))
-+	if (write && !capable(CAP_SYS_RAWIO))
- 		return -EPERM;
- 
- 	ret = proc_doulongvec_minmax(table, write, buffer, lenp, ppos);
+---
+ sound/pci/hda/patch_conexant.c |    7 ++++---
+ 1 file changed, 4 insertions(+), 3 deletions(-)
+
+--- a/sound/pci/hda/patch_conexant.c
++++ b/sound/pci/hda/patch_conexant.c
+@@ -1177,9 +1177,10 @@ static int patch_cxt5045(struct hda_code
+ 	case 0x103c:
+ 	case 0x1631:
+ 	case 0x1734:
+-		/* HP, Packard Bell, & Fujitsu-Siemens laptops have really bad
+-		 * sound over 0dB on NID 0x17. Fix max PCM level to 0 dB
+-		 * (originally it has 0x2b steps with 0dB offset 0x14)
++	case 0x17aa:
++		/* HP, Packard Bell, Fujitsu-Siemens & Lenovo laptops have
++		 * really bad sound over 0dB on NID 0x17. Fix max PCM level to
++		 * 0 dB (originally it has 0x2b steps with 0dB offset 0x14)
+ 		 */
+ 		snd_hda_override_amp_caps(codec, 0x17, HDA_INPUT,
+ 					  (0x14 << AC_AMPCAP_OFFSET_SHIFT) |
 
 
