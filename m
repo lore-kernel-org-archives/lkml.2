@@ -1,46 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756856Ab0EXLKe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 07:10:34 -0400
-Received: from pindarots.xs4all.nl ([80.101.128.228]:33872 "EHLO
-	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755390Ab0EXLKd (ORCPT
+	id S1756845Ab0EXLMw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 07:12:52 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:37042 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755456Ab0EXLMu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 07:10:33 -0400
-X-Greylist: delayed 3042 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 May 2010 07:10:32 EDT
-Message-ID: <4BFA52C3.4080006@xs4all.nl>
-Date: Mon, 24 May 2010 12:19:47 +0200
-From: Udo van den Heuvel <udovdh@xs4all.nl>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	Mon, 24 May 2010 07:12:50 -0400
+Date: Mon, 24 May 2010 13:12:45 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Daniel Mack <daniel@caiaq.de>
+Cc: linux-kernel@vger.kernel.org,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
+       Devin Heitmueller <dheitmueller@kernellabs.com>,
+       linux-media@vger.kernel.org
+Subject: Re: [PATCH 2/2] drivers/media/dvb/dvb-usb/dib0700: CodingStyle
+	fixes
+Message-ID: <20100524111245.GA16756@pengutronix.de>
+References: <AANLkTikffmoWofbIo2h6zw-VW5aKEH8T_b0vMfKdo3KJ@mail.gmail.com> <1274698635-19512-2-git-send-email-daniel@caiaq.de>
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: hpet timers gone?
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="d6Gm4EdcadzBjdND"
+Content-Disposition: inline
+In-Reply-To: <1274698635-19512-2-git-send-email-daniel@caiaq.de>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
 
-What has happened between 2.6.30.9 and 2.6.32.8 with regard to hpet timers?
+--d6Gm4EdcadzBjdND
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-dmesg output from 2.6.30.9 does show activity but 2.6.32.8 and beyond don't.
-Also /proc/timer_list doesn't show hpet anymore. Also on 2.6.34 no hpet
-in timer_list.
+On Mon, May 24, 2010 at 12:57:15PM +0200, Daniel Mack wrote:
+> Signed-off-by: Daniel Mack <daniel@caiaq.de>
+> Cc: Wolfram Sang <w.sang@pengutronix.de>
+> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
+> Cc: Jiri Slaby <jslaby@suse.cz>
+> Cc: Dmitry Torokhov <dtor@mail.ru>
+> Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
+> Cc: linux-media@vger.kernel.org
 
-relevant .config:
-CONFIG_HPET_TIMER=y
-CONFIG_HPET_EMULATE_RTC=y
-CONFIG_HPET=y
-CONFIG_HPET_MMAP=y
+Looks correct to me and definately more readable:
 
-And I have hpet=force on the kernel commandline for this VIA Epia
-LT10000 board.
+Acked-by: Wolfram Sang <w.sang@pengutronix.de>
 
-Any ideas?
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-Kind regards,
-Udo
+--d6Gm4EdcadzBjdND
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
+
+iEYEARECAAYFAkv6Xy0ACgkQD27XaX1/VRtHSACgmh6hyJp5JEIbxoulnxnRsB8u
+D0EAn2T8qEk/ZT26JaGZE4R7+NtksaWp
+=kYUk
+-----END PGP SIGNATURE-----
+
+--d6Gm4EdcadzBjdND--
