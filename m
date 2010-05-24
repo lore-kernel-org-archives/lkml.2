@@ -1,47 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756293Ab0EXJy3 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 05:54:29 -0400
-Received: from ix.technologeek.org ([213.41.157.215]:35104 "EHLO
-	sonic.technologeek.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752364Ab0EXJy1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 05:54:27 -0400
-From: Julien BLACHE <jb@jblache.org>
-To: Shan Wei <shanwei@cn.fujitsu.com>
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [regression] fib6_del() bug from 2.6.34-rc1 still present in 2.6.34
-References: <87632g53tx.fsf@sonic.technologeek.org>
-	<4BF9DCB7.8040308@cn.fujitsu.com>
-Date: Mon, 24 May 2010 11:54:20 +0200
-In-Reply-To: <4BF9DCB7.8040308@cn.fujitsu.com> (Shan Wei's message of "Mon, 24
-	May 2010 09:56:07 +0800")
-Message-ID: <878w7962wj.fsf@sonic.technologeek.org>
-User-Agent: Gnus/5.110009 (No Gnus v0.9) XEmacs/21.4.22 (linux)
+	id S1756811Ab0EXJyp (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 05:54:45 -0400
+Received: from www.tglx.de ([62.245.132.106]:50432 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756617Ab0EXJyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 05:54:43 -0400
+Date: Mon, 24 May 2010 11:54:23 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
+Subject: [GIT Pull] timer fixes for 2.6.35-rc1
+Message-ID: <alpine.LFD.2.00.1005241153240.3506@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Shan Wei <shanwei@cn.fujitsu.com> wrote:
+Linus,
 
-Hi,
+Please pull the latest timers-for-linus-urgent git tree from:
 
-> I saw the warning on 2.6.34-rc3. But on net-next tree the warning disappeared.
-> So I think the bug is fixed in net-next tree. My NIC driver is r8169.
->
-> The net-next tree is newer than 2.6.34, maybe the fix is not queued to 2.6.34.
-> So the warning also be present in 2.6.34.
-> Can you try net-next tree firstly?
+   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-for-linus-urgent
 
-Unfortunately, this tree has a number of issues that prevent a
-successful boot into userland on my machine :/
+Thanks,
 
-Any idea what the fix(es) is so I can test it out?
+	tglx
 
-JB.
+------------------>
+Thomas Gleixner (1):
+      timekeeping: Fix timezone update
 
--- 
-Julien BLACHE                                   <http://www.jblache.org> 
-<jb@jblache.org>                                  GPG KeyID 0xF5D65169
+
+ kernel/time.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
+
+diff --git a/kernel/time.c b/kernel/time.c
+index 50612fa..848b1c2 100644
+--- a/kernel/time.c
++++ b/kernel/time.c
+@@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct timeval __user *, tv,
+  */
+ static inline void warp_clock(void)
+ {
+-	struct timespec delta, adjust;
+-	delta.tv_sec = sys_tz.tz_minuteswest * 60;
+-	delta.tv_nsec = 0;
+-	adjust = timespec_add_safe(current_kernel_time(), delta);
++	struct timespec adjust;
++
++	adjust = current_kernel_time();
++	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
+ 	do_settimeofday(&adjust);
+ }
+ 
