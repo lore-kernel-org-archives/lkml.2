@@ -1,47 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757144Ab0EXNyr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 09:54:47 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:51448 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757121Ab0EXNyq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 09:54:46 -0400
-Date: Mon, 24 May 2010 09:54:44 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, d.hatayama@jp.fujitsu.com
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20100524134942.5765.4089.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: Fix userspace warnings in elfcore.h
+	id S1757164Ab0EXN7x (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 09:59:53 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:52378 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757137Ab0EXN7w (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 09:59:52 -0400
+Date: Mon, 24 May 2010 14:59:40 +0100
+From: Matthew Garrett <mjg@redhat.com>
+To: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: Stephen Rothwell <sfr@canb.auug.org.au>, Ben Skeggs <bskeggs@redhat.com>,
+       dri-devel@lists.freedesktop.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>, David Airlie <airlied@linux.ie>
+Subject: Re: [PATCH -next] nouveau: fix acpi_lid_open undefined
+Message-ID: <20100524135940.GA15892@srcf.ucam.org>
+References: <20100522170459.4c89723d.sfr@canb.auug.org.au> <20100523170040.3c4aa87c.randy.dunlap@oracle.com> <20100524125628.GA14278@srcf.ucam.org> <4BFA84EF.7070609@oracle.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFA84EF.7070609@oracle.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fixes compile warning:
+On Mon, May 24, 2010 at 06:53:51AM -0700, Randy Dunlap wrote:
+> On 05/24/10 05:56, Matthew Garrett wrote:
+> > Won't this result in a behavioural difference? The desirable outcome is 
+> 
+> It could, yes.
+> 
+> > that that configuration be impossible, not for that configuration to 
+> > build but be buggy.
+> 
+> so nouveau should depend on (or select, if ACPI is enabled) ACPI_BUTTON?
 
-/home/rhel6/usr/include/linux/elfcore.h:104: userspace cannot call function or variable defined in the kernel
-/home/rhel6/usr/include/linux/elfcore.h:105: userspace cannot call function or variable defined in the kernel
-/home/rhel6/usr/include/linux/elfcore.h:108: userspace cannot call function or variable defined in the kernel
-/home/rhel6/usr/include/linux/elfcore.h:110: userspace cannot call function or variable defined in the kernel
+There's an argument that it doesn't need to depend on it, but if button 
+is a module then nouveau has to be. Except the inverse isn't true. 
+Kconfig is hard, let's weep gently.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
-
-diff --git a/include/linux/elfcore.h b/include/linux/elfcore.h
-index e687bc3..26f7486 100644
---- a/include/linux/elfcore.h
-+++ b/include/linux/elfcore.h
-@@ -150,8 +150,6 @@ static inline int elf_core_copy_task_xfpregs(struct task_struct *t, elf_fpxregse
- }
- #endif
- 
--#endif /* __KERNEL__ */
--
- /*
-  * These functions parameterize elf_core_dump in fs/binfmt_elf.c to write out
-  * extra segments containing the gate DSO contents.  Dumping its
-@@ -167,5 +165,6 @@ elf_core_write_extra_phdrs(struct file *file, loff_t offset, size_t *size,
- extern int
- elf_core_write_extra_data(struct file *file, size_t *size, unsigned long limit);
- extern size_t elf_core_extra_data_size(void);
-+#endif /* __KERNEL__ */
- 
- #endif /* _LINUX_ELFCORE_H */
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
