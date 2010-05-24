@@ -1,107 +1,171 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752372Ab0EXFsi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 01:48:38 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:58391 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750871Ab0EXFsh convert rfc822-to-8bit (ORCPT
+	id S1752709Ab0EXFxg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 01:53:36 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:42974 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1750871Ab0EXFxe (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 01:48:37 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=v6Ys83W5WfTDwzAU1cGO3T5A6lUBqkkBrHTzNUW/cRZ6oAT23FX64F0yxBYcT96rUV
-         KxAlbKsMum3mhzCG4lvcnPNEFbdZULVpa1YqWvqO26h7frCvU1QNJr2mTA2G0e5o0Vd2
-         UKsjExV20UTliFW/Wzaf7BvXpckQaoBtzw+Mw=
+	Mon, 24 May 2010 01:53:34 -0400
+Date: Mon, 24 May 2010 15:53:29 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
+       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
+       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
+Subject: Re: [RFC] new ->perform_write fop
+Message-ID: <20100524055329.GD12087@dastard>
+References: <20100512212403.GE3597@localhost.localdomain>
+ <20100513013926.GD27011@dhcp231-156.rdu.redhat.com>
+ <20100514010042.GI13617@dastard>
+ <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
+ <20100514064145.GJ13617@dastard>
+ <20100514072219.GC4706@laptop>
+ <20100521151518.GA12752@infradead.org>
+ <20100522023102.GP2516@laptop>
+ <20100522083703.GA12087@dastard>
+ <20100524030943.GQ2516@laptop>
 MIME-Version: 1.0
-In-Reply-To: <20100524052530.GD16369@barra>
-References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
-	 <1274213429-22667-2-git-send-email-rydberg@euromail.se>
-	 <AANLkTikpmYwEYh5Dh-p3478cDMVo9hXOsDkt54ltHW6J@mail.gmail.com>
-	 <4BF4E00A.30206@euromail.se>
-	 <AANLkTinYX96zokFF6Rc-3_gxIrMZmvMS_pw3YdQD6CG4@mail.gmail.com>
-	 <1274455140.1871.8.camel@tron>
-	 <AANLkTimemw0iAslk6jeuwf0LGRgCo0-2Mvpgso42CP5Z@mail.gmail.com>
-	 <4BF6FA55.6040900@euromail.se> <20100524052530.GD16369@barra>
-Date: Sun, 23 May 2010 22:48:35 -0700
-Message-ID: <AANLkTimoAPwV8IUox5MpOrFsefdte15dSCmNnuZ7bCOn@mail.gmail.com>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
-From: Ping Cheng <pinglinux@gmail.com>
-To: Peter Hutterer <peter.hutterer@who-t.net>
-Cc: Henrik Rydberg <rydberg@euromail.se>, Rafi Rubin <rafi@seas.upenn.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Michael Poole <mdpoole@troilus.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100524030943.GQ2516@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sun, May 23, 2010 at 10:25 PM, Peter Hutterer
-<peter.hutterer@who-t.net> wrote:
-> On Fri, May 21, 2010 at 11:25:41PM +0200, Henrik Rydberg wrote:
->> Ping Cheng wrote:
->> > On Fri, May 21, 2010 at 8:19 AM, Rafi Rubin <rafi@seas.upenn.edu> wrote:
->> [...]
->> >> Ping: please confirm, are you actually talking about each finger simultaneously sending multiple positions?
->> >
->> > You are definitely on the right track.  The fingers/touch objects can
->> > be represented two-dimensionally (x,y) instead of one-dimensionally
->> > (ABS_MT_TRACKING_ID).  I think we can survive with the current MT_BLOB
->> > definition although some optimization would be helpful, especially for
->> > filtering. For the sake of Henrik great effort, I'd like to see his
->> > current patchset gets in the tree before we start another round of
->> > "suggestions".
->> >
->> > Thank you for asking.
->>
->> Regarding blobs, I confused myself yesterday. The original intention of the blob
->>  id was in fact to be able to "paint" more generic contact forms. However, no
->> driver has come close to doing this yet, so it has gotten close to no attention.
->> Now, to address the question of how to communicate more elaborate contact forms,
->> it seems one can combine the two goals "one position per slot" and "multiple
->> positions per contact" by simply repeating the same tracking id for a set of
->> slots, like this:
->>
->> ABS_SLOT 0
->> ABS_MT_TRACKING_ID 14
->> ABS_MT_POSITION_X x[0]
->> ABS_MT_POSITION_Y y[0]
->> ABS_SLOT 1
->> ABS_MT_TRACKING_ID 14
->> ABS_MT_POSITION_X x[1]
->> ABS_MT_POSITION_Y y[1]
->> ABS_SLOT 2
->> ABS_MT_TRACKING_ID 14
->> ABS_MT_POSITION_X x[2]
->> ABS_MT_POSITION_Y y[2]
->>
->> Not all too different from what you suggested, and there is no blob id involved
->> at all. And yes, it would require additional parsing power at the user end.
->> Something for later.
->
-> This is confusing me now :)
->
-> How would a device get multiple x/y coordinates for a single contact? I
-> could understand a range of coordinates but that's what we have the
-> ABS_MT_WIDTH_MAJOR/MINOR for. If a touchpoint sends two different x/y
-> coordinates, wouldn't that be two touchpoints, tracked individually and thus
-> with a different tracking ID?
->
-> I read the example above as _the_ example for using blob IDs to combine
-> multiple contacts into one semantic contact.
+On Mon, May 24, 2010 at 01:09:43PM +1000, Nick Piggin wrote:
+> On Sat, May 22, 2010 at 06:37:03PM +1000, Dave Chinner wrote:
+> > On Sat, May 22, 2010 at 12:31:02PM +1000, Nick Piggin wrote:
+> > > On Fri, May 21, 2010 at 11:15:18AM -0400, Christoph Hellwig wrote:
+> > > > Nick, what exactly is the problem with the reserve + allocate design?
+> > > > 
+> > > > In a delalloc filesystem (which is all those that will care about high
+> > > > performance large writes) the write path fundamentally consists of those
+> > > > two operations.  Getting rid of the get_blocks mess and replacing it
+> > > > with a dedicated operations vector will simplify things a lot.
+> > > 
+> > > Nothing wrong with it, I think it's a fine idea (although you may still
+> > > need a per-bh call to connect the fs metadata to each page).
+> > > 
+> > > I just much prefer to have operations after the copy not able to fail,
+> > > otherwise you get into all those pagecache corner cases.
+> > > 
+> > > BTW. when you say reserve + allocate, this is in the page-dirty path,
+> > > right? I thought delalloc filesystems tend to do the actual allocation
+> > > in the page-cleaning path? Or am I confused?
+> > 
+> > See my reply to Jan - delayed allocate has two parts to it - space
+> > reservation (accounting for ENOSPC) and recording of the delalloc extents
+> > (allocate). This is separate to the writeback path where we convert
+> > delalloc extents to real extents....
+> 
+> Yes I saw that. I'm sure we'll want clearer terminology in the core
+> code. But I don't quite know why you need to do it in 2 parts
+> (reserve, then "allocate").
 
-As Henrik pointed out, the current BLOB format is for "more generic
-contact forms", such as rectangles or ellipses.  They are special
-blobs. A generic (true) blob doesn't have to have a regular shape.  It
-is most likely in an irregular shape. They would be represented in an
-array of points/contacts/(x,y)s,  whichever term works for you :).
+Because reserve/allocate are the two steps that allocation is
+generally broken down into, even in filesystems that don't do
+delayed allocation. That's because....
 
-tbh, I don't know what exact format we are going to use.  But, I feel
-we can live with Henrik's current format, at least for a while.
+> Surely even reservation failures are
+> very rare
 
-Ping
+... ENOSPC and EDQUOT are not at all rare, and they are generated
+during the reservation stage. i.e. before any real allocation or
+state changes are made. Just about every filesystem does this
+because failing half way through an allocation not being able to
+allocate a block due to ENOSPC or EDQUOT is pretty much impossible
+to undo reliably in most filesystems.
+
+> , and obviously the error handling is required, so why not
+> just do a single call?
+
+Because if we fail after the allocation then ensuring we handle the
+error *correctly* and *without further failures* is *fucking hard*.
+
+IMO, the fundamental issue with using hole punching or direct IO
+from the zero page to handle errors is that they are complex enough
+that there is *no guarantee that they will succeed*. e.g. Both can
+get ENOSPC/EDQUOT because they may end up with metadata allocation
+requirements above and beyond what was originally reserved. If the
+error handling fails to handle the error, then where do we go from
+there?
+
+In comparison, undoing a reservation is simple - maybe incrementing
+a couple of counters - and is effectively guaranteed never to fail.
+This is a good characteristic to have in an error handling
+function...
+
+> > > > Punching holes is a rather problematic operation, and as mentioned not
+> > > > actually implemented for most filesystems - just decrementing counters
+> > > > on errors increases the chances that our error handling will actually
+> > > > work massively.
+> > > 
+> > > It's just harder for the pagecache. Invalidating and throwing out old
+> > > pagecache and splicing in new pages seems a bit of a hack.
+> > 
+> > Hardly a hack - it turns a buffered write into an operation that
+> > does not expose transient page state and hence prevents torn writes.
+> > That will allow us to use DIF enabled storage paths for buffered
+> > filesystem IO(*), perhaps even allow us to generate checksums during
+> > copy-in to do end-to-end checksum protection of data....
+> 
+> It is a hack. Invalidating is inherently racy and isn't guaranteed
+> to succeed.
+> 
+> You do not need to invalidate the pagecache to do this (which as I said
+> is racy). You need to lock the page to prevent writes, and then unmap
+> user mappings.
+
+Which is the major part of invalidating a page. The other part of
+invalidation is removing the page from the page cache, so if
+invalidation is inherently too racy to use safely here, then I fail
+to see why the above isn't also too racy to use safely....
+
+> You'd also need to have done some magic so writable mmaps
+> don't leak into get_user_pages.
+
+Which means what, and why don't we have to do any special magic now
+to prevent it?
+
+> But this should be a different discussion anyway. Don't forget, your
+> approach is forced into the invalidation requirement because of
+> downsides in its error handling sequence.
+
+I wouldn't say forced into it, Nick - it's a deliberate design
+choice to make the overall stack simpler and more likely to function
+correctly.
+
+Besides, all it takes to avoid the requirement of invalidation is to
+provide the guarantee that the allocation after reservation will
+either succeed or the filesystem shuts down in a corrupted state.
+If we provide that guarantee then the fact that transient page cache
+data might appear on allocation error is irrelevant, because it
+will never get written to disk and applications will error out
+pretty quickly.
+
+I'm quite happy with that requirement, because of two things.
+Firstly, after the reservation nothing but a corruption or IO error
+should prevent the allocation from succeeding. In that case, the
+filesystem should already be in a shutdown state by the time the
+failed allocation returns.  Secondly, filesystems using delayed
+allocation are already making this promise successfully from
+get_blocks to ->writepage, hence I don't see any issues with
+encoding it into an allocation interface....
+
+> That cannot be construed as
+> positive, because you are forced into it, wheras other approaches
+> *could* use it, but do not have to.
+
+Except for the fact the other alternatives have much, much worse
+downsides. Yes, they could also use such a write path, but that
+doesn't reduce the complexity of those solutions or prevent any of
+the problems they have.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
