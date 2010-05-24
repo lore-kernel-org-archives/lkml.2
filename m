@@ -1,74 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932667Ab0EXXXy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:23:54 -0400
-Received: from kroah.org ([198.145.64.141]:59384 "EHLO coco.kroah.org"
+	id S932635Ab0EXX0Q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:26:16 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35561 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932406Ab0EXXXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:37 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:14 2010
-Message-Id: <20100524231814.547878097@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:27 -0700
+	id S932826Ab0EXX0K (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:26:10 -0400
+Date: Mon, 24 May 2010 16:25:24 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [15/39] [S390] ptrace: fix return value of do_syscall_trace_enter()
-In-Reply-To: <20100524231840.GA17857@kroah.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, Frank Arnold <frank.arnold@amd.com>,
+       Borislav Petkov <borislav.petkov@amd.com>
+Subject: Re: [20/34] x86, cacheinfo: Turn off L3 cache index disable
+ feature in virtualized environments
+Message-ID: <20100524232524.GA18124@suse.de>
+References: <20100524230351.136502585@clark.site>
+ <4BFB080F.3080508@zytor.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFB080F.3080508@zytor.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Mon, May 24, 2010 at 04:13:19PM -0700, H. Peter Anvin wrote:
+> On 05/24/2010 03:59 PM, Greg KH wrote:
+> > 2.6.34-stable review patch.  If anyone has any objections, please let us know.
+> > 
+> > ------------------
+> > 
+> > From: Frank Arnold <frank.arnold@amd.com>
+> > 
+> > commit 7f284d3cc96e02468a42e045f77af11e5ff8b095 upstream.
+> > 
+> 
+> Objection only that this already in 2.6.34.
 
-2.6.33-stable review patch.  If anyone has any objections, please let us know.
+Of course it is, I stupidly said ".34" when this is a ".32" review
+cycle.
 
-------------------
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+Same thing for all of the patches in this series, sorry, my bad.
 
-commit 545c174d1f093a462b4bb9131b23d5ea72a600e1 upstream.
+/me goes off to kick his scripts into submission...
 
-strace may change the system call number, so regs->gprs[2] must not
-be read before tracehook_report_syscall_entry(). This fixes a bug
-where "strace -f" will hang after a vfork().
-
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- arch/s390/kernel/ptrace.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
-
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -640,7 +640,7 @@ long compat_arch_ptrace(struct task_stru
- 
- asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- {
--	long ret;
-+	long ret = 0;
- 
- 	/* Do the secure computing check first. */
- 	secure_computing(regs->gprs[2]);
-@@ -649,7 +649,6 @@ asmlinkage long do_syscall_trace_enter(s
- 	 * The sysc_tracesys code in entry.S stored the system
- 	 * call number to gprs[2].
- 	 */
--	ret = regs->gprs[2];
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    (tracehook_report_syscall_entry(regs) ||
- 	     regs->gprs[2] >= NR_syscalls)) {
-@@ -671,7 +670,7 @@ asmlinkage long do_syscall_trace_enter(s
- 				    regs->gprs[2], regs->orig_gpr2,
- 				    regs->gprs[3], regs->gprs[4],
- 				    regs->gprs[5]);
--	return ret;
-+	return ret ?: regs->gprs[2];
- }
- 
- asmlinkage void do_syscall_trace_exit(struct pt_regs *regs)
-
-
+greg k-h
