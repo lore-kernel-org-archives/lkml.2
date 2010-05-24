@@ -1,91 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758256Ab0EXXBP (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:01:15 -0400
-Received: from zeniv.linux.org.uk ([195.92.253.2]:34231 "EHLO
-	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754449Ab0EXXBN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:01:13 -0400
-Date: Tue, 25 May 2010 00:01:09 +0100
-From: Al Viro <viro@ZenIV.linux.org.uk>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100524230109.GT31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
- <20100524115903.GP31073@ZenIV.linux.org.uk>
- <20100524155031.GQ31073@ZenIV.linux.org.uk>
- <1274718082.10795.31.camel@heimdal.trondhjem.org>
- <20100524164736.GR31073@ZenIV.linux.org.uk>
- <1274720791.10795.50.camel@heimdal.trondhjem.org>
- <20100524190828.GS31073@ZenIV.linux.org.uk>
- <1274735612.4030.16.camel@heimdal.trondhjem.org>
+	id S1758517Ab0EXXCP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:02:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:35610 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755806Ab0EXXCO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:02:14 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Daniel Mack <daniel@caiaq.de>
+Subject: Re: [Regression] Commit "power_supply: Use attribute groups" breaks KDE battery monitor on openSUSE 11.3 M6
+Date: Tue, 25 May 2010 01:03:08 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
+Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Greg KH <gregkh@suse.de>,
+       Kay Sievers <kay.sievers@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>
+References: <201005250028.24687.rjw@sisk.pl> <20100524223221.GQ30801@buzzloop.caiaq.de>
+In-Reply-To: <20100524223221.GQ30801@buzzloop.caiaq.de>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274735612.4030.16.camel@heimdal.trondhjem.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005250103.09009.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 05:13:32PM -0400, Trond Myklebust wrote:
-
-> Sorry... I misunderstood you.
+On Tuesday 25 May 2010, Daniel Mack wrote:
+> On Tue, May 25, 2010 at 12:28:24AM +0200, Rafael J. Wysocki wrote:
+> > Your commit 5f487cd34f4337f9bc27ca19da72a39d1b0a0ab4 (power_supply: Use
+> > attribute groups) unfortunately breaks KDE 4.4's battery monitor from openSUSE
+> > 11.3 Milestone 6 on my Acer Ferrari One.  Apparently, the battery monitor can't
+> > access the sysfs battery attributes with this commit applied.
 > 
-> In cases like the above, then the default behaviour of the server would
-> be to assign the same filehandles to those mount points. The
-> administrator can, however, make them different by choosing to use the
-> 'fsid' mount option to manually assign different fsids to the different
-> export points.
-> 
-> If not, then the client will automatically group these things in the
-> same superblock, so like the server, it too is supposed to share the
-> same inode for these different objects. It will then use
-> d_obtain_alias() to get a root dentry for that inode (see
-> nfs4_get_root()).
+> Can you still see the attributes in sysfs?
 
-Yes, it will.  So what will happen in nfs_follow_referral()?  Note that
-we check the rootpath returned by the server (whatever it will end up
-being) against the mnt_devname + relative path from mnt_root to referral
-point.  In this case it'll be /a/z or /b/z (depending on which export
-will server select when it sees the fsid) vs /a/z/x or /b/z/x (depending
-on which one does client walk into).  And the calls of nfs4_proc_fs_locations()
-will get identical arguments whether client walks into a/z/x or b/z/x.
-So will the actual RPC requests seen by the server, so it looks like in
-at least one of those cases we will get the rootpath that is _not_ a prefix
-we are expecting, stepping into
-        if (strncmp(path, fs_path, strlen(fs_path)) != 0) {
-                dprintk("%s: path %s does not begin with fsroot %s\n",
-                        __func__, path, fs_path);
-                return -ENOENT;
-        }
-in nfs4_validate_fspath().
+Yes, I can.
 
-Question regarding RFC3530: is it actually allowed to have the same fhandle
-show up in two different locations in server's namespace?  If so, what
-should GETATTR with FS_LOCATIONS return for it?
+> What are their properties?
 
-Client question: what stops you from stack overflows in that area?  Call
-chains you've got are *deep*, and I really wonder what happens if you
-hit a referral point while traversing nested symlink, get pathname
-resolution (already several levels into recursion) call ->follow_link(),
-bounce down through nfs_do_refmount/nfs_follow_referral/try_location/
-vfs_kern_mount/nfs4_referral_get_sb/nfs_follow_remote_path into
-vfs_path_lookup, which will cheerfully add a few more loops like that.
+They don't seem to be different from the properties without the commit.
 
-Sure, the *total* nesting depth through symlinks is still limited by 8, but
-that pile of stack frames is _MUCH_ fatter than what we normally have in
-pathname resolution.  You've suddenly added ~60 extra stack frames to the
-worst-case stack footprint of the pathname resolution.  Don't try that
-on sparc64, boys and girls, it won't be happy with attempt to carve ~12Kb
-extra out of its kernel stack...  In fact, it's worse than just ~60 stack
-frames - several will contain (on-stack) struct nameidata in them, which
-very definitely will _not_ fit into the minimal stack frame.  It's about
-160 bytes extra, for each of those (up to 7).
+Yet, the battery monitor evidently thinks the battery is not present (it also
+doesn't seem to see the AC adapter).
 
-Come to think of that, x86 variants might get rather upset about that kind
-of treatment as well.  Minimal stack frames are smaller, but so's the stack...
+Thanks,
+Rafael
