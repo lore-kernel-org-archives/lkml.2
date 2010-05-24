@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab0EXX3e (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:29:34 -0400
-Received: from kroah.org ([198.145.64.141]:59397 "EHLO coco.kroah.org"
+	id S932944Ab0EXXZG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:25:06 -0400
+Received: from kroah.org ([198.145.64.141]:59529 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932478Ab0EXXXk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:40 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:14 2010
-Message-Id: <20100524231814.813743264@clark.site>
+	id S932685Ab0EXXX5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:57 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:16 2010
+Message-Id: <20100524231816.605221556@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:30 -0700
+Date: Mon, 24 May 2010 16:15:50 -0700
 From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
+To: linux-kernel@vger.kernel.org, stable@kernel.org, greg@kroah.com
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jeff Layton <jlayton@redhat.com>, Steve French <sfrench@us.ibm.com>
-Subject: [18/39] cifs: guard against hardlinking directories
+       "Luis R. Rodriguez" <lrodriguez@atheros.com>,
+       Ming Lei <tom.leiming@gmail.com>, linux-wireless@vger.kernel.org,
+       "John W. Linville" <linville@tuxdriver.com>,
+       Johannes Berg <johannes@sipsolutions.net>
+Subject: [38/39] Revert "ath9k: fix lockdep warning when unloading module" on stable kernels
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,90 +28,143 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Jeff Layton <jlayton@redhat.com>
 
-commit 3d69438031b00c601c991ab447cafb7d5c3c59a6 upstream.
+Johannes' patch 34e8950 titled:
 
-When we made serverino the default, we trusted that the field sent by the
-server in the "uniqueid" field was actually unique. It turns out that it
-isn't reliably so.
+	mac80211: allow station add/remove to sleep
 
-Samba, in particular, will just put the st_ino in the uniqueid field when
-unix extensions are enabled. When a share spans multiple filesystems, it's
-quite possible that there will be collisions. This is a server bug, but
-when the inodes in question are a directory (as is often the case) and
-there is a collision with the root inode of the mount, the result is a
-kernel panic on umount.
+changed the way mac80211 adds and removes peers. The new
+sta_add() / sta_remove() callbacks allowed the driver callbacks
+to sleep. Johannes also ported ath9k to use sta_add() / sta_remove()
+via the patch 4ca7786 titled:
 
-Fix this by checking explicitly for directory inodes with the same
-uniqueid. If that is the case, then we can assume that using server inode
-numbers will be a problem and that they should be disabled.
+	ath9k: convert to new station add/remove callbacks
 
-Fixes Samba bugzilla 7407
+but this patch forgot to address a change in locking issue which
+Ming Lei eventually found on his 2.6.33-wl #12 build. The 2.6.33-wl
+build includes code for the 802.11 subsystem for 2.6.34 though so did
+already have the above two patches (ath9k_sta_remove() on his trace),
+the 2.6.33 kernel did not however have these two patches. Ming eventually
+cured his lockdep warnign via the patch a9f042c titled:
 
-Signed-off-by: Jeff Layton <jlayton@redhat.com>
-Reviewed-and-Tested-by: Suresh Jayaraman <sjayaraman@suse.de>
-Signed-off-by: Steve French <sfrench@us.ibm.com>
+	ath9k: fix lockdep warning when unloading module
+
+This went in to 2.6.34 and although it was not marked as a stable
+fix it did get trickled down and applied on both 2.6.33 and 2.6.32.
+
+In review, the culprits:
+
+	mac80211: allow station add/remove to sleep
+git describe --contains 34e895075e21be3e21e71d6317440d1ee7969ad0
+v2.6.34-rc1~233^2~49^2~107
+
+	ath9k: convert to new station add/remove callbacks
+git describe --contains 4ca778605cfec53d8a689f0b57babb93b030c784
+v2.6.34-rc1~233^2~49^2~10
+
+	ath9k: fix lockdep warning when unloading module
+
+This last one trickled down to 2.6.33 (OK), 2.6.33 (invalid) and 2.6.32 (invalid).
+
+git describe --contains a9f042cbe5284f34ccff15f3084477e11b39b17b
+v2.6.34-rc2~48^2~77^2~7
+git describe --contains 0524bcfa80f1fffb4e1fe18a0a28900869a58a7c
+v2.6.33.2~125
+git describe --contains 0dcc9985f34aef3c60bffab3dfc7f7ba3748f35a
+v2.6.32.11~79
+
+The patch titled "ath9k: fix lockdep warning when unloading module"
+should be reverted on both 2.6.33 and 2.6.32 as it is invalid and
+actually ended up causing the following warning:
+
+ADDRCONF(NETDEV_CHANGE): wlan31: link becomes ready
+phy0: WMM queue=2 aci=0 acm=0 aifs=3 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=3 aci=1 acm=0 aifs=7 cWmin=15 cWmax=1023 txop=0
+phy0: WMM queue=1 aci=2 acm=0 aifs=2 cWmin=7 cWmax=15 txop=94
+phy0: WMM queue=0 aci=3 acm=0 aifs=2 cWmin=3 cWmax=7 txop=47
+phy0: device now idle
+------------[ cut here ]------------
+WARNING: at kernel/softirq.c:143 local_bh_enable_ip+0x7b/0xa0()
+Hardware name: 7660A14
+Modules linked in: ath9k(-) mac80211 ath cfg80211 <whatever-bleh-etc>
+Pid: 2003, comm: rmmod Not tainted 2.6.32.11 #6
+Call Trace:
+ [<ffffffff8105d178>] warn_slowpath_common+0x78/0xb0
+ [<ffffffff8105d1bf>] warn_slowpath_null+0xf/0x20
+ [<ffffffff81063f8b>] local_bh_enable_ip+0x7b/0xa0
+ [<ffffffff815121e4>] _spin_unlock_bh+0x14/0x20
+ [<ffffffffa034aea5>] ath_tx_node_cleanup+0x185/0x1b0 [ath9k]
+ [<ffffffffa0345597>] ath9k_sta_notify+0x57/0xb0 [ath9k]
+ [<ffffffffa02ac51a>] __sta_info_unlink+0x15a/0x260 [mac80211]
+ [<ffffffffa02ac658>] sta_info_unlink+0x38/0x60 [mac80211]
+ [<ffffffffa02b3fbe>] ieee80211_set_disassoc+0x1ae/0x210 [mac80211]
+ [<ffffffffa02b42d9>] ieee80211_mgd_deauth+0x109/0x110 [mac80211]
+ [<ffffffffa02ba409>] ieee80211_deauth+0x19/0x20 [mac80211]
+ [<ffffffffa028160e>] __cfg80211_mlme_deauth+0xee/0x130 [cfg80211]
+ [<ffffffff81118540>] ? init_object+0x50/0x90
+ [<ffffffffa0285429>] __cfg80211_disconnect+0x159/0x1d0 [cfg80211]
+ [<ffffffffa027125f>] cfg80211_netdev_notifier_call+0x10f/0x450 [cfg80211]
+ [<ffffffff81514ca7>] notifier_call_chain+0x47/0x90
+ [<ffffffff8107f501>] raw_notifier_call_chain+0x11/0x20
+ [<ffffffff81442d66>] call_netdevice_notifiers+0x16/0x20
+ [<ffffffff8144352d>] dev_close+0x4d/0xa0
+ [<ffffffff814439a8>] rollback_registered+0x48/0x120
+ [<ffffffff81443a9d>] unregister_netdevice+0x1d/0x70
+ [<ffffffffa02b6cc4>] ieee80211_remove_interfaces+0x84/0xc0 [mac80211]
+ [<ffffffffa02aa072>] ieee80211_unregister_hw+0x42/0xf0 [mac80211]
+ [<ffffffffa0347bde>] ath_detach+0x8e/0x180 [ath9k]
+ [<ffffffffa0347ce1>] ath_cleanup+0x11/0x50 [ath9k]
+ [<ffffffffa0351a2c>] ath_pci_remove+0x1c/0x20 [ath9k]
+ [<ffffffff8129d712>] pci_device_remove+0x32/0x60
+ [<ffffffff81332373>] __device_release_driver+0x53/0xb0
+ [<ffffffff81332498>] driver_detach+0xc8/0xd0
+ [<ffffffff81331405>] bus_remove_driver+0x85/0xe0
+ [<ffffffff81332a5a>] driver_unregister+0x5a/0x90
+ [<ffffffff8129da00>] pci_unregister_driver+0x40/0xb0
+ [<ffffffffa03518d0>] ath_pci_exit+0x10/0x20 [ath9k]
+ [<ffffffffa0353cd5>] ath9k_exit+0x9/0x2a [ath9k]
+ [<ffffffff81092838>] sys_delete_module+0x1a8/0x270
+ [<ffffffff8107ebe9>] ? up_read+0x9/0x10
+ [<ffffffff81011f82>] system_call_fastpath+0x16/0x1b
+---[ end trace fad957019ffdd40b ]---
+phy0: Removed STA 00:22:6b:56:fd:e8
+phy0: Destroyed STA 00:22:6b:56:fd:e8
+wlan31: deauthenticating from 00:22:6b:56:fd:e8 by local choice (reason=3)
+ath9k 0000:16:00.0: PCI INT A disabled
+
+The original lockdep fixed an issue where due to the new changes
+the driver was not disabling the bottom halves but it is incorrect
+to do this on the older kernels since IRQs are already disabled.
+
+Cc: Ming Lei <tom.leiming@gmail.com>
+Cc: Johannes Berg <johannes@sipsolutions.net>
+Cc: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Luis R. Rodriguez <lrodriguez@atheros.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/cifs/cifsglob.h |    1 +
- fs/cifs/inode.c    |   21 +++++++++++++++++++--
- 2 files changed, 20 insertions(+), 2 deletions(-)
+ drivers/net/wireless/ath/ath9k/xmit.c |    4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
 
---- a/fs/cifs/cifsglob.h
-+++ b/fs/cifs/cifsglob.h
-@@ -500,6 +500,7 @@ struct dfs_info3_param {
- #define CIFS_FATTR_DFS_REFERRAL		0x1
- #define CIFS_FATTR_DELETE_PENDING	0x2
- #define CIFS_FATTR_NEED_REVAL		0x4
-+#define CIFS_FATTR_INO_COLLISION	0x8
+--- a/drivers/net/wireless/ath/ath9k/xmit.c
++++ b/drivers/net/wireless/ath/ath9k/xmit.c
+@@ -2244,7 +2244,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 		if (ATH_TXQ_SETUP(sc, i)) {
+ 			txq = &sc->tx.txq[i];
  
- struct cifs_fattr {
- 	u32		cf_flags;
---- a/fs/cifs/inode.c
-+++ b/fs/cifs/inode.c
-@@ -610,6 +610,16 @@ cifs_find_inode(struct inode *inode, voi
- 	if (CIFS_I(inode)->uniqueid != fattr->cf_uniqueid)
- 		return 0;
+-			spin_lock_bh(&txq->axq_lock);
++			spin_lock(&txq->axq_lock);
  
-+	/*
-+	 * uh oh -- it's a directory. We can't use it since hardlinked dirs are
-+	 * verboten. Disable serverino and return it as if it were found, the
-+	 * caller can discard it, generate a uniqueid and retry the find
-+	 */
-+	if (S_ISDIR(inode->i_mode) && !list_empty(&inode->i_dentry)) {
-+		fattr->cf_flags |= CIFS_FATTR_INO_COLLISION;
-+		cifs_autodisable_serverino(CIFS_SB(inode->i_sb));
-+	}
-+
- 	return 1;
+ 			list_for_each_entry_safe(ac,
+ 					ac_tmp, &txq->axq_acq, list) {
+@@ -2265,7 +2265,7 @@ void ath_tx_node_cleanup(struct ath_soft
+ 				}
+ 			}
+ 
+-			spin_unlock_bh(&txq->axq_lock);
++			spin_unlock(&txq->axq_lock);
+ 		}
+ 	}
  }
- 
-@@ -629,15 +639,22 @@ cifs_iget(struct super_block *sb, struct
- 	unsigned long hash;
- 	struct inode *inode;
- 
-+retry_iget5_locked:
- 	cFYI(1, ("looking for uniqueid=%llu", fattr->cf_uniqueid));
- 
- 	/* hash down to 32-bits on 32-bit arch */
- 	hash = cifs_uniqueid_to_ino_t(fattr->cf_uniqueid);
- 
- 	inode = iget5_locked(sb, hash, cifs_find_inode, cifs_init_inode, fattr);
--
--	/* we have fattrs in hand, update the inode */
- 	if (inode) {
-+		/* was there a problematic inode number collision? */
-+		if (fattr->cf_flags & CIFS_FATTR_INO_COLLISION) {
-+			iput(inode);
-+			fattr->cf_uniqueid = iunique(sb, ROOT_I);
-+			fattr->cf_flags &= ~CIFS_FATTR_INO_COLLISION;
-+			goto retry_iget5_locked;
-+		}
-+
- 		cifs_fattr_to_inode(inode, fattr);
- 		if (sb->s_flags & MS_NOATIME)
- 			inode->i_flags |= S_NOATIME | S_NOCMTIME;
 
 
