@@ -1,74 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757689Ab0EXSIv (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:08:51 -0400
-Received: from core.signal11.us ([64.251.29.136]:34069 "EHLO core.signal11.us"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754343Ab0EXSIu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:08:50 -0400
-Message-ID: <4BFAC0B0.2060701@signal11.us>
-Date: Mon, 24 May 2010 14:08:48 -0400
-From: Alan Ott <alan@signal11.us>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1757993Ab0EXSMr (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:12:47 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:34375 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754348Ab0EXSMp (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 14:12:45 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+References: <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org>
+	<AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com>
+	<20100522223838.ebca396a.akpm@linux-foundation.org>
+	<AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
+	<20100523070917.GO23411@kernel.dk>
+	<AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
+	<20100523174706.GP23411@kernel.dk>
+	<87632e846m.fsf@devron.myhome.or.jp>
+	<20100524070416.GQ23411@kernel.dk>
+	<87bpc54u9w.fsf@devron.myhome.or.jp>
+	<20100524171522.GT23411@kernel.dk>
+Date: Tue, 25 May 2010 03:12:40 +0900
+In-Reply-To: <20100524171522.GT23411@kernel.dk> (Jens Axboe's message of "Mon,
+	24 May 2010 19:15:22 +0200")
+Message-ID: <87d3wlw4mf.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
 MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Subject: [RFC] User Guide for Sysfs and libudev
-X-Enigmail-Version: 0.95.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-DSPAM-Result: Innocent
-X-DSPAM-Processed: Mon May 24 14:08:49 2010
-X-DSPAM-Confidence: 1.0000
-X-DSPAM-Probability: 0.0023
-X-DSPAM-Signature: 4bfac0b1101555289812512
-X-DSPAM-Factors: 27,
-	Date*48+0400, 0.40000,
-	Received*26+177, 0.40000,
-	libudev, 0.40000,
-	libudev, 0.40000,
-	To*linux+input, 0.40000,
-	provide, 0.40000,
-	Date*May, 0.40000,
-	or, 0.40000,
-	how+to, 0.40000,
-	background, 0.40000,
-	gotten, 0.40000,
-	of, 0.40000,
-	of, 0.40000,
-	Thanks+Alan, 0.40000,
-	much+documentation, 0.40000,
-	Received*ESMTP, 0.40000,
-	thing+is, 0.40000,
-	ago+I, 0.40000,
-	have+gotten, 0.40000,
-	why+this, 0.40000,
-	Received*(c+76, 0.40000,
-	Received*242.hsd1.fl.comcast.net+[76.26.177.242]), 0.40000,
-	much, 0.40000,
-	Date*Mon, 0.40000,
-	use, 0.40000,
-	provides+some, 0.40000,
-	From*<alan, 0.40000
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+Jens Axboe <jens.axboe@oracle.com> writes:
 
-Several weeks ago I had need of libudev, and was unable to find very
-much documentation for it on the web.
+>> > Isn't that pretty much what I described?
+>> 
+>> Yes, probably. Well, 120kb was still multiple of page size. :)
+>
+> It is, but 120KB/page_size is not (which is the power-of-2 of interest
+> here).
 
-I have created a guide on how to use libudev, which also provides some
-background information on /dev, Sysfs, and why this kind of thing is needed.
+Um... I have no interest whether rounded-up-size is power-of-2 or
+not. Because it is implementation detail.
 
-Please check it out and provide comments, as I'm sure there are things
-which I have gotten wrong or omitted.
-
-The guide can be found here:
-    http://www.signal11.us/oss/udev/
-
-Thanks,
-
-Alan.
-
-
+Anyway, we agreed with "in bytes" and "at least"? If so, I'm happy with
+it, and I'm sorry if I was just noise.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
