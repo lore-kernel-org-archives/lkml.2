@@ -1,271 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755940Ab0EXCfK (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 22:35:10 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:58664 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755912Ab0EXCfB convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 22:35:01 -0400
+	id S1755898Ab0EXCqd (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 22:46:33 -0400
+Received: from pop3.scorch.co.nz ([203.167.210.162]:44429 "HELO scorch.co.nz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1755350Ab0EXCqc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Sun, 23 May 2010 22:46:32 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Sun, 23 May 2010 22:46:32 EDT
+X-Virus-Checked: Checked by ClamAV on scorch.co.nz
+From: Charles Manning <manningc2@actrix.gen.nz>
+To: linux-kernel@vger.kernel.org
+Subject: Trying to use SLUB in an odd way
+Date: Mon, 24 May 2010 14:39:48 +1200
+User-Agent: KMail/1.9.10
 MIME-Version: 1.0
-In-Reply-To: <1274266017-18660-1-git-send-email-daniel@caiaq.de>
-References: <20100519103448.GH5202@pengutronix.de>
-	 <1274266017-18660-1-git-send-email-daniel@caiaq.de>
-Date: Sun, 23 May 2010 22:34:59 -0400
-Message-ID: <AANLkTikffmoWofbIo2h6zw-VW5aKEH8T_b0vMfKdo3KJ@mail.gmail.com>
-Subject: Re: [PATCH] drivers/media/dvb/dvb-usb/dib0700: fix return values
-From: Devin Heitmueller <dheitmueller@kernellabs.com>
-To: Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       Jiri Slaby <jslaby@suse.cz>, Dmitry Torokhov <dtor@mail.ru>,
-       linux-media@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain;
+  charset="us-ascii"
+Content-Transfer-Encoding: 7bit
+Content-Disposition: inline
+Message-Id: <201005241439.48373.manningc2@actrix.gen.nz>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 6:46 AM, Daniel Mack <daniel@caiaq.de> wrote:
-> Propagte correct error values instead of returning -1 which just means
-> -EPERM ("Permission denied")
->
-> While at it, also fix some coding style violations.
->
-> Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> Cc: Mauro Carvalho Chehab <mchehab@infradead.org>
-> Cc: Jiri Slaby <jslaby@suse.cz>
-> Cc: Dmitry Torokhov <dtor@mail.ru>
-> Cc: Devin Heitmueller <dheitmueller@kernellabs.com>
-> Cc: linux-media@vger.kernel.org
-> ---
->  drivers/media/dvb/dvb-usb/dib0700_core.c |   82 +++++++++++++++--------------
->  1 files changed, 42 insertions(+), 40 deletions(-)
->
-> diff --git a/drivers/media/dvb/dvb-usb/dib0700_core.c b/drivers/media/dvb/dvb-usb/dib0700_core.c
-> index 4f961d2..45aec3a 100644
-> --- a/drivers/media/dvb/dvb-usb/dib0700_core.c
-> +++ b/drivers/media/dvb/dvb-usb/dib0700_core.c
-> @@ -53,7 +53,7 @@ static int dib0700_ctrl_wr(struct dvb_usb_device *d, u8 *tx, u8 txlen)
->        int status;
->
->        deb_data(">>> ");
-> -       debug_dump(tx,txlen,deb_data);
-> +       debug_dump(tx, txlen, deb_data);
->
->        status = usb_control_msg(d->udev, usb_sndctrlpipe(d->udev,0),
->                tx[0], USB_TYPE_VENDOR | USB_DIR_OUT, 0, 0, tx, txlen,
-> @@ -98,7 +98,7 @@ int dib0700_ctrl_rd(struct dvb_usb_device *d, u8 *tx, u8 txlen, u8 *rx, u8 rxlen
->                deb_info("ep 0 read error (status = %d)\n",status);
->
->        deb_data("<<< ");
-> -       debug_dump(rx,rxlen,deb_data);
-> +       debug_dump(rx, rxlen, deb_data);
->
->        return status; /* length in case of success */
->  }
-> @@ -106,28 +106,29 @@ int dib0700_ctrl_rd(struct dvb_usb_device *d, u8 *tx, u8 txlen, u8 *rx, u8 rxlen
->  int dib0700_set_gpio(struct dvb_usb_device *d, enum dib07x0_gpios gpio, u8 gpio_dir, u8 gpio_val)
->  {
->        u8 buf[3] = { REQUEST_SET_GPIO, gpio, ((gpio_dir & 0x01) << 7) | ((gpio_val & 0x01) << 6) };
-> -       return dib0700_ctrl_wr(d,buf,3);
-> +       return dib0700_ctrl_wr(d, buf, sizeof(buf));
->  }
->
->  static int dib0700_set_usb_xfer_len(struct dvb_usb_device *d, u16 nb_ts_packets)
->  {
-> -    struct dib0700_state *st = d->priv;
-> -    u8 b[3];
-> -    int ret;
-> -
-> -    if (st->fw_version >= 0x10201) {
-> -       b[0] = REQUEST_SET_USB_XFER_LEN;
-> -       b[1] = (nb_ts_packets >> 8)&0xff;
-> -       b[2] = nb_ts_packets & 0xff;
-> -
-> -       deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
-> -
-> -       ret = dib0700_ctrl_wr(d, b, 3);
-> -    } else {
-> -       deb_info("this firmware does not allow to change the USB xfer len\n");
-> -       ret = -EIO;
-> -    }
-> -    return ret;
-> +       struct dib0700_state *st = d->priv;
-> +       u8 b[3];
-> +       int ret;
-> +
-> +       if (st->fw_version >= 0x10201) {
-> +               b[0] = REQUEST_SET_USB_XFER_LEN;
-> +               b[1] = (nb_ts_packets >> 8) & 0xff;
-> +               b[2] = nb_ts_packets & 0xff;
-> +
-> +               deb_info("set the USB xfer len to %i Ts packet\n", nb_ts_packets);
-> +
-> +               ret = dib0700_ctrl_wr(d, b, 3);
-> +       } else {
-> +               deb_info("this firmware does not allow to change the USB xfer len\n");
-> +               ret = -EIO;
-> +       }
-> +
-> +       return ret;
->  }
->
->  /*
-> @@ -178,7 +179,8 @@ static int dib0700_i2c_xfer_new(struct i2c_adapter *adap, struct i2c_msg *msg,
->                        value = ((en_start << 7) | (en_stop << 6) |
->                                 (msg[i].len & 0x3F)) << 8 | i2c_dest;
->                        /* I2C ctrl + FE bus; */
-> -                       index = ((gen_mode<<6)&0xC0) | ((bus_mode<<4)&0x30);
-> +                       index = ((gen_mode << 6) & 0xC0) |
-> +                               ((bus_mode << 4) & 0x30);
->
->                        result = usb_control_msg(d->udev,
->                                                 usb_rcvctrlpipe(d->udev, 0),
-> @@ -198,11 +200,12 @@ static int dib0700_i2c_xfer_new(struct i2c_adapter *adap, struct i2c_msg *msg,
->                } else {
->                        /* Write request */
->                        buf[0] = REQUEST_NEW_I2C_WRITE;
-> -                       buf[1] = (msg[i].addr << 1);
-> +                       buf[1] = msg[i].addr << 1;
->                        buf[2] = (en_start << 7) | (en_stop << 6) |
->                                (msg[i].len & 0x3F);
->                        /* I2C ctrl + FE bus; */
-> -                       buf[3] = ((gen_mode<<6)&0xC0) | ((bus_mode<<4)&0x30);
-> +                       buf[3] = ((gen_mode << 6) & 0xC0) |
-> +                                ((bus_mode << 4) & 0x30);
->                        /* The Actual i2c payload */
->                        memcpy(&buf[4], msg[i].buf, msg[i].len);
->
-> @@ -240,7 +243,7 @@ static int dib0700_i2c_xfer_legacy(struct i2c_adapter *adap,
->
->        for (i = 0; i < num; i++) {
->                /* fill in the address */
-> -               buf[1] = (msg[i].addr << 1);
-> +               buf[1] = msg[i].addr << 1;
->                /* fill the buffer */
->                memcpy(&buf[2], msg[i].buf, msg[i].len);
->
-> @@ -368,7 +371,8 @@ int dib0700_download_firmware(struct usb_device *udev, const struct firmware *fw
->        u8 buf[260];
->
->        while ((ret = dvb_usb_get_hexline(fw, &hx, &pos)) > 0) {
-> -               deb_fwdata("writing to address 0x%08x (buffer: 0x%02x %02x)\n",hx.addr, hx.len, hx.chk);
-> +               deb_fwdata("writing to address 0x%08x (buffer: 0x%02x %02x)\n",
-> +                               hx.addr, hx.len, hx.chk);
->
->                buf[0] = hx.len;
->                buf[1] = (hx.addr >> 8) & 0xff;
-> @@ -408,16 +412,16 @@ int dib0700_download_firmware(struct usb_device *udev, const struct firmware *fw
->                                  REQUEST_GET_VERSION,
->                                  USB_TYPE_VENDOR | USB_DIR_IN, 0, 0,
->                                  b, sizeof(b), USB_CTRL_GET_TIMEOUT);
-> -       fw_version = (b[8] << 24)  | (b[9] << 16)  | (b[10] << 8) | b[11];
-> +       fw_version = (b[8] << 24) | (b[9] << 16) | (b[10] << 8) | b[11];
->
->        /* set the buffer size - DVB-USB is allocating URB buffers
->         * only after the firwmare download was successful */
->        for (i = 0; i < dib0700_device_count; i++) {
->                for (adap_num = 0; adap_num < dib0700_devices[i].num_adapters;
->                                adap_num++) {
-> -                       if (fw_version >= 0x10201)
-> +                       if (fw_version >= 0x10201) {
->                                dib0700_devices[i].adapter[adap_num].stream.u.bulk.buffersize = 188*nb_packet_buffer_size;
-> -                       else {
-> +                       } else {
->                                /* for fw version older than 1.20.1,
->                                 * the buffersize has to be n times 512 */
->                                dib0700_devices[i].adapter[adap_num].stream.u.bulk.buffersize = ((188*nb_packet_buffer_size+188/2)/512)*512;
-> @@ -453,7 +457,7 @@ int dib0700_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
->        if (st->disable_streaming_master_mode == 1)
->                b[2] = 0x00;
->        else
-> -               b[2] = (0x01 << 4); /* Master mode */
-> +               b[2] = 0x01 << 4; /* Master mode */
->
->        b[3] = 0x00;
->
-> @@ -466,7 +470,7 @@ int dib0700_streaming_ctrl(struct dvb_usb_adapter *adap, int onoff)
->
->        b[2] |= st->channel_state;
->
-> -       deb_info("data for streaming: %x %x\n",b[1],b[2]);
-> +       deb_info("data for streaming: %x %x\n", b[1], b[2]);
->
->        return dib0700_ctrl_wr(adap->dev, b, 4);
->  }
-> @@ -631,7 +635,7 @@ resubmit:
->  int dib0700_rc_setup(struct dvb_usb_device *d)
->  {
->        struct dib0700_state *st = d->priv;
-> -       u8 rc_setup[3] = {REQUEST_SET_RC, dvb_usb_dib0700_ir_proto, 0};
-> +       u8 rc_setup[3] = { REQUEST_SET_RC, dvb_usb_dib0700_ir_proto, 0 };
->        struct urb *purb;
->        int ret;
->        int i;
-> @@ -640,10 +644,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->                return 0;
->
->        /* Set the IR mode */
-> -       i = dib0700_ctrl_wr(d, rc_setup, 3);
-> -       if (i<0) {
-> +       i = dib0700_ctrl_wr(d, rc_setup, sizeof(rc_setup));
-> +       if (i < 0) {
->                err("ir protocol setup failed");
-> -               return -1;
-> +               return i;
->        }
->
->        if (st->fw_version < 0x10200)
-> @@ -653,14 +657,14 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->        purb = usb_alloc_urb(0, GFP_KERNEL);
->        if (purb == NULL) {
->                err("rc usb alloc urb failed\n");
-> -               return -1;
-> +               return -ENOMEM;
->        }
->
->        purb->transfer_buffer = kzalloc(RC_MSG_SIZE_V1_20, GFP_KERNEL);
->        if (purb->transfer_buffer == NULL) {
->                err("rc kzalloc failed\n");
->                usb_free_urb(purb);
-> -               return -1;
-> +               return -ENOMEM;
->        }
->
->        purb->status = -EINPROGRESS;
-> @@ -669,12 +673,10 @@ int dib0700_rc_setup(struct dvb_usb_device *d)
->                          dib0700_rc_urb_completion, d);
->
->        ret = usb_submit_urb(purb, GFP_ATOMIC);
-> -       if (ret != 0) {
-> +       if (ret)
->                err("rc submit urb failed\n");
-> -               return -1;
-> -       }
->
-> -       return 0;
-> +       return ret;
->  }
->
->  static int dib0700_probe(struct usb_interface *intf,
-> --
-> 1.7.1
+Hi
 
-Hello Daniel,
+YAFFS uses an internal almost slub-like allocator and I've been looking at 
+moving it to use SLUB as part of an attempt to mainline yaffs.
 
-I am not against any of these changes in principle, but you should not
-be mixing functional changes with codingstyle fixes.  It results in a
-situation where as a reviewer I have to scrutinize every line *very*
-closely to determine whether it's an actual change or just a
-codingstyle fix.
+In yaffs I create a lot of tiny objects which are allocated in blocks, like 
+slub, and then managed in a free list. Very slubbish so far, but mine is far 
+less intelligent than slub.
 
-In other words, split this into two patches.
+The difference though is that I can keep the objects for each mount separate 
+and can dump the whole lot on umount without individually freeing objects. I 
+just deallocate my whole cache.
 
-Thanks,
+There are two problems that I encountered in  moving to slub:
+1) I want to keep each mount point separate, but slub just hooks up with an 
+existing cache of the same size. I managed to trick slub into keeping yaffs 
+objects in their own cache by assigning a fake ctor. That stops the 
+combination (well at present anyway - could easy change in the future like if 
+ctor gets dropped). Like a VW Bug: ugly but it gets you there....
 
-Devin
+2) If I dump a cache with existing in-use objects then slub gets upset and 
+dumps warnings. I don't like the idea of just ignoring warnings. I also don't 
+want to manually tear down trees etc when the existing  "just dump it" 
+approach is a lot faster. Pity there is no "trust me I know what I'm doing" 
+flag.
 
--- 
-Devin J. Heitmueller - Kernel Labs
-http://www.kernellabs.com
+Questions:
+A) Is there a better way to use slub to do this or is it better to just 
+continue with my manual allocator?
+
+B) Is it worth adding flags to kmem_cache_create() to say:
+ a) Don't combine this slub with others.
+ b) "Trust me I know what I'm doing": Allow the cache to be dumped with 
+objects still allocated. 
+
+If (B) makes sense I'll put together a patch.
+
+-- Charles
+
+
