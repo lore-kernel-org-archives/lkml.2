@@ -1,48 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756592Ab0EXTI1 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 15:08:27 -0400
-Received: from cavan.codon.org.uk ([93.93.128.6]:42395 "EHLO
-	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752526Ab0EXTI0 (ORCPT
+	id S1756811Ab0EXTIf (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 15:08:35 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35714 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756673Ab0EXTIc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 15:08:26 -0400
-Date: Mon, 24 May 2010 20:08:04 +0100
-From: Matthew Garrett <mjg@redhat.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Kevin Hilman <khilman@deeprootsystems.com>,
-       Arve Hj?nnev?g <arve@android.com>, linux-pm@lists.linux-foundation.org,
-       linux-kernel@vger.kernel.org, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100524190804.GA21874@srcf.ucam.org>
-References: <1272667021-21312-1-git-send-email-arve@android.com> <87wrvl5479.fsf@deeprootsystems.com> <20100503215028.GB18910@srcf.ucam.org> <20100524185754.GD1292@ucw.cz>
+	Mon, 24 May 2010 15:08:32 -0400
+Date: Mon, 24 May 2010 20:08:28 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100524190828.GS31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+ <20100524115903.GP31073@ZenIV.linux.org.uk>
+ <20100524155031.GQ31073@ZenIV.linux.org.uk>
+ <1274718082.10795.31.camel@heimdal.trondhjem.org>
+ <20100524164736.GR31073@ZenIV.linux.org.uk>
+ <1274720791.10795.50.camel@heimdal.trondhjem.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100524185754.GD1292@ucw.cz>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
-X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
+In-Reply-To: <1274720791.10795.50.camel@heimdal.trondhjem.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 08:57:54PM +0200, Pavel Machek wrote:
+On Mon, May 24, 2010 at 01:06:31PM -0400, Trond Myklebust wrote:
 
-> And btw I do have wakelock-less implementation of autosleep, that only
-> sleeped the machine when nothing was ready to run. It was called
-> "sleepy linux". Should I dig it out?
+> I believe that the answer is that most filehandle types include an
+> encoding of the inode number of the export directory. In other words, as
+> long as '/a' and '/b' are different directories, then they will result
+> in the generation of different filehandles for /a/x and /b/x.
+> 
+> It seems that is not always the case, though. According to the
+> definition of mk_fsid(), it looks as if the 'FSID_UUID8' and
+> 'FSID_UUID16' filehandle types only encode the uuid of the filesystem,
+> and have no inode information. They will therefore not be able to
+> distinguish between an export through '/a' or '/b'.
+> 
+> Neil, Bruce am I right?
 
-As has been explained several times now, that's not equivalent. The 
-difference is what makes this a hard problem. If a usecase is valid and 
-nobody can come up with a convincing explanation of what an elegant 
-solution would look like, then the ugly solution wins.
+Er?  On server:
 
--- 
-Matthew Garrett | mjg59@srcf.ucam.org
+mount -t ext2 /dev/sdb1 /srv/nfs4
+mount -t ext2 /dev/sda1 /srv/nfs4/a
+mount -t ext2 /dev/sda1 /srv/nfs4/b
+
+after that /srv/nfs4/a and /srv/nfs4/b will have the *same* inode, nevermind
+the inode number.  I really mean the same filesystem mounted twice; if you
+want to include inumber of mountpoint into fsid, fine, turn the above into
+
+mount -t ext2 /dev/sdb1 /srv/nfs4
+mount -t ext2 /dev/sda1 /srv/nfs4/a
+mount -t ext2 /dev/sda1 /srv/nfs4/b
+mount -t ext2 /dev/sda3 /srv/nfs4/a/z
+mount -t ext2 /dev/sda3 /srv/nfs4/b/z
+
+At that point you have the same fs (ext2 from sda3) mounted on /srv/nfs4/a/z
+and /srv/nfs4/b/z, with the same directory inode overmounted by it in both
+mountpoints.  Suppose your referral point is on /a/z/x and /b/z/x resp. and
+see the question upthread...
