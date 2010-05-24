@@ -1,357 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756861Ab0EXLE2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 07:04:28 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:39570 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754738Ab0EXLE0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 07:04:26 -0400
-Message-ID: <39216.10.24.255.17.1274699065.squirrel@dbdmail.itg.ti.com>
-Date: Mon, 24 May 2010 16:34:25 +0530 (IST)
-Subject: [PATCH V2] misc : ROHM BH1780GLI Ambient light sensor Driver
-From: "Hemanth V" <hemanthv@ti.com>
-To: linux-kernel@vger.kernel.org
-Cc: linux-omap@vger.kernel.org
-User-Agent: SquirrelMail/1.4.3a
-X-Mailer: SquirrelMail/1.4.3a
+	id S1756856Ab0EXLKe (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 07:10:34 -0400
+Received: from pindarots.xs4all.nl ([80.101.128.228]:33872 "EHLO
+	pindarots.xs4all.nl" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755390Ab0EXLKd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 07:10:33 -0400
+X-Greylist: delayed 3042 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 May 2010 07:10:32 EDT
+Message-ID: <4BFA52C3.4080006@xs4all.nl>
+Date: Mon, 24 May 2010 12:19:47 +0200
+From: Udo van den Heuvel <udovdh@xs4all.nl>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7BIT
-X-Priority: 3 (Normal)
-Importance: Normal
+To: linux-kernel@vger.kernel.org
+Subject: hpet timers gone?
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Hemanth V <hemanthv@ti.com>
-Date: Fri, 21 May 2010 15:52:03 +0530
-Subject: [PATCH] misc: ROHM BH1780GLI Ambient light sensor Driver
+Hello,
 
-This patch adds support for ROHM BH1780GLI Ambient light sensor.
+What has happened between 2.6.30.9 and 2.6.32.8 with regard to hpet timers?
 
-BH1780 supports I2C interface. Driver supports read/update of power state and
-read of lux value (through SYSFS). Writing value 3 to power_state enables the
-sensor and current lux value could be read.
+dmesg output from 2.6.30.9 does show activity but 2.6.32.8 and beyond don't.
+Also /proc/timer_list doesn't show hpet anymore. Also on 2.6.34 no hpet
+in timer_list.
 
-Signed-off-by: Hemanth V <hemanthv@ti.com>
-Reviewed-by: Daniel Mack <daniel@caiaq.de>
-Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
----
- drivers/misc/Kconfig     |   10 ++
- drivers/misc/Makefile    |    1 +
- drivers/misc/bh1780gli.c |  273 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 284 insertions(+), 0 deletions(-)
- create mode 100644 drivers/misc/bh1780gli.c
+relevant .config:
+CONFIG_HPET_TIMER=y
+CONFIG_HPET_EMULATE_RTC=y
+CONFIG_HPET=y
+CONFIG_HPET_MMAP=y
 
-diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
-index 0d0d625..3f5bf0f 100644
---- a/drivers/misc/Kconfig
-+++ b/drivers/misc/Kconfig
-@@ -278,6 +278,16 @@ config SENSORS_TSL2550
- 	  This driver can also be built as a module.  If so, the module
- 	  will be called tsl2550.
+And I have hpet=force on the kernel commandline for this VIA Epia
+LT10000 board.
 
-+config SENSORS_BH1780
-+	tristate "ROHM BH1780GLI ambient light sensor"
-+	depends on I2C && SYSFS
-+	help
-+	  If you say yes here you get support for the ROHM BH1780GLI
-+	  ambient light sensor.
-+
-+	  This driver can also be built as a module.  If so, the module
-+	  will be called bh1780gli.
-+
- config EP93XX_PWM
- 	tristate "EP93xx PWM support"
- 	depends on ARCH_EP93XX
-diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
-index 7b6f7ee..c479d91 100644
---- a/drivers/misc/Makefile
-+++ b/drivers/misc/Makefile
-@@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
- obj-y				+= eeprom/
- obj-y				+= cb710/
- obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
-+obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
-diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
-new file mode 100644
-index 0000000..774531d
---- /dev/null
-+++ b/drivers/misc/bh1780gli.c
-@@ -0,0 +1,273 @@
-+/*
-+ * bh1780gli.c
-+ * ROHM Ambient Light Sensor Driver
-+ *
-+ * Copyright (C) 2010 Texas Instruments
-+ * Author: Hemanth V <hemanthv@ti.com>
-+ *
-+ * This program is free software; you can redistribute it and/or modify it
-+ * under the terms of the GNU General Public License version 2 as published by
-+ * the Free Software Foundation.
-+ *
-+ * This program is distributed in the hope that it will be useful, but WITHOUT
-+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
-+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
-+ * more details.
-+ *
-+ * You should have received a copy of the GNU General Public License along with
-+ * this program.  If not, see <http://www.gnu.org/licenses/>.
-+ */
-+#include <linux/i2c.h>
-+#include <linux/slab.h>
-+#include <linux/mutex.h>
-+#include <linux/platform_device.h>
-+#include <linux/delay.h>
-+
-+#define BH1780_REG_CONTROL	0x80
-+#define BH1780_REG_PARTID	0x8A
-+#define BH1780_REG_MANFID	0x8B
-+#define BH1780_REG_DLOW	0x8C
-+#define BH1780_REG_DHIGH	0x8D
-+
-+#define BH1780_REVMASK		(0xf)
-+#define BH1780_POWMASK		(0x3)
-+#define BH1780_POFF		(0x0)
-+#define BH1780_PON		(0x3)
-+
-+/* power on settling time in ms */
-+#define BH1780_PON_DELAY	2
-+
-+struct bh1780_data {
-+	struct i2c_client *client;
-+	int power_state;
-+	/* lock for sysfs operations */
-+	struct mutex lock;
-+};
-+
-+static int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
-+{
-+	int ret = i2c_smbus_write_byte_data(ddata->client, reg, val);
-+	if (ret < 0)
-+		dev_err(&ddata->client->dev,
-+			"i2c_smbus_write_byte_data failed error %d\
-+			Register (%s)\n", ret, msg);
-+	return ret;
-+}
-+
-+static int bh1780_read(struct bh1780_data *ddata, u8 reg, char *msg)
-+{
-+	int ret = i2c_smbus_read_byte_data(ddata->client, reg);
-+	if (ret < 0)
-+		dev_err(&ddata->client->dev,
-+			"i2c_smbus_read_byte_data failed error %d\
-+			 Register (%s)\n", ret, msg);
-+	return ret;
-+}
-+
-+static ssize_t bh1780_show_lux(struct device *dev,
-+				struct device_attribute *attr, char *buf)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-+	int lsb, msb;
-+
-+	lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
-+	if (lsb < 0)
-+		return lsb;
-+
-+	msb = bh1780_read(ddata, BH1780_REG_DHIGH, "DHIGH");
-+	if (msb < 0)
-+		return msb;
-+
-+	return sprintf(buf, "%d\n", (msb << 8) | lsb);
-+}
-+
-+static ssize_t bh1780_show_power_state(struct device *dev,
-+					struct device_attribute *attr,
-+					char *buf)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-+	int state;
-+
-+	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-+	if (state < 0)
-+		return state;
-+
-+	return sprintf(buf, "%d\n", state & BH1780_POWMASK);
-+}
-+
-+static ssize_t bh1780_store_power_state(struct device *dev,
-+					struct device_attribute *attr,
-+					const char *buf, size_t count)
-+{
-+	struct platform_device *pdev = to_platform_device(dev);
-+	struct bh1780_data *ddata = platform_get_drvdata(pdev);
-+	unsigned long val;
-+	int error;
-+
-+	error = strict_strtoul(buf, 0, &val);
-+	if (error)
-+		return error;
-+
-+	if (val < BH1780_POFF || val > BH1780_PON)
-+		return -EINVAL;
-+
-+	mutex_lock(&ddata->lock);
-+
-+	error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
-+	if (error < 0) {
-+		mutex_unlock(&ddata->lock);
-+		return error;
-+	}
-+
-+	msleep(BH1780_PON_DELAY);
-+	ddata->power_state = val;
-+	mutex_unlock(&ddata->lock);
-+
-+	return count;
-+}
-+
-+static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
-+
-+static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
-+		bh1780_show_power_state, bh1780_store_power_state);
-+
-+static struct attribute *bh1780_attributes[] = {
-+	&dev_attr_power_state.attr,
-+	&dev_attr_lux.attr,
-+	NULL
-+};
-+
-+static const struct attribute_group bh1780_attr_group = {
-+	.attrs = bh1780_attributes,
-+};
-+
-+static int __devinit bh1780_probe(struct i2c_client *client,
-+						const struct i2c_device_id *id)
-+{
-+	int ret;
-+	struct bh1780_data *ddata = NULL;
-+	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
-+
-+	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
-+		ret = -EIO;
-+		goto err_op_failed;
-+	}
-+
-+	ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
-+	if (ddata == NULL) {
-+		ret = -ENOMEM;
-+		goto err_op_failed;
-+	}
-+
-+	ddata->client = client;
-+	i2c_set_clientdata(client, ddata);
-+
-+	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
-+	if (ret < 0)
-+		goto err_op_failed;
-+
-+	dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
-+			(ret & BH1780_REVMASK));
-+
-+	mutex_init(&ddata->lock);
-+
-+	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
-+	if (ret)
-+		goto err_op_failed;
-+
-+	return 0;
-+
-+err_op_failed:
-+	kfree(ddata);
-+	return ret;
-+}
-+
-+static int __devexit bh1780_remove(struct i2c_client *client)
-+{
-+	struct bh1780_data *ddata;
-+
-+	ddata = i2c_get_clientdata(client);
-+	sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
-+	i2c_set_clientdata(client, NULL);
-+	kfree(ddata);
-+
-+	return 0;
-+}
-+
-+#ifdef CONFIG_PM
-+static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
-+{
-+	struct bh1780_data *ddata;
-+	int state, ret;
-+
-+	ddata = i2c_get_clientdata(client);
-+	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
-+	if (state < 0)
-+		return state;
-+
-+	ddata->power_state = state & BH1780_POWMASK;
-+
-+	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
-+				"CONTROL");
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+
-+static int bh1780_resume(struct i2c_client *client)
-+{
-+	struct bh1780_data *ddata;
-+	int state, ret;
-+
-+	ddata = i2c_get_clientdata(client);
-+	state = ddata->power_state;
-+
-+	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
-+				"CONTROL");
-+
-+	if (ret < 0)
-+		return ret;
-+
-+	return 0;
-+}
-+#else
-+#define bh1780_suspend NULL
-+#define bh1780_resume NULL
-+#endif /* CONFIG_PM */
-+
-+static const struct i2c_device_id bh1780_id[] = {
-+	{ "bh1780", 0 },
-+	{ },
-+};
-+
-+static struct i2c_driver bh1780_driver = {
-+	.probe		= bh1780_probe,
-+	.remove		= bh1780_remove,
-+	.id_table	= bh1780_id,
-+	.suspend	= bh1780_suspend,
-+	.resume		= bh1780_resume,
-+	.driver = {
-+		.name = "bh1780"
-+	},
-+};
-+
-+static int __init bh1780_init(void)
-+{
-+	return i2c_add_driver(&bh1780_driver);
-+}
-+
-+static void __exit bh1780_exit(void)
-+{
-+	i2c_del_driver(&bh1780_driver);
-+}
-+
-+module_init(bh1780_init)
-+module_exit(bh1780_exit)
-+
-+MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
-+MODULE_LICENSE("GPL");
-+MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
--- 
-1.5.6.3
+Any ideas?
+
+Kind regards,
+Udo
 
