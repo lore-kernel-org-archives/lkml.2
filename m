@@ -1,53 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751050Ab0EXEdQ (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 00:33:16 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:36042 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1749667Ab0EXEdO (ORCPT
+	id S1751416Ab0EXEeB (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 00:34:01 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:42728 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750733Ab0EXEeA (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 00:33:14 -0400
-Date: Mon, 24 May 2010 07:32:24 +0300
-From: Felipe Balbi <felipe.balbi@nokia.com>
-To: "ext Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       "linux-pm@lists.linux-foundation.org" 
-	<linux-pm@lists.linux-foundation.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100524043224.GA31700@nokia.com>
-Reply-To: felipe.balbi@nokia.com
-References: <1274482015-30899-1-git-send-email-arve@android.com>
- <201005240246.55043.rjw@sisk.pl>
+	Mon, 24 May 2010 00:34:00 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=sX3GwpEkT4SG3SBRCYm2d4HVsBNjaGy3UoQsTUonubZwogQDn8m81bvv0E+NzuWwaA
+         VeyC3pNFAiFOZ9KeNh8b4pSnzgH+D2GnMLYkPosj1hnHZ/N6zhqLRLJoOYJje1lrQDuA
+         bAJvmpZ7DzI9ohvUKnFdfpbcp5DuwN5CI0Adg=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1; format=flowed
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <201005240246.55043.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-OriginalArrivalTime: 24 May 2010 04:31:54.0286 (UTC) FILETIME=[0992BCE0:01CAFAFA]
-X-Nokia-AV: Clean
+In-Reply-To: <20100522165401.GB19573@redhat.com>
+References: <1266280229-18469-1-git-send-email-vapier@gentoo.org> 
+	<1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> 
+	<20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> 
+	<20100522165401.GB19573@redhat.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 24 May 2010 00:33:38 -0400
+Message-ID: <AANLkTinCtKiXjz08FI6EDUKWgLRDd64UVgDawhonZr__@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix 
+	the unsafe usage of child->mm
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       uclinux-dist-devel@blackfin.uclinux.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 02:46:54AM +0200, ext Rafael J. Wysocki wrote:
->On Saturday 22 May 2010, Arve Hjønnevåg wrote:
->> This patch series adds a suspend-block api that provides the same
->> functionality as the android wakelock api. This version adds a
->> delay before suspending again if no suspend blockers were used
->> during the last suspend attempt.
+On Sat, May 22, 2010 at 12:54, Oleg Nesterov wrote:
+> Now that Mike Frysinger unified the FDPIC ptrace code, we can fix
+> the unsafe usage of child->mm in ptrace_request(PTRACE_GETFDPIC).
 >
->Patches [1-6/8] applied to suspend-2.6/linux-next
+> We have the reference to task_struct, and ptrace_check_attach()
+> verified the tracee is stopped. But nothing can protect from
+> SIGKILL after that, we must not assume child->mm != NULL.
 
-funny thing is that even without sorting out the concerns plenty of 
-developers had on the other thread, this series is still taken. What's 
-the point in dicussing/reviewing the patches then ?
+gdb still works with FDPIC apps after this, so presumably it works
+fine :).  ive added it to the Blackfin tree to get more testing on our
+side (not that i'll be pushing it out or anything).
 
--- 
-balbi
-
-DefectiveByDesign.org
+thanks!
+-mike
