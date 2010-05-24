@@ -1,73 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757946Ab0EXS2j (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:28:39 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:23186 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757393Ab0EXS2i (ORCPT
+	id S1758045Ab0EXSbK (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:31:10 -0400
+Received: from one.firstfloor.org ([213.235.205.2]:46002 "EHLO
+	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0EXSbI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:28:38 -0400
-X-Greylist: delayed 416 seconds by postgrey-1.27 at vger.kernel.org; Mon, 24 May 2010 14:28:37 EDT
-X-IronPort-AV: E=Sophos;i="4.53,292,1272844800"; 
-   d="scan'208";a="61772"
-Date: Mon, 24 May 2010 19:29:10 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [PATCH 0 of 12] PV on HVM Xen
-In-Reply-To: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
-Message-ID: <alpine.DEB.2.00.1005241928340.25605@kaball-desktop>
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 24 May 2010 14:31:08 -0400
+Date: Mon, 24 May 2010 20:31:20 +0200
+From: Andi Kleen <andi@firstfloor.org>
+To: Tony Luck <tony.luck@intel.com>
+Cc: Russ Anderson <rja@sgi.com>, "Eric W. Biederman" <ebiederm@xmission.com>,
+       Borislav Petkov <bp@amd64.org>,
+       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
+       Mauro Carvalho Chehab <mchehab@redhat.com>,
+       "Young, Brent" <brent.young@intel.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Matt Domsch <Matt_Domsch@dell.com>,
+       Doug Thompson <dougthompson@xmission.com>,
+       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
+       "bluesmoke-devel@lists.sourceforge.net" 
+	<bluesmoke-devel@lists.sourceforge.net>,
+       Linux Edac Mailing List <linux-edac@vger.kernel.org>
+Subject: Re: Hardware Error Kernel Mini-Summit
+Message-ID: <20100524183120.GC3429@gargoyle.fritz.box>
+References: <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <AANLkTilxFZygP7YJybluPxtdxVGqWeqR4g7CRr8EEocW@mail.gmail.com> <20100524155506.GA7145@sgi.com> <AANLkTin8jmZCm9801Jh-6mGHsJcx5dsCKwsSyn8SbBPc@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTin8jmZCm9801Jh-6mGHsJcx5dsCKwsSyn8SbBPc@mail.gmail.com>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The subject should be [PATCH 0 of 11] PV on HVM Xen, sorry about that.
+On Mon, May 24, 2010 at 10:35:21AM -0700, Tony Luck wrote:
+> On Mon, May 24, 2010 at 8:55 AM, Russ Anderson <rja@sgi.com> wrote:
+> > ia64 had the Intel defined MCA Spec which defined the interaction
+> > between SAL and the kernel.  x86 does not have a similar well
+> > defined way of how errors should be handled.  It would be
+> > good to agree on how the errors should be handled.
+> 
+> X86 has machine check registers defined by the SDM. It also
+> has some f/w <-> OS interactions defined by the APEI sections
+> in the latest ACPI spec (chapter 17 of the 4.0a spec released
+> last month - see http://acpi.info). Some parts look cleaner than
 
-On Mon, 24 May 2010, Stefano Stabellini wrote:
-> Hi all,
-> this is another update of the PV on HVM Xen series that addresses
-> Jeremy's comments.
-> The platform_pci hooks have been removed, suspend/resume for HVM
-> domains is now much more similar to the PV case and shares the same
-> do_suspend function.
-> Alloc_xen_mmio_hook has been removed has well, now the memory allocation for
-> the grant table is done by the xen platform pci driver directly.
-> The per_cpu xen_vcpu variable is set by a cpu_notifier function so that
-> secondary vcpus have the variable set correctly no matter what the xen
-> features are on the host.
-> The kernel command line option xen_unplug has been renamed to
-> xen_emul_unplug and the code that makes use of it has been moved to a
-> separate file (arch/x86/xen/platform-pci-unplug.c).
-> Xen_unplug_emulated_devices is now able to detect if blkfront, netfront
-> and the Xen platform PCI driver have been compiled, and set the default
-> value of xen_emul_unplug accordingly.
-> The patch "Initialize xenbus device structs with ENODEV as
-> default" has been removed from the series and it will be sent
-> separately.
-> Finally the comments on most of the patches have been improved.
-> 
-> The series is based on 2.6.34 and supports Xen PV frontends running
-> in a HVM domain, including netfront, blkfront and the VIRQ_TIMER.
-> 
-> In order to be able to use VIRQ_TIMER and to improve performances you
-> need a patch to Xen to implement the vector callback mechanism
-> for event channel delivery.
-> 
-> A git tree is also available here:
-> 
-> git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
-> 
-> branch name 2.6.34-pvhvm-v2.
-> 
-> Cheers,
-> 
-> Stefano
-> 
+I should add the Intel Software Developer's manual has quite
+precise guidelines on what to do (and the Linux MCE code implements
+near all that faithfully) 
+
+The ACPI spec isn't quite as precise unfortunately.
+
+-Andi
