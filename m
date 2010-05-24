@@ -1,48 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755669Ab0EXBb1 (ORCPT <rfc822;w@1wt.eu>);
-	Sun, 23 May 2010 21:31:27 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48941 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753997Ab0EXBbX (ORCPT
+	id S1755173Ab0EXBnx (ORCPT <rfc822;w@1wt.eu>);
+	Sun, 23 May 2010 21:43:53 -0400
+Received: from mail.parknet.co.jp ([210.171.160.6]:48782 "EHLO
+	mail.parknet.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753628Ab0EXBnv (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Sun, 23 May 2010 21:31:23 -0400
-From: Arnaldo Carvalho de Melo <acme@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: linux-kernel@vger.kernel.org,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       =?utf-8?q?Fr=C3=A9d=C3=A9ric=20Weisbecker?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Stephane Eranian <eranian@google.com>, Tom Zanussi <tzanussi@gmail.com>
-Subject: [GIT PULL 0/2] perf annotate fix and report improvoment
-Date: Sun, 23 May 2010 22:31:09 -0300
-Message-Id: <1274664671-27385-1-git-send-email-acme@infradead.org>
-X-Mailer: git-send-email 1.6.2.5
-LKML-Reference: <new-submission>
-X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Sun, 23 May 2010 21:43:51 -0400
+From: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
+To: Jens Axboe <jens.axboe@oracle.com>
+Cc: mtk.manpages@gmail.com, Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu>
+	<alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org>
+	<AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com>
+	<20100522223838.ebca396a.akpm@linux-foundation.org>
+	<AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com>
+	<20100523070917.GO23411@kernel.dk>
+	<AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com>
+	<20100523174706.GP23411@kernel.dk>
+Date: Mon, 24 May 2010 10:43:45 +0900
+In-Reply-To: <20100523174706.GP23411@kernel.dk> (Jens Axboe's message of "Sun,
+	23 May 2010 19:47:06 +0200")
+Message-ID: <87632e846m.fsf@devron.myhome.or.jp>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/24.0.50 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+Jens Axboe <jens.axboe@oracle.com> writes:
 
-        Please pull from:
+>> > We can easily make F_GETPIPE_SZ return bytes, but I don't think passing
+>> > in bytes to F_SETPIPE_SZ makes a lot of sense. The pipe array must be a
+>> > power of 2 in pages. So the question is if that makes the API cleaner,
+>> > passing in number of pages but returning bytes? Or pass in bytes all
+>> > around, but have F_SETPIPE_SZ round to the nearest multiple of pow2 in
+>> > pages if need be. Then it would return a size at least what was passed
+>> > in, or error.
 
-git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
+I really think "power of 2 in pages" is simply current implementation
+detail, not detail of pipe API.
 
-Regards,
+>> I'd recommend this: Pass it in and out in bytes. Don't round to a
+>> power of 2. Require the user to know what they are doing. Give an
+>> error if the user doesn't supply a power-of-2 * page-size for
+>> F_SETPIPE_SZ. (Again, consider the case of architectures  with
+>> switchable page sizes.)
+>
+> But is there much point in erroring on an incorrect size? If the
+> application says "I need at least 120kb of space in there", kernel
+> returns "OK, you got 128kb". Would returning -1/EINVAL for that case
+> really make a better API? Doesn't seem like it to me.
 
-- Arnaldo
+FWIW, my first impression of this was setsockopt(SO_RCV/SNDBUF) of unix
+socket. Well, API itself wouldn't say "at least this size" or "exactly
+this size", so, in here, important thing is consistency of interfaces, I
+think. (And the both is sane API at least for me if those had
+consistency in the system.)
 
-Arnaldo Carvalho de Melo (2):
-  perf report: Support multiple events on the TUI
-  perf annotate: Fix up usage of the build id cache
+Well, so how about set/get in bytes, and kernel will set "at least
+specified size" actually like setsockopt(SO_RCV/SNDBUF)?
 
- tools/perf/builtin-report.c |   60 +++++++++++++++++++++--------------
- tools/perf/util/hist.c      |   13 ++++++-
- tools/perf/util/hist.h      |   14 +++++++-
- tools/perf/util/newt.c      |   74 ++++++++++++++++++++++++++++++++++--------
- 4 files changed, 119 insertions(+), 42 deletions(-)
-
+Thanks.
+-- 
+OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>
