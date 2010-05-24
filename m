@@ -1,140 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755998Ab0EXOpw (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 10:45:52 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:34727 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752482Ab0EXOpv (ORCPT
+	id S1756371Ab0EXOvo (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 10:51:44 -0400
+Received: from sprinkles.athenacr.com ([64.95.46.210]:51720 "EHLO
+	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1752208Ab0EXOvn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 10:45:51 -0400
-Date: Mon, 24 May 2010 15:45:39 +0100
-From: Russell King - ARM Linux <linux@arm.linux.org.uk>
-To: Ming Lei <tom.leiming@gmail.com>
-Cc: linux-kernel@vger.kernel.org, linux-embedded@vger.kernel.org,
-       linux-arm-kernel@lists.infradead.org, a.p.zijlstra@chello.nl
-Subject: Re: [RESEND PATCH] ARM: fix 'unannotated irqs-on' lockdep warning
-Message-ID: <20100524144539.GE21117@n2100.arm.linux.org.uk>
-References: <1274615328-27953-1-git-send-email-tom.leiming@gmail.com> <20100523123801.GC950@n2100.arm.linux.org.uk> <AANLkTikRp0EHxshKYq39p18ymoRNAtyHrNm3yq6A49-r@mail.gmail.com> <20100523141300.GD950@n2100.arm.linux.org.uk> <AANLkTinV9Na9zxYMIfTr893Ynnc0YOk2B6uPKEa9s4R1@mail.gmail.com> <20100523194746.GE950@n2100.arm.linux.org.uk> <20100524112355.18424622@tom-lei> <20100524071921.GA17528@n2100.arm.linux.org.uk> <20100524101416.GA21117@n2100.arm.linux.org.uk> <20100524222033.12b25f2a@tom-lei>
+	Mon, 24 May 2010 10:51:43 -0400
+Message-ID: <4BFA927A.8070305@athenacr.com>
+Date: Mon, 24 May 2010 10:51:38 -0400
+From: Brian Bloniarz <bmb@athenacr.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100524222033.12b25f2a@tom-lei>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: mtk.manpages@gmail.com
+CC: Michael Kerrisk <mtk.manpages@googlemail.com>,
+       Jens Axboe <jens.axboe@oracle.com>,
+       OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [patch] pipe: add support for shrinking and growing pipes
+References: <E1OEmP5-0006GU-KC@pomaz-ex.szeredi.hu> <alpine.LFD.2.00.1005190946540.23538@i5.linux-foundation.org> 	<AANLkTikkRywJSJ8HFsVhVU9dHz8cFGqlK9ZHXZuGQbb2@mail.gmail.com> 	<20100522223838.ebca396a.akpm@linux-foundation.org> <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> 	<20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> 	<20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> 	<20100524070416.GQ23411@kernel.dk> <AANLkTikwTa16lDh87zkI-L9SaI9jG1_eqZuo4z7dj2qP@mail.gmail.com>
+In-Reply-To: <AANLkTikwTa16lDh87zkI-L9SaI9jG1_eqZuo4z7dj2qP@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 10:20:33PM +0800, Ming Lei wrote:
-> On Mon, 24 May 2010 11:14:16 +0100
-> Russell King - ARM Linux <linux@arm.linux.org.uk> wrote:
-> 
-> > Right, I see what the problem is now - it's all to do with threads
-> > created with kernel_thread() confusing lockdep.
-> > 
-> > I'm of the opinion that all your changes in entry*.S are the wrong
-> > way to fix this - not only does it add additional overhead where
-> > none is really necessary, it adds additional complexity.
-> > 
-> > So, here's a patch to solve the warning you quoted.
-> 
-> No, your patch does not fix the issue, I still can see the lockdep
-> warning after applying it against Linux 2.6.34-next-20100524.
+On 05/24/2010 03:28 AM, Michael Kerrisk wrote:
+> Actually, SO_*BUF is pretty weird. It returns double what was
+> supplied. It's not simply a matter of rounding up: it always doubles
+> what was supplied.
 
-No, my patch fixes the issue you raised in the dump.  This is a new
-lockdep issue which is unrelated to the first dump.
+Rationale in net/core/sock.c:
 
-What's wrong is:
+set_rcvbuf:
+                sk->sk_userlocks |= SOCK_RCVBUF_LOCK;
+                /*
+                 * We double it on the way in to account for
+                 * "struct sk_buff" etc. overhead.   Applications
+                 * assume that the SO_RCVBUF setting they make will
+                 * allow that much actual data to be received on that
+                 * socket.
+                 *
+                 * Applications are unaware that "struct sk_buff" and
+                 * other overheads allocate from the receive buffer
+                 * during socket buffer allocation.
+                 *
+                 * And after considering the possible alternatives,
+                 * returning the value we actually used in getsockopt
+                 * is the most desirable behavior.
+                 */
+                if ((val * 2) < SOCK_MIN_RCVBUF)
+                        sk->sk_rcvbuf = SOCK_MIN_RCVBUF;
+                else
+                        sk->sk_rcvbuf = val * 2;
+                break;
 
-commit 0d928b0b616d1c5c5fe76019a87cba171ca91633
-Author: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-Date:   Thu Aug 13 20:38:17 2009 +0200
+I'm guessing pipes don't have this kind of wrinkle.
 
-    Complete irq tracing support for ARM
-
-    Before this patch enabling and disabling irqs in assembler code and by
-    the hardware wasn't tracked completly.
-
-    I had to transpose two instructions in arch/arm/lib/bitops.h because
-    restore_irqs doesn't preserve the flags with CONFIG_TRACE_IRQFLAGS=y
-
-    Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-    Cc: Russell King <linux@arm.linux.org.uk>
-    Cc: Peter Zijlstra <peterz@infradead.org>
-    Cc: Ingo Molnar <mingo@redhat.com>
-
-    Signed-off-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-
-which needs to be redone with a little more understanding, like the
-following patch.  Note: you will need the previous patch as well,
-which is separate because it addresses a *different* issue.
-
-diff --git a/arch/arm/kernel/entry-armv.S b/arch/arm/kernel/entry-armv.S
-index 7ee48e7..3fd7861 100644
---- a/arch/arm/kernel/entry-armv.S
-+++ b/arch/arm/kernel/entry-armv.S
-@@ -162,8 +162,6 @@ ENDPROC(__und_invalid)
- 	@  r4 - orig_r0 (see pt_regs definition in ptrace.h)
- 	@
- 	stmia	r5, {r0 - r4}
--
--	asm_trace_hardirqs_off
- 	.endm
- 
- 	.align	5
-@@ -204,7 +202,7 @@ __dabt_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--	disable_irq
-+	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
-@@ -218,6 +216,9 @@ ENDPROC(__dabt_svc)
- __irq_svc:
- 	svc_entry
- 
-+#ifdef CONFIG_TRACE_IRQFLAGS
-+	bl	trace_hardirqs_off
-+#endif
- #ifdef CONFIG_PREEMPT
- 	get_thread_info tsk
- 	ldr	r8, [tsk, #TI_PREEMPT]		@ get preempt count
-@@ -291,7 +292,7 @@ __und_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--1:	disable_irq
-+1:	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
-@@ -327,7 +328,7 @@ __pabt_svc:
- 	@
- 	@ IRQs off again before pulling preserved data off the stack
- 	@
--	disable_irq
-+	disable_irq_notrace
- 
- 	@
- 	@ restore SPSR and restart the instruction
-@@ -393,8 +394,6 @@ ENDPROC(__pabt_svc)
- 	@ Clear FP to mark the first stack frame
- 	@
- 	zero_fp
--
--	asm_trace_hardirqs_off
- 	.endm
- 
- 	.macro	kuser_cmpxchg_check
-@@ -465,9 +464,6 @@ __irq_usr:
-  THUMB(	movne	r0, #0		)
-  THUMB(	strne	r0, [r0]	)
- #endif
--#ifdef CONFIG_TRACE_IRQFLAGS
--	bl	trace_hardirqs_on
--#endif
- 
- 	mov	why, #0
- 	b	ret_to_user
