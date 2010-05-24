@@ -1,67 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758035Ab0EXVVU (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 17:21:20 -0400
-Received: from crca.org.au ([74.207.252.120]:52369 "EHLO crca.org.au"
+	id S1758071Ab0EXVWO (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 17:22:14 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29822 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757804Ab0EXVVT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 17:21:19 -0400
-X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BFAEDC9.1010707@crca.org.au>
-Date: Tue, 25 May 2010 07:21:13 +1000
-From: Nigel Cunningham <ncunningham@crca.org.au>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S1757737Ab0EXVWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 17:22:13 -0400
+Date: Mon, 24 May 2010 17:22:07 -0400
+From: Vivek Goyal <vgoyal@redhat.com>
+To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+Cc: Jens Axboe <jens.axboe@oracle.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace
+	backlogged group status
+Message-ID: <20100524212207.GC28685@redhat.com>
+References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com> <4BF9D265.70008@cn.fujitsu.com>
 MIME-Version: 1.0
-To: Pavel Machek <pavel@ucw.cz>
-CC: "Rafael J. Wysocki" <rjw@sisk.pl>, Alan Stern <stern@rowland.harvard.edu>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       linux-pm <linux-pm@lists.linux-foundation.org>,
-       Matt Reimer <mattjreimer@gmail.com>
-Subject: Re: [linux-pm] Is it supposed to be ok to call del_gendisk while
- userspace is frozen?
-References: <Pine.LNX.4.44L0.1005162219330.24400-100000@netrider.rowland.org> <4BF0F3FF.2010603@crca.org.au> <201005172235.37824.rjw@sisk.pl> <4BF1C86B.8000203@crca.org.au> <20100524190206.GL1292@ucw.cz>
-In-Reply-To: <20100524190206.GL1292@ucw.cz>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BF9D265.70008@cn.fujitsu.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
+On Mon, May 24, 2010 at 09:12:05AM +0800, Gui Jianfeng wrote:
+> Vivek Goyal wrote:
+> > On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
+> >> Hi,
+> >>
+> >> This series implements three new interfaces to keep track of tranferred bytes,
+> >> elapsing time and io rate since group getting backlogged. If the group dequeues
+> >> from service tree, these three interfaces will reset and shows zero.
+> > 
+> > Hi Gui,
+> > 
+> > Can you give some details regarding how this functionality is useful? Why
+> > would somebody be interested in only in stats of till group was
+> > backlogged and not in total stats?
+> > 
+> > Groups can come and go so fast and these stats will reset so many times
+> > that I am not able to visualize how these stats will be useful.
+> 
+> Hi Vivek,
+> 
+> Currently, we assign weight to a group, but user still doesn't know how fast the
+> group runs. With io rate interface, users can check the rate of a group at any
+> moment, or to determine whether the weight assigned to a group is enough.
+> bytes and time interface is just for debug purpose.
 
-On 25/05/10 05:02, Pavel Machek wrote:
->
->>>> - We're dealing with the symptom, not the cause. Almost always a bad idea.
->>>
->>> I very much prefer to have a fix for a symptom than no fix at all, which is the
->>> realistic alternative in this case.
->>>
->>> So, I think we should merge the patch and if someone finds the root cause
->>> at one point in future, then we can just use the *right* approach instead of
->>> the present one.
->>>
->>> The problem is real and people in the field are affected by it, so if you don't
->>> have a working alternative patch, please just let go.
->>
->> I'm not denying that the problem is real. What I am concerned about
->> is finding a real solution, not just putting a sticky plaster over
->> the wound. It seems to me to be much wiser to deal with the issue
->> properly now instead of doing extra work later to diagnose what
->> might be a harder to reproduce symptom of the same problem. I'd
->> happily put the time in now myself, but I simply don't have the time
->> this week.
->>
->> Would it be possible to apply the patch, adding some sort of new tag
->> that can be used to say "This needs further attention", perhaps
->> including an enduring reference to this conversation. Later, the
->> 'real' fix could include another special tag that says "Proper fix
->> for the symptom addressed in commit 5e94f810"?
->
-> WARN_ON() whenever patch triggers?
+Gui,
 
-I suppose that would do. I was thinking of a more generic git tag that 
-could perhaps be searched for later, but .. okay.
+I still don't understand that why blkio.sectors or blkio.io_service_bytes
+or blkio.io_serviced interfaces are not good enough to determine at what
+rate a group is doing IO.
 
-Nigel
+I think we can very well write something in userspace like "iostat" to 
+display the per group rate. Utility can read the any of the above files
+say at the interfval of 1s, calculate the diff between the values and
+display that as group effective rate.
+
+Thanks
+Vivek
