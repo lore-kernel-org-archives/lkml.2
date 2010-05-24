@@ -1,64 +1,102 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758071Ab0EXVWO (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 17:22:14 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29822 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757737Ab0EXVWN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 17:22:13 -0400
-Date: Mon, 24 May 2010 17:22:07 -0400
-From: Vivek Goyal <vgoyal@redhat.com>
-To: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
-Cc: Jens Axboe <jens.axboe@oracle.com>,
-       linux kernel mailing list <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace
-	backlogged group status
-Message-ID: <20100524212207.GC28685@redhat.com>
-References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com> <4BF9D265.70008@cn.fujitsu.com>
+	id S1758148Ab0EXVZI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 17:25:08 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35590 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757058Ab0EXVZG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 17:25:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=NRTN8fj1cNVhyjnnfyV5BM/djJlAEMHfDCdvSCaZsa6XqXxMDRKkUV/s06BUCY3SPv
+         Enw2bGT1NgqVb70b/zpYkPwoIcxR8nZFnWBsIrNsw9hZS4W5rwkYfoEleehumQD81NZP
+         eB0PBdhN/2Laa1YIP7Kxjc5WwbYjGnNmVPX+8=
+Date: Mon, 24 May 2010 23:25:01 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Robert Richter <robert.richter@amd.com>
+Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Stephane Eranian <eranian@google.com>, Ingo Molnar <mingo@elte.hu>,
+       Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Paul Mackerras <paulus@samba.org>, LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [RFC PATCH] perf: align raw sample data on 64-bit boundaries
+Message-ID: <20100524212459.GA9707@nowhere>
+References: <1271190201-25705-1-git-send-email-robert.richter@amd.com> <1271190201-25705-13-git-send-email-robert.richter@amd.com> <n2wbd4cb8901004190519m9c939c26wbe49701fdfd2379a@mail.gmail.com> <20100518151227.GJ21799@erda.amd.com> <20100519073908.GE5704@nowhere> <20100519093100.GL21799@erda.amd.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BF9D265.70008@cn.fujitsu.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+In-Reply-To: <20100519093100.GL21799@erda.amd.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 09:12:05AM +0800, Gui Jianfeng wrote:
-> Vivek Goyal wrote:
-> > On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
-> >> Hi,
-> >>
-> >> This series implements three new interfaces to keep track of tranferred bytes,
-> >> elapsing time and io rate since group getting backlogged. If the group dequeues
-> >> from service tree, these three interfaces will reset and shows zero.
-> > 
-> > Hi Gui,
-> > 
-> > Can you give some details regarding how this functionality is useful? Why
-> > would somebody be interested in only in stats of till group was
-> > backlogged and not in total stats?
-> > 
-> > Groups can come and go so fast and these stats will reset so many times
-> > that I am not able to visualize how these stats will be useful.
+On Wed, May 19, 2010 at 11:31:00AM +0200, Robert Richter wrote:
+> On 19.05.10 03:39:10, Frederic Weisbecker wrote:
 > 
-> Hi Vivek,
+> > > This changes the ABI and requires changes in the userland tools. For
+> > > tools/perf this is at a single location in event.c only. This could
+> > > also introduce some overhead on smaller architectures, but currently
+> > > this is only used on x86 or for transferring raw tracepoint
+> > > data.
+> > 
+> > 
+> > No this is used on any architectures that event have a minimal support for
+> > perf events.
+> > 
+> > I use tracepoint raw samples in sparc 64 for example (which has much more
+> > than the minimal support).
 > 
-> Currently, we assign weight to a group, but user still doesn't know how fast the
-> group runs. With io rate interface, users can check the rate of a group at any
-> moment, or to determine whether the weight assigned to a group is enough.
-> bytes and time interface is just for debug purpose.
+> Isn't here the same alignment problem on archs there unsigned long is
+> 64 bit? Also, most samples I found have a size of multiples of 8
+> bytes, so even on 32 bit archs there would be a padding of 4 bytes
+> somethere in the sample.
 
-Gui,
 
-I still don't understand that why blkio.sectors or blkio.io_service_bytes
-or blkio.io_serviced interfaces are not good enough to determine at what
-rate a group is doing IO.
 
-I think we can very well write something in userspace like "iostat" to 
-display the per group rate. Utility can read the any of the above files
-say at the interfval of 1s, calculate the diff between the values and
-display that as group effective rate.
+Yeah there was an alignment problem in sparc 64 that I fixed in perf
+tools lately. The fix is more a hack though, the real solution would
+be to have this alignment thing fixed.
 
-Thanks
-Vivek
+And yeah, probably most samples need padding.
+
+
+ 
+> > I don't think we should do this. Ok it's true we've screwed up
+> > something there but breaking the ABI is going to make the things
+> > even worst I think.
+> 
+> I was not sure how hard an ABI breakage would be. I think the small
+> number of users of raw samples is manageable, but I understand if you
+> feel uncomfortable with it.
+
+
+I don't know how many people use it. But I prefer not to take that
+risk.
+
+
+
+> 
+> > I would feel better with a new PERF_SAMPLE_RAW_ALIGNED sample_type
+> > and schedule the deprecation of PERF_SAMPLE_RAW for later but keep
+> > it for some releases.
+> 
+> This could be an alternative. Though, it duplicates code paths and
+> introduces ugly sample type checks. Another alternative would be to
+> check the size value, if it is (n * sizeof(u64)) we could asume 64 bit
+> alignment. But maybe this makes things much worse.
+> 
+> -Robert
+
+
+It doesn't duplicate much code paths, we only have a few corner cases to
+plug in. And more importantly, that would be temporary if we schedule the
+older PERF_SAMPLE_RAW in, say, three releases from now.
+
+This ensures an easy forward compatibility (older perf tools -> newer kernel).
+But the backward compatibility is less easy (newer perf tools -> older kernel)
+as it means we need to test dynamically if we have PERF_SAMPLE_RAW_ALIGNED,
+otherwise we need to fall back to using the older one.
+
