@@ -1,132 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756778Ab0EXKum (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 06:50:42 -0400
-Received: from smtp-01.mandic.com.br ([200.225.81.132]:50219 "EHLO
-	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755361Ab0EXKul (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 06:50:41 -0400
-Message-ID: <4BFA59F7.2020606@cesarb.net>
-Date: Mon, 24 May 2010 07:50:31 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756827Ab0EXKvx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 06:51:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:17969 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756017Ab0EXKvw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 06:51:52 -0400
+Message-ID: <4BFA5A3F.4040005@redhat.com>
+Date: Mon, 24 May 2010 13:51:43 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 0/3] mm: Swap checksum
-References: <4BF81D87.6010506@cesarb.net>	<20100523140348.GA10843@barrios-desktop>	<4BF974D5.30207@cesarb.net>	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>	<4BF9CF00.2030704@cesarb.net> <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
-In-Reply-To: <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
+To: Nick Piggin <npiggin@suse.de>
+CC: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] mm: Swap checksum
+References: <4BF81D87.6010506@cesarb.net> <1274551731-4534-3-git-send-email-cesarb@cesarb.net> <4BF94792.5030405@redhat.com> <4BF97AC2.1040505@cesarb.net> <4BFA1F92.2080802@redhat.com> <20100524073259.GW2516@laptop>
+In-Reply-To: <20100524073259.GW2516@laptop>
 Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 23-05-2010 23:05, Minchan Kim escreveu:
-> On Mon, May 24, 2010 at 9:57 AM, Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
->> The internal ECC of the disk will not save you - a quick Google search found
->> an instance of someone with silent data corruption caused by a faulty *power
->> supply*.[1]
->>
->> And if it is silent corruption, without the checksums you will not notice it
->> - it will just be dismissed as "oh, Firefox just crashed again" or similar
->> (the same as bit flips on RAM without ECC).
+On 05/24/2010 10:32 AM, Nick Piggin wrote:
 >
-> When I read your comment, suddenly some thought occurred to me.
-> If we can't believe ECC of the disk, why do we separate error
-> detection logic between file system and swap disk?
->
-> I mean it make sense that put crc detection into block layer?
-> It can make sure any block I/O.
+> I wonder, though. If we no longer trust block devices to give the
+> correct data back, should we provide a meta block device to do error
+> detection?
 
-There are differences as to where the checksum will be stored.
+Some block devices do provide space for end-to-end checksums.  For the 
+ones that don't, I see no efficient way of adding it (either we turn one 
+access into two, or we have a non-power-of-two block size).
 
-For the filesystem (and for the software suspend image), you have to 
-store the checksums in the disk itself, and the correct place (and 
-ordering requirements) depends on the filesystem. Also, most filesystems 
-do not currently have on-disk checksums.
+> No production filesystem on Linux has checksums (well, ext4
+> has a few). Of the ones that add checksumming, I'd say most will not do
+> data checksumming (and for direct IO it is not done).
+>    
 
-For the swap, it is much simpler; the checksums can be stored in memory 
-(since they do not matter after a reboot; the swap contents are simply 
-discarded). This also gives better performance, since the checksums do 
-not have to be separately written, and more flexibility, since the 
-kernel can use whatever kind of checksum it wants and can store the 
-checksum in whatever data structure it choses, without worrying about 
-compatibility.
-
-And, in fact, there is a CRC code in the block layer; it is 
-CONFIG_BLK_DEV_INTEGRITY. However, it is not a generic solution; it 
-needs some extra prerequisites (like a disk low-level formatted with 
-sectors with >512 bytes).
-
-> And what's BER of disk?
-> Is it usual to meet the problem?
-
-It is unusual enough that most people who meet it will not notice.
-
-And the filesystem developers (who understand about these things more 
-than me) seem to be trending towards adding checksums to their 
-filesystems. The point of this patch is to meet the same level of safety 
-as btrfs (thus the choice of crc32c, which is what btrfs uses).
-
-> In normal desktop, some app killed are not critical. If the
-> application is critical, maybe app have to logic fault handling.
-> Firefox has session restore feature and Office program has temporal
-> save feature.
-
-In fact, crashing is the "best" outcome here. The worst outcome is your 
-application silently corrupting the data you then save to disk.
-
-> On the other hand, in server, does it designed well to use swap disk
-> until we meet bit error of disk?
-
-Servers are the ones which would benefit the most, as their RAM is 
-usually very reliable (they tend to use ECC memory). Their disk 
-subsystems, however, are also more reliable.
-
-Desktop systems (especially "no-name" brand ones) do not gain as much, 
-since their RAM is usually unprotected; however, they are also the ones 
-which have better chance of having low-quality power supplies, uncommon 
-storage media (USB flash drives as the root disk is an example), and 
-problematic I/O subsystems.
-
-> My feel is that it seem to be rather overkill.
-
-Yes, it is a bit overkill, except when you are using software suspend. 
-While the software suspend image is not protected by this patch (I am 
-already thinking of a separate patch to add checksums to it), the 
-swapped out pages are (software suspend uses both a memory image saved 
-to the swap partition and the normal swapped out pages).
-
-But you do not have to use it if you think it is overkill - I even added 
-a kernel parameter to easily disable it.
-
->> The swap checksum only protects the page against being silently corrupted
->> while on the disk and at least to some degree on the I/O path between the
->> memory and the disk. It does not protect against broken kernel-mode code
->> writing to the wrong address, nor against broken hardware (or hardware
->> misconfigured by broken drivers) doing DMA to wrong addresses. It also does
->> not protect against hardware errors in the RAM itself (you have ECC memory
->> for that).
->>
->> That is, the code assumes the memory containing the checksums will not be
->> corrupted, because if it is, you have worse problems (and the CRC error here
->> would be a *good* thing, since it would make you notice something is not
->> quite right).
->>
->
-> Which is high between BER of RAM and disk?
-> It's a just question. :)
-
-I have no idea.
-
-However, we can do nothing in software against RAM errors; it would kill 
-performance too much. Against disk errors, however, we can do a lot 
-(software RAID-1 is just one of the simplest examples).
+I believe btrfs checksums direct IO.  Unfortunately it has some way to 
+go before it can be used in production.
 
 -- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
+Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+
