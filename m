@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758565Ab0EXWko (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:40:44 -0400
-Received: from kroah.org ([198.145.64.141]:42371 "EHLO coco.kroah.org"
+	id S932086Ab0EXWlR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:41:17 -0400
+Received: from kroah.org ([198.145.64.141]:42349 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758270Ab0EXWiV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:21 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:17 2010
-Message-Id: <20100524223017.250456752@clark.site>
+	id S1758234Ab0EXWiT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
+Message-Id: <20100524223016.455173570@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:10 -0700
+Date: Mon, 24 May 2010 15:28:07 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tomas Henzl <thenzl@redhat.com>, Bo Yang <Bo.Yang@lsi.com>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [14/24] [SCSI] megaraid_sas: fix for 32bit apps
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [11/24] ext4: Fix file fragmentation during large file write.
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,69 +27,196 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Tomas Henzl <thenzl@redhat.com>
 
-commit b3dc1a212e5167984616445990c76056034f8eeb upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-It looks like this patch -
+commit 22208dedbd7626e5fc4339c417f8d24cc21f79d7 upstream.
 
-commit 7b2519afa1abd1b9f63aa1e90879307842422dae
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Tue Oct 6 14:52:20 2009 -0600
+The range_cyclic writeback mode uses the address_space writeback_index
+as the start index for writeback.  With delayed allocation we were
+updating writeback_index wrongly resulting in highly fragmented file.
+This patch reduces the number of extents reduced from 4000 to 27 for a
+3GB file.
 
-    [SCSI] megaraid_sas: fix 64 bit sense pointer truncation
-
-has caused a problem for 32bit programs with 64bit os -
-
-http://bugzilla.kernel.org/show_bug.cgi?id=15001
-
-fix by converting the user space 32bit pointer to a 64 bit one when
-needed.
-
-[jejb: fix up some 64 bit warnings]
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
-Cc: Bo Yang <Bo.Yang@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+[dev@jaysonking.com: Some changed lines from the original version of this patch were dropped, since they were rolled up with another cherry-picked patch applied to 2.6.27.y earlier.]
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/megaraid/megaraid_sas.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ fs/ext4/inode.c |   88 +++++++++++++++++++++++++++++++++++---------------------
+ 1 file changed, 55 insertions(+), 33 deletions(-)
 
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -3292,6 +3292,7 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    compat_alloc_user_space(sizeof(struct megasas_iocpacket));
- 	int i;
- 	int error = 0;
-+	compat_uptr_t ptr;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1721,7 +1721,11 @@ static int mpage_da_submit_io(struct mpa
  
- 	if (clear_user(ioc, sizeof(*ioc)))
- 		return -EFAULT;
-@@ -3304,9 +3305,22 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    copy_in_user(&ioc->sge_count, &cioc->sge_count, sizeof(u32)))
- 		return -EFAULT;
+ 			pages_skipped = mpd->wbc->pages_skipped;
+ 			err = mapping->a_ops->writepage(page, mpd->wbc);
+-			if (!err)
++			if (!err && (pages_skipped == mpd->wbc->pages_skipped))
++				/*
++				 * have successfully written the page
++				 * without skipping the same
++				 */
+ 				mpd->pages_written++;
+ 			/*
+ 			 * In error case, we have to continue because
+@@ -2175,7 +2179,6 @@ static int mpage_da_writepages(struct ad
+ 			       struct writeback_control *wbc,
+ 			       struct mpage_da_data *mpd)
+ {
+-	long to_write;
+ 	int ret;
  
--	for (i = 0; i < MAX_IOCTL_SGE; i++) {
--		compat_uptr_t ptr;
-+	/*
-+	 * The sense_ptr is used in megasas_mgmt_fw_ioctl only when
-+	 * sense_len is not null, so prepare the 64bit value under
-+	 * the same condition.
-+	 */
-+	if (ioc->sense_len) {
-+		void __user **sense_ioc_ptr =
-+			(void __user **)(ioc->frame.raw + ioc->sense_off);
-+		compat_uptr_t *sense_cioc_ptr =
-+			(compat_uptr_t *)(cioc->frame.raw + cioc->sense_off);
-+		if (get_user(ptr, sense_cioc_ptr) ||
-+		    put_user(compat_ptr(ptr), sense_ioc_ptr))
-+			return -EFAULT;
+ 	if (!mpd->get_block)
+@@ -2190,19 +2193,18 @@ static int mpage_da_writepages(struct ad
+ 	mpd->pages_written = 0;
+ 	mpd->retval = 0;
+ 
+-	to_write = wbc->nr_to_write;
+-
+ 	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, mpd);
+-
+ 	/*
+ 	 * Handle last extent of pages
+ 	 */
+ 	if (!mpd->io_done && mpd->next_page != mpd->first_page) {
+ 		if (mpage_da_map_blocks(mpd) == 0)
+ 			mpage_da_submit_io(mpd);
+-	}
+ 
+-	wbc->nr_to_write = to_write - mpd->pages_written;
++		mpd->io_done = 1;
++		ret = MPAGE_DA_EXTENT_TAIL;
 +	}
++	wbc->nr_to_write -= mpd->pages_written;
+ 	return ret;
+ }
  
-+	for (i = 0; i < MAX_IOCTL_SGE; i++) {
- 		if (get_user(ptr, &cioc->sgl[i].iov_base) ||
- 		    put_user(compat_ptr(ptr), &ioc->sgl[i].iov_base) ||
- 		    copy_in_user(&ioc->sgl[i].iov_len,
+@@ -2447,11 +2449,14 @@ static int ext4_da_writepages_trans_bloc
+ static int ext4_da_writepages(struct address_space *mapping,
+ 			      struct writeback_control *wbc)
+ {
++	pgoff_t	index;
++	int range_whole = 0;
+ 	handle_t *handle = NULL;
+ 	struct mpage_da_data mpd;
+ 	struct inode *inode = mapping->host;
++	int no_nrwrite_index_update;
++	long pages_written = 0, pages_skipped;
+ 	int needed_blocks, ret = 0, nr_to_writebump = 0;
+-	long to_write, pages_skipped = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(mapping->host->i_sb);
+ 
+ 	/*
+@@ -2485,16 +2490,26 @@ static int ext4_da_writepages(struct add
+ 		nr_to_writebump = sbi->s_mb_stream_request - wbc->nr_to_write;
+ 		wbc->nr_to_write = sbi->s_mb_stream_request;
+ 	}
++	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
++		range_whole = 1;
+ 
+-
+-	pages_skipped = wbc->pages_skipped;
++	if (wbc->range_cyclic)
++		index = mapping->writeback_index;
++	else
++		index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 
+ 	mpd.wbc = wbc;
+ 	mpd.inode = mapping->host;
+ 
+-restart_loop:
+-	to_write = wbc->nr_to_write;
+-	while (!ret && to_write > 0) {
++	/*
++	 * we don't want write_cache_pages to update
++	 * nr_to_write and writeback_index
++	 */
++	no_nrwrite_index_update = wbc->no_nrwrite_index_update;
++	wbc->no_nrwrite_index_update = 1;
++	pages_skipped = wbc->pages_skipped;
++
++	while (!ret && wbc->nr_to_write > 0) {
+ 
+ 		/*
+ 		 * we  insert one extent at a time. So we need
+@@ -2527,46 +2542,53 @@ restart_loop:
+ 				goto out_writepages;
+ 			}
+ 		}
+-		to_write -= wbc->nr_to_write;
+-
+ 		mpd.get_block = ext4_da_get_block_write;
+ 		ret = mpage_da_writepages(mapping, wbc, &mpd);
+ 
+ 		ext4_journal_stop(handle);
+ 
+-		if (mpd.retval == -ENOSPC)
++		if (mpd.retval == -ENOSPC) {
++			/* commit the transaction which would
++			 * free blocks released in the transaction
++			 * and try again
++			 */
+ 			jbd2_journal_force_commit_nested(sbi->s_journal);
+-
+-		/* reset the retry count */
+-		if (ret == MPAGE_DA_EXTENT_TAIL) {
++			wbc->pages_skipped = pages_skipped;
++			ret = 0;
++		} else if (ret == MPAGE_DA_EXTENT_TAIL) {
+ 			/*
+ 			 * got one extent now try with
+ 			 * rest of the pages
+ 			 */
+-			to_write += wbc->nr_to_write;
++			pages_written += mpd.pages_written;
++			wbc->pages_skipped = pages_skipped;
+ 			ret = 0;
+-		} else if (wbc->nr_to_write) {
++		} else if (wbc->nr_to_write)
+ 			/*
+ 			 * There is no more writeout needed
+ 			 * or we requested for a noblocking writeout
+ 			 * and we found the device congested
+ 			 */
+-			to_write += wbc->nr_to_write;
+ 			break;
+-		}
+-		wbc->nr_to_write = to_write;
+-	}
+-
+-	if (!wbc->range_cyclic && (pages_skipped != wbc->pages_skipped)) {
+-		/* We skipped pages in this loop */
+-		wbc->nr_to_write = to_write +
+-				wbc->pages_skipped - pages_skipped;
+-		wbc->pages_skipped = pages_skipped;
+-		goto restart_loop;
+ 	}
++	if (pages_skipped != wbc->pages_skipped)
++		printk(KERN_EMERG "This should not happen leaving %s "
++				"with nr_to_write = %ld ret = %d\n",
++				__func__, wbc->nr_to_write, ret);
++
++	/* Update index */
++	index += pages_written;
++	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
++		/*
++		 * set the writeback_index so that range_cyclic
++		 * mode will write it back later
++		 */
++		mapping->writeback_index = index;
+ 
+ out_writepages:
+-	wbc->nr_to_write = to_write - nr_to_writebump;
++	if (!no_nrwrite_index_update)
++		wbc->no_nrwrite_index_update = 0;
++	wbc->nr_to_write -= nr_to_writebump;
+ 	return ret;
+ }
+ 
 
 
