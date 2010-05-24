@@ -1,60 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758196Ab0EXR4w (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 13:56:52 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:55154 "EHLO kernel.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757689Ab0EXR4v (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 13:56:51 -0400
-Date: Mon, 24 May 2010 19:56:49 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: mtk.manpages@gmail.com
-Cc: OGAWA Hirofumi <hirofumi@mail.parknet.co.jp>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Miklos Szeredi <miklos@szeredi.hu>, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [patch] pipe: add support for shrinking and growing pipes
-Message-ID: <20100524175649.GV23411@kernel.dk>
-References: <AANLkTinFOqDF0v_uMvkj4r8n4aX4xvpFvTi-9odUYa5F@mail.gmail.com> <20100523070917.GO23411@kernel.dk> <AANLkTimKFHQPi9kKhYYjRhMt0s5CDsBXmESQaH493hpR@mail.gmail.com> <20100523174706.GP23411@kernel.dk> <87632e846m.fsf@devron.myhome.or.jp> <AANLkTin42kucqLbErGA4GlGPZEIPQV2DFkiHkEVSYiI9@mail.gmail.com> <20100524070552.GR23411@kernel.dk> <AANLkTikogQtGpO9c94A7YSmP8zdyM8dZBrwJf1nwlR4j@mail.gmail.com> <20100524173551.GU23411@kernel.dk> <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com>
+	id S1758086Ab0EXSDX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:03:23 -0400
+Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:46950 "EHLO
+	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753546Ab0EXSDV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 14:03:21 -0400
+Message-ID: <4BFABF40.30700@euromail.se>
+Date: Mon, 24 May 2010 20:02:40 +0200
+From: Henrik Rydberg <rydberg@euromail.se>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimDJjHWKISxnLax3r200Db8OQp_lMKOx14ONgkS@mail.gmail.com>
+To: Ping Cheng <pinglinux@gmail.com>
+CC: Randy Dunlap <rdunlap@xenotime.net>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev4)
+References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>	 <1274567437-2818-2-git-send-email-rydberg@euromail.se>	 <20100523102413.2fee3f4c.rdunlap@xenotime.net>	 <4BF9ABC7.9090208@euromail.se>	 <AANLkTimQIIPiah962ar_TRZvJZpqCFvh-KLXxakbUHmZ@mail.gmail.com>	 <4BFA272B.7090602@euromail.se> <AANLkTimro6rna8MTqylaE2cnr_7Fif68Ldc6czLk7UDG@mail.gmail.com>
+In-Reply-To: <AANLkTimro6rna8MTqylaE2cnr_7Fif68Ldc6czLk7UDG@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Originating-IP: 83.248.196.134
+X-Scan-Result: No virus found in message 1OGbz9-0001rm-3d.
+X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OGbz9-0001rm-3d 6f7c5cb888a83253e33bf55054a33cd3
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24 2010, Michael Kerrisk wrote:
-> On Mon, May 24, 2010 at 7:35 PM, Jens Axboe <jens.axboe@oracle.com> wrote:
-> > On Mon, May 24 2010, Michael Kerrisk wrote:
-> >> > Right, that looks like a thinko.
-> >> >
-> >> > I'll submit a patch changing it to bytes and the agreed API and fix this
-> >> > -Eerror. Thanks for your comments and suggestions!
-> >>
-> >> Thanks. And of course you are welcome. (Please CC linux-api@vger on
-> >> this patche (and all patches that change the API/ABI.)
-> >
-> > The first change is this:
-> >
-> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=0191f8697bbdfefcd36e7b8dc3eeddfe82893e4b
-> >
-> > and the one dealing with the pages vs bytes API is this:
-> >
-> > http://git.kernel.dk/?p=linux-2.6-block.git;a=commit;h=b9598db3401282bb27b4aef77e3eee12015f7f29
-> >
-> > Not tested yet, will do so before sending in of course.
+Ping Cheng wrote:
+> On Mon, May 24, 2010 at 12:13 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
+>> Ping Cheng wrote:
+>>> What I am thinking is that we only need one SYN_ call for both _MT_
+>>> and regular data combined, which is a call to input_sync() at the end
+>>> of the whole packet. The SYN_MT_ can be replaced by the following
+>>> example, which I think is more "client-friendly". This solution is
+>>> based on the fact that the major difference between type A and type B
+>>> is whether we need to filter the data or not:
+>>>
+>>> ABS_MT_RANDOM 0
+>>> ABS_MT_POSITION_X x[0]
+>>> ABS_MT_POSITION_Y y[0]
+>>> ABS_MT_ RANDOM 1
+>>> ABS_MT_POSITION_X x[1]
+>>> ABS_MT_POSITION_Y y[1]
+>>> SYN_REPORT
+>>>
+>>> input_set_abs_params(input_dev, ABS_MT_RANDOM, 0, 2, 0, 0);
+>>>
+>>> would tell the clients that they can expect two random touches.
+>> And if you do s/RANDOM/SLOT/, you end up with what? ;-)
 > 
-> Eyeballing it quickly, these changes look right.
+> Haha, I know what you are thinking :).
+> 
+> Maybe I didn't make my point clear.  I didn't mean to make SLOT
+> backward compatible.  I meant to replace SYN_MT_REPORT event with the
+> ABS_MT_ RANDOM label so we only sync the whole packet once at the end.
+> This way both types of MT_ data follow the same input event reporting
+> flow....
 
-Good, thanks.
+You mean changing the type A protocol, breaking the current code base? That is a
+big no-no.
 
-> Do you have some test programs you can make available?
+> SLOT and RANDOM are both needed since they deal with two different
+> types of MT data, filtered (type B) and unfiltered (type A). There is
+> no midunderstanding there.
+> 
+> Ping
 
-Actually I don't, I test it by modifying fio's splice engine to set/get
-the pipe size and test the resulting transfers.
-
--- 
-Jens Axboe
-
+Henrik
