@@ -1,58 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757210Ab0EXPz0 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 11:55:26 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:52884 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753011Ab0EXPzZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 11:55:25 -0400
-Date: Mon, 24 May 2010 10:55:06 -0500
-From: Russ Anderson <rja@sgi.com>
-To: Tony Luck <tony.luck@gmail.com>
-Cc: "Eric W. Biederman" <ebiederm@xmission.com>,
-       Andi Kleen <andi@firstfloor.org>, Borislav Petkov <bp@amd64.org>,
-       Hidetoshi Seto <seto.hidetoshi@jp.fujitsu.com>,
-       Mauro Carvalho Chehab <mchehab@redhat.com>,
-       "Young, Brent" <brent.young@intel.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Ingo Molnar <mingo@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Matt Domsch <Matt_Domsch@dell.com>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Joe Perches <joe@perches.com>, Ingo Molnar <mingo@elte.hu>,
-       "bluesmoke-devel@lists.sourceforge.net" 
-	<bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>, rja@sgi.com
-Subject: Re: Hardware Error Kernel Mini-Summit
-Message-ID: <20100524155506.GA7145@sgi.com>
-Reply-To: Russ Anderson <rja@sgi.com>
-References: <4BF2392A.9040409@jp.fujitsu.com> <4BF2C3D1.10009@redhat.com> <1274204560.17703.82.camel@Joe-Laptop.home> <20100518185305.GA23921@elte.hu> <987664A83D2D224EAE907B061CE93D53C61D1C57@orsmsx505.amr.corp.intel.com> <20100518191802.GG25224@aftab> <m1k4r0c0y7.fsf@fess.ebiederm.org> <20100518222832.GJ22675@basil.fritz.box> <m1wrv0zo9q.fsf@fess.ebiederm.org> <AANLkTilxFZygP7YJybluPxtdxVGqWeqR4g7CRr8EEocW@mail.gmail.com>
+	id S1757236Ab0EXPz4 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 11:55:56 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:37079 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753537Ab0EXPzy convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 11:55:54 -0400
+Subject: Re: [PATCH] Make sure timers have migrated before killing
+ migration_thread
+From: Peter Zijlstra <peterz@infradead.org>
+To: vatsa@in.ibm.com
+Cc: "Amit K. Arora" <aarora@linux.vnet.ibm.com>, tj@kernel.org,
+       Ingo Molnar <mingo@elte.hu>, Gautham R Shenoy <ego@in.ibm.com>,
+       Darren Hart <dvhltc@us.ibm.com>, Brian King <brking@linux.vnet.ibm.com>,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100524151655.GF13808@linux.vnet.ibm.com>
+References: <20100519090557.GA15237@amitarora.in.ibm.com>
+	 <1274261515.5605.10423.camel@twins>
+	 <20100524095951.GA17680@amitarora.in.ibm.com>
+	 <1274707726.5605.31932.camel@twins>
+	 <20100524151655.GF13808@linux.vnet.ibm.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Mon, 24 May 2010 17:55:14 +0200
+Message-ID: <1274716514.5605.32372.camel@twins>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilxFZygP7YJybluPxtdxVGqWeqR4g7CRr8EEocW@mail.gmail.com>
-User-Agent: Mutt/1.4.2.2i
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 19, 2010 at 10:30:17AM -0700, Tony Luck wrote:
+On Mon, 2010-05-24 at 20:46 +0530, Srivatsa Vaddagiri wrote:
+> On Mon, May 24, 2010 at 03:28:45PM +0200, Peter Zijlstra wrote:
+> > On Mon, 2010-05-24 at 15:29 +0530, Amit K. Arora wrote:
+> > > since _cpu_up() and _cpu_down() can never run in
+> > > parallel, because of cpu_add_remove_lock. 
+> > 
+> > Ah indeed. I guess your initial patch works then. 
 > 
-> We are still in the dark ages for memory errors where the OS
-> is expected to look at all the errors and figure out whether they
-> represent any kind of meaningful pattern that requires some
-> action to replace h/w components.
+> One thing I found surprising was that a cpu's rt-bandwidth renewal could be
+> dependant on another cpu's (rt-bandwidth) timer firing ontime. In this case, we
+> had migration/23 pulled over to CPU0 and we hung later waiting for migration/23
+> to exit. migration/23 was not exiting because it could not run on CPU0 (as
+> CPU0's rt-bandwidth had expired). This situation remained forever. I would have
+> expected CPU0's bandwidth to have been renewed independent of some timer on
+> CPU23 to fire - maybe I am missing something not obvious in the code?
 
-ia64 is good at detecting & recovering from memory uncorrectable
-errors.  x86 is significantly behind, due to historically not
-being able to recover from uncorrectable memory errors.  
-
-ia64 had the Intel defined MCA Spec which defined the interaction
-between SAL and the kernel.  x86 does not have a similar well
-defined way of how errors should be handled.  It would be 
-good to agree on how the errors should be handled.
-
-> -Tony
-
--- 
-Russ Anderson, OS RAS/Partitioning Project Lead  
-SGI - Silicon Graphics Inc          rja@sgi.com
+The bandwidth constraint is per cgroup, and cgroups span cpus.
