@@ -1,43 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751789Ab0ENEWi (ORCPT <rfc822;w@1wt.eu>);
-	Fri, 14 May 2010 00:22:38 -0400
-Received: from cobra.newdream.net ([66.33.216.30]:40580 "EHLO
-	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751344Ab0ENEWg (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Fri, 14 May 2010 00:22:36 -0400
-Date: Thu, 13 May 2010 21:25:45 -0700 (PDT)
-From: Sage Weil <sage@newdream.net>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Cheng Renquan <crquan@gmail.com>
-Subject: Re: linux-next: manual merge of the ceph tree with Linus' tree
-In-Reply-To: <20100514100747.42445cdf.sfr@canb.auug.org.au>
-Message-ID: <Pine.LNX.4.64.1005132124170.25892@cobra.newdream.net>
-References: <20100514100747.42445cdf.sfr@canb.auug.org.au>
+	id S1758780Ab0EXXI2 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:08:28 -0400
+Received: from hera.kernel.org ([140.211.167.34]:55405 "EHLO hera.kernel.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758378Ab0EXXI1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:08:27 -0400
+Date: Mon, 24 May 2010 23:08:04 GMT
+From: tip-bot for Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
+       akpm@linux-foundation.org, a.p.zijlstra@chello.nl, tglx@linutronix.de,
+       hpa@linux.intel.com
+Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       a.p.zijlstra@chello.nl, akpm@linux-foundation.org, tglx@linutronix.de,
+       hpa@linux.intel.com
+In-Reply-To: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
+References: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
+To: linux-tip-commits@vger.kernel.org
+Subject: [tip:x86/urgent] x86: remove last traces of quicklist usage
+Message-ID: <tip-48691ff86d91db1090551ec2a5ae0d80ef59105f@git.kernel.org>
+Git-Commit-ID: 48691ff86d91db1090551ec2a5ae0d80ef59105f
+X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=UTF-8
+Content-Disposition: inline
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Mon, 24 May 2010 23:08:08 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Stephen,
+Commit-ID:  48691ff86d91db1090551ec2a5ae0d80ef59105f
+Gitweb:     http://git.kernel.org/tip/48691ff86d91db1090551ec2a5ae0d80ef59105f
+Author:     Peter Zijlstra <a.p.zijlstra@chello.nl>
+AuthorDate: Mon, 24 May 2010 12:13:19 -0700
+Committer:  H. Peter Anvin <hpa@linux.intel.com>
+CommitDate: Mon, 24 May 2010 13:33:31 -0700
 
-On Fri, 14 May 2010, Stephen Rothwell wrote:
-> Hi Sage,
-> 
-> Today's linux-next merge of the ceph tree got a conflict in
-> fs/ceph/super.c between commit 5dfc589a8467470226feccdc50f1b32713318e7b
-> ("ceph: unregister bdi before kill_anon_super releases device name") from
-> Linus' tree and commits 9f2a2a1faa0fd990d4930605583a67d7dff28bff ("ceph:
-> use ceph_sb_to_client instead of ceph_client") and
-> c72b09ba224e6f2c00bcf810a0a62059fcf405f7 ("ceph: name bdi ceph-%d instead
-> of major:minor") from the ceph tree.
+x86: remove last traces of quicklist usage
 
-Aie, sorry...  I rebased everything queued for the next window yesterday 
-but forgot to update the for-next tag.  These conflicts should all 
-disappear next time around.
+We still have a stray quicklist header included even though we axed
+quicklist usage quite a while back.
 
-Thanks!
-sage
+Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+LKML-Reference: <201005241913.o4OJDJe9010881@imap1.linux-foundation.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+---
+ arch/x86/mm/pgtable_32.c |    1 -
+ 1 files changed, 0 insertions(+), 1 deletions(-)
+
+diff --git a/arch/x86/mm/pgtable_32.c b/arch/x86/mm/pgtable_32.c
+index 7928540..cac7184 100644
+--- a/arch/x86/mm/pgtable_32.c
++++ b/arch/x86/mm/pgtable_32.c
+@@ -9,7 +9,6 @@
+ #include <linux/pagemap.h>
+ #include <linux/spinlock.h>
+ #include <linux/module.h>
+-#include <linux/quicklist.h>
+ 
+ #include <asm/system.h>
+ #include <asm/pgtable.h>
