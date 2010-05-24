@@ -1,210 +1,306 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932615Ab0EXXqg (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:46:36 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:15710 "EHLO
+	id S1758960Ab0EXXvX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:51:23 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:55421 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932301Ab0EXXqe (ORCPT
+	with ESMTP id S1758811Ab0EXXvW (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:46:34 -0400
+	Mon, 24 May 2010 19:51:22 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
-	references:user-agent:mime-version:content-type:x-system-of-record;
-	b=fxwb5ICPEbsWhsGZVRYzob8ExyLXrAk9N8NJ03oZJDi7JW8DkSQc56hz+M3atvCKx
-	eYRZQxontpGV7zPbwZWgQ==
-Date: Mon, 24 May 2010 16:46:24 -0700 (PDT)
-From: Hugh Dickins <hughd@google.com>
-X-X-Sender: hugh@sister.anvils
-To: Greg KH <gregkh@suse.de>
-cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       Tharindu Rukshan Bamunuarachchi <btharindu@gmail.com>,
-       linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Subject: Re: TMPFS over NFSv4
-In-Reply-To: <20100524110903.72524853@lxorguk.ukuu.org.uk>
-Message-ID: <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
-References: <AANLkTik47c6l3y8CdJ-hUCd2h3SRSb3qAtRovWryb8_p@mail.gmail.com> <alpine.LSU.2.00.1005211344440.7369@sister.anvils> <AANLkTil7I6q4wdLgmwZdRN6hb9LVVagN_7oGTIVNDhUk@mail.gmail.com> <AANLkTilMQjZaUom2h_aFgU6WB83IGH-VVKTg-CJD-_ZZ@mail.gmail.com>
- <20100524110903.72524853@lxorguk.ukuu.org.uk>
-User-Agent: Alpine 2.00 (LSU 1167 2008-08-23)
+	h=date:from:to:cc:subject:message-id:mime-version:
+	content-type:content-disposition:user-agent:x-system-of-record;
+	b=d3wvBESpwGtnZBeXeQitac2isjSHtmvEVu8ahKs6zqQjLje6Z/LEL30WSnwCDIm7/
+	iT+wWKivtRDdxwkazFiYQ==
+Date: Mon, 24 May 2010 16:51:12 -0700
+From: Michel Lespinasse <walken@google.com>
+To: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Thomas Gleixner <tglx@linutronix.de>
+Cc: LKML <linux-kernel@vger.kernel.org>, Robert Love <rml@tech9.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andreas Herrmann <andreas.herrmann3@amd.com>
+Subject: Stronger CONFIG_DEBUG_SPINLOCK_SLEEP without CONFIG_PREEMPT
+Message-ID: <20100524235112.GA30453@google.com>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Greg,
-
-On Mon, 24 May 2010, Alan Cox wrote:
-> On Mon, 24 May 2010 02:57:30 -0700
-> Hugh Dickins <hughd@google.com> wrote:
-> > On Mon, May 24, 2010 at 2:26 AM, Tharindu Rukshan Bamunuarachchi
-> > <btharindu@gmail.com> wrote:
-> > > thankx a lot Hugh ... I will try this out ... (bit harder patch
-> > > already patched SLES kernel :-p ) ....
-> > 
-> > If patch conflicts are a problem, you really only need to put in the
-> > two-liner patch to mm/mmap.c: Alan was seeking perfection in
-> > the rest of the patch, but you can get away without it.
-> > 
-> > >
-> > > BTW, what does Alan means by "strict overcommit" ?
-> > 
-> > Ah, that phrase, yes, it's a nonsense, but many of us do say it by mistake.
-> > Alan meant to say "strict no-overcommit".
-> 
-> No I always meant to say 'strict overcommit'. It avoids excess negatives
-> and "no noovercommit" discussions.
-> 
-> I guess 'strict overcommit control' would have been clearer 8)
-> 
-> Alan
-
-I see we've just missed 2.6.27.47-rc1, but if there's to be an -rc2,
-please include Alan's 2.6.28 oops fix below: which Tharindu appears
-to be needing - just now discussed on linux-mm and linux-nfs.
-Failing that, please queue it up for 2.6.27.48.
-
-Or if you'd prefer a smaller patch for -stable, then just the mm/mmap.c
-part of it should suffice: I think it's fair to say that the rest of the
-patch was more precautionary - as Alan describes, for catching other bugs,
-so good for an ongoing development tree, but not necessarily in -stable.
-(However, Alan may disagree - I've already misrepresented him once here!)
-
-Thanks,
-Hugh
-
-commit 731572d39fcd3498702eda4600db4c43d51e0b26
-Author: Alan Cox <alan@redhat.com>
-Date:   Wed Oct 29 14:01:20 2008 -0700
-
-    nfsd: fix vm overcommit crash
+CONFIG_DEBUG_SPINLOCK_SLEEP without CONFIG_PREEMPT
     
-    Junjiro R.  Okajima reported a problem where knfsd crashes if you are
-    using it to export shmemfs objects and run strict overcommit.  In this
-    situation the current->mm based modifier to the overcommit goes through a
-    NULL pointer.
-    
-    We could simply check for NULL and skip the modifier but we've caught
-    other real bugs in the past from mm being NULL here - cases where we did
-    need a valid mm set up (eg the exec bug about a year ago).
-    
-    To preserve the checks and get the logic we want shuffle the checking
-    around and add a new helper to the vm_ security wrappers
-    
-    Also fix a current->mm reference in nommu that should use the passed mm
-    
-    [akpm@linux-foundation.org: coding-style fixes]
-    [akpm@linux-foundation.org: fix build]
-    Reported-by: Junjiro R. Okajima <hooanon05@yahoo.co.jp>
-    Acked-by: James Morris <jmorris@namei.org>
-    Signed-off-by: Alan Cox <alan@redhat.com>
-    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
-    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
+When CONFIG_DEBUG_SPINLOCK_SLEEP is enabled, I think it would make sense
+to have preempt_disable() increment the preempt count in order to be able
+to display debug messages if someone attempts to sleep from within a
+critical region.
 
-diff --git a/include/linux/security.h b/include/linux/security.h
-index f5c4a51..c13f1ce 100644
---- a/include/linux/security.h
-+++ b/include/linux/security.h
-@@ -1585,6 +1585,7 @@ int security_syslog(int type);
- int security_settime(struct timespec *ts, struct timezone *tz);
- int security_vm_enough_memory(long pages);
- int security_vm_enough_memory_mm(struct mm_struct *mm, long pages);
-+int security_vm_enough_memory_kern(long pages);
- int security_bprm_alloc(struct linux_binprm *bprm);
- void security_bprm_free(struct linux_binprm *bprm);
- void security_bprm_apply_creds(struct linux_binprm *bprm, int unsafe);
-@@ -1820,6 +1821,11 @@ static inline int security_vm_enough_memory(long pages)
- 	return cap_vm_enough_memory(current->mm, pages);
- }
+This change defines PREEMPT_LOCK_OFFSET to be the value by which
+preempt_disable() increment the preempt count - 1 if CONFIG_PREEMPT and/or
+CONFIG_DEBUG_SPINLOCK_SLEEP are set, and 0 otherwise.
+
+If CONFIG_PREEMPT is not set, preempt_disable() should add
+PREEMPT_LOCK_OFFSET to the preempt count but it is allowed to skip
+the optimization barriers since we are not, in the non-preempt case,
+worried about the preempt count value being tested from within
+interrupt handlers.
+
+Signed-off-by: Michel Lespinasse <walken@google.com>
+
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d5b3876..4902dd8 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -2,7 +2,7 @@
+ #define LINUX_HARDIRQ_H
  
-+static inline int security_vm_enough_memory_kern(long pages)
-+{
-+	return cap_vm_enough_memory(current->mm, pages);
-+}
-+
- static inline int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
- {
- 	return cap_vm_enough_memory(mm, pages);
-diff --git a/mm/mmap.c b/mm/mmap.c
-index 74f4d15..de14ac2 100644
---- a/mm/mmap.c
-+++ b/mm/mmap.c
-@@ -175,7 +175,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 
- 	/* Don't let a single process grow too big:
- 	   leave 3% of the size of this process for other processes */
--	allowed -= mm->total_vm / 32;
-+	if (mm)
-+		allowed -= mm->total_vm / 32;
- 
- 	/*
- 	 * cast `allowed' as a signed long because vm_committed_space
-diff --git a/mm/nommu.c b/mm/nommu.c
-index 2696b24..7695dc8 100644
---- a/mm/nommu.c
-+++ b/mm/nommu.c
-@@ -1454,7 +1454,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
- 
- 	/* Don't let a single process grow too big:
- 	   leave 3% of the size of this process for other processes */
--	allowed -= current->mm->total_vm / 32;
-+	if (mm)
-+		allowed -= mm->total_vm / 32;
- 
- 	/*
- 	 * cast `allowed' as a signed long because vm_committed_space
-diff --git a/mm/shmem.c b/mm/shmem.c
-index d38d7e6..0ed0752 100644
---- a/mm/shmem.c
-+++ b/mm/shmem.c
-@@ -161,8 +161,8 @@ static inline struct shmem_sb_info *SHMEM_SB(struct super_block *sb)
+ #include <linux/preempt.h>
+-#ifdef CONFIG_PREEMPT
++#if PREEMPT_LOCK_OFFSET
+ #include <linux/smp_lock.h>
+ #endif
+ #include <linux/lockdep.h>
+@@ -92,12 +92,10 @@
   */
- static inline int shmem_acct_size(unsigned long flags, loff_t size)
- {
--	return (flags & VM_ACCOUNT)?
--		security_vm_enough_memory(VM_ACCT(size)): 0;
-+	return (flags & VM_ACCOUNT) ?
-+		security_vm_enough_memory_kern(VM_ACCT(size)) : 0;
- }
+ #define in_nmi()	(preempt_count() & NMI_MASK)
  
- static inline void shmem_unacct_size(unsigned long flags, loff_t size)
-@@ -179,8 +179,8 @@ static inline void shmem_unacct_size(unsigned long flags, loff_t size)
+-#if defined(CONFIG_PREEMPT)
++#if PREEMPT_LOCK_OFFSET
+ # define PREEMPT_INATOMIC_BASE kernel_locked()
+-# define PREEMPT_CHECK_OFFSET 1
+ #else
+ # define PREEMPT_INATOMIC_BASE 0
+-# define PREEMPT_CHECK_OFFSET 0
+ #endif
+ 
+ /*
+@@ -114,16 +112,16 @@
+  * (used by the scheduler, *after* releasing the kernel lock)
   */
- static inline int shmem_acct_block(unsigned long flags)
- {
--	return (flags & VM_ACCOUNT)?
--		0: security_vm_enough_memory(VM_ACCT(PAGE_CACHE_SIZE));
-+	return (flags & VM_ACCOUNT) ?
-+		0 : security_vm_enough_memory_kern(VM_ACCT(PAGE_CACHE_SIZE));
- }
+ #define in_atomic_preempt_off() \
+-		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_CHECK_OFFSET)
++		((preempt_count() & ~PREEMPT_ACTIVE) != PREEMPT_LOCK_OFFSET)
  
- static inline void shmem_unacct_blocks(unsigned long flags, long pages)
-diff --git a/security/security.c b/security/security.c
-index 255b085..c0acfa7 100644
---- a/security/security.c
-+++ b/security/security.c
-@@ -198,14 +198,23 @@ int security_settime(struct timespec *ts, struct timezone *tz)
+ #ifdef CONFIG_PREEMPT
+ # define preemptible()	(preempt_count() == 0 && !irqs_disabled())
+-# define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET-1)
+ #else
+ # define preemptible()	0
+-# define IRQ_EXIT_OFFSET HARDIRQ_OFFSET
+ #endif
  
- int security_vm_enough_memory(long pages)
- {
-+	WARN_ON(current->mm == NULL);
- 	return security_ops->vm_enough_memory(current->mm, pages);
- }
- 
- int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
- {
-+	WARN_ON(mm == NULL);
- 	return security_ops->vm_enough_memory(mm, pages);
- }
- 
-+int security_vm_enough_memory_kern(long pages)
-+{
-+	/* If current->mm is a kernel thread then we will pass NULL,
-+	   for this specific case that is fine */
-+	return security_ops->vm_enough_memory(current->mm, pages);
-+}
++#define IRQ_EXIT_OFFSET (HARDIRQ_OFFSET - PREEMPT_LOCK_OFFSET)
 +
- int security_bprm_alloc(struct linux_binprm *bprm)
+ #if defined(CONFIG_SMP) || defined(CONFIG_GENERIC_HARDIRQS)
+ extern void synchronize_irq(unsigned int irq);
+ #else
+diff --git a/include/linux/pagemap.h b/include/linux/pagemap.h
+index 3c62ed4..07e9a51 100644
+--- a/include/linux/pagemap.h
++++ b/include/linux/pagemap.h
+@@ -133,9 +133,7 @@ static inline int page_cache_get_speculative(struct page *page)
+ 	VM_BUG_ON(in_interrupt());
+ 
+ #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
+-	VM_BUG_ON(!in_atomic());
+-# endif
++	VM_BUG_ON(PREEMPT_LOCK_OFFSET && !in_atomic());
+ 	/*
+ 	 * Preempt must be disabled here - we rely on rcu_read_lock doing
+ 	 * this for us.
+@@ -171,9 +169,7 @@ static inline int page_cache_add_speculative(struct page *page, int count)
+ 	VM_BUG_ON(in_interrupt());
+ 
+ #if !defined(CONFIG_SMP) && defined(CONFIG_TREE_RCU)
+-# ifdef CONFIG_PREEMPT
+-	VM_BUG_ON(!in_atomic());
+-# endif
++	VM_BUG_ON(PREEMPT_LOCK_OFFSET && !in_atomic());
+ 	VM_BUG_ON(page_count(page) == 0);
+ 	atomic_add(count, &page->_count);
+ 
+diff --git a/include/linux/preempt.h b/include/linux/preempt.h
+index 0f82cb0..1cbfda1 100644
+--- a/include/linux/preempt.h
++++ b/include/linux/preempt.h
+@@ -18,6 +18,12 @@
+ # define sub_preempt_count(val)	do { preempt_count() -= (val); } while (0)
+ #endif
+ 
++#if defined(CONFIG_PREEMPT) || defined(CONFIG_DEBUG_SPINLOCK_SLEEP)
++# define PREEMPT_LOCK_OFFSET 1
++#else
++# define PREEMPT_LOCK_OFFSET 0
++#endif
++
+ #define inc_preempt_count() add_preempt_count(1)
+ #define dec_preempt_count() sub_preempt_count(1)
+ 
+@@ -27,72 +33,65 @@
+ 
+ asmlinkage void preempt_schedule(void);
+ 
++#define preempt_check_resched() \
++do { \
++	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
++		preempt_schedule(); \
++} while (0)
++
++#define preempt_barrier() \
++do { \
++	barrier(); \
++} while (0)
++
++#else
++
++#define preempt_check_resched()		do { } while (0)
++#define preempt_barrier()		do { } while (0)
++
++#endif
++
+ #define preempt_disable() \
+ do { \
+-	inc_preempt_count(); \
+-	barrier(); \
++	add_preempt_count(PREEMPT_LOCK_OFFSET); \
++	preempt_barrier(); \
+ } while (0)
+ 
+ #define preempt_enable_no_resched() \
+ do { \
+-	barrier(); \
+-	dec_preempt_count(); \
+-} while (0)
+-
+-#define preempt_check_resched() \
+-do { \
+-	if (unlikely(test_thread_flag(TIF_NEED_RESCHED))) \
+-		preempt_schedule(); \
++	preempt_barrier(); \
++	sub_preempt_count(PREEMPT_LOCK_OFFSET); \
+ } while (0)
+ 
+ #define preempt_enable() \
+ do { \
+ 	preempt_enable_no_resched(); \
+-	barrier(); \
++	preempt_barrier(); \
+ 	preempt_check_resched(); \
+ } while (0)
+ 
+ /* For debugging and tracer internals only! */
+-#define add_preempt_count_notrace(val)			\
+-	do { preempt_count() += (val); } while (0)
+-#define sub_preempt_count_notrace(val)			\
+-	do { preempt_count() -= (val); } while (0)
+-#define inc_preempt_count_notrace() add_preempt_count_notrace(1)
+-#define dec_preempt_count_notrace() sub_preempt_count_notrace(1)
+ 
+ #define preempt_disable_notrace() \
+ do { \
+-	inc_preempt_count_notrace(); \
+-	barrier(); \
++	preempt_count() += PREEMPT_LOCK_OFFSET; \
++	preempt_barrier(); \
+ } while (0)
+ 
+ #define preempt_enable_no_resched_notrace() \
+ do { \
+-	barrier(); \
+-	dec_preempt_count_notrace(); \
++	preempt_barrier(); \
++	preempt_count() -= PREEMPT_LOCK_OFFSET; \
+ } while (0)
+ 
+ /* preempt_check_resched is OK to trace */
+ #define preempt_enable_notrace() \
+ do { \
+ 	preempt_enable_no_resched_notrace(); \
+-	barrier(); \
++	preempt_barrier(); \
+ 	preempt_check_resched(); \
+ } while (0)
+ 
+-#else
+-
+-#define preempt_disable()		do { } while (0)
+-#define preempt_enable_no_resched()	do { } while (0)
+-#define preempt_enable()		do { } while (0)
+-#define preempt_check_resched()		do { } while (0)
+-
+-#define preempt_disable_notrace()		do { } while (0)
+-#define preempt_enable_no_resched_notrace()	do { } while (0)
+-#define preempt_enable_notrace()		do { } while (0)
+-
+-#endif
+-
+ #ifdef CONFIG_PREEMPT_NOTIFIERS
+ 
+ struct preempt_notifier;
+diff --git a/include/linux/sched.h b/include/linux/sched.h
+index 2b7b81d..df119c1 100644
+--- a/include/linux/sched.h
++++ b/include/linux/sched.h
+@@ -2354,12 +2354,6 @@ extern int _cond_resched(void);
+ 
+ extern int __cond_resched_lock(spinlock_t *lock);
+ 
+-#ifdef CONFIG_PREEMPT
+-#define PREEMPT_LOCK_OFFSET	PREEMPT_OFFSET
+-#else
+-#define PREEMPT_LOCK_OFFSET	0
+-#endif
+-
+ #define cond_resched_lock(lock) ({				\
+ 	__might_sleep(__FILE__, __LINE__, PREEMPT_LOCK_OFFSET);	\
+ 	__cond_resched_lock(lock);				\
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3c2a54f..61dd981 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -2641,9 +2641,9 @@ void sched_fork(struct task_struct *p, int clone_flags)
+ #if defined(CONFIG_SMP) && defined(__ARCH_WANT_UNLOCKED_CTXSW)
+ 	p->oncpu = 0;
+ #endif
+-#ifdef CONFIG_PREEMPT
++#if PREEMPT_LOCK_OFFSET
+ 	/* Want to start with kernel preemption disabled. */
+-	task_thread_info(p)->preempt_count = 1;
++	task_thread_info(p)->preempt_count = PREEMPT_LOCK_OFFSET;
+ #endif
+ 	plist_node_init(&p->pushable_tasks, MAX_PRIO);
+ 
+@@ -5266,11 +5266,8 @@ void __cpuinit init_idle(struct task_struct *idle, int cpu)
+ 	raw_spin_unlock_irqrestore(&rq->lock, flags);
+ 
+ 	/* Set the preempt count _outside_ the spinlocks! */
+-#if defined(CONFIG_PREEMPT)
+-	task_thread_info(idle)->preempt_count = (idle->lock_depth >= 0);
+-#else
+-	task_thread_info(idle)->preempt_count = 0;
+-#endif
++	task_thread_info(idle)->preempt_count =
++		(idle->lock_depth >= 0) ? PREEMPT_LOCK_OFFSET : 0;
+ 	/*
+ 	 * The idle tasks have their own, simple scheduling class:
+ 	 */
+diff --git a/lib/kernel_lock.c b/lib/kernel_lock.c
+index b135d04..106826d 100644
+--- a/lib/kernel_lock.c
++++ b/lib/kernel_lock.c
+@@ -96,6 +96,7 @@ static inline void __lock_kernel(void)
+  */
+ static inline void __lock_kernel(void)
  {
- 	return security_ops->bprm_alloc_security(bprm);
++	preempt_disable();
+ 	do_raw_spin_lock(&kernel_flag);
+ }
+ #endif
+
+
+-- 
+Michel "Walken" Lespinasse
+A program is never fully debugged until the last user dies.
