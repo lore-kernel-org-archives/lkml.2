@@ -1,59 +1,219 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756811Ab0EXJyp (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 05:54:45 -0400
-Received: from www.tglx.de ([62.245.132.106]:50432 "EHLO www.tglx.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756617Ab0EXJyn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 05:54:43 -0400
-Date: Mon, 24 May 2010 11:54:23 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>
-Subject: [GIT Pull] timer fixes for 2.6.35-rc1
-Message-ID: <alpine.LFD.2.00.1005241153240.3506@localhost.localdomain>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1756832Ab0EXKAh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 06:00:37 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:56204 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755987Ab0EXKAf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 06:00:35 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=jlYS92O5mmwCeagAzkk+GV2Y5frAlgixWtPRwAArIf9hoe0Tsla7+dd6hxKg+cloND
+         8xO2DVKZy54gz1GapzRFcwLRew0Gax0l1SlLVj3FlU+J/iNYOJB1P2TpbNfuZZ7v16+X
+         3MsVoVafXopXPFc39hvRSjYWiVRUVB/goh3qw=
+From: Mark <reodge@gmail.com>
+To: gregkh@suse.de
+Cc: Mark <reodge@gmail.com>, Bill Pemberton <wfp5p@virginia.edu>,
+       Rich Folsom <rich.folsom@gmail.com>,
+       Mithlesh Thukral <mithlesh@linsyssoft.com>,
+       Jiri Slaby <jirislaby@gmail.com>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: [PATCH] Staging: comedi: Checkpatch cleanups in adl_pci9111.c
+Date: Mon, 24 May 2010 17:59:10 +0800
+Message-Id: <1274695150-4015-1-git-send-email-reodge@gmail.com>
+X-Mailer: git-send-email 1.7.1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+This patch cleans up some various warnings generated from checkpatch.pl
 
-Please pull the latest timers-for-linus-urgent git tree from:
+Signed-off-by: Mark Rankilor <reodge@gmail.com>
+---
+ drivers/staging/comedi/drivers/adl_pci9111.c |  105 ++++++++++++++-----------
+ 1 files changed, 59 insertions(+), 46 deletions(-)
 
-   git://git.kernel.org/pub/scm/linux/kernel/git/tip/linux-2.6-tip.git timers-for-linus-urgent
-
-Thanks,
-
-	tglx
-
------------------->
-Thomas Gleixner (1):
-      timekeeping: Fix timezone update
-
-
- kernel/time.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
-
-diff --git a/kernel/time.c b/kernel/time.c
-index 50612fa..848b1c2 100644
---- a/kernel/time.c
-+++ b/kernel/time.c
-@@ -132,10 +132,10 @@ SYSCALL_DEFINE2(gettimeofday, struct timeval __user *, tv,
-  */
- static inline void warp_clock(void)
- {
--	struct timespec delta, adjust;
--	delta.tv_sec = sys_tz.tz_minuteswest * 60;
--	delta.tv_nsec = 0;
--	adjust = timespec_add_safe(current_kernel_time(), delta);
-+	struct timespec adjust;
-+
-+	adjust = current_kernel_time();
-+	adjust.tv_sec += sys_tz.tz_minuteswest * 60;
- 	do_settimeofday(&adjust);
- }
+diff --git a/drivers/staging/comedi/drivers/adl_pci9111.c b/drivers/staging/comedi/drivers/adl_pci9111.c
+index 36a254c..595689d 100644
+--- a/drivers/staging/comedi/drivers/adl_pci9111.c
++++ b/drivers/staging/comedi/drivers/adl_pci9111.c
+@@ -68,8 +68,9 @@ CHANGELOG:
+ TODO:
  
+   - Really test implemented functionality.
+-  - Add support for the PCI-9111DG with a probe routine to identify the card type
+-    (perhaps with the help of the channel number readback of the A/D Data register).
++  - Add support for the PCI-9111DG with a probe routine to identify the card
++    type (perhaps with the help of the channel number readback of the A/D Data
++    register).
+   - Add external multiplexer support.
+ 
+ */
+@@ -83,12 +84,12 @@ TODO:
+ #include "comedi_pci.h"
+ #include "comedi_fc.h"
+ 
+-#define PCI9111_DRIVER_NAME 	"adl_pci9111"
+-#define PCI9111_HR_DEVICE_ID 	0x9111
++#define PCI9111_DRIVER_NAME	"adl_pci9111"
++#define PCI9111_HR_DEVICE_ID	0x9111
+ 
+ /*  TODO: Add other pci9111 board id */
+ 
+-#define PCI9111_IO_RANGE 	0x0100
++#define PCI9111_IO_RANGE	0x0100
+ 
+ #define PCI9111_FIFO_HALF_SIZE	512
+ 
+@@ -134,27 +135,29 @@ TODO:
+ 
+ /* IO address map */
+ 
+-#define PCI9111_REGISTER_AD_FIFO_VALUE 			0x00	/*  AD Data stored in FIFO */
+-#define PCI9111_REGISTER_DA_OUTPUT 			0x00
+-#define PCI9111_REGISTER_DIGITAL_IO 			0x02
+-#define PCI9111_REGISTER_EXTENDED_IO_PORTS 		0x04
+-#define PCI9111_REGISTER_AD_CHANNEL_CONTROL 		0x06	/*  Channel selection */
+-#define PCI9111_REGISTER_AD_CHANNEL_READBACK 		0x06
+-#define PCI9111_REGISTER_INPUT_SIGNAL_RANGE 		0x08
+-#define PCI9111_REGISTER_RANGE_STATUS_READBACK 		0x08
+-#define PCI9111_REGISTER_TRIGGER_MODE_CONTROL 		0x0A
+-#define PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK 	0x0A
+-#define PCI9111_REGISTER_SOFTWARE_TRIGGER 		0x0E
+-#define PCI9111_REGISTER_INTERRUPT_CONTROL 		0x0C
++#define PCI9111_REGISTER_AD_FIFO_VALUE			0x00 /* AD Data stored
++								in FIFO */
++#define PCI9111_REGISTER_DA_OUTPUT			0x00
++#define PCI9111_REGISTER_DIGITAL_IO			0x02
++#define PCI9111_REGISTER_EXTENDED_IO_PORTS		0x04
++#define PCI9111_REGISTER_AD_CHANNEL_CONTROL		0x06 /* Channel
++								selection */
++#define PCI9111_REGISTER_AD_CHANNEL_READBACK		0x06
++#define PCI9111_REGISTER_INPUT_SIGNAL_RANGE		0x08
++#define PCI9111_REGISTER_RANGE_STATUS_READBACK		0x08
++#define PCI9111_REGISTER_TRIGGER_MODE_CONTROL		0x0A
++#define PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK	0x0A
++#define PCI9111_REGISTER_SOFTWARE_TRIGGER		0x0E
++#define PCI9111_REGISTER_INTERRUPT_CONTROL		0x0C
+ #define PCI9111_REGISTER_8254_COUNTER_0			0x40
+ #define PCI9111_REGISTER_8254_COUNTER_1			0x42
+-#define PCI9111_REGISTER_8254_COUNTER_2 		0X44
++#define PCI9111_REGISTER_8254_COUNTER_2			0X44
+ #define PCI9111_REGISTER_8254_CONTROL			0x46
+-#define PCI9111_REGISTER_INTERRUPT_CLEAR 		0x48
++#define PCI9111_REGISTER_INTERRUPT_CLEAR		0x48
+ 
+-#define PCI9111_TRIGGER_MASK 				0x0F
+-#define PCI9111_PTRG_OFF 				(0 << 3)
+-#define PCI9111_PTRG_ON 				(1 << 3)
++#define PCI9111_TRIGGER_MASK				0x0F
++#define PCI9111_PTRG_OFF				(0 << 3)
++#define PCI9111_PTRG_ON					(1 << 3)
+ #define PCI9111_EITS_EXTERNAL				(1 << 2)
+ #define PCI9111_EITS_INTERNAL				(0 << 2)
+ #define PCI9111_TPST_SOFTWARE_TRIGGER			(0 << 1)
+@@ -164,9 +167,9 @@ TODO:
+ 
+ #define PCI9111_ISC0_SET_IRQ_ON_ENDING_OF_AD_CONVERSION (0 << 0)
+ #define PCI9111_ISC0_SET_IRQ_ON_FIFO_HALF_FULL		(1 << 0)
+-#define PCI9111_ISC1_SET_IRQ_ON_TIMER_TICK  		(0 << 1)
+-#define PCI9111_ISC1_SET_IRQ_ON_EXT_TRG 		(1 << 1)
+-#define PCI9111_FFEN_SET_FIFO_ENABLE 			(0 << 2)
++#define PCI9111_ISC1_SET_IRQ_ON_TIMER_TICK		(0 << 1)
++#define PCI9111_ISC1_SET_IRQ_ON_EXT_TRG			(1 << 1)
++#define PCI9111_FFEN_SET_FIFO_ENABLE			(0 << 2)
+ #define PCI9111_FFEN_SET_FIFO_DISABLE			(1 << 2)
+ 
+ #define PCI9111_CHANNEL_MASK				0x0F
+@@ -177,7 +180,7 @@ TODO:
+ #define PCI9111_FIFO_FULL_MASK				0x40
+ #define PCI9111_AD_BUSY_MASK				0x80
+ 
+-#define PCI9111_IO_BASE dev->iobase
++#define PCI9111_IO_BASE (dev->iobase)
+ 
+ /*
+  * Define inlined function
+@@ -189,8 +192,9 @@ TODO:
+ #define pci9111_trigger_and_autoscan_set(flags) \
+   outb(flags, PCI9111_IO_BASE+PCI9111_REGISTER_TRIGGER_MODE_CONTROL)
+ 
+-#define pci9111_interrupt_and_fifo_get() \
+-  ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK) >> 4) &0x03)
++#define pci9111_interrupt_and_fifo_get()				   \
++  ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_MODE_INTERRUPT_READBACK) >> 4) \
++   &0x03)
+ 
+ #define pci9111_interrupt_and_fifo_set(flags) \
+   outb(flags, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL)
+@@ -201,38 +205,47 @@ TODO:
+ #define pci9111_software_trigger() \
+   outb(0, PCI9111_IO_BASE+PCI9111_REGISTER_SOFTWARE_TRIGGER)
+ 
+-#define pci9111_fifo_reset() \
+-  outb(PCI9111_FFEN_SET_FIFO_ENABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
+-  outb(PCI9111_FFEN_SET_FIFO_DISABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL); \
+-  outb(PCI9111_FFEN_SET_FIFO_ENABLE, PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL)
++#define pci9111_fifo_reset() do {					\
++  outb(PCI9111_FFEN_SET_FIFO_ENABLE,					\
++       PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL);		\
++  outb(PCI9111_FFEN_SET_FIFO_DISABLE,					\
++       PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL);		\
++  outb(PCI9111_FFEN_SET_FIFO_ENABLE,					\
++       PCI9111_IO_BASE+PCI9111_REGISTER_INTERRUPT_CONTROL);		\
++  } while (0)
+ 
+ #define pci9111_is_fifo_full() \
+   ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)& \
+-    PCI9111_FIFO_FULL_MASK)==0)
++    PCI9111_FIFO_FULL_MASK) == 0)
+ 
+ #define pci9111_is_fifo_half_full() \
+   ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)& \
+-    PCI9111_FIFO_HALF_FULL_MASK)==0)
++    PCI9111_FIFO_HALF_FULL_MASK) == 0)
+ 
+ #define pci9111_is_fifo_empty() \
+   ((inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)& \
+-    PCI9111_FIFO_EMPTY_MASK)==0)
++    PCI9111_FIFO_EMPTY_MASK) == 0)
+ 
+-#define pci9111_ai_channel_set(channel) \
+-  outb((channel)&PCI9111_CHANNEL_MASK, PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_CONTROL)
++#define pci9111_ai_channel_set(channel)					\
++  outb((channel)&PCI9111_CHANNEL_MASK,					\
++       PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_CONTROL)
+ 
+-#define pci9111_ai_channel_get() \
+-  inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_READBACK)&PCI9111_CHANNEL_MASK
++#define pci9111_ai_channel_get()					\
++  (inb(PCI9111_IO_BASE+PCI9111_REGISTER_AD_CHANNEL_READBACK)		\
++   &PCI9111_CHANNEL_MASK)
+ 
+-#define pci9111_ai_range_set(range) \
+-  outb((range)&PCI9111_RANGE_MASK, PCI9111_IO_BASE+PCI9111_REGISTER_INPUT_SIGNAL_RANGE)
++#define pci9111_ai_range_set(range)					\
++  outb((range)&PCI9111_RANGE_MASK,					\
++       PCI9111_IO_BASE+PCI9111_REGISTER_INPUT_SIGNAL_RANGE)
+ 
+-#define pci9111_ai_range_get() \
+-  inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)&PCI9111_RANGE_MASK
++#define pci9111_ai_range_get()						\
++  (inb(PCI9111_IO_BASE+PCI9111_REGISTER_RANGE_STATUS_READBACK)		\
++   &PCI9111_RANGE_MASK)
+ 
+-#define pci9111_ai_get_data() \
+-  ((inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE)>>4)&PCI9111_AI_RESOLUTION_MASK) \
+-  ^ PCI9111_AI_RESOLUTION_2_CMP_BIT
++#define pci9111_ai_get_data()						\
++  (((inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE)>>4)		\
++    &PCI9111_AI_RESOLUTION_MASK)					\
++   ^ PCI9111_AI_RESOLUTION_2_CMP_BIT)
+ 
+ #define pci9111_hr_ai_get_data() \
+   (inw(PCI9111_IO_BASE+PCI9111_REGISTER_AD_FIFO_VALUE) & PCI9111_HR_AI_RESOLUTION_MASK) \
+-- 
+1.7.1
+
