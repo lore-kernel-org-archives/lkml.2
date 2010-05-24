@@ -1,262 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756797Ab0EXKVe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 06:21:34 -0400
-Received: from bld-mail14.adl6.internode.on.net ([150.101.137.99]:37518 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753632Ab0EXKVa (ORCPT
+	id S1756778Ab0EXKum (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 06:50:42 -0400
+Received: from smtp-01.mandic.com.br ([200.225.81.132]:50219 "EHLO
+	smtp-01.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755361Ab0EXKul (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 06:21:30 -0400
-Date: Mon, 24 May 2010 20:21:25 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Hellwig <hch@infradead.org>, Josef Bacik <josef@redhat.com>,
-       linux-fsdevel@vger.kernel.org, chris.mason@oracle.com,
-       akpm@linux-foundation.org, linux-kernel@vger.kernel.org
-Subject: Re: [RFC] new ->perform_write fop
-Message-ID: <20100524102125.GE12087@dastard>
-References: <20100514010042.GI13617@dastard>
- <20100514033057.GL27011@dhcp231-156.rdu.redhat.com>
- <20100514064145.GJ13617@dastard>
- <20100514072219.GC4706@laptop>
- <20100521151518.GA12752@infradead.org>
- <20100522023102.GP2516@laptop>
- <20100522083703.GA12087@dastard>
- <20100524030943.GQ2516@laptop>
- <20100524055329.GD12087@dastard>
- <20100524065519.GT2516@laptop>
+	Mon, 24 May 2010 06:50:41 -0400
+Message-ID: <4BFA59F7.2020606@cesarb.net>
+Date: Mon, 24 May 2010 07:50:31 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100524065519.GT2516@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/3] mm: Swap checksum
+References: <4BF81D87.6010506@cesarb.net>	<20100523140348.GA10843@barrios-desktop>	<4BF974D5.30207@cesarb.net>	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>	<4BF9CF00.2030704@cesarb.net> <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
+In-Reply-To: <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 04:55:19PM +1000, Nick Piggin wrote:
-> On Mon, May 24, 2010 at 03:53:29PM +1000, Dave Chinner wrote:
-> > On Mon, May 24, 2010 at 01:09:43PM +1000, Nick Piggin wrote:
-> > > On Sat, May 22, 2010 at 06:37:03PM +1000, Dave Chinner wrote:
-> > > > On Sat, May 22, 2010 at 12:31:02PM +1000, Nick Piggin wrote:
-> > > > > On Fri, May 21, 2010 at 11:15:18AM -0400, Christoph Hellwig wrote:
-> > > > > > Nick, what exactly is the problem with the reserve + allocate design?
-> > > > > > 
-> > > > > > In a delalloc filesystem (which is all those that will care about high
-> > > > > > performance large writes) the write path fundamentally consists of those
-> > > > > > two operations.  Getting rid of the get_blocks mess and replacing it
-> > > > > > with a dedicated operations vector will simplify things a lot.
-> > > > > 
-> > > > > Nothing wrong with it, I think it's a fine idea (although you may still
-> > > > > need a per-bh call to connect the fs metadata to each page).
-> > > > > 
-> > > > > I just much prefer to have operations after the copy not able to fail,
-> > > > > otherwise you get into all those pagecache corner cases.
-> > > > > 
-> > > > > BTW. when you say reserve + allocate, this is in the page-dirty path,
-> > > > > right? I thought delalloc filesystems tend to do the actual allocation
-> > > > > in the page-cleaning path? Or am I confused?
-> > > > 
-> > > > See my reply to Jan - delayed allocate has two parts to it - space
-> > > > reservation (accounting for ENOSPC) and recording of the delalloc extents
-> > > > (allocate). This is separate to the writeback path where we convert
-> > > > delalloc extents to real extents....
-> > > 
-> > > Yes I saw that. I'm sure we'll want clearer terminology in the core
-> > > code. But I don't quite know why you need to do it in 2 parts
-> > > (reserve, then "allocate").
-> > 
-> > Because reserve/allocate are the two steps that allocation is
-> > generally broken down into, even in filesystems that don't do
-> > delayed allocation. That's because....
-> > 
-> > > Surely even reservation failures are
-> > > very rare
-> > 
-> > ... ENOSPC and EDQUOT are not at all rare, and they are generated
-> > during the reservation stage. i.e. before any real allocation or
-> 
-> I meant "rare" as-in not critical for performance. Not that they don't
-> have to be handled properly.
+Em 23-05-2010 23:05, Minchan Kim escreveu:
+> On Mon, May 24, 2010 at 9:57 AM, Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
+>> The internal ECC of the disk will not save you - a quick Google search found
+>> an instance of someone with silent data corruption caused by a faulty *power
+>> supply*.[1]
+>>
+>> And if it is silent corruption, without the checksums you will not notice it
+>> - it will just be dismissed as "oh, Firefox just crashed again" or similar
+>> (the same as bit flips on RAM without ECC).
+>
+> When I read your comment, suddenly some thought occurred to me.
+> If we can't believe ECC of the disk, why do we separate error
+> detection logic between file system and swap disk?
+>
+> I mean it make sense that put crc detection into block layer?
+> It can make sure any block I/O.
 
-I am trying to handle these cases properly for the fast path, not
-turn it into a maze of twisty, dark, buggy passages.
+There are differences as to where the checksum will be stored.
 
-> > state changes are made. Just about every filesystem does this
-> > because failing half way through an allocation not being able to
-> > allocate a block due to ENOSPC or EDQUOT is pretty much impossible
-> > to undo reliably in most filesystems.
-> > 
-> > > , and obviously the error handling is required, so why not
-> > > just do a single call?
-> > 
-> > Because if we fail after the allocation then ensuring we handle the
-> > error *correctly* and *without further failures* is *fucking hard*.
-> 
-> I don't think you really answered my question. Let me put it in concrete
-> terms. In your proposal, why not just do the reserve+allocate *after*
-> the pagecache copy? What does the "reserve" part add?
+For the filesystem (and for the software suspend image), you have to 
+store the checksums in the disk itself, and the correct place (and 
+ordering requirements) depends on the filesystem. Also, most filesystems 
+do not currently have on-disk checksums.
 
-....
+For the swap, it is much simpler; the checksums can be stored in memory 
+(since they do not matter after a reboot; the swap contents are simply 
+discarded). This also gives better performance, since the checksums do 
+not have to be separately written, and more flexibility, since the 
+kernel can use whatever kind of checksum it wants and can store the 
+checksum in whatever data structure it choses, without worrying about 
+compatibility.
 
-> Your design is forced to do it when I pointed out that writes into the
-> pagecache should not be made visiable if the process can subsequently
-> fail. copy-last is not subject to this.
+And, in fact, there is a CRC code in the block layer; it is 
+CONFIG_BLK_DEV_INTEGRITY. However, it is not a generic solution; it 
+needs some extra prerequisites (like a disk low-level formatted with 
+sectors with >512 bytes).
 
-Let's summarise what we've got so far so that it becomes obvious why
-we need a two step process.
+> And what's BER of disk?
+> Is it usual to meet the problem?
 
-1. Copy First Problem: Copying in data before the allocate results
-in transient data exposure if the allocate fails or if we overwrite
-pages in the same loop iteration as the failed allocation. To deal
-with this, we've talked page replacement mechanisms for the page
-cache and all the complex issues associated with that.
+It is unusual enough that most people who meet it will not notice.
 
-2. Copy Last Problem: If we allocate up front, then we have to
-handle errors allocating pages into the page cache or copying the
-data. To work around copying failures, we've talked about punching
-out the allocation range that wasn't copied into. This gets complex
-with mixed overwrite/allocate ranges. To deal with page cache
-allocation failures, we talked about using direct IO w/ the zero
-page to zero the remaining range, but this gets complex with
-delalloc.
+And the filesystem developers (who understand about these things more 
+than me) seem to be trending towards adding checksums to their 
+filesystems. The point of this patch is to meet the same level of safety 
+as btrfs (thus the choice of crc32c, which is what btrfs uses).
 
-Situation: both copy-first and copy-last have serious issues.
+> In normal desktop, some app killed are not critical. If the
+> application is critical, maybe app have to logic fault handling.
+> Firefox has session restore feature and Office program has temporal
+> save feature.
 
-3. Generic Simplification: The first thing we need to do in both
-cases is avoid the mixed overwrite/allocate copy case, as that
-greatly increases the complexity of error handling in both cases.
-To do this we need to split the mutlipage write up into ranges that
-are of the same kind (only allocate, or only overwrite). This needs
-to be done before we copy the data and hence we need to be able to
-map the range we are allowed to copy before we do the copy. A
-filesystem callout that is required to do this.
+In fact, crashing is the "best" outcome here. The worst outcome is your 
+application silently corrupting the data you then save to disk.
 
-4. Avoiding Copy Last Problems: To avoid page allocation failures
-requiring hole punching or DIO writes, we need to ensure we don't do
-allocation until after the copy has succeeded (i.e. take that bit of
-Copy First). However, to avoid data exposure problems, we need to
-ensure this allocation will succeed in all normal cases.  ENOSPC and
-EDQUOT are normal cases, EIO or filesystem corruption are not normal
-cases.
+> On the other hand, in server, does it designed well to use swap disk
+> until we meet bit error of disk?
 
-5. To avoid the catch-22 situation, we can avoid "normal" errors in
-the allocation case if we reserve the space required for the
-upcoming allocation before we copy any data.  Effectively we can
-guarantee the allocation will succeed.
+Servers are the ones which would benefit the most, as their RAM is 
+usually very reliable (they tend to use ECC memory). Their disk 
+subsystems, however, are also more reliable.
 
-6. If the allocation does fail, then the filesystem is considered
-corrupted and needs to enter a shutdown/failed state.  This ensures
-allocation failures do not expose transient data in any meaningful
-way because the cached data on an errored filesystem can not be
-guaranteed to be valid. This is a hard stop, but should never occur
-unless there is some other hard-stop error condition in the
-filesystem.
+Desktop systems (especially "no-name" brand ones) do not gain as much, 
+since their RAM is usually unprotected; however, they are also the ones 
+which have better chance of having low-quality power supplies, uncommon 
+storage media (USB flash drives as the root disk is an example), and 
+problematic I/O subsystems.
 
-7. Hence by reserving space and defining how the filesystem needs to
-handle allocation failures after a successful reserve, we remove all
-the problematic error handling in the Copy Last case. This requires
-a filesystem callout.
+> My feel is that it seem to be rather overkill.
 
-8. Avoiding Copy First Problems: By ensuring that allocation will
-never fail except in a hard-stop situation, the allocation can be
-safely done after the copy has been made. Effectively the steps to
-remove the problematic error handling from the Copy Last case also
-remove the problematic transient data issues from the Copy First
-case.
+Yes, it is a bit overkill, except when you are using software suspend. 
+While the software suspend image is not protected by this patch (I am 
+already thinking of a separate patch to add checksums to it), the 
+swapped out pages are (software suspend uses both a memory image saved 
+to the swap partition and the normal swapped out pages).
 
-9. Copying Data: Given the guarantee that allocation will succeed,
-we don't need to worry about exposing transіent data during the data
-copy. The copy can fail at any time (either page allocation failure
-or EFAULT during the copy) and we can easily deal with it. Hence we
-don't need to lock more than one page at once, and the copy can
-proceed a page at a time. Failure during a copy will require partial
-pages to be treated like a partial write.
+But you do not have to use it if you think it is overkill - I even added 
+a kernel parameter to easily disable it.
 
-10. Handling Errors: If we fail the reserve/map stage, then there is
-nothing to undo and we can simply return at that point.
+>> The swap checksum only protects the page against being silently corrupted
+>> while on the disk and at least to some degree on the I/O path between the
+>> memory and the disk. It does not protect against broken kernel-mode code
+>> writing to the wrong address, nor against broken hardware (or hardware
+>> misconfigured by broken drivers) doing DMA to wrong addresses. It also does
+>> not protect against hardware errors in the RAM itself (you have ECC memory
+>> for that).
+>>
+>> That is, the code assumes the memory containing the checksums will not be
+>> corrupted, because if it is, you have worse problems (and the CRC error here
+>> would be a *good* thing, since it would make you notice something is not
+>> quite right).
+>>
+>
+> Which is high between BER of RAM and disk?
+> It's a just question. :)
 
-11. If we fail part way through the copy (i.e.  in the middle), the
-error handling is simple:
-	a) allocate the range that did succeed (if allocate)
-	b) zero the portion of the page that failed (if allocate)
-	c) update the page states appropriately (write_end)
-	d) release the unused reserved space (if allocate)
+I have no idea.
 
-13. If we fail the allocation:
-	a) the filesystem is shut down
-	b) the range that failed is tossed out of the page cache.
+However, we can do nothing in software against RAM errors; it would kill 
+performance too much. Against disk errors, however, we can do a lot 
+(software RAID-1 is just one of the simplest examples).
 
-To me this seems pretty sane - "copy middle" avoids all the pitfalls
-and traps we've been talking about.  No transient data exposure
-problems, no need to lock multiple pages at a time, no complex error
-handling required, no major new filesystem functionality, etc.
-
-> > IMO, the fundamental issue with using hole punching or direct IO
-> > from the zero page to handle errors is that they are complex enough
-> > that there is *no guarantee that they will succeed*. e.g. Both can
-> > get ENOSPC/EDQUOT because they may end up with metadata allocation
-> > requirements above and beyond what was originally reserved. If the
-> > error handling fails to handle the error, then where do we go from
-> > there?
-> 
-> There are already fundamental issues that seems like they are not
-> handled properly if your filesystem may allocate uninitialized blocks
-> over holes for writeback cache without somehow marking them as
-> uninitialized.
-
-You mean like the problems ext3's data=writeback mode has? ;)
-
-> If you get a power failure or IO error before the pagecache can be
-> written out, you're left with uninitialized data there, aren't you?
-> Simple buffer head based filesystems are already subject to this.
-
-Most filesystems avoid this one way or another. XFS, btrfs, ext3/4
-(in data=ordered/journal modes), gfs2, etc all use different
-methods, but the end result is the same - they don't expose stale
-blocks.
-
-But that's not really the issue I was alluding to. What I was
-thinking of was a whole lot more complex than that, and might give
-you insight into why the error handling you were proposing is ..
-meeting resistance.
-
-Take a delayed allocation in XFS - it XFS reserves an amount (worst
-case) of extra blocks for metadata allocation during the eventual
-real extent allocation. Every delalloc reserves this metadata space
-but it is not specific to the inode, so pretty much any outstanding
-delalloc conversion has a big pool of reserved metadata space that
-it can allocate metadata blocks from. When the allocation occurs
-during writeback this unused metadata space is taken back out of the
-pool.
-
-If we then change this to use DIO, the first thing XFS has to do is
-punch out the delalloc extent spanning the page because we cannot do
-direct IO into delalloc extents (a fundamental design rule).  That
-punch would require it's own metadata reservation on top of the
-current delalloc reservation which is not released until after the
-reservation for th ehole punch is made. Hence it can ENOSPC/EDQUOT.
-
-Then we have to allocate during DIO, which also requires it's own
-metadata reservation plus the blocks for the page being written.
-That can also ENOSPC/EDQUOT because it can't make use of the large
-delalloc metadata pool that would have allowed it to succeed.
-
-But because this is an error handling path, it must be made to
-succeed. If it fails, we've failed to handle the error correctly and
-somethign bad *will* happen as a result. As you can see switching to
-DIO from the zero page in a copy-last error handler would be quite
-hard to implement in XFS - it would require a special DIO path
-because we'd need to know that it was in a do-not-fail case and that
-we'd have to hole punch before allocation rather than asserting that
-a design rule had been violated, and then make sure that neither
-punching or the later allocation failed, which we can't actually
-do....
-
-Cheers,
-
-Dave.
 -- 
-Dave Chinner
-david@fromorbit.com
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
