@@ -1,92 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758793Ab0EXXJE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:04 -0400
-Received: from kroah.org ([198.145.64.141]:36350 "EHLO coco.kroah.org"
+	id S1759078Ab0EXXJl (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:09:41 -0400
+Received: from kroah.org ([198.145.64.141]:36512 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758242Ab0EXXJD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:03 -0400
-Date: Mon, 24 May 2010 16:04:18 -0700
+	id S1758782Ab0EXXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:36 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
+Message-Id: <20100524230351.661833955@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Mon, 24 May 2010 15:59:58 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/34] 2.6.32.14-stable review
-Message-ID: <20100524230418.GA12770@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Wey-Yi Guy <wey-yi.w.guy@intel.com>,
+       Reinette Chatre <reinette.chatre@intel.com>
+Subject: [26/34] iwlwifi: clear all the stop_queue flag after load firmware
+In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
----- NOTE ----
-I have only included patches that were released in kernels up to the
-2.6.34 release.  Nothing that was requested to be in a stable release
-that showed up in Linus's tree _after_ 2.6.34 has been included here, I
-had to draw the line somewhere.
---------------
+2.6.34-stable review patch.  If anyone has any objections, please let us know.
 
-This is the start of the stable review cycle for the 2.6.32.14 release.
-There are 34 patches in this series, all will be posted as a response to
-this one.  If anyone has any issues with these being applied, please let
-us know.  If anyone is a maintainer of the proper subsystem, and wants
-to add a Signed-off-by: line to the patch, please respond with it.
+------------------
 
-Responses should be made by Wed May 26, 22:00:00 UTC 2010
-Anything received after that time might be too late.
+From: Wey-Yi Guy <wey-yi.w.guy@intel.com>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.32.14-rc1.gz
-and the diffstat can be found below.
+commit a9e10fb9b1c6ad16e73cf2656951fce3a817611e upstream.
 
-thanks,
+All the queues are awake and ready to use after loading firmware,
+for firmware reload case, if any queues was stopped before
+reload, mac80211 will wake those queues after restart hardware, so make
+sure all the flag used to keep track of the queue status are
+reset correctly.
 
-greg k-h
+Signed-off-by: Wey-Yi Guy <wey-yi.w.guy@intel.com>
+Signed-off-by: Reinette Chatre <reinette.chatre@intel.com>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
- Documentation/filesystems/proc.txt       |    5 +-
- Makefile                                 |    2 +-
- arch/parisc/kernel/pci.c                 |    7 +--
- arch/powerpc/include/asm/hw_irq.h        |   38 ------------
- arch/powerpc/kernel/asm-offsets.c        |    1 -
- arch/powerpc/kernel/entry_64.S           |    9 ---
- arch/powerpc/kernel/irq.c                |    6 --
- arch/powerpc/kernel/time.c               |   60 +++++++++++++++----
- arch/s390/kernel/ptrace.c                |    5 +-
- arch/x86/include/asm/k8.h                |    5 ++
- arch/x86/kernel/cpu/intel_cacheinfo.c    |    4 +
- arch/x86/kernel/process.c                |   12 ++--
- crypto/authenc.c                         |   16 ++++--
- drivers/acpi/sleep.c                     |   90 +-----------------------------
- drivers/hwmon/hp_accel.c                 |    2 +-
- drivers/mmc/host/atmel-mci.c             |   14 +++--
- drivers/net/wireless/ath/ath9k/xmit.c    |    4 +-
- drivers/net/wireless/iwlwifi/iwl-4965.c  |    5 ++
- drivers/net/wireless/iwlwifi/iwl-5000.c  |    5 ++
- drivers/net/wireless/p54/eeprom.c        |   31 ++++++----
- drivers/scsi/megaraid/megaraid_sas.c     |   18 +++++-
- drivers/serial/imx.c                     |   10 +++-
- drivers/video/bfin-t350mcqb-fb.c         |   15 +++--
- fs/btrfs/ioctl.c                         |    5 ++
- fs/cachefiles/security.c                 |    4 +
- fs/cifs/cifsglob.h                       |    1 +
- fs/cifs/inode.c                          |   21 ++++++-
- fs/compat.c                              |    2 -
- fs/exec.c                                |    2 -
- fs/nilfs2/super.c                        |    1 +
- fs/notify/inotify/inotify_fsnotify.c     |    2 +
- fs/notify/inotify/inotify_user.c         |    9 ++-
- fs/proc/array.c                          |   92 +-----------------------------
- fs/proc/task_mmu.c                       |   19 ------
- include/asm-generic/dma-mapping-common.h |    4 +-
- include/linux/sched.h                    |    1 -
- kernel/fork.c                            |    2 -
- kernel/profile.c                         |    4 +-
- mm/hugetlb.c                             |    2 +-
- net/ipv4/udp.c                           |    6 +-
- security/min_addr.c                      |    2 +-
- sound/pci/hda/hda_intel.c                |    1 +
- sound/pci/hda/patch_conexant.c           |    7 +-
- sound/pci/ice1712/maya44.c               |    6 +-
- 44 files changed, 212 insertions(+), 345 deletions(-)
+--- a/drivers/net/wireless/iwlwifi/iwl-4965.c
++++ b/drivers/net/wireless/iwlwifi/iwl-4965.c
+@@ -581,6 +581,11 @@ static int iwl4965_alive_notify(struct iwl_priv *priv)
+ 
+ 	iwl4965_set_wr_ptrs(priv, IWL_CMD_QUEUE_NUM, 0);
+ 
++	/* make sure all queue are not stopped */
++	memset(&priv->queue_stopped[0], 0, sizeof(priv->queue_stopped));
++	for (i = 0; i < 4; i++)
++		atomic_set(&priv->queue_stop_count[i], 0);
++
+ 	/* reset to 0 to enable all the queue first */
+ 	priv->txq_ctx_active_msk = 0;
+ 	/* Map each Tx/cmd queue to its corresponding fifo */
+diff --git a/drivers/net/wireless/iwlwifi/iwl-5000.c b/drivers/net/wireless/iwlwifi/iwl-5000.c
+index a7fa1ad..94fc836 100644
+--- a/drivers/net/wireless/iwlwifi/iwl-5000.c
++++ b/drivers/net/wireless/iwlwifi/iwl-5000.c
+@@ -648,6 +648,11 @@ int iwl5000_alive_notify(struct iwl_priv *priv)
+ 
+ 	iwl5000_set_wr_ptrs(priv, IWL_CMD_QUEUE_NUM, 0);
+ 
++	/* make sure all queue are not stopped */
++	memset(&priv->queue_stopped[0], 0, sizeof(priv->queue_stopped));
++	for (i = 0; i < 4; i++)
++		atomic_set(&priv->queue_stop_count[i], 0);
++
+ 	/* reset to 0 to enable all the queue first */
+ 	priv->txq_ctx_active_msk = 0;
+ 	/* map qos queues to fifos one-to-one */
+
+
