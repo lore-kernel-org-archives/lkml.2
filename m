@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932234Ab0EXXPG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:15:06 -0400
-Received: from kroah.org ([198.145.64.141]:36407 "EHLO coco.kroah.org"
+	id S1758990Ab0EXXPs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:15:48 -0400
+Received: from kroah.org ([198.145.64.141]:36387 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758964Ab0EXXJW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:22 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:50 2010
-Message-Id: <20100524230350.236716124@clark.site>
+	id S1758829Ab0EXXJT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:49 2010
+Message-Id: <20100524230349.879809151@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:42 -0700
+Date: Mon, 24 May 2010 15:59:38 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Gerald Schaefer <gerald.schaefer@de.ibm.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>
-Subject: [10/34] [S390] ptrace: fix return value of do_syscall_trace_enter()
+       Alex Chiang <achiang@canonical.com>
+Subject: [06/34] ACPI: sleep: eliminate duplicate entries in acpisleep_dmi_table[]
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,49 +25,126 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Gerald Schaefer <gerald.schaefer@de.ibm.com>
+From: Alex Chiang <achiang@canonical.com>
 
-commit 545c174d1f093a462b4bb9131b23d5ea72a600e1 upstream.
+commit 7d6fb7bd1919517937ec390f6ca2d7bcf4f89fb6 upstream.
 
-strace may change the system call number, so regs->gprs[2] must not
-be read before tracehook_report_syscall_entry(). This fixes a bug
-where "strace -f" will hang after a vfork().
+Duplicate entries ended up acpisleep_dmi_table[] by accident.
+They don't hurt functionality, but they are ugly, so let's get
+rid of them.
 
-Signed-off-by: Gerald Schaefer <gerald.schaefer@de.ibm.com>
-Signed-off-by: Martin Schwidefsky <schwidefsky@de.ibm.com>
+Signed-off-by: Alex Chiang <achiang@canonical.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/s390/kernel/ptrace.c |    5 ++---
- 1 file changed, 2 insertions(+), 3 deletions(-)
+ drivers/acpi/sleep.c |   90 ---------------------------------------------------
+ 1 file changed, 1 insertion(+), 89 deletions(-)
 
---- a/arch/s390/kernel/ptrace.c
-+++ b/arch/s390/kernel/ptrace.c
-@@ -632,7 +632,7 @@ long compat_arch_ptrace(struct task_stru
- 
- asmlinkage long do_syscall_trace_enter(struct pt_regs *regs)
- {
--	long ret;
-+	long ret = 0;
- 
- 	/* Do the secure computing check first. */
- 	secure_computing(regs->gprs[2]);
-@@ -641,7 +641,6 @@ asmlinkage long do_syscall_trace_enter(s
- 	 * The sysc_tracesys code in entry.S stored the system
- 	 * call number to gprs[2].
- 	 */
--	ret = regs->gprs[2];
- 	if (test_thread_flag(TIF_SYSCALL_TRACE) &&
- 	    (tracehook_report_syscall_entry(regs) ||
- 	     regs->gprs[2] >= NR_syscalls)) {
-@@ -663,7 +662,7 @@ asmlinkage long do_syscall_trace_enter(s
- 				    regs->gprs[2], regs->orig_gpr2,
- 				    regs->gprs[3], regs->gprs[4],
- 				    regs->gprs[5]);
--	return ret;
-+	return ret ?: regs->gprs[2];
- }
- 
- asmlinkage void do_syscall_trace_exit(struct pt_regs *regs)
+--- a/drivers/acpi/sleep.c
++++ b/drivers/acpi/sleep.c
+@@ -475,101 +475,13 @@ static struct dmi_system_id __initdata a
+ 	},
+ 	{
+ 	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
++	.ident = "Lenovo ThinkPad X201[s]",
+ 	.matches = {
+ 		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+ 		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+ 		},
+ 	},
+ 	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T410",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T410"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad T510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad T510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad W510",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad W510"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201"),
+-		},
+-	},
+-	{
+-	.callback = init_set_sci_en_on_resume,
+-	.ident = "Lenovo ThinkPad X201",
+-	.matches = {
+-		DMI_MATCH(DMI_SYS_VENDOR, "LENOVO"),
+-		DMI_MATCH(DMI_PRODUCT_VERSION, "ThinkPad X201s"),
+-		},
+-	},
+-	{
+ 	.callback = init_old_suspend_ordering,
+ 	.ident = "Panasonic CF51-2L",
+ 	.matches = {
 
 
