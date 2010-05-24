@@ -1,63 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756371Ab0EXUjj (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 16:39:39 -0400
-Received: from e32.co.us.ibm.com ([32.97.110.150]:47012 "EHLO
-	e32.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753733Ab0EXUjh (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 16:39:37 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: john stultz <johnstul@us.ibm.com>
-To: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Brian Bloniarz <bmb@athenacr.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BFADF9D.9050209@zytor.com>
-References: <4BF58B59.7080901@athenacr.com AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
-	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
-	 <1274727116.2954.5.camel@localhost.localdomain>
-	 <4BFADF9D.9050209@zytor.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Mon, 24 May 2010 13:39:26 -0700
-Message-ID: <1274733566.2954.73.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756046Ab0EXUpd (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 16:45:33 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:46148 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753047Ab0EXUpc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 16:45:32 -0400
+Message-ID: <4BFAE533.6080603@redhat.com>
+Date: Mon, 24 May 2010 16:44:35 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Ingo Molnar <mingo@elte.hu>
+CC: Arjan van de Ven <arjan@infradead.org>, linux-kernel@vger.kernel.org,
+       davej@redhat.com, Andrew Morton <akpm@linux-foundation.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: Re: [PATCH v2  0/8] Fix performance issue with ondemand governor
+References: <20100509082126.4a080d46@infradead.org> <20100509174936.GB17881@elte.hu>
+In-Reply-To: <20100509174936.GB17881@elte.hu>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 13:20 -0700, H. Peter Anvin wrote:
-> On 05/24/2010 11:51 AM, john stultz wrote:
-> > 
-> > Hmmm. That could be an option for newer cpus that I wouldn't oppose.
-> > 
-> > While Peter is correct that the stamped value is probably not very
-> > accurate, atleast it would be constant from boot to boot, and NTP's
-> > calculated drift value would be correct. 
-> > 
-> > We'd need a check to make sure its not way off, since NTP will give up
-> > if its outside 500ppm.  So as long as its close to the calibrated value,
-> > we probably could use it.
-> > 
-> 
-> Is that still the case?  I thought newer versions of NTP could deal with
-> large values.  Inaccuracies of way more than 500 ppm are everyday.
+On 05/09/2010 01:49 PM, Ingo Molnar wrote:
+> * Arjan van de Ven<arjan@infradead.org>  wrote:
+>
+>> [Version 2 includes the acks/etc. Andrew: no changes from the patches that
+>> are in -mm]
+>>
+>> There have been various reports of the ondemand governor causing some
+>> serious performance issues, one of the latest ones from Andrew. There are
+>> several fundamental issues with ondemand (being worked on), but the report
+>> from Andrew can be fixed relatively easily.
+>>
+>> The fundamental issue is that ondemand will go to a (too) low CPU frequency
+>> for workloads that alternatingly disk and CPU bound...
+>
+> I've applied your series to sched/core and started testing it, thanks Arjan!
 
-That's scary. 
+This code seems to help significantly with some workloads,
+allowing more systems to use the ondemand governor (and
+having fewer systems waste power by using the performance
+governor all the time).
 
-Yea, in the kernel the ntp freq correction tops out at 500ppm. Almost
-all the systems I see tend to fall in the +/- 200ppm range (if there's
-not something terribly wrong with the hardware).
+It would be nice to see it in 2.6.35
 
-So maybe things aren't so bad out there? Or is that wishful thinking?
-
-thanks
--john
-
-
+-- 
+All rights reversed
