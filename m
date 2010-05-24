@@ -1,68 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755651Ab0EXTeG (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 15:34:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:50411 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752646Ab0EXTeD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 15:34:03 -0400
-Date: Mon, 24 May 2010 12:32:00 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
-       Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
-       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
-       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
-       David Miller <davem@davemloft.net>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
-Message-Id: <20100524123200.23e23fd2.akpm@linux-foundation.org>
-In-Reply-To: <1270802693.20295.3272.camel@laptop>
-References: <20100409150335.80E3.A69D9226@jp.fujitsu.com>
-	<20100409154730.e9945cbc.kamezawa.hiroyu@jp.fujitsu.com>
-	<20100409160252.80E6.A69D9226@jp.fujitsu.com>
-	<1270802693.20295.3272.camel@laptop>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1755987Ab0EXTvG (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 15:51:06 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:54602 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755678Ab0EXTvE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 15:51:04 -0400
+Message-ID: <4BFAD899.4020909@redhat.com>
+Date: Mon, 24 May 2010 15:50:49 -0400
+From: Ric Wheeler <rwheeler@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Zan Lynx <zlynx@acm.org>
+CC: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, lwoodman@redhat.com,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm <linux-mm@kvack.org>,
+       Nick Piggin <npiggin@suse.de>, Jan Kara <jack@suse.cz>
+Subject: Re: RFC: dirty_ratio back to 40%
+References: <4BF51B0A.1050901@redhat.com> <20100521083408.1E36.A69D9226@jp.fujitsu.com> <4BF5D875.3030900@acm.org>
+In-Reply-To: <4BF5D875.3030900@acm.org>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, 09 Apr 2010 10:44:53 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+On 05/20/2010 08:48 PM, Zan Lynx wrote:
+> On 5/20/10 5:48 PM, KOSAKI Motohiro wrote:
+>> Hi
+>>
+>> CC to Nick and Jan
+>>
+>>> We've seen multiple performance regressions linked to the lower(20%)
+>>> dirty_ratio.  When performing enough IO to overwhelm the background
+>>> flush daemons the percent of dirty pagecache memory quickly climbs
+>>> to the new/lower dirty_ratio value of 20%.  At that point all writing
+>>> processes are forced to stop and write dirty pagecache pages back to 
+>>> disk.
+>>> This causes performance regressions in several benchmarks as well as 
+>>> causing
+>>> a noticeable overall sluggishness.  We all know that the dirty_ratio is
+>>> an integrity vs performance trade-off but the file system journaling
+>>> will cover any devastating effects in the event of a system crash.
+>>>
+>>> Increasing the dirty_ratio to 40% will regain the performance loss seen
+>>> in several benchmarks.  Whats everyone think about this???
+>>
+>> In past, Jan Kara also claim the exactly same thing.
+>>
+>>     Subject: [LSF/VM TOPIC] Dynamic sizing of dirty_limit
+>>     Date: Wed, 24 Feb 2010 15:34:42 +0100
+>>
+>> >  (*) We ended up increasing dirty_limit in SLES 11 to 40% as it 
+>> used to be
+>> >  with old kernels because customers running e.g. LDAP (using BerkelyDB
+>> >  heavily) were complaining about performance problems.
+>>
+>> So, I'd prefer to restore the default rather than both Redhat and 
+>> SUSE apply exactly
+>> same distro specific patch. because we can easily imazine other users 
+>> will face the same
+>> issue in the future.
+>
+> On desktop systems the low dirty limits help maintain interactive 
+> feel. Users expect applications that are saving data to be slow. They 
+> do not like it when every application in the system randomly comes to 
+> a halt because of one program stuffing data up to the dirty limit.
+>
+> The cause and effect for the system slowdown is clear when the dirty 
+> limit is low. "I saved data and now the system is slow until it is 
+> done." When the dirty page ratio is very high, the cause and effect is 
+> disconnected. "I was just web surfing and the system came to a halt."
+>
+> I think we should expect server admins to do more tuning than desktop 
+> users, so the default limits should stay low in my opinion.
+>
 
-> On Fri, 2010-04-09 at 16:29 +0900, KOSAKI Motohiro wrote:
-> > 
-> > 
-> > diff --git a/mm/rmap.c b/mm/rmap.c
-> > index 8b088f0..b4a0b5b 100644
-> > --- a/mm/rmap.c
-> > +++ b/mm/rmap.c
-> > @@ -295,7 +295,7 @@ struct anon_vma *page_lock_anon_vma(struct page
-> > *page)
-> >         unsigned long anon_mapping;
-> >  
-> >         rcu_read_lock();
-> > -       anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
-> > +       anon_mapping = (unsigned long) rcu_dereference(page->mapping);
-> >         if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
-> >                 goto out;
-> >         if (!page_mapped(page)) 
-> 
-> Yes, I think this is indeed required.
-> 
-> I'll do a new version of the patch that includes the comment updates
-> requested by Andrew.
+Have you done any performance testing that shows this?
 
-Either this didn't happen or I lost the patch.
+A laptop the smaller default would spin up drives more often and greatly 
+decrease your battery life.
 
-I parked mm-revalidate-anon_vma-in-page_lock_anon_vma.patch for now. 
-Hopefully everything still works without it..
+Note that both SLES and RHEL default away from the upstream default.
+
+Ric
 
