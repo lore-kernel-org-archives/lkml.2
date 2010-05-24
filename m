@@ -1,21 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932131Ab0EXWjy (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 18:39:54 -0400
-Received: from kroah.org ([198.145.64.141]:42392 "EHLO coco.kroah.org"
+	id S1758375Ab0EXWiZ (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 18:38:25 -0400
+Received: from kroah.org ([198.145.64.141]:42355 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758310Ab0EXWiY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 18:38:24 -0400
-X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:18 2010
-Message-Id: <20100524223018.243139350@clark.site>
+	id S1755430Ab0EXWiU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 18:38:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Mon May 24 15:30:16 2010
+Message-Id: <20100524223016.785615552@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:28:13 -0700
+Date: Mon, 24 May 2010 15:28:08 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "J. Bruce Fields" <bfields@citi.umich.edu>
-Subject: [17/24] nfsd4: bug in read_buf
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [12/24] ext4: Implement range_cyclic in ext4_da_writepages instead of write_cache_pages
 In-Reply-To: <20100524223544.GA13721@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,58 +27,100 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Neil Brown <neilb@suse.de>
 
-commit 2bc3c1179c781b359d4f2f3439cb3df72afc17fc upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-When read_buf is called to move over to the next page in the pagelist
-of an NFSv4 request, it sets argp->end to essentially a random
-number, certainly not an address within the page which argp->p now
-points to.  So subsequent calls to READ_BUF will think there is much
-more than a page of spare space (the cast to u32 ensures an unsigned
-comparison) so we can expect to fall off the end of the second
-page.
+commit 2acf2c261b823d9d9ed954f348b97620297a36b5 upstream.
 
-We never encountered thsi in testing because typically the only
-operations which use more than two pages are write-like operations,
-which have their own decoding logic.  Something like a getattr after a
-write may cross a page boundary, but it would be very unusual for it to
-cross another boundary after that.
+With delayed allocation we lock the page in write_cache_pages() and
+try to build an in memory extent of contiguous blocks.  This is needed
+so that we can get large contiguous blocks request.  If range_cyclic
+mode is enabled, write_cache_pages() will loop back to the 0 index if
+no I/O has been done yet, and try to start writing from the beginning
+of the range.  That causes an attempt to take the page lock of lower
+index page while holding the page lock of higher index page, which can
+cause a dead lock with another writeback thread.
 
-Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+The solution is to implement the range_cyclic behavior in
+ext4_da_writepages() instead.
+
+http://bugzilla.kernel.org/show_bug.cgi?id=12579
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- fs/nfsd/nfs4xdr.c |    8 ++++----
- 1 file changed, 4 insertions(+), 4 deletions(-)
+ fs/ext4/inode.c |   21 +++++++++++++++++++--
+ 1 file changed, 19 insertions(+), 2 deletions(-)
 
---- a/fs/nfsd/nfs4xdr.c
-+++ b/fs/nfsd/nfs4xdr.c
-@@ -179,10 +179,10 @@ static __be32 *read_buf(struct nfsd4_com
- 	argp->p = page_address(argp->pagelist[0]);
- 	argp->pagelist++;
- 	if (argp->pagelen < PAGE_SIZE) {
--		argp->end = p + (argp->pagelen>>2);
-+		argp->end = argp->p + (argp->pagelen>>2);
- 		argp->pagelen = 0;
- 	} else {
--		argp->end = p + (PAGE_SIZE>>2);
-+		argp->end = argp->p + (PAGE_SIZE>>2);
- 		argp->pagelen -= PAGE_SIZE;
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -2456,6 +2456,7 @@ static int ext4_da_writepages(struct add
+ 	struct inode *inode = mapping->host;
+ 	int no_nrwrite_index_update;
+ 	long pages_written = 0, pages_skipped;
++	int range_cyclic, cycled = 1, io_done = 0;
+ 	int needed_blocks, ret = 0, nr_to_writebump = 0;
+ 	struct ext4_sb_info *sbi = EXT4_SB(mapping->host->i_sb);
+ 
+@@ -2493,9 +2494,15 @@ static int ext4_da_writepages(struct add
+ 	if (wbc->range_start == 0 && wbc->range_end == LLONG_MAX)
+ 		range_whole = 1;
+ 
+-	if (wbc->range_cyclic)
++	range_cyclic = wbc->range_cyclic;
++	if (wbc->range_cyclic) {
+ 		index = mapping->writeback_index;
+-	else
++		if (index)
++			cycled = 0;
++		wbc->range_start = index << PAGE_CACHE_SHIFT;
++		wbc->range_end  = LLONG_MAX;
++		wbc->range_cyclic = 0;
++	} else
+ 		index = wbc->range_start >> PAGE_CACHE_SHIFT;
+ 
+ 	mpd.wbc = wbc;
+@@ -2509,6 +2516,7 @@ static int ext4_da_writepages(struct add
+ 	wbc->no_nrwrite_index_update = 1;
+ 	pages_skipped = wbc->pages_skipped;
+ 
++retry:
+ 	while (!ret && wbc->nr_to_write > 0) {
+ 
+ 		/*
+@@ -2563,6 +2571,7 @@ static int ext4_da_writepages(struct add
+ 			pages_written += mpd.pages_written;
+ 			wbc->pages_skipped = pages_skipped;
+ 			ret = 0;
++			io_done = 1;
+ 		} else if (wbc->nr_to_write)
+ 			/*
+ 			 * There is no more writeout needed
+@@ -2571,6 +2580,13 @@ static int ext4_da_writepages(struct add
+ 			 */
+ 			break;
  	}
- 	memcpy(((char*)p)+avail, argp->p, (nbytes - avail));
-@@ -1115,10 +1115,10 @@ nfsd4_decode_compound(struct nfsd4_compo
- 			argp->p = page_address(argp->pagelist[0]);
- 			argp->pagelist++;
- 			if (argp->pagelen < PAGE_SIZE) {
--				argp->end = p + (argp->pagelen>>2);
-+				argp->end = argp->p + (argp->pagelen>>2);
- 				argp->pagelen = 0;
- 			} else {
--				argp->end = p + (PAGE_SIZE>>2);
-+				argp->end = argp->p + (PAGE_SIZE>>2);
- 				argp->pagelen -= PAGE_SIZE;
- 			}
- 		}
++	if (!io_done && !cycled) {
++		cycled = 1;
++		index = 0;
++		wbc->range_start = index << PAGE_CACHE_SHIFT;
++		wbc->range_end  = mapping->writeback_index - 1;
++		goto retry;
++	}
+ 	if (pages_skipped != wbc->pages_skipped)
+ 		printk(KERN_EMERG "This should not happen leaving %s "
+ 				"with nr_to_write = %ld ret = %d\n",
+@@ -2578,6 +2594,7 @@ static int ext4_da_writepages(struct add
+ 
+ 	/* Update index */
+ 	index += pages_written;
++	wbc->range_cyclic = range_cyclic;
+ 	if (wbc->range_cyclic || (range_whole && wbc->nr_to_write > 0))
+ 		/*
+ 		 * set the writeback_index so that range_cyclic
 
 
