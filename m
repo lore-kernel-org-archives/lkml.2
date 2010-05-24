@@ -1,21 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756652Ab0EXIVr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 04:21:47 -0400
-Received: from cn.fujitsu.com ([222.73.24.84]:51647 "EHLO song.cn.fujitsu.com"
+	id S1756794Ab0EXIWM (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 04:22:12 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:57017 "EHLO song.cn.fujitsu.com"
 	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
-	id S1753812Ab0EXIVq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 04:21:46 -0400
-Message-ID: <4BFA37A4.1050208@cn.fujitsu.com>
-Date: Mon, 24 May 2010 16:24:04 +0800
+	id S1753812Ab0EXIWK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 04:22:10 -0400
+Message-ID: <4BFA37BC.8080707@cn.fujitsu.com>
+Date: Mon, 24 May 2010 16:24:28 +0800
 From: Li Zefan <lizf@cn.fujitsu.com>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
 To: Steven Rostedt <rostedt@goodmis.org>
 CC: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, "Theodore Ts'o" <tytso@mit.edu>,
-       linux-ext4@vger.kernel.org
-Subject: [PATCH 5/8] tracing: Convert more ext4 events to DEFINE_EVENT
+       LKML <linux-kernel@vger.kernel.org>
+Subject: [PATCH 6/8] tracing: Remove test of NULL define_fields callback
 References: <4BFA3728.3000701@cn.fujitsu.com>
 In-Reply-To: <4BFA3728.3000701@cn.fujitsu.com>
 Content-Type: text/plain; charset=UTF-8
@@ -24,128 +23,90 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Use DECLARE_EVENT_CLASS, and save ~2.7K:
-
-   text    data     bss     dec     hex filename
- 274441    7200     260  281901   44d2d fs/ext4/ext4.o.orig
- 271881    7040     256  279177   44289 fs/ext4/ext4.o
-
-4 events are converted:
-
-  ext4__mb_new_pa: ext4_mb_new_inode_pa, ext4_mb_new_group_pa
-  ext4__mballoc:   ext4_mballoc_discard, ext4_mballoc_free
-
-No change in functionality.
+Every event (or event class) has it's define_fields callback,
+so the test is redundant.
 
 Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 ---
- include/trace/events/ext4.h |   61 ++++++++++++-------------------------------
- 1 files changed, 17 insertions(+), 44 deletions(-)
+ kernel/trace/trace_events.c        |   28 +++++++++++++---------------
+ kernel/trace/trace_events_filter.c |    9 ---------
+ 2 files changed, 13 insertions(+), 24 deletions(-)
 
-diff --git a/include/trace/events/ext4.h b/include/trace/events/ext4.h
-index 2aa6aa3..9425714 100644
---- a/include/trace/events/ext4.h
-+++ b/include/trace/events/ext4.h
-@@ -353,7 +353,7 @@ TRACE_EVENT(ext4_discard_blocks,
- 		  jbd2_dev_to_name(__entry->dev), __entry->blk, __entry->count)
- );
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index efe1ffd..b5d5b73 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -987,23 +987,21 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		 		  id);
+ #endif
  
--TRACE_EVENT(ext4_mb_new_inode_pa,
-+DECLARE_EVENT_CLASS(ext4__mb_new_pa,
- 	TP_PROTO(struct ext4_allocation_context *ac,
- 		 struct ext4_prealloc_space *pa),
+-	if (call->class->define_fields) {
+-		/*
+-		 * Other events may have the same class. Only update
+-		 * the fields if they are not already defined.
+-		 */
+-		head = trace_get_fields(call);
+-		if (list_empty(head)) {
+-			ret = call->class->define_fields(call);
+-			if (ret < 0) {
+-				pr_warning("Could not initialize trace point"
+-					   " events/%s\n", call->name);
+-				return ret;
+-			}
++	/*
++	 * Other events may have the same class. Only update
++	 * the fields if they are not already defined.
++	 */
++	head = trace_get_fields(call);
++	if (list_empty(head)) {
++		ret = call->class->define_fields(call);
++		if (ret < 0) {
++			pr_warning("Could not initialize trace point"
++				   " events/%s\n", call->name);
++			return ret;
+ 		}
+-		trace_create_file("filter", 0644, call->dir, call,
+-				  filter);
+ 	}
++	trace_create_file("filter", 0644, call->dir, call,
++			  filter);
  
-@@ -381,32 +381,20 @@ TRACE_EVENT(ext4_mb_new_inode_pa,
- 		  __entry->pa_pstart, __entry->pa_len, __entry->pa_lstart)
- );
+ 	trace_create_file("format", 0444, call->dir, call,
+ 			  format);
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 330fefd..36d4010 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -639,9 +639,6 @@ static int init_subsystem_preds(struct event_subsystem *system)
+ 	int err;
  
--TRACE_EVENT(ext4_mb_new_group_pa,
-+DEFINE_EVENT(ext4__mb_new_pa, ext4_mb_new_inode_pa,
-+
- 	TP_PROTO(struct ext4_allocation_context *ac,
- 		 struct ext4_prealloc_space *pa),
- 
--	TP_ARGS(ac, pa),
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->class || !call->class->define_fields)
+-			continue;
 -
--	TP_STRUCT__entry(
--		__field(	dev_t,	dev			)
--		__field(	ino_t,	ino			)
--		__field(	__u64,	pa_pstart		)
--		__field(	__u32,	pa_len			)
--		__field(	__u64,	pa_lstart		)
-+	TP_ARGS(ac, pa)
-+);
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
  
--	),
-+DEFINE_EVENT(ext4__mb_new_pa, ext4_mb_new_group_pa,
+@@ -658,9 +655,6 @@ static void filter_free_subsystem_preds(struct event_subsystem *system)
+ 	struct ftrace_event_call *call;
  
--	TP_fast_assign(
--		__entry->dev		= ac->ac_sb->s_dev;
--		__entry->ino		= ac->ac_inode->i_ino;
--		__entry->pa_pstart	= pa->pa_pstart;
--		__entry->pa_len		= pa->pa_len;
--		__entry->pa_lstart	= pa->pa_lstart;
--	),
-+	TP_PROTO(struct ext4_allocation_context *ac,
-+		 struct ext4_prealloc_space *pa),
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->class || !call->class->define_fields)
+-			continue;
+-
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
  
--	TP_printk("dev %s ino %lu pstart %llu len %u lstart %llu",
--		  jbd2_dev_to_name(__entry->dev), (unsigned long) __entry->ino,
--		  __entry->pa_pstart, __entry->pa_len, __entry->pa_lstart)
-+	TP_ARGS(ac, pa)
- );
+@@ -1263,9 +1257,6 @@ static int replace_system_preds(struct event_subsystem *system,
+ 	list_for_each_entry(call, &ftrace_events, list) {
+ 		struct event_filter *filter = call->filter;
  
- TRACE_EVENT(ext4_mb_release_inode_pa,
-@@ -790,7 +778,7 @@ TRACE_EVENT(ext4_mballoc_prealloc,
- 		  __entry->result_len, __entry->result_logical)
- );
+-		if (!call->class || !call->class->define_fields)
+-			continue;
+-
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
  
--TRACE_EVENT(ext4_mballoc_discard,
-+DECLARE_EVENT_CLASS(ext4__mballoc,
- 	TP_PROTO(struct ext4_allocation_context *ac),
- 
- 	TP_ARGS(ac),
-@@ -819,33 +807,18 @@ TRACE_EVENT(ext4_mballoc_discard,
- 		  __entry->result_len, __entry->result_logical)
- );
- 
--TRACE_EVENT(ext4_mballoc_free,
-+DEFINE_EVENT(ext4__mballoc, ext4_mballoc_discard,
-+
- 	TP_PROTO(struct ext4_allocation_context *ac),
- 
--	TP_ARGS(ac),
-+	TP_ARGS(ac)
-+);
- 
--	TP_STRUCT__entry(
--		__field(	dev_t,	dev			)
--		__field(	ino_t,	ino			)
--		__field(	__u32, 	result_logical		)
--		__field(	  int,	result_start		)
--		__field(	__u32, 	result_group		)
--		__field(	  int,	result_len		)
--	),
-+DEFINE_EVENT(ext4__mballoc, ext4_mballoc_free,
- 
--	TP_fast_assign(
--		__entry->dev		= ac->ac_inode->i_sb->s_dev;
--		__entry->ino		= ac->ac_inode->i_ino;
--		__entry->result_logical	= ac->ac_b_ex.fe_logical;
--		__entry->result_start	= ac->ac_b_ex.fe_start;
--		__entry->result_group	= ac->ac_b_ex.fe_group;
--		__entry->result_len	= ac->ac_b_ex.fe_len;
--	),
-+	TP_PROTO(struct ext4_allocation_context *ac),
- 
--	TP_printk("dev %s inode %lu extent %u/%d/%u@%u ",
--		  jbd2_dev_to_name(__entry->dev), (unsigned long) __entry->ino,
--		  __entry->result_group, __entry->result_start,
--		  __entry->result_len, __entry->result_logical)
-+	TP_ARGS(ac)
- );
- 
- TRACE_EVENT(ext4_forget,
 -- 
 1.6.3
 
