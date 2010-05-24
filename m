@@ -1,66 +1,95 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758224Ab0EXSbe (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:31:34 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:6992 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757653Ab0EXSbc (ORCPT
+	id S1758248Ab0EXScP (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:32:15 -0400
+Received: from cobra.newdream.net ([66.33.216.30]:37265 "EHLO
+	cobra.newdream.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752332Ab0EXScO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:31:32 -0400
-X-IronPort-AV: E=Sophos;i="4.53,292,1272844800"; 
-   d="scan'208";a="61740"
-Date: Mon, 24 May 2010 19:25:27 +0100
-From: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-CC: Jeremy Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>,
-       Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>
-Subject: [PATCH 0 of 12] PV on HVM Xen
-Message-ID: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Mon, 24 May 2010 14:32:14 -0400
+Date: Mon, 24 May 2010 11:35:48 -0700 (PDT)
+From: Sage Weil <sage@newdream.net>
+To: linux-kernel@vger.kernel.org, mingo@elte.hu, peterz@infradead.org,
+       andreas.herrmann3@amd.com, tglx@linutronix.de, efault@gmx.de
+Subject: [PATCH] sched: add wait_for_completion_killable_timeout
+Message-ID: <Pine.LNX.4.64.1005241129500.1745@cobra.newdream.net>
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all,
-this is another update of the PV on HVM Xen series that addresses
-Jeremy's comments.
-The platform_pci hooks have been removed, suspend/resume for HVM
-domains is now much more similar to the PV case and shares the same
-do_suspend function.
-Alloc_xen_mmio_hook has been removed has well, now the memory allocation for
-the grant table is done by the xen platform pci driver directly.
-The per_cpu xen_vcpu variable is set by a cpu_notifier function so that
-secondary vcpus have the variable set correctly no matter what the xen
-features are on the host.
-The kernel command line option xen_unplug has been renamed to
-xen_emul_unplug and the code that makes use of it has been moved to a
-separate file (arch/x86/xen/platform-pci-unplug.c).
-Xen_unplug_emulated_devices is now able to detect if blkfront, netfront
-and the Xen platform PCI driver have been compiled, and set the default
-value of xen_emul_unplug accordingly.
-The patch "Initialize xenbus device structs with ENODEV as
-default" has been removed from the series and it will be sent
-separately.
-Finally the comments on most of the patches have been improved.
+Hi guys,
 
-The series is based on 2.6.34 and supports Xen PV frontends running
-in a HVM domain, including netfront, blkfront and the VIRQ_TIMER.
+I need this patch (or something similar) to fix an issue with the way Ceph 
+is waiting for MDS requests to complete.  I'm assuming there's no specific 
+reason the _killable_timeout variant was excluded?  Can this go into .35?
 
-In order to be able to use VIRQ_TIMER and to improve performances you
-need a patch to Xen to implement the vector callback mechanism
-for event channel delivery.
+Thanks-
+sage
 
-A git tree is also available here:
+---
 
-git://xenbits.xen.org/people/sstabellini/linux-pvhvm.git
+>From 1ae82e511ba1664691380ea5c630a94eec370166 Mon Sep 17 00:00:00 2001
+From: Sage Weil <sage@newdream.net>
+Date: Mon, 24 May 2010 11:12:42 -0700
+Subject: [PATCH] sched: add wait_for_completion_killable_timeout
 
-branch name 2.6.34-pvhvm-v2.
+Add missing _killable_timeout variant for wait_for_completion that will
+return when a timeout expires or the task is killed.
 
-Cheers,
+CC: Ingo Molnar <mingo@elte.hu>
+CC: Peter Zijlstra <peterz@infradead.org>
+CC: Andreas Herrmann <andreas.herrmann3@amd.com>
+CC: Thomas Gleixner <tglx@linutronix.de>
+CC: Mike Galbraith <efault@gmx.de>
+Signed-off-by: Sage Weil <sage@newdream.net>
+---
+ include/linux/completion.h |    2 ++
+ kernel/sched.c             |   17 +++++++++++++++++
+ 2 files changed, 19 insertions(+), 0 deletions(-)
 
-Stefano
+diff --git a/include/linux/completion.h b/include/linux/completion.h
+index 4a6b604..51e3145 100644
+--- a/include/linux/completion.h
++++ b/include/linux/completion.h
+@@ -83,6 +83,8 @@ extern unsigned long wait_for_completion_timeout(struct completion *x,
+ 						   unsigned long timeout);
+ extern unsigned long wait_for_completion_interruptible_timeout(
+ 			struct completion *x, unsigned long timeout);
++extern unsigned long wait_for_completion_killable_timeout(
++			struct completion *x, unsigned long timeout);
+ extern bool try_wait_for_completion(struct completion *x);
+ extern bool completion_done(struct completion *x);
+ 
+diff --git a/kernel/sched.c b/kernel/sched.c
+index 3c2a54f..4d051c7 100644
+--- a/kernel/sched.c
++++ b/kernel/sched.c
+@@ -4161,6 +4161,23 @@ int __sched wait_for_completion_killable(struct completion *x)
+ EXPORT_SYMBOL(wait_for_completion_killable);
+ 
+ /**
++ * wait_for_completion_killable_timeout: - waits for completion of a task (w/(to,killable))
++ * @x:  holds the state of this particular completion
++ * @timeout:  timeout value in jiffies
++ *
++ * This waits for either a completion of a specific task to be
++ * signaled or for a specified timeout to expire. It can be
++ * interrupted by a kill signal. The timeout is in jiffies.
++ */
++unsigned long __sched
++wait_for_completion_killable_timeout(struct completion *x,
++				     unsigned long timeout)
++{
++	return wait_for_common(x, timeout, TASK_KILLABLE);
++}
++EXPORT_SYMBOL(wait_for_completion_killable_timeout);
++
++/**
+  *	try_wait_for_completion - try to decrement a completion without blocking
+  *	@x:	completion structure
+  *
+-- 
+1.7.0
+
