@@ -1,93 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757659Ab0EXVHl (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 17:07:41 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24439 "EHLO mx1.redhat.com"
+	id S1757739Ab0EXVMg (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 17:12:36 -0400
+Received: from fifo99.com ([67.223.236.141]:55424 "EHLO fifo99.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757155Ab0EXVHj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 17:07:39 -0400
-From: Don Zickus <dzickus@redhat.com>
-To: mmarek@suse.cz
-Cc: sam@ravnborg.org, agruen@suse.de, linux-kernel@vger.kernel.org,
-       Don Zickus <dzickus@redhat.com>
-Subject: Makefile.build: make KBUILD_SYMTYPES work again
-Date: Mon, 24 May 2010 17:07:24 -0400
-Message-Id: <1274735244-31249-1-git-send-email-dzickus@redhat.com>
+	id S1757703Ab0EXVMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 17:12:35 -0400
+Subject: Re: [PATCH 11/11] Use down_read_critical() for /proc/<pid>/exe and
+ /proc/<pid>/maps files
+From: Daniel Walker <dwalker@fifo99.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+In-Reply-To: <1274733081-4623-12-git-send-email-walken@google.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	 <1274733081-4623-12-git-send-email-walken@google.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 May 2010 14:12:21 -0700
+Message-ID: <1274735541.11372.54.camel@c-dwalke-linux.qualcomm.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.1 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-commit 37a8d9f67f18de1e2cbc7387311ce22d4dbff518 tried to combine some
-duplicate code and accidentally broke how KBUILD_SYMTYPES worked
+On Mon, 2010-05-24 at 13:31 -0700, Michel Lespinasse wrote:
+> This helps in the following situation:
+> - Thread A takes a page fault while reading or writing memory.
+>   do_page_fault() acquires the mmap_sem for read and blocks on disk
+>   (either reading the page from file, or hitting swap) for a long time.
+> - Thread B does an mmap call and blocks trying to acquire the mmap_sem
+>   for write
+> - Thread C is a monitoring process trying to read every /proc/pid/maps
+>   in the system. This requires acquiring the mmap_sem for read. Thread C
+>   blocks behind B, waiting for A to release the rwsem.  If thread C
+>   could be allowed to run in parallel with A, it would probably get done
+>   long before thread A's disk access completes, thus not actually slowing
+>   down thread B.
+> 
+> Test results with down_read_critical_test (10 seconds):
 
-This fixes the code to match the original intention by the author who
-originally added the code I believe.
+Did you try using queuing on scheduling priorities in some way to do
+this? It seems like your setting it up so Thread C is more important
+than Thread B, but your using code to dictate that instead of scheduling
+priorities. It would make more sense to me if the threads had priorities
+to dictate what's "critical" and what's not.
 
-The fixes include:
-- removing extra whitespaces in the if-statements
-- moving the if-statement from around the -r to the -T
-- adding a second arg to cmd_gensymtypes to simplify the options passed
-  to genksyms.
-
-Tested by instrumenting genksyms and seeing what options were passed in
-during a make, KBUILD_SYMTYPES make, and when a foo.symref was created.
-
-Everything compiled and looked ok.
-
-Signed-off-by: Don Zickus <dzickus@redhat.com>
----
- scripts/Makefile.build |   26 +++++++++++++-------------
- 1 files changed, 13 insertions(+), 13 deletions(-)
-
-diff --git a/scripts/Makefile.build b/scripts/Makefile.build
-index 0b94d2f..f5fe50a 100644
---- a/scripts/Makefile.build
-+++ b/scripts/Makefile.build
-@@ -156,14 +156,14 @@ $(obj)/%.i: $(src)/%.c FORCE
- 
- cmd_gensymtypes =                                                           \
-     $(CPP) -D__GENKSYMS__ $(c_flags) $< |                                   \
--    $(GENKSYMS) -T $@ -a $(ARCH)                                            \
-+    $(GENKSYMS) $(if $(1), -T $(2)) -a $(ARCH)                              \
-      $(if $(KBUILD_PRESERVE),-p)                                            \
--     $(if $(1),-r $(firstword $(wildcard $(@:.symtypes=.symref) /dev/null)))
-+     -r $(firstword $(wildcard $(2:.symtypes=.symref) /dev/null))
- 
- quiet_cmd_cc_symtypes_c = SYM $(quiet_modtag) $@
- cmd_cc_symtypes_c =                                                         \
-     set -e;                                                                 \
--    $(call cmd_gensymtypes, true) >/dev/null;                               \
-+    $(call cmd_gensymtypes,true,$@) >/dev/null;                             \
-     test -s $@ || rm -f $@
- 
- $(obj)/%.symtypes : $(src)/%.c FORCE
-@@ -192,16 +192,16 @@ else
- #   the actual value of the checksum generated by genksyms
- 
- cmd_cc_o_c = $(CC) $(c_flags) -c -o $(@D)/.tmp_$(@F) $<
--cmd_modversions =							\
--	if $(OBJDUMP) -h $(@D)/.tmp_$(@F) | grep -q __ksymtab; then	\
--		$(call cmd_gensymtypes, $(KBUILD_SYMTYPES))		\
--		    > $(@D)/.tmp_$(@F:.o=.ver);				\
--									\
--		$(LD) $(LDFLAGS) -r -o $@ $(@D)/.tmp_$(@F) 		\
--			-T $(@D)/.tmp_$(@F:.o=.ver);			\
--		rm -f $(@D)/.tmp_$(@F) $(@D)/.tmp_$(@F:.o=.ver);	\
--	else								\
--		mv -f $(@D)/.tmp_$(@F) $@;				\
-+cmd_modversions =								\
-+	if $(OBJDUMP) -h $(@D)/.tmp_$(@F) | grep -q __ksymtab; then		\
-+		$(call cmd_gensymtypes,$(KBUILD_SYMTYPES),$(@:.o=.symtypes))	\
-+		    > $(@D)/.tmp_$(@F:.o=.ver);					\
-+										\
-+		$(LD) $(LDFLAGS) -r -o $@ $(@D)/.tmp_$(@F) 			\
-+			-T $(@D)/.tmp_$(@F:.o=.ver);				\
-+		rm -f $(@D)/.tmp_$(@F) $(@D)/.tmp_$(@F:.o=.ver);		\
-+	else									\
-+		mv -f $(@D)/.tmp_$(@F) $@;					\
- 	fi;
- endif
- 
--- 
-1.7.0.1
+Daniel
 
