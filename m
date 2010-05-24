@@ -1,23 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759091Ab0EXXJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:09:44 -0400
-Received: from kroah.org ([198.145.64.141]:36518 "EHLO coco.kroah.org"
+	id S1759177Ab0EXXMs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:12:48 -0400
+Received: from kroah.org ([198.145.64.141]:36451 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759048Ab0EXXJg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:09:36 -0400
+	id S1759000Ab0EXXJ3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:09:29 -0400
 X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:03:51 2010
-Message-Id: <20100524230351.748291415@clark.site>
+Message-Id: <20100524230350.955860014@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 15:59:59 -0700
+Date: Mon, 24 May 2010 15:59:50 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Larry Finger <Larry.Finger@lwfinger.net>,
-       Christian Lamparter <chunkeey@web.de>,
-       "John W. Linville" <linville@tuxdriver.com>
-Subject: [27/34] p54: disable channels with incomplete calibration data sets
+       Hugh Dickins <hughd@google.com>
+Subject: [18/34] profile: fix stats and data leakage
 In-Reply-To: <20100524230418.GA12770@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -27,109 +25,35 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Christian Lamparter <chunkeey@googlemail.com>
+From: Hugh Dickins <hughd@google.com>
 
-commit 93a59d7527147e3656664aa3179f8d19de256081 upstream.
+commit 16a2164bb03612efe79a76c73da6da44445b9287 upstream.
 
-James Grossmann [1] reported that p54 spews out confusing
-messages instead of preventing the mayhem from happening.
+If the kernel is large or the profiling step small, /proc/profile
+leaks data and readprofile shows silly stats, until readprofile -r
+has reset the buffer: clear the prof_buffer when it is vmalloc()ed.
 
-the reason is that "p54: generate channel list dynamically"
-is not perfect. It didn't discard incomplete channel data
-sets and therefore p54 advertised to support them as well.
-
-[1]: http://marc.info/?l=linux-wireless&m=125699830215890
-
-Cc: Larry Finger <Larry.Finger@lwfinger.net>
-Reported-by: James Grossmann <cctsurf@gmail.com>
-Signed-off-by: Christian Lamparter <chunkeey@web.de>
-Signed-off-by: John W. Linville <linville@tuxdriver.com>
+Signed-off-by: Hugh Dickins <hughd@google.com>
+Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/net/wireless/p54/eeprom.c |   31 +++++++++++++++++++------------
- 1 file changed, 19 insertions(+), 12 deletions(-)
+ kernel/profile.c |    4 +++-
+ 1 file changed, 3 insertions(+), 1 deletion(-)
 
---- a/drivers/net/wireless/p54/eeprom.c
-+++ b/drivers/net/wireless/p54/eeprom.c
-@@ -126,7 +126,7 @@ static int p54_generate_band(struct ieee
- 	int ret = -ENOMEM;
+--- a/kernel/profile.c
++++ b/kernel/profile.c
+@@ -127,8 +127,10 @@ int __ref profile_init(void)
+ 		return 0;
  
- 	if ((!list->entries) || (!list->band_channel_num[band]))
--		return 0;
-+		return -EINVAL;
- 
- 	tmp = kzalloc(sizeof(*tmp), GFP_KERNEL);
- 	if (!tmp)
-@@ -158,6 +158,7 @@ static int p54_generate_band(struct ieee
- 			       (list->channels[i].data & CHAN_HAS_CURVE ? "" :
- 				" [curve data]"),
- 			       list->channels[i].index, list->channels[i].freq);
-+			continue;
- 		}
- 
- 		tmp->channels[j].band = list->channels[i].band;
-@@ -165,7 +166,16 @@ static int p54_generate_band(struct ieee
- 		j++;
- 	}
- 
--	tmp->n_channels = list->band_channel_num[band];
-+	if (j == 0) {
-+		printk(KERN_ERR "%s: Disabling totally damaged %s band.\n",
-+		       wiphy_name(dev->wiphy), (band == IEEE80211_BAND_2GHZ) ?
-+		       "2 GHz" : "5 GHz");
-+
-+		ret = -ENODATA;
-+		goto err_out;
-+	}
-+
-+	tmp->n_channels = j;
- 	old = priv->band_table[band];
- 	priv->band_table[band] = tmp;
- 	if (old) {
-@@ -228,13 +238,13 @@ static int p54_generate_channel_lists(st
- 	struct p54_common *priv = dev->priv;
- 	struct p54_channel_list *list;
- 	unsigned int i, j, max_channel_num;
--	int ret = -ENOMEM;
-+	int ret = 0;
- 	u16 freq;
- 
- 	if ((priv->iq_autocal_len != priv->curve_data->entries) ||
- 	    (priv->iq_autocal_len != priv->output_limit->entries))
--		printk(KERN_ERR "%s: EEPROM is damaged... you may not be able"
--				"to use all channels with this device.\n",
-+		printk(KERN_ERR "%s: Unsupported or damaged EEPROM detected. "
-+				"You may not be able to use all channels.\n",
- 				wiphy_name(dev->wiphy));
- 
- 	max_channel_num = max_t(unsigned int, priv->output_limit->entries,
-@@ -243,8 +253,10 @@ static int p54_generate_channel_lists(st
- 				priv->curve_data->entries);
- 
- 	list = kzalloc(sizeof(*list), GFP_KERNEL);
--	if (!list)
-+	if (!list) {
-+		ret = -ENOMEM;
- 		goto free;
+ 	prof_buffer = vmalloc(buffer_bytes);
+-	if (prof_buffer)
++	if (prof_buffer) {
++		memset(prof_buffer, 0, buffer_bytes);
+ 		return 0;
 +	}
  
- 	list->max_entries = max_channel_num;
- 	list->channels = kzalloc(sizeof(struct p54_channel_entry) *
-@@ -282,13 +294,8 @@ static int p54_generate_channel_lists(st
- 	     p54_compare_channels, NULL);
- 
- 	for (i = 0, j = 0; i < IEEE80211_NUM_BANDS; i++) {
--		if (list->band_channel_num[i]) {
--			ret = p54_generate_band(dev, list, i);
--			if (ret)
--				goto free;
--
-+		if (p54_generate_band(dev, list, i) == 0)
- 			j++;
--		}
- 	}
- 	if (j == 0) {
- 		/* no useable band available. */
+ 	free_cpumask_var(prof_cpu_mask);
+ 	return -ENOMEM;
 
 
