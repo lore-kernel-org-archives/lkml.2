@@ -1,75 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758086Ab0EXSDX (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 14:03:23 -0400
-Received: from ch-smtp01.sth.basefarm.net ([80.76.149.212]:46950 "EHLO
-	ch-smtp01.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753546Ab0EXSDV (ORCPT
+	id S1758205Ab0EXSEU (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 14:04:20 -0400
+Received: from mail-pz0-f185.google.com ([209.85.222.185]:49606 "EHLO
+	mail-pz0-f185.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754343Ab0EXSES (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 14:03:21 -0400
-Message-ID: <4BFABF40.30700@euromail.se>
-Date: Mon, 24 May 2010 20:02:40 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: Ping Cheng <pinglinux@gmail.com>
-CC: Randy Dunlap <rdunlap@xenotime.net>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+	Mon, 24 May 2010 14:04:18 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=hqf8TIN8ziRNo3XBy7EidCkflY+OIETGAw6eo6hgKqxqyEJtm+I6KtujYg+XNjYBZZ
+         695PCVQ1vplR3ricl6U8o9oLaIHzqH27HvYhK+WYxxYSShcbdkbUCNnY7i1LBZe6+Mx7
+         Wp/HASKZoYyqHnVaDTHtZzWDEVSlCoZwy1B1g=
+Date: Mon, 24 May 2010 11:04:12 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Henrik Rydberg <rydberg@euromail.se>
+Cc: Ping Cheng <pinglinux@gmail.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
        Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
        linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
        Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
        Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev4)
-References: <1274567437-2818-1-git-send-email-rydberg@euromail.se>	 <1274567437-2818-2-git-send-email-rydberg@euromail.se>	 <20100523102413.2fee3f4c.rdunlap@xenotime.net>	 <4BF9ABC7.9090208@euromail.se>	 <AANLkTimQIIPiah962ar_TRZvJZpqCFvh-KLXxakbUHmZ@mail.gmail.com>	 <4BFA272B.7090602@euromail.se> <AANLkTimro6rna8MTqylaE2cnr_7Fif68Ldc6czLk7UDG@mail.gmail.com>
-In-Reply-To: <AANLkTimro6rna8MTqylaE2cnr_7Fif68Ldc6czLk7UDG@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OGbz9-0001rm-3d.
-X-Scan-Signature: ch-smtp01.sth.basefarm.net 1OGbz9-0001rm-3d 6f7c5cb888a83253e33bf55054a33cd3
+Subject: Re: [PATCH 2/2] input: mt: Document the MT event slot protocol (rev2)
+Message-ID: <20100524180411.GA6033@core.coreip.homeip.net>
+References: <1274213429-22667-1-git-send-email-rydberg@euromail.se>
+ <20100524155901.GB3182@core.coreip.homeip.net>
+ <AANLkTin9ahtqL7jrUP4C0zF9-P3rUg7ktN93-hcqdDnj@mail.gmail.com>
+ <201005241021.02731.dmitry.torokhov@gmail.com>
+ <4BFABBD0.9020202@euromail.se>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFABBD0.9020202@euromail.se>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ping Cheng wrote:
-> On Mon, May 24, 2010 at 12:13 AM, Henrik Rydberg <rydberg@euromail.se> wrote:
->> Ping Cheng wrote:
->>> What I am thinking is that we only need one SYN_ call for both _MT_
->>> and regular data combined, which is a call to input_sync() at the end
->>> of the whole packet. The SYN_MT_ can be replaced by the following
->>> example, which I think is more "client-friendly". This solution is
->>> based on the fact that the major difference between type A and type B
->>> is whether we need to filter the data or not:
->>>
->>> ABS_MT_RANDOM 0
->>> ABS_MT_POSITION_X x[0]
->>> ABS_MT_POSITION_Y y[0]
->>> ABS_MT_ RANDOM 1
->>> ABS_MT_POSITION_X x[1]
->>> ABS_MT_POSITION_Y y[1]
->>> SYN_REPORT
->>>
->>> input_set_abs_params(input_dev, ABS_MT_RANDOM, 0, 2, 0, 0);
->>>
->>> would tell the clients that they can expect two random touches.
->> And if you do s/RANDOM/SLOT/, you end up with what? ;-)
+On Mon, May 24, 2010 at 07:48:00PM +0200, Henrik Rydberg wrote:
+> Dmitry Torokhov wrote:
+> [...]
+> >>>> I think we need to add an ioctl to enable user land driver/client to
+> >>>> signal the kernel driver to send all events without filtering, just
+> >>>> once. Hot-plugged devices and X driver starts after user has contacted
+> >>>> with the device are two examples that the client would miss filtered
+> >>>> events.
+> >>>>
+> >>>> Dmitry, do you think it is a valid suggestion?
+> >>> What about using EVIOCGKEY/EVIOCGSW/EVIOCGABS?
+> >> Those EVIOCs only give us the static values (max/min/supported keys,
+> >> etc.).  We need their dynamic input data here, the actual x, y,
+> >> button, pressure, etc. Am I missing something about those EVIOs?
+> >>
+> > 
+> > Yes you are ;) Supported events are reported via EVIOCGBIT, EVIOCGKEY and
+> > EVIOCGSW will return current state of keys/switches. As far as EVIOCGABS
+> > goes, it also returns, besides min/max/etc, last reported _values_ of the
+> > ABS_* events.
+> > 
 > 
-> Haha, I know what you are thinking :).
+> Ping is not alone. :-)
 > 
-> Maybe I didn't make my point clear.  I didn't mean to make SLOT
-> backward compatible.  I meant to replace SYN_MT_REPORT event with the
-> ABS_MT_ RANDOM label so we only sync the whole packet once at the end.
-> This way both types of MT_ data follow the same input event reporting
-> flow....
-
-You mean changing the type A protocol, breaking the current code base? That is a
-big no-no.
-
-> SLOT and RANDOM are both needed since they deal with two different
-> types of MT data, filtered (type B) and unfiltered (type A). There is
-> no midunderstanding there.
+> But it does not work for MT events -- yet.
 > 
-> Ping
 
-Henrik
+Yes, this is true.
+
+I think the most interesting is the switch data, since they may not change
+at all. The rest is transient and should refresh "fairly quickly".
+
+-- 
+Dmitry
