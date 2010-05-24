@@ -1,70 +1,131 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756564Ab0EXHoI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 03:44:08 -0400
-Received: from cantor.suse.de ([195.135.220.2]:38667 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753014Ab0EXHoF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 03:44:05 -0400
-Date: Mon, 24 May 2010 17:43:36 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Manfred Spraul <manfred@colorfullife.com>, linux-kernel@vger.kernel.org
-Subject: Re: [patch 3/3] ipc: increase IPCMNI_MAX
-Message-ID: <20100524074335.GX2516@laptop>
-References: <20100520065911.GG2516@laptop>
- <20100520070741.GI2516@laptop>
- <20100521133136.d0e282df.akpm@linux-foundation.org>
+	id S1756710Ab0EXHoq (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 03:44:46 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:49921 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1751975Ab0EXHoo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 03:44:44 -0400
+Message-ID: <4BFA2DAD.2030601@cn.fujitsu.com>
+Date: Mon, 24 May 2010 15:41:33 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100521133136.d0e282df.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       KVM list <kvm@vger.kernel.org>
+Subject: [PATCH 2/2 v2] KVM: MMU: allow more page become unsync at getting
+ sp time
+References: <4BF91C34.6020904@cn.fujitsu.com> <4BF91C82.8050308@cn.fujitsu.com>
+In-Reply-To: <4BF91C82.8050308@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 01:31:36PM -0700, Andrew Morton wrote:
-> On Thu, 20 May 2010 17:07:41 +1000
-> Nick Piggin <npiggin@suse.de> wrote:
-> 
-> > Just wondering whether there is a good reason to have a full 16 bits of
-> > sequence in ipc ids? 32K indexes is pretty easy to overflow, if only in
-> > stress tests for now. I was doing some big aim7 stress testing, which
-> > required this patch, but it's not exactly a realistic workload :) 
-> > 
-> > But the sequence seems like it just helps slightly with buggy apps, and
-> > if the app is buggy then it can by definition mess up its own ids
-> > anyway? So I don't see that such amount of seq is required.
-> > 
-> > Index: linux-2.6/ipc/util.h
-> > ===================================================================
-> > --- linux-2.6.orig/ipc/util.h
-> > +++ linux-2.6/ipc/util.h
-> > @@ -14,7 +14,16 @@
-> >  #include <linux/err.h>
-> >  
-> >  /* IPCMNI_MAX should be <= MAX_INT, absolute limit for ipc arrays */
-> > -#define IPCMNI_MAX_SHIFT	15
-> > +/*
-> > + * IPC ids consist of an index into the idr, which allocates from the bottom
-> > + * up, and a sequence number which is continually incremented. Valid indexes
-> > + * are from 0..IPCMNI_MAX (or further constrained by sysctls or other limits).
-> > + * The sequence number prevents ids from being reused quickly. The sequence
-> > + * number resides in the top part of the 'int' after IPCMNI_MAX.
-> > + *
-> > + * Increasing IPCMNI_MAX reduces the sequence wrap interval.
-> > + */
-> > +#define IPCMNI_MAX_SHIFT	20
-> >  #define IPCMNI_MAX		(1 << IPCMNI_MAX_SHIFT)
-> >  
-> >  #define SEQ_SHIFT		IPCMNI_MAX_SHIFT
-> 
-> Some anaylsis of the worst-case memory consumption would be mollifying.
+Allow more page become asynchronous at getting sp time, if need create new
+shadow page for gfn but it not allow unsync(level > 1), we should unsync all
+gfn's unsync page
 
-OK.
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/mmu.c |   47 +++++++++++++++++++++++++++++++++++++----------
+ 1 files changed, 37 insertions(+), 10 deletions(-)
+
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 170c8f7..e3a0ddf 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -1218,6 +1218,35 @@ static int kvm_sync_page(struct kvm_vcpu *vcpu, struct kvm_mmu_page *sp)
+ 	return __kvm_sync_page(vcpu, sp, true);
+ }
  
-> I took the absence of Signed-off-by:'s to mean "rfc" and wandered away.
++/* @gfn should be write-protected at the call site */
++static void kvm_sync_pages(struct kvm_vcpu *vcpu,  gfn_t gfn)
++{
++	struct hlist_head *bucket;
++	struct kvm_mmu_page *s;
++	struct hlist_node *node, *n;
++	unsigned index;
++	bool flush = false;
++
++	index = kvm_page_table_hashfn(gfn);
++	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
++	hlist_for_each_entry_safe(s, node, n, bucket, hash_link) {
++		if (s->gfn != gfn || !s->unsync || s->role.invalid)
++			continue;
++
++		WARN_ON(s->role.level != PT_PAGE_TABLE_LEVEL);
++		if ((s->role.cr4_pae != !!is_pae(vcpu)) ||
++			(vcpu->arch.mmu.sync_page(vcpu, s))) {
++			kvm_mmu_zap_page(vcpu->kvm, s);
++			continue;
++		}
++		kvm_unlink_unsync_page(vcpu->kvm, s);
++		flush = true;
++	}
++
++	if (flush)
++		kvm_mmu_flush_tlb(vcpu);
++}
++
+ struct mmu_page_path {
+ 	struct kvm_mmu_page *parent[PT64_ROOT_LEVEL-1];
+ 	unsigned int idx[PT64_ROOT_LEVEL-1];
+@@ -1316,8 +1345,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	unsigned index;
+ 	unsigned quadrant;
+ 	struct hlist_head *bucket;
+-	struct kvm_mmu_page *sp, *unsync_sp = NULL;
++	struct kvm_mmu_page *sp;
+ 	struct hlist_node *node, *tmp;
++	bool need_sync = false;
+ 
+ 	role = vcpu->arch.mmu.base_role;
+ 	role.level = level;
+@@ -1334,17 +1364,14 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	bucket = &vcpu->kvm->arch.mmu_page_hash[index];
+ 	hlist_for_each_entry_safe(sp, node, tmp, bucket, hash_link)
+ 		if (sp->gfn == gfn) {
+-			if (sp->unsync)
+-				unsync_sp = sp;
++			if (!need_sync && sp->unsync)
++				need_sync = true;
+ 
+ 			if (sp->role.word != role.word)
+ 				continue;
+ 
+-			if (!direct && unsync_sp &&
+-			      kvm_sync_page_transient(vcpu, unsync_sp)) {
+-				unsync_sp = NULL;
++			if (sp->unsync && kvm_sync_page_transient(vcpu, sp))
+ 				break;
+-			}
+ 
+ 			mmu_page_add_parent_pte(vcpu, sp, parent_pte);
+ 			if (sp->unsync_children) {
+@@ -1356,9 +1383,6 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 			trace_kvm_mmu_get_page(sp, false);
+ 			return sp;
+ 		}
+-	if (!direct && unsync_sp)
+-		kvm_sync_page(vcpu, unsync_sp);
+-
+ 	++vcpu->kvm->stat.mmu_cache_miss;
+ 	sp = kvm_mmu_alloc_page(vcpu, parent_pte);
+ 	if (!sp)
+@@ -1369,6 +1393,9 @@ static struct kvm_mmu_page *kvm_mmu_get_page(struct kvm_vcpu *vcpu,
+ 	if (!direct) {
+ 		if (rmap_write_protect(vcpu->kvm, gfn))
+ 			kvm_flush_remote_tlbs(vcpu->kvm);
++		if (level > PT_PAGE_TABLE_LEVEL && need_sync)
++			kvm_sync_pages(vcpu, gfn);
++
+ 		account_shadowed(vcpu->kvm, gfn);
+ 	}
+ 	if (shadow_trap_nonpresent_pte != shadow_notrap_nonpresent_pte)
+-- 
+1.6.1.2
 
-Yes. They should probably go through Manfred to you anyway.
 
