@@ -1,22 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932458Ab0EXX1b (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:27:31 -0400
-Received: from kroah.org ([198.145.64.141]:59465 "EHLO coco.kroah.org"
+	id S932708Ab0EXX1q (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 19:27:46 -0400
+Received: from kroah.org ([198.145.64.141]:59459 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932619Ab0EXXXt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:23:49 -0400
+	id S932612Ab0EXXXs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 19:23:48 -0400
 X-Mailbox-Line: From gregkh@clark.site Mon May 24 16:18:15 2010
-Message-Id: <20100524231815.798139777@clark.site>
+Message-Id: <20100524231815.713224572@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Mon, 24 May 2010 16:15:41 -0700
+Date: Mon, 24 May 2010 16:15:40 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Andreas Herrmann <andreas.herrmann3@amd.com>,
-       "H. Peter Anvin" <hpa@linux.intel.com>
-Subject: [29/39] x86, amd: Check X86_FEATURE_OSVW bit before accessing OSVW MSRs
+       Frank Arnold <frank.arnold@amd.com>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: [28/39] x86, cacheinfo: Turn off L3 cache index disable feature in virtualized environments
 In-Reply-To: <20100524231840.GA17857@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,43 +27,102 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.33-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
-From: Andreas Herrmann <herrmann.der.user@googlemail.com>
+From: Frank Arnold <frank.arnold@amd.com>
 
-commit f01487119dda3d9f58c9729c7361ecc50a61c188 upstream.
+commit 7f284d3cc96e02468a42e045f77af11e5ff8b095 upstream.
 
-If host CPU is exposed to a guest the OSVW MSRs are not guaranteed
-to be present and a GP fault occurs. Thus checking the feature flag is
-essential.
+When running a quest kernel on xen we get:
 
-Signed-off-by: Andreas Herrmann <andreas.herrmann3@amd.com>
-LKML-Reference: <20100427101348.GC4489@alberich.amd.com>
-Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
+BUG: unable to handle kernel NULL pointer dereference at 0000000000000038
+IP: [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+PGD 0
+Oops: 0000 [#1] SMP
+last sysfs file:
+CPU 0
+Modules linked in:
+
+Pid: 0, comm: swapper Tainted: G        W  2.6.34-rc3 #1 /HVM domU
+RIP: 0010:[<ffffffff8142f2fb>]  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x
+2ca/0x3df
+RSP: 0018:ffff880002203e08  EFLAGS: 00010046
+RAX: 0000000000000000 RBX: 0000000000000003 RCX: 0000000000000060
+RDX: 0000000000000000 RSI: 0000000000000040 RDI: 0000000000000000
+RBP: ffff880002203ed8 R08: 00000000000017c0 R09: ffff880002203e38
+R10: ffff8800023d5d40 R11: ffffffff81a01e28 R12: ffff880187e6f5c0
+R13: ffff880002203e34 R14: ffff880002203e58 R15: ffff880002203e68
+FS:  0000000000000000(0000) GS:ffff880002200000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 0000000000000038 CR3: 0000000001a3c000 CR4: 00000000000006f0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process swapper (pid: 0, threadinfo ffffffff81a00000, task ffffffff81a44020)
+Stack:
+ ffffffff810d7ecb ffff880002203e20 ffffffff81059140 ffff880002203e30
+<0> ffffffff810d7ec9 0000000002203e40 000000000050d140 ffff880002203e70
+<0> 0000000002008140 0000000000000086 ffff880040020140 ffffffff81068b8b
+Call Trace:
+ <IRQ>
+ [<ffffffff810d7ecb>] ? sync_supers_timer_fn+0x0/0x1c
+ [<ffffffff81059140>] ? mod_timer+0x23/0x25
+ [<ffffffff810d7ec9>] ? arm_supers_timer+0x34/0x36
+ [<ffffffff81068b8b>] ? hrtimer_get_next_event+0xa7/0xc3
+ [<ffffffff81058e85>] ? get_next_timer_interrupt+0x19a/0x20d
+ [<ffffffff8142fa23>] get_cpu_leaves+0x5c/0x232
+ [<ffffffff8106a7b1>] ? sched_clock_local+0x1c/0x82
+ [<ffffffff8106a9a0>] ? sched_clock_tick+0x75/0x7a
+ [<ffffffff8107748c>] generic_smp_call_function_single_interrupt+0xae/0xd0
+ [<ffffffff8101f6ef>] smp_call_function_single_interrupt+0x18/0x27
+ [<ffffffff8100a773>] call_function_single_interrupt+0x13/0x20
+ <EOI>
+ [<ffffffff8143c468>] ? notifier_call_chain+0x14/0x63
+ [<ffffffff810295c6>] ? native_safe_halt+0xc/0xd
+ [<ffffffff810114eb>] ? default_idle+0x36/0x53
+ [<ffffffff81008c22>] cpu_idle+0xaa/0xe4
+ [<ffffffff81423a9a>] rest_init+0x7e/0x80
+ [<ffffffff81b10dd2>] start_kernel+0x40e/0x419
+ [<ffffffff81b102c8>] x86_64_start_reservations+0xb3/0xb7
+ [<ffffffff81b103c4>] x86_64_start_kernel+0xf8/0x107
+Code: 14 d5 40 ff ae 81 8b 14 02 31 c0 3b 15 47 1c 8b 00 7d 0e 48 8b 05 36 1c 8b
+ 00 48 63 d2 48 8b 04 d0 c7 85 5c ff ff ff 00 00 00 00 <8b> 70 38 48 8d 8d 5c ff
+ ff ff 48 8b 78 10 ba c4 01 00 00 e8 eb
+RIP  [<ffffffff8142f2fb>] cpuid4_cache_lookup_regs+0x2ca/0x3df
+ RSP <ffff880002203e08>
+CR2: 0000000000000038
+---[ end trace a7919e7f17c0a726 ]---
+
+The L3 cache index disable feature of AMD CPUs has to be disabled if the
+kernel is running as guest on top of a hypervisor because northbridge
+devices are not available to the guest. Currently, this fixes a boot
+crash on top of Xen. In the future this will become an issue on KVM as
+well.
+
+Check if northbridge devices are present and do not enable the feature
+if there are none.
+
+[ hpa: backported to 2.6.34 ]
+
+Signed-off-by: Frank Arnold <frank.arnold@amd.com>
+LKML-Reference: <1271945222-5283-3-git-send-email-bp@amd64.org>
+Acked-by: Borislav Petkov <borislav.petkov@amd.com>
+Signed-off-by: H. Peter Anvin <hpa@zytor.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- arch/x86/kernel/process.c |   12 +++++++-----
- 1 file changed, 7 insertions(+), 5 deletions(-)
+ arch/x86/kernel/cpu/intel_cacheinfo.c |    4 ++++
+ 1 file changed, 4 insertions(+)
 
---- a/arch/x86/kernel/process.c
-+++ b/arch/x86/kernel/process.c
-@@ -539,11 +539,13 @@ static int __cpuinit check_c1e_idle(cons
- 		 * check OSVW bit for CPUs that are not affected
- 		 * by erratum #400
- 		 */
--		rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
--		if (val >= 2) {
--			rdmsrl(MSR_AMD64_OSVW_STATUS, val);
--			if (!(val & BIT(1)))
--				goto no_c1e_idle;
-+		if (cpu_has(c, X86_FEATURE_OSVW)) {
-+			rdmsrl(MSR_AMD64_OSVW_ID_LENGTH, val);
-+			if (val >= 2) {
-+				rdmsrl(MSR_AMD64_OSVW_STATUS, val);
-+				if (!(val & BIT(1)))
-+					goto no_c1e_idle;
-+			}
- 		}
- 		return 1;
- 	}
+--- a/arch/x86/kernel/cpu/intel_cacheinfo.c
++++ b/arch/x86/kernel/cpu/intel_cacheinfo.c
+@@ -338,6 +338,10 @@ amd_check_l3_disable(int index, struct _
+ 	     (boot_cpu_data.x86_mask  < 0x1)))
+ 		return;
+ 
++	/* not in virtualized environments */
++	if (num_k8_northbridges == 0)
++		return;
++
+ 	this_leaf->can_disable = true;
+ 	this_leaf->l3_indices  = amd_calc_l3_indices();
+ }
 
 
