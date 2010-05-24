@@ -1,82 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753257Ab0EXIJo (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 04:09:44 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2073 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751188Ab0EXIJn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 04:09:43 -0400
-Date: Mon, 24 May 2010 11:05:18 +0300
-From: "Michael S. Tsirkin" <mst@redhat.com>
-To: Avi Kivity <avi@redhat.com>
-Cc: Rusty Russell <rusty@rustcorp.com.au>, linux-kernel@vger.kernel.org,
-       virtualization@lists.linux-foundation.org, kvm@vger.kernel.org,
-       qemu-devel@nongnu.org
-Subject: Re: [Qemu-devel] [PATCH RFC] virtio: put last seen used index into
-	ring itself
-Message-ID: <20100524080518.GA16115@redhat.com>
-References: <20100505205814.GA7090@redhat.com> <4BF39C12.7090407@redhat.com> <201005201431.51142.rusty@rustcorp.com.au> <201005201438.17010.rusty@rustcorp.com.au> <20100523153134.GA14646@redhat.com> <4BF94CAD.5010504@redhat.com> <20100523155132.GA14733@redhat.com> <4BF951BE.1010402@redhat.com> <20100523163039.GC14733@redhat.com> <4BFA1E91.8060706@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFA1E91.8060706@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	id S1753639Ab0EXIOw (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 04:14:52 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:55847 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750888Ab0EXIOu (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 04:14:50 -0400
+Subject: Re: [linux-pm] [Regression][git head f4b87dee9] ath9k doesn't work
+ correctly after resume from suspend to RAM
+From: Johannes Berg <johannes@sipsolutions.net>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+Cc: "John W. Linville" <linville@tuxdriver.com>,
+       linux-pm@lists.linux-foundation.org, linux-wireless@vger.kernel.org,
+       "Luis R. Rodriguez" <mcgrof@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Maciej Rutecki <maciej.rutecki@gmail.com>,
+       Daniel Yingqiang Ma <yma.cool@gmail.com>,
+       David Miller <davem@davemloft.net>
+In-Reply-To: <201005240059.57921.rjw@sisk.pl>
+References: <201005222353.26920.rjw@sisk.pl>
+	 <201005230013.37578.rjw@sisk.pl> <201005232120.16814.rjw@sisk.pl>
+	 <201005240059.57921.rjw@sisk.pl>
+Content-Type: text/plain; charset="UTF-8"
+Date: Mon, 24 May 2010 10:14:29 +0200
+Message-ID: <1274688869.3743.5.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 09:37:05AM +0300, Avi Kivity wrote:
-> On 05/23/2010 07:30 PM, Michael S. Tsirkin wrote:
->>
->>    
->>>> Maybe we should use atomics on index then?
->>>>
->>>>        
->>> This should only be helpful if you access the cacheline several times in
->>> a row.  That's not the case in virtio (or here).
->>>      
->> So why does it help?
->>    
->
-> We actually do access the cacheline several times in a row here (but not  
-> in virtio?):
->
->> 		case SHARE:
->> 			while (count<  MAX_BOUNCES) {
->> 				/* Spin waiting for other side to change it. */
->> 				while (counter->cacheline1 != count);
->>    
->
-> Broadcast a read request.
->
->> 				count++;
->> 				counter->cacheline1 = count;
->>    
->
-> Broadcast an invalidate request.
->
->> 				count++;
->> 			}
->> 			break;
->>
->> 		case LOCKSHARE:
->> 			while (count<  MAX_BOUNCES) {
->> 				/* Spin waiting for other side to change it. */
->> 				while (__sync_val_compare_and_swap(&counter->cacheline1, count, count+1)
->> 				       != count);
->>    
->
-> Broadcast a 'read for ownership' request.
->
->> 				count += 2;
->> 			}
->> 			break;
->>    
->
-> So RMW should certainly by faster using single-instruction RMW  
-> operations (or using prefetchw).
+On Mon, 2010-05-24 at 00:59 +0200, Rafael J. Wysocki wrote:
 
-Okay, but why is lockunshare faster than unshare?
+> commit 03ceedea972a82d343fa5c2528b3952fa9e615d5
+> Author: Daniel Yingqiang Ma <yma.cool@gmail.com>
+> Date:   Tue Apr 13 15:12:07 2010 +0800
+> 
+>     ath9k: Group Key fix for VAPs
+> 
+> also fixes the resume issue with iwlagn.
 
-> -- 
-> Do not meddle in the internals of kernels, for they are subtle and quick to panic.
+Ok that had me going WTF.
+
+But then I saw that a huge ath9k patch had a mac80211 change sneakily
+hidden in it. WTF!
+
+> So, please revert.
+
+Indeed, this patch needs to be reverted. That mac80211 change is wrong
+and completely unnecessary.
+
+johannes
+
