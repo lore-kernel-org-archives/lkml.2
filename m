@@ -1,75 +1,264 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755650Ab0EYHPQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:15:16 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:49033 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752410Ab0EYHPN convert rfc822-to-8bit (ORCPT
+	id S1756283Ab0EYHV4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:21:56 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59131 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab0EYHVy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:15:13 -0400
+	Tue, 25 May 2010 03:21:54 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+        h=from:to:cc:subject:date:organization:message-id:references
+         :in-reply-to:x-mailer:mime-version:content-type
          :content-transfer-encoding;
-        b=lG1BoSwdewpzwmxSuKsDQI7aYgO8WQB1ESQXPQBkmtgQC8fSxz215HNxmevUpYDotZ
-         6/lVcM8KhBbgGnaqzHK+rPOKlWs/aPfngp72BAm7ckQMfbvaFjOyRuanNjuPXCNj61Tf
-         qqse20cv4V4+VaSJPGMqzWdmgyikBt8k6hGng=
+        b=Oz79pOZp6sOCA2I9AmfDo1RDQ/qQvom5E358qx0Kjn9uGADUwu2Hi0Z3Mv+2tmy2kq
+         hU5QgYESzUcZfWh39kTW44f0BQ+b3jyzxnUJxpkIbhydp5wesoGVZ+1rN8T0+nE7UhA4
+         Q2AAQ5e74aG9qOPMJEDXrWCgL9Fn9kYqoCK98=
+From: Grant Coady <gcoady.lk@gmail.com>
+To: Greg KH <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [04/24] ext4: Make sure all the block allocation paths reserve blocks
+Date: Tue, 25 May 2010 17:21:43 +1000
+Organization: scattered
+Message-ID: <5humv51rdjr8vl3c7qlroekj2k004gl665@4ax.com>
+References: <20100524223544.GA13721@kroah.com> <20100524223014.777274118@clark.site>
+In-Reply-To: <20100524223014.777274118@clark.site>
+X-Mailer: Forte Agent 6.00/32.1186
 MIME-Version: 1.0
-In-Reply-To: <20100511004655.30590.74584.stgit@localhost.localdomain>
-References: <20100511004655.30590.74584.stgit@localhost.localdomain>
-Date: Tue, 25 May 2010 00:15:12 -0700
-X-Google-Sender-Auth: n-UxfD5MtVd2XPp62YxGlyorebM
-Message-ID: <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
-Subject: Re: [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx panic
-From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-To: stable@kernel.org, greg@kroah.com
-Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
-       Brandon <brandon@ifup.org>,
-       Jesse Brandeburg <jesse.brandeburg@intel.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
-> From: Jesse Brandeburg <jesse.brandeburg@intel.com>
->
-> backporting this commit:
->
-> commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
-> Author: Krishna Kumar <krkumar2@in.ibm.com>
-> Date:   Wed Feb 3 13:13:10 2010 +0000
->
->    ixgbe: Fix return of invalid txq
->
->    a developer had complained of getting lots of warnings:
->
->    "eth16 selects TX queue 98, but real number of TX queues is 64"
->
->    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
->
->    As there was no follow up on that bug, I am submitting this
->    patch assuming that the other return points will not return
->    invalid txq's, and also that this fixes the bug (not tested).
->
->    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
->    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
->    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
->    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
->    Signed-off-by: David S. Miller <davem@davemloft.net>
->
-> CC: Brandon <brandon@ifup.org>
-> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> ---
->
->  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
->  1 files changed, 6 insertions(+), 2 deletions(-)
->
+On Mon, 24 May 2010 15:28:00 -0700, you wrote:
 
-Greg - status?  Did you queue this patch for the stable release and I missed it?
+>2.6.27-stable review patch.  If anyone has any objections, please let us know.
+>
+>------------------
+>
+>
+>From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>
+>commit a30d542a0035b886ffaafd0057ced0a2b28c3a4f upstream.
+>
+>With delayed allocation we need to make sure block are reserved before
+>we attempt to allocate them. Otherwise we get block allocation failure
+>(ENOSPC) during writepages which cannot be handled. This would mean
+>silent data loss (We do a printk stating data will be lost). This patch
+>updates the DIO and fallocate code path to do block reservation before
+>block allocation. This is needed to make sure parallel DIO and fallocate
+>request doesn't take block out of delayed reserve space.
+>
+>When free blocks count go below a threshold we switch to a slow patch
 
+s/patch/path/ ??
+
+Or, are these patch comments locked in stone for -stable?
+
+Grant.
+
+>which looks at other CPU's accumulated percpu counter values.
+>
+>Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+>Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+>Signed-off-by: Jayson R. King <dev@jaysonking.com>
+>Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+>Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+>
+>---
+> fs/ext4/balloc.c  |   58 +++++++++++++++++++++++++++++++++++++++---------------
+> fs/ext4/ext4.h    |   13 ++++++++++++
+> fs/ext4/inode.c   |    5 ----
+> fs/ext4/mballoc.c |   23 ++++++++++++---------
+> 4 files changed, 69 insertions(+), 30 deletions(-)
+>
+>--- a/fs/ext4/balloc.c
+>+++ b/fs/ext4/balloc.c
+>@@ -1754,6 +1754,32 @@ out:
+> 	return ret;
+> }
+> 
+>+int ext4_claim_free_blocks(struct ext4_sb_info *sbi,
+>+						ext4_fsblk_t nblocks)
+>+{
+>+	s64 free_blocks;
+>+	ext4_fsblk_t root_blocks = 0;
+>+	struct percpu_counter *fbc = &sbi->s_freeblocks_counter;
+>+
+>+	free_blocks = percpu_counter_read(fbc);
+>+
+>+	if (!capable(CAP_SYS_RESOURCE) &&
+>+		sbi->s_resuid != current->fsuid &&
+>+		(sbi->s_resgid == 0 || !in_group_p(sbi->s_resgid)))
+>+		root_blocks = ext4_r_blocks_count(sbi->s_es);
+>+
+>+	if (free_blocks - (nblocks + root_blocks) < EXT4_FREEBLOCKS_WATERMARK)
+>+		free_blocks = percpu_counter_sum(&sbi->s_freeblocks_counter);
+>+
+>+	if (free_blocks < (root_blocks + nblocks))
+>+		/* we don't have free space */
+>+		return -ENOSPC;
+>+
+>+	/* reduce fs free blocks counter */
+>+	percpu_counter_sub(fbc, nblocks);
+>+	return 0;
+>+}
+>+
+> /**
+>  * ext4_has_free_blocks()
+>  * @sbi:	in-core super block structure.
+>@@ -1775,18 +1801,17 @@ ext4_fsblk_t ext4_has_free_blocks(struct
+> 		sbi->s_resuid != current->fsuid &&
+> 		(sbi->s_resgid == 0 || !in_group_p(sbi->s_resgid)))
+> 		root_blocks = ext4_r_blocks_count(sbi->s_es);
+>-#ifdef CONFIG_SMP
+>-	if (free_blocks - root_blocks < FBC_BATCH)
+>-		free_blocks =
+>-			percpu_counter_sum(&sbi->s_freeblocks_counter);
+>-#endif
+>+
+>+	if (free_blocks - (nblocks + root_blocks) < EXT4_FREEBLOCKS_WATERMARK)
+>+		free_blocks = percpu_counter_sum_positive(&sbi->s_freeblocks_counter);
+>+
+> 	if (free_blocks <= root_blocks)
+> 		/* we don't have free space */
+> 		return 0;
+> 	if (free_blocks - root_blocks < nblocks)
+> 		return free_blocks - root_blocks;
+> 	return nblocks;
+>- }
+>+}
+> 
+> 
+> /**
+>@@ -1865,14 +1890,11 @@ ext4_fsblk_t ext4_old_new_blocks(handle_
+> 		/*
+> 		 * With delalloc we already reserved the blocks
+> 		 */
+>-		*count = ext4_has_free_blocks(sbi, *count);
+>-	}
+>-	if (*count == 0) {
+>-		*errp = -ENOSPC;
+>-		return 0;	/*return with ENOSPC error */
+>+		if (ext4_claim_free_blocks(sbi, *count)) {
+>+			*errp = -ENOSPC;
+>+			return 0;	/*return with ENOSPC error */
+>+		}
+> 	}
+>-	num = *count;
+>-
+> 	/*
+> 	 * Check quota for allocation of this block.
+> 	 */
+>@@ -2067,9 +2089,13 @@ allocated:
+> 	le16_add_cpu(&gdp->bg_free_blocks_count, -num);
+> 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group_no, gdp);
+> 	spin_unlock(sb_bgl_lock(sbi, group_no));
+>-	if (!EXT4_I(inode)->i_delalloc_reserved_flag)
+>-		percpu_counter_sub(&sbi->s_freeblocks_counter, num);
+>-
+>+	if (!EXT4_I(inode)->i_delalloc_reserved_flag && (*count != num)) {
+>+		/*
+>+		 * we allocated less blocks than we
+>+		 * claimed. Add the difference back.
+>+		 */
+>+		percpu_counter_add(&sbi->s_freeblocks_counter, *count - num);
+>+	}
+> 	if (sbi->s_log_groups_per_flex) {
+> 		ext4_group_t flex_group = ext4_flex_group(sbi, group_no);
+> 		spin_lock(sb_bgl_lock(sbi, flex_group));
+>--- a/fs/ext4/ext4.h
+>+++ b/fs/ext4/ext4.h
+>@@ -1015,6 +1015,8 @@ extern ext4_fsblk_t ext4_new_blocks(hand
+> 					unsigned long *count, int *errp);
+> extern ext4_fsblk_t ext4_old_new_blocks(handle_t *handle, struct inode *inode,
+> 			ext4_fsblk_t goal, unsigned long *count, int *errp);
+>+extern int ext4_claim_free_blocks(struct ext4_sb_info *sbi,
+>+						ext4_fsblk_t nblocks);
+> extern ext4_fsblk_t ext4_has_free_blocks(struct ext4_sb_info *sbi,
+> 						ext4_fsblk_t nblocks);
+> extern void ext4_free_blocks (handle_t *handle, struct inode *inode,
+>@@ -1245,6 +1247,17 @@ do {								\
+> 		__ext4_std_error((sb), __func__, (errno));	\
+> } while (0)
+> 
+>+#ifdef CONFIG_SMP
+>+/* Each CPU can accumulate FBC_BATCH blocks in their local
+>+ * counters. So we need to make sure we have free blocks more
+>+ * than FBC_BATCH  * nr_cpu_ids. Also add a window of 4 times.
+>+ */
+>+#define EXT4_FREEBLOCKS_WATERMARK (4 * (FBC_BATCH * nr_cpu_ids))
+>+#else
+>+#define EXT4_FREEBLOCKS_WATERMARK 0
+>+#endif
+>+
+>+
+> /*
+>  * Inodes and files operations
+>  */
+>--- a/fs/ext4/inode.c
+>+++ b/fs/ext4/inode.c
+>@@ -1564,13 +1564,10 @@ static int ext4_da_reserve_space(struct
+> 	md_needed = mdblocks - EXT4_I(inode)->i_reserved_meta_blocks;
+> 	total = md_needed + nrblocks;
+> 
+>-	if (ext4_has_free_blocks(sbi, total) < total) {
+>+	if (ext4_claim_free_blocks(sbi, total)) {
+> 		spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
+> 		return -ENOSPC;
+> 	}
+>-	/* reduce fs free blocks counter */
+>-	percpu_counter_sub(&sbi->s_freeblocks_counter, total);
+>-
+> 	EXT4_I(inode)->i_reserved_data_blocks += nrblocks;
+> 	EXT4_I(inode)->i_reserved_meta_blocks = mdblocks;
+> 
+>--- a/fs/ext4/mballoc.c
+>+++ b/fs/ext4/mballoc.c
+>@@ -3194,9 +3194,15 @@ ext4_mb_mark_diskspace_used(struct ext4_
+> 	 * at write_begin() time for delayed allocation
+> 	 * do not double accounting
+> 	 */
+>-	if (!(ac->ac_flags & EXT4_MB_DELALLOC_RESERVED))
+>-		percpu_counter_sub(&sbi->s_freeblocks_counter,
+>-					ac->ac_b_ex.fe_len);
+>+	if (!(ac->ac_flags & EXT4_MB_DELALLOC_RESERVED) &&
+>+			ac->ac_o_ex.fe_len != ac->ac_b_ex.fe_len) {
+>+		/*
+>+		 * we allocated less blocks than we calimed
+>+		 * Add the difference back
+>+		 */
+>+		percpu_counter_add(&sbi->s_freeblocks_counter,
+>+				ac->ac_o_ex.fe_len - ac->ac_b_ex.fe_len);
+>+	}
+> 
+> 	if (sbi->s_log_groups_per_flex) {
+> 		ext4_group_t flex_group = ext4_flex_group(sbi,
+>@@ -4649,14 +4655,11 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t
+> 		/*
+> 		 * With delalloc we already reserved the blocks
+> 		 */
+>-		ar->len = ext4_has_free_blocks(sbi, ar->len);
+>-	}
+>-
+>-	if (ar->len == 0) {
+>-		*errp = -ENOSPC;
+>-		return 0;
+>+		if (ext4_claim_free_blocks(sbi, ar->len)) {
+>+			*errp = -ENOSPC;
+>+			return 0;
+>+		}
+> 	}
+>-
+> 	while (ar->len && DQUOT_ALLOC_BLOCK(ar->inode, ar->len)) {
+> 		ar->flags |= EXT4_MB_HINT_NOPREALLOC;
+> 		ar->len--;
 -- 
-Cheers,
-Jeff
+http://bugs.id.au/
