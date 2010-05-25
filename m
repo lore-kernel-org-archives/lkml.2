@@ -1,51 +1,30 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756189Ab0EYIaH (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 04:30:07 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:51320 "EHLO kernel.dk"
+	id S1756382Ab0EYIky (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 04:40:54 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:26991 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754615Ab0EYIaF (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 04:30:05 -0400
-Date: Tue, 25 May 2010 10:30:03 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Tejun Heo <tj@kernel.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Ciprian Docan <docan@eden.rutgers.edu>, linux-kernel@vger.kernel.org,
-       Al Viro <viro@zeniv.linux.org.uk>
-Subject: Re: [PATCH] vfs: don't hold s_umount over close_bdev_exclusive()
-	call
-Message-ID: <20100525083003.GE23411@kernel.dk>
-References: <Pine.SOC.4.64.1005201226440.1441@er1.rutgers.edu> <20100521141445.bae41292.akpm@linux-foundation.org> <4BF7EFA4.4050901@kernel.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BF7EFA4.4050901@kernel.org>
+	id S1756333Ab0EYIkr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 04:40:47 -0400
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
+Subject: GFS2: Pre-pull patch posting (fixes)
+Date: Tue, 25 May 2010 09:21:26 +0100
+Message-Id: <1274775689-4689-1-git-send-email-swhiteho@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Sat, May 22 2010, Tejun Heo wrote:
-> This patch fixes an obscure AB-BA deadlock in get_sb_bdev().
-> 
-> When a superblock is mounted more than once get_sb_bdev() calls
-> close_bdev_exclusive() to drop the extra bdev reference while holding
-> s_umount.  However, sb->s_umount nests inside bd_mutex during
-> __invalidate_device() and close_bdev_exclusive() acquires bd_mutex
-> during blkdev_put(); thus creating an AB-BA deadlock.
-> 
-> This condition doesn't trigger frequently.  For this condition to be
-> visible to lockdep, the filesystem must occupy the whole device (as
-> __invalidate_device() only grabs bd_mutex for the whole device), the
-> FS must be mounted more than once and partition rescan should be
-> issued while the FS is still mounted.
-> 
-> Fix it by dropping s_umount over close_bdev_exclusive().
+Hi,
 
-Looks safe to me, since it has (as you note) an elevated ref count.
+These are three important, but relatively small, bug fixes for GFS2.
+The first prevents a kernel BUG triggering in a relatively unlikely
+(but possible) scenario when a log flush caused by glock demotion
+races with a log flush from some other initiator (e.g. fsync).
 
-Acked-by: Jens Axboe <jens.axboe@oracle.com>
+The second and third patches add extra conditions to two areas
+of code. This makes their behaviour match ext3 in those cases,
 
+Steve.
 
--- 
-Jens Axboe
 
