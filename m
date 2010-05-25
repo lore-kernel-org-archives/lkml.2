@@ -1,81 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759014Ab0EYUve (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:51:34 -0400
-Received: from kroah.org ([198.145.64.141]:45661 "EHLO coco.kroah.org"
+	id S934181Ab0EYUvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:51:40 -0400
+Received: from kroah.org ([198.145.64.141]:45664 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755642Ab0EYUvd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:51:33 -0400
-Date: Tue, 25 May 2010 13:18:37 -0700
+	id S1759057Ab0EYUvi (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:51:38 -0400
+Date: Tue, 25 May 2010 13:51:23 -0700
 From: Greg KH <greg@kroah.com>
-To: "Brandeburg, Jesse" <jesse.brandeburg@intel.com>
-Cc: Jeff Kirsher <jeffrey.t.kirsher@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>, Brandon <brandon@ifup.org>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "davem@davemloft.net" <davem@davemloft.net>
-Subject: Re: [stable] [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx
- panic
-Message-ID: <20100525201837.GA13821@kroah.com>
-References: <20100511004655.30590.74584.stgit@localhost.localdomain>
- <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
- <alpine.WNT.2.00.1005250926320.2708@jbrandeb-desk1.amr.corp.intel.com>
+To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
+Cc: stable@kernel.org, hpa@zytor.com, linux-kernel@vger.kernel.org,
+       suresh.b.siddha@intel.com
+Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere
+ EP)
+Message-ID: <20100525205123.GA14993@kroah.com>
+References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU>
+ <20100525155307.GA7453@kroah.com>
+ <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=utf-8
 Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.WNT.2.00.1005250926320.2708@jbrandeb-desk1.amr.corp.intel.com>
+In-Reply-To: <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 09:27:25AM -0700, Brandeburg, Jesse wrote:
+On Tue, May 25, 2010 at 04:32:16PM -0400, "S.Ã‡aÄŸlar Onur" wrote:
+> Hi Greg,
 > 
+> On May 25, 2010, at 11:53 AM, Greg KH wrote:
 > 
-> On Tue, 25 May 2010, Jeff Kirsher wrote:
-> 
-> > On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
-> > > From: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > >
-> > > backporting this commit:
-> > >
-> > > commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
-> > > Author: Krishna Kumar <krkumar2@in.ibm.com>
-> > > Date:   Wed Feb 3 13:13:10 2010 +0000
-> > >
-> > >    ixgbe: Fix return of invalid txq
-> > >
-> > >    a developer had complained of getting lots of warnings:
-> > >
-> > >    "eth16 selects TX queue 98, but real number of TX queues is 64"
-> > >
-> > >    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
-> > >
-> > >    As there was no follow up on that bug, I am submitting this
-> > >    patch assuming that the other return points will not return
-> > >    invalid txq's, and also that this fixes the bug (not tested).
-> > >
-> > >    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
-> > >    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > >    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> > >    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> > >    Signed-off-by: David S. Miller <davem@davemloft.net>
-> > >
-> > > CC: Brandon <brandon@ifup.org>
-> > > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > > ---
-> > >
-> > >  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
-> > >  1 files changed, 6 insertions(+), 2 deletions(-)
-> > >
+> > On Tue, May 25, 2010 at 11:10:28AM -0400, "S.Ã‡aÄŸlar Onur" wrote:
+> >> Hi,
+> >> 
+> >> We are observing boot failures [1] & [2] on some of our servers (Dell
+> >> r410) with 2.6.27-stable kernels. I found following commit in upstream
+> >> tree via a quick search (but I haven't tried it yet) so I don't know
+> >> whether I'm on the right track or not. 
+> >> 
+> >> Please let me know if anything else is needed...
 > > 
-> > Greg - status?  Did you queue this patch for the stable release and I missed it?
+> > Has any .27 kernel worked on these machines?  If so, can you narrow it
+> > down to the patch that caused the problem?
 > 
-> Maybe we didn't say (and we should have) that this fixes a panic on 
-> machines with > 64 cores.  Please apply to -stable 32.
+> I don't think any .27 kernel worked on those machines before. But in
+> any case I'll try (I don't have a physical access to those machines as
+> they are located in China) an older .27 release to see.
 
-I'll get to it for the next release after this one, if that's ok.
+Ok, so it isn't a regression, which is what I want to know.
+
+New hardware like this, probably will only work on newer kernel
+versions, so please use those instead :)
 
 thanks,
 
