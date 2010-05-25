@@ -1,81 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758988Ab0EYUZ2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:25:28 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36821 "EHLO mx1.redhat.com"
+	id S1759021Ab0EYU2W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:28:22 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:42253 "EHLO mx01.d-labs.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab0EYUZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:25:26 -0400
-Date: Tue, 25 May 2010 16:25:21 -0400 (EDT)
-From: Mikulas Patocka <mpatocka@redhat.com>
-X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
-To: Dominik Brodowski <linux@dominikbrodowski.net>
-cc: linux-kernel@vger.kernel.org
-Subject: PCMCIA regression
-Message-ID: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1751567Ab0EYU2V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:28:21 -0400
+Date: Tue, 25 May 2010 22:28:14 +0200
+From: Florian Mickler <florian@mickler.org>
+To: linux-kernel@vger.kernel.org, ranjith kumar <ranjithproxy@gmail.com>
+Subject: Re: building linux kernel
+Message-ID: <20100525222814.4dc4a034@schatten.dmk.lab>
+In-Reply-To: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
+References: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi
+Hi,
 
-The commit a8408c17d0038b76a83affb1b56dc18fa1e7ed86 in Linux 2.6.34-rc6 
-broke pcmcia for me. I use 3c574 network card in yenta socket on Armada 
-7400 laptop. My distribution is Debian lenny.
+On Tue, 25 May 2010 16:50:31 +0530
+ranjith kumar <ranjithproxy@gmail.com> wrote:
 
-Reverting the test for "s->functions" in pccard_validate_cis makes the 
-network card work again.
+> Hi,
+> 
+> I am using fedora11 on my PC. I downloaded the linux kernel souce code.
+> I copied config file from /boot directory and tried to compile. I am
+> getting some compilation errors.
+> So  I configured the kernel, with 'make defconfig', and it is
+> compiling successfully.
+> But when I am booting my machine with new kernel, it simply starts and
+> displays '-' at top of the screen. nothing more.
+> 
+> My question is are fedora and linux kernel are connected or  not? If so how?
+> I thinks linux kernel runs for a while, when it is booted. But after
+> that control comes to fedora.
+> 
+> For example, in Fedora we can play chess.Windows are
+> displayed.......etc ...many graphical things are there.
+> I don't think that these gaphics, chess game.....are not part of linux kernel.
+> Am I right?
+> 
+> Also, some time back when I was using fedora10, I configured linux
+> kernel with /boot/ config file. I successfully compiled and run new
+> linux kernel.
+> When I boot with new kernel, it is still going into fedora. But when I
+> run uname command it is showing new kernel version. But how come I was
+> able to play chess game? chess game is not part of kernel.
+> 
+> 
+> So if you got what I am asking, please tell me how to disconnect
+> fedora and linux kernel? So when I boot with new kernel only kernel's
+> things  should be running. not fedora's chess game. How to disconnect
+> them?
+> 
+> Thanks in advance
 
-Mikulas
+Put init=/bin/sh on the kernel commandline to start directly into a
+basic shell (instead of the complex "fedora"). 
 
-May 20 14:17:21 gerlinda vmunix: ------------[ cut here ]------------
-May 20 14:17:21 gerlinda vmunix: WARNING: at drivers/pcmcia/cistpl.c:1488 
-pccard_validate_cis+0x287/0x2d0 [pcmcia]()
-May 20 14:17:21 gerlinda vmunix: Modules linked in: 3c574_cs ohci_hcd 
-pcmcia rtc_cmos crc32 ide_cd_mod rtc_core usbcore rtc_lib yenta_socket 
-cdrom psmouse pcspkr rsrc_nonstatic nls_base pcmcia_core unix
-May 20 14:17:21 gerlinda vmunix: Pid: 1486, comm: pccardd Not tainted 
-2.6.34-fast #15
-May 20 14:17:21 gerlinda vmunix: Call Trace:
-May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
-pccard_validate_cis+0x287/0x2d0 [pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
-pccard_validate_cis+0x287/0x2d0 [pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<c10207d6>] ? 
-warn_slowpath_common+0x76/0xd0 May 20 14:17:21 gerlinda vmunix:  
-[<cc95cc57>] ? pccard_validate_cis+0x287/0x2d0 [pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<c1020843>] ? 
-warn_slowpath_null+0x13/0x20
-May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
-pccard_validate_cis+0x287/0x2d0 [pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<cc83517a>] ? 
-pcmcia_nonstatic_validate_mem+0xda/0x180 [rsrc_nonstatic]
-May 20 14:17:21 gerlinda vmunix:  [<c10ce0af>] ? 
-sysfs_addrm_finish+0x7f/0xb0
-May 20 14:17:21 gerlinda vmunix:  [<cc9587c2>] ? pcmcia_card_add+0x72/0xf0 
-[pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<c10f39e0>] ? kobject_release+0x0/0xa0
-May 20 14:17:21 gerlinda vmunix:  [<c10f44c9>] ? kref_put+0x29/0x60
-May 20 14:17:21 gerlinda vmunix:  [<cc9577cc>] ? 
-pcmcia_card_remove+0x8c/0xa0 [pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<cc958a24>] ? pcmcia_requery+0x74/0x130 
-[pcmcia]
-May 20 14:17:21 gerlinda vmunix:  [<c101af4e>] ? set_next_entity+0x2e/0x70
-May 20 14:17:21 gerlinda vmunix:  [<c101c500>] ? 
-do_sched_setscheduler+0x90/0xa0May 20 14:17:21 gerlinda vmunix:  
-[<c11c0883>] ? schedule+0x203/0x3c0
-May 20 14:17:21 gerlinda vmunix:  [<cc818109>] ? pccardd+0x219/0x470 
-[pcmcia_core]
-May 20 14:17:21 gerlinda vmunix:  [<c11c095a>] ? schedule+0x2da/0x3c0
-May 20 14:17:21 gerlinda vmunix:  [<cc817ef0>] ? pccardd+0x0/0x470 
-[pcmcia_core]May 20 14:17:21 gerlinda vmunix:  [<c1035124>] ? 
-kthread+0x74/0x80
-May 20 14:17:21 gerlinda vmunix:  [<c10350b0>] ? kthread+0x0/0x80
-May 20 14:17:21 gerlinda vmunix:  [<c10030f6>] ? 
-kernel_thread_helper+0x6/0x10
-May 20 14:17:21 gerlinda vmunix: ---[ end trace 256ec3e16d1d0f46 ]---
+The kernel is an abstraction layer, so that your chess game
+(or /bin/sh) runs on all possible hardware. The kernel provides
+mechanisms for the chess games (also known as a "userspace program") to
+use the hardware, without knowing what hardware it is running on.
 
+This is all basic system architecture. I didn't read the wikipedia
+article on operating systems, but it i hope it is a good start:
+http://en.wikipedia.org/wiki/Operating_system
 
+Cheers,
+Flo
 
+p.s.: you may wanna post any follow on questions on kernel-newbies
+mailinglist (kernelnewbies@nl.linux.org) , as lkml is mainly for
+developing and not so much for explanation of basic system
+architecture. 
