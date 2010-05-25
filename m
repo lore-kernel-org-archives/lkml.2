@@ -1,80 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934349Ab0EYVIi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 17:08:38 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:37878 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934328Ab0EYVIf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 17:08:35 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=oYUjv/7iu8y1zviUBa1siKn3qYTmkMqEcwwhmZR/EtJKtem1qncWNn59uMPvFzX1+
-	X+wpXQLJTUZAAPA2R56sg==
+	id S934320Ab0EYVId (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 17:08:33 -0400
+Received: from vps.mortis.eu ([79.99.135.181]:55590 "EHLO vps.mortis.eu"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S934296Ab0EYVIa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 17:08:30 -0400
+Date: Tue, 25 May 2010 23:08:25 +0200
+From: Giel van Schijndel <me@mortis.eu>
+To: Wim Van Sebroeck <wim@iguana.be>
+Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] [RFC] watchdog: f71808e_wdt: new watchdog driver
+ for Fintek F71808E
+Message-ID: <20100525210824.GA7815@salidar.me.mortis.eu>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk>
+ <1269523063-30346-1-git-send-email-me@mortis.eu>
+ <1269523063-30346-2-git-send-email-me@mortis.eu>
+ <1269523063-30346-3-git-send-email-me@mortis.eu>
+ <20100330090639.GA8822@salidar.me.mortis.eu>
+ <20100520075229.GO4008@infomag.iguana.be>
 MIME-Version: 1.0
-In-Reply-To: <1274664671-27385-1-git-send-email-acme@infradead.org>
-References: <1274664671-27385-1-git-send-email-acme@infradead.org>
-Date: Tue, 25 May 2010 23:08:29 +0200
-Message-ID: <AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
-Subject: Re: [GIT PULL 0/2] perf annotate fix and report improvoment
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Tom Zanussi <tzanussi@gmail.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="UugvWAfsgieZRqgk"
+Content-Disposition: inline
+In-Reply-To: <20100520075229.GO4008@infomag.iguana.be>
+OpenPGP: id=CEE5E742; url=http://gpg.mortis.eu/me.asc
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 3:31 AM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Hi Ingo,
->
->        Please pull from:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
->
-> Regards,
->
-> - Arnaldo
->
-> Arnaldo Carvalho de Melo (2):
->  perf report: Support multiple events on the TUI
->  perf annotate: Fix up usage of the build id cache
->
-With these patches, can I analyze a binary on a remote
-machine? If I copy perf.data + .debug subdir, then can
-I run perf annotate on a different machine, where I don't
-have the sampled binaries installed?
 
-I have tried that today using -tip, and perf annotate still
-looked for the binary using its original pathname in perf.data.
-perf report worked fine.
+--UugvWAfsgieZRqgk
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-Thanks.
+On Thu, May 20, 2010 at 09:52:29AM +0200, Wim Van Sebroeck wrote:
+>> On Thu, Mar 25, 2010 at 02:17:43PM +0100, Giel van Schijndel wrote:
+>> > Add a new watchdog driver for the Fintek F71808E Super I/O chip.
+>>=20
+>> Updated patch:
+>>  * fixes a bug where detection wouldn't function properly if a
+>>    non-Fintek device was found (or a wrong Super I/O port chosen).
+>>  * Add support for the F71882FG
+>>=20
+>> NOTE: This patch depends on patch [1] (applied in [2]) and patch [3].
+>>=20
+>> [1] https://patchwork.kernel.org/patch/89023/
+>> [2] http://git.kernel.org/?p=3Dlinux/kernel/git/jbarnes/pci-2.6.git;a=3D=
+commit;h=3D316607809324cc796c0809630b6ae8a768404296
+>> [3] https://patchwork.kernel.org/patch/88235/
+>=20
+> Driver looks OK to me. Can't apply it before the I/O resource sharing
+> is in place.  How do you want to proceed?
 
->  tools/perf/builtin-report.c |   60 +++++++++++++++++++++--------------
->  tools/perf/util/hist.c      |   13 ++++++-
->  tools/perf/util/hist.h      |   14 +++++++-
->  tools/perf/util/newt.c      |   74 ++++++++++++++++++++++++++++++++++--------
->  4 files changed, 119 insertions(+), 42 deletions(-)
->
->
+I would think applying it to watchdog-next to apply it for the next
+kernel release (similar to Jean Delvare's linux-next).
 
+--=20
+Met vriendelijke groet,
+With kind regards,
+Giel van Schijndel
 
+--UugvWAfsgieZRqgk
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
--- 
-Stephane Eranian  | EMEA Software Engineering
-Google France | 38 avenue de l'Opéra | 75002 Paris
-Tel : +33 (0) 1 42 68 53 00
-This email may be confidential or privileged. If you received this
-communication by mistake, please
-don't forward it to anyone else, please erase all copies and
-attachments, and please let me know that
-it went to the wrong person. Thanks
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv8PEcACgkQZBYm/87l50JZxgCgs3jRI+jEtrTp2iyiGBBC8fGg
+35kAn3zwuHiwY6b4Y36KX72TCyv+NWqM
+=OtPH
+-----END PGP SIGNATURE-----
+
+--UugvWAfsgieZRqgk--
