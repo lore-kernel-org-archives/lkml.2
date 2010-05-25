@@ -1,53 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758779Ab0EYBol (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:44:41 -0400
-Received: from ozlabs.org ([203.10.76.45]:56588 "EHLO ozlabs.org"
+	id S1758805Ab0EYBqX (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:46:23 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:40552 "EHLO smtps.tip.net.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757682Ab0EYBok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:44:40 -0400
-Date: Tue, 25 May 2010 11:43:23 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>,
-       Arnaldo Carvalho de Melo <acme@redhat.com>
-Subject: Re: [PATCH 2/4] perf: Add exclude_task perf event attribute
-Message-ID: <20100525014323.GC30395@drongo>
-References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com>
- <1274450715-23955-3-git-send-regression-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274450715-23955-3-git-send-regression-fweisbec@gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1757682Ab0EYBqV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:46:21 -0400
+Date: Tue, 25 May 2010 11:46:14 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: David Miller <davem@davemloft.net>, <netdev@vger.kernel.org>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Neil Jones <NeilJay@gmail.com>
+Subject: linux-next: build warning in Linus'  tree
+Message-Id: <20100525114614.fd61d822.sfr@canb.auug.org.au>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Tue__25_May_2010_11_46_14_+1000_PTS0dIspDlqzk/=9"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Fri, May 21, 2010 at 04:05:13PM +0200, Frederic Weisbecker wrote:
+--Signature=_Tue__25_May_2010_11_46_14_+1000_PTS0dIspDlqzk/=9
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> Excluding is useful when you want to trace only hard and softirqs.
-> 
-> For this we use a new generic perf_exclude_event() (the previous
-> one beeing turned into perf_exclude_swevent) to which you can pass
-> the preemption offset to which your events trigger.
-> 
-> Computing preempt_count() - offset gives us the preempt_count() of
-> the context that the event has interrupted, on top of which we
-> can filter the non-irq contexts.
+Hi Dave,
 
-How does this work for hardware events when we are sampling and
-getting an interrupt every N events?  It seems like the hardware is
-still counting all events and interrupting every N events, but we are
-only recording a sample if the interrupt occurred in the context we
-want.  In other words the context of the Nth event is considered to be
-the context for the N-1 events preceding that, which seems a pretty
-poor approximation.
+Today's linux-next build (x86_64 allmodconfig) produced this warning:
 
-Also, for hardware events, if we are counting rather than sampling,
-the exclude_task bit will have no effect.  So perhaps in that case the
-perf_event_open should fail rather than appear to succeed but give
-wrong data.
+drivers/net/usb/asix.c: In function 'asix_rx_fixup':
+drivers/net/usb/asix.c:325: warning: cast from pointer to integer of differ=
+ent size
+drivers/net/usb/asix.c:354: warning: cast from pointer to integer of differ=
+ent size
 
-Paul.
+Introduced by commit 3f78d1f210ff89af77f042ab7f4a8fee39feb1c9
+("drivers/net/usb/asix.c: Fix unaligned accesses").  This commit casts
+skb->data to u32.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Tue__25_May_2010_11_46_14_+1000_PTS0dIspDlqzk/=9
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv7K+YACgkQjjKRsyhoI8y1WwCaA4fPBIcgEiHc220slTxhmHFj
+kFgAoJzAjvCRRUg8jvuX5dSqFCfBMXXL
+=WIpL
+-----END PGP SIGNATURE-----
+
+--Signature=_Tue__25_May_2010_11_46_14_+1000_PTS0dIspDlqzk/=9--
