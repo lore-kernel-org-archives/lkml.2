@@ -1,76 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759099Ab0EYWRS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:17:18 -0400
-Received: from smtp123.mail.ukl.yahoo.com ([77.238.184.54]:32724 "HELO
-	smtp123.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1759063Ab0EYWRP (ORCPT
+	id S932738Ab0EYWSU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:18:20 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:53107 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1759020Ab0EYWSR convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:17:15 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.es;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:From:To:Cc:Subject:Date:Message-Id:X-Mailer:In-Reply-To:References;
-  b=wWQZra/1zLji3LGcKEsDQjWibgza1YV74VUL9rkAmjslczHbG3pOd88kWY+nHyHsJUUuYGp/BVI5E4wul+ZBEJ2FBuk+3btplodRsOkOjupQpkpJaKqZo4miaaHYx0s8zgt2eDlAHhVpluY6/P7FIU9bLLJrgyXiaKyesvKfhMo=  ;
-X-Yahoo-SMTP: czee06uswBAtfIYshc.kP27UlfEXaxwWNSjJ
-X-YMail-OSG: K19.TbsVM1l7HsRJf.e4chHw_y0HrKi8WO52I1GqMsgqWNQluwuutMuZ_hAwt7KIcYJl_nLeddE1OmB1jZhr3WbBnvNIAwayYC_0Dyn.hQ_MTqfFD6JzI8HL4LKfGzs4hG9Fr1dzBjZoRGt51BD_BQvN4eAWTYx4np.9DAY_RAkt807.hwccaGSHGUy.Fsd0ERAK7Ae6jkS5Q49et6guPHZ6VRRZ8TT9FMYMscNdTitXJyJeh_.M2R09sIMXzqoYmAHINptSHGTTpTbOE7LfLRZEB3Hox8Bf
-X-Yahoo-Newman-Property: ymail-3
-From: Albert Herranz <albert_herranz@yahoo.es>
-To: npiggin@suse.de, jayakumar.lkml@gmail.com, akpm@linux-foundation.org,
-       torvalds@linux-foundation.org, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fbdev@vger.kernel.org
-Cc: Albert Herranz <albert_herranz@yahoo.es>
-Subject: [RFT PATCH 2/2] fb_defio: redo fix for non-dirty ptes
-Date: Wed, 26 May 2010 00:17:00 +0200
-Message-Id: <1274825820-10246-2-git-send-email-albert_herranz@yahoo.es>
-X-Mailer: git-send-email 1.7.0.4
-In-Reply-To: <1274825820-10246-1-git-send-email-albert_herranz@yahoo.es>
-References: <1274825820-10246-1-git-send-email-albert_herranz@yahoo.es>
+	Tue, 25 May 2010 18:18:17 -0400
+To: Mike Frysinger <vapier.adi@gmail.com>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
+       linux-omap@vger.kernel.org, Michael Roth <mroth@nessie.de>,
+       Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] touchscreen: ads7846: please don't touch free'd memory
+References: <1274226413-8520-1-git-send-email-khilman@deeprootsystems.com>
+	<20100519000019.GA17475@core.coreip.homeip.net>
+	<87mxvnlpxv.fsf@deeprootsystems.com>
+	<20100525202135.GC4455@core.coreip.homeip.net>
+	<8739xflkn5.fsf@deeprootsystems.com>
+	<AANLkTik72Q50eHX5cLW4uZ13BiMVCKQ0_bKdrCGZxpeE@mail.gmail.com>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Tue, 25 May 2010 15:18:13 -0700
+In-Reply-To: <AANLkTik72Q50eHX5cLW4uZ13BiMVCKQ0_bKdrCGZxpeE@mail.gmail.com> (Mike Frysinger's message of "Tue\, 25 May 2010 17\:56\:27 -0400")
+Message-ID: <87r5kzk4m2.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-As pointed by Nick Piggin, ->page_mkwrite provides a way to keep a page
-locked until the associated PTE is marked dirty.
+Mike Frysinger <vapier.adi@gmail.com> writes:
 
-Re-implement the fix by using this mechanism.
+> On Tue, May 25, 2010 at 17:46, Kevin Hilman wrote:
+>> After digging into the driver core and realizing that it seemed to
+>> have sane error handling itself, I took a closer look at
+>> ads7846_probe() and discovered it doesn't actually return an error
+>> code for certain failure cases!  That was the root cause.
+>
+> that is crappy
+>
+>> Subject: [PATCH] input: touchscreen: ads7846: return error on probe failure
+>
+> i'd refer to the specific probe issue rather than just "probe".  maybe:
+> input: touchscreen: ads7846: return error on regulator_get() failure
 
-LKML-Reference: <20100525160149.GE20853@laptop>
-Signed-off-by: Albert Herranz <albert_herranz@yahoo.es>
+Thanks for the review, here's one with updated subject and ack added.
+
+Kevin
+
+>From 8ce49a91341d8713f870d2a931969f227a82b8ad Mon Sep 17 00:00:00 2001
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Date: Tue, 25 May 2010 14:38:04 -0700
+Subject: [PATCH] input: touchscreen: ads7846: return error on regulator_get() failure
+
+In probe(), if regulator_get() failed, an error code was not being
+returned causing the driver to be successfully bound, even though
+probe failed.  This in turn caused the suspend, resume and remove
+methods to be registered and accessed via the SPI core.  Since these
+functions all access private driver data using pointers that had been
+freed during the failed probe, this would lead to unpredictable
+behavior.
+
+This patch ensures that probe() returns an error code in this failure
+case so the driver is not bound.
+
+Found using lockdep and noticing the lock used in the suspend/resum
+path pointed to a bogus lock due to the freed memory.
+
+Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+Acked-by: Mike Frysinger <vapier@gentoo.org>
 ---
- drivers/video/fb_defio.c |   12 +++++++++++-
- 1 files changed, 11 insertions(+), 1 deletions(-)
+ drivers/input/touchscreen/ads7846.c |    4 ++--
+ 1 files changed, 2 insertions(+), 2 deletions(-)
 
-diff --git a/drivers/video/fb_defio.c b/drivers/video/fb_defio.c
-index 0e4dcdb..a3e8cc7 100644
---- a/drivers/video/fb_defio.c
-+++ b/drivers/video/fb_defio.c
-@@ -100,6 +100,16 @@ static int fb_deferred_io_mkwrite(struct vm_area_struct *vma,
- 	/* protect against the workqueue changing the page list */
- 	mutex_lock(&fbdefio->lock);
+diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+index 532279c..634f6f6 100644
+--- a/drivers/input/touchscreen/ads7846.c
++++ b/drivers/input/touchscreen/ads7846.c
+@@ -1163,8 +1163,8 @@ static int __devinit ads7846_probe(struct spi_device *spi)
  
-+	/*
-+	 * We want the page to remain locked from ->page_mkwrite until
-+	 * the PTE is marked dirty to avoid page_mkclean() being called
-+	 * before the PTE is updated, which would leave the page ignored
-+	 * by defio.
-+	 * Do this by locking the page here and informing the caller
-+	 * about it with VM_FAULT_LOCKED.
-+	 */
-+	lock_page(page);
-+
- 	/* we loop through the pagelist before adding in order
- 	to keep the pagelist sorted */
- 	list_for_each_entry(cur, &fbdefio->pagelist, lru) {
-@@ -121,7 +131,7 @@ page_already_added:
+ 	ts->reg = regulator_get(&spi->dev, "vcc");
+ 	if (IS_ERR(ts->reg)) {
+-		dev_err(&spi->dev, "unable to get regulator: %ld\n",
+-			PTR_ERR(ts->reg));
++		err = PTR_ERR(ts->reg);
++		dev_err(&spi->dev, "unable to get regulator: %ld\n", err);
+ 		goto err_free_gpio;
+ 	}
  
- 	/* come back after delay to process the deferred IO */
- 	schedule_delayed_work(&info->deferred_work, fbdefio->delay);
--	return 0;
-+	return VM_FAULT_LOCKED;
- }
- 
- static const struct vm_operations_struct fb_deferred_io_vm_ops = {
 -- 
-1.7.0.4
+1.7.0.2
 
