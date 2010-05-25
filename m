@@ -1,112 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759062Ab0EYWXZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:23:25 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55986 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756485Ab0EYWXX convert rfc822-to-8bit (ORCPT
+	id S932345Ab0EYWYJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:24:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:59889 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753903Ab0EYWYF (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:23:23 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100525184740.GA4248@core.coreip.homeip.net>
-References: <201005251124.58017.dmitry.torokhov@gmail.com>
-	 <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
-	 <20100525184740.GA4248@core.coreip.homeip.net>
+	Tue, 25 May 2010 18:24:05 -0400
 Date: Tue, 25 May 2010 15:23:23 -0700
-Message-ID: <AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+From: Andrew Morton <akpm@linux-foundation.org>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Boaz Harrosh <bharrosh@panasas.com>, Julia Lawall <julia@diku.dk>,
+       Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
+Message-Id: <20100525152323.26652def.akpm@linux-foundation.org>
+In-Reply-To: <1274799513.5300.37.camel@mulgrave.site>
+References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
+	<1274538263.4410.38.camel@mulgrave.site>
+	<4BF94B89.2050101@panasas.com>
+	<1274631752.5894.24.camel@mulgrave.site>
+	<4BFBDB83.2090807@panasas.com>
+	<1274799513.5300.37.camel@mulgrave.site>
+X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
-<dmitry.torokhov@gmail.com> wrote:
-> On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
->> On Tue, 25 May 2010, Dmitry Torokhov wrote:
->>
->> > > Here's the scenario:
->> > >
->> > > The system is awake, and the user presses a key. The keyboard driver
->> > > processes the keystroke and puts it in an input queue.  A user process
->> > > reads it from the event queue, thereby emptying the queue.
->> > >
->> > > At that moment, the system decides to go into opportunistic suspend.
->> > > Since the input queue is empty, there's nothing to stop it.  As the
->> > > first step, userspace is frozen -- before the process has a chance to
->> > > do anything with the keystroke it just read.  As a result, the system
->> > > stays asleep until something else wakes it up, even though the
->> > > keystroke was important and should have prevented it from sleeping.
->> > >
->> > > Suspend blockers protect against this scenario.  Here's how:
->> > >
->> > > The user process doesn't read the input queue directly; instead it
->> > > does a select or poll.  When it sees there is data in the queue, it
->> > > first acquires a suspend blocker and then reads the data.
->> > >
->> > > Now the system _can't_ go into opportunistic suspend, because a suspend
->> > > blocker is active.  The user process can do whatever it wants with the
->> > > keystroke.  When it is finished, it releases the suspend blocker and
->> > > loops back to the select/poll call.
->> > >
->> >
->> > What you describe can be done in userspace though, via a "suspend manager"
->> > process. Tasks reading input events will post "busy" events to stop the
->> > manager process from sending system into suspend. But this can be confined to
->> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
->> > to not go into suspend with full queues, but that is using existing kernel
->> > APIs).
->>
->> I think that could be made to work.  And it might remove the need for
->> the userspace suspend-blocker API, which would be an advantage.  It
->> could even remove the need for the opportunistic-suspend workqueue --
->> opportunistic suspends would be initiated by the "suspend manager"
->> process instead of by the kernel.
->>
->> However you still have the issue of modifying the kernel drivers to
->> disallow opportunistic suspend if their queues are non-empty.  Doing
->> that is more or less equivalent to implementing kernel-level suspend
->> blockers.  (The suspend blocker approach is slightly more efficient,
->> because it will prevent a suspend from starting if a queue is
->> non-empty, instead of allowing the suspend to start and then aborting
->> it partway through.)
->>
->> Maybe I'm missing something here...  No doubt someone will point it out
->> if I am.
->>
->
-> Well, from my perspective that would limit changes to the evdev driver
-> (well, limited input core plumbing will be needed) but that is using the
-> current PM infrastructure. The HW driver changes will be limited to what
-> you described "type 2" in your other e-mail.
->
-> Also, not suspending while events are in progress) is probably
-> beneficial for platforms other than Android as well. So unless I am
-> missing something this sounds like a win.
->
+On Tue, 25 May 2010 09:58:33 -0500
+James Bottomley <James.Bottomley@suse.de> wrote:
 
-How would this limit the changes you need in the evdev driver? It need
-to block suspend when there are unprocessed events in some queues.
-Suspend blockers gives you an api to do this, without it, you check
-the queues in your suspend hook and abort suspend if they are not
-empty. Without suspend blockers you have no api to signal that it is
-OK to suspend again, so you are forcing the thread that tried to
-suspend to poll until you stop aborting suspend.
+> On Tue, 2010-05-25 at 17:15 +0300, Boaz Harrosh wrote:
+> > On 05/23/2010 07:22 PM, James Bottomley wrote:
+> > > On Sun, 2010-05-23 at 18:36 +0300, Boaz Harrosh wrote:
+> > >>> This type of transformation has really no value at all.
 
--- 
-Arve Hjønnevåg
+kerrrrapp!!  There's always value in replacing open-coded straggles
+with calls to well-understood, well-documented, well-tested library
+code.
+
+>  The code you're
+> > >>> proposing to replace is already correct.  I'm fairly ambivalent on
+> > >>> patterned APIs anyway but I accept they're useful way to prevent new
+> > >>> code getting it wrong. However, it's completely bogus to force
+> > >>> replacement of correctly functioning code throughout the kernel
+
+Hello?  This is Linux.  We're continuously filtering through old code,
+improving and updating it.  There's nothing which exempts
+./drivers/scsi/ from our reasons for doing this.
+
+> (unless
+> > >>> you're going to argue that everyone who tries to copy from user into a
+> > >>> kmalloc space does a cut and paste from sg?)
+> > >>>
+> > >>> Of infinitely greater service would be finding any places where the
+> > >>> pattern is being incorrectly used.
+> > >>>
+> > >>
+> > >> It looks like it is not done 100% kosher and calling memdup_user should
+> > >> be better.
+> > >>
+> > >> - For 1 memdup_user does a GFP_KERNEL with a comment on how copy_from_user
+> > >>   would eventually sleep, so what's the point of GFP_ATOMIC?
+> > > 
+> > > Well, since you've written a storage driver, I really hope that question
+> > > is rhetorical ...
+> > > 
+> > 
+> > Not really I do mean it in this case. It is not a storage-driver code
+> > path. Is sg a storage-driver. I was not aware anyone used it for one.
+> 
+> by storage driver, I mean anything in the writeout path ... this
+> includes ULDs, of which sg is one.
+> 
+> > > The reason for using GFP_ATOMIC from user context in storage drivers is
+> > > to avoid writeout deadlock:  you don't want to trigger a swap write
+> > > while you potentially occupy the writeout path.  In all older drivers
+> > > this had to be GFP_ATOMIC because GFP_NOIO wasn't around.
+> > > 
+> > 
+> > I confess my total swap ignorance. I was under the impression that
+> > swap needs a block device. OK you could do a user-mode filesystem
+> > over sg, under loop device. Does swap work over loop device=>ext2
+> > for example? Or is there a way to directly swap over a filesystem
+> > (Not block based)?
+> 
+> Well, swap can function above block devices or files.
+> 
+> However, it's not just swap, it's also triggerable via mmap (you do file
+> backed mmap of a large area then have a process that joyfully dirties
+> lots of it) ... and that's what can make it such a difficult problem.
+> Basically you end up with a system with mostly dirty memory that it has
+> to clean via writeout (either to swap or by flushing dirty pages).  The
+> writeout path that these pages go down cannot ever wait on dirty pages
+> being flushed (which is what a sleeping kmalloc does), because that can
+> end up as a deadlock.
+
+copy_from_user() can take a fault, take a zillion locks, perform
+GFP_HIGHUSER allocations, enter page reclaim, enter filesystems, etc. 
+View a pagefault as a syscall with a different calling convention -
+it's that high level.
+
+If this driver if correct in potentially taking a pagefault at this
+place then the patch is correct and desirable.  Otherwise, well, the
+driver already has problem and the patch did nothing to increase them.
+
+And, of course, Julia's "no value" work caused us to identify those
+problems.
+
