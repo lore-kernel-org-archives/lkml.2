@@ -1,79 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758194Ab0EYDTr (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 23:19:47 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:57612 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755662Ab0EYDTq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 23:19:46 -0400
-From: Alex Elder <aelder@sgi.com>
-Message-Id: <201005250319.o4P3JexR027722@stout.americas.sgi.com>
-Date: Mon, 24 May 2010 22:19:40 -0500
-To: torvalds@linux-foundation.org
-Subject: [GIT PULL] XFS update for 2.6.35-rc1 (2 of 2)
-Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com, akpm@linux-foundation.org
-User-Agent: Heirloom mailx 12.4 7/29/08
+	id S1758282Ab0EYD1N (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 23:27:13 -0400
+Received: from crca.org.au ([74.207.252.120]:51955 "EHLO crca.org.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757993Ab0EYD1M (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 23:27:12 -0400
+X-Bogosity: Ham, spamicity=0.000000
+Message-ID: <4BFB438A.8000909@crca.org.au>
+Date: Tue, 25 May 2010 13:27:06 +1000
+From: Nigel Cunningham <ncunningham@crca.org.au>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+To: Dave Airlie <airlied@redhat.com>
+CC: Randy Dunlap <randy.dunlap@oracle.com>, Matthew Garrett <mjg@redhat.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>,
+       LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.freedesktop.org,
+       linux-next@vger.kernel.org, Ben Skeggs <bskeggs@redhat.com>
+Subject: Re: [PATCH -next] nouveau: fix acpi_lid_open undefined
+References: <20100522170459.4c89723d.sfr@canb.auug.org.au>	 <20100523170040.3c4aa87c.randy.dunlap@oracle.com>	 <20100524125628.GA14278@srcf.ucam.org> <4BFA84EF.7070609@oracle.com>	 <20100524135940.GA15892@srcf.ucam.org>  <4BFA8A71.4080900@oracle.com> <1274741255.3416.1.camel@clockmaker-el6>
+In-Reply-To: <1274741255.3416.1.camel@clockmaker-el6>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Here is the second set of changes for XFS for 2.6.35-rc1.	-Alex
+Hi.
 
-The following changes since commit 7e125f7b9cbfce4101191b8076d606c517a73066:
+On 25/05/10 08:47, Dave Airlie wrote:
+> On Mon, 2010-05-24 at 07:17 -0700, Randy Dunlap wrote:
+>> On 05/24/10 06:59, Matthew Garrett wrote:
+>>> On Mon, May 24, 2010 at 06:53:51AM -0700, Randy Dunlap wrote:
+>>>> On 05/24/10 05:56, Matthew Garrett wrote:
+>>>>> Won't this result in a behavioural difference? The desirable outcome is
+>>>>
+>>>> It could, yes.
+>>>>
+>>>>> that that configuration be impossible, not for that configuration to
+>>>>> build but be buggy.
+>>>>
+>>>> so nouveau should depend on (or select, if ACPI is enabled) ACPI_BUTTON?
+>>>
+>>> There's an argument that it doesn't need to depend on it, but if button
+>>> is a module then nouveau has to be. Except the inverse isn't true.
+>>> Kconfig is hard, let's weep gently.
+>>
+>> Maybe Dave can weep with us when he is back at work...
+>
+> Yeah I've had problems like this a few times lately with the drm, I'm
+> torn between just adding select all over the place, or assuming someone
+> sane is configuring the kernel.
+>
+> I'm sort of erring on the someone sane is configuring the kernel just
+> because Linus's objects to "default y" things seems to point at that we
+> can't really give pointers to the people who haven't done it before. So
+> I'm quite happy to leave it having different behaviour depending on the
+> configuration and simply ignoring bug reports from incompetents.
 
-  Merge git://git.kernel.org/pub/scm/linux/kernel/git/davem/ide-2.6 (2010-05-24 08:05:29 -0700)
+'scuse me for butting in, but would you at least consider adding 
+something to the help for the Nouveau and/or ACPI button options? You 
+might have a sane person configuring the kernel, but that doesn't mean a 
+dependency like this would necessarily be obvious to them.
 
-are available in the git repository at:
+Personally, I'd argue for the select.
 
-  git://oss.sgi.com/xfs/xfs for-linus
+Regards,
 
-Alex Elder (1):
-      Merge branch 'delayed-logging-for-2.6.35' into for-linus
-
-Dave Chinner (12):
-      xfs: Don't reuse the same transaction ID for duplicated transactions.
-      xfs: allow log ticket allocation to take allocation flags
-      xfs: modify buffer item reference counting
-      xfs: Clean up XFS_BLI_* flag namespace
-      xfs: clean up log ticket overrun debug output
-      xfs: make the log ticket ID available outside the log infrastructure
-      xfs: Improve scalability of busy extent tracking
-      xfs: Delayed logging design documentation
-      xfs: Introduce delayed logging core code
-      xfs: forced unmounts need to push the CIL
-      xfs: enable background pushing of the CIL
-      xfs: Ensure inode allocation buffers are fully replayed
-
- .../filesystems/xfs-delayed-logging-design.txt     |  816 ++++++++++++++++++++
- fs/xfs/Makefile                                    |    1 +
- fs/xfs/linux-2.6/xfs_buf.c                         |    9 +
- fs/xfs/linux-2.6/xfs_quotaops.c                    |    1 +
- fs/xfs/linux-2.6/xfs_super.c                       |   12 +-
- fs/xfs/linux-2.6/xfs_trace.h                       |   83 ++-
- fs/xfs/quota/xfs_dquot.c                           |    6 +-
- fs/xfs/xfs_ag.h                                    |   24 +-
- fs/xfs/xfs_alloc.c                                 |  357 ++++++---
- fs/xfs/xfs_alloc.h                                 |    7 +-
- fs/xfs/xfs_alloc_btree.c                           |    2 +-
- fs/xfs/xfs_buf_item.c                              |  166 ++--
- fs/xfs/xfs_buf_item.h                              |   18 +-
- fs/xfs/xfs_error.c                                 |    2 +-
- fs/xfs/xfs_log.c                                   |  120 +++-
- fs/xfs/xfs_log.h                                   |   14 +-
- fs/xfs/xfs_log_cil.c                               |  725 +++++++++++++++++
- fs/xfs/xfs_log_priv.h                              |  118 +++-
- fs/xfs/xfs_log_recover.c                           |   46 +-
- fs/xfs/xfs_log_recover.h                           |    2 +-
- fs/xfs/xfs_mount.h                                 |    1 +
- fs/xfs/xfs_trans.c                                 |  144 +++-
- fs/xfs/xfs_trans.h                                 |   44 +-
- fs/xfs/xfs_trans_buf.c                             |   46 +-
- fs/xfs/xfs_trans_item.c                            |  114 +---
- fs/xfs/xfs_trans_priv.h                            |   15 +-
- fs/xfs/xfs_types.h                                 |    2 +
- 27 files changed, 2382 insertions(+), 513 deletions(-)
- create mode 100644 Documentation/filesystems/xfs-delayed-logging-design.txt
- create mode 100644 fs/xfs/xfs_log_cil.c
+Nigel
