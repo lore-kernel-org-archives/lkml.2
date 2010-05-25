@@ -1,68 +1,292 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934082Ab0EYUUG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:20:06 -0400
-Received: from www.tglx.de ([62.245.132.106]:38661 "EHLO www.tglx.de"
+	id S934126Ab0EYUUU (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:20:20 -0400
+Received: from claw.goop.org ([74.207.240.146]:57098 "EHLO claw.goop.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932530Ab0EYUUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:20:03 -0400
-Date: Tue, 25 May 2010 22:19:29 +0200 (CEST)
-From: Thomas Gleixner <tglx@linutronix.de>
-To: Peter Zijlstra <peterz@infradead.org>
-cc: "Amit K. Arora" <aarora@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
-       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v2] Make sure timers have migrated before killing
- migration_thread
-In-Reply-To: <1274340483.5605.13161.camel@twins>
-Message-ID: <alpine.LFD.2.00.1005252215260.2948@localhost.localdomain>
-References: <20100519090557.GA15237@amitarora.in.ibm.com>  <1274261515.5605.10423.camel@twins>  <20100519121356.GB15237@amitarora.in.ibm.com> <1274340483.5605.13161.camel@twins>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	id S932635Ab0EYUUR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:20:17 -0400
+Message-ID: <4BFC30FE.10206@goop.org>
+Date: Tue, 25 May 2010 13:20:14 -0700
+From: Jeremy Fitzhardinge <jeremy@goop.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
+       Don Dutile <ddutile@redhat.com>
+Subject: Re: [PATCH 06/11] Add suspend\resume support for PV on HVM guests.
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-6-git-send-email-stefano.stabellini@eu.citrix.com>
+In-Reply-To: <1274725657-1149-6-git-send-email-stefano.stabellini@eu.citrix.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-15
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, 20 May 2010, Peter Zijlstra wrote:
+On 05/24/2010 11:27 AM, Stefano Stabellini wrote:
+> Suspend\resume requires few different thing on HVM: the suspend
+> hypercall is different, we don't need to save\restore any memory related
+> setting, but we need to reinitialize the shared info page and the
+> callback mechanism.
+>
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+> ---
+>  arch/x86/xen/enlighten.c   |   14 +++++++++---
+>  arch/x86/xen/suspend.c     |    6 +++++
+>  arch/x86/xen/xen-ops.h     |    1 +
+>  drivers/xen/manage.c       |   45 ++++++++++++++++++++++++++++++++++++++++---
+>  drivers/xen/platform-pci.c |   23 +++++++++++++++++++++-
+>  include/xen/xen-ops.h      |    3 ++
+>  6 files changed, 83 insertions(+), 9 deletions(-)
+>
+> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
+> index ed34b30..cb316b5 100644
+> --- a/arch/x86/xen/enlighten.c
+> +++ b/arch/x86/xen/enlighten.c
+> @@ -1263,12 +1263,14 @@ static int init_hvm_pv_info(int *major, int *minor)
+>  	return 0;
+>  }
+>  
+> -static void __init init_shared_info(void)
+> +void init_shared_info(void)
+>   
 
-> On Wed, 2010-05-19 at 17:43 +0530, Amit K. Arora wrote:
-> > Alternate Solution considered : Another option considered was to
-> > increase the priority of the hrtimer cpu offline notifier, such that it
-> > gets to run before scheduler's migration cpu offline notifier. In this
-> > way we are sure that the timers will get migrated before migration_call
-> > tries to kill migration_thread. But, this can have some non-obvious
-> > implications, suggested Srivatsa.
-> 
-> 
-> > On Wed, May 19, 2010 at 11:31:55AM +0200, Peter Zijlstra wrote:
-> > > The other problem is more urgent though, CPU_POST_DEAD runs outside of
-> > > the hotplug lock and thus the above becomes a race where we could
-> > > possible kill off the migration thread of a newly brought up cpu:
-> > > 
-> > >  cpu0 - down 2
-> > >  cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
-> > >  cpu0 - post_down 2 - frees the migration thread -- oops!
-> > 
-> > Ok. So, how about adding a check in CPU_UP_PREPARE event handling too ?
-> > The cpuset_lock will synchronize, and thus avoid race between killing of
-> > migration_thread in up_prepare and post_dead events. 
-> > 
-> > Here is the updated patch. If you don't like this one too, do you mind
-> > suggesting an alternate approach to tackle the problem ? Thanks !
-> 
-> Right, so this isn't pretty at all..
-> 
-> Ingo, the comment near the migration_notifier says that migration_call
-> should happen before all else, but can you see anything that would break
-> if we let the timer migration happen first?
-> 
-> Thomas?
+This needs a xen_ prefix.
 
-That should work, though what is killing the scheduler per rq hrtimers
-_before_ we migrate stuff ? We don't want to migrate them, right ?
+    J
 
-Thanks,
+>  {
+> +	int cpu;
+>  	struct xen_add_to_physmap xatp;
+> -	struct shared_info *shared_info_page;
+> +	static struct shared_info *shared_info_page = 0;
+>  
+> -	shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
+> +	if (!shared_info_page)
+> +		shared_info_page = (struct shared_info *) alloc_bootmem_pages(PAGE_SIZE);
+>  	xatp.domid = DOMID_SELF;
+>  	xatp.idx = 0;
+>  	xatp.space = XENMAPSPACE_shared_info;
+> @@ -1280,7 +1282,11 @@ static void __init init_shared_info(void)
+>  
+>  	/* Don't do the full vcpu_info placement stuff until we have a
+>  	   possible map and a non-dummy shared_info. */
+> -	per_cpu(xen_vcpu, 0) = &HYPERVISOR_shared_info->vcpu_info[0];
+> +	/* init_shared_info is run at resume time too, in that case multiple
+> +	 * vcpus might be online */
+> + 	for_each_online_cpu(cpu) {
+> +		per_cpu(xen_vcpu, cpu) = &HYPERVISOR_shared_info->vcpu_info[cpu];
+> +	}
+>  }
+>  
+>  static int __cpuinit xen_hvm_cpu_notify(struct notifier_block *self,
+> diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
+> index 987267f..ef517ee 100644
+> --- a/arch/x86/xen/suspend.c
+> +++ b/arch/x86/xen/suspend.c
+> @@ -26,6 +26,12 @@ void xen_pre_suspend(void)
+>  		BUG();
+>  }
+>  
+> +void xen_hvm_post_suspend(int suspend_cancelled)
+> +{
+> +	init_shared_info();
+> +	xen_callback_vector();
+> +}
+> +
+>  void xen_post_suspend(int suspend_cancelled)
+>  {
+>  	xen_build_mfn_list_list();
+> diff --git a/arch/x86/xen/xen-ops.h b/arch/x86/xen/xen-ops.h
+> index 0d0e0e6..caf89ee 100644
+> --- a/arch/x86/xen/xen-ops.h
+> +++ b/arch/x86/xen/xen-ops.h
+> @@ -39,6 +39,7 @@ void xen_enable_syscall(void);
+>  void xen_vcpu_restore(void);
+>  
+>  void xen_callback_vector(void);
+> +void init_shared_info(void);
+>  
+>  void __init xen_build_dynamic_phys_to_machine(void);
+>  
+> diff --git a/drivers/xen/manage.c b/drivers/xen/manage.c
+> index 2ac4440..0716ba6 100644
+> --- a/drivers/xen/manage.c
+> +++ b/drivers/xen/manage.c
+> @@ -9,6 +9,7 @@
+>  #include <linux/stop_machine.h>
+>  #include <linux/freezer.h>
+>  
+> +#include <xen/xen.h>
+>  #include <xen/xenbus.h>
+>  #include <xen/grant_table.h>
+>  #include <xen/events.h>
+> @@ -17,6 +18,7 @@
+>  
+>  #include <asm/xen/hypercall.h>
+>  #include <asm/xen/page.h>
+> +#include <asm/xen/hypervisor.h>
+>  
+>  enum shutdown_state {
+>  	SHUTDOWN_INVALID = -1,
+> @@ -33,10 +35,30 @@ enum shutdown_state {
+>  static enum shutdown_state shutting_down = SHUTDOWN_INVALID;
+>  
+>  #ifdef CONFIG_PM_SLEEP
+> -static int xen_suspend(void *data)
+> +static int xen_hvm_suspend(void *data)
+>  {
+> +	struct sched_shutdown r = { .reason = SHUTDOWN_suspend };
+>  	int *cancelled = data;
+> +
+> +	BUG_ON(!irqs_disabled());
+> +
+> +	*cancelled = HYPERVISOR_sched_op(SCHEDOP_shutdown, &r);
+> +
+> +	xen_hvm_post_suspend(*cancelled);
+> +	gnttab_resume();
+> +
+> +	if (!*cancelled) {
+> +		xen_irq_resume();
+> +		xen_timer_resume();
+> +	}
+> +
+> +	return 0;
+> +}
+> +
+> +static int xen_suspend(void *data)
+> +{
+>  	int err;
+> +	int *cancelled = data;
+>  
+>  	BUG_ON(!irqs_disabled());
+>  
+> @@ -112,7 +134,10 @@ static void do_suspend(void)
+>  		goto out_resume;
+>  	}
+>  
+> -	err = stop_machine(xen_suspend, &cancelled, cpumask_of(0));
+> +	if (xen_hvm_domain())
+> +		err = stop_machine(xen_hvm_suspend, &cancelled, cpumask_of(0));
+> +	else
+> +		err = stop_machine(xen_suspend, &cancelled, cpumask_of(0));
+>  
+>  	dpm_resume_noirq(PMSG_RESUME);
+>  
+> @@ -261,7 +286,19 @@ static int shutdown_event(struct notifier_block *notifier,
+>  	return NOTIFY_DONE;
+>  }
+>  
+> -static int __init setup_shutdown_event(void)
+> +static int __init __setup_shutdown_event(void)
+> +{
+> +	/* Delay initialization in the PV on HVM case */
+> +	if (xen_hvm_domain())
+> +		return 0;
+> +
+> +	if (!xen_pv_domain())
+> +		return -ENODEV;
+> +
+> +	return xen_setup_shutdown_event();
+> +}
+> +
+> +int xen_setup_shutdown_event(void)
+>  {
+>  	static struct notifier_block xenstore_notifier = {
+>  		.notifier_call = shutdown_event
+> @@ -271,4 +308,4 @@ static int __init setup_shutdown_event(void)
+>  	return 0;
+>  }
+>  
+> -subsys_initcall(setup_shutdown_event);
+> +subsys_initcall(__setup_shutdown_event);
+> diff --git a/drivers/xen/platform-pci.c b/drivers/xen/platform-pci.c
+> index 0f78318..70395c9 100644
+> --- a/drivers/xen/platform-pci.c
+> +++ b/drivers/xen/platform-pci.c
+> @@ -31,6 +31,7 @@
+>  #include <xen/xenbus.h>
+>  #include <xen/events.h>
+>  #include <xen/hvm.h>
+> +#include <xen/xen-ops.h>
+>  
+>  #define DRV_NAME    "xen-platform-pci"
+>  
+> @@ -41,6 +42,7 @@ MODULE_LICENSE("GPL");
+>  static unsigned long platform_mmio;
+>  static unsigned long platform_mmio_alloc;
+>  static unsigned long platform_mmiolen;
+> +static uint64_t callback_via;
+>  
+>  unsigned long alloc_xen_mmio(unsigned long len)
+>  {
+> @@ -85,13 +87,25 @@ static int xen_allocate_irq(struct pci_dev *pdev)
+>  			"xen-platform-pci", pdev);
+>  }
+>  
+> +static int platform_pci_resume(struct pci_dev *pdev)
+> +{
+> +	int err;
+> +	if (xen_have_vector_callback)
+> +		return 0;
+> +	err = xen_set_callback_via(callback_via);
+> +	if (err) {
+> +		printk("platform_pci_resume failure!\n");
+> +		return err;
+> +	}
+> +	return 0;
+> +}
+> +
+>  static int __devinit platform_pci_init(struct pci_dev *pdev,
+>  				       const struct pci_device_id *ent)
+>  {
+>  	int i, ret;
+>  	long ioaddr, iolen;
+>  	long mmio_addr, mmio_len;
+> -	uint64_t callback_via;
+>  
+>  	i = pci_enable_device(pdev);
+>  	if (i)
+> @@ -145,6 +159,10 @@ static int __devinit platform_pci_init(struct pci_dev *pdev,
+>  	ret = xenbus_probe_init();
+>  	if (ret)
+>  		goto out;
+> +	ret = xen_setup_shutdown_event();
+> +	if (ret)
+> +		goto out;
+> +
+>  
+>  out:
+>  	if (ret) {
+> @@ -168,6 +186,9 @@ static struct pci_driver platform_driver = {
+>  	.name =           DRV_NAME,
+>  	.probe =          platform_pci_init,
+>  	.id_table =       platform_pci_tbl,
+> +#ifdef CONFIG_PM
+> +	.resume_early =   platform_pci_resume,
+> +#endif
+>  };
+>  
+>  static int __init platform_pci_module_init(void)
+> diff --git a/include/xen/xen-ops.h b/include/xen/xen-ops.h
+> index 883a21b..46bc81e 100644
+> --- a/include/xen/xen-ops.h
+> +++ b/include/xen/xen-ops.h
+> @@ -7,6 +7,7 @@ DECLARE_PER_CPU(struct vcpu_info *, xen_vcpu);
+>  
+>  void xen_pre_suspend(void);
+>  void xen_post_suspend(int suspend_cancelled);
+> +void xen_hvm_post_suspend(int suspend_cancelled);
+>  
+>  void xen_mm_pin_all(void);
+>  void xen_mm_unpin_all(void);
+> @@ -14,4 +15,6 @@ void xen_mm_unpin_all(void);
+>  void xen_timer_resume(void);
+>  void xen_arch_resume(void);
+>  
+> +int xen_setup_shutdown_event(void);
+> +
+>  #endif /* INCLUDE_XEN_OPS_H */
+>   
 
-	tglx
