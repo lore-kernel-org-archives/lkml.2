@@ -1,268 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756449Ab0EYIlY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 04:41:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:26157 "EHLO mx1.redhat.com"
+	id S1756440Ab0EYImw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 04:42:52 -0400
+Received: from cantor.suse.de ([195.135.220.2]:48084 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756347Ab0EYIkw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 04:40:52 -0400
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Cc: Bob Peterson <rpeterso@redhat.com>,
-       Steven Whitehouse <swhiteho@redhat.com>
-Subject: [PATCH 1/3] GFS2: Rework reclaiming unlinked dinodes
-Date: Tue, 25 May 2010 09:21:27 +0100
-Message-Id: <1274775689-4689-2-git-send-email-swhiteho@redhat.com>
-In-Reply-To: <1274775689-4689-1-git-send-email-swhiteho@redhat.com>
-References: <1274775689-4689-1-git-send-email-swhiteho@redhat.com>
+	id S1754053Ab0EYImu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 04:42:50 -0400
+Date: Tue, 25 May 2010 10:42:48 +0200 (CEST)
+From: Jiri Kosina <jkosina@suse.cz>
+To: Corey Minyard <minyard@acm.org>, Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, openipmi-developer@lists.sourceforge.net
+Subject: [PATCH] ipmi: handle run_to_completion properly in
+ deliver_recv_msg()
+Message-ID: <alpine.LNX.2.00.1005251034450.28092@pobox.suse.cz>
+User-Agent: Alpine 2.00 (LNX 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Bob Peterson <rpeterso@redhat.com>
+If run_to_completion flag is set, it means that we are running in
+a single-threaded mode, and thus no locks are held.
 
-The previous patch I wrote for reclaiming unlinked dinodes
-had some shortcomings and did not prevent all hangs.
-This version is much cleaner and more logical, and has
-passed very difficult testing.  Sorry for the churn.
+This fixes a deadlock when IPMI notifier is being called during panic.
 
-Signed-off-by: Bob Peterson <rpeterso@redhat.com>
-Signed-off-by: Steven Whitehouse <swhiteho@redhat.com>
+Signed-off-by: Jiri Kosina <jkosina@suse.cz>
 ---
- fs/gfs2/inode.c |   54 +++++++++++++++++++++++++++++-------------------------
- fs/gfs2/inode.h |    3 +--
- fs/gfs2/log.c   |    2 +-
- fs/gfs2/log.h   |   29 +++++++++++------------------
- fs/gfs2/rgrp.c  |   20 ++++++++++++--------
- 5 files changed, 54 insertions(+), 54 deletions(-)
+ drivers/char/ipmi/ipmi_si_intf.c |   11 ++++++++---
+ 1 files changed, 8 insertions(+), 3 deletions(-)
 
-diff --git a/fs/gfs2/inode.c b/fs/gfs2/inode.c
-index 51d8061..b5612cb 100644
---- a/fs/gfs2/inode.c
-+++ b/fs/gfs2/inode.c
-@@ -242,34 +242,38 @@ fail:
- }
- 
- /**
-- * gfs2_unlinked_inode_lookup - Lookup an unlinked inode for reclamation
-+ * gfs2_process_unlinked_inode - Lookup an unlinked inode for reclamation
-+ *                               and try to reclaim it by doing iput.
-+ *
-+ * This function assumes no rgrp locks are currently held.
-+ *
-  * @sb: The super block
-  * no_addr: The inode number
-- * @@inode: A pointer to the inode found, if any
-  *
-- * Returns: 0 and *inode if no errors occurred.  If an error occurs,
-- *          the resulting *inode may or may not be NULL.
-  */
- 
--int gfs2_unlinked_inode_lookup(struct super_block *sb, u64 no_addr,
--			       struct inode **inode)
-+void gfs2_process_unlinked_inode(struct super_block *sb, u64 no_addr)
+diff --git a/drivers/char/ipmi/ipmi_si_intf.c b/drivers/char/ipmi/ipmi_si_intf.c
+index 47ffe4a..d1765b6 100644
+--- a/drivers/char/ipmi/ipmi_si_intf.c
++++ b/drivers/char/ipmi/ipmi_si_intf.c
+@@ -314,9 +314,14 @@ static void deliver_recv_msg(struct smi_info *smi_info,
  {
- 	struct gfs2_sbd *sdp;
- 	struct gfs2_inode *ip;
- 	struct gfs2_glock *io_gl;
- 	int error;
- 	struct gfs2_holder gh;
-+	struct inode *inode;
- 
--	*inode = gfs2_iget_skip(sb, no_addr);
-+	inode = gfs2_iget_skip(sb, no_addr);
- 
--	if (!(*inode))
--		return -ENOBUFS;
-+	if (!inode)
-+		return;
- 
--	if (!((*inode)->i_state & I_NEW))
--		return -ENOBUFS;
-+	/* If it's not a new inode, someone's using it, so leave it alone. */
-+	if (!(inode->i_state & I_NEW)) {
-+		iput(inode);
-+		return;
+ 	/* Deliver the message to the upper layer with the lock
+ 	   released. */
+-	spin_unlock(&(smi_info->si_lock));
+-	ipmi_smi_msg_received(smi_info->intf, msg);
+-	spin_lock(&(smi_info->si_lock));
++
++	if (smi_info->run_to_completion) {
++		ipmi_smi_msg_received(smi_info->intf, msg);
++	} else {
++		spin_unlock(&(smi_info->si_lock));
++		ipmi_smi_msg_received(smi_info->intf, msg);
++		spin_lock(&(smi_info->si_lock));
 +	}
- 
--	ip = GFS2_I(*inode);
--	sdp = GFS2_SB(*inode);
-+	ip = GFS2_I(inode);
-+	sdp = GFS2_SB(inode);
- 	ip->i_no_formal_ino = -1;
- 
- 	error = gfs2_glock_get(sdp, no_addr, &gfs2_inode_glops, CREATE, &ip->i_gl);
-@@ -284,15 +288,13 @@ int gfs2_unlinked_inode_lookup(struct super_block *sb, u64 no_addr,
- 	set_bit(GIF_INVALID, &ip->i_flags);
- 	error = gfs2_glock_nq_init(io_gl, LM_ST_SHARED, LM_FLAG_TRY | GL_EXACT,
- 				   &ip->i_iopen_gh);
--	if (unlikely(error)) {
--		if (error == GLR_TRYFAILED)
--			error = 0;
-+	if (unlikely(error))
- 		goto fail_iopen;
--	}
-+
- 	ip->i_iopen_gh.gh_gl->gl_object = ip;
- 	gfs2_glock_put(io_gl);
- 
--	(*inode)->i_mode = DT2IF(DT_UNKNOWN);
-+	inode->i_mode = DT2IF(DT_UNKNOWN);
- 
- 	/*
- 	 * We must read the inode in order to work out its type in
-@@ -303,16 +305,17 @@ int gfs2_unlinked_inode_lookup(struct super_block *sb, u64 no_addr,
- 	 */
- 	error = gfs2_glock_nq_init(ip->i_gl, LM_ST_EXCLUSIVE, LM_FLAG_TRY,
- 				   &gh);
--	if (unlikely(error)) {
--		if (error == GLR_TRYFAILED)
--			error = 0;
-+	if (unlikely(error))
- 		goto fail_glock;
--	}
-+
- 	/* Inode is now uptodate */
- 	gfs2_glock_dq_uninit(&gh);
--	gfs2_set_iop(*inode);
-+	gfs2_set_iop(inode);
-+
-+	/* The iput will cause it to be deleted. */
-+	iput(inode);
-+	return;
- 
--	return 0;
- fail_glock:
- 	gfs2_glock_dq(&ip->i_iopen_gh);
- fail_iopen:
-@@ -321,7 +324,8 @@ fail_put:
- 	ip->i_gl->gl_object = NULL;
- 	gfs2_glock_put(ip->i_gl);
- fail:
--	return error;
-+	iget_failed(inode);
-+	return;
  }
  
- static int gfs2_dinode_in(struct gfs2_inode *ip, const void *buf)
-diff --git a/fs/gfs2/inode.h b/fs/gfs2/inode.h
-index e161461..300ada3 100644
---- a/fs/gfs2/inode.h
-+++ b/fs/gfs2/inode.h
-@@ -84,8 +84,7 @@ static inline void gfs2_inum_out(const struct gfs2_inode *ip,
- extern void gfs2_set_iop(struct inode *inode);
- extern struct inode *gfs2_inode_lookup(struct super_block *sb, unsigned type, 
- 				       u64 no_addr, u64 no_formal_ino);
--extern int gfs2_unlinked_inode_lookup(struct super_block *sb, u64 no_addr,
--				      struct inode **inode);
-+extern void gfs2_process_unlinked_inode(struct super_block *sb, u64 no_addr);
- extern struct inode *gfs2_ilookup(struct super_block *sb, u64 no_addr);
- 
- extern int gfs2_inode_refresh(struct gfs2_inode *ip);
-diff --git a/fs/gfs2/log.c b/fs/gfs2/log.c
-index b593f0e..6a857e2 100644
---- a/fs/gfs2/log.c
-+++ b/fs/gfs2/log.c
-@@ -696,7 +696,7 @@ static void gfs2_ordered_wait(struct gfs2_sbd *sdp)
-  *
-  */
- 
--void __gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
-+void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl)
- {
- 	struct gfs2_ail *ai;
- 
-diff --git a/fs/gfs2/log.h b/fs/gfs2/log.h
-index eb570b4..0d007f9 100644
---- a/fs/gfs2/log.h
-+++ b/fs/gfs2/log.h
-@@ -47,28 +47,21 @@ static inline void gfs2_log_pointers_init(struct gfs2_sbd *sdp,
- 	sdp->sd_log_head = sdp->sd_log_tail = value;
- }
- 
--unsigned int gfs2_struct2blk(struct gfs2_sbd *sdp, unsigned int nstruct,
-+extern unsigned int gfs2_struct2blk(struct gfs2_sbd *sdp, unsigned int nstruct,
- 			    unsigned int ssize);
- 
--int gfs2_log_reserve(struct gfs2_sbd *sdp, unsigned int blks);
--void gfs2_log_incr_head(struct gfs2_sbd *sdp);
-+extern int gfs2_log_reserve(struct gfs2_sbd *sdp, unsigned int blks);
-+extern void gfs2_log_incr_head(struct gfs2_sbd *sdp);
- 
--struct buffer_head *gfs2_log_get_buf(struct gfs2_sbd *sdp);
--struct buffer_head *gfs2_log_fake_buf(struct gfs2_sbd *sdp,
-+extern struct buffer_head *gfs2_log_get_buf(struct gfs2_sbd *sdp);
-+extern struct buffer_head *gfs2_log_fake_buf(struct gfs2_sbd *sdp,
- 				      struct buffer_head *real);
--void __gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl);
-+extern void gfs2_log_flush(struct gfs2_sbd *sdp, struct gfs2_glock *gl);
-+extern void gfs2_log_commit(struct gfs2_sbd *sdp, struct gfs2_trans *trans);
-+extern void gfs2_remove_from_ail(struct gfs2_bufdata *bd);
- 
--static inline void gfs2_log_flush(struct gfs2_sbd *sbd, struct gfs2_glock *gl)
--{
--	if (!gl || test_bit(GLF_LFLUSH, &gl->gl_flags))
--		__gfs2_log_flush(sbd, gl);
--}
--
--void gfs2_log_commit(struct gfs2_sbd *sdp, struct gfs2_trans *trans);
--void gfs2_remove_from_ail(struct gfs2_bufdata *bd);
--
--void gfs2_log_shutdown(struct gfs2_sbd *sdp);
--void gfs2_meta_syncfs(struct gfs2_sbd *sdp);
--int gfs2_logd(void *data);
-+extern void gfs2_log_shutdown(struct gfs2_sbd *sdp);
-+extern void gfs2_meta_syncfs(struct gfs2_sbd *sdp);
-+extern int gfs2_logd(void *data);
- 
- #endif /* __LOG_DOT_H__ */
-diff --git a/fs/gfs2/rgrp.c b/fs/gfs2/rgrp.c
-index 8bce73e..6daf4c6 100644
---- a/fs/gfs2/rgrp.c
-+++ b/fs/gfs2/rgrp.c
-@@ -1191,7 +1191,6 @@ int gfs2_inplace_reserve_i(struct gfs2_inode *ip, char *file, unsigned int line)
- {
- 	struct gfs2_sbd *sdp = GFS2_SB(&ip->i_inode);
- 	struct gfs2_alloc *al = ip->i_alloc;
--	struct inode *inode;
- 	int error = 0;
- 	u64 last_unlinked = NO_BLOCK, unlinked;
- 
-@@ -1209,22 +1208,27 @@ try_again:
- 	if (error)
- 		return error;
- 
-+	/* Find an rgrp suitable for allocation.  If it encounters any unlinked
-+	   dinodes along the way, error will equal -EAGAIN and unlinked will
-+	   contains it block address. We then need to look up that inode and
-+	   try to free it, and try the allocation again. */
- 	error = get_local_rgrp(ip, &unlinked, &last_unlinked);
- 	if (error) {
- 		if (ip != GFS2_I(sdp->sd_rindex))
- 			gfs2_glock_dq_uninit(&al->al_ri_gh);
- 		if (error != -EAGAIN)
- 			return error;
--		error = gfs2_unlinked_inode_lookup(ip->i_inode.i_sb,
--						   unlinked, &inode);
--		if (inode)
--			iput(inode);
-+
-+		gfs2_process_unlinked_inode(ip->i_inode.i_sb, unlinked);
-+		/* regardless of whether or not gfs2_process_unlinked_inode
-+		   was successful, we don't want to repeat it again. */
-+		last_unlinked = unlinked;
- 		gfs2_log_flush(sdp, NULL);
--		if (error == GLR_TRYFAILED)
--			error = 0;
-+		error = 0;
-+
- 		goto try_again;
- 	}
--
-+	/* no error, so we have the rgrp set in the inode's allocation. */
- 	al->al_file = file;
- 	al->al_line = line;
- 
+ static void return_hosed_msg(struct smi_info *smi_info, int cCode)
 -- 
-1.6.2.5
+1.6.4.2
 
