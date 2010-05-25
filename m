@@ -1,43 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758623Ab0EYBHS (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:07:18 -0400
-Received: from ozlabs.org ([203.10.76.45]:48455 "EHLO ozlabs.org"
+	id S932136Ab0EYBOR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:14:17 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34539 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758501Ab0EYBHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:07:16 -0400
-Date: Tue, 25 May 2010 10:55:28 +1000
-From: Paul Mackerras <paulus@samba.org>
-To: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH 1/5] perf: Disallow mmap() on per-task inherited events
-Message-ID: <20100525005528.GB30395@drongo>
-References: <20100518133258.000434886@chello.nl>
- <20100518133725.885757039@chello.nl>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100518133725.885757039@chello.nl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1758306Ab0EYBOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:14:15 -0400
+Date: Tue, 25 May 2010 11:14:05 +1000
+From: Neil Brown <neilb@suse.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100525111405.04eaf924@notabene.brown>
+In-Reply-To: <20100524115903.GP31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+	<20100524115903.GP31073@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 18, 2010 at 03:32:59PM +0200, Peter Zijlstra wrote:
+On Mon, 24 May 2010 12:59:03 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-> Since we now have working per-task-per-cpu events for a while,
-> disallow mmap() on per-task inherited events. Those things were
-> a performance problem anyway, and doing away with it allows
-> us to optimize the buffer somewhat by assuming there is only a single
-> writer.
+> On Mon, May 24, 2010 at 04:57:56PM +1000, Neil Brown wrote:
+> > 
+> > Commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5 broke FS_REVAL_DOT semantics.
+> > 
+> > In particular, before this patch, the command
+> >    ls -l
+> > in an NFS mounted directory would always check if the directory on the server
+> > had changed and if so would flush and refill the pagecache for the dir.
+> > After this patch, the same "ls -l" will repeatedly return stale date until
+> > the cached attributes for the directory time out.
+> > 
+> > The following patch fixes this by ensuring the d_revalidate is called by
+> > do_last when "." is being looked-up.
+> > link_path_walk has already called d_revalidate, but in that case LOOKUP_OPEN
+> > is not set so nfs_lookup_verify_inode chooses not to do any validation.
+> > 
+> > The following patch restores the original behaviour.
+> > 
+> > Cc: stable@kernel.org
+> > Signed-off-by: NeilBrown <neilb@suse.de>
+> 
+> Applied, but I really don't like the way you do it; note that e.g. foo/bar/.
+> gets that revalidation as well, for no good reason.  If anything, shouldn't
+> we handle that thing in the _beginning_ of pathname resolution, not in
+> the end?  For now it'd do, and it's a genuine regression, but...
+> 
 
-This also disallows user-space access to hardware counter for this
-event -- which is arguably OK, since doing the userspace read would
-give a different answer to read() on the event fd, as the read() sums
-up all the child counters for us.  Nevertheless, I think this
-side-effect is worth mentioning.
+Thanks.
 
-Paul.
+I think I see what you mean by "at the beginning" - the problem path is
+simply ".", and both the start and end of that are "." so we can handle at
+either end...  But I don't think there is any other special handling of the
+'start' of a path, so I imagine it would be a fairly ugly special case.
+
+We could avoid the extra GETATTR in "foo/bar/." by allowing NFS to keep some
+state in the namei_data to record that it has valid attributes for a given
+dentry so if it sees the same dentry again it doesn't need to revalidate.
+
+I must confess though that I don't feel I understand VFS name lookup properly
+any more.  Since intents were added it seems to have become much more obscure
+and complex.  I cannot help thinking that there must be a better way:
+distinguish between the various cases at a higher level so we don't need as
+many flags being passed around and interpreted by widely separate pieces of
+code.  I don't have a concrete proposal but I would certainly be interested
+to work on one if there were any hope of real change.
+Thoughts?
+
+Thanks,
+NeilBrown
+
+> BTW, here's a question for nfs client folks: is it true that for any two
+> pathnames on _client_ resolving to pairs (mnt1, dentry) and (mnt2, dentry)
+> resp., nfs_devname(mnt1, dentry, ...) and nfs_devname(mnt2, dentry, ...)
+> should yield the strings that do not differ past the ':' (i.e. that the
+> only possible difference is going to be in spelling the server name)?
+
