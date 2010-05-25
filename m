@@ -1,59 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754993Ab0EYIPu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 04:15:50 -0400
-Received: from 0122700014.0.fullrate.dk ([95.166.99.235]:41391 "EHLO kernel.dk"
+	id S1754934Ab0EYIQn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 04:16:43 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:43456 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab0EYIPs (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 04:15:48 -0400
-Date: Tue, 25 May 2010 10:15:46 +0200
-From: Jens Axboe <jens.axboe@oracle.com>
-To: Shaohua Li <shaohua.li@intel.com>
-Cc: linux-kernel@vger.kernel.org, jmoyer@redhat.com
-Subject: Re: [PATCH]cfq-iosched: fix an oops caused by slab leak
-Message-ID: <20100525081546.GB23411@kernel.dk>
-References: <20100525011849.GA29820@sli10-desk.sh.intel.com>
+	id S1753333Ab0EYIQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 04:16:40 -0400
+Date: Tue, 25 May 2010 18:16:35 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Christoph Lameter <cl@linux-foundation.org>,
+       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
+Message-ID: <20100525081634.GE5087@laptop>
+References: <20100521211452.659982351@quilx.com>
+ <20100524070309.GU2516@laptop>
+ <alpine.DEB.2.00.1005240852580.5045@router.home>
+ <20100525020629.GA5087@laptop>
+ <AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
+ <20100525070734.GC5087@laptop>
+ <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100525011849.GA29820@sli10-desk.sh.intel.com>
+In-Reply-To: <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25 2010, Shaohua Li wrote:
-> I got below oops when unloading cfq-iosched. Considering scenario:
-> queue A merge to B, C merge to D and B will be merged to D. Before B is merged
-> to D, we do split B. We should put B's reference for D.
+On Tue, May 25, 2010 at 11:03:49AM +0300, Pekka Enberg wrote:
+> Hi Nick,
 > 
-> [  807.768536] =============================================================================
-> [  807.768539] BUG cfq_queue: Objects remaining on kmem_cache_close()
-> [  807.768541] -----------------------------------------------------------------------------
-> [  807.768543]
-> [  807.768546] INFO: Slab 0xffffea0003e6b4e0 objects=26 used=1 fp=0xffff88011d584fd8 flags=0x200000000004082
-> [  807.768550] Pid: 5946, comm: rmmod Tainted: G        W   2.6.34-07097-gf4b87de-dirty #724
-> [  807.768552] Call Trace:
-> [  807.768560]  [<ffffffff81104e8d>] slab_err+0x8f/0x9d
-> [  807.768564]  [<ffffffff811059e1>] ? flush_cpu_slab+0x0/0x93
-> [  807.768569]  [<ffffffff8164be52>] ? add_preempt_count+0xe/0xca
-> [  807.768572]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
-> [  807.768577]  [<ffffffff81648871>] ? _raw_spin_unlock+0x15/0x30
-> [  807.768580]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
-> [  807.768584]  [<ffffffff811061bc>] list_slab_objects+0x9b/0x19f
-> [  807.768588]  [<ffffffff8164bf0a>] ? add_preempt_count+0xc6/0xca
-> [  807.768591]  [<ffffffff81109e27>] kmem_cache_destroy+0x13f/0x21d
-> [  807.768597]  [<ffffffffa000ff13>] cfq_slab_kill+0x1a/0x43 [cfq_iosched]
-> [  807.768601]  [<ffffffffa000ffcf>] cfq_exit+0x93/0x9e [cfq_iosched]
-> [  807.768606]  [<ffffffff810973a2>] sys_delete_module+0x1b1/0x219
-> [  807.768612]  [<ffffffff8102fb5b>] system_call_fastpath+0x16/0x1b
-> [  807.768618] INFO: Object 0xffff88011d584618 @offset=1560
-> [  807.768622] INFO: Allocated in cfq_get_queue+0x11e/0x274 [cfq_iosched] age=7173 cpu=1 pid=5496
-> [  807.768626] =============================================================================
+> On Tue, May 25, 2010 at 10:07 AM, Nick Piggin <npiggin@suse.de> wrote:
+> > There is nothing to stop incremental changes or tweaks on top of that
+> > allocator, even to the point of completely changing the allocation
+> > scheme. It is inevitable that with changes in workloads, SMP/NUMA, and
+> > cache/memory costs and hierarchies, the best slab allocation schemes
+> > will change over time.
 > 
-> Signed-off-by: Shaohua Li <shaohua.li@intel.com>
+> Agreed.
+> 
+> On Tue, May 25, 2010 at 10:07 AM, Nick Piggin <npiggin@suse.de> wrote:
+> > I think it is more important to have one allocator than trying to get
+> > the absolute most perfect one for everybody. That way changes are
+> > carefully and slowly reviewed and merged, with results to justify the
+> > change. This way everybody is testing the same thing, and bisection will
+> > work. The situation with SLUB is already a nightmare because now each
+> > allocator has half the testing and half the work put into it.
+> 
+> I wouldn't say it's a nightmare, but yes, it could be better. From my
+> point of view SLUB is the base of whatever the future will be because
+> the code is much cleaner and simpler than SLAB. That's why I find
+> Christoph's work on SLEB more interesting than SLQB, for example,
+> because it's building on top of something that's mature and stable.
 
-Good catch, I will apply it and mark for -stable.
+I don't think SLUB ever proved itself very well. The selling points
+were some untestable handwaving about how queueing is bad and jitter
+is bad, ignoring the fact that queues could be shortened and periodic
+reaping disabled at runtime with SLAB style of allocator. It also
+has relied heavily on higher order allocations which put great strain
+on hugepage allocations and page reclaim (witness the big slowdown
+in low memory conditions when tmpfs was using higher order allocations
+via SLUB).
 
--- 
-Jens Axboe
 
+> That said, are you proposing that even without further improvements to
+> SLUB, we should go ahead and, for example, remove SLAB from Kconfig
+> for v2.6.36 and see if we can just delete the whole thing from, say,
+> v2.6.38?
+
+SLUB has not been able to displace SLAB for a long timedue to
+performance and higher order allocation problems.
+
+I think "clean code" is very important, but by far the hardest thing to
+get right by far is the actual allocation and freeing strategies. So
+it's crazy to base such a choice on code cleanliness. If that's the
+deciding factor, then I can provide a patch to modernise SLAB and then
+we can remove SLUB and start incremental improvements from there.
+ 
