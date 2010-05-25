@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932676Ab0EXXzz (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 19:55:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:7599 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932166Ab0EXXzy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 19:55:54 -0400
-Date: Mon, 24 May 2010 19:55:44 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Will Drewry <wad@chromium.org>
-Cc: dm-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH v3 3/3] dm: lookup devices by path with name_to_dev_t
-Message-ID: <20100524235544.GB7204@redhat.com>
-References: <1274294304-30606-1-git-send-email-wad@chromium.org>
- <1274294304-30606-3-git-send-email-wad@chromium.org>
- <20100524115737.GY3991@agk-dp.fab.redhat.com>
- <AANLkTik8F43_4SRkH7XpfX5CTQ-xQ_8f3_yJTjDqSulU@mail.gmail.com>
- <20100524150729.GZ3991@agk-dp.fab.redhat.com>
- <AANLkTinlgQ5Br4vyjgvNKtHD4F3mZKwoz3siYCQyReAl@mail.gmail.com>
- <20100524233552.GA7204@redhat.com>
+	id S933006Ab0EYACI (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 20:02:08 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:43296 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932281Ab0EYACF convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 20:02:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100524233552.GA7204@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+Message-ID: <bcb35f6d-e632-4fb6-bef0-8c55335ef537@default>
+Date: Mon, 24 May 2010 17:01:06 -0700 (PDT)
+From: Dan Magenheimer <dan.magenheimer@oracle.com>
+To: john stultz <johnstul@us.ibm.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>, Brian Bloniarz <bmb@athenacr.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+References: <4BF58B59.7080901@athenacr.com>
+ <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+ <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+ <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com>
+ <1274733566.2954.73.camel@localhost.localdomain>
+ <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
+ <1274741362.2954.80.camel@localhost.localdomain>
+ <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default
+ 1274743836.2954.104.camel@localhost.localdomain>
+In-Reply-To: <1274743836.2954.104.camel@localhost.localdomain>
+X-Priority: 3
+X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
+ 12.0.6514.5000]
+Content-Type: text/plain; charset=utf-8
+Content-Transfer-Encoding: 8BIT
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BFB135E.002A:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24 2010 at  7:35pm -0400,
-Mike Snitzer <snitzer@redhat.com> wrote:
+> Sorry, this is sort of mixing points
+> Again, this is mixing the discussion.
 
-> On Mon, May 24 2010 at 12:35pm -0400,
-> Will Drewry <wad@chromium.org> wrote:
-> 
-> > On Mon, May 24, 2010 at 10:07 AM, Alasdair G Kergon <agk@redhat.com> wrote:
-> > > On Mon, May 24, 2010 at 09:44:07AM -0500, Will Drewry wrote:
-> > >> fwiw, the only reason for the copy was because |path| is a
-> > >> const in the function but not when passed to name_to_dev_t.
-> > >> I wasn't sure what the preferred practice was so I just duped
-> > >> the data needed.
-> > >
-> > > Well check that it is treated as 'const' and send a separate patch to
-> > > the maintainer to add const, perhaps?  If it isn't const (why would
-> > > that be?), then yes we'd need to copy it.
-> > 
-> > I'll cross-check the code again and send a patch out if it looks like
-> > it is const-safe.
-> 
-> Also, it would see that name_to_dev_t is EXPORT_SYMBOL?
+Oops, sorry, missed that. :-}
+ 
+> Maybe something like a tsc_long_calibration=1 option would allow for
+> this?
 
-Bleh, I typed that way too quick:
-Also, it would seem that name_to_dev_t is _not_ EXPORT_SYMBOL?
+Sounds good to me.  If it's non-obvious what value to choose for
+the new calibration, maybe specifying it in MS (per MAX_QUICK_PIT_MS
+in arch/x86/kernel/tsc.c) would be nice.
 
-Regards,
-Mike
+> However, I really do like the idea of pulling the stamped value from
+> the MSR and if its close to what we quickly calibrated, use that.
+
+On a quick sample of two machines looking at the TSC calibration
+done by Xen (which exposes the equivalent of tsc_khz), it appears
+that the stamped value is different from the calibration by about
+1000ppm.  YMMV.
