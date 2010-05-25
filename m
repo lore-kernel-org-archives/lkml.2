@@ -1,75 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754917Ab0EYNEw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:04:52 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:53638 "EHLO mail-out2.uio.no"
+	id S1755365Ab0EYNGc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:06:32 -0400
+Received: from thunk.org ([69.25.196.29]:52820 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751484Ab0EYNEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:04:50 -0400
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <20100524234404.GU31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
-	 <20100524115903.GP31073@ZenIV.linux.org.uk>
-	 <20100524155031.GQ31073@ZenIV.linux.org.uk>
-	 <1274718082.10795.31.camel@heimdal.trondhjem.org>
-	 <20100524164736.GR31073@ZenIV.linux.org.uk>
-	 <1274720791.10795.50.camel@heimdal.trondhjem.org>
-	 <20100524190828.GS31073@ZenIV.linux.org.uk>
-	 <1274735612.4030.16.camel@heimdal.trondhjem.org>
-	 <20100524230109.GT31073@ZenIV.linux.org.uk>
-	 <20100524234404.GU31073@ZenIV.linux.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 May 2010 09:04:43 -0400
-Message-ID: <1274792683.5377.20.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 13 sum msgs/h 2 total rcpts 356 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: 1253C4D61D85EA7AC1D2C56BC4450FD07CCBB633
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 173 max/h 6 blacklist 0 greylist 0 ratelimit 0
+	id S1753676Ab0EYNGb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:06:31 -0400
+Date: Tue, 25 May 2010 09:06:26 -0400
+From: tytso@mit.edu
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: [PATCH 3/6] ext4: Use our own write_cache_pages()
+Message-ID: <20100525130626.GD5556@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Dave Chinner <david@fromorbit.com>,
+	linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+	linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+	jens.axboe@oracle.com
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
+ <1274784852-30502-4-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274784852-30502-4-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-25 at 00:44 +0100, Al Viro wrote: 
-> On Tue, May 25, 2010 at 12:01:09AM +0100, Al Viro wrote:
-> > Client question: what stops you from stack overflows in that area?  Call
-> > chains you've got are *deep*, and I really wonder what happens if you
-> > hit a referral point while traversing nested symlink, get pathname
-> > resolution (already several levels into recursion) call ->follow_link(),
-> > bounce down through nfs_do_refmount/nfs_follow_referral/try_location/
-> > vfs_kern_mount/nfs4_referral_get_sb/nfs_follow_remote_path into
-> > vfs_path_lookup, which will cheerfully add a few more loops like that.
-> > 
-> > Sure, the *total* nesting depth through symlinks is still limited by 8, but
-> > that pile of stack frames is _MUCH_ fatter than what we normally have in
-> > pathname resolution.  You've suddenly added ~60 extra stack frames to the
-> > worst-case stack footprint of the pathname resolution.  Don't try that
-> > on sparc64, boys and girls, it won't be happy with attempt to carve ~12Kb
-> > extra out of its kernel stack...  In fact, it's worse than just ~60 stack
-> > frames - several will contain (on-stack) struct nameidata in them, which
-> > very definitely will _not_ fit into the minimal stack frame.  It's about
-> > 160 bytes extra, for each of those (up to 7).
+On Tue, May 25, 2010 at 08:54:09PM +1000, Dave Chinner wrote:
+> From: Theodore Ts'o <tytso@mit.edu>
 > 
-> Actually, just what will happen if you have a referral that would eventually
-> resolve to a directory you have no permissions to access?  AFAICS, you'll
-> end up trying it on all alternates, since nfs_follow_referral() will cheerfully
-> keep trying one variant after another, getting -EACCES from each.  Worse,
-> if there are nested referrals in it, you'll get all sequences of alternates
-> tried before you give up.
-> 
-> ..o*O(at least it's merely exponential; Ackermann would be even more fun)
+> Make a copy of write_cache_pages() for the benefit of
+> ext4_da_writepages().  This allows us to simplify the code some, and
+> will allow us to further customize the code in future patches.
 
-We could perhaps quit if the referral resolves to EACCES, but there is
-the theoretical possibility that the administrator of the particular
-replicated server has instead just unexported the filesystem, (which
-will also result in EACCES).
+I'm going to be pushing this to Linus shortly, so it's likely you'll
+be able to drop this from your patch series.  I just wanted to give
+you a heads up about what I was planning on doing, which hopefully
+simplified your life a little.
 
-
-
+      	       	      	  	   	      - Ted
