@@ -1,17 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932741Ab0EYAMA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 20:12:00 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:24705 "EHLO
+	id S932977Ab0EYAMF (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 20:12:05 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:61841 "EHLO
 	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932689Ab0EYAL4 (ORCPT
+	with ESMTP id S932651Ab0EYALy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 20:11:56 -0400
+	Mon, 24 May 2010 20:11:54 -0400
 DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
 	h=from:to:cc:subject:date:message-id:x-mailer:in-reply-to:
 	references:x-system-of-record;
-	b=HdzPNGR041gz3JbpTqWqONuKsEie1aCviD1cTgvQDCB0ksmkuZoevFfxsomg8q5LQ
-	fFPNGIlei9yZHFC9nMzSA==
+	b=Swzxa6YaibW9O1S0txjEWU729Wc7FVcccoQ3J+nWNoymgceRzi72ozW9iQ/A8apiD
+	QtjmjoLkCiATWW/zzxbSw==
 From: Venkatesh Pallipadi <venki@google.com>
 To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
@@ -19,203 +19,191 @@ To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
        Paul Menage <menage@google.com>
 Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>,
        Venkatesh Pallipadi <venki@google.com>
-Subject: [RFC PATCH 3/4] sched: Generalize cpuacct usage tracking making it simpler to add new stats
-Date: Mon, 24 May 2010 17:11:21 -0700
-Message-Id: <1274746282-21533-4-git-send-email-venki@google.com>
+Subject: [RFC PATCH 2/4] x86: Add IRQ_TIME_ACCOUNTING, finer accounting of irq time to task
+Date: Mon, 24 May 2010 17:11:20 -0700
+Message-Id: <1274746282-21533-3-git-send-email-venki@google.com>
 X-Mailer: git-send-email 1.7.0.1
-In-Reply-To: <1274746282-21533-3-git-send-email-venki@google.com>
+In-Reply-To: <1274746282-21533-2-git-send-email-venki@google.com>
 References: <1274746282-21533-1-git-send-email-venki@google.com>
  <1274746282-21533-2-git-send-email-venki@google.com>
- <1274746282-21533-3-git-send-email-venki@google.com>
 X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Generalize cpuacct usage, making it easier to add new stats in the following
-patch.
+Some archs have support for CONFIG_VIRT_CPU_ACCOUNTING which does
+the fine granularity accounting of user, system, hardirq, softirq times.
+Adding that option on archs like x86 may be challenging however, given the
+state of TSC reliability on various platforms and also the overhead it may
+ass in syscall entry exit.
 
-Also adds alloc_percpu_array() interface in percpu.h
+Instead, add an option that only does finer accounting of hardirq softirq,
+providing precise irq times (instead of timer ticks based samples). This
+accounting is added with a new config option CONFIG_IRQ_TIME_ACCOUNTING
+so that there wont be any overhead for users not interested in paying the
+perf penalty. And this accounting is based on sched_clock, so other archs
+may find it useful as well.
+
+Note that the kstat_cpu irq times are still based on tick based samples
+and only the task irq times report this new finer granularity irq time.
+The reason being that the kstat irq also includes system time and
+changing only irq time to have finer granularity can result in inconsistency
+like sum kstat time adding up to more than 100% etc.
+
+Continuing with the example from previous patch, without finer
+granularity accounting, exec_time and si_time in 10s intervals would be
+(appropriate fields of /proc/<pid>/stat)
+(loop)  (nc)
+505 0   500 359
+502 1   501 363
+503 0   502 354
+504 0   499 359
+503 3   500 360
+
+And with finer granularity accounting they would be
+(loop)  (nc)
+503 9   502 301
+502 8   502 303
+502 9   501 302
+502 8   502 302
+503 9   501 302
 
 Signed-off-by: Venkatesh Pallipadi <venki@google.com>
 ---
- include/linux/percpu.h |    4 ++++
- kernel/sched.c         |   39 ++++++++++++++++++++++++++-------------
- kernel/sched_fair.c    |    2 +-
- kernel/sched_rt.c      |    2 +-
- 4 files changed, 32 insertions(+), 15 deletions(-)
+ arch/x86/Kconfig        |   11 +++++++++++
+ fs/proc/array.c         |   11 +++++++++--
+ include/linux/hardirq.h |    4 +++-
+ kernel/sched.c          |   35 +++++++++++++++++++++++++++++++++--
+ 4 files changed, 56 insertions(+), 5 deletions(-)
 
-diff --git a/include/linux/percpu.h b/include/linux/percpu.h
-index d3a38d6..216f96a 100644
---- a/include/linux/percpu.h
-+++ b/include/linux/percpu.h
-@@ -167,6 +167,10 @@ extern phys_addr_t per_cpu_ptr_to_phys(void *addr);
- #define alloc_percpu(type)	\
- 	(typeof(type) __percpu *)__alloc_percpu(sizeof(type), __alignof__(type))
+diff --git a/arch/x86/Kconfig b/arch/x86/Kconfig
+index a2d3a5f..d34e305 100644
+--- a/arch/x86/Kconfig
++++ b/arch/x86/Kconfig
+@@ -364,6 +364,17 @@ endif
+ # This is an alphabetically sorted list of 64 bit extended platforms
+ # Please maintain the alphabetic order if and when there are additions
  
-+#define alloc_percpu_array(type, size)	\
-+	(typeof(type) __percpu *)__alloc_percpu(sizeof(type) * size, \
-+						__alignof__(type))
++config IRQ_TIME_ACCOUNTING
++	bool "Fine granularity task level IRQ time accounting"
++	default n
++	help
++	  Select this option to enable fine granularity task irq time
++	  accounting. This is done by reading a timestamp on each
++	  transitions between softirq and hardirq state, so there is a
++	  small performance impact.
 +
- /*
-  * Optional methods for optimized non-lvalue per-cpu variable access.
-  *
++	  If in doubt, say N here.
++
+ config X86_VSMP
+ 	bool "ScaleMP vSMP"
+ 	select PARAVIRT
+diff --git a/fs/proc/array.c b/fs/proc/array.c
+index 401a1c0..16b755e 100644
+--- a/fs/proc/array.c
++++ b/fs/proc/array.c
+@@ -360,6 +360,13 @@ int proc_pid_status(struct seq_file *m, struct pid_namespace *ns,
+ 	return 0;
+ }
+ 
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++/* [hi|si]_time are stored in ns units as cputime may not be fine enough */
++#define IRQTIME_TO_CLOCK_T(x)	nsec_to_clock_t(x)
++#else
++#define IRQTIME_TO_CLOCK_T(x)	cputime64_to_clock_t(x)
++#endif
++
+ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 			struct pid *pid, struct task_struct *task, int whole)
+ {
+@@ -526,8 +533,8 @@ static int do_task_stat(struct seq_file *m, struct pid_namespace *ns,
+ 		cputime_to_clock_t(gtime),
+ 		cputime_to_clock_t(cgtime),
+ 		nsec_to_clock_t(exec_time),
+-		(unsigned long long)cputime64_to_clock_t(si_time),
+-		(unsigned long long)cputime64_to_clock_t(hi_time));
++		(unsigned long long)IRQTIME_TO_CLOCK_T(si_time),
++		(unsigned long long)IRQTIME_TO_CLOCK_T(hi_time));
+ 	if (mm)
+ 		mmput(mm);
+ 	return 0;
+diff --git a/include/linux/hardirq.h b/include/linux/hardirq.h
+index d5b3876..bfafd29 100644
+--- a/include/linux/hardirq.h
++++ b/include/linux/hardirq.h
+@@ -132,10 +132,12 @@ extern void synchronize_irq(unsigned int irq);
+ 
+ struct task_struct;
+ 
+-#ifndef CONFIG_VIRT_CPU_ACCOUNTING
++#if !defined(CONFIG_VIRT_CPU_ACCOUNTING) && !defined(CONFIG_IRQ_TIME_ACCOUNTING)
+ static inline void account_system_vtime(struct task_struct *tsk)
+ {
+ }
++#else
++extern void account_system_vtime(struct task_struct *tsk);
+ #endif
+ 
+ #if defined(CONFIG_NO_HZ)
 diff --git a/kernel/sched.c b/kernel/sched.c
-index e6090ff..d7d7efe 100644
+index b410d5f..e6090ff 100644
 --- a/kernel/sched.c
 +++ b/kernel/sched.c
-@@ -1402,12 +1402,20 @@ enum cpuacct_stat_index {
- 	CPUACCT_STAT_NSTATS,
- };
+@@ -3228,6 +3228,13 @@ static void account_guest_time(struct task_struct *p, cputime_t cputime,
+ 	}
+ }
  
-+enum cpuacct_charge_index {
-+	CPUACCT_CHARGE_USAGE,	/* ... execution time */
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++/* In this case, we charge the task at irq time for finer accounting */
++#define TASK_IRQ_CHARGE_AT_TICK(x, y)	(x)
++#else
++#define TASK_IRQ_CHARGE_AT_TICK(x, y)	cputime64_add(x, y)
++#endif
 +
-+	CPUACCT_CHARGE_NCHARGES,
-+};
+ /*
+  * Account system cpu time to a process.
+  * @p: the process that the cpu time gets accounted to
+@@ -3255,10 +3262,10 @@ void account_system_time(struct task_struct *p, int hardirq_offset,
+ 	tmp = cputime_to_cputime64(cputime);
+ 	if (hardirq_count() - hardirq_offset) {
+ 		cpustat->irq = cputime64_add(cpustat->irq, tmp);
+-		p->hi_time = cputime64_add(p->hi_time, tmp);
++		p->hi_time = TASK_IRQ_CHARGE_AT_TICK(p->hi_time, tmp);
+ 	} else if (softirq_count()) {
+ 		cpustat->softirq = cputime64_add(cpustat->softirq, tmp);
+-		p->si_time = cputime64_add(p->si_time, tmp);
++		p->si_time = TASK_IRQ_CHARGE_AT_TICK(p->si_time, tmp);
+ 	} else {
+ 		cpustat->system = cputime64_add(cpustat->system, tmp);
+ 	}
+@@ -8967,3 +8974,27 @@ void synchronize_sched_expedited(void)
+ EXPORT_SYMBOL_GPL(synchronize_sched_expedited);
+ 
+ #endif /* #else #ifndef CONFIG_SMP */
 +
- #ifdef CONFIG_CGROUP_CPUACCT
--static void cpuacct_charge(struct task_struct *tsk, u64 cputime);
-+static void cpuacct_charge(struct task_struct *tsk,
-+		enum cpuacct_charge_index idx, u64 cputime);
- static void cpuacct_update_stats(struct task_struct *tsk,
- 		enum cpuacct_stat_index idx, cputime_t val);
- #else
--static inline void cpuacct_charge(struct task_struct *tsk, u64 cputime) {}
-+static inline void cpuacct_charge(struct task_struct *tsk,
-+		enum cpuacct_charge_index idx, u64 cputime) {}
- static inline void cpuacct_update_stats(struct task_struct *tsk,
- 		enum cpuacct_stat_index idx, cputime_t val) {}
- #endif
-@@ -8640,7 +8648,7 @@ struct cgroup_subsys cpu_cgroup_subsys = {
- /* track cpu usage of a group of tasks and its child groups */
- struct cpuacct {
- 	struct cgroup_subsys_state css;
--	/* cpuusage holds pointer to a u64-type object on every cpu */
-+	/* cpuusage holds pointer to a u64-type array object on every cpu */
- 	u64 __percpu *cpuusage;
- 	struct percpu_counter cpustat[CPUACCT_STAT_NSTATS];
- 	struct cpuacct *parent;
-@@ -8672,7 +8680,7 @@ static struct cgroup_subsys_state *cpuacct_create(
- 	if (!ca)
- 		goto out;
- 
--	ca->cpuusage = alloc_percpu(u64);
-+	ca->cpuusage = alloc_percpu_array(u64, CPUACCT_CHARGE_NCHARGES);
- 	if (!ca->cpuusage)
- 		goto out_free_ca;
- 
-@@ -8708,9 +8716,10 @@ cpuacct_destroy(struct cgroup_subsys *ss, struct cgroup *cgrp)
- 	kfree(ca);
- }
- 
--static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
-+static u64 cpuacct_cpuusage_read(struct cpuacct *ca,
-+		enum cpuacct_charge_index idx, int cpu)
- {
--	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu) + idx;
- 	u64 data;
- 
- #ifndef CONFIG_64BIT
-@@ -8727,9 +8736,10 @@ static u64 cpuacct_cpuusage_read(struct cpuacct *ca, int cpu)
- 	return data;
- }
- 
--static void cpuacct_cpuusage_write(struct cpuacct *ca, int cpu, u64 val)
-+static void cpuacct_cpuusage_write(struct cpuacct *ca,
-+		enum cpuacct_charge_index idx, int cpu, u64 val)
- {
--	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+	u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu) + idx;
- 
- #ifndef CONFIG_64BIT
- 	/*
-@@ -8751,7 +8761,7 @@ static u64 cpuusage_read(struct cgroup *cgrp, struct cftype *cft)
- 	int i;
- 
- 	for_each_present_cpu(i)
--		totalcpuusage += cpuacct_cpuusage_read(ca, i);
-+		totalcpuusage += cpuacct_cpuusage_read(ca, cft->private, i);
- 
- 	return totalcpuusage;
- }
-@@ -8769,7 +8779,7 @@ static int cpuusage_write(struct cgroup *cgrp, struct cftype *cftype,
- 	}
- 
- 	for_each_present_cpu(i)
--		cpuacct_cpuusage_write(ca, i, 0);
-+		cpuacct_cpuusage_write(ca, cftype->private, i, 0);
- 
- out:
- 	return err;
-@@ -8783,7 +8793,7 @@ static int cpuacct_percpu_seq_read(struct cgroup *cgroup, struct cftype *cft,
- 	int i;
- 
- 	for_each_present_cpu(i) {
--		percpu = cpuacct_cpuusage_read(ca, i);
-+		percpu = cpuacct_cpuusage_read(ca, cft->private, i);
- 		seq_printf(m, "%llu ", (unsigned long long) percpu);
- 	}
- 	seq_printf(m, "\n");
-@@ -8814,10 +8824,12 @@ static struct cftype files[] = {
- 		.name = "usage",
- 		.read_u64 = cpuusage_read,
- 		.write_u64 = cpuusage_write,
-+		.private = CPUACCT_CHARGE_USAGE,
- 	},
- 	{
- 		.name = "usage_percpu",
- 		.read_seq_string = cpuacct_percpu_seq_read,
-+		.private = CPUACCT_CHARGE_USAGE,
- 	},
- 	{
- 		.name = "stat",
-@@ -8835,7 +8847,8 @@ static int cpuacct_populate(struct cgroup_subsys *ss, struct cgroup *cgrp)
-  *
-  * called with rq->lock held.
-  */
--static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
-+static void cpuacct_charge(struct task_struct *tsk,
-+		enum cpuacct_charge_index idx, u64 cputime)
- {
- 	struct cpuacct *ca;
- 	int cpu;
-@@ -8850,7 +8863,7 @@ static void cpuacct_charge(struct task_struct *tsk, u64 cputime)
- 	ca = task_ca(tsk);
- 
- 	for (; ca; ca = ca->parent) {
--		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu);
-+		u64 *cpuusage = per_cpu_ptr(ca->cpuusage, cpu) + idx;
- 		*cpuusage += cputime;
- 	}
- 
-diff --git a/kernel/sched_fair.c b/kernel/sched_fair.c
-index 217e4a9..09e8dd1 100644
---- a/kernel/sched_fair.c
-+++ b/kernel/sched_fair.c
-@@ -541,7 +541,7 @@ static void update_curr(struct cfs_rq *cfs_rq)
- 		struct task_struct *curtask = task_of(curr);
- 
- 		trace_sched_stat_runtime(curtask, delta_exec, curr->vruntime);
--		cpuacct_charge(curtask, delta_exec);
-+		cpuacct_charge(curtask, CPUACCT_CHARGE_USAGE, delta_exec);
- 		account_group_exec_runtime(curtask, delta_exec);
- 	}
- }
-diff --git a/kernel/sched_rt.c b/kernel/sched_rt.c
-index 8afb953..12adcfe 100644
---- a/kernel/sched_rt.c
-+++ b/kernel/sched_rt.c
-@@ -619,7 +619,7 @@ static void update_curr_rt(struct rq *rq)
- 	account_group_exec_runtime(curr, delta_exec);
- 
- 	curr->se.exec_start = rq->clock;
--	cpuacct_charge(curr, delta_exec);
-+	cpuacct_charge(curr, CPUACCT_CHARGE_USAGE, delta_exec);
- 
- 	sched_rt_avg_update(rq, delta_exec);
- 
++#ifdef CONFIG_IRQ_TIME_ACCOUNTING
++
++static DEFINE_PER_CPU(u64, irq_start_time);
++
++void account_system_vtime(struct task_struct *tsk)
++{
++	unsigned long flags;
++	int cpu;
++	u64 now;
++
++	local_irq_save(flags);
++	cpu = task_cpu(tsk);
++	now = sched_clock_cpu(cpu);
++	if (hardirq_count())
++		tsk->hi_time += now - per_cpu(irq_start_time, cpu);
++	else if (softirq_count())
++		tsk->si_time += now - per_cpu(irq_start_time, cpu);
++
++	per_cpu(irq_start_time, cpu) = now;
++	local_irq_restore(flags);
++}
++
++#endif
 -- 
 1.7.0.1
 
