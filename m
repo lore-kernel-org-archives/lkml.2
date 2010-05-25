@@ -1,72 +1,92 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758512Ab0EYBCa (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:02:30 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:28391 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758083Ab0EYBC2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:02:28 -0400
-Message-ID: <4BFB218F.6030800@redhat.com>
-Date: Mon, 24 May 2010 22:02:07 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
+	id S1758596Ab0EYBFS (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:05:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42566 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758310Ab0EYBFP convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:05:15 -0400
 MIME-Version: 1.0
-To: Jonathan Corbet <corbet@lwn.net>
-CC: linux-kernel@vger.kernel.org, Harald Welte <laforge@gnumonks.org>,
-       linux-fbdev@vger.kernel.org, JosephChan@via.com.tw,
-       ScottFang@viatech.com.cn,
-       =?ISO-8859-1?Q?Bruno_Pr=E9mont?= <bonbons@linux-vserver.org>,
-       Florian Tobias Schandinat <FlorianSchandinat@gmx.de>,
-       linux-media@vger.kernel.org
-Subject: Re: [PATCH 5/5] Add the viafb video capture driver
-References: <1273098884-21848-1-git-send-email-corbet@lwn.net>	<1273098884-21848-6-git-send-email-corbet@lwn.net>	<4BF924E3.5020702@redhat.com> <20100524172237.7c17cd57@bike.lwn.net>
-In-Reply-To: <20100524172237.7c17cd57@bike.lwn.net>
+In-Reply-To: <Pine.LNX.4.44L0.1005212226180.20028-100000@netrider.rowland.org>
+References: <1274482015-30899-2-git-send-email-arve@android.com>
+	 <Pine.LNX.4.44L0.1005212226180.20028-100000@netrider.rowland.org>
+Date: Mon, 24 May 2010 18:05:14 -0700
+Message-ID: <AANLkTikz2UcDv6BZQ9Hq2MdowuAK1y_PBBPPXMEkDmNa@mail.gmail.com>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
 Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jonathan Corbet wrote:
-> On Sun, 23 May 2010 09:51:47 -0300
-> Mauro Carvalho Chehab <mchehab@redhat.com> wrote:
-> 
->> The driver is OK to my eyes. I just found 2 minor coding style issues.
->> it is ok to me if you want to sent it via your git tree.
->>
->> Acked-by: Mauro Carvalho Chehab <mchehab@redhat.com>
-> 
-> Great, thanks for taking a look!
-> 
-> All of the precursor stuff is in mainline now, so it can go via whatever
-> path.  I'll just go ahead and request a pull in the near future unless
-> somebody objects.
+2010/5/21 Alan Stern <stern@rowland.harvard.edu>:
+> On Fri, 21 May 2010, [UTF-8] Arve Hjønnevåg wrote:
+>
+>> The first goal can be achieved either by using device runtime PM and
+>> cpuidle to put all hardware into low-power states, transparently from
+>> the user space point of view, or by suspending the whole system.
+>> However, system suspend, in its current form, does not guarantee that
+>> the events of interest will always be responded to, since wakeup
+>> events (events that wake the CPU from idle and the system from
+>> suspend) that occur right after initiating suspend will not be
+>> processed until another possibly unrelated event wakes the system up
+>> again.
+>
+> Minor point of clarification here.  I'm not requesting that the patch
+> description be rewritten.  But this issue of lost wakeup events is more
+> subtle than it appears.
+>
+> Wakeup events can be lost in at least three different ways:
+>
+>     1. A hardware signal (such as an IRQ) gets ignored.
+>
+>     2. The hardware event occurs, but without effect since the
+>        kernel thread that would handle the event has been frozen.
+>        The event just ends up sitting in a queue somewhere until
+>        something else wakes up the system.
+>
+>     3. The hardware event occurs and the kernel handles it fully,
+>        but the event propagates to userspace for further handling
+>        and the user program is already frozen.
+>
+> 1 is a hardware configuration failure (for example, it might happen as
+> a result of using edge-triggered IRQs instead of level-triggered) and
+> is outside the scope of this discussion.
+>
+> 2 generally represents a failure of the core PM subsystem, or a failure
+> of some other part of the kernel to use the PM core correctly.  In
+> theory we should be able to fix such mistakes.  Right now I'm aware of
+> at least one possible failure scenario that could be fixed fairly
+> easily.
+>
+> 3 is the type of failure that suspend blockers were really meant to
+> handle, particularly the userspace suspend-blocker API.
+>
+> IMO, we should strive to fix the existing type-2 failure modes.
+> However it is worth pointing out that they are basically separate from
+> the suspend-blocker mechanism.
+>
+> And it might be a good idea to point out somewhere in the patch
+> descriptions that suspend blockers are really meant to handle type-3
+> wakeup losses.
+>
 
-OK.
-
->>> +	.sizeimage	= VGA_WIDTH*VGA_HEIGHT*2,
->> CodingStyle: please use spaces between values/operators. Not sure why, but
->> newer versions of checkpatch.pl don't complain anymore on some cases.
-> 
-> Interesting...for all of my programming life I've left out spaces around
-> multiplicative operators - a way of showing that they bind more tightly
-> than the additive variety.  I thought everybody else did that too.
-> CodingStyle agrees with you, though; I'll append a patch fixing these up.
-
-We all have some sort of different CodingStyle that were inherited from previous
-programming practices... I used to just not add any space at all at expressions, 
-as C is a compact language, and I was a bit lazy ;)
-
-Yet, when reviewing lots of code, those spaces help to read a code quicker
-than without. Not sure why, but my guess is that the brain can do a faster
-parsing when the words are separated from operators. Or maybe it is just because
-it is easier to parse patches when everybody uses the same Coding Style.
-
-> Learn something every day...
-
-Very true ;)
+I don't see a big difference between 2 and 3. You can use suspend
+blockers to handle either.
 
 -- 
-
-Cheers,
-Mauro
+Arve Hjønnevåg
