@@ -1,64 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757042Ab0EYNan (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:30:43 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:48847 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756573Ab0EYNal (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:30:41 -0400
-Date: Tue, 25 May 2010 23:30:25 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mark Gross <mgross@linux.intel.com>
-Subject: Re: linux-next: build failure after merge of the viafb tree
-Message-Id: <20100525233025.595b49d4.sfr@canb.auug.org.au>
-In-Reply-To: <20100525065647.76931339@bike.lwn.net>
-References: <20100525125718.703fdc08.sfr@canb.auug.org.au>
-	<20100525065647.76931339@bike.lwn.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1756811Ab0EYNbe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:31:34 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:51981 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab0EYNbd (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:31:33 -0400
+X-Authority-Analysis: v=1.1 cv=Pm0qIGCwx3bIEOZlSg1a56K3RSwKBTW9sPEb+DFvEKk= c=1 sm=0 a=2AvjukvjyTwA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=VwQbUJbxAAAA:8 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=RCKV_jubbbYVyT8zMFMA:9 a=EPVnLPeplNcYJ7_Gu3zqdaiCB-MA:4 a=PUjeQqilurYA:10 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: [PATCH][GIT PULL] tracing: Add __used annotation to event variable
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: LKML <linux-kernel@vger.kernel.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Tue, 25 May 2010 09:31:30 -0400
+Message-ID: <1274794290.22648.209.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__25_May_2010_23_30_25_+1000_ZHDP7jL3zpSgWeWH"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_May_2010_23_30_25_+1000_ZHDP7jL3zpSgWeWH
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Jon,
+Ingo,
 
-On Tue, 25 May 2010 06:56:47 -0600 Jonathan Corbet <corbet@lwn.net> wrote:
->
-> On Tue, 25 May 2010 12:57:18 +1000
-> Stephen Rothwell <sfr@canb.auug.org.au> wrote:
->=20
-> > drivers/media/video/via-camera.c: In function 'viacam_streamon':
-> > drivers/media/video/via-camera.c:1032: error: implicit declaration of f=
-unction 'pm_qos_add_requirement'
->=20
-> Argh.  I should have known that would happen, sorry.  Will fix shortly.
+This fixes the warning/error on PowerPC.
 
-Thanks.
+Please pull the latest tip/perf/core tree, which can be found at:
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+  git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
+tip/perf/core
 
---Signature=_Tue__25_May_2010_23_30_25_+1000_ZHDP7jL3zpSgWeWH
-Content-Type: application/pgp-signature
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
+Steven Rostedt (1):
+      tracing: Add __used annotation to event variable
 
-iEYEARECAAYFAkv70PEACgkQjjKRsyhoI8x5XgCffDOa+6xiCjYCc2zl7a8EXeNV
-hV0An1Akd9Od5nTcvn3v8x3x3wNzWLtv
-=2ptV
------END PGP SIGNATURE-----
+----
+ include/trace/ftrace.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+---------------------------
+commit 49c177461bfbedeccbab22bf3905db2f9da7f1c3
+Author: Steven Rostedt <srostedt@redhat.com>
+Date:   Tue May 25 06:19:35 2010 -0700
 
---Signature=_Tue__25_May_2010_23_30_25_+1000_ZHDP7jL3zpSgWeWH--
+    tracing: Add __used annotation to event variable
+    
+    The TRACE_EVENT() macros automate creation of trace events. To automate
+    initialization, the set up variables are loaded in a special section
+    that is read on boot up. GCC is not aware that these static variables
+    are used and will complain about them if we do not inform GCC that
+    they are indeed used.
+    
+    One of the declarations of the event element was missing a __used
+    annotation. This patch adds it.
+    
+    Reported-by: Ingo Molnar <mingo@elte.hu>
+    Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+
+diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
+index 0152b86..34bead7 100644
+--- a/include/trace/ftrace.h
++++ b/include/trace/ftrace.h
+@@ -68,7 +68,7 @@
+ 
+ #undef DEFINE_EVENT
+ #define DEFINE_EVENT(template, name, proto, args)	\
+-	static struct ftrace_event_call			\
++	static struct ftrace_event_call	__used		\
+ 	__attribute__((__aligned__(4))) event_##name
+ 
+ #undef DEFINE_EVENT_PRINT
+
+
