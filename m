@@ -1,63 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759057Ab0EYWjX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:39:23 -0400
-Received: from xenotime.net ([72.52.115.56]:37619 "HELO xenotime.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
-	id S1750800Ab0EYWjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:39:21 -0400
-Date: Tue, 25 May 2010 15:39:12 -0700
-From: Randy Dunlap <rdunlap@xenotime.net>
-To: Greg Kroah-Hartman <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
-       "David S. Miller" <davem@davemloft.net>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       Chris Mason <chris.mason@oracle.com>,
-       Alasdair G Kergon <agk@redhat.com>,
-       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-       Ian Kent <raven@themaw.net>
-Subject: Re: [PATCH 1/1] driver core: add devname module aliases to allow
- module on-demand auto-loading
-Message-Id: <20100525153912.0ba10435.rdunlap@xenotime.net>
-In-Reply-To: <1274825798-29613-1-git-send-email-gregkh@suse.de>
-References: <20100525221546.GA29511@kroah.com>
-	<1274825798-29613-1-git-send-email-gregkh@suse.de>
-Organization: YPO4
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758535Ab0EYWmF (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:42:05 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:35132 "EHLO mail.zytor.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753903Ab0EYWmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:42:01 -0400
+Message-ID: <4BFC5217.6060804@zytor.com>
+Date: Tue, 25 May 2010 15:41:27 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mike Travis <travis@sgi.com>
+CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com> <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com> <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>
+In-Reply-To: <4BFC5080.6030103@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 15:16:38 -0700 Greg Kroah-Hartman wrote:
-
-> From: Kay Sievers <kay.sievers@vrfy.org>
+On 05/25/2010 03:34 PM, Mike Travis wrote:
 > 
-> This adds:
->   alias: devname:<name>
-> to some common kernel modules, which will allow the on-demand loading
-> of the kernel module when the device node is accessed.
 > 
-> Ideally all these modules would be compiled-in, but distros seems too
-> much in love with their modularization that we need to cover the common
-> cases with this new facility. It will allow us to remove a bunch of pretty
-> useless init scripts and modprobes from init scripts.
+> H. Peter Anvin wrote:
+>> On 05/13/2010 02:55 PM, Mike Travis wrote:
+>>> I saw that too, and wondered why e820_saved did not
+>>> have the extra entries.   The comment indicates it
+>>> should.
+>>>
+>>> I'm on the system tonight and will investigate this
+>>> further.
+>>>
+>>
+>> e820_saved lacks the extra entries because they aren't being passed in
+>> from the bootloader, as they should, and instead you're using
+>> add_efi_memmap which is, as far as the kernel is concerned, a post-boot
+>> modification.
+>>
+>> That being said, add_efi_memmap does come from the firmware, and as such
+>> it would be legitimate for it to add them to e820_saved.
+>>
+>> 	-hpa
+> 
+> Did this last patch meet expectations?
+> 
+> http://marc.info/?l=linux-kernel&m=127474230623061&w=4
+> 
 
-[snip]
+I'm concerned about calling sanitize_e820_map() on e820_saved; it is
+supposed to reflect the raw data as reported by the source, and
+sanitizing it would corrupt that.
 
-
-I have no objection to this patch or to it being merged.
-
-I just note that this patch was posted to lkml on 2010-May-20.
-
-If it causes any problems, it can easily be reverted.
-
-I think that some (other, non-gregkh and non-davem) maintainers take far too long
-to merge some patches.  Maybe it's just a merge window thing.
-
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+	-hpa
