@@ -1,204 +1,369 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab0EYXyh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 19:54:37 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:41759 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753594Ab0EYXyf convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 19:54:35 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100525232625.GB5331@core.coreip.homeip.net>
-References: <201005251124.58017.dmitry.torokhov@gmail.com>
-	 <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
-	 <20100525184740.GA4248@core.coreip.homeip.net>
-	 <AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
-	 <20100525223220.GC4928@core.coreip.homeip.net>
-	 <AANLkTinnSH_egFYowkOQiYHL87QfIH332i1__OaTem-s@mail.gmail.com>
-	 <20100525225544.GA5331@core.coreip.homeip.net>
-	 <AANLkTikaoXH5T4FJ5sY9OnAyjhaY8wa7rH6S7_k9F_m8@mail.gmail.com>
-	 <20100525232625.GB5331@core.coreip.homeip.net>
-Date: Tue, 25 May 2010 16:54:34 -0700
-Message-ID: <AANLkTimdGWKbUTkgTZEUGNPrXVzZ6CYwbbKQ7C3X7Ek_@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1758772Ab0EYX7h (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 19:59:37 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:55348
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752272Ab0EYX7g convert rfc822-to-8bit
+	(ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 19:59:36 -0400
+Date: Tue, 25 May 2010 16:59:45 -0700 (PDT)
+Message-Id: <20100525.165945.39198480.davem@davemloft.net>
+To: torvalds@linux-foundation.org
+CC: akpm@linux-foundation.org, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: [GIT] Networking
+From: David Miller <davem@davemloft.net>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=iso-8859-1
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
-> On Tue, May 25, 2010 at 04:13:35PM -0700, Arve Hjønnevåg wrote:
->> 2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
->> > On Tue, May 25, 2010 at 03:37:48PM -0700, Arve Hjønnevåg wrote:
->> >> 2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
->> >> > On Tue, May 25, 2010 at 03:23:23PM -0700, Arve Hjønnevåg wrote:
->> >> >> On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
->> >> >> <dmitry.torokhov@gmail.com> wrote:
->> >> >> > On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
->> >> >> >> On Tue, 25 May 2010, Dmitry Torokhov wrote:
->> >> >> >>
->> >> >> >> > > Here's the scenario:
->> >> >> >> > >
->> >> >> >> > > The system is awake, and the user presses a key. The keyboard driver
->> >> >> >> > > processes the keystroke and puts it in an input queue.  A user process
->> >> >> >> > > reads it from the event queue, thereby emptying the queue.
->> >> >> >> > >
->> >> >> >> > > At that moment, the system decides to go into opportunistic suspend.
->> >> >> >> > > Since the input queue is empty, there's nothing to stop it.  As the
->> >> >> >> > > first step, userspace is frozen -- before the process has a chance to
->> >> >> >> > > do anything with the keystroke it just read.  As a result, the system
->> >> >> >> > > stays asleep until something else wakes it up, even though the
->> >> >> >> > > keystroke was important and should have prevented it from sleeping.
->> >> >> >> > >
->> >> >> >> > > Suspend blockers protect against this scenario.  Here's how:
->> >> >> >> > >
->> >> >> >> > > The user process doesn't read the input queue directly; instead it
->> >> >> >> > > does a select or poll.  When it sees there is data in the queue, it
->> >> >> >> > > first acquires a suspend blocker and then reads the data.
->> >> >> >> > >
->> >> >> >> > > Now the system _can't_ go into opportunistic suspend, because a suspend
->> >> >> >> > > blocker is active.  The user process can do whatever it wants with the
->> >> >> >> > > keystroke.  When it is finished, it releases the suspend blocker and
->> >> >> >> > > loops back to the select/poll call.
->> >> >> >> > >
->> >> >> >> >
->> >> >> >> > What you describe can be done in userspace though, via a "suspend manager"
->> >> >> >> > process. Tasks reading input events will post "busy" events to stop the
->> >> >> >> > manager process from sending system into suspend. But this can be confined to
->> >> >> >> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
->> >> >> >> > to not go into suspend with full queues, but that is using existing kernel
->> >> >> >> > APIs).
->> >> >> >>
->> >> >> >> I think that could be made to work.  And it might remove the need for
->> >> >> >> the userspace suspend-blocker API, which would be an advantage.  It
->> >> >> >> could even remove the need for the opportunistic-suspend workqueue --
->> >> >> >> opportunistic suspends would be initiated by the "suspend manager"
->> >> >> >> process instead of by the kernel.
->> >> >> >>
->> >> >> >> However you still have the issue of modifying the kernel drivers to
->> >> >> >> disallow opportunistic suspend if their queues are non-empty.  Doing
->> >> >> >> that is more or less equivalent to implementing kernel-level suspend
->> >> >> >> blockers.  (The suspend blocker approach is slightly more efficient,
->> >> >> >> because it will prevent a suspend from starting if a queue is
->> >> >> >> non-empty, instead of allowing the suspend to start and then aborting
->> >> >> >> it partway through.)
->> >> >> >>
->> >> >> >> Maybe I'm missing something here...  No doubt someone will point it out
->> >> >> >> if I am.
->> >> >> >>
->> >> >> >
->> >> >> > Well, from my perspective that would limit changes to the evdev driver
->> >> >> > (well, limited input core plumbing will be needed) but that is using the
->> >> >> > current PM infrastructure. The HW driver changes will be limited to what
->> >> >> > you described "type 2" in your other e-mail.
->> >> >> >
->> >> >> > Also, not suspending while events are in progress) is probably
->> >> >> > beneficial for platforms other than Android as well. So unless I am
->> >> >> > missing something this sounds like a win.
->> >> >> >
->> >> >>
->> >> >> How would this limit the changes you need in the evdev driver? It need
->> >> >> to block suspend when there are unprocessed events in some queues.
->> >> >> Suspend blockers gives you an api to do this, without it, you check
->> >> >> the queues in your suspend hook and abort suspend if they are not
->> >> >> empty. Without suspend blockers you have no api to signal that it is
->> >> >> OK to suspend again, so you are forcing the thread that tried to
->> >> >> suspend to poll until you stop aborting suspend.
->> >> >
->> >> > No, you do not need to poll. You just set a timeout (short or long,
->> >> > depending on your needs) and if no userspace task blocked suspend
->> >> > durng that time you attempt to initiate suspend from your manager
->> >> > process. If it succeeds - good, if not that means that more events came
->> >> > your way and you have to do it later.
->> >> >
->> >>
->> >> How is that not polling? If the user is holding down a key, the keypad
->> >> driver has to block suspend, and user space will try to suspend again
->> >> and again and again...
->> >>
->> >
->> > If your userpsace is that stupid - sure. However, you can:
->> >
->> > 1. Notify the suspend manager process that he rest of your userspace is
->> > busy handling keystrokes so that it does not try to suspend while there
->> > are events pending.
->>
->> You are missing the point. There are no event pending. The kernel
->> reported the key down event, it was handled, but the keypad driver is
->> still scanning to see if the user presses another key,
->
-> Employ reasonable timeout.
 
-Timeout for what? Stop trying to suspend altogether, stop scanning for
-key changes, or a more "reasonable" poll interval?
+1) dev_get_valid_name can create conditions wherein it becomes impossible
+   to rename a device, fixed by Daniel Lezcano.
 
->
->> or releases the
->> currently held key.
->>
->
-> Userspace consumer should wait for the key release and retract "busy"
-> once event is received and handled.
->
+2) CAIF protocol bug fixes from Sjur Braendeland:
 
-No it should not. User-space does not know if the key is coming from a
-keypad driver that needs to actively scan the matrix while keys are
-pressed.
+   a) wait_ev*_timeout return value accidently stored in 'int' instead
+      of 'long'
+   b) By-hand list implementation buggy, use standard kernel lists.
+   c) Memory allocation failures not handled correctly.
+   d) poll() erroneously returns POLLHUP when connecting
+   e) missing spin_unlock in cfmuxl_remove_uplayer()
+   f) receive needs to set MSG_TRUNC when user buf size is insufficient
 
->> >
->> > 2. Wait a tiny bit after last application notified you that it finished
->> > processing events.
->> >
->> > So basically the difference is that with in-kernel suspend blockers,
->> > there is a tiny window where we haven't started the suspend yet but are
->> > about to the driver has a chance to prevent entire system from starting
->> > sleep.
->>
->> No, the difference is that if a driver needs to prevent suspend for an
->> extended period of time, you don't have user space continuously
->> polling to see if it can suspend.
->
-> Why would a driver, on its own, prevent suspend for extended periods of
-> time? I think that the decision should originate from userspace, kernel
-> is here just to serve the requests.
->
+3) Cleanup accidently introduced uninitialized variable in pppoe_flush_dev().
+   Fix from Dan Carpenter.
 
-A driver prevents suspend if suspend would prevent it from working.
-For instance, the gpio keypad matrix code prevents suspend when a key
-is help down, since it has to activly scan the keypad for changes.
-Only no-keys-pressed versus one-or-more-keys-pressed can be detected
-with an interrupt.
+4) ISDN fixes from Tilman Schmidt.
+   a) ->reset_ctr() op is marked optional, but code doesn't actually
+      check for NULL
+   b) Dummy stubs for ->reset_ctr() and ->load_firmware() are erroneous
+      and cause hangs, delete.
 
->>
->> >
->> > Without the blocker we may start suspending and will stop midcycle. We
->> > may be even better off in the end since we could leave some devices
->> > still powered down after aborting system-wide suspend.
->> >
->>
->> That does not sound right.
->
-> Why doesn't it? If a device implements runtime PM it may chose remain in
-> powered-down mode even if system is awake.
->
+5) Blackfin SIR IRDA device is not harmed by the UART unit bug, so don't
+   adjust clock values using the bug workaround adjustment.  From
+   Graf Yang.
 
-If the device implements runtime PM it should already be powered-down
-if it is not in use.
+6) Networking control group is severely limited because it tries to sample
+   the task control group at the time of packet transmission.  This really
+   can't be done reliably, especially when packets are sent async from
+   another context.
 
--- 
-Arve Hjønnevåg
+   Fix by storing the cgroupid in the socket, sampling it at I/O call
+   points (sendmsg, recvmsg, splice_read, sendpage), then use this
+   value when we classify via the skb->sk socket.
+
+   Handle special cases like TUN (which call netif_rx() to inject packets)
+   directly.
+
+   All of this work done by Herbert Xu.
+
+7) DCCP stores error codes in a u8, which is insufficient for MIPS which
+   needs a u16, fix from Yoichi Yuasa.
+
+8) BE2NET bug fixes from Sarveshwar Bandi:
+   a) Must PHY reset after FW init.
+   b) FW upgrade can take a while, use completions instead of polling
+      with softirqs disabled.
+
+9) proc_dointvec change that came in via the networking tree for port
+   range specifications introduced a regression for procfs files, accidently
+   disallowing write("1\n").  Fix from J. R. Okajima.
+
+10) Use after free in Phone socket close, fix from Rémi Denis-Courmont.
+
+11) Memory leak in macvlan, from Jiri Pirko.
+
+12) Initial GRO fraglist element's ->gso_size can be bogus, if packet
+    hits device not TSO capable but fraglist capable.  Fix from Herbert
+    Xu.
+
+13) Add support for some new IXGBE device IDs.
+
+14) Memory leak and alloc failure fixes from Denis Kirjaniv.
+    a) sh_mdio_release() leaks memory
+    b) check for kzalloc() return value in ieee802154.
+    c) bfin_mac leaks miibus->irq memory
+
+15) sja1000.c missing spin_lock_init() on priv->cmdreg_lock, fix from
+    Oliver Hartkopp.
+
+16) The batched dequeuing of input_pkt_queue introduced this merge window
+    added some problems.  Inaccurate packet counting can occur which defeats
+    the schemes that RFS uses to prevent out-of-order packet processing when
+    we want to modify the the target RX cpu for a flow.
+
+    Fix from Tom Herbert.
+
+17) Several wireless fixes via John Linville and the wireless crew.
+
+18) ENIC bug fixes from Scott Feldman.
+    a) Fix UUID fmt'ing array type.
+    b) port-profile assosciation happens before we have a MAC address
+       assigned, use a random one instead of garbage
+
+19) qdisc_notify() can OOPS, because tc_fill_qdisc() can accidently be
+    called for a builtin qdisc.  Fix from Eric Dumazet.
+
+20) do_setlink() had some error handling bugs introduced this cycle
+    (failure to initialize 'err' in some error paths), fix from David
+    Howells.
+
+21) ethoc_probe can deref a NULL pointer, fix from Thomas Chou.
+
+
+22) netif_vdbg() definition is garbage when VERBOSE_DEBUG is defined.
+    Fix from Ben Hutchings.
+
+23) Netfilter fixes via Patrick McHardy:
+    a) nf_ct_sip doesn't handle nonlinear packets, but it needs to
+    b) __nf_conntrack_confirm() races with nf_ct_get_next_corpse()
+
+24) Fix race in i2400m_rx_edata() resulting in an OOPS on i2400m->rx_roq,
+    from Inaky Perez-Gonzalez.
+
+Please pull, thanks a lot!
+
+The following changes since commit ec96e2fe954c23a54bfdf2673437a39e193a1822:
+  Linus Torvalds (1):
+        Merge branch 'devel' of master.kernel.org:/home/rmk/linux-2.6-arm
+
+are available in the git repository at:
+
+  master.kernel.org:/pub/scm/linux/kernel/git/davem/net-2.6.git master
+
+Baruch Siach (1):
+      fec: add support for PHY interface platform data
+
+Ben Hutchings (1):
+      net: Fix definition of netif_vdbg() when VERBOSE_DEBUG is not defined
+
+Bruno Randolf (1):
+      ath5k: consistently use rx_bufsize for RX DMA
+
+Dan Carpenter (4):
+      pppoe: uninitialized variable in pppoe_flush_dev()
+      ath9k_htc: dereferencing before check in hif_usb_tx_cb()
+      ath9k_htc: rare leak in ath9k_hif_usb_alloc_tx_urbs()
+      iwlwifi: testing the wrong variable in iwl_add_bssid_station()
+
+Daniel Lezcano (1):
+      net-2.6 : V2 - fix dev_get_valid_name
+
+David Howells (1):
+      rtnetlink: Fix error handling in do_setlink()
+
+David S. Miller (4):
+      Merge branch 'master' of git://git.kernel.org/.../kaber/nf-next-2.6
+      Merge branch 'master' of git://git.kernel.org/.../linville/wireless-2.6
+      Merge branch 'wimax-2.6.35.y' of git://git.kernel.org/.../inaky/wimax
+      drivers/net/usb/asix.c: Fix pointer cast.
+
+Denis Kirjanov (3):
+      sh_eth: Fix memleak in sh_mdio_release
+      ieee802154: Fix possible NULL pointer dereference in wpan_phy_alloc
+      bfin_mac: fix memleak in mii_bus{probe|remove}
+
+Eric Dumazet (1):
+      net_sched: Fix qdisc_notify()
+
+Felix Fietkau (3):
+      cfg80211: fix crash in cfg80211_set_freq()
+      ath9k: change beacon allocation to prefer the first beacon slot
+      ath9k: remove VEOL support for ad-hoc
+
+Filip Aben (1):
+      hso: add support for new products
+
+Gertjan van Wingerde (2):
+      rt2x00: Fix failed SLEEP->AWAKE and AWAKE->SLEEP transitions.
+      rt2x00: Fix rt2800usb TX descriptor writing.
+
+Graf Yang (1):
+      net/irda: bfin_sir: IRDA is not affected by anomaly 05000230
+
+Helmut Schaa (1):
+      rt2x00: don't use to_pci_dev in rt2x00pci_uninitialize
+
+Herbert Xu (4):
+      gro: Fix bogus gso_size on the first fraglist entry
+      cls_cgroup: Store classid in struct sock
+      tun: Update classid on packet injection
+      cls_cgroup: Fix build error when built-in
+
+Inaky Perez-Gonzalez (1):
+      wimax/i2400m: fix bad race condition check in RX path
+
+J. R. Okajima (1):
+      proc_dointvec: write a single value
+
+Jiri Pirko (1):
+      macvlan: do proper cleanup in macvlan_common_newlink() V2
+
+Joerg Marx (1):
+      netfilter: nf_conntrack: fix a race in __nf_conntrack_confirm against nf_ct_get_next_corpse()
+
+Johannes Berg (1):
+      cfg80211: add missing braces
+
+John W. Linville (1):
+      Revert "ath9k: Group Key fix for VAPs"
+
+Jussi Kivilinna (1):
+      rndis_wlan: replace wireless_send_event with cfg80211_disconnected
+
+Juuso Oikarinen (1):
+      wl1271: Fix RX data path frame lengths
+
+Luciano Coelho (1):
+      netfilter: fix description of expected checkentry return code on xt_target
+
+Luis R. Rodriguez (1):
+      ath9k: remove AR9003 from PCI IDs for now
+
+Mallikarjuna R Chilakala (1):
+      ixgbe:add support for a new 82599 10G Base-T device
+
+Mike Frysinger (1):
+      net-caif: drop redundant Kconfig entries
+
+Oliver Hartkopp (1):
+      can: SJA1000 add missing spin_lock_init()
+
+Patrick McHardy (1):
+      netfilter: nf_ct_sip: handle non-linear skbs
+
+Randy Dunlap (3):
+      wireless: fix mac80211.h kernel-doc warnings
+      wireless: fix sta_info.h kernel-doc warnings
+      sock.h: fix kernel-doc warning
+
+Reinette Chatre (1):
+      iwlwifi: fix internal scan race
+
+Rémi Denis-Courmont (1):
+      Phonet: fix potential use-after-free in pep_sock_close()
+
+Sarveshwar Bandi (2):
+      be2net: Bug fix in init code in probe
+      be2net: Bug fix to avoid disabling bottom half during firmware upgrade.
+
+Scott Feldman (2):
+      enic: bug fix: sprintf UUID to string as u8[] rather than u16[] array
+      enic: Use random mac addr when associating port-profile
+
+Sjur Braendeland (6):
+      caif: Bugfix - wait_ev*_timeout returns long.
+      caif: Bugfix - use standard Linux lists
+      caif: Bugfix - handle mem-allocation failures
+      caif: Bugfix - Poll can't return POLLHUP while connecting.
+      caif: Bugfix - missing spin_unlock
+      caif: Bugfix - use MSG_TRUNC in receive
+
+Sujith (1):
+      cfg80211: Fix signal_type comparison
+
+Tejun Heo (1):
+      wireless: update gfp/slab.h includes
+
+Thomas Chou (1):
+      ethoc: fix null dereference in ethoc_probe
+
+Tilman Schmidt (2):
+      isdn/capi: make reset_ctr op truly optional
+      isdn/gigaset: remove dummy CAPI method implementations
+
+Tom Herbert (1):
+      net: fix problem in dequeuing from input_pkt_queue
+
+Vasanthakumar Thiagarajan (1):
+      ath9k: Fix rx of mcast/bcast frames in PS mode with auto sleep
+
+Yoichi Yuasa (1):
+      net/dccp: expansion of error code size
+
+ drivers/isdn/capi/kcapi.c                  |    6 ++
+ drivers/isdn/gigaset/capi.c                |   28 +--------
+ drivers/net/benet/be.h                     |    2 +
+ drivers/net/benet/be_cmds.c                |   19 +++++-
+ drivers/net/benet/be_main.c                |   11 ++-
+ drivers/net/bfin_mac.c                     |    2 +
+ drivers/net/can/sja1000/sja1000.c          |    2 +
+ drivers/net/enic/enic_main.c               |   29 ++++++---
+ drivers/net/ethoc.c                        |   34 +++++++++-
+ drivers/net/fec.c                          |   22 +++++++
+ drivers/net/fec.h                          |    2 +
+ drivers/net/irda/bfin_sir.c                |    8 ++-
+ drivers/net/ixgbe/ixgbe.h                  |    3 +
+ drivers/net/ixgbe/ixgbe_82598.c            |    1 +
+ drivers/net/ixgbe/ixgbe_82599.c            |    1 +
+ drivers/net/ixgbe/ixgbe_main.c             |   69 +++++++++++++++++++++
+ drivers/net/ixgbe/ixgbe_phy.c              |   30 +++++++++
+ drivers/net/ixgbe/ixgbe_phy.h              |    3 +
+ drivers/net/ixgbe/ixgbe_type.h             |    4 +
+ drivers/net/macvlan.c                      |    9 +++-
+ drivers/net/pppoe.c                        |    1 +
+ drivers/net/sh_eth.c                       |    3 +
+ drivers/net/tun.c                          |    2 +
+ drivers/net/usb/asix.c                     |    4 +-
+ drivers/net/usb/hso.c                      |    3 +
+ drivers/net/wimax/i2400m/rx.c              |    4 +-
+ drivers/net/wireless/ath/ath5k/base.c      |    7 +-
+ drivers/net/wireless/ath/ath9k/beacon.c    |   75 ++++-------------------
+ drivers/net/wireless/ath/ath9k/hif_usb.c   |   10 +++-
+ drivers/net/wireless/ath/ath9k/htc.h       |    1 +
+ drivers/net/wireless/ath/ath9k/main.c      |   28 +--------
+ drivers/net/wireless/ath/ath9k/pci.c       |    1 -
+ drivers/net/wireless/ath/ath9k/recv.c      |   17 ++++--
+ drivers/net/wireless/iwlwifi/iwl-agn-ict.c |    1 +
+ drivers/net/wireless/iwlwifi/iwl-scan.c    |   21 ++++++-
+ drivers/net/wireless/iwlwifi/iwl-sta.c     |    2 +-
+ drivers/net/wireless/rndis_wlan.c          |   16 +++--
+ drivers/net/wireless/rt2x00/rt2400pci.c    |    9 ++-
+ drivers/net/wireless/rt2x00/rt2500pci.c    |    9 ++-
+ drivers/net/wireless/rt2x00/rt2800usb.c    |    2 +-
+ drivers/net/wireless/rt2x00/rt2x00pci.c    |    2 +-
+ drivers/net/wireless/rt2x00/rt61pci.c      |    7 +-
+ drivers/net/wireless/rt2x00/rt73usb.c      |    7 +-
+ drivers/net/wireless/wl12xx/wl1271_rx.c    |    2 +
+ include/linux/fec.h                        |   21 ++++++
+ include/linux/netdevice.h                  |   16 ++++-
+ include/linux/netfilter/x_tables.h         |    2 +-
+ include/net/caif/cfctrl.h                  |    4 +-
+ include/net/cls_cgroup.h                   |   63 +++++++++++++++++++
+ include/net/mac80211.h                     |    4 +-
+ include/net/netfilter/nf_conntrack_core.h  |    2 +-
+ include/net/sock.h                         |   12 +++-
+ kernel/sysctl.c                            |    4 +-
+ net/caif/Kconfig                           |    5 +-
+ net/caif/caif_socket.c                     |   91 +++++++++++-----------------
+ net/caif/cfctrl.c                          |   92 ++++++++--------------------
+ net/caif/cfmuxl.c                          |    3 +-
+ net/caif/cfpkt_skbuff.c                    |   25 +++++---
+ net/caif/cfserl.c                          |    3 +-
+ net/caif/cfsrvl.c                          |    6 ++
+ net/core/dev.c                             |   48 ++++++++------
+ net/core/rtnetlink.c                       |    4 +-
+ net/core/skbuff.c                          |    1 +
+ net/core/sock.c                            |   19 ++++++
+ net/dccp/input.c                           |    6 +-
+ net/ieee802154/wpan-class.c                |    7 ++-
+ net/mac80211/key.c                         |    1 -
+ net/mac80211/sta_info.h                    |    2 +-
+ net/netfilter/nf_conntrack_core.c          |   10 +++
+ net/netfilter/nf_conntrack_sip.c           |   12 +---
+ net/phonet/pep.c                           |    2 +
+ net/sched/cls_cgroup.c                     |   50 ++++++++++-----
+ net/sched/sch_api.c                        |   14 ++--
+ net/socket.c                               |    9 +++
+ net/wireless/chan.c                        |    2 +-
+ net/wireless/nl80211.c                     |    6 +-
+ net/wireless/scan.c                        |    4 +-
+ 77 files changed, 682 insertions(+), 387 deletions(-)
+ create mode 100644 include/linux/fec.h
+ create mode 100644 include/net/cls_cgroup.h
