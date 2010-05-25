@@ -1,47 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758760Ab0EYOGb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:06:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56585 "EHLO mx2.suse.de"
+	id S1756787Ab0EYOJ7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:09:59 -0400
+Received: from thunk.org ([69.25.196.29]:45993 "EHLO thunker.thunk.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756603Ab0EYOGa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:06:30 -0400
-Date: Tue, 25 May 2010 07:06:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: =?iso-8859-1?Q?Bj=F8rn?= Mork <bjorn@mork.no>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [01/34] ipv4: udp: fix short packet and bad checksum logging
-Message-ID: <20100525140605.GA5515@suse.de>
-References: <20100524230349.439835687@clark.site>
- <87zkzoqwz8.fsf@nemi.mork.no>
+	id S1755010Ab0EYOJ5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:09:57 -0400
+Date: Tue, 25 May 2010 10:09:54 -0400
+From: tytso@mit.edu
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH] ext4: Add a missing trace hook
+Message-ID: <20100525140954.GI5556@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Li Zefan <lizf@cn.fujitsu.com>,
+	LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+References: <4BFA37FC.1000709@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <87zkzoqwz8.fsf@nemi.mork.no>
+In-Reply-To: <4BFA37FC.1000709@cn.fujitsu.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 09:08:59AM +0200, Bjørn Mork wrote:
-> Greg KH <gregkh@suse.de> writes:
+On Mon, May 24, 2010 at 04:25:32PM +0800, Li Zefan wrote:
+> Commit f8ec9d6837241865cf99bed97bb99f4399fd5a03 added a
+> trace event ext4_da_release_space, but didn't add some
+> corresponding trace hook.
 > 
-> > 2.6.34-stable review patch.  If anyone has any objections, please let us know.
-> >
-> > ------------------
-> >
-> > From: Bjørn Mork <bjorn@mork.no>
-> >
-> > commit ccc2d97cb7c798e785c9f198de243e2b59f7073b upstream.
-> 
-> This is already in 2.6.34 AFAIK.
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
-Yes, sorry, that should have said '2.6.32-stable review patch' above :(
+Thanks for pointing this out, added to the ext4 tree.
 
-thanks,
-
-greg k-h
+       	   	    	      	       - Ted
