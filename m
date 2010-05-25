@@ -1,57 +1,132 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757826Ab0EYDCA (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 23:02:00 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48714 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755471Ab0EYDB7 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 23:01:59 -0400
-X-Authority-Analysis: v=1.1 cv=ThiPuEJrAfM5PTlEgIT3cJp8+3pkHBIG3CaogqDGxqo= c=1 sm=0 a=bcKYIIXupmcA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=3ZFVx9Sc1LauN_iTPe8A:9 a=-F_oCfJFCfpexfd8E1zup-9CUHgA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH v4 11/13] trace: uprobes trace_event interface
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Christoph Hellwig <hch@infradead.org>,
-       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
-       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
-       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-In-Reply-To: <20100518170034.20070.49627.sendpatchset@localhost6.localdomain6>
-References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
-	 <20100518170034.20070.49627.sendpatchset@localhost6.localdomain6>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 24 May 2010 22:22:10 -0400
-Message-ID: <1274754130.22648.194.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1758202Ab0EYDCx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 23:02:53 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59772 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1755471Ab0EYDCv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 23:02:51 -0400
+Message-ID: <4BFB3D66.1080001@cn.fujitsu.com>
+Date: Tue, 25 May 2010 11:00:54 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <jens.axboe@oracle.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace	backlogged
+ group status
+References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com> <4BF9D265.70008@cn.fujitsu.com> <20100524212207.GC28685@redhat.com> <4BFB29DB.10507@cn.fujitsu.com> <20100525020339.GA8214@redhat.com>
+In-Reply-To: <20100525020339.GA8214@redhat.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-18 at 22:30 +0530, Srikar Dronamraju wrote:
+Vivek Goyal wrote:
+> On Tue, May 25, 2010 at 09:37:31AM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>>> On Mon, May 24, 2010 at 09:12:05AM +0800, Gui Jianfeng wrote:
+>>>> Vivek Goyal wrote:
+>>>>> On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
+>>>>>> Hi,
+>>>>>>
+>>>>>> This series implements three new interfaces to keep track of tranferred bytes,
+>>>>>> elapsing time and io rate since group getting backlogged. If the group dequeues
+>>>>>> from service tree, these three interfaces will reset and shows zero.
+>>>>> Hi Gui,
+>>>>>
+>>>>> Can you give some details regarding how this functionality is useful? Why
+>>>>> would somebody be interested in only in stats of till group was
+>>>>> backlogged and not in total stats?
+>>>>>
+>>>>> Groups can come and go so fast and these stats will reset so many times
+>>>>> that I am not able to visualize how these stats will be useful.
+>>>> Hi Vivek,
+>>>>
+>>>> Currently, we assign weight to a group, but user still doesn't know how fast the
+>>>> group runs. With io rate interface, users can check the rate of a group at any
+>>>> moment, or to determine whether the weight assigned to a group is enough.
+>>>> bytes and time interface is just for debug purpose.
+>>> Gui,
+>>>
+>>> I still don't understand that why blkio.sectors or blkio.io_service_bytes
+>>> or blkio.io_serviced interfaces are not good enough to determine at what
+>>> rate a group is doing IO.
+>>>
+>>> I think we can very well write something in userspace like "iostat" to 
+>>> display the per group rate. Utility can read the any of the above files
+>>> say at the interfval of 1s, calculate the diff between the values and
+>>> display that as group effective rate.
+>> Hi Vivek,
+>>
+>> blkio.io_active_rate reflects the rate since group get backlogged, so the rate is a smooth 
+>> value. This value represents the actual rate a group runs. IMO, io rate calculated from
+>> user space is not accurate in following two scenarios:
+>>
+>> 1 Userspace app chooses the interval of 1s, if 0.5s is backlogged and 0.5s is not, the 
+>>   rate calculated in this interval doesn't make sense.
+>>
+> 
+> If you are not servicing groups for long time, anyway it is very bad for
+> latency. So that's why soft limit of 300ms of CFQ makes sense and
+> practically I am not sure you will be blocking groups for .5s.
+> 
+> Even if you do, then user just needs to choose a bigger interval and you
+> will see more smooth rates. Reduce the interval and you might see little
+> bursty rate.
 
-> This is based on trace_events for kprobes to the extent that it may
-> resemble that file on 2.6.34.
+Vivek,
 
-Check the changes that have been done in tip/perf/core. These will be
-going mainline for 35. The interface with the ftrace_event_call
-structure will affect this patch too.
+IIUC, the most big problem for user app is the user app doesn't know how long
+the group has been dequeued during the interval. For example, user choose
+10s interval, 8s of which is not backlogged, but when user app calculates
+io rate, this 8s still include. So this rate isn't what we want. Am i missing
+something?
+"io_active_rate" will never take un-backlogged time into account when calculating
+io rate.
 
--- Steve
+> 
+> And, why do you say that "io_active_rate" is smooth interface. IIUC, the
+> value of group rate will vary depending on time when I read the file.
 
+"io_active_rate" always shows backlogged io rate. Maybe when io_active_time
+is very small, don't need to calculate "io_active_rate".
 
+Thanks
+Gui
+
+> 
+> Assume a group gets serviced for 30ms and then is put back in the queue
+> and is serviced again after 50ms. If I read the "io_active_rate"
+> immediately after group has been serviced I should see a high rate value
+> and if I read the same file after another 30ms I would see a reduced rate.
+> 
+> Point being that to get a better idea of average rate of group, we need
+> to observe byte transferred over a little longer period. If you sample
+> bytes transferred from a group over a very short interval then you can
+> expect bursty output. There is no way to avoid that?
+> 
+>> 2 Consider there're several groups are waiting for service, but most part of the interval
+>>   is just fall into the period that the group is under-service. such rate calculated by user
+>>   app isn't acurate, rate burst might occur.
+> 
+> Actually I think that whole notion of relying on time calculations of CFQ
+> is not very good. these are very approximate time calculations. There are
+> many situations where calculating time is not possible and we approximate
+> the slice_used to 1ms. So relying on that time for rate calculation is
+> much more inaccurate.
+> 
+> Hence I think calculating group's rate in user space makes much more
+> sense.
+> 
+>> Further more, once max weight control is available, we can make use of such interface to realize
+>> how well this group works.
+> 
+> Again I don't understand with max BW controller, why can't we monitor the
+> group's BW in userspace accurately?
+> 
+> Vivek
+> 
+> 
