@@ -1,135 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934185Ab0EYUYX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:24:23 -0400
-Received: from claw.goop.org ([74.207.240.146]:39094 "EHLO claw.goop.org"
+	id S1758988Ab0EYUZ2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:25:28 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:36821 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751481Ab0EYUYW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:24:22 -0400
-Message-ID: <4BFC31F5.9040806@goop.org>
-Date: Tue, 25 May 2010 13:24:21 -0700
-From: Jeremy Fitzhardinge <jeremy@goop.org>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1751481Ab0EYUZ0 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:25:26 -0400
+Date: Tue, 25 May 2010 16:25:21 -0400 (EDT)
+From: Mikulas Patocka <mpatocka@redhat.com>
+X-X-Sender: mpatocka@hs20-bc2-1.build.redhat.com
+To: Dominik Brodowski <linux@dominikbrodowski.net>
+cc: linux-kernel@vger.kernel.org
+Subject: PCMCIA regression
+Message-ID: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
 MIME-Version: 1.0
-To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-CC: linux-kernel@vger.kernel.org, xen-devel@lists.xensource.com,
-       Don Dutile <ddutile@redhat.com>
-Subject: Re: [PATCH 10/11] Support VIRQ_TIMER and pvclock on HVM
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-10-git-send-email-stefano.stabellini@eu.citrix.com>
-In-Reply-To: <1274725657-1149-10-git-send-email-stefano.stabellini@eu.citrix.com>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-15
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2010 11:27 AM, Stefano Stabellini wrote:
-> Use the paravirtualized timer (VIRQ_TIMER) as timer and the
-> paravirtualized clock (pvclock) as wallclock on HVM domains too.
->   
+Hi
 
-That's not quite correct.  There's the Xen clockevent driver, the Xen
-clocksource, and a distinct-but-related Xen notion of wallclock time. 
-In general, clocksources and wallclock don't have much direct
-relationship to each other.
+The commit a8408c17d0038b76a83affb1b56dc18fa1e7ed86 in Linux 2.6.34-rc6 
+broke pcmcia for me. I use 3c574 network card in yenta socket on Armada 
+7400 laptop. My distribution is Debian lenny.
 
-> Any interaction with emulated hardware is not very fast, so using the
-> paravirtualized timer instead of the emulated hpet is defenitely a
->   
-"definitely"
+Reverting the test for "s->functions" in pccard_validate_cis makes the 
+network card work again.
 
-> performance improvement.
->   
+Mikulas
 
-Are there accuracy/stability/precision improvements too?
+May 20 14:17:21 gerlinda vmunix: ------------[ cut here ]------------
+May 20 14:17:21 gerlinda vmunix: WARNING: at drivers/pcmcia/cistpl.c:1488 
+pccard_validate_cis+0x287/0x2d0 [pcmcia]()
+May 20 14:17:21 gerlinda vmunix: Modules linked in: 3c574_cs ohci_hcd 
+pcmcia rtc_cmos crc32 ide_cd_mod rtc_core usbcore rtc_lib yenta_socket 
+cdrom psmouse pcspkr rsrc_nonstatic nls_base pcmcia_core unix
+May 20 14:17:21 gerlinda vmunix: Pid: 1486, comm: pccardd Not tainted 
+2.6.34-fast #15
+May 20 14:17:21 gerlinda vmunix: Call Trace:
+May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
+pccard_validate_cis+0x287/0x2d0 [pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
+pccard_validate_cis+0x287/0x2d0 [pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<c10207d6>] ? 
+warn_slowpath_common+0x76/0xd0 May 20 14:17:21 gerlinda vmunix:  
+[<cc95cc57>] ? pccard_validate_cis+0x287/0x2d0 [pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<c1020843>] ? 
+warn_slowpath_null+0x13/0x20
+May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ? 
+pccard_validate_cis+0x287/0x2d0 [pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<cc83517a>] ? 
+pcmcia_nonstatic_validate_mem+0xda/0x180 [rsrc_nonstatic]
+May 20 14:17:21 gerlinda vmunix:  [<c10ce0af>] ? 
+sysfs_addrm_finish+0x7f/0xb0
+May 20 14:17:21 gerlinda vmunix:  [<cc9587c2>] ? pcmcia_card_add+0x72/0xf0 
+[pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<c10f39e0>] ? kobject_release+0x0/0xa0
+May 20 14:17:21 gerlinda vmunix:  [<c10f44c9>] ? kref_put+0x29/0x60
+May 20 14:17:21 gerlinda vmunix:  [<cc9577cc>] ? 
+pcmcia_card_remove+0x8c/0xa0 [pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<cc958a24>] ? pcmcia_requery+0x74/0x130 
+[pcmcia]
+May 20 14:17:21 gerlinda vmunix:  [<c101af4e>] ? set_next_entity+0x2e/0x70
+May 20 14:17:21 gerlinda vmunix:  [<c101c500>] ? 
+do_sched_setscheduler+0x90/0xa0May 20 14:17:21 gerlinda vmunix:  
+[<c11c0883>] ? schedule+0x203/0x3c0
+May 20 14:17:21 gerlinda vmunix:  [<cc818109>] ? pccardd+0x219/0x470 
+[pcmcia_core]
+May 20 14:17:21 gerlinda vmunix:  [<c11c095a>] ? schedule+0x2da/0x3c0
+May 20 14:17:21 gerlinda vmunix:  [<cc817ef0>] ? pccardd+0x0/0x470 
+[pcmcia_core]May 20 14:17:21 gerlinda vmunix:  [<c1035124>] ? 
+kthread+0x74/0x80
+May 20 14:17:21 gerlinda vmunix:  [<c10350b0>] ? kthread+0x0/0x80
+May 20 14:17:21 gerlinda vmunix:  [<c10030f6>] ? 
+kernel_thread_helper+0x6/0x10
+May 20 14:17:21 gerlinda vmunix: ---[ end trace 256ec3e16d1d0f46 ]---
 
-    J
 
-> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-> ---
->  arch/x86/xen/enlighten.c         |   31 +++++++++++++++++++++++++++++++
->  arch/x86/xen/suspend.c           |    4 ++++
->  include/xen/interface/features.h |    3 +++
->  3 files changed, 38 insertions(+), 0 deletions(-)
->
-> diff --git a/arch/x86/xen/enlighten.c b/arch/x86/xen/enlighten.c
-> index cb316b5..88e8a09 100644
-> --- a/arch/x86/xen/enlighten.c
-> +++ b/arch/x86/xen/enlighten.c
-> @@ -1307,6 +1307,36 @@ static struct notifier_block __cpuinitdata xen_hvm_cpu_notifier = {
->  	.notifier_call	= xen_hvm_cpu_notify,
->  };
->  
-> +static void xen_hvm_setup_cpu_clockevents(void)
-> +{
-> +	int cpu = smp_processor_id();
-> +	xen_setup_runstate_info(cpu);
-> +	xen_setup_timer(cpu);
-> +	xen_setup_cpu_clockevents();
-> +}
-> +
-> +static void init_hvm_time(void)
-> +{
-> +	/* vector callback is needed otherwise we cannot receive interrupts
-> +	 * on cpu > 0 */
-> +	if (!xen_have_vector_callback && num_present_cpus() > 1)
-> +		return;
-> +	if (!xen_feature(XENFEAT_hvm_safe_pvclock)) {
-> +		printk(KERN_INFO "Xen doesn't support pvclock on HVM,"
-> +				"disable pv timer\n");
-> +		return;
-> +	}
-> +
-> +	pv_time_ops = xen_time_ops;
-> +	x86_init.timers.timer_init = xen_time_init;
-> +	x86_init.timers.setup_percpu_clockev = x86_init_noop;
-> +	x86_cpuinit.setup_percpu_clockev = xen_hvm_setup_cpu_clockevents;
-> +
-> +	x86_platform.calibrate_tsc = xen_tsc_khz;
-> +	x86_platform.get_wallclock = xen_get_wallclock;
-> +	x86_platform.set_wallclock = xen_set_wallclock;
-> +}
-> +
->  void __init xen_guest_init(void)
->  {
->  	int r;
-> @@ -1326,4 +1356,5 @@ void __init xen_guest_init(void)
->  	register_cpu_notifier(&xen_hvm_cpu_notifier);
->  	have_vcpu_info_placement = 0;
->  	x86_init.irqs.intr_init = xen_init_IRQ;
-> +	init_hvm_time();
->  }
-> diff --git a/arch/x86/xen/suspend.c b/arch/x86/xen/suspend.c
-> index ef517ee..02c3253 100644
-> --- a/arch/x86/xen/suspend.c
-> +++ b/arch/x86/xen/suspend.c
-> @@ -28,8 +28,12 @@ void xen_pre_suspend(void)
->  
->  void xen_hvm_post_suspend(int suspend_cancelled)
->  {
-> +	int cpu;
->  	init_shared_info();
->  	xen_callback_vector();
-> +	for_each_online_cpu(cpu) {
-> +		xen_setup_runstate_info(cpu);
-> +	}
->  }
->  
->  void xen_post_suspend(int suspend_cancelled)
-> diff --git a/include/xen/interface/features.h b/include/xen/interface/features.h
-> index 8ab08b9..70d2563 100644
-> --- a/include/xen/interface/features.h
-> +++ b/include/xen/interface/features.h
-> @@ -44,6 +44,9 @@
->  /* x86: Does this Xen host support the HVM callback vector type? */
->  #define XENFEAT_hvm_callback_vector        8
->  
-> +/* x86: pvclock algorithm is safe to use on HVM */
-> +#define XENFEAT_hvm_safe_pvclock           9
-> +
->  #define XENFEAT_NR_SUBMAPS 1
->  
->  #endif /* __XEN_PUBLIC_FEATURES_H__ */
->   
 
