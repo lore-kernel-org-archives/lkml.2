@@ -1,91 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932177Ab0EYNgL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:36:11 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:65032 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755010Ab0EYNgJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:36:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=V8iYWh3UqvpkYFmD8G2BmyRThpbN5bowlhB2Kg8WAHUlg/MwqDH9dtgM3dL4U++WkB
-         nDV8lBU0NPCjtevb27B/bRDnbwtzsFllGJ+hwlpXMm5/Gl592nutLQnjvqjFgJiGq73W
-         P/dgZ6ydBz5NdMGikYAfnuNUUB6RT62x1VZIo=
-Date: Tue, 25 May 2010 15:36:04 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: LKML <linux-kernel@vger.kernel.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <peterz@infradead.org>
-Subject: Re: [PATCH][GIT PULL] tracing: Add __used annotation to event
-	variable
-Message-ID: <20100525133600.GB5286@nowhere>
-References: <1274794290.22648.209.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274794290.22648.209.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1756530Ab0EYNjd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:39:33 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:41478 "EHLO mail-out2.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754708Ab0EYNjb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:39:31 -0400
+Subject: Re: Deadlock in NFSv4 in all kernels
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+Cc: Pavel Machek <pavel@ucw.cz>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       salvet@ics.muni.cz
+In-Reply-To: <20100525125833.GB9731@ics.muni.cz>
+References: <20100507153920.GP28167@ics.muni.cz>
+	 <20100524212422.GA1286@ucw.cz>
+	 <1274790520.2949.20.camel@heimdal.trondhjem.org>
+	 <20100525125833.GB9731@ics.muni.cz>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 09:39:25 -0400
+Message-ID: <1274794765.5377.43.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 12 msgs/h 2 sum rcpts/h 19 sum msgs/h 3 total rcpts 362 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 9151177D26D13168E68B83BADDDFE3948CD2B20B
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 2 total 174 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 09:31:30AM -0400, Steven Rostedt wrote:
+On Tue, 2010-05-25 at 14:58 +0200, Lukas Hejtmanek wrote: 
+> Hi,
 > 
-> Ingo,
+> On Tue, May 25, 2010 at 08:28:40AM -0400, Trond Myklebust wrote:
+> > > Seems like pretty fundamental problem in nfs :-(. Limiting writeback
+> > > caches for nfs, so that system has enough memory to perform rpc calls
+> > > with the rest might do the trick, but...
+> > > 
+> > 
+> > It's the same problem that you have for any file or storage system that
+> > has initiators in userland. On the storage side, iSCSI in particular has
+> > the same problem. On the filesystem side, CIFS, AFS, coda, .... do too.
+> > The clustered filesystems can deadlock if the node that is running the
+> > DLM runs out of memory...
+> > 
+> > A few years ago there were several people proposing various solutions
+> > for allowing these daemons to run in a protected memory environment to
+> > avoid deadlocks, but those efforts have since petered out. Perhaps it is
+> > time to review the problem?
 > 
-> This fixes the warning/error on PowerPC.
+> I saw some patches targeting 2.6.35 that should prevent some deadlocks. They
+> seem to be not enough in some cases. rpc.* daemons should be mlocked for sure
+> but there is a problem with libkrb that reads files using fread(). fread() uses
+> anonymous mmap, under mlockall(MCL_FUTURE) this causes the anonymous map to be
+> mapped instantly and it deadlocks. 
 > 
-> Please pull the latest tip/perf/core tree, which can be found at:
-> 
->   git://git.kernel.org/pub/scm/linux/kernel/git/rostedt/linux-2.6-trace.git
-> tip/perf/core
-> 
-> 
-> Steven Rostedt (1):
->       tracing: Add __used annotation to event variable
-> 
-> ----
->  include/trace/ftrace.h |    2 +-
->  1 files changed, 1 insertions(+), 1 deletions(-)
-> ---------------------------
-> commit 49c177461bfbedeccbab22bf3905db2f9da7f1c3
-> Author: Steven Rostedt <srostedt@redhat.com>
-> Date:   Tue May 25 06:19:35 2010 -0700
-> 
->     tracing: Add __used annotation to event variable
->     
->     The TRACE_EVENT() macros automate creation of trace events. To automate
->     initialization, the set up variables are loaded in a special section
->     that is read on boot up. GCC is not aware that these static variables
->     are used and will complain about them if we do not inform GCC that
->     they are indeed used.
->     
->     One of the declarations of the event element was missing a __used
->     annotation. This patch adds it.
->     
->     Reported-by: Ingo Molnar <mingo@elte.hu>
->     Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
-> 
-> diff --git a/include/trace/ftrace.h b/include/trace/ftrace.h
-> index 0152b86..34bead7 100644
-> --- a/include/trace/ftrace.h
-> +++ b/include/trace/ftrace.h
-> @@ -68,7 +68,7 @@
->  
->  #undef DEFINE_EVENT
->  #define DEFINE_EVENT(template, name, proto, args)	\
-> -	static struct ftrace_event_call			\
-> +	static struct ftrace_event_call	__used		\
->  	__attribute__((__aligned__(4))) event_##name
+> IBM GPFS also uses userspace daemon, but it seems that the deamon is mlocked
+> and it does not open any files and does not create new connections. 
 
+Doesn't matter. Just writing to a socket or pipe may trigger a kernel
+memory allocation which can result in an attempt to reclaim memory.
+Furthermore, there is the issue of what to do when you really are OOM,
+and the kernel cannot allocate more memory for you without reclaiming
+it.
 
-Oh, I was writing the exact same patch...
+The schemes I'm talking about typically had special memory pools
+preallocated for use by daemons, and would label the daemons using some
+equivalent of the PF_MEMALLOC flag to prevent recursion into the
+filesystem.
 
-In fact it appears only DEFINE_EVENT_PRINT() uses this declaration,
-while before, we had various callbacks that always used it.
-
-Anyway, thanks.
 
