@@ -1,93 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932680Ab0EYK1d (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 06:27:33 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:57559 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932609Ab0EYK1b (ORCPT
+	id S932694Ab0EYKaA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 06:30:00 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:46847 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S932609Ab0EYK37 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 06:27:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=TWvAwvq7XkxlxJ71RtbbUf0zb9QxvG+8qE6lU+WzIdBkDIWgTaLtaKcNDuhHnTwmmP
-         62aKCIlZV7dEjRF6EE0qUjt02xRD9W2RqTJ/sQLn/AJFRV0FSfo03FFkRGl9hGTGAuJP
-         hXEfJ62f+3ZqDbLp36YYlzsGcyqHmm+3tX0t8=
-Date: Tue, 25 May 2010 14:27:22 +0400
-From: Anton Vorontsov <cbouatmailru@gmail.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, Greg KH <gregkh@suse.de>,
-       Kay Sievers <kay.sievers@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>,
-       Daniel Mack <daniel@caiaq.de>
-Subject: [GIT PULL] battery-2.6.git
-Message-ID: <20100525102722.GA2613@oksana.dev.rtsoft.ru>
-References: <201005250028.24687.rjw@sisk.pl>
- <201005250220.45889.rjw@sisk.pl>
- <20100525004744.GS30801@buzzloop.caiaq.de>
- <201005250255.11924.rjw@sisk.pl>
- <20100525070844.GV30801@buzzloop.caiaq.de>
+	Tue, 25 May 2010 06:29:59 -0400
+Message-ID: <4BFBA6A2.4070405@example.com>
+Date: Tue, 25 May 2010 12:29:54 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <20100525070844.GV30801@buzzloop.caiaq.de>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: piotr@hosowicz.com
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
+       Divyesh Shah <dpshah@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com> <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com>
+In-Reply-To: <4BFBA0F8.9090908@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 12025455431085093234
+X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello Linus,
+On 25.05.2010 12:05, Piotr Hosowicz wrote:
+> On 25.05.2010 12:00, Peter Zijlstra wrote:
+>> On Tue, 2010-05-25 at 11:57 +0200, Piotr Hosowicz wrote:
+>>> On 25.05.2010 11:43, Ingo Molnar wrote:
+>>>
+>>>> This doesnt fix the whole issue. cpu_clock() is local, while the
+>>>> measurements
+>>>> done in the blk code are global ...
+>>>>
+>>>> While the warning is fixed this way, the far more serious issue is
+>>>> still
+>>>> there: time can go backwards if two points of time measurement are on
+>>>> different CPUs and can mess up the statistics with negative values,
+>>>> etc...
+>>>
+>>> How serious is this? Can it damage my data? I ask because the machine is
+>>> my private computer, not any test machine.
+>>
+>> I'm not sure, since I didn't really look what they use the timestamps
+>> for, but a guess would say your data is safe, it might schedule the io
+>> funny, but it should not compromise integrity. At best its used purely
+>> for statistics and not even behaviour is affected.
+>
+> Thanks.
 
-Please pull from
+Seems to work like a charm. I ask my question anew - shall I have to 
+apply the patch each time I update my kernel tree?
 
-  git://git.infradead.org/battery-2.6.git master
+Regards,
 
-to receive a fixup for regression reported by Rafael J. Wysocki
-http://lkml.org/lkml/2010/5/24/273
+Piotr Hosowicz
 
-Thanks!
-
-commit bbabb158f0e9d41174ae5c2183a8e4f981daf6ce
-Author: Daniel Mack <daniel@caiaq.de>
-Date:   Tue May 25 02:39:45 2010 +0200
-
-    power_supply: Fix regression for 'type' property
-    
-    Commit 5f487cd34f4337f9bc27ca19da72a39d1b0a0ab4 (power_supply: Use
-    attribute groups) causes a regression the power supply core does not
-    export the 'type' attribute anymore.
-    
-    POWER_SUPPLY_PROP_TYPE is handled by the power supply core without the
-    low-level driver, so power_supply_attr_is_visible() must always return
-    the entry as readable.
-    
-    Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Daniel Mack <daniel@caiaq.de>
-    Tested-by: Rafael J. Wysocki <rjw@sisk.pl>
-    Signed-off-by: Anton Vorontsov <cbouatmailru@gmail.com>
-
-diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-index 6a86cdf..9d30eeb 100644
---- a/drivers/power/power_supply_sysfs.c
-+++ b/drivers/power/power_supply_sysfs.c
-@@ -179,14 +179,16 @@ static mode_t power_supply_attr_is_visible(struct kobject *kobj,
- {
- 	struct device *dev = container_of(kobj, struct device, kobj);
- 	struct power_supply *psy = dev_get_drvdata(dev);
-+	mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
- 	int i;
- 
-+	if (attrno == POWER_SUPPLY_PROP_TYPE)
-+		return mode;
-+
- 	for (i = 0; i < psy->num_properties; i++) {
- 		int property = psy->properties[i];
- 
- 		if (property == attrno) {
--			mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
--
- 			if (psy->property_is_writeable &&
- 			    psy->property_is_writeable(psy, property) > 0)
- 				mode |= S_IWUSR;
+-- 
+Janusz Korwin-Mikke:
+"Idiota z dyplomem to taki sam idiota,
+jak przedtem - tylko z pretensjami."
+NP: Slash - Ghost (Feat. Ian Astbury)
+NB: 2.6.34-20100524-1752-patched
