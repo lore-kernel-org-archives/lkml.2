@@ -1,52 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932919Ab0EYRAP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:00:15 -0400
-Received: from charlotte.tuxdriver.com ([70.61.120.58]:57832 "EHLO
-	smtp.tuxdriver.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753935Ab0EYRAM (ORCPT
+	id S932963Ab0EYRBj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:01:39 -0400
+Received: from he.sipsolutions.net ([78.46.109.217]:37164 "EHLO
+	sipsolutions.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758855Ab0EYRBh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:00:12 -0400
-Date: Tue, 25 May 2010 12:55:24 -0400
-From: "John W. Linville" <linville@tuxdriver.com>
+	Tue, 25 May 2010 13:01:37 -0400
+Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
+From: Johannes Berg <johannes@sipsolutions.net>
 To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
 Cc: linux-wireless@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>
-Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
-Message-ID: <20100525165524.GD31753@tuxdriver.com>
-References: <20100525163920.GA2730@core.coreip.homeip.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
 In-Reply-To: <20100525163920.GA2730@core.coreip.homeip.net>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+References: <20100525163920.GA2730@core.coreip.homeip.net>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 19:01:56 +0200
+Message-ID: <1274806916.18861.0.camel@jlt3.sipsolutions.net>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 09:39:20AM -0700, Dmitry Torokhov wrote:
+On Tue, 2010-05-25 at 09:39 -0700, Dmitry Torokhov wrote:
 > Hi,
 > 
 > I am getting the following crashers in iwl3945 after updating to
 > post-2.6.34 kernels. This is with the pull from Linus's tree as of last
 > night (the taint is from nvidia module):
+> 
+> [ 3330.630734] general protection fault: 0000 [#1] PREEMPT SMP 
+> [ 3330.630752] last sysfs file: /sys/devices/platform/dock.0/docked
+> [ 3330.630761] CPU 0 
+> [ 3330.630766] Modules linked in: cryptd aes_x86_64 aes_generic fuse rfcomm sco bnep l2cap autofs4
+> coretemp hwmon sunrpc ppdev parport_pc parport acpi_cpufreq mperf uinput nvidia(P) snd_hda_codec_idt
+> arc4 snd_hda_intel ecb snd_hda_codec snd_hwdep iwl3945 joydev snd_seq snd_seq_device snd_pcm iwlcore
+> mac80211 snd_timer cfg80211 snd psmouse iTCO_wdt dell_wmi iTCO_vendor_support serio_raw tg3 battery
+> dell_laptop dcdbas soundcore snd_page_alloc btusb bluetooth video pcspkr mac_hid ac wmi libphy
+> firewire_ohci i2c_i801 firewire_core yenta_socket crc_itu_t ohci_hcd [last unloaded: microcode]
+> [ 3330.630950] 
+> [ 3330.630958] Pid: 455, comm: iwl3945 Tainted: P            2.6.35-rc0 #293 0WM416/Latitude D630                   
+> [ 3330.630967] RIP: 0010:[<ffffffffa01e70d3>]  [<ffffffffa01e70d3>] iwl3945_get_channels_for_scan+0xe3/0x460 [iwl3945]
 
-Linus doesn't have this one yet:
 
-commit 073d5eab6fc85b6c278d507a5633b759a85dc878
-Author: Reinette Chatre <reinette.chatre@intel.com>
-Date:   Thu May 13 14:49:44 2010 -0700
+http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2208
 
-    iwlwifi: fix internal scan race
-    
-    It is possible for internal scan to race against itself if the device is
-    not returning the scan results from first requests. What happens in this
-    case is the cleanup done during the abort of the first internal scan also
-    cleans up part of the new scan, causing it to access memory it shouldn't.
-...
+johannes
 
-I suspect it might be related.
-
-John
--- 
-John W. Linville		Someday the world will need a hero, and you
-linville@tuxdriver.com			might be all we have.  Be ready.
