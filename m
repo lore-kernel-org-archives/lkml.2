@@ -1,70 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758863Ab0EYQO3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 12:14:29 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:42601 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756352Ab0EYQOB (ORCPT
+	id S1758875Ab0EYQPb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 12:15:31 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43664 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756352Ab0EYQPa convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 12:14:01 -0400
-X-Authority-Analysis: v=1.1 cv=Pm0qIGCwx3bIEOZlSg1a56K3RSwKBTW9sPEb+DFvEKk= c=1 sm=0 a=ZFhThlrqerAA:10 a=yQWWgrYGNuUA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=20KFwNOVAAAA:8 a=meVymXHHAAAA:8 a=YsutFaGuW-MPxZOjv9QA:9 a=q1HI4eE6oqj9MaDlzGcA:7 a=315Fj_-sZPZMndpp597v4DjSCrIA:4 a=jEp0ucaQiEUA:10 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Message-Id: <20100525161358.685469182@goodmis.org>
-User-Agent: quilt/0.48-1
-Date: Tue, 25 May 2010 12:13:00 -0400
-From: Steven Rostedt <rostedt@goodmis.org>
-To: linux-kernel@vger.kernel.org
-Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] ring-buffer: Reset "real_end" when page is filled
-References: <20100525161259.568803673@goodmis.org>
-Content-Disposition: inline; filename=0001-ring-buffer-Reset-real_end-when-page-is-filled.patch
+	Tue, 25 May 2010 12:15:30 -0400
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+From: Peter Zijlstra <peterz@infradead.org>
+To: piotr@hosowicz.com
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+In-Reply-To: <4BFBE357.2040602@example.com>
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>
+	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com>
+	 <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com>
+	 <4BFBA6A2.4070405@example.com> <4BFBDAF3.3020504@example.com>
+	 <4BFBE004.5060101@example.com> <1274798197.5882.1491.camel@twins>
+	 <4BFBE357.2040602@example.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 18:15:01 +0200
+Message-ID: <1274804101.5882.1805.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Steven Rostedt <srostedt@redhat.com>
+On Tue, 2010-05-25 at 16:48 +0200, Piotr Hosowicz wrote:
+> May 25 15:04:35 aapi205 kernel: [ 9694.523288] BUG: using smp_processor_id() in preemptible [00000000] code: shutdown/16256
+> May 25 15:04:35 aapi205 kernel: [ 9694.523296] caller is dqstats_inc+0x19/0x2c
+> May 25 15:04:35 aapi205 kernel: [ 9694.523299] Pid: 16256, comm: shutdown Tainted: P        W   2.6.34-20100524-1752-patched #1
+> May 25 15:04:35 aapi205 kernel: [ 9694.523301] Call Trace:
+> May 25 15:04:35 aapi205 kernel: [ 9694.523308]  [<ffffffff811a537b>] debug_smp_processor_id+0xc7/0xe0
+> May 25 15:04:35 aapi205 kernel: [ 9694.523311]  [<ffffffff8112c0ad>] dqstats_inc+0x19/0x2c
+> May 25 15:04:35 aapi205 kernel: [ 9694.523314]  [<ffffffff8112ee66>] vfs_quota_sync+0x1b1/0x293
+> May 25 15:04:35 aapi205 kernel: [ 9694.523319]  [<ffffffff8103bf21>] ? wake_up_process+0x10/0x12
 
-The code to store the "lost events" requires knowing the real end
-of the page. Since the 'commit' includes the padding at the end of
-a page a "real_end" variable was used to keep track of the end not
-including the padding.
+That's a different issue, see:
 
-If events were lost, the reader can place the count of events in
-the padded area if there is enough room.
-
-The bug this patch fixes is that when we fill the page we do not
-reset the real_end variable, and if the writer had wrapped a few
-times, the real_end would be incorrect.
-
-This patch simply resets the real_end if the page was filled.
-
-Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
----
- kernel/trace/ring_buffer.c |    8 ++++++++
- 1 files changed, 8 insertions(+), 0 deletions(-)
-
-diff --git a/kernel/trace/ring_buffer.c b/kernel/trace/ring_buffer.c
-index 7f6059c..b0702ff 100644
---- a/kernel/trace/ring_buffer.c
-+++ b/kernel/trace/ring_buffer.c
-@@ -1768,6 +1768,14 @@ rb_reset_tail(struct ring_buffer_per_cpu *cpu_buffer,
- 	 * must fill the old tail_page with padding.
- 	 */
- 	if (tail >= BUF_PAGE_SIZE) {
-+		/*
-+		 * If the page was filled, then we still need
-+		 * to update the real_end. Reset it to zero
-+		 * and the reader will ignore it.
-+		 */
-+		if (tail == BUF_PAGE_SIZE)
-+			tail_page->real_end = 0;
-+
- 		local_sub(length, &tail_page->write);
- 		return;
- 	}
--- 
-1.7.0
-
-
+  http://lkml.org/lkml/2010/5/22/164
