@@ -1,113 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757046Ab0EYCT5 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 22:19:57 -0400
-Received: from arroyo.ext.ti.com ([192.94.94.40]:46867 "EHLO arroyo.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755662Ab0EYCTz convert rfc822-to-8bit (ORCPT
+	id S1757659Ab0EYCVs (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 22:21:48 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:55874 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756371Ab0EYCVr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 22:19:55 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
-Date: Mon, 24 May 2010 21:19:50 -0500
-Subject: NULL Pointer Deference: NFS & Telnet
-Thread-Topic: NULL Pointer Deference: NFS & Telnet
-Thread-Index: Acr7sMEhWAICO9I8TUCo7EaT0RzjBw==
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Mon, 24 May 2010 22:21:47 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=MZUJBZtWP6shd8FDHyjziSsm61Y/u7+MvGHD0W+gsgT/gtU2XOpcl8pz0fqiUb75aZ
+         NC+xLcwV/A8j2OTlJZUgsRHj9gVp4IOoQFAkLyJqffNrQfZ2nbxksWYZUTOOFBtcYZe3
+         8SWxGQ8Dfbv6cn2ZHq7Ceo9qnO+eoA/CqivZ8=
 MIME-Version: 1.0
+In-Reply-To: <AANLkTinFt5yiINXrc9-fnUl7NiyzN42eUotFnZdcxbas@mail.gmail.com>
+References: <AANLkTik_7rxDBc0TKlAfoYyM5S6Cf_Hyxbr4W5ORnTsq@mail.gmail.com>
+	 <1274726029.2091.15160.camel@rchatre-DESK>
+	 <1274738896.2091.15438.camel@rchatre-DESK>
+	 <AANLkTinFt5yiINXrc9-fnUl7NiyzN42eUotFnZdcxbas@mail.gmail.com>
+Date: Tue, 25 May 2010 07:51:45 +0530
+Message-ID: <AANLkTin0GuV28NsXwK6Pzo3cZ24Jn3WLR2YL9L660Us_@mail.gmail.com>
+Subject: iwl3945 bug in 2.6.34
+From: Satish Eerpini <eerpini@gmail.com>
+To: linux-kernel <linux-kernel@vger.kernel.org>,
+       linux-wireless@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+> Actually, sorry, but that patch will not work on 2.6.34 since the
+> feature it enables is not present there - it will be in 2.6.35 though.
+> To enable the feature in 2.6.34 will take some more backporting effort
+> that I'm looking into now.
+>
+the patch does lead to a reject, I am not very experienced with
+code-fu in the kernel, and have no clue about the iwl code base, but
+comparing the code from 2.6.24 and the latest compat-wireless tarball,
+I found that in iwl-core.c
+iwl_check_stuck_queue
+iwl_bg_monitor_recover
+are not present in the 2.6.34 version of the file, is there a
+particular reason for doing this ?
+is there a patch series/discussion I can follow to know the details on this ?
+and I am trying to compile 2.6.34 by adding just these two functions
+to iwl-core.c. If that works I will report back (though you might
+already know if it will work or not)
 
-I have 2 scenarios in which I am getting a NULL pointer dereference:
 
-1) root filesystem over nfs
-2) telnet connection
+Cheers
+Satish
 
-The issue appeared on this commit
 
-http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=f8965467f366fd18f01feafb5db10512d7b4422c
+--
+http://tuxitter.blogspot.com
 
-The driver I am working with is drivers/net/ks8851.c
-Any help will be highly appreciated...
 
----
 
-Scenario 1 | root filesystem over nfs
-
-Looking up port of RPC 100005/1 on 10.87.231.229
-VFS: Mounted root (nfs filesystem) on device 0:10.
-Freeing init memory: 128K
-Unable to handle kernel NULL pointer dereference at virtual address 00000000
-[..]
-PC is at put_page+0xc/0x120
-LR is at skb_release_data+0x74/0xb8
-[..]
-Backtrace:
-[<c0086dd0>] (put_page+0x0/0x120)
-[<c01d0a48>] (skb_release_data+0x0/0xb8)
-[<c01d1044>] (skb_release_all+0x0/0x20)
-[<c01d075c>] (__kfree_skb+0x0/0xbc)
-[<c01d0818>] (consume_skb+0x0/0x58)
-[<c01d39cc>] (skb_free_datagram+0x0/0x40)
-[<c023ff74>] (xs_udp_data_ready+0x0/0x1e8)
-[<c01ce034>] (sock_queue_rcv_skb+0x0/0x1c0)
-[<c01fbba8>] (ip_queue_rcv_skb+0x0/0x58)
-[<c02176c0>] (__udp_queue_rcv_skb+0x0/0x18c)
-[<c0218e28>] (udp_queue_rcv_skb+0x0/0x348)
-[<c02195a4>] (__udp4_lib_rcv+0x0/0x564)
-[<c0219b08>] (udp_rcv+0x0/0x20)
-[<c01f5f34>] (ip_local_deliver+0x0/0x264)
-[<c01f586c>] (ip_rcv+0x0/0x6c8)
-[<c01d7ec0>] (__netif_receive_skb+0x0/0x2d0)
-[<c01d8190>] (process_backlog+0x0/0x16c)
-[<c01d8e14>] (net_rx_action+0x0/0x18c)
-[<c00521a0>] (__do_softirq+0x0/0x12c)
-[<c00522cc>] (irq_exit+0x0/0x70)
-[<c0028000>] (asm_do_IRQ+0x0/0xc8)
-
-Complete log at http://pastebin.mozilla.org/728027
-
----
-
-Scenario 2
-
- 1. Root filesystem booted in ram
- 2. eth0 brought up
- 3. telnetd daemon started
- 4. tried to connect through telnet
-
-# Unable to handle kernel NULL pointer dereference at virtual address 00000000
-pgd = d98e8000
-[..]
-PC is at put_page+0xc/0x120
-LR is at skb_release_data+0x74/0xb8
-[..]
-Backtrace:
-[<c0086dd0>] (put_page+0x0/0x120)
-[<c01d0a48>] (skb_release_data+0x0/0xb8)
-[<c01d1044>] (skb_release_all+0x0/0x20)
-[<c01d075c>] (__kfree_skb+0x0/0xbc)
-[<c0202444>] (tcp_recvmsg+0x0/0x93c)
-[<c02201e8>] (inet_recvmsg+0x0/0xec)
-[<c01c7fd0>] (sock_aio_read+0x0/0xf8)
-[<c00ab3ac>] (do_sync_read+0x0/0xec)
-[<c00abfbc>] (vfs_read+0x0/0x164)
-[<c00ac1a0>] (sys_read+0x0/0x70)
-[<c0029100>] (ret_fast_syscall+0x0/0x30)
-
-Complete log at http://pastebin.mozilla.org/728028
-
-Best Regards
-Abraham Arce
+-- 
+http://tuxitter.blogspot.com
