@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932137Ab0EYOWu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:22:50 -0400
-Received: from casper.infradead.org ([85.118.1.10]:33504 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757004Ab0EYOWs convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:22:48 -0400
-Subject: Re: [PATCH v3] Make sure timers have migrated before killing
- migration_thread
-From: Peter Zijlstra <peterz@infradead.org>
-To: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
-Cc: Ingo Molnar <mingo@elte.hu>, tj@kernel.org,
-       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
-       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
-       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
-In-Reply-To: <20100525132346.GA14986@amitarora.in.ibm.com>
-References: <20100519090557.GA15237@amitarora.in.ibm.com>
-	 <1274261515.5605.10423.camel@twins>
-	 <20100524095951.GA17680@amitarora.in.ibm.com>
-	 <1274787095.5882.949.camel@twins>
-	 <20100525132346.GA14986@amitarora.in.ibm.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 May 2010 16:22:22 +0200
-Message-ID: <1274797342.5882.1444.camel@twins>
+	id S932771Ab0EYOXI (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:23:08 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:58692 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757004Ab0EYOXG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:23:06 -0400
+X-Greylist: delayed 910 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 10:23:05 EDT
+Date: Tue, 25 May 2010 16:07:42 +0200
+From: Zdenek Salvet <salvet@ics.muni.cz>
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+Cc: Lukas Hejtmanek <xhejtman@ics.muni.cz>, Pavel Machek <pavel@ucw.cz>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
+Subject: Re: Deadlock in NFSv4 in all kernels
+Message-ID: <20100525140742.GM12852@horn.ics.muni.cz>
+Reply-To: salvet@ics.muni.cz
+References: <20100507153920.GP28167@ics.muni.cz> <20100524212422.GA1286@ucw.cz> <1274790520.2949.20.camel@heimdal.trondhjem.org> <20100525125833.GB9731@ics.muni.cz> <1274794765.5377.43.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274794765.5377.43.camel@heimdal.trondhjem.org>
+X-Muni-Spam-TestIP: 147.251.6.10
+X-Muni-Envelope-From: salvet@ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 25 May 2010 16:07:51 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-25 at 18:53 +0530, Amit K. Arora wrote:
+On Tue, May 25, 2010 at 09:39:25AM -0400, Trond Myklebust wrote:
+> The schemes I'm talking about typically had special memory pools
+> preallocated for use by daemons, and would label the daemons using some
+> equivalent of the PF_MEMALLOC flag to prevent recursion into the
+> filesystem.
 
-nice :-)
+Yes. In my opinion, proper solution has to be careful at three points:
+- daemons must be carefully written not to require much memory
+- daemons should 'inherit' PF_MEMALLOC while processing upcalls 
+- FS should try to flush fast enough (what W. Adamson wrote) and 
+  delay new allocations when it cannot 
 
-Thanks!
+Regards,
 
-> Signed-off-by: Amit Arora <aarora@in.ibm.com>
-> Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
-> Cc: Ingo Molnar <mingo@elte.hu>
-> Cc: Peter Zijlstra <peterz@infradead.org>
-> Cc: Tejun Heo <tj@kernel.org>
-> ---
-> diff -Nuarp linux-2.6-next-20100525.org/kernel/stop_machine.c linux-2.6-next-20100525/kernel/stop_machine.c
-> --- linux-2.6-next-20100525.org/kernel/stop_machine.c   2010-05-25 14:27:51.000000000 -0400
-> +++ linux-2.6-next-20100525/kernel/stop_machine.c       2010-05-25 14:30:09.000000000 -0400
-> @@ -321,7 +321,7 @@ static int __cpuinit cpu_stop_cpu_callba
->  
->  #ifdef CONFIG_HOTPLUG_CPU
->         case CPU_UP_CANCELED:
-> -       case CPU_DEAD:
-> +       case CPU_POST_DEAD:
->         {
->                 struct cpu_stop_work *work; 
+Zdenek Salvet                                              salvet@ics.muni.cz 
+Institute of Computer Science of Masaryk University, Brno, Czech Republic
+and CESNET, z.s.p.o., Prague, Czech Republic
+Phone: ++420-549 49 6534                           Fax: ++420-541 212 747
+----------------------------------------------------------------------------
+      Teamwork is essential -- it allows you to blame someone else.
+
