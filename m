@@ -1,58 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756630Ab0EYMbz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 08:31:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:29474 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756297Ab0EYMbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 08:31:53 -0400
-Date: Tue, 25 May 2010 14:30:27 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage
-	of child->mm
-Message-ID: <20100525123027.GA29883@redhat.com>
-References: <20100522165401.GB19573@redhat.com> <1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> <20147.1274790240@redhat.com>
+	id S1756530Ab0EYMhW (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 08:37:22 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:55718 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754082Ab0EYMhU (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 08:37:20 -0400
+Date: Tue, 25 May 2010 13:37:01 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: Len Brown <lenb@kernel.org>
+Cc: Philip Langdale <philipl@overt.org>, Jeff Garrett <jeff@jgarrett.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org, luming.yu@intel.com, venki@google.com
+Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
+Message-ID: <20100525123701.GA7876@srcf.ucam.org>
+References: <20100126084740.GA5265@jgarrett.org> <87y6jkee1b.fsf@basil.nowhere.org> <20100205160900.GA2736@jgarrett.org> <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain> <20100426194002.586fbaa5@fido5> <20100427124703.GA16706@jgarrett.org> <alpine.LFD.2.00.1004301218280.2489@sony> <20100430174447.GA14889@srcf.ucam.org> <d7f2dd35a4361e5156079278543769a0@localhost> <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20147.1274790240@redhat.com>
+In-Reply-To: <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
 User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25, David Howells wrote:
->
-> Oleg Nesterov <oleg@redhat.com> wrote:
->
-> > > Like PEEKTEXT and POKETEXT?
-> >
-> > They use access_process_vm().
->
-> Which needs to get the mm:
->
-> 	int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
-> 	{
-> 		struct vm_area_struct *vma;
-> 		struct mm_struct *mm;
->
-> 		if (addr + len < addr)
-> 			return 0;
->
-> 		mm = get_task_mm(tsk);
+On Tue, May 25, 2010 at 01:43:26AM -0400, Len Brown wrote:
 
-Yes sure,
+> I'm told by the hardware guys that BM_STS is _not_ always
+> a NOP, and so we're not supposed to simply ignore it on C3 --
+> though it should be extremely rare that we see it set.
+> If it is ever set, it should go on and off depending on 
+> activity on some latency sensitive device, like out on the LPC.
+> It may be possible for the BIOS writer to configure the chipset
+> so that BM_STS is enabled always, presumably to accomodate
+> some latency sensitve device -- or maybe by mistake.
 
-But I do not think it makes any sense to change the signature of
-access_process_vm() as well, it has a lot of callers. And it is
-complex, it does get_user_pages(). Compared to that get_task_mm()
-inside of access_process_vm() is nothing.
+On some hardware we've seen BM_STS be enabled approximately 50% of the 
+time without any obvious cause.
 
-Oleg.
-
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
