@@ -1,13 +1,12 @@
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0EYJ67 (ORCPT <rfc822;list-kernel77@spinics.net>);
-	Tue, 25 May 2010 05:58:59 -0400
-Received: from [209.88.91.210] ([209.88.91.210]:52213 "HELO nust.ac.zw"
+	id S932380Ab0EYLGa (ORCPT <rfc822;list-kernel77@spinics.net>);
+	Tue, 25 May 2010 07:06:30 -0400
+Received: from [209.88.91.210] ([209.88.91.210]:55235 "HELO nust.ac.zw"
 	rhost-flags-FAIL-FAIL-OK-FAIL) by vger.kernel.org with SMTP
-	id S1750956Ab0EYJ66 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:58:58 -0400
-X-Greylist: delayed 2149 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 05:58:55 EDT
-Message-ID: <79faaea6f2edd238782b263fdd8cc541.squirrel@mailbyo2.nust.ac.zw>
-Date: Tue, 25 May 2010 11:55:53 +0300
+	id S932177Ab0EYLG3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 07:06:29 -0400
+Message-ID: <8fe698a397f9a9bdcbf1b244c1a0b105.squirrel@mailbyo2.nust.ac.zw>
+Date: Tue, 25 May 2010 13:05:48 +0300
 Subject: Loan Application
 From: "Loan Solution Team" <nokianationliverwood@w.cn>
 Reply-To: loansolutionteam1000@onfruit.cn
