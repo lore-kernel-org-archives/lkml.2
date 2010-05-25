@@ -1,79 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756638Ab0EYM2t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 08:28:49 -0400
-Received: from mail-out2.uio.no ([129.240.10.58]:49158 "EHLO mail-out2.uio.no"
+	id S1756630Ab0EYMbz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 08:31:55 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29474 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756578Ab0EYM2r (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 08:28:47 -0400
-Subject: Re: Deadlock in NFSv4 in all kernels
-From: Trond Myklebust <trond.myklebust@fys.uio.no>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Lukas Hejtmanek <xhejtman@ics.muni.cz>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       salvet@ics.muni.cz
-In-Reply-To: <20100524212422.GA1286@ucw.cz>
-References: <20100507153920.GP28167@ics.muni.cz>
-	 <20100524212422.GA1286@ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 May 2010 08:28:40 -0400
-Message-ID: <1274790520.2949.20.camel@heimdal.trondhjem.org>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
-Content-Transfer-Encoding: 7bit
-X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 10 sum msgs/h 1 total rcpts 344 max rcpts/h 20 ratelimit 0
-X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
-X-UiO-Scanned: D89BC44D94F68E94067A966358B7542EBBB7DE62
-X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 171 max/h 6 blacklist 0 greylist 0 ratelimit 0
+	id S1756297Ab0EYMbx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 08:31:53 -0400
+Date: Tue, 25 May 2010 14:30:27 +0200
+From: Oleg Nesterov <oleg@redhat.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
+       Paul Mundt <lethal@linux-sh.org>,
+       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage
+	of child->mm
+Message-ID: <20100525123027.GA29883@redhat.com>
+References: <20100522165401.GB19573@redhat.com> <1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> <20147.1274790240@redhat.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20147.1274790240@redhat.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 23:24 +0200, Pavel Machek wrote: 
-> Hi!
-> 
-> > I encountered the following problem. We use short expiration time for
-> > kerberos contexts created by rpc.gssd (some patches were included in mainline
-> > nfs-utils). In particular, we use 120secs expiration time.
-> > 
-> > Now, I run application that eats 80% of available RAM. Then I run 10 parallel
-> > dd processes that write data into NFS4 volume with sec=krb5.
-> > 
-> > As soon as the kerberos context expires (i.e., up to 120 secs), the whole
-> > system gets stuck in do_page_fault and succesive functions. It is because
-> > there is no free memory in kernel, all free memory is used as cache for NFS4
-> > (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
-> > anything as it is missing valid context. NFS contacts rpc.gssd to provide
-> > a renewed context, the rpc.gssd does not provide the context as it needs some memory
-> > to scan /tmp for a ticket. I.e., it deadlocks.
-> > 
-> > Longer context expiration time is no real solution as it only makes the
-> > deadlock less often. 
-> > 
-> > Any ideas what can be done here? (Please cc me.) We could preallocate some
-> > memory in rpc.gssd and use mlockall but not sure whether this proctects also
-> > kernel malloc for things related to rpc.gssd and context creation (new file
-> > descriptors and so on). 
-> > 
-> > This is seen in 2.6.32 kernel but most probably this is related to all kernel
-> > versions.
-> 
-> Seems like pretty fundamental problem in nfs :-(. Limiting writeback
-> caches for nfs, so that system has enough memory to perform rpc calls
-> with the rest might do the trick, but...
-> 
+On 05/25, David Howells wrote:
+>
+> Oleg Nesterov <oleg@redhat.com> wrote:
+>
+> > > Like PEEKTEXT and POKETEXT?
+> >
+> > They use access_process_vm().
+>
+> Which needs to get the mm:
+>
+> 	int access_process_vm(struct task_struct *tsk, unsigned long addr, void *buf, int len, int write)
+> 	{
+> 		struct vm_area_struct *vma;
+> 		struct mm_struct *mm;
+>
+> 		if (addr + len < addr)
+> 			return 0;
+>
+> 		mm = get_task_mm(tsk);
 
-It's the same problem that you have for any file or storage system that
-has initiators in userland. On the storage side, iSCSI in particular has
-the same problem. On the filesystem side, CIFS, AFS, coda, .... do too.
-The clustered filesystems can deadlock if the node that is running the
-DLM runs out of memory...
+Yes sure,
 
-A few years ago there were several people proposing various solutions
-for allowing these daemons to run in a protected memory environment to
-avoid deadlocks, but those efforts have since petered out. Perhaps it is
-time to review the problem?
+But I do not think it makes any sense to change the signature of
+access_process_vm() as well, it has a lot of callers. And it is
+complex, it does get_user_pages(). Compared to that get_task_mm()
+inside of access_process_vm() is nothing.
 
-Cheers
-  Trond
+Oleg.
 
