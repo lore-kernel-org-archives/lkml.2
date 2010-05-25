@@ -1,88 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932230Ab0EYGsJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 02:48:09 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:53255 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932069Ab0EYGsH (ORCPT
+	id S932282Ab0EYGvJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 02:51:09 -0400
+Received: from mtoichi13.ns.itscom.net ([219.110.2.183]:45930 "EHLO
+	mtoichi13.ns.itscom.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932199Ab0EYGvH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 02:48:07 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:content-type:date:message-id:mime-version
-         :x-mailer:content-transfer-encoding;
-        b=bX5Hf4Tv+bt/F26tS2HyDuiJQ5OrOwf9/SPnf9SsoxvBu1W+V9Tdmxn1G8s+GholyX
-         6IVN27GY1tdZSQoZFXqa6GG7Y2srG/8+dBJ+SQJdyEzPi7Ye+5AvpknJcSCcf/YcV0Lx
-         Xzc25DCVoYVS2nea8G+GL+KGYMS1CCURKusSQ=
-Subject: ab3100-otp: fix memory leak in ab3100_otp_probe
-From: Axel Lin <axel.lin@gmail.com>
-To: linux-kernel <linux-kernel@vger.kernel.org>
-Cc: Linus Walleij <linus.walleij@stericsson.com>,
-       Samuel Ortiz <sameo@linux.intel.com>
-Content-Type: text/plain
-Date: Tue, 25 May 2010 14:49:51 +0800
-Message-Id: <1274770191.6998.3.camel@mola>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.22.3.1 
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 02:51:07 -0400
+From: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+To: amwang@redhat.com
+Cc: opurdila@ixiacom.com, davem@davemloft.net, linux-kernel@vger.kernel.org,
+       "J. R. Okajima" <hooanon05@yahoo.co.jp>
+Subject: [PATCH] proc_dointvec, write a single value
+Date: Tue, 25 May 2010 15:49:44 +0900
+Message-Id: <1274770184-12611-1-git-send-email-hooanon05@yahoo.co.jp>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <4BFB6197.5030206@redhat.com>
+References: <4BFB6197.5030206@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-In current implementation, there is a memory leak if ab3100_otp_read fail.
-And in the case of ab3100_otp_init_debugfs fail, it does not properly remove
-sysfs entries.
-This patch properly handle above failure cases.
+The commit 00b7c3395aec3df43de5bd02a3c5a099ca51169f
+"sysctl: refactor integer handling proc code"
+modified the behaviour of writing to /proc.
+Before the commit, write("1\n") to /proc/sys/kernel/printk succeeded. But
+now it returns EINVAL.
 
-Signed-off-by: Axel Lin <axel.lin@gmail.com>
+This commit supports writing a single value to a multi-valued entry.
+
+Signed-off-by: J. R. Okajima <hooanon05@yahoo.co.jp>
 ---
- drivers/mfd/ab3100-otp.c |   16 ++++++++--------
- 1 files changed, 8 insertions(+), 8 deletions(-)
+ kernel/sysctl.c |    4 +++-
+ 1 files changed, 3 insertions(+), 1 deletions(-)
 
-diff --git a/drivers/mfd/ab3100-otp.c b/drivers/mfd/ab3100-otp.c
-index 2d14655..939b876 100644
---- a/drivers/mfd/ab3100-otp.c
-+++ b/drivers/mfd/ab3100-otp.c
-@@ -202,7 +202,7 @@ static int __init ab3100_otp_probe(struct platform_device *pdev)
+diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+index 4c93486..78ac3fb 100644
+--- a/kernel/sysctl.c
++++ b/kernel/sysctl.c
+@@ -2262,6 +2262,8 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+ 		if (write) {
+ 			left -= proc_skip_spaces(&kbuf);
  
- 	err = ab3100_otp_read(otp);
- 	if (err)
--		return err;
-+		goto err_otp_read;
++			if (!left)
++				break;
+ 			err = proc_get_long(&kbuf, &left, &lval, &neg,
+ 					     proc_wspace_sep,
+ 					     sizeof(proc_wspace_sep), NULL);
+@@ -2288,7 +2290,7 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
  
- 	dev_info(&pdev->dev, "AB3100 OTP readout registered\n");
- 
-@@ -211,21 +211,21 @@ static int __init ab3100_otp_probe(struct platform_device *pdev)
- 		err = device_create_file(&pdev->dev,
- 					 &ab3100_otp_attrs[i]);
- 		if (err)
--			goto out_no_sysfs;
-+			goto err_create_file;
- 	}
- 
- 	/* debugfs entries */
- 	err = ab3100_otp_init_debugfs(&pdev->dev, otp);
- 	if (err)
--		goto out_no_debugfs;
-+		goto err_init_debugfs;
- 
- 	return 0;
- 
--out_no_sysfs:
--	for (i = 0; i < ARRAY_SIZE(ab3100_otp_attrs); i++)
--		device_remove_file(&pdev->dev,
--				   &ab3100_otp_attrs[i]);
--out_no_debugfs:
-+err_init_debugfs:
-+err_create_file:
-+	while (--i >= 0)
-+		device_remove_file(&pdev->dev, &ab3100_otp_attrs[i]);
-+err_otp_read:
- 	kfree(otp);
- 	return err;
- }
+ 	if (!write && !first && left && !err)
+ 		err = proc_put_char(&buffer, &left, '\n');
+-	if (write && !err)
++	if (write && !err && left)
+ 		left -= proc_skip_spaces(&kbuf);
+ free:
+ 	if (write) {
 -- 
-1.5.4.3
-
-
+1.6.6.1
 
