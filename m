@@ -1,129 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758685Ab0EYNzd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:55:33 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:35322 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758061Ab0EYNuw (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:50:52 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org
-Subject: [PATCHv4 06/17] EXT2: do not manipulate s_dirt directly
-Date: Tue, 25 May 2010 16:49:01 +0300
-Message-Id: <1274795352-3551-7-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 May 2010 13:50:42.0766 (UTC) FILETIME=[448486E0:01CAFC11]
-X-Nokia-AV: Clean
+	id S932338Ab0EYOCj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:02:39 -0400
+Received: from minas.ics.muni.cz ([147.251.4.40]:51411 "EHLO minas.ics.muni.cz"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758522Ab0EYOCh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:02:37 -0400
+Date: Tue, 25 May 2010 16:02:40 +0200
+From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+To: "William A. (Andy) Adamson" <androsadamson@gmail.com>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
+Subject: Re: Deadlock in NFSv4 in all kernels
+Message-ID: <20100525140240.GG9731@ics.muni.cz>
+References: <20100507153920.GP28167@ics.muni.cz>
+ <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-2
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
+X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-Muni-Spam-TestIP: 147.251.3.109
+X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
+X-Muni-Virus-Test: Clean
+X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 25 May 2010 16:02:34 +0200 (CEST)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Tue, May 25, 2010 at 09:45:32AM -0400, William A. (Andy) Adamson wrote:
+> Not get into the problem in the first place: this means
+> 
+> 1) determine a 'lead time' where the NFS client declares a context
+> expired even though it really as 'lead time' until it actually
+> expires.
+> 
+> 2) flush all writes on any contex that will expire within the lead
+> time which needs to be long enough for flushes to take place.
 
-... use new VFS helpers instead.
+I think you cannot give any guarantees that the flush happens on time. There
+can be server overload, network overload, anything and you are out of luck. 
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: linux-ext4@vger.kernel.org
----
- fs/ext2/balloc.c |    4 ++--
- fs/ext2/ialloc.c |    4 ++--
- fs/ext2/super.c  |    6 +++---
- fs/ext2/xattr.c  |    2 +-
- 4 files changed, 8 insertions(+), 8 deletions(-)
-
-diff --git a/fs/ext2/balloc.c b/fs/ext2/balloc.c
-index e8766a3..f2e830e 100644
---- a/fs/ext2/balloc.c
-+++ b/fs/ext2/balloc.c
-@@ -165,7 +165,7 @@ static void release_blocks(struct super_block *sb, int count)
- 		struct ext2_sb_info *sbi = EXT2_SB(sb);
- 
- 		percpu_counter_add(&sbi->s_freeblocks_counter, count);
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
- 	}
- }
- 
-@@ -180,7 +180,7 @@ static void group_adjust_blocks(struct super_block *sb, int group_no,
- 		free_blocks = le16_to_cpu(desc->bg_free_blocks_count);
- 		desc->bg_free_blocks_count = cpu_to_le16(free_blocks + count);
- 		spin_unlock(sb_bgl_lock(sbi, group_no));
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
- 		mark_buffer_dirty(bh);
- 	}
- }
-diff --git a/fs/ext2/ialloc.c b/fs/ext2/ialloc.c
-index 938dbc7..bd2a472 100644
---- a/fs/ext2/ialloc.c
-+++ b/fs/ext2/ialloc.c
-@@ -81,7 +81,7 @@ static void ext2_release_inode(struct super_block *sb, int group, int dir)
- 	spin_unlock(sb_bgl_lock(EXT2_SB(sb), group));
- 	if (dir)
- 		percpu_counter_dec(&EXT2_SB(sb)->s_dirs_counter);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	mark_buffer_dirty(bh);
- }
- 
-@@ -547,7 +547,7 @@ got:
- 	}
- 	spin_unlock(sb_bgl_lock(sbi, group));
- 
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	mark_buffer_dirty(bh2);
- 	if (test_opt(sb, GRPID)) {
- 		inode->i_mode = mode;
-diff --git a/fs/ext2/super.c b/fs/ext2/super.c
-index 71e9eb1..b8e23d3 100644
---- a/fs/ext2/super.c
-+++ b/fs/ext2/super.c
-@@ -119,7 +119,7 @@ static void ext2_put_super (struct super_block * sb)
- 	int i;
- 	struct ext2_sb_info *sbi = EXT2_SB(sb);
- 
--	if (sb->s_dirt)
-+	if (is_sb_dirty(sb))
- 		ext2_write_super(sb);
- 
- 	ext2_xattr_put_super(sb);
-@@ -1147,7 +1147,7 @@ static void ext2_sync_super(struct super_block *sb, struct ext2_super_block *es,
- 	mark_buffer_dirty(EXT2_SB(sb)->s_sbh);
- 	if (wait)
- 		sync_dirty_buffer(EXT2_SB(sb)->s_sbh);
--	sb->s_dirt = 0;
-+	mark_sb_clean(sb);
- }
- 
- /*
-@@ -1181,7 +1181,7 @@ void ext2_write_super(struct super_block *sb)
- 	if (!(sb->s_flags & MS_RDONLY))
- 		ext2_sync_fs(sb, 1);
- 	else
--		sb->s_dirt = 0;
-+		mark_sb_clean(sb);
- }
- 
- static int ext2_remount (struct super_block * sb, int * flags, char * data)
-diff --git a/fs/ext2/xattr.c b/fs/ext2/xattr.c
-index 7c39157..b2e9cfb 100644
---- a/fs/ext2/xattr.c
-+++ b/fs/ext2/xattr.c
-@@ -348,7 +348,7 @@ static void ext2_xattr_update_super_block(struct super_block *sb)
- 	spin_lock(&EXT2_SB(sb)->s_lock);
- 	EXT2_SET_COMPAT_FEATURE(sb, EXT2_FEATURE_COMPAT_EXT_ATTR);
- 	spin_unlock(&EXT2_SB(sb)->s_lock);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	mark_buffer_dirty(EXT2_SB(sb)->s_sbh);
- }
- 
 -- 
-1.6.6.1
-
+Luká¹ Hejtmánek
