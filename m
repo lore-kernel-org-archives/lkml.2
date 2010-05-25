@@ -1,56 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759040Ab0EYURr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:17:47 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:51931 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753638Ab0EYURq (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:17:46 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=Ipuctdg/Rvu+KDrVUgz4bEneje7s6jPqgt6LS5AMq6+6c6PTBvZ5XlG6kYfOaEvAbr
-         L/uSyImphWgRnzftiUo0NT2001BeSYAfztTshZ85dHeilr0oMd5Uen9h+vcioBHcWqrg
-         xxrNHS4t+X0VKySnWzteOlvFYb3mDR3M3R4eo=
-Date: Tue, 25 May 2010 22:17:43 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Chase Douglas <chase.douglas@canonical.com>,
-       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: Tracing configuration review
-Message-ID: <20100525201736.GB5370@nowhere>
-References: <1274815906.9757.83.camel@cndougla-ubuntu> <1274816768.22648.220.camel@gandalf.stny.rr.com>
+	id S934082Ab0EYUUG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:20:06 -0400
+Received: from www.tglx.de ([62.245.132.106]:38661 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932530Ab0EYUUD (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:20:03 -0400
+Date: Tue, 25 May 2010 22:19:29 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Peter Zijlstra <peterz@infradead.org>
+cc: "Amit K. Arora" <aarora@linux.vnet.ibm.com>, Ingo Molnar <mingo@elte.hu>,
+       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v2] Make sure timers have migrated before killing
+ migration_thread
+In-Reply-To: <1274340483.5605.13161.camel@twins>
+Message-ID: <alpine.LFD.2.00.1005252215260.2948@localhost.localdomain>
+References: <20100519090557.GA15237@amitarora.in.ibm.com>  <1274261515.5605.10423.camel@twins>  <20100519121356.GB15237@amitarora.in.ibm.com> <1274340483.5605.13161.camel@twins>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274816768.22648.220.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 03:46:08PM -0400, Steven Rostedt wrote:
-> On Tue, 2010-05-25 at 15:31 -0400, Chase Douglas wrote:
-> > # CONFIG_SCHED_TRACER is not set (headed for deprecation?)
+On Thu, 20 May 2010, Peter Zijlstra wrote:
+
+> On Wed, 2010-05-19 at 17:43 +0530, Amit K. Arora wrote:
+> > Alternate Solution considered : Another option considered was to
+> > increase the priority of the hrtimer cpu offline notifier, such that it
+> > gets to run before scheduler's migration cpu offline notifier. In this
+> > way we are sure that the timers will get migrated before migration_call
+> > tries to kill migration_thread. But, this can have some non-obvious
+> > implications, suggested Srivatsa.
 > 
-> Although it is headed for deprecation, I think it still gets set by
-> other tracers, since it has the code to initiate the comm reader.
-
-
-
-Doesn't actually CONTEXT_SWITCH_TRACER has the code for the
-comm things?
-
-
-> > CONFIG_BOOT_TRACER=y (no performance impact by default)
 > 
-> But this tracer is pretty useless. It gives no more information than
-> debug_initcalls.
+> > On Wed, May 19, 2010 at 11:31:55AM +0200, Peter Zijlstra wrote:
+> > > The other problem is more urgent though, CPU_POST_DEAD runs outside of
+> > > the hotplug lock and thus the above becomes a race where we could
+> > > possible kill off the migration thread of a newly brought up cpu:
+> > > 
+> > >  cpu0 - down 2
+> > >  cpu1 - up 2 (allocs a new migration thread, and leaks the old one)
+> > >  cpu0 - post_down 2 - frees the migration thread -- oops!
+> > 
+> > Ok. So, how about adding a check in CPU_UP_PREPARE event handling too ?
+> > The cpuset_lock will synchronize, and thus avoid race between killing of
+> > migration_thread in up_prepare and post_dead events. 
+> > 
+> > Here is the updated patch. If you don't like this one too, do you mind
+> > suggesting an alternate approach to tackle the problem ? Thanks !
+> 
+> Right, so this isn't pretty at all..
+> 
+> Ingo, the comment near the migration_notifier says that migration_call
+> should happen before all else, but can you see anything that would break
+> if we let the timer migration happen first?
+> 
+> Thomas?
 
+That should work, though what is killing the scheduler per rq hrtimers
+_before_ we migrate stuff ? We don't want to migrate them, right ?
 
+Thanks,
 
-Yeah it's pretty useless. And these informations can also be displayed
-through printk on boot so...
-
+	tglx
