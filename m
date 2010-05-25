@@ -1,103 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932206Ab0EYBSx (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:18:53 -0400
-Received: from mga09.intel.com ([134.134.136.24]:3175 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758306Ab0EYBSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:18:51 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,295,1272870000"; 
-   d="scan'208";a="624469945"
-Date: Tue, 25 May 2010 09:18:49 +0800
-From: Shaohua Li <shaohua.li@intel.com>
-To: linux-kernel@vger.kernel.org
-Cc: jens.axboe@oracle.com, jmoyer@redhat.com
-Subject: [PATCH]cfq-iosched: fix an oops caused by slab leak
-Message-ID: <20100525011849.GA29820@sli10-desk.sh.intel.com>
+	id S932195Ab0EYB35 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:29:57 -0400
+Received: from mail-gx0-f227.google.com ([209.85.217.227]:62997 "EHLO
+	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758090Ab0EYB3z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:29:55 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type;
+        b=vWsXROhpNwKA2nlGLbT8ERy43HXJREBbAp4Dnlr8/1ddeC07whZOmYjEKjvYuqMrqx
+         NYDdhSJpUub69pnNkArm6yrVsJZQ58KbWLrvC5y4mM+BsmD+rDDU6EbTOIXKWaNTQqV6
+         w248lfv0/Y0g5cNefsNBjpOVBpVMg40oYut1Y=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100524234250.F158849A56@magilla.sf.frob.com>
+References: <20100522165401.GB19573@redhat.com> <1266280229-18469-1-git-send-email-vapier@gentoo.org> 
+	<1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> 
+	<20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> 
+	<25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> 
+	<20100524234250.F158849A56@magilla.sf.frob.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Mon, 24 May 2010 21:29:34 -0400
+Message-ID: <AANLkTinpMp1yZ2c5B5O7aT2NR57zBHlggvUXZ58bLGv2@mail.gmail.com>
+Subject: Re: [Uclinux-dist-devel] [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix 
+	the unsafe usage of child->mm
+To: Roland McGrath <roland@redhat.com>
+Cc: Oleg Nesterov <oleg@redhat.com>, linux-sh@vger.kernel.org,
+       linux-kernel@vger.kernel.org, David Howells <dhowells@redhat.com>,
+       Paul Mundt <lethal@linux-sh.org>,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       Andrew Morton <akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I got below oops when unloading cfq-iosched. Considering scenario:
-queue A merge to B, C merge to D and B will be merged to D. Before B is merged
-to D, we do split B. We should put B's reference for D.
+On Mon, May 24, 2010 at 19:42, Roland McGrath wrote:
+>> You mean, pass it to arch_ptrace() ?
+>>
+>> grep, grep, grep. I guess I understand you. We have more unsafe code
+>> like this in arch/*/kernel/ptrace.c. Of course, it can be fixed without
+>> doing get_task_mm() in sys_ptrace(), but perhaps it would be more clean
+>> to do what you suggest.
+>>
+>> Roland, what do you think?
+>
+> The mm pointer is only used by these uncommon ptrace operations that exist
+> only in certain unusual arch's (and they're all ill-advised old arch ptrace
+> ABI additions, at that).
 
-[  807.768536] =============================================================================
-[  807.768539] BUG cfq_queue: Objects remaining on kmem_cache_close()
-[  807.768541] -----------------------------------------------------------------------------
-[  807.768543]
-[  807.768546] INFO: Slab 0xffffea0003e6b4e0 objects=26 used=1 fp=0xffff88011d584fd8 flags=0x200000000004082
-[  807.768550] Pid: 5946, comm: rmmod Tainted: G        W   2.6.34-07097-gf4b87de-dirty #724
-[  807.768552] Call Trace:
-[  807.768560]  [<ffffffff81104e8d>] slab_err+0x8f/0x9d
-[  807.768564]  [<ffffffff811059e1>] ? flush_cpu_slab+0x0/0x93
-[  807.768569]  [<ffffffff8164be52>] ? add_preempt_count+0xe/0xca
-[  807.768572]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
-[  807.768577]  [<ffffffff81648871>] ? _raw_spin_unlock+0x15/0x30
-[  807.768580]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
-[  807.768584]  [<ffffffff811061bc>] list_slab_objects+0x9b/0x19f
-[  807.768588]  [<ffffffff8164bf0a>] ? add_preempt_count+0xc6/0xca
-[  807.768591]  [<ffffffff81109e27>] kmem_cache_destroy+0x13f/0x21d
-[  807.768597]  [<ffffffffa000ff13>] cfq_slab_kill+0x1a/0x43 [cfq_iosched]
-[  807.768601]  [<ffffffffa000ffcf>] cfq_exit+0x93/0x9e [cfq_iosched]
-[  807.768606]  [<ffffffff810973a2>] sys_delete_module+0x1b1/0x219
-[  807.768612]  [<ffffffff8102fb5b>] system_call_fastpath+0x16/0x1b
-[  807.768618] INFO: Object 0xffff88011d584618 @offset=1560
-[  807.768622] INFO: Allocated in cfq_get_queue+0x11e/0x274 [cfq_iosched] age=7173 cpu=1 pid=5496
-[  807.768626] =============================================================================
-
-Signed-off-by: Shaohua Li <shaohua.li@intel.com>
-
-diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
-index ed897b5..855fd5f 100644
---- a/block/cfq-iosched.c
-+++ b/block/cfq-iosched.c
-@@ -2537,15 +2537,10 @@ static void cfq_free_io_context(struct io_context *ioc)
- 	__call_for_each_cic(ioc, cic_free_func);
- }
- 
--static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
-+static void cfq_put_cooperator(struct cfq_queue *cfqq)
- {
- 	struct cfq_queue *__cfqq, *next;
- 
--	if (unlikely(cfqq == cfqd->active_queue)) {
--		__cfq_slice_expired(cfqd, cfqq, 0);
--		cfq_schedule_dispatch(cfqd);
--	}
--
- 	/*
- 	 * If this queue was scheduled to merge with another queue, be
- 	 * sure to drop the reference taken on that queue (and others in
-@@ -2561,6 +2556,16 @@ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
- 		cfq_put_queue(__cfqq);
- 		__cfqq = next;
- 	}
-+}
-+
-+static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
-+{
-+	if (unlikely(cfqq == cfqd->active_queue)) {
-+		__cfq_slice_expired(cfqd, cfqq, 0);
-+		cfq_schedule_dispatch(cfqd);
-+	}
-+
-+	cfq_put_cooperator(cfqq);
- 
- 	cfq_put_queue(cfqq);
- }
-@@ -3516,6 +3521,9 @@ split_cfqq(struct cfq_io_context *cic, struct cfq_queue *cfqq)
- 	}
- 
- 	cic_set_cfqq(cic, NULL, 1);
-+
-+	cfq_put_cooperator(cfqq);
-+
- 	cfq_put_queue(cfqq);
- 	return NULL;
- }
+are you suggesting the FDPIC additions are ill-advised as well ?
+curious how you would have implemented this if that's the case ...
+-mike
