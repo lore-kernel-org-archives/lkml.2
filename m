@@ -1,64 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757914Ab0E0Pwt (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:52:49 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:40001 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757266Ab0E0Pws convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Thu, 27 May 2010 11:52:48 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=T9WDKwiNgQt2FTK7/+eGEjbv7/2zNwsKYxn0LoZEkqS1cnh3U5DZymdTTGiBCnK82
-	0oi2AjrksO+hPnNxSBMCA==
+	id S1758128Ab0E0Pxa (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:53:30 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56769 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755512Ab0E0Px1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Thu, 27 May 2010 11:53:27 -0400
+Date: Tue, 25 May 2010 23:55:52 +0200
+From: Jan Kara <jack@suse.cz>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Jan Kara <jack@suse.cz>, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Christoph Hellwig <hch@infradead.org>,
+       Al Viro <viro@zeniv.linux.org.uk>
+Subject: Re: linux-next: manual merge of the ext3 tree with Linus' tree
+Message-ID: <20100525215552.GA12633@quack.suse.cz>
+References: <20100522154532.bc0f8008.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-In-Reply-To: <20100527154510.GK9874@ghostprotocols.net>
-References: <4bfe6b18.914ed80a.0573.4c6e@mx.google.com>
-	<20100527145142.GJ9874@ghostprotocols.net>
-	<20100527154510.GK9874@ghostprotocols.net>
-Date: Thu, 27 May 2010 17:52:42 +0200
-Message-ID: <AANLkTinrLDskqxBbrCa6XJ45yp-pdhwWkrj65a47Tb52@mail.gmail.com>
-Subject: Re: [PATCH] perf: fix use_browser infinite loop bug in annotate
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: linux-kernel@vger.kernel.org, peterz@infradead.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100522154532.bc0f8008.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 5:45 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Thu, May 27, 2010 at 11:51:42AM -0300, Arnaldo Carvalho de Melo escreveu:
->> Em Thu, May 27, 2010 at 02:50:01PM +0200, Stephane Eranian escreveu:
->> > This patch fixes an infinite loop problem with perf annotate when
->> > the TUI is not used. When the perfconfig file is not found use_browser
->> > remains at -1, when found and tui is disabled use_browser = 0. Thus the
->> > correct test for TUI is use_browser > 0.
->> >
->> > Signed-off-by: Stephane Eranian <eranian@google.com>
->>
->> Thanks, I'm applying this one and doing an audit of other uses, I know
->> of one more case reported by Frédéric that was fixed in a similar way.
->
->        Oops, I already have this fixed on changeset
->
-> 62e3436b5f3461662929eae102beefbd12127cb1
->
->        That is at:
->
-> git://git.kernel.org/pub/scm/linux/kernel/git/acme/linux-2.6 perf
->
-> http://git.kernel.org/?p=linux/kernel/git/acme/linux-2.6.git;a=commit;h=62e3436b5f3461662929eae102beefbd12127cb1
->
->        I pushed this to Ingo yesterday, should be in tip/perf/core soon,
-> thanks anyway!
->
-Ok, if it's fixed then this is fine. The other problem I reported is
-more important.
-Thanks for checking.
+  Hi Stephen,
+
+On Sat 22-05-10 15:45:32, Stephen Rothwell wrote:
+> Today's linux-next merge of the ext3 tree got a conflict in fs/super.c
+> between commits b20bd1a5e78af267dc4b6e1ffed48d5d776302c5 ("get rid of
+> S_BIAS"), 1712ac8fda7d8bc4dc921f5777b7423aacad7263 ("Saner locking around
+> deactivate_super()") and e1e46bf1866317d4f86f66bf18d3f07317d9f9ee ("Trim
+> includes in fs/super.c") from Linus' tree and commits
+> c3134141c78d5ea233a08b703b553e70cfb5c585 ("quota: move unmount handling
+> into the filesystem") and cdb89ca659f5a39edf88f3c55e545ea3347533d1
+> ("quota: explicitly set ->dq_op and ->s_qcop") from the ext3 tree.
+  Thanks! I've now rebased for_next branch on recent Linus's tree and
+so this conflict should go away.
+
+								Honza
+-- 
+Jan Kara <jack@suse.cz>
+SUSE Labs, CR
