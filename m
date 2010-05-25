@@ -1,94 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932563Ab0EYJxr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:53:47 -0400
-Received: from fg-out-1718.google.com ([72.14.220.156]:5567 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756508Ab0EYJxp (ORCPT
+	id S932613Ab0EYJyP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:54:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:41616 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756397Ab0EYJyN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:53:45 -0400
+	Tue, 25 May 2010 05:54:13 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
-        b=nlNz/9lmg2JZK0JIDoEzCaQ5gTUH8ANpBLHG3H+fD900V0lzfvZTostXxupOFbkbpP
-         ergaKOK92J7u2Oe25D254pJWKElk9k0zy5+TBlbwBdCKQ9B3T8czHz7VpReqJEP6jW/5
-         tDqC/tGmVMKh69gOU4BYasZ9ItMT/IA21TVJg=
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=DxJk69Sp6XgP+b45e/FsXiIaG/eo72Dp/UXOS78qAw7yTszxpZvlC2QgqX1qxqBJO9
+         8zRg56eic02o+yRN6va9jo3LZrCwxr49H9/Xor6SctGq9VaOZ3FDFWbLOaY64B+WxufD
+         sPX+F9dpgoQQsAMat+tLszE3oMUwlEoLA3Quo=
+Date: Tue, 25 May 2010 11:53:48 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Dan Williams <dan.j.williams@intel.com>
+Cc: Linus Walleij <linus.walleij@stericsson.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Richard =?iso-8859-1?Q?R=F6jfors?= 
+	<richard.rojfors@pelagicore.com>,
+       Stephen Rothwell <sfr@canb.auug.org.au>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch 1/2] dma/timb_dma: fixup error handling in
+	td_alloc_init_desc()
+Message-ID: <20100525095348.GI22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Dan Williams <dan.j.williams@intel.com>,
+	Linus Walleij <linus.walleij@stericsson.com>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Richard =?iso-8859-1?Q?R=F6jfors?= <richard.rojfors@pelagicore.com>,
+	Stephen Rothwell <sfr@canb.auug.org.au>,
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
-In-Reply-To: <20100525093410.GH5087@laptop>
-References: <20100521211452.659982351@quilx.com>
-	<20100524070309.GU2516@laptop>
-	<alpine.DEB.2.00.1005240852580.5045@router.home>
-	<20100525020629.GA5087@laptop>
-	<AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
-	<20100525070734.GC5087@laptop>
-	<AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
-	<20100525081634.GE5087@laptop>
-	<AANLkTilJBY0sinB365lIZFUaMgMCZ1xyhMdXRTJTVDSV@mail.gmail.com>
-	<20100525093410.GH5087@laptop>
-Date: Tue, 25 May 2010 12:53:43 +0300
-X-Google-Sender-Auth: ELObNlEjAtDhkayBth7HPw-LOMU
-Message-ID: <AANLkTikXp5LlKLK1deKOQpciUFNugjlQah5QpNcImf39@mail.gmail.com>
-Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: Nick Piggin <npiggin@suse.de>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
-       Mel Gorman <mel@csn.ul.ie>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Nick,
+The original code tried to kfree(td_desc->desc_list) when td_desc was
+NULL so I re-arranged it.
 
-On Tue, May 25, 2010 at 12:34 PM, Nick Piggin <npiggin@suse.de> wrote:
->> The main selling point for SLUB was NUMA. Has the situation changed?
->
-> Well one problem with SLAB was really just those alien caches. AFAIK
-> they were added by Christoph Lameter (maybe wrong), and I didn't ever
-> actually see much justification for them in the changelog. noaliencache
-> can be and is used on bigger machines, and SLES and RHEL kernels are
-> using SLAB on production NUMA systems up to thousands of CPU Altixes,
-> and have been looking at working on SGI's UV, and hundreds of cores
-> POWER7 etc.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Yes, Christoph and some other people introduced alien caches IIRC for
-big iron SGI boxes. As for benchmarks, commit
-e498be7dafd72fd68848c1eef1575aa7c5d658df ("Numa-aware slab allocator
-V5") mentions AIM.
-
-On Tue, May 25, 2010 at 12:34 PM, Nick Piggin <npiggin@suse.de> wrote:
-> I have not seen NUMA benchmarks showing SLUB is significantly better.
-> I haven't done much testing myself, mind you. But from indications, we
-> could probably quite easily drop the alien caches setup and do like a
-> simpler single remote freeing queue per CPU or something like that.
-
-Commit 81819f0fc8285a2a5a921c019e3e3d7b6169d225 ("SLUB core") mentions
-kernbench improvements.
-
-Other than these two data points, I unfortunately don't have any as I
-wasn't involved with merging of either of the patches. If other NUMA
-people know better, please feel free to share the data.
-
-On Tue, May 25, 2010 at 11:16 AM, Nick Piggin <npiggin@suse.de> wrote:
-> I think we should: modernise SLAB code, add missing debug features,
-> possibly turn off alien caches by default, chuck out SLUB, and then
-> require that future changes have some reasonable bar set to justify
-> them.
->
-> I would not be at all against adding changes that transform SLAB to
-> SLUB or SLEB or SLQB. That's how it really should be done in the
-> first place.
-
-Like I said, as a maintainer I'm happy to merge patches to modernize
-SLAB but I still think you're underestimating the effort especially
-considering the fact that we can't afford many performance regressions
-there either. I guess trying to get rid of alien caches would be the
-first logical step there.
+diff --git a/drivers/dma/timb_dma.c b/drivers/dma/timb_dma.c
+index 0172fa3..3e101a0 100644
+--- a/drivers/dma/timb_dma.c
++++ b/drivers/dma/timb_dma.c
+@@ -390,7 +390,7 @@ static struct timb_dma_desc *td_alloc_init_desc(struct timb_dma_chan *td_chan)
+ 	td_desc->desc_list = kzalloc(td_desc->desc_list_len, GFP_KERNEL);
+ 	if (!td_desc->desc_list) {
+ 		dev_err(chan2dev(chan), "Failed to alloc descriptor\n");
+-		goto err;
++		goto err_desc;
+ 	}
+ 
+ 	dma_async_tx_descriptor_init(&td_desc->txd, chan);
+@@ -403,14 +403,16 @@ static struct timb_dma_desc *td_alloc_init_desc(struct timb_dma_chan *td_chan)
+ 	err = dma_mapping_error(chan2dmadev(chan), td_desc->txd.phys);
+ 	if (err) {
+ 		dev_err(chan2dev(chan), "DMA mapping error: %d\n", err);
+-		goto err;
++		goto err_list;
+ 	}
+ 
+ 	return td_desc;
+-err:
++
++err_list:
+ 	kfree(td_desc->desc_list);
++err_desc:
+ 	kfree(td_desc);
+-
++err:
+ 	return NULL;
+ 
+ }
