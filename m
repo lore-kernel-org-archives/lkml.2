@@ -1,62 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932398Ab0EYWhx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:37:53 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:4504 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759044Ab0EYWhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:37:50 -0400
-Date: Tue, 25 May 2010 18:37:48 -0400
-From: Prarit Bhargava <prarit@redhat.com>
-To: linux-kernel@vger.kernel.org, hpa@zytor.com, ebiederm@xmission.com,
-       vgoyal@redhat.com, mjg@redhat.com, arozansk@redhat.com
-Cc: Prarit Bhargava <prarit@redhat.com>
-Message-Id: <20100525223406.9446.46193.sendpatchset@prarit.bos.redhat.com>
-Subject: [PATCH]: Fix checkstack warning in bunzip2 library
+	id S932657Ab0EYWiA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:38:00 -0400
+Received: from g1t0029.austin.hp.com ([15.216.28.36]:35325 "EHLO
+	g1t0029.austin.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932541Ab0EYWh6 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:37:58 -0400
+From: "Camuso, Tony" <Tony.Camuso@hp.com>
+To: Prarit Bhargava <prarit@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "Altobelli, David" <david.altobelli@hp.com>
+Date: Tue, 25 May 2010 22:35:58 +0000
+Subject: RE: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
+Thread-Topic: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
+Thread-Index: Acr8V6YZ1+OjuNAFRMCTa4oNqB2qUAAArsGQ
+Message-ID: <B9407FD6893A644D9D6B72C30268E7A938681FF444@GVW0538EXC.americas.hpqcorp.net>
+References: <20100522004615.25451.83108.sendpatchset@prarit.bos.redhat.com>
+ <20100525144937.e0726ec2.akpm@linux-foundation.org>
+ <4BFC4ABC.9010209@redhat.com>
+In-Reply-To: <4BFC4ABC.9010209@redhat.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix checkstack error:
+I guess it would have helped if I asked David what the code did, first. 
+":|
 
-lib/decompress_bunzip2.c: In function ‘get_next_block’:
-lib/decompress_bunzip2.c:511: warning: the frame size of 1932 bytes is larger than 1024 bytes
 
-byteCount, symToByte, and mtfSymbol cannot be declared static or allocated
-dynamically so place them in the bunzip_data struct.
 
-Signed-off-by: Prarit Bhargava <prarit@redhat.com>
+-----Original Message-----
+From: Prarit Bhargava [mailto:prarit@redhat.com] 
+Sent: Tuesday, May 25, 2010 6:10 PM
+To: Andrew Morton
+Cc: linux-kernel@vger.kernel.org; stable@kernel.org; Altobelli, David; Camuso, Tony
+Subject: Re: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
 
-diff --git a/lib/decompress_bunzip2.c b/lib/decompress_bunzip2.c
-index a4e971d..81c8bb1 100644
---- a/lib/decompress_bunzip2.c
-+++ b/lib/decompress_bunzip2.c
-@@ -107,6 +107,8 @@ struct bunzip_data {
- 	unsigned char selectors[32768];		/* nSelectors = 15 bits */
- 	struct group_data groups[MAX_GROUPS];	/* Huffman coding tables */
- 	int io_error;			/* non-zero if we have IO error */
-+	int byteCount[256];
-+	unsigned char symToByte[256], mtfSymbol[256];
- };
- 
- 
-@@ -158,14 +160,16 @@ static int INIT get_next_block(struct bunzip_data *bd)
- 	int *base = NULL;
- 	int *limit = NULL;
- 	int dbufCount, nextSym, dbufSize, groupCount, selector,
--		i, j, k, t, runPos, symCount, symTotal, nSelectors,
--		byteCount[256];
--	unsigned char uc, symToByte[256], mtfSymbol[256], *selectors;
-+		i, j, k, t, runPos, symCount, symTotal, nSelectors, *byteCount;
-+	unsigned char uc, *symToByte, *mtfSymbol, *selectors;
- 	unsigned int *dbuf, origPtr;
- 
- 	dbuf = bd->dbuf;
- 	dbufSize = bd->dbufSize;
- 	selectors = bd->selectors;
-+	byteCount = bd->byteCount;
-+	symToByte = bd->symToByte;
-+	mtfSymbol = bd->mtfSymbol;
- 
- 	/* Read in header signature and CRC, then validate signature.
- 	   (last block signature means CRC is for whole file, return now) */
+
+
+On 05/25/2010 05:49 PM, Andrew Morton wrote:
+> On Fri, 21 May 2010 20:50:41 -0400
+> Prarit Bhargava<prarit@redhat.com>  wrote:
+>
+>    
+>> Fixes warning:
+>>
+>> drivers/misc/hpilo.c: In function ___ilo_ccb_setup___:
+>> drivers/misc/hpilo.c:274: warning: cast to pointer from integer of different size
+>>
+>> Signed-off-by: Prarit Bhargava<prarit@redhat.com>
+>>
+>> diff --git a/drivers/misc/hpilo.c b/drivers/misc/hpilo.c
+>> index 98ad012..b07a541 100644
+>> --- a/drivers/misc/hpilo.c
+>> +++ b/drivers/misc/hpilo.c
+>> @@ -272,7 +272,7 @@ static int ilo_ccb_setup(struct ilo_hwinfo *hw, struct ccb_data *data, int slot)
+>>   		return -ENOMEM;
+>>
+>>   	dma_va = (char *)data->dma_va;
+>> -	dma_pa = (char *)data->dma_pa;
+>> +	dma_pa = (char *)(&data->dma_pa);
+>>
+>>   	memset(dma_va, 0, data->dma_size);
+>>      
+> Seems very wrong - writes to *dmp_pa will now scribble over the `struct
+> ccb_data'.
+>
+> Probably local variable dma_pa should have type dma_addr_t.
+>    
+
+Ugh ... I even passed this by a colleague at HP :/.  I'll fix it up and 
+repost.
+
+P.
+
