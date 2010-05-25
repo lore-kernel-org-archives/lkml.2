@@ -1,99 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0EYPHS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:07:18 -0400
-Received: from mail.wired-net.gr ([86.35.2.10]:39289 "EHLO enigma.wired-net.gr"
+	id S1758971Ab0EYPNK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:13:10 -0400
+Received: from king.tilera.com ([72.1.168.226]:44273 "EHLO king.tilera.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932854Ab0EYPHQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:07:16 -0400
-Message-ID: <4BFBE793.5030103@wired-net.gr>
-Date: Tue, 25 May 2010 18:06:59 +0300
-From: Nanakos Chrysostomos <nanakos@wired-net.gr>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 6.0; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+	id S1757090Ab0EYPNI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 11:13:08 -0400
+Message-ID: <4BFBE8FF.6080208@tilera.com>
+Date: Tue, 25 May 2010 11:13:03 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Martyn Welch <martyn.welch@ge.com>
-CC: Greg KH <gregkh@suse.de>, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vme: vme.c: fixed an EXPORT_SYMBOL warning
-References: <1274792957-4602-1-git-send-email-nanakos@wired-net.gr> <20100525134453.GA4818@suse.de> <4BFBDC74.6000000@ge.com>
-In-Reply-To: <4BFBDC74.6000000@ge.com>
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Ulrich Drepper <drepper@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org, Chen Liqin <liqin.chen@sunplusct.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005242053.25594.arnd@arndb.de> <4BFBD68C.9060405@tilera.com> <201005251703.11613.arnd@arndb.de>
+In-Reply-To: <201005251703.11613.arnd@arndb.de>
 X-Enigmail-Version: 1.0.1
 Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 May 2010 15:13:05.0592 (UTC) FILETIME=[C6ABEB80:01CAFC1C]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25/5/2010 17:19, Martyn Welch wrote:
-> Greg KH wrote:
+On 5/25/2010 11:03 AM, Arnd Bergmann wrote:
+> I would keep allocating from the bottom. For now, maybe we should just
+> reserve 16 arch specific syscall numbers starting at 244, and add
+>
+> #define __NR_tile_cmpxchg_baddr (__NR_arch_specific_syscall + 0)
+> #define __NR_tile_raise_fpe	(__NR_arch_specific_syscall + 1)
+> #define __NR_tile_flush_cache	(__NR_arch_specific_syscall + 2)
+>
+> to your own unistd.h.
 >   
->> On Tue, May 25, 2010 at 01:09:17PM +0000, nanakos@wired-net.gr wrote:
->>   
->>     
->>> From: Nanakos Chrysostomos <nanakos@wired-net.gr>
->>>
->>> Fixed an EXPORT_SYMBOL warning.
->>>     
->>>       
->> What type of warning?  a checkpatch.pl one?  a gcc one?  a sparse one?
->>
->> Please be more verbose.
->>
->>   
->>     
->>> Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
->>> ---
->>>  drivers/staging/vme/vme.c |    2 +-
->>>  1 files changed, 1 insertions(+), 1 deletions(-)
->>>
->>> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
->>> index 093fbff..a0b63d5 100644
->>> --- a/drivers/staging/vme/vme.c
->>> +++ b/drivers/staging/vme/vme.c
->>> @@ -1519,7 +1519,6 @@ struct bus_type vme_bus_type = {
->>>  	.probe = vme_bus_probe,
->>>  	.remove = vme_bus_remove,
->>>  };
->>> -EXPORT_SYMBOL(vme_bus_type);
->>>  
->>>  static int __init vme_init(void)
->>>  {
->>> @@ -1530,6 +1529,7 @@ static void __exit vme_exit(void)
->>>  {
->>>  	bus_unregister(&vme_bus_type);
->>>  }
->>> +EXPORT_SYMBOL(vme_bus_type);
->>>     
->>>       
->> This does not look correct, why move this away from where the structure
->> is defined?
->>
->>   
->>     
-> It's a checkpatch error:
->
-> $ scripts/checkpatch.pl -f drivers/staging/vme/vme.c
-> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-> #1522: FILE: staging/vme/vme.c:1522:
-> +EXPORT_SYMBOL(vme_bus_type);
->
-> total: 0 errors, 1 warnings, 1539 lines checked
->
->
->   
->> confused,
->>   
->>     
-> Yup, confused me as well. :-)
->
-> Martyn
->
->   
->> greg k-h
->>   
->>     
->
->   
-Yes you are right, this is a checkpatch error as well.
 
-Thanks for your time looking the patches.
+OK.
+
+>  The idea was to only have them around as a transitional helper for
+> new architectures while getting merged, but nothing should ever
+> use these in production.
+>   
+
+Perhaps the best strategy for Tile for now is to enable the transitional
+helpers, and then when glibc no longer requires any of those syscalls,
+we can remove them from the kernel.  If this happens in the relatively
+short term (e.g. before our 3.0 release later this year) all the better,
+but for now we can separate this into a first change that preserves most
+of the compatibility syscalls, and work towards remove them in a later
+release.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
+
