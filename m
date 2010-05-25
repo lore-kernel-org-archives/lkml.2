@@ -1,66 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758966Ab0EYBzi (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:55:38 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50243 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758749Ab0EYBzh (ORCPT
+	id S932166Ab0EYB61 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:58:27 -0400
+Received: from zeniv.linux.org.uk ([195.92.253.2]:35149 "EHLO
+	ZenIV.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758771Ab0EYB6Z (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:55:37 -0400
-X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=HguAhMkt-QwA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=m5CNwJbRKoju0NDaGqUA:9 a=ww42xmaBX2srE1TL5BkOII1jF80A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: FUNCTION_TRACER: can it be used to trace early bootup functions
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
-Cc: linux-kernel@vger.kernel.org
-In-Reply-To: <06EE497F774E482693005209CB740D6A@rainbow>
-References: <06EE497F774E482693005209CB740D6A@rainbow>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Mon, 24 May 2010 21:55:34 -0400
-Message-ID: <1274752534.22648.186.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	Mon, 24 May 2010 21:58:25 -0400
+Date: Tue, 25 May 2010 02:58:22 +0100
+From: Al Viro <viro@ZenIV.linux.org.uk>
+To: Neil Brown <neilb@suse.de>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100525015822.GV31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+ <20100524115903.GP31073@ZenIV.linux.org.uk>
+ <20100525111405.04eaf924@notabene.brown>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100525111405.04eaf924@notabene.brown>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 15:55 +0900, Iram Shahzad wrote:
-> Hi
-> 
-> I would like to know whether the Kernel Function Tracer
-> (kernel/trace/trace_functions) be used to trace early kernel
-> bootup functions starting from start_kernel?
-> My arch is ARM, by the way.
-> 
-> I have done some trials but it doesn't seem to trace early
-> bootup functions. I even made it the default tracer replacing
-> the nop tracer, but still it doesn't give me trace from
-> start_kernel.
-> 
-> Looking at the source code, it seems to me that it starts
-> recording data only after its own initialization. So does it
-> mean that by design it does not support early tracing?
+On Tue, May 25, 2010 at 11:14:05AM +1000, Neil Brown wrote:
 
-The main reason it does not support early tracing is that we need memory
-management initialized before we can setup tracing. The tracing needs to
-go somewhere :-)
+> I must confess though that I don't feel I understand VFS name lookup properly
+> any more.  Since intents were added it seems to have become much more obscure
+> and complex.  I cannot help thinking that there must be a better way:
+> distinguish between the various cases at a higher level so we don't need as
+> many flags being passed around and interpreted by widely separate pieces of
+> code.  I don't have a concrete proposal but I would certainly be interested
+> to work on one if there were any hope of real change.
+> Thoughts?
 
-With my previous tracer (logdev) I had a way to initialize the ring
-buffer via bootmem. This allowed for tracing as soon as bootmem could be
-allocated.
+Intents are vile crap that has been introduced by the nfs folks to start
+with...  I've been trying to localize the mess and it's got a _lot_ better
+than it used to be a year ago, but they are still not gone.  And yes, I
+plan to kill that crap.  Basically, most of the do_last() guts will become
+a method that would get struct file *explicitly* and ask the fs to do
+(possibly atomic) open.  With normal filesystems defaulting to what's there
+right now.
 
-It is still feasible to add a way to do function tracing with bootmem, I
-just never got around to it.
+The main obstacle at the moment is in ->d_revalidate() abuses.  NFS, CIFS
+*and* autofs, the last one in a way that isn't really compatible with what
+NFS et.al. are trying to do.  Overloading of ->d_revalidate() and ->lookup()
+to do the work of open() doesn't help, and the horrors nfs4 piles on top
+of that are even scarier.
 
-> 
-> Please CC me in the reply.
+_Another_ fine piece of something is ->follow_link() abuses, including
+referrals' treatment.  Also tied to the previous messes.
 
-Don't worry, that's the default way for LKML ;-)
+We definitely will need to get VFS-to-fs APIs in that area changed; most of
+the mess has been created by the deeply misguided efforts to keep the API
+changes minimal.
 
--- Steve
-
-
+As for the flags, quite a few will be gone once we split "opening the final
+component" from the normal cases.  Google for lookup_instantiate_filp+shit
+for details of these plans...
