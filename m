@@ -1,54 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933404Ab0EYRdT (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:33:19 -0400
-Received: from bosmailout12.eigbox.net ([66.96.186.12]:33551 "EHLO
-	bosmailout12.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932676Ab0EYRdR (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:33:17 -0400
-X-Greylist: delayed 1894 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 13:33:16 EDT
-X-EN-OrigOutIP: 10.20.18.15
-X-EN-IMPSID: Mt1b1e00P0KWaAJ01t1ckU
-Message-ID: <4BFC024A.9090600@jaysonking.com>
-Date: Tue, 25 May 2010 12:00:58 -0500
-From: "Jayson R. King" <dev@jaysonking.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Thunderbird/3.0.3
+	id S1759006Ab0EYReO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:34:14 -0400
+Received: from mail.gmx.net ([213.165.64.20]:46150 "HELO mail.gmx.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758624Ab0EYReM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 13:34:12 -0400
+X-Authenticated: #20629184
+X-Provags-ID: V01U2FsdGVkX1/kRkkxTjvk4h+FqTIdt0U9kiyefxDfq68R24kI7V
+	X4HQjoBRK/nD86
+Message-ID: <4BFC0A11.1030902@gmx.de>
+Date: Tue, 25 May 2010 19:34:09 +0200
+From: Johannes Bauer <dfnsonfsduifb@gmx.de>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; de; rv:1.8.1.23) Gecko/20091110 Thunderbird/2.0.0.23 Mnenhy/0.7.6.666
 MIME-Version: 1.0
-To: Greg KH <gregkh@suse.de>
-CC: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Theodore Tso <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
-References: <20100524223544.GA13721@kroah.com> <20100524223016.208581966@clark.site> <20100525111208.GA8779@infradead.org> <20100525165230.GA9154@suse.de>
-In-Reply-To: <20100525165230.GA9154@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+To: linux-kernel@vger.kernel.org
+Subject: usbtmc makes Rigol DS1052E oscilloscope crash
+Content-Type: text/plain; charset=ISO-8859-15
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
-X-EN-AuthUser: jaysonking@jaysonking.com
-X-EN-OrigIP: 68.93.139.172
-X-EN-OrigHost: unknown
+X-Y-GMX-Trusted: 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2010 11:52 AM, Greg KH wrote:
-> On Tue, May 25, 2010 at 07:12:08AM -0400, Christoph Hellwig wrote:
->> On Mon, May 24, 2010 at 03:28:06PM -0700, Greg KH wrote:
->>> 2.6.27-stable review patch.  If anyone has any objections, please let us know.
->>
->> NACK.  This has been shown to cause severe writeback regression for
->> other filesystems and is beeing reverted in mianline.
-> 
-> Ok, if I drop this one, I think I need to drop an ext4 patch as well,
-> I'll go figure that out and respin a -rc2 with this change in it.
+Hi folks,
 
-You'd have to drop the next two ext4 -stable patches to get a buildable
-kernel if you drop this one. The last of those ext4 patches is the one
-which fixes the deadlock from kernel bugzilla #12579.
+I'm experiencing trouble connecting to a Rigol DS1052E oscilloscope via
+the usbtmc USB class driver. When requesting small amounts of data it
+works quite nicely, but when requesting a large chunk (i.e. when
+requesting the whole memory to be transferred), the read aborts, the
+connection times out and ultimately this leads to the oscilloscope crashing.
 
-Jayson
+The commands I'm executing in the example I have provided are:
+
+Cmd: *IDN?
+Rigol.Technologies,DS1052E,DS1ED120100155,00.02.04.00.00
+Cmd: :WAVEFORM:POINTS:MODE?
+MAXIMUM
+Cmd: :RUN
+Cmd: :FORC
+Cmd: :CHAN1:MEMD?
+1048576
+Cmd: :WAV:DATA?
+
+After the ":WAV:DATA?" command, the oscilloscope crashes, here's how it
+looks before for those who are interested:
+http://s1.directupload.net/file/d/2169/r3m4l97m_jpg.htm
+
+And after:
+http://s10.directupload.net/file/d/2169/egvgv7hq_jpg.htm
+
+I've captured the USB traffic which is going on using usbmon, debugfs
+and wireshark, it's a 5kB pcap file:
+http://www.file-upload.net/download-2544840/usb_rigol.pcap.html
+
+To further trace the problem, I've patched usbtmc.c to emit some more
+debug output. Here's the patch:
+http://pastebin.com/fMkA5xSJ
+
+Here's what the extended dmesg output looks after I applied my patch
+against 2.6.34 (I annotated it so that it is clear which output is
+emitted after which read):
+http://pastebin.com/CXRwxxe8
+
+I really hope this can be resolved,
+Kind regards,
+Johannes
