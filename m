@@ -1,141 +1,115 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758453Ab0EYW7V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:59:21 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:41478 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751024Ab0EYW7T convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:59:19 -0400
-To: Arve =?iso-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-References: <201005251124.58017.dmitry.torokhov@gmail.com>
-	<Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
-	<20100525184740.GA4248@core.coreip.homeip.net>
-	<AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
-	<20100525223220.GC4928@core.coreip.homeip.net>
-	<AANLkTinnSH_egFYowkOQiYHL87QfIH332i1__OaTem-s@mail.gmail.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Tue, 25 May 2010 15:59:15 -0700
-In-Reply-To: <AANLkTinnSH_egFYowkOQiYHL87QfIH332i1__OaTem-s@mail.gmail.com>
- ("Arve =?iso-8859-1?Q?Hj=F8nnev=E5g=22's?= message of "Tue\, 25 May 2010
- 15\:37\:48 -0700")
-Message-ID: <87ljb7io58.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
+	id S1758466Ab0EYW7f (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:59:35 -0400
+Received: from relay3.sgi.com ([192.48.152.1]:53404 "EHLO relay.sgi.com"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1756282Ab0EYW7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:59:33 -0400
+Message-ID: <4BFC5650.7090104@sgi.com>
+Date: Tue, 25 May 2010 15:59:28 -0700
+From: Mike Travis <travis@sgi.com>
+User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Transfer-Encoding: 8BIT
+To: "H. Peter Anvin" <hpa@zytor.com>
+CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
+ specified v2
+References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com> <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com> <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com> <4BFC5217.6060804@zytor.com>
+In-Reply-To: <4BFC5217.6060804@zytor.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Arve Hjønnevåg <arve@android.com> writes:
+Currently, the e820_reserve_resources() function does not add entries
+obtained via the "add_efi_memmap" kernel cmdline option.  This causes
+/sys/firmware/memmap/... to be incomplete (stops after 128 entries).
+Utilities that examine these entries then do not get the complete
+picture of system memory.
 
-> 2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
->> On Tue, May 25, 2010 at 03:23:23PM -0700, Arve Hjønnevåg wrote:
->>> On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
->>> <dmitry.torokhov@gmail.com> wrote:
->>> > On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
->>> >> On Tue, 25 May 2010, Dmitry Torokhov wrote:
->>> >>
->>> >> > > Here's the scenario:
->>> >> > >
->>> >> > > The system is awake, and the user presses a key. The keyboard driver
->>> >> > > processes the keystroke and puts it in an input queue.  A user process
->>> >> > > reads it from the event queue, thereby emptying the queue.
->>> >> > >
->>> >> > > At that moment, the system decides to go into opportunistic suspend.
->>> >> > > Since the input queue is empty, there's nothing to stop it.  As the
->>> >> > > first step, userspace is frozen -- before the process has a chance to
->>> >> > > do anything with the keystroke it just read.  As a result, the system
->>> >> > > stays asleep until something else wakes it up, even though the
->>> >> > > keystroke was important and should have prevented it from sleeping.
->>> >> > >
->>> >> > > Suspend blockers protect against this scenario.  Here's how:
->>> >> > >
->>> >> > > The user process doesn't read the input queue directly; instead it
->>> >> > > does a select or poll.  When it sees there is data in the queue, it
->>> >> > > first acquires a suspend blocker and then reads the data.
->>> >> > >
->>> >> > > Now the system _can't_ go into opportunistic suspend, because a suspend
->>> >> > > blocker is active.  The user process can do whatever it wants with the
->>> >> > > keystroke.  When it is finished, it releases the suspend blocker and
->>> >> > > loops back to the select/poll call.
->>> >> > >
->>> >> >
->>> >> > What you describe can be done in userspace though, via a "suspend manager"
->>> >> > process. Tasks reading input events will post "busy" events to stop the
->>> >> > manager process from sending system into suspend. But this can be confined to
->>> >> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
->>> >> > to not go into suspend with full queues, but that is using existing kernel
->>> >> > APIs).
->>> >>
->>> >> I think that could be made to work.  And it might remove the need for
->>> >> the userspace suspend-blocker API, which would be an advantage.  It
->>> >> could even remove the need for the opportunistic-suspend workqueue --
->>> >> opportunistic suspends would be initiated by the "suspend manager"
->>> >> process instead of by the kernel.
->>> >>
->>> >> However you still have the issue of modifying the kernel drivers to
->>> >> disallow opportunistic suspend if their queues are non-empty.  Doing
->>> >> that is more or less equivalent to implementing kernel-level suspend
->>> >> blockers.  (The suspend blocker approach is slightly more efficient,
->>> >> because it will prevent a suspend from starting if a queue is
->>> >> non-empty, instead of allowing the suspend to start and then aborting
->>> >> it partway through.)
->>> >>
->>> >> Maybe I'm missing something here...  No doubt someone will point it out
->>> >> if I am.
->>> >>
->>> >
->>> > Well, from my perspective that would limit changes to the evdev driver
->>> > (well, limited input core plumbing will be needed) but that is using the
->>> > current PM infrastructure. The HW driver changes will be limited to what
->>> > you described "type 2" in your other e-mail.
->>> >
->>> > Also, not suspending while events are in progress) is probably
->>> > beneficial for platforms other than Android as well. So unless I am
->>> > missing something this sounds like a win.
->>> >
->>>
->>> How would this limit the changes you need in the evdev driver? It need
->>> to block suspend when there are unprocessed events in some queues.
->>> Suspend blockers gives you an api to do this, without it, you check
->>> the queues in your suspend hook and abort suspend if they are not
->>> empty. Without suspend blockers you have no api to signal that it is
->>> OK to suspend again, so you are forcing the thread that tried to
->>> suspend to poll until you stop aborting suspend.
->>
->> No, you do not need to poll. You just set a timeout (short or long,
->> depending on your needs) and if no userspace task blocked suspend
->> durng that time you attempt to initiate suspend from your manager
->> process. If it succeeds - good, if not that means that more events came
->> your way and you have to do it later.
->>
->
-> How is that not polling? If the user is holding down a key, the keypad
-> driver has to block suspend, and user space will try to suspend again
-> and again and again...
+This patch causes the add_efi_memmap function to add the memmap entries
+to both the e820 map and the e820_saved map.
 
-Then the userspace suspend manager should be a little more clever
-and should not blindly retry continuously.
+Signed-off-by: Mike Travis <travis@sgi.com>
+Signed-off-by: Jack Steiner <steiner@sgi.com>
+---
+v2: drop call to sanitize e820_saved map after adding efi_memmap
+    entries.  (Note: it may still be "sanitized" via setup_arch->
+    early_reserve_e820_mpc_new-> early_reserve_e820->update_e820_saved->
+    sanitize_e820_map)
+---
+ arch/x86/include/asm/e820.h |    1 +
+ arch/x86/kernel/e820-xen.c  |    5 +++++
+ arch/x86/kernel/e820.c      |   11 ++++++++---
+ arch/x86/kernel/efi.c       |    1 +
+ 4 files changed, 15 insertions(+), 3 deletions(-)
 
-It should be more like a governor which makes some simple decisions
-based on previous events, simple heuristics, uses timeouts etc.,
-
-Kevin
+--- linux-2.6.32.orig/arch/x86/include/asm/e820.h
++++ linux-2.6.32/arch/x86/include/asm/e820.h
+@@ -70,6 +70,7 @@ extern unsigned long pci_mem_start;
+ extern int e820_any_mapped(u64 start, u64 end, unsigned type);
+ extern int e820_all_mapped(u64 start, u64 end, unsigned type);
+ extern void e820_add_region(u64 start, u64 size, int type);
++extern void e820_saved_add_region(u64 start, u64 size, int type);
+ extern void e820_print_map(char *who);
+ extern int
+ sanitize_e820_map(struct e820entry *biosmap, int max_nr_map, u32 *pnr_map);
+--- linux-2.6.32.orig/arch/x86/kernel/e820-xen.c
++++ linux-2.6.32/arch/x86/kernel/e820-xen.c
+@@ -150,6 +150,11 @@ void __init e820_add_region(u64 start, u
+ 	__e820_add_region(&e820, start, size, type);
+ }
+ 
++void __init e820_saved_add_region(u64 start, u64 size, int type)
++{
++	__e820_add_region(&e820_saved, start, size, type);
++}
++
+ static void __init e820_print_type(u32 type)
+ {
+ 	switch (type) {
+--- linux-2.6.32.orig/arch/x86/kernel/e820.c
++++ linux-2.6.32/arch/x86/kernel/e820.c
+@@ -33,9 +33,9 @@
+  * and that is also registered with modifications in the kernel resource tree
+  * with the iomem_resource as parent.
+  *
+- * The e820_saved is directly saved after the BIOS-provided memory map is
+- * copied. It doesn't get modified afterwards. It's registered for the
+- * /sys/firmware/memmap interface.
++ * The e820_saved is saved after the BIOS-provided memory map is copied as
++ * well as the optional add_efi_memmap entries are processed.  It doesn't get
++ * modified afterwards. It's registered for the /sys/firmware/memmap interface.
+  *
+  * That memory map is not modified and is used as base for kexec. The kexec'd
+  * kernel should get the same memory map as the firmware provides. Then the
+@@ -132,6 +132,11 @@ void __init e820_add_region(u64 start, u
+ 	__e820_add_region(&e820, start, size, type);
+ }
+ 
++void __init e820_saved_add_region(u64 start, u64 size, int type)
++{
++	__e820_add_region(&e820_saved, start, size, type);
++}
++
+ static void __init e820_print_type(u32 type)
+ {
+ 	switch (type) {
+--- linux-2.6.32.orig/arch/x86/kernel/efi.c
++++ linux-2.6.32/arch/x86/kernel/efi.c
+@@ -271,6 +271,7 @@ static void __init do_add_efi_memmap(voi
+ 			break;
+ 		}
+ 		e820_add_region(start, size, e820_type);
++		e820_saved_add_region(start, size, e820_type);
+ 	}
+ 	sanitize_e820_map(e820.map, ARRAY_SIZE(e820.map), &e820.nr_map);
+ }
 
