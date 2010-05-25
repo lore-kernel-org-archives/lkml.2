@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755661Ab0EYM6e (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 08:58:34 -0400
-Received: from minas.ics.muni.cz ([147.251.4.40]:41897 "EHLO minas.ics.muni.cz"
+	id S1754917Ab0EYNEw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:04:52 -0400
+Received: from mail-out2.uio.no ([129.240.10.58]:53638 "EHLO mail-out2.uio.no"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab0EYM6c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 08:58:32 -0400
-Date: Tue, 25 May 2010 14:58:33 +0200
-From: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-To: Trond Myklebust <trond.myklebust@fys.uio.no>
-Cc: Pavel Machek <pavel@ucw.cz>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       salvet@ics.muni.cz
-Subject: Re: Deadlock in NFSv4 in all kernels
-Message-ID: <20100525125833.GB9731@ics.muni.cz>
-References: <20100507153920.GP28167@ics.muni.cz>
- <20100524212422.GA1286@ucw.cz>
- <1274790520.2949.20.camel@heimdal.trondhjem.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-2
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1274790520.2949.20.camel@heimdal.trondhjem.org>
-X-echelon: NSA, CIA, CI5, MI5, FBI, KGB, BIS, Plutonium, Bin Laden, bomb
-User-Agent: Mutt/1.5.20 (2009-06-14)
-X-Muni-Spam-TestIP: 147.251.3.109
-X-Muni-Envelope-From: xhejtman@anubis.ics.muni.cz
-X-Muni-Virus-Test: Clean
-X-Greylist: Sender succeeded SMTP AUTH authentication, not delayed by milter-greylist-3.0 (minas.ics.muni.cz [147.251.4.35]); Tue, 25 May 2010 14:58:27 +0200 (CEST)
+	id S1751484Ab0EYNEu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:04:50 -0400
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Neil Brown <neilb@suse.de>, "Dr. J. Bruce Fields" <bfields@fieldses.org>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <20100524234404.GU31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+	 <20100524115903.GP31073@ZenIV.linux.org.uk>
+	 <20100524155031.GQ31073@ZenIV.linux.org.uk>
+	 <1274718082.10795.31.camel@heimdal.trondhjem.org>
+	 <20100524164736.GR31073@ZenIV.linux.org.uk>
+	 <1274720791.10795.50.camel@heimdal.trondhjem.org>
+	 <20100524190828.GS31073@ZenIV.linux.org.uk>
+	 <1274735612.4030.16.camel@heimdal.trondhjem.org>
+	 <20100524230109.GT31073@ZenIV.linux.org.uk>
+	 <20100524234404.GU31073@ZenIV.linux.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 09:04:43 -0400
+Message-ID: <1274792683.5377.20.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 13 sum msgs/h 2 total rcpts 356 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: 1253C4D61D85EA7AC1D2C56BC4450FD07CCBB633
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 173 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Tue, May 25, 2010 at 08:28:40AM -0400, Trond Myklebust wrote:
-> > Seems like pretty fundamental problem in nfs :-(. Limiting writeback
-> > caches for nfs, so that system has enough memory to perform rpc calls
-> > with the rest might do the trick, but...
+On Tue, 2010-05-25 at 00:44 +0100, Al Viro wrote: 
+> On Tue, May 25, 2010 at 12:01:09AM +0100, Al Viro wrote:
+> > Client question: what stops you from stack overflows in that area?  Call
+> > chains you've got are *deep*, and I really wonder what happens if you
+> > hit a referral point while traversing nested symlink, get pathname
+> > resolution (already several levels into recursion) call ->follow_link(),
+> > bounce down through nfs_do_refmount/nfs_follow_referral/try_location/
+> > vfs_kern_mount/nfs4_referral_get_sb/nfs_follow_remote_path into
+> > vfs_path_lookup, which will cheerfully add a few more loops like that.
 > > 
+> > Sure, the *total* nesting depth through symlinks is still limited by 8, but
+> > that pile of stack frames is _MUCH_ fatter than what we normally have in
+> > pathname resolution.  You've suddenly added ~60 extra stack frames to the
+> > worst-case stack footprint of the pathname resolution.  Don't try that
+> > on sparc64, boys and girls, it won't be happy with attempt to carve ~12Kb
+> > extra out of its kernel stack...  In fact, it's worse than just ~60 stack
+> > frames - several will contain (on-stack) struct nameidata in them, which
+> > very definitely will _not_ fit into the minimal stack frame.  It's about
+> > 160 bytes extra, for each of those (up to 7).
 > 
-> It's the same problem that you have for any file or storage system that
-> has initiators in userland. On the storage side, iSCSI in particular has
-> the same problem. On the filesystem side, CIFS, AFS, coda, .... do too.
-> The clustered filesystems can deadlock if the node that is running the
-> DLM runs out of memory...
+> Actually, just what will happen if you have a referral that would eventually
+> resolve to a directory you have no permissions to access?  AFAICS, you'll
+> end up trying it on all alternates, since nfs_follow_referral() will cheerfully
+> keep trying one variant after another, getting -EACCES from each.  Worse,
+> if there are nested referrals in it, you'll get all sequences of alternates
+> tried before you give up.
 > 
-> A few years ago there were several people proposing various solutions
-> for allowing these daemons to run in a protected memory environment to
-> avoid deadlocks, but those efforts have since petered out. Perhaps it is
-> time to review the problem?
+> ..o*O(at least it's merely exponential; Ackermann would be even more fun)
 
-I saw some patches targeting 2.6.35 that should prevent some deadlocks. They
-seem to be not enough in some cases. rpc.* daemons should be mlocked for sure
-but there is a problem with libkrb that reads files using fread(). fread() uses
-anonymous mmap, under mlockall(MCL_FUTURE) this causes the anonymous map to be
-mapped instantly and it deadlocks. 
-
-IBM GPFS also uses userspace daemon, but it seems that the deamon is mlocked
-and it does not open any files and does not create new connections. 
-
-My problem was quite easily reproducible.
-
-I started an application that eats 80% of free memory. Then I started:
-for i in `seq 1 10`; do dd if=/dev/zero of=/mnt/nfs4/file$i bs=1M count=2048
-& done
-
-it deadlock within 2 minutes until this patch is applied:
-commit 3d7b08945e54a3a5358d5890240619a013cb7388
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Thu Apr 22 15:35:55 2010 -0400
-
-    SUNRPC: Fix a bug in rpcauth_prune_expired
-    
-    Don't want to evict a credential if cred->cr_expire == jiffies, since that
-    means that it was just placed on the cred_unused list. We therefore need
-to
-    use time_in_range() rather than time_in_range_open().
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-diff --git a/net/sunrpc/auth.c b/net/sunrpc/auth.c
-index f394fc1..95afe79 100644
---- a/net/sunrpc/auth.c
-+++ b/net/sunrpc/auth.c
-@@ -237,7 +237,7 @@ rpcauth_prune_expired(struct list_head *free, int
-nr_to_scan)
-        list_for_each_entry_safe(cred, next, &cred_unused, cr_lru) {
- 
-                /* Enforce a 60 second garbage collection moratorium */
--               if (time_in_range_open(cred->cr_expire, expired, jiffies) &&
-+               if (time_in_range(cred->cr_expire, expired, jiffies) &&
-                    test_bit(RPCAUTH_CRED_HASHED, &cred->cr_flags) != 0)
-                        continue;
+We could perhaps quit if the referral resolves to EACCES, but there is
+the theoretical possibility that the administrator of the particular
+replicated server has instead just unexported the filesystem, (which
+will also result in EACCES).
 
 
-but I believe this only hides the real problem.
 
--- 
-Luká¹ Hejtmánek
