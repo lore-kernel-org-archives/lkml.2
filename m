@@ -1,116 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758605Ab0EYOTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:19:21 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36121 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756587Ab0EYOTT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:19:19 -0400
-Date: Tue, 25 May 2010 16:17:20 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Richard Henderson <rth@twiddle.net>, Roland McGrath <roland@redhat.com>
-Cc: wezhang@redhat.com, linux-kernel@vger.kernel.org
-Subject: Q: sys_personality() && misc oddities
-Message-ID: <20100525141720.GA2253@redhat.com>
+	id S1758792Ab0EYOT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:19:28 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:47721 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756587Ab0EYOTX convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:19:23 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=hgxp9+o+7RoNdTBNkgnCZVYGdNNYnIlYoTMMnBjRzC6wq+5JQ3PYyE3JKeQBB8zI/
+	jEoqCFs0MhNYludwIhEhg==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+In-Reply-To: <1274796225.5882.1389.camel@twins>
+References: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
+	<1274794518.5882.1280.camel@twins>
+	<AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
+	<1274796225.5882.1389.camel@twins>
+Date: Tue, 25 May 2010 16:19:18 +0200
+Message-ID: <AANLkTinTfqLdRbgqRfn4Avl6bedB6xyLbRybwencYRiF@mail.gmail.com>
+Subject: Re: [PATCH] perf_events: fix event scheduling issues introduced by 
+	transactional API (take 2)
+From: Stephane Eranian <eranian@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: eranian@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       acme@infradead.org, ming.m.lin@intel.com, perfmon2-devel@lists.sf.net
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello.
+Ok, let me check. I think it is almost right.
 
-This code is really old, and I do not know whom should I ask. And,
-despite the fact it is really trivial, I have no idea how to fix it.
-And even more, I am not sure it actually needs fixes. I'd better ask
-the questions. Please help ;)
+On Tue, May 25, 2010 at 4:03 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Tue, 2010-05-25 at 15:39 +0200, stephane eranian wrote:
+>> On Tue, May 25, 2010 at 3:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+>> > On Tue, 2010-05-25 at 15:20 +0200, Stephane Eranian wrote:
+>> >
+>> >> With this patch, you can now overcommit the PMU even with pinned
+>> >> system-wide events present and still get valid counts.
+>> >
+>> > Does this patch differ from the one you send earlier?
+>> >
+>> Yes, it does. It changes the way n_added is updated.
+>>
+>> The first version was buggy (perf top would crash the machine).
+>> You cannot delay updating n_added until commit, because there
+>> are paths where you don't go through transactions. This version
+>> instead keeps the number of events last added and speculatively
+>> updates n_added (assuming success). If the transaction succeeds,
+>> then no correction is done (subtracting 0), if it fails, then the number
+>> of events just added to n_added is subtracted.
+>
+>
+> OK, just to see if I got it right, I wrote a similar patch from just the
+> changelog.
+>
+> Does the below look good?
+>
+> ---
+>  arch/x86/kernel/cpu/perf_event.c |   13 +++++++++++++
+>  kernel/perf_event.c              |   11 +++++++----
+>  2 files changed, 20 insertions(+), 4 deletions(-)
+>
+> diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
+> index 856aeeb..be84944 100644
+> --- a/arch/x86/kernel/cpu/perf_event.c
+> +++ b/arch/x86/kernel/cpu/perf_event.c
+> @@ -106,6 +106,7 @@ struct cpu_hw_events {
+>
+>        int                     n_events;
+>        int                     n_added;
+> +       int                     n_txn;
+>        int                     assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
+>        u64                     tags[X86_PMC_IDX_MAX];
+>        struct perf_event       *event_list[X86_PMC_IDX_MAX]; /* in enabled order */
+> @@ -983,6 +984,7 @@ static int x86_pmu_enable(struct perf_event *event)
+>  out:
+>        cpuc->n_events = n;
+>        cpuc->n_added += n - n0;
+> +       cpuc->n_txn += n - n0;
+>
+>        return 0;
+>  }
+> @@ -1089,6 +1091,14 @@ static void x86_pmu_disable(struct perf_event *event)
+>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>        int i;
+>
+> +       /*
+> +        * If we're called during a txn, we don't need to do anything.
+> +        * The events never got scheduled and ->cancel_txn will truncate
+> +        * the event_list.
+> +        */
+> +       if (cpuc->group_flags & PERF_EVENT_TXN_STARTED)
+> +               return;
+> +
+>        x86_pmu_stop(event);
+>
+>        for (i = 0; i < cpuc->n_events; i++) {
+> @@ -1379,6 +1389,7 @@ static void x86_pmu_start_txn(const struct pmu *pmu)
+>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>
+>        cpuc->group_flag |= PERF_EVENT_TXN_STARTED;
+> +       cpuc->n_txn = 0;
+>  }
+>
+>  /*
+> @@ -1391,6 +1402,8 @@ static void x86_pmu_cancel_txn(const struct pmu *pmu)
+>        struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
+>
+>        cpuc->group_flag &= ~PERF_EVENT_TXN_STARTED;
+> +       cpuc->n_added -= cpuc->n_txn;
+> +       cpuc->n_events -= cpuc->n_txn;
+>  }
+>
+>  /*
+> diff --git a/kernel/perf_event.c b/kernel/perf_event.c
+> index e099650..ca79f2a 100644
+> --- a/kernel/perf_event.c
+> +++ b/kernel/perf_event.c
+> @@ -652,8 +652,11 @@ group_sched_in(struct perf_event *group_event,
+>        if (txn)
+>                pmu->start_txn(pmu);
+>
+> -       if (event_sched_in(group_event, cpuctx, ctx))
+> +       if (event_sched_in(group_event, cpuctx, ctx)) {
+> +               if (txn)
+> +                       pmu->cancel_txn(pmu);
+>                return -EAGAIN;
+> +       }
+>
+>        /*
+>         * Schedule in siblings as one group (if any):
+> @@ -675,9 +678,6 @@ group_sched_in(struct perf_event *group_event,
+>        }
+>
+>  group_error:
+> -       if (txn)
+> -               pmu->cancel_txn(pmu);
+> -
+>        /*
+>         * Groups can be scheduled in as one unit only, so undo any
+>         * partial group before returning:
+> @@ -689,6 +689,9 @@ group_error:
+>        }
+>        event_sched_out(group_event, cpuctx, ctx);
+>
+> +       if (txn)
+> +               pmu->cancel_txn(pmu);
+> +
+>        return -EAGAIN;
+>  }
+>
+>
+>
 
 
 
-First of all, task_struct->personality is "int", but sys_personality()
-takes "long". This means that every comparison or assignment inside of
-sys_personality() paths is not right.
-
-Probably we need something like this trivial patch
-
-	--- x/kernel/exec_domain.c
-	+++ x/kernel/exec_domain.c
-	@@ -192,7 +192,9 @@ SYSCALL_DEFINE1(personality, u_long, per
-	 {
-		u_long old = current->personality;
-	
-	-	if (personality != 0xffffffff) {
-	+	if (personality > 0xffffffff)
-	+		return -EINVAL;
-	+	else if (personality != 0xffffffff) {
-			set_personality(personality);
-			if (current->personality != personality)
-				return -EINVAL;
-
-?
-
-Or, perhaps we shouldn't allow personality >= int32_max = 0x7ffffff ?
-Otherwise, on 32bit machine the value returned to the user-space can
-look like -ESOMETHING.
-
-Even on x86_64, in user-space it is declared as
-
-	int personality(unsigned long persona);
-
-if the kernel returns the "large" old it looks negative to the user-space,
-and the test-case thinks that the syscall failed but errno is not set.
-
-This is the actual reason for the question. I am really surprized I
-do not know how to close the redhat-internal bugzilla entry, the
-problem is very trivial.
-
-------------------------------------------------------------------------------
-
-But there are other oddities I can't understand. Let's forget about
-the sizeof(task_struct->personality), let's suppose it is "long" too.
-And note that is was long before 97dc32cdb1b53832801159d5f634b41aad9d0a23
-which did s/long/int/ to reduce the sizeof task_struct.
-
-__set_personality(). What is the point to check
-ep == current_thread_info()->exec_domain ? This buys nothing afaics.
-IOW, it could be simplified:
-
-	int __set_personality(u_long personality)
-	{
-		struct exec_domain *oep = current_thread_info()->exec_domain;
-
-		current_thread_info()->exec_domain = lookup_exec_domain(personality);
-		current->personality = personality;
-		module_put(oep->module);
-
-		return 0;
-	}
-
-Now let's look at the caller, sys_personality()
-
-	set_personality(personality);
-	if (current->personality != personality)
-		return -EINVAL;
-
-but __set_personality() always sets current->personality = personality,
-what is the point to check equality?
-
-IOW, when we should return -EINVAL? Perhaps, lookup_exec_domain() should
-return NULL instead of default_exec_domain when the search in exec_domains
-fails? And probably we shouldn't change task->personality/exec_domain in
-this case? It is really strange that sys_personality() can return -EINVAL
-but change ->personality.
-
-But this can probably break exec. alpha does set_personality(PER_OSF4)
-but I do not see the corresponding register_exec_domain(). On the other
-hand, I do not understand why it puts PER_OSF4 into PER_MASK. PER_OSF4
-is only used by sys_osf_readv/sys_osf_writev.
-
-Thanks,
-
-Oleg.
-
+-- 
+Stephane Eranian  | EMEA Software Engineering
+Google France | 38 avenue de l'Opéra | 75002 Paris
+Tel : +33 (0) 1 42 68 53 00
+This email may be confidential or privileged. If you received this
+communication by mistake, please
+don't forward it to anyone else, please erase all copies and
+attachments, and please let me know that
+it went to the wrong person. Thanks
