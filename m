@@ -1,264 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756283Ab0EYHV4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:21:56 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:59131 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab0EYHVy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:21:54 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:organization:message-id:references
-         :in-reply-to:x-mailer:mime-version:content-type
-         :content-transfer-encoding;
-        b=Oz79pOZp6sOCA2I9AmfDo1RDQ/qQvom5E358qx0Kjn9uGADUwu2Hi0Z3Mv+2tmy2kq
-         hU5QgYESzUcZfWh39kTW44f0BQ+b3jyzxnUJxpkIbhydp5wesoGVZ+1rN8T0+nE7UhA4
-         Q2AAQ5e74aG9qOPMJEDXrWCgL9Fn9kYqoCK98=
-From: Grant Coady <gcoady.lk@gmail.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [04/24] ext4: Make sure all the block allocation paths reserve blocks
-Date: Tue, 25 May 2010 17:21:43 +1000
-Organization: scattered
-Message-ID: <5humv51rdjr8vl3c7qlroekj2k004gl665@4ax.com>
-References: <20100524223544.GA13721@kroah.com> <20100524223014.777274118@clark.site>
-In-Reply-To: <20100524223014.777274118@clark.site>
-X-Mailer: Forte Agent 6.00/32.1186
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1752214Ab0EYHW2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:22:28 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:41627 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750742Ab0EYHW1 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 03:22:27 -0400
+Date: Tue, 25 May 2010 17:22:18 +1000
+From: Neil Brown <neilb@suse.de>
+To: "zhanglx" <zhanglx@semico.com.cn>
+Cc: "Nick W" <n60storm4@gmail.com>, <linux-kernel@vger.kernel.org>
+Subject: Re: The Future of the Linux Kernel
+Message-ID: <20100525172218.79e3d325@notabene.brown>
+In-Reply-To: <017601cafbd9$30924dd0$3701a8c0@wxintech.com>
+References: <AANLkTil8KvSojByVejgcPHIlVn9QOYmmCAfQwpb4XT5E@mail.gmail.com>
+	<20100525165152.1ecfadd4@notabene.brown>
+	<017601cafbd9$30924dd0$3701a8c0@wxintech.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 May 2010 15:28:00 -0700, you wrote:
+On Tue, 25 May 2010 15:09:17 +0800
+"zhanglx" <zhanglx@semico.com.cn> wrote:
 
->2.6.27-stable review patch.  If anyone has any objections, please let us know.
->
->------------------
->
->
->From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->
->commit a30d542a0035b886ffaafd0057ced0a2b28c3a4f upstream.
->
->With delayed allocation we need to make sure block are reserved before
->we attempt to allocate them. Otherwise we get block allocation failure
->(ENOSPC) during writepages which cannot be handled. This would mean
->silent data loss (We do a printk stating data will be lost). This patch
->updates the DIO and fallocate code path to do block reservation before
->block allocation. This is needed to make sure parallel DIO and fallocate
->request doesn't take block out of delayed reserve space.
->
->When free blocks count go below a threshold we switch to a slow patch
+> Good answer, the future is determined by now.
+> But the kernel is very complex. It's too difficult for beginners. :(
 
-s/patch/path/ ??
+We were all beginners once!
+Yes, the kernel is much more complex than it once was, so understanding a
+whole subsystem is a more daunting task than it once was.  But there is still
+room to start.  www.kernelnewbies.org/  is supposed to be a good place to
+start.
 
-Or, are these patch comments locked in stone for -stable?
+We all learn to read before we can write.  I recommend the same with the
+kernel.  Read lots of code, improve the documentation as you go, submit
+little patches for little bugs that you find, get interested, build courage,
+see where you end up.
 
-Grant.
+NeilBrown
 
->which looks at other CPU's accumulated percpu counter values.
->
->Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
->Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
->Signed-off-by: Jayson R. King <dev@jaysonking.com>
->Signed-off-by: Theodore Ts'o <tytso@mit.edu>
->Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->
->---
-> fs/ext4/balloc.c  |   58 +++++++++++++++++++++++++++++++++++++++---------------
-> fs/ext4/ext4.h    |   13 ++++++++++++
-> fs/ext4/inode.c   |    5 ----
-> fs/ext4/mballoc.c |   23 ++++++++++++---------
-> 4 files changed, 69 insertions(+), 30 deletions(-)
->
->--- a/fs/ext4/balloc.c
->+++ b/fs/ext4/balloc.c
->@@ -1754,6 +1754,32 @@ out:
-> 	return ret;
-> }
+
 > 
->+int ext4_claim_free_blocks(struct ext4_sb_info *sbi,
->+						ext4_fsblk_t nblocks)
->+{
->+	s64 free_blocks;
->+	ext4_fsblk_t root_blocks = 0;
->+	struct percpu_counter *fbc = &sbi->s_freeblocks_counter;
->+
->+	free_blocks = percpu_counter_read(fbc);
->+
->+	if (!capable(CAP_SYS_RESOURCE) &&
->+		sbi->s_resuid != current->fsuid &&
->+		(sbi->s_resgid == 0 || !in_group_p(sbi->s_resgid)))
->+		root_blocks = ext4_r_blocks_count(sbi->s_es);
->+
->+	if (free_blocks - (nblocks + root_blocks) < EXT4_FREEBLOCKS_WATERMARK)
->+		free_blocks = percpu_counter_sum(&sbi->s_freeblocks_counter);
->+
->+	if (free_blocks < (root_blocks + nblocks))
->+		/* we don't have free space */
->+		return -ENOSPC;
->+
->+	/* reduce fs free blocks counter */
->+	percpu_counter_sub(fbc, nblocks);
->+	return 0;
->+}
->+
-> /**
->  * ext4_has_free_blocks()
->  * @sbi:	in-core super block structure.
->@@ -1775,18 +1801,17 @@ ext4_fsblk_t ext4_has_free_blocks(struct
-> 		sbi->s_resuid != current->fsuid &&
-> 		(sbi->s_resgid == 0 || !in_group_p(sbi->s_resgid)))
-> 		root_blocks = ext4_r_blocks_count(sbi->s_es);
->-#ifdef CONFIG_SMP
->-	if (free_blocks - root_blocks < FBC_BATCH)
->-		free_blocks =
->-			percpu_counter_sum(&sbi->s_freeblocks_counter);
->-#endif
->+
->+	if (free_blocks - (nblocks + root_blocks) < EXT4_FREEBLOCKS_WATERMARK)
->+		free_blocks = percpu_counter_sum_positive(&sbi->s_freeblocks_counter);
->+
-> 	if (free_blocks <= root_blocks)
-> 		/* we don't have free space */
-> 		return 0;
-> 	if (free_blocks - root_blocks < nblocks)
-> 		return free_blocks - root_blocks;
-> 	return nblocks;
->- }
->+}
+> ----- Original Message ----- 
+> From: "Neil Brown" <neilb@suse.de>
+> To: "Nick W" <n60storm4@gmail.com>
+> Cc: <linux-kernel@vger.kernel.org>
+> Sent: Tuesday, May 25, 2010 2:51 PM
+> Subject: Re: The Future of the Linux Kernel
 > 
 > 
-> /**
->@@ -1865,14 +1890,11 @@ ext4_fsblk_t ext4_old_new_blocks(handle_
-> 		/*
-> 		 * With delalloc we already reserved the blocks
-> 		 */
->-		*count = ext4_has_free_blocks(sbi, *count);
->-	}
->-	if (*count == 0) {
->-		*errp = -ENOSPC;
->-		return 0;	/*return with ENOSPC error */
->+		if (ext4_claim_free_blocks(sbi, *count)) {
->+			*errp = -ENOSPC;
->+			return 0;	/*return with ENOSPC error */
->+		}
-> 	}
->-	num = *count;
->-
-> 	/*
-> 	 * Check quota for allocation of this block.
-> 	 */
->@@ -2067,9 +2089,13 @@ allocated:
-> 	le16_add_cpu(&gdp->bg_free_blocks_count, -num);
-> 	gdp->bg_checksum = ext4_group_desc_csum(sbi, group_no, gdp);
-> 	spin_unlock(sb_bgl_lock(sbi, group_no));
->-	if (!EXT4_I(inode)->i_delalloc_reserved_flag)
->-		percpu_counter_sub(&sbi->s_freeblocks_counter, num);
->-
->+	if (!EXT4_I(inode)->i_delalloc_reserved_flag && (*count != num)) {
->+		/*
->+		 * we allocated less blocks than we
->+		 * claimed. Add the difference back.
->+		 */
->+		percpu_counter_add(&sbi->s_freeblocks_counter, *count - num);
->+	}
-> 	if (sbi->s_log_groups_per_flex) {
-> 		ext4_group_t flex_group = ext4_flex_group(sbi, group_no);
-> 		spin_lock(sb_bgl_lock(sbi, flex_group));
->--- a/fs/ext4/ext4.h
->+++ b/fs/ext4/ext4.h
->@@ -1015,6 +1015,8 @@ extern ext4_fsblk_t ext4_new_blocks(hand
-> 					unsigned long *count, int *errp);
-> extern ext4_fsblk_t ext4_old_new_blocks(handle_t *handle, struct inode *inode,
-> 			ext4_fsblk_t goal, unsigned long *count, int *errp);
->+extern int ext4_claim_free_blocks(struct ext4_sb_info *sbi,
->+						ext4_fsblk_t nblocks);
-> extern ext4_fsblk_t ext4_has_free_blocks(struct ext4_sb_info *sbi,
-> 						ext4_fsblk_t nblocks);
-> extern void ext4_free_blocks (handle_t *handle, struct inode *inode,
->@@ -1245,6 +1247,17 @@ do {								\
-> 		__ext4_std_error((sb), __func__, (errno));	\
-> } while (0)
-> 
->+#ifdef CONFIG_SMP
->+/* Each CPU can accumulate FBC_BATCH blocks in their local
->+ * counters. So we need to make sure we have free blocks more
->+ * than FBC_BATCH  * nr_cpu_ids. Also add a window of 4 times.
->+ */
->+#define EXT4_FREEBLOCKS_WATERMARK (4 * (FBC_BATCH * nr_cpu_ids))
->+#else
->+#define EXT4_FREEBLOCKS_WATERMARK 0
->+#endif
->+
->+
-> /*
->  * Inodes and files operations
->  */
->--- a/fs/ext4/inode.c
->+++ b/fs/ext4/inode.c
->@@ -1564,13 +1564,10 @@ static int ext4_da_reserve_space(struct
-> 	md_needed = mdblocks - EXT4_I(inode)->i_reserved_meta_blocks;
-> 	total = md_needed + nrblocks;
-> 
->-	if (ext4_has_free_blocks(sbi, total) < total) {
->+	if (ext4_claim_free_blocks(sbi, total)) {
-> 		spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
-> 		return -ENOSPC;
-> 	}
->-	/* reduce fs free blocks counter */
->-	percpu_counter_sub(&sbi->s_freeblocks_counter, total);
->-
-> 	EXT4_I(inode)->i_reserved_data_blocks += nrblocks;
-> 	EXT4_I(inode)->i_reserved_meta_blocks = mdblocks;
-> 
->--- a/fs/ext4/mballoc.c
->+++ b/fs/ext4/mballoc.c
->@@ -3194,9 +3194,15 @@ ext4_mb_mark_diskspace_used(struct ext4_
-> 	 * at write_begin() time for delayed allocation
-> 	 * do not double accounting
-> 	 */
->-	if (!(ac->ac_flags & EXT4_MB_DELALLOC_RESERVED))
->-		percpu_counter_sub(&sbi->s_freeblocks_counter,
->-					ac->ac_b_ex.fe_len);
->+	if (!(ac->ac_flags & EXT4_MB_DELALLOC_RESERVED) &&
->+			ac->ac_o_ex.fe_len != ac->ac_b_ex.fe_len) {
->+		/*
->+		 * we allocated less blocks than we calimed
->+		 * Add the difference back
->+		 */
->+		percpu_counter_add(&sbi->s_freeblocks_counter,
->+				ac->ac_o_ex.fe_len - ac->ac_b_ex.fe_len);
->+	}
-> 
-> 	if (sbi->s_log_groups_per_flex) {
-> 		ext4_group_t flex_group = ext4_flex_group(sbi,
->@@ -4649,14 +4655,11 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t
-> 		/*
-> 		 * With delalloc we already reserved the blocks
-> 		 */
->-		ar->len = ext4_has_free_blocks(sbi, ar->len);
->-	}
->-
->-	if (ar->len == 0) {
->-		*errp = -ENOSPC;
->-		return 0;
->+		if (ext4_claim_free_blocks(sbi, ar->len)) {
->+			*errp = -ENOSPC;
->+			return 0;
->+		}
-> 	}
->-
-> 	while (ar->len && DQUOT_ALLOC_BLOCK(ar->inode, ar->len)) {
-> 		ar->flags |= EXT4_MB_HINT_NOPREALLOC;
-> 		ar->len--;
--- 
-http://bugs.id.au/
+> > On Tue, 25 May 2010 18:34:36 +1200
+> > Nick W <n60storm4@gmail.com> wrote:
+> > 
+> >> Hi guys I am new to the LKML so Hi! Anyway I think the Linux Kernel is
+> >> great! (Love C development on anything what so ever!) But what do you
+> >> think the future of it is? Please can you guys have a think and we can
+> >> decide!
+> > 
+> > Yes said that already... if you are going to say it again at least you could
+> > try saying it differently.
+> > 
+> > We don't plan and decide the future.  We create possible small steps
+> > into the future and see if they survive testing and peer-review.  The future
+> > we end up with is simple the sum of lots of these small steps.
+> > 
+> > What would *you* like the future to be?  Please answer in the form of a patch.
+> > 
+> > NeilBrown
+> > --
+> > To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> > the body of a message to majordomo@vger.kernel.org
+> > More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> > Please read the FAQ at  http://www.tux.org/lkml/
