@@ -1,69 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756397Ab0EYPoO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:44:14 -0400
-Received: from cantor.suse.de ([195.135.220.2]:35269 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756201Ab0EYPoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:44:12 -0400
-Date: Wed, 26 May 2010 01:43:52 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
-       Mel Gorman <mel@csn.ul.ie>
-Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
-Message-ID: <20100525154352.GB20853@laptop>
-References: <AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
- <20100525070734.GC5087@laptop>
- <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
- <20100525081634.GE5087@laptop>
- <AANLkTilJBY0sinB365lIZFUaMgMCZ1xyhMdXRTJTVDSV@mail.gmail.com>
- <20100525093410.GH5087@laptop>
- <AANLkTikXp5LlKLK1deKOQpciUFNugjlQah5QpNcImf39@mail.gmail.com>
- <20100525101924.GJ5087@laptop>
- <AANLkTimazVL8G-XQURiQ1s0M3NKa2ndXNceSaw9sADRQ@mail.gmail.com>
- <alpine.LFD.2.00.1005250812100.3689@i5.linux-foundation.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <alpine.LFD.2.00.1005250812100.3689@i5.linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1754523Ab0EYPrS (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:47:18 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:36461 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751208Ab0EYPrR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 11:47:17 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@suse.de>,
+       Tejun Heo <tj@kernel.org>, Scott James Remnant <scott@ubuntu.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>,
+       Harald Hoyer <harald@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>, agk@redhat.com,
+       snitzer@redhat.com, Will Drewry <wad@chromium.org>
+Subject: [PATCH 1/2] init: make the path argument a const in name_to_dev_t
+Date: Tue, 25 May 2010 10:46:50 -0500
+Message-Id: <1274802411-26613-1-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 08:13:50AM -0700, Linus Torvalds wrote:
-> 
-> 
-> On Tue, 25 May 2010, Pekka Enberg wrote:
-> > 
-> > I would have liked to see SLQB merged as well but it just didn't happen.
-> 
-> And it's not going to. I'm not going to merge YASA that will stay around 
-> for years, not improve on anything, and will just mean that there are some 
-> bugs that developers don't see because they depend on some subtle 
-> interaction with the sl*b allocator.
-> 
-> We've got three. That's at least one too many. We're not adding any new 
-> ones until we've gotten rid of at least one old one.
+name_to_dev_t takes a char * argument which it never modifies.  This
+change converts it to a const char *.
 
-No agree and realized that a while back (hence stop pushing SLQB).
-SLAB is simply a good allocator that is very very hard to beat. The
-fact that a lot of places are still using SLAB despite the real
-secondary advantages of SLUB (cleaner code, better debugging support)
-indicate to me that we should go back and start from there.
+(This is useful with the second patch in the series which exports the
+symbol.  External consumers of the function will now be able to pass in
+a const char * without duping or casting away const-ness.)
 
-What is sad is all this duplicate (and unsynchronized and not always
-complete) work implementing things in both the allocators[*] and
-split testing base.
+Signed-off-by: Will Drewry <wad@chromium.org>
+---
+ include/linux/mount.h |    2 +-
+ init/do_mounts.c |    2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
 
-As far as I can see, there was never a good reason to replace SLAB
-rather than clean up its code and make incremental improvements.
+diff --git a/include/linux/mount.h b/include/linux/mount.h
+index 4bd0547..ad819a0 100644
+--- a/include/linux/mount.h
++++ b/include/linux/mount.h
+@@ -134,6 +134,6 @@ extern int do_add_mount(struct vfsmount *newmnt, struct path *path,
+ 
+ extern void mark_mounts_for_expiry(struct list_head *mounts);
+ 
+-extern dev_t name_to_dev_t(char *name);
++extern dev_t name_to_dev_t(const char *name);
+ 
+ #endif /* _LINUX_MOUNT_H */
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index 0848a5b..a322b13 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -75,7 +75,7 @@ __setup("rw", readwrite);
+  *	bangs.
+  */
+ 
+-dev_t name_to_dev_t(char *name)
++dev_t name_to_dev_t(const char *name)
+ {
+ 	char s[32];
+ 	char *p;
+-- 
+1.7.0.4
 
