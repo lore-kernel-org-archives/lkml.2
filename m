@@ -1,62 +1,192 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933459Ab0EYXZs (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 19:25:48 -0400
-Received: from einhorn.in-berlin.de ([192.109.42.8]:56862 "EHLO
-	einhorn.in-berlin.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933018Ab0EYXZq (ORCPT
+	id S933765Ab0EYX0g (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 19:26:36 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:39319 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933285Ab0EYX0e (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 19:25:46 -0400
-X-Envelope-From: stefanr@s5r6.in-berlin.de
-Message-ID: <4BFC5C69.4050105@s5r6.in-berlin.de>
-Date: Wed, 26 May 2010 01:25:29 +0200
-From: Stefan Richter <stefanr@s5r6.in-berlin.de>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.8.1.23) Gecko/20100415 SeaMonkey/1.1.18
+	Tue, 25 May 2010 19:26:34 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=yDJlunPvBHBB0KnI0lzAOE+5q+QzhL8LUqwaMfTtcha8Y9IhhTJj8Y8En3Q8nBHEsV
+         dJV5hNTGKZnpq60dnCKGRcfdTdyRTSf/GTQ4oyDsFSmvGFjbgWjzrrELX7IcoKDnFWsy
+         ywZEn2CHtlDmZwIwFXPSFFcBw+EgPQ+bvZdbw=
+Date: Tue, 25 May 2010 16:26:25 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Message-ID: <20100525232625.GB5331@core.coreip.homeip.net>
+References: <201005251124.58017.dmitry.torokhov@gmail.com>
+ <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
+ <20100525184740.GA4248@core.coreip.homeip.net>
+ <AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
+ <20100525223220.GC4928@core.coreip.homeip.net>
+ <AANLkTinnSH_egFYowkOQiYHL87QfIH332i1__OaTem-s@mail.gmail.com>
+ <20100525225544.GA5331@core.coreip.homeip.net>
+ <AANLkTikaoXH5T4FJ5sY9OnAyjhaY8wa7rH6S7_k9F_m8@mail.gmail.com>
 MIME-Version: 1.0
-To: Andrew Morton <akpm@linux-foundation.org>
-CC: Julia Lawall <julia@diku.dk>, linux1394-devel@lists.sourceforge.net,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 12/27] drivers/ieee1394: Use memdup_user
-References: <Pine.LNX.4.64.1005221021460.13021@ask.diku.dk>	<4BF7A31B.2040302@s5r6.in-berlin.de> <20100525153244.73069b6a.akpm@linux-foundation.org>
-In-Reply-To: <20100525153244.73069b6a.akpm@linux-foundation.org>
-X-Enigmail-Version: 0.96.0
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTikaoXH5T4FJ5sY9OnAyjhaY8wa7rH6S7_k9F_m8@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Andrew Morton wrote:
-> On Sat, 22 May 2010 11:25:47 +0200
-> Stefan Richter <stefanr@s5r6.in-berlin.de> wrote:
+On Tue, May 25, 2010 at 04:13:35PM -0700, Arve Hjønnevåg wrote:
+> 2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
+> > On Tue, May 25, 2010 at 03:37:48PM -0700, Arve Hjønnevåg wrote:
+> >> 2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
+> >> > On Tue, May 25, 2010 at 03:23:23PM -0700, Arve Hjønnevåg wrote:
+> >> >> On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
+> >> >> <dmitry.torokhov@gmail.com> wrote:
+> >> >> > On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
+> >> >> >> On Tue, 25 May 2010, Dmitry Torokhov wrote:
+> >> >> >>
+> >> >> >> > > Here's the scenario:
+> >> >> >> > >
+> >> >> >> > > The system is awake, and the user presses a key. The keyboard driver
+> >> >> >> > > processes the keystroke and puts it in an input queue.  A user process
+> >> >> >> > > reads it from the event queue, thereby emptying the queue.
+> >> >> >> > >
+> >> >> >> > > At that moment, the system decides to go into opportunistic suspend.
+> >> >> >> > > Since the input queue is empty, there's nothing to stop it.  As the
+> >> >> >> > > first step, userspace is frozen -- before the process has a chance to
+> >> >> >> > > do anything with the keystroke it just read.  As a result, the system
+> >> >> >> > > stays asleep until something else wakes it up, even though the
+> >> >> >> > > keystroke was important and should have prevented it from sleeping.
+> >> >> >> > >
+> >> >> >> > > Suspend blockers protect against this scenario.  Here's how:
+> >> >> >> > >
+> >> >> >> > > The user process doesn't read the input queue directly; instead it
+> >> >> >> > > does a select or poll.  When it sees there is data in the queue, it
+> >> >> >> > > first acquires a suspend blocker and then reads the data.
+> >> >> >> > >
+> >> >> >> > > Now the system _can't_ go into opportunistic suspend, because a suspend
+> >> >> >> > > blocker is active.  The user process can do whatever it wants with the
+> >> >> >> > > keystroke.  When it is finished, it releases the suspend blocker and
+> >> >> >> > > loops back to the select/poll call.
+> >> >> >> > >
+> >> >> >> >
+> >> >> >> > What you describe can be done in userspace though, via a "suspend manager"
+> >> >> >> > process. Tasks reading input events will post "busy" events to stop the
+> >> >> >> > manager process from sending system into suspend. But this can be confined to
+> >> >> >> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
+> >> >> >> > to not go into suspend with full queues, but that is using existing kernel
+> >> >> >> > APIs).
+> >> >> >>
+> >> >> >> I think that could be made to work.  And it might remove the need for
+> >> >> >> the userspace suspend-blocker API, which would be an advantage.  It
+> >> >> >> could even remove the need for the opportunistic-suspend workqueue --
+> >> >> >> opportunistic suspends would be initiated by the "suspend manager"
+> >> >> >> process instead of by the kernel.
+> >> >> >>
+> >> >> >> However you still have the issue of modifying the kernel drivers to
+> >> >> >> disallow opportunistic suspend if their queues are non-empty.  Doing
+> >> >> >> that is more or less equivalent to implementing kernel-level suspend
+> >> >> >> blockers.  (The suspend blocker approach is slightly more efficient,
+> >> >> >> because it will prevent a suspend from starting if a queue is
+> >> >> >> non-empty, instead of allowing the suspend to start and then aborting
+> >> >> >> it partway through.)
+> >> >> >>
+> >> >> >> Maybe I'm missing something here...  No doubt someone will point it out
+> >> >> >> if I am.
+> >> >> >>
+> >> >> >
+> >> >> > Well, from my perspective that would limit changes to the evdev driver
+> >> >> > (well, limited input core plumbing will be needed) but that is using the
+> >> >> > current PM infrastructure. The HW driver changes will be limited to what
+> >> >> > you described "type 2" in your other e-mail.
+> >> >> >
+> >> >> > Also, not suspending while events are in progress) is probably
+> >> >> > beneficial for platforms other than Android as well. So unless I am
+> >> >> > missing something this sounds like a win.
+> >> >> >
+> >> >>
+> >> >> How would this limit the changes you need in the evdev driver? It need
+> >> >> to block suspend when there are unprocessed events in some queues.
+> >> >> Suspend blockers gives you an api to do this, without it, you check
+> >> >> the queues in your suspend hook and abort suspend if they are not
+> >> >> empty. Without suspend blockers you have no api to signal that it is
+> >> >> OK to suspend again, so you are forcing the thread that tried to
+> >> >> suspend to poll until you stop aborting suspend.
+> >> >
+> >> > No, you do not need to poll. You just set a timeout (short or long,
+> >> > depending on your needs) and if no userspace task blocked suspend
+> >> > durng that time you attempt to initiate suspend from your manager
+> >> > process. If it succeeds - good, if not that means that more events came
+> >> > your way and you have to do it later.
+> >> >
+> >>
+> >> How is that not polling? If the user is holding down a key, the keypad
+> >> driver has to block suspend, and user space will try to suspend again
+> >> and again and again...
+> >>
+> >
+> > If your userpsace is that stupid - sure. However, you can:
+> >
+> > 1. Notify the suspend manager process that he rest of your userspace is
+> > busy handling keystrokes so that it does not try to suspend while there
+> > are events pending.
 > 
->> Julia Lawall wrote:
->>> Use memdup_user when user data is immediately copied into the
->>> allocated region.
->> Looks nice.  We won't apply janitorial updates to drivers/ieee1394
->> anymore though, since it is made obsolete by drivers/firewire and to be
->> removed sooner than later.  (I will post a proposed removal schedule
->> today to make this better known.)
+> You are missing the point. There are no event pending. The kernel
+> reported the key down event, it was handled, but the keypad driver is
+> still scanning to see if the user presses another key,
+
+Employ reasonable timeout.
+
+> or releases the
+> currently held key.
 > 
-> I don't see much point in declaring a moratorium against
-> drivers/ieee1394.  Perhaps that removal will never happen.
 
-That's a wrong impression due to us driver developers dragging the
-coexistence of two driver stacks out for too long.
+Userspace consumer should wait for the key release and retract "busy"
+once event is received and handled.
 
-> Perhaps
-> third parties will find reason to revert that removal and to continue
-> to maintain drivers/ieee1394.  Perhaps people will take code snippets
-> from drivers/ieee1394 and will move them into drivers/firewire.
+> >
+> > 2. Wait a tiny bit after last application notified you that it finished
+> > processing events.
+> >
+> > So basically the difference is that with in-kernel suspend blockers,
+> > there is a tiny window where we haven't started the suspend yet but are
+> > about to the driver has a chance to prevent entire system from starting
+> > sleep.
 > 
-> The bottom line is that the patch improves the code.  And there ain't
-> nothing wrong with having better code.
+> No, the difference is that if a driver needs to prevent suspend for an
+> extended period of time, you don't have user space continuously
+> polling to see if it can suspend.
 
-This code is as good as it needs to be.
+Why would a driver, on its own, prevent suspend for extended periods of
+time? I think that the decision should originate from userspace, kernel
+is here just to serve the requests.
 
-Spending time on things that can be done is fun, but spending time on
-things that need to be done can't hurt either.
+> 
+> >
+> > Without the blocker we may start suspending and will stop midcycle. We
+> > may be even better off in the end since we could leave some devices
+> > still powered down after aborting system-wide suspend.
+> >
+> 
+> That does not sound right.
+
+Why doesn't it? If a device implements runtime PM it may chose remain in
+powered-down mode even if system is awake.
+
 -- 
-Stefan Richter
--=====-==-=- -=-= ==-=-
-http://arcgraph.de/sr/
+Dmitry
