@@ -1,55 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755814Ab0EYJtW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:49:22 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41756 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750851Ab0EYJtU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:49:20 -0400
-Date: Tue, 25 May 2010 10:48:45 +0100
-From: Alasdair G Kergon <agk@redhat.com>
-To: Kay Sievers <kay.sievers@vrfy.org>, Nikanth Karthikesan <knikanth@suse.de>,
-       Peter Rajnoha <prajnoha@redhat.com>, Milan Broz <mbroz@redhat.com>,
-       Alasdair G Kergon <agk@redhat.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       "David S. Miller" <davem@davemloft.net>,
-       Miklos Szeredi <miklos@szeredi.hu>,
-       Chris Mason <chris.mason@oracle.com>,
-       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-       Ian Kent <raven@themaw.net>, dm-devel@redhat.com
-Subject: Re: [dm-devel] add devname module aliases to allow module
-	on-demand auto-loading
-Message-ID: <20100525094845.GA3991@agk-dp.fab.redhat.com>
-Mail-Followup-To: Kay Sievers <kay.sievers@vrfy.org>,
-	Nikanth Karthikesan <knikanth@suse.de>,
-	Peter Rajnoha <prajnoha@redhat.com>, Milan Broz <mbroz@redhat.com>,
-	Alasdair G Kergon <agk@redhat.com>,
-	linux-kernel <linux-kernel@vger.kernel.org>,
+	id S1756188Ab0EYJvk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:51:40 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:49513 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755800Ab0EYJvi (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 05:51:38 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=W3tEfKBbaIPsQcI7rNJnD2DSsJFN8ALEiuRWVyloVQ6OpCBLhp6U7oSJG0DyVH1Iwo
+         HVXdHHUhvDSE4j6IoNYtQ056v1K2WA+siLDEXNcK5u2VSqo/An5brWVKZl6Nq2wmovYp
+         aZRE2cDxJ+C5IrlMJwkIAHSu4X5P9PthFVrqg=
+Date: Tue, 25 May 2010 11:51:10 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: "Eric W. Biederman" <ebiederm@xmission.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] kobject: free memory if netlink_kernel_create() fails
+Message-ID: <20100525095110.GG22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	"Eric W. Biederman" <ebiederm@xmission.com>,
 	Greg Kroah-Hartman <gregkh@suse.de>,
 	"David S. Miller" <davem@davemloft.net>,
-	Miklos Szeredi <miklos@szeredi.hu>,
-	Chris Mason <chris.mason@oracle.com>,
-	Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
-	Ian Kent <raven@themaw.net>, dm-devel@redhat.com
-References: <1274371640.302.5.camel@yio.site> <AANLkTilI3RYcybjG7b1juTa3H31ImxQI1-2R_l7q0yc1@mail.gmail.com> <AANLkTinQwEqFKAiyAwVPwmzLtUXJkaOdZ0c88O_tfp-1@mail.gmail.com> <201005211909.29326.knikanth@suse.de> <AANLkTimGBgpqB7HEZrecv7uEis6L8b5Yv7jfD6iv_f4J@mail.gmail.com> <20100521182325.GO3991@agk-dp.fab.redhat.com> <AANLkTimuciWfkVwn7dKVeKL38WpMiCvgAxGx4ngAankW@mail.gmail.com> <20100525053341.GB31345@maude.comedia.it>
+	linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100525053341.GB31345@maude.comedia.it>
-Organization: Red Hat UK Ltd. Registered in England and Wales, number
-	03798903. Registered Office: Amberley Place, 107-111 Peascod
-	Street, Windsor, Berkshire, SL4 1TE.
 User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 07:33:41AM +0200, Luca Berra wrote:
-> what patch?
+There is a kfree(ue_sk) missing on the error path if 
+netlink_kernel_create() fails.
 
-Peter Rajnoha is working on a final version of this, which includes
-tweaking the userspace logic to give supremacy to devtmpfs.
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Alasdair
-
+diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+index 59c1551..08e15f7 100644
+--- a/lib/kobject_uevent.c
++++ b/lib/kobject_uevent.c
+@@ -378,6 +378,7 @@ static int uevent_net_init(struct net *net)
+ 	if (!ue_sk->sk) {
+ 		printk(KERN_ERR
+ 		       "kobject_uevent: unable to create netlink socket!\n");
++		kfree(ue_sk);
+ 		return -ENODEV;
+ 	}
+ 	mutex_lock(&uevent_sock_mutex);
