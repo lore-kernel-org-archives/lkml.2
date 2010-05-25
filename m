@@ -1,87 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754934Ab0EYIQn (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 04:16:43 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:43456 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753333Ab0EYIQk (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 04:16:40 -0400
-Date: Tue, 25 May 2010 18:16:35 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Pekka Enberg <penberg@cs.helsinki.fi>
-Cc: Christoph Lameter <cl@linux-foundation.org>,
-       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>
-Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
-Message-ID: <20100525081634.GE5087@laptop>
-References: <20100521211452.659982351@quilx.com>
- <20100524070309.GU2516@laptop>
- <alpine.DEB.2.00.1005240852580.5045@router.home>
- <20100525020629.GA5087@laptop>
- <AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
- <20100525070734.GC5087@laptop>
- <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755804Ab0EYIT7 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 04:19:59 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:50112 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751484Ab0EYIT5 convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 04:19:57 -0400
+Subject: Re: [PATCH 1/5] perf: Disallow mmap() on per-task inherited events
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Arnaldo Carvalho de Melo <acme@infradead.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Thomas Gleixner <tglx@linutronix.de>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100525005528.GB30395@drongo>
+References: <20100518133258.000434886@chello.nl>
+	 <20100518133725.885757039@chello.nl>  <20100525005528.GB30395@drongo>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 10:19:41 +0200
+Message-ID: <1274775581.5882.503.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 11:03:49AM +0300, Pekka Enberg wrote:
-> Hi Nick,
+On Tue, 2010-05-25 at 10:55 +1000, Paul Mackerras wrote:
+> On Tue, May 18, 2010 at 03:32:59PM +0200, Peter Zijlstra wrote:
 > 
-> On Tue, May 25, 2010 at 10:07 AM, Nick Piggin <npiggin@suse.de> wrote:
-> > There is nothing to stop incremental changes or tweaks on top of that
-> > allocator, even to the point of completely changing the allocation
-> > scheme. It is inevitable that with changes in workloads, SMP/NUMA, and
-> > cache/memory costs and hierarchies, the best slab allocation schemes
-> > will change over time.
+> > Since we now have working per-task-per-cpu events for a while,
+> > disallow mmap() on per-task inherited events. Those things were
+> > a performance problem anyway, and doing away with it allows
+> > us to optimize the buffer somewhat by assuming there is only a single
+> > writer.
 > 
-> Agreed.
-> 
-> On Tue, May 25, 2010 at 10:07 AM, Nick Piggin <npiggin@suse.de> wrote:
-> > I think it is more important to have one allocator than trying to get
-> > the absolute most perfect one for everybody. That way changes are
-> > carefully and slowly reviewed and merged, with results to justify the
-> > change. This way everybody is testing the same thing, and bisection will
-> > work. The situation with SLUB is already a nightmare because now each
-> > allocator has half the testing and half the work put into it.
-> 
-> I wouldn't say it's a nightmare, but yes, it could be better. From my
-> point of view SLUB is the base of whatever the future will be because
-> the code is much cleaner and simpler than SLAB. That's why I find
-> Christoph's work on SLEB more interesting than SLQB, for example,
-> because it's building on top of something that's mature and stable.
+> This also disallows user-space access to hardware counter for this
+> event -- which is arguably OK, since doing the userspace read would
+> give a different answer to read() on the event fd, as the read() sums
+> up all the child counters for us.  Nevertheless, I think this
+> side-effect is worth mentioning.
 
-I don't think SLUB ever proved itself very well. The selling points
-were some untestable handwaving about how queueing is bad and jitter
-is bad, ignoring the fact that queues could be shortened and periodic
-reaping disabled at runtime with SLAB style of allocator. It also
-has relied heavily on higher order allocations which put great strain
-on hugepage allocations and page reclaim (witness the big slowdown
-in low memory conditions when tmpfs was using higher order allocations
-via SLUB).
-
-
-> That said, are you proposing that even without further improvements to
-> SLUB, we should go ahead and, for example, remove SLAB from Kconfig
-> for v2.6.36 and see if we can just delete the whole thing from, say,
-> v2.6.38?
-
-SLUB has not been able to displace SLAB for a long timedue to
-performance and higher order allocation problems.
-
-I think "clean code" is very important, but by far the hardest thing to
-get right by far is the actual allocation and freeing strategies. So
-it's crazy to base such a choice on code cleanliness. If that's the
-deciding factor, then I can provide a patch to modernise SLAB and then
-we can remove SLUB and start incremental improvements from there.
- 
+Right, using rdpmc (and similar) should be strictly limited to strict
+self-monitoring.
