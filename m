@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932086Ab0EYFnw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 01:43:52 -0400
-Received: from vms173005pub.verizon.net ([206.46.173.5]:39368 "EHLO
-	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756190Ab0EYFnu (ORCPT
+	id S1756269Ab0EYGAO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 02:00:14 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:52924 "EHLO
+	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755225Ab0EYGAL (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 01:43:50 -0400
-Date: Tue, 25 May 2010 01:43:26 -0400 (EDT)
-From: Len Brown <lenb@kernel.org>
-X-X-Sender: lenb@localhost.localdomain
-To: Philip Langdale <philipl@overt.org>
-Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Jeff Garrett <jeff@jgarrett.org>,
-       Andi Kleen <andi@firstfloor.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       linux-acpi@vger.kernel.org, luming.yu@intel.com, venki@google.com
-Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
-In-reply-to: <d7f2dd35a4361e5156079278543769a0@localhost>
-Message-id: <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
-References: <20100126084740.GA5265@jgarrett.org>
- <87y6jkee1b.fsf@basil.nowhere.org> <20100205160900.GA2736@jgarrett.org>
- <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
- <20100426194002.586fbaa5@fido5> <20100427124703.GA16706@jgarrett.org>
- <alpine.LFD.2.00.1004301218280.2489@sony>
- <20100430174447.GA14889@srcf.ucam.org>
- <d7f2dd35a4361e5156079278543769a0@localhost>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-version: 1.0
-Content-type: TEXT/PLAIN; charset=US-ASCII
+	Tue, 25 May 2010 02:00:11 -0400
+Subject: BUG: using smp_processor_id() in preemptible
+From: Artem Bityutskiy <dedekind1@gmail.com>
+Reply-To: dedekind1@gmail.com
+To: Dmitry Monakhov <dmonakhov@openvz.org>
+Cc: linux-fsdevel <linux-fsdevel@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 08:57:42 +0300
+Message-ID: <1274767062.2106.6.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 8bit
+X-OriginalArrivalTime: 25 May 2010 05:58:41.0988 (UTC) FILETIME=[5404C040:01CAFBCF]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> >> I am hopeful that the "right thing to do" is to not look at bm-status
-> >> and that perhaps there is a bug where we are looking at it
-> >> "by mistake".
-> > 
-> > https://patchwork.kernel.org/patch/58962/ - it seems to be a win.
-> 
-> Indeed. This patch does solve the C6 problem. I'm not in a position to
-> speak about whether there's any undesirable I/O latency, but it
-> passes the basic sanity check.
-> 
-> I have filed https://bugzilla.kernel.org/show_bug.cgi?id=15886 with
-> my acpi dump - assuming that's still useful.
+Hi,
 
-Luming's patch above basically deletes acpi_idle_bm_check() --
-the BM_STS check -- from the C3 path on all Intel SMP boxes.
-This is effectively the same as my test patch
-https://patchwork.kernel.org/patch/77370/
-that made acpi_idle_bm_check() do nothing.
+I get tons of these debugging complaints with the latest Linus' tree:
 
-I'm told by the hardware guys that BM_STS is _not_ always
-a NOP, and so we're not supposed to simply ignore it on C3 --
-though it should be extremely rare that we see it set.
-If it is ever set, it should go on and off depending on 
-activity on some latency sensitive device, like out on the LPC.
-It may be possible for the BIOS writer to configure the chipset
-so that BM_STS is enabled always, presumably to accomodate
-some latency sensitve device -- or maybe by mistake.
+BUG: using smp_processor_id() in preemptible [00000000] code: sync/2503
+caller is dqstats_inc+0x19/0x2c
+Pid: 2503, comm: sync Tainted: G      D     2.6.34-misc-2.6 #9
+Call Trace:
+ [<ffffffff811ad1a2>] debug_smp_processor_id+0xc2/0xdc
+ [<ffffffff81134c7e>] dqstats_inc+0x19/0x2c
+ [<ffffffff8113786e>] vfs_quota_sync+0x1bd/0x2a5
+ [<ffffffff8111252b>] ? sync_one_sb+0x0/0x1d
+ [<ffffffff811124e7>] __sync_filesystem+0x3a/0x7e
+ [<ffffffff81112546>] sync_one_sb+0x1b/0x1d
+ [<ffffffff810f4d70>] iterate_supers+0x6d/0xb2
+ [<ffffffff81112477>] sync_filesystems+0x1b/0x1d
+ [<ffffffff81112564>] sys_sync+0x1c/0x2e
+ [<ffffffff81002a6b>] system_call_fastpath+0x16/0x1b
 
-(is it observed to be set always on your systems, or does
- it ever change its value?)
+and git blame points to you.
 
-The logic in Luming's patch doesn't make sense to me.
-bm_check and bm_control are related to C3 need to flush
-the cache or ability to invoke ARB_DIS.  They are not
-directly related to BM_STS -- which is a bit that tells
-us if there has recently been bus master activity of
-a type that would break us out of C3.
-
--Len Brown, Intel Open Source Technology Center
+-- 
+Best Regards,
+Artem Bityutskiy (Артём Битюцкий)
 
