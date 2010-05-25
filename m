@@ -1,120 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758520Ab0EYNu6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:50:58 -0400
-Received: from mail-yw0-f182.google.com ([209.85.211.182]:49720 "EHLO
-	mail-yw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758083Ab0EYNuy convert rfc822-to-8bit (ORCPT
+	id S933008Ab0EYNyX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:54:23 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:35370 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758575Ab0EYNvN (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:50:54 -0400
-X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 09:50:53 EDT
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=XalrMLvbmj1kFukn+9P5H2i4d7ESPafk+XeVDFyx/5u9MGbNLYt6YarpaxSKel4fZC
-         sFL2xzFqx4QrZV+1octglgLDEZMdRsgeFB9SUhRp0BAYKCWAopWEh0LZ9ntf/YHRbgOf
-         CFhoFIl6uVgGRl4CmoPYc8nFnTah6L6W/54ZU=
-MIME-Version: 1.0
-In-Reply-To: <20100507153920.GP28167@ics.muni.cz>
-References: <20100507153920.GP28167@ics.muni.cz>
-Date: Tue, 25 May 2010 09:45:32 -0400
-Message-ID: <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
-Subject: Re: Deadlock in NFSv4 in all kernels
-From: "William A. (Andy) Adamson" <androsadamson@gmail.com>
-To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
-Content-Type: text/plain; charset=ISO-8859-2
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 May 2010 09:51:13 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org,
+       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>
+Subject: [PATCHv4 03/17] BFS: do not manipulate s_dirt directly
+Date: Tue, 25 May 2010 16:48:58 +0300
+Message-Id: <1274795352-3551-4-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 25 May 2010 13:50:38.0579 (UTC) FILETIME=[4205A430:01CAFC11]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/7 Lukas Hejtmanek <xhejtman@ics.muni.cz>:
-> Hi,
->
-> I encountered the following problem. We use short expiration time for
-> kerberos contexts created by rpc.gssd (some patches were included in mainline
-> nfs-utils). In particular, we use 120secs expiration time.
->
-> Now, I run application that eats 80% of available RAM. Then I run 10 parallel
-> dd processes that write data into NFS4 volume with sec=krb5.
->
-> As soon as the kerberos context expires (i.e., up to 120 secs), the whole
-> system gets stuck in do_page_fault and succesive functions. It is because
-> there is no free memory in kernel, all free memory is used as cache for NFS4
-> (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
-> anything as it is missing valid context. NFS contacts rpc.gssd to provide
-> a renewed context, the rpc.gssd does not provide the context as it needs some memory
-> to scan /tmp for a ticket. I.e., it deadlocks.
->
-> Longer context expiration time is no real solution as it only makes the
-> deadlock less often.
->
-> Any ideas what can be done here?
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-Not get into the problem in the first place: this means
+... use new VFS helpers instead.
 
-1) determine a 'lead time' where the NFS client declares a context
-expired even though it really as 'lead time' until it actually
-expires.
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+Cc: Tigran A. Aivazian <tigran@aivazian.fsnet.co.uk>
+---
+ fs/bfs/inode.c |    8 ++++----
+ 1 files changed, 4 insertions(+), 4 deletions(-)
 
-2) flush all writes on any contex that will expire within the lead
-time which needs to be long enough for flushes to take place.
+diff --git a/fs/bfs/inode.c b/fs/bfs/inode.c
+index f22a7d3..080115e 100644
+--- a/fs/bfs/inode.c
++++ b/fs/bfs/inode.c
+@@ -223,7 +223,7 @@ static int bfs_sync_fs(struct super_block *sb, int wait)
+ 
+ 	mutex_lock(&info->bfs_lock);
+ 	mark_buffer_dirty(info->si_sbh);
+-	sb->s_dirt = 0;
++	mark_sb_clean(sb);
+ 	mutex_unlock(&info->bfs_lock);
+ 
+ 	return 0;
+@@ -234,7 +234,7 @@ static void bfs_write_super(struct super_block *sb)
+ 	if (!(sb->s_flags & MS_RDONLY))
+ 		bfs_sync_fs(sb, 1);
+ 	else
+-		sb->s_dirt = 0;
++		mark_sb_clean(sb);
+ }
+ 
+ static void bfs_put_super(struct super_block *s)
+@@ -246,7 +246,7 @@ static void bfs_put_super(struct super_block *s)
+ 
+ 	lock_kernel();
+ 
+-	if (s->s_dirt)
++	if (is_sb_dirty(s))
+ 		bfs_write_super(s);
+ 
+ 	brelse(info->si_sbh);
+@@ -474,7 +474,7 @@ static int bfs_fill_super(struct super_block *s, void *data, int silent)
+ 	brelse(bh);
+ 	if (!(s->s_flags & MS_RDONLY)) {
+ 		mark_buffer_dirty(info->si_sbh);
+-		s->s_dirt = 1;
++		mark_sb_dirty(s);
+ 	} 
+ 	dump_imap("read_super", s);
+ 	return 0;
+-- 
+1.6.6.1
 
--->Andy
-
-
->(Please cc me.) We could preallocate some
-> memory in rpc.gssd and use mlockall but not sure whether this proctects also
-> kernel malloc for things related to rpc.gssd and context creation (new file
-> descriptors and so on).
->
-> This is seen in 2.6.32 kernel but most probably this is related to all kernel
-> versions.
->
-> rpc.gssd and all dd processes are stuck in:
->
-> May  6 15:33:10 skirit20 kernel: [84087.788019] rpc.gssd      D 6758d881     0 26864      1 0x00000000
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  c280594c 00000086 f94c3d6c 6758d881 00004c5a 0f3e1c27 c1d868c0 c1c068dc
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  c07d8880 c07d8880 f6752130 f67523d4 c1c06880 00000000 c1c06880 00000000
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  f6d7c8f0 f67523d4 f6752130 c1c06cd4 c1c06880 c2805960 c052101f 00000000
-> May  6 15:33:10 skirit20 kernel: [84087.788019] Call Trace:
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c052101f>] io_schedule+0x6f/0xc0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88d8af5>] nfs_wait_bit_uninterruptible+0x5/0x10 [nfs]
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c05215a7>] __wait_on_bit+0x47/0x70
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0521683>] out_of_line_wait_on_bit+0xb3/0xd0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88d8ae3>] nfs_wait_on_request+0x23/0x30 [nfs]
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88ddb4a>] nfs_sync_mapping_wait+0xea/0x200 [nfs]
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88ddd0e>] nfs_wb_page_priority+0xae/0x170 [nfs]
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88cdfec>] nfs_release_page+0x5c/0x70 [nfs]
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029620b>] try_to_release_page+0x2b/0x40
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a25af>] shrink_page_list+0x37f/0x4b0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a29ae>] shrink_inactive_list+0x2ce/0x6c0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a34c8>] shrink_zone+0x1c8/0x260
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a35ae>] shrink_zones+0x4e/0xe0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a43b5>] do_try_to_free_pages+0x75/0x2e0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a4756>] try_to_free_pages+0x86/0xa0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029cda4>] __alloc_pages_slowpath+0x164/0x470
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029d1c8>] __alloc_pages_nodemask+0x118/0x120
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02acce0>] do_anonymous_page+0x100/0x240
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02b072a>] handle_mm_fault+0x34a/0x3d0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0524c54>] do_page_fault+0x174/0x370
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0522cb6>] error_code+0x66/0x70
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0296ac2>] file_read_actor+0x32/0xf0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029815f>] do_generic_file_read+0x3af/0x4c0
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0298a01>] generic_file_aio_read+0xb1/0x210
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02cdc05>] do_sync_read+0xd5/0x120
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02ce3bb>] vfs_read+0x9b/0x110
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02ce501>] sys_read+0x41/0x80
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0203150>] sysenter_do_call+0x12/0x22
-> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<ffffe430>] 0xffffe430
->
-> --
-> Luká¹ Hejtmánek
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
->
