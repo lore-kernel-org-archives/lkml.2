@@ -1,72 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933750Ab0EYS0j (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:26:39 -0400
-Received: from smtp141.mail.ukl.yahoo.com ([77.238.184.72]:32907 "HELO
-	smtp141.mail.ukl.yahoo.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S932566Ab0EYS0h (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:26:37 -0400
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws;
-  s=s1024; d=yahoo.es;
-  h=Received:X-Yahoo-SMTP:X-YMail-OSG:X-Yahoo-Newman-Property:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
-  b=tJM1ewCswgfh0H066GHL+OvQrHk8HkaY/1qUuBbYWhjxkiCLEARhNQV/oIAu4Ym5hvMnPOyv+nwePlzTjx6ACN5UFrlbiOmgc/6k/PWWdTpI6M+rwmWm68DlGWqOZ7jaz4k3pMRd8K5OnoHkqQ5bUmMt2TjZ+k5+GBTGM6wEtZw=  ;
-X-Yahoo-SMTP: czee06uswBAtfIYshc.kP27UlfEXaxwWNSjJ
-X-YMail-OSG: n_hGC0sVM1nEnkeQxRgDC7SXDchJmwAFSwWUjCYVqsCQe_IHmRCY5_LuSIsDJczoNNOQIVy69YHERjdiHyhS9rxhz2mFWQj0w.4O6_ZsfSbzPpN4YLPFTI1irX375CpeRh0MLWy.06RJpsLsnGfbJvMe7bsFy1mMrte5kkQZ_UMG8o2VujYHDRD2QwQXeA5ZXYrmwEB9AlQ1NAP8I5Jrid5aT3jh.redtdbiDwCBjfOrA80nB3DLv8EvghWdlAhDRmkUCSYAHOVRU57TGlI_V5.frvgGnMas
-X-Yahoo-Newman-Property: ymail-3
-Message-ID: <4BFC1657.5000707@yahoo.es>
-Date: Tue, 25 May 2010 20:26:31 +0200
-From: Albert Herranz <albert_herranz@yahoo.es>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	id S932784Ab0EYScK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:32:10 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:52242 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932294Ab0EYScI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:32:08 -0400
+Date: Tue, 25 May 2010 14:30:51 -0400
+From: Mike Snitzer <snitzer@redhat.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Will Drewry <wad@chromium.org>, Alasdair G Kergon <agk@redhat.com>,
+       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
+       Nick Piggin <npiggin@suse.de>, Tejun Heo <tj@kernel.org>,
+       Scott James Remnant <scott@ubuntu.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>,
+       Harald Hoyer <harald@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>
+Subject: Re: [PATCH 2/2] init, mount: export the name_to_dev_t symbol
+Message-ID: <20100525183051.GA692@redhat.com>
+References: <1274802411-26613-1-git-send-email-wad@chromium.org>
+ <1274802411-26613-2-git-send-email-wad@chromium.org>
+ <20100525155535.GA811@infradead.org>
+ <20100525160550.GC28588@agk-dp.fab.redhat.com>
+ <AANLkTin6Nt2TqxlF9kQJZThI7pZ6wqAwSlg9GnqkKB-v@mail.gmail.com>
+ <20100525172110.GA6046@infradead.org>
 MIME-Version: 1.0
-To: Nick Piggin <npiggin@suse.de>
-CC: aya Kumar <jayakumar.lkml@gmail.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fbdev@vger.kernel.org
-Subject: Re: page_mkwrite vs pte dirty race in fb_defio
-References: <20100525160149.GE20853@laptop>
-In-Reply-To: <20100525160149.GE20853@laptop>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100525172110.GA6046@infradead.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, May 25 2010 at  1:21pm -0400,
+Christoph Hellwig <hch@infradead.org> wrote:
 
-On 05/25/2010 06:01 PM, Nick Piggin wrote:
-> Hi,
+> On Tue, May 25, 2010 at 11:11:33AM -0500, Will Drewry wrote:
+> > In addition to getting rid of the code duplication, I'd like device-mapper
+> > to be able to resolve slave devices at boot-time to accommodate a
+> > do_mounts_dm.c equivalent to do_mounts_md.c:
 > 
-> I couldn't find where this patch (49bbd815fd8) was discussed, so I'll
-> make my own thread. Adding a few lists to cc because it might be of
-> interest to driver and filesystem writers.
-> 
+> So please add a do_mounts_dm.c instead of pushing this somewhere it
+> doesn't belong to.
 
-The original thread can be found here:
-http://marc.info/?l=linux-fbdev&m=127369791432181
+He is proposing doing just that, you cut out the patchwork url he
+already shared: https://patchwork.kernel.org/patch/101024/
 
-> The old ->page_mkwrite calling convention was causing problems exactly
-> because of this race, and we solved it by allowing page_mkwrite to
-> return with the page locked, and the lock will be held until the
-> pte is marked dirty. See commit b827e496c893de0c0f142abfaeb8730a2fd6b37f.
-> 
+Will's intentions are good: avoid code duplication.
 
-Ah, didn't know about that. Thanks for the pointer.
+He is also trying to keep DM-specific common code in drivers/md/
 
-> I hope that should provide a more elegant solution to your problem. I
-> would really like you to take a look at that, because we already have
-> filesystem code (NFS) relying on it, and more code we have relying on
-> this synchronization, the more chance we would find a subtle problem
-> with it (also it should be just nicer).
-> 
+So in this instance, avoiding the need to export name_to_dev_t would
+require splitting the internal DM __table_get_device (or more likely:
+dm_get_device) out to a public facing interface that takes a dev_t.
 
-So if I undestand it correctly, using the "new" calling convention I should just lock the page on fb_deferred_io_mkwrite() and return VM_FAULT_LOCKED to fix the described race for fb_defio.
-
-> Thanks,
-> Nick
-> 
-
-Thanks,
-Albert
+Mike
