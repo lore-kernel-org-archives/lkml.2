@@ -1,74 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932178Ab0EYBQR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:16:17 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:55722 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758306Ab0EYBQQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:16:16 -0400
+	id S932206Ab0EYBSx (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:18:53 -0400
+Received: from mga09.intel.com ([134.134.136.24]:3175 "EHLO mga09.intel.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758306Ab0EYBSv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:18:51 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,295,1272870000"; 
+   d="scan'208";a="624469945"
+Date: Tue, 25 May 2010 09:18:49 +0800
+From: Shaohua Li <shaohua.li@intel.com>
+To: linux-kernel@vger.kernel.org
+Cc: jens.axboe@oracle.com, jmoyer@redhat.com
+Subject: [PATCH]cfq-iosched: fix an oops caused by slab leak
+Message-ID: <20100525011849.GA29820@sli10-desk.sh.intel.com>
 MIME-Version: 1.0
-In-Reply-To: <20100524185754.GD1292@ucw.cz>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
-	 <87wrvl5479.fsf@deeprootsystems.com>
-	 <20100503215028.GB18910@srcf.ucam.org> <20100524185754.GD1292@ucw.cz>
-Date: Mon, 24 May 2010 18:16:15 -0700
-Message-ID: <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Matthew Garrett <mjg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:57 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> Hi!
->
->> I agree that the runtime scenario is a far more appealing one from an
->> aesthetic standpoint, but so far we don't have a very compelling
->> argument for dealing with the starting and stopping of userspace. The
->> use-cases that Google have provided are valid and they have an
->> implementation that addresses them, and while we're unable to provide an
->> alternative that provides the same level of functionality I think we're
->> in a poor position to prevent this from going in.
->
-> Uhuh?
->
-> "We have this ugly code here, but it works and we don't have better
-> one, so lets merge it"?
->
-> I don't really like this line of reasoning. I would not want to judge
-> wakelocks here, but... "it works, merge it" should not be used as
-> argument.
->
-> And btw I do have wakelock-less implementation of autosleep, that only
-> sleeped the machine when nothing was ready to run. It was called
-> "sleepy linux". Should I dig it out?
->
-> Major difference was that it only sleeped the machine when it was
-> absolutely certain machine is idle and no timers are close to firing
-> -- needing elimination or at least markup of all short timers. It
-> erred on side of not sleeping the machine when it would break
-> something.
->
+I got below oops when unloading cfq-iosched. Considering scenario:
+queue A merge to B, C merge to D and B will be merged to D. Before B is merged
+to D, we do split B. We should put B's reference for D.
 
-How did you handle external events that occur right after you decided to sleep?
+[  807.768536] =============================================================================
+[  807.768539] BUG cfq_queue: Objects remaining on kmem_cache_close()
+[  807.768541] -----------------------------------------------------------------------------
+[  807.768543]
+[  807.768546] INFO: Slab 0xffffea0003e6b4e0 objects=26 used=1 fp=0xffff88011d584fd8 flags=0x200000000004082
+[  807.768550] Pid: 5946, comm: rmmod Tainted: G        W   2.6.34-07097-gf4b87de-dirty #724
+[  807.768552] Call Trace:
+[  807.768560]  [<ffffffff81104e8d>] slab_err+0x8f/0x9d
+[  807.768564]  [<ffffffff811059e1>] ? flush_cpu_slab+0x0/0x93
+[  807.768569]  [<ffffffff8164be52>] ? add_preempt_count+0xe/0xca
+[  807.768572]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
+[  807.768577]  [<ffffffff81648871>] ? _raw_spin_unlock+0x15/0x30
+[  807.768580]  [<ffffffff8164bd9c>] ? sub_preempt_count+0xe/0xb6
+[  807.768584]  [<ffffffff811061bc>] list_slab_objects+0x9b/0x19f
+[  807.768588]  [<ffffffff8164bf0a>] ? add_preempt_count+0xc6/0xca
+[  807.768591]  [<ffffffff81109e27>] kmem_cache_destroy+0x13f/0x21d
+[  807.768597]  [<ffffffffa000ff13>] cfq_slab_kill+0x1a/0x43 [cfq_iosched]
+[  807.768601]  [<ffffffffa000ffcf>] cfq_exit+0x93/0x9e [cfq_iosched]
+[  807.768606]  [<ffffffff810973a2>] sys_delete_module+0x1b1/0x219
+[  807.768612]  [<ffffffff8102fb5b>] system_call_fastpath+0x16/0x1b
+[  807.768618] INFO: Object 0xffff88011d584618 @offset=1560
+[  807.768622] INFO: Allocated in cfq_get_queue+0x11e/0x274 [cfq_iosched] age=7173 cpu=1 pid=5496
+[  807.768626] =============================================================================
 
-> Still I believe it is better design than wakelocks -- that need
-> markup/fixes to all places where machine must not sleep -- effectively
-> sleeping the machine too often than fixing stuff with wakelocks all
-> over kernel and userspace...
+Signed-off-by: Shaohua Li <shaohua.li@intel.com>
 
--- 
-Arve Hjønnevåg
+diff --git a/block/cfq-iosched.c b/block/cfq-iosched.c
+index ed897b5..855fd5f 100644
+--- a/block/cfq-iosched.c
++++ b/block/cfq-iosched.c
+@@ -2537,15 +2537,10 @@ static void cfq_free_io_context(struct io_context *ioc)
+ 	__call_for_each_cic(ioc, cic_free_func);
+ }
+ 
+-static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
++static void cfq_put_cooperator(struct cfq_queue *cfqq)
+ {
+ 	struct cfq_queue *__cfqq, *next;
+ 
+-	if (unlikely(cfqq == cfqd->active_queue)) {
+-		__cfq_slice_expired(cfqd, cfqq, 0);
+-		cfq_schedule_dispatch(cfqd);
+-	}
+-
+ 	/*
+ 	 * If this queue was scheduled to merge with another queue, be
+ 	 * sure to drop the reference taken on that queue (and others in
+@@ -2561,6 +2556,16 @@ static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
+ 		cfq_put_queue(__cfqq);
+ 		__cfqq = next;
+ 	}
++}
++
++static void cfq_exit_cfqq(struct cfq_data *cfqd, struct cfq_queue *cfqq)
++{
++	if (unlikely(cfqq == cfqd->active_queue)) {
++		__cfq_slice_expired(cfqd, cfqq, 0);
++		cfq_schedule_dispatch(cfqd);
++	}
++
++	cfq_put_cooperator(cfqq);
+ 
+ 	cfq_put_queue(cfqq);
+ }
+@@ -3516,6 +3521,9 @@ split_cfqq(struct cfq_io_context *cic, struct cfq_queue *cfqq)
+ 	}
+ 
+ 	cic_set_cfqq(cic, NULL, 1);
++
++	cfq_put_cooperator(cfqq);
++
+ 	cfq_put_queue(cfqq);
+ 	return NULL;
+ }
