@@ -1,86 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932136Ab0EYBOR (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:14:17 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34539 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758306Ab0EYBOP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:14:15 -0400
-Date: Tue, 25 May 2010 11:14:05 +1000
-From: Neil Brown <neilb@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100525111405.04eaf924@notabene.brown>
-In-Reply-To: <20100524115903.GP31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
-	<20100524115903.GP31073@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S932178Ab0EYBQR (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:16:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55722 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758306Ab0EYBQQ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:16:16 -0400
+MIME-Version: 1.0
+In-Reply-To: <20100524185754.GD1292@ucw.cz>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+	 <87wrvl5479.fsf@deeprootsystems.com>
+	 <20100503215028.GB18910@srcf.ucam.org> <20100524185754.GD1292@ucw.cz>
+Date: Mon, 24 May 2010 18:16:15 -0700
+Message-ID: <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 May 2010 12:59:03 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+On Mon, May 24, 2010 at 11:57 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> Hi!
+>
+>> I agree that the runtime scenario is a far more appealing one from an
+>> aesthetic standpoint, but so far we don't have a very compelling
+>> argument for dealing with the starting and stopping of userspace. The
+>> use-cases that Google have provided are valid and they have an
+>> implementation that addresses them, and while we're unable to provide an
+>> alternative that provides the same level of functionality I think we're
+>> in a poor position to prevent this from going in.
+>
+> Uhuh?
+>
+> "We have this ugly code here, but it works and we don't have better
+> one, so lets merge it"?
+>
+> I don't really like this line of reasoning. I would not want to judge
+> wakelocks here, but... "it works, merge it" should not be used as
+> argument.
+>
+> And btw I do have wakelock-less implementation of autosleep, that only
+> sleeped the machine when nothing was ready to run. It was called
+> "sleepy linux". Should I dig it out?
+>
+> Major difference was that it only sleeped the machine when it was
+> absolutely certain machine is idle and no timers are close to firing
+> -- needing elimination or at least markup of all short timers. It
+> erred on side of not sleeping the machine when it would break
+> something.
+>
 
-> On Mon, May 24, 2010 at 04:57:56PM +1000, Neil Brown wrote:
-> > 
-> > Commit 1f36f774b22a0ceb7dd33eca626746c81a97b6a5 broke FS_REVAL_DOT semantics.
-> > 
-> > In particular, before this patch, the command
-> >    ls -l
-> > in an NFS mounted directory would always check if the directory on the server
-> > had changed and if so would flush and refill the pagecache for the dir.
-> > After this patch, the same "ls -l" will repeatedly return stale date until
-> > the cached attributes for the directory time out.
-> > 
-> > The following patch fixes this by ensuring the d_revalidate is called by
-> > do_last when "." is being looked-up.
-> > link_path_walk has already called d_revalidate, but in that case LOOKUP_OPEN
-> > is not set so nfs_lookup_verify_inode chooses not to do any validation.
-> > 
-> > The following patch restores the original behaviour.
-> > 
-> > Cc: stable@kernel.org
-> > Signed-off-by: NeilBrown <neilb@suse.de>
-> 
-> Applied, but I really don't like the way you do it; note that e.g. foo/bar/.
-> gets that revalidation as well, for no good reason.  If anything, shouldn't
-> we handle that thing in the _beginning_ of pathname resolution, not in
-> the end?  For now it'd do, and it's a genuine regression, but...
-> 
+How did you handle external events that occur right after you decided to sleep?
 
-Thanks.
+> Still I believe it is better design than wakelocks -- that need
+> markup/fixes to all places where machine must not sleep -- effectively
+> sleeping the machine too often than fixing stuff with wakelocks all
+> over kernel and userspace...
 
-I think I see what you mean by "at the beginning" - the problem path is
-simply ".", and both the start and end of that are "." so we can handle at
-either end...  But I don't think there is any other special handling of the
-'start' of a path, so I imagine it would be a fairly ugly special case.
-
-We could avoid the extra GETATTR in "foo/bar/." by allowing NFS to keep some
-state in the namei_data to record that it has valid attributes for a given
-dentry so if it sees the same dentry again it doesn't need to revalidate.
-
-I must confess though that I don't feel I understand VFS name lookup properly
-any more.  Since intents were added it seems to have become much more obscure
-and complex.  I cannot help thinking that there must be a better way:
-distinguish between the various cases at a higher level so we don't need as
-many flags being passed around and interpreted by widely separate pieces of
-code.  I don't have a concrete proposal but I would certainly be interested
-to work on one if there were any hope of real change.
-Thoughts?
-
-Thanks,
-NeilBrown
-
-> BTW, here's a question for nfs client folks: is it true that for any two
-> pathnames on _client_ resolving to pairs (mnt1, dentry) and (mnt2, dentry)
-> resp., nfs_devname(mnt1, dentry, ...) and nfs_devname(mnt2, dentry, ...)
-> should yield the strings that do not differ past the ':' (i.e. that the
-> only possible difference is going to be in spelling the server name)?
-
+-- 
+Arve Hjønnevåg
