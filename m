@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755315Ab0EYNvb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:51:31 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:37660 "EHLO
+	id S932769Ab0EYNvg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:51:36 -0400
+Received: from smtp.nokia.com ([192.100.122.230]:37697 "EHLO
 	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab0EYNv0 (ORCPT
+	with ESMTP id S932595Ab0EYNvd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:51:26 -0400
+	Tue, 25 May 2010 09:51:33 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org, Evgeniy Dushistov <dushistov@mail.ru>
-Subject: [PATCHv4 15/17] UFS: do not manipulate s_dirt directly
-Date: Tue, 25 May 2010 16:49:10 +0300
-Message-Id: <1274795352-3551-16-git-send-email-dedekind1@gmail.com>
+       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
+Subject: [PATCHv4 09/17] HFS: do not manipulate s_dirt directly
+Date: Tue, 25 May 2010 16:49:04 +0300
+Message-Id: <1274795352-3551-10-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
 References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 May 2010 13:50:54.0953 (UTC) FILETIME=[4BC81D90:01CAFC11]
+X-OriginalArrivalTime: 25 May 2010 13:50:46.0859 (UTC) FILETIME=[46F511B0:01CAFC11]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,133 +28,102 @@ From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ... use new VFS helpers instead.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: Evgeniy Dushistov <dushistov@mail.ru>
+Cc: Roman Zippel <zippel@linux-m68k.org>
 ---
- fs/ufs/balloc.c |    8 ++++----
- fs/ufs/ialloc.c |    4 ++--
- fs/ufs/super.c  |   12 ++++++------
- 3 files changed, 12 insertions(+), 12 deletions(-)
+ fs/hfs/extent.c |    2 +-
+ fs/hfs/hfs_fs.h |    2 +-
+ fs/hfs/inode.c  |    6 +++---
+ fs/hfs/super.c  |    6 +++---
+ 4 files changed, 8 insertions(+), 8 deletions(-)
 
-diff --git a/fs/ufs/balloc.c b/fs/ufs/balloc.c
-index 5cfa4d8..43e5c4f 100644
---- a/fs/ufs/balloc.c
-+++ b/fs/ufs/balloc.c
-@@ -122,7 +122,7 @@ void ufs_free_fragments(struct inode *inode, u64 fragment, unsigned count)
- 		ubh_ll_rw_block(SWRITE, UCPI_UBH(ucpi));
- 		ubh_wait_on_buffer (UCPI_UBH(ucpi));
+diff --git a/fs/hfs/extent.c b/fs/hfs/extent.c
+index 2c16316..bff476a 100644
+--- a/fs/hfs/extent.c
++++ b/fs/hfs/extent.c
+@@ -432,7 +432,7 @@ out:
+ 		if (inode->i_ino < HFS_FIRSTUSER_CNID)
+ 			set_bit(HFS_FLG_ALT_MDB_DIRTY, &HFS_SB(sb)->flags);
+ 		set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
+-		sb->s_dirt = 1;
++		mark_sb_dirty(sb);
  	}
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	
- 	unlock_super (sb);
- 	UFSD("EXIT\n");
-@@ -223,7 +223,7 @@ do_more:
- 		goto do_more;
- 	}
+ 	return res;
  
+diff --git a/fs/hfs/hfs_fs.h b/fs/hfs/hfs_fs.h
+index fe35e3b..2083002 100644
+--- a/fs/hfs/hfs_fs.h
++++ b/fs/hfs/hfs_fs.h
+@@ -251,7 +251,7 @@ static inline const char *hfs_mdb_name(struct super_block *sb)
+ static inline void hfs_bitmap_dirty(struct super_block *sb)
+ {
+ 	set_bit(HFS_FLG_BITMAP_DIRTY, &HFS_SB(sb)->flags);
 -	sb->s_dirt = 1;
 +	mark_sb_dirty(sb);
- 	unlock_super (sb);
- 	UFSD("EXIT\n");
- 	return;
-@@ -573,7 +573,7 @@ static u64 ufs_add_fragments(struct inode *inode, u64 fragment,
- 		ubh_ll_rw_block(SWRITE, UCPI_UBH(ucpi));
- 		ubh_wait_on_buffer (UCPI_UBH(ucpi));
- 	}
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 
- 	UFSD("EXIT, fragment %llu\n", (unsigned long long)fragment);
- 	
-@@ -702,7 +702,7 @@ succed:
- 		ubh_ll_rw_block(SWRITE, UCPI_UBH(ucpi));
- 		ubh_wait_on_buffer (UCPI_UBH(ucpi));
- 	}
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 
- 	result += cgno * uspi->s_fpg;
- 	UFSD("EXIT3, result %llu\n", (unsigned long long)result);
-diff --git a/fs/ufs/ialloc.c b/fs/ufs/ialloc.c
-index 3a959d5..765a21d 100644
---- a/fs/ufs/ialloc.c
-+++ b/fs/ufs/ialloc.c
-@@ -124,7 +124,7 @@ void ufs_free_inode (struct inode * inode)
- 		ubh_wait_on_buffer (UCPI_UBH(ucpi));
- 	}
- 	
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	unlock_super (sb);
- 	UFSD("EXIT\n");
  }
-@@ -300,7 +300,7 @@ cg_found:
- 		ubh_ll_rw_block(SWRITE, UCPI_UBH(ucpi));
- 		ubh_wait_on_buffer (UCPI_UBH(ucpi));
- 	}
+ 
+ static inline void hfs_buffer_sync(struct buffer_head *bh)
+diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
+index 14f5cb1..74cb771 100644
+--- a/fs/hfs/inode.c
++++ b/fs/hfs/inode.c
+@@ -198,7 +198,7 @@ struct inode *hfs_new_inode(struct inode *dir, struct qstr *name, int mode)
+ 	insert_inode_hash(inode);
+ 	mark_inode_dirty(inode);
+ 	set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
 -	sb->s_dirt = 1;
 +	mark_sb_dirty(sb);
  
- 	inode->i_ino = cg * uspi->s_ipg + bit;
- 	inode_init_owner(inode, dir, mode);
-diff --git a/fs/ufs/super.c b/fs/ufs/super.c
-index 14743d9..a0317d8 100644
---- a/fs/ufs/super.c
-+++ b/fs/ufs/super.c
-@@ -288,7 +288,7 @@ void ufs_error (struct super_block * sb, const char * function,
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		usb1->fs_clean = UFS_FSBAD;
- 		ubh_mark_buffer_dirty(USPI_UBH(uspi));
+ 	return inode;
+ }
+@@ -213,7 +213,7 @@ void hfs_delete_inode(struct inode *inode)
+ 		if (HFS_I(inode)->cat_key.ParID == cpu_to_be32(HFS_ROOT_CNID))
+ 			HFS_SB(sb)->root_dirs--;
+ 		set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
 -		sb->s_dirt = 1;
 +		mark_sb_dirty(sb);
- 		sb->s_flags |= MS_RDONLY;
+ 		return;
  	}
- 	va_start (args, fmt);
-@@ -321,7 +321,7 @@ void ufs_panic (struct super_block * sb, const char * function,
- 	if (!(sb->s_flags & MS_RDONLY)) {
- 		usb1->fs_clean = UFS_FSBAD;
- 		ubh_mark_buffer_dirty(USPI_UBH(uspi));
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
+ 	HFS_SB(sb)->file_count--;
+@@ -226,7 +226,7 @@ void hfs_delete_inode(struct inode *inode)
+ 		}
  	}
- 	va_start (args, fmt);
- 	vsnprintf (error_buf, sizeof(error_buf), fmt, args);
-@@ -1204,7 +1204,7 @@ static int ufs_sync_fs(struct super_block *sb, int wait)
- 		ufs_set_fs_state(sb, usb1, usb3,
- 				UFS_FSOK - fs32_to_cpu(sb, usb1->fs_time));
- 	ufs_put_cstotal(sb);
+ 	set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
+-	sb->s_dirt = 1;
++	mark_sb_dirty(sb);
+ }
+ 
+ void hfs_inode_read_fork(struct inode *inode, struct hfs_extent *ext,
+diff --git a/fs/hfs/super.c b/fs/hfs/super.c
+index 0a81eb7..3fc4e9f 100644
+--- a/fs/hfs/super.c
++++ b/fs/hfs/super.c
+@@ -52,7 +52,7 @@ MODULE_LICENSE("GPL");
+ static void hfs_write_super(struct super_block *sb)
+ {
+ 	lock_super(sb);
 -	sb->s_dirt = 0;
 +	mark_sb_clean(sb);
  
- 	UFSD("EXIT\n");
- 	unlock_kernel();
-@@ -1218,7 +1218,7 @@ static void ufs_write_super(struct super_block *sb)
+ 	/* sync everything to the buffers */
  	if (!(sb->s_flags & MS_RDONLY))
- 		ufs_sync_fs(sb, 1);
- 	else
--		sb->s_dirt = 0;
-+		mark_sb_clean(sb);
- }
+@@ -64,7 +64,7 @@ static int hfs_sync_fs(struct super_block *sb, int wait)
+ {
+ 	lock_super(sb);
+ 	hfs_mdb_commit(sb);
+-	sb->s_dirt = 0;
++	mark_sb_clean(sb);
+ 	unlock_super(sb);
  
- static void ufs_put_super(struct super_block *sb)
-@@ -1227,7 +1227,7 @@ static void ufs_put_super(struct super_block *sb)
- 		
- 	UFSD("ENTER\n");
+ 	return 0;
+@@ -81,7 +81,7 @@ static void hfs_put_super(struct super_block *sb)
+ {
+ 	lock_kernel();
  
 -	if (sb->s_dirt)
 +	if (is_sb_dirty(sb))
- 		ufs_write_super(sb);
- 
- 	if (!(sb->s_flags & MS_RDONLY))
-@@ -1297,7 +1297,7 @@ static int ufs_remount (struct super_block *sb, int *mount_flags, char *data)
- 			ufs_set_fs_state(sb, usb1, usb3,
- 				UFS_FSOK - fs32_to_cpu(sb, usb1->fs_time));
- 		ubh_mark_buffer_dirty (USPI_UBH(uspi));
--		sb->s_dirt = 0;
-+		mark_sb_clean(sb);
- 		sb->s_flags |= MS_RDONLY;
- 	} else {
- 	/*
+ 		hfs_write_super(sb);
+ 	hfs_mdb_close(sb);
+ 	/* release the MDB's resources */
 -- 
 1.6.6.1
 
