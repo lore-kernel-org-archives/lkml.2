@@ -1,113 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932345Ab0EYWYJ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:24:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:59889 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753903Ab0EYWYF (ORCPT
+	id S1758575Ab0EYWZL (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:25:11 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:51562 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab0EYWZI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:24:05 -0400
-Date: Tue, 25 May 2010 15:23:23 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Boaz Harrosh <bharrosh@panasas.com>, Julia Lawall <julia@diku.dk>,
-       Doug Gilbert <dgilbert@interlog.com>, linux-scsi@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
-Message-Id: <20100525152323.26652def.akpm@linux-foundation.org>
-In-Reply-To: <1274799513.5300.37.camel@mulgrave.site>
-References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>
-	<1274538263.4410.38.camel@mulgrave.site>
-	<4BF94B89.2050101@panasas.com>
-	<1274631752.5894.24.camel@mulgrave.site>
-	<4BFBDB83.2090807@panasas.com>
-	<1274799513.5300.37.camel@mulgrave.site>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 18:25:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :in-reply-to:user-agent;
+        b=Pdli6/M2ew297jAQmlaW7seVdDbsN4ceOcjQ1WpERE4P+C3LrediIkuPgMLblUofyW
+         laOheVjkOq1PrbURCtVAqSN2w+3k6PH6dgmkTkdHELBFUlJGtR20D0EN2iLfYE5Mt6uW
+         b9JoDdckZKkUPi3GoisCHFRvZEFWSh9iMWvtU=
+Date: Tue, 25 May 2010 15:25:01 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Kevin Hilman <khilman@deeprootsystems.com>
+Cc: Mike Frysinger <vapier.adi@gmail.com>, linux-input@vger.kernel.org,
+       linux-omap@vger.kernel.org, Michael Roth <mroth@nessie.de>,
+       Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] touchscreen: ads7846: please don't touch free'd memory
+Message-ID: <20100525222501.GA4928@core.coreip.homeip.net>
+References: <1274226413-8520-1-git-send-email-khilman@deeprootsystems.com>
+ <20100519000019.GA17475@core.coreip.homeip.net>
+ <87mxvnlpxv.fsf@deeprootsystems.com>
+ <20100525202135.GC4455@core.coreip.homeip.net>
+ <8739xflkn5.fsf@deeprootsystems.com>
+ <AANLkTik72Q50eHX5cLW4uZ13BiMVCKQ0_bKdrCGZxpeE@mail.gmail.com>
+ <87r5kzk4m2.fsf@deeprootsystems.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <87r5kzk4m2.fsf@deeprootsystems.com>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 09:58:33 -0500
-James Bottomley <James.Bottomley@suse.de> wrote:
-
-> On Tue, 2010-05-25 at 17:15 +0300, Boaz Harrosh wrote:
-> > On 05/23/2010 07:22 PM, James Bottomley wrote:
-> > > On Sun, 2010-05-23 at 18:36 +0300, Boaz Harrosh wrote:
-> > >>> This type of transformation has really no value at all.
-
-kerrrrapp!!  There's always value in replacing open-coded straggles
-with calls to well-understood, well-documented, well-tested library
-code.
-
->  The code you're
-> > >>> proposing to replace is already correct.  I'm fairly ambivalent on
-> > >>> patterned APIs anyway but I accept they're useful way to prevent new
-> > >>> code getting it wrong. However, it's completely bogus to force
-> > >>> replacement of correctly functioning code throughout the kernel
-
-Hello?  This is Linux.  We're continuously filtering through old code,
-improving and updating it.  There's nothing which exempts
-./drivers/scsi/ from our reasons for doing this.
-
-> (unless
-> > >>> you're going to argue that everyone who tries to copy from user into a
-> > >>> kmalloc space does a cut and paste from sg?)
-> > >>>
-> > >>> Of infinitely greater service would be finding any places where the
-> > >>> pattern is being incorrectly used.
-> > >>>
-> > >>
-> > >> It looks like it is not done 100% kosher and calling memdup_user should
-> > >> be better.
-> > >>
-> > >> - For 1 memdup_user does a GFP_KERNEL with a comment on how copy_from_user
-> > >>   would eventually sleep, so what's the point of GFP_ATOMIC?
-> > > 
-> > > Well, since you've written a storage driver, I really hope that question
-> > > is rhetorical ...
-> > > 
-> > 
-> > Not really I do mean it in this case. It is not a storage-driver code
-> > path. Is sg a storage-driver. I was not aware anyone used it for one.
+On Tue, May 25, 2010 at 03:18:13PM -0700, Kevin Hilman wrote:
+> Mike Frysinger <vapier.adi@gmail.com> writes:
 > 
-> by storage driver, I mean anything in the writeout path ... this
-> includes ULDs, of which sg is one.
+> > On Tue, May 25, 2010 at 17:46, Kevin Hilman wrote:
+> >> After digging into the driver core and realizing that it seemed to
+> >> have sane error handling itself, I took a closer look at
+> >> ads7846_probe() and discovered it doesn't actually return an error
+> >> code for certain failure cases!  That was the root cause.
+> >
+> > that is crappy
+> >
+> >> Subject: [PATCH] input: touchscreen: ads7846: return error on probe failure
+> >
+> > i'd refer to the specific probe issue rather than just "probe".  maybe:
+> > input: touchscreen: ads7846: return error on regulator_get() failure
 > 
-> > > The reason for using GFP_ATOMIC from user context in storage drivers is
-> > > to avoid writeout deadlock:  you don't want to trigger a swap write
-> > > while you potentially occupy the writeout path.  In all older drivers
-> > > this had to be GFP_ATOMIC because GFP_NOIO wasn't around.
-> > > 
-> > 
-> > I confess my total swap ignorance. I was under the impression that
-> > swap needs a block device. OK you could do a user-mode filesystem
-> > over sg, under loop device. Does swap work over loop device=>ext2
-> > for example? Or is there a way to directly swap over a filesystem
-> > (Not block based)?
+> Thanks for the review, here's one with updated subject and ack added.
 > 
-> Well, swap can function above block devices or files.
+> Kevin
 > 
-> However, it's not just swap, it's also triggerable via mmap (you do file
-> backed mmap of a large area then have a process that joyfully dirties
-> lots of it) ... and that's what can make it such a difficult problem.
-> Basically you end up with a system with mostly dirty memory that it has
-> to clean via writeout (either to swap or by flushing dirty pages).  The
-> writeout path that these pages go down cannot ever wait on dirty pages
-> being flushed (which is what a sleeping kmalloc does), because that can
-> end up as a deadlock.
+> From 8ce49a91341d8713f870d2a931969f227a82b8ad Mon Sep 17 00:00:00 2001
+> From: Kevin Hilman <khilman@deeprootsystems.com>
+> Date: Tue, 25 May 2010 14:38:04 -0700
+> Subject: [PATCH] input: touchscreen: ads7846: return error on regulator_get() failure
+> 
+> In probe(), if regulator_get() failed, an error code was not being
+> returned causing the driver to be successfully bound, even though
+> probe failed.  This in turn caused the suspend, resume and remove
+> methods to be registered and accessed via the SPI core.  Since these
+> functions all access private driver data using pointers that had been
+> freed during the failed probe, this would lead to unpredictable
+> behavior.
+> 
+> This patch ensures that probe() returns an error code in this failure
+> case so the driver is not bound.
+> 
+> Found using lockdep and noticing the lock used in the suspend/resum
+> path pointed to a bogus lock due to the freed memory.
+> 
+> Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
+> Acked-by: Mike Frysinger <vapier@gentoo.org>
 
-copy_from_user() can take a fault, take a zillion locks, perform
-GFP_HIGHUSER allocations, enter page reclaim, enter filesystems, etc. 
-View a pagefault as a syscall with a different calling convention -
-it's that high level.
+OK, this makes much better sense. Will aplly, thank you Kevin.
 
-If this driver if correct in potentially taking a pagefault at this
-place then the patch is correct and desirable.  Otherwise, well, the
-driver already has problem and the patch did nothing to increase them.
+> ---
+>  drivers/input/touchscreen/ads7846.c |    4 ++--
+>  1 files changed, 2 insertions(+), 2 deletions(-)
+> 
+> diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
+> index 532279c..634f6f6 100644
+> --- a/drivers/input/touchscreen/ads7846.c
+> +++ b/drivers/input/touchscreen/ads7846.c
+> @@ -1163,8 +1163,8 @@ static int __devinit ads7846_probe(struct spi_device *spi)
+>  
+>  	ts->reg = regulator_get(&spi->dev, "vcc");
+>  	if (IS_ERR(ts->reg)) {
+> -		dev_err(&spi->dev, "unable to get regulator: %ld\n",
+> -			PTR_ERR(ts->reg));
+> +		err = PTR_ERR(ts->reg);
+> +		dev_err(&spi->dev, "unable to get regulator: %ld\n", err);
+>  		goto err_free_gpio;
+>  	}
+>  
+> -- 
+> 1.7.0.2
+> 
 
-And, of course, Julia's "no value" work caused us to identify those
-problems.
-
+-- 
+Dmitry
