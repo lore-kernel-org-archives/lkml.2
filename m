@@ -1,54 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab0EYO6H (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:58:07 -0400
-Received: from thunk.org ([69.25.196.29]:44923 "EHLO thunker.thunk.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756413Ab0EYO6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:58:06 -0400
-Date: Tue, 25 May 2010 10:57:56 -0400
-From: tytso@mit.edu
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
-Subject: Re: [PATCH 5/8] tracing: Convert more ext4 events to DEFINE_EVENT
-Message-ID: <20100525145756.GJ5556@thunk.org>
-Mail-Followup-To: tytso@mit.edu, Li Zefan <lizf@cn.fujitsu.com>,
-	Steven Rostedt <rostedt@goodmis.org>,
-	Frederic Weisbecker <fweisbec@gmail.com>,
-	Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
-	linux-ext4@vger.kernel.org
-References: <4BFA3728.3000701@cn.fujitsu.com>
- <4BFA37A4.1050208@cn.fujitsu.com>
+	id S932409Ab0EYO62 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:58:28 -0400
+Received: from buzzloop.caiaq.de ([212.112.241.133]:47352 "EHLO
+	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758672Ab0EYO60 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:58:26 -0400
+Date: Tue, 25 May 2010 16:57:59 +0200
+From: Daniel Mack <daniel@caiaq.de>
+To: Philippe =?iso-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Cc: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "maramaopercheseimorto@gmail.com" <maramaopercheseimorto@gmail.com>,
+       "sameo@linux.intel.com" <sameo@linux.intel.com>,
+       "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "rpurdie@linux.intel.com" <rpurdie@linux.intel.com>,
+       Longchamp Valentin <valentin.longchamp@epfl.ch>
+Subject: Re: [PATCH 1/2] mc13783: add LED support
+Message-ID: <20100525145759.GJ30801@buzzloop.caiaq.de>
+References: <1274114423-30020-1-git-send-email-philippe.retornaz@epfl.ch>
+ <1274114423-30020-2-git-send-email-philippe.retornaz@epfl.ch>
+ <20100517190242.GA17604@pengutronix.de>
+ <201005181327.29529.philippe.retornaz@epfl.ch>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4BFA37A4.1050208@cn.fujitsu.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <201005181327.29529.philippe.retornaz@epfl.ch>
 User-Agent: Mutt/1.5.20 (2009-06-14)
-X-SA-Exim-Connect-IP: <locally generated>
-X-SA-Exim-Mail-From: tytso@thunk.org
-X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 04:24:04PM +0800, Li Zefan wrote:
-> Use DECLARE_EVENT_CLASS, and save ~2.7K:
-> 
->    text    data     bss     dec     hex filename
->  274441    7200     260  281901   44d2d fs/ext4/ext4.o.orig
->  271881    7040     256  279177   44289 fs/ext4/ext4.o
-> 
-> 4 events are converted:
-> 
->   ext4__mb_new_pa: ext4_mb_new_inode_pa, ext4_mb_new_group_pa
->   ext4__mballoc:   ext4_mballoc_discard, ext4_mballoc_free
-> 
-> No change in functionality.
-> 
-> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+On Tue, May 18, 2010 at 01:27:29PM +0200, Philippe Rétornaz wrote:
+> Thank you for the review, I will post a v2 patch with the appropriates fixes 
+> soon.
 
-Thanks, added to the ext4 tree.
+Just curious - is there a v2 of this patches coming?
 
-					- Ted
+Thanks,
+Daniel
+
