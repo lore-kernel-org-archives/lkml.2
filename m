@@ -1,21 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933480Ab0EYSRh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:17:37 -0400
-Received: from kroah.org ([198.145.64.141]:44402 "EHLO coco.kroah.org"
+	id S933603Ab0EYSSM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:18:12 -0400
+Received: from kroah.org ([198.145.64.141]:44430 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933449Ab0EYSRe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:17:34 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:13 2010
-Message-Id: <20100525181213.850086958@clark.site>
+	id S933503Ab0EYSRj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:39 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:14 2010
+Message-Id: <20100525181214.431662028@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Tue, 25 May 2010 11:09:16 -0700
+Date: Tue, 25 May 2010 11:09:22 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Jean Delvare <khali@linux-fr.org>, Hans de Goede <hdegoede@redhat.com>
-Subject: [18/25] i2c: Fix probing of FSC hardware monitoring chips
+       Jean Delvare <khali@linux-fr.org>, Till Harbaum <till@harbaum.org>
+Subject: [24/25] i2c-tiny-usb: Fix on big-endian systems
 In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -26,67 +26,76 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 ------------------
 From: Jean Delvare <khali@linux-fr.org>
 
-commit b1d4b390ea4bb480e65974ce522a04022608a8df upstream.
+commit 1c010ff8912cbc08d80e865aab9c32b6b00c527d upstream.
 
-Some FSC hardware monitoring chips (Syleus at least) doesn't like
-quick writes we typically use to probe for I2C chips. Use a regular
-byte read instead for the address they live at (0x73). These are the
-only known chips living at this address on PC systems.
+The functionality bit vector is always returned as a little-endian
+32-bit number by the device, so it must be byte-swapped to the host
+endianness.
 
-For clarity, this fix should not be needed for kernels 2.6.30 and
-later, as we started instantiating the hwmon devices explicitly based
-on DMI data. Still, this fix is valuable in the following two cases:
-* Support for recent FSC chips on older kernels. The DMI-based device
-  instantiation is more difficult to backport than the device support
-  itself.
-* Case where the DMI-based device instantiation fails, whatever the
-  reason. We fall back to probing in that case, so it should work.
+On the other hand, the delay value is handled by the USB stack, so no
+byte swapping is needed on our side.
 
-This fixes kernel bug #15634:
-https://bugzilla.kernel.org/show_bug.cgi?id=15634
+This fixes bug #15105:
+http://bugzilla.kernel.org/show_bug.cgi?id=15105
 
+Reported-by: Jens Richter <jens@richter-stutensee.de>
 Signed-off-by: Jean Delvare <khali@linux-fr.org>
-Acked-by: Hans de Goede <hdegoede@redhat.com>
+Tested-by: Jens Richter <jens@richter-stutensee.de>
+Cc: Till Harbaum <till@harbaum.org>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
-
 ---
- drivers/i2c/i2c-core.c |   24 +++++++++++++++++-------
- 1 file changed, 17 insertions(+), 7 deletions(-)
+ drivers/i2c/busses/i2c-tiny-usb.c |   12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
 
---- a/drivers/i2c/i2c-core.c
-+++ b/drivers/i2c/i2c-core.c
-@@ -1269,14 +1269,24 @@ static int i2c_detect_address(struct i2c
+--- a/drivers/i2c/busses/i2c-tiny-usb.c
++++ b/drivers/i2c/busses/i2c-tiny-usb.c
+@@ -13,6 +13,7 @@
+ #include <linux/kernel.h>
+ #include <linux/errno.h>
+ #include <linux/module.h>
++#include <linux/types.h>
  
- 	/* Make sure there is something at this address, unless forced */
- 	if (kind < 0) {
--		if (i2c_smbus_xfer(adapter, addr, 0, 0, 0,
--				   I2C_SMBUS_QUICK, NULL) < 0)
--			return 0;
-+		if (addr == 0x73 && (adapter->class & I2C_CLASS_HWMON)) {
-+			/* Special probe for FSC hwmon chips */
-+			union i2c_smbus_data dummy;
+ /* include interfaces to usb layer */
+ #include <linux/usb.h>
+@@ -31,8 +32,8 @@
+ #define CMD_I2C_IO_END		(1<<1)
  
--		/* prevent 24RF08 corruption */
--		if ((addr & ~0x0f) == 0x50)
--			i2c_smbus_xfer(adapter, addr, 0, 0, 0,
--				       I2C_SMBUS_QUICK, NULL);
-+			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_READ, 0,
-+					   I2C_SMBUS_BYTE_DATA, &dummy) < 0)
-+				return 0;
-+		} else {
-+			if (i2c_smbus_xfer(adapter, addr, 0, I2C_SMBUS_WRITE, 0,
-+					   I2C_SMBUS_QUICK, NULL) < 0)
-+				return 0;
-+
-+			/* Prevent 24RF08 corruption */
-+			if ((addr & ~0x0f) == 0x50)
-+				i2c_smbus_xfer(adapter, addr, 0,
-+					       I2C_SMBUS_WRITE, 0,
-+					       I2C_SMBUS_QUICK, NULL);
-+		}
+ /* i2c bit delay, default is 10us -> 100kHz */
+-static int delay = 10;
+-module_param(delay, int, 0);
++static unsigned short delay = 10;
++module_param(delay, ushort, 0);
+ MODULE_PARM_DESC(delay, "bit delay in microseconds, "
+ 		 "e.g. 10 for 100kHz (default is 100kHz)");
+ 
+@@ -109,7 +110,7 @@ static int usb_xfer(struct i2c_adapter *
+ 
+ static u32 usb_func(struct i2c_adapter *adapter)
+ {
+-	u32 func;
++	__le32 func;
+ 
+ 	/* get functionality from adapter */
+ 	if (usb_read(adapter, CMD_GET_FUNC, 0, 0, &func, sizeof(func)) !=
+@@ -118,7 +119,7 @@ static u32 usb_func(struct i2c_adapter *
+ 		return 0;
  	}
  
- 	/* Finally call the custom detection function */
+-	return func;
++	return le32_to_cpu(func);
+ }
+ 
+ /* This is the actual algorithm we define */
+@@ -216,8 +217,7 @@ static int i2c_tiny_usb_probe(struct usb
+ 		 "i2c-tiny-usb at bus %03d device %03d",
+ 		 dev->usb_dev->bus->busnum, dev->usb_dev->devnum);
+ 
+-	if (usb_write(&dev->adapter, CMD_SET_DELAY,
+-		      cpu_to_le16(delay), 0, NULL, 0) != 0) {
++	if (usb_write(&dev->adapter, CMD_SET_DELAY, delay, 0, NULL, 0) != 0) {
+ 		dev_err(&dev->adapter.dev,
+ 			"failure setting delay to %dus\n", delay);
+ 		retval = -EIO;
 
 
