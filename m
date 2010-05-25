@@ -1,251 +1,349 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756295Ab0EYIud (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 04:50:33 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:48749 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752114Ab0EYIub convert rfc822-to-8bit (ORCPT
+	id S1756369Ab0EYIxb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 04:53:31 -0400
+Received: from bld-mail12.adl6.internode.on.net ([150.101.137.97]:35798 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754917Ab0EYIx3 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 04:50:31 -0400
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-From: Peter Zijlstra <peterz@infradead.org>
-To: piotr@hosowicz.com
-Cc: linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Divyesh Shah <dpshah@google.com>
-In-Reply-To: <4BF9EC69.5030709@example.com>
-References: <4BF9EC69.5030709@example.com>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 May 2010 10:50:22 +0200
-Message-ID: <1274777422.5882.591.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Tue, 25 May 2010 04:53:29 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: linux-fsdevel@vger.kernel.org, linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: [PATCH 2/5] mm: add context argument to shrinker callback
+Date: Tue, 25 May 2010 18:53:05 +1000
+Message-Id: <1274777588-21494-3-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 05:03 +0200, Piotr Hosowicz wrote:
-> [  720.313607] BUG: using smp_processor_id() in preemptible [00000000] code: icedove-bin/5449
-> [  720.313612] caller is native_sched_clock+0x3c/0x68
-> [  720.313616] Pid: 5449, comm: icedove-bin Tainted: P            2.6.34-20100524-0407 #1
-> [  720.313618] Call Trace:
-> [  720.313624]  [<ffffffff811a533b>] debug_smp_processor_id+0xc7/0xe0
-> [  720.313629]  [<ffffffff81009b87>] native_sched_clock+0x3c/0x68
-> [  720.313634]  [<ffffffff81009a4d>] sched_clock+0x9/0xd
-> [  720.313637]  [<ffffffff811823ec>] blk_rq_init+0x92/0x9d
-> [  720.313641]  [<ffffffff81184227>] get_request+0x1bf/0x2c7
-> [  720.313646]  [<ffffffff8118435c>] get_request_wait+0x2d/0x19d 
+From: Dave Chinner <dchinner@redhat.com>
 
-This comes from wreckage in the blk tree..
+The current shrinker implementation requires the registered callback
+to have global state to work from. This makes it difficult to shrink
+caches that are not global (e.g. per-filesystem caches). Pass the shrinker
+structure to the callback so that users can embed the shrinker structure
+in the context the shrinker needs to operate on and get back to it in the
+callback via container_of().
 
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
 ---
-commit 9195291e5f05e01d67f9a09c756b8aca8f009089
-Author: Divyesh Shah <dpshah@google.com>
-Date:   Thu Apr 1 15:01:41 2010 -0700
+ arch/x86/kvm/mmu.c              |    2 +-
+ drivers/gpu/drm/i915/i915_gem.c |    2 +-
+ fs/dcache.c                     |    2 +-
+ fs/gfs2/glock.c                 |    2 +-
+ fs/gfs2/quota.c                 |    2 +-
+ fs/gfs2/quota.h                 |    2 +-
+ fs/inode.c                      |    2 +-
+ fs/mbcache.c                    |    5 +++--
+ fs/nfs/dir.c                    |    2 +-
+ fs/nfs/internal.h               |    3 ++-
+ fs/quota/dquot.c                |    2 +-
+ fs/ubifs/shrinker.c             |    2 +-
+ fs/ubifs/ubifs.h                |    2 +-
+ fs/xfs/linux-2.6/xfs_buf.c      |    5 +++--
+ fs/xfs/linux-2.6/xfs_sync.c     |    1 +
+ fs/xfs/quota/xfs_qm.c           |    7 +++++--
+ include/linux/mm.h              |    2 +-
+ mm/vmscan.c                     |    8 +++++---
+ 18 files changed, 31 insertions(+), 22 deletions(-)
 
-    blkio: Increment the blkio cgroup stats for real now
-    
-    We also add start_time_ns and io_start_time_ns fields to struct request
-    here to record the time when a request is created and when it is
-    dispatched to device. We use ns uints here as ms and jiffies are
-    not very useful for non-rotational media.
-    
-    Signed-off-by: Divyesh Shah<dpshah@google.com>
-    Signed-off-by: Jens Axboe <jens.axboe@oracle.com>
----
-
-+#ifdef CONFIG_BLK_CGROUP
-+static inline void set_start_time_ns(struct request *req)
-+{
-+	req->start_time_ns = sched_clock();
-+}
-+
-+static inline void set_io_start_time_ns(struct request *req)
-+{
-+	req->io_start_time_ns = sched_clock();
-+}
-+#else
-+static inline void set_start_time_ns(struct request *req) {}
-+static inline void set_io_start_time_ns(struct request *req) {}
-+#endif
-
----
-
-Clearly nobody tested this, and its terribly broken to boot.
-
-I guess they want something like:
-
----
-Subject: sched_clock: Add local_clock()
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue May 25 10:48:51 CEST 2010
-
-For people who otherwise get to write: cpu_clock(smp_processor_id()),
-there is now: local_clock().
-
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-LKML-Reference: <new-submission>
----
-Index: linux-2.6/arch/parisc/kernel/ftrace.c
-===================================================================
---- linux-2.6.orig/arch/parisc/kernel/ftrace.c
-+++ linux-2.6/arch/parisc/kernel/ftrace.c
-@@ -82,7 +82,7 @@ unsigned long ftrace_return_to_handler(u
- 	unsigned long ret;
- 
- 	pop_return_trace(&trace, &ret);
--	trace.rettime = cpu_clock(raw_smp_processor_id());
-+	trace.rettime = local_clock();
- 	ftrace_graph_return(&trace);
- 
- 	if (unlikely(!ret)) {
-@@ -126,7 +126,7 @@ void prepare_ftrace_return(unsigned long
- 		return;
- 	}
- 
--	calltime = cpu_clock(raw_smp_processor_id());
-+	calltime = local_clock();
- 
- 	if (push_return_trace(old, calltime,
- 				self_addr, &trace.depth) == -EBUSY) {
-Index: linux-2.6/include/linux/blkdev.h
-===================================================================
---- linux-2.6.orig/include/linux/blkdev.h
-+++ linux-2.6/include/linux/blkdev.h
-@@ -1213,12 +1213,12 @@ int kblockd_schedule_work(struct request
- #ifdef CONFIG_BLK_CGROUP
- static inline void set_start_time_ns(struct request *req)
- {
--	req->start_time_ns = sched_clock();
-+	req->start_time_ns = local_clock();
+diff --git a/arch/x86/kvm/mmu.c b/arch/x86/kvm/mmu.c
+index 81563e7..ac3d107 100644
+--- a/arch/x86/kvm/mmu.c
++++ b/arch/x86/kvm/mmu.c
+@@ -2919,7 +2919,7 @@ static int kvm_mmu_remove_some_alloc_mmu_pages(struct kvm *kvm)
+ 	return kvm_mmu_zap_page(kvm, page) + 1;
  }
  
- static inline void set_io_start_time_ns(struct request *req)
+-static int mmu_shrink(int nr_to_scan, gfp_t gfp_mask)
++static int mmu_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
  {
--	req->io_start_time_ns = sched_clock();
-+	req->io_start_time_ns = local_clock();
+ 	struct kvm *kvm;
+ 	struct kvm *kvm_freed = NULL;
+diff --git a/drivers/gpu/drm/i915/i915_gem.c b/drivers/gpu/drm/i915/i915_gem.c
+index 112699f..6cd2e7a 100644
+--- a/drivers/gpu/drm/i915/i915_gem.c
++++ b/drivers/gpu/drm/i915/i915_gem.c
+@@ -5216,7 +5216,7 @@ i915_gpu_is_active(struct drm_device *dev)
  }
  
- static inline uint64_t rq_start_time_ns(struct request *req)
-Index: linux-2.6/include/linux/sched.h
-===================================================================
---- linux-2.6.orig/include/linux/sched.h
-+++ linux-2.6/include/linux/sched.h
-@@ -1822,6 +1822,7 @@ extern void sched_clock_idle_wakeup_even
-  * clock constructed from sched_clock():
+ static int
+-i915_gem_shrink(int nr_to_scan, gfp_t gfp_mask)
++i915_gem_shrink(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+ {
+ 	drm_i915_private_t *dev_priv, *next_dev;
+ 	struct drm_i915_gem_object *obj_priv, *next_obj;
+diff --git a/fs/dcache.c b/fs/dcache.c
+index d96047b..dba6b6d 100644
+--- a/fs/dcache.c
++++ b/fs/dcache.c
+@@ -894,7 +894,7 @@ EXPORT_SYMBOL(shrink_dcache_parent);
+  *
+  * In this case we return -1 to tell the caller that we baled.
   */
- extern unsigned long long cpu_clock(int cpu);
-+extern unsigned long long local_clock(void);
- 
- extern unsigned long long
- task_sched_runtime(struct task_struct *task);
-Index: linux-2.6/kernel/lockdep.c
-===================================================================
---- linux-2.6.orig/kernel/lockdep.c
-+++ linux-2.6/kernel/lockdep.c
-@@ -146,7 +146,7 @@ static DEFINE_PER_CPU(struct lock_class_
- 
- static inline u64 lockstat_clock(void)
+-static int shrink_dcache_memory(int nr, gfp_t gfp_mask)
++static int shrink_dcache_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
  {
--	return cpu_clock(smp_processor_id());
-+	return local_clock();
+ 	if (nr) {
+ 		if (!(gfp_mask & __GFP_FS))
+diff --git a/fs/gfs2/glock.c b/fs/gfs2/glock.c
+index ddcdbf4..04b540c 100644
+--- a/fs/gfs2/glock.c
++++ b/fs/gfs2/glock.c
+@@ -1348,7 +1348,7 @@ void gfs2_glock_complete(struct gfs2_glock *gl, int ret)
  }
  
- static int lock_point(unsigned long points[], unsigned long ip)
-Index: linux-2.6/kernel/perf_event.c
-===================================================================
---- linux-2.6.orig/kernel/perf_event.c
-+++ linux-2.6/kernel/perf_event.c
-@@ -214,7 +214,7 @@ static void perf_unpin_context(struct pe
  
- static inline u64 perf_clock(void)
+-static int gfs2_shrink_glock_memory(int nr, gfp_t gfp_mask)
++static int gfs2_shrink_glock_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
  {
--	return cpu_clock(raw_smp_processor_id());
-+	return local_clock();
- }
+ 	struct gfs2_glock *gl;
+ 	int may_demote;
+diff --git a/fs/gfs2/quota.c b/fs/gfs2/quota.c
+index 49667d6..4ea548f 100644
+--- a/fs/gfs2/quota.c
++++ b/fs/gfs2/quota.c
+@@ -77,7 +77,7 @@ static LIST_HEAD(qd_lru_list);
+ static atomic_t qd_lru_count = ATOMIC_INIT(0);
+ static DEFINE_SPINLOCK(qd_lru_lock);
  
- /*
-Index: linux-2.6/kernel/rcutorture.c
-===================================================================
---- linux-2.6.orig/kernel/rcutorture.c
-+++ linux-2.6/kernel/rcutorture.c
-@@ -239,8 +239,7 @@ static unsigned long
- rcu_random(struct rcu_random_state *rrsp)
+-int gfs2_shrink_qd_memory(int nr, gfp_t gfp_mask)
++int gfs2_shrink_qd_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
  {
- 	if (--rrsp->rrs_count < 0) {
--		rrsp->rrs_state +=
--			(unsigned long)cpu_clock(raw_smp_processor_id());
-+		rrsp->rrs_state += (unsigned long)local_clock();
- 		rrsp->rrs_count = RCU_RANDOM_REFRESH;
- 	}
- 	rrsp->rrs_state = rrsp->rrs_state * RCU_RANDOM_MULT + RCU_RANDOM_ADD;
-Index: linux-2.6/kernel/sched.c
-===================================================================
---- linux-2.6.orig/kernel/sched.c
-+++ linux-2.6/kernel/sched.c
-@@ -1670,7 +1670,7 @@ static void update_shares(struct sched_d
- 	if (root_task_group_empty())
- 		return;
- 
--	now = cpu_clock(raw_smp_processor_id());
-+	now = local_clock();
- 	elapsed = now - sd->last_update;
- 
- 	if (elapsed >= (s64)(u64)sysctl_sched_shares_ratelimit) {
-Index: linux-2.6/kernel/sched_clock.c
-===================================================================
---- linux-2.6.orig/kernel/sched_clock.c
-+++ linux-2.6/kernel/sched_clock.c
-@@ -249,6 +249,18 @@ unsigned long long cpu_clock(int cpu)
- 	return clock;
+ 	struct gfs2_quota_data *qd;
+ 	struct gfs2_sbd *sdp;
+diff --git a/fs/gfs2/quota.h b/fs/gfs2/quota.h
+index 195f60c..e7d236c 100644
+--- a/fs/gfs2/quota.h
++++ b/fs/gfs2/quota.h
+@@ -51,7 +51,7 @@ static inline int gfs2_quota_lock_check(struct gfs2_inode *ip)
+ 	return ret;
  }
  
-+unsigned long long local_clock(void)
-+{
-+	unsigned long long clock;
-+	unsigned long flags;
-+
-+	local_irq_save(flags);
-+	clock = sched_clock_cpu(smp_processor_id());
-+	local_irq_restore(flags);
-+
-+	return clock;
-+}
-+
- #else /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
+-extern int gfs2_shrink_qd_memory(int nr, gfp_t gfp_mask);
++extern int gfs2_shrink_qd_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask);
+ extern const struct quotactl_ops gfs2_quotactl_ops;
  
- void sched_clock_init(void)
-@@ -264,12 +276,17 @@ u64 sched_clock_cpu(int cpu)
- 	return sched_clock();
- }
- 
--
- unsigned long long cpu_clock(int cpu)
- {
- 	return sched_clock_cpu(cpu);
- }
- 
-+unsigned long long local_clock(void)
-+{
-+	return sched_clock_cpu(0);
-+}
-+
- #endif /* CONFIG_HAVE_UNSTABLE_SCHED_CLOCK */
- 
- EXPORT_SYMBOL_GPL(cpu_clock);
-+EXPORT_SYMBOL_GPL(local_clock);
-Index: linux-2.6/kernel/trace/trace_clock.c
-===================================================================
---- linux-2.6.orig/kernel/trace/trace_clock.c
-+++ linux-2.6/kernel/trace/trace_clock.c
-@@ -56,7 +56,7 @@ u64 notrace trace_clock_local(void)
+ #endif /* __QUOTA_DOT_H__ */
+diff --git a/fs/inode.c b/fs/inode.c
+index 3caa758..1e44ec5 100644
+--- a/fs/inode.c
++++ b/fs/inode.c
+@@ -577,7 +577,7 @@ static void prune_icache(int count)
+  * This function is passed the number of inodes to scan, and it returns the
+  * total number of remaining possibly-reclaimable inodes.
   */
- u64 notrace trace_clock(void)
+-static int shrink_icache_memory(int nr, gfp_t gfp_mask)
++static int shrink_icache_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
  {
--	return cpu_clock(raw_smp_processor_id());
-+	return local_clock();
+ 	if (nr) {
+ 		/*
+diff --git a/fs/mbcache.c b/fs/mbcache.c
+index ec88ff3..e28f21b 100644
+--- a/fs/mbcache.c
++++ b/fs/mbcache.c
+@@ -115,7 +115,7 @@ mb_cache_indexes(struct mb_cache *cache)
+  * What the mbcache registers as to get shrunk dynamically.
+  */
+ 
+-static int mb_cache_shrink_fn(int nr_to_scan, gfp_t gfp_mask);
++static int mb_cache_shrink_fn(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask);
+ 
+ static struct shrinker mb_cache_shrinker = {
+ 	.shrink = mb_cache_shrink_fn,
+@@ -191,13 +191,14 @@ forget:
+  * This function is called by the kernel memory management when memory
+  * gets low.
+  *
++ * @shrink: (ignored)
+  * @nr_to_scan: Number of objects to scan
+  * @gfp_mask: (ignored)
+  *
+  * Returns the number of objects which are present in the cache.
+  */
+ static int
+-mb_cache_shrink_fn(int nr_to_scan, gfp_t gfp_mask)
++mb_cache_shrink_fn(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+ {
+ 	LIST_HEAD(free_list);
+ 	struct list_head *l, *ltmp;
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index ee9a179..3f33bc0 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1708,7 +1708,7 @@ static void nfs_access_free_list(struct list_head *head)
+ 	}
  }
  
+-int nfs_access_cache_shrinker(int nr_to_scan, gfp_t gfp_mask)
++int nfs_access_cache_shrinker(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+ {
+ 	LIST_HEAD(head);
+ 	struct nfs_inode *nfsi;
+diff --git a/fs/nfs/internal.h b/fs/nfs/internal.h
+index d8bd619..e70f44b 100644
+--- a/fs/nfs/internal.h
++++ b/fs/nfs/internal.h
+@@ -205,7 +205,8 @@ extern struct rpc_procinfo nfs4_procedures[];
+ void nfs_close_context(struct nfs_open_context *ctx, int is_sync);
  
+ /* dir.c */
+-extern int nfs_access_cache_shrinker(int nr_to_scan, gfp_t gfp_mask);
++extern int nfs_access_cache_shrinker(struct shrinker *shrink,
++					int nr_to_scan, gfp_t gfp_mask);
+ 
+ /* inode.c */
+ extern struct workqueue_struct *nfsiod_workqueue;
+diff --git a/fs/quota/dquot.c b/fs/quota/dquot.c
+index 655a4c5..cfd5437 100644
+--- a/fs/quota/dquot.c
++++ b/fs/quota/dquot.c
+@@ -697,7 +697,7 @@ static int dqstats_read(unsigned int type)
+  * more memory
+  */
+ 
+-static int shrink_dqcache_memory(int nr, gfp_t gfp_mask)
++static int shrink_dqcache_memory(struct shrinker *shrink, int nr, gfp_t gfp_mask)
+ {
+ 	if (nr) {
+ 		spin_lock(&dq_list_lock);
+diff --git a/fs/ubifs/shrinker.c b/fs/ubifs/shrinker.c
+index 02feb59..0b20111 100644
+--- a/fs/ubifs/shrinker.c
++++ b/fs/ubifs/shrinker.c
+@@ -277,7 +277,7 @@ static int kick_a_thread(void)
+ 	return 0;
+ }
+ 
+-int ubifs_shrinker(int nr, gfp_t gfp_mask)
++int ubifs_shrinker(struct shrinker *shrink, int nr, gfp_t gfp_mask)
+ {
+ 	int freed, contention = 0;
+ 	long clean_zn_cnt = atomic_long_read(&ubifs_clean_zn_cnt);
+diff --git a/fs/ubifs/ubifs.h b/fs/ubifs/ubifs.h
+index bd2542d..5a92345 100644
+--- a/fs/ubifs/ubifs.h
++++ b/fs/ubifs/ubifs.h
+@@ -1575,7 +1575,7 @@ int ubifs_tnc_start_commit(struct ubifs_info *c, struct ubifs_zbranch *zroot);
+ int ubifs_tnc_end_commit(struct ubifs_info *c);
+ 
+ /* shrinker.c */
+-int ubifs_shrinker(int nr_to_scan, gfp_t gfp_mask);
++int ubifs_shrinker(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask);
+ 
+ /* commit.c */
+ int ubifs_bg_thread(void *info);
+diff --git a/fs/xfs/linux-2.6/xfs_buf.c b/fs/xfs/linux-2.6/xfs_buf.c
+index f01de3c..fe8bf82 100644
+--- a/fs/xfs/linux-2.6/xfs_buf.c
++++ b/fs/xfs/linux-2.6/xfs_buf.c
+@@ -44,7 +44,7 @@
+ 
+ static kmem_zone_t *xfs_buf_zone;
+ STATIC int xfsbufd(void *);
+-STATIC int xfsbufd_wakeup(int, gfp_t);
++STATIC int xfsbufd_wakeup(struct shrinker *, int, gfp_t);
+ STATIC void xfs_buf_delwri_queue(xfs_buf_t *, int);
+ static struct shrinker xfs_buf_shake = {
+ 	.shrink = xfsbufd_wakeup,
+@@ -339,7 +339,7 @@ _xfs_buf_lookup_pages(
+ 					__func__, gfp_mask);
+ 
+ 			XFS_STATS_INC(xb_page_retries);
+-			xfsbufd_wakeup(0, gfp_mask);
++			xfsbufd_wakeup(NULL, 0, gfp_mask);
+ 			congestion_wait(BLK_RW_ASYNC, HZ/50);
+ 			goto retry;
+ 		}
+@@ -1753,6 +1753,7 @@ xfs_buf_runall_queues(
+ 
+ STATIC int
+ xfsbufd_wakeup(
++	struct shrinker		*shrink,
+ 	int			priority,
+ 	gfp_t			mask)
+ {
+diff --git a/fs/xfs/linux-2.6/xfs_sync.c b/fs/xfs/linux-2.6/xfs_sync.c
+index 3884e20..c881a0c 100644
+--- a/fs/xfs/linux-2.6/xfs_sync.c
++++ b/fs/xfs/linux-2.6/xfs_sync.c
+@@ -842,6 +842,7 @@ static struct rw_semaphore xfs_mount_list_lock;
+ 
+ static int
+ xfs_reclaim_inode_shrink(
++	struct shrinker	*shrink,
+ 	int		nr_to_scan,
+ 	gfp_t		gfp_mask)
+ {
+diff --git a/fs/xfs/quota/xfs_qm.c b/fs/xfs/quota/xfs_qm.c
+index 38e7641..b8051aa 100644
+--- a/fs/xfs/quota/xfs_qm.c
++++ b/fs/xfs/quota/xfs_qm.c
+@@ -69,7 +69,7 @@ STATIC void	xfs_qm_list_destroy(xfs_dqlist_t *);
+ 
+ STATIC int	xfs_qm_init_quotainos(xfs_mount_t *);
+ STATIC int	xfs_qm_init_quotainfo(xfs_mount_t *);
+-STATIC int	xfs_qm_shake(int, gfp_t);
++STATIC int	xfs_qm_shake(struct shrinker *, int, gfp_t);
+ 
+ static struct shrinker xfs_qm_shaker = {
+ 	.shrink = xfs_qm_shake,
+@@ -2117,7 +2117,10 @@ xfs_qm_shake_freelist(
+  */
+ /* ARGSUSED */
+ STATIC int
+-xfs_qm_shake(int nr_to_scan, gfp_t gfp_mask)
++xfs_qm_shake(
++	struct shrinker	*shrink,
++	int		nr_to_scan,
++	gfp_t		gfp_mask)
+ {
+ 	int	ndqused, nfree, n;
+ 
+diff --git a/include/linux/mm.h b/include/linux/mm.h
+index fb19bb9..3d7eedc 100644
+--- a/include/linux/mm.h
++++ b/include/linux/mm.h
+@@ -994,7 +994,7 @@ static inline void sync_mm_rss(struct task_struct *task, struct mm_struct *mm)
+  * querying the cache size, so a fastpath for that case is appropriate.
+  */
+ struct shrinker {
+-	int (*shrink)(int nr_to_scan, gfp_t gfp_mask);
++	int (*shrink)(struct shrinker *, int nr_to_scan, gfp_t gfp_mask);
+ 	int seeks;	/* seeks to recreate an obj */
+ 
+ 	/* These are for internal use */
+diff --git a/mm/vmscan.c b/mm/vmscan.c
+index 3ff3311..9d56aaf 100644
+--- a/mm/vmscan.c
++++ b/mm/vmscan.c
+@@ -215,8 +215,9 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 	list_for_each_entry(shrinker, &shrinker_list, list) {
+ 		unsigned long long delta;
+ 		unsigned long total_scan;
+-		unsigned long max_pass = (*shrinker->shrink)(0, gfp_mask);
++		unsigned long max_pass;
+ 
++		max_pass = (*shrinker->shrink)(shrinker, 0, gfp_mask);
+ 		delta = (4 * scanned) / shrinker->seeks;
+ 		delta *= max_pass;
+ 		do_div(delta, lru_pages + 1);
+@@ -244,8 +245,9 @@ unsigned long shrink_slab(unsigned long scanned, gfp_t gfp_mask,
+ 			int shrink_ret;
+ 			int nr_before;
+ 
+-			nr_before = (*shrinker->shrink)(0, gfp_mask);
+-			shrink_ret = (*shrinker->shrink)(this_scan, gfp_mask);
++			nr_before = (*shrinker->shrink)(shrinker, 0, gfp_mask);
++			shrink_ret = (*shrinker->shrink)(shrinker, this_scan,
++								gfp_mask);
+ 			if (shrink_ret == -1)
+ 				break;
+ 			if (shrink_ret < nr_before)
+-- 
+1.5.6.5
 
