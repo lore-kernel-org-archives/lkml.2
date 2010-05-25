@@ -1,58 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932784Ab0EYScK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:32:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:52242 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab0EYScI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:32:08 -0400
-Date: Tue, 25 May 2010 14:30:51 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Will Drewry <wad@chromium.org>, Alasdair G Kergon <agk@redhat.com>,
-       linux-kernel@vger.kernel.org, Al Viro <viro@zeniv.linux.org.uk>,
-       Nick Piggin <npiggin@suse.de>, Tejun Heo <tj@kernel.org>,
-       Scott James Remnant <scott@ubuntu.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Harald Hoyer <harald@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>
-Subject: Re: [PATCH 2/2] init, mount: export the name_to_dev_t symbol
-Message-ID: <20100525183051.GA692@redhat.com>
-References: <1274802411-26613-1-git-send-email-wad@chromium.org>
- <1274802411-26613-2-git-send-email-wad@chromium.org>
- <20100525155535.GA811@infradead.org>
- <20100525160550.GC28588@agk-dp.fab.redhat.com>
- <AANLkTin6Nt2TqxlF9kQJZThI7pZ6wqAwSlg9GnqkKB-v@mail.gmail.com>
- <20100525172110.GA6046@infradead.org>
+	id S933444Ab0EYSeT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:34:19 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:27088 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932530Ab0EYSeR (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:34:17 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:x-system-of-record;
+	b=is+eCGIl/MI8hS+Ck12zHlqktXCS2bPtxBVLMvsP5kG6AVYXUAVzyxBjmIHLyzAgD
+	4wRD/9tMMVnWFGe23fU3A==
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100525172110.GA6046@infradead.org>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <20100525165334.GA27307@redhat.com>
+References: <1274227488.2370.107.camel@w-sridhar.beaverton.ibm.com>
+	<AANLkTinsrFoLVKDFM5pcKcL_6MvAzhR6IzbNmWKh3BDh@mail.gmail.com>
+	<20100525165334.GA27307@redhat.com>
+Date: Tue, 25 May 2010 11:34:12 -0700
+Message-ID: <AANLkTilawCLv5_XlStsFdOdLh-dmlIR3aUTyrVS-JF_s@mail.gmail.com>
+Subject: Re: [PATCH 1/3] cgroups: Add an API to attach a task to current 
+	task's cgroup
+From: Paul Menage <menage@google.com>
+To: "Michael S. Tsirkin" <mst@redhat.com>
+Cc: Sridhar Samudrala <samudrala.sridhar@gmail.com>,
+       netdev <netdev@vger.kernel.org>,
+       "kvm@vger.kernel.org" <kvm@vger.kernel.org>,
+       lkml <linux-kernel@vger.kernel.org>,
+       containers@lists.linux-foundation.org, lizf@cn.fujitsu.com
+Content-Type: text/plain; charset=ISO-8859-1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25 2010 at  1:21pm -0400,
-Christoph Hellwig <hch@infradead.org> wrote:
+On Tue, May 25, 2010 at 9:53 AM, Michael S. Tsirkin <mst@redhat.com> wrote:
+> On Thu, May 20, 2010 at 03:22:15PM -0700, Paul Menage wrote:
+>> On Tue, May 18, 2010 at 5:04 PM, Sridhar Samudrala
+>> <samudrala.sridhar@gmail.com> wrote:
+>> > Add a new kernel API to attach a task to current task's cgroup
+>> > in all the active hierarchies.
+>> >
+>> > Signed-off-by: Sridhar Samudrala <sri@us.ibm.com>
+>>
+>> Reviewed-by: Paul Menage <menage@google.com>
+>>
+>> It would be more efficient to just attach directly to current->cgroups
+>> rather than potentially creating/destroying one css_set for each
+>> hierarchy until we've completely converged on current->cgroups - but
+>> that would require a bunch of refactoring of the guts of
+>> cgroup_attach_task() to ensure that the right can_attach()/attach()
+>> callbacks are made. That doesn't really seem worthwhile right now for
+>> the initial use, that I imagine isn't going to be
+>> performance-sensitive.
+>>
+>> Paul
+>
+> Is this patch suitable for 2.6.35?
 
-> On Tue, May 25, 2010 at 11:11:33AM -0500, Will Drewry wrote:
-> > In addition to getting rid of the code duplication, I'd like device-mapper
-> > to be able to resolve slave devices at boot-time to accommodate a
-> > do_mounts_dm.c equivalent to do_mounts_md.c:
-> 
-> So please add a do_mounts_dm.c instead of pushing this somewhere it
-> doesn't belong to.
+Should be OK, yes.
 
-He is proposing doing just that, you cut out the patchwork url he
-already shared: https://patchwork.kernel.org/patch/101024/
-
-Will's intentions are good: avoid code duplication.
-
-He is also trying to keep DM-specific common code in drivers/md/
-
-So in this instance, avoiding the need to export name_to_dev_t would
-require splitting the internal DM __table_get_device (or more likely:
-dm_get_device) out to a public facing interface that takes a dev_t.
-
-Mike
+Paul
