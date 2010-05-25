@@ -1,83 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758789Ab0EYP3X (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:29:23 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:59477 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756255Ab0EYP3V (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:29:21 -0400
-Date: Tue, 25 May 2010 07:58:02 -0700
-From: Greg KH <gregkh@suse.de>
-To: Martyn Welch <martyn.welch@ge.com>
-Cc: nanakos@wired-net.gr, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] Staging: vme: vme.c: fixed an EXPORT_SYMBOL warning
-Message-ID: <20100525145802.GA6417@suse.de>
-References: <1274792957-4602-1-git-send-email-nanakos@wired-net.gr>
- <20100525134453.GA4818@suse.de>
- <4BFBDC74.6000000@ge.com>
+	id S1754924Ab0EYPa1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:30:27 -0400
+Received: from moutng.kundenserver.de ([212.227.17.10]:63622 "EHLO
+	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751024Ab0EYPaZ (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 11:30:25 -0400
+From: Arnd Bergmann <arnd@arndb.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+Date: Tue, 25 May 2010 17:30:18 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-19-generic; KDE/4.3.2; x86_64; ; )
+Cc: Ulrich Drepper <drepper@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org, Chen Liqin <liqin.chen@sunplusct.com>
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005251703.11613.arnd@arndb.de> <4BFBE8FF.6080208@tilera.com>
+In-Reply-To: <4BFBE8FF.6080208@tilera.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFBDC74.6000000@ge.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005251730.18830.arnd@arndb.de>
+X-Provags-ID: V01U2FsdGVkX1+sYDVBZkCsyy2gpjbrdobqYT1y5Mb6qDtfhIz
+ vaPD45D5yrs+sCnPCa+syvNP8f5YmrernlSW9jRs0QBHzHNB8m
+ Cfi5OUF7h0UnudyVon91w==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 03:19:32PM +0100, Martyn Welch wrote:
-> Greg KH wrote:
-> > On Tue, May 25, 2010 at 01:09:17PM +0000, nanakos@wired-net.gr wrote:
-> >   
-> >> From: Nanakos Chrysostomos <nanakos@wired-net.gr>
-> >>
-> >> Fixed an EXPORT_SYMBOL warning.
-> >>     
-> >
-> > What type of warning?  a checkpatch.pl one?  a gcc one?  a sparse one?
-> >
-> > Please be more verbose.
-> >
-> >   
-> >> Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
-> >> ---
-> >>  drivers/staging/vme/vme.c |    2 +-
-> >>  1 files changed, 1 insertions(+), 1 deletions(-)
-> >>
-> >> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
-> >> index 093fbff..a0b63d5 100644
-> >> --- a/drivers/staging/vme/vme.c
-> >> +++ b/drivers/staging/vme/vme.c
-> >> @@ -1519,7 +1519,6 @@ struct bus_type vme_bus_type = {
-> >>  	.probe = vme_bus_probe,
-> >>  	.remove = vme_bus_remove,
-> >>  };
-> >> -EXPORT_SYMBOL(vme_bus_type);
-> >>  
-> >>  static int __init vme_init(void)
-> >>  {
-> >> @@ -1530,6 +1529,7 @@ static void __exit vme_exit(void)
-> >>  {
-> >>  	bus_unregister(&vme_bus_type);
-> >>  }
-> >> +EXPORT_SYMBOL(vme_bus_type);
-> >>     
-> >
-> > This does not look correct, why move this away from where the structure
-> > is defined?
-> >
+On Tuesday 25 May 2010, Chris Metcalf wrote:
+> >  The idea was to only have them around as a transitional helper for
+> > new architectures while getting merged, but nothing should ever
+> > use these in production.
 > >   
 > 
-> It's a checkpatch error:
-> 
-> $ scripts/checkpatch.pl -f drivers/staging/vme/vme.c
-> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
-> #1522: FILE: staging/vme/vme.c:1522:
-> +EXPORT_SYMBOL(vme_bus_type);
+> Perhaps the best strategy for Tile for now is to enable the transitional
+> helpers, and then when glibc no longer requires any of those syscalls,
+> we can remove them from the kernel.  If this happens in the relatively
+> short term (e.g. before our 3.0 release later this year) all the better,
+> but for now we can separate this into a first change that preserves most
+> of the compatibility syscalls, and work towards remove them in a later
+> release.
 
-We should fix checkpatch.pl, as this looks like a bug in it, not the
-source code here.
+I don't like the idea of adding syscalls first and then disabling them
+again. We tried that on score and now we're stuck with the wrong syscall
+table there because they never got removed.
 
-thanks,
+Instead, I'd suggest you do the minimal syscall table for upstream and
+just carry a private patch to enable the other syscalls until you get
+a working glibc/eglibc/uclibc with the official kernel.
 
-greg k-h
+	Arnd
