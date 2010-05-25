@@ -1,96 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932738Ab0EYWSU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:18:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:53107 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759020Ab0EYWSR convert rfc822-to-8bit (ORCPT
+	id S1759082Ab0EYWT2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:19:28 -0400
+Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:40377 "EHLO
+	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758780Ab0EYWT1 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:18:17 -0400
-To: Mike Frysinger <vapier.adi@gmail.com>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>, linux-input@vger.kernel.org,
-       linux-omap@vger.kernel.org, Michael Roth <mroth@nessie.de>,
-       Pavel Machek <pavel@ucw.cz>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] touchscreen: ads7846: please don't touch free'd memory
-References: <1274226413-8520-1-git-send-email-khilman@deeprootsystems.com>
-	<20100519000019.GA17475@core.coreip.homeip.net>
-	<87mxvnlpxv.fsf@deeprootsystems.com>
-	<20100525202135.GC4455@core.coreip.homeip.net>
-	<8739xflkn5.fsf@deeprootsystems.com>
-	<AANLkTik72Q50eHX5cLW4uZ13BiMVCKQ0_bKdrCGZxpeE@mail.gmail.com>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Tue, 25 May 2010 15:18:13 -0700
-In-Reply-To: <AANLkTik72Q50eHX5cLW4uZ13BiMVCKQ0_bKdrCGZxpeE@mail.gmail.com> (Mike Frysinger's message of "Tue\, 25 May 2010 17\:56\:27 -0400")
-Message-ID: <87r5kzk4m2.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
+	Tue, 25 May 2010 18:19:27 -0400
+From: "Altobelli, David" <david.altobelli@hp.com>
+To: Andrew Morton <akpm@linux-foundation.org>,
+       Prarit Bhargava <prarit@redhat.com>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "tony.camuso@redhat.com" <tony.camuso@redhat.com>
+Date: Tue, 25 May 2010 22:16:10 +0000
+Subject: RE: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
+Thread-Topic: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
+Thread-Index: Acr8VC4K6q7Ns5JLT4CUGmRMLKe/ZwAAl75Q
+Message-ID: <92D64232F2316045B18937D5C9996B152CD6C5BA90@GVW1144EXB.americas.hpqcorp.net>
+References: <20100522004615.25451.83108.sendpatchset@prarit.bos.redhat.com>
+ <20100525144937.e0726ec2.akpm@linux-foundation.org>
+In-Reply-To: <20100525144937.e0726ec2.akpm@linux-foundation.org>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger <vapier.adi@gmail.com> writes:
+> Seems very wrong - writes to *dmp_pa will now scribble over 
+> the `struct ccb_data'.
 
-> On Tue, May 25, 2010 at 17:46, Kevin Hilman wrote:
->> After digging into the driver core and realizing that it seemed to
->> have sane error handling itself, I took a closer look at
->> ads7846_probe() and discovered it doesn't actually return an error
->> code for certain failure cases!  That was the root cause.
->
-> that is crappy
->
->> Subject: [PATCH] input: touchscreen: ads7846: return error on probe failure
->
-> i'd refer to the specific probe issue rather than just "probe".  maybe:
-> input: touchscreen: ads7846: return error on regulator_get() failure
+Yeah.  The dma_pa variable is used to track the physical 
+address of the DMA memory, and it is written to the device.  
+We don't want a kernel pointer, we want the actual physical addr,
+plus the various offsets.
 
-Thanks for the review, here's one with updated subject and ack added.
+> Probably local variable dma_pa should have type dma_addr_t.
 
-Kevin
-
->From 8ce49a91341d8713f870d2a931969f227a82b8ad Mon Sep 17 00:00:00 2001
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Date: Tue, 25 May 2010 14:38:04 -0700
-Subject: [PATCH] input: touchscreen: ads7846: return error on regulator_get() failure
-
-In probe(), if regulator_get() failed, an error code was not being
-returned causing the driver to be successfully bound, even though
-probe failed.  This in turn caused the suspend, resume and remove
-methods to be registered and accessed via the SPI core.  Since these
-functions all access private driver data using pointers that had been
-freed during the failed probe, this would lead to unpredictable
-behavior.
-
-This patch ensures that probe() returns an error code in this failure
-case so the driver is not bound.
-
-Found using lockdep and noticing the lock used in the suspend/resum
-path pointed to a bogus lock due to the freed memory.
-
-Signed-off-by: Kevin Hilman <khilman@deeprootsystems.com>
-Acked-by: Mike Frysinger <vapier@gentoo.org>
----
- drivers/input/touchscreen/ads7846.c |    4 ++--
- 1 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/drivers/input/touchscreen/ads7846.c b/drivers/input/touchscreen/ads7846.c
-index 532279c..634f6f6 100644
---- a/drivers/input/touchscreen/ads7846.c
-+++ b/drivers/input/touchscreen/ads7846.c
-@@ -1163,8 +1163,8 @@ static int __devinit ads7846_probe(struct spi_device *spi)
- 
- 	ts->reg = regulator_get(&spi->dev, "vcc");
- 	if (IS_ERR(ts->reg)) {
--		dev_err(&spi->dev, "unable to get regulator: %ld\n",
--			PTR_ERR(ts->reg));
-+		err = PTR_ERR(ts->reg);
-+		dev_err(&spi->dev, "unable to get regulator: %ld\n", err);
- 		goto err_free_gpio;
- 	}
- 
--- 
-1.7.0.2
-
+I feel like I tried that, and I had trouble setting or using
+the send_fifobar/recv_fifobar variables.  But I probably
+didn't try too hard.
