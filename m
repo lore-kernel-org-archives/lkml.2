@@ -1,51 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758895Ab0EYBu2 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:50:28 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:57575 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758090Ab0EYBu0 convert rfc822-to-8bit (ORCPT
+	id S1758966Ab0EYBzi (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:55:38 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:50243 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758749Ab0EYBzh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:50:26 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=kGoabzFAr4GwyFdmN70C9L7pDW8jIDe09HWHyVZiv+tHus54tWWZNog5nofr3+CJZ
-	cwN7wFTg3CX9bBTvAzu7w==
-MIME-Version: 1.0
-In-Reply-To: <20100524231815.713224572@clark.site>
-References: <20100524231840.GA17857@kroah.com>
-	<20100524231815.713224572@clark.site>
-Date: Mon, 24 May 2010 18:50:20 -0700
-Message-ID: <AANLkTilMq6zUgCus6_suEjAcTPYY7Ao0gCvrWHkTe9F6@mail.gmail.com>
-Subject: Re: [28/39] x86, cacheinfo: Turn off L3 cache index disable feature 
-	in virtualized environments
-From: Hugh Dickins <hughd@google.com>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Frank Arnold <frank.arnold@amd.com>,
-       Borislav Petkov <borislav.petkov@amd.com>,
-       "H. Peter Anvin" <hpa@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+	Mon, 24 May 2010 21:55:37 -0400
+X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=HguAhMkt-QwA:10 a=uEzv4HemXiYA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=m5CNwJbRKoju0NDaGqUA:9 a=ww42xmaBX2srE1TL5BkOII1jF80A:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: FUNCTION_TRACER: can it be used to trace early bootup functions
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Iram Shahzad <iram.shahzad@jp.fujitsu.com>
+Cc: linux-kernel@vger.kernel.org
+In-Reply-To: <06EE497F774E482693005209CB740D6A@rainbow>
+References: <06EE497F774E482693005209CB740D6A@rainbow>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 24 May 2010 21:55:34 -0400
+Message-ID: <1274752534.22648.186.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 4:15 PM, Greg KH <gregkh@suse.de> wrote:
->
-> 2.6.33-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
-> From: Frank Arnold <frank.arnold@amd.com>
->
-> commit 7f284d3cc96e02468a42e045f77af11e5ff8b095 upstream.
+On Mon, 2010-05-24 at 15:55 +0900, Iram Shahzad wrote:
+> Hi
+> 
+> I would like to know whether the Kernel Function Tracer
+> (kernel/trace/trace_functions) be used to trace early kernel
+> bootup functions starting from start_kernel?
+> My arch is ARM, by the way.
+> 
+> I have done some trials but it doesn't seem to trace early
+> bootup functions. I even made it the default tracer replacing
+> the nop tracer, but still it doesn't give me trace from
+> start_kernel.
+> 
+> Looking at the source code, it seems to me that it starts
+> recording data only after its own initialization. So does it
+> mean that by design it does not support early tracing?
 
-Closer, but aren't all the XX/34s intended for 2.6.32.14, not 2.6.33.5?
+The main reason it does not support early tracing is that we need memory
+management initialized before we can setup tracing. The tracing needs to
+go somewhere :-)
 
-I'm trying to check whether my kernel/profile.c fix (18/34) is in for
-both 2.6.32.14 and 2.6.33.5, but getting too confused to tell!
+With my previous tracer (logdev) I had a way to initialize the ring
+buffer via bootmem. This allowed for tracing as soon as bootmem could be
+allocated.
 
-Hugh
+It is still feasible to add a way to do function tracing with bootmem, I
+just never got around to it.
+
+> 
+> Please CC me in the reply.
+
+Don't worry, that's the default way for LKML ;-)
+
+-- Steve
+
+
