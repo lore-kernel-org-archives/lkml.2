@@ -1,47 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752720Ab0EYHZc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:25:32 -0400
-Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53635 "EHLO
-	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751067Ab0EYHZb (ORCPT
+	id S1754256Ab0EYHax (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:30:53 -0400
+Received: from www.wytron.com.tw ([211.75.82.101]:56993 "EHLO
+	www.wytron.com.tw" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753723Ab0EYHav (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:25:31 -0400
-Date: Tue, 25 May 2010 08:25:08 +0100
-From: Russell King <rmk@arm.linux.org.uk>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Ben Dooks <ben-linux@fluff.org>,
-       Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: Re: linux-next: build failure (arm tree related)
-Message-ID: <20100525072508.GA7612@flint.arm.linux.org.uk>
-References: <20100525165606.239a0465.sfr@canb.auug.org.au>
+	Tue, 25 May 2010 03:30:51 -0400
+X-Greylist: delayed 2427 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 03:30:51 EDT
+Message-ID: <4BFB7378.6070900@wytron.com.tw>
+Date: Tue, 25 May 2010 14:51:36 +0800
+From: Thomas Chou <thomas@wytron.com.tw>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100318)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100525165606.239a0465.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+To: nios2-dev@sopc.et.ntust.edu.tw
+CC: netdev@vger.kernel.org, thierry.reding@avionic-design.de,
+       linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>
+Subject: Re: [Nios2-dev] [PATCH] ethoc: fix null dereference in ethoc_probe
+References: <20100522155455.GE22515@bicker>	<1274669042-1901-1-git-send-email-thomas@wytron.com.tw> <4BFB6B4B.3020107@zhaw.ch>
+In-Reply-To: <4BFB6B4B.3020107@zhaw.ch>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+X-SA-Exim-Connect-IP: 192.168.1.20
+X-SA-Exim-Mail-From: thomas@wytron.com.tw
+X-SA-Exim-Scanned: No (on www.wytron.com.tw); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 04:56:06PM +1000, Stephen Rothwell wrote:
-> Hi Russell,
+Tobias Klauser wrote:
+>> @@ -944,6 +946,7 @@ static int ethoc_probe(struct platform_device *pdev)
+>>  	priv = netdev_priv(netdev);
+>>  	priv->netdev = netdev;
+>>  	priv->dma_alloc = 0;
+>> +	priv->io_region_size = mmio->end - mmio->start + 1;
 > 
-> Most (all?) of the arm builds are failing for next-20100525:
-> 
-> arch/arm/Kconfig:883: can't open file "arch/arm/plat-s5pc1xx/Kconfig"
-> 
-> I think this may be a bad merge 211cc52a36dedd1e90147af43f6ab5eeb57952ac
-> ("Merge branch 'for-rmk/samsung3' of git://git.fluff.org/bjdooks/linux
-> into devel-stable") which resurrected the include of
-> arch/arm/plat-s5pc1xx/Kconfig after it was removed in commit
-> acc84707d3487735fc666fdeab76185d086428c0 ("ARM: SAMSUNG: move S5PC100
-> support from plat-s5pc1xx to plat-s5p framework").
+> Better use the resource_size inline here.
 
-Yea, found that last night but forgot to push the fixed tree out.
+Hi Tobias,
 
--- 
-Russell King
- Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
- maintainer of:
+I just see your patch of resource_size from the git log. Sorry, I missed 
+this one. I will send update on this. Thank you.
+
+Cheers,
+Thomas
