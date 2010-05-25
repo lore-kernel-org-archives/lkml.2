@@ -1,61 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758283Ab0EYBeI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:34:08 -0400
-Received: from sprinkles.athenacr.com ([64.95.46.210]:13491 "EHLO
-	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754449Ab0EYBeH (ORCPT
+	id S1758570Ab0EYBe5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:34:57 -0400
+Received: from netrider.rowland.org ([192.131.102.5]:49468 "HELO
+	netrider.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1754449Ab0EYBez (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:34:07 -0400
-Message-ID: <4BFB2902.50308@athenacr.com>
-Date: Mon, 24 May 2010 21:33:54 -0400
-From: Brian Bloniarz <bmb@athenacr.com>
-User-Agent: Mozilla-Thunderbird 2.0.0.22 (X11/20090707)
+	Mon, 24 May 2010 21:34:55 -0400
+Date: Mon, 24 May 2010 21:34:54 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@netrider.rowland.org
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+cc: Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+In-Reply-To: <AANLkTikz2UcDv6BZQ9Hq2MdowuAK1y_PBBPPXMEkDmNa@mail.gmail.com>
+Message-ID: <Pine.LNX.4.44L0.1005242130290.8440-100000@netrider.rowland.org>
 MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Dan Magenheimer <dan.magenheimer@oracle.com>,
-       john stultz <johnstul@us.ibm.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com> <ce764b91-11b0-44a5-9cf9-96977652bbd5@default> <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain> <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
-In-Reply-To: <4BFAFE17.8060105@zytor.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I still sorta think the clearest thing is to keep the kernel's
-quick, dynamic calibration at boot, and expose the tsc_khz it
-decides on. People who don't care about clocksync get their
-quick boot, NTP knows enough to correct its drift estimate
-when it starts, and users don't need to learn all these
-details to get stable clocksync (*).
+On Mon, 24 May 2010, Arve Hjønnevåg wrote:
 
-If we're being strict, something like NTP needs to know exactly
-what's driving gettimeofday(). If the clocksource changes, it
-needs to know that so it could correct or trash its drift
-estimate. If there's one-time calibration, it needs to know
-what the result was. If there's continuous calibration, it
-either needs to be notified, or have the ability to disable
-it. Right? So I think exporting tsc_khz in some form is a
-step in the right direction.
+> > Wakeup events can be lost in at least three different ways:
+> >
+> >     1. A hardware signal (such as an IRQ) gets ignored.
+> >
+> >     2. The hardware event occurs, but without effect since the
+> >        kernel thread that would handle the event has been frozen.
+> >        The event just ends up sitting in a queue somewhere until
+> >        something else wakes up the system.
+> >
+> >     3. The hardware event occurs and the kernel handles it fully,
+> >        but the event propagates to userspace for further handling
+> >        and the user program is already frozen.
+> >
+> > 1 is a hardware configuration failure (for example, it might happen as
+> > a result of using edge-triggered IRQs instead of level-triggered) and
+> > is outside the scope of this discussion.
+> >
+> > 2 generally represents a failure of the core PM subsystem, or a failure
+> > of some other part of the kernel to use the PM core correctly.  In
+> > theory we should be able to fix such mistakes.  Right now I'm aware of
+> > at least one possible failure scenario that could be fixed fairly
+> > easily.
+> >
+> > 3 is the type of failure that suspend blockers were really meant to
+> > handle, particularly the userspace suspend-blocker API.
 
-So what's wrong with just adding a
-/sys/devices/system/clocksource/clocksource0/tsc_khz?
-Maybe Thomas Gleixner's suggestion of a vget_tsc_raw()
-would also suffice, I'm not sure I understand the details
-enough.
+> I don't see a big difference between 2 and 3. You can use suspend
+> blockers to handle either.
 
-Any of the other fixes people have discussed (tsc_khz=
-bootopt, tsc_long_calibration=1) would be enough to make
-me happy though :)
+You can, but they aren't necessary.  If 2 were the only reason for 
+suspend blockers, I would say they shouldn't be merged.
 
-(*) Though they still need to learn enough to coax the
-kernel into giving them a fast gettimeofday(). That's a
-price you gotta pay if you care enough :)
+Whereas 3, on the other hand, can _not_ be handled by any existing
+mechanism.  3 is perhaps the most important reason for using suspend
+blockers.
+
+Alan Stern
 
