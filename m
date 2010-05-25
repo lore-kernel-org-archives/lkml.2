@@ -1,64 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757982Ab0EYC50 (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 22:57:26 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:36362 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755471Ab0EYC5Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 22:57:25 -0400
-Date: Tue, 25 May 2010 12:57:18 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Jonathan Corbet <corbet@lwn.net>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Mark Gross <mgross@linux.intel.com>
-Subject: linux-next: build failure after merge of the viafb tree
-Message-Id: <20100525125718.703fdc08.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1757826Ab0EYDCA (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 23:02:00 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.124]:48714 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755471Ab0EYDB7 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 23:01:59 -0400
+X-Authority-Analysis: v=1.1 cv=ThiPuEJrAfM5PTlEgIT3cJp8+3pkHBIG3CaogqDGxqo= c=1 sm=0 a=bcKYIIXupmcA:10 a=UBIxAjGgU1YA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=3ZFVx9Sc1LauN_iTPe8A:9 a=-F_oCfJFCfpexfd8E1zup-9CUHgA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH v4 11/13] trace: uprobes trace_event interface
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Srikar Dronamraju <srikar@linux.vnet.ibm.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Masami Hiramatsu <mhiramat@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>, "H. Peter Anvin" <hpa@zytor.com>,
+       Christoph Hellwig <hch@infradead.org>,
+       Ananth N Mavinakayanahalli <ananth@in.ibm.com>,
+       Oleg Nesterov <oleg@redhat.com>, Mark Wielaard <mjw@redhat.com>,
+       Mathieu Desnoyers <mathieu.desnoyers@efficios.com>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Jim Keniston <jkenisto@linux.vnet.ibm.com>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, "Frank Ch. Eigler" <fche@redhat.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+In-Reply-To: <20100518170034.20070.49627.sendpatchset@localhost6.localdomain6>
+References: <20100518165826.20070.11594.sendpatchset@localhost6.localdomain6>
+	 <20100518170034.20070.49627.sendpatchset@localhost6.localdomain6>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Mon, 24 May 2010 22:22:10 -0400
+Message-ID: <1274754130.22648.194.camel@gandalf.stny.rr.com>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__25_May_2010_12_57_18_+1000_rDkOHSP.=IhO7+Ce"
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_May_2010_12_57_18_+1000_rDkOHSP.=IhO7+Ce
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2010-05-18 at 22:30 +0530, Srikar Dronamraju wrote:
 
-Hi Jonathan,
+> This is based on trace_events for kprobes to the extent that it may
+> resemble that file on 2.6.34.
 
-After merging the viafb tree, today's linux-next build (x86_64
-allmodconfig) failed like this:
+Check the changes that have been done in tip/perf/core. These will be
+going mainline for 35. The interface with the ftrace_event_call
+structure will affect this patch too.
 
-drivers/media/video/via-camera.c: In function 'viacam_streamon':
-drivers/media/video/via-camera.c:1032: error: implicit declaration of funct=
-ion 'pm_qos_add_requirement'
-drivers/media/video/via-camera.c: In function 'viacam_streamoff':
-drivers/media/video/via-camera.c:1052: error: implicit declaration of funct=
-ion 'pm_qos_remove_requirement'
+-- Steve
 
-Caused by commit d9acc26333e04633af61e634a5bd91c066162fca ("Add the viafb
-video capture driver") interacting with commit
-ed77134bfccf5e75b6cbadab268e559dbe6a4ebb ("PM QOS update") from Linus'
-tree.  The pm_qos_..._requirement functions were renamed.
 
-I have used the viafb tree from next-20100524 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__25_May_2010_12_57_18_+1000_rDkOHSP.=IhO7+Ce
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv7PI4ACgkQjjKRsyhoI8wtRwCgg6ra933MwJ81EC2MboXhPxBa
-h7YAnAzGfii1VBM79z+CAi0S0qpdDvn/
-=at90
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_May_2010_12_57_18_+1000_rDkOHSP.=IhO7+Ce--
