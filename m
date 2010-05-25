@@ -1,78 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756624Ab0EYJm5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:42:57 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:36820 "EHLO
-	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756283Ab0EYJmz (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:42:55 -0400
-Subject: [GIT PULL] Regulator updates for 2.6.35
-From: Liam Girdwood <lrg@slimlogic.co.uk>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 May 2010 10:42:51 +0100
-Message-ID: <1274780571.3000.23.camel@odin>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S932253Ab0EYJn0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:43:26 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:50861 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754245Ab0EYJnZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 05:43:25 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+In-Reply-To: <AANLkTilBIZ71S2cO1NNe_30yzXdWtfkQoFcl44ktFiVb@mail.gmail.com>
+References: <AANLkTilBIZ71S2cO1NNe_30yzXdWtfkQoFcl44ktFiVb@mail.gmail.com> <1274135154-24082-1-git-send-email-walken@google.com> <1274135154-24082-11-git-send-email-walken@google.com> <31783.1274282492@redhat.com>
+To: Michel Lespinasse <walken@google.com>
+Cc: dhowells@redhat.com, Linus Torvalds <torvalds@linux-foundation.org>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>,
+       peterz@infradead.org
+Subject: Re: [PATCH 10/10] Use down_read_critical() for /sys/<pid>/exe and /sys/<pid>/maps files
+Date: Tue, 25 May 2010 10:42:53 +0100
+Message-ID: <17704.1274780573@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Michel Lespinasse <walken@google.com> wrote:
 
-Please pull the following voltage regulator updates for 2.6.35. There
-are no new PMIC drivers this time, it's mostly improvements to the core
-and existing regulator drivers.
+> - The cluster management software tracks ownership of sysv shm
+> segments, potentially deleting them if they have been abandoned.
+> /proc/<pid>/maps files are used as an input to these decisions.
 
-Thanks
+ipcs manages to give you that information in its nattch column, I believe,
+without touching /proc/pid/maps.
 
-Liam
-
----
-
-The following changes since commit 7e125f7b9cbfce4101191b8076d606c517a73066:
-  Linus Torvalds (1):
-        Merge git://git.kernel.org/.../davem/ide-2.6
-
-are available in the git repository at:
-
-  git://git.kernel.org/pub/scm/linux/kernel/git/lrg/voltage-2.6.git for-linus
-
-Axel Lin (2):
-      mc13783-regulator: fix vaild voltage range checking for mc13783_fixed_regulator_set_voltage
-      Regulators: ab3100/bq24022: add a missing .owner field in regulator_desc
-
-Haojian Zhuang (2):
-      regulator: make 88pm860x sharing one driver structure
-      regulator: use voltage number array in 88pm860x
-
-Jani Nikula (3):
-      regulator: prevent registration of matching regulator consumer supplies
-      regulator: fix unset_regulator_supplies() to remove all matches
-      regulator: simplify regulator_register() error handling
-
-Mark Brown (1):
-      regulator: Allow regulator-regulator supplies to be specified by name
-
-Rajendra Nayak (1):
-      twl6030: regulator: Remove vsel tables and use formula for calculation
-
-Sundar R Iyer (1):
-      regulator: return set_mode is same mode is requested
-
- drivers/mfd/88pm860x-core.c           |   36 ++-
- drivers/regulator/88pm8607.c          |  533 ++++++++++++++-------------------
- drivers/regulator/ab3100.c            |   10 +
- drivers/regulator/bq24022.c           |    1 +
- drivers/regulator/core.c              |   83 ++++--
- drivers/regulator/mc13783-regulator.c |    6 +-
- drivers/regulator/twl-regulator.c     |  138 ++++++---
- include/linux/mfd/88pm860x.h          |    3 +-
- include/linux/regulator/machine.h     |    9 +-
- 9 files changed, 414 insertions(+), 405 deletions(-)
-
-
+David
