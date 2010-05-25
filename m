@@ -1,34 +1,37 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932493Ab0EYLIP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 07:08:15 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:41587 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932137Ab0EYLIN (ORCPT
+	id S1757178Ab0EYLLK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 07:11:10 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:42227 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab0EYLLH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 07:08:13 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=GDytczraX8TgxYxmIvKHxZ1fMdmytz4B9aDXBvzJwTirWJ5w1usTK0FqgBDR0ChVL1
-         asYMXDrn1tLF+WHZe5a3IOQmUXtI7wXYQrwfQWEyiaEBcAak6Yo8OaWg/lU3qiS0/1ir
-         dka6iIqT44vkqdEs9lD6IR0EUM7Cr3ALqjJN8=
+	Tue, 25 May 2010 07:11:07 -0400
+Date: Tue, 25 May 2010 07:11:06 -0400
+From: Christoph Hellwig <hch@infradead.org>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       tytso@mit.edu, jens.axboe@oracle.com
+Subject: Re: [PATCH 4/6] writeback: pay attention to wbc->nr_to_write in
+	write_cache_pages
+Message-ID: <20100525111106.GA6076@infradead.org>
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com> <1274784852-30502-5-git-send-email-david@fromorbit.com>
 MIME-Version: 1.0
-In-Reply-To: <alpine.LNX.2.00.1005251200410.28092@pobox.suse.cz>
-References: <alpine.LNX.2.00.1005251200410.28092@pobox.suse.cz>
-Date: Tue, 25 May 2010 20:08:12 +0900
-Message-ID: <AANLkTikOFfTERKE-Wgw_9U9-3z0ecPZ-eWn_hjsU3M2h@mail.gmail.com>
-Subject: Re: [PATCH] staging: remove all code dependent on LINUX_VERSION_CODE
-From: Jassi Brar <jassisinghbrar@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org,
-       devel@driverdev.osuosl.org
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274784852-30502-5-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4PB8PaS004657
 
-On Tue, May 25, 2010 at 7:01 PM, Jiri Kosina <jkosina@suse.cz> wrote:> diff --git a/drivers/staging/cxt1e1/hwprobe.c b/drivers/staging/cxt1e1/hwprobe.c> index 4c86102..c52ff7c 100644> --- a/drivers/staging/cxt1e1/hwprobe.c> +++ b/drivers/staging/cxt1e1/hwprobe.c> @@ -305,15 +305,9 @@ c4hw_attach_all (void)> Â  Â  error_flag = 0;> Â  Â  prep_hdw_info ();> Â  Â  /*** scan PCI bus for all possible boards */> -#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)> - Â  Â while ((pdev = pci_get_device (PCI_VENDOR_ID_CONEXANT,> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  PCI_DEVICE_ID_CN8474,> - Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  pdev)))> -#else> Â  Â  while ((pdev = pci_find_device (PCI_VENDOR_ID_CONEXANT,> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  PCI_DEVICE_ID_CN8474,> Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  Â  pdev)))> -#endif> Â  Â  {> Â  Â  Â  Â  if (c4_hdw_init (pdev, found))> Â  Â  Â  Â  Â  Â  found++;The other way round ?ÿôèº{.nÇ+‰·Ÿ®‰­†+%ŠËÿ±éÝ¶¥Šwÿº{.nÇ+‰·¥Š{±þG«éÿŠ{ayºÊ‡Ú™ë,j­¢f£¢·hšïêÿ‘êçz_è®(­éšŽŠÝ¢j"ú¶m§ÿÿ¾«þG«éÿ¢¸?™¨è­Ú&£ø§~á¶iO•æ¬z·švØ^¶m§ÿÿÃÿ¶ìÿ¢¸?–I¥
+On Tue, May 25, 2010 at 08:54:10PM +1000, Dave Chinner wrote:
+> This commit adds a ->writepage tracepoint inside write_cache_pages() (how the
+> above trace was generated) and does the revert manually leaving the subsequent
+
+The tracepoint really should be a separate commit, probably ordered
+before the ext4 revert.
+
