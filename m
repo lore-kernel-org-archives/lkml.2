@@ -1,196 +1,120 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933004Ab0EYNyB (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:54:01 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:35376 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932265Ab0EYNvO (ORCPT
+	id S1758520Ab0EYNu6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:50:58 -0400
+Received: from mail-yw0-f182.google.com ([209.85.211.182]:49720 "EHLO
+	mail-yw0-f182.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758083Ab0EYNuy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:51:14 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       "Theodore Ts'o" <tytso@mit.edu>
-Subject: [PATCHv4 07/17] EXT4: do not manipulate s_dirt directly
-Date: Tue, 25 May 2010 16:49:02 +0300
-Message-Id: <1274795352-3551-8-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 May 2010 13:50:44.0219 (UTC) FILETIME=[45623CB0:01CAFC11]
-X-Nokia-AV: Clean
+	Tue, 25 May 2010 09:50:54 -0400
+X-Greylist: delayed 320 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 09:50:53 EDT
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=XalrMLvbmj1kFukn+9P5H2i4d7ESPafk+XeVDFyx/5u9MGbNLYt6YarpaxSKel4fZC
+         sFL2xzFqx4QrZV+1octglgLDEZMdRsgeFB9SUhRp0BAYKCWAopWEh0LZ9ntf/YHRbgOf
+         CFhoFIl6uVgGRl4CmoPYc8nFnTah6L6W/54ZU=
+MIME-Version: 1.0
+In-Reply-To: <20100507153920.GP28167@ics.muni.cz>
+References: <20100507153920.GP28167@ics.muni.cz>
+Date: Tue, 25 May 2010 09:45:32 -0400
+Message-ID: <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
+Subject: Re: Deadlock in NFSv4 in all kernels
+From: "William A. (Andy) Adamson" <androsadamson@gmail.com>
+To: Lukas Hejtmanek <xhejtman@ics.muni.cz>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
+Content-Type: text/plain; charset=ISO-8859-2
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+2010/5/7 Lukas Hejtmanek <xhejtman@ics.muni.cz>:
+> Hi,
+>
+> I encountered the following problem. We use short expiration time for
+> kerberos contexts created by rpc.gssd (some patches were included in mainline
+> nfs-utils). In particular, we use 120secs expiration time.
+>
+> Now, I run application that eats 80% of available RAM. Then I run 10 parallel
+> dd processes that write data into NFS4 volume with sec=krb5.
+>
+> As soon as the kerberos context expires (i.e., up to 120 secs), the whole
+> system gets stuck in do_page_fault and succesive functions. It is because
+> there is no free memory in kernel, all free memory is used as cache for NFS4
+> (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
+> anything as it is missing valid context. NFS contacts rpc.gssd to provide
+> a renewed context, the rpc.gssd does not provide the context as it needs some memory
+> to scan /tmp for a ticket. I.e., it deadlocks.
+>
+> Longer context expiration time is no real solution as it only makes the
+> deadlock less often.
+>
+> Any ideas what can be done here?
 
-... use new VFS helpers instead.
+Not get into the problem in the first place: this means
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: linux-ext4@vger.kernel.org
-Cc: Theodore Ts'o <tytso@mit.edu>
----
- fs/ext4/balloc.c  |    2 +-
- fs/ext4/file.c    |    2 +-
- fs/ext4/ialloc.c  |    4 ++--
- fs/ext4/inode.c   |    2 +-
- fs/ext4/mballoc.c |    4 ++--
- fs/ext4/resize.c  |    4 ++--
- fs/ext4/super.c   |    6 +++---
- fs/ext4/xattr.c   |    2 +-
- 8 files changed, 13 insertions(+), 13 deletions(-)
+1) determine a 'lead time' where the NFS client declares a context
+expired even though it really as 'lead time' until it actually
+expires.
 
-diff --git a/fs/ext4/balloc.c b/fs/ext4/balloc.c
-index d2f37a5..36b35cf 100644
---- a/fs/ext4/balloc.c
-+++ b/fs/ext4/balloc.c
-@@ -477,7 +477,7 @@ void ext4_add_groupblocks(handle_t *handle, struct super_block *sb,
- 	ret = ext4_handle_dirty_metadata(handle, NULL, gd_bh);
- 	if (!err)
- 		err = ret;
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 
- error_return:
- 	brelse(bitmap_bh);
-diff --git a/fs/ext4/file.c b/fs/ext4/file.c
-index d0776e4..edef79f 100644
---- a/fs/ext4/file.c
-+++ b/fs/ext4/file.c
-@@ -123,7 +123,7 @@ static int ext4_file_open(struct inode * inode, struct file * filp)
- 		if (!IS_ERR(cp)) {
- 			memcpy(sbi->s_es->s_last_mounted, cp,
- 			       sizeof(sbi->s_es->s_last_mounted));
--			sb->s_dirt = 1;
-+			mark_sb_dirty(sb);
- 		}
- 	}
- 	return dquot_file_open(inode, filp);
-diff --git a/fs/ext4/ialloc.c b/fs/ext4/ialloc.c
-index 1a0e183..2de625e 100644
---- a/fs/ext4/ialloc.c
-+++ b/fs/ext4/ialloc.c
-@@ -289,7 +289,7 @@ void ext4_free_inode(handle_t *handle, struct inode *inode)
- 	err = ext4_handle_dirty_metadata(handle, NULL, bitmap_bh);
- 	if (!fatal)
- 		fatal = err;
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- error_return:
- 	brelse(bitmap_bh);
- 	ext4_std_error(sb, fatal);
-@@ -972,7 +972,7 @@ got:
- 	percpu_counter_dec(&sbi->s_freeinodes_counter);
- 	if (S_ISDIR(mode))
- 		percpu_counter_inc(&sbi->s_dirs_counter);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 
- 	if (sbi->s_log_groups_per_flex) {
- 		flex_group = ext4_flex_group(sbi, group);
-diff --git a/fs/ext4/inode.c b/fs/ext4/inode.c
-index 3e0f6af..158c6d9 100644
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -5276,7 +5276,7 @@ static int ext4_do_update_inode(handle_t *handle,
- 			ext4_update_dynamic_rev(sb);
- 			EXT4_SET_RO_COMPAT_FEATURE(sb,
- 					EXT4_FEATURE_RO_COMPAT_LARGE_FILE);
--			sb->s_dirt = 1;
-+			mark_sb_dirty(sb);
- 			ext4_handle_sync(handle);
- 			err = ext4_handle_dirty_metadata(handle, NULL,
- 					EXT4_SB(sb)->s_sbh);
-diff --git a/fs/ext4/mballoc.c b/fs/ext4/mballoc.c
-index b423a36..1f363a0 100644
---- a/fs/ext4/mballoc.c
-+++ b/fs/ext4/mballoc.c
-@@ -2762,7 +2762,7 @@ ext4_mb_mark_diskspace_used(struct ext4_allocation_context *ac,
- 	err = ext4_handle_dirty_metadata(handle, NULL, gdp_bh);
- 
- out_err:
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	brelse(bitmap_bh);
- 	return err;
- }
-@@ -4630,7 +4630,7 @@ do_more:
- 		put_bh(bitmap_bh);
- 		goto do_more;
- 	}
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- error_return:
- 	if (freed)
- 		dquot_free_block(inode, freed);
-diff --git a/fs/ext4/resize.c b/fs/ext4/resize.c
-index 5692c48..fe7cc90 100644
---- a/fs/ext4/resize.c
-+++ b/fs/ext4/resize.c
-@@ -921,7 +921,7 @@ int ext4_group_add(struct super_block *sb, struct ext4_new_group_data *input)
- 	}
- 
- 	ext4_handle_dirty_metadata(handle, NULL, sbi->s_sbh);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 
- exit_journal:
- 	mutex_unlock(&sbi->s_resize_lock);
-@@ -1045,7 +1045,7 @@ int ext4_group_extend(struct super_block *sb, struct ext4_super_block *es,
- 	}
- 	ext4_blocks_count_set(es, o_blocks_count + add);
- 	ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- 	mutex_unlock(&EXT4_SB(sb)->s_resize_lock);
- 	ext4_debug("freeing blocks %llu through %llu\n", o_blocks_count,
- 		   o_blocks_count + add);
-diff --git a/fs/ext4/super.c b/fs/ext4/super.c
-index e14d22c..b4ebc48 100644
---- a/fs/ext4/super.c
-+++ b/fs/ext4/super.c
-@@ -650,7 +650,7 @@ static void ext4_put_super(struct super_block *sb)
- 
- 	lock_super(sb);
- 	lock_kernel();
--	if (sb->s_dirt)
-+	if (is_sb_dirty(sb))
- 		ext4_commit_super(sb, 1);
- 
- 	if (sbi->s_journal) {
-@@ -2680,7 +2680,7 @@ static int ext4_fill_super(struct super_block *sb, void *data, int silent)
- #else
- 		es->s_flags |= cpu_to_le32(EXT2_FLAGS_SIGNED_HASH);
- #endif
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
- 	}
- 
- 	if (sbi->s_blocks_per_group > blocksize * 8) {
-@@ -3387,7 +3387,7 @@ static int ext4_commit_super(struct super_block *sb, int sync)
- 					&EXT4_SB(sb)->s_freeblocks_counter));
- 	es->s_free_inodes_count = cpu_to_le32(percpu_counter_sum_positive(
- 					&EXT4_SB(sb)->s_freeinodes_counter));
--	sb->s_dirt = 0;
-+	mark_sb_clean(sb);
- 	BUFFER_TRACE(sbh, "marking dirty");
- 	mark_buffer_dirty(sbh);
- 	if (sync) {
-diff --git a/fs/ext4/xattr.c b/fs/ext4/xattr.c
-index 2de0e95..a8032a5 100644
---- a/fs/ext4/xattr.c
-+++ b/fs/ext4/xattr.c
-@@ -460,7 +460,7 @@ static void ext4_xattr_update_super_block(handle_t *handle,
- 
- 	if (ext4_journal_get_write_access(handle, EXT4_SB(sb)->s_sbh) == 0) {
- 		EXT4_SET_COMPAT_FEATURE(sb, EXT4_FEATURE_COMPAT_EXT_ATTR);
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
- 		ext4_handle_dirty_metadata(handle, NULL, EXT4_SB(sb)->s_sbh);
- 	}
- }
--- 
-1.6.6.1
+2) flush all writes on any contex that will expire within the lead
+time which needs to be long enough for flushes to take place.
 
+-->Andy
+
+
+>(Please cc me.) We could preallocate some
+> memory in rpc.gssd and use mlockall but not sure whether this proctects also
+> kernel malloc for things related to rpc.gssd and context creation (new file
+> descriptors and so on).
+>
+> This is seen in 2.6.32 kernel but most probably this is related to all kernel
+> versions.
+>
+> rpc.gssd and all dd processes are stuck in:
+>
+> May  6 15:33:10 skirit20 kernel: [84087.788019] rpc.gssd      D 6758d881     0 26864      1 0x00000000
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  c280594c 00000086 f94c3d6c 6758d881 00004c5a 0f3e1c27 c1d868c0 c1c068dc
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  c07d8880 c07d8880 f6752130 f67523d4 c1c06880 00000000 c1c06880 00000000
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  f6d7c8f0 f67523d4 f6752130 c1c06cd4 c1c06880 c2805960 c052101f 00000000
+> May  6 15:33:10 skirit20 kernel: [84087.788019] Call Trace:
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c052101f>] io_schedule+0x6f/0xc0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88d8af5>] nfs_wait_bit_uninterruptible+0x5/0x10 [nfs]
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c05215a7>] __wait_on_bit+0x47/0x70
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0521683>] out_of_line_wait_on_bit+0xb3/0xd0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88d8ae3>] nfs_wait_on_request+0x23/0x30 [nfs]
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88ddb4a>] nfs_sync_mapping_wait+0xea/0x200 [nfs]
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88ddd0e>] nfs_wb_page_priority+0xae/0x170 [nfs]
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<f88cdfec>] nfs_release_page+0x5c/0x70 [nfs]
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029620b>] try_to_release_page+0x2b/0x40
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a25af>] shrink_page_list+0x37f/0x4b0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a29ae>] shrink_inactive_list+0x2ce/0x6c0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a34c8>] shrink_zone+0x1c8/0x260
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a35ae>] shrink_zones+0x4e/0xe0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a43b5>] do_try_to_free_pages+0x75/0x2e0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02a4756>] try_to_free_pages+0x86/0xa0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029cda4>] __alloc_pages_slowpath+0x164/0x470
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029d1c8>] __alloc_pages_nodemask+0x118/0x120
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02acce0>] do_anonymous_page+0x100/0x240
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02b072a>] handle_mm_fault+0x34a/0x3d0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0524c54>] do_page_fault+0x174/0x370
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0522cb6>] error_code+0x66/0x70
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0296ac2>] file_read_actor+0x32/0xf0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c029815f>] do_generic_file_read+0x3af/0x4c0
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0298a01>] generic_file_aio_read+0xb1/0x210
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02cdc05>] do_sync_read+0xd5/0x120
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02ce3bb>] vfs_read+0x9b/0x110
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c02ce501>] sys_read+0x41/0x80
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<c0203150>] sysenter_do_call+0x12/0x22
+> May  6 15:33:10 skirit20 kernel: [84087.788019]  [<ffffe430>] 0xffffe430
+>
+> --
+> Luká¹ Hejtmánek
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-nfs" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>
