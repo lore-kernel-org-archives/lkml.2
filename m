@@ -1,58 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932357Ab0EYCRE (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 22:17:04 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:57344 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932151Ab0EYCRB convert rfc822-to-8bit (ORCPT
+	id S1757046Ab0EYCT5 (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 22:19:57 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:46867 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755662Ab0EYCTz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 22:17:01 -0400
-MIME-Version: 1.0
-Message-ID: <c5c17e83-a21c-4360-a201-3bb865062961@default>
-Date: Mon, 24 May 2010 19:15:59 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: chris.mason@oracle.com, akpm@linux-foundation.org, adilger@sun.com,
-       tytso@mit.edu, mfasheh@suse.com, joel.becker@oracle.com, matthew@wil.cx,
-       linux-btrfs@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
-       ocfs2-devel@oss.oracle.com, linux-mm@kvack.org, ngupta@vflare.org,
-       jeremy@goop.org, JBeulich@novell.com, kurt.hackel@oracle.com,
-       npiggin@suse.de, dave.mccracken@oracle.com, riel@redhat.com
-Subject: RE: Cleancache [PATCH 2/7] (was Transcendent Memory): core files
-References: <20100422132809.GA27302@ca-server1.us.oracle.com
- 20100514231815.GY30031@ZenIV.linux.org.uk
- 1b84523f-a7df-4d6a-870f-b684bd012230@default>
-In-Reply-To: <1b84523f-a7df-4d6a-870f-b684bd012230@default>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
+	Mon, 24 May 2010 22:19:55 -0400
+From: "Arce, Abraham" <x0066660@ti.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>
+Date: Mon, 24 May 2010 21:19:50 -0500
+Subject: NULL Pointer Deference: NFS & Telnet
+Thread-Topic: NULL Pointer Deference: NFS & Telnet
+Thread-Index: Acr7sMEhWAICO9I8TUCo7EaT0RzjBw==
+Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
 Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090204.4BFB3303.01C5:SCFMA922111,ss=1,fgs=0
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > The third one is pgoff_t; again, use sane types, _if_ you actually
-> want
-> > the argument #3 at all - it can be derived from struct page you are
-> > passing there as well.
-> 
-> I thought it best to declare the _ops so that the struct page
-> is opaque to the "backend" (driver).  The kernel-side ("frontend")
-> defines the handle and ensures coherency, so the backend shouldn't
-> be allowed to derive or muck with the three-tuple passed by the
-> kernel. In the existing (Xen tmem) driver, the only operation
-> performed on the struct page parameter is page_to_pfn().  OTOH,
-> I could go one step further and pass a pfn_t instead of a
-> struct page, since it is really only the physical page frame that
-> the backend needs to know about and (synchronously) read/write from/to.
-> 
-> Thoughts?
+Hi,
 
-Silly me.  pfn_t is a Xen/KVM type not otherwise used in the
-kernel AFAICT.  Please ignore...
+I have 2 scenarios in which I am getting a NULL pointer dereference:
 
+1) root filesystem over nfs
+2) telnet connection
+
+The issue appeared on this commit
+
+http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-2.6.git;a=commit;h=f8965467f366fd18f01feafb5db10512d7b4422c
+
+The driver I am working with is drivers/net/ks8851.c
+Any help will be highly appreciated...
+
+---
+
+Scenario 1 | root filesystem over nfs
+
+Looking up port of RPC 100005/1 on 10.87.231.229
+VFS: Mounted root (nfs filesystem) on device 0:10.
+Freeing init memory: 128K
+Unable to handle kernel NULL pointer dereference at virtual address 00000000
+[..]
+PC is at put_page+0xc/0x120
+LR is at skb_release_data+0x74/0xb8
+[..]
+Backtrace:
+[<c0086dd0>] (put_page+0x0/0x120)
+[<c01d0a48>] (skb_release_data+0x0/0xb8)
+[<c01d1044>] (skb_release_all+0x0/0x20)
+[<c01d075c>] (__kfree_skb+0x0/0xbc)
+[<c01d0818>] (consume_skb+0x0/0x58)
+[<c01d39cc>] (skb_free_datagram+0x0/0x40)
+[<c023ff74>] (xs_udp_data_ready+0x0/0x1e8)
+[<c01ce034>] (sock_queue_rcv_skb+0x0/0x1c0)
+[<c01fbba8>] (ip_queue_rcv_skb+0x0/0x58)
+[<c02176c0>] (__udp_queue_rcv_skb+0x0/0x18c)
+[<c0218e28>] (udp_queue_rcv_skb+0x0/0x348)
+[<c02195a4>] (__udp4_lib_rcv+0x0/0x564)
+[<c0219b08>] (udp_rcv+0x0/0x20)
+[<c01f5f34>] (ip_local_deliver+0x0/0x264)
+[<c01f586c>] (ip_rcv+0x0/0x6c8)
+[<c01d7ec0>] (__netif_receive_skb+0x0/0x2d0)
+[<c01d8190>] (process_backlog+0x0/0x16c)
+[<c01d8e14>] (net_rx_action+0x0/0x18c)
+[<c00521a0>] (__do_softirq+0x0/0x12c)
+[<c00522cc>] (irq_exit+0x0/0x70)
+[<c0028000>] (asm_do_IRQ+0x0/0xc8)
+
+Complete log at http://pastebin.mozilla.org/728027
+
+---
+
+Scenario 2
+
+ 1. Root filesystem booted in ram
+ 2. eth0 brought up
+ 3. telnetd daemon started
+ 4. tried to connect through telnet
+
+# Unable to handle kernel NULL pointer dereference at virtual address 00000000
+pgd = d98e8000
+[..]
+PC is at put_page+0xc/0x120
+LR is at skb_release_data+0x74/0xb8
+[..]
+Backtrace:
+[<c0086dd0>] (put_page+0x0/0x120)
+[<c01d0a48>] (skb_release_data+0x0/0xb8)
+[<c01d1044>] (skb_release_all+0x0/0x20)
+[<c01d075c>] (__kfree_skb+0x0/0xbc)
+[<c0202444>] (tcp_recvmsg+0x0/0x93c)
+[<c02201e8>] (inet_recvmsg+0x0/0xec)
+[<c01c7fd0>] (sock_aio_read+0x0/0xf8)
+[<c00ab3ac>] (do_sync_read+0x0/0xec)
+[<c00abfbc>] (vfs_read+0x0/0x164)
+[<c00ac1a0>] (sys_read+0x0/0x70)
+[<c0029100>] (ret_fast_syscall+0x0/0x30)
+
+Complete log at http://pastebin.mozilla.org/728028
+
+Best Regards
+Abraham Arce
