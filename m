@@ -1,39 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932353Ab0EYALI (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 20:11:08 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35450 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755185Ab0EYALG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 20:11:06 -0400
-Message-ID: <4BFB14BE.8070407@zytor.com>
-Date: Mon, 24 May 2010 17:07:26 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Dan Magenheimer <dan.magenheimer@oracle.com>
-CC: john stultz <johnstul@us.ibm.com>, Brian Bloniarz <bmb@athenacr.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com> <ce764b91-11b0-44a5-9cf9-96977652bbd5@default> <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com> <1274733566.2954.73.camel@localhost.localdomain> <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com> <1274741362.2954.80.camel@localhost.localdomain> <b4a3fe9e-8646-4fb9-93e0-6953be7a0aa9@default 1274743836.2954.104.camel@localhost.localdomain> <bcb35f6d-e632-4fb6-bef0-8c55335ef537@default>
-In-Reply-To: <bcb35f6d-e632-4fb6-bef0-8c55335ef537@default>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+	id S932557Ab0EYALh (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 20:11:37 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:61719 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932320Ab0EYALf (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 20:11:35 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=from:to:cc:subject:date:message-id:x-mailer:x-system-of-record;
+	b=shlzLKyUSpJWR513i7YKi/KeJLKIatQgy+XGSevFmDEYOLrTtncUHjCc3r8Sd3Fg7
+	uOhbtHAgXU8K9b39UtXkA==
+From: Venkatesh Pallipadi <venki@google.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       "H. Peter Anvin" <hpa@zytor.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Paul Menage <menage@google.com>
+Cc: linux-kernel@vger.kernel.org, Paul Turner <pjt@google.com>
+Subject: [RFC PATCH 0/4] Finer granularity and task/cgroup irq time accounting
+Date: Mon, 24 May 2010 17:11:18 -0700
+Message-Id: <1274746282-21533-1-git-send-email-venki@google.com>
+X-Mailer: git-send-email 1.7.0.1
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/24/2010 05:01 PM, Dan Magenheimer wrote:
-> On a quick sample of two machines looking at the TSC calibration
-> done by Xen (which exposes the equivalent of tsc_khz), it appears
-> that the stamped value is different from the calibration by about
-> 1000ppm.  YMMV.
+Currently, the softirq and hardirq time reporting is only done at the
+CPU level. There are usecases where reporting this time against task
+or task groups or cgroups will be useful for user/administrator
+in terms of resource planning and utilization charging. Also, as the
+accoounting is already done at the CPU level, reporting the same at
+the task level does not add any significant computational overhead
+other than task level storage (patch 1).
 
-So pretty seriously different.  Less than I would have expected, but not
-out of the ballpark.
+The softirq/hardirq statistics commonly done based on tick based sampling.
+Though some archs have CONFIG_VIRT_CPU_ACCOUNTING based fine granularity
+accounting. Having similar mechanism to get fine granularity accounting
+on x86 will be a major challenge, given the state of TSC reliability
+on various platforms and also the overhead it may add in common paths
+like syscall entry exit.
 
-	-hpa
+An alternative is to have a generic (sched_clock based) and configurable
+fine-granularity accounting of si and hi time which can be reported
+over the /proc/<pid>/stat API (patch 2).
+
+Patch 3 and 4 are exporting this info at the cgroup level.
+
+Does exposing this additional info to user makes sense? Any feedback on
+the way it is done in this patchset?
+
+This precise irq time based on sched_clock() provides some potential
+opportunities to handle the softirq time charging in a more fair way.
+Specifically cases where an unrelated task is being penalized for
+irq load on that CPU.
+* With network Receive Flow Steering, for example; We can potentially
+do things like not charge receive softirq time to the process that is
+currently running and charge it instead to the actual consumer of
+the receive (in recvmsg, for example).
+* We can reduce the power of the CPU to account for softirq/hardirq
+load, in order to increase the scheduler fairness for tasks running on
+that CPU.
+
+Comments?
+
+Thanks,
+Venki
+
