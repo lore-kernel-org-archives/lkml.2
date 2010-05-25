@@ -1,60 +1,40 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756267Ab0EYHwe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:52:34 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:41246 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1754307Ab0EYHwc (ORCPT
+	id S1756312Ab0EYHwr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:52:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:53126 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756285Ab0EYHwo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:52:32 -0400
-Date: Mon, 24 May 2010 23:25:11 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Matthew Garrett <mjg@redhat.com>
-Cc: Tony Lindgren <tony@atomide.com>, Alan Stern <stern@rowland.harvard.edu>,
-       Paul Walmsley <paul@pwsan.com>, Arve Hj?nnev?g <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, Oleg Nesterov <oleg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>, magnus.damm@gmail.com,
-       "Theodore Ts'o" <tytso@mit.edu>, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>,
-       Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Beno?t Cousson <b-cousson@ti.com>, linux-omap@vger.kernel.org,
-       Vitaly Wool <vitalywool@gmail.com>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Liam Girdwood <lrg@slimlogic.co.uk>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100524212511.GC1286@ucw.cz>
-References: <alpine.DEB.2.00.1005122118530.7624@utopia.booyaka.com>
- <Pine.LNX.4.44L0.1005131002380.1695-100000@iolanthe.rowland.org>
- <20100513191717.GA3428@atomide.com>
- <20100513192522.GA19256@srcf.ucam.org>
- <20100513194205.GC3428@atomide.com>
- <20100513195349.GB19722@srcf.ucam.org>
- <20100513200003.GE3428@atomide.com>
- <20100513200814.GA20254@srcf.ucam.org>
+	Tue, 25 May 2010 03:52:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type;
+        b=MsNX2VKPM+tutpT2WrNRi0FvkUIr5iFetzpAU4fyXpajD6i70qZ7uqTfR5adMtYLCJ
+         O7n0sk133DZzyq+wlN+lRwNcWMJd6ktFsDfe5EKo+1KFHaNf8sbLALP4jtwoOmhHDHGY
+         H9hvacukXAY59qN8bHqYi5F7cUFgmSN8NZjDM=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100513200814.GA20254@srcf.ucam.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <01a101cafbdd$6fa10c10$3701a8c0@wxintech.com>
+References: <AANLkTil8KvSojByVejgcPHIlVn9QOYmmCAfQwpb4XT5E@mail.gmail.com>
+	 <20100525165152.1ecfadd4@notabene.brown>
+	 <017601cafbd9$30924dd0$3701a8c0@wxintech.com>
+	 <20100525172218.79e3d325@notabene.brown>
+	 <01a101cafbdd$6fa10c10$3701a8c0@wxintech.com>
+Date: Tue, 25 May 2010 10:52:40 +0300
+Message-ID: <AANLkTikFzNjBS_jPhIwJEQlip6CsBSOECvAXXzHr-IbO@mail.gmail.com>
+Subject: Re: The Future of the Linux Kernel
+From: Anca Emanuel <anca.emanuel@gmail.com>
+To: zhanglx <zhanglx@semico.com.cn>
+Cc: linux-kernel <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu 2010-05-13 21:08:14, Matthew Garrett wrote:
-> On Thu, May 13, 2010 at 01:00:04PM -0700, Tony Lindgren wrote:
-> 
-> > The system stays running because there's something to do. The system
-> > won't suspend until all the processors hit the kernel idle loop and
-> > the next_timer_interrupt_critical() returns nothing.
-> 
-> At which point an application in a busy loop cripples you. I think we 
+On Tue, May 25, 2010 at 10:39 AM, zhanglx <zhanglx@semico.com.cn> wrote:
+> I will not say interest or no interest on Linux kernel. I just want to know how it runs on earth because a lot of talent people working on it. :)
+>
+> I do not know how to submit patches. Is it processed by GIT tool?
 
-Application running busy loop already cripples you, with power going
-from 15W to 50W in thinkpad case. Just avoid badly written apps.
-
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+Here: http://www.youtube.com/watch?v=LLBrBBImJt4 is a tutorial by Greg
