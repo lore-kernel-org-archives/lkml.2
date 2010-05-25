@@ -1,84 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab0EYONN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:13:13 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:59092 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755432Ab0EYONL (ORCPT
+	id S1758243Ab0EYOPi (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:15:38 -0400
+Received: from daytona.panasas.com ([67.152.220.89]:33476 "EHLO
+	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754053Ab0EYOPg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:13:11 -0400
-Message-ID: <4BFBDAF3.3020504@example.com>
-Date: Tue, 25 May 2010 16:13:07 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	Tue, 25 May 2010 10:15:36 -0400
+Message-ID: <4BFBDB83.2090807@panasas.com>
+Date: Tue, 25 May 2010 17:15:31 +0300
+From: Boaz Harrosh <bharrosh@panasas.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Divyesh Shah <dpshah@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com> <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com> <4BFBA6A2.4070405@example.com>
-In-Reply-To: <4BFBA6A2.4070405@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 15795531268202656114
-X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+To: James Bottomley <James.Bottomley@suse.de>
+CC: Julia Lawall <julia@diku.dk>, Doug Gilbert <dgilbert@interlog.com>,
+       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
+References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>	 <1274538263.4410.38.camel@mulgrave.site>  <4BF94B89.2050101@panasas.com> <1274631752.5894.24.camel@mulgrave.site>
+In-Reply-To: <1274631752.5894.24.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 May 2010 14:15:34.0879 (UTC) FILETIME=[BDE2E6F0:01CAFC14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.05.2010 12:29, Piotr Hosowicz wrote:
-> On 25.05.2010 12:05, Piotr Hosowicz wrote:
->> On 25.05.2010 12:00, Peter Zijlstra wrote:
->>> On Tue, 2010-05-25 at 11:57 +0200, Piotr Hosowicz wrote:
->>>> On 25.05.2010 11:43, Ingo Molnar wrote:
->>>>
->>>>> This doesnt fix the whole issue. cpu_clock() is local, while the
->>>>> measurements
->>>>> done in the blk code are global ...
->>>>>
->>>>> While the warning is fixed this way, the far more serious issue is
->>>>> still
->>>>> there: time can go backwards if two points of time measurement are on
->>>>> different CPUs and can mess up the statistics with negative values,
->>>>> etc...
->>>>
->>>> How serious is this? Can it damage my data? I ask because the
->>>> machine is
->>>> my private computer, not any test machine.
+On 05/23/2010 07:22 PM, James Bottomley wrote:
+> On Sun, 2010-05-23 at 18:36 +0300, Boaz Harrosh wrote:
+>>> This type of transformation has really no value at all.  The code you're
+>>> proposing to replace is already correct.  I'm fairly ambivalent on
+>>> patterned APIs anyway but I accept they're useful way to prevent new
+>>> code getting it wrong. However, it's completely bogus to force
+>>> replacement of correctly functioning code throughout the kernel (unless
+>>> you're going to argue that everyone who tries to copy from user into a
+>>> kmalloc space does a cut and paste from sg?)
 >>>
->>> I'm not sure, since I didn't really look what they use the timestamps
->>> for, but a guess would say your data is safe, it might schedule the io
->>> funny, but it should not compromise integrity. At best its used purely
->>> for statistics and not even behaviour is affected.
+>>> Of infinitely greater service would be finding any places where the
+>>> pattern is being incorrectly used.
+>>>
 >>
->> Thanks.
->
-> Seems to work like a charm.
+>> It looks like it is not done 100% kosher and calling memdup_user should
+>> be better.
+>>
+>> - For 1 memdup_user does a GFP_KERNEL with a comment on how copy_from_user
+>>   would eventually sleep, so what's the point of GFP_ATOMIC?
+> 
+> Well, since you've written a storage driver, I really hope that question
+> is rhetorical ...
+> 
 
-Not exactly. I looked into the syslog. I's much better, but I rebooted 
-to single user mode to rebuild nvidia driver (new beta version) and I 
-see same error (BUG ... code: ???) on shuting down, mentioning sync, 
-umount and finally shutdown.
+Not really I do mean it in this case. It is not a storage-driver code
+path. Is sg a storage-driver. I was not aware anyone used it for one.
 
-Anyway it's much more comfortable to build nvidia drivers in the console 
-because previously the BUG lines cluttered all the console.
+> The reason for using GFP_ATOMIC from user context in storage drivers is
+> to avoid writeout deadlock:  you don't want to trigger a swap write
+> while you potentially occupy the writeout path.  In all older drivers
+> this had to be GFP_ATOMIC because GFP_NOIO wasn't around.
+> 
 
-Regards,
+I confess my total swap ignorance. I was under the impression that
+swap needs a block device. OK you could do a user-mode filesystem
+over sg, under loop device. Does swap work over loop device=>ext2
+for example? Or is there a way to directly swap over a filesystem
+(Not block based)?
 
-Piotr Hosowicz
+> This also illustrates the problem with design patterns:  The idea that
+> if you have user context, you must be able to kmalloc GFP_KERNEL seems
+> logical to the people who wrote the pattern, but actually it's
+> potentially incorrect for storage.
+> 
 
+Again I confess my ignorance but I thought that copy_from_user can sleep
+because of a page_fault which will invoke the memory allocation subsystem
+anyway, so the out-of-memory condition will apply to copy_from_user as
+well. But I don't have a clue, actually, why the copy_from_user might
+sleep.
 
+> Now in the particular case of sg, I don't believe we'll ever want to
+> swap over sg (famous last words, of course), so in this instance we
+> probably could get away with using GFP_KERNEL ... but since it's
+> following the storage pattern, GFP_ATOMIC (or GFP_NOIO) is correct.
+> 
 
--- 
-Z cyklu "Uroki demokracji", czyli pytania i odpowiedzi w teledurniejach:
-- Co wydarzy³o siê w Dallas 22 listopada 1963 roku?
-- Nie wiem, wtedy nie ogl±da³em.
-NP: Slash - Paradise City (Feat. Fergie And Cypress Hill) (Australian Bonus)
-NB: 2.6.34-20100524-1752-patched
+Again I never considered sg as storage-driver. It is not a block-device
+and is only used from user-mode that has it's out-of-memory-sleep problems
+without sg.
+
+> Does osd need auditing for this problem (or would no-one ever do swap
+> over osd)?
+> 
+
+libosd's members all receive a gfp_t parameter and let the caller
+determine the sleep policy. For example in osdblk allocations are
+done with GFP_ATOMIC. At the exofs level everything is GFP_KERNEL
+because that is one of the rules of VFS API. So osdblk should
+theoretically be able to swap.
+
+That said, in current kernel an iscsi device cannot be used for swap
+because of NET. There was grate progress done to try and swap over
+nfs which improved iscsi as well, but it was never seen all the way
+through.
+
+>> If this is by design then it surly calls for a comment that explains.
+>> (I would like to know)
+> 
+> This pattern occurs many times in storage ... documenting it at every
+> callsite would be a huge waste.
+> 
+
+So if this is serious, them maybe call copy_from_user_inatomic to match
+the GFP_ATOMIC allocation?
+
+> James
+> 
+
+Boaz
