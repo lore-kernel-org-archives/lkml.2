@@ -1,49 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756609Ab0EYPoY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:44:24 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43871 "EHLO mx1.redhat.com"
+	id S1756397Ab0EYPoO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:44:14 -0400
+Received: from cantor.suse.de ([195.135.220.2]:35269 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756449Ab0EYPoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:44:17 -0400
-Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
-From: Steven Whitehouse <swhiteho@redhat.com>
-To: Minchan Kim <minchan.kim@gmail.com>
-Cc: Nick Piggin <npiggin@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
-       linux-mm@kvack.org, linux-kernel@vger.kernel.org
-In-Reply-To: <20100525150038.GA3227@barrios-desktop>
-References: <1271427056.7196.163.camel@localhost.localdomain>
-	 <1271603649.2100.122.camel@barrios-desktop>
-	 <1271681929.7196.175.camel@localhost.localdomain>
-	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
-	 <1272548602.7196.371.camel@localhost.localdomain>
-	 <1272821394.2100.224.camel@barrios-desktop>
-	 <1273063728.7196.385.camel@localhost.localdomain>
-	 <20100505161632.GB5378@laptop> <1274277294.2532.54.camel@localhost>
-	 <20100525084323.GG5087@laptop>  <20100525150038.GA3227@barrios-desktop>
-Content-Type: text/plain; charset="UTF-8"
-Organization: Red Hat UK Ltd
-Date: Tue, 25 May 2010 16:48:44 +0100
-Message-ID: <1274802524.11327.2.camel@localhost>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1756201Ab0EYPoM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 11:44:12 -0400
+Date: Wed, 26 May 2010 01:43:52 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
+       Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
+Message-ID: <20100525154352.GB20853@laptop>
+References: <AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
+ <20100525070734.GC5087@laptop>
+ <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
+ <20100525081634.GE5087@laptop>
+ <AANLkTilJBY0sinB365lIZFUaMgMCZ1xyhMdXRTJTVDSV@mail.gmail.com>
+ <20100525093410.GH5087@laptop>
+ <AANLkTikXp5LlKLK1deKOQpciUFNugjlQah5QpNcImf39@mail.gmail.com>
+ <20100525101924.GJ5087@laptop>
+ <AANLkTimazVL8G-XQURiQ1s0M3NKa2ndXNceSaw9sADRQ@mail.gmail.com>
+ <alpine.LFD.2.00.1005250812100.3689@i5.linux-foundation.org>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <alpine.LFD.2.00.1005250812100.3689@i5.linux-foundation.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
-
-On Wed, 2010-05-26 at 00:00 +0900, Minchan Kim wrote:
-
-> Anyway, I am looking forard to seeing Steven's experiment.
-> If test has no problem, I will remake refactoring patch based on your patch. :)
+On Tue, May 25, 2010 at 08:13:50AM -0700, Linus Torvalds wrote:
 > 
-> Thanks, Nick.
+> 
+> On Tue, 25 May 2010, Pekka Enberg wrote:
+> > 
+> > I would have liked to see SLQB merged as well but it just didn't happen.
+> 
+> And it's not going to. I'm not going to merge YASA that will stay around 
+> for years, not improve on anything, and will just mean that there are some 
+> bugs that developers don't see because they depend on some subtle 
+> interaction with the sl*b allocator.
+> 
+> We've got three. That's at least one too many. We're not adding any new 
+> ones until we've gotten rid of at least one old one.
 
-I gather that it might be a couple of days before our tester can run the
-tests as he is busy with something else at the moment. I'll get back to
-you as soon as I can. Apologies for the delay in testing,
+No agree and realized that a while back (hence stop pushing SLQB).
+SLAB is simply a good allocator that is very very hard to beat. The
+fact that a lot of places are still using SLAB despite the real
+secondary advantages of SLUB (cleaner code, better debugging support)
+indicate to me that we should go back and start from there.
 
-Steve.
+What is sad is all this duplicate (and unsynchronized and not always
+complete) work implementing things in both the allocators[*] and
+split testing base.
 
+As far as I can see, there was never a good reason to replace SLAB
+rather than clean up its code and make incremental improvements.
 
