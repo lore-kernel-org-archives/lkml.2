@@ -1,56 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933399Ab0EYR2o (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:28:44 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:51898 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933021Ab0EYR2m convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:28:42 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=I52dQifNXiW9Yq4L67K/cwjQxvDiLN6ybaea7GeMtJ7iGjQAkymqxg30qDE+qmYM7h
-         uNsxskLHK9r66QudqNY2txMQeHgBUcT5M22n8xAf8CdTy7phJVBrCR19RimhXzCYSO63
-         7scUHaxmoeqfjeDlDX2ugjMjADtqQKyA87xso=
-MIME-Version: 1.0
-In-Reply-To: <20100525102345.GA23574@redhat.com>
-References: <20100524234250.F158849A56@magilla.sf.frob.com> 
-	<1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> 
-	<20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> 
-	<20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> 
-	<20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> 
-	<20100525102345.GA23574@redhat.com>
-From: Mike Frysinger <vapier.adi@gmail.com>
-Date: Tue, 25 May 2010 13:28:19 -0400
-Message-ID: <AANLkTilT3D8c86LYK2DxcNpM2F3D8iCbgY_sfUg8h58p@mail.gmail.com>
-Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage of 
-	child->mm
-To: Oleg Nesterov <oleg@redhat.com>
-Cc: David Howells <dhowells@redhat.com>, Roland McGrath <roland@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1759000Ab0EYRc1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:32:27 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38368 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758834Ab0EYRcZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 13:32:25 -0400
+Subject: Re: [PATCH 6/7] scsi: megaraid_sas - Add three times Online
+ controller reset - V2
+From: James Bottomley <James.Bottomley@suse.de>
+To: Tomas Henzl <thenzl@redhat.com>
+Cc: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+In-Reply-To: <4BFBF814.5040202@redhat.com>
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>
+	 <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>
+	 <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>
+	 <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>
+	 <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>
+	 <4BFBF814.5040202@redhat.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 12:32:16 -0500
+Message-ID: <1274808736.5300.133.camel@mulgrave.site>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.2 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 06:23, Oleg Nesterov wrote:
->        - arch/blackfin/kernel/ptrace.c:is_user_addr_valid()
->          needs mmap_sem around find_vma()
->
->          The lockless access to mm->context.sram_list doesn't look
->          safe to me.
->
->          If we add get_task_mm() - this protects us against
->          destroy_context() only. What is the tracee's sub-thread
->          does sys_sram_alloc() or sys_sram_free() in parallel?
+On Tue, 2010-05-25 at 18:17 +0200, Tomas Henzl wrote:
+> V2: I've cleaned up some coding style issues and removed a variable, the functionality shouldn't be changed
+> 
+> Tomas
+> 
+> If fw didn't raise the interrupt with the fw state change to driver and fw goes to failure state, driver
+> Will check the FW state in driver's timeout routine and issue the reset if need.  Driver will do the OCR upto three
+> Times until kill adapter.  Also driver will issue OCR before driver kill adapter even if fw in operational state.   
 
-i dont believe there are any code paths in UP systems where this would
-be a practical problem because sram_list is only updated by syscalls
-from userspace.  we probably should add proper locking to this
-structure though.  i'll open a tracker item about it, thanks !
--mike
+So there's supposed to be a replacement for 3/7 (megaraid_sas - Online
+COntroller Reset (OCR) PART-III) as well, isn't there?
+
+Also descriptive subjects would be nice (parts I-III may do well for
+Lord of the Rings ... it's less useful for SCSI patches).
+
+James
+
+
