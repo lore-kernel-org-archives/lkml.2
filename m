@@ -1,150 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932854Ab0EYOEE (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:04:04 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:42535 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757011Ab0EYOEA convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:04:00 -0400
-Subject: Re: [PATCH] perf_events: fix event scheduling issues introduced by
-  transactional API (take 2)
-From: Peter Zijlstra <peterz@infradead.org>
-To: eranian@gmail.com
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       acme@infradead.org, ming.m.lin@intel.com, perfmon2-devel@lists.sf.net
-In-Reply-To: <AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
-References: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
-	 <1274794518.5882.1280.camel@twins>
-	 <AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
+	id S933098Ab0EYOEj (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:04:39 -0400
+Received: from mail-out1.uio.no ([129.240.10.57]:57749 "EHLO mail-out1.uio.no"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932693Ab0EYOEg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:04:36 -0400
+Subject: Re: Deadlock in NFSv4 in all kernels
+From: Trond Myklebust <trond.myklebust@fys.uio.no>
+To: "William A. (Andy) Adamson" <androsadamson@gmail.com>
+Cc: Lukas Hejtmanek <xhejtman@ics.muni.cz>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       salvet@ics.muni.cz
+In-Reply-To: <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
+References: <20100507153920.GP28167@ics.muni.cz>
+	 <AANLkTimsQTYWndbQo2nU01pcJfTRSZlPCMEY8m-CnksM@mail.gmail.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 May 2010 16:03:45 +0200
-Message-ID: <1274796225.5882.1389.camel@twins>
+Date: Tue, 25 May 2010 10:04:30 -0400
+Message-ID: <1274796270.5377.48.camel@heimdal.trondhjem.org>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+Content-Transfer-Encoding: 7bit
+X-UiO-Ratelimit-Test: rcpts/h 6 msgs/h 1 sum rcpts/h 15 sum msgs/h 2 total rcpts 368 max rcpts/h 20 ratelimit 0
+X-UiO-Spam-info: not spam, SpamAssassin (score=-5.0, required=5.0, autolearn=disabled, UIO_MAIL_IS_INTERNAL=-5, uiobl=NO, uiouri=NO)
+X-UiO-Scanned: A3A273925EDD5C2243B8DB3258D83CBD794196EE
+X-UiO-SPAM-Test: remote_host: 68.40.206.115 spam_score: -49 maxlevel 80 minaction 2 bait 0 mail/h: 1 total 175 max/h 6 blacklist 0 greylist 0 ratelimit 0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-25 at 15:39 +0200, stephane eranian wrote:
-> On Tue, May 25, 2010 at 3:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> > On Tue, 2010-05-25 at 15:20 +0200, Stephane Eranian wrote:
+On Tue, 2010-05-25 at 09:45 -0400, William A. (Andy) Adamson wrote: 
+> 2010/5/7 Lukas Hejtmanek <xhejtman@ics.muni.cz>:
+> > Hi,
 > >
-> >> With this patch, you can now overcommit the PMU even with pinned
-> >> system-wide events present and still get valid counts.
+> > I encountered the following problem. We use short expiration time for
+> > kerberos contexts created by rpc.gssd (some patches were included in mainline
+> > nfs-utils). In particular, we use 120secs expiration time.
 > >
-> > Does this patch differ from the one you send earlier?
+> > Now, I run application that eats 80% of available RAM. Then I run 10 parallel
+> > dd processes that write data into NFS4 volume with sec=krb5.
 > >
-> Yes, it does. It changes the way n_added is updated.
+> > As soon as the kerberos context expires (i.e., up to 120 secs), the whole
+> > system gets stuck in do_page_fault and succesive functions. It is because
+> > there is no free memory in kernel, all free memory is used as cache for NFS4
+> > (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
+> > anything as it is missing valid context. NFS contacts rpc.gssd to provide
+> > a renewed context, the rpc.gssd does not provide the context as it needs some memory
+> > to scan /tmp for a ticket. I.e., it deadlocks.
+> >
+> > Longer context expiration time is no real solution as it only makes the
+> > deadlock less often.
+> >
+> > Any ideas what can be done here?
 > 
-> The first version was buggy (perf top would crash the machine).
-> You cannot delay updating n_added until commit, because there
-> are paths where you don't go through transactions. This version
-> instead keeps the number of events last added and speculatively
-> updates n_added (assuming success). If the transaction succeeds,
-> then no correction is done (subtracting 0), if it fails, then the number
-> of events just added to n_added is subtracted.
+> Not get into the problem in the first place: this means
+> 
+> 1) determine a 'lead time' where the NFS client declares a context
+> expired even though it really as 'lead time' until it actually
+> expires.
+> 
+> 2) flush all writes on any contex that will expire within the lead
+> time which needs to be long enough for flushes to take place.
 
+That too is only a partial solution. The GSS context can expire early
+due to totally unforeseeable circumstances such as a server reboot, for
+instance.
 
-OK, just to see if I got it right, I wrote a similar patch from just the
-changelog.
-
-Does the below look good?
-
----
- arch/x86/kernel/cpu/perf_event.c |   13 +++++++++++++
- kernel/perf_event.c              |   11 +++++++----
- 2 files changed, 20 insertions(+), 4 deletions(-)
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index 856aeeb..be84944 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -106,6 +106,7 @@ struct cpu_hw_events {
- 
- 	int			n_events;
- 	int			n_added;
-+	int			n_txn;
- 	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
- 	u64			tags[X86_PMC_IDX_MAX];
- 	struct perf_event	*event_list[X86_PMC_IDX_MAX]; /* in enabled order */
-@@ -983,6 +984,7 @@ static int x86_pmu_enable(struct perf_event *event)
- out:
- 	cpuc->n_events = n;
- 	cpuc->n_added += n - n0;
-+	cpuc->n_txn += n - n0;
- 
- 	return 0;
- }
-@@ -1089,6 +1091,14 @@ static void x86_pmu_disable(struct perf_event *event)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 	int i;
- 
-+	/*
-+	 * If we're called during a txn, we don't need to do anything.
-+	 * The events never got scheduled and ->cancel_txn will truncate
-+	 * the event_list.
-+	 */
-+	if (cpuc->group_flags & PERF_EVENT_TXN_STARTED)
-+		return;
-+
- 	x86_pmu_stop(event);
- 
- 	for (i = 0; i < cpuc->n_events; i++) {
-@@ -1379,6 +1389,7 @@ static void x86_pmu_start_txn(const struct pmu *pmu)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	cpuc->group_flag |= PERF_EVENT_TXN_STARTED;
-+	cpuc->n_txn = 0;
- }
- 
- /*
-@@ -1391,6 +1402,8 @@ static void x86_pmu_cancel_txn(const struct pmu *pmu)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	cpuc->group_flag &= ~PERF_EVENT_TXN_STARTED;
-+	cpuc->n_added -= cpuc->n_txn;
-+	cpuc->n_events -= cpuc->n_txn;
- }
- 
- /*
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index e099650..ca79f2a 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -652,8 +652,11 @@ group_sched_in(struct perf_event *group_event,
- 	if (txn)
- 		pmu->start_txn(pmu);
- 
--	if (event_sched_in(group_event, cpuctx, ctx))
-+	if (event_sched_in(group_event, cpuctx, ctx)) {
-+		if (txn)
-+			pmu->cancel_txn(pmu);
- 		return -EAGAIN;
-+	}
- 
- 	/*
- 	 * Schedule in siblings as one group (if any):
-@@ -675,9 +678,6 @@ group_sched_in(struct perf_event *group_event,
- 	}
- 
- group_error:
--	if (txn)
--		pmu->cancel_txn(pmu);
--
- 	/*
- 	 * Groups can be scheduled in as one unit only, so undo any
- 	 * partial group before returning:
-@@ -689,6 +689,9 @@ group_error:
- 	}
- 	event_sched_out(group_event, cpuctx, ctx);
- 
-+	if (txn)
-+		pmu->cancel_txn(pmu);
-+
- 	return -EAGAIN;
- }
- 
 
