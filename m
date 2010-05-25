@@ -1,48 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759082Ab0EYWT2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:19:28 -0400
-Received: from g5t0009.atlanta.hp.com ([15.192.0.46]:40377 "EHLO
-	g5t0009.atlanta.hp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758780Ab0EYWT1 convert rfc822-to-8bit (ORCPT
+	id S1759062Ab0EYWXZ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:23:25 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:55986 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756485Ab0EYWXX convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:19:27 -0400
-From: "Altobelli, David" <david.altobelli@hp.com>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Prarit Bhargava <prarit@redhat.com>
-CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "tony.camuso@redhat.com" <tony.camuso@redhat.com>
-Date: Tue, 25 May 2010 22:16:10 +0000
-Subject: RE: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
-Thread-Topic: [PATCH]: hpilo: fix pointer warning in ilo_ccb_setup
-Thread-Index: Acr8VC4K6q7Ns5JLT4CUGmRMLKe/ZwAAl75Q
-Message-ID: <92D64232F2316045B18937D5C9996B152CD6C5BA90@GVW1144EXB.americas.hpqcorp.net>
-References: <20100522004615.25451.83108.sendpatchset@prarit.bos.redhat.com>
- <20100525144937.e0726ec2.akpm@linux-foundation.org>
-In-Reply-To: <20100525144937.e0726ec2.akpm@linux-foundation.org>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 May 2010 18:23:23 -0400
 MIME-Version: 1.0
+In-Reply-To: <20100525184740.GA4248@core.coreip.homeip.net>
+References: <201005251124.58017.dmitry.torokhov@gmail.com>
+	 <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
+	 <20100525184740.GA4248@core.coreip.homeip.net>
+Date: Tue, 25 May 2010 15:23:23 -0700
+Message-ID: <AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Alan Stern <stern@rowland.harvard.edu>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> Seems very wrong - writes to *dmp_pa will now scribble over 
-> the `struct ccb_data'.
+On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
+>> On Tue, 25 May 2010, Dmitry Torokhov wrote:
+>>
+>> > > Here's the scenario:
+>> > >
+>> > > The system is awake, and the user presses a key. The keyboard driver
+>> > > processes the keystroke and puts it in an input queue.  A user process
+>> > > reads it from the event queue, thereby emptying the queue.
+>> > >
+>> > > At that moment, the system decides to go into opportunistic suspend.
+>> > > Since the input queue is empty, there's nothing to stop it.  As the
+>> > > first step, userspace is frozen -- before the process has a chance to
+>> > > do anything with the keystroke it just read.  As a result, the system
+>> > > stays asleep until something else wakes it up, even though the
+>> > > keystroke was important and should have prevented it from sleeping.
+>> > >
+>> > > Suspend blockers protect against this scenario.  Here's how:
+>> > >
+>> > > The user process doesn't read the input queue directly; instead it
+>> > > does a select or poll.  When it sees there is data in the queue, it
+>> > > first acquires a suspend blocker and then reads the data.
+>> > >
+>> > > Now the system _can't_ go into opportunistic suspend, because a suspend
+>> > > blocker is active.  The user process can do whatever it wants with the
+>> > > keystroke.  When it is finished, it releases the suspend blocker and
+>> > > loops back to the select/poll call.
+>> > >
+>> >
+>> > What you describe can be done in userspace though, via a "suspend manager"
+>> > process. Tasks reading input events will post "busy" events to stop the
+>> > manager process from sending system into suspend. But this can be confined to
+>> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
+>> > to not go into suspend with full queues, but that is using existing kernel
+>> > APIs).
+>>
+>> I think that could be made to work.  And it might remove the need for
+>> the userspace suspend-blocker API, which would be an advantage.  It
+>> could even remove the need for the opportunistic-suspend workqueue --
+>> opportunistic suspends would be initiated by the "suspend manager"
+>> process instead of by the kernel.
+>>
+>> However you still have the issue of modifying the kernel drivers to
+>> disallow opportunistic suspend if their queues are non-empty.  Doing
+>> that is more or less equivalent to implementing kernel-level suspend
+>> blockers.  (The suspend blocker approach is slightly more efficient,
+>> because it will prevent a suspend from starting if a queue is
+>> non-empty, instead of allowing the suspend to start and then aborting
+>> it partway through.)
+>>
+>> Maybe I'm missing something here...  No doubt someone will point it out
+>> if I am.
+>>
+>
+> Well, from my perspective that would limit changes to the evdev driver
+> (well, limited input core plumbing will be needed) but that is using the
+> current PM infrastructure. The HW driver changes will be limited to what
+> you described "type 2" in your other e-mail.
+>
+> Also, not suspending while events are in progress) is probably
+> beneficial for platforms other than Android as well. So unless I am
+> missing something this sounds like a win.
+>
 
-Yeah.  The dma_pa variable is used to track the physical 
-address of the DMA memory, and it is written to the device.  
-We don't want a kernel pointer, we want the actual physical addr,
-plus the various offsets.
+How would this limit the changes you need in the evdev driver? It need
+to block suspend when there are unprocessed events in some queues.
+Suspend blockers gives you an api to do this, without it, you check
+the queues in your suspend hook and abort suspend if they are not
+empty. Without suspend blockers you have no api to signal that it is
+OK to suspend again, so you are forcing the thread that tried to
+suspend to poll until you stop aborting suspend.
 
-> Probably local variable dma_pa should have type dma_addr_t.
-
-I feel like I tried that, and I had trouble setting or using
-the send_fifobar/recv_fifobar variables.  But I probably
-didn't try too hard.
+-- 
+Arve Hjønnevåg
