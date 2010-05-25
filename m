@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933008Ab0EYNyX (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:54:23 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:35370 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758575Ab0EYNvN (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:51:13 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org,
-       "Tigran A. Aivazian" <tigran@aivazian.fsnet.co.uk>
-Subject: [PATCHv4 03/17] BFS: do not manipulate s_dirt directly
-Date: Tue, 25 May 2010 16:48:58 +0300
-Message-Id: <1274795352-3551-4-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 May 2010 13:50:38.0579 (UTC) FILETIME=[4205A430:01CAFC11]
-X-Nokia-AV: Clean
+	id S933026Ab0EYNy2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:54:28 -0400
+Received: from king.tilera.com ([72.1.168.226]:42417 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933006Ab0EYNyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:54:24 -0400
+Message-ID: <4BFBD68C.9060405@tilera.com>
+Date: Tue, 25 May 2010 09:54:20 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>
+CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005240008.16497.arnd@arndb.de> <4BFA9B4E.9010200@tilera.com> <201005242053.25594.arnd@arndb.de>
+In-Reply-To: <201005242053.25594.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 25 May 2010 13:54:21.0829 (UTC) FILETIME=[C716E350:01CAFC11]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On 5/24/2010 2:53 PM, Arnd Bergmann wrote:
+> Note that the asm-generic version defines 244 numbers, while you have
+> a total of 313 numbers. You obviously need the extra arch specific
+> syscalls (e.g cmpxchg), so we need to reserve some space for those
+> in the generic header. All the other ones that are in your version but
+> not in the generic version are very likely not needed (unless I made
+> a mistake in the generic code).
+>   
 
-... use new VFS helpers instead.
+I looked at the diff of the set of syscalls you provide and the ones
+we've been using.
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: Tigran A. Aivazian <tigran@aivazian.fsnet.co.uk>
----
- fs/bfs/inode.c |    8 ++++----
- 1 files changed, 4 insertions(+), 4 deletions(-)
+Specific questions:
 
-diff --git a/fs/bfs/inode.c b/fs/bfs/inode.c
-index f22a7d3..080115e 100644
---- a/fs/bfs/inode.c
-+++ b/fs/bfs/inode.c
-@@ -223,7 +223,7 @@ static int bfs_sync_fs(struct super_block *sb, int wait)
- 
- 	mutex_lock(&info->bfs_lock);
- 	mark_buffer_dirty(info->si_sbh);
--	sb->s_dirt = 0;
-+	mark_sb_clean(sb);
- 	mutex_unlock(&info->bfs_lock);
- 
- 	return 0;
-@@ -234,7 +234,7 @@ static void bfs_write_super(struct super_block *sb)
- 	if (!(sb->s_flags & MS_RDONLY))
- 		bfs_sync_fs(sb, 1);
- 	else
--		sb->s_dirt = 0;
-+		mark_sb_clean(sb);
- }
- 
- static void bfs_put_super(struct super_block *s)
-@@ -246,7 +246,7 @@ static void bfs_put_super(struct super_block *s)
- 
- 	lock_kernel();
- 
--	if (s->s_dirt)
-+	if (is_sb_dirty(s))
- 		bfs_write_super(s);
- 
- 	brelse(info->si_sbh);
-@@ -474,7 +474,7 @@ static int bfs_fill_super(struct super_block *s, void *data, int silent)
- 	brelse(bh);
- 	if (!(s->s_flags & MS_RDONLY)) {
- 		mark_buffer_dirty(info->si_sbh);
--		s->s_dirt = 1;
-+		mark_sb_dirty(s);
- 	} 
- 	dump_imap("read_super", s);
- 	return 0;
+- How do you propose representing the architecture-specific syscalls? 
+We have three "very special" syscalls that are negative numbers, which I
+won't worry about, since they'll be out of the normal numbering
+sequence.  But we also have a few others (cmpxchg_baddr, raise_fpe,
+flush_cache) that we'll need a numbering location for.  I see that you
+already have an empty block from 244 (today) to 1023; perhaps
+architectures should just use 1023 on down?  I'll do this for now.
+
+- You renamed __NR__llseek to __NR_llseek, which of course seems pretty
+reasonable, but libc expects to see the former (both glibc and uclibc). 
+Is it worth requiring non-standard libc code?  I may just add
+__NR__llseek as an alias in my unistd.h for now.
+
+- Are you planning to keep all the ifdef'ed syscalls going forward? 
+Because honestly, I'd rather just enable __ARCH_WANT_SYSCALL_NO_AT,
+etc., and use the kernel implementations, since otherwise I'll have to
+go into both uclibc and glibc and add a bunch of extra Tilera-specific
+code and then try to push that up to their community, when really I just
+want to have the Tilera architecture userspace support be as generic as
+possible.
+
+The result seems positive overall; I'm certainly happy to dump, e.g.,
+"nice" and "stime", since they have obvious userspace wrappers (and in
+fact libc is already geared up to use them if available).  And a few
+other syscalls in the Tile list aren't even implemented but were just
+brought over from x86 "in case", like afs_syscall, putpmsg, and getpmsg,
+so I'm happy to abandon them as well.  And "sysfs" is commented out of
+uclibc, and not present in glibc, so no big loss there.  Other than that
+I think the set of supported syscalls will only change by a couple --
+and more importantly, from my point of view, Tilera gets to stay
+automatically synced to any new syscalls added to Linux going forward. 
+So this is good.
+
+I assume that folks are committing to not changing any of the existing
+numbers, ifdefs, etc. in asm-generic/unistd.h; if we're the only
+architecture using it, no one might notice until we did. :-)
+
 -- 
-1.6.6.1
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
 
