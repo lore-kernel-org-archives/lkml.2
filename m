@@ -1,51 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752220Ab0EYEns (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 00:43:48 -0400
-Received: from mail-gx0-f227.google.com ([209.85.217.227]:59710 "EHLO
-	mail-gx0-f227.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750891Ab0EYEnr convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 00:43:47 -0400
+	id S1752720Ab0EYEp6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 00:45:58 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:29384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1750891Ab0EYEp5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 00:45:57 -0400
+Message-ID: <4BFB56F1.1080200@redhat.com>
+Date: Tue, 25 May 2010 12:49:53 +0800
+From: Cong Wang <amwang@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Shredder/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <4BFAC0B0.2060701@signal11.us>
-References: <4BFAC0B0.2060701@signal11.us>
-From: Kay Sievers <kay.sievers@vrfy.org>
-Date: Tue, 25 May 2010 06:43:30 +0200
-Message-ID: <AANLkTikDHib2QiQ51cJztYGxORojxo5PEwOGXvS5vCJ1@mail.gmail.com>
-Subject: Re: [RFC] User Guide for Sysfs and libudev
-To: Alan Ott <alan@signal11.us>
-Cc: linux-kernel@vger.kernel.org, linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "J. R. Okajima" <hooanon05@yahoo.co.jp>
+CC: opurdila@ixiacom.com, davem@davemloft.net, linux-kernel@vger.kernel.org
+Subject: Re: proc_dointvec() and write
+References: <306.1274711539@jrobl>
+In-Reply-To: <306.1274711539@jrobl>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 20:08, Alan Ott <alan@signal11.us> wrote:
-> Several weeks ago I had need of libudev, and was unable to find very
-> much documentation for it on the web.
+On 05/24/10 22:32, J. R. Okajima wrote:
+> The commit 00b7c3395aec3df43de5bd02a3c5a099ca51169f
+> "sysctl: refactor integer handling proc code"
+> modified the behaviour of writing to /proc.
 >
-> I have created a guide on how to use libudev, which also provides some
-> background information on /dev, Sysfs, and why this kind of thing is needed.
+> Before the commit, write("1\n") to /proc/sys/kernel/printk succeeded. But
+> now it returns EINVAL. Is this intended change? If not, how about this
+> patch?
 >
-> Please check it out and provide comments, as I'm sure there are things
-> which I have gotten wrong or omitted.
+
+
+Hmm, odd, I tested other proc files, I see no problem.
+I am wondering why /proc/sys/kernel/printk is special here.
+
+I will be back later.
+
 >
-> The guide can be found here:
->    http://www.signal11.us/oss/udev/
+> J. R. Okajima
+>
+> diff --git a/kernel/sysctl.c b/kernel/sysctl.c
+> index 4c93486..5058e12 100644
+> --- a/kernel/sysctl.c
+> +++ b/kernel/sysctl.c
+> @@ -2262,6 +2272,8 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+>   		if (write) {
+>   			left -= proc_skip_spaces(&kbuf);
+>
+> +			if (!left)
+> +				break;
+>   			err = proc_get_long(&kbuf,&left,&lval,&neg,
+>   					     proc_wspace_sep,
+>   					     sizeof(proc_wspace_sep), NULL);
+> @@ -2288,7 +2306,7 @@ static int __do_proc_dointvec(void *tbl_data, struct ctl_table *table,
+>
+>   	if (!write&&  !first&&  left&&  !err)
+>   		err = proc_put_char(&buffer,&left, '\n');
+> -	if (write&&  !err)
+> +	if (write&&  !err&&  left)
+>   		left -= proc_skip_spaces(&kbuf);
+>   free:
+>   	if (write) {
+>
 
-Enumeration and monitoring should be in one example, I guess -- that's
-what people are supposed to do today. Before starting to enumerate,
-software should subscribe to events. This makes the handle
-coldplug/hotplug properly, makes it handle duplicate events properly,
-and all other sorts of cases, which software should handle today.
-
-Also "change" is not necessarily a "property" change, it can be any
-event, that a device has changed its state, it will only in  a few
-cases be visible in /sys. The most prominent example is "media
-changed" event for SCSI devices, and we forward them to the block
-device. There will never change anything in /sys before or after the
-event.
-
-Kay
