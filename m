@@ -1,71 +1,67 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932620Ab0EYKZP (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 06:25:15 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:8450 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932380Ab0EYKZM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 06:25:12 -0400
-Date: Tue, 25 May 2010 12:23:45 +0200
-From: Oleg Nesterov <oleg@redhat.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Roland McGrath <roland@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Mike Frysinger <vapier@gentoo.org>, linux-sh@vger.kernel.org,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage
-	of child->mm
-Message-ID: <20100525102345.GA23574@redhat.com>
-References: <20100524234250.F158849A56@magilla.sf.frob.com> <20100522165401.GB19573@redhat.com> <1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> <20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> <20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> <20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com>
+	id S932657Ab0EYKZq (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 06:25:46 -0400
+Received: from out02.mta.xmission.com ([166.70.13.232]:56556 "EHLO
+	out02.mta.xmission.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932380Ab0EYKZo (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 06:25:44 -0400
+To: Dan Carpenter <error27@gmail.com>
+Cc: Greg Kroah-Hartman <gregkh@suse.de>,
+       "David S. Miller" <davem@davemloft.net>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+References: <20100525095110.GG22515@bicker>
+From: ebiederm@xmission.com (Eric W. Biederman)
+Date: Tue, 25 May 2010 03:25:37 -0700
+In-Reply-To: <20100525095110.GG22515@bicker> (Dan Carpenter's message of "Tue\, 25 May 2010 11\:51\:10 +0200")
+Message-ID: <m1d3wk2s7y.fsf@fess.ebiederm.org>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <17134.1274778852@redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+X-XM-SPF: eid=;;;mid=;;;hst=in02.mta.xmission.com;;;ip=67.188.5.249;;;frm=ebiederm@xmission.com;;;spf=neutral
+X-SA-Exim-Connect-IP: 67.188.5.249
+X-SA-Exim-Rcpt-To: error27@gmail.com, kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net, gregkh@suse.de
+X-SA-Exim-Mail-From: ebiederm@xmission.com
+X-Spam-DCC: XMission; sa03 1397; Body=1 Fuz1=1 Fuz2=1 
+X-Spam-Combo: ;Dan Carpenter <error27@gmail.com>
+X-Spam-Relay-Country: 
+X-Spam-Report: * -1.8 ALL_TRUSTED Passed through trusted hosts only via SMTP
+	*  0.0 T_TM2_M_HEADER_IN_MSG BODY: T_TM2_M_HEADER_IN_MSG
+	* -3.0 BAYES_00 BODY: Bayesian spam probability is 0 to 1%
+	*      [score: 0.0000]
+	* -0.0 DCC_CHECK_NEGATIVE Not listed in DCC
+	*      [sa03 1397; Body=1 Fuz1=1 Fuz2=1]
+	*  0.0 T_TooManySym_01 4+ unique symbols in subject
+	*  0.0 XM_SPF_Neutral SPF-Neutral
+	*  0.0 T_TooManySym_02 5+ unique symbols in subject
+	*  0.4 UNTRUSTED_Relay Comes from a non-trusted relay
+Subject: Re: [patch] kobject: free memory if netlink_kernel_create() fails
+X-SA-Exim-Version: 4.2.1 (built Thu, 25 Oct 2007 00:26:12 +0000)
+X-SA-Exim-Scanned: Yes (on in02.mta.xmission.com)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25, David Howells wrote:
+Dan Carpenter <error27@gmail.com> writes:
+
+> There is a kfree(ue_sk) missing on the error path if 
+> netlink_kernel_create() fails.
 >
-> Roland McGrath <roland@redhat.com> wrote:
->
-> > The mm pointer is only used by these uncommon ptrace operations
->
-> Like PEEKTEXT and POKETEXT?
+> Signed-off-by: Dan Carpenter <error27@gmail.com>
+Reviewed-by: "Eric W. Biederman" <ebiederm@xmission.com>
 
-They use access_process_vm().
+Oops.
 
-According to grep, mm is only use to read a couple of members.
-
-Perhaps can even add the simple helper
-
-	struct mm_xxx {
-		unsigned long start_code, end_code, start_data, end_data;
-		... some more ...
-	};
-
-	int get_mm_xxx(struct task_struct *tracee, struct mm_xxx *mm_xxx)
-	{
-		struct mm_struct *mm = get_task_mm(tracee);
-		...
-	}
-
-Except:
-
-	- arch/um/kernel/ptrace.c PTRACE_SWITCH_MM does something
-	  really strange
-
-	- arch/blackfin/kernel/ptrace.c:is_user_addr_valid()
-	  needs mmap_sem around find_vma()
-
-	  The lockless access to mm->context.sram_list doesn't look
-	  safe to me.
-
-	  If we add get_task_mm() - this protects us against
-	  destroy_context() only. What is the tracee's sub-thread
-	  does sys_sram_alloc() or sys_sram_free() in parallel?
-
-Oleg.
-
+> diff --git a/lib/kobject_uevent.c b/lib/kobject_uevent.c
+> index 59c1551..08e15f7 100644
+> --- a/lib/kobject_uevent.c
+> +++ b/lib/kobject_uevent.c
+> @@ -378,6 +378,7 @@ static int uevent_net_init(struct net *net)
+>  	if (!ue_sk->sk) {
+>  		printk(KERN_ERR
+>  		       "kobject_uevent: unable to create netlink socket!\n");
+> +		kfree(ue_sk);
+>  		return -ENODEV;
+>  	}
+>  	mutex_lock(&uevent_sock_mutex);
