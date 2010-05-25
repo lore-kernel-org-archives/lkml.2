@@ -1,67 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755460Ab0EYMlQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 08:41:16 -0400
-Received: from toro.web-alm.net ([62.245.132.31]:48581 "EHLO toro.web-alm.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754053Ab0EYMlO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 08:41:14 -0400
-Message-ID: <4BFBC393.50207@osadl.org>
-Date: Tue, 25 May 2010 14:33:23 +0200
-From: Carsten Emde <C.Emde@osadl.org>
-Organization: Open Source Automation Development Lab (OSADL) eG
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1756520Ab0EYMnn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 08:43:43 -0400
+Received: from cavan.codon.org.uk ([93.93.128.6]:41205 "EHLO
+	cavan.codon.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754355Ab0EYMnk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 08:43:40 -0400
+Date: Tue, 25 May 2010 13:43:25 +0100
+From: Matthew Garrett <mjg59@srcf.ucam.org>
+To: "Yu, Luming" <luming.yu@intel.com>
+Cc: Len Brown <lenb@kernel.org>, Philip Langdale <philipl@overt.org>,
+       Jeff Garrett <jeff@jgarrett.org>, Andi Kleen <andi@firstfloor.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       "linux-acpi@vger.kernel.org" <linux-acpi@vger.kernel.org>,
+       "venki@google.com" <venki@google.com>
+Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
+Message-ID: <20100525124325.GC7876@srcf.ucam.org>
+References: <87y6jkee1b.fsf@basil.nowhere.org> <20100205160900.GA2736@jgarrett.org> <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain> <20100426194002.586fbaa5@fido5> <20100427124703.GA16706@jgarrett.org> <alpine.LFD.2.00.1004301218280.2489@sony> <20100430174447.GA14889@srcf.ucam.org> <d7f2dd35a4361e5156079278543769a0@localhost> <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain> <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
 MIME-Version: 1.0
-To: Ingo Molnar <mingo@elte.hu>
-CC: Steven Rostedt <rostedt@goodmis.org>, linux-kernel@vger.kernel.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Re: [PATCH 2/4] tracing/sched: Fix task states in sched switch event
-References: <RYmXFZH5FML2.rJxWwvD3@ce.dyn.web-alm.net> <20100513133539.GA17107@elte.hu>
-In-Reply-To: <20100513133539.GA17107@elte.hu>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <CE761E84DADF2947A4AF22FB8D97A4731E0366B5@shsmsx501.ccr.corp.intel.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: mjg59@cavan.codon.org.uk
+X-SA-Exim-Scanned: No (on cavan.codon.org.uk); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Ingo,
+On the other hand, the relevant section of spec is:
 
->>> Hm, this is totally unreadable. What does 'TASK_STATE_X' mean??
->> Would this be better?
->> +#define MAKE_TASK_STATE_STRING(num) TASK_STATE_##num " (" DESCR_TASK_STATE_##num ")"
->>   static const char *task_state_array[] = {
->> -	"R (running)",		/*   0 */
->> -	"S (sleeping)",		/*   1 */
->> -	"D (disk sleep)",	/*   2 */
->> -	"T (stopped)",		/*   4 */
->> -	"t (tracing stop)",	/*   8 */
->> -	"Z (zombie)",		/*  16 */
->> -	"X (dead)",		/*  32 */
->> -	"x (dead)",		/*  64 */
->> -	"K (wakekill)",		/* 128 */
->> -	"W (waking)",		/* 256 */
->> +	MAKE_TASK_STATE_STRING(0),
->> +	MAKE_TASK_STATE_STRING(1),
->> +	MAKE_TASK_STATE_STRING(2),
->> +	MAKE_TASK_STATE_STRING(4),
->> +	MAKE_TASK_STATE_STRING(8),
->> +	MAKE_TASK_STATE_STRING(16),
->> +	MAKE_TASK_STATE_STRING(32),
->> +	MAKE_TASK_STATE_STRING(64),
->> +	MAKE_TASK_STATE_STRING(128),
->> +	MAKE_TASK_STATE_STRING(256)
->
-> The whole enumeration there is pointless in that .c file - it tells nothing to
-> the code reader.
->
-> If it cannot be expressed in a meaningful way then introduce
-> TASK_STATE_STRINGS_INIT construct that is defined next to the strings (in a .h
-> file or so) - that way it's a coherent whole.
-This is what I did and submitted some time ago. Is there anything else
-you want me to change?
+"OSPM uses the BM_STS bit to determine the power state to enter when 
+considering a transition to or from the C2/C3 power state. The BM_STS is 
+an optional bit that indicates when bus masters are active. OSPM uses 
+this bit to determine the policy between the C2 and C3 power states: a 
+lot of bus master activity demotes the CPU power state to the C2 (or C1 
+if C2 is not supported), no bus master activity promotes the CPU power 
+state to the C3 power state. OSPM keeps a running history of the BM_STS 
+bit to determine CPU power state policy."
 
-Thanks,
+while the description of the bit itself is:
 
-	Carsten.
+"This is the bus master status bit. This bit is set any time a system 
+bus master requests the system bus, and can only be cleared by writing a 
+“1” to this bit position. Notice that this bit reflects bus master 
+activity, not CPU activity (this bit monitors any bus master that can 
+cause an incoherent cache for a processor in the C3 state when the bus 
+master performs a memory transaction)."
+
+which implies that as long as you don't have any cache coherency 
+concerns, it's acceptable (if potentially suboptimal) to enter C3 even 
+if the bit is set.
+
+-- 
+Matthew Garrett | mjg59@srcf.ucam.org
