@@ -1,58 +1,36 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932644Ab0EYQ0t (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 12:26:49 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:48583 "EHLO mx1.redhat.com"
+	id S1758871Ab0EYQ2V (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 12:28:21 -0400
+Received: from hera.kernel.org ([140.211.167.34]:42206 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932154Ab0EYQ0s (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 12:26:48 -0400
-Date: Tue, 25 May 2010 12:26:35 -0400
-From: John Villalovos <jvillalo@redhat.com>
-To: linux-kernel@vger.kernel.org
-Cc: Alan Cox <alan@linux.intel.com>
-Subject: [PATCH] serial: Fix missing bit coverage of ASYNC_FLAGS
-Message-ID: <20100525162634.GA20573@linuxjohn.usersys.redhat.com>
-Reply-To: John Villalovos <jvillalo@redhat.com>
+	id S1756484Ab0EYQ2T (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 12:28:19 -0400
+Message-ID: <4BFBFA83.3000501@kernel.org>
+Date: Tue, 25 May 2010 18:27:47 +0200
+From: Tejun Heo <tj@kernel.org>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686 (x86_64); en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+To: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3] Make sure timers have migrated before killing	migration_thread
+References: <20100519090557.GA15237@amitarora.in.ibm.com> <1274261515.5605.10423.camel@twins> <20100524095951.GA17680@amitarora.in.ibm.com> <1274787095.5882.949.camel@twins> <20100525132346.GA14986@amitarora.in.ibm.com>
+In-Reply-To: <20100525132346.GA14986@amitarora.in.ibm.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Tue, 25 May 2010 16:27:49 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-It seems that currently ASYNC_FLAGS is one bit short of covering all the bits
-of the ASYNC user flags.  In particular it does not cover the ASYNC_AUTOPROBE
-bit.
 
-ASYNCB_LAST_USER and ASYNCB_AUTOPROBE are both equal to 15.
+Acked-by: Tejun Heo <tj@kernel.org>
 
-Therefore:
-ASYNC_AUTOPROBE = 1000 0000 0000 0000
-ASYNC_FLAGS     = 0111 1111 1111 1111
+Thanks.
 
-So ASYNC_FLAGS is not covering the ASYNC_AUTOPROBE bit.
-
-This patch fixes the issue and with the patch the values will be:
-ASYNC_AUTOPROBE = 1000 0000 0000 0000
-ASYNC_FLAGS     = 1111 1111 1111 1111
-
-As a side note, doing a "git grep" I didn't find any use of
-ASYNC_AUTOPROBE or ASYNCB_AUTOPROBE in the kernel, besides this include
-file.
-
-Signed-off-by: John Villalovos <john.l.villalovos@intel.com>
-
-diff --git a/include/linux/serial.h b/include/linux/serial.h
-index c8613c3..c3b45ad 100644
---- a/include/linux/serial.h
-+++ b/include/linux/serial.h
-@@ -151,7 +151,7 @@ struct serial_uart_config {
- #define ASYNC_BUGGY_UART	(1U << ASYNCB_BUGGY_UART)
- #define ASYNC_AUTOPROBE		(1U << ASYNCB_AUTOPROBE)
- 
--#define ASYNC_FLAGS		((1U << ASYNCB_LAST_USER) - 1)
-+#define ASYNC_FLAGS		((1U << (ASYNCB_LAST_USER + 1)) - 1)
- #define ASYNC_USR_MASK		(ASYNC_SPD_HI|ASYNC_SPD_VHI| \
- 		ASYNC_CALLOUT_NOHUP|ASYNC_SPD_SHI|ASYNC_LOW_LATENCY)
- #define ASYNC_SPD_CUST		(ASYNC_SPD_HI|ASYNC_SPD_VHI)
+-- 
+tejun
