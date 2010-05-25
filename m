@@ -1,44 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933032Ab0EYRDZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:03:25 -0400
-Received: from cantor.suse.de ([195.135.220.2]:37525 "EHLO mx1.suse.de"
+	id S933285Ab0EYRDd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:03:33 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:34166 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932724Ab0EYRDX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:03:23 -0400
-Date: Tue, 25 May 2010 09:58:26 -0700
+	id S932724Ab0EYRDa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 13:03:30 -0400
+Date: Tue, 25 May 2010 10:00:03 -0700
 From: Greg KH <gregkh@suse.de>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Theodore Tso <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
-Message-ID: <20100525165825.GB9154@suse.de>
-References: <20100524223544.GA13721@kroah.com>
- <20100524223016.208581966@clark.site>
- <20100525111208.GA8779@infradead.org>
+To: Hugh Dickins <hughd@google.com>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Tharindu Rukshan Bamunuarachchi <btharindu@gmail.com>,
+       linux-mm@kvack.org, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org, stable@kernel.org
+Subject: Re: TMPFS over NFSv4
+Message-ID: <20100525170003.GD9154@suse.de>
+References: <AANLkTik47c6l3y8CdJ-hUCd2h3SRSb3qAtRovWryb8_p@mail.gmail.com>
+ <alpine.LSU.2.00.1005211344440.7369@sister.anvils>
+ <AANLkTil7I6q4wdLgmwZdRN6hb9LVVagN_7oGTIVNDhUk@mail.gmail.com>
+ <AANLkTilMQjZaUom2h_aFgU6WB83IGH-VVKTg-CJD-_ZZ@mail.gmail.com>
+ <20100524110903.72524853@lxorguk.ukuu.org.uk>
+ <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100525111208.GA8779@infradead.org>
+In-Reply-To: <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 07:12:08AM -0400, Christoph Hellwig wrote:
-> On Mon, May 24, 2010 at 03:28:06PM -0700, Greg KH wrote:
-> > 2.6.27-stable review patch.  If anyone has any objections, please let us know.
+On Mon, May 24, 2010 at 04:46:24PM -0700, Hugh Dickins wrote:
+> Hi Greg,
 > 
-> NACK.  This has been shown to cause severe writeback regression for
-> other filesystems and is beeing reverted in mianline.
+> On Mon, 24 May 2010, Alan Cox wrote:
+> > On Mon, 24 May 2010 02:57:30 -0700
+> > Hugh Dickins <hughd@google.com> wrote:
+> > > On Mon, May 24, 2010 at 2:26 AM, Tharindu Rukshan Bamunuarachchi
+> > > <btharindu@gmail.com> wrote:
+> > > > thankx a lot Hugh ... I will try this out ... (bit harder patch
+> > > > already patched SLES kernel :-p ) ....
+> > > 
+> > > If patch conflicts are a problem, you really only need to put in the
+> > > two-liner patch to mm/mmap.c: Alan was seeking perfection in
+> > > the rest of the patch, but you can get away without it.
+> > > 
+> > > >
+> > > > BTW, what does Alan means by "strict overcommit" ?
+> > > 
+> > > Ah, that phrase, yes, it's a nonsense, but many of us do say it by mistake.
+> > > Alan meant to say "strict no-overcommit".
+> > 
+> > No I always meant to say 'strict overcommit'. It avoids excess negatives
+> > and "no noovercommit" discussions.
+> > 
+> > I guess 'strict overcommit control' would have been clearer 8)
+> > 
+> > Alan
+> 
+> I see we've just missed 2.6.27.47-rc1, but if there's to be an -rc2,
+> please include Alan's 2.6.28 oops fix below: which Tharindu appears
+> to be needing - just now discussed on linux-mm and linux-nfs.
+> Failing that, please queue it up for 2.6.27.48.
 
-Ok, I've dropped this one, and the two ext4 patches after this one as
-well.  If someone wants them back, please feel free to redo them so that
-they apply to the .27 tree now.
+
+There is now going to be a -rc2 due to other problems, so I'll go queue
+this one up as well.
+
+> Or if you'd prefer a smaller patch for -stable, then just the mm/mmap.c
+> part of it should suffice: I think it's fair to say that the rest of the
+> patch was more precautionary - as Alan describes, for catching other bugs,
+> so good for an ongoing development tree, but not necessarily in -stable.
+> (However, Alan may disagree - I've already misrepresented him once here!)
+
+The original is best, it makes more sense.
 
 thanks,
 
