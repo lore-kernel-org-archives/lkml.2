@@ -1,73 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932694Ab0EYKaA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 06:30:00 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:46847 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932609Ab0EYK37 (ORCPT
+	id S1756573Ab0EYKf1 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 06:35:27 -0400
+Received: from fg-out-1718.google.com ([72.14.220.158]:46348 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750783Ab0EYKfZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 06:29:59 -0400
-Message-ID: <4BFBA6A2.4070405@example.com>
-Date: Tue, 25 May 2010 12:29:54 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+	Tue, 25 May 2010 06:35:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=sender:from:to:cc:subject:references:date:in-reply-to:message-id
+         :user-agent:mime-version:content-type;
+        b=PkcRsNZRNPWt7jZeT4eS8khMCyzHz1z3b3DEjn5hzM4P/XlYRuKjcB01VioSkYcp2G
+         IDV3sN4EK+gKb13RNurEY9YSDrQHUFsJFGAMUqClEChSNTJfU2B3GfJgukWJYpKNf2eq
+         041rE+u+N8icsTgpBLX71g05cjDzToJxXNg/s=
+From: Dmitry Monakhov <dmonakhov@openvz.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Frantisek Hanzlik <franta@hanzlici.cz>, linux-kernel@vger.kernel.org
+Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
+References: <4BFA730C.1010906@hanzlici.cz>
+	<20100524230512.8cc7dfc1.akpm@linux-foundation.org>
+Date: Tue, 25 May 2010 14:35:20 +0400
+In-Reply-To: <20100524230512.8cc7dfc1.akpm@linux-foundation.org> (Andrew
+	Morton's message of "Mon, 24 May 2010 23:05:12 -0700")
+Message-ID: <87vdacl15j.fsf@openvz.org>
+User-Agent: Gnus/5.13 (Gnus v5.13) Emacs/23.1.50 (gnu/linux)
 MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Divyesh Shah <dpshah@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com> <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com>
-In-Reply-To: <4BFBA0F8.9090908@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 7bit
-X-Ovh-Tracer-Id: 12025455431085093234
-X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 25.05.2010 12:05, Piotr Hosowicz wrote:
-> On 25.05.2010 12:00, Peter Zijlstra wrote:
->> On Tue, 2010-05-25 at 11:57 +0200, Piotr Hosowicz wrote:
->>> On 25.05.2010 11:43, Ingo Molnar wrote:
->>>
->>>> This doesnt fix the whole issue. cpu_clock() is local, while the
->>>> measurements
->>>> done in the blk code are global ...
->>>>
->>>> While the warning is fixed this way, the far more serious issue is
->>>> still
->>>> there: time can go backwards if two points of time measurement are on
->>>> different CPUs and can mess up the statistics with negative values,
->>>> etc...
->>>
->>> How serious is this? Can it damage my data? I ask because the machine is
->>> my private computer, not any test machine.
->>
->> I'm not sure, since I didn't really look what they use the timestamps
->> for, but a guess would say your data is safe, it might schedule the io
->> funny, but it should not compromise integrity. At best its used purely
->> for statistics and not even behaviour is affected.
+Andrew Morton <akpm@linux-foundation.org> writes:
+
+> On Mon, 24 May 2010 14:37:32 +0200 Frantisek Hanzlik <franta@hanzlici.cz> wrote:
 >
-> Thanks.
+>> Hello,
+>> I upgrade from kernel 2.6.33.3 to 2.6.33.4 (2.6.33.4-95.fc13.i686.PAE, 
+>> Fedora 13 distro) and now I see several these messages every day in 
+>> /var/log/messages:
+>> 
+>> May 24 14:01:32 ns kernel: ------------[ cut here ]------------
+>> May 24 14:01:32 ns kernel: WARNING: at fs/fs-writeback.c:597 
+>> writeback_inodes_wb+0x202/0x30e()
+>
+> I don't see anything which would generate this warning in 2.6.33.4's
+> fs/fs-writeback.c:597.  RH must have mucked with it.
+Already fixed in mainstream by
+commit 7c8a3554c683f512dbcee26faedb42e4c05f12fa
+Author: Jens Axboe <jens.axboe@oracle.com>
+Date:   Tue May 18 14:29:29 2010 +0200
 
-Seems to work like a charm. I ask my question anew - shall I have to 
-apply the patch each time I update my kernel tree?
-
-Regards,
-
-Piotr Hosowicz
-
--- 
-Janusz Korwin-Mikke:
-"Idiota z dyplomem to taki sam idiota,
-jak przedtem - tylko z pretensjami."
-NP: Slash - Ghost (Feat. Ian Astbury)
-NB: 2.6.34-20100524-1752-patched
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
