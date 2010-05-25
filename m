@@ -1,39 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932354Ab0EYJwL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:52:11 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:35109 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932131Ab0EYJwJ (ORCPT
+	id S932602Ab0EYJwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:52:19 -0400
+Received: from mail-ew0-f216.google.com ([209.85.219.216]:62282 "EHLO
+	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932131Ab0EYJwO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:52:09 -0400
-X-IronPort-AV: E=Sophos;i="4.53,297,1272844800"; 
-   d="scan'208";a="71919"
-Date: Tue, 25 May 2010 10:55:56 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Boris Derzhavets <bderzhavets@yahoo.com>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       Jeremy Fitzhardinge <jeremy@goop.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Stefano@yahoo.com" <Stefano@yahoo.com>,
-       Don Dutile <ddutile@redhat.com>, Sheng Yang <sheng@linux.intel.com>
-Subject: Re: [Xen-devel] [PATCH 0 of 12] PV on HVM Xen
-In-Reply-To: <589587.84468.qm@web56105.mail.re3.yahoo.com>
-Message-ID: <alpine.DEB.2.00.1005251055230.25605@kaball-desktop>
-References: <589587.84468.qm@web56105.mail.re3.yahoo.com>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
+	Tue, 25 May 2010 05:52:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :content-type;
+        b=dSbXjiYTGePayuzdjNNBFu/WTccCIi3uz6L8veA7pqIEecpToPqG21lh/RyXETTaUm
+         ks8tiWJEj8btjLvAScmfex2+TSIB+lnCLvgXVjNUs+2ijO2xBjTuXtD6gbYarSKtqp0y
+         cWJIEhcUwXhalEIZVG3ly+1GB4cYV97N+QMfk=
 MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+In-Reply-To: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
+References: <2d460de71003260850x7f90d04cy79ac853464108182@mail.gmail.com>
+Date: Tue, 25 May 2010 11:52:12 +0200
+Message-ID: <AANLkTik_QdZN_nFoOVD3-1JTGN5oxRySCdV5_eDqvQve@mail.gmail.com>
+Subject: Re: [Patch] fix packet loss and massive ping spikes with PPP 
+	multi-link
+From: Richard Hartmann <richih.mailinglist@gmail.com>
+To: linux-kernel@vger.kernel.org, netdev@vger.kernel.org,
+       linux-ppp@vger.kernel.org, erik_list@caneris.com
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010, Boris Derzhavets wrote:
-> What Xen Version this patch is supposed to be applied ?
-> Seems like not 4.0.
-> 
+Hi all,
 
-xen-unstable, but it shouldn't be difficult to port to 4.0.
-BTW I just sent an updated version of the patch to the list.
+unfortunately, I lack the thread [1] in which John and Erik so I am
+replying in my initial thread.
+
+Unfortunately, our own patch is still in its initial state even though
+we tried to clean it up to the Kernel's standard.
+
+As you can see in [1], there is a real problem with multilink ppp. Thus,
+I wanted to take the opportunity to ask for someone who is more familiar
+with both C and the Linux Kernel than we are to have a go at getting
+this code cleaned up and into mainline.
+
+
+Any and all feedback appreciated,
+Richard
+
+[1] http://marc.info/?l=linux-ppp&m=127429724125841&w=2
