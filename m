@@ -1,22 +1,21 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933448Ab0EYSRe (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:17:34 -0400
-Received: from kroah.org ([198.145.64.141]:44369 "EHLO coco.kroah.org"
+	id S933515Ab0EYSRl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:17:41 -0400
+Received: from kroah.org ([198.145.64.141]:44407 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932817Ab0EYSR2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:17:28 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:13 2010
-Message-Id: <20100525181213.167804688@clark.site>
+	id S933454Ab0EYSRf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:35 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:14 2010
+Message-Id: <20100525181213.948838100@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Tue, 25 May 2010 11:09:09 -0700
+Date: Tue, 25 May 2010 11:09:17 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Tomas Henzl <thenzl@redhat.com>, Bo Yang <Bo.Yang@lsi.com>,
-       James Bottomley <James.Bottomley@suse.de>
-Subject: [11/25] [SCSI] megaraid_sas: fix for 32bit apps
+       Jeff Garzik <jgarzik@redhat.com>
+Subject: [19/25] libata: ensure NCQ error result taskfile is fully initialized before returning it via qc->result_tf.
 In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,70 +24,26 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
 ------------------
+From: Jeff Garzik <jeff@garzik.org>
 
-From: Tomas Henzl <thenzl@redhat.com>
+commit a09bf4cd53b8ab000197ef81f15d50f29ecf973c upstream.
 
-commit b3dc1a212e5167984616445990c76056034f8eeb upstream.
-
-It looks like this patch -
-
-commit 7b2519afa1abd1b9f63aa1e90879307842422dae
-Author: Yang, Bo <Bo.Yang@lsi.com>
-Date:   Tue Oct 6 14:52:20 2009 -0600
-
-    [SCSI] megaraid_sas: fix 64 bit sense pointer truncation
-
-has caused a problem for 32bit programs with 64bit os -
-
-http://bugzilla.kernel.org/show_bug.cgi?id=15001
-
-fix by converting the user space 32bit pointer to a 64 bit one when
-needed.
-
-[jejb: fix up some 64 bit warnings]
-Signed-off-by: Tomas Henzl <thenzl@redhat.com>
-Cc: Bo Yang <Bo.Yang@lsi.com>
-Signed-off-by: James Bottomley <James.Bottomley@suse.de>
+Signed-off-by: Jeff Garzik <jgarzik@redhat.com>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/scsi/megaraid/megaraid_sas.c |   18 ++++++++++++++++--
- 1 file changed, 16 insertions(+), 2 deletions(-)
+ drivers/ata/libata-eh.c |    1 +
+ 1 file changed, 1 insertion(+)
 
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -3292,6 +3292,7 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    compat_alloc_user_space(sizeof(struct megasas_iocpacket));
- 	int i;
- 	int error = 0;
-+	compat_uptr_t ptr;
+--- a/drivers/ata/libata-eh.c
++++ b/drivers/ata/libata-eh.c
+@@ -1497,6 +1497,7 @@ void ata_eh_analyze_ncq_error(struct ata
+ 	}
  
- 	if (clear_user(ioc, sizeof(*ioc)))
- 		return -EFAULT;
-@@ -3304,9 +3305,22 @@ static int megasas_mgmt_compat_ioctl_fw(
- 	    copy_in_user(&ioc->sge_count, &cioc->sge_count, sizeof(u32)))
- 		return -EFAULT;
- 
--	for (i = 0; i < MAX_IOCTL_SGE; i++) {
--		compat_uptr_t ptr;
-+	/*
-+	 * The sense_ptr is used in megasas_mgmt_fw_ioctl only when
-+	 * sense_len is not null, so prepare the 64bit value under
-+	 * the same condition.
-+	 */
-+	if (ioc->sense_len) {
-+		void __user **sense_ioc_ptr =
-+			(void __user **)(ioc->frame.raw + ioc->sense_off);
-+		compat_uptr_t *sense_cioc_ptr =
-+			(compat_uptr_t *)(cioc->frame.raw + cioc->sense_off);
-+		if (get_user(ptr, sense_cioc_ptr) ||
-+		    put_user(compat_ptr(ptr), sense_ioc_ptr))
-+			return -EFAULT;
-+	}
- 
-+	for (i = 0; i < MAX_IOCTL_SGE; i++) {
- 		if (get_user(ptr, &cioc->sgl[i].iov_base) ||
- 		    put_user(compat_ptr(ptr), &ioc->sgl[i].iov_base) ||
- 		    copy_in_user(&ioc->sgl[i].iov_len,
+ 	/* okay, this error is ours */
++	memset(&tf, 0, sizeof(tf));
+ 	rc = ata_eh_read_log_10h(dev, &tag, &tf);
+ 	if (rc) {
+ 		ata_link_printk(link, KERN_ERR, "failed to read log page 10h "
 
 
