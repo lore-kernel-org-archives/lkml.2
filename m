@@ -1,84 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933026Ab0EYNy2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:54:28 -0400
-Received: from king.tilera.com ([72.1.168.226]:42417 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933006Ab0EYNyY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:54:24 -0400
-Message-ID: <4BFBD68C.9060405@tilera.com>
-Date: Tue, 25 May 2010 09:54:20 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Arnd Bergmann <arnd@arndb.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       linux-arch@vger.kernel.org
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <201005240008.16497.arnd@arndb.de> <4BFA9B4E.9010200@tilera.com> <201005242053.25594.arnd@arndb.de>
-In-Reply-To: <201005242053.25594.arnd@arndb.de>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 May 2010 13:54:21.0829 (UTC) FILETIME=[C716E350:01CAFC11]
+	id S933032Ab0EYNy6 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:54:58 -0400
+Received: from smtp.nokia.com ([192.100.105.134]:35332 "EHLO
+	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758373Ab0EYNu4 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:50:56 -0400
+From: Artem Bityutskiy <dedekind1@gmail.com>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
+       linux-fsdevel@vger.kernel.org
+Subject: [PATCHv4 13/17] SYSV: do not manipulate s_dirt directly
+Date: Tue, 25 May 2010 16:49:08 +0300
+Message-Id: <1274795352-3551-14-git-send-email-dedekind1@gmail.com>
+X-Mailer: git-send-email 1.6.6.1
+In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
+X-OriginalArrivalTime: 25 May 2010 13:50:52.0219 (UTC) FILETIME=[4A26F0B0:01CAFC11]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/24/2010 2:53 PM, Arnd Bergmann wrote:
-> Note that the asm-generic version defines 244 numbers, while you have
-> a total of 313 numbers. You obviously need the extra arch specific
-> syscalls (e.g cmpxchg), so we need to reserve some space for those
-> in the generic header. All the other ones that are in your version but
-> not in the generic version are very likely not needed (unless I made
-> a mistake in the generic code).
->   
+From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 
-I looked at the diff of the set of syscalls you provide and the ones
-we've been using.
+... use new VFS helpers instead.
 
-Specific questions:
+Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+---
+ fs/sysv/inode.c |    6 +++---
+ fs/sysv/super.c |    2 +-
+ fs/sysv/sysv.h  |    2 +-
+ 3 files changed, 5 insertions(+), 5 deletions(-)
 
-- How do you propose representing the architecture-specific syscalls? 
-We have three "very special" syscalls that are negative numbers, which I
-won't worry about, since they'll be out of the normal numbering
-sequence.  But we also have a few others (cmpxchg_baddr, raise_fpe,
-flush_cache) that we'll need a numbering location for.  I see that you
-already have an empty block from 244 (today) to 1023; perhaps
-architectures should just use 1023 on down?  I'll do this for now.
-
-- You renamed __NR__llseek to __NR_llseek, which of course seems pretty
-reasonable, but libc expects to see the former (both glibc and uclibc). 
-Is it worth requiring non-standard libc code?  I may just add
-__NR__llseek as an alias in my unistd.h for now.
-
-- Are you planning to keep all the ifdef'ed syscalls going forward? 
-Because honestly, I'd rather just enable __ARCH_WANT_SYSCALL_NO_AT,
-etc., and use the kernel implementations, since otherwise I'll have to
-go into both uclibc and glibc and add a bunch of extra Tilera-specific
-code and then try to push that up to their community, when really I just
-want to have the Tilera architecture userspace support be as generic as
-possible.
-
-The result seems positive overall; I'm certainly happy to dump, e.g.,
-"nice" and "stime", since they have obvious userspace wrappers (and in
-fact libc is already geared up to use them if available).  And a few
-other syscalls in the Tile list aren't even implemented but were just
-brought over from x86 "in case", like afs_syscall, putpmsg, and getpmsg,
-so I'm happy to abandon them as well.  And "sysfs" is commented out of
-uclibc, and not present in glibc, so no big loss there.  Other than that
-I think the set of supported syscalls will only change by a couple --
-and more importantly, from my point of view, Tilera gets to stay
-automatically synced to any new syscalls added to Linux going forward. 
-So this is good.
-
-I assume that folks are committing to not changing any of the existing
-numbers, ifdefs, etc. in asm-generic/unistd.h; if we're the only
-architecture using it, no one might notice until we did. :-)
-
+diff --git a/fs/sysv/inode.c b/fs/sysv/inode.c
+index 4573734..03a6387 100644
+--- a/fs/sysv/inode.c
++++ b/fs/sysv/inode.c
+@@ -61,7 +61,7 @@ static void sysv_write_super(struct super_block *sb)
+ 	if (!(sb->s_flags & MS_RDONLY))
+ 		sysv_sync_fs(sb, 1);
+ 	else
+-		sb->s_dirt = 0;
++		mark_sb_clean(sb);
+ }
+ 
+ static int sysv_remount(struct super_block *sb, int *flags, char *data)
+@@ -71,7 +71,7 @@ static int sysv_remount(struct super_block *sb, int *flags, char *data)
+ 	if (sbi->s_forced_ro)
+ 		*flags |= MS_RDONLY;
+ 	if (!(*flags & MS_RDONLY))
+-		sb->s_dirt = 1;
++		mark_sb_dirty(sb);
+ 	unlock_super(sb);
+ 	return 0;
+ }
+@@ -80,7 +80,7 @@ static void sysv_put_super(struct super_block *sb)
+ {
+ 	struct sysv_sb_info *sbi = SYSV_SB(sb);
+ 
+-	if (sb->s_dirt)
++	if (is_sb_dirty(sb))
+ 		sysv_write_super(sb);
+ 
+ 	if (!(sb->s_flags & MS_RDONLY)) {
+diff --git a/fs/sysv/super.c b/fs/sysv/super.c
+index 5a903da..f0d3679 100644
+--- a/fs/sysv/super.c
++++ b/fs/sysv/super.c
+@@ -347,7 +347,7 @@ static int complete_read_super(struct super_block *sb, int silent, int size)
+ 		sb->s_flags |= MS_RDONLY;
+ 	if (sbi->s_truncate)
+ 		sb->s_root->d_op = &sysv_dentry_operations;
+-	sb->s_dirt = 1;
++	mark_sb_dirty(sb);
+ 	return 1;
+ }
+ 
+diff --git a/fs/sysv/sysv.h b/fs/sysv/sysv.h
+index 94cb9b4..f0441c2 100644
+--- a/fs/sysv/sysv.h
++++ b/fs/sysv/sysv.h
+@@ -118,7 +118,7 @@ static inline void dirty_sb(struct super_block *sb)
+ 	mark_buffer_dirty(sbi->s_bh1);
+ 	if (sbi->s_bh1 != sbi->s_bh2)
+ 		mark_buffer_dirty(sbi->s_bh2);
+-	sb->s_dirt = 1;
++	mark_sb_dirty(sb);
+ }
+ 
+ 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+1.6.6.1
 
