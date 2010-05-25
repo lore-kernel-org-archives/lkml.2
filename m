@@ -1,82 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0EYXTV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 19:19:21 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:36796
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S932617Ab0EYXTT (ORCPT
+	id S933399Ab0EYXYG (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 19:24:06 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:41756 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933018Ab0EYXYC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 19:19:19 -0400
-Date: Tue, 25 May 2010 16:19:29 -0700 (PDT)
-Message-Id: <20100525.161929.112591425.davem@davemloft.net>
-To: sfr@canb.auug.org.au
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, NeilJay@gmail.com
-Subject: Re: linux-next: build warning in Linus' tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100524.215822.13254177.davem@davemloft.net>
-References: <20100525114614.fd61d822.sfr@canb.auug.org.au>
-	<20100524.215822.13254177.davem@davemloft.net>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 19:24:02 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=J/TxO207lzkBYsMyt/2IUnY54nTkkMgrU+zfBiw+Tp5jTas9yShqUtWxaGeVZaQMFm
+         9H3CMBUihrLUgxZrR2yoq4yLNoYS3r5H4TXuygpKZPHTTZQvvqdsNs9ZrXdgR04+2y2X
+         c6fMen/9JKabR8aey7z3Mk7HDpluGm8XQ6QX4=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: x86@kernel.org
+Cc: hpa@zytor.com, linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH]X86:BUG_FIX iMac10,1 reboot issue.
+Date: Tue, 25 May 2010 16:24:08 -0700
+Message-Id: <1274829848-18964-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: David Miller <davem@davemloft.net>
-Date: Mon, 24 May 2010 21:58:22 -0700 (PDT)
+I somehow ran into this while doing a google search:
+https://bugs.launchpad.net/ubuntu/+source/linux/+bug/499497
 
-> From: Stephen Rothwell <sfr@canb.auug.org.au>
-> Date: Tue, 25 May 2010 11:46:14 +1000
-> 
->> Hi Dave,
->> 
->> Today's linux-next build (x86_64 allmodconfig) produced this warning:
->> 
->> drivers/net/usb/asix.c: In function 'asix_rx_fixup':
->> drivers/net/usb/asix.c:325: warning: cast from pointer to integer of different size
->> drivers/net/usb/asix.c:354: warning: cast from pointer to integer of different size
->> 
->> Introduced by commit 3f78d1f210ff89af77f042ab7f4a8fee39feb1c9
->> ("drivers/net/usb/asix.c: Fix unaligned accesses").  This commit casts
->> skb->data to u32.
-> 
-> Thanks I'll look into this.
+sounds vary similar to what my machine(iMac9,1) was doing.
+keep in mind I dont have the hardware(if I had the cash I would),
+nor the gentlemens e-mail address to contact them to test this
+out.(so hopefully somebody on kernel.org, can supply the info
+and/or test this out). 
 
-Here is how I fixed this:
+cheers,
 
---------------------
-drivers/net/usb/asix.c: Fix pointer cast.
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
-Stephen Rothwell reports the following new warning:
-
-drivers/net/usb/asix.c: In function 'asix_rx_fixup':
-drivers/net/usb/asix.c:325: warning: cast from pointer to integer of different size
-drivers/net/usb/asix.c:354: warning: cast from pointer to integer of different size
-
-The code just cares about the low alignment bits, so use
-an "unsigned long" cast instead of one to "u32".
-
-Signed-off-by: David S. Miller <davem@davemloft.net>
 ---
- drivers/net/usb/asix.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+ arch/x86/kernel/reboot.c |    8 ++++++++
+ 1 files changed, 8 insertions(+), 0 deletions(-)
 
-diff --git a/drivers/net/usb/asix.c b/drivers/net/usb/asix.c
-index 31b7331..ea75f47 100644
---- a/drivers/net/usb/asix.c
-+++ b/drivers/net/usb/asix.c
-@@ -322,7 +322,7 @@ static int asix_rx_fixup(struct usbnet *dev, struct sk_buff *skb)
- 		size = (u16) (header & 0x0000ffff);
+diff --git a/arch/x86/kernel/reboot.c b/arch/x86/kernel/reboot.c
+index 8e1aac8..6ed4231 100644
+--- a/arch/x86/kernel/reboot.c
++++ b/arch/x86/kernel/reboot.c
+@@ -469,6 +469,14 @@ static struct dmi_system_id __initdata pci_reboot_dmi_table[] = {
+ 			DMI_MATCH(DMI_PRODUCT_NAME, "iMac9,1"),
+ 		},
+ 	},
++	{	/* Handle problems with rebooting on the iMac10,1. */
++		.callback = set_pci_reboot,
++		.ident = "Apple iMac10,1",
++		.matches = {
++			DMI_MATCH(DMI_SYS_VENDOR, "Apple Inc."),
++			DMI_MATCH(DMI_PRODUCT_NAME, "iMac10,1"),
++		},
++	},
+ 	{ }
+ };
  
- 		if ((skb->len) - ((size + 1) & 0xfffe) == 0) {
--			u8 alignment = (u32)skb->data & 0x3;
-+			u8 alignment = (unsigned long)skb->data & 0x3;
- 			if (alignment != 0x2) {
- 				/*
- 				 * not 16bit aligned so use the room provided by
 -- 
-1.7.0.4
+1.7.1.rc1.21.gf3bd6
 
