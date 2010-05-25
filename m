@@ -1,40 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932331Ab0EYJV5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:21:57 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:56301 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756527Ab0EYJVz (ORCPT
+	id S932358Ab0EYJ2Y (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:28:24 -0400
+Received: from casper.infradead.org ([85.118.1.10]:54812 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756360Ab0EYJ2X convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:21:55 -0400
-Date: Tue, 25 May 2010 05:21:55 -0400
-From: Christoph Hellwig <hch@infradead.org>
-To: Steven Whitehouse <swhiteho@redhat.com>
-Cc: cluster-devel@redhat.com, linux-kernel@vger.kernel.org
-Subject: Re: [Cluster-devel] [PATCH 1/3] GFS2: Rework reclaiming unlinked
-	dinodes
-Message-ID: <20100525092155.GA9575@infradead.org>
-References: <1274775689-4689-1-git-send-email-swhiteho@redhat.com> <1274775689-4689-2-git-send-email-swhiteho@redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274775689-4689-2-git-send-email-swhiteho@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
-X-SRS-Rewrite: SMTP reverse-path rewritten from <hch@infradead.org> by bombadil.infradead.org
-	See http://www.infradead.org/rpr.html
+	Tue, 25 May 2010 05:28:23 -0400
+Subject: Re: [PATCH 00/11] V4: rwsem changes + down_read_critical() proposal
+From: Peter Zijlstra <peterz@infradead.org>
+To: Michel Lespinasse <walken@google.com>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       David Howells <dhowells@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Waychison <mikew@google.com>,
+       Suleiman Souhlal <suleiman@google.com>, Ying Han <yinghan@google.com>
+In-Reply-To: <AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com>
+References: <1274733081-4623-1-git-send-email-walken@google.com>
+	 <1274777239.5882.581.camel@twins>
+	 <AANLkTikbeXjmRW4gqiy1Ss-Suce5gIM4xJ5o9Z81ZTQX@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 11:27:55 +0200
+Message-ID: <1274779675.5882.684.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 09:21:27AM +0100, Steven Whitehouse wrote:
-> From: Bob Peterson <rpeterso@redhat.com>
+On Tue, 2010-05-25 at 02:12 -0700, Michel Lespinasse wrote:
+> On Tue, May 25, 2010 at 1:47 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > So what happened to those patches that dropped mmap_sem during I/O?
 > 
-> The previous patch I wrote for reclaiming unlinked dinodes
-> had some shortcomings and did not prevent all hangs.
-> This version is much cleaner and more logical, and has
-> passed very difficult testing.  Sorry for the churn.
+> Yes, we do have patches trying to release the mmap_sem when a page
+> fault for a file backed VMA blocks on accessing the corresponding
+> file. We have not given up on these, and we intend to try submitting
+> them again. However, these patches do *not* address the case of a page
+> fault blocking while trying to get a free page (i.e. when you get
+> under high memory pressure).
 
-It would be much more helpful to have a commit message that describes
-what is changed and why.  The above one won't tell anyting to someone
-reading through the commit log later on.
+But I guess they could, right? Simply make the allocation under mmap_sem
+be __GFP_HARDWALL|__GFP_HIGHMEM|__GFP_MOVABLE__GFP_NOWARN or
+(GFP_HUGHUSER_MOVABLE & ~(__GFP_WAIT|__GFP_IO|__GFP_FS))|__GFP_NOWARN
 
+and drop the mmap_sem when that fails.
+
+> > I really don't like people tinkering with the lock implementations like
+> > this. Nor do I like the naming, stats are in no way _critical_.
+> 
+> Critical here refers to the fact that you're not allowed to block
+> while holding the unfairly acquired rwsem.
+
+We usually call that atomic, your 0/n patch didn't explain any of that.
+
+Also, do you really think doing something like:
+
+        /*
+         * Check the vma index is within the range and do
+         * sequential scan until m_index.
+         */
+        vma = NULL;
+        if ((unsigned long)l < mm->map_count) {
+                vma = mm->mmap;
+                while (l-- && vma)
+                        vma = vma->vm_next;
+                goto out;
+        }
+
+with preemption disabled is a _good_ thing?
+
+People were talking about raising our vma limit of 64k...
