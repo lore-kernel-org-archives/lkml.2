@@ -1,54 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933381Ab0EYRZb (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:25:31 -0400
-Received: from bosmailout11.eigbox.net ([66.96.190.11]:46558 "EHLO
-	bosmailout11.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932458Ab0EYRZ3 (ORCPT
+	id S933361Ab0EYR1l (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:27:41 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:57531 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab0EYR1j (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:25:29 -0400
-X-Greylist: delayed 1895 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 13:25:29 EDT
-X-EN-OrigOutIP: 10.20.18.5
-X-EN-IMPSID: Mstn1e00206Zqne01stndJ
-Message-ID: <4BFC0070.9010408@jaysonking.com>
-Date: Tue, 25 May 2010 11:53:04 -0500
-From: "Jayson R. King" <dev@jaysonking.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Thunderbird/3.0.3
+	Tue, 25 May 2010 13:27:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:subject:date:user-agent:cc:references:in-reply-to
+         :mime-version:content-type:content-transfer-encoding:message-id;
+        b=xHHoVBZyFhzlSgP0Vq14ga1dUZz4y1R/zcsE9z2veSQr2ZE8Z6w2XArVDVrFVO6a8K
+         hLz/+kjqrgcok+2usQirBZ0zFJtvAgBnUomLoOtVDLEunHuvwXBuXDutUoYaHRW0Rwfh
+         kWMdt6ETBthy6qGRBsrZsce9yKrJ+FX9VRExs=
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Abhijeet Kolekar <abhijeet.kolekar@intel.com>
+Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
+Date: Tue, 25 May 2010 10:27:31 -0700
+User-Agent: KMail/1.13.2 (Linux/2.6.32.12-115.fc12.x86_64; KDE/4.4.2; x86_64; ; )
+Cc: Johannes Berg <johannes@sipsolutions.net>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>
+References: <20100525163920.GA2730@core.coreip.homeip.net> <1274806916.18861.0.camel@jlt3.sipsolutions.net> <1274807302.7494.1.camel@abhi-desktop>
+In-Reply-To: <1274807302.7494.1.camel@abhi-desktop>
 MIME-Version: 1.0
-To: Christoph Hellwig <hch@infradead.org>
-CC: Greg KH <gregkh@suse.de>, linux-kernel@vger.kernel.org, stable@kernel.org,
-       stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Theodore Tso <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
-References: <20100524223544.GA13721@kroah.com> <20100524223016.208581966@clark.site> <20100525111208.GA8779@infradead.org>
-In-Reply-To: <20100525111208.GA8779@infradead.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: Text/Plain;
+  charset="utf-8"
 Content-Transfer-Encoding: 7bit
-X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
-X-EN-AuthUser: jaysonking@jaysonking.com
-X-EN-OrigIP: 68.93.139.172
-X-EN-OrigHost: unknown
+Message-Id: <201005251027.32778.dmitry.torokhov@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2010 06:12 AM, Christoph Hellwig wrote:
-> On Mon, May 24, 2010 at 03:28:06PM -0700, Greg KH wrote:
->> 2.6.27-stable review patch.  If anyone has any objections, please let us know.
+On Tuesday 25 May 2010 10:08:22 am Abhijeet Kolekar wrote:
+> On Tue, 2010-05-25 at 10:01 -0700, Johannes Berg wrote:
+> > On Tue, 2010-05-25 at 09:39 -0700, Dmitry Torokhov wrote:
+> > > Hi,
+> > > 
+> > > I am getting the following crashers in iwl3945 after updating to
+> > > post-2.6.34 kernels. This is with the pull from Linus's tree as of last
+> > > night (the taint is from nvidia module):
+> > > 
+> > > [ 3330.630734] general protection fault: 0000 [#1] PREEMPT SMP
+> > > [ 3330.630752] last sysfs file: /sys/devices/platform/dock.0/docked
+> > > [ 3330.630761] CPU 0
+> > > [ 3330.630766] Modules linked in: cryptd aes_x86_64 aes_generic fuse
+> > > rfcomm sco bnep l2cap autofs4 coretemp hwmon sunrpc ppdev parport_pc
+> > > parport acpi_cpufreq mperf uinput nvidia(P) snd_hda_codec_idt arc4
+> > > snd_hda_intel ecb snd_hda_codec snd_hwdep iwl3945 joydev snd_seq
+> > > snd_seq_device snd_pcm iwlcore mac80211 snd_timer cfg80211 snd psmouse
+> > > iTCO_wdt dell_wmi iTCO_vendor_support serio_raw tg3 battery
+> > > dell_laptop dcdbas soundcore snd_page_alloc btusb bluetooth video
+> > > pcspkr mac_hid ac wmi libphy firewire_ohci i2c_i801 firewire_core
+> > > yenta_socket crc_itu_t ohci_hcd [last unloaded: microcode] [
+> > > 3330.630950]
+> > > [ 3330.630958] Pid: 455, comm: iwl3945 Tainted: P            2.6.35-rc0
+> > > #293 0WM416/Latitude D630 [ 3330.630967] RIP:
+> > > 0010:[<ffffffffa01e70d3>]  [<ffffffffa01e70d3>]
+> > > iwl3945_get_channels_for_scan+0xe3/0x460 [iwl3945]
+> > 
+> > http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2208
 > 
-> NACK.  This has been shown to cause severe writeback regression for
-> other filesystems and is beeing reverted in mianline.
+> Can you please try this patch and report your findings?
+> 
+> http://bugzilla.intellinuxwireless.org/attachment.cgi?id=2447
+> 
 
-It can't be reverted directly (you'll get a build failure) since the
-next ext4 patch in this -stable series depends on it.
+Thanks, will try both this patch and the one John mention. Later tonight
+though.
 
-There's a commit from Ted Ts'o in the ext4 git, "ext4: Use our own
-write_cache_pages()", which removes the dependency, but that patch is
-not yet in mainline so isn't a -stable candidate. When/if that patch
-hits mainline, it can be added to -stable and this patch dropped/reverted.
-
-Jayson
+-- 
+Dmitry
