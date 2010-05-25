@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932635Ab0EYSRV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:17:21 -0400
-Received: from kroah.org ([198.145.64.141]:44303 "EHLO coco.kroah.org"
+	id S932977Ab0EYSRX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:17:23 -0400
+Received: from kroah.org ([198.145.64.141]:44313 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932192Ab0EYSRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:17:19 -0400
+	id S932620Ab0EYSRV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:21 -0400
 X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:12 2010
-Message-Id: <20100525181212.204460185@clark.site>
+Message-Id: <20100525181212.388455050@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Tue, 25 May 2010 11:08:59 -0700
+Date: Tue, 25 May 2010 11:09:01 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
-Subject: [01/25] ALSA: mixart: range checking proc file
+       "Theodore Tso" <tytso@mit.edu>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Mingming Cao <cmm@us.ibm.com>, "Jayson R. King" <dev@jaysonking.com>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>
+Subject: [03/25] percpu counter: clean up percpu_counter_sum_and_set()
 In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,69 +28,101 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
 
-commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
+From: Mingming Cao <cmm@us.ibm.com>
 
-The original code doesn't take into consideration that the value of
-MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
-unsigned value for "count".
+commit 1f7c14c62ce63805f9574664a6c6de3633d4a354 upstream.
 
-Also I moved the check that read size is a multiple of 4 bytes below
-the code that adjusts "count".
+percpu_counter_sum_and_set() and percpu_counter_sum() is the same except
+the former updates the global counter after accounting.  Since we are
+taking the fbc->lock to calculate the precise value of the counter in
+percpu_counter_sum() anyway, it should simply set fbc->count too, as the
+percpu_counter_sum_and_set() does.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
-Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
-Signed-off-by: Takashi Iwai <tiwai@suse.de>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+This patch merges these two interfaces into one.
+
+Signed-off-by: Mingming Cao <cmm@us.ibm.com>
+Acked-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
+Cc: <linux-ext4@vger.kernel.org>
+Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 
 ---
- sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
- 1 file changed, 14 insertions(+), 10 deletions(-)
+ fs/ext4/balloc.c               |    2 +-
+ include/linux/percpu_counter.h |   12 +++---------
+ lib/percpu_counter.c           |    8 +++-----
+ 3 files changed, 7 insertions(+), 15 deletions(-)
 
---- a/sound/pci/mixart/mixart.c
-+++ b/sound/pci/mixart/mixart.c
-@@ -1160,13 +1160,15 @@ static long snd_mixart_BA0_read(struct s
- 				unsigned long count, unsigned long pos)
- {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -1778,7 +1778,7 @@ ext4_fsblk_t ext4_has_free_blocks(struct
+ #ifdef CONFIG_SMP
+ 	if (free_blocks - root_blocks < FBC_BATCH)
+ 		free_blocks =
+-			percpu_counter_sum_and_set(&sbi->s_freeblocks_counter);
++			percpu_counter_sum(&sbi->s_freeblocks_counter);
+ #endif
+ 	if (free_blocks <= root_blocks)
+ 		/* we don't have free space */
+--- a/include/linux/percpu_counter.h
++++ b/include/linux/percpu_counter.h
+@@ -35,7 +35,7 @@ int percpu_counter_init_irq(struct percp
+ void percpu_counter_destroy(struct percpu_counter *fbc);
+ void percpu_counter_set(struct percpu_counter *fbc, s64 amount);
+ void __percpu_counter_add(struct percpu_counter *fbc, s64 amount, s32 batch);
+-s64 __percpu_counter_sum(struct percpu_counter *fbc, int set);
++s64 __percpu_counter_sum(struct percpu_counter *fbc);
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos >= MIXART_BA0_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA0_SIZE)
--		count = (long)(MIXART_BA0_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
-+	maxsize = MIXART_BA0_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
- }
-@@ -1179,13 +1181,15 @@ static long snd_mixart_BA1_read(struct s
- 				unsigned long count, unsigned long pos)
+ static inline void percpu_counter_add(struct percpu_counter *fbc, s64 amount)
  {
- 	struct mixart_mgr *mgr = entry->private_data;
-+	unsigned long maxsize;
+@@ -44,19 +44,13 @@ static inline void percpu_counter_add(st
  
--	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
--	if(count <= 0)
-+	if (pos > MIXART_BA1_SIZE)
- 		return 0;
--	if(pos + count > MIXART_BA1_SIZE)
--		count = (long)(MIXART_BA1_SIZE - pos);
--	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
-+	maxsize = MIXART_BA1_SIZE - pos;
-+	if (count > maxsize)
-+		count = maxsize;
-+	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
-+	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
- 		return -EFAULT;
- 	return count;
+ static inline s64 percpu_counter_sum_positive(struct percpu_counter *fbc)
+ {
+-	s64 ret = __percpu_counter_sum(fbc, 0);
++	s64 ret = __percpu_counter_sum(fbc);
+ 	return ret < 0 ? 0 : ret;
  }
+ 
+-static inline s64 percpu_counter_sum_and_set(struct percpu_counter *fbc)
+-{
+-	return __percpu_counter_sum(fbc, 1);
+-}
+-
+-
+ static inline s64 percpu_counter_sum(struct percpu_counter *fbc)
+ {
+-	return __percpu_counter_sum(fbc, 0);
++	return __percpu_counter_sum(fbc);
+ }
+ 
+ static inline s64 percpu_counter_read(struct percpu_counter *fbc)
+--- a/lib/percpu_counter.c
++++ b/lib/percpu_counter.c
+@@ -52,7 +52,7 @@ EXPORT_SYMBOL(__percpu_counter_add);
+  * Add up all the per-cpu counts, return the result.  This is a more accurate
+  * but much slower version of percpu_counter_read_positive()
+  */
+-s64 __percpu_counter_sum(struct percpu_counter *fbc, int set)
++s64 __percpu_counter_sum(struct percpu_counter *fbc)
+ {
+ 	s64 ret;
+ 	int cpu;
+@@ -62,11 +62,9 @@ s64 __percpu_counter_sum(struct percpu_c
+ 	for_each_online_cpu(cpu) {
+ 		s32 *pcount = per_cpu_ptr(fbc->counters, cpu);
+ 		ret += *pcount;
+-		if (set)
+-			*pcount = 0;
++		*pcount = 0;
+ 	}
+-	if (set)
+-		fbc->count = ret;
++	fbc->count = ret;
+ 
+ 	spin_unlock(&fbc->lock);
+ 	return ret;
 
 
