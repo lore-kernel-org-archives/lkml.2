@@ -1,66 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754523Ab0EYPrS (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:47:18 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:36461 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751208Ab0EYPrR (ORCPT
+	id S1754317Ab0EYPvA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:51:00 -0400
+Received: from rcsinet11.oracle.com ([148.87.113.123]:57340 "EHLO
+	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751873Ab0EYPu7 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:47:17 -0400
-From: Will Drewry <wad@chromium.org>
-To: linux-kernel@vger.kernel.org
-Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@suse.de>,
-       Tejun Heo <tj@kernel.org>, Scott James Remnant <scott@ubuntu.com>,
-       Vegard Nossum <vegard.nossum@gmail.com>,
-       Harald Hoyer <harald@redhat.com>,
-       Christoph Lameter <cl@linux-foundation.org>, agk@redhat.com,
-       snitzer@redhat.com, Will Drewry <wad@chromium.org>
-Subject: [PATCH 1/2] init: make the path argument a const in name_to_dev_t
-Date: Tue, 25 May 2010 10:46:50 -0500
-Message-Id: <1274802411-26613-1-git-send-email-wad@chromium.org>
-X-Mailer: git-send-email 1.7.0.4
+	Tue, 25 May 2010 11:50:59 -0400
+Date: Tue, 25 May 2010 08:49:59 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>,
+       linux-pm@lists.linux-foundation.org
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>
+Subject: Re: linux-next: Tree for May 25 (kernel/power, SUSPEND=n)
+Message-Id: <20100525084959.4ff9e924.randy.dunlap@oracle.com>
+In-Reply-To: <20100525142657.c2ae7804.sfr@canb.auug.org.au>
+References: <20100525142657.c2ae7804.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Source-IP: acsmt355.oracle.com [141.146.40.155]
+X-Auth-Type: Internal IP
+X-CT-RefId: str=0001.0A0B0203.4BFBF1B4.0316:SCFMA4539814,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-name_to_dev_t takes a char * argument which it never modifies.  This
-change converts it to a const char *.
+On Tue, 25 May 2010 14:26:57 +1000 Stephen Rothwell wrote:
 
-(This is useful with the second patch in the series which exports the
-symbol.  External consumers of the function will now be able to pass in
-a const char * without duping or casting away const-ness.)
+> Hi all,
+> 
+> We are in the merge window again.  I remind you all not to add stuff for
+> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
 
-Signed-off-by: Will Drewry <wad@chromium.org>
+
+when CONFIG_SUSPEND=n, CONFIG_OPPORTUNISTIC_SUSPEND=n, CONFIG_PM=y:
+
+kernel/power/main.c:66: error: 'pm_states' undeclared (first use in this function)
+
+
 ---
- include/linux/mount.h |    2 +-
- init/do_mounts.c |    2 +-
- 2 files changed, 2 insertions(+), 2 deletions(-)
-
-diff --git a/include/linux/mount.h b/include/linux/mount.h
-index 4bd0547..ad819a0 100644
---- a/include/linux/mount.h
-+++ b/include/linux/mount.h
-@@ -134,6 +134,6 @@ extern int do_add_mount(struct vfsmount *newmnt, struct path *path,
- 
- extern void mark_mounts_for_expiry(struct list_head *mounts);
- 
--extern dev_t name_to_dev_t(char *name);
-+extern dev_t name_to_dev_t(const char *name);
- 
- #endif /* _LINUX_MOUNT_H */
-diff --git a/init/do_mounts.c b/init/do_mounts.c
-index 0848a5b..a322b13 100644
---- a/init/do_mounts.c
-+++ b/init/do_mounts.c
-@@ -75,7 +75,7 @@ __setup("rw", readwrite);
-  *	bangs.
-  */
- 
--dev_t name_to_dev_t(char *name)
-+dev_t name_to_dev_t(const char *name)
- {
- 	char s[32];
- 	char *p;
--- 
-1.7.0.4
-
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
