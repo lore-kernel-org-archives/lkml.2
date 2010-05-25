@@ -1,127 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932245Ab0EYWhw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:37:52 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:40079 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758817Ab0EYWht convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:37:49 -0400
-MIME-Version: 1.0
-In-Reply-To: <20100525223220.GC4928@core.coreip.homeip.net>
-References: <201005251124.58017.dmitry.torokhov@gmail.com>
-	 <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
-	 <20100525184740.GA4248@core.coreip.homeip.net>
-	 <AANLkTik7eKNIqMFGVl6OzpqBnhvjet9puUQDCRkrabkg@mail.gmail.com>
-	 <20100525223220.GC4928@core.coreip.homeip.net>
-Date: Tue, 25 May 2010 15:37:48 -0700
-Message-ID: <AANLkTinnSH_egFYowkOQiYHL87QfIH332i1__OaTem-s@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	id S1759057Ab0EYWjX (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:39:23 -0400
+Received: from xenotime.net ([72.52.115.56]:37619 "HELO xenotime.net"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1750800Ab0EYWjV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:39:21 -0400
+Date: Tue, 25 May 2010 15:39:12 -0700
+From: Randy Dunlap <rdunlap@xenotime.net>
+To: Greg Kroah-Hartman <gregkh@suse.de>
+Cc: linux-kernel@vger.kernel.org, Kay Sievers <kay.sievers@vrfy.org>,
+       "David S. Miller" <davem@davemloft.net>,
+       Miklos Szeredi <miklos@szeredi.hu>,
+       Chris Mason <chris.mason@oracle.com>,
+       Alasdair G Kergon <agk@redhat.com>,
+       Tigran Aivazian <tigran@aivazian.fsnet.co.uk>,
+       Ian Kent <raven@themaw.net>
+Subject: Re: [PATCH 1/1] driver core: add devname module aliases to allow
+ module on-demand auto-loading
+Message-Id: <20100525153912.0ba10435.rdunlap@xenotime.net>
+In-Reply-To: <1274825798-29613-1-git-send-email-gregkh@suse.de>
+References: <20100525221546.GA29511@kroah.com>
+	<1274825798-29613-1-git-send-email-gregkh@suse.de>
+Organization: YPO4
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/25 Dmitry Torokhov <dmitry.torokhov@gmail.com>:
-> On Tue, May 25, 2010 at 03:23:23PM -0700, Arve Hjønnevåg wrote:
->> On Tue, May 25, 2010 at 11:47 AM, Dmitry Torokhov
->> <dmitry.torokhov@gmail.com> wrote:
->> > On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
->> >> On Tue, 25 May 2010, Dmitry Torokhov wrote:
->> >>
->> >> > > Here's the scenario:
->> >> > >
->> >> > > The system is awake, and the user presses a key. The keyboard driver
->> >> > > processes the keystroke and puts it in an input queue.  A user process
->> >> > > reads it from the event queue, thereby emptying the queue.
->> >> > >
->> >> > > At that moment, the system decides to go into opportunistic suspend.
->> >> > > Since the input queue is empty, there's nothing to stop it.  As the
->> >> > > first step, userspace is frozen -- before the process has a chance to
->> >> > > do anything with the keystroke it just read.  As a result, the system
->> >> > > stays asleep until something else wakes it up, even though the
->> >> > > keystroke was important and should have prevented it from sleeping.
->> >> > >
->> >> > > Suspend blockers protect against this scenario.  Here's how:
->> >> > >
->> >> > > The user process doesn't read the input queue directly; instead it
->> >> > > does a select or poll.  When it sees there is data in the queue, it
->> >> > > first acquires a suspend blocker and then reads the data.
->> >> > >
->> >> > > Now the system _can't_ go into opportunistic suspend, because a suspend
->> >> > > blocker is active.  The user process can do whatever it wants with the
->> >> > > keystroke.  When it is finished, it releases the suspend blocker and
->> >> > > loops back to the select/poll call.
->> >> > >
->> >> >
->> >> > What you describe can be done in userspace though, via a "suspend manager"
->> >> > process. Tasks reading input events will post "busy" events to stop the
->> >> > manager process from sending system into suspend. But this can be confined to
->> >> > Android userspace, leaving the kernel as is (well, kernel needs to be modified
->> >> > to not go into suspend with full queues, but that is using existing kernel
->> >> > APIs).
->> >>
->> >> I think that could be made to work.  And it might remove the need for
->> >> the userspace suspend-blocker API, which would be an advantage.  It
->> >> could even remove the need for the opportunistic-suspend workqueue --
->> >> opportunistic suspends would be initiated by the "suspend manager"
->> >> process instead of by the kernel.
->> >>
->> >> However you still have the issue of modifying the kernel drivers to
->> >> disallow opportunistic suspend if their queues are non-empty.  Doing
->> >> that is more or less equivalent to implementing kernel-level suspend
->> >> blockers.  (The suspend blocker approach is slightly more efficient,
->> >> because it will prevent a suspend from starting if a queue is
->> >> non-empty, instead of allowing the suspend to start and then aborting
->> >> it partway through.)
->> >>
->> >> Maybe I'm missing something here...  No doubt someone will point it out
->> >> if I am.
->> >>
->> >
->> > Well, from my perspective that would limit changes to the evdev driver
->> > (well, limited input core plumbing will be needed) but that is using the
->> > current PM infrastructure. The HW driver changes will be limited to what
->> > you described "type 2" in your other e-mail.
->> >
->> > Also, not suspending while events are in progress) is probably
->> > beneficial for platforms other than Android as well. So unless I am
->> > missing something this sounds like a win.
->> >
->>
->> How would this limit the changes you need in the evdev driver? It need
->> to block suspend when there are unprocessed events in some queues.
->> Suspend blockers gives you an api to do this, without it, you check
->> the queues in your suspend hook and abort suspend if they are not
->> empty. Without suspend blockers you have no api to signal that it is
->> OK to suspend again, so you are forcing the thread that tried to
->> suspend to poll until you stop aborting suspend.
->
-> No, you do not need to poll. You just set a timeout (short or long,
-> depending on your needs) and if no userspace task blocked suspend
-> durng that time you attempt to initiate suspend from your manager
-> process. If it succeeds - good, if not that means that more events came
-> your way and you have to do it later.
->
+On Tue, 25 May 2010 15:16:38 -0700 Greg Kroah-Hartman wrote:
 
-How is that not polling? If the user is holding down a key, the keypad
-driver has to block suspend, and user space will try to suspend again
-and again and again...
+> From: Kay Sievers <kay.sievers@vrfy.org>
+> 
+> This adds:
+>   alias: devname:<name>
+> to some common kernel modules, which will allow the on-demand loading
+> of the kernel module when the device node is accessed.
+> 
+> Ideally all these modules would be compiled-in, but distros seems too
+> much in love with their modularization that we need to cover the common
+> cases with this new facility. It will allow us to remove a bunch of pretty
+> useless init scripts and modprobes from init scripts.
 
--- 
-Arve Hjønnevåg
+[snip]
+
+
+I have no objection to this patch or to it being merged.
+
+I just note that this patch was posted to lkml on 2010-May-20.
+
+If it causes any problems, it can easily be reverted.
+
+I think that some (other, non-gregkh and non-davem) maintainers take far too long
+to merge some patches.  Maybe it's just a merge window thing.
+
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
