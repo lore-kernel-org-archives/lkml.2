@@ -1,85 +1,86 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932265Ab0EYBgM (ORCPT <rfc822;w@1wt.eu>);
-	Mon, 24 May 2010 21:36:12 -0400
-Received: from mga02.intel.com ([134.134.136.20]:5365 "EHLO mga02.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754449Ab0EYBgI convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Mon, 24 May 2010 21:36:08 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,295,1272870000"; 
-   d="scan'208";a="624473109"
-From: "Guo, Chaohong" <chaohong.guo@intel.com>
-To: Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-CC: minskey guo <chaohong_guo@linux.intel.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Stephen Rothwell <sfr@canb.auug.org.au>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       "linux-mm@kvack.org" <linux-mm@kvack.org>,
-       "prarit@redhat.com" <prarit@redhat.com>,
-       "Kleen, Andi" <andi.kleen@intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       Tejun Heo <tj@kernel.org>, "stable@kernel.org" <stable@kernel.org>
-Date: Tue, 25 May 2010 09:35:27 +0800
-Subject: RE: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
-Thread-Topic: [PATCH] online CPU before memory failed in pcpu_alloc_pages()
-Thread-Index: Acr7UbqOyEfMae2JShm+TTsj96xhgAAWJ/WA
-Message-ID: <CF2F38D4AE21BB4CB845318E4C5ECB671E790AF3@shsmsx501.ccr.corp.intel.com>
-References: <1274163442-7081-1-git-send-email-chaohong_guo@linux.intel.com>
-	 <20100520134359.fdfb397e.akpm@linux-foundation.org>
-	 <20100521105512.0c2cf254.sfr@canb.auug.org.au>
-	 <20100521134424.45e0ee36.kamezawa.hiroyu@jp.fujitsu.com>
-	 <4BF642BB.2020402@linux.intel.com>
-	 <20100521173940.8f130205.kamezawa.hiroyu@jp.fujitsu.com>
-	 <4BF64E79.4010401@linux.intel.com>
-	 <1274448107.9131.87.camel@useless.americas.hpqcorp.net>
-	 <CF2F38D4AE21BB4CB845318E4C5ECB671E790500@shsmsx501.ccr.corp.intel.com>
- <1274713162.13756.209.camel@useless.americas.hpqcorp.net>
-In-Reply-To: <1274713162.13756.209.camel@useless.americas.hpqcorp.net>
-Accept-Language: zh-CN, en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: zh-CN, en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	id S1758746Ab0EYBja (ORCPT <rfc822;w@1wt.eu>);
+	Mon, 24 May 2010 21:39:30 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:55538 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1758038Ab0EYBj3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Mon, 24 May 2010 21:39:29 -0400
+Message-ID: <4BFB29DB.10507@cn.fujitsu.com>
+Date: Tue, 25 May 2010 09:37:31 +0800
+From: Gui Jianfeng <guijianfeng@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
+To: Vivek Goyal <vgoyal@redhat.com>
+CC: Jens Axboe <jens.axboe@oracle.com>,
+       linux kernel mailing list <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH 0/4] io-controller: Add new interfaces to trace	backlogged
+ group status
+References: <4BF64712.1070500@cn.fujitsu.com> <20100521131751.GA15302@redhat.com> <4BF9D265.70008@cn.fujitsu.com> <20100524212207.GC28685@redhat.com>
+In-Reply-To: <20100524212207.GC28685@redhat.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
+Vivek Goyal wrote:
+> On Mon, May 24, 2010 at 09:12:05AM +0800, Gui Jianfeng wrote:
+>> Vivek Goyal wrote:
+>>> On Fri, May 21, 2010 at 04:40:50PM +0800, Gui Jianfeng wrote:
+>>>> Hi,
+>>>>
+>>>> This series implements three new interfaces to keep track of tranferred bytes,
+>>>> elapsing time and io rate since group getting backlogged. If the group dequeues
+>>>> from service tree, these three interfaces will reset and shows zero.
+>>> Hi Gui,
+>>>
+>>> Can you give some details regarding how this functionality is useful? Why
+>>> would somebody be interested in only in stats of till group was
+>>> backlogged and not in total stats?
+>>>
+>>> Groups can come and go so fast and these stats will reset so many times
+>>> that I am not able to visualize how these stats will be useful.
+>> Hi Vivek,
 >>
->>  But currently, I don't
->> >think you can use the numa_mem_id()/cpu_to_mem() interfaces for your
->> >purpose.  I suppose you could change page_alloc.c to compile
->> >local_memory_node() #if defined(CONFIG_HAVE_MEMORYLESS_NODES) ||
->> >defined
->> >(CPU_HOTPLUG) and use that function to find the nearest memory.  It
->> >should return a valid node after zonelists have been rebuilt.
->> >
->> >Does that make sense?
->>
->> Yes, besides,  I need to find a place in hotplug path to call set_numa_mem()
->> just as you mentioned for ia64 platform.  Is my understanding right ?
->
->I don't think you can use any of the "numa_mem" functions on x86[_64]
->without doing a lot more work to expose memoryless nodes.  On x86_64,
->numa_mem_id() and cpu_to_mem() always return the same as numa_node_id()
->and cpu_to_node().  This is because x86_64 code hides memoryless nodes
->and reassigns all cpus to nodes with memory.  Are you planning on
->changing this such that memoryless nodes remain on-line with their cpus
->associated with them?  If so, go for it!   If not, then you don't need
->to [can't really, I think] use set_numa_mem()/cpu_to_mem() for your
->purposes.  That's why I suggested you arrange for local_memory_node() to
->be compiled for CPU_HOTPLUG and call that function directly to obtain a
->nearby node from which you can allocate memory during cpu hot plug.  Or,
->I could just completely misunderstand what you propose to do with these
->percpu variables.
+>> Currently, we assign weight to a group, but user still doesn't know how fast the
+>> group runs. With io rate interface, users can check the rate of a group at any
+>> moment, or to determine whether the weight assigned to a group is enough.
+>> bytes and time interface is just for debug purpose.
+> 
+> Gui,
+> 
+> I still don't understand that why blkio.sectors or blkio.io_service_bytes
+> or blkio.io_serviced interfaces are not good enough to determine at what
+> rate a group is doing IO.
+> 
+> I think we can very well write something in userspace like "iostat" to 
+> display the per group rate. Utility can read the any of the above files
+> say at the interfval of 1s, calculate the diff between the values and
+> display that as group effective rate.
 
-Got it, thank you very much for detailed explanation.
+Hi Vivek,
+
+blkio.io_active_rate reflects the rate since group get backlogged, so the rate is a smooth 
+value. This value represents the actual rate a group runs. IMO, io rate calculated from
+user space is not accurate in following two scenarios:
+
+1 Userspace app chooses the interval of 1s, if 0.5s is backlogged and 0.5s is not, the 
+  rate calculated in this interval doesn't make sense.
+
+2 Consider there're several groups are waiting for service, but most part of the interval
+  is just fall into the period that the group is under-service. such rate calculated by user
+  app isn't acurate, rate burst might occur.
+
+Further more, once max weight control is available, we can make use of such interface to realize
+how well this group works.
+
+Thanks,
+Gui
 
 
--minskey
+> 
+> Thanks
+> Vivek
+> 
+> 
