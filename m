@@ -1,75 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758780Ab0EYTuh (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 15:50:37 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:49991 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758519Ab0EYTug convert rfc822-to-8bit (ORCPT
+	id S1758806Ab0EYTv4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 15:51:56 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:20974 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab0EYTvy (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 15:50:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=CILGFJ6sNOq36aawG8XB0itFL/8HhdvpSyTdgZr5SRXs6qAN3fg3U/qZ7T6WpWPfiT
-         sSzuOdvf0u+9Lrl2oz09WvWVFFs47XOcR8wfuAfLbexBOsPe0ZEr5HAgNCgk80k4L6hE
-         yyIrDztmvRId4MPgxKfxARqTF0wZub7BXFx9U=
+	Tue, 25 May 2010 15:51:54 -0400
+Message-ID: <4BFC29C3.1080005@oracle.com>
+Date: Tue, 25 May 2010 12:49:23 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+Organization: Oracle Linux Engineering
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
 MIME-Version: 1.0
-In-Reply-To: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
-References: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
-Date: Tue, 25 May 2010 21:50:34 +0200
-X-Google-Sender-Auth: 1g92tJrcRk489jC6K_P2oetLHBk
-Message-ID: <AANLkTimH-p5muib3-3sPWySFpQN7eLXf9KsCb_f0r9gw@mail.gmail.com>
-Subject: Re: [PATCH] FLAT: allow arches to declare a larger alignment than the 
-	slab
-From: Geert Uytterhoeven <geert@linux-m68k.org>
-To: Mike Frysinger <vapier@gentoo.org>
-Cc: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
-       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       microblaze-uclinux@itee.uq.edu.au, Michal Simek <monstr@monstr.eu>,
-       linux-m32r@ml.linux-m32r.org, Hirokazu Takata <takata@linux-m32r.org>,
-       linux-kernel@vger.kernel.org,
-       Yoshinori Sato <ysato@users.sourceforge.jp>,
-       Jie Zhang <jie.zhang@analog.com>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+CC: Stephen Rothwell <sfr@canb.auug.org.au>,
+       linux-pm@lists.linux-foundation.org, linux-next@vger.kernel.org,
+       LKML <linux-kernel@vger.kernel.org>
+Subject: Re: linux-next: Tree for May 25 (kernel/power, SUSPEND=n)
+References: <20100525142657.c2ae7804.sfr@canb.auug.org.au> <20100525084959.4ff9e924.randy.dunlap@oracle.com> <201005252124.52108.rjw@sisk.pl>
+In-Reply-To: <201005252124.52108.rjw@sisk.pl>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BFC2A3C.0142:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 21:24, Mike Frysinger <vapier@gentoo.org> wrote:
-> From: Jie Zhang <jie.zhang@analog.com>
->
-> The recent commit 1f0ce8b3dd667dca7 which moved the ARCH_SLAB_MINALIGN
-> default into the global header inadvertently broke FLAT for a bunch of
-> systems.  Blackfin systems now fail on any FLAT exec with:
-> Unable to read code+data+bss, errno 14
-> When your /init is a FLAT binary, obviously this can be annoying ;).
->
-> This stems from the alignment usage in the FLAT loader.  The behavior
-> before was that FLAT would default to ARCH_SLAB_MINALIGN only if it was
-> defined, and this was only defined by arches when they wanted a larger
-> alignment value.  Otherwise it'd default to pointer alignment.  Arguably,
-                                             ^^^^^^^^^^^^^^^^^
-That would be __alignof__(void *)
+On 05/25/10 12:24, Rafael J. Wysocki wrote:
+> On Tuesday 25 May 2010, Randy Dunlap wrote:
+>> On Tue, 25 May 2010 14:26:57 +1000 Stephen Rothwell wrote:
+>>
+>>> Hi all,
+>>>
+>>> We are in the merge window again.  I remind you all not to add stuff for
+>>> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
+>>
+>>
+>> when CONFIG_SUSPEND=n, CONFIG_OPPORTUNISTIC_SUSPEND=n, CONFIG_PM=y:
+>>
+>> kernel/power/main.c:66: error: 'pm_states' undeclared (first use in this function)
+> 
+> Thanks, the patch below fixes this.
+> 
+> Rafael
+> 
+> ---
+> From: Rafael J. Wysocki <rjw@sisk.pl>
+> Subject: PM: Fix build with CONFIG_SUSPEND unset
+> 
+> If CONFIG_SUSPEND is unset, pm_state_valid() doesn't build because
+> the pm_states[] array is not defined, but pm_state_valid() is only
+> used under #ifdef CONFIG_SUSPEND, so don't try to build it if
+> CONFIG_SUSPEND is unset.
+> 
+> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
 
-> +#elif defined(ARCH_SLAB_MINALIGN)
->  #define FLAT_DATA_ALIGN        (ARCH_SLAB_MINALIGN)
->  #else
->  #define FLAT_DATA_ALIGN        (sizeof(void *))
+Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
 
-Not sizeof(void *)
+Thanks.
 
-Gr{oetje,eeting}s,
 
-						Geert
+> ---
+>  kernel/power/main.c |    2 ++
+>  1 file changed, 2 insertions(+)
+> 
+> Index: linux-2.6/kernel/power/main.c
+> ===================================================================
+> --- linux-2.6.orig/kernel/power/main.c
+> +++ linux-2.6/kernel/power/main.c
+> @@ -61,10 +61,12 @@ static inline int pm_enter_state(int sta
+>  
+>  static inline bool hibernation_supported(void) { return true; }
+>  
+> +#ifdef CONFIG_SUSPEND
+>  static inline bool pm_state_valid(int state_idx)
+>  {
+>  	return pm_states[state_idx] && valid_state(state_idx);
+>  }
+> +#endif /* CONFIG_SUSPEND */
+>  
+>  static inline int pm_enter_state(int state_idx)
+>  {
 
---
-Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
 
-In personal conversations with technical people, I call myself a hacker. But
-when I'm talking to journalists I just say "programmer" or something like that.
-							    -- Linus Torvalds
+-- 
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
