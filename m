@@ -1,39 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932089Ab0EYGF2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 02:05:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:53361 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1752835Ab0EYGF1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 02:05:27 -0400
-Date: Mon, 24 May 2010 23:05:12 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Frantisek Hanzlik <franta@hanzlici.cz>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: fs/fs-writeback oopses in kernel 2.6.33.4-95.fc13.i686.PAE
-Message-Id: <20100524230512.8cc7dfc1.akpm@linux-foundation.org>
-In-Reply-To: <4BFA730C.1010906@hanzlici.cz>
-References: <4BFA730C.1010906@hanzlici.cz>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756297Ab0EYGQr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 02:16:47 -0400
+Received: from mx1.zhaw.ch ([160.85.104.50]:46350 "EHLO mx1.zhaw.ch"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756259Ab0EYGQq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 02:16:46 -0400
+Message-ID: <4BFB6B4B.3020107@zhaw.ch>
+Date: Tue, 25 May 2010 08:16:43 +0200
+From: Tobias Klauser <klto@zhaw.ch>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: nios2-dev@sopc.et.ntust.edu.tw
+CC: netdev@vger.kernel.org, thierry.reding@avionic-design.de,
+       linux-kernel@vger.kernel.org, Dan Carpenter <error27@gmail.com>
+Subject: Re: [Nios2-dev] [PATCH] ethoc: fix null dereference in ethoc_probe
+References: <20100522155455.GE22515@bicker> <1274669042-1901-1-git-send-email-thomas@wytron.com.tw>
+In-Reply-To: <1274669042-1901-1-git-send-email-thomas@wytron.com.tw>
+X-Enigmail-Version: 0.95.7
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-PMX-Version: 5.5.9.395186, Antispam-Engine: 2.7.2.376379, Antispam-Data: 2010.5.25.60617
+X-PerlMx-Spam: Gauge=X, Probability=10%, Report='
+ TO_IN_SUBJECT 0.5, BODY_SIZE_3000_3999 0, BODY_SIZE_5000_LESS 0, BODY_SIZE_7000_LESS 0, TO_NO_NAME 0, __BOUNCE_CHALLENGE_SUBJ 0, __BOUNCE_NDR_SUBJ_EXEMPT 0, __CT 0, __CTE 0, __CT_TEXT_PLAIN 0, __FRAUD_BODY_WEBMAIL 0, __FRAUD_WEBMAIL 0, __HAS_MSGID 0, __MIME_TEXT_ONLY 0, __MIME_VERSION 0, __MOZILLA_MSGID 0, __SANE_MSGID 0, __TO_MALFORMED_2 0, __URI_NO_PATH 0, __URI_NO_WWW 0, __URI_NS , __USER_AGENT 0'
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 May 2010 14:37:32 +0200 Frantisek Hanzlik <franta@hanzlici.cz> wrote:
-
-> Hello,
-> I upgrade from kernel 2.6.33.3 to 2.6.33.4 (2.6.33.4-95.fc13.i686.PAE, 
-> Fedora 13 distro) and now I see several these messages every day in 
-> /var/log/messages:
+On 05/24/2010 04:44 AM, Thomas Chou wrote:
+> Dan reported the patch 0baa080c75c: "ethoc: use system memory
+> as buffer" introduced a potential null dereference.
 > 
-> May 24 14:01:32 ns kernel: ------------[ cut here ]------------
-> May 24 14:01:32 ns kernel: WARNING: at fs/fs-writeback.c:597 
-> writeback_inodes_wb+0x202/0x30e()
+>   1060  free:
+>   1061          if (priv->dma_alloc)
+>                     ^^^^^^^^^^^^^^^
+> 	priv can be null here.
+> 
+> He also suggested that the error handling is not complete.
+> 
+> This patch fixes the null priv issue and improves resources
+> releasing in ethoc_probe() and ethoc_remove().
+> 
+> Reported-by: Dan Carpenter <error27@gmail.com>
+> Signed-off-by: Thomas Chou <thomas@wytron.com.tw>
+> ---
+>  drivers/net/ethoc.c |   34 ++++++++++++++++++++++++++++++----
+>  1 files changed, 30 insertions(+), 4 deletions(-)
+> 
+> diff --git a/drivers/net/ethoc.c b/drivers/net/ethoc.c
+> index a8d9250..fddd5f5 100644
+> --- a/drivers/net/ethoc.c
+> +++ b/drivers/net/ethoc.c
+> @@ -174,6 +174,7 @@ MODULE_PARM_DESC(buffer_size, "DMA buffer allocation size");
+>   * @iobase:	pointer to I/O memory region
+>   * @membase:	pointer to buffer memory region
+>   * @dma_alloc:	dma allocated buffer size
+> + * @io_region_size:	I/O memory region size
+>   * @num_tx:	number of send buffers
+>   * @cur_tx:	last send buffer written
+>   * @dty_tx:	last buffer actually sent
+> @@ -193,6 +194,7 @@ struct ethoc {
+>  	void __iomem *iobase;
+>  	void __iomem *membase;
+>  	int dma_alloc;
+> +	resource_size_t io_region_size;
+>  
+>  	unsigned int num_tx;
+>  	unsigned int cur_tx;
+> @@ -944,6 +946,7 @@ static int ethoc_probe(struct platform_device *pdev)
+>  	priv = netdev_priv(netdev);
+>  	priv->netdev = netdev;
+>  	priv->dma_alloc = 0;
+> +	priv->io_region_size = mmio->end - mmio->start + 1;
 
-I don't see anything which would generate this warning in 2.6.33.4's
-fs/fs-writeback.c:597.  RH must have mucked with it.
+Better use the resource_size inline here.
 
+>  	priv->iobase = devm_ioremap_nocache(&pdev->dev, netdev->base_addr,
+>  			resource_size(mmio));
+                        ^^^
+Then you could use the io_region_size here to avoid calculating the size
+again.
+
+> @@ -1049,20 +1052,34 @@ static int ethoc_probe(struct platform_device *pdev)
+>  	ret = register_netdev(netdev);
+>  	if (ret < 0) {
+>  		dev_err(&netdev->dev, "failed to register interface\n");
+> -		goto error;
+> +		goto error2;
+>  	}
+>  
+>  	goto out;
+>  
+> +error2:
+> +	netif_napi_del(&priv->napi);
+>  error:
+>  	mdiobus_unregister(priv->mdio);
+>  free_mdio:
+>  	kfree(priv->mdio->irq);
+>  	mdiobus_free(priv->mdio);
+>  free:
+> -	if (priv->dma_alloc)
+> -		dma_free_coherent(NULL, priv->dma_alloc, priv->membase,
+> -			netdev->mem_start);
+> +	if (priv) {
+> +		if (priv->dma_alloc)
+> +			dma_free_coherent(NULL, priv->dma_alloc, priv->membase,
+> +					  netdev->mem_start);
+> +		else if (priv->membase)
+> +			devm_iounmap(&pdev->dev, priv->membase);
+> +		if (priv->iobase)
+> +			devm_iounmap(&pdev->dev, priv->iobase);
+> +	}
+> +	if (mem)
+> +		devm_release_mem_region(&pdev->dev, mem->start,
+> +					mem->end - mem->start + 1);
+
+resource_size again
+
+> +	if (mmio)
+> +		devm_release_mem_region(&pdev->dev, mmio->start,
+> +					mmio->end - mmio->start + 1);
+
+ditto
+
+>  	free_netdev(netdev);
+>  out:
+>  	return ret;
+> @@ -1080,6 +1097,7 @@ static int ethoc_remove(struct platform_device *pdev)
+>  	platform_set_drvdata(pdev, NULL);
+>  
+>  	if (netdev) {
+> +		netif_napi_del(&priv->napi);
+>  		phy_disconnect(priv->phy);
+>  		priv->phy = NULL;
+>  
+> @@ -1091,6 +1109,14 @@ static int ethoc_remove(struct platform_device *pdev)
+>  		if (priv->dma_alloc)
+>  			dma_free_coherent(NULL, priv->dma_alloc, priv->membase,
+>  				netdev->mem_start);
+> +		else {
+> +			devm_iounmap(&pdev->dev, priv->membase);
+> +			devm_release_mem_region(&pdev->dev, netdev->mem_start,
+> +				netdev->mem_end - netdev->mem_start + 1);
+> +		}
+> +		devm_iounmap(&pdev->dev, priv->iobase);
+> +		devm_release_mem_region(&pdev->dev, netdev->base_addr,
+> +			priv->io_region_size);
+>  		unregister_netdev(netdev);
+>  		free_netdev(netdev);
+>  	}
