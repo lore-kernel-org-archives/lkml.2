@@ -1,89 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754759Ab0EYHWr (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:22:47 -0400
-Received: from canardo.mork.no ([148.122.252.1]:53580 "EHLO canardo.mork.no"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752835Ab0EYHWo convert rfc822-to-8bit (ORCPT
+	id S1752720Ab0EYHZc (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:25:32 -0400
+Received: from caramon.arm.linux.org.uk ([78.32.30.218]:53635 "EHLO
+	caramon.arm.linux.org.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751067Ab0EYHZb (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:22:44 -0400
-X-Greylist: delayed 640 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 03:22:44 EDT
-From: =?utf-8?Q?Bj=C3=B8rn_Mork?= <bjorn@mork.no>
-To: Greg KH <gregkh@suse.de>
-Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
-       torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, Eric Dumazet <eric.dumazet@gmail.com>,
-       "David S. Miller" <davem@davemloft.net>
-Subject: Re: [01/34] ipv4: udp: fix short packet and bad checksum logging
-Organization: m
-References: <20100524230349.439835687@clark.site>
-Date: Tue, 25 May 2010 09:08:59 +0200
-In-Reply-To: <20100524230349.439835687@clark.site> (Greg KH's message of "Mon,
-	24 May 2010 15:59:33 -0700")
-Message-ID: <87zkzoqwz8.fsf@nemi.mork.no>
-User-Agent: Gnus/5.110011 (No Gnus v0.11) Emacs/23.2 (gnu/linux)
+	Tue, 25 May 2010 03:25:31 -0400
+Date: Tue, 25 May 2010 08:25:08 +0100
+From: Russell King <rmk@arm.linux.org.uk>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       Ben Dooks <ben-linux@fluff.org>,
+       Marek Szyprowski <m.szyprowski@samsung.com>
+Subject: Re: linux-next: build failure (arm tree related)
+Message-ID: <20100525072508.GA7612@flint.arm.linux.org.uk>
+References: <20100525165606.239a0465.sfr@canb.auug.org.au>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8BIT
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100525165606.239a0465.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greg KH <gregkh@suse.de> writes:
+On Tue, May 25, 2010 at 04:56:06PM +1000, Stephen Rothwell wrote:
+> Hi Russell,
+> 
+> Most (all?) of the arm builds are failing for next-20100525:
+> 
+> arch/arm/Kconfig:883: can't open file "arch/arm/plat-s5pc1xx/Kconfig"
+> 
+> I think this may be a bad merge 211cc52a36dedd1e90147af43f6ab5eeb57952ac
+> ("Merge branch 'for-rmk/samsung3' of git://git.fluff.org/bjdooks/linux
+> into devel-stable") which resurrected the include of
+> arch/arm/plat-s5pc1xx/Kconfig after it was removed in commit
+> acc84707d3487735fc666fdeab76185d086428c0 ("ARM: SAMSUNG: move S5PC100
+> support from plat-s5pc1xx to plat-s5p framework").
 
-> 2.6.34-stable review patch.  If anyone has any objections, please let us know.
->
-> ------------------
->
-> From: Bjørn Mork <bjorn@mork.no>
->
-> commit ccc2d97cb7c798e785c9f198de243e2b59f7073b upstream.
+Yea, found that last night but forgot to push the fixed tree out.
 
-This is already in 2.6.34 AFAIK.
-
-
-
-Bjørn
-
-> commit 2783ef23 moved the initialisation of saddr and daddr after
-> pskb_may_pull() to avoid a potential data corruption.  Unfortunately
-> also placing it after the short packet and bad checksum error paths,
-> where these variables are used for logging.  The result is bogus
-> output like
->
-> [92238.389505] UDP: short packet: From 2.0.0.0:65535 23715/178 to 0.0.0.0:65535
->
-> Moving the saddr and daddr initialisation above the error paths, while still
-> keeping it after the pskb_may_pull() to keep the fix from commit 2783ef23.
->
-> Signed-off-by: Bjørn Mork <bjorn@mork.no>
-> Acked-by: Eric Dumazet <eric.dumazet@gmail.com>
-> Signed-off-by: David S. Miller <davem@davemloft.net>
-> Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
->
-> ---
->  net/ipv4/udp.c |    6 +++---
->  1 file changed, 3 insertions(+), 3 deletions(-)
->
-> --- a/net/ipv4/udp.c
-> +++ b/net/ipv4/udp.c
-> @@ -1292,6 +1292,9 @@ int __udp4_lib_rcv(struct sk_buff *skb,
->  
->  	uh   = udp_hdr(skb);
->  	ulen = ntohs(uh->len);
-> +	saddr = ip_hdr(skb)->saddr;
-> +	daddr = ip_hdr(skb)->daddr;
-> +
->  	if (ulen > skb->len)
->  		goto short_packet;
->  
-> @@ -1305,9 +1308,6 @@ int __udp4_lib_rcv(struct sk_buff *skb,
->  	if (udp4_csum_init(skb, uh, proto))
->  		goto csum_error;
->  
-> -	saddr = ip_hdr(skb)->saddr;
-> -	daddr = ip_hdr(skb)->daddr;
-> -
->  	if (rt->rt_flags & (RTCF_BROADCAST|RTCF_MULTICAST))
->  		return __udp4_lib_mcast_deliver(net, skb, uh,
->  				saddr, daddr, udptable);
+-- 
+Russell King
+ Linux kernel    2.6 ARM Linux   - http://www.arm.linux.org.uk/
+ maintainer of:
