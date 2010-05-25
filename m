@@ -1,224 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756285Ab0EYNV6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:21:58 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:24960 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755631Ab0EYNV4 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:21:56 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=message-id:from:date:to:reply-to:cc:subject:x-system-of-record;
-	b=jAOV0BntHPT1SKvv5NlW2FYKyKVTmej7hig46soyTVWcg/MImZWKACGJIah+T/vwX
-	cu+/MPhFR0ZMACZMcacpg==
-Message-ID: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
-From: Stephane Eranian <eranian@google.com>
-Date: Tue, 25 May 2010 15:20:01 +0200
-To: linux-kernel@vger.kernel.org
-Reply-to: eranian@google.com
-Cc: peterz@infradead.org, mingo@elte.hu, paulus@samba.org, davem@davemloft.net,
-       fweisbec@gmail.com, acme@infradead.org, ming.m.lin@intel.com,
-       perfmon2-devel@lists.sf.net, eranian@gmail.com, eranian@google.com
-Subject: [PATCH] perf_events: fix event scheduling issues introduced by transactional API (take 2)
-X-System-Of-Record: true
+	id S1756449Ab0EYNYE (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:24:04 -0400
+Received: from e4.ny.us.ibm.com ([32.97.182.144]:55030 "EHLO e4.ny.us.ibm.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755800Ab0EYNYB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 09:24:01 -0400
+Date: Tue, 25 May 2010 18:53:46 +0530
+From: "Amit K. Arora" <aarora@linux.vnet.ibm.com>
+To: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>
+Cc: tj@kernel.org, Srivatsa Vaddagiri <vatsa@in.ibm.com>,
+       Gautham R Shenoy <ego@in.ibm.com>, Darren Hart <dvhltc@us.ibm.com>,
+       Brian King <brking@linux.vnet.ibm.com>, linux-kernel@vger.kernel.org
+Subject: [PATCH v3] Make sure timers have migrated before killing
+	migration_thread
+Message-ID: <20100525132346.GA14986@amitarora.in.ibm.com>
+References: <20100519090557.GA15237@amitarora.in.ibm.com> <1274261515.5605.10423.camel@twins> <20100524095951.GA17680@amitarora.in.ibm.com> <1274787095.5882.949.camel@twins>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274787095.5882.949.camel@twins>
+User-Agent: Mutt/1.5.17 (2007-11-01)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The transactional API patch between the generic and model-specific
-code introduced several important bugs with event scheduling, at
-least on X86. If you had pinned events, e.g., watchdog,  and were
-over-committing the PMU, you would get bogus counts. The bug was
-showing up on Intel CPU because events would move around more
-often that on AMD. But the problem also existed on AMD, though
-harder to expose.
+On Tue, May 25, 2010 at 01:31:35PM +0200, Peter Zijlstra wrote:
+> On Mon, 2010-05-24 at 15:29 +0530, Amit K. Arora wrote:
+> > 
+> > Thus, since above race can never happen, is there any other issue with
+> > this patch ?
+> 
+> It doesn't seem to apply nicely...
 
-The issues were:
+Here is the new patch. 
 
- - group_sched_in() was missing a cancel_txn() in the error path
+Problem : In a stress test where some heavy tests were running along with
+regular CPU offlining and onlining, a hang was observed. The system seems to
+be hung at a point where migration_call() tries to kill the migration_thread
+of the dying CPU, which just got moved to the current CPU. This migration
+thread does not get a chance to run (and die) since rt_throttled is set to 1
+on current, and it doesn't get cleared as the hrtimer which is supposed to
+reset the rt bandwidth (sched_rt_period_timer) is tied to the CPU which we just
+marked dead!
 
- - cpuc->n_added was not properly maintained, leading to missing
-   actions in hw_perf_enable(), i.e., n_running being 0. You cannot
-   update n_added until you know the transaction has succeeded. In
-   case of failed transaction n_added was not adjusted back.
+Solution : This patch pushes the killing of migration thread to "CPU_POST_DEAD"
+event. By then all the timers (including sched_rt_period_timer) should have got
+migrated (along with other callbacks).
 
- - in case of failed transactions, event_sched_out() was called
-   and eventually invoked x86_disable_event() to touch the HW reg.
-   But with transactions, on X86, event_sched_in() does not touch
-   HW registers, it simply collects events into a list. Thus, you
-   could end up calling x86_disable_event() on a counter which
-   did not correspond to the current event when idx != -1.
+Thanks!
+Regards,
+Amit Arora
 
-The patch modifies the generic and X86 code to avoid all those problems.
-
-First, we keep track of the number of events added last. In case the
-transaction fails, we substract them from n_added. This approach is
-necessary (as opposed to delaying updates to n_added) because not all
-event updates use the transaction API, e.g., single events.
-
-Second, we encapsulate the event_sched_in() and event_sched_out() in
-group_sched_in() inside the transaction. That makes the operations
-symmetrical and you can also detect that you are inside a transaction
-and skip the HW reg access by checking cpuc->group_flag.
-
-With this patch, you can now overcommit the PMU even with pinned
-system-wide events present and still get valid counts.
-
-Signed-off-by: Stephane Eranian <eranian@google.com>
-
-diff --git a/arch/x86/kernel/cpu/perf_event.c b/arch/x86/kernel/cpu/perf_event.c
-index c775860..3ea4c5c 100644
---- a/arch/x86/kernel/cpu/perf_event.c
-+++ b/arch/x86/kernel/cpu/perf_event.c
-@@ -105,6 +105,7 @@ struct cpu_hw_events {
- 	int			enabled;
+Signed-off-by: Amit Arora <aarora@in.ibm.com>
+Signed-off-by: Gautham R Shenoy <ego@in.ibm.com>
+Cc: Ingo Molnar <mingo@elte.hu>
+Cc: Peter Zijlstra <peterz@infradead.org>
+Cc: Tejun Heo <tj@kernel.org>
+---
+diff -Nuarp linux-2.6-next-20100525.org/kernel/stop_machine.c linux-2.6-next-20100525/kernel/stop_machine.c
+--- linux-2.6-next-20100525.org/kernel/stop_machine.c	2010-05-25 14:27:51.000000000 -0400
++++ linux-2.6-next-20100525/kernel/stop_machine.c	2010-05-25 14:30:09.000000000 -0400
+@@ -321,7 +321,7 @@ static int __cpuinit cpu_stop_cpu_callba
  
- 	int			n_events;
-+	int			n_events_trans;
- 	int			n_added;
- 	int			assign[X86_PMC_IDX_MAX]; /* event to counter assignment */
- 	u64			tags[X86_PMC_IDX_MAX];
-@@ -591,7 +592,7 @@ void hw_perf_disable(void)
- 	if (!cpuc->enabled)
- 		return;
- 
--	cpuc->n_added = 0;
-+	cpuc->n_added = cpuc->n_events_trans = 0;
- 	cpuc->enabled = 0;
- 	barrier();
- 
-@@ -820,7 +821,7 @@ void hw_perf_enable(void)
- 		 * apply assignment obtained either from
- 		 * hw_perf_group_sched_in() or x86_pmu_enable()
- 		 *
--		 * step1: save events moving to new counters
-+		 * step1: stop-save old events moving to new counters
- 		 * step2: reprogram moved events into new counters
- 		 */
- 		for (i = 0; i < n_running; i++) {
-@@ -983,6 +984,7 @@ static int x86_pmu_enable(struct perf_event *event)
- out:
- 	cpuc->n_events = n;
- 	cpuc->n_added += n - n0;
-+	cpuc->n_events_trans = n - n0;
- 
- 	return 0;
- }
-@@ -1070,7 +1072,7 @@ static void x86_pmu_stop(struct perf_event *event)
- 	struct hw_perf_event *hwc = &event->hw;
- 	int idx = hwc->idx;
- 
--	if (!__test_and_clear_bit(idx, cpuc->active_mask))
-+	if (idx == -1 || !__test_and_clear_bit(idx, cpuc->active_mask))
- 		return;
- 
- 	x86_pmu.disable(event);
-@@ -1087,14 +1089,30 @@ static void x86_pmu_stop(struct perf_event *event)
- static void x86_pmu_disable(struct perf_event *event)
- {
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
-+	bool no_trans;
- 	int i;
- 
--	x86_pmu_stop(event);
-+	/*
-+	 * when coming from a transaction, then the event has not
-+	 * actually been scheduled in yet. It has only been collected
-+	 * (collect_events), thus we cannot apply a full disable:
-+	 * - put_constraints() assumes went thru schedule_events()
-+	 * - x86_pmu_stop() assumes went thru x86_pmu_start() because
-+	 *   maybe idx != -1 and thus we may overwrite another the wrong
-+	 *   counter (e.g, pinned event).
-+	 *
-+	 * When called from a transaction, we need to un-collect the
-+	 * event, i..e, remove the event from event_list[]
-+	 */
-+	no_trans = !(cpuc->group_flag & PERF_EVENT_TXN_STARTED);
-+
-+	if (no_trans)
-+		x86_pmu_stop(event);
- 
- 	for (i = 0; i < cpuc->n_events; i++) {
- 		if (event == cpuc->event_list[i]) {
- 
--			if (x86_pmu.put_event_constraints)
-+			if (no_trans && x86_pmu.put_event_constraints)
- 				x86_pmu.put_event_constraints(cpuc, event);
- 
- 			while (++i < cpuc->n_events)
-@@ -1104,7 +1122,8 @@ static void x86_pmu_disable(struct perf_event *event)
- 			break;
- 		}
- 	}
--	perf_event_update_userpage(event);
-+	if (no_trans)
-+		perf_event_update_userpage(event);
- }
- 
- static int x86_pmu_handle_irq(struct pt_regs *regs)
-@@ -1391,6 +1410,14 @@ static void x86_pmu_cancel_txn(const struct pmu *pmu)
- 	struct cpu_hw_events *cpuc = &__get_cpu_var(cpu_hw_events);
- 
- 	cpuc->group_flag &= ~PERF_EVENT_TXN_STARTED;
-+
-+	/*
-+	 * adjust for failed transaction
-+	 * failed if n_events_trans != 0
-+	 */
-+	cpuc->n_added -= cpuc->n_events_trans;
-+
-+	cpuc->n_events_trans = 0;
- }
- 
- /*
-@@ -1419,6 +1446,14 @@ static int x86_pmu_commit_txn(const struct pmu *pmu)
- 	 */
- 	memcpy(cpuc->assign, assign, n*sizeof(int));
- 
-+	/*
-+	 * transaction succeeded, no need to adjust
-+	 * n_added on cancel_txn()
-+	 *
-+	 * adjust in cancel_txn for cases with failures
-+	 * before we reach commit_txn()
-+	 */
-+	cpuc->n_events_trans = 0;
- 	return 0;
- }
- 
-diff --git a/kernel/perf_event.c b/kernel/perf_event.c
-index e099650..b521a0b 100644
---- a/kernel/perf_event.c
-+++ b/kernel/perf_event.c
-@@ -652,8 +652,11 @@ group_sched_in(struct perf_event *group_event,
- 	if (txn)
- 		pmu->start_txn(pmu);
- 
--	if (event_sched_in(group_event, cpuctx, ctx))
-+	if (event_sched_in(group_event, cpuctx, ctx)) {
-+		if (txn)
-+			pmu->cancel_txn(pmu);
- 		return -EAGAIN;
-+	}
- 
- 	/*
- 	 * Schedule in siblings as one group (if any):
-@@ -675,8 +678,6 @@ group_sched_in(struct perf_event *group_event,
- 	}
- 
- group_error:
--	if (txn)
--		pmu->cancel_txn(pmu);
- 
- 	/*
- 	 * Groups can be scheduled in as one unit only, so undo any
-@@ -689,6 +690,9 @@ group_error:
- 	}
- 	event_sched_out(group_event, cpuctx, ctx);
- 
-+	if (txn)
-+		pmu->cancel_txn(pmu);
-+
- 	return -EAGAIN;
- }
+ #ifdef CONFIG_HOTPLUG_CPU
+ 	case CPU_UP_CANCELED:
+-	case CPU_DEAD:
++	case CPU_POST_DEAD:
+ 	{
+ 		struct cpu_stop_work *work;
  
