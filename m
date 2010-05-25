@@ -1,77 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934063Ab0EYUBz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:01:55 -0400
-Received: from tauceti.net ([62.245.250.166]:37222 "EHLO www.tauceti.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933711Ab0EYUBx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:01:53 -0400
-Message-ID: <4BFC2CB2.9050305@tauceti.net>
-Date: Tue, 25 May 2010 22:01:54 +0200
-From: Robert Wimmer <kernel@tauceti.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100427 Thunderbird/3.0.4 ThunderBrowse/3.2.8.1
+	id S934068Ab0EYUFR (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:05:17 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:65335 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932644Ab0EYUFO convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 16:05:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=uijcRsoLnUuTr6SySGL/6LjItQi52wTkbSgfZg4Y34mLhRe2UP42Kw6awn3M46Fbbt
+         ajLhYciv27e799lrrMGT/jR6s0v0f6JYAkK0jVvaqKDqJUTOgRKkJp2kI/XVCUEyZh5W
+         wHDUx2xlqtP95eVseL7d0i4NQT9Y8PXRhFJuw=
 MIME-Version: 1.0
-To: Trond Myklebust <Trond.Myklebust@netapp.com>
-CC: mst@redhat.com, Avi Kivity <avi@redhat.com>,
-       Andrew Morton <akpm@linux-foundation.org>, linux-mm@kvack.org,
-       bugzilla-daemon@bugzilla.kernel.org,
-       Rusty Russell <rusty@rustcorp.com.au>, Mel Gorman <mel@csn.ul.ie>,
-       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: [Bugme-new] [Bug 15709] New: swapper page allocation failure
-References: <4BC43097.3060000@tauceti.net> <4BCC52B9.8070200@tauceti.net> <20100419131718.GB16918@redhat.com> <dbf86fc1c370496138b3a74a3c74ec18@tauceti.net> <20100421094249.GC30855@redhat.com> <c638ec9fdee2954ec5a7a2bd405aa2ba@tauceti.net> <20100422100304.GC30532@redhat.com> <4BD12F9C.30802@tauceti.net> <20100425091759.GA9993@redhat.com> <4BD4A917.70702@tauceti.net> <20100425204916.GA12686@redhat.com> <1272284154.4252.34.camel@localhost.localdomain> <4BD5F6C5.8080605@tauceti.net> <1272315854.8984.125.camel@localhost.localdomain> <4BD61147.40709@tauceti.net> <1272324536.16814.45.camel@localhost.localdomain> <4BD76B81.2070606@tauceti.net> <be8a0f012ebb2ae02522998591e6f1a5@tauceti.net> <4BE33259.3000609@tauceti.net> <1273181438.22155.26.camel@localhost.localdomain> <4BEC6A5D.5070304@tauceti.net> <1273785234.22932.14.camel@localhost.localdomain> <a133ef4ed022a00afd40b505719ae3d2@tauceti.net>
-In-Reply-To: <a133ef4ed022a00afd40b505719ae3d2@tauceti.net>
+In-Reply-To: <1274165817.7859.16.camel@eee51>
+References: <1274165817.7859.16.camel@eee51>
+Date: Tue, 25 May 2010 12:59:52 -0700
+X-Google-Sender-Auth: 19GotUqqu14No22IQggxRqdO-5M
+Message-ID: <AANLkTilwpzIMVYi5GtI6FTQC_pNTSBMIB3_PUAQTE6AY@mail.gmail.com>
+Subject: Re: (tsc) clock too slow on Core-i7/ASRock X58
+From: john stultz <johnstul@us.ibm.com>
+To: =?UTF-8?B?5a6+6KW/6JKZ?= <binximeng@gmail.com>
+Cc: linux-kernel@vger.kernel.org, Thomas Gleixner <tglx@linutronix.de>
 Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Trond,
-
-just a little reminder ;-)
-
-Thanks!
-Robert
-
-On 05/20/10 09:39, kernel@tauceti.net wrote:
-> Hi Trond,
+On Mon, May 17, 2010 at 11:56 PM, 宾西蒙 <binximeng@gmail.com> wrote:
+> I have a problem with the system clock being off roughly 10 minutes a 2
+> hours on a Xeon W3250 (like Core-i7 920) using the 2.6.34 Linux and tsc
+> clocksource. Switching to hpet seems to improve the situation
+> momentarily, however, are there any other thoughts on this matter?
 >
-> have you had some time to download the wireshark dump?
->
-> Thanks!
-> Robert
->
-> On Thu, 13 May 2010 17:13:54 -0400, Trond Myklebust
-> <Trond.Myklebust@netapp.com> wrote:
->   
->> On Thu, 2010-05-13 at 23:08 +0200, Robert Wimmer wrote: 
->>     
->>> Finally I've had some time to do the next test.
->>> Here is a wireshark dump (~750 MByte):
->>> http://213.252.12.93/2.6.34-rc5.cap.gz
->>>
->>> dmesg output after page allocation failure:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26371
->>>
->>> stack trace before page allocation failure:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26369
->>>
->>> stack trace after page allocation failure:
->>> https://bugzilla.kernel.org/attachment.cgi?id=26370
->>>
->>> I hope the wireshark dump is not to big to download.
->>> It was created with
->>> tshark -f "tcp port 2049" -i eth0 -w 2.6.34-rc5.cap
->>>
->>> Thanks!
->>> Robert
->>>       
->> Hi Robert,
->>
->> I tried the above wireshark dump URL, but it appears to point to an
->> empty file.
->>
->> Cheers
->>   Trond
->>     
+> What I find odd is that the processor speed in dmesg (after TSC
+> calibration message) is 2.8 GHz, whereas BIOS says @2.67GHz, might that
+> be related?
 
+So just to be clear, I assume the clock is ahead (fast) 10 minutes
+every 2 hours, right?
+
+Could you include or link to the full dmesg?
+
+Did earlier kernels (prior to 2.6.34) work properly on this machine?
+
+thanks
+-john
