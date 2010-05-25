@@ -1,93 +1,182 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754947Ab0EYHbA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:31:00 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:38502 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754389Ab0EYHa6 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:30:58 -0400
-Subject: [PATCH 01a/10] perf, trace: Fix !x86 build issue
-From: Peter Zijlstra <peterz@infradead.org>
-To: Ingo Molnar <mingo@elte.hu>
-Cc: Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>,
+	id S1754726Ab0EYHcz (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:32:55 -0400
+Received: from mail.skyhub.de ([78.46.96.112]:43823 "EHLO mail.skyhub.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753943Ab0EYHcy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 03:32:54 -0400
+Date: Tue, 25 May 2010 09:32:46 +0200
+From: Borislav Petkov <bp@alien8.de>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Ingo Molnar <mingo@elte.hu>, Frederic Weisbecker <fweisbec@gmail.com>,
        Steven Rostedt <rostedt@goodmis.org>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100521090710.419716197@chello.nl>
-References: <20100521090201.326791353@chello.nl>
-	 <20100521090710.419716197@chello.nl>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Tue, 25 May 2010 09:30:43 +0200
-Message-ID: <1274772643.5882.304.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+       Arnaldo Carvalho de Melo <acme@redhat.com>,
+       Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 1/2] perf: Add persistent events
+Message-ID: <20100525073246.GA6085@liondog.tnic>
+Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
+	Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Arnaldo Carvalho de Melo <acme@redhat.com>,
+	Lin Ming <ming.m.lin@intel.com>, linux-kernel@vger.kernel.org
+References: <1274554806-28216-1-git-send-email-bp@alien8.de>
+ <1274554806-28216-2-git-send-email-bp@alien8.de>
+ <1274638513.1674.1727.camel@laptop>
+ <20100523183353.GB1408@liondog.tnic>
+ <1274640047.1674.1731.camel@laptop>
+ <20100523185411.GA5608@liondog.tnic>
+ <1274642601.1674.1755.camel@laptop>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+In-Reply-To: <1274642601.1674.1755.camel@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: perf, trace: Fix !x86 build issue
-From: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Date: Tue May 25 09:22:38 CEST 2010
+From: Peter Zijlstra <peterz@infradead.org>
+Date: Sun, May 23, 2010 at 09:23:21PM +0200
 
-Patch b7e2ecef92 (perf, trace: Optimize tracepoints by removing
-IRQ-disable from perf/tracepoint interaction) made the unfortunate
-mistake of assuming the world is x86 only, correct this.
+> Either we add some notifier thing, or we simply add an explicit call in
+> the init sequence after the perf_event subsystem is running. I would
+> suggest we start with some explicit call, and take it from there.
 
-The problem was that perf_fetch_caller_regs() did local_save_flags()
-into regs->flags, and I re-used that to remove another
-local_save_flags(), forgetting !x86 doesn't have regs->flags.
+Ok, this couldn't be more straightforward. So I looked at the init
+sequence we do when booting wrt to perf/ftrace initialization:
 
-Do the reverse, remove the local_save_flags() from
-perf_fetch_caller_regs() and let the ftrace site do the
-local_save_flags() instead.
+start_kernel
+...
+|-> sched_init
+    |-> perf_event_init
+...
+|-> ftrace_init
+rest_init
+kernel_init
+|-> do_pre_smp_initcalls
+|...
+|-> smp_int
+|-> do_basic_setup
+    |-> do_initcalls
 
-Signed-off-by: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Acked-by: Paul Mackerras <paulus@samba.org>
+and one of the convenient places after both perf is initialized and
+ftrace has enumerated the tracepoints is do_initcalls() (It cannot be an
+early_initcall since at that time we're not running SMP yet and we want
+the MCE event per cpu.)
+
+So I added a core_initcall that registers the mce perf event. This makes
+it more or less a persistent event without any changes to the perf_event
+subsystem. I guess this should work - at least it builds here, will give
+it a run later.
+
+As a further enhancement, the init-function should read out all the
+logged mce events which survived the warm reboot and those which happen
+between mce init and the actual event registration so that perf can
+postprocess those too at a more convenient time.
+
+Thanks.
+
 ---
- arch/x86/kernel/cpu/perf_event.c |    6 +++++-
- kernel/trace/trace_event_perf.c  |    4 +++-
- 2 files changed, 8 insertions(+), 2 deletions(-)
-
-Index: linux-2.6/arch/x86/kernel/cpu/perf_event.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/cpu/perf_event.c
-+++ linux-2.6/arch/x86/kernel/cpu/perf_event.c
-@@ -1717,7 +1717,11 @@ void perf_arch_fetch_caller_regs(struct 
- 	 */
- 	regs->bp = rewind_frame_pointer(skip + 1);
- 	regs->cs = __KERNEL_CS;
--	local_save_flags(regs->flags);
-+	/*
-+	 * We abuse bit 3 to pass exact information, see perf_misc_flags
-+	 * and the comment with PERF_EFLAGS_EXACT.
-+	 */
-+	regs->flags = 0;
+diff --git a/arch/x86/kernel/cpu/mcheck/mce.c b/arch/x86/kernel/cpu/mcheck/mce.c
+index 8a6f0af..e3370a2 100644
+--- a/arch/x86/kernel/cpu/mcheck/mce.c
++++ b/arch/x86/kernel/cpu/mcheck/mce.c
+@@ -94,6 +94,7 @@ static char			*mce_helper_argv[2] = { mce_helper, NULL };
+ 
+ static DECLARE_WAIT_QUEUE_HEAD(mce_wait);
+ static DEFINE_PER_CPU(struct mce, mces_seen);
++static DEFINE_PER_CPU(struct perf_event *, mce_event);
+ static int			cpu_missing;
+ 
+ /*
+@@ -1996,6 +1997,60 @@ static void __cpuinit mce_reenable_cpu(void *h)
+ 	}
  }
  
- unsigned long perf_instruction_pointer(struct pt_regs *regs)
-Index: linux-2.6/kernel/trace/trace_event_perf.c
-===================================================================
---- linux-2.6.orig/kernel/trace/trace_event_perf.c
-+++ linux-2.6/kernel/trace/trace_event_perf.c
-@@ -157,6 +157,7 @@ __kprobes void *perf_trace_buf_prepare(i
- 				       struct pt_regs *regs, int *rctxp)
- {
- 	struct trace_entry *entry;
-+	unsigned long flags;
- 	char *raw_data;
- 	int pc;
- 
-@@ -174,7 +175,8 @@ __kprobes void *perf_trace_buf_prepare(i
- 	memset(&raw_data[size - sizeof(u64)], 0, sizeof(u64));
- 
- 	entry = (struct trace_entry *)raw_data;
--	tracing_generic_entry_update(entry, regs->flags, pc);
-+	local_save_flags(flags);
-+	tracing_generic_entry_update(entry, flags, pc);
- 	entry->type = type;
- 
- 	return raw_data;
++struct perf_event_attr pattr = {
++	.type	= PERF_TYPE_TRACEPOINT,
++	.size	= sizeof(pattr),
++};
++
++static int mcheck_enable_perf_event_on_cpu(int cpu)
++{
++	struct perf_event *event;
++
++	pattr.config = event_mce_record.id;
++
++	event = perf_event_create_kernel_counter(&pattr, cpu, -1, NULL);
++	if (IS_ERR(event))
++		return -EINVAL;
++
++	perf_event_enable(event);
++	per_cpu(mce_event, cpu) = event;
++
++	return 0;
++}
++
++static void mcheck_disable_perf_event_on_cpu(int cpu)
++{
++	struct perf_event *event = per_cpu(mce_event, cpu);
++
++	if (!event)
++		return;
++
++	perf_event_disable(event);
++	per_cpu(mce_event, cpu) = NULL;
++	perf_event_release_kernel(event);
++}
++
++static int mcheck_init_perf_event(void)
++{
++	int cpu, err;
++
++	get_online_cpus();
++
++	for_each_online_cpu(cpu) {
++		err = mcheck_enable_perf_event_on_cpu(cpu);
++		if (err) {
++			printk(KERN_ERR "mce: error initializing mce tracepoint"
++					" on cpu %d\n", cpu);
++			return err;
++		}
++	}
++
++	put_online_cpus();
++
++	return 0;
++}
++core_initcall(mcheck_init_perf_event);
++
+ /* Get notified when a cpu comes on/off. Be hotplug friendly. */
+ static int __cpuinit
+ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+@@ -2009,6 +2064,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 		mce_create_device(cpu);
+ 		if (threshold_cpu_callback)
+ 			threshold_cpu_callback(action, cpu);
++		mcheck_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_DEAD:
+ 	case CPU_DEAD_FROZEN:
+@@ -2020,6 +2076,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 	case CPU_DOWN_PREPARE_FROZEN:
+ 		del_timer_sync(t);
+ 		smp_call_function_single(cpu, mce_disable_cpu, &action, 1);
++		mcheck_disable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_DOWN_FAILED:
+ 	case CPU_DOWN_FAILED_FROZEN:
+@@ -2029,6 +2086,7 @@ mce_cpu_callback(struct notifier_block *nfb, unsigned long action, void *hcpu)
+ 			add_timer_on(t, cpu);
+ 		}
+ 		smp_call_function_single(cpu, mce_reenable_cpu, &action, 1);
++		mcheck_enable_perf_event_on_cpu(cpu);
+ 		break;
+ 	case CPU_POST_DEAD:
+ 		/* intentionally ignoring frozen here */
 
+-- 
+Regards/Gruss,
+    Boris.
