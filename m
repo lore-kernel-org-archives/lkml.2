@@ -1,111 +1,109 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759118Ab0EYVks (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 17:40:48 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:50475 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758701Ab0EYVkq convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 17:40:46 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=DkiRGO4bXHRx2DDsaFP4aLi9VOZ5B9V45VqfvcOOb0Wvk4uy/whIsIccW+I5AsgN+
-	rfziqb8beheEIEq3090pA==
+	id S1759123Ab0EYVng (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 17:43:36 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:39542 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1758778Ab0EYVnf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 17:43:35 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Date: Tue, 25 May 2010 23:44:37 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-In-Reply-To: <1274769311.5882.96.camel@twins>
-References: <1274746282-21533-1-git-send-email-venki@google.com>
-	<1274746282-21533-2-git-send-email-venki@google.com>
-	<1274746282-21533-3-git-send-email-venki@google.com>
-	<1274769311.5882.96.camel@twins>
-Date: Tue, 25 May 2010 14:40:42 -0700
-Message-ID: <AANLkTinPtwSUjMtBRkb96DU4lym8ZNrYwPe_q6rstT4D@mail.gmail.com>
-Subject: Re: [RFC PATCH 2/4] x86: Add IRQ_TIME_ACCOUNTING, finer accounting of 
-	irq time to task
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-       Paul Turner <pjt@google.com>,
-       Martin Schwidefsky <schwidefsky@de.ibm.com>,
-       Heiko Carstens <heiko.carstens@de.ibm.com>,
-       Paul Mackerras <paulus@samba.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005252344.37639.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Mon, 2010-05-24 at 17:11 -0700, Venkatesh Pallipadi wrote:
->> +void account_system_vtime(struct task_struct *tsk)
->> +{
->> +       unsigned long flags;
->> +       int cpu;
->> +       u64 now;
->> +
->> +       local_irq_save(flags);
->> +       cpu = task_cpu(tsk);
->> +       now = sched_clock_cpu(cpu);
->> +       if (hardirq_count())
->> +               tsk->hi_time += now - per_cpu(irq_start_time, cpu);
->> +       else if (softirq_count())
->> +               tsk->si_time += now - per_cpu(irq_start_time, cpu);
->> +
->> +       per_cpu(irq_start_time, cpu) = now;
->> +       local_irq_restore(flags);
->> +}
->
-> Right, so this gets called from irq_enter/exit() and __do_softirq().
->
-> The reason I never pressed onwards with this (I had patches to add IRQ
-> time accounting) is that it sucks terribly for anything falling back to
-> jiffies -- maybe find some smart way to disable the whole call when
-> there's no TSC available, preferably without adding conditionals, using
-> alternatives maybe?
->
-> I guess you mostly side-stepped that by adding a IRQ_TIME_ACCOUNTING
-> config (but forgot to make it depend on X86_TSC).
+On Tuesday 25 May 2010, Alan Stern wrote:
+> On Tue, 25 May 2010, Rafael J. Wysocki wrote:
+> 
+> > So, basically, you'd prefer to move the entire complexity to user space.
+> 
+> No, just the complexity of the userspace suspend blockers.  That was 
+> one of the parts of the interface that people objected to, after all.
+> 
+> > I'm not sure if that's a big win
+> 
+> It's not a _big_ win, but it is an improvement IMO.
+> 
+> >  and I'm not sure anyone is actually going to
+> > implement it (and some drivers would still have to be modified to participate
+> > in this framework).
+> 
+> Of course drivers have to be modified.  The kernel-layer suspend
+> blockers aren't affected by this proposal, so they still have to be
+> implemented.
+> 
+> >  So again, we have a hunch that the goal may be achieved
+> > in a different way, but at this point we'd rather need a _working_ _solution_
+> > (in the form of code one can build and actually use).
+> 
+> It's not very different from what has been submitted, and I think
+> there's little doubt that it could be built and used fairly easily.  
+> All we're talking about is removing the userspace suspend-blocker API
+> and the opportunistic workqueue, replacing them with an "opportunistic"
+> entry in /sys/power/state, and setting up a userspace power manager
+> process.
+> 
+> > I don't think it's realistic to expect the Android people to go and redesign
+> > their stuff along the lines you've described, because they have a working
+> > implementation (in the kernel) that they are satisfied with.
+> 
+> The redesign would be pretty small.  The kernel changes relative to
+> what they have submitted are minimal, mostly just removing a few of
+> their additions.  Furthermore, we've been told that Android _already_
+> funnels all its userspace suspend-blocker work through a single
+> process.  All that would be needed would be to make that process
+> initiate an opportunistic suspend whenever no userspace suspend
+> blockers were active.
+> 
+> > Now, we can reject their patches, but that's not going to cause any progress
+> > to happen, realistically.  Quite on the contrary, Android will continue to use
+> > wakelocks and Android driver writers will continue to ignore the mainline
+> > and the gap between the two kernel lines will only get wider and wider over
+> > time.
+> > 
+> > And what really is the drawback if we merge the patches?  Quite frankly,
+> > I don't see any.
+> 
+> You don't seem to appreciate how small a change Dmitry has proposed.  
+> Almost all of the suspend-blocker work would remain as in the submitted
+> patches.  The only difference is that the userspace API and
+> opportunistic-suspend implementation would be simplified, by moving
+> some of the work out of the kernel.
 
-Yes. The TSC dependency is unfortunately not CONFIG time. Even with X86_TSC,
-there is support for tsc_disabled. So, this should be a run time
-conditional or an alternative.
+No, I don't really think it's going to be a small change.  The problem is that
+for the Android people changing user space is very hard, so I don't think
+this realy is an option, given that they would have to implement it themselves,
+test it, validate it on multiple different hardware platforms etc. and _then_
+resubmit the feature without any guarantee that it will be merged.
 
-> Another thing I dislike about this account_system_vtime() is that its
-> the same call for both IRQ and SoftIRQ, leaving us to add conditionals
-> inside the call to figure out what context we got called from.
->
-> [ Adedd the s390 and ppc guys who already use this stuff ]
-
-We can probably add a parameter on from where it is being called. Even
-with that we still need some conditionals to handle hardirq overlapping a
-softirq. That part kind of happens naturally with the current code.
-
-> Anyway, once we have this, please also add it to sched_rt_avg_update()
-> (which should really be called sched_!fair_avg_update()).
-
-You mean take out the hi and si time from rt_delta?
-
-> Also, did you measure the overhead of doing this? sched_clock_cpu() adds
-> a cmpxchg64 on all systems that don't have a rock solid TSC (ie. most of
-> todays machines).
->
-> Another thing that would be real nice is if you could find a way to not
-> make all of this x86 specific.
-
-Yes. Thats one of the reason I made this based of sched_clock. May be
-we can have
-a has_fast_sched_clock feature that archs and opt in to that enables
-this with an
-alternative?
-
-overhead: My initial testing was on reliable TSC system, where sched_clock_cpu()
-takes <50 cycles. So, no noticable overhead there. I still have to run
-this on other
-platforms, will post the data once I do that.
+So, my opinion is that we only have a choice to either take the feature as is
+now, or reject it altogether and live with the consequeces in each case.  And
+quite frankly I don't feel like I'm in position to make that decision.
 
 Thanks,
-Venki
+Rafael
