@@ -1,222 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756418Ab0EYJBF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 05:01:05 -0400
-Received: from mail-iw0-f174.google.com ([209.85.214.174]:58195 "EHLO
-	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754145Ab0EYJBB convert rfc822-to-8bit (ORCPT
+	id S932166Ab0EYJCv (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 05:02:51 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:58259 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756404Ab0EYJCs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 05:01:01 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=hSVQNkrzJRe4af5CLpAa0W6IuT00fBQQD3ZpRyObeMdUAYpKBvfKVK9+B1U0ObEQEZ
-         zKIb5ML1ZFIhk4V4IOib9HNPMNWFgZrQu9kZV0RYiNPETz6HcFfPnzQic6cYzjcHUc8K
-         xJefhaNwMQQ/9zEZa/lWTCsPjowrqX9ONMUw8=
-MIME-Version: 1.0
-In-Reply-To: <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
-References: <AANLkTik47c6l3y8CdJ-hUCd2h3SRSb3qAtRovWryb8_p@mail.gmail.com> 
-	<alpine.LSU.2.00.1005211344440.7369@sister.anvils> <AANLkTil7I6q4wdLgmwZdRN6hb9LVVagN_7oGTIVNDhUk@mail.gmail.com> 
-	<AANLkTilMQjZaUom2h_aFgU6WB83IGH-VVKTg-CJD-_ZZ@mail.gmail.com> 
-	<20100524110903.72524853@lxorguk.ukuu.org.uk> <alpine.LSU.2.00.1005241624130.28773@sister.anvils>
-From: Tharindu Rukshan Bamunuarachchi <btharindu@gmail.com>
-Date: Tue, 25 May 2010 10:00:29 +0100
-Message-ID: <AANLkTil-gH0k7n_Vb3C1ubn_PioL9LG6xX1tgD1vqgQo@mail.gmail.com>
-Subject: Re: TMPFS over NFSv4
-To: Hugh Dickins <hughd@google.com>
-Cc: Greg KH <gregkh@suse.de>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
-       linux-mm@kvack.org, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org, stable@kernel.org
-Content-Type: text/plain; charset=windows-1252
+	Tue, 25 May 2010 05:02:48 -0400
+Subject: Re: [PATCH 02/13] mm: Revalidate anon_vma in page_lock_anon_vma()
+From: Peter Zijlstra <peterz@infradead.org>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Nick Piggin <npiggin@suse.de>, Andrea Arcangeli <aarcange@redhat.com>,
+       Avi Kivity <avi@redhat.com>, Thomas Gleixner <tglx@linutronix.de>,
+       Rik van Riel <riel@redhat.com>, Ingo Molnar <mingo@elte.hu>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       linux-kernel@vger.kernel.org, linux-arch@vger.kernel.org,
+       Benjamin Herrenschmidt <benh@kernel.crashing.org>,
+       David Miller <davem@davemloft.net>,
+       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Mel Gorman <mel@csn.ul.ie>
+In-Reply-To: <20100524123200.23e23fd2.akpm@linux-foundation.org>
+References: <20100409150335.80E3.A69D9226@jp.fujitsu.com>
+	 <20100409154730.e9945cbc.kamezawa.hiroyu@jp.fujitsu.com>
+	 <20100409160252.80E6.A69D9226@jp.fujitsu.com>
+	 <1270802693.20295.3272.camel@laptop>
+	 <20100524123200.23e23fd2.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="UTF-8"
 Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 11:01:56 +0200
+Message-ID: <1274778116.5882.619.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-hope that the 2.6.27.48 or later will be shipped with SP1 :-)
+On Mon, 2010-05-24 at 12:32 -0700, Andrew Morton wrote:
+> On Fri, 09 Apr 2010 10:44:53 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Fri, 2010-04-09 at 16:29 +0900, KOSAKI Motohiro wrote:
+> > > 
+> > > 
+> > > diff --git a/mm/rmap.c b/mm/rmap.c
+> > > index 8b088f0..b4a0b5b 100644
+> > > --- a/mm/rmap.c
+> > > +++ b/mm/rmap.c
+> > > @@ -295,7 +295,7 @@ struct anon_vma *page_lock_anon_vma(struct page
+> > > *page)
+> > >         unsigned long anon_mapping;
+> > >  
+> > >         rcu_read_lock();
+> > > -       anon_mapping = (unsigned long) ACCESS_ONCE(page->mapping);
+> > > +       anon_mapping = (unsigned long) rcu_dereference(page->mapping);
+> > >         if ((anon_mapping & PAGE_MAPPING_FLAGS) != PAGE_MAPPING_ANON)
+> > >                 goto out;
+> > >         if (!page_mapped(page)) 
+> > 
+> > Yes, I think this is indeed required.
+> > 
+> > I'll do a new version of the patch that includes the comment updates
+> > requested by Andrew.
+> 
+> Either this didn't happen or I lost the patch.
 
-__
-tharindu.info
+It didn't happen, I got distracted.
 
-"those that can, do. Those that can’t, complain." -- Linus
+> I parked mm-revalidate-anon_vma-in-page_lock_anon_vma.patch for now. 
+> Hopefully everything still works without it..
 
+Yes, I think it actually does due to a number of really non-obvious
+things ;-)
 
-
-On Tue, May 25, 2010 at 12:46 AM, Hugh Dickins <hughd@google.com> wrote:
-> Hi Greg,
->
-> On Mon, 24 May 2010, Alan Cox wrote:
->> On Mon, 24 May 2010 02:57:30 -0700
->> Hugh Dickins <hughd@google.com> wrote:
->> > On Mon, May 24, 2010 at 2:26 AM, Tharindu Rukshan Bamunuarachchi
->> > <btharindu@gmail.com> wrote:
->> > > thankx a lot Hugh ... I will try this out ... (bit harder patch
->> > > already patched SLES kernel :-p ) ....
->> >
->> > If patch conflicts are a problem, you really only need to put in the
->> > two-liner patch to mm/mmap.c: Alan was seeking perfection in
->> > the rest of the patch, but you can get away without it.
->> >
->> > >
->> > > BTW, what does Alan means by "strict overcommit" ?
->> >
->> > Ah, that phrase, yes, it's a nonsense, but many of us do say it by mistake.
->> > Alan meant to say "strict no-overcommit".
->>
->> No I always meant to say 'strict overcommit'. It avoids excess negatives
->> and "no noovercommit" discussions.
->>
->> I guess 'strict overcommit control' would have been clearer 8)
->>
->> Alan
->
-> I see we've just missed 2.6.27.47-rc1, but if there's to be an -rc2,
-> please include Alan's 2.6.28 oops fix below: which Tharindu appears
-> to be needing - just now discussed on linux-mm and linux-nfs.
-> Failing that, please queue it up for 2.6.27.48.
->
-> Or if you'd prefer a smaller patch for -stable, then just the mm/mmap.c
-> part of it should suffice: I think it's fair to say that the rest of the
-> patch was more precautionary - as Alan describes, for catching other bugs,
-> so good for an ongoing development tree, but not necessarily in -stable.
-> (However, Alan may disagree - I've already misrepresented him once here!)
->
-> Thanks,
-> Hugh
->
-> commit 731572d39fcd3498702eda4600db4c43d51e0b26
-> Author: Alan Cox <alan@redhat.com>
-> Date:   Wed Oct 29 14:01:20 2008 -0700
->
->    nfsd: fix vm overcommit crash
->
->    Junjiro R.  Okajima reported a problem where knfsd crashes if you are
->    using it to export shmemfs objects and run strict overcommit.  In this
->    situation the current->mm based modifier to the overcommit goes through a
->    NULL pointer.
->
->    We could simply check for NULL and skip the modifier but we've caught
->    other real bugs in the past from mm being NULL here - cases where we did
->    need a valid mm set up (eg the exec bug about a year ago).
->
->    To preserve the checks and get the logic we want shuffle the checking
->    around and add a new helper to the vm_ security wrappers
->
->    Also fix a current->mm reference in nommu that should use the passed mm
->
->    [akpm@linux-foundation.org: coding-style fixes]
->    [akpm@linux-foundation.org: fix build]
->    Reported-by: Junjiro R. Okajima <hooanon05@yahoo.co.jp>
->    Acked-by: James Morris <jmorris@namei.org>
->    Signed-off-by: Alan Cox <alan@redhat.com>
->    Signed-off-by: Andrew Morton <akpm@linux-foundation.org>
->    Signed-off-by: Linus Torvalds <torvalds@linux-foundation.org>
->
-> diff --git a/include/linux/security.h b/include/linux/security.h
-> index f5c4a51..c13f1ce 100644
-> --- a/include/linux/security.h
-> +++ b/include/linux/security.h
-> @@ -1585,6 +1585,7 @@ int security_syslog(int type);
->  int security_settime(struct timespec *ts, struct timezone *tz);
->  int security_vm_enough_memory(long pages);
->  int security_vm_enough_memory_mm(struct mm_struct *mm, long pages);
-> +int security_vm_enough_memory_kern(long pages);
->  int security_bprm_alloc(struct linux_binprm *bprm);
->  void security_bprm_free(struct linux_binprm *bprm);
->  void security_bprm_apply_creds(struct linux_binprm *bprm, int unsafe);
-> @@ -1820,6 +1821,11 @@ static inline int security_vm_enough_memory(long pages)
->        return cap_vm_enough_memory(current->mm, pages);
->  }
->
-> +static inline int security_vm_enough_memory_kern(long pages)
-> +{
-> +       return cap_vm_enough_memory(current->mm, pages);
-> +}
-> +
->  static inline int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
->  {
->        return cap_vm_enough_memory(mm, pages);
-> diff --git a/mm/mmap.c b/mm/mmap.c
-> index 74f4d15..de14ac2 100644
-> --- a/mm/mmap.c
-> +++ b/mm/mmap.c
-> @@ -175,7 +175,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->
->        /* Don't let a single process grow too big:
->           leave 3% of the size of this process for other processes */
-> -       allowed -= mm->total_vm / 32;
-> +       if (mm)
-> +               allowed -= mm->total_vm / 32;
->
->        /*
->         * cast `allowed' as a signed long because vm_committed_space
-> diff --git a/mm/nommu.c b/mm/nommu.c
-> index 2696b24..7695dc8 100644
-> --- a/mm/nommu.c
-> +++ b/mm/nommu.c
-> @@ -1454,7 +1454,8 @@ int __vm_enough_memory(struct mm_struct *mm, long pages, int cap_sys_admin)
->
->        /* Don't let a single process grow too big:
->           leave 3% of the size of this process for other processes */
-> -       allowed -= current->mm->total_vm / 32;
-> +       if (mm)
-> +               allowed -= mm->total_vm / 32;
->
->        /*
->         * cast `allowed' as a signed long because vm_committed_space
-> diff --git a/mm/shmem.c b/mm/shmem.c
-> index d38d7e6..0ed0752 100644
-> --- a/mm/shmem.c
-> +++ b/mm/shmem.c
-> @@ -161,8 +161,8 @@ static inline struct shmem_sb_info *SHMEM_SB(struct super_block *sb)
->  */
->  static inline int shmem_acct_size(unsigned long flags, loff_t size)
->  {
-> -       return (flags & VM_ACCOUNT)?
-> -               security_vm_enough_memory(VM_ACCT(size)): 0;
-> +       return (flags & VM_ACCOUNT) ?
-> +               security_vm_enough_memory_kern(VM_ACCT(size)) : 0;
->  }
->
->  static inline void shmem_unacct_size(unsigned long flags, loff_t size)
-> @@ -179,8 +179,8 @@ static inline void shmem_unacct_size(unsigned long flags, loff_t size)
->  */
->  static inline int shmem_acct_block(unsigned long flags)
->  {
-> -       return (flags & VM_ACCOUNT)?
-> -               0: security_vm_enough_memory(VM_ACCT(PAGE_CACHE_SIZE));
-> +       return (flags & VM_ACCOUNT) ?
-> +               0 : security_vm_enough_memory_kern(VM_ACCT(PAGE_CACHE_SIZE));
->  }
->
->  static inline void shmem_unacct_blocks(unsigned long flags, long pages)
-> diff --git a/security/security.c b/security/security.c
-> index 255b085..c0acfa7 100644
-> --- a/security/security.c
-> +++ b/security/security.c
-> @@ -198,14 +198,23 @@ int security_settime(struct timespec *ts, struct timezone *tz)
->
->  int security_vm_enough_memory(long pages)
->  {
-> +       WARN_ON(current->mm == NULL);
->        return security_ops->vm_enough_memory(current->mm, pages);
->  }
->
->  int security_vm_enough_memory_mm(struct mm_struct *mm, long pages)
->  {
-> +       WARN_ON(mm == NULL);
->        return security_ops->vm_enough_memory(mm, pages);
->  }
->
-> +int security_vm_enough_memory_kern(long pages)
-> +{
-> +       /* If current->mm is a kernel thread then we will pass NULL,
-> +          for this specific case that is fine */
-> +       return security_ops->vm_enough_memory(current->mm, pages);
-> +}
-> +
->  int security_bprm_alloc(struct linux_binprm *bprm)
->  {
->        return security_ops->bprm_alloc_security(bprm);
->
+I'll try and get back to my make mmu_gather preemptible stuff shortly
+and write comments there.
