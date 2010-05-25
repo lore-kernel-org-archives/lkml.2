@@ -1,64 +1,195 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756297Ab0EYKrd (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 06:47:33 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:61453 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753984Ab0EYKrb convert rfc822-to-8bit (ORCPT
+	id S1756418Ab0EYKyg (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 06:54:36 -0400
+Received: from bld-mail16.adl2.internode.on.net ([150.101.137.101]:36920 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1751047Ab0EYKye (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 06:47:31 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AK7HsjvYRdKmcld1a0vKawEyCiM1fBHvWzzVNaQ9CTiLi0GUaYBpQQihpJ9jge+Q7K
-         3uu9EkNbLAyaXPj0jxL4IO5KYY4QC9x+gtfzgrM9K4sM7S8o0GGk98XXvA1XFbkbzIAS
-         BJ/A0qPxxaJeZoEEwKKRiZk+NYARcUyy3mZSI=
-MIME-Version: 1.0
-In-Reply-To: <alpine.DEB.2.00.1005250257100.8045@chino.kir.corp.google.com>
-References: <20100521211452.659982351@quilx.com>
-	<20100524070309.GU2516@laptop>
-	<alpine.DEB.2.00.1005240852580.5045@router.home>
-	<20100525020629.GA5087@laptop>
-	<AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com>
-	<20100525070734.GC5087@laptop>
-	<AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
-	<alpine.DEB.2.00.1005250257100.8045@chino.kir.corp.google.com>
-Date: Tue, 25 May 2010 13:47:30 +0300
-X-Google-Sender-Auth: 1SgMBGrcErnAxho1q3HYI19oHko
-Message-ID: <AANLkTin5PNELUXc6oCHadVyX-YcAEalRSppjz4GMyIBh@mail.gmail.com>
-Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: David Rientjes <rientjes@google.com>
-Cc: Nick Piggin <npiggin@suse.de>, Christoph Lameter <cl@linux-foundation.org>,
-       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
-       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+	Tue, 25 May 2010 06:54:34 -0400
+From: Dave Chinner <david@fromorbit.com>
+To: linux-kernel@vger.kernel.org
+Cc: xfs@oss.sgi.com, linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       tytso@mit.edu, jens.axboe@oracle.com
+Subject: [PATCH 2/6] writeback: Add tracing to balance_dirty_pages
+Date: Tue, 25 May 2010 20:54:08 +1000
+Message-Id: <1274784852-30502-3-git-send-email-david@fromorbit.com>
+X-Mailer: git-send-email 1.5.6.5
+In-Reply-To: <1274784852-30502-1-git-send-email-david@fromorbit.com>
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi David,
+From: Dave Chinner <dchinner@redhat.com>
 
-On Tue, May 25, 2010 at 1:02 PM, David Rientjes <rientjes@google.com> wrote:
->> I wouldn't say it's a nightmare, but yes, it could be better. From my
->> point of view SLUB is the base of whatever the future will be because
->> the code is much cleaner and simpler than SLAB.
->
-> The code may be much cleaner and simpler than slab, but nobody (to date)
-> has addressed the significant netperf TCP_RR regression that slub has, for
-> example.  I worked on a patchset to do that for a while but it wasn't
-> popular because it added some increments to the fastpath for tracking
-> data.
+Tracing high level background writeback events is good, but it doesn't
+give the entire picture. Add IO dispatched by foreground throttling to the
+writeback events.
 
-Yes and IIRC I asked you to resend the series because while I care a
-lot about performance regressions, I simply don't have the time or the
-hardware to reproduce and fix the weird cases you're seeing.
+Signed-off-by: Dave Chinner <dchinner@redhat.com>
+---
+ fs/fs-writeback.c                |    5 ++
+ include/trace/events/writeback.h |   80 ++++++++++++++++++++++++++++++++++++++
+ mm/page-writeback.c              |    4 ++
+ 3 files changed, 89 insertions(+), 0 deletions(-)
 
-                        Pekka
+diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
+index b44aba6..efa3d18 100644
+--- a/fs/fs-writeback.c
++++ b/fs/fs-writeback.c
+@@ -814,7 +814,11 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		wbc.more_io = 0;
+ 		wbc.nr_to_write = MAX_WRITEBACK_PAGES;
+ 		wbc.pages_skipped = 0;
++
++		trace_wbc_writeback_start(&wbc);
+ 		writeback_inodes_wb(wb, &wbc);
++		trace_wbc_writeback_written(&wbc);
++
+ 		args->nr_pages -= MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+ 		wrote += MAX_WRITEBACK_PAGES - wbc.nr_to_write;
+ 
+@@ -842,6 +846,7 @@ static long wb_writeback(struct bdi_writeback *wb,
+ 		if (!list_empty(&wb->b_more_io))  {
+ 			inode = list_entry(wb->b_more_io.prev,
+ 						struct inode, i_list);
++			trace_wbc_writeback_wait(&wbc);
+ 			inode_wait_for_writeback(inode);
+ 		}
+ 		spin_unlock(&inode_lock);
+diff --git a/include/trace/events/writeback.h b/include/trace/events/writeback.h
+index df76457..72c1a12 100644
+--- a/include/trace/events/writeback.h
++++ b/include/trace/events/writeback.h
+@@ -7,6 +7,9 @@
+ #include <linux/backing-dev.h>
+ #include <linux/writeback.h>
+ 
++struct wb_writeback_args;
++struct bdi_work;
++
+ TRACE_EVENT(writeback_queue,
+ 
+ 	TP_PROTO(struct backing_dev_info *bdi, struct wb_writeback_args *args),
+@@ -165,6 +168,83 @@ TRACE_EVENT(writeback_bdi_register,
+ 	TP_printk("%s: %s", __entry->name,
+ 			__entry->start ? "registered" : "unregistered")
+ );
++
++/* pass flags explicitly */
++DECLARE_EVENT_CLASS(wbc_class,
++	TP_PROTO(struct writeback_control *wbc),
++	TP_ARGS(wbc),
++	TP_STRUCT__entry(
++		__field(unsigned int, wbc)
++		__array(char, name, 16)
++		__field(long, nr_to_write)
++		__field(long, pages_skipped)
++		__field(int, sb)
++		__field(int, sync_mode)
++		__field(int, nonblocking)
++		__field(int, encountered_congestion)
++		__field(int, for_kupdate)
++		__field(int, for_background)
++		__field(int, for_reclaim)
++		__field(int, range_cyclic)
++		__field(int, more_io)
++		__field(unsigned long, older_than_this)
++		__field(long, range_start)
++		__field(long, range_end)
++	),
++
++	TP_fast_assign(
++		char *__name = "(none)";
++
++		__entry->wbc		= (unsigned long)wbc & 0xffff;
++		if (wbc->bdi)
++			strncpy(__entry->name, dev_name(wbc->bdi->dev), 16);
++		else
++			strncpy(__entry->name, __name, 16);
++		__entry->nr_to_write	= wbc->nr_to_write;
++		__entry->pages_skipped	= wbc->pages_skipped;
++		__entry->sb		= !!wbc->sb;
++		__entry->sync_mode	= wbc->sync_mode;
++		__entry->for_kupdate	= wbc->for_kupdate;
++		__entry->for_background	= wbc->for_background;
++		__entry->for_reclaim	= wbc->for_reclaim;
++		__entry->range_cyclic	= wbc->range_cyclic;
++		__entry->more_io	= wbc->more_io;
++		__entry->older_than_this = wbc->older_than_this ?
++						*wbc->older_than_this : 0;
++		__entry->range_start	= (long)wbc->range_start;
++		__entry->range_end	= (long)wbc->range_end;
++	),
++
++	TP_printk("dev %s wbc=%x towrt=%ld skip=%ld sb=%d mode=%d kupd=%d "
++		"bgrd=%d reclm=%d cyclic=%d more=%d older=0x%lx "
++		"start=0x%lx end=0x%lx",
++		__entry->name,
++		__entry->wbc,
++		__entry->nr_to_write,
++		__entry->pages_skipped,
++		__entry->sb,
++		__entry->sync_mode,
++		__entry->for_kupdate,
++		__entry->for_background,
++		__entry->for_reclaim,
++		__entry->range_cyclic,
++		__entry->more_io,
++		__entry->older_than_this,
++		__entry->range_start,
++		__entry->range_end)
++)
++
++#define DEFINE_WBC_EVENT(name) \
++DEFINE_EVENT(wbc_class, name, \
++	TP_PROTO(struct writeback_control *wbc), \
++	TP_ARGS(wbc))
++DEFINE_WBC_EVENT(wbc_writeback_start);
++DEFINE_WBC_EVENT(wbc_writeback_written);
++DEFINE_WBC_EVENT(wbc_writeback_wait);
++DEFINE_WBC_EVENT(wbc_balance_dirty_start);
++DEFINE_WBC_EVENT(wbc_balance_dirty_written);
++DEFINE_WBC_EVENT(wbc_balance_dirty_wait);
++
+ #endif /* _TRACE_WRITEBACK_H */
+ 
+ /* This part must be outside protection */
+diff --git a/mm/page-writeback.c b/mm/page-writeback.c
+index b289310..68eb727 100644
+--- a/mm/page-writeback.c
++++ b/mm/page-writeback.c
+@@ -34,6 +34,7 @@
+ #include <linux/syscalls.h>
+ #include <linux/buffer_head.h>
+ #include <linux/pagevec.h>
++#include <trace/events/writeback.h>
+ 
+ /*
+  * After a CPU has dirtied this many pages, balance_dirty_pages_ratelimited
+@@ -536,11 +537,13 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		 * threshold otherwise wait until the disk writes catch
+ 		 * up.
+ 		 */
++		trace_wbc_balance_dirty_start(&wbc);
+ 		if (bdi_nr_reclaimable > bdi_thresh) {
+ 			writeback_inodes_wbc(&wbc);
+ 			pages_written += write_chunk - wbc.nr_to_write;
+ 			get_dirty_limits(&background_thresh, &dirty_thresh,
+ 				       &bdi_thresh, bdi);
++			trace_wbc_balance_dirty_written(&wbc);
+ 		}
+ 
+ 		/*
+@@ -566,6 +569,7 @@ static void balance_dirty_pages(struct address_space *mapping,
+ 		if (pages_written >= write_chunk)
+ 			break;		/* We've done our duty */
+ 
++		trace_wbc_balance_dirty_wait(&wbc);
+ 		__set_current_state(TASK_INTERRUPTIBLE);
+ 		io_schedule_timeout(pause);
+ 
+-- 
+1.5.6.5
+
