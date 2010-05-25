@@ -1,45 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932948Ab0EYRFV (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:05:21 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:49780 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932689Ab0EYRFU (ORCPT
+	id S932566Ab0EYRLw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:11:52 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64518 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754317Ab0EYRLt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:05:20 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=j+C92cEQ83NmgrZD1yLLFdX0sLWG9Efv33hTx5jsEPK5mKKAagjTCH9UP3pXt82or
-	6CUzia7wB5u4hBurXoZHA==
+	Tue, 25 May 2010 13:11:49 -0400
+Message-ID: <4BFC046F.7000005@oracle.com>
+Date: Tue, 25 May 2010 10:10:07 -0700
+From: Sunil Mushran <sunil.mushran@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1274775277.5882.482.camel@twins>
-References: <1274746282-21533-1-git-send-email-venki@google.com>
-	<1274775277.5882.482.camel@twins>
-Date: Tue, 25 May 2010 10:05:15 -0700
-Message-ID: <AANLkTikWPkhKz96qteQGYsqTYtuapkDp3SMNfB6IfZuu@mail.gmail.com>
-Subject: Re: [RFC PATCH 0/4] Finer granularity and task/cgroup irq time 
-	accounting
-From: Venkatesh Pallipadi <venki@google.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
-       Thomas Gleixner <tglx@linutronix.de>,
-       Balbir Singh <balbir@linux.vnet.ibm.com>,
-       Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
-       Paul Turner <pjt@google.com>
-Content-Type: text/plain; charset=ISO-8859-1
-X-System-Of-Record: true
+To: Trond Myklebust <trond.myklebust@fys.uio.no>
+CC: Pavel Machek <pavel@ucw.cz>, Lukas Hejtmanek <xhejtman@ics.muni.cz>,
+       linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-fsdevel@vger.kernel.org, salvet@ics.muni.cz
+Subject: Re: Deadlock in NFSv4 in all kernels
+References: <20100507153920.GP28167@ics.muni.cz>	 <20100524212422.GA1286@ucw.cz> <1274790520.2949.20.camel@heimdal.trondhjem.org>
+In-Reply-To: <1274790520.2949.20.camel@heimdal.trondhjem.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090207.4BFC04C4.0114:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 1:14 AM, Peter Zijlstra <peterz@infradead.org> wrote:
->
-> Argh - you managed to use chain-reply with git-1.7?
->
+On 05/25/2010 05:28 AM, Trond Myklebust wrote:
+>>> I encountered the following problem. We use short expiration time for
+>>> kerberos contexts created by rpc.gssd (some patches were included in mainline
+>>> nfs-utils). In particular, we use 120secs expiration time.
+>>>
+>>> Now, I run application that eats 80% of available RAM. Then I run 10 parallel
+>>> dd processes that write data into NFS4 volume with sec=krb5.
+>>>
+>>> As soon as the kerberos context expires (i.e., up to 120 secs), the whole
+>>> system gets stuck in do_page_fault and succesive functions. It is because
+>>> there is no free memory in kernel, all free memory is used as cache for NFS4
+>>> (due to dd traffic), kernel ask NFS to write back its pages but NFS cannot do
+>>> anything as it is missing valid context. NFS contacts rpc.gssd to provide
+>>> a renewed context, the rpc.gssd does not provide the context as it needs some memory
+>>> to scan /tmp for a ticket. I.e., it deadlocks.
+>>>
+>>> Longer context expiration time is no real solution as it only makes the
+>>> deadlock less often.
+>>>
+>>> Any ideas what can be done here? (Please cc me.) We could preallocate some
+>>> memory in rpc.gssd and use mlockall but not sure whether this proctects also
+>>> kernel malloc for things related to rpc.gssd and context creation (new file
+>>> descriptors and so on).
+>>>
+>>> This is seen in 2.6.32 kernel but most probably this is related to all kernel
+>>> versions.
+>>>        
+>> Seems like pretty fundamental problem in nfs :-(. Limiting writeback
+>> caches for nfs, so that system has enough memory to perform rpc calls
+>> with the rest might do the trick, but...
+>>      
+> It's the same problem that you have for any file or storage system that
+> has initiators in userland. On the storage side, iSCSI in particular has
+> the same problem. On the filesystem side, CIFS, AFS, coda, .... do too.
+> The clustered filesystems can deadlock if the node that is running the
+> DLM runs out of memory...
+>    
 
-Sorry. My fault.
-Had chainreplyto turned on in my gitconfig. :-(. Fixing it now...
+Not so trivially. In ocfs2, the dlm allocates small blocks with GFP_NOFS.
+Furthermore, in the time-sensitive recovery thread, it preallocates buffers,
+what it can, at create time. That does not mean it is not affected by
+memory pressure. It is. But that shows up as slower response and not
+a deadlock.
 
-Thanks,
-Venki
