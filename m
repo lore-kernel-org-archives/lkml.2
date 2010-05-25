@@ -1,140 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932625Ab0EYQSK (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 12:18:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:13408 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1758849Ab0EYQSI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 12:18:08 -0400
-Message-ID: <4BFBF814.5040202@redhat.com>
-Date: Tue, 25 May 2010 18:17:24 +0200
-From: Tomas Henzl <thenzl@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: "Yang, Bo" <Bo.Yang@lsi.com>
-CC: "'James.Bottomley@HansenPartnership.com'" 
-	<James.Bottomley@HansenPartnership.com>,
-       "'James.Bottomley@suse.de'" <James.Bottomley@suse.de>,
-       "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
-       "'akpm@osdl.org'" <akpm@osdl.org>,
-       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
-Subject: [PATCH 6/7] scsi: megaraid_sas - Add three times Online controller
- reset - V2
-References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com> <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com> <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>
-In-Reply-To: <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+	id S932650Ab0EYQSx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 12:18:53 -0400
+Received: from casper.infradead.org ([85.118.1.10]:43692 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932192Ab0EYQSw convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 12:18:52 -0400
+Subject: Re: [PATCH] perf_events: fix event scheduling issues introduced by
+  transactional API (take 2)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: eranian@gmail.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
+       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
+       acme@infradead.org, ming.m.lin@intel.com, perfmon2-devel@lists.sf.net
+In-Reply-To: <AANLkTilwlZKx0k-Z_6LHVXIM561JLcWV4mX4Wcwgb7r0@mail.gmail.com>
+References: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
+	 <1274794518.5882.1280.camel@twins>
+	 <AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
+	 <1274796225.5882.1389.camel@twins>
+	 <AANLkTinTfqLdRbgqRfn4Avl6bedB6xyLbRybwencYRiF@mail.gmail.com>
+	 <AANLkTimWx4fnqA5hviwv8gOTH1eydC0SMllcmsQp8jSB@mail.gmail.com>
+	 <1274801531.5882.1670.camel@twins> <1274803086.5882.1752.camel@twins>
+	 <AANLkTilwlZKx0k-Z_6LHVXIM561JLcWV4mX4Wcwgb7r0@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 18:18:35 +0200
+Message-ID: <1274804315.5882.1821.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-V2: I've cleaned up some coding style issues and removed a variable, the functionality shouldn't be changed
+On Tue, 2010-05-25 at 18:10 +0200, Stephane Eranian wrote:
+> > Index: linux-2.6/kernel/perf_event.c
+> > ===================================================================
+> > --- linux-2.6.orig/kernel/perf_event.c
+> > +++ linux-2.6/kernel/perf_event.c
+> > @@ -668,15 +668,9 @@ group_sched_in(struct perf_event *group_
+> >                }
+> >        }
+> >
+> > -       if (!txn)
+> > +       if (!txn || !pmu->commit_txn(pmu))
+> >                return 0;
+> >
+> > -       ret = pmu->commit_txn(pmu);
+> > -       if (!ret) {
+> > -               pmu->cancel_txn(pmu);
+> > -               return 0;
+> > -       }
+> > -
+> >  group_error:
+> >        /*
+> >         * Groups can be scheduled in as one unit only, so undo any
+> >
+> Looks okay.
+> 
+> I believe you can also drop the txn test in group_sched_in() after group_error:,
+> given you have the if !(txn) return 0.
 
-Tomas
+Can't we still get in the group_error: branch with either scenario?
 
-If fw didn't raise the interrupt with the fw state change to driver and fw goes to failure state, driver
-Will check the FW state in driver's timeout routine and issue the reset if need.  Driver will do the OCR upto three
-Times until kill adapter.  Also driver will issue OCR before driver kill adapter even if fw in operational state.   
+!txn will get there if ->enable() of a group sibling fails,
+txn will get there if either ->enable() or ->commit_txn() fails.
 
-Signed-off-by Bo Yang<bo.yang@lsi.com>
-Signed-off-by Tomas Henzl<thenzl@redhat.com>
-
----
-diff --git a/drivers/scsi/megaraid/megaraid_sas.c b/drivers/scsi/megaraid/megaraid_sas.c
-index 92e381b..0b84b3a 100644
---- a/drivers/scsi/megaraid/megaraid_sas.c
-+++ b/drivers/scsi/megaraid/megaraid_sas.c
-@@ -1551,6 +1551,28 @@ static void megasas_complete_cmd_dpc(unsigned long instance_addr)
- 	}
- }
- 
-+static void
-+megasas_internal_reset_defer_cmds(struct megasas_instance *instance);
-+
-+static void
-+process_fw_state_change_wq(struct work_struct *work);
-+
-+void megasas_do_ocr(struct megasas_instance *instance)
-+{
-+	if (instance->pdev->device == PCI_DEVICE_ID_LSI_SAS1064R ||
-+	    instance->pdev->device == PCI_DEVICE_ID_DELL_PERC5 ||
-+	    instance->pdev->device == PCI_DEVICE_ID_LSI_VERDE_ZCR)
-+		*instance->consumer = MEGASAS_ADPRESET_INPROG_SIGN;
-+
-+	instance->instancet->disable_intr(instance->reg_set);
-+	instance->adprecovery = MEGASAS_ADPRESET_SM_INFAULT;
-+	instance->issuepend_done = 0;
-+
-+	atomic_set(&instance->fw_outstanding, 0);
-+	megasas_internal_reset_defer_cmds(instance);
-+	process_fw_state_change_wq(&instance->work_init);
-+}
-+
- /**
-  * megasas_wait_for_outstanding -	Wait for all outstanding cmds
-  * @instance:				Adapter soft state
-@@ -1568,6 +1590,9 @@ static int megasas_wait_for_outstanding(struct megasas_instance *instance)
- 	unsigned long flags;
- 	struct list_head clist_local;
- 	struct megasas_cmd *reset_cmd;
-+	u32 fw_state;
-+	u8 kill_adapter_flag;
-+	int outstanding;
- 
- 	spin_lock_irqsave(&instance->hba_lock, flags);
- 	adprecovery = instance->adprecovery;
-@@ -1628,7 +1653,7 @@ static int megasas_wait_for_outstanding(struct megasas_instance *instance)
- 	printk(KERN_NOTICE "megaraid_sas: HBA reset handler invoked without an internal reset condition.\n");
- 	for (i = 0; i < wait_time; i++) {
- 
--		int outstanding = atomic_read(&instance->fw_outstanding);
-+		outstanding = atomic_read(&instance->fw_outstanding);
- 
- 		if (!outstanding)
- 			break;
-@@ -1646,7 +1671,41 @@ static int megasas_wait_for_outstanding(struct megasas_instance *instance)
- 		msleep(1000);
- 	}
- 
--	if (atomic_read(&instance->fw_outstanding)) {
-+	i = 0;
-+	kill_adapter_flag = 0;
-+	do {
-+		fw_state = instance->instancet->read_fw_status_reg(
-+					instance->reg_set) & MFI_STATE_MASK;
-+		if (fw_state == MFI_STATE_FAULT &&
-+		    instance->disableOnlineCtrlReset == 0) {
-+			if (i == 3) {
-+				kill_adapter_flag = 2;
-+				break;
-+			}
-+			megasas_do_ocr(instance);
-+			kill_adapter_flag = 1;
-+
-+			/* wait for 1 secs to let FW finish the pending cmds */
-+			msleep(1000);
-+		}
-+		i++;
-+	} while (i <= 3);
-+
-+	if (atomic_read(&instance->fw_outstanding) && !kill_adapter_flag &&
-+	    instance->disableOnlineCtrlReset == 0) {
-+
-+		megasas_do_ocr(instance);
-+
-+		/* wait for 5 secs to let FW finish the pending cmds */
-+		for (i = 0; i < wait_time; i++) {
-+			outstanding = atomic_read(&instance->fw_outstanding);
-+			if (!outstanding)
-+				return SUCCESS;
-+			msleep(1000);
-+		}
-+	}
-+
-+	if (atomic_read(&instance->fw_outstanding) || kill_adapter_flag == 2) {
- 		printk(KERN_NOTICE "megaraid_sas: pending cmds after reset\n");
- 		/*
- 		* Send signal to FW to stop processing any pending cmds.
-
-
+(Although typically ->enable() would not fail for txn)
