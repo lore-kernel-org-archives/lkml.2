@@ -1,21 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933687Ab0EYSTf (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:19:35 -0400
-Received: from kroah.org ([198.145.64.141]:44393 "EHLO coco.kroah.org"
+	id S933507Ab0EYSVn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:21:43 -0400
+Received: from kroah.org ([198.145.64.141]:44338 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933376Ab0EYSRc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:17:32 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:13 2010
-Message-Id: <20100525181213.565182425@clark.site>
+	id S933004Ab0EYSRY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:24 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:12 2010
+Message-Id: <20100525181212.667240375@clark.site>
 User-Agent: quilt/0.48-8.10
-Date: Tue, 25 May 2010 11:09:13 -0700
+Date: Tue, 25 May 2010 11:09:04 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
        akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       Dan Carpenter <error27@gmail.com>
-Subject: [15/25] USB: fix testing the wrong variable in fs_create_by_name()
+       "Theodore Tso" <tytso@mit.edu>,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Mingming Cao <cmm@us.ibm.com>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [06/25] ext4: Retry block reservation
 In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -25,38 +28,128 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 ------------------
 
-From: Dan Carpenter <error27@gmail.com>
 
-commit fa7fe7af146a7b613e36a311eefbbfb5555325d1 upstream.
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-There is a typo here.  We should be testing "*dentry" which was just
-assigned instead of "dentry".  This could result in dereferencing an
-ERR_PTR inside either usbfs_mkdir() or usbfs_create().
+commit 030ba6bc67b4f2bc5cd174f57785a1745c929abe upstream.
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+During block reservation if we don't have enough blocks left, retry
+block reservation with smaller block counts.  This makes sure we try
+fallocate and DIO with smaller request size and don't fail early.  The
+delayed allocation reservation cannot try with smaller block count. So
+retry block reservation to handle temporary disk full conditions.  Also
+print free blocks details if we fail block allocation during writepages.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Mingming Cao <cmm@us.ibm.com>
+Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
 Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
 
 ---
- drivers/usb/core/inode.c |    4 ++--
- 1 file changed, 2 insertions(+), 2 deletions(-)
+ fs/ext4/balloc.c  |    8 +++++++-
+ fs/ext4/inode.c   |   14 +++++++++++---
+ fs/ext4/mballoc.c |    7 ++++++-
+ 3 files changed, 24 insertions(+), 5 deletions(-)
 
---- a/drivers/usb/core/inode.c
-+++ b/drivers/usb/core/inode.c
-@@ -510,13 +510,13 @@ static int fs_create_by_name (const char
- 	*dentry = NULL;
- 	mutex_lock(&parent->d_inode->i_mutex);
- 	*dentry = lookup_one_len(name, parent, strlen(name));
--	if (!IS_ERR(dentry)) {
-+	if (!IS_ERR(*dentry)) {
- 		if ((mode & S_IFMT) == S_IFDIR)
- 			error = usbfs_mkdir (parent->d_inode, *dentry, mode);
- 		else 
- 			error = usbfs_create (parent->d_inode, *dentry, mode);
- 	} else
--		error = PTR_ERR(dentry);
-+		error = PTR_ERR(*dentry);
- 	mutex_unlock(&parent->d_inode->i_mutex);
+--- a/fs/ext4/balloc.c
++++ b/fs/ext4/balloc.c
+@@ -1907,10 +1907,16 @@ ext4_fsblk_t ext4_old_new_blocks(handle_
+ 		/*
+ 		 * With delalloc we already reserved the blocks
+ 		 */
+-		if (ext4_claim_free_blocks(sbi, *count)) {
++		while (*count && ext4_claim_free_blocks(sbi, *count)) {
++			/* let others to free the space */
++			yield();
++			*count = *count >> 1;
++		}
++		if (!*count) {
+ 			*errp = -ENOSPC;
+ 			return 0;	/*return with ENOSPC error */
+ 		}
++		num = *count;
+ 	}
+ 	/*
+ 	 * Check quota for allocation of this block.
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1549,6 +1549,7 @@ static int ext4_journalled_write_end(str
  
- 	return error;
+ static int ext4_da_reserve_space(struct inode *inode, int nrblocks)
+ {
++	int retries = 0;
+        struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
+        unsigned long md_needed, mdblocks, total = 0;
+ 
+@@ -1557,6 +1558,7 @@ static int ext4_da_reserve_space(struct
+ 	 * in order to allocate nrblocks
+ 	 * worse case is one extent per block
+ 	 */
++repeat:
+ 	spin_lock(&EXT4_I(inode)->i_block_reservation_lock);
+ 	total = EXT4_I(inode)->i_reserved_data_blocks + nrblocks;
+ 	mdblocks = ext4_calc_metadata_amount(inode, total);
+@@ -1567,6 +1569,10 @@ static int ext4_da_reserve_space(struct
+ 
+ 	if (ext4_claim_free_blocks(sbi, total)) {
+ 		spin_unlock(&EXT4_I(inode)->i_block_reservation_lock);
++		if (ext4_should_retry_alloc(inode->i_sb, &retries)) {
++			yield();
++			goto repeat;
++		}
+ 		return -ENOSPC;
+ 	}
+ 	EXT4_I(inode)->i_reserved_data_blocks += nrblocks;
+@@ -1864,20 +1870,18 @@ static void ext4_da_block_invalidatepage
+ static int  mpage_da_map_blocks(struct mpage_da_data *mpd)
+ {
+ 	int err = 0;
++	struct buffer_head new;
+ 	struct buffer_head *lbh = &mpd->lbh;
+ 	sector_t next = lbh->b_blocknr;
+-	struct buffer_head new;
+ 
+ 	/*
+ 	 * We consider only non-mapped and non-allocated blocks
+ 	 */
+ 	if (buffer_mapped(lbh) && !buffer_delay(lbh))
+ 		return 0;
+-
+ 	new.b_state = lbh->b_state;
+ 	new.b_blocknr = 0;
+ 	new.b_size = lbh->b_size;
+-
+ 	/*
+ 	 * If we didn't accumulate anything
+ 	 * to write simply return
+@@ -1910,6 +1914,10 @@ static int  mpage_da_map_blocks(struct m
+ 				  lbh->b_size >> mpd->inode->i_blkbits, err);
+ 		printk(KERN_EMERG "This should not happen.!! "
+ 					"Data will be lost\n");
++		if (err == -ENOSPC) {
++			printk(KERN_CRIT "Total free blocks count %lld\n",
++				ext4_count_free_blocks(mpd->inode->i_sb));
++		}
+ 		/* invlaidate all the pages */
+ 		ext4_da_block_invalidatepages(mpd, next,
+ 				lbh->b_size >> mpd->inode->i_blkbits);
+--- a/fs/ext4/mballoc.c
++++ b/fs/ext4/mballoc.c
+@@ -4651,7 +4651,12 @@ ext4_fsblk_t ext4_mb_new_blocks(handle_t
+ 		/*
+ 		 * With delalloc we already reserved the blocks
+ 		 */
+-		if (ext4_claim_free_blocks(sbi, ar->len)) {
++		while (ar->len && ext4_claim_free_blocks(sbi, ar->len)) {
++			/* let others to free the space */
++			yield();
++			ar->len = ar->len >> 1;
++		}
++		if (!ar->len) {
+ 			*errp = -ENOSPC;
+ 			return 0;
+ 		}
 
 
