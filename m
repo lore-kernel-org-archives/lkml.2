@@ -1,63 +1,122 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab0EYTx3 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 15:53:29 -0400
-Received: from ch-smtp02.sth.basefarm.net ([80.76.149.213]:38298 "EHLO
-	ch-smtp02.sth.basefarm.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1758855Ab0EYTx1 (ORCPT
+	id S1758980Ab0EYT5S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 15:57:18 -0400
+Received: from smtp-out.google.com ([216.239.44.51]:15243 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab0EYT5Q (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 15:53:27 -0400
-Message-ID: <4BFC2A7D.50501@euromail.se>
-Date: Tue, 25 May 2010 21:52:29 +0200
-From: Henrik Rydberg <rydberg@euromail.se>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+	Tue, 25 May 2010 15:57:16 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=date:from:x-x-sender:to:cc:subject:in-reply-to:message-id:
+	references:user-agent:mime-version:content-type:x-system-of-record;
+	b=NERN7HdqamAmNTO1L4Hd9haA3f6k1hX6V7kys0QY6G6kHcaMQvv4EsCfVe9HNQmRZ
+	E0vxdsMVqJSpwXfez4v+Q==
+Date: Tue, 25 May 2010 12:57:06 -0700 (PDT)
+From: David Rientjes <rientjes@google.com>
+X-X-Sender: rientjes@chino.kir.corp.google.com
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+cc: Nick Piggin <npiggin@suse.de>, Christoph Lameter <cl@linux-foundation.org>,
+       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>
+Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
+In-Reply-To: <AANLkTin5PNELUXc6oCHadVyX-YcAEalRSppjz4GMyIBh@mail.gmail.com>
+Message-ID: <alpine.DEB.2.00.1005251247090.20631@chino.kir.corp.google.com>
+References: <20100521211452.659982351@quilx.com> <20100524070309.GU2516@laptop> <alpine.DEB.2.00.1005240852580.5045@router.home> <20100525020629.GA5087@laptop> <AANLkTik2O-_Fbh-dq0sSLFJyLU7PZi4DHm85lCo4sugS@mail.gmail.com> <20100525070734.GC5087@laptop>
+ <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com> <alpine.DEB.2.00.1005250257100.8045@chino.kir.corp.google.com> <AANLkTin5PNELUXc6oCHadVyX-YcAEalRSppjz4GMyIBh@mail.gmail.com>
+User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
 MIME-Version: 1.0
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-CC: Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
-       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
-       Peter Hutterer <peter.hutterer@who-t.net>,
-       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
-       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
-Subject: Re: [PATCH 0/2] input: mt: Add EVIOC mechanism for MT slots
-References: <1274788379-11026-1-git-send-email-rydberg@euromail.se> <20100525173446.GA4634@core.coreip.homeip.net>
-In-Reply-To: <20100525173446.GA4634@core.coreip.homeip.net>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Originating-IP: 83.248.196.134
-X-Scan-Result: No virus found in message 1OH0B1-0008JF-7p.
-X-Scan-Signature: ch-smtp02.sth.basefarm.net 1OH0B1-0008JF-7p 78483ae3caee4a4e4b61be718e35d7f6
+Content-Type: TEXT/PLAIN; charset=US-ASCII
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dmitry Torokhov wrote:
-> Hi Henrik,
+On Tue, 25 May 2010, Pekka Enberg wrote:
+
+> > The code may be much cleaner and simpler than slab, but nobody (to date)
+> > has addressed the significant netperf TCP_RR regression that slub has, for
+> > example. I worked on a patchset to do that for a while but it wasn't
+> > popular because it added some increments to the fastpath for tracking
+> > data.
 > 
-> On Tue, May 25, 2010 at 01:52:57PM +0200, Henrik Rydberg wrote:
->> These patches are in response to the discussion about input state
->> retrieval.
->>
->> The current EVIOCGABS method does not work with MT slots.  These
->> patches provides a mechanism where a slot is first selected via a call
->> to EVIOCSABS, after which the corresponding MT events can be extracted
->> with calls to EVIOCGABS.
->>
->> The symmetric operation, to set the MT state via EVIOCSABS, seems to
->> violate input data integrity, and is therefore not implemented.
->>
-> 
-> This looks sane, however the question remains - is there any users for
-> this data? Like I mentioned, I can see the need to fetch state of
-> switches and ranges of absolute axis, and even non-multitouch ABS values
-> (due to the fact that some input devices, like sliders, may stay in a
-> certain position for long periods of time), but I expect multitouch data
-> to be "refreshed" very quickly.
-> 
-> Thanks.
+> Yes and IIRC I asked you to resend the series because while I care a
+> lot about performance regressions, I simply don't have the time or the
+> hardware to reproduce and fix the weird cases you're seeing.
 > 
 
-There were some voices addressing this issue, and the patches are here,
-available for whomever to pick up. Drop them if you wish, I will not send them anew.
+My patchset still never attained parity with slab even though it improved 
+slub's performance for that specific benchmark on my 16-core machine with 
+64G of memory:
 
-Cheers,
-Henrik
+	# threads	SLAB		SLUB		SLUB+patchset
+	16		69892		71592		69505
+	32		126490		95373		119731
+	48		138050		113072		125014
+	64		169240		149043		158919
+	80		192294		172035		179679
+	96		197779		187849		192154
+	112		217283		204962		209988
+	128		229848		217547		223507
+	144		238550		232369		234565
+	160		250333		239871		244789
+	176		256878		242712		248971
+	192		261611		243182		255596
+
+CONFIG_SLUB_STATS demonstrates that the kmalloc-256 and kmalloc-2048 are
+performing quite poorly without the changes:
+
+	cache		ALLOC_FASTPATH	ALLOC_SLOWPATH
+	kmalloc-256	98125871	31585955
+	kmalloc-2048	77243698	52347453
+
+	cache		FREE_FASTPATH	FREE_SLOWPATH
+	kmalloc-256	173624		129538000
+	kmalloc-2048	90520		129500630
+
+When you have these type of results, it's obvious why slub is failing to 
+achieve the same performance as slab.  With the slub fastpath percpu work 
+that has been done recently, it might be possible to resurrect my patchset 
+and get more positive feedback because the penalty won't be as a 
+significant, but the point is that slub still fails to achieve the same 
+results that slab can with heavy networking loads.  Thus, I think any 
+discussion about removing slab is premature until it's no longer shown to 
+be a clear winner in comparison to its replacement, whether that is slub, 
+slqb, sleb, or another allocator.  I agree that slub is clearly better in 
+terms of maintainability, but we simply can't use it because of its 
+performance for networking loads.
+
+If you want to duplicate these results on machines with a larger number of 
+cores, just download netperf, run with CONFIG_SLUB on both netserver and 
+netperf machines, and use this script:
+
+#!/bin/bash
+
+TIME=60				# seconds
+HOSTNAME=<hostname>		# netserver
+
+NR_CPUS=$(grep ^processor /proc/cpuinfo | wc -l)
+echo NR_CPUS=$NR_CPUS
+
+run_netperf() {
+	for i in $(seq 1 $1); do
+		netperf -H $HOSTNAME -t TCP_RR -l $TIME &
+	done
+}
+
+ITERATIONS=0
+while [ $ITERATIONS -lt 12 ]; do
+	RATE=0
+	ITERATIONS=$[$ITERATIONS + 1]	
+	THREADS=$[$NR_CPUS * $ITERATIONS]
+	RESULTS=$(run_netperf $THREADS | grep -v '[a-zA-Z]' | awk '{ print $6 }')
+
+	for j in $RESULTS; do
+		RATE=$[$RATE + ${j/.*}]
+	done
+	echo threads=$THREADS rate=$RATE
+done
