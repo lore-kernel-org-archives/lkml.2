@@ -1,71 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758724Ab0EYOyM (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:54:12 -0400
-Received: from fmmailgate02.web.de ([217.72.192.227]:49557 "EHLO
-	fmmailgate02.web.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758204Ab0EYOyL (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:54:11 -0400
-From: Markus <M4rkusXXL@web.de>
-To: linux-kernel@vger.kernel.org
-Subject: Re: BUG: unable to handle kernel paging request
-Date: Tue, 25 May 2010 16:54:09 +0200
-User-Agent: KMail/1.13.3 (Linux/2.6.33.2-gentoo-r1-ck1; KDE/4.4.3; x86_64; ; )
-Cc: Borislav Petkov <bp@amd64.org>
-References: <201005231829.32106.M4rkusXXL@web.de> <201005251509.39495.M4rkusXXL@web.de> <20100525143120.GA18018@kryptos.osrc.amd.com>
-In-Reply-To: <20100525143120.GA18018@kryptos.osrc.amd.com>
+	id S1758896Ab0EYO6H (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:58:07 -0400
+Received: from thunk.org ([69.25.196.29]:44923 "EHLO thunker.thunk.org"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756413Ab0EYO6G (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 10:58:06 -0400
+Date: Tue, 25 May 2010 10:57:56 -0400
+From: tytso@mit.edu
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Steven Rostedt <rostedt@goodmis.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>, linux-ext4@vger.kernel.org
+Subject: Re: [PATCH 5/8] tracing: Convert more ext4 events to DEFINE_EVENT
+Message-ID: <20100525145756.GJ5556@thunk.org>
+Mail-Followup-To: tytso@mit.edu, Li Zefan <lizf@cn.fujitsu.com>,
+	Steven Rostedt <rostedt@goodmis.org>,
+	Frederic Weisbecker <fweisbec@gmail.com>,
+	Ingo Molnar <mingo@elte.hu>, LKML <linux-kernel@vger.kernel.org>,
+	linux-ext4@vger.kernel.org
+References: <4BFA3728.3000701@cn.fujitsu.com>
+ <4BFA37A4.1050208@cn.fujitsu.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005251654.09288.M4rkusXXL@web.de>
-X-Provags-ID: V01U2FsdGVkX19vvo1gsbLt5MqZCKSbgnU77n5OiEJbD5FxGZX4
-	5kE4JGsTML6vjy2eEk0Y25KRgqpHT8v3CcFg6ObmMlYzM7Ed6v
-	0wHfTSFzQ=
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <4BFA37A4.1050208@cn.fujitsu.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
+X-SA-Exim-Connect-IP: <locally generated>
+X-SA-Exim-Mail-From: tytso@thunk.org
+X-SA-Exim-Scanned: No (on thunker.thunk.org); SAEximRunCond expanded to false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi.
-
-I already thought "swapper" to be unrelated to "swap", but who knows.
-
-The linked article is pretty old, isnt it? I used mdadm to create the 
-raid1 and "echo check > /sys/block/mdX/md/sync_action" to regulary start 
-the check.
-
-Its exactly the same kernel as before (the one crashing); Still the 
-gentoo-kernel (vanilla+fbcondecor).
-
-I will send a mail if anything happens.
-
-Thanks for your time,
-Markus
-
-> From: Markus <M4rkusXXL@web.de>
-> Date: Tue, May 25, 2010 at 03:09:39PM +0200
+On Mon, May 24, 2010 at 04:24:04PM +0800, Li Zefan wrote:
+> Use DECLARE_EVENT_CLASS, and save ~2.7K:
 > 
-> > Had disabled swap (saw the string "swapper" and "page_fault"...)
-> > and now the problem does not show up anymore.
+>    text    data     bss     dec     hex filename
+>  274441    7200     260  281901   44d2d fs/ext4/ext4.o.orig
+>  271881    7040     256  279177   44289 fs/ext4/ext4.o
 > 
-> No, swapper is the idle task and I don't think it has anything to do
-> with the oops - it simply happens to be the currently running process
-> when the oops happens. And the kernel should be handling swapless
-> configurations just fine for the cost of slowing down when RAM is
-> depleted or OOM killing a memory hog.
+> 4 events are converted:
 > 
-> > Dont know, if its now "fixed", but is it possible that raid1 and
-> > swap on top does not really work? Normal system usage
-> > (auto-detected raid1, add swap by fstab, regularly running a check
-> > and perhaps a resync).
+>   ext4__mb_new_pa: ext4_mb_new_inode_pa, ext4_mb_new_group_pa
+>   ext4__mballoc:   ext4_mballoc_discard, ext4_mballoc_free
 > 
-> Enabling swap on raid1 might need a bit more work, see here:
-> http://www.linuxjournal.com/article/5898
+> No change in functionality.
 > 
-> Anyways, let me know what happens and especially if it appears again.
-> Now you say it doesn't happen anymore but le me ask: is this still
-> the gentoo kernel or is it a vanilla one?
-> 
-> Thanks.
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
 
+Thanks, added to the ext4 tree.
+
+					- Ted
