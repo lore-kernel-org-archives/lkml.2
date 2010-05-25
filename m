@@ -1,67 +1,108 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933413Ab0EYSrQ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:47:16 -0400
-Received: from cantor.suse.de ([195.135.220.2]:40460 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932294Ab0EYSrO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:47:14 -0400
-Date: Wed, 26 May 2010 04:47:00 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Albert Herranz <albert_herranz@yahoo.es>
-Cc: aya Kumar <jayakumar.lkml@gmail.com>,
+	id S933503Ab0EYSrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:47:52 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:42521 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932294Ab0EYSru (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:47:50 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=H+V83VXw5MHmRAUHsuGdu0O+uTUxYdTBzbuabzc4znjYacISttJCIQpWp1fZv9BH5E
+         r92MXEDVtGQA9ZcYbueAr5RJo5G9HaHbk3Exedfxsjey4HpcKz7OHS5zFYBlbtQeYIFo
+         E76W12Pk+QN30qeVloui9Q3e0DwmCm0HwSyqM=
+Date: Tue, 25 May 2010 11:47:40 -0700
+From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+To: Alan Stern <stern@rowland.harvard.edu>
+Cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>, linux-mm@kvack.org,
-       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
-       linux-fbdev@vger.kernel.org
-Subject: Re: page_mkwrite vs pte dirty race in fb_defio
-Message-ID: <20100525184700.GJ20853@laptop>
-References: <20100525160149.GE20853@laptop>
- <4BFC1657.5000707@yahoo.es>
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Message-ID: <20100525184740.GA4248@core.coreip.homeip.net>
+References: <201005251124.58017.dmitry.torokhov@gmail.com>
+ <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <4BFC1657.5000707@yahoo.es>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <Pine.LNX.4.44L0.1005251428090.1634-100000@iolanthe.rowland.org>
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 08:26:31PM +0200, Albert Herranz wrote:
-> Hi,
+On Tue, May 25, 2010 at 02:35:17PM -0400, Alan Stern wrote:
+> On Tue, 25 May 2010, Dmitry Torokhov wrote:
 > 
-> On 05/25/2010 06:01 PM, Nick Piggin wrote:
-> > Hi,
+> > > Here's the scenario:
+> > > 
+> > > The system is awake, and the user presses a key. The keyboard driver
+> > > processes the keystroke and puts it in an input queue.  A user process
+> > > reads it from the event queue, thereby emptying the queue.
+> > > 
+> > > At that moment, the system decides to go into opportunistic suspend.
+> > > Since the input queue is empty, there's nothing to stop it.  As the
+> > > first step, userspace is frozen -- before the process has a chance to
+> > > do anything with the keystroke it just read.  As a result, the system
+> > > stays asleep until something else wakes it up, even though the
+> > > keystroke was important and should have prevented it from sleeping.
+> > > 
+> > > Suspend blockers protect against this scenario.  Here's how:
+> > > 
+> > > The user process doesn't read the input queue directly; instead it
+> > > does a select or poll.  When it sees there is data in the queue, it
+> > > first acquires a suspend blocker and then reads the data.
+> > > 
+> > > Now the system _can't_ go into opportunistic suspend, because a suspend
+> > > blocker is active.  The user process can do whatever it wants with the
+> > > keystroke.  When it is finished, it releases the suspend blocker and
+> > > loops back to the select/poll call.
+> > > 
 > > 
-> > I couldn't find where this patch (49bbd815fd8) was discussed, so I'll
-> > make my own thread. Adding a few lists to cc because it might be of
-> > interest to driver and filesystem writers.
-> > 
+> > What you describe can be done in userspace though, via a "suspend manager" 
+> > process. Tasks reading input events will post "busy" events to stop the 
+> > manager process from sending system into suspend. But this can be confined to 
+> > Android userspace, leaving the kernel as is (well, kernel needs to be modified 
+> > to not go into suspend with full queues, but that is using existing kernel 
+> > APIs).
 > 
-> The original thread can be found here:
-> http://marc.info/?l=linux-fbdev&m=127369791432181
-
-Thanks.
-
- 
-> > The old ->page_mkwrite calling convention was causing problems exactly
-> > because of this race, and we solved it by allowing page_mkwrite to
-> > return with the page locked, and the lock will be held until the
-> > pte is marked dirty. See commit b827e496c893de0c0f142abfaeb8730a2fd6b37f.
-> > 
+> I think that could be made to work.  And it might remove the need for 
+> the userspace suspend-blocker API, which would be an advantage.  It 
+> could even remove the need for the opportunistic-suspend workqueue -- 
+> opportunistic suspends would be initiated by the "suspend manager" 
+> process instead of by the kernel.
 > 
-> Ah, didn't know about that. Thanks for the pointer.
+> However you still have the issue of modifying the kernel drivers to 
+> disallow opportunistic suspend if their queues are non-empty.  Doing 
+> that is more or less equivalent to implementing kernel-level suspend 
+> blockers.  (The suspend blocker approach is slightly more efficient, 
+> because it will prevent a suspend from starting if a queue is 
+> non-empty, instead of allowing the suspend to start and then aborting 
+> it partway through.)
+>
+> Maybe I'm missing something here...  No doubt someone will point it out 
+> if I am.
 > 
-> > I hope that should provide a more elegant solution to your problem. I
-> > would really like you to take a look at that, because we already have
-> > filesystem code (NFS) relying on it, and more code we have relying on
-> > this synchronization, the more chance we would find a subtle problem
-> > with it (also it should be just nicer).
-> > 
-> 
-> So if I undestand it correctly, using the "new" calling convention I should just lock the page on fb_deferred_io_mkwrite() and return VM_FAULT_LOCKED to fix the described race for fb_defio.
 
-As far as I can see from quick reading of the fb_defio code, yes
-that should solve it (provided you lock the page inside the mutex,
-of course).
+Well, from my perspective that would limit changes to the evdev driver
+(well, limited input core plumbing will be needed) but that is using the
+current PM infrastructure. The HW driver changes will be limited to what
+you described "type 2" in your other e-mail.
 
+Also, not suspending while events are in progress) is probably
+beneficial for platforms other than Android as well. So unless I am
+missing something this sounds like a win.
+
+-- 
+Dmitry
