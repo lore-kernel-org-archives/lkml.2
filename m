@@ -1,60 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758683Ab0EYXvG (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 19:51:06 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:38459 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755315Ab0EYXvD (ORCPT
+	id S1758778Ab0EYXw4 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 19:52:56 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:58418 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755315Ab0EYXwy convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 19:51:03 -0400
-Date: Tue, 25 May 2010 16:47:32 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-In-Reply-To: <201005260054.52122.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1005251639420.3689@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005260054.52122.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Tue, 25 May 2010 19:52:54 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=JQ/D3YJr2eP0hl6xDKsOO5YVU/hqyvl/MfA3vBbegfvQp9rfwDq6saPKwAK2d6zCrK
+         usQRQiKGmh6xT8okCAOvb6tUFfK9Js/YcXsIDvWNigm0JIgGWDArjf1wriOw+ZBo31g+
+         DX1ELZito6Ajv5r0FomM7MgjDuo8fFxeI7nC8=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <4BFA59F7.2020606@cesarb.net>
+References: <4BF81D87.6010506@cesarb.net>
+	<20100523140348.GA10843@barrios-desktop>
+	<4BF974D5.30207@cesarb.net>
+	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>
+	<4BF9CF00.2030704@cesarb.net>
+	<AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
+	<4BFA59F7.2020606@cesarb.net>
+Date: Wed, 26 May 2010 08:52:52 +0900
+Message-ID: <AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>
+Subject: Re: [PATCH 0/3] mm: Swap checksum
+From: Minchan Kim <minchan.kim@gmail.com>
+To: Cesar Eduardo Barros <cesarb@cesarb.net>
+Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Hugh Dickins <hughd@google.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi, Cesar.
 
-
-On Wed, 26 May 2010, Rafael J. Wysocki wrote:
+On Mon, May 24, 2010 at 7:50 PM, Cesar Eduardo Barros <cesarb@cesarb.net> wrote:
+> Em 23-05-2010 23:05, Minchan Kim escreveu:
+>>
+>> On Mon, May 24, 2010 at 9:57 AM, Cesar Eduardo Barros<cesarb@cesarb.net>
+>>  wrote:
+>>>
+>>> The internal ECC of the disk will not save you - a quick Google search
+>>> found
+>>> an instance of someone with silent data corruption caused by a faulty
+>>> *power
+>>> supply*.[1]
+>>>
+>>> And if it is silent corruption, without the checksums you will not notice
+>>> it
+>>> - it will just be dismissed as "oh, Firefox just crashed again" or
+>>> similar
+>>> (the same as bit flips on RAM without ECC).
+>>
+>> When I read your comment, suddenly some thought occurred to me.
+>> If we can't believe ECC of the disk, why do we separate error
+>> detection logic between file system and swap disk?
+>>
+>> I mean it make sense that put crc detection into block layer?
+>> It can make sure any block I/O.
 >
-> I'm not able to reproduce the issue with the following commit reverted:
-> 
-> commit 480b02df3aa9f07d1c7df0cd8be7a5ca73893455
-> Author: Rusty Russell <rusty@rustcorp.com.au>
-> Date:   Wed May 19 17:33:39 2010 -0600
-> 
->     module: drop the lock while waiting for module to complete initialization.
+> There are differences as to where the checksum will be stored.
+>
+> For the filesystem (and for the software suspend image), you have to store
+> the checksums in the disk itself, and the correct place (and ordering
+> requirements) depends on the filesystem. Also, most filesystems do not
+> currently have on-disk checksums.
+>
+> For the swap, it is much simpler; the checksums can be stored in memory
+> (since they do not matter after a reboot; the swap contents are simply
+> discarded). This also gives better performance, since the checksums do not
+> have to be separately written, and more flexibility, since the kernel can
+> use whatever kind of checksum it wants and can store the checksum in
+> whatever data structure it choses, without worrying about compatibility.
+>
+> And, in fact, there is a CRC code in the block layer; it is
+> CONFIG_BLK_DEV_INTEGRITY. However, it is not a generic solution; it needs
+> some extra prerequisites (like a disk low-level formatted with sectors with
+>>512 bytes).
 
-Hmm. That does seem to be buggy. We can't just drop and re-take the lock: 
-that may make sense _internally_ as far as resolve_symbol() itself is 
-concerned, but the caller will its own local variables, and some of those 
-will no longer be valid if the lock was dropped. 
+Thanks for good information.
 
-That commit also changes the return value semantics of "use_module()", 
-which is an exported interface where the only users seem to be 
-out-of-kernel (the only in-kernel use is in kernel/module.c itself). That 
-seems like a really really bad idea too.
+You mean BLK_DEV_INTEGRITY has a dependency with block device driver?
+If you want to support checksum into suspend, At last, should we put
+the checksum on disk?
 
-So I think reverting it is definitely the right thing to do. The commit 
-seems fundamentally broken. And having modules do request_module() in 
-their init functions has always been invalid anyway, so that excuse 
-doesn't really seem to be a reason to do anything crazy like this either.
+I mean could we extend BLK_DEV_INTEGRITY by more generic solution?
+As you said, in case of swap, we don't need to put checksum on disk.
 
-Rewriting the logic to
- - not drop the lock
- - not change the return semantics of an exported interface
- - just make 'resolve_symbol()' fail if the module isn't fully loaded
-would seem to be a more reasonable approach, no?
+If swap case, let it put the one on memory. If non-swap case, let it
+put checksum on disk,
+I am not sure it's possible.
 
-			Linus
+When we have a unreliable disk, your point is that let's solve it with
+(btrfs + swap) which both supports checksum. And my point is that
+let's solve it with (any file system + swap) which is put on block
+layer which supports checksum.
+
+I am not a expert of block layer. so whatever i says might be nonsense.
+And any mm guys don't oppose this idea until now(except Nick).
+Could we regard it as ack of others?
+
+If others don't oppose the idea, I will be not against, either.
+
+Thanks, Cesar.
+
+-- 
+Kind regards,
+Minchan Kim
