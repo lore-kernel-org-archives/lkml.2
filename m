@@ -1,123 +1,146 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758852Ab0EYWdx (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:33:53 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:58005 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758701Ab0EYWdv convert rfc822-to-8bit (ORCPT
+	id S1758970Ab0EYWeP (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:34:15 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:46707 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758443Ab0EYWeM convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:33:51 -0400
+	Tue, 25 May 2010 18:34:12 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=googlemail.com; s=gamma;
+        h=mime-version:reply-to:in-reply-to:references:date:message-id
+         :subject:from:to:cc:content-type:content-transfer-encoding;
+        b=C61sF9avjAb1KgW6cTx2//PLim16sFmWQN03WTiy7sG+agxMamP2LLOBtLU6sXlfDa
+         9kVllzRLto6QTa28fkO9d21t75SkwYa7F3xzgxKLgY/00CrkhI9CD9Oq2gBGoSsfG2TD
+         mS1hmqrRTzGFje6MXdavyNfeoG3Ipg8Ar3F8M=
 MIME-Version: 1.0
-In-Reply-To: <201005252344.37639.rjw@sisk.pl>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
-	 <201005252344.37639.rjw@sisk.pl>
-Date: Tue, 25 May 2010 15:33:50 -0700
-Message-ID: <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+Reply-To: sedat.dilek@gmail.com
+In-Reply-To: <201005251027.32778.dmitry.torokhov@gmail.com>
+References: <20100525163920.GA2730@core.coreip.homeip.net>
+	 <1274806916.18861.0.camel@jlt3.sipsolutions.net>
+	 <1274807302.7494.1.camel@abhi-desktop>
+	 <201005251027.32778.dmitry.torokhov@gmail.com>
+Date: Wed, 26 May 2010 00:34:10 +0200
+Message-ID: <AANLkTiljgdU4guPZUFMTI1xtfD5YLYoAicy6xmRhxfXL@mail.gmail.com>
+Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
+From: Sedat Dilek <sedat.dilek@googlemail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Abhijeet Kolekar <abhijeet.kolekar@intel.com>,
+       Johannes Berg <johannes@sipsolutions.net>,
+       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
+       LKML <linux-kernel@vger.kernel.org>, 582906@bugs.debian.org
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 2:44 PM, Rafael J. Wysocki <rjw@sisk.pl> wrote:
-> On Tuesday 25 May 2010, Alan Stern wrote:
->> On Tue, 25 May 2010, Rafael J. Wysocki wrote:
->>
->> > So, basically, you'd prefer to move the entire complexity to user space.
->>
->> No, just the complexity of the userspace suspend blockers.  That was
->> one of the parts of the interface that people objected to, after all.
->>
->> > I'm not sure if that's a big win
->>
->> It's not a _big_ win, but it is an improvement IMO.
->>
->> >  and I'm not sure anyone is actually going to
->> > implement it (and some drivers would still have to be modified to participate
->> > in this framework).
->>
->> Of course drivers have to be modified.  The kernel-layer suspend
->> blockers aren't affected by this proposal, so they still have to be
->> implemented.
->>
->> >  So again, we have a hunch that the goal may be achieved
->> > in a different way, but at this point we'd rather need a _working_ _solution_
->> > (in the form of code one can build and actually use).
->>
->> It's not very different from what has been submitted, and I think
->> there's little doubt that it could be built and used fairly easily.
->> All we're talking about is removing the userspace suspend-blocker API
->> and the opportunistic workqueue, replacing them with an "opportunistic"
->> entry in /sys/power/state, and setting up a userspace power manager
->> process.
->>
->> > I don't think it's realistic to expect the Android people to go and redesign
->> > their stuff along the lines you've described, because they have a working
->> > implementation (in the kernel) that they are satisfied with.
->>
->> The redesign would be pretty small.  The kernel changes relative to
->> what they have submitted are minimal, mostly just removing a few of
->> their additions.  Furthermore, we've been told that Android _already_
->> funnels all its userspace suspend-blocker work through a single
->> process.  All that would be needed would be to make that process
->> initiate an opportunistic suspend whenever no userspace suspend
->> blockers were active.
->>
->> > Now, we can reject their patches, but that's not going to cause any progress
->> > to happen, realistically.  Quite on the contrary, Android will continue to use
->> > wakelocks and Android driver writers will continue to ignore the mainline
->> > and the gap between the two kernel lines will only get wider and wider over
->> > time.
+[ CC <582906@bugs.debian.org> ]
+
+Unfortunately, I didn't notice I compiled compat-wireless (2010-05-21)
+on user request against linux-image-2.6.32-5-686 and was using it
+since then.
+AFAICS Debian Bug #582906 can be closed.
+
+$ dpkg -l | grep linux-image
+ii  linux-image-2.6.32-5-686
+    2.6.32-13                             Linux 2.6.32 for modern PCs
+
+$ sudo lsmod | grep iwl | sort
+cfg80211              100582  3 iwl3945,iwlcore,mac80211
+compat_firmware_class     4683  1 iwl3945
+iwl3945                45461  0
+iwlcore                58688  1 iwl3945
+mac80211              140617  2 iwl3945,iwlcore
+
+On first sight it seems both patches fixed the issue here:
+
+sd@seduxbox:~/src/compat-wireless/compat-wireless-2010-05-21$ cat
+.pc/applied-patches
+iwlwifi-fix-internal-scan-race.patch
+temp.patch
+
+By the way, iwlwifi-fix-internal-scan-race.patch alone did it not.
+
+Any ideas for a testcase to be sure the problem is really fixed, now?
+
+- Sedat -
+
+[1] http://bugs.debian.org/cgi-bin/bugreport.cgi?bug=582906
+
+P.S.:
+
+$ dmesg | egrep -i 'iwl|80211|wlan'
+[    9.854377] cfg80211: Calling CRDA to update world regulatory domain
+[   11.196129] iwl3945: Intel(R) PRO/Wireless 3945ABG/BG Network
+Connection driver for Linux, in-tree:s
+[   11.196132] iwl3945: Copyright(c) 2003-2010 Intel Corporation
+[   11.196215] iwl3945 0000:10:00.0: PCI INT A -> GSI 17 (level, low) -> IRQ 17
+[   11.196229] iwl3945 0000:10:00.0: setting latency timer to 64
+[   11.250133] iwl3945 0000:10:00.0: Tunable channels: 13 802.11bg, 23
+802.11a channels
+[   11.250136] iwl3945 0000:10:00.0: Detected Intel Wireless WiFi Link 3945ABG
+[   11.250277] iwl3945 0000:10:00.0: irq 29 for MSI/MSI-X
+[   11.437198] cfg80211: World regulatory domain updated:
+[   11.792890] phy0: Selected rate control algorithm 'iwl-3945-rs'
+[   20.000982] iwl3945 0000:10:00.0: loaded firmware version 15.32.2.9
+[   20.090054] ADDRCONF(NETDEV_UP): wlan0: link is not ready
+[   30.185858] wlan0: direct probe to 00:04:0e:e4:00:3d (try 1)
+[   30.188652] wlan0: direct probe responded
+[   30.200042] wlan0: authenticate with 00:04:0e:e4:00:3d (try 1)
+[   30.203234] wlan0: authenticated
+[   30.203856] wlan0: associate with 00:04:0e:e4:00:3d (try 1)
+[   30.400035] wlan0: associate with 00:04:0e:e4:00:3d (try 2)
+[   30.404960] wlan0: RX AssocResp from 00:04:0e:e4:00:3d (capab=0x411
+status=0 aid=1)
+[   30.404966] wlan0: associated
+[   30.406500] ADDRCONF(NETDEV_CHANGE): wlan0: link becomes ready
+[   41.048032] wlan0: no IPv6 routers present
+
+On Tue, May 25, 2010 at 7:27 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tuesday 25 May 2010 10:08:22 am Abhijeet Kolekar wrote:
+>> On Tue, 2010-05-25 at 10:01 -0700, Johannes Berg wrote:
+>> > On Tue, 2010-05-25 at 09:39 -0700, Dmitry Torokhov wrote:
+>> > > Hi,
+>> > >
+>> > > I am getting the following crashers in iwl3945 after updating to
+>> > > post-2.6.34 kernels. This is with the pull from Linus's tree as of last
+>> > > night (the taint is from nvidia module):
+>> > >
+>> > > [ 3330.630734] general protection fault: 0000 [#1] PREEMPT SMP
+>> > > [ 3330.630752] last sysfs file: /sys/devices/platform/dock.0/docked
+>> > > [ 3330.630761] CPU 0
+>> > > [ 3330.630766] Modules linked in: cryptd aes_x86_64 aes_generic fuse
+>> > > rfcomm sco bnep l2cap autofs4 coretemp hwmon sunrpc ppdev parport_pc
+>> > > parport acpi_cpufreq mperf uinput nvidia(P) snd_hda_codec_idt arc4
+>> > > snd_hda_intel ecb snd_hda_codec snd_hwdep iwl3945 joydev snd_seq
+>> > > snd_seq_device snd_pcm iwlcore mac80211 snd_timer cfg80211 snd psmouse
+>> > > iTCO_wdt dell_wmi iTCO_vendor_support serio_raw tg3 battery
+>> > > dell_laptop dcdbas soundcore snd_page_alloc btusb bluetooth video
+>> > > pcspkr mac_hid ac wmi libphy firewire_ohci i2c_i801 firewire_core
+>> > > yenta_socket crc_itu_t ohci_hcd [last unloaded: microcode] [
+>> > > 3330.630950]
+>> > > [ 3330.630958] Pid: 455, comm: iwl3945 Tainted: P Â  Â  Â  Â  Â  Â 2.6.35-rc0
+>> > > #293 0WM416/Latitude D630 [ 3330.630967] RIP:
+>> > > 0010:[<ffffffffa01e70d3>] Â [<ffffffffa01e70d3>]
+>> > > iwl3945_get_channels_for_scan+0xe3/0x460 [iwl3945]
 >> >
->> > And what really is the drawback if we merge the patches?  Quite frankly,
->> > I don't see any.
+>> > http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2208
 >>
->> You don't seem to appreciate how small a change Dmitry has proposed.
->> Almost all of the suspend-blocker work would remain as in the submitted
->> patches.  The only difference is that the userspace API and
->> opportunistic-suspend implementation would be simplified, by moving
->> some of the work out of the kernel.
+>> Can you please try this patch and report your findings?
+>>
+>> http://bugzilla.intellinuxwireless.org/attachment.cgi?id=2447
+>>
 >
-> No, I don't really think it's going to be a small change.  The problem is that
-> for the Android people changing user space is very hard, so I don't think
-> this realy is an option, given that they would have to implement it themselves,
-> test it, validate it on multiple different hardware platforms etc. and _then_
-> resubmit the feature without any guarantee that it will be merged.
+> Thanks, will try both this patch and the one John mention. Later tonight
+> though.
 >
-
-The biggest problem here is not that it is hard to change our
-user-space, but that the proposed change is inferior to what we have
-now. It forces us to poll until all drivers stop aborting suspend. On
-one hand we have people telling us that all code that polls is broken
-and must be fixed (instead of suspending to limit the damage), and on
-the other hand we have people suggesting we implement opportunistic
-suspend by polling from user-space until suspend succeeds.
-
-
-> So, my opinion is that we only have a choice to either take the feature as is
-> now, or reject it altogether and live with the consequeces in each case.  And
-> quite frankly I don't feel like I'm in position to make that decision.
+> --
+> Dmitry
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-wireless" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at Â http://vger.kernel.org/majordomo-info.html
 >
-
-
-
--- 
-Arve Hjønnevåg
