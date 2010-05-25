@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758735Ab0EYPVZ (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:21:25 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35178 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757090Ab0EYPVX (ORCPT
+	id S1758802Ab0EYP0r (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:26:47 -0400
+Received: from exprod5og111.obsmtp.com ([64.18.0.22]:41616 "EHLO
+	exprod5og111.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757090Ab0EYP0p (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:21:23 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=rElvQZkdScdPvBFEfJK0XzOB6WgMKVfUTls8gpBhisYs34Tvl246V8JSooP5b38VX1
-         aVbGZ0tNFaVNmTArwTj1+iJ93g6oXxXLfsx1Gi8RBaNYcPMHVFKCk3y+chyQQxGnWZHi
-         gAEYdZZhr5xg871SBhB20Fz89xUjcjKbU8KSw=
-Date: Wed, 26 May 2010 00:21:15 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Nitin Gupta <ngupta@vflare.org>
-Cc: Greg KH <greg@kroah.com>, Pekka Enberg <penberg@cs.helsinki.fi>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Hugh Dickins <hugh.dickins@tiscali.co.uk>, Cyp <cyp561@gmail.com>,
-       driverdev <devel@driverdev.osuosl.org>,
-       linux-kernel <linux-kernel@vger.kernel.org>
-Subject: Re: [PATCH 0/3] zram: generic RAM based compressed R/W block
- devices
-Message-ID: <20100525152115.GB3227@barrios-desktop>
-References: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
+	Tue, 25 May 2010 11:26:45 -0400
+Message-ID: <4BFBEBA8.2030300@ge.com>
+Date: Tue, 25 May 2010 16:24:24 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274710685-2351-1-git-send-email-ngupta@vflare.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Andy Whitcroft <apw@canonical.com>
+CC: Greg KH <gregkh@suse.de>, devel@driverdev.osuosl.org, nanakos@wired-net.gr,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vme: vme.c: fixed an EXPORT_SYMBOL warning
+References: <1274792957-4602-1-git-send-email-nanakos@wired-net.gr>	<20100525134453.GA4818@suse.de> <4BFBDC74.6000000@ge.com>
+In-Reply-To: <4BFBDC74.6000000@ge.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Nitin. 
+Martyn Welch wrote:
+> Greg KH wrote:
+>   
+>> On Tue, May 25, 2010 at 01:09:17PM +0000, nanakos@wired-net.gr wrote:
+>>   
+>>     
+>>> From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+>>>
+>>> Fixed an EXPORT_SYMBOL warning.
+>>>     
+>>>       
+>> What type of warning?  a checkpatch.pl one?  a gcc one?  a sparse one?
+>>
+>> Please be more verbose.
+>>
+>>   
+>>     
+>>> Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
+>>> ---
+>>>  drivers/staging/vme/vme.c |    2 +-
+>>>  1 files changed, 1 insertions(+), 1 deletions(-)
+>>>
+>>> diff --git a/drivers/staging/vme/vme.c b/drivers/staging/vme/vme.c
+>>> index 093fbff..a0b63d5 100644
+>>> --- a/drivers/staging/vme/vme.c
+>>> +++ b/drivers/staging/vme/vme.c
+>>> @@ -1519,7 +1519,6 @@ struct bus_type vme_bus_type = {
+>>>  	.probe = vme_bus_probe,
+>>>  	.remove = vme_bus_remove,
+>>>  };
+>>> -EXPORT_SYMBOL(vme_bus_type);
+>>>  
+>>>  static int __init vme_init(void)
+>>>  {
+>>> @@ -1530,6 +1529,7 @@ static void __exit vme_exit(void)
+>>>  {
+>>>  	bus_unregister(&vme_bus_type);
+>>>  }
+>>> +EXPORT_SYMBOL(vme_bus_type);
+>>>     
+>>>       
+>> This does not look correct, why move this away from where the structure
+>> is defined?
+>>
+>>   
+>>     
+>
+> It's a checkpatch error:
+>
+> $ scripts/checkpatch.pl -f drivers/staging/vme/vme.c
+> WARNING: EXPORT_SYMBOL(foo); should immediately follow its function/variable
+> #1522: FILE: staging/vme/vme.c:1522:
+> +EXPORT_SYMBOL(vme_bus_type);
+>
+> total: 0 errors, 1 warnings, 1539 lines checked
+>
+>   
 
-On Mon, May 24, 2010 at 07:48:02PM +0530, Nitin Gupta wrote:
-> Creates RAM based block devices: /dev/zramX (X = 0, 1, ...).
-> Pages written to these disks are compressed and stored in memory
-> itself. These disks allow very fast I/O and compression provides
-> good amounts of memory savings.
-> 
-> This is enhancement over existing ramzswap driver which creates
-> virtual block devices (/dev/ramzswapX) which could be used only
-> as swap disks.
-> 
-> Now, with the ability to handle any kind of I/O request, zram
-> devices have lot more use cases:
->  - /tmp storage
->  - various caches under /var
->  - swap disks
->  - maybe even more! :)
+Andy, this looks like a miss detection in checkpatch.pl to me, and from
+Greg's comment I get the impression he thinks the same. What do you think?
 
-Wow, it looks good to me. 
+Martyn
 
-As a matter of fact, when I saw your descriptoin, I thought we can merge 
-your feature into brd. But I changed my mind due to following as 
+>> confused,
+>>   
+>>     
+>
+> Yup, confused me as well. :-)
+>
+> Martyn
+>
+>   
+>> greg k-h
+>>   
+>>     
+>
+>
+>   
 
-First of all, ramfs supports direct I/O. So it's hard to support compression. 
-If we can select optionable config, it would make brd code complicated or ugly.
-That's because ramzswap uses own allocator, compression, extended ioctl and so on. 
-And some users might regard write with important than read without considering space.
-So it would be better to keep other block device for easy use and clear code. 
-
-I will review this code when I have a time. 
-Thanks, Nitin. 
 
 -- 
-Kind regards,
-Minchan Kim
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
+
