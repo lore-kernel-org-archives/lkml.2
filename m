@@ -1,76 +1,93 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759017Ab0EYSQ5 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:16:57 -0400
-Received: from kroah.org ([198.145.64.141]:44297 "EHLO coco.kroah.org"
+	id S932635Ab0EYSRV (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:17:21 -0400
+Received: from kroah.org ([198.145.64.141]:44303 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756378Ab0EYSQz (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:16:55 -0400
-Date: Tue, 25 May 2010 11:12:59 -0700
+	id S932192Ab0EYSRT (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:19 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:12 2010
+Message-Id: <20100525181212.204460185@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Tue, 25 May 2010 11:08:59 -0700
 From: Greg KH <gregkh@suse.de>
 To: linux-kernel@vger.kernel.org, stable@kernel.org
 Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk
-Subject: [00/25] 2.6.27.47-stable review, take 2
-Message-ID: <20100525181259.GA18630@kroah.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Dan Carpenter <error27@gmail.com>, Takashi Iwai <tiwai@suse.de>
+Subject: [01/25] ALSA: mixart: range checking proc file
+In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ok, here's the second try at getting a new 2.6.27-stable release out the
-door.  A number of missed patches were added, and some were dropped due
-to issues that people had with them.
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Please let me know if anyone has any problems with the patches this time
-around.
+------------------
 
-Responses should be made by Wed May 26, 22:00:00 UTC 2010
-Anything received after that time might be too late.
+From: Dan Carpenter <error27@gmail.com>
 
-The whole patch series can be found in one patch at:
-	kernel.org/pub/linux/kernel/v2.6/stable-review/patch-2.6.27.47-rc2.gz
-and the diffstat can be found below.
+commit b0cc58a25d04160d39a80e436847eaa2fbc5aa09 upstream.
 
-thanks,
+The original code doesn't take into consideration that the value of
+MIXART_BA0_SIZE - pos can be less than zero which would lead to a large
+unsigned value for "count".
 
-greg k-h
+Also I moved the check that read size is a multiple of 4 bytes below
+the code that adjusts "count".
 
- Makefile                             |    2 +-
- arch/x86/kernel/process.c            |    6 +-
- drivers/acpi/processor_idle.c        |   13 ++-
- drivers/ata/libata-eh.c              |    6 +-
- drivers/char/tty_io.c                |    2 +
- drivers/hwmon/w83781d.c              |   26 ++--
- drivers/i2c/busses/i2c-i801.c        |    6 +-
- drivers/i2c/busses/i2c-tiny-usb.c    |   12 +-
- drivers/i2c/i2c-core.c               |   24 +++-
- drivers/scsi/megaraid/megaraid_sas.c |   18 +++-
- drivers/usb/core/inode.c             |    4 +-
- fs/ext4/balloc.c                     |   88 ++++++++++---
- fs/ext4/ext4.h                       |   13 ++
- fs/ext4/ext4_sb.h                    |    1 +
- fs/ext4/inode.c                      |  229 ++++++++++++++++++++++++----------
- fs/ext4/mballoc.c                    |   39 ++++---
- fs/ext4/super.c                      |    8 +-
- fs/nfs/client.c                      |    2 +
- fs/nfs/dir.c                         |    2 +
- fs/nfsd/nfs4xdr.c                    |    8 +-
- include/linux/percpu_counter.h       |   12 +--
- include/linux/security.h             |    6 +
- include/linux/writeback.h            |    1 -
- kernel/time/clockevents.c            |   16 ++-
- kernel/time/tick-broadcast.c         |    7 +-
- kernel/trace/trace.c                 |    2 +-
- lib/percpu_counter.c                 |    8 +-
- mm/mmap.c                            |    3 +-
- mm/nommu.c                           |    3 +-
- mm/page-writeback.c                  |    2 -
- mm/shmem.c                           |    8 +-
- net/sunrpc/svc_xprt.c                |   25 +++-
- security/security.c                  |    9 ++
- sound/pci/mixart/mixart.c            |   24 ++--
- 34 files changed, 433 insertions(+), 202 deletions(-)
+Signed-off-by: Dan Carpenter <error27@gmail.com>
+Acked-by: Linus Torvalds <torvalds@linux-foundation.org>
+Signed-off-by: Takashi Iwai <tiwai@suse.de>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ sound/pci/mixart/mixart.c |   24 ++++++++++++++----------
+ 1 file changed, 14 insertions(+), 10 deletions(-)
+
+--- a/sound/pci/mixart/mixart.c
++++ b/sound/pci/mixart/mixart.c
+@@ -1160,13 +1160,15 @@ static long snd_mixart_BA0_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos >= MIXART_BA0_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA0_SIZE)
+-		count = (long)(MIXART_BA0_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_MEM( mgr, pos ), count))
++	maxsize = MIXART_BA0_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_MEM(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
+@@ -1179,13 +1181,15 @@ static long snd_mixart_BA1_read(struct s
+ 				unsigned long count, unsigned long pos)
+ {
+ 	struct mixart_mgr *mgr = entry->private_data;
++	unsigned long maxsize;
+ 
+-	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
+-	if(count <= 0)
++	if (pos > MIXART_BA1_SIZE)
+ 		return 0;
+-	if(pos + count > MIXART_BA1_SIZE)
+-		count = (long)(MIXART_BA1_SIZE - pos);
+-	if(copy_to_user_fromio(buf, MIXART_REG( mgr, pos ), count))
++	maxsize = MIXART_BA1_SIZE - pos;
++	if (count > maxsize)
++		count = maxsize;
++	count = count & ~3; /* make sure the read size is a multiple of 4 bytes */
++	if (copy_to_user_fromio(buf, MIXART_REG(mgr, pos), count))
+ 		return -EFAULT;
+ 	return count;
+ }
+
+
