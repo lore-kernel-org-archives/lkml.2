@@ -1,23 +1,23 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932769Ab0EYNvg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:51:36 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:37697 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932595Ab0EYNvd (ORCPT
+	id S932843Ab0EYNvl (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:51:41 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:50312 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S932731Ab0EYNvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:51:33 -0400
+	Tue, 25 May 2010 09:51:36 -0400
 From: Artem Bityutskiy <dedekind1@gmail.com>
 To: Al Viro <viro@ZenIV.linux.org.uk>
 Cc: LKML <linux-kernel@vger.kernel.org>, Jens Axboe <jens.axboe@oracle.com>,
-       linux-fsdevel@vger.kernel.org, Roman Zippel <zippel@linux-m68k.org>
-Subject: [PATCHv4 09/17] HFS: do not manipulate s_dirt directly
-Date: Tue, 25 May 2010 16:49:04 +0300
-Message-Id: <1274795352-3551-10-git-send-email-dedekind1@gmail.com>
+       linux-fsdevel@vger.kernel.org, reiserfs-devel@vger.kernel.org
+Subject: [PATCHv4 12/17] reiserfs: do not manipulate s_dirt directly
+Date: Tue, 25 May 2010 16:49:07 +0300
+Message-Id: <1274795352-3551-13-git-send-email-dedekind1@gmail.com>
 X-Mailer: git-send-email 1.6.6.1
 In-Reply-To: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
 References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
-X-OriginalArrivalTime: 25 May 2010 13:50:46.0859 (UTC) FILETIME=[46F511B0:01CAFC11]
+X-OriginalArrivalTime: 25 May 2010 13:50:51.0047 (UTC) FILETIME=[49741B70:01CAFC11]
 X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
@@ -28,102 +28,99 @@ From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
 ... use new VFS helpers instead.
 
 Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-Cc: Roman Zippel <zippel@linux-m68k.org>
+Cc: reiserfs-devel@vger.kernel.org
 ---
- fs/hfs/extent.c |    2 +-
- fs/hfs/hfs_fs.h |    2 +-
- fs/hfs/inode.c  |    6 +++---
- fs/hfs/super.c  |    6 +++---
- 4 files changed, 8 insertions(+), 8 deletions(-)
+ fs/reiserfs/journal.c |    6 +++---
+ fs/reiserfs/resize.c  |    2 +-
+ fs/reiserfs/super.c   |   10 +++++-----
+ 3 files changed, 9 insertions(+), 9 deletions(-)
 
-diff --git a/fs/hfs/extent.c b/fs/hfs/extent.c
-index 2c16316..bff476a 100644
---- a/fs/hfs/extent.c
-+++ b/fs/hfs/extent.c
-@@ -432,7 +432,7 @@ out:
- 		if (inode->i_ino < HFS_FIRSTUSER_CNID)
- 			set_bit(HFS_FLG_ALT_MDB_DIRTY, &HFS_SB(sb)->flags);
- 		set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
+diff --git a/fs/reiserfs/journal.c b/fs/reiserfs/journal.c
+index 19fbc81..4016d0a 100644
+--- a/fs/reiserfs/journal.c
++++ b/fs/reiserfs/journal.c
+@@ -3337,7 +3337,7 @@ int journal_mark_dirty(struct reiserfs_transaction_handle *th,
+ 			       th->t_trans_id, journal->j_trans_id);
  	}
- 	return res;
  
-diff --git a/fs/hfs/hfs_fs.h b/fs/hfs/hfs_fs.h
-index fe35e3b..2083002 100644
---- a/fs/hfs/hfs_fs.h
-+++ b/fs/hfs/hfs_fs.h
-@@ -251,7 +251,7 @@ static inline const char *hfs_mdb_name(struct super_block *sb)
- static inline void hfs_bitmap_dirty(struct super_block *sb)
- {
- 	set_bit(HFS_FLG_BITMAP_DIRTY, &HFS_SB(sb)->flags);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
- }
- 
- static inline void hfs_buffer_sync(struct buffer_head *bh)
-diff --git a/fs/hfs/inode.c b/fs/hfs/inode.c
-index 14f5cb1..74cb771 100644
---- a/fs/hfs/inode.c
-+++ b/fs/hfs/inode.c
-@@ -198,7 +198,7 @@ struct inode *hfs_new_inode(struct inode *dir, struct qstr *name, int mode)
- 	insert_inode_hash(inode);
- 	mark_inode_dirty(inode);
- 	set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
 -	sb->s_dirt = 1;
 +	mark_sb_dirty(sb);
  
- 	return inode;
- }
-@@ -213,7 +213,7 @@ void hfs_delete_inode(struct inode *inode)
- 		if (HFS_I(inode)->cat_key.ParID == cpu_to_be32(HFS_ROOT_CNID))
- 			HFS_SB(sb)->root_dirs--;
- 		set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
--		sb->s_dirt = 1;
-+		mark_sb_dirty(sb);
- 		return;
- 	}
- 	HFS_SB(sb)->file_count--;
-@@ -226,7 +226,7 @@ void hfs_delete_inode(struct inode *inode)
+ 	prepared = test_clear_buffer_journal_prepared(bh);
+ 	clear_buffer_journal_restore_dirty(bh);
+@@ -3632,7 +3632,7 @@ int reiserfs_flush_old_commits(struct super_block *sb)
+ 			do_journal_end(&th, sb, 1, COMMIT_NOW | WAIT);
  		}
  	}
- 	set_bit(HFS_FLG_MDB_DIRTY, &HFS_SB(sb)->flags);
--	sb->s_dirt = 1;
-+	mark_sb_dirty(sb);
+-	return sb->s_dirt;
++	return is_sb_dirty(sb);
  }
  
- void hfs_inode_read_fork(struct inode *inode, struct hfs_extent *ext,
-diff --git a/fs/hfs/super.c b/fs/hfs/super.c
-index 0a81eb7..3fc4e9f 100644
---- a/fs/hfs/super.c
-+++ b/fs/hfs/super.c
-@@ -52,7 +52,7 @@ MODULE_LICENSE("GPL");
- static void hfs_write_super(struct super_block *sb)
- {
- 	lock_super(sb);
--	sb->s_dirt = 0;
-+	mark_sb_clean(sb);
+ /*
+@@ -4062,7 +4062,7 @@ static int do_journal_end(struct reiserfs_transaction_handle *th,
+ 	 ** it tells us if we should continue with the journal_end, or just return
+ 	 */
+ 	if (!check_journal_end(th, sb, nblocks, flags)) {
+-		sb->s_dirt = 1;
++		mark_sb_dirty(sb);
+ 		wake_queued_writers(sb);
+ 		reiserfs_async_progress_wait(sb);
+ 		goto out;
+diff --git a/fs/reiserfs/resize.c b/fs/reiserfs/resize.c
+index b3a94d2..588d55a 100644
+--- a/fs/reiserfs/resize.c
++++ b/fs/reiserfs/resize.c
+@@ -203,7 +203,7 @@ int reiserfs_resize(struct super_block *s, unsigned long block_count_new)
+ 					  (bmap_nr_new - bmap_nr)));
+ 	PUT_SB_BLOCK_COUNT(s, block_count_new);
+ 	PUT_SB_BMAP_NR(s, bmap_would_wrap(bmap_nr_new) ? : bmap_nr_new);
+-	s->s_dirt = 1;
++	mark_sb_dirty(s);
  
- 	/* sync everything to the buffers */
- 	if (!(sb->s_flags & MS_RDONLY))
-@@ -64,7 +64,7 @@ static int hfs_sync_fs(struct super_block *sb, int wait)
- {
- 	lock_super(sb);
- 	hfs_mdb_commit(sb);
--	sb->s_dirt = 0;
-+	mark_sb_clean(sb);
- 	unlock_super(sb);
+ 	journal_mark_dirty(&th, s, SB_BUFFER_WITH_SB(s));
  
+diff --git a/fs/reiserfs/super.c b/fs/reiserfs/super.c
+index 59125fb..93eb3fc 100644
+--- a/fs/reiserfs/super.c
++++ b/fs/reiserfs/super.c
+@@ -71,8 +71,8 @@ static int reiserfs_sync_fs(struct super_block *s, int wait)
+ 	if (!journal_begin(&th, s, 1))
+ 		if (!journal_end_sync(&th, s, 1))
+ 			reiserfs_flush_old_commits(s);
+-	s->s_dirt = 0;	/* Even if it's not true.
+-			 * We'll loop forever in sync_supers otherwise */
++	mark_sb_clean(s); /* Even if it's not true.
++			   * We'll loop forever in sync_supers otherwise */
+ 	reiserfs_write_unlock(s);
  	return 0;
-@@ -81,7 +81,7 @@ static void hfs_put_super(struct super_block *sb)
- {
- 	lock_kernel();
+ }
+@@ -98,7 +98,7 @@ static int reiserfs_freeze(struct super_block *s)
+ 			journal_end_sync(&th, s, 1);
+ 		}
+ 	}
+-	s->s_dirt = 0;
++	mark_sb_clean(s);
+ 	reiserfs_write_unlock(s);
+ 	return 0;
+ }
+@@ -468,7 +468,7 @@ static void reiserfs_put_super(struct super_block *s)
  
--	if (sb->s_dirt)
-+	if (is_sb_dirty(sb))
- 		hfs_write_super(sb);
- 	hfs_mdb_close(sb);
- 	/* release the MDB's resources */
+ 	reiserfs_write_lock(s);
+ 
+-	if (s->s_dirt)
++	if (is_sb_dirty(s))
+ 		reiserfs_write_super(s);
+ 
+ 	/* change file system state to current state if it was mounted with read-write permissions */
+@@ -1292,7 +1292,7 @@ static int reiserfs_remount(struct super_block *s, int *mount_flags, char *arg)
+ 	err = journal_end(&th, s, 10);
+ 	if (err)
+ 		goto out_err;
+-	s->s_dirt = 0;
++	mark_sb_clean(s);
+ 
+ 	if (!(*mount_flags & MS_RDONLY)) {
+ 		finish_unfinished(s);
 -- 
 1.6.6.1
 
