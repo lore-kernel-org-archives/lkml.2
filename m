@@ -1,50 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756245Ab0EYFnF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 01:43:05 -0400
-Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:51705 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1756156Ab0EYFnC (ORCPT
+	id S932086Ab0EYFnw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 01:43:52 -0400
+Received: from vms173005pub.verizon.net ([206.46.173.5]:39368 "EHLO
+	vms173005pub.verizon.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756190Ab0EYFnu (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 01:43:02 -0400
-Date: Tue, 25 May 2010 15:42:54 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Steven Rostedt <rostedt@goodmis.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Dave Chinner <dchinner@redhat.com>,
-       Alex Elder <aelder@sgi.com>, Christoph Hellwig <hch@lst.de>,
-       xfs@oss.sgi.com, LKML <linux-kernel@vger.kernel.org>,
-       Frederic Weisbecker <fweisbec@gmail.com>
-Subject: Re: [PATCH] xfs: convert more trace events to DEFINE_EVENT
-Message-ID: <20100525054254.GG12087@dastard>
-References: <4BFA3815.7070000@cn.fujitsu.com>
- <1274758614.22648.205.camel@gandalf.stny.rr.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274758614.22648.205.camel@gandalf.stny.rr.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Tue, 25 May 2010 01:43:50 -0400
+Date: Tue, 25 May 2010 01:43:26 -0400 (EDT)
+From: Len Brown <lenb@kernel.org>
+X-X-Sender: lenb@localhost.localdomain
+To: Philip Langdale <philipl@overt.org>
+Cc: Matthew Garrett <mjg59@srcf.ucam.org>, Jeff Garrett <jeff@jgarrett.org>,
+       Andi Kleen <andi@firstfloor.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-acpi@vger.kernel.org, luming.yu@intel.com, venki@google.com
+Subject: Re: acpi_idle: Very idle Core i7 machine never enters C3
+In-reply-to: <d7f2dd35a4361e5156079278543769a0@localhost>
+Message-id: <alpine.LFD.2.00.1005250125590.20648@localhost.localdomain>
+References: <20100126084740.GA5265@jgarrett.org>
+ <87y6jkee1b.fsf@basil.nowhere.org> <20100205160900.GA2736@jgarrett.org>
+ <alpine.LFD.2.00.1002051238280.4050@localhost.localdomain>
+ <20100426194002.586fbaa5@fido5> <20100427124703.GA16706@jgarrett.org>
+ <alpine.LFD.2.00.1004301218280.2489@sony>
+ <20100430174447.GA14889@srcf.ucam.org>
+ <d7f2dd35a4361e5156079278543769a0@localhost>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-version: 1.0
+Content-type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, May 24, 2010 at 11:36:54PM -0400, Steven Rostedt wrote:
-> On Mon, 2010-05-24 at 16:25 +0800, Li Zefan wrote:
-> > Use DECLARE_EVENT_CLASS, and save ~15K:
+> >> I am hopeful that the "right thing to do" is to not look at bm-status
+> >> and that perhaps there is a bug where we are looking at it
+> >> "by mistake".
 > > 
-> >    text    data     bss     dec     hex filename
-> >  171949   43028      48  215025   347f1 fs/xfs/linux-2.6/xfs_trace.o.orig
-> >  156521   43028      36  199585   30ba1 fs/xfs/linux-2.6/xfs_trace.o
-> > 
-> > No change in functionality.
-> > 
+> > https://patchwork.kernel.org/patch/58962/ - it seems to be a win.
 > 
-> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+> Indeed. This patch does solve the C6 problem. I'm not in a position to
+> speak about whether there's any undesirable I/O latency, but it
+> passes the basic sanity check.
+> 
+> I have filed https://bugzilla.kernel.org/show_bug.cgi?id=15886 with
+> my acpi dump - assuming that's still useful.
 
-I'll get this pushed through the XFS tree.
+Luming's patch above basically deletes acpi_idle_bm_check() --
+the BM_STS check -- from the C3 path on all Intel SMP boxes.
+This is effectively the same as my test patch
+https://patchwork.kernel.org/patch/77370/
+that made acpi_idle_bm_check() do nothing.
 
-Cheers,
+I'm told by the hardware guys that BM_STS is _not_ always
+a NOP, and so we're not supposed to simply ignore it on C3 --
+though it should be extremely rare that we see it set.
+If it is ever set, it should go on and off depending on 
+activity on some latency sensitive device, like out on the LPC.
+It may be possible for the BIOS writer to configure the chipset
+so that BM_STS is enabled always, presumably to accomodate
+some latency sensitve device -- or maybe by mistake.
 
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+(is it observed to be set always on your systems, or does
+ it ever change its value?)
+
+The logic in Luming's patch doesn't make sense to me.
+bm_check and bm_control are related to C3 need to flush
+the cache or ability to invoke ARB_DIS.  They are not
+directly related to BM_STS -- which is a bit that tells
+us if there has recently been bus master activity of
+a type that would break us out of C3.
+
+-Len Brown, Intel Open Source Technology Center
+
