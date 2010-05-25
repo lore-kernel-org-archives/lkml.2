@@ -1,66 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759121Ab0EYVyg (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 17:54:36 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:53327 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758976Ab0EYVyf (ORCPT
+	id S934161Ab0EYWBd (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:01:33 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:44476 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933004Ab0EYWBc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 17:54:35 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
-         :content-type:content-disposition:user-agent;
-        b=qlspFEimB2Wx2EDuxhIZk05yVXlTIJ+1ur2WjQr+mj5cAlnsoKsCtCC84BhUCpxaZI
-         RCRd3l+RmdgynvcgLvnpCIWC7eKhp/z01hwb/tIjkzi3xiPzSKlzsIipN99D3ERRuyA7
-         mNm3KmV3k5yAxALTnnUY+rmMMuv53kiaiSWHc=
-Date: Tue, 25 May 2010 23:54:01 +0200
-From: Dan Carpenter <error27@gmail.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Lee Schermerhorn <lee.schermerhorn@hp.com>,
-       KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, kernel-janitors@vger.kernel.org
-Subject: [patch] mempolicy: ERR_PTR dereference in mpol_shared_policy_init()
-Message-ID: <20100525215401.GA2506@bicker>
-Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
-	Andrew Morton <akpm@linux-foundation.org>,
-	Lee Schermerhorn <lee.schermerhorn@hp.com>,
-	KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>,
-	Christoph Lameter <cl@linux-foundation.org>,
-	David Rientjes <rientjes@google.com>, linux-kernel@vger.kernel.org,
-	linux-mm@kvack.org, kernel-janitors@vger.kernel.org
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Tue, 25 May 2010 18:01:32 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=mI6YO6ZdSLUA:10 a=IkcTkHD0fZMA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=LDAwBmX4x4Svb3WsdWYA:9 a=PJrfSe69N3LPhGRzMg-V0ZzI2eAA:4 a=QEXdDO2ut3YA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: Tracing configuration review
+From: Steven Rostedt <rostedt@goodmis.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+In-Reply-To: <20100525201736.GB5370@nowhere>
+References: <1274815906.9757.83.camel@cndougla-ubuntu>
+	 <1274816768.22648.220.camel@gandalf.stny.rr.com>
+	 <20100525201736.GB5370@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Tue, 25 May 2010 18:01:06 -0400
+Message-ID: <1274824866.1876.1.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 (2.28.3-1.fc12) 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The original code called mpol_put(new) while "new" was an ERR_PTR.
+On Tue, 2010-05-25 at 22:17 +0200, Frederic Weisbecker wrote:
+> On Tue, May 25, 2010 at 03:46:08PM -0400, Steven Rostedt wrote:
+> > On Tue, 2010-05-25 at 15:31 -0400, Chase Douglas wrote:
+> > > # CONFIG_SCHED_TRACER is not set (headed for deprecation?)
+> > 
+> > Although it is headed for deprecation, I think it still gets set by
+> > other tracers, since it has the code to initiate the comm reader.
+> 
+> 
+> 
+> Doesn't actually CONTEXT_SWITCH_TRACER has the code for the
+> comm things?
+> 
 
-Signed-off-by: Dan Carpenter <error27@gmail.com>
+Ah, I was confused. But then the SCHED_TRACER is the wakeup tracer, and
+that is heading for deprecation??
 
-diff --git a/mm/mempolicy.c b/mm/mempolicy.c
-index 7575101..5d6fb33 100644
---- a/mm/mempolicy.c
-+++ b/mm/mempolicy.c
-@@ -2098,7 +2098,7 @@ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
- 		/* contextualize the tmpfs mount point mempolicy */
- 		new = mpol_new(mpol->mode, mpol->flags, &mpol->w.user_nodemask);
- 		if (IS_ERR(new))
--			goto put_free; /* no valid nodemask intersection */
-+			goto free_scratch; /* no valid nodemask intersection */
- 
- 		task_lock(current);
- 		ret = mpol_set_nodemask(new, &mpol->w.user_nodemask, scratch);
-@@ -2114,6 +2114,7 @@ void mpol_shared_policy_init(struct shared_policy *sp, struct mempolicy *mpol)
- 
- put_free:
- 		mpol_put(new);			/* drop initial ref */
-+free_scratch:
- 		NODEMASK_SCRATCH_FREE(scratch);
- 	}
- }
+-- Steve
+
+
