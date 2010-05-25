@@ -1,32 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934108Ab0EYUPA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 16:15:00 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:48008
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933472Ab0EYUO7 (ORCPT
+	id S1759040Ab0EYURr (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 16:17:47 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:51931 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753638Ab0EYURq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 16:14:59 -0400
-Date: Tue, 25 May 2010 13:15:09 -0700 (PDT)
-Message-Id: <20100525.131509.184702276.davem@davemloft.net>
-To: linville@tuxdriver.com
-Cc: linux-wireless@vger.kernel.org, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: pull request: wireless-2.6 2010-05-25
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100525170401.GE31753@tuxdriver.com>
-References: <20100525170401.GE31753@tuxdriver.com>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 16:17:46 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=Ipuctdg/Rvu+KDrVUgz4bEneje7s6jPqgt6LS5AMq6+6c6PTBvZ5XlG6kYfOaEvAbr
+         L/uSyImphWgRnzftiUo0NT2001BeSYAfztTshZ85dHeilr0oMd5Uen9h+vcioBHcWqrg
+         xxrNHS4t+X0VKySnWzteOlvFYb3mDR3M3R4eo=
+Date: Tue, 25 May 2010 22:17:43 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Steven Rostedt <rostedt@goodmis.org>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
+Subject: Re: Tracing configuration review
+Message-ID: <20100525201736.GB5370@nowhere>
+References: <1274815906.9757.83.camel@cndougla-ubuntu> <1274816768.22648.220.camel@gandalf.stny.rr.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274816768.22648.220.camel@gandalf.stny.rr.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: "John W. Linville" <linville@tuxdriver.com>
-Date: Tue, 25 May 2010 13:04:02 -0400
+On Tue, May 25, 2010 at 03:46:08PM -0400, Steven Rostedt wrote:
+> On Tue, 2010-05-25 at 15:31 -0400, Chase Douglas wrote:
+> > # CONFIG_SCHED_TRACER is not set (headed for deprecation?)
+> 
+> Although it is headed for deprecation, I think it still gets set by
+> other tracers, since it has the code to initiate the comm reader.
 
-> git://git.kernel.org/pub/scm/linux/kernel/git/linville/wireless-2.6.git master
 
-Pulled, thanks John.
+
+Doesn't actually CONTEXT_SWITCH_TRACER has the code for the
+comm things?
+
+
+> > CONFIG_BOOT_TRACER=y (no performance impact by default)
+> 
+> But this tracer is pretty useless. It gives no more information than
+> debug_initcalls.
+
+
+
+Yeah it's pretty useless. And these informations can also be displayed
+through printk on boot so...
+
