@@ -1,91 +1,87 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758806Ab0EYTv4 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 15:51:56 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20974 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758317Ab0EYTvy (ORCPT
+	id S1758860Ab0EYTwT (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 15:52:19 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:59077 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1758317Ab0EYTwQ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 15:51:54 -0400
-Message-ID: <4BFC29C3.1080005@oracle.com>
-Date: Tue, 25 May 2010 12:49:23 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-Organization: Oracle Linux Engineering
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.5) Gecko/20091209 Fedora/3.0-3.fc11 Thunderbird/3.0
+	Tue, 25 May 2010 15:52:16 -0400
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: linux-input@vger.kernel.org, linux-omap@vger.kernel.org,
+       Michael Roth <mroth@nessie.de>, Pavel Machek <pavel@ucw.cz>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Mike Frysinger <vapier@gentoo.org>, linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] touchscreen: ads7846: please don't touch free'd memory
+References: <1274226413-8520-1-git-send-email-khilman@deeprootsystems.com>
+	<20100519000019.GA17475@core.coreip.homeip.net>
+From: Kevin Hilman <khilman@deeprootsystems.com>
+Organization: Deep Root Systems, LLC
+Date: Tue, 25 May 2010 12:52:12 -0700
+In-Reply-To: <20100519000019.GA17475@core.coreip.homeip.net> (Dmitry Torokhov's message of "Tue\, 18 May 2010 17\:00\:20 -0700")
+Message-ID: <87mxvnlpxv.fsf@deeprootsystems.com>
+User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
 MIME-Version: 1.0
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-CC: Stephen Rothwell <sfr@canb.auug.org.au>,
-       linux-pm@lists.linux-foundation.org, linux-next@vger.kernel.org,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: Re: linux-next: Tree for May 25 (kernel/power, SUSPEND=n)
-References: <20100525142657.c2ae7804.sfr@canb.auug.org.au> <20100525084959.4ff9e924.randy.dunlap@oracle.com> <201005252124.52108.rjw@sisk.pl>
-In-Reply-To: <201005252124.52108.rjw@sisk.pl>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BFC2A3C.0142:SCFMA922111,ss=1,fgs=0
+Content-Type: text/plain; charset=us-ascii
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/10 12:24, Rafael J. Wysocki wrote:
-> On Tuesday 25 May 2010, Randy Dunlap wrote:
->> On Tue, 25 May 2010 14:26:57 +1000 Stephen Rothwell wrote:
->>
->>> Hi all,
->>>
->>> We are in the merge window again.  I remind you all not to add stuff for
->>> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
->>
->>
->> when CONFIG_SUSPEND=n, CONFIG_OPPORTUNISTIC_SUSPEND=n, CONFIG_PM=y:
->>
->> kernel/power/main.c:66: error: 'pm_states' undeclared (first use in this function)
-> 
-> Thanks, the patch below fixes this.
-> 
-> Rafael
-> 
-> ---
-> From: Rafael J. Wysocki <rjw@sisk.pl>
-> Subject: PM: Fix build with CONFIG_SUSPEND unset
-> 
-> If CONFIG_SUSPEND is unset, pm_state_valid() doesn't build because
-> the pm_states[] array is not defined, but pm_state_valid() is only
-> used under #ifdef CONFIG_SUSPEND, so don't try to build it if
-> CONFIG_SUSPEND is unset.
-> 
-> Signed-off-by: Rafael J. Wysocki <rjw@sisk.pl>
+Dmitry Torokhov <dmitry.torokhov@gmail.com> writes:
 
-Acked-by: Randy Dunlap <randy.dunlap@oracle.com>
+> On Tue, May 18, 2010 at 04:46:53PM -0700, Kevin Hilman wrote:
+>> If the _probe() method fails, the 'ts' struct is freed, yet it is
+>> still used as the drvdata passed to suspend/resume/remove methods.
+>> Even though the input device does not get registerd, the driver's
+>> suspend/resume methods still get called as it's a registered SPI
+>> device.  This patch adds sanity checks to these methods to ensure that
+>> drvdata is valid before using it.
+>> 
+>
+> This is a load of crap. If probe() fails that means that driver does not
+> manage the device and thus ads7846_suspend() and ads7846_resume() should
+> not be called _at all_. If SPI core manages to call random methods from
+> the drivers that failed to bind to a device that should be fixed in SPI
+> core.
 
-Thanks.
+Agreed, this is indeed a bug in the SPI driver core.
 
+However, by fixing the SPI core to unregister the driver on failure
+(patch below), we prevent the suspend & resume methods from being
+called, but the driver's ->remove() method will still be called due to
+the driver_unregister().  So at least the remove() method needs fixing
+to prevent accessing free'd memory.
 
-> ---
->  kernel/power/main.c |    2 ++
->  1 file changed, 2 insertions(+)
-> 
-> Index: linux-2.6/kernel/power/main.c
-> ===================================================================
-> --- linux-2.6.orig/kernel/power/main.c
-> +++ linux-2.6/kernel/power/main.c
-> @@ -61,10 +61,12 @@ static inline int pm_enter_state(int sta
->  
->  static inline bool hibernation_supported(void) { return true; }
->  
-> +#ifdef CONFIG_SUSPEND
->  static inline bool pm_state_valid(int state_idx)
->  {
->  	return pm_states[state_idx] && valid_state(state_idx);
->  }
-> +#endif /* CONFIG_SUSPEND */
->  
->  static inline int pm_enter_state(int state_idx)
->  {
+Unless there are objections, I'll post the below along with an updated
+version of ads7846 patch.
 
+Kevin
 
--- 
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+diff --git a/drivers/spi/spi.c b/drivers/spi/spi.c
+index b3a1f92..42d4d26 100644
+--- a/drivers/spi/spi.c
++++ b/drivers/spi/spi.c
+@@ -175,6 +175,8 @@ static void spi_drv_shutdown(struct device *dev)
+  */
+ int spi_register_driver(struct spi_driver *sdrv)
+ {
++	int ret;
++
+ 	sdrv->driver.bus = &spi_bus_type;
+ 	if (sdrv->probe)
+ 		sdrv->driver.probe = spi_drv_probe;
+@@ -182,7 +184,12 @@ int spi_register_driver(struct spi_driver *sdrv)
+ 		sdrv->driver.remove = spi_drv_remove;
+ 	if (sdrv->shutdown)
+ 		sdrv->driver.shutdown = spi_drv_shutdown;
+-	return driver_register(&sdrv->driver);
++
++	ret = driver_register(&sdrv->driver);
++	if (!ret)
++		driver_unregister(&sdrv->driver);
++
++	return ret;
+ }
+ EXPORT_SYMBOL_GPL(spi_register_driver);
+ 
+
