@@ -1,108 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755169Ab0EYHJW (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 03:09:22 -0400
-Received: from buzzloop.caiaq.de ([212.112.241.133]:52928 "EHLO
-	buzzloop.caiaq.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753885Ab0EYHJV (ORCPT
+	id S1755650Ab0EYHPQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 03:15:16 -0400
+Received: from mail-iw0-f174.google.com ([209.85.214.174]:49033 "EHLO
+	mail-iw0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752410Ab0EYHPN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 03:09:21 -0400
-Date: Tue, 25 May 2010 09:08:44 +0200
-From: Daniel Mack <daniel@caiaq.de>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-Cc: Anton Vorontsov <cbouatmailru@gmail.com>, Greg KH <gregkh@suse.de>,
-       Kay Sievers <kay.sievers@vrfy.org>, LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Maciej Rutecki <maciej.rutecki@gmail.com>
-Subject: Re: [Regression] Commit "power_supply: Use attribute groups"
- breaks KDE battery monitor on openSUSE 11.3 M6
-Message-ID: <20100525070844.GV30801@buzzloop.caiaq.de>
-References: <201005250028.24687.rjw@sisk.pl>
- <201005250220.45889.rjw@sisk.pl>
- <20100525004744.GS30801@buzzloop.caiaq.de>
- <201005250255.11924.rjw@sisk.pl>
+	Tue, 25 May 2010 03:15:13 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=lG1BoSwdewpzwmxSuKsDQI7aYgO8WQB1ESQXPQBkmtgQC8fSxz215HNxmevUpYDotZ
+         6/lVcM8KhBbgGnaqzHK+rPOKlWs/aPfngp72BAm7ckQMfbvaFjOyRuanNjuPXCNj61Tf
+         qqse20cv4V4+VaSJPGMqzWdmgyikBt8k6hGng=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005250255.11924.rjw@sisk.pl>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <20100511004655.30590.74584.stgit@localhost.localdomain>
+References: <20100511004655.30590.74584.stgit@localhost.localdomain>
+Date: Tue, 25 May 2010 00:15:12 -0700
+X-Google-Sender-Auth: n-UxfD5MtVd2XPp62YxGlyorebM
+Message-ID: <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
+Subject: Re: [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx panic
+From: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+To: stable@kernel.org, greg@kroah.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org, davem@davemloft.net,
+       Brandon <brandon@ifup.org>,
+       Jesse Brandeburg <jesse.brandeburg@intel.com>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 02:55:11AM +0200, Rafael J. Wysocki wrote:
-> On Tuesday 25 May 2010, Daniel Mack wrote:
-> > On Tue, May 25, 2010 at 02:20:45AM +0200, Rafael J. Wysocki wrote:
-> > > On Tuesday 25 May 2010, Rafael J. Wysocki wrote:
-> > > > On Tuesday 25 May 2010, Daniel Mack wrote:
-> > > > > On Tue, May 25, 2010 at 12:28:24AM +0200, Rafael J. Wysocki wrote:
-> > > > > > Your commit 5f487cd34f4337f9bc27ca19da72a39d1b0a0ab4 (power_supply: Use
-> > > > > > attribute groups) unfortunately breaks KDE 4.4's battery monitor from openSUSE
-> > > > > > 11.3 Milestone 6 on my Acer Ferrari One.  Apparently, the battery monitor can't
-> > > > > > access the sysfs battery attributes with this commit applied.
-> > > > > 
-> > > > > Can you still see the attributes in sysfs?
-> > > > 
-> > > > Yes, I can.
-> > > 
-> > > Ah, sorry.  The 'type' property is not present (I didn't notice that before).
-> > 
-> > Ah. That I didn't see. Does the (untested) patch below help?
-> > 
-> > Daniel
-> > 
-> > From ea5c518fb287d5e80e9a46ba1f9a17c45141187c Mon Sep 17 00:00:00 2001
-> > From: Daniel Mack <daniel@caiaq.de>
-> > Date: Tue, 25 May 2010 02:39:45 +0200
-> > Subject: [PATCH] power_supply: fix regression for 'type' property
-> > 
-> > Commit 5f487cd34f4337f9bc27ca19da72a39d1b0a0ab4 (power_supply: Use
-> > attribute groups) causes a regression the power supply core does not
-> > export the 'type' attribute anymore.
-> > 
-> > POWER_SUPPLY_PROP_TYPE is handled by the power supply core without the
-> > low-level driver, so power_supply_attr_is_visible() must always return
-> > the entry as readable.
-> > 
-> > Signed-off-by: Daniel Mack <daniel@caiaq.de>
-> > Reported-by: Rafael J. Wysocki <rjw@sisk.pl>
-> 
-> Yes, that's it, thanks.
+On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
+> From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>
+> backporting this commit:
+>
+> commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
+> Author: Krishna Kumar <krkumar2@in.ibm.com>
+> Date:   Wed Feb 3 13:13:10 2010 +0000
+>
+>    ixgbe: Fix return of invalid txq
+>
+>    a developer had complained of getting lots of warnings:
+>
+>    "eth16 selects TX queue 98, but real number of TX queues is 64"
+>
+>    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
+>
+>    As there was no follow up on that bug, I am submitting this
+>    patch assuming that the other return points will not return
+>    invalid txq's, and also that this fixes the bug (not tested).
+>
+>    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+>    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+>    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+>    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+>    Signed-off-by: David S. Miller <davem@davemloft.net>
+>
+> CC: Brandon <brandon@ifup.org>
+> Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> ---
+>
+>  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
+>  1 files changed, 6 insertions(+), 2 deletions(-)
+>
 
-Good, thanks for testing.
+Greg - status?  Did you queue this patch for the stable release and I missed it?
 
-I think Anton will pick this for battery-2.6.git.
-
-
-Daniel
-
-
-> >  drivers/power/power_supply_sysfs.c |    6 ++++--
-> >  1 files changed, 4 insertions(+), 2 deletions(-)
-> > 
-> > diff --git a/drivers/power/power_supply_sysfs.c b/drivers/power/power_supply_sysfs.c
-> > index 6a86cdf..9d30eeb 100644
-> > --- a/drivers/power/power_supply_sysfs.c
-> > +++ b/drivers/power/power_supply_sysfs.c
-> > @@ -179,14 +179,16 @@ static mode_t power_supply_attr_is_visible(struct kobject *kobj,
-> >  {
-> >  	struct device *dev = container_of(kobj, struct device, kobj);
-> >  	struct power_supply *psy = dev_get_drvdata(dev);
-> > +	mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
-> >  	int i;
-> >  
-> > +	if (attrno == POWER_SUPPLY_PROP_TYPE)
-> > +		return mode;
-> > +
-> >  	for (i = 0; i < psy->num_properties; i++) {
-> >  		int property = psy->properties[i];
-> >  
-> >  		if (property == attrno) {
-> > -			mode_t mode = S_IRUSR | S_IRGRP | S_IROTH;
-> > -
-> >  			if (psy->property_is_writeable &&
-> >  			    psy->property_is_writeable(psy, property) > 0)
-> >  				mode |= S_IWUSR;
-> > 
-> 
+-- 
+Cheers,
+Jeff
