@@ -1,59 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754367Ab0EYG4V (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 02:56:21 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:59119 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754213Ab0EYG4R (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 02:56:17 -0400
-Date: Tue, 25 May 2010 16:56:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Russell King <rmk@arm.linux.org.uk>
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       Ben Dooks <ben-linux@fluff.org>,
-       Marek Szyprowski <m.szyprowski@samsung.com>
-Subject: linux-next: build failure (arm tree related)
-Message-Id: <20100525165606.239a0465.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S1753709Ab0EYG6W (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 02:58:22 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:52940 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752026Ab0EYG6V convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 02:58:21 -0400
+Subject: Re: [PATCH 2/4] perf: Add exclude_task perf event attribute
+From: Peter Zijlstra <peterz@infradead.org>
+To: Paul Mackerras <paulus@samba.org>
+Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+In-Reply-To: <20100525014323.GC30395@drongo>
+References: <1274450715-23955-1-git-send-regression-fweisbec@gmail.com>
+	 <1274450715-23955-3-git-send-regression-fweisbec@gmail.com>
+	 <20100525014323.GC30395@drongo>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Tue, 25 May 2010 08:58:08 +0200
+Message-ID: <1274770688.5882.168.camel@twins>
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Tue__25_May_2010_16_56_06_+1000_28EbEePRgUDvRLsg"
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Tue__25_May_2010_16_56_06_+1000_28EbEePRgUDvRLsg
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 2010-05-25 at 11:43 +1000, Paul Mackerras wrote:
+> On Fri, May 21, 2010 at 04:05:13PM +0200, Frederic Weisbecker wrote:
+> 
+> > Excluding is useful when you want to trace only hard and softirqs.
+> > 
+> > For this we use a new generic perf_exclude_event() (the previous
+> > one beeing turned into perf_exclude_swevent) to which you can pass
+> > the preemption offset to which your events trigger.
+> > 
+> > Computing preempt_count() - offset gives us the preempt_count() of
+> > the context that the event has interrupted, on top of which we
+> > can filter the non-irq contexts.
+> 
+> How does this work for hardware events when we are sampling and
+> getting an interrupt every N events?  It seems like the hardware is
+> still counting all events and interrupting every N events, but we are
+> only recording a sample if the interrupt occurred in the context we
+> want.  In other words the context of the Nth event is considered to be
+> the context for the N-1 events preceding that, which seems a pretty
+> poor approximation.
+> 
+> Also, for hardware events, if we are counting rather than sampling,
+> the exclude_task bit will have no effect.  So perhaps in that case the
+> perf_event_open should fail rather than appear to succeed but give
+> wrong data.
 
-Hi Russell,
+Right, so for hardware event we'd need to go with those irq_{enter,exit}
+hooks and either fully disable the call, or do as Ingo suggested, read
+the count delta and add that to period_left, so that we'll delay the
+sample (and subtract from ->count, which is I think the trickiest bit as
+it'll generate a non-monotonic ->count).
 
-Most (all?) of the arm builds are failing for next-20100525:
-
-arch/arm/Kconfig:883: can't open file "arch/arm/plat-s5pc1xx/Kconfig"
-
-I think this may be a bad merge 211cc52a36dedd1e90147af43f6ab5eeb57952ac
-("Merge branch 'for-rmk/samsung3' of git://git.fluff.org/bjdooks/linux
-into devel-stable") which resurrected the include of
-arch/arm/plat-s5pc1xx/Kconfig after it was removed in commit
-acc84707d3487735fc666fdeab76185d086428c0 ("ARM: SAMSUNG: move S5PC100
-support from plat-s5pc1xx to plat-s5p framework").
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Tue__25_May_2010_16_56_06_+1000_28EbEePRgUDvRLsg
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv7dIYACgkQjjKRsyhoI8z07QCfbBV1fslDV3ytEentl+YHVRiB
-MN8AoLr/9OxZ8vQIaWVOdurcdTFeQYxv
-=No8H
------END PGP SIGNATURE-----
-
---Signature=_Tue__25_May_2010_16_56_06_+1000_28EbEePRgUDvRLsg--
+So I prefer the disable/enable from irq_enter/exit, however I also
+suspect that that is by far the most expensive option.
