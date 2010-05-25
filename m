@@ -1,168 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754710Ab0EYPn6 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:43:58 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:24797 "EHLO mx1.redhat.com"
+	id S1756609Ab0EYPoY (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:44:24 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:43871 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751047Ab0EYPn4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:43:56 -0400
-Date: Tue, 25 May 2010 12:43:38 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Bluesmoke ML <bluesmoke-devel@lists.sourceforge.net>,
-       Linux Edac Mailing List <linux-edac@vger.kernel.org>
-Subject: [GIT PULL for 2.6.35] i7core/nehalem EDAC driver
-Message-ID: <20100525124338.30bc22b4@pedra>
+	id S1756449Ab0EYPoR (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 11:44:17 -0400
+Subject: Re: [PATCH] cache last free vmap_area to avoid restarting beginning
+From: Steven Whitehouse <swhiteho@redhat.com>
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Nick Piggin <npiggin@suse.de>, Andrew Morton <akpm@linux-foundation.org>,
+       linux-mm@kvack.org, linux-kernel@vger.kernel.org
+In-Reply-To: <20100525150038.GA3227@barrios-desktop>
+References: <1271427056.7196.163.camel@localhost.localdomain>
+	 <1271603649.2100.122.camel@barrios-desktop>
+	 <1271681929.7196.175.camel@localhost.localdomain>
+	 <h2g28c262361004190712v131bf7a3q2a82fd1168faeefe@mail.gmail.com>
+	 <1272548602.7196.371.camel@localhost.localdomain>
+	 <1272821394.2100.224.camel@barrios-desktop>
+	 <1273063728.7196.385.camel@localhost.localdomain>
+	 <20100505161632.GB5378@laptop> <1274277294.2532.54.camel@localhost>
+	 <20100525084323.GG5087@laptop>  <20100525150038.GA3227@barrios-desktop>
+Content-Type: text/plain; charset="UTF-8"
+Organization: Red Hat UK Ltd
+Date: Tue, 25 May 2010 16:48:44 +0100
+Message-ID: <1274802524.11327.2.camel@localhost>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+Hi,
 
-I'm re-sending the pull request, as the previous branch were wrong.
+On Wed, 2010-05-26 at 00:00 +0900, Minchan Kim wrote:
 
-Please pull from:
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git linux_next
+> Anyway, I am looking forard to seeing Steven's experiment.
+> If test has no problem, I will remake refactoring patch based on your patch. :)
+> 
+> Thanks, Nick.
 
+I gather that it might be a couple of days before our tester can run the
+tests as he is busy with something else at the moment. I'll get back to
+you as soon as I can. Apologies for the delay in testing,
 
-The following changes since commit 66f41d4c5c8a5deed66fdcc84509376c9a0bf9d8:
-  Linus Torvalds (1):
-        Linux 2.6.34-rc6
-
-are available in the git repository at:
-
-  ssh://master.kernel.org/pub/scm/linux/kernel/git/mchehab/i7core.git linux_next
-
-Alan Cox (1):
-      edac: i7core_edac produces undefined behaviour on 32bit
-
-Alexander Beregalov (1):
-      i7core_edac: fix memory leak of i7core_dev
-
-Aristeu Rozanski (1):
-      pci: Add a probing code that seeks for an specific bus
-
-Jiri Slaby (1):
-      EDAC: add __init to i7core_xeon_pci_fixup
-
-Keith Mannthey (2):
-      i7core_edac: Fix ecc enable shift
-      i7core_edac: Probe on Xeons eariler
-
-Mauro Carvalho Chehab (72):
-      i7core_edac: Add an EDAC memory controller driver for Nehalem chipsets
-      i7core_edac: Add error insertion code for Nehalem
-      i7core_edac: Add more status functions to EDAC driver
-      i7core_edac: Registers all supported MC functions
-      i7core_edac: Show read/write virtual/physical channel association
-      i7core_edac: A few fixes at error injection code
-      i7core_edac: need mci->edac_check, otherwise module removal doesn't work
-      i7core_edac: Add a memory check routine, based on device 3 function 4
-      i7core_edac: Add additional tests for error detection
-      i7core_edac: Properly fill struct csrow_info
-      i7core_edac: Improve error handling
-      i7core_edac: Add more information about each active dimm
-      i7core_edac: Get more info about the memory DIMMs
-      i7core_edac: Memory info fixes and preparation for properly filling cswrow data
-      i7core_edac: fill csrows edac sysfs info
-      i7core_edac: CodingStyle fixes
-      edac_mce: Add an interface driver to report mce errors via edac
-      edac/Kconfig: edac_mce can't be module
-      i7core_edac: Add edac_mce glue
-      i7core_edac: Adds write unlock to MC registers
-      i7core_edac: Add a code to probe Xeon 55xx bus
-      i7core_edac: add support for more than one MC socket
-      i7core_edac: maps all sockets as if ther are one MC controller
-      i7core_edac: decode mcelog error and send it via edac interface
-      i7core_edac: some fixes at memory error parser
-      i7core: fix probing on Xeon55xx
-      i7core: check if the memory error is fatal or non-fatal
-      i7core: enrich error information based on memory transaction type
-      i7core: fix get_devices routine for Xeon55xx
-      i7core: better document i7core_get_active_channels()
-      i7core: add socket info at the debug msg
-      i7core: remove some uneeded noisy debug messages
-      i7core_edac: Some cleanups at displayed info
-      i7core_edac: some fixes at error injection code
-      i7core_edac: fix error codes for sysfs error injection interface
-      i7core_edac: fix error injection
-      Documentation/edac.txt: Add Nehalem specific EDAC characteristics
-      i7core_edac: CodingSyle fixes/cleanups
-      i7core_edac: Print an error message if pci register fails
-      i7core_edac: Use Device 3 function 2 to report errors with RDIMM's
-      i7core: Use registered memories per processor
-      i7core_edac: Improve corrected_error_counts output for RDIMM
-      i7core: temporary workaround to allow it to compile against 2.6.30
-      Dynamically allocate memory for PCI devices
-      i7core_edac: create one mc per socket/QPI
-      i7core_edac: sanity check: print a warning if a mcelog is ignored
-      i7core_edac: a few fixes for multiple mc's
-      Documentation/edac.txt: Improve it to reflect the latest changes at the driver
-      i7core_edac: Fix a bug when printing error counts with RDIMMs
-      i7core_edac: at remove, don't remove all pci devices at once
-      i7core_edac: remove static counter for max sockets
-      i7core_edac: change remove module strategy
-      i7core_edac: We need to use list_for_each_entry_safe to avoid errors
-      i7core_edac: Avoid printing a warning when debug is disabled
-      edac_core: Allow the creation of sysfs groups
-      i7core_edac: Add support for sysfs addrmatch group
-      edac: store/show methods for device groups weren't working
-      edac: Don't create csrow entries on instance groups
-      i7core_edac: Convert UDIMM error counters into a proper sysfs group
-      Documentation/edac.txt: Reflect the sysfs changes at the document
-      edac: Create an unique instance for each kobj
-      i7core_edac: Use a lockless ringbuffer
-      i7core_edac: Better parse "any" addrmask
-      i7core_edac: First store, then increment
-      i7core_edac: Fix ringbuffer maxsize
-      i7core_edac: PCI device is called NONCORE, instead of NOCORE
-      i7core_edac: Use a more generic approach for probing PCI devices
-      i7core_edac: Add initial support for Lynnfield
-      i7core: add support for Lynnfield alternate address
-      i7core_edac: Fix wrong device id for channel 1 devices
-      i7core_edac: Add support for X5670
-      i7core_edac: Better describe the supported devices
-
-Randy Dunlap (1):
-      edac: fix i7core build
-
-Stephen Rothwell (1):
-      i7core_edac: do not export static functions
-
-Tony Luck (1):
-      i7core_edac: don't free on success
-
-Vernon Mauery (2):
-      Always call i7core_[ur]dimm_check_mc_ecc_err
-      Add support for Westmere to i7core_edac driver
-
- Documentation/edac.txt           |  152 +++
- arch/x86/include/asm/pci_x86.h   |    2 +
- arch/x86/kernel/cpu/mcheck/mce.c |   10 +
- arch/x86/pci/legacy.c            |   42 +-
- drivers/edac/Kconfig             |   13 +
- drivers/edac/Makefile            |    2 +
- drivers/edac/edac_core.h         |   23 +-
- drivers/edac/edac_mc_sysfs.c     |  175 +++-
- drivers/edac/edac_mce.c          |   61 ++
- drivers/edac/i7core_edac.c       | 2078 ++++++++++++++++++++++++++++++++++++++
- include/linux/edac_mce.h         |   31 +
- include/linux/pci.h              |    1 +
- include/linux/pci_ids.h          |   52 +
- 13 files changed, 2598 insertions(+), 44 deletions(-)
- create mode 100644 drivers/edac/edac_mce.c
- create mode 100644 drivers/edac/i7core_edac.c
- create mode 100644 include/linux/edac_mce.h
+Steve.
 
 
-
--- 
-
-Cheers,
-Mauro
