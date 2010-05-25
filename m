@@ -1,118 +1,266 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758243Ab0EYOPi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:15:38 -0400
-Received: from daytona.panasas.com ([67.152.220.89]:33476 "EHLO
-	daytona.int.panasas.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1754053Ab0EYOPg (ORCPT
+	id S1758724Ab0EYOQe (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:16:34 -0400
+Received: from exprod5og102.obsmtp.com ([64.18.0.143]:37854 "EHLO
+	exprod5og102.obsmtp.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756198Ab0EYOQc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:15:36 -0400
-Message-ID: <4BFBDB83.2090807@panasas.com>
-Date: Tue, 25 May 2010 17:15:31 +0300
-From: Boaz Harrosh <bharrosh@panasas.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	Tue, 25 May 2010 10:16:32 -0400
+Message-ID: <4BFBDBB8.6040702@ge.com>
+Date: Tue, 25 May 2010 15:16:24 +0100
+From: Martyn Welch <martyn.welch@ge.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
 MIME-Version: 1.0
-To: James Bottomley <James.Bottomley@suse.de>
-CC: Julia Lawall <julia@diku.dk>, Doug Gilbert <dgilbert@interlog.com>,
-       linux-scsi@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: Re: [PATCH 14/27] drivers/scsi: Use memdup_user
-References: <Pine.LNX.4.64.1005221022180.13021@ask.diku.dk>	 <1274538263.4410.38.camel@mulgrave.site>  <4BF94B89.2050101@panasas.com> <1274631752.5894.24.camel@mulgrave.site>
-In-Reply-To: <1274631752.5894.24.camel@mulgrave.site>
-Content-Type: text/plain; charset=UTF-8
+To: nanakos@wired-net.gr
+CC: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] Staging: vme: devices: vme_user.c: fixed ERRORS and WARNINGS
+References: <1274792972-4620-1-git-send-email-nanakos@wired-net.gr>
+In-Reply-To: <1274792972-4620-1-git-send-email-nanakos@wired-net.gr>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 25 May 2010 14:15:34.0879 (UTC) FILETIME=[BDE2E6F0:01CAFC14]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/23/2010 07:22 PM, James Bottomley wrote:
-> On Sun, 2010-05-23 at 18:36 +0300, Boaz Harrosh wrote:
->>> This type of transformation has really no value at all.  The code you're
->>> proposing to replace is already correct.  I'm fairly ambivalent on
->>> patterned APIs anyway but I accept they're useful way to prevent new
->>> code getting it wrong. However, it's completely bogus to force
->>> replacement of correctly functioning code throughout the kernel (unless
->>> you're going to argue that everyone who tries to copy from user into a
->>> kmalloc space does a cut and paste from sg?)
->>>
->>> Of infinitely greater service would be finding any places where the
->>> pattern is being incorrectly used.
->>>
->>
->> It looks like it is not done 100% kosher and calling memdup_user should
->> be better.
->>
->> - For 1 memdup_user does a GFP_KERNEL with a comment on how copy_from_user
->>   would eventually sleep, so what's the point of GFP_ATOMIC?
-> 
-> Well, since you've written a storage driver, I really hope that question
-> is rhetorical ...
-> 
+Hi,
 
-Not really I do mean it in this case. It is not a storage-driver code
-path. Is sg a storage-driver. I was not aware anyone used it for one.
+Thanks for spending some time looking at this, I guess these are
+checkpatch.pl errors? I few minor issues below.
 
-> The reason for using GFP_ATOMIC from user context in storage drivers is
-> to avoid writeout deadlock:  you don't want to trigger a swap write
-> while you potentially occupy the writeout path.  In all older drivers
-> this had to be GFP_ATOMIC because GFP_NOIO wasn't around.
-> 
+Martyn
 
-I confess my total swap ignorance. I was under the impression that
-swap needs a block device. OK you could do a user-mode filesystem
-over sg, under loop device. Does swap work over loop device=>ext2
-for example? Or is there a way to directly swap over a filesystem
-(Not block based)?
+nanakos@wired-net.gr wrote:
+> From: Nanakos Chrysostomos <nanakos@wired-net.gr>
+>
+> Fixed ERRORS and WARNINGS
+>
+> Signed-off-by: Nanakos Chrysostomos <nanakos@wired-net.gr>
+> ---
+>  drivers/staging/vme/devices/vme_user.c |   90 +++++++++++++++----------------
+>  1 files changed, 44 insertions(+), 46 deletions(-)
+>
+> diff --git a/drivers/staging/vme/devices/vme_user.c b/drivers/staging/vme/devices/vme_user.c
+> index bc16fc0..727dc0c 100644
+> --- a/drivers/staging/vme/devices/vme_user.c
+> +++ b/drivers/staging/vme/devices/vme_user.c
+> @@ -34,8 +34,8 @@
+>  #include <linux/smp_lock.h>
+>  #include <linux/types.h>
+>  
+> -#include <asm/io.h>
+> -#include <asm/uaccess.h>
+> +#include <linux/io.h>
+> +#include <linux/uaccess.h>
+>  
+>  #include "../vme.h"
+>  #include "vme_user.h"
+> @@ -48,19 +48,19 @@ static int bus_num;
+>  /* Currently Documentation/devices.txt defines the following for VME:
+>   *
+>   * 221 char	VME bus
+> - * 		  0 = /dev/bus/vme/m0		First master image
+> - * 		  1 = /dev/bus/vme/m1		Second master image
+> - * 		  2 = /dev/bus/vme/m2		Third master image
+> - * 		  3 = /dev/bus/vme/m3		Fourth master image
+> - * 		  4 = /dev/bus/vme/s0		First slave image
+> - * 		  5 = /dev/bus/vme/s1		Second slave image
+> - * 		  6 = /dev/bus/vme/s2		Third slave image
+> - * 		  7 = /dev/bus/vme/s3		Fourth slave image
+> - * 		  8 = /dev/bus/vme/ctl		Control
+> + *		0 = /dev/bus/vme/m0		First master image
+> + *		1 = /dev/bus/vme/m1		Second master image
+> + *		2 = /dev/bus/vme/m2		Third master image
+> + *		3 = /dev/bus/vme/m3		Fourth master image
+> + *		4 = /dev/bus/vme/s0		First slave image
+> + *		5 = /dev/bus/vme/s1		Second slave image
+> + *		6 = /dev/bus/vme/s2		Third slave image
+> + *		7 = /dev/bus/vme/s3		Fourth slave image
+> + *		8 = /dev/bus/vme/ctl		Control
+>   
 
-> This also illustrates the problem with design patterns:  The idea that
-> if you have user context, you must be able to kmalloc GFP_KERNEL seems
-> logical to the people who wrote the pattern, but actually it's
-> potentially incorrect for storage.
-> 
+Whilst the space before the tabbing is definitely incorrect, the double
+space after it is intentional and shouldn't cause an error or warning,
+please can you leave that in.
 
-Again I confess my ignorance but I thought that copy_from_user can sleep
-because of a page_fault which will invoke the memory allocation subsystem
-anyway, so the out-of-memory condition will apply to copy_from_user as
-well. But I don't have a clue, actually, why the copy_from_user might
-sleep.
+>   *
+> - * 		It is expected that all VME bus drivers will use the
+> - * 		same interface.  For interface documentation see
+> - * 		http://www.vmelinux.org/.
+> + *		It is expected that all VME bus drivers will use the
+> + *		same interface.  For interface documentation see
+> + *		http://www.vmelinux.org/.
+>   *
+>   * However the VME driver at http://www.vmelinux.org/ is rather old and doesn't
+>   * even support the tsi148 chipset (which has 8 master and 8 slave windows).
+> @@ -136,13 +136,13 @@ static long vme_user_unlocked_ioctl(struct file *, unsigned int, unsigned long);
+>  static int __init vme_user_probe(struct device *, int, int);
+>  static int __exit vme_user_remove(struct device *, int, int);
+>  
+> -static struct file_operations vme_user_fops = {
+> -        .open = vme_user_open,
+> -        .release = vme_user_release,
+> -        .read = vme_user_read,
+> -        .write = vme_user_write,
+> -        .llseek = vme_user_llseek,
+> -        .unlocked_ioctl = vme_user_unlocked_ioctl,
+> +const static struct file_operations vme_user_fops = {
+> +	.open = vme_user_open,
+> +	.release = vme_user_release,
+> +	.read = vme_user_read,
+> +	.write = vme_user_write,
+> +	.llseek = vme_user_llseek,
+> +	.unlocked_ioctl = vme_user_unlocked_ioctl,
+>  };
+>  
+>  
+> @@ -151,13 +151,13 @@ static struct file_operations vme_user_fops = {
+>   */
+>  static void reset_counters(void)
+>  {
+> -        statistics.reads = 0;
+> -        statistics.writes = 0;
+> -        statistics.ioctls = 0;
+> -        statistics.irqs = 0;
+> -        statistics.berrs = 0;
+> -        statistics.dmaErrors = 0;
+> -        statistics.timeouts = 0;
+> +	statistics.reads = 0;
+> +	statistics.writes = 0;
+> +	statistics.ioctls = 0;
+> +	statistics.irqs = 0;
+> +	statistics.berrs = 0;
+> +	statistics.dmaErrors = 0;
+> +	statistics.timeouts = 0;
+>  }
+>  
+>  static int vme_user_open(struct inode *inode, struct file *file)
+> @@ -216,9 +216,8 @@ static ssize_t resource_to_user(int minor, char __user *buf, size_t count,
+>  		/* We copy to kernel buffer */
+>  		copied = vme_master_read(image[minor].resource,
+>  			image[minor].kern_buf, count, *ppos);
+> -		if (copied < 0) {
+> +		if (copied < 0)
+>  			return (int)copied;
+> -		}
+>  
+>  		retval = __copy_to_user(buf, image[minor].kern_buf,
+>  			(unsigned long)copied);
+> @@ -313,7 +312,7 @@ static ssize_t buffer_from_user(unsigned int minor, const char *buf,
+>  }
+>  
+>  static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
+> -			loff_t * ppos)
+> +			loff_t *ppos)
+>  {
+>  	unsigned int minor = MINOR(file->f_dentry->d_inode->i_rdev);
+>  	ssize_t retval;
+> @@ -337,7 +336,7 @@ static ssize_t vme_user_read(struct file *file, char *buf, size_t count,
+>  	else
+>  		okcount = count;
+>  
+> -	switch (type[minor]){
+> +	switch (type[minor]) {
+>  	case MASTER_MINOR:
+>  		retval = resource_to_user(minor, buf, okcount, ppos);
+>  		break;
+> @@ -380,7 +379,7 @@ static ssize_t vme_user_write(struct file *file, const char *buf, size_t count,
+>  	else
+>  		okcount = count;
+>  
+> -	switch (type[minor]){
+> +	switch (type[minor]) {
+>  	case MASTER_MINOR:
+>  		retval = resource_from_user(minor, buf, okcount, ppos);
+>  		break;
+> @@ -571,7 +570,7 @@ vme_user_unlocked_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+>  /*
+>   * Unallocate a previously allocated buffer
+>   */
+> -static void buf_unalloc (int num)
+> +static void buf_unalloc(int num)
+>  {
+>  	if (image[num].kern_buf) {
+>  #ifdef VME_DEBUG
+> @@ -594,8 +593,8 @@ static void buf_unalloc (int num)
+>  }
+>  
+>  static struct vme_driver vme_user_driver = {
+> -        .name = driver_name,
+> -        .probe = vme_user_probe,
+> +	.name = driver_name,
+> +	.probe = vme_user_probe,
+>  	.remove = vme_user_remove,
+>  };
+>  
+> @@ -770,16 +769,16 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+>  	}
+>  
+>  	/* Add sysfs Entries */
+> -	for (i=0; i<VME_DEVS; i++) {
+> +	for (i = 0; i < VME_DEVS; i++) {
+>  		switch (type[i]) {
+>  		case MASTER_MINOR:
+> -			sprintf(name,"bus/vme/m%%d");
+> +			sprintf(name, "bus/vme/m%%d");
+>  			break;
+>  		case CONTROL_MINOR:
+> -			sprintf(name,"bus/vme/ctl");
+> +			sprintf(name, "bus/vme/ctl");
+>  			break;
+>  		case SLAVE_MINOR:
+> -			sprintf(name,"bus/vme/s%%d");
+> +			sprintf(name, "bus/vme/s%%d");
+>  			break;
+>  		default:
+>  			err = -EINVAL;
+> @@ -788,9 +787,9 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+>  		}
+>  
+>  		image[i].device =
+> -			device_create(vme_user_sysfs_class, NULL,
+> -				MKDEV(VME_MAJOR, i), NULL, name,
+> -				(type[i] == SLAVE_MINOR)? i - (MASTER_MAX + 1) : i);
+> +		   device_create(vme_user_sysfs_class, NULL,
+> +			MKDEV(VME_MAJOR, i), NULL, name,
+> +			(type[i] == SLAVE_MINOR) ? i - (MASTER_MAX + 1) : i);
+>   
 
-> Now in the particular case of sg, I don't believe we'll ever want to
-> swap over sg (famous last words, of course), so in this instance we
-> probably could get away with using GFP_KERNEL ... but since it's
-> following the storage pattern, GFP_ATOMIC (or GFP_NOIO) is correct.
-> 
+It looks like you have compacted the tabbing here to try and avoid the
+80 character width limit, but in doing so have replaced some clean
+tabbing at the beginning of the "device_create" line for spaces. I'm not
+sure this is overly constructive.
 
-Again I never considered sg as storage-driver. It is not a block-device
-and is only used from user-mode that has it's out-of-memory-sleep problems
-without sg.
+>  		if (IS_ERR(image[i].device)) {
+>  			printk("%s: Error creating sysfs device\n",
+>  				driver_name);
+> @@ -804,7 +803,7 @@ static int __init vme_user_probe(struct device *dev, int cur_bus, int cur_slot)
+>  	/* Ensure counter set correcty to destroy all sysfs devices */
+>  	i = VME_DEVS;
+>  err_sysfs:
+> -	while (i > 0){
+> +	while (i > 0) {
+>  		i--;
+>  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
+>  	}
+> @@ -845,9 +844,8 @@ static int __exit vme_user_remove(struct device *dev, int cur_bus, int cur_slot)
+>  	int i;
+>  
+>  	/* Remove sysfs Entries */
+> -	for(i=0; i<VME_DEVS; i++) {
+> +	for (i = 0; i < VME_DEVS; i++)
+>  		device_destroy(vme_user_sysfs_class, MKDEV(VME_MAJOR, i));
+> -	}
+>  	class_destroy(vme_user_sysfs_class);
+>  
+>  	for (i = MASTER_MINOR; i < (MASTER_MAX + 1); i++)
+>   
 
-> Does osd need auditing for this problem (or would no-one ever do swap
-> over osd)?
-> 
 
-libosd's members all receive a gfp_t parameter and let the caller
-determine the sleep policy. For example in osdblk allocations are
-done with GFP_ATOMIC. At the exofs level everything is GFP_KERNEL
-because that is one of the rules of VFS API. So osdblk should
-theoretically be able to swap.
+-- 
+Martyn Welch (Principal Software Engineer)   |   Registered in England and
+GE Intelligent Platforms                     |   Wales (3828642) at 100
+T +44(0)127322748                            |   Barbirolli Square, Manchester,
+E martyn.welch@ge.com                        |   M2 3AB  VAT:GB 927559189
 
-That said, in current kernel an iscsi device cannot be used for swap
-because of NET. There was grate progress done to try and swap over
-nfs which improved iscsi as well, but it was never seen all the way
-through.
-
->> If this is by design then it surly calls for a comment that explains.
->> (I would like to know)
-> 
-> This pattern occurs many times in storage ... documenting it at every
-> callsite would be a huge waste.
-> 
-
-So if this is serious, them maybe call copy_from_user_inatomic to match
-the GFP_ATOMIC allocation?
-
-> James
-> 
-
-Boaz
