@@ -1,80 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933367Ab0EYRPc (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:15:32 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:43715 "EHLO mx1.redhat.com"
+	id S933129Ab0EYRUJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:20:09 -0400
+Received: from cantor.suse.de ([195.135.220.2]:38035 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933018Ab0EYRP3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:15:29 -0400
-Date: Tue, 25 May 2010 13:15:15 -0400
-From: Mike Snitzer <snitzer@redhat.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: dm-devel@redhat.com, Alasdair Kergon <agk@redhat.com>,
-       Kiyoshi Ueda <k-ueda@ct.jp.nec.com>, linux-kernel@vger.kernel.org
-Subject: [PATCH 2/1] block: make blk_init_free_list and elevator_init
- idempotent
-Message-ID: <20100525171515.GB10155@redhat.com>
-References: <1274744795-9825-1-git-send-email-snitzer@redhat.com>
- <1274744795-9825-3-git-send-email-snitzer@redhat.com>
- <4BFBB21A.3030105@ct.jp.nec.com>
- <20100525124912.GA7447@redhat.com>
- <20100525163455.GA10155@redhat.com>
+	id S1753903Ab0EYRUH (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 13:20:07 -0400
+Date: Wed, 26 May 2010 03:19:59 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+Cc: Linus Torvalds <torvalds@linux-foundation.org>,
+       Christoph Lameter <cl@linux-foundation.org>,
+       Christoph Lameter <cl@linux.com>, linux-mm@kvack.org,
+       LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       David Rientjes <rientjes@google.com>,
+       Zhang Yanmin <yanmin_zhang@linux.intel.com>,
+       Matthew Wilcox <willy@linux.intel.com>, Matt Mackall <mpm@selenic.com>,
+       Mel Gorman <mel@csn.ul.ie>
+Subject: Re: [RFC V2 SLEB 00/14] The Enhanced(hopefully) Slab Allocator
+Message-ID: <20100525171959.GH20853@laptop>
+References: <AANLkTimhTfz_mMWNh_r18yapNxSDjA7wRDnFM6L5aIdE@mail.gmail.com>
+ <20100525081634.GE5087@laptop>
+ <AANLkTilJBY0sinB365lIZFUaMgMCZ1xyhMdXRTJTVDSV@mail.gmail.com>
+ <20100525093410.GH5087@laptop>
+ <AANLkTikXp5LlKLK1deKOQpciUFNugjlQah5QpNcImf39@mail.gmail.com>
+ <20100525101924.GJ5087@laptop>
+ <AANLkTimazVL8G-XQURiQ1s0M3NKa2ndXNceSaw9sADRQ@mail.gmail.com>
+ <alpine.LFD.2.00.1005250812100.3689@i5.linux-foundation.org>
+ <20100525154352.GB20853@laptop>
+ <AANLkTilEIwPSN-stGGuu5wV4Q6Ty0GytNMpfq-vRpK_k@mail.gmail.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100525163455.GA10155@redhat.com>
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <AANLkTilEIwPSN-stGGuu5wV4Q6Ty0GytNMpfq-vRpK_k@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-blk_init_allocated_queue_node may fail and the caller _could_ retry.
-Accommodate the unlikely event that blk_init_allocated_queue_node is
-called on an already initialized (possibly partially) request_queue.
+On Tue, May 25, 2010 at 08:02:32PM +0300, Pekka Enberg wrote:
+> Hi Nick,
+> 
+> On Tue, May 25, 2010 at 6:43 PM, Nick Piggin <npiggin@suse.de> wrote:
+> > As far as I can see, there was never a good reason to replace SLAB
+> > rather than clean up its code and make incremental improvements.
+> 
+> I'm not totally convinced but I guess we're about to find that out.
+> How do you propose we benchmark SLAB while we clean it up
 
-Signed-off-by: Mike Snitzer <snitzer@redhat.com>
----
- block/blk-core.c |    3 +++
- block/elevator.c |    6 ++++--
- 2 files changed, 7 insertions(+), 2 deletions(-)
+Well the first pass will be code cleanups, bootstrap simplifications.
+Then looking at what debugging features were implemented in SLUB but not
+SLAB and what will be useful to bring over from there.
 
-diff --git a/block/blk-core.c b/block/blk-core.c
-index c0179b7..2c208c3 100644
---- a/block/blk-core.c
-+++ b/block/blk-core.c
-@@ -467,6 +467,9 @@ static int blk_init_free_list(struct request_queue *q)
- {
- 	struct request_list *rl = &q->rq;
- 
-+	if (unlikely(rl->rq_pool))
-+		return 0;
-+
- 	rl->count[BLK_RW_SYNC] = rl->count[BLK_RW_ASYNC] = 0;
- 	rl->starved[BLK_RW_SYNC] = rl->starved[BLK_RW_ASYNC] = 0;
- 	rl->elvpriv = 0;
-diff --git a/block/elevator.c b/block/elevator.c
-index 0abce47..923a913 100644
---- a/block/elevator.c
-+++ b/block/elevator.c
-@@ -242,9 +242,11 @@ int elevator_init(struct request_queue *q, char *name)
- {
- 	struct elevator_type *e = NULL;
- 	struct elevator_queue *eq;
--	int ret = 0;
- 	void *data;
- 
-+	if (unlikely(q->elevator))
-+		return 0;
-+
- 	INIT_LIST_HEAD(&q->queue_head);
- 	q->last_merge = NULL;
- 	q->end_sector = 0;
-@@ -284,7 +286,7 @@ int elevator_init(struct request_queue *q, char *name)
- 	}
- 
- 	elevator_attach(q, eq, data);
--	return ret;
-+	return 0;
- }
- EXPORT_SYMBOL(elevator_init);
- 
+At this point the aim would be for actual allocation behaviour with
+non-debug settings to be unchanged. Hopefully this removes everyone's
+(apparently) largest gripe that code is crufty.
+
+Next would be to add some options to tweak queue sizes and disable
+cache reaping at runtime, for the benfit of the low jitter crowd,
+see if any further hotplug fixes are required.
+
+Then would be to propose incremental improvements to actual algorithm.
+For example, replacing the alien cache crossbar with a lighter weight
+or more scalable structure.
+
+
+> and change
+> things to make sure we don't make the same mistakes as we did with
+> SLUB (i.e. miss an important workload like TPC-C)?
+
+Obviously it is impossible to make forward progress and also catch
+all regressions before release. This fact means that we have to be
+able to cope with them as well as possible.
+
+We get two benefits from starting with SLAB. Firstly, we get a larger
+testing base. Secondly, we get a simple (ie. git revert) formula of how
+to get from good behaviour to bad behaviour.
+
+I don't anticipate a huge number of functional changes to SLAB here
+though. It's surprisingly hard to do better than it. alien caches are
+one area, maybe configurable higher order allocation support, jitter
+reduction.
+
+If we do get a big proposed change in the pipeline, then we have to
+eat it somehow, but AFAIKS we've still got a better foundation than
+starting with a completely new allocator and feeling around in the
+dark trying to move it past SLAB in terms of performance.
+
+
