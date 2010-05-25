@@ -1,59 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933086Ab0EYRO0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:14:26 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:34587 "EHLO mx2.suse.de"
+	id S933185Ab0EYROb (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:14:31 -0400
+Received: from cantor.suse.de ([195.135.220.2]:37909 "EHLO mx1.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932203Ab0EYROY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:14:24 -0400
-Date: Tue, 25 May 2010 10:12:22 -0700
+	id S1756597Ab0EYRO2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 13:14:28 -0400
+Date: Tue, 25 May 2010 10:14:11 -0700
 From: Greg KH <gregkh@suse.de>
-To: "Jayson R. King" <dev@jaysonking.com>
-Cc: Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
-       stable@kernel.org, stable-review@kernel.org,
+To: Hugh Dickins <hughd@google.com>
+Cc: linux-kernel@vger.kernel.org, stable@kernel.org, stable-review@kernel.org,
        torvalds@linux-foundation.org, akpm@linux-foundation.org,
-       alan@lxorguk.ukuu.org.uk, linux-fsdevel@vger.kernel.org,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Theodore Tso <tytso@mit.edu>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: Re: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
-Message-ID: <20100525171222.GA3533@suse.de>
-References: <20100524223544.GA13721@kroah.com>
- <20100524223016.208581966@clark.site>
- <20100525111208.GA8779@infradead.org>
- <20100525165230.GA9154@suse.de>
- <4BFC024A.9090600@jaysonking.com>
+       alan@lxorguk.ukuu.org.uk, Frank Arnold <frank.arnold@amd.com>,
+       Borislav Petkov <borislav.petkov@amd.com>,
+       "H. Peter Anvin" <hpa@zytor.com>
+Subject: Re: [28/39] x86, cacheinfo: Turn off L3 cache index disable
+ feature in virtualized environments
+Message-ID: <20100525171411.GA3548@suse.de>
+References: <20100524231840.GA17857@kroah.com>
+ <20100524231815.713224572@clark.site>
+ <AANLkTilMq6zUgCus6_suEjAcTPYY7Ao0gCvrWHkTe9F6@mail.gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+Content-Type: text/plain; charset=iso-8859-1
 Content-Disposition: inline
-In-Reply-To: <4BFC024A.9090600@jaysonking.com>
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTilMq6zUgCus6_suEjAcTPYY7Ao0gCvrWHkTe9F6@mail.gmail.com>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 12:00:58PM -0500, Jayson R. King wrote:
-> On 05/25/2010 11:52 AM, Greg KH wrote:
-> > On Tue, May 25, 2010 at 07:12:08AM -0400, Christoph Hellwig wrote:
-> >> On Mon, May 24, 2010 at 03:28:06PM -0700, Greg KH wrote:
-> >>> 2.6.27-stable review patch.  If anyone has any objections, please let us know.
-> >>
-> >> NACK.  This has been shown to cause severe writeback regression for
-> >> other filesystems and is beeing reverted in mianline.
-> > 
-> > Ok, if I drop this one, I think I need to drop an ext4 patch as well,
-> > I'll go figure that out and respin a -rc2 with this change in it.
+On Mon, May 24, 2010 at 06:50:20PM -0700, Hugh Dickins wrote:
+> On Mon, May 24, 2010 at 4:15 PM, Greg KH <gregkh@suse.de> wrote:
+> >
+> > 2.6.33-stable review patch.  If anyone has any objections, please let us know.
+> >
+> > ------------------
+> > From: Frank Arnold <frank.arnold@amd.com>
+> >
+> > commit 7f284d3cc96e02468a42e045f77af11e5ff8b095 upstream.
 > 
-> You'd have to drop the next two ext4 -stable patches to get a buildable
-> kernel if you drop this one. The last of those ext4 patches is the one
-> which fixes the deadlock from kernel bugzilla #12579.
+> Closer, but aren't all the XX/34s intended for 2.6.32.14, not 2.6.33.5?
 
-I've now dropped those next two ext4 patches.  If someone wants to get
-this bug fixed for the .27 tree, please feel free to send me the
-patches.
+Yes.  This one is a XX/39 and for the .33 tree.
 
-Personally, I doubt many people care about ext4 on the .27 kernel
-release...
+> I'm trying to check whether my kernel/profile.c fix (18/34) is in for
+> both 2.6.32.14 and 2.6.33.5, but getting too confused to tell!
+
+Yes, I see it in both trees.
 
 thanks,
 
