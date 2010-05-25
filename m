@@ -1,74 +1,194 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933730Ab0EYSW0 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:22:26 -0400
-Received: from kroah.org ([198.145.64.141]:44515 "EHLO coco.kroah.org"
+	id S933748Ab0EYSWn (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:22:43 -0400
+Received: from kroah.org ([198.145.64.141]:44307 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933086Ab0EYSWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:22:21 -0400
-Date: Tue, 25 May 2010 11:19:35 -0700
-From: Greg KH <greg@kroah.com>
-To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-Cc: stable@kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Brandon <brandon@ifup.org>, davem@davemloft.net
-Subject: Re: [stable] [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx
- panic
-Message-ID: <20100525181935.GA11150@kroah.com>
-References: <20100511004655.30590.74584.stgit@localhost.localdomain>
- <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S932354Ab0EYSRU (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:17:20 -0400
+X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:12 2010
+Message-Id: <20100525181212.292677742@clark.site>
+User-Agent: quilt/0.48-8.10
+Date: Tue, 25 May 2010 11:09:00 -0700
+From: Greg KH <gregkh@suse.de>
+To: linux-kernel@vger.kernel.org, stable@kernel.org
+Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
+       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       "Theodore Tso" <tytso@mit.edu>, "Jayson R. King" <dev@jaysonking.com>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: [02/25] ext4: invalidate pages if delalloc block allocation fails.
+In-Reply-To: <20100525181259.GA18630@kroah.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 12:15:12AM -0700, Jeff Kirsher wrote:
-> On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
-> > From: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> >
-> > backporting this commit:
-> >
-> > commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
-> > Author: Krishna Kumar <krkumar2@in.ibm.com>
-> > Date:   Wed Feb 3 13:13:10 2010 +0000
-> >
-> >    ixgbe: Fix return of invalid txq
-> >
-> >    a developer had complained of getting lots of warnings:
-> >
-> >    "eth16 selects TX queue 98, but real number of TX queues is 64"
-> >
-> >    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
-> >
-> >    As there was no follow up on that bug, I am submitting this
-> >    patch assuming that the other return points will not return
-> >    invalid txq's, and also that this fixes the bug (not tested).
-> >
-> >    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
-> >    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> >    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
-> >    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
-> >    Signed-off-by: David S. Miller <davem@davemloft.net>
-> >
-> > CC: Brandon <brandon@ifup.org>
-> > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
-> > ---
-> >
-> >  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
-> >  1 files changed, 6 insertions(+), 2 deletions(-)
-> >
-> 
-> Greg - status?  Did you queue this patch for the stable release and I missed it?
+2.6.27-stable review patch.  If anyone has any objections, please let us know.
 
-Nope, I missed it, sorry.
+------------------
 
-I'll make sure to get it for the next .32 round.
 
-thanks,
+From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
 
-greg k-h
+commit c4a0c46ec92c194c873232b88debce4e1a448483 upstream.
+
+We are a bit agressive in invalidating all the pages. But
+it is ok because we really don't know why the block allocation
+failed and it is better to come of the writeback path
+so that user can look for more info.
+
+Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+Signed-off-by: Jayson R. King <dev@jaysonking.com>
+Signed-off-by: Theodore Ts'o <tytso@mit.edu>
+Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
+
+---
+ fs/ext4/inode.c |   85 ++++++++++++++++++++++++++++++++++++++++++++++++--------
+ 1 file changed, 73 insertions(+), 12 deletions(-)
+
+--- a/fs/ext4/inode.c
++++ b/fs/ext4/inode.c
+@@ -1821,6 +1821,39 @@ static inline void __unmap_underlying_bl
+ 		unmap_underlying_metadata(bdev, bh->b_blocknr + i);
+ }
+ 
++static void ext4_da_block_invalidatepages(struct mpage_da_data *mpd,
++					sector_t logical, long blk_cnt)
++{
++	int nr_pages, i;
++	pgoff_t index, end;
++	struct pagevec pvec;
++	struct inode *inode = mpd->inode;
++	struct address_space *mapping = inode->i_mapping;
++
++	index = logical >> (PAGE_CACHE_SHIFT - inode->i_blkbits);
++	end   = (logical + blk_cnt - 1) >>
++				(PAGE_CACHE_SHIFT - inode->i_blkbits);
++	while (index <= end) {
++		nr_pages = pagevec_lookup(&pvec, mapping, index, PAGEVEC_SIZE);
++		if (nr_pages == 0)
++			break;
++		for (i = 0; i < nr_pages; i++) {
++			struct page *page = pvec.pages[i];
++			index = page->index;
++			if (index > end)
++				break;
++			index++;
++
++			BUG_ON(!PageLocked(page));
++			BUG_ON(PageWriteback(page));
++			block_invalidatepage(page, 0);
++			ClearPageUptodate(page);
++			unlock_page(page);
++		}
++	}
++	return;
++}
++
+ /*
+  * mpage_da_map_blocks - go through given space
+  *
+@@ -1830,7 +1863,7 @@ static inline void __unmap_underlying_bl
+  * The function skips space we know is already mapped to disk blocks.
+  *
+  */
+-static void mpage_da_map_blocks(struct mpage_da_data *mpd)
++static int  mpage_da_map_blocks(struct mpage_da_data *mpd)
+ {
+ 	int err = 0;
+ 	struct buffer_head *lbh = &mpd->lbh;
+@@ -1841,7 +1874,7 @@ static void mpage_da_map_blocks(struct m
+ 	 * We consider only non-mapped and non-allocated blocks
+ 	 */
+ 	if (buffer_mapped(lbh) && !buffer_delay(lbh))
+-		return;
++		return 0;
+ 
+ 	new.b_state = lbh->b_state;
+ 	new.b_blocknr = 0;
+@@ -1852,10 +1885,38 @@ static void mpage_da_map_blocks(struct m
+ 	 * to write simply return
+ 	 */
+ 	if (!new.b_size)
+-		return;
++		return 0;
+ 	err = mpd->get_block(mpd->inode, next, &new, 1);
+-	if (err)
+-		return;
++	if (err) {
++
++		/* If get block returns with error
++		 * we simply return. Later writepage
++		 * will redirty the page and writepages
++		 * will find the dirty page again
++		 */
++		if (err == -EAGAIN)
++			return 0;
++		/*
++		 * get block failure will cause us
++		 * to loop in writepages. Because
++		 * a_ops->writepage won't be able to
++		 * make progress. The page will be redirtied
++		 * by writepage and writepages will again
++		 * try to write the same.
++		 */
++		printk(KERN_EMERG "%s block allocation failed for inode %lu "
++				  "at logical offset %llu with max blocks "
++				  "%zd with error %d\n",
++				  __func__, mpd->inode->i_ino,
++				  (unsigned long long)next,
++				  lbh->b_size >> mpd->inode->i_blkbits, err);
++		printk(KERN_EMERG "This should not happen.!! "
++					"Data will be lost\n");
++		/* invlaidate all the pages */
++		ext4_da_block_invalidatepages(mpd, next,
++				lbh->b_size >> mpd->inode->i_blkbits);
++		return err;
++	}
+ 	BUG_ON(new.b_size == 0);
+ 
+ 	if (buffer_new(&new))
+@@ -1868,7 +1929,7 @@ static void mpage_da_map_blocks(struct m
+ 	if (buffer_delay(lbh) || buffer_unwritten(lbh))
+ 		mpage_put_bnr_to_bhs(mpd, next, &new);
+ 
+-	return;
++	return 0;
+ }
+ 
+ #define BH_FLAGS ((1 << BH_Uptodate) | (1 << BH_Mapped) | \
+@@ -1937,8 +1998,8 @@ flush_it:
+ 	 * We couldn't merge the block to our extent, so we
+ 	 * need to flush current  extent and start new one
+ 	 */
+-	mpage_da_map_blocks(mpd);
+-	mpage_da_submit_io(mpd);
++	if (mpage_da_map_blocks(mpd) == 0)
++		mpage_da_submit_io(mpd);
+ 	mpd->io_done = 1;
+ 	return;
+ }
+@@ -1980,8 +2041,8 @@ static int __mpage_da_writepage(struct p
+ 		 * and start IO on them using writepage()
+ 		 */
+ 		if (mpd->next_page != mpd->first_page) {
+-			mpage_da_map_blocks(mpd);
+-			mpage_da_submit_io(mpd);
++			if (mpage_da_map_blocks(mpd) == 0)
++				mpage_da_submit_io(mpd);
+ 			/*
+ 			 * skip rest of the page in the page_vec
+ 			 */
+@@ -2102,8 +2163,8 @@ static int mpage_da_writepages(struct ad
+ 	 * Handle last extent of pages
+ 	 */
+ 	if (!mpd.io_done && mpd.next_page != mpd.first_page) {
+-		mpage_da_map_blocks(&mpd);
+-		mpage_da_submit_io(&mpd);
++		if (mpage_da_map_blocks(&mpd) == 0)
++			mpage_da_submit_io(&mpd);
+ 	}
+ 
+ 	wbc->nr_to_write = to_write - mpd.pages_written;
+
+
