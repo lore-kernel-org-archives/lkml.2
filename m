@@ -1,47 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754317Ab0EYPvA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 11:51:00 -0400
-Received: from rcsinet11.oracle.com ([148.87.113.123]:57340 "EHLO
-	rcsinet11.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751873Ab0EYPu7 (ORCPT
+	id S1754168Ab0EYPwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 11:52:40 -0400
+Received: from mail-qy0-f183.google.com ([209.85.221.183]:61077 "EHLO
+	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750851Ab0EYPwj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 11:50:59 -0400
-Date: Tue, 25 May 2010 08:49:59 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>,
-       linux-pm@lists.linux-foundation.org
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>
-Subject: Re: linux-next: Tree for May 25 (kernel/power, SUSPEND=n)
-Message-Id: <20100525084959.4ff9e924.randy.dunlap@oracle.com>
-In-Reply-To: <20100525142657.c2ae7804.sfr@canb.auug.org.au>
-References: <20100525142657.c2ae7804.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Source-IP: acsmt355.oracle.com [141.146.40.155]
-X-Auth-Type: Internal IP
-X-CT-RefId: str=0001.0A0B0203.4BFBF1B4.0316:SCFMA4539814,ss=1,fgs=0
+	Tue, 25 May 2010 11:52:39 -0400
+From: Will Drewry <wad@chromium.org>
+To: linux-kernel@vger.kernel.org
+Cc: Al Viro <viro@zeniv.linux.org.uk>, Nick Piggin <npiggin@suse.de>,
+       Tejun Heo <tj@kernel.org>, Scott James Remnant <scott@ubuntu.com>,
+       Vegard Nossum <vegard.nossum@gmail.com>,
+       Harald Hoyer <harald@redhat.com>,
+       Christoph Lameter <cl@linux-foundation.org>, agk@redhat.com,
+       snitzer@redhat.com, Will Drewry <wad@chromium.org>
+Subject: [PATCH 2/2] init, mount: export the name_to_dev_t symbol
+Date: Tue, 25 May 2010 10:46:51 -0500
+Message-Id: <1274802411-26613-2-git-send-email-wad@chromium.org>
+X-Mailer: git-send-email 1.7.0.4
+In-Reply-To: <1274802411-26613-1-git-send-email-wad@chromium.org>
+References: <1274802411-26613-1-git-send-email-wad@chromium.org>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 14:26:57 +1000 Stephen Rothwell wrote:
+This change only adds EXPORT_SYMBOL() for name_to_dev_t.
 
-> Hi all,
-> 
-> We are in the merge window again.  I remind you all not to add stuff for
-> 2.6.36 to your linux-next trees until after 2.6.35-rc1.
+name_to_dev_t is in use outside of init/ but is not 'officially'
+exported.  It provides behavior that is useful for any code that may be
+need to lookup a block device by major:minor or registered kernel name,
+especially before there is a root filesystem.
 
+Hopefully, this is the appropriate use of EXPORT_SYMBOL().  This
+specific function seems to be a stable interface and is available
+in include/linux/mount.h.
 
-when CONFIG_SUSPEND=n, CONFIG_OPPORTUNISTIC_SUSPEND=n, CONFIG_PM=y:
-
-kernel/power/main.c:66: error: 'pm_states' undeclared (first use in this function)
-
-
+Signed-off-by: Will Drewry <wad@chromium.org>
 ---
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+ init/do_mounts.c      |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
+
+diff --git a/init/do_mounts.c b/init/do_mounts.c
+index a322b13..b9206e7 100644
+--- a/init/do_mounts.c
++++ b/init/do_mounts.c
+@@ -144,6 +144,7 @@ fail:
+ done:
+ 	return res;
+ }
++EXPORT_SYMBOL(name_to_dev_t);
+ 
+ static int __init root_dev_setup(char *line)
+ {
+-- 
+1.7.0.4
+
