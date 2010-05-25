@@ -1,58 +1,62 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758834Ab0EYWeu (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:34:50 -0400
-Received: from relay3.sgi.com ([192.48.152.1]:52300 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1753903Ab0EYWes (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:34:48 -0400
-Message-ID: <4BFC5080.6030103@sgi.com>
-Date: Tue, 25 May 2010 15:34:40 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
-MIME-Version: 1.0
-To: "H. Peter Anvin" <hpa@zytor.com>
-CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
-Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
- specified.
-References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com> <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com> <4BEC8161.6050206@zytor.com>
-In-Reply-To: <4BEC8161.6050206@zytor.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S932398Ab0EYWhx (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:37:53 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4504 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759044Ab0EYWhu (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:37:50 -0400
+Date: Tue, 25 May 2010 18:37:48 -0400
+From: Prarit Bhargava <prarit@redhat.com>
+To: linux-kernel@vger.kernel.org, hpa@zytor.com, ebiederm@xmission.com,
+       vgoyal@redhat.com, mjg@redhat.com, arozansk@redhat.com
+Cc: Prarit Bhargava <prarit@redhat.com>
+Message-Id: <20100525223406.9446.46193.sendpatchset@prarit.bos.redhat.com>
+Subject: [PATCH]: Fix checkstack warning in bunzip2 library
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Fix checkstack error:
 
+lib/decompress_bunzip2.c: In function ‘get_next_block’:
+lib/decompress_bunzip2.c:511: warning: the frame size of 1932 bytes is larger than 1024 bytes
 
-H. Peter Anvin wrote:
-> On 05/13/2010 02:55 PM, Mike Travis wrote:
->> I saw that too, and wondered why e820_saved did not
->> have the extra entries.   The comment indicates it
->> should.
->>
->> I'm on the system tonight and will investigate this
->> further.
->>
-> 
-> e820_saved lacks the extra entries because they aren't being passed in
-> from the bootloader, as they should, and instead you're using
-> add_efi_memmap which is, as far as the kernel is concerned, a post-boot
-> modification.
-> 
-> That being said, add_efi_memmap does come from the firmware, and as such
-> it would be legitimate for it to add them to e820_saved.
-> 
-> 	-hpa
+byteCount, symToByte, and mtfSymbol cannot be declared static or allocated
+dynamically so place them in the bunzip_data struct.
 
-Did this last patch meet expectations?
+Signed-off-by: Prarit Bhargava <prarit@redhat.com>
 
-http://marc.info/?l=linux-kernel&m=127474230623061&w=4
-
-Thanks,
-Mike
+diff --git a/lib/decompress_bunzip2.c b/lib/decompress_bunzip2.c
+index a4e971d..81c8bb1 100644
+--- a/lib/decompress_bunzip2.c
++++ b/lib/decompress_bunzip2.c
+@@ -107,6 +107,8 @@ struct bunzip_data {
+ 	unsigned char selectors[32768];		/* nSelectors = 15 bits */
+ 	struct group_data groups[MAX_GROUPS];	/* Huffman coding tables */
+ 	int io_error;			/* non-zero if we have IO error */
++	int byteCount[256];
++	unsigned char symToByte[256], mtfSymbol[256];
+ };
+ 
+ 
+@@ -158,14 +160,16 @@ static int INIT get_next_block(struct bunzip_data *bd)
+ 	int *base = NULL;
+ 	int *limit = NULL;
+ 	int dbufCount, nextSym, dbufSize, groupCount, selector,
+-		i, j, k, t, runPos, symCount, symTotal, nSelectors,
+-		byteCount[256];
+-	unsigned char uc, symToByte[256], mtfSymbol[256], *selectors;
++		i, j, k, t, runPos, symCount, symTotal, nSelectors, *byteCount;
++	unsigned char uc, *symToByte, *mtfSymbol, *selectors;
+ 	unsigned int *dbuf, origPtr;
+ 
+ 	dbuf = bd->dbuf;
+ 	dbufSize = bd->dbufSize;
+ 	selectors = bd->selectors;
++	byteCount = bd->byteCount;
++	symToByte = bd->symToByte;
++	mtfSymbol = bd->mtfSymbol;
+ 
+ 	/* Read in header signature and CRC, then validate signature.
+ 	   (last block signature means CRC is for whole file, return now) */
