@@ -1,52 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758161Ab0EYNjw (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 09:39:52 -0400
-Received: from mail-ew0-f216.google.com ([209.85.219.216]:52409 "EHLO
-	mail-ew0-f216.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758062Ab0EYNju (ORCPT
+	id S1754915Ab0EYNpQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 09:45:16 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:46979 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754053Ab0EYNpO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 09:39:50 -0400
+	Tue, 25 May 2010 09:45:14 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=googlemail.com; s=gamma;
-        h=mime-version:reply-to:in-reply-to:references:date:message-id
-         :subject:from:to:cc:content-type;
-        b=s9JyFqT75mjQabrjgTyXO53q/yykUQi/Cpll4pI8mO9d/K0ZFGpeQRUjWBM++4y+d9
-         ALJ88aCpyQ9O4st3HVtPxJhQgXg1wB+gAlX7CuNYhR7fPUy0mOdNAKBO+HJqRtyVSf00
-         zTTZgxivsFH7F1U+FTl5FKM592u50ozE7Epc0=
-MIME-Version: 1.0
-Reply-To: eranian@gmail.com
-In-Reply-To: <1274794518.5882.1280.camel@twins>
-References: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
-	 <1274794518.5882.1280.camel@twins>
-Date: Tue, 25 May 2010 15:39:48 +0200
-Message-ID: <AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix event scheduling issues introduced by 
-	transactional API (take 2)
-From: stephane eranian <eranian@googlemail.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: eranian@google.com, linux-kernel@vger.kernel.org, mingo@elte.hu,
-       paulus@samba.org, davem@davemloft.net, fweisbec@gmail.com,
-       acme@infradead.org, ming.m.lin@intel.com, perfmon2-devel@lists.sf.net
-Content-Type: text/plain; charset=UTF-8
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version;
+        b=DD5ILmMeJZnauqqNlr/kdqCxMIF+2z+5kfP9AhRNX1AdfWZwQ8aIRQjOSNuvSk8P2W
+         dw57f5xnWZ7cv0IdCqljmIkpETh0QmrTu0VWr57VeqPDCvDq+No//xpkmDh9TXj57NKQ
+         qRrTPrL1e1jMAKm4opeW/7fqVHKYwfHo4ONyM=
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Ingo Molnar <mingo@elte.hu>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Arnaldo Carvalho de Melo <acme@redhat.com>
+Subject: [GIT PULL] perf updates
+Date: Tue, 25 May 2010 15:45:06 +0200
+Message-Id: <1274795108-24496-1-git-send-regression-fweisbec@gmail.com>
+X-Mailer: git-send-regression
+X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 3:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
-> On Tue, 2010-05-25 at 15:20 +0200, Stephane Eranian wrote:
->
->> With this patch, you can now overcommit the PMU even with pinned
->> system-wide events present and still get valid counts.
->
-> Does this patch differ from the one you send earlier?
->
-Yes, it does. It changes the way n_added is updated.
+Ingo,
 
-The first version was buggy (perf top would crash the machine).
-You cannot delay updating n_added until commit, because there
-are paths where you don't go through transactions. This version
-instead keeps the number of events last added and speculatively
-updates n_added (assuming success). If the transaction succeeds,
-then no correction is done (subtracting 0), if it fails, then the number
-of events just added to n_added is subtracted.
+Please pull the perf/core branch that can be found at:
+
+git://git.kernel.org/pub/scm/linux/kernel/git/frederic/random-tracing.git
+	perf/core
+
+Thanks,
+	Frederic
+---
+
+Frederic Weisbecker (2):
+      x86: Unify dumpstack.h and stacktrace.h
+      perf: Drop the skip argument from perf_arch_fetch_regs_caller
+
+
+ arch/powerpc/include/asm/perf_event.h |   12 +++++++
+ arch/powerpc/kernel/misc.S            |   26 ---------------
+ arch/sparc/include/asm/perf_event.h   |    8 +++++
+ arch/sparc/kernel/helpers.S           |    6 ++--
+ arch/x86/include/asm/perf_event.h     |   13 +++++++
+ arch/x86/include/asm/stacktrace.h     |   49 ++++++++++++++++++++++++++++
+ arch/x86/kernel/cpu/perf_event.c      |   18 ----------
+ arch/x86/kernel/dumpstack.c           |    1 -
+ arch/x86/kernel/dumpstack.h           |   56 ---------------------------------
+ arch/x86/kernel/dumpstack_32.c        |    2 -
+ arch/x86/kernel/dumpstack_64.c        |    1 -
+ arch/x86/kernel/stacktrace.c          |    7 ++--
+ include/linux/perf_event.h            |   32 ++++--------------
+ include/trace/ftrace.h                |    2 +-
+ kernel/perf_event.c                   |    5 ---
+ kernel/trace/trace_event_perf.c       |    2 -
+ 16 files changed, 97 insertions(+), 143 deletions(-)
