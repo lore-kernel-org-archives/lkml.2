@@ -1,223 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933725Ab0EYSV2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 14:21:28 -0400
-Received: from kroah.org ([198.145.64.141]:44341 "EHLO coco.kroah.org"
+	id S933730Ab0EYSW0 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 14:22:26 -0400
+Received: from kroah.org ([198.145.64.141]:44515 "EHLO coco.kroah.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933032Ab0EYSRZ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 14:17:25 -0400
-X-Mailbox-Line: From gregkh@clark.site Tue May 25 11:12:12 2010
-Message-Id: <20100525181212.773632342@clark.site>
-User-Agent: quilt/0.48-8.10
-Date: Tue, 25 May 2010 11:09:05 -0700
-From: Greg KH <gregkh@suse.de>
-To: linux-kernel@vger.kernel.org, stable@kernel.org
-Cc: stable-review@kernel.org, torvalds@linux-foundation.org,
-       akpm@linux-foundation.org, alan@lxorguk.ukuu.org.uk,
-       "Theodore Tso" <tytso@mit.edu>,
-       Ext4 Developers List <linux-ext4@vger.kernel.org>,
-       Mingming Cao <cmm@us.ibm.com>, "Jayson R. King" <dev@jaysonking.com>,
-       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
-Subject: [07/25] ext4: Retry block allocation if we have free blocks left
-In-Reply-To: <20100525181259.GA18630@kroah.com>
+	id S933086Ab0EYSWV (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 14:22:21 -0400
+Date: Tue, 25 May 2010 11:19:35 -0700
+From: Greg KH <greg@kroah.com>
+To: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+Cc: stable@kernel.org, Jesse Brandeburg <jesse.brandeburg@intel.com>,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Brandon <brandon@ifup.org>, davem@davemloft.net
+Subject: Re: [stable] [stable-2.6.32 PATCH] ixgbe: backport bug fix for tx
+ panic
+Message-ID: <20100525181935.GA11150@kroah.com>
+References: <20100511004655.30590.74584.stgit@localhost.localdomain>
+ <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTinHm8ukQ3KlcrMKWvQ-QrlmBcWeVD-i99Q9Z7JL@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2.6.27-stable review patch.  If anyone has any objections, please let us know.
+On Tue, May 25, 2010 at 12:15:12AM -0700, Jeff Kirsher wrote:
+> On Mon, May 10, 2010 at 17:46, Jeff Kirsher <jeffrey.t.kirsher@intel.com> wrote:
+> > From: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> >
+> > backporting this commit:
+> >
+> > commit fdd3d631cddad20ad9d3e1eb7dbf26825a8a121f
+> > Author: Krishna Kumar <krkumar2@in.ibm.com>
+> > Date:   Wed Feb 3 13:13:10 2010 +0000
+> >
+> >    ixgbe: Fix return of invalid txq
+> >
+> >    a developer had complained of getting lots of warnings:
+> >
+> >    "eth16 selects TX queue 98, but real number of TX queues is 64"
+> >
+> >    http://www.mail-archive.com/e1000-devel@lists.sourceforge.net/msg02200.html
+> >
+> >    As there was no follow up on that bug, I am submitting this
+> >    patch assuming that the other return points will not return
+> >    invalid txq's, and also that this fixes the bug (not tested).
+> >
+> >    Signed-off-by: Krishna Kumar <krkumar2@in.ibm.com>
+> >    Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> >    Acked-by: Peter P Waskiewicz Jr <peter.p.waskiewicz.jr@intel.com>
+> >    Signed-off-by: Jeff Kirsher <jeffrey.t.kirsher@intel.com>
+> >    Signed-off-by: David S. Miller <davem@davemloft.net>
+> >
+> > CC: Brandon <brandon@ifup.org>
+> > Signed-off-by: Jesse Brandeburg <jesse.brandeburg@intel.com>
+> > ---
+> >
+> >  drivers/net/ixgbe/ixgbe_main.c |    8 ++++++--
+> >  1 files changed, 6 insertions(+), 2 deletions(-)
+> >
+> 
+> Greg - status?  Did you queue this patch for the stable release and I missed it?
 
-------------------
+Nope, I missed it, sorry.
 
-From: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
+I'll make sure to get it for the next .32 round.
 
-commit df22291ff0fde0d350cf15dac3e5cc33ac528875 upstream.
+thanks,
 
-When we truncate files, the meta-data blocks released are not reused
-untill we commit the truncate transaction.  That means delayed get_block
-request will return ENOSPC even if we have free blocks left.  Force a
-journal commit and retry block allocation if we get ENOSPC with free
-blocks left.
-
-Signed-off-by: Aneesh Kumar K.V <aneesh.kumar@linux.vnet.ibm.com>
-Signed-off-by: Mingming Cao <cmm@us.ibm.com>
-Signed-off-by: "Theodore Ts'o" <tytso@mit.edu>
-Signed-off-by: Jayson R. King <dev@jaysonking.com>
-Signed-off-by: Theodore Ts'o <tytso@mit.edu>
-Signed-off-by: Greg Kroah-Hartman <gregkh@suse.de>
-
----
- fs/ext4/inode.c |   81 +++++++++++++++++++++++++++++++++++++++-----------------
- 1 file changed, 57 insertions(+), 24 deletions(-)
-
---- a/fs/ext4/inode.c
-+++ b/fs/ext4/inode.c
-@@ -1661,6 +1661,7 @@ struct mpage_da_data {
- 	struct writeback_control *wbc;
- 	int io_done;
- 	long pages_written;
-+	int retval;
- };
- 
- /*
-@@ -1858,6 +1859,24 @@ static void ext4_da_block_invalidatepage
- 	return;
- }
- 
-+static void ext4_print_free_blocks(struct inode *inode)
-+{
-+	struct ext4_sb_info *sbi = EXT4_SB(inode->i_sb);
-+	printk(KERN_EMERG "Total free blocks count %lld\n",
-+			ext4_count_free_blocks(inode->i_sb));
-+	printk(KERN_EMERG "Free/Dirty block details\n");
-+	printk(KERN_EMERG "free_blocks=%lld\n",
-+			percpu_counter_sum(&sbi->s_freeblocks_counter));
-+	printk(KERN_EMERG "dirty_blocks=%lld\n",
-+			percpu_counter_sum(&sbi->s_dirtyblocks_counter));
-+	printk(KERN_EMERG "Block reservation details\n");
-+	printk(KERN_EMERG "i_reserved_data_blocks=%lu\n",
-+			EXT4_I(inode)->i_reserved_data_blocks);
-+	printk(KERN_EMERG "i_reserved_meta_blocks=%lu\n",
-+			EXT4_I(inode)->i_reserved_meta_blocks);
-+	return;
-+}
-+
- /*
-  * mpage_da_map_blocks - go through given space
-  *
-@@ -1872,7 +1891,7 @@ static int  mpage_da_map_blocks(struct m
- 	int err = 0;
- 	struct buffer_head new;
- 	struct buffer_head *lbh = &mpd->lbh;
--	sector_t next = lbh->b_blocknr;
-+	sector_t next;
- 
- 	/*
- 	 * We consider only non-mapped and non-allocated blocks
-@@ -1882,6 +1901,7 @@ static int  mpage_da_map_blocks(struct m
- 	new.b_state = lbh->b_state;
- 	new.b_blocknr = 0;
- 	new.b_size = lbh->b_size;
-+	next = lbh->b_blocknr;
- 	/*
- 	 * If we didn't accumulate anything
- 	 * to write simply return
-@@ -1898,6 +1918,13 @@ static int  mpage_da_map_blocks(struct m
- 		 */
- 		if (err == -EAGAIN)
- 			return 0;
-+
-+		if (err == -ENOSPC &&
-+				ext4_count_free_blocks(mpd->inode->i_sb)) {
-+			mpd->retval = err;
-+			return 0;
-+		}
-+
- 		/*
- 		 * get block failure will cause us
- 		 * to loop in writepages. Because
-@@ -1915,8 +1942,7 @@ static int  mpage_da_map_blocks(struct m
- 		printk(KERN_EMERG "This should not happen.!! "
- 					"Data will be lost\n");
- 		if (err == -ENOSPC) {
--			printk(KERN_CRIT "Total free blocks count %lld\n",
--				ext4_count_free_blocks(mpd->inode->i_sb));
-+			ext4_print_free_blocks(mpd->inode);
- 		}
- 		/* invlaidate all the pages */
- 		ext4_da_block_invalidatepages(mpd, next,
-@@ -2141,39 +2167,36 @@ static int __mpage_da_writepage(struct p
-  */
- static int mpage_da_writepages(struct address_space *mapping,
- 			       struct writeback_control *wbc,
--			       get_block_t get_block)
-+			       struct mpage_da_data *mpd)
- {
--	struct mpage_da_data mpd;
- 	long to_write;
- 	int ret;
- 
--	if (!get_block)
-+	if (!mpd->get_block)
- 		return generic_writepages(mapping, wbc);
- 
--	mpd.wbc = wbc;
--	mpd.inode = mapping->host;
--	mpd.lbh.b_size = 0;
--	mpd.lbh.b_state = 0;
--	mpd.lbh.b_blocknr = 0;
--	mpd.first_page = 0;
--	mpd.next_page = 0;
--	mpd.get_block = get_block;
--	mpd.io_done = 0;
--	mpd.pages_written = 0;
-+	mpd->lbh.b_size = 0;
-+	mpd->lbh.b_state = 0;
-+	mpd->lbh.b_blocknr = 0;
-+	mpd->first_page = 0;
-+	mpd->next_page = 0;
-+	mpd->io_done = 0;
-+	mpd->pages_written = 0;
-+	mpd->retval = 0;
- 
- 	to_write = wbc->nr_to_write;
- 
--	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, &mpd);
-+	ret = write_cache_pages(mapping, wbc, __mpage_da_writepage, mpd);
- 
- 	/*
- 	 * Handle last extent of pages
- 	 */
--	if (!mpd.io_done && mpd.next_page != mpd.first_page) {
--		if (mpage_da_map_blocks(&mpd) == 0)
--			mpage_da_submit_io(&mpd);
-+	if (!mpd->io_done && mpd->next_page != mpd->first_page) {
-+		if (mpage_da_map_blocks(mpd) == 0)
-+			mpage_da_submit_io(mpd);
- 	}
- 
--	wbc->nr_to_write = to_write - mpd.pages_written;
-+	wbc->nr_to_write = to_write - mpd->pages_written;
- 	return ret;
- }
- 
-@@ -2420,6 +2443,7 @@ static int ext4_da_writepages(struct add
- {
- 	handle_t *handle = NULL;
- 	loff_t range_start = 0;
-+	struct mpage_da_data mpd;
- 	struct inode *inode = mapping->host;
- 	int needed_blocks, ret = 0, nr_to_writebump = 0;
- 	long to_write, pages_skipped = 0;
-@@ -2467,6 +2491,9 @@ static int ext4_da_writepages(struct add
- 	range_start =  wbc->range_start;
- 	pages_skipped = wbc->pages_skipped;
- 
-+	mpd.wbc = wbc;
-+	mpd.inode = mapping->host;
-+
- restart_loop:
- 	to_write = wbc->nr_to_write;
- 	while (!ret && to_write > 0) {
-@@ -2502,11 +2529,17 @@ restart_loop:
- 				goto out_writepages;
- 			}
- 		}
--
- 		to_write -= wbc->nr_to_write;
--		ret = mpage_da_writepages(mapping, wbc,
--					  ext4_da_get_block_write);
-+
-+		mpd.get_block = ext4_da_get_block_write;
-+		ret = mpage_da_writepages(mapping, wbc, &mpd);
-+
- 		ext4_journal_stop(handle);
-+
-+		if (mpd.retval == -ENOSPC)
-+			jbd2_journal_force_commit_nested(sbi->s_journal);
-+
-+		/* reset the retry count */
- 		if (ret == MPAGE_DA_EXTENT_TAIL) {
- 			/*
- 			 * got one extent now try with
-
-
+greg k-h
