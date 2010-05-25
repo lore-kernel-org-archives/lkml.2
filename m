@@ -1,63 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758535Ab0EYWmF (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 18:42:05 -0400
-Received: from terminus.zytor.com ([198.137.202.10]:35132 "EHLO mail.zytor.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753903Ab0EYWmB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 18:42:01 -0400
-Message-ID: <4BFC5217.6060804@zytor.com>
-Date: Tue, 25 May 2010 15:41:27 -0700
-From: "H. Peter Anvin" <hpa@zytor.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1758778Ab0EYWnM (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 18:43:12 -0400
+Received: from bld-mail17.adl2.internode.on.net ([150.101.137.102]:52422 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753903Ab0EYWnK (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 18:43:10 -0400
+Date: Wed, 26 May 2010 08:42:59 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: tytso@mit.edu, linux-kernel@vger.kernel.org, xfs@oss.sgi.com,
+       linux-fsdevel@vger.kernel.org, linux-ext4@vger.kernel.org,
+       jens.axboe@oracle.com
+Subject: Re: [PATCH 3/6] ext4: Use our own write_cache_pages()
+Message-ID: <20100525224259.GM2150@dastard>
+References: <1274784852-30502-1-git-send-email-david@fromorbit.com>
+ <1274784852-30502-4-git-send-email-david@fromorbit.com>
+ <20100525130626.GD5556@thunk.org>
 MIME-Version: 1.0
-To: Mike Travis <travis@sgi.com>
-CC: Yinghai <yinghai.lu@oracle.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
-Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if add_efi_memmap
- specified.
-References: <4BEAEF10.9040809@sgi.com> <4BEAF9B6.2040606@zytor.com> <4BEB0D5F.8070806@oracle.com> <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com> <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com> <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>
-In-Reply-To: <4BFC5080.6030103@sgi.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100525130626.GD5556@thunk.org>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2010 03:34 PM, Mike Travis wrote:
+On Tue, May 25, 2010 at 09:06:26AM -0400, tytso@mit.edu wrote:
+> On Tue, May 25, 2010 at 08:54:09PM +1000, Dave Chinner wrote:
+> > From: Theodore Ts'o <tytso@mit.edu>
+> > 
+> > Make a copy of write_cache_pages() for the benefit of
+> > ext4_da_writepages().  This allows us to simplify the code some, and
+> > will allow us to further customize the code in future patches.
 > 
-> 
-> H. Peter Anvin wrote:
->> On 05/13/2010 02:55 PM, Mike Travis wrote:
->>> I saw that too, and wondered why e820_saved did not
->>> have the extra entries.   The comment indicates it
->>> should.
->>>
->>> I'm on the system tonight and will investigate this
->>> further.
->>>
->>
->> e820_saved lacks the extra entries because they aren't being passed in
->> from the bootloader, as they should, and instead you're using
->> add_efi_memmap which is, as far as the kernel is concerned, a post-boot
->> modification.
->>
->> That being said, add_efi_memmap does come from the firmware, and as such
->> it would be legitimate for it to add them to e820_saved.
->>
->> 	-hpa
-> 
-> Did this last patch meet expectations?
-> 
-> http://marc.info/?l=linux-kernel&m=127474230623061&w=4
-> 
+> I'm going to be pushing this to Linus shortly, so it's likely you'll
+> be able to drop this from your patch series.
 
-I'm concerned about calling sanitize_e820_map() on e820_saved; it is
-supposed to reflect the raw data as reported by the source, and
-sanitizing it would corrupt that.
+Great!
 
-	-hpa
+> I just wanted to give
+> you a heads up about what I was planning on doing, which hopefully
+> simplified your life a little.
+
+And that's appreciated. I included it to make sure everyone could
+see how this all fitted together and others could test it if they so
+desired. i.e. make sure I wasn't breaking ext4 by reverting the
+changes to write_cache_pages. I'll leave it in the series until the
+ext4 change is upstream, then I'll drop it.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
