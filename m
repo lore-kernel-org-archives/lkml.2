@@ -1,62 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758896Ab0EYObU (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 10:31:20 -0400
-Received: from s15228384.onlinehome-server.info ([87.106.30.177]:44304 "EHLO
-	mail.x86-64.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756480Ab0EYObS (ORCPT
+	id S1758966Ab0EYOew (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 10:34:52 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:39366 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1758228Ab0EYOev (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 10:31:18 -0400
-Date: Tue, 25 May 2010 16:31:20 +0200
-From: Borislav Petkov <bp@amd64.org>
-To: Markus <M4rkusXXL@web.de>
-Cc: linux-kernel@vger.kernel.org, Borislav Petkov <bp@alien8.de>
-Subject: Re: BUG: unable to handle kernel paging request
-Message-ID: <20100525143120.GA18018@kryptos.osrc.amd.com>
-References: <201005231829.32106.M4rkusXXL@web.de>
- <201005232244.41977.M4rkusXXL@web.de>
- <20100523211717.GD1408@liondog.tnic>
- <201005251509.39495.M4rkusXXL@web.de>
+	Tue, 25 May 2010 10:34:51 -0400
+Message-ID: <4BFBE004.5060101@example.com>
+Date: Tue, 25 May 2010 16:34:44 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005251509.39495.M4rkusXXL@web.de>
-Organization: Advanced Micro Devices =?iso-8859-1?Q?GmbH?=
-	=?iso-8859-1?Q?=2C_Karl-Hammerschmidt-Str=2E_34=2C_85609_Dornach_bei_M=FC?=
-	=?iso-8859-1?Q?nchen=2C_Gesch=E4ftsf=FChrer=3A_Thomas_M=2E_McCoy=2C_Giuli?=
-	=?iso-8859-1?Q?ano_Meroni=2C_Andrew_Bowd=2C_Sitz=3A_Dornach=2C_Gemeinde_A?=
-	=?iso-8859-1?Q?schheim=2C_Landkreis_M=FCnchen=2C_Registergericht_M=FCnche?=
-	=?iso-8859-1?Q?n=2C?= HRB Nr. 43632
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: piotr@hosowicz.com
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
+       Divyesh Shah <dpshah@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com> <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com> <4BFBA6A2.4070405@example.com> <4BFBDAF3.3020504@example.com>
+In-Reply-To: <4BFBDAF3.3020504@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 7bit
+X-Ovh-Tracer-Id: 16160322839576998258
+X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Markus <M4rkusXXL@web.de>
-Date: Tue, May 25, 2010 at 03:09:39PM +0200
+On 25.05.2010 16:13, Piotr Hosowicz wrote:
+> On 25.05.2010 12:29, Piotr Hosowicz wrote:
+>> On 25.05.2010 12:05, Piotr Hosowicz wrote:
+>>> On 25.05.2010 12:00, Peter Zijlstra wrote:
+>>>> On Tue, 2010-05-25 at 11:57 +0200, Piotr Hosowicz wrote:
+>>>>> On 25.05.2010 11:43, Ingo Molnar wrote:
+>>>>>
+>>>>>> This doesnt fix the whole issue. cpu_clock() is local, while the
+>>>>>> measurements
+>>>>>> done in the blk code are global ...
+>>>>>>
+>>>>>> While the warning is fixed this way, the far more serious issue is
+>>>>>> still
+>>>>>> there: time can go backwards if two points of time measurement are on
+>>>>>> different CPUs and can mess up the statistics with negative values,
+>>>>>> etc...
+>>>>>
+>>>>> How serious is this? Can it damage my data? I ask because the
+>>>>> machine is
+>>>>> my private computer, not any test machine.
+>>>>
+>>>> I'm not sure, since I didn't really look what they use the timestamps
+>>>> for, but a guess would say your data is safe, it might schedule the io
+>>>> funny, but it should not compromise integrity. At best its used purely
+>>>> for statistics and not even behaviour is affected.
+>>>
+>>> Thanks.
+>>
+>> Seems to work like a charm.
+>
+> Not exactly. I looked into the syslog. I's much better, but I rebooted
+> to single user mode to rebuild nvidia driver (new beta version) and I
+> see same error (BUG ... code: ???) on shuting down, mentioning sync,
+> umount and finally shutdown.
 
-> Had disabled swap (saw the string "swapper" and "page_fault"...) and
-> now the problem does not show up anymore.
-
-No, swapper is the idle task and I don't think it has anything to do
-with the oops - it simply happens to be the currently running process
-when the oops happens. And the kernel should be handling swapless
-configurations just fine for the cost of slowing down when RAM is
-depleted or OOM killing a memory hog.
-
-> Dont know, if its now "fixed", but is it possible that raid1 and swap
-> on top does not really work? Normal system usage (auto-detected raid1,
-> add swap by fstab, regularly running a check and perhaps a resync).
-
-Enabling swap on raid1 might need a bit more work, see here:
-http://www.linuxjournal.com/article/5898
-
-Anyways, let me know what happens and especially if it appears again.
-Now you say it doesn't happen anymore but le me ask: is this still the
-gentoo kernel or is it a vanilla one?
-
-Thanks.
+Sorry, reversed order - shutdown, umount, finally sync.
 
 -- 
-Regards/Gruss,
-Boris.
+- Czy jest cukier w kostkach ?
+- Nie ma.
+- A jakas inna tania bombonierka? Dla tesciowej.
+NP: Chickenfoot - Soap On A Rope
+NB: 2.6.34-20100524-1752-patched
