@@ -1,74 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933361Ab0EYR1l (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 13:27:41 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:57531 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756404Ab0EYR1j (ORCPT
+	id S933399Ab0EYR2o (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 13:28:44 -0400
+Received: from mail-gw0-f46.google.com ([74.125.83.46]:51898 "EHLO
+	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933021Ab0EYR2m convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 13:27:39 -0400
+	Tue, 25 May 2010 13:28:42 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding:message-id;
-        b=xHHoVBZyFhzlSgP0Vq14ga1dUZz4y1R/zcsE9z2veSQr2ZE8Z6w2XArVDVrFVO6a8K
-         hLz/+kjqrgcok+2usQirBZ0zFJtvAgBnUomLoOtVDLEunHuvwXBuXDutUoYaHRW0Rwfh
-         kWMdt6ETBthy6qGRBsrZsce9yKrJ+FX9VRExs=
-From: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-To: Abhijeet Kolekar <abhijeet.kolekar@intel.com>
-Subject: Re: iwl3945 dies (oops) in post 2.6.34 kernels
-Date: Tue, 25 May 2010 10:27:31 -0700
-User-Agent: KMail/1.13.2 (Linux/2.6.32.12-115.fc12.x86_64; KDE/4.4.2; x86_64; ; )
-Cc: Johannes Berg <johannes@sipsolutions.net>,
-       "linux-wireless@vger.kernel.org" <linux-wireless@vger.kernel.org>,
-       LKML <linux-kernel@vger.kernel.org>
-References: <20100525163920.GA2730@core.coreip.homeip.net> <1274806916.18861.0.camel@jlt3.sipsolutions.net> <1274807302.7494.1.camel@abhi-desktop>
-In-Reply-To: <1274807302.7494.1.camel@abhi-desktop>
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=I52dQifNXiW9Yq4L67K/cwjQxvDiLN6ybaea7GeMtJ7iGjQAkymqxg30qDE+qmYM7h
+         uNsxskLHK9r66QudqNY2txMQeHgBUcT5M22n8xAf8CdTy7phJVBrCR19RimhXzCYSO63
+         7scUHaxmoeqfjeDlDX2ugjMjADtqQKyA87xso=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005251027.32778.dmitry.torokhov@gmail.com>
+In-Reply-To: <20100525102345.GA23574@redhat.com>
+References: <20100524234250.F158849A56@magilla.sf.frob.com> 
+	<1266280229-18469-1-git-send-email-vapier@gentoo.org> <1274431345-22366-1-git-send-email-vapier@gentoo.org> 
+	<20100521162659.GA16193@redhat.com> <20100521183512.4477F40476@magilla.sf.frob.com> 
+	<20100522165320.GA19573@redhat.com> <25539.1274711817@redhat.com> 
+	<20100524151445.GA6393@redhat.com> <17134.1274778852@redhat.com> 
+	<20100525102345.GA23574@redhat.com>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Tue, 25 May 2010 13:28:19 -0400
+Message-ID: <AANLkTilT3D8c86LYK2DxcNpM2F3D8iCbgY_sfUg8h58p@mail.gmail.com>
+Subject: Re: [PATCH -mm 1/1] ptrace: PTRACE_GETFDPIC: fix the unsafe usage of 
+	child->mm
+To: Oleg Nesterov <oleg@redhat.com>
+Cc: David Howells <dhowells@redhat.com>, Roland McGrath <roland@redhat.com>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-sh@vger.kernel.org,
+       Paul Mundt <lethal@linux-sh.org>,
+       uclinux-dist-devel@blackfin.uclinux.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tuesday 25 May 2010 10:08:22 am Abhijeet Kolekar wrote:
-> On Tue, 2010-05-25 at 10:01 -0700, Johannes Berg wrote:
-> > On Tue, 2010-05-25 at 09:39 -0700, Dmitry Torokhov wrote:
-> > > Hi,
-> > > 
-> > > I am getting the following crashers in iwl3945 after updating to
-> > > post-2.6.34 kernels. This is with the pull from Linus's tree as of last
-> > > night (the taint is from nvidia module):
-> > > 
-> > > [ 3330.630734] general protection fault: 0000 [#1] PREEMPT SMP
-> > > [ 3330.630752] last sysfs file: /sys/devices/platform/dock.0/docked
-> > > [ 3330.630761] CPU 0
-> > > [ 3330.630766] Modules linked in: cryptd aes_x86_64 aes_generic fuse
-> > > rfcomm sco bnep l2cap autofs4 coretemp hwmon sunrpc ppdev parport_pc
-> > > parport acpi_cpufreq mperf uinput nvidia(P) snd_hda_codec_idt arc4
-> > > snd_hda_intel ecb snd_hda_codec snd_hwdep iwl3945 joydev snd_seq
-> > > snd_seq_device snd_pcm iwlcore mac80211 snd_timer cfg80211 snd psmouse
-> > > iTCO_wdt dell_wmi iTCO_vendor_support serio_raw tg3 battery
-> > > dell_laptop dcdbas soundcore snd_page_alloc btusb bluetooth video
-> > > pcspkr mac_hid ac wmi libphy firewire_ohci i2c_i801 firewire_core
-> > > yenta_socket crc_itu_t ohci_hcd [last unloaded: microcode] [
-> > > 3330.630950]
-> > > [ 3330.630958] Pid: 455, comm: iwl3945 Tainted: P            2.6.35-rc0
-> > > #293 0WM416/Latitude D630 [ 3330.630967] RIP:
-> > > 0010:[<ffffffffa01e70d3>]  [<ffffffffa01e70d3>]
-> > > iwl3945_get_channels_for_scan+0xe3/0x460 [iwl3945]
-> > 
-> > http://bugzilla.intellinuxwireless.org/show_bug.cgi?id=2208
-> 
-> Can you please try this patch and report your findings?
-> 
-> http://bugzilla.intellinuxwireless.org/attachment.cgi?id=2447
-> 
+On Tue, May 25, 2010 at 06:23, Oleg Nesterov wrote:
+>        - arch/blackfin/kernel/ptrace.c:is_user_addr_valid()
+>          needs mmap_sem around find_vma()
+>
+>          The lockless access to mm->context.sram_list doesn't look
+>          safe to me.
+>
+>          If we add get_task_mm() - this protects us against
+>          destroy_context() only. What is the tracee's sub-thread
+>          does sys_sram_alloc() or sys_sram_free() in parallel?
 
-Thanks, will try both this patch and the one John mention. Later tonight
-though.
-
--- 
-Dmitry
+i dont believe there are any code paths in UP systems where this would
+be a practical problem because sram_list is only updated by syscalls
+from userspace.  we probably should add proper locking to this
+structure though.  i'll open a tracker item about it, thanks !
+-mike
