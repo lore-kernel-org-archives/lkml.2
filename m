@@ -1,68 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756654Ab0EZPzd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:55:33 -0400
-Received: from mgw2.diku.dk ([130.225.96.92]:40704 "EHLO mgw2.diku.dk"
+	id S1756690Ab0EZPzq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:55:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:4060 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755284Ab0EZPza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:55:30 -0400
-Date: Wed, 26 May 2010 17:55:25 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Mike Isely <isely@pobox.com>,
-       Mauro Carvalho Chehab <mchehab@infradead.org>,
-       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 5/17] drivers/media/video/pvrusb2: Add missing mutex_unlock
-Message-ID: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
+	id S1755284Ab0EZPzn (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:55:43 -0400
+Message-ID: <4BFD42B4.90207@redhat.com>
+Date: Wed, 26 May 2010 17:48:04 +0200
+From: Tomas Henzl <thenzl@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+To: James Bottomley <James.Bottomley@suse.de>
+CC: "Yang, Bo" <Bo.Yang@lsi.com>,
+       "'linux-scsi@vger.kernel.org'" <linux-scsi@vger.kernel.org>,
+       "'akpm@osdl.org'" <akpm@osdl.org>,
+       "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "Daftardar, Jayant" <Jayant.Daftardar@lsi.com>
+Subject: Re: [PATCH 6/7] scsi: megaraid_sas - Add three times Online controller
+ reset - V2
+References: <4B6A08C587958942AA3002690DD4F8C35C5123FA@cosmail02.lsi.com>	 <4B6A08C587958942AA3002690DD4F8C35C6861A5@cosmail02.lsi.com>	 <3A916D859199814BBB666188F96EB165013979165E@cosmail02.lsi.com>	 <4B6A08C587958942AA3002690DD4F8C3CDB80B82@cosmail02.lsi.com>	 <4B6A08C587958942AA3002690DD4F8C3CDB80C32@cosmail02.lsi.com>	 <4BFBF814.5040202@redhat.com> <1274808736.5300.133.camel@mulgrave.site>
+In-Reply-To: <1274808736.5300.133.camel@mulgrave.site>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On 05/25/2010 07:32 PM, James Bottomley wrote:
+> On Tue, 2010-05-25 at 18:17 +0200, Tomas Henzl wrote:
+>   
+>> V2: I've cleaned up some coding style issues and removed a variable, the functionality shouldn't be changed
+>>
+>> Tomas
+>>
+>> If fw didn't raise the interrupt with the fw state change to driver and fw goes to failure state, driver
+>> Will check the FW state in driver's timeout routine and issue the reset if need.  Driver will do the OCR upto three
+>> Times until kill adapter.  Also driver will issue OCR before driver kill adapter even if fw in operational state.   
+>>     
+> So there's supposed to be a replacement for 3/7 (megaraid_sas - Online
+> COntroller Reset (OCR) PART-III) as well, isn't there?
+>   
+Yes, I think there are some issues that could be removed, on the other side
+it is mostly coding style related, so I think it could be accepted as it is.
+I hope I could afterwards clean something up. (The patches as they are now don't
+apply correctly on my system, it's maybe an issue with my mail reader.)
+ 
 
-Add a mutex_unlock missing on the error path.  In the other functions in
-the same file the locks and unlocks of this mutex appear to be balanced,
-so it would seem that the same should hold in this case.
+> Also descriptive subjects would be nice (parts I-III may do well for
+> Lord of the Rings ... it's less useful for SCSI patches).
+>   
+This is again a question for the original author. Bo?
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+Tomas
 
-// <smpl>
-@@
-expression E1;
-@@
 
-* mutex_lock(E1,...);
-  <+... when != E1
-  if (...) {
-    ... when != E1
-*   return ...;
-  }
-  ...+>
-* mutex_unlock(E1,...);
-// </smpl>
+> James
+>
+>
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-scsi" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+>   
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
-
----
- drivers/media/video/pvrusb2/pvrusb2-ioread.c |    5 ++++-
- 1 file changed, 4 insertions(+), 1 deletion(-)
-
-diff --git a/drivers/media/video/pvrusb2/pvrusb2-ioread.c b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-index b482478..bba6115 100644
---- a/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-+++ b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
-@@ -223,7 +223,10 @@ int pvr2_ioread_setup(struct pvr2_ioread *cp,struct pvr2_stream *sp)
- 				   " pvr2_ioread_setup (setup) id=%p",cp);
- 			pvr2_stream_kill(sp);
- 			ret = pvr2_stream_set_buffer_count(sp,BUFFER_COUNT);
--			if (ret < 0) return ret;
-+			if (ret < 0) {
-+				mutex_unlock(&cp->mutex);
-+				return ret;
-+			}
- 			for (idx = 0; idx < BUFFER_COUNT; idx++) {
- 				bp = pvr2_stream_get_buffer(sp,idx);
- 				pvr2_buffer_set_buffer(bp,
