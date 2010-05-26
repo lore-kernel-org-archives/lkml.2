@@ -1,90 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934056Ab0EZRZW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:25:22 -0400
-Received: from fg-out-1718.google.com ([72.14.220.158]:22443 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755524Ab0EZRZS convert rfc822-to-8bit (ORCPT
+	id S1757214Ab0EZR2T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:28:19 -0400
+Received: from e28smtp05.in.ibm.com ([122.248.162.5]:40955 "EHLO
+	e28smtp05.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755540Ab0EZR2S (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:25:18 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=KnAHsPd2HiwHqVTz3dNIQ/ysH0yZmXWy78QN8sWebqA/hFJe/7TDroIMkqu3VZl66R
-         eE1rZyhEDFNroskGGn27sxOveaJ/Oz/Mq5vasSRgSj3Je3tg5cRGymceofV6iJe/nEo/
-         9tyEsfJ9csdVe09raS/4iTl4b9p5+DCw2IP7Q=
-MIME-Version: 1.0
-In-Reply-To: <1274890736.4467.574.camel@mulgrave.site>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
-	<201005252344.37639.rjw@sisk.pl>
-	<AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
-	<1274863342.5882.4850.camel@twins>
-	<20100526112303.3fef15a4@schatten.dmk.lab>
-	<1274866402.5882.5051.camel@twins>
-	<AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	<1274868384.5882.5169.camel@twins>
-	<AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	<1274869262.5882.5222.camel@twins>
-	<AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
-	<1274890736.4467.574.camel@mulgrave.site>
-Date: Wed, 26 May 2010 20:25:15 +0300
-X-Google-Sender-Auth: tB4rNgi_MQmUBGaqz0tZgEeoPis
-Message-ID: <AANLkTinv5C-TO48ZMP0ZV-ne7VbCAhXlARhYOJmhYoRa@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: James Bottomley <James.Bottomley@suse.de>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
+	Wed, 26 May 2010 13:28:18 -0400
+Date: Wed, 26 May 2010 22:58:10 +0530
+From: "K.Prasad" <prasad@linux.vnet.ibm.com>
+To: David Howells <dhowells@redhat.com>
+Cc: Millton Miller <miltonm@bga.com>, Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       David Gibson <dwg@au1.ibm.com>,
+       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
        Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
+       Paul Mackerras <paulus@samba.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
+	unregistration
+Message-ID: <20100526172810.GA3701@in.ibm.com>
+Reply-To: prasad@linux.vnet.ibm.com
+References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net> <4250.1274867681@redhat.com> <20100526171742.GA5563@in.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526171742.GA5563@in.ibm.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi James,
+On Wed, May 26, 2010 at 10:47:42PM +0530, K.Prasad wrote:
+> On Wed, May 26, 2010 at 10:54:41AM +0100, David Howells wrote:
+> > K.Prasad <prasad@linux.vnet.ibm.com> wrote:
+> > 
+> > > > My understanding is weak function definitions must appear in a different C
+> > > > file than their call sites to work on some toolchains.
+> > > > 
+> > > 
+> > > Atleast, there are quite a few precedents inside the Linux kernel for
+> > > __weak functions being invoked from the file in which they are defined
+> > > (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
+> > > name a few).
+> > > Moreover the online GCC docs haven't any such constraints mentioned.
+> > 
+> > I've seen problems in this area.  gcc sometimes inlines a weak function that's
+> > in the same file as the call point.
+> > 
+> 
+> We've seen such behaviour even otherwise....even with noinline attribute
+> in place. I'm not sure if this gcc fix
+> (http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16922) helped correct the
 
-On Wed, 2010-05-26 at 13:29 +0300, Pekka Enberg wrote:
->> Yup, I don't quite get Arve's argument either. C code can interact
->> with Java code (and vice versa) just fine in userspace.
+Looks like I cited the wrong bug. The appropriate one is
+http://gcc.gnu.org/bugzilla/show_bug.cgi?id=34563.
 
-On Wed, May 26, 2010 at 7:18 PM, James Bottomley
-<James.Bottomley@suse.de> wrote:
-> This is an incorrect statement.  It's possible for java to call C via
-> the JNI, even though there are quite a few gotchas that mean not just
-> *any* C code can do it (been there, tripped over some of them, although
-> they were all ultimately ironed out).  It's very difficult for C to call
-> directly into Java without being specially coded because it involves
-> creating and managing a JVM (so in general, arbitrary C code can't do
-> this).  The usual way we do C -> Java is process to process via some
-> intermediary like RPC or Corba or SOAP (or even JSON) ... which gets
-> very messy for a mobile device.
+Thanks,
+K.Prasad
 
-Incorrect statement how exactly? A JVM can do mmap(), for example,
-just fine through FileChannel.map() so there's no need for
-heavy-weight RPC. Furthermore, the whole discussion is moot anyway as
-Android runs Dalvik which can be hacked to support whatever
-communication mechanism is the best choice here.
-
-So can we drop the whole "we need to do it in kernel because Java is
-hard" nonsense and concentrate on real issues?
-
-                               Pekka
