@@ -1,81 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756821Ab0EZToM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:44:12 -0400
-Received: from e3.ny.us.ibm.com ([32.97.182.143]:40715 "EHLO e3.ny.us.ibm.com"
+	id S932637Ab0EZToj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:44:39 -0400
+Received: from mx2.netapp.com ([216.240.18.37]:36860 "EHLO mx2.netapp.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757167Ab0EZToI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:44:08 -0400
-Date: Wed, 26 May 2010 12:44:02 -0700
-From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
-To: Heiko Carstens <heiko.carstens@de.ibm.com>
-Cc: linux-kernel@vger.kernel.org, Dagmar Volkmann <dagmar.volkmann@de.ibm.com>
-Subject: Re: rcu: inet_timewait_sock.h:227 invoked rcu_dereference_check()
- without protection
-Message-ID: <20100526194402.GD2934@linux.vnet.ibm.com>
-Reply-To: paulmck@linux.vnet.ibm.com
-References: <20100526154507.GC2232@osiris.boeblingen.de.ibm.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526154507.GC2232@osiris.boeblingen.de.ibm.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1756755Ab0EZTog convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:44:36 -0400
+X-IronPort-AV: E=Sophos;i="4.53,305,1272870000"; 
+   d="scan'208";a="368117570"
+Subject: [GIT PULL] Please pull NFS client bugfixes...
+From: Trond Myklebust <Trond.Myklebust@netapp.com>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Organization: NetApp
+Date: Wed, 26 May 2010 15:42:21 -0400
+Message-ID: <1274902941.5270.36.camel@heimdal.trondhjem.org>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
+X-OriginalArrivalTime: 26 May 2010 19:44:35.0909 (UTC) FILETIME=[DEDEC750:01CAFD0B]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 05:45:07PM +0200, Heiko Carstens wrote:
-> Hi Paul,
-> 
-> we got the following RCU trace here while doing some tests with 2.6.34
-> vanilla with some extra patches on top, but which do not touch RCU nor
-> inet code.
-> Would be nice if you could have a look at it.
+Hi Linus,
 
-Hello, Heiko,
+Please pull from the "bugfixes" branch of the repository at
 
-This is fixed by commit 7ec75c582e639d956ce3afd499f67febe6f902a4 in
-Linus's tree.
+   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
 
-							Thanx, Paul
+This will update the following files through the appended changesets.
 
-> May 21 09:05:16 h0515017 kernel: ===================================================
-> May 21 09:05:16 h0515017 kernel: [ INFO: suspicious rcu_dereference_check() usage. ]
-> May 21 09:05:16 h0515017 kernel: ---------------------------------------------------
-> May 21 09:05:16 h0515017 kernel: /home/autobuild/BUILD/linux-2.6.34-20100520/include/net/inet_timewait_sock.h:227 invoked rcu_dereference_check() without protection!
-> May 21 09:05:16 h0515017 kernel:
-> May 21 09:05:16 h0515017 kernel: other info that might help us debug this:
-> May 21 09:05:16 h0515017 kernel:
-> May 21 09:05:16 h0515017 kernel:
-> May 21 09:05:16 h0515017 kernel: rcu_scheduler_active = 1, debug_locks = 0
-> May 21 09:05:16 h0515017 kernel: 1 lock held by swapper/0:
-> May 21 09:05:16 h0515017 kernel: #0:  (/home/autobuild/BUILD/linux-2.6.34-20100520/net/ipv4/tcp_minisocks.c:41){+.-...}, at: [<0000000000158398>] run_timer_softirq+0x1b4/0x354
-> May 21 09:05:16 h0515017 kernel:
-> May 21 09:05:16 h0515017 kernel: stack backtrace:
-> May 21 09:05:16 h0515017 kernel: CPU: 0 Not tainted 2.6.34-42.x.20100520-s390xdefault #1
-> May 21 09:05:16 h0515017 kernel: Process swapper (pid: 0, task: 0000000000812a18, ksp: 0000000000807e00)
-> May 21 09:05:16 h0515017 kernel: 0000000000000000 000000003ffa7bc8 0000000000000002 0000000000000000
-> May 21 09:05:16 h0515017 kernel:       000000003ffa7c68 000000003ffa7be0 000000003ffa7be0 000000000056ba7c
-> May 21 09:05:16 h0515017 kernel:       0000000000000000 0000000000000002 00000000000002d8 0000000000000000
-> May 21 09:05:16 h0515017 kernel:       000000000000000d 0000000000000000 000000003ffa7c38 000000000000000e
-> May 21 09:05:16 h0515017 kernel:       00000000005c48a8 0000000000105a20 000000003ffa7bc8 000000003ffa7c10
-> May 21 09:05:16 h0515017 kernel: Call Trace:
-> May 21 09:05:16 h0515017 kernel: ([<000000000010596e>] show_trace+0x142/0x148)
-> May 21 09:05:16 h0515017 kernel: [<00000000004a5068>] __inet_twsk_kill+0x140/0x14c
-> May 21 09:05:16 h0515017 kernel: [<00000000004a566c>] inet_twdr_do_twkill_work+0x90/0x130
-> May 21 09:05:16 h0515017 kernel: [<00000000004a585a>] inet_twdr_hangman+0x5e/0xec
-> May 21 09:05:16 h0515017 kernel: [<000000000015842a>] run_timer_softirq+0x246/0x354
-> May 21 09:05:16 h0515017 kernel: [<00000000001514ae>] __do_softirq+0xfa/0x1b8
-> May 21 09:05:16 h0515017 kernel: [<0000000000112608>] do_softirq+0xe4/0xe8
-> May 21 09:05:16 h0515017 kernel: [<0000000000150f3c>] irq_exit+0xc0/0xe0
-> May 21 09:05:16 h0515017 kernel: [<000000000010f9ce>] do_extint+0x126/0x17c
-> May 21 09:05:16 h0515017 kernel: [<0000000000119e5c>] ext_no_vtime+0x28/0x2c
-> May 21 09:05:16 h0515017 kernel: [<0000000000116c10>] vtime_stop_cpu+0xac/0x100
-> May 21 09:05:16 h0515017 kernel: ([<0000000000116bb6>] vtime_stop_cpu+0x52/0x100)
-> May 21 09:05:16 h0515017 kernel: [<000000000010c1a8>] cpu_idle+0xf8/0x190
-> May 21 09:05:16 h0515017 kernel: [<0000000000859cf0>] start_kernel+0x3b4/0x418
-> May 21 09:05:16 h0515017 kernel: [<0000000000100020>] _stext+0x20/0x80
-> May 21 09:05:16 h0515017 kernel: INFO: lockdep is turned off.
-> 
-> Thanks,
-> Heiko
+  Cheers,
+    Trond
+
+----
+ fs/nfs/dir.c          |    1 +
+ fs/nfs/write.c        |   20 ++++++++++++++++----
+ net/sunrpc/xprtsock.c |   29 ++++++++++++++++++-----------
+ 3 files changed, 35 insertions(+), 15 deletions(-)
+
+commit 0522f6adedd2736cbca3c0e16ca51df668993eee
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed May 26 08:42:24 2010 -0400
+
+    NFS: Fix another nfs_wb_page() deadlock
+    
+    J.R. Okajima reports that the call to sync_inode() in nfs_wb_page() can
+    deadlock with other writeback flush calls. It boils down to the fact
+    that we cannot ever call writeback_single_inode() while holding a page
+    lock (even if we do set nr_to_write to zero) since another process may
+    already be waiting in the call to do_writepages(), and so will deny us
+    the I_SYNC lock.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit c5efa5fc91f1f6d1d47e65f39e7ec6d1157c777d
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed May 26 08:42:11 2010 -0400
+
+    NFS: Ensure that we mark the inode as dirty if we exit early from commit
+    
+    If we exit from nfs_commit_inode() without ensuring that the COMMIT rpc
+    call has been completed, we must re-mark the inode as dirty. Otherwise,
+    future calls to sync_inode() with the WB_SYNC_ALL flag set will fail to
+    ensure that the data is on the disk.
+    
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 59844a9bd73e084b0ffefc0e13226098e28c71ad
+Author: Trond Myklebust <Trond.Myklebust@netapp.com>
+Date:   Wed May 26 08:42:24 2010 -0400
+
+    NFS: Fix a lock imbalance typo in nfs_access_cache_shrinker
+    
+    Commit 9c7e7e23371e629dbb3b341610a418cdf1c19d91 (NFS: Don't call iput() in
+    nfs_access_cache_shrinker) unintentionally removed the spin unlock for the
+    inode->i_lock.
+    
+    Reported-by: David Howells <dhowells@redhat.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+commit 0a68b0bed08eeb7ec62e0125f17856b1ccb1ea4b
+Author: J. Bruce Fields <bfields@citi.umich.edu>
+Date:   Wed May 26 08:42:24 2010 -0400
+
+    sunrpc: fix leak on error on socket xprt setup
+    
+    Also collect exit code together while we're at it.
+    
+    Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
+    Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
+    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
+
+
