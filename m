@@ -1,80 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757292Ab0EZRdG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:33:06 -0400
-Received: from ksp.mff.cuni.cz ([195.113.26.206]:57703 "EHLO
-	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1757184Ab0EZRdC (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:33:02 -0400
-Date: Wed, 26 May 2010 19:32:52 +0200
-From: Pavel Machek <pavel@ucw.cz>
-To: Arve Hj?nnev?g <arve@android.com>
-Cc: Matthew Garrett <mjg@redhat.com>,
-       Kevin Hilman <khilman@deeprootsystems.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
-       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
-       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Geoff Smith <geoffx.smith@intel.com>
-Subject: Re: [PATCH 0/8] Suspend block api (version 6)
-Message-ID: <20100526173252.GC9069@elf.ucw.cz>
-References: <1272667021-21312-1-git-send-email-arve@android.com>
- <87wrvl5479.fsf@deeprootsystems.com>
- <20100503215028.GB18910@srcf.ucam.org>
- <20100524185754.GD1292@ucw.cz>
- <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
+	id S1757309Ab0EZRdM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:33:12 -0400
+Received: from gw1.transmode.se ([213.115.205.20]:48375 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757184Ab0EZRdJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 13:33:09 -0400
+In-Reply-To: <alpine.LFD.2.00.1005260939030.3689@i5.linux-foundation.org>
+References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au> <20100525182040.f1882d0a.akpm@linux-foundation.org> <20100526140900.5b091c16.sfr@canb.auug.org.au> <OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se> <20100525234116.71889c71.akpm@linux-foundation.org> <20100526171424.447fac18.sfr@canb.auug.org.au> <OFE5212A1C.B62E8E51-ONC125772F.00371EE7-C125772F.0038EEC8@transmode.se> <alpine.LFD.2.00.1005260828320.3689@i5.linux-foundation.org> <OF6B2D521C.109F3133-ONC125772F.00576DF0-C125772F.005B18F3@transmode.se> <alpine.LFD.2.00.1005260939030.3689@i5.linux-foundation.org>
+Subject: Re: linux-next: build warning in Linus'tree
+X-KeepSent: E9F7159D:A4D62F91-C125772F:005CB786;
+ type=4; name=$KeepSent
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org, Stephen Rothwell <sfr@canb.auug.org.au>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OFE9F7159D.A4D62F91-ONC125772F.005CB786-C125772F.00603B6C@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 26 May 2010 19:31:06 +0200
+X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1|September 28, 2009) at
+ 2010-05-26 19:33:08
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
-X-Warning: Reading this can be dangerous to your mental health.
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon 2010-05-24 18:16:15, Arve Hj?nnev?g wrote:
-> On Mon, May 24, 2010 at 11:57 AM, Pavel Machek <pavel@ucw.cz> wrote:
-> > Hi!
+Linus Torvalds <torvalds@linux-foundation.org> wrote on 2010/05/26 18:46:11:
+>
+> On Wed, 26 May 2010, Joakim Tjernlund wrote:
 > >
-> >> I agree that the runtime scenario is a far more appealing one from an
-> >> aesthetic standpoint, but so far we don't have a very compelling
-> >> argument for dealing with the starting and stopping of userspace. The
-> >> use-cases that Google have provided are valid and they have an
-> >> implementation that addresses them, and while we're unable to provide an
-> >> alternative that provides the same level of functionality I think we're
-> >> in a poor position to prevent this from going in.
-> >
-> > Uhuh?
-> >
-> > "We have this ugly code here, but it works and we don't have better
-> > one, so lets merge it"?
-> >
-> > I don't really like this line of reasoning. I would not want to judge
-> > wakelocks here, but... "it works, merge it" should not be used as
-> > argument.
-> >
-> > And btw I do have wakelock-less implementation of autosleep, that only
-> > sleeped the machine when nothing was ready to run. It was called
-> > "sleepy linux". Should I dig it out?
-> >
-> > Major difference was that it only sleeped the machine when it was
-> > absolutely certain machine is idle and no timers are close to firing
-> > -- needing elimination or at least markup of all short timers. It
-> > erred on side of not sleeping the machine when it would break
-> > something.
-> >
-> 
-> How did you handle external events that occur right after you decided to sleep?
+> > 1) It silently breaks when neither of {__LITTLE_,__BIG}_ENDIAN (or both)are
+> >    defined depending on the endianess of the target CPU.
+> >    The glibc model generates a compile error if you forget to include __BYTE_ORDER.
+>
+> Umm. Except when it doesn't (yes, Linux has the "Wundefined" thing, and
+> has had for a long time). I've seen the glibc model do the wrong thing
+> exactly because traditional C semantics is "undefined symbol is 0 in
+> evaluations"
+>
+> Try compiling this
+>
+>    #include <stdio.h>
+>
+>    #if NOT_HERE == NOT_THERE
+>    int main()
+>    {
+>       printf("Hello world!\n");
+>    }
+>    #endif
+>
+> and even with -Wall it compiles perfectly happily.
 
-I decided to go to sleep with interrupts disabled... it was prototype
-on x86, so it was rather tricky.
+Ouch! But here -Wundef really helps.
 
-I'd expect external events after sleep decision to just wakeup machine
-immediately, similar to entering deep CPU sleep mode...
--- 
-(english) http://www.livejournal.com/~pavelmachek
-(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
+>
+> So no. The glibc model is _not_ any better in practice.
+
+In the kernel it is since it breaks the compile. The breakage
+my patch introduced is a sign of that, right?
+
+>
+> > 2) It clashes with user space so one cannot use it in exported header files.
+>
+> Which is annoying, I agree. But you shouldn't generally use kernel headers
+> for user space anyway, much less export anything that is byteorder-
+
+Not in general, but my case could have been avoided, I sure there are others
+too. Why else does some header files bother with __BYTE_ORDER?
+
+> specific. So anybody who has this problem is likely doing something iffy
+> to begin with.
+
+hmm, so then I guess the existing use of __BYTE_ORDER in the
+kernel should be removed?
+
+>
+> Besides, you can solve it cleanly by simply avoiding the crazy glibc
+> semantics entirely. IOW, the CONFIG_BIG_ENDIAN option I suggested (and
+
+CONFIG_BIG_ENDIAN would have helped me with my lib/crc32.c problem
+but it does not prevent silent breakage so I figured the glibc model
+would be better.
+Is it such a big difference, readability wise, between
+  #ifdef CONFIG_BIG_ENDIAN
+and
+  #if __BYTE_ORDER == __BIG_ENDIAN
+that you rather risk silent breakage?
+
+> again, you should damn well not export things that depend on it to user
+> space - there are architectures where user-space might be switchable)
+
+Such arch exists but does any of them run linux in both modes?
+
+  Jocke
+
