@@ -1,123 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757522Ab0EZSXS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 14:23:18 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52667 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757487Ab0EZSXP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 14:23:15 -0400
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Thomas Gleixner <tglx@linutronix.de>
-Cc: Peter Zijlstra <peterz@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Arve Hj?nnev?g <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu
-In-Reply-To: <alpine.LFD.2.00.1005261948290.2995@localhost.localdomain>
-References: <1274863342.5882.4850.camel@twins>
-	 <20100526112303.3fef15a4@schatten.dmk.lab>
-	 <1274866402.5882.5051.camel@twins>
-	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	 <1274868384.5882.5169.camel@twins>
-	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	 <1274869262.5882.5222.camel@twins>
-	 <AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
-	 <1274890736.4467.574.camel@mulgrave.site>
-	 <1274891308.1674.1766.camel@laptop>  <20100526165919.GB2089@elf.ucw.cz>
-	 <1274893309.1674.1773.camel@laptop>
-	 <1274894685.4467.758.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005261948290.2995@localhost.localdomain>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 13:23:00 -0500
-Message-ID: <1274898180.4467.925.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1757488Ab0EZS1N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 14:27:13 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:64616 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751936Ab0EZS1M (ORCPT
+	<rfc822;<linux-kernel@vger.kernel.org>>);
+	Wed, 26 May 2010 14:27:12 -0400
+Date: Wed, 26 May 2010 14:26:49 -0400
+From: Konrad Rzeszutek Wilk <konrad.wilk@oracle.com>
+To: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+Cc: linux-kernel@vger.kernel.org, Jeremy Fitzhardinge <jeremy@goop.org>,
+       xen-devel@lists.xensource.com, Don Dutile <ddutile@redhat.com>
+Subject: Re: [Xen-devel] [PATCH 04/11] Fix find_unbound_irq in presence of
+	ioapic irqs.
+Message-ID: <20100526182649.GF5188@phenom.dumpdata.com>
+References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-4-git-send-email-stefano.stabellini@eu.citrix.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274725657-1149-4-git-send-email-stefano.stabellini@eu.citrix.com>
+User-Agent: Mutt/1.5.19 (2009-01-05)
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090205.4BFD67F1.00CA:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 19:51 +0200, Thomas Gleixner wrote:
-> On Wed, 26 May 2010, James Bottomley wrote:
-> > On Wed, 2010-05-26 at 19:01 +0200, Peter Zijlstra wrote:
-> > > On Wed, 2010-05-26 at 18:59 +0200, Pavel Machek wrote:
-> > > > On Wed 2010-05-26 18:28:28, Peter Zijlstra wrote:
-> > > > > On Wed, 2010-05-26 at 11:18 -0500, James Bottomley wrote:
-> > > > > > > Or make the suspend manager a C proglet and provide a JNI interface,
-> > > > > > > or whatever.
-> > > > > > 
-> > > > > > It's a fairly large piece of code to try to rewrite in C, so I don't
-> > > > > > think that's feasible on a reasonable timescale.  Android does have the
-> > > > > > concept of special sockets that can be used to communicate from less to
-> > > > > > more privileged processes (it has a very segmented runtime model), so
-> > > > > > these might be usable ... they have a drawback that they're essentially
-> > > > > > named pipes, so no multiplexing, but one per suspend influencing C
-> > > > > > process shouldn't be a huge burden. 
-> > > > > 
-> > > > > It wouldn't need to convert the whole Frameworks layer into C, just
-> > > > > enough to manage the suspend state.
-> > > > > 
-> > > > > Anyway, I think there's been enough arguments against even the concept
-> > > > > of opportunistic/auto-suspend, and I for one will object with a NAK if
-> > > > > Rafael send this to Linus.
-> > > > 
-> > > > It was submitted already. I tried to followup with NAK, but can't
-> > > > currently see it in the archive.
-> > 
-> > You mean this one:
-> > 
-> > https://lists.linux-foundation.org/pipermail/linux-pm/2010-May/025689.html
-> > 
-> > ?
-> > 
-> > > It was apparently hidden on some funky list.
-> > 
-> > Sending a PM pull request to the PM list doesn't really strike me as the
-> > height of obfuscation.  Plus almost everyone who objected was on the cc
-> > list.
-> > 
-> > >  Hiding pull requests is bad enough, but hiding pull requests for
-> > > contended features is just plain wrong.
-> > 
-> > I don't think it's a conspiracy ... just standard operating procedure
-> > for this subsystem.  I do think cc'ing lkml is good practise (having
-> > been yelled at for not doing that in the past) but it's certainly not
-> > universal practise.
+On Mon, May 24, 2010 at 07:27:30PM +0100, Stefano Stabellini wrote:
+> Signed-off-by: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
+
+Can you provide a more detailed description of why this is needed?
+
+> ---
+>  drivers/xen/events.c |   11 ++++++++++-
+>  1 files changed, 10 insertions(+), 1 deletions(-)
 > 
-> At least it would be good style for a topic which is
+> diff --git a/drivers/xen/events.c b/drivers/xen/events.c
+> index 8b68fc4..1356fa2 100644
+> --- a/drivers/xen/events.c
+> +++ b/drivers/xen/events.c
+> @@ -339,9 +339,18 @@ static int find_unbound_irq(void)
+>  	int irq;
+>  	struct irq_desc *desc;
+>  
+> -	for (irq = 0; irq < nr_irqs; irq++)
+> +	for (irq = 0; irq < nr_irqs; irq++) {
+> +		desc = irq_to_desc(irq);
+> +		/* only 0->15 have init'd desc; handle irq > 16 */
+> +		if (desc == NULL)
+> +			break;
+> +		if (desc->chip == &no_irq_chip)
+> +			break;
+> +		if (desc->chip != &xen_dynamic_chip)
+> +			continue;
+>  		if (irq_info[irq].type == IRQT_UNBOUND)
+>  			break;
+> +	}
+>  
+>  	if (irq == nr_irqs)
+>  		panic("No available IRQ to bind to: increase nr_irqs!\n");
+> -- 
+> 1.5.4.3
 > 
->    1) contended like this one
 > 
->    2) pushing an intrusive feature last minute which has been merged
->       into the pm tree barely two days ago.
-
-Don't disagree ... I was just explaining how it could happen while not
-being a conspiracy.
-
-> Darn, _we_ have to deal with that forever as it sets a crappy user
-> space ABI in stone.
-
-I really don't see how it is ... the ABI comes with a switch that allows
-it to be disabled, so only platforms wishing to use it have to support
-it.  Even on those platforms that do support it, we can translate most
-of it into pm QoS stuff and if one day someone solves the rogue app
-problem, we can migrate over.
-
-James
-
-
+> _______________________________________________
+> Xen-devel mailing list
+> Xen-devel@lists.xensource.com
+> http://lists.xensource.com/xen-devel
