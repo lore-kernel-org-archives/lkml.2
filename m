@@ -1,51 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755228Ab0EZTPg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:15:36 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:46593 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754081Ab0EZTPe convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:15:34 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:organization:to:subject:date:user-agent:cc:references
-         :in-reply-to:mime-version:content-type:content-transfer-encoding
-         :message-id;
-        b=wmmgt9XyYlOwaJdjBAQHgSJN0kKw3O1UQ7luO8OKxQcktQxG2mfYK7dQZRa/CkUXdz
-         KiDv8i0HGHAb4IUwr+8l0ZH9TGnw6snllVjafNfCkFTO0xdR2QJPKzxKdt/n9TrR1Lx/
-         pPIgrpKxSufCuMymtipG+ZT1SBFUpasqFdDag=
-From: Marek Vasut <marek.vasut@gmail.com>
-Organization: Hack&Dev
-To: "Russell King - ARM Linux" <linux@arm.linux.org.uk>
-Subject: Re: [PATCH 7/17] arch/arm/common: Add missing spin_unlock_irqrestore
-Date: Wed, 26 May 2010 21:13:37 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.33-2-amd64; KDE/4.4.2; x86_64; ; )
-Cc: linux-arm-kernel@lists.infradead.org, Julia Lawall <julia@diku.dk>,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-References: <Pine.LNX.4.64.1005261756000.23743@ask.diku.dk> <201005261907.06198.marek.vasut@gmail.com> <20100526184358.GC6232@n2100.arm.linux.org.uk>
-In-Reply-To: <20100526184358.GC6232@n2100.arm.linux.org.uk>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005262113.38450.marek.vasut@gmail.com>
+	id S1755469Ab0EZTPv (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:15:51 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:52781 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752795Ab0EZTPt (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:15:49 -0400
+Date: Wed, 26 May 2010 21:15:42 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Pavel Machek <pavel@ucw.cz>
+Cc: James Bottomley <James.Bottomley@suse.de>,
+       Peter Zijlstra <peterz@infradead.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Arve Hj?nnev?g <arve@android.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Message-ID: <20100526211542.1bfa2564@schatten.dmk.lab>
+In-Reply-To: <20100526172824.GA9069@elf.ucw.cz>
+References: <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
+	<1274868384.5882.5169.camel@twins>
+	<AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+	<1274869262.5882.5222.camel@twins>
+	<AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
+	<1274890736.4467.574.camel@mulgrave.site>
+	<1274891308.1674.1766.camel@laptop>
+	<1274892847.4467.674.camel@mulgrave.site>
+	<1274893228.1674.1772.camel@laptop>
+	<1274894042.4467.727.camel@mulgrave.site>
+	<20100526172824.GA9069@elf.ucw.cz>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Dne St 26. května 2010 20:43:58 Russell King - ARM Linux napsal(a):
-> On Wed, May 26, 2010 at 07:07:06PM +0200, Marek Vasut wrote:
-> > Why are "readl"s protected by spinlock anyway ? Can't we just move the
-> > locking past the code above ?
-> 
-> Good question - and there seems to be a deadlock waiting to happen -
-> sa1111_wake() re-takes the same lock.
-> 
-> I think we should kill all the spinlock in sa1111_resume().
+On Wed, 26 May 2010 19:28:24 +0200
+Pavel Machek <pavel@ucw.cz> wrote:
 
-Russell, Julia, check the patch I posted. Comments are welcome.
 
-btw. Russell, killing the spinlock in resume might be overkill. If there was any 
-reason for that being there, it was for the write ops so I'd rather keep those 
-locked. Anyone with actual hardware available should look into that though.
+> Besides that it is not linux system at all?
+
+I believe the kernel to be a layer between userspace and hardware. What
+business is it to the kernel if it runs whatever android
+uses as init process or /bin/bash, sys-v-init or systemd?
+
+There is this thing called choice. 
+
+> 
+> Yes, with custom userspace it works extremely nicely.
+> 
+> Had anyone even tried running oportunistic suspend on normal desktop?
+> 									Pavel
+
+I don't think this is a valid concern. Just because current linux/gnu
+systems don't implement the userspace part of this interface doesn't
+mean it is useless or broken. 
+
+Cheers,
+Flo
+
+-- 
+Just because I argue an issue, doesn't mean I agree with either side of
+it.
