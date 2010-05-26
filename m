@@ -1,92 +1,97 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756927Ab0EZP7h (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:59:37 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:46391 "EHLO mgw1.diku.dk"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755543Ab0EZP7d (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:59:33 -0400
-Date: Wed, 26 May 2010 17:59:27 +0200 (CEST)
-From: Julia Lawall <julia@diku.dk>
-To: Jaroslav Kysela <perex@perex.cz>, Takashi Iwai <tiwai@suse.de>,
-       linux-kernel@vger.kernel.org, alsa-devel@alsa-project.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 17/17] sound: Add missing spin_unlock
-Message-ID: <Pine.LNX.4.64.1005261759110.23743@ask.diku.dk>
+	id S1756940Ab0EZP7p (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:59:45 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:60885 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756917Ab0EZP7g convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:59:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vhucMyTGB9eOC5c8SeDraTdg88LQ9cULfmZFvc9L7EuP2g7mvfiZ0wgWKbhNywgel/
+         pFP0mOTQWKzndnl7eMQ0jaoU3w4i0mDy7aIyUPPgGn8rcDeQQeLIG5q3KVnbivWSqi31
+         sIaZ78vW2YAOSLcmcmbUpdiQFW4MRXYhkBNrs=
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+In-Reply-To: <20100525202340.GD4455@core.coreip.homeip.net>
+References: <1274788379-11026-1-git-send-email-rydberg@euromail.se>
+	 <20100525173446.GA4634@core.coreip.homeip.net>
+	 <4BFC2A7D.50501@euromail.se>
+	 <20100525202340.GD4455@core.coreip.homeip.net>
+Date: Wed, 26 May 2010 08:59:35 -0700
+Message-ID: <AANLkTimR3VN21URkandBGhPjWYdkdFP2zmAVscyRbqtW@mail.gmail.com>
+Subject: Re: [PATCH 0/2] input: mt: Add EVIOC mechanism for MT slots
+From: Ping Cheng <pinglinux@gmail.com>
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+Cc: Henrik Rydberg <rydberg@euromail.se>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-input@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Mika Kuoppala <mika.kuoppala@nokia.com>,
+       Peter Hutterer <peter.hutterer@who-t.net>,
+       Benjamin Tissoires <tissoire@cena.fr>, Stephane Chatty <chatty@enac.fr>,
+       Rafi Rubin <rafi@seas.upenn.edu>, Michael Poole <mdpoole@troilus.org>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Julia Lawall <julia@diku.dk>
+On Tue, May 25, 2010 at 1:23 PM, Dmitry Torokhov
+<dmitry.torokhov@gmail.com> wrote:
+> On Tue, May 25, 2010 at 09:52:29PM +0200, Henrik Rydberg wrote:
+>> Dmitry Torokhov wrote:
+>> > Hi Henrik,
+>> >
+>> > On Tue, May 25, 2010 at 01:52:57PM +0200, Henrik Rydberg wrote:
+>> >> These patches are in response to the discussion about input state
+>> >> retrieval.
+>> >>
+>> >> The current EVIOCGABS method does not work with MT slots.  These
+>> >> patches provides a mechanism where a slot is first selected via a call
+>> >> to EVIOCSABS, after which the corresponding MT events can be extracted
+>> >> with calls to EVIOCGABS.
+>> >>
+>> >> The symmetric operation, to set the MT state via EVIOCSABS, seems to
+>> >> violate input data integrity, and is therefore not implemented.
+>> >>
+>> >
+>> > This looks sane, however the question remains - is there any users for
+>> > this data? Like I mentioned, I can see the need to fetch state of
+>> > switches and ranges of absolute axis, and even non-multitouch ABS values
+>> > (due to the fact that some input devices, like sliders, may stay in a
+>> > certain position for long periods of time), but I expect multitouch data
+>> > to be "refreshed" very quickly.
+>> >
+>> > Thanks.
+>> >
+>>
+>> There were some voices addressing this issue, and the patches are here,
+>> available for whomever to pick up. Drop them if you wish, I will not send them anew.
+>>
+>
+> I'll save them in my queue but will hold off applying until I hear
+> userspace folks requesting such functionality.
 
-Add a spin_unlock missing on the error path.
+Hi Dmitry,
 
-The semantic match that finds this problem is as follows:
-(http://coccinelle.lip6.fr/)
+You do have a valid point - the (x,y) from a touch object would most
+likely change all the time. Even if the object itself is in a steady
+state on the digitizer, i.e., without any intentional movement, the
+electronic noise would most likely lead to some (x,y) changes. So, the
+chance that we need to retrieve (x,y) is rare.
 
-// <smpl>
-@@
-expression E1;
-@@
+However, it is possibe that when X driver starts, an object was
+already on the digitizer. And the digitizer is of such a high quality
+:), it filtered all the noises so we can not locate the touch without
+a EVIOCGABS call.
 
-* spin_lock(E1,...);
-  <+... when != E1
-  if (...) {
-    ... when != E1
-*   return ...;
-  }
-  ...+>
-* spin_unlock(E1,...);
-// </smpl>
+Plus, from a pure coding/development point of view, it is not a bad
+practice to provide the equivalent features for _MT_ support as we did
+for the existing input devices. At least, it doesn't hurt to make the
+support consistent across devices/tools (considering touch as a new
+input device/tool).
 
-Signed-off-by: Julia Lawall <julia@diku.dk>
+Hope I didn't miss too much this round :).
 
----
- sound/mips/au1x00.c                 |    1 +
- sound/oss/dmasound/dmasound_atari.c |    5 +++--
- 2 files changed, 4 insertions(+), 2 deletions(-)
-
-diff --git a/sound/mips/au1x00.c b/sound/mips/au1x00.c
-index 3e763d6..446cf97 100644
---- a/sound/mips/au1x00.c
-+++ b/sound/mips/au1x00.c
-@@ -516,6 +516,7 @@ get the interrupt driven case to work efficiently */
- 			break;
- 	if (i == 0x5000) {
- 		printk(KERN_ERR "au1000 AC97: AC97 command read timeout\n");
-+		spin_unlock(&au1000->ac97_lock);
- 		return 0;
- 	}
- 
-diff --git a/sound/oss/dmasound/dmasound_atari.c b/sound/oss/dmasound/dmasound_atari.c
-index 1f47741..13c2144 100644
---- a/sound/oss/dmasound/dmasound_atari.c
-+++ b/sound/oss/dmasound/dmasound_atari.c
-@@ -1277,7 +1277,7 @@ static irqreturn_t AtaInterrupt(int irq, void *dummy)
- 		 * (almost) like on the TT.
- 		 */
- 		write_sq_ignore_int = 0;
--		return IRQ_HANDLED;
-+		goto out;
- 	}
- 
- 	if (!write_sq.active) {
-@@ -1285,7 +1285,7 @@ static irqreturn_t AtaInterrupt(int irq, void *dummy)
- 		 * the sq variables, so better don't do anything here.
- 		 */
- 		WAKE_UP(write_sq.sync_queue);
--		return IRQ_HANDLED;
-+		goto out;
- 	}
- 
- 	/* Probably ;) one frame is finished. Well, in fact it may be that a
-@@ -1322,6 +1322,7 @@ static irqreturn_t AtaInterrupt(int irq, void *dummy)
- 	/* We are not playing after AtaPlay(), so there
- 	   is nothing to play any more. Wake up a process
- 	   waiting for audio output to drain. */
-+out:
- 	spin_unlock(&dmasound.lock);
- 	return IRQ_HANDLED;
- }
+Ping
