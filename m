@@ -1,109 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933913Ab0EZHOL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 03:14:11 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:47793 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933376Ab0EZHOJ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 03:14:09 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=GYFTifyGvFRDMMdO3i/Xer1mDzZjom6GtkTSnROOVenH+XQ2MMXe5dRC5u2qRjoVQT
-         j4fe22joTkAjTqcE7V2WZOO1+s9ZPU9MWTMhnfd8GZr1uei9aDoXjBfqn73STLV84yX1
-         MkNvbls7DNaiycBbc7sXXkpZgj0g+35FeqVec=
-Message-ID: <4BFCCA52.3010102@gmail.com>
-Date: Wed, 26 May 2010 00:14:26 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
-MIME-Version: 1.0
-To: Mikulas Patocka <mpatocka@redhat.com>
-CC: Dominik Brodowski <linux@dominikbrodowski.net>,
-       linux-kernel@vger.kernel.org
-Subject: Re: PCMCIA regression
-References: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
-In-Reply-To: <Pine.LNX.4.64.1005251619020.12278@hs20-bc2-1.build.redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+	id S933783Ab0EZHOf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 03:14:35 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:49217 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933376Ab0EZHOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 03:14:33 -0400
+Date: Wed, 26 May 2010 17:14:24 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
+       linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
+       Linus <torvalds@linux-foundation.org>
+Subject: Re: linux-next: build warning in Linus'tree
+Message-Id: <20100526171424.447fac18.sfr@canb.auug.org.au>
+In-Reply-To: <20100525234116.71889c71.akpm@linux-foundation.org>
+References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>
+	<20100525182040.f1882d0a.akpm@linux-foundation.org>
+	<20100526140900.5b091c16.sfr@canb.auug.org.au>
+	<OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
+	<20100525234116.71889c71.akpm@linux-foundation.org>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2010 01:25 PM, Mikulas Patocka wrote:
-> Hi
->
-> The commit a8408c17d0038b76a83affb1b56dc18fa1e7ed86 in Linux 2.6.34-rc6
-> broke pcmcia for me. I use 3c574 network card in yenta socket on Armada
-> 7400 laptop. My distribution is Debian lenny.
->
-> Reverting the test for "s->functions" in pccard_validate_cis makes the
-> network card work again.
->
-> Mikulas
->
-> May 20 14:17:21 gerlinda vmunix: ------------[ cut here ]------------
-> May 20 14:17:21 gerlinda vmunix: WARNING: at drivers/pcmcia/cistpl.c:1488
-> pccard_validate_cis+0x287/0x2d0 [pcmcia]()
-> May 20 14:17:21 gerlinda vmunix: Modules linked in: 3c574_cs ohci_hcd
-> pcmcia rtc_cmos crc32 ide_cd_mod rtc_core usbcore rtc_lib yenta_socket
-> cdrom psmouse pcspkr rsrc_nonstatic nls_base pcmcia_core unix
-> May 20 14:17:21 gerlinda vmunix: Pid: 1486, comm: pccardd Not tainted
-> 2.6.34-fast #15
-> May 20 14:17:21 gerlinda vmunix: Call Trace:
-> May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<c10207d6>] ?
-> warn_slowpath_common+0x76/0xd0 May 20 14:17:21 gerlinda vmunix:
-> [<cc95cc57>] ? pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<c1020843>] ?
-> warn_slowpath_null+0x13/0x20
-> May 20 14:17:21 gerlinda vmunix:  [<cc95cc57>] ?
-> pccard_validate_cis+0x287/0x2d0 [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<cc83517a>] ?
-> pcmcia_nonstatic_validate_mem+0xda/0x180 [rsrc_nonstatic]
-> May 20 14:17:21 gerlinda vmunix:  [<c10ce0af>] ?
-> sysfs_addrm_finish+0x7f/0xb0
-> May 20 14:17:21 gerlinda vmunix:  [<cc9587c2>] ? pcmcia_card_add+0x72/0xf0
-> [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<c10f39e0>] ? kobject_release+0x0/0xa0
-> May 20 14:17:21 gerlinda vmunix:  [<c10f44c9>] ? kref_put+0x29/0x60
-> May 20 14:17:21 gerlinda vmunix:  [<cc9577cc>] ?
-> pcmcia_card_remove+0x8c/0xa0 [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<cc958a24>] ? pcmcia_requery+0x74/0x130
-> [pcmcia]
-> May 20 14:17:21 gerlinda vmunix:  [<c101af4e>] ? set_next_entity+0x2e/0x70
-> May 20 14:17:21 gerlinda vmunix:  [<c101c500>] ?
-> do_sched_setscheduler+0x90/0xa0May 20 14:17:21 gerlinda vmunix:
-> [<c11c0883>] ? schedule+0x203/0x3c0
-> May 20 14:17:21 gerlinda vmunix:  [<cc818109>] ? pccardd+0x219/0x470
-> [pcmcia_core]
-> May 20 14:17:21 gerlinda vmunix:  [<c11c095a>] ? schedule+0x2da/0x3c0
-> May 20 14:17:21 gerlinda vmunix:  [<cc817ef0>] ? pccardd+0x0/0x470
-> [pcmcia_core]May 20 14:17:21 gerlinda vmunix:  [<c1035124>] ?
-> kthread+0x74/0x80
-> May 20 14:17:21 gerlinda vmunix:  [<c10350b0>] ? kthread+0x0/0x80
-> May 20 14:17:21 gerlinda vmunix:  [<c10030f6>] ?
-> kernel_thread_helper+0x6/0x10
-> May 20 14:17:21 gerlinda vmunix: ---[ end trace 256ec3e16d1d0f46 ]---
->
->
->
-> --
-> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
-> the body of a message to majordomo@vger.kernel.org
-> More majordomo info at  http://vger.kernel.org/majordomo-info.html
-> Please read the FAQ at  http://www.tux.org/lkml/
->
->    
+--Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-maybe this is similar:
+Hi Andrew, Joakim,
 
-https://bugzilla.kernel.org/show_bug.cgi?id=16015
+On Tue, 25 May 2010 23:41:16 -0700 Andrew Morton <akpm@linux-foundation.org=
+> wrote:
+>
+> On Wed, 26 May 2010 08:29:45 +0200 Joakim Tjernlund <joakim.tjernlund@tra=
+nsmode.se> wrote:
+>=20
+> > Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2010/05/26 06:09:00:
+> > >
+> > > On Tue, 25 May 2010 18:20:40 -0700 Andrew Morton <akpm@linux-foundati=
+on.org> wrote:
+> > > >
+> > > > hmpf.  Does this fix?
+> > >
+> > > No.
+> > >
+> > > The problem is that __LITTLE_ENDIAN is only defined in
+> > > linux/byteorder/little_endian.h which is only included by little endi=
+an
+> > > architectures ...
+> >=20
+> > Ah, not sure how to fix this ATM. Perhaps best to revert
+> >    crc32: use __BYTE_ORDER macro for endian detection
+> > for now.
+>=20
+> yup.
 
-Justin P. Mattock
+We also need to revert b3b77c8caef1750ebeea1054e39e358550ea9f55 ("endian:
+#define __BYTE_ORDER") in order to get rid of the other warning I pointed o=
+ut:
 
+In file included from fs/jfs/jfs_types.h:33,
+                 from fs/jfs/jfs_incore.h:26,
+                 from fs/jfs/file.c:22:
+fs/jfs/endian24.h:36:101: warning: "__LITTLE_ENDIAN" is not defined
 
+I get this warning on powerpc builds for most of the files in fs/jfs ...
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv8ylAACgkQjjKRsyhoI8y59ACgpTECm6WZS8UakYPQyGVnnC/y
+LVUAnRnaZPSNHlxKvaBDe8xR3O1b7qhY
+=uAxp
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE--
