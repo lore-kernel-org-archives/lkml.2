@@ -1,77 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab0EZXqp (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:46:45 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:60711 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1759053Ab0EZXqn (ORCPT
+	id S934899Ab0EZXwu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:52:50 -0400
+Received: from metis.ext.pengutronix.de ([92.198.50.35]:34487 "EHLO
+	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933697Ab0EZXwt (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:46:43 -0400
-Date: Thu, 27 May 2010 00:52:45 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Arve =?ISO-8859-14?B?SGr4bm5lduVn?= <arve@android.com>
-Cc: Brian Swetland <swetland@google.com>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Peter Zijlstra <peterz@infradead.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, linux-kernel@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
-       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
- blockers from user-space
-Message-ID: <20100527005245.1c19675d@lxorguk.ukuu.org.uk>
-In-Reply-To: <AANLkTilz8z2rWV2gj48FLnIG9UIYA2W-pY_WiTmj6LH1@mail.gmail.com>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<1274482015-30899-3-git-send-email-arve@android.com>
-	<1274863428.5882.4860.camel@twins>
-	<201005262357.28933.rjw@sisk.pl>
-	<20100526231448.41c5be7f@lxorguk.ukuu.org.uk>
-	<AANLkTikqYwcJfCSJgBlXKyyDJFAVJmrZmyt38KOby97j@mail.gmail.com>
-	<20100527000004.2da62052@lxorguk.ukuu.org.uk>
-	<AANLkTilz8z2rWV2gj48FLnIG9UIYA2W-pY_WiTmj6LH1@mail.gmail.com>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Wed, 26 May 2010 19:52:49 -0400
+Date: Thu, 27 May 2010 01:52:46 +0200
+From: Wolfram Sang <w.sang@pengutronix.de>
+To: Linus Walleij <linus.ml.walleij@gmail.com>
+Cc: Robert Emanuele <rob@emanuele.us>,
+       linux-arm-kernel <linux-arm-kernel@lists.infradead.org>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Controlling Driver Load Order
+Message-ID: <20100526235246.GA31068@pengutronix.de>
+References: <AANLkTikzDvWakd7JW3DzTHinjS3dAlqzPx6K8V2qMDG7@mail.gmail.com> <AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: multipart/signed; micalg=pgp-sha1;
+	protocol="application/pgp-signature"; boundary="IS0zKkzwUGydFO0o"
+Content-Disposition: inline
+In-Reply-To: <AANLkTinkY8JYh44UOEPflBUDyQ2wat_AKShRjA3HPxrf@mail.gmail.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
+X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
+X-SA-Exim-Mail-From: wsa@pengutronix.de
+X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
+X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> No, many suspend blockers protect data, not tasks. We block suspend
-> when there are unprocessed input events in the kernel queue.
-> User-space then blocks suspend before reading those events, and it
-> blocks suspend using a different suspend blocker when its queue of
-> processed events become not-empty.
 
-That sounds to me like higher level user space implementation plus a
-kernel driver imposing a power level limit.
+--IS0zKkzwUGydFO0o
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-The fact your suspend blockers as a user construct are tied to data isn't
-neccessarily what the kernel needs to provide.
+On Wed, May 26, 2010 at 11:04:01PM +0200, Linus Walleij wrote:
+> 2010/5/26 Robert Emanuele <rob@emanuele.us>:
+>=20
+> > On my at91sam9g45 platform I need my i2c drivers to load before the
+> > framebuffer driver. =A0The i2c drivers control a power management IC
+> > which is needed to enable the graphics controller.
+> >
+> > Is there a way to set up that order?
+>=20
+> The usual trick (which you can find in a lot of other I2C busses) is to u=
+se
+> a core_initcall() instead of module_init().
 
-That aside we could equally provide latency constraints using a file
-handle based semantic like your suspend blockers. That would make it
-easier to do suspend blockers in those terms and provide an interface
-that can be used for more elegant expression of desire.
+Correct, but it's subsys_initcall().
 
-I suggested setpidle() to keep resources tied and bounded to tasks and
-to make SMP work nicely. I have no problem with the latency constraints
-being floating file handles, although some thought would be needed as to
-how that is then mapped to SMP.
+--=20
+Pengutronix e.K.                           | Wolfram Sang                |
+Industrial Linux Solutions                 | http://www.pengutronix.de/  |
 
-The problem with an arbitary mapping is that if I have an 8 processor
-system I might want to use the latency info to stuff tasks onto different
-cores so that most of them are in a deeper idle than the others. I can't
-do that unless I know who the latency constraint applies to. But
-hopefully someone in scheduler land has bright ideas - eg could we keep a
-per task variable and adjust it when people open/close blockers with the
-assumption being anyone who has open a given constraint is bound by it
-and nobody else is.
+--IS0zKkzwUGydFO0o
+Content-Type: application/pgp-signature; name="signature.asc"
+Content-Description: Digital signature
+Content-Disposition: inline
 
-Might need it to be a constraintfs so you can open other people's
-constraints but all the framework for that is there in the kernel too.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.9 (GNU/Linux)
 
-Alan
+iEYEARECAAYFAkv9tE4ACgkQD27XaX1/VRsuwgCgtuBO/G43yUxbTED+MdBf6tUv
+9hYAn0WL0L475IYsXqiOlUMzGmdrAcr7
+=KcVU
+-----END PGP SIGNATURE-----
+
+--IS0zKkzwUGydFO0o--
