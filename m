@@ -1,179 +1,118 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933442Ab0EZUMM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:12:12 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36876 "EHLO
+	id S1757439Ab0EZUM2 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:12:28 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53289 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756912Ab0EZULp (ORCPT
+	with ESMTP id S1756880Ab0EZULo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:11:45 -0400
-X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=XNsFWFCL3BUA:10 a=yQWWgrYGNuUA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=5jufeMnQdlb9OGeKkMwA:9 a=bYQTyiJwAjKS_BZpZxEA:7 a=ft-7fl4Zji7q1mKd3ubpGOiC-UYA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+	Wed, 26 May 2010 16:11:44 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=EtJ5tPMKL4sA:10 a=yQWWgrYGNuUA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=eRV4yW0wae2RUGSZnZQA:9 a=Q2iANXbTAsMEt_15N9el5wg61UwA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100526201142.873068190@goodmis.org>
+Message-Id: <20100526201141.945159652@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 26 May 2010 16:10:43 -0400
+Date: Wed, 26 May 2010 16:10:41 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 7/7] tracing: Remove open-coded __trace_add_event_call()
+Subject: [PATCH 5/7] tracing: Remove test of NULL define_fields callback
 References: <20100526201036.951395509@goodmis.org>
-Content-Disposition: inline; filename=0007-tracing-Remove-open-coded-__trace_add_event_call.patch
+Content-Disposition: inline; filename=0005-tracing-Remove-test-of-NULL-define_fields-callback.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Zefan <lizf@cn.fujitsu.com>
 
-Let trace_module_add_events() and event_trace_init() call
-__trace_add_event_call().
+Every event (or event class) has it's define_fields callback,
+so the test is redundant.
 
 Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BFA37E9.1020106@cn.fujitsu.com>
+LKML-Reference: <4BFA37BC.8080707@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events.c |   70 +++++++++++-------------------------------
- 1 files changed, 19 insertions(+), 51 deletions(-)
+ kernel/trace/trace_events.c        |   28 +++++++++++++---------------
+ kernel/trace/trace_events_filter.c |    9 ---------
+ 2 files changed, 13 insertions(+), 24 deletions(-)
 
 diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index b5d5b73..f4dbce1 100644
+index efe1ffd..b5d5b73 100644
 --- a/kernel/trace/trace_events.c
 +++ b/kernel/trace/trace_events.c
-@@ -1009,11 +1009,17 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 	return 0;
- }
+@@ -987,23 +987,21 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		 		  id);
+ #endif
  
--static int __trace_add_event_call(struct ftrace_event_call *call)
-+static int
-+__trace_add_event_call(struct ftrace_event_call *call, struct module *mod,
-+		       const struct file_operations *id,
-+		       const struct file_operations *enable,
-+		       const struct file_operations *filter,
-+		       const struct file_operations *format)
- {
- 	struct dentry *d_events;
- 	int ret;
- 
-+	/* The linker may leave blanks */
- 	if (!call->name)
- 		return -EINVAL;
- 
-@@ -1021,8 +1027,8 @@ static int __trace_add_event_call(struct ftrace_event_call *call)
- 		ret = call->class->raw_init(call);
- 		if (ret < 0) {
- 			if (ret != -ENOSYS)
--				pr_warning("Could not initialize trace "
--				"events/%s\n", call->name);
-+				pr_warning("Could not initialize trace events/%s\n",
-+					   call->name);
- 			return ret;
- 		}
- 	}
-@@ -1031,11 +1037,10 @@ static int __trace_add_event_call(struct ftrace_event_call *call)
- 	if (!d_events)
- 		return -ENOENT;
- 
--	ret = event_create_dir(call, d_events, &ftrace_event_id_fops,
--				&ftrace_enable_fops, &ftrace_event_filter_fops,
--				&ftrace_event_format_fops);
-+	ret = event_create_dir(call, d_events, id, enable, filter, format);
- 	if (!ret)
- 		list_add(&call->list, &ftrace_events);
-+	call->mod = mod;
- 
- 	return ret;
- }
-@@ -1045,7 +1050,10 @@ int trace_add_event_call(struct ftrace_event_call *call)
- {
- 	int ret;
- 	mutex_lock(&event_mutex);
--	ret = __trace_add_event_call(call);
-+	ret = __trace_add_event_call(call, NULL, &ftrace_event_id_fops,
-+				     &ftrace_enable_fops,
-+				     &ftrace_event_filter_fops,
-+				     &ftrace_event_format_fops);
- 	mutex_unlock(&event_mutex);
- 	return ret;
- }
-@@ -1162,8 +1170,6 @@ static void trace_module_add_events(struct module *mod)
- {
- 	struct ftrace_module_file_ops *file_ops = NULL;
- 	struct ftrace_event_call *call, *start, *end;
--	struct dentry *d_events;
--	int ret;
- 
- 	start = mod->trace_events;
- 	end = mod->trace_events + mod->num_trace_events;
-@@ -1171,38 +1177,14 @@ static void trace_module_add_events(struct module *mod)
- 	if (start == end)
- 		return;
- 
--	d_events = event_trace_events_dir();
--	if (!d_events)
-+	file_ops = trace_create_file_ops(mod);
-+	if (!file_ops)
- 		return;
- 
- 	for_each_event(call, start, end) {
--		/* The linker may leave blanks */
--		if (!call->name)
--			continue;
--		if (call->class->raw_init) {
--			ret = call->class->raw_init(call);
--			if (ret < 0) {
--				if (ret != -ENOSYS)
--					pr_warning("Could not initialize trace "
--					"point events/%s\n", call->name);
--				continue;
--			}
--		}
+-	if (call->class->define_fields) {
 -		/*
--		 * This module has events, create file ops for this module
--		 * if not already done.
+-		 * Other events may have the same class. Only update
+-		 * the fields if they are not already defined.
 -		 */
--		if (!file_ops) {
--			file_ops = trace_create_file_ops(mod);
--			if (!file_ops)
--				return;
--		}
--		call->mod = mod;
--		ret = event_create_dir(call, d_events,
-+		__trace_add_event_call(call, mod,
- 				       &file_ops->id, &file_ops->enable,
- 				       &file_ops->filter, &file_ops->format);
--		if (!ret)
--			list_add(&call->list, &ftrace_events);
- 	}
- }
- 
-@@ -1333,24 +1315,10 @@ static __init int event_trace_init(void)
- 		pr_warning("tracing: Failed to allocate common fields");
- 
- 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
--		/* The linker may leave blanks */
--		if (!call->name)
--			continue;
--		if (call->class->raw_init) {
--			ret = call->class->raw_init(call);
+-		head = trace_get_fields(call);
+-		if (list_empty(head)) {
+-			ret = call->class->define_fields(call);
 -			if (ret < 0) {
--				if (ret != -ENOSYS)
--					pr_warning("Could not initialize trace "
--					"point events/%s\n", call->name);
--				continue;
+-				pr_warning("Could not initialize trace point"
+-					   " events/%s\n", call->name);
+-				return ret;
 -			}
--		}
--		ret = event_create_dir(call, d_events, &ftrace_event_id_fops,
-+		__trace_add_event_call(call, NULL, &ftrace_event_id_fops,
- 				       &ftrace_enable_fops,
- 				       &ftrace_event_filter_fops,
- 				       &ftrace_event_format_fops);
--		if (!ret)
--			list_add(&call->list, &ftrace_events);
++	/*
++	 * Other events may have the same class. Only update
++	 * the fields if they are not already defined.
++	 */
++	head = trace_get_fields(call);
++	if (list_empty(head)) {
++		ret = call->class->define_fields(call);
++		if (ret < 0) {
++			pr_warning("Could not initialize trace point"
++				   " events/%s\n", call->name);
++			return ret;
+ 		}
+-		trace_create_file("filter", 0644, call->dir, call,
+-				  filter);
  	}
++	trace_create_file("filter", 0644, call->dir, call,
++			  filter);
  
- 	while (true) {
+ 	trace_create_file("format", 0444, call->dir, call,
+ 			  format);
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 330fefd..36d4010 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -639,9 +639,6 @@ static int init_subsystem_preds(struct event_subsystem *system)
+ 	int err;
+ 
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->class || !call->class->define_fields)
+-			continue;
+-
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
+ 
+@@ -658,9 +655,6 @@ static void filter_free_subsystem_preds(struct event_subsystem *system)
+ 	struct ftrace_event_call *call;
+ 
+ 	list_for_each_entry(call, &ftrace_events, list) {
+-		if (!call->class || !call->class->define_fields)
+-			continue;
+-
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
+ 
+@@ -1263,9 +1257,6 @@ static int replace_system_preds(struct event_subsystem *system,
+ 	list_for_each_entry(call, &ftrace_events, list) {
+ 		struct event_filter *filter = call->filter;
+ 
+-		if (!call->class || !call->class->define_fields)
+-			continue;
+-
+ 		if (strcmp(call->class->system, system->name) != 0)
+ 			continue;
+ 
 -- 
 1.7.0
 
