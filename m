@@ -1,55 +1,90 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab0EZRV0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:21:26 -0400
-Received: from earth.cora.nwra.com ([65.44.101.180]:43622 "EHLO
-	earth.cora.nwra.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751428Ab0EZRVY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:21:24 -0400
-X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 13:21:24 EDT
-Message-ID: <4BFD5616.6070302@cora.nwra.com>
-Date: Wed, 26 May 2010 11:10:46 -0600
-From: Orion Poplawski <orion@cora.nwra.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S934046Ab0EZRWl (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:22:41 -0400
+Received: from www.tglx.de ([62.245.132.106]:59229 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753618Ab0EZRWj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 13:22:39 -0400
+Date: Wed, 26 May 2010 19:22:16 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Florian Mickler <florian@mickler.org>
+cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+In-Reply-To: <20100526171106.0e44a736@schatten.dmk.lab>
+Message-ID: <alpine.LFD.2.00.1005261829540.2995@localhost.localdomain>
+References: <20100526171106.0e44a736@schatten.dmk.lab>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-To: Gleb Natapov <gleb@redhat.com>
-CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
-Subject: Re: Clock jumps
-References: <loom.20100524T171038-56@post.gmane.org> <20100525062100.GP22163@redhat.com>
-In-Reply-To: <20100525062100.GP22163@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/25/2010 12:21 AM, Gleb Natapov wrote:
-> Adding kvm to CC.
+Florian,
+
+On Wed, 26 May 2010, Florian Mickler wrote:
 >
-> On Mon, May 24, 2010 at 04:06:32PM +0000, Orion Poplawski wrote:
->> I have a KVM virtual machine running 2.6.33.4-95.fc13.x86_64 on a CentOS 5.5
->> host whose clock jumps about 8-12 hours a couple times a day.  I have no idea
->> what is causing it.  Fedora 12 and Centos 5.5 KVM machines run fine on the same
->> host.  Is there any debugging I can enable to see what is jumping the clock?
->>
->> kvm-clock: cpu 0, msr 0:1ba4741, boot clock
->> kvm-clock: cpu 0, msr 0:1e15741, primary cpu clock
->> Switching to clocksource kvm-clock
->> rtc_cmos 00:01: setting system clock to 2010-05-20 16:59:48 UTC (1274374788)
+> On the other hand, applications can say, they don't need that much
+> power and userspace guaranties and not take a suspend blocker.
+> 
+> This is an option which they currently don't have.
 
+Wrong. A well coded power aware application is very well able to
+express that in various ways already today. Admittedly it's far from
+perfect, but that can be fixed by adding interfaces which allow the
+power aware coder to express the requirements of his application
+actively, not by avoiding it.
 
-Thanks, though I don't think it made it there.  I'm also not sure it's 
-completely limited to KVM, though that is the only running system I am 
-currently seeing the problem on.  I also see clock jumps during anaconda 
-installs on physical hardware and apparently they have been present since at 
-least F11.  Might be unrelated though.
+suspend blockers are completely backwards as they basically disable
+the kernels ability to do resource management.
 
-I'm really at a loss of how to debug this though.
+Also they enforce a black and white scheme (suspend or run) on the
+kernel which is stupid, as there are more options to efficiently save
+power than those two. While current android devices might not provide
+them, later hardware will have it and any atom based device has them
+already.
 
--- 
-Orion Poplawski
-Technical Manager                     303-415-9701 x222
-NWRA/CoRA Division                    FAX: 303-415-9702
-3380 Mitchell Lane                  orion@cora.nwra.com
-Boulder, CO 80301              http://www.cora.nwra.com
+So what the kernel needs to know to make better decisions are things
+like:
+
+  - how much slack can timers have (exisiting interface)
+  - how much delay of wakeups is tolerated (missing interface)
+
+and probably some others. That information would allow the kernel to
+make better decisions versus power states, grouping timers, race to
+idle and other things which influence the power consumption based on
+the hardware you are running on.
+
+> I don't think opportunistic suspend is a policy decision by the kernel.
+> it is something new. Something which currently only the android
+> userspace implements / supports. If you don't want to suspend while
+> looking at the bouncing-cow, you have to take a suspend blocker and
+> make yourself a user-visible power-eater, or don't do 
+> 
+> echo "opportunistic" > /sys/power/policy 
+> 
+> in the first place.
+> 
+> This "optionally being badly written, who cares?" is a new feature the
+> kernel can provide to applications. 
+
+It's a misfeature which the kernel should not provide at all. It sends
+out the completely wrong message: Hey, we can deal with your crappy
+code, keep on coding that way.
+
+While this seems to sound cool to certain people in the mobile space,
+it's completely backwards and will backfire in no time. 
+
+The power efficiency of a mobile device is depending on a sane overall
+software stack and not on the ability to mitigate crappy software in
+some obscure way which is prone to malfunction and disappoint users.
+
+Thanks,
+
+	tglx
+
