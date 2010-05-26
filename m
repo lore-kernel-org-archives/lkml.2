@@ -1,69 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933929Ab0EZCDA (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 22:03:00 -0400
-Received: from devils.ext.ti.com ([198.47.26.153]:36255 "EHLO
-	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S933008Ab0EZCC5 convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 22:02:57 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
+	id S933970Ab0EZCEO (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 22:04:14 -0400
+Received: from chilli.pcug.org.au ([203.10.76.44]:52255 "EHLO smtps.tip.net.au"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933894Ab0EZCEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 22:04:12 -0400
+Date: Wed, 26 May 2010 12:04:06 +1000
+From: Stephen Rothwell <sfr@canb.auug.org.au>
 To: David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "tony@atomide.com" <tony@atomide.com>,
-       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
-Date: Tue, 25 May 2010 21:02:51 -0500
-Subject: RE: NULL Pointer Deference: NFS & Telnet
-Thread-Topic: NULL Pointer Deference: NFS & Telnet
-Thread-Index: Acr8dhlHZ+Mcdbt/TXmIcNerqOSfPQAAElaA
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
-References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
-	<27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
- <20100525.185236.193707791.davem@davemloft.net>
-In-Reply-To: <20100525.185236.193707791.davem@davemloft.net>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
+       linux-kernel@vger.kernel.org, NeilJay@gmail.com
+Subject: Re: linux-next: build warning in Linus' tree
+Message-Id: <20100526120406.1906cecc.sfr@canb.auug.org.au>
+In-Reply-To: <20100525.162446.183058933.davem@davemloft.net>
+References: <20100525114614.fd61d822.sfr@canb.auug.org.au>
+	<20100524.215822.13254177.davem@davemloft.net>
+	<20100525.161929.112591425.davem@davemloft.net>
+	<20100525.162446.183058933.davem@davemloft.net>
+X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: multipart/signed; protocol="application/pgp-signature";
+ micalg="PGP-SHA1";
+ boundary="Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks David,
+--Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi
+Content-Type: text/plain; charset=US-ASCII
+Content-Disposition: inline
+Content-Transfer-Encoding: quoted-printable
 
-> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
-> > index f8abf68..eb81f76 100644
-> > --- a/net/core/skbuff.c
-> > +++ b/net/core/skbuff.c
-> > @@ -334,7 +334,7 @@ static void skb_release_data(struct sk_buff *skb)
-> >  	if (!skb->cloned ||
-> >  	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
-> >  			       &skb_shinfo(skb)->dataref)) {
-> > -		if (skb_shinfo(skb)->nr_frags) {
-> > +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
-> >  			int i;
-> >  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-> >  				put_page(skb_shinfo(skb)->frags[i].page);
-> 
-> skb_shinfo(skb)->nr_frags counts the number of entries contained
-> in the skb_shinfo(skb)->frags[] array.
-> 
-> This has nothing to do with the frag list pointer,
-> skb_shinfo(skb)->frag_list, which is what skb_has_frags()
-> tests.
-> 
-> You've got some kind of memory corruption going on and it
-> appears to have nothing to do with the code paths you're
-> playing with here.
+Hi Dave,
 
-Do you have any recommendation on debugging technique/tool for this memory corruption issue?
+On Tue, 25 May 2010 16:24:46 -0700 (PDT) David Miller <davem@davemloft.net>=
+ wrote:
+>
+> From: David Miller <davem@davemloft.net>
+> Date: Tue, 25 May 2010 16:19:29 -0700 (PDT)
+>=20
+> > Here is how I fixed this:
+> >=20
+> > --------------------
+> > drivers/net/usb/asix.c: Fix pointer cast.
+>=20
+> Sorry, that only took care of one of the two warnings :-)
+>=20
+> This patch is better.
 
-Best Regards
-Abraham
+Thanks, looks good.
+
+--=20
+Cheers,
+Stephen Rothwell                    sfr@canb.auug.org.au
+http://www.canb.auug.org.au/~sfr/
+
+--Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi
+Content-Type: application/pgp-signature
+
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv8gZYACgkQjjKRsyhoI8yAywCdHfuAtKNUWMgCzKaqpCJDJHdb
+sPQAoIMtGvnWnswfj4fBJvfkmw/MzifC
+=kiYx
+-----END PGP SIGNATURE-----
+
+--Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi--
