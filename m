@@ -1,117 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757830Ab0EZUbB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:31:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:55771 "EHLO mx1.redhat.com"
+	id S933929Ab0EZUbQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:31:16 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:14740 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756161Ab0EZUa7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:30:59 -0400
-Subject: Re: [PATCH 3/5] track the root (oldest) anon_vma
-From: Larry Woodman <lwoodman@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <20100526154010.3904df5c@annuminas.surriel.com>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
-	 <20100526154010.3904df5c@annuminas.surriel.com>
-Content-Type: text/plain
-Date: Wed, 26 May 2010 16:34:59 -0400
-Message-Id: <1274906099.20515.109.camel@dhcp-100-19-198.bos.redhat.com>
-Mime-Version: 1.0
+	id S1755093Ab0EZUbN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 16:31:13 -0400
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
 Content-Transfer-Encoding: 7bit
+From: Roland McGrath <roland@redhat.com>
+To: Oleg Nesterov <oleg@redhat.com>
+X-Fcc: ~/Mail/linus
+Cc: Andi Kleen <andi@firstfloor.org>, "H. Peter Anvin" <hpa@zytor.com>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Richard Henderson <rth@twiddle.net>, wezhang@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: Q: sys_personality() && misc oddities
+In-Reply-To: Oleg Nesterov's message of  Wednesday, 26 May 2010 14:36:22 +0200 <20100526123622.GA26033@redhat.com>
+References: <20100525141720.GA2253@redhat.com>
+	<20100525193348.83F1549A54@magilla.sf.frob.com>
+	<20100526123622.GA26033@redhat.com>
+X-Zippy-Says: CHUBBY CHECKER just had a CHICKEN SANDWICH in downtown DULUTH!
+Message-Id: <20100526203105.59D7849A56@magilla.sf.frob.com>
+Date: Wed, 26 May 2010 13:31:05 -0700 (PDT)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 15:40 -0400, Rik van Riel wrote:
-> Subject: track the root (oldest) anon_vma
+> > Though the high bit might be set on 32-bit, there still should not really
+> > be a danger of misinterpreting a value as an error code--as long as we
+> > haven't used up all 10 of those middle bits.  The test userland (glibc)
+> > uses is not "long < 0" but "u_long > -4095UL".  So as long as at least
+> > one bit in 0xff00 remains clear, it won't match.
 > 
-> Track the root (oldest) anon_vma in each anon_vma tree.   Because we only
-> take the lock on the root anon_vma, we cannot use the lock on higher-up
-> anon_vmas to lock anything.  This makes it impossible to do an indirect
-> lookup of the root anon_vma, since the data structures could go away from
-> under us.
-> 
-> However, a direct pointer is safe because the root anon_vma is always the
-> last one that gets freed on munmap or exit, by virtue of the same_vma list
-> order and unlink_anon_vmas walking the list forward.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Acked-by: Mel Gorman <mel@csn.ul.ie>
-> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
+> Yes, libc itself is fine. But from the application's pov, personality()
+> returns int, not long.
 
-Tested and Acked-by: Larry Woodman <lwoodman@redhat.com>
+That doesn't really matter to error/success ambiguity.  Since what I said
+is true, it won't ever return exactly -1 for a non-error.  But even if it
+did, the application can use errno=0;personality(x);errno!=0 checking.
 
-> ---
->  include/linux/rmap.h |    1 +
->  mm/rmap.c            |   18 ++++++++++++++++--
->  2 files changed, 17 insertions(+), 2 deletions(-)
+> > For 64-bit you want to avoid sign-extension of the old value just so it
+> > looks valid (even though it won't look like an error code).  I think the
+> > most sensible thing is to change the task_struct field to 'unsigned int'.
 > 
-> Index: linux-2.6.34/include/linux/rmap.h
-> ===================================================================
-> --- linux-2.6.34.orig/include/linux/rmap.h
-> +++ linux-2.6.34/include/linux/rmap.h
-> @@ -26,6 +26,7 @@
->   */
->  struct anon_vma {
->  	spinlock_t lock;	/* Serialize access to vma list */
-> +	struct anon_vma *root;	/* Root of this anon_vma tree */
->  #if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
->  
->  	/*
-> Index: linux-2.6.34/mm/rmap.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/rmap.c
-> +++ linux-2.6.34/mm/rmap.c
-> @@ -132,6 +132,11 @@ int anon_vma_prepare(struct vm_area_stru
->  			if (unlikely(!anon_vma))
->  				goto out_enomem_free_avc;
->  			allocated = anon_vma;
-> +			/*
-> +			 * This VMA had no anon_vma yet.  This anon_vma is
-> +			 * the root of any anon_vma tree that might form.
-> +			 */
-> +			anon_vma->root = anon_vma;
->  		}
->  
->  		anon_vma_lock(anon_vma);
-> @@ -224,9 +229,15 @@ int anon_vma_fork(struct vm_area_struct 
->  	avc = anon_vma_chain_alloc();
->  	if (!avc)
->  		goto out_error_free_anon_vma;
-> -	anon_vma_chain_link(vma, avc, anon_vma);
-> +
-> +	/*
-> +	 * The root anon_vm's spinlock is the lock actually used when we
-> +	 * lock any of the anon_vmas in this anon_vma tree.
-> +	 */
-> +	anon_vma->root = pvma->anon_vma->root;
->  	/* Mark this anon_vma as the one where our new (COWed) pages go. */
->  	vma->anon_vma = anon_vma;
-> +	anon_vma_chain_link(vma, avc, anon_vma);
->  
->  	return 0;
->  
-> @@ -261,7 +272,10 @@ void unlink_anon_vmas(struct vm_area_str
->  {
->  	struct anon_vma_chain *avc, *next;
->  
-> -	/* Unlink each anon_vma chained to the VMA. */
-> +	/*
-> +	 * Unlink each anon_vma chained to the VMA.  This list is ordered
-> +	 * from newest to oldest, ensuring the root anon_vma gets freed last.
-> +	 */
->  	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
->  		anon_vma_unlink(avc);
->  		list_del(&avc->same_vma);
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+> it is already 'unsigned int' ;)
 
+Ok, then there is no bug right now, is there?
+
+> Yes! and despite the fact it returns -EINVAL, current->personality was
+> changed. This can't be right.
+
+Agreed.
+
+> > So, perhaps you are right about checking high
+> > bits.  Then I'd make it:
+> >
+> > 	if ((int) personality != -1) {
+> > 		if (unlikely((unsigned int) personality != personality))
+> > 			return -EINVAL;
+> 
+> Well. Think about personality(0xffffffff - 1). It passes both checks
+> and we change current->personality. Then the application calls
+> personality() again, we return the old value, and since the user-space
+> expects "int" it gets -2.
+
+Yes, it never really made any sense to me that it doesn't validate any of
+the flag bits.
+
+> How about
+> 
+> 	if (personality != 0xffffffff) {
+> 		if (personality >= 0x7fffffff)
+> 			return -EINVAL;
+> 		set_personality(personality);
+> 	}
+> 
+> ? Now that personality always fits into "insigned int" we don't need
+> to recheck current->personality == personality, and "< 0x7fffffff"
+> gurantees that "int old_personality = personality(whatever)" in user
+> space can be never misinterpeted as error.
+
+Sure.
+
+> As for the other oddities, they need the separate patches. Or we can
+> just leave this code alone ;)
+
+I can't see any sign that anybody cares.
+
+
+Thanks,
+Roland
