@@ -1,64 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757443Ab0EZUXF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:23:05 -0400
-Received: from sprinkles.athenacr.com ([64.95.46.210]:32684 "EHLO
-	sprinkles.inp.in.athenacr.com" rhost-flags-OK-OK-OK-FAIL)
-	by vger.kernel.org with ESMTP id S1755184Ab0EZUXB (ORCPT
+	id S932162Ab0EZU0s (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:26:48 -0400
+Received: from ip-70-38-54-39.static.privatedns.com ([70.38.54.39]:43424 "EHLO
+	ginevra.hungrycats.org" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753232Ab0EZU0r (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:23:01 -0400
-Message-ID: <4BFD8322.3040905@athenacr.com>
-Date: Wed, 26 May 2010 16:22:58 -0400
-From: Brian Bloniarz <bmb@athenacr.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
+	Wed, 26 May 2010 16:26:47 -0400
+X-Greylist: delayed 499 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 16:26:46 EDT
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+X-Envelope-Mail-From: vger-linux-omap-esightcorp@mailtoo.hungrycats.org
+Date: Wed, 26 May 2010 16:18:20 -0400
+From: Zygo Blaxell <vger-linux-omap-esightcorp@mailtoo.hungrycats.org>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526201820.GA25663@gibbs.hungrycats.org>
+References: <AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
+ <1274868593.5882.5185.camel@twins>
+ <AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
+ <1274869966.5882.5262.camel@twins>
+ <AANLkTikRMBkoFxgaKsxMJ2lOMomTXpiHJDk3rVt0EtwM@mail.gmail.com>
+ <1274870970.5882.5311.camel@twins>
+ <AANLkTinlxsokwralwRAL9_YRQ7-SZUSvrGHTlRISA9bC@mail.gmail.com>
+ <1274872357.27810.16.camel@twins>
+ <20100526133510.6e9de670@lxorguk.ukuu.org.uk>
+ <1274878396.27810.334.camel@twins>
 MIME-Version: 1.0
-To: john stultz <johnstul@us.ibm.com>
-CC: "H. Peter Anvin" <hpa@zytor.com>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com>	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>	 <1274727116.2954.5.camel@localhost.localdomain>	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>	 <1274834888.4678.66.camel@localhost.localdomain>	 <4BFC8C77.7020802@athenacr.com> <1274886299.1759.8.camel@work-vm>	 <4BFD4629.6040602@athenacr.com> <1274891109.1759.27.camel@work-vm>	 <4BFD6C2B.4070403@athenacr.com> <1274903390.3383.17.camel@localhost.localdomain>
-In-Reply-To: <1274903390.3383.17.camel@localhost.localdomain>
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274878396.27810.334.camel@twins>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 03:49 PM, john stultz wrote:
-> On Wed, 2010-05-26 at 14:44 -0400, Brian Bloniarz wrote:
->> On 05/26/2010 12:25 PM, john stultz wrote:
->>> Brian: is this something the NTPd folks actually want? Has anyone
->>> checked with them before we hand down the solution from high upon on
->>> lkml mountain?
->>
->> I haven't checked, it's been a while since I dealt with
->> this problem. The NTP maintainers definitely complain about the
->> quick TSC calibration code like it's a bug:
->> (e.g. http://www.mail-archive.com/questions@lists.ntp.org/msg02079.html).
->> Anyway I'll reach out before I spend any time investing in
->> a solution that they don't want (and you don't like :).
->>
->>> Personally I think NTPd should be a little more savvy about how far it
->>> trusts the drift file when it starts up. Since I believe its
->>> fast-startup mode can quickly estimate the drift well within 100ppm,
->>> which is about the maximum variance I've seen from the calibration code.
->>
->> The workaround we went with was to remove the drift file on 
->> every reboot. But in our experience, even with iburst, converging takes
->> a long time. I don't have hard numbers since it's been a long time since
->> I investigated the problem, but we defined failure as >1ms offset syncing
->> to a server in our LAN, and a cold NTP boot takes 10-20 hours to get
->> there.
+On Wed, May 26, 2010 at 02:53:16PM +0200, Peter Zijlstra wrote:
+> On Wed, 2010-05-26 at 13:35 +0100, Alan Cox wrote:
+> > This is an area where machines are improving and where the ability to
+> > do stuff like autosuspend, the technology like the OLPC screen and so on
+> > create an incentive for the BIOS and platform people to improve their
+> > bits of it.
 > 
-> Ok. If its been awhile, you may find recent kernels (2.6.31+) are much
-> faster to converge due to adjustments made to the SHIFT_PLL constant.
-> This was done explicitly to address issues similar to what you describe
-> above.
+> But do you think its a sensible thing to do? Explicitly not running
+> runnable tasks just sounds wrong. 
+[...]
+> Why would the code holding suspend blockers be any more or less
+> important than any other piece of runnable code.
 
-My tests were pre-2.6.31, this is really good to know. I'll take
-another look on recent kernels.
+With my userspace developer hat on, I'd *kill* for a way to tell
+the kernel that there are more important things for the system to
+be doing than executing my runnable task.  In some cases, the set of
+"more important things" the system might include running other tasks,
+but it also might include conserving power.  I'd like to have my program
+tell the kernel things like "wake me up in 0.1 seconds, plus or minus
+a year if you have something better to do."
+
+With my sysadmin hat on (which is nearly identical to my phone owner hat,
+BTW), I'd like whatever syscall implements those features to take a PID
+argument, so I can impose my importance decisions on other processes.
+I'd also like to set the relative importance of keeping the CPU idle on
+the same scale, so that I could raise or lower the importance of keeping
+the CPU idle as power availability changes.
+
+> This whole thing introduces an artificial segregation of code. My 'cool'
+> code is more important than your 'uncool' code. Without a clear
+> definition of what makes code cool or not.
+
+It's impossible in the general case for an application to know whether
+it's important or not, so it's also impossible for the kernel to derive
+this information from the application's behavior--and impossible, in the
+general case, to decide whether the application is more important than the
+battery or some other scarce resource the kernel might also be managing
+(e.g. if the machine is running hot, heat dissipation might be scarce,
+and we'd want to be idle then too).  This is similar to niceness and
+SCHED_RR/FIFO:  there's no way for the kernel to automatically assign
+those values either, they have to be specified by a user or administrator.
+Of course, programs are free--within limits--to specify these values
+about themselves.
+
+Consider a traditional Unix program like "sort".  Seriously, how is "sort"
+supposed to know that it's the most important application on the system
+(because I need my contacts list alphabetized *now*), or the least
+(because the screensaver needs to know which is the oldest graphics
+hack in the list)?
+
+"sort" gets invoked from a shell, cooperating with other processes to do
+its work.  It knows very little about the context in which it is executing
+(nor should it).  Should "sort" sprout command-line arguments for every
+possible scheduling latency and power management policy option, or should
+"sort" not care, and defer such decisions to other command-line
+tools which set these options before exec()ing "sort", or to a management
+utility like "top" that implements policy across the entire system?
+
