@@ -1,97 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756540Ab0EZPzU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:55:20 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:36541 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755392Ab0EZPzQ (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:55:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=Cn4s8EHVM+Lbe3EhGA3XRTzkxszK/GQ8DVN5iFw6qOiL92pZ7dJJHPFK7ML74v7d9+
-         +TXrcnum/eAWLO3jIcPK6gVYB0T12KpYEmW8cvJ86FdeBH75ga5wINQTgL8ipZCyj7Xs
-         7+Bb8erhEzZuztfqwfBVDEZYQiVsNUTnR7Tk8=
-Date: Wed, 26 May 2010 08:52:44 -0700
-From: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>
-To: Jiri Kosina <jkosina@suse.cz>
-Cc: Charles =?iso-8859-1?Q?Cl=E9ment?= <caratorn@gmail.com>,
-       Andreas Schwab <schwab@redhat.com>, devel@driverdev.osuosl.org,
-       Jassi Brar <jassisinghbrar@gmail.com>,
-       Greg Kroah-Hartman <gregkh@suse.de>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] staging: remove all code dependent on
- LINUX_VERSION_CODE
-Message-ID: <20100526155243.GA5884@fujitsu>
-References: <alpine.LNX.2.00.1005251200410.28092@pobox.suse.cz>
- <AANLkTik-k5lECpQtbsQy8DLJJ3DOPrAz_e5XPPMzgr2o@mail.gmail.com>
- <alpine.LNX.2.00.1005251355100.28092@pobox.suse.cz>
- <m3eih0dvyv.fsf@hase.home>
- <alpine.LNX.2.00.1005251414310.28092@pobox.suse.cz>
- <20100525180220.GA14127@fujitsu>
- <alpine.LNX.2.00.1005261339070.28092@pobox.suse.cz>
+	id S1756654Ab0EZPzd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:55:33 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40704 "EHLO mgw2.diku.dk"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755284Ab0EZPza (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:55:30 -0400
+Date: Wed, 26 May 2010 17:55:25 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Mike Isely <isely@pobox.com>,
+       Mauro Carvalho Chehab <mchehab@infradead.org>,
+       linux-media@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 5/17] drivers/media/video/pvrusb2: Add missing mutex_unlock
+Message-ID: <Pine.LNX.4.64.1005261755110.23743@ask.diku.dk>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <alpine.LNX.2.00.1005261339070.28092@pobox.suse.cz>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 01:39:42PM +0200, Jiri Kosina wrote:
-> On Tue, 25 May 2010, Charles Clément wrote:
+From: Julia Lawall <julia@diku.dk>
 
-> > > diff --git a/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c b/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> > > index 65f4889..14ca610 100644
-> > > --- a/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> > > +++ b/drivers/staging/rtl8192e/ieee80211/ieee80211_crypt_tkip.c
-> > 
-> > > @@ -886,32 +711,18 @@ static int ieee80211_tkip_set_key(void *key, int len, u8 *seq, void *priv)
-> > >  {
-> > >  	struct ieee80211_tkip_data *tkey = priv;
-> > >  	int keyidx;
-> > > -#if((LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)) && (!OPENSUSE_SLED))
-> > > -	struct crypto_tfm *tfm = tkey->tx_tfm_michael;
-> > > -	struct crypto_tfm *tfm2 = tkey->tx_tfm_arc4;
-> > > -	struct crypto_tfm *tfm3 = tkey->rx_tfm_michael;
-> > > -	struct crypto_tfm *tfm4 = tkey->rx_tfm_arc4;
-> > > -#else
-> > >  	struct crypto_hash *tfm = tkey->tx_tfm_michael;
-> > >  	struct crypto_blkcipher *tfm2 = tkey->tx_tfm_arc4;
-> > >  	struct crypto_hash *tfm3 = tkey->rx_tfm_michael;
-> > >  	struct crypto_blkcipher *tfm4 = tkey->rx_tfm_arc4;
-> > > -#endif
-> > >  
-> > >  	keyidx = tkey->key_idx;
-> > >  	memset(tkey, 0, sizeof(*tkey));
-> > >  	tkey->key_idx = keyidx;
-> > > -#if((LINUX_VERSION_CODE < KERNEL_VERSION(2,6,21)) && (!OPENSUSE_SLED))
-> > >  	tkey->tx_tfm_michael = tfm;
-> > >  	tkey->tx_tfm_arc4 = tfm2;
-> > >  	tkey->rx_tfm_michael = tfm3;
-> > >  	tkey->rx_tfm_arc4 = tfm4;
-> > > -#else
-> > > -	tkey->tx_tfm_michael = tfm;
-> > > -	tkey->tx_tfm_arc4 = tfm2;
-> > > -	tkey->rx_tfm_michael = tfm3;
-> > > -	tkey->rx_tfm_arc4 = tfm4;
-> > > -#endif
-> > 
-> > In this block, it is not the same branch that are kept, don't you want
-> > to keep the same ones?
-> 
-> What difference do you see?
+Add a mutex_unlock missing on the error path.  In the other functions in
+the same file the locks and unlocks of this mutex appear to be balanced,
+so it would seem that the same should hold in this case.
 
-Right, the branch are exactly the same, sorry.
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
 
-> -- 
-> Jiri Kosina
-> SUSE Labs, Novell Inc.
+// <smpl>
+@@
+expression E1;
+@@
 
--- 
-Charles Clément
+* mutex_lock(E1,...);
+  <+... when != E1
+  if (...) {
+    ... when != E1
+*   return ...;
+  }
+  ...+>
+* mutex_unlock(E1,...);
+// </smpl>
 
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/media/video/pvrusb2/pvrusb2-ioread.c |    5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/media/video/pvrusb2/pvrusb2-ioread.c b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
+index b482478..bba6115 100644
+--- a/drivers/media/video/pvrusb2/pvrusb2-ioread.c
++++ b/drivers/media/video/pvrusb2/pvrusb2-ioread.c
+@@ -223,7 +223,10 @@ int pvr2_ioread_setup(struct pvr2_ioread *cp,struct pvr2_stream *sp)
+ 				   " pvr2_ioread_setup (setup) id=%p",cp);
+ 			pvr2_stream_kill(sp);
+ 			ret = pvr2_stream_set_buffer_count(sp,BUFFER_COUNT);
+-			if (ret < 0) return ret;
++			if (ret < 0) {
++				mutex_unlock(&cp->mutex);
++				return ret;
++			}
+ 			for (idx = 0; idx < BUFFER_COUNT; idx++) {
+ 				bp = pvr2_stream_get_buffer(sp,idx);
+ 				pvr2_buffer_set_buffer(bp,
