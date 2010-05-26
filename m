@@ -1,75 +1,117 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934548Ab0EZWqD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:46:03 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:56308 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934434Ab0EZWp5 (ORCPT
+	id S1757390Ab0EZWvO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:51:14 -0400
+Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:42291 "EHLO
+	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1757314Ab0EZWvM (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:45:57 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=huT92K7a+Cm8KL8qJn8yVwo6l/gk3gfnBqN2bM7jZJp67lNzoOvuzu0zg10DzQi1C0
-         h/r7yMaYp4P4wxVr3ndzcEAbtaxawjIfy6r299U0fgl0zUKjDQH+eAqEl4y6OyK7CtuB
-         tKFngsLEQn9Q+ECzh9rEfN5iaT77M+9IwfrUQ=
+	Wed, 26 May 2010 18:51:12 -0400
+Date: Wed, 26 May 2010 15:51:12 -0700
+From: Dmitry Torokhov <dtor@vmware.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
+Subject: [PATCH] VMware Balloon: clamp number of collected non-balloonable
+ pages
+Message-ID: <20100526225033.GA20733@dtor-ws.eng.vmware.com>
 MIME-Version: 1.0
-In-Reply-To: <22942.1274909335@localhost>
-References: <4BF81D87.6010506@cesarb.net>
-	<20100523140348.GA10843@barrios-desktop>
-	<4BF974D5.30207@cesarb.net>
-	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>
-	<4BF9CF00.2030704@cesarb.net>
-	<AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
-	<4BFA59F7.2020606@cesarb.net>
-	<AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>
-	<4BFCF645.2050400@cesarb.net>
-	<20100526153144.GA3650@barrios-desktop>
-	<22942.1274909335@localhost>
-Date: Thu, 27 May 2010 07:45:56 +0900
-Message-ID: <AANLkTikwxCvxHI0-d1hGctEmfGRuDUlZ7wAbEXbrS1WA@mail.gmail.com>
-Subject: Re: [PATCH 0/3] mm: Swap checksum
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Valdis.Kletnieks@vt.edu
-Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org,
-       linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
-Content-Type: text/plain; charset=UTF-8
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-08-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 6:28 AM,  <Valdis.Kletnieks@vt.edu> wrote:
-> On Thu, 27 May 2010 00:31:44 +0900, Minchan Kim said:
->> On Wed, May 26, 2010 at 07:21:57AM -0300, Cesar Eduardo Barros wrote:
->> > far as I can see, does nothing against the disk simply failing to
->> > write and later returning stale data, since the stale checksum would
->> > match the stale data.
->>
->> Sorry. I can't understand your point.
->> Who makes stale data? If any layer makes data as stale, integrity is up to
->> the layer. Maybe I am missing your point.
->> Could you explain more detail?
->
-> I'm pretty sure that what Cesar meant was that the following could happen:
->
-> 1) Write block 11983 on the disk, checksum 34FE9B72.
-> (... time passes.. maybe weeks)
-> 2) Attempt to write block 11983 on disk with checksum AE9F3581. The write fails
-> due to a power failure or something.
-> (... more time passes...)
-> 3) Read block 11983, get back data with checksum 34FE9B72. Checksum matches,
-> and there's no indication that the write in (2) ever failed. The program
-> proceeds thinking it's just read back the most recently written data, when in
-> fact it's just read an older version of that block. Problems can ensue if the
-> data just read is now out of sync with *other* blocks of data - instant data
-> corruption.
 
-Oh, doesn't normal disk support atomicity of sector write?
-I have been thought disk must support atomicity of sector write at least.
+>From e672fc1756a1315b617638bfeb15734bd45208b2 Mon Sep 17 00:00:00 2001
+From: Dmitry Torokhov <dtor@vmware.com>
+Date: Tue, 18 May 2010 10:28:04 -0700
+Subject: [PATCH] VMware Balloon: clamp number of collected non-balloonable pages
 
-AFAIK, other device(ex, nand device by FTL) supports atomicity of sector write.
+Limit number of accumulated non-balloonable pages during inflation
+cycle, otherwise there is a chance we will be spinning and growing the
+list forever.  This happens during torture tests when balloon target
+changes while we are in the middle of inflation cycle and monitor starts
+refusing to lock pages (since they are not needed anymore).
 
+Cc: stable@kernel.org
+Acked-by: Bhavesh Davda <bhavesh@vmware.com>
+Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
+---
+
+Andrew,
+
+Please consider forwarding this to Linus in your next batch of patches
+for 2.6.35.
+
+Thanks!
+
+ drivers/misc/vmware_balloon.c |   18 +++++++++++++++---
+ 1 files changed, 15 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/misc/vmware_balloon.c b/drivers/misc/vmware_balloon.c
+index e7161c4..ad8fb09 100644
+--- a/drivers/misc/vmware_balloon.c
++++ b/drivers/misc/vmware_balloon.c
+@@ -45,7 +45,7 @@
+ 
+ MODULE_AUTHOR("VMware, Inc.");
+ MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
+-MODULE_VERSION("1.2.1.0-K");
++MODULE_VERSION("1.2.1.1-k");
+ MODULE_ALIAS("dmi:*:svnVMware*:*");
+ MODULE_ALIAS("vmware_vmmemctl");
+ MODULE_LICENSE("GPL");
+@@ -101,6 +101,8 @@ MODULE_LICENSE("GPL");
+ /* Maximum number of page allocations without yielding processor */
+ #define VMW_BALLOON_YIELD_THRESHOLD	1024
+ 
++/* Maximum number of refused pages we accumulate during inflation cycle */
++#define VMW_BALLOON_MAX_REFUSED		16
+ 
+ /*
+  * Hypervisor communication port definitions.
+@@ -183,6 +185,7 @@ struct vmballoon {
+ 
+ 	/* transient list of non-balloonable pages */
+ 	struct list_head refused_pages;
++	unsigned int n_refused_pages;
+ 
+ 	/* balloon size in pages */
+ 	unsigned int size;
+@@ -428,14 +431,21 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
+ 		/* inform monitor */
+ 		locked = vmballoon_send_lock_page(b, page_to_pfn(page));
+ 		if (!locked) {
++			STATS_INC(b->stats.refused_alloc);
++
+ 			if (b->reset_required) {
+ 				__free_page(page);
+ 				return -EIO;
+ 			}
+ 
+-			/* place on list of non-balloonable pages, retry allocation */
++			/*
++			 * Place page on the list of non-balloonable pages
++			 * and retry allocation, unless we already accumulated
++			 * too many of them, in which case take a breather.
++			 */
+ 			list_add(&page->lru, &b->refused_pages);
+-			STATS_INC(b->stats.refused_alloc);
++			if (++b->n_refused_pages >= VMW_BALLOON_MAX_REFUSED)
++				return -EIO;
+ 		}
+ 	} while (!locked);
+ 
+@@ -483,6 +493,8 @@ static void vmballoon_release_refused_pages(struct vmballoon *b)
+ 		__free_page(page);
+ 		STATS_INC(b->stats.refused_free);
+ 	}
++
++	b->n_refused_pages = 0;
+ }
+ 
+ /*
 -- 
-Kind regards,
-Minchan Kim
+1.6.6.1
+
