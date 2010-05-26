@@ -1,68 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754941Ab0EZNEf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:04:35 -0400
-Received: from smtp.ctxuk.citrix.com ([62.200.22.115]:18012 "EHLO
-	SMTP.EU.CITRIX.COM" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753578Ab0EZNEa (ORCPT
+	id S1754931Ab0EZNGV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:06:21 -0400
+Received: from [18.85.46.34] ([18.85.46.34]:37064 "EHLO bombadil.infradead.org"
+	rhost-flags-FAIL-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752691Ab0EZNGU convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:04:30 -0400
-X-IronPort-AV: E=Sophos;i="4.53,304,1272844800"; 
-   d="scan'208";a="98964"
-Date: Wed, 26 May 2010 14:08:23 +0100
-From: Stefano Stabellini <stefano.stabellini@eu.citrix.com>
-X-X-Sender: sstabellini@kaball-desktop
-To: Jeremy Fitzhardinge <jeremy@goop.org>
-CC: Stefano Stabellini <Stefano.Stabellini@eu.citrix.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "xen-devel@lists.xensource.com" <xen-devel@lists.xensource.com>,
-       Don Dutile <ddutile@redhat.com>
-Subject: Re: [PATCH 10/11] Support VIRQ_TIMER and pvclock on HVM
-In-Reply-To: <4BFC31F5.9040806@goop.org>
-Message-ID: <alpine.DEB.2.00.1005261342240.25605@kaball-desktop>
-References: <alpine.DEB.2.00.1005241615300.25605@kaball-desktop> <1274725657-1149-10-git-send-email-stefano.stabellini@eu.citrix.com> <4BFC31F5.9040806@goop.org>
-User-Agent: Alpine 2.00 (DEB 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: text/plain; charset="US-ASCII"
+	Wed, 26 May 2010 09:06:20 -0400
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: felipe.balbi@nokia.com, Vitaly Wool <vitalywool@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+In-Reply-To: <20100526145452.685337db@schatten.dmk.lab>
+References: <1274863655.5882.4875.camel@twins>
+	 <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	 <1274867106.5882.5090.camel@twins>
+	 <20100526120242.5c9b73ad@schatten.dmk.lab>
+	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	 <20100526133721.602633b2@schatten.dmk.lab>
+	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	 <20100526142430.327ccbc4@schatten.dmk.lab>
+	 <20100526122932.GB1990@nokia.com>
+	 <20100526143323.7c6f8705@schatten.dmk.lab>
+	 <20100526123532.GA2629@nokia.com>
+	 <20100526145452.685337db@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 May 2010 15:06:17 +0200
+Message-ID: <1274879177.27810.386.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010, Jeremy Fitzhardinge wrote:
-> On 05/24/2010 11:27 AM, Stefano Stabellini wrote:
-> > Use the paravirtualized timer (VIRQ_TIMER) as timer and the
-> > paravirtualized clock (pvclock) as wallclock on HVM domains too.
-> >   
-> 
-> That's not quite correct.  There's the Xen clockevent driver, the Xen
-> clocksource, and a distinct-but-related Xen notion of wallclock time. 
-> In general, clocksources and wallclock don't have much direct
-> relationship to each other.
+On Wed, 2010-05-26 at 14:54 +0200, Florian Mickler wrote:
 
-Let me rephrase it:
+> It really comes down to a policy decision by the distribution maker.
+> And I don't think kernel upstream should be the one to force one way or
+> the other.
 
-use xen_vcpuop_clockevent instead of hpet and APIC timers as main
-clockevent device on all vcpus, use the xen wallclock time as wallclock
-instead of rtc and use xen_clocksource as clocksource.
-The pv clock algorithm needs to work correctly for the xen_clocksource
-and xen wallclock to be usable, only modern Xen versions offer a
-reliable pv clock in HVM guests (XENFEAT_hvm_safe_pvclock).
+That's exactly what we always do. If we were not to do so, the kernel
+would be a bloated incoherent piece of crap.
 
-> 
-> > Any interaction with emulated hardware is not very fast, so using the
-> > paravirtualized timer instead of the emulated hpet is defenitely a
-> >   
-> "definitely"
-> 
-> > performance improvement.
-> >   
-> 
-> Are there accuracy/stability/precision improvements too?
-> 
+>  So merging this patch set will allow android to continue
+> their work _on mainline_ while everybody else can continue as before.
 
-Using the hpet as clocksource means a VMEXIT every time we read/write to
-the hpet mmio addresses, pvclock give us a better rating without
-VMEXITs. Same goes for the xen wallclock and xen_vcpuop_clockevent.
+> Nonetheless, I really think the kernel needs to allow for the android
+> way of power saving. It misses out on a big feature and a big user-base
+> if not.
 
+I really think we should not do so. Let them help in fixing the real
+issue instead of creating a new class of userspace that is more
+important than another.
 
+> But look at it this way: Suspend blockers are a way for the kernel
+> to make user space programs accountable for using the resource "power".
 
+How is userspace without suspend blockers not accountable? We can easily
+account runtime and in fact have several ways to do so.
