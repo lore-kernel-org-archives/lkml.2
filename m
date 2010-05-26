@@ -1,71 +1,150 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934273Ab0EZGz3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 02:55:29 -0400
-Received: from mail-pz0-f176.google.com ([209.85.222.176]:41217 "EHLO
-	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934124Ab0EZGz1 (ORCPT
+	id S934296Ab0EZGzi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 02:55:38 -0400
+Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:33541 "EHLO
+	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934174Ab0EZGzf (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 02:55:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=ELJXWaVKzl4+bZJpoqR/wCErQde/O9eA20CSNY9hv/kIoU2zWcphOwNmwB3G6DwFq3
-         BQo7JNzr9GqpbvxwTyuVGqoGSWAmJ+XvMzLDUAxT/O1+9OBdCktlL37RwwXxpWmOczF+
-         0wgBsms7zkBZIIdyjkfmk+E//oSTVbFLiSMEI=
-MIME-Version: 1.0
-From: Frank Pan <frankpzh@gmail.com>
-Date: Wed, 26 May 2010 14:55:04 +0800
-Message-ID: <AANLkTikBrXROMvNKrhgxQ1jVh6aOsx3nIrNXTznXInV1@mail.gmail.com>
-Subject: [PATCH 0/2] Enlarge the storage of chars in virtual terminal
-To: Alan Cox <alan@linux.intel.com>,
-       Gerardo Exequiel Pozzi <vmlinuz386@yahoo.com.ar>,
-       Kay Sievers <kay.sievers@vrfy.org>,
+	Wed, 26 May 2010 02:55:35 -0400
+Date: Wed, 26 May 2010 15:51:56 +0900
+From: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
+To: Mel Gorman <mel@csn.ul.ie>
+Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
+       Andi Kleen <andi@firstfloor.org>,
        Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Daniel Mack <daniel@caiaq.de>, Tejun Heo <tj@kernel.org>,
-       Christoph Lameter <cl@linux-foundation.org>,
-       Jiri Slaby <jirislaby@gmail.com>, Jochen Hein <jochen@jochen.org>,
-       Johannes Weiner <hannes@cmpxchg.org>, Dave Airlie <airlied@redhat.com>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Geert Uytterhoeven <geert@linux-m68k.org>
-Cc: LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset=ISO-8859-1
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Larry Woodman <lwoodman@redhat.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
+Message-ID: <20100526065156.GC7128@spritzerA.linux.bs1.fc.nec.co.jp>
+References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <1273737326-21211-2-git-send-email-n-horiguchi@ah.jp.nec.com>
+ <20100513152737.GE27949@csn.ul.ie>
+ <20100514074641.GD10000@spritzerA.linux.bs1.fc.nec.co.jp>
+ <20100514095449.GB21481@csn.ul.ie>
+ <20100524071516.GC11008@spritzerA.linux.bs1.fc.nec.co.jp>
+ <20100525105957.GD29038@csn.ul.ie>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-2022-jp
+Content-Disposition: inline
+In-Reply-To: <20100525105957.GD29038@csn.ul.ie>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings
+Hi, Mel.
 
-The motivation is display much more characters on the
-framebuffer console than 512. If this is done, foreign
-languages can be easily rendered with currently supported
-utf-8 encoding.
+Thank you for the review.
 
-In order to display fonts with more than 512 chars,
-the storage of one char in virtual terminal must be
-enlarged. Currently vt holds one u16 for every character,
-7 bits for attributes. The patches extend it into u32.
+On Tue, May 25, 2010 at 11:59:57AM +0100, Mel Gorman wrote:
+> ...
+> I'd have preferred to see the whole series but still...
 
-Virtual terminal is referenced by many other drivers.
-If it has been changed, others must be changed as well.
-Change all of them may spend 1 or more weeks, and the
-patches include the change of fbcon. So I just put the
-done part here and wish to have your advices.
+OK.
 
-Any reply is appreciated, thank you.
+> > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
+> > index 78b4bc6..a574d09 100644
+> > --- a/include/linux/hugetlb.h
+> > +++ b/include/linux/hugetlb.h
+> > @@ -14,11 +14,6 @@ struct user_struct;
+> >  
+> >  int PageHuge(struct page *page);
+> >  
+> > -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+> > -{
+> > -	return vma->vm_flags & VM_HUGETLB;
+> > -}
+> > -
+> >  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
+> >  int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+> >  int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
+> > @@ -77,11 +72,6 @@ static inline int PageHuge(struct page *page)
+> >  	return 0;
+> >  }
+> >  
+> > -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
+> > -{
+> > -	return 0;
+> > -}
+> > -
+> 
+> You collapse two functions into one here and move them to another
+> header. Is there a reason why pagemap.h could not include hugetlb.h?
 
-Frank Pan
+Yes, hugetlb.h includes pagemap.h through mempolicy.h.
+I didn't make pagemap.h depend on hugetlb.h because it makes cyclic dependency
+among pagemap.h, mempolicy.h and hugetlb.h.
 
- drivers/char/selection.c        |   26 ++--
- drivers/char/vc_screen.c        |    8 +-
- drivers/char/vt.c               |  250 ++++++++++++++++++++------------------
- drivers/video/console/bitblit.c |   33 +++--
- drivers/video/console/fbcon.c   |  256 ++++++++++++++++++++-------------------
- drivers/video/console/fbcon.h   |   16 ++--
- include/linux/console.h         |    8 +-
- include/linux/console_struct.h  |    8 +-
- include/linux/selection.h       |    6 +-
- include/linux/vt_buffer.h       |   15 ++-
- 10 files changed, 327 insertions(+), 299 deletions(-)
+> It adds another header dependency which is bad but moving hugetlb stuff
+> into mm.h seems bad too.
+
+I have another choice to move the definition of is_vm_hugetlb_page() into
+mm/hugetlb.c and introduce declaration of this function to pagemap.h,
+but this needed a bit ugly #ifdefs and I didn't like it.
+If putting hugetlb code in mm.h is worse, I'll take the second choice
+in the next post.
+
+> > @@ -2268,6 +2277,50 @@ static int unmap_ref_private(struct mm_struct *mm, struct vm_area_struct *vma,
+> >  	return 1;
+> >  }
+> >  
+> > +/*
+> > + * The following three functions are counterparts of ones in mm/rmap.c.
+> > + * Unlike them, these functions don't have accounting code nor lru code,
+> > + * because we handle hugepages differently from common anonymous pages.
+> > + */
+> > +static void __hugepage_set_anon_rmap(struct page *page,
+> > +	struct vm_area_struct *vma, unsigned long address, int exclusive)
+> > +{
+> > +	struct anon_vma *anon_vma = vma->anon_vma;
+> > +	BUG_ON(!anon_vma);
+> > +	if (!exclusive) {
+> > +		struct anon_vma_chain *avc;
+> > +		avc = list_entry(vma->anon_vma_chain.prev,
+> > +				 struct anon_vma_chain, same_vma);
+> > +		anon_vma = avc->anon_vma;
+> > +	}
+> > +	anon_vma = (void *) anon_vma + PAGE_MAPPING_ANON;
+> > +	page->mapping = (struct address_space *) anon_vma;
+> > +	page->index = linear_page_index(vma, address);
+> > +}
+> > +
+> > +static void hugepage_add_anon_rmap(struct page *page,
+> > +			struct vm_area_struct *vma, unsigned long address)
+> > +{
+> > +	struct anon_vma *anon_vma = vma->anon_vma;
+> > +	int first;
+> > +	BUG_ON(!anon_vma);
+> > +	BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+> > +	first = atomic_inc_and_test(&page->_mapcount);
+> > +	if (first)
+> > +		__hugepage_set_anon_rmap(page, vma, address, 0);
+> > +}
+> > +
+> > +void hugepage_add_new_anon_rmap(struct page *page,
+> > +	struct vm_area_struct *vma, unsigned long address)
+> > +{
+> > +	BUG_ON(address < vma->vm_start || address >= vma->vm_end);
+> > +	atomic_set(&page->_mapcount, 0);
+> > +	__hugepage_set_anon_rmap(page, vma, address, 1);
+> > +}
+> > +
+> 
+> Is it possible to move these to mm/rmap.c so all the anon rmap adding
+> code is in the same place? In the event that __page_set_anon_rmap() is
+> updated, there would be a greater chance the hugepage equivalent will be
+> noticed and updated.
+
+Sounds reasonable, I'll do it.
+
+> I didn't spot anything particularly bad after this.  If these minor issues
+> could be addressed and the full series reposted, I'll test the hugetlb side
+> of things further just to be sure.
+
+OK, thanks you :)
+
+Thanks,
+Naoya Horiguchi
