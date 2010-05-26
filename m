@@ -1,84 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933931Ab0EZCwk (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 22:52:40 -0400
-Received: from cantor.suse.de ([195.135.220.2]:52725 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932105Ab0EZCwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 22:52:39 -0400
-Date: Wed, 26 May 2010 12:52:27 +1000
-From: Neil Brown <neilb@suse.de>
-To: Al Viro <viro@ZenIV.linux.org.uk>
-Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
-       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
-Message-ID: <20100526125227.51b34f4f@notabene.brown>
-In-Reply-To: <20100525015822.GV31073@ZenIV.linux.org.uk>
-References: <20100524165756.2cfa54c4@notabene.brown>
-	<20100524115903.GP31073@ZenIV.linux.org.uk>
-	<20100525111405.04eaf924@notabene.brown>
-	<20100525015822.GV31073@ZenIV.linux.org.uk>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S933944Ab0EZB6S (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:58:18 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:59099 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933018Ab0EZB6R (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 21:58:17 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:content-type:content-transfer-encoding;
+        b=Ax9NUu50xtliaz8ewU8HVw/S2wF7+iocOg5BB6QTWXMwshHz1zIL0BPCt2Hk1YC1b0
+         MDY0OLnKsXGehdM27egV7iB8USmkvrYtYdSj3pV/f8tfdDhjJRdh6lEhpWxf7/Iw4chd
+         TDxQ8VXFggHB1S1wW+Llg1nmMh5mlx/pfzzLA=
+Message-ID: <4BFC8059.5020708@gmail.com>
+Date: Wed, 26 May 2010 09:58:49 +0800
+From: Wan ZongShun <mcuos.com@gmail.com>
+User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: LKML <linux-kernel@vger.kernel.org>
+Subject: Re: [PATCH] NUC900: add maintainer entries for Wan ZongShun.
+References: <4BF7E6EC.7010505@gmail.com> <20100525160130.6e5aeb60.akpm@linux-foundation.org>
+In-Reply-To: <20100525160130.6e5aeb60.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=US-ASCII; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 02:58:22 +0100
-Al Viro <viro@ZenIV.linux.org.uk> wrote:
+Dear Andrew,
 
-> On Tue, May 25, 2010 at 11:14:05AM +1000, Neil Brown wrote:
-> 
-> > I must confess though that I don't feel I understand VFS name lookup properly
-> > any more.  Since intents were added it seems to have become much more obscure
-> > and complex.  I cannot help thinking that there must be a better way:
-> > distinguish between the various cases at a higher level so we don't need as
-> > many flags being passed around and interpreted by widely separate pieces of
-> > code.  I don't have a concrete proposal but I would certainly be interested
-> > to work on one if there were any hope of real change.
-> > Thoughts?
-> 
-> Intents are vile crap that has been introduced by the nfs folks to start
-> with...  I've been trying to localize the mess and it's got a _lot_ better
-> than it used to be a year ago, but they are still not gone.  And yes, I
-> plan to kill that crap.  Basically, most of the do_last() guts will become
-> a method that would get struct file *explicitly* and ask the fs to do
-> (possibly atomic) open.  With normal filesystems defaulting to what's there
-> right now.
 
-That sounds like the sort of direction I was imagining.  
-I note however that vfat uses intents in a way that would not be addressed by
-a '->do_last' method.  It wants to invalidate negative dentries in
-d_revalidate if they are the target of a rename (or another create), and
-presumably rename wouldn't use ->do_last?  Or maybe it would, but with a NULL
-file ??
+> On Sat, 22 May 2010 22:15:08 +0800
+> Wan ZongShun <mcuos.com@gmail.com> wrote:
+> 
+>> Dear Andrew,
+>>
+>> I want to add some files entries in MAINTAINER files
+>> for Winbond/Nuvoton ARM platform.
+>>
+>> Could you help me merge this patch?
+>>
+> 
+> I can do that.
+
+Thanks a lot for your help again!
 
 > 
-> The main obstacle at the moment is in ->d_revalidate() abuses.  NFS, CIFS
-> *and* autofs, the last one in a way that isn't really compatible with what
-> NFS et.al. are trying to do.  Overloading of ->d_revalidate() and ->lookup()
-> to do the work of open() doesn't help, and the horrors nfs4 piles on top
-> of that are even scarier.
+>> >From 4e5326dbfbfdad58eb2c333df91c15993bce6c47 Mon Sep 17 00:00:00 2001
+>> From: zswan <zswan@zswan-marvell.(none)>
+>> Date: Sat, 22 May 2010 21:56:26 +0800
+>> Subject: [PATCH] add maintainer file entries
+>>
 > 
-> _Another_ fine piece of something is ->follow_link() abuses, including
-> referrals' treatment.  Also tied to the previous messes.
-> 
-> We definitely will need to get VFS-to-fs APIs in that area changed; most of
-> the mess has been created by the deeply misguided efforts to keep the API
-> changes minimal.
-> 
-> As for the flags, quite a few will be gone once we split "opening the final
-> component" from the normal cases.  Google for lookup_instantiate_filp+shit
-> for details of these plans...
+> Please send your Signed-off-by: for this change.
 
-I tried cloning
-   git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git
-and couldn't find anything in the 'untested' branch.  Did I look in the wrong
-place? Is there some work-in-progress I can explore?
+So,should I add the "Signed-off-by" in my patch,and resubmit it to you?
 
-Thanks,
-NeilBrown
+> 
+>> diff --git a/MAINTAINERS b/MAINTAINERS
+>> index d329b05..d6b3777 100644
+>> --- a/MAINTAINERS
+>> +++ b/MAINTAINERS
+>> @@ -970,6 +970,18 @@ M:	Wan ZongShun <mcuos.com@gmail.com>
+>>  L:	linux-arm-kernel@lists.infradead.org (moderated for non-subscribers)
+>>  W:	http://www.mcuos.com
+>>  S:	Maintained
+>> +F:	arch/arm/mach-w90x900/
+>> +F:	arch/arm/mach-nuc93x/
+>> +F:	drivers/input/keyboard/w90p910_keypad.c
+>> +F:	drivers/input/touchscreen/w90p910_ts.c
+>> +F:	drivers/watchdog/nuc900_wdt.c
+>> +F:	drivers/net/arm/w90p910_ether.c
+>> +F:	drivers/mtd/nand/w90p910_nand.c
+>> +F:	drivers/rtc/rtc-nuc900.c
+>> +F:	drivers/spi/spi_nuc900.c
+>> +F:	drivers/usb/host/ehci-w90x900.c
+>> +F:	drivers/video/nuc900fb.c
+>> +F:	drivers/sound/soc/nuc900/
+>>
+>>  ARM/U300 MACHINE SUPPORT
+>>  M:	Linus Walleij <linus.walleij@stericsson.com>
+>> -- 
+>> 1.6.3.3
+> 
 
