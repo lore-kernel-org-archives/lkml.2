@@ -1,23 +1,24 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756645Ab0EZTfQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:35:16 -0400
-Received: from mga09.intel.com ([134.134.136.24]:45831 "EHLO mga09.intel.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755454Ab0EZTfL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:35:11 -0400
+	id S1756726Ab0EZTfZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:35:25 -0400
+Received: from mga12.intel.com ([143.182.124.36]:29930 "EHLO
+	azsmga102.ch.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1755454Ab0EZTfT (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:35:19 -0400
 X-ExtLoop1: 1
 X-IronPort-AV: E=Sophos;i="4.53,305,1272870000"; 
-   d="scan'208";a="625092608"
-Subject: [PATCH v2 1/2] tmpfs: Quick token library to allow scalable
- retrieval of tokens from token jar
+   d="scan'208";a="281714584"
+Subject: [PATCH v2 2/2] tmpfs: Make tmpfs scalable with caches for free
+ blocks
 From: Tim Chen <tim.c.chen@linux.intel.com>
 To: Andrew Morton <akpm@linux-foundation.org>
 Cc: linux-kernel@vger.kernel.org, Andi Kleen <ak@linux.intel.com>,
        Hugh Dickins <hughd@google.com>
 Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 12:32:51 -0700
-Message-ID: <1274902371.31973.9392.camel@mudge.jf.intel.com>
+Date: Wed, 26 May 2010 12:32:57 -0700
+Message-ID: <1274902377.31973.9393.camel@mudge.jf.intel.com>
 Mime-Version: 1.0
 X-Mailer: Evolution 2.28.2 (2.28.2-1.fc12) 
 Content-Transfer-Encoding: 7bit
@@ -25,528 +26,191 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch creates a quick token (qtoken) library to maintain local
-caches of tokens. This avoids lock contention when a token is
-retrieved or returned to the token jar to improve scalability performance
-on system with many cpus.
+The current implementation of tmpfs is not scalable.
+The stat_lock is contended whenever we need to get a 
+new page, leading to lots lock contentions.  This patch  
+makes use of the qtoken library to maintain local
+caches of free pages to speed up getting and returning
+of pages without acquisition of stat_lock
+improve the performance of tmpfs.
 
- include/linux/qtoken.h |   41 +++++
- lib/Makefile           |    2 +-
- lib/qtoken.c           |  447 ++++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 489 insertions(+), 1 deletions(-)
+ include/linux/shmem_fs.h |    4 ++-
+ mm/shmem.c               |   58 +++++++++++++++++++++++++--------------------
+ 2 files changed, 35 insertions(+), 27 deletions(-)
 
-diff --git a/include/linux/qtoken.h b/include/linux/qtoken.h
-new file mode 100644
-index 0000000..a9e0f97
---- /dev/null
-+++ b/include/linux/qtoken.h
-@@ -0,0 +1,41 @@
-+/*
-+ * qtoken.h: Structure and function prototypes to implement quick token
-+ * retrieval from a jar of tokens with per cpu cache.
-+ *
-+ * Copyright (C) 2010 Intel Corporation
-+ * Author: Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ *
-+ */
-+
-+#ifndef _QTOKEN_H
-+#define _QTOKEN_H
-+
-+#define QTOKEN_CACHE_HIGH 2
-+#define QTOKEN_POOL_HIGH (2 * QTOKEN_CACHE_HIGH)
-+
-+struct qtoken {
-+	unsigned long pool;   /* pool of free tokens */
-+	unsigned long total;  /* total num of tokens */
-+#ifdef CONFIG_SMP
-+	unsigned long init_cache_sz; /* initial cache size */
-+	spinlock_t    lock;	/* lock on token jar */
-+	atomic_long_t __percpu *cache; /* per cpu cache of tokens */
-+#endif
-+};
-+
-+extern void qtoken_return(struct qtoken *token_jar, unsigned long tokens);
-+extern int qtoken_get(struct qtoken *token_jar, unsigned long tokens,
-+			unsigned long reserve);
-+extern int qtoken_init(struct qtoken *token_jar, unsigned long total_tokens,
-+			unsigned long init_cache_sz);
-+extern void qtoken_free(struct qtoken *token_jar);
-+extern unsigned long qtoken_avail(struct qtoken *token_jar);
-+extern int qtoken_resize(struct qtoken *token_jar, unsigned long new_size);
-+extern unsigned long qtoken_total(struct qtoken *token_jar);
-+
-+#endif /* _QTOKEN_H */
-diff --git a/lib/Makefile b/lib/Makefile
-index 0d40152..1fa8945 100644
---- a/lib/Makefile
-+++ b/lib/Makefile
-@@ -12,7 +12,7 @@ lib-y := ctype.o string.o vsprintf.o cmdline.o \
- 	 idr.o int_sqrt.o extable.o prio_tree.o \
- 	 sha1.o irq_regs.o reciprocal_div.o argv_split.o \
- 	 proportions.o prio_heap.o ratelimit.o show_mem.o \
--	 is_single_threaded.o plist.o decompress.o flex_array.o
-+	 is_single_threaded.o plist.o decompress.o flex_array.o qtoken.o
+diff --git a/include/linux/shmem_fs.h b/include/linux/shmem_fs.h
+index e164291..6ba014d 100644
+--- a/include/linux/shmem_fs.h
++++ b/include/linux/shmem_fs.h
+@@ -3,10 +3,12 @@
  
- lib-$(CONFIG_MMU) += ioremap.o
- lib-$(CONFIG_SMP) += cpumask.o
-diff --git a/lib/qtoken.c b/lib/qtoken.c
-new file mode 100644
-index 0000000..4fcd144
---- /dev/null
-+++ b/lib/qtoken.c
-@@ -0,0 +1,447 @@
-+/*
-+ * qtoken.c: Library of functions to implement quick token
-+ * retrieval from a jar of tokens with per cpu cache.
-+ *
-+ * Copyright (C) 2010 Intel Corporation
-+ * Author: Tim Chen <tim.c.chen@linux.intel.com>
-+ *
-+ * This program is free software; you can redistribute it and/or
-+ * modify it under the terms of the GNU General Public License
-+ * as published by the Free Software Foundation; version 2
-+ * of the License.
-+ *
-+ */
-+
-+#include <linux/kernel.h>
-+#include <linux/module.h>
-+#include <linux/init.h>
-+#include <linux/cpumask.h>
+ #include <linux/swap.h>
+ #include <linux/mempolicy.h>
 +#include <linux/qtoken.h>
-+
-+/*
-+ * This library is useful when we have a large number of threads
-+ * running concurrently on many cpus trying to access tokens in a token jar
-+ * at the same time.
-+ *
-+ * The token jar is implemented with per cpu cache of tokens.
-+ * This library allows tokens to be obtained from or returned quickly to
-+ * the local cpu cache without any lock acquisition most of the time.
-+ * We only need to lock and modify tokens in the common pool for the
-+ * following cases:
-+ *
-+ * 1) Not enough tokens are in our local cache and we need to get tokens
-+ * from the common pool
-+ * 2) We have too many tokens in local cache and need to return
-+ * some tokens to the common pool
-+ * 3) We want to resize the token jar and need to freeze the free tokens
-+ *
-+ * The local token cache is disabled by setting it to -1 and tokens
-+ * reaped into the common pool when we find the common pool low in tokens.
-+ * The token jar should be initialized with a cache size large enough
-+ * to avoid touching the common pool's tokens frequently.
-+ *
-+ * It is possible to implement the token jar with just a single
-+ * atomic variable for all free tokens.  However, this approach is
-+ * not used here to prevent excessive cache line bouncing which causes poor
-+ * performance when token jar is accessed by large number of simultaneous
-+ * threads.
-+ */
-+
-+#ifdef CONFIG_SMP
-+/**
-+ * qtoken_return - return tokens to token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @tokens: the number of tokens to return to token jar
-+ *
-+ * @tokens are returned to the cache in current cpu, unless
-+ * the cache is disabled (i.e. value -1).  For this case,
-+ * @tokens are returned to common pool.
-+ * If the number of tokens in current cpu's cache exceed
-+ * a a highmark, we will return the extra tokens into the
-+ * common pool.
-+ */
-+void qtoken_return(struct qtoken *token_jar, unsigned long tokens)
-+{
-+	long cnt;
-+	unsigned long flags;
-+	int	 cpu;
-+	atomic_long_t *cache;
-+
-+	cpu = get_cpu();
-+	cache = per_cpu_ptr(token_jar->cache, cpu);
-+	cnt = atomic_long_read(cache);
-+	if (cnt >= 0) {
-+		if ((cnt + tokens) <= QTOKEN_CACHE_HIGH * token_jar->init_cache_sz) {
-+			if (!atomic_long_add_unless(cache, tokens, -1)) {
-+				spin_lock_irqsave(&token_jar->lock, flags);
-+				token_jar->pool += tokens;
-+				spin_unlock_irqrestore(&token_jar->lock, flags);
+ 
+ /* inode in-kernel data */
+ 
+ #define SHMEM_NR_DIRECT 16
++#define SHMEM_FREE_BLK_CACHE_SZ 512
+ 
+ struct shmem_inode_info {
+ 	spinlock_t		lock;
+@@ -23,7 +25,7 @@ struct shmem_inode_info {
+ 
+ struct shmem_sb_info {
+ 	unsigned long max_blocks;   /* How many blocks are allowed */
+-	unsigned long free_blocks;  /* How many are left for allocation */
++	struct qtoken token_jar;    /* Token jar of free blocks */
+ 	unsigned long max_inodes;   /* How many inodes are allowed */
+ 	unsigned long free_inodes;  /* How many are left for allocation */
+ 	spinlock_t stat_lock;	    /* Serialize shmem_sb_info changes */
+diff --git a/mm/shmem.c b/mm/shmem.c
+index eef4ebe..d51783f 100644
+--- a/mm/shmem.c
++++ b/mm/shmem.c
+@@ -29,6 +29,7 @@
+ #include <linux/mm.h>
+ #include <linux/module.h>
+ #include <linux/swap.h>
++#include <linux/qtoken.h>
+ 
+ static struct vfsmount *shm_mnt;
+ 
+@@ -233,10 +234,10 @@ static void shmem_free_blocks(struct inode *inode, long pages)
+ {
+ 	struct shmem_sb_info *sbinfo = SHMEM_SB(inode->i_sb);
+ 	if (sbinfo->max_blocks) {
+-		spin_lock(&sbinfo->stat_lock);
+-		sbinfo->free_blocks += pages;
++		spin_lock(&inode->i_lock);
++		qtoken_return(&sbinfo->token_jar, pages);
+ 		inode->i_blocks -= pages*BLOCKS_PER_PAGE;
+-		spin_unlock(&sbinfo->stat_lock);
++		spin_unlock(&inode->i_lock);
+ 	}
+ }
+ 
+@@ -416,19 +417,18 @@ static swp_entry_t *shmem_swp_alloc(struct shmem_inode_info *info, unsigned long
+ 		if (sgp == SGP_READ)
+ 			return shmem_swp_map(ZERO_PAGE(0));
+ 		/*
+-		 * Test free_blocks against 1 not 0, since we have 1 data
+-		 * page (and perhaps indirect index pages) yet to allocate:
++		 * Leave 1 pg in reserve in token jar, since we have
++		 * 1 data pg (and perhaps indirect index pages) yet to allocate:
+ 		 * a waste to allocate index if we cannot allocate data.
+ 		 */
+ 		if (sbinfo->max_blocks) {
+-			spin_lock(&sbinfo->stat_lock);
+-			if (sbinfo->free_blocks <= 1) {
+-				spin_unlock(&sbinfo->stat_lock);
++			spin_lock(&inode->i_lock);
++			if (qtoken_get(&sbinfo->token_jar, 1, 1)) {
++				spin_unlock(&inode->i_lock);
+ 				return ERR_PTR(-ENOSPC);
+ 			}
+-			sbinfo->free_blocks--;
+ 			inode->i_blocks += BLOCKS_PER_PAGE;
+-			spin_unlock(&sbinfo->stat_lock);
++			spin_unlock(&inode->i_lock);
+ 		}
+ 
+ 		spin_unlock(&info->lock);
+@@ -1385,17 +1385,20 @@ repeat:
+ 		shmem_swp_unmap(entry);
+ 		sbinfo = SHMEM_SB(inode->i_sb);
+ 		if (sbinfo->max_blocks) {
+-			spin_lock(&sbinfo->stat_lock);
+-			if (sbinfo->free_blocks == 0 ||
+-			    shmem_acct_block(info->flags)) {
+-				spin_unlock(&sbinfo->stat_lock);
++			if (shmem_acct_block(info->flags)) {
++				spin_unlock(&info->lock);
++				error = -ENOSPC;
++				goto failed;
 +			}
-+		} else {
-+			spin_lock_irqsave(&token_jar->lock, flags);
-+			if (atomic_long_add_unless(cache, token_jar->init_cache_sz - cnt, -1)) {
-+				int extra;
++			spin_lock(&inode->i_lock);
++			if (qtoken_get(&sbinfo->token_jar, 1, 0)) {
++				spin_unlock(&inode->i_lock);
+ 				spin_unlock(&info->lock);
+ 				error = -ENOSPC;
+ 				goto failed;
+ 			}
+-			sbinfo->free_blocks--;
+ 			inode->i_blocks += BLOCKS_PER_PAGE;
+-			spin_unlock(&sbinfo->stat_lock);
++			spin_unlock(&inode->i_lock);
+ 		} else if (shmem_acct_block(info->flags)) {
+ 			spin_unlock(&info->lock);
+ 			error = -ENOSPC;
+@@ -1794,7 +1797,7 @@ static int shmem_statfs(struct dentry *dentry, struct kstatfs *buf)
+ 	spin_lock(&sbinfo->stat_lock);
+ 	if (sbinfo->max_blocks) {
+ 		buf->f_blocks = sbinfo->max_blocks;
+-		buf->f_bavail = buf->f_bfree = sbinfo->free_blocks;
++		buf->f_bavail = buf->f_bfree = qtoken_avail(&sbinfo->token_jar);
+ 	}
+ 	if (sbinfo->max_inodes) {
+ 		buf->f_files = sbinfo->max_inodes;
+@@ -2250,7 +2253,6 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ {
+ 	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
+ 	struct shmem_sb_info config = *sbinfo;
+-	unsigned long blocks;
+ 	unsigned long inodes;
+ 	int error = -EINVAL;
+ 
+@@ -2258,12 +2260,6 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 		return error;
+ 
+ 	spin_lock(&sbinfo->stat_lock);
+-	blocks = sbinfo->max_blocks - sbinfo->free_blocks;
+-	inodes = sbinfo->max_inodes - sbinfo->free_inodes;
+-	if (config.max_blocks < blocks)
+-		goto out;
+-	if (config.max_inodes < inodes)
+-		goto out;
+ 	/*
+ 	 * Those tests also disallow limited->unlimited while any are in
+ 	 * use, so i_blocks will always be zero when max_blocks is zero;
+@@ -2274,10 +2270,14 @@ static int shmem_remount_fs(struct super_block *sb, int *flags, char *data)
+ 		goto out;
+ 	if (config.max_inodes && !sbinfo->max_inodes)
+ 		goto out;
++	inodes = sbinfo->max_inodes - sbinfo->free_inodes;
++	if (config.max_inodes < inodes)
++		goto out;
++	if (qtoken_resize(&sbinfo->token_jar, config.max_blocks))
++		goto out;
+ 
+ 	error = 0;
+ 	sbinfo->max_blocks  = config.max_blocks;
+-	sbinfo->free_blocks = config.max_blocks - blocks;
+ 	sbinfo->max_inodes  = config.max_inodes;
+ 	sbinfo->free_inodes = config.max_inodes - inodes;
+ 
+@@ -2310,6 +2310,10 @@ static int shmem_show_options(struct seq_file *seq, struct vfsmount *vfs)
+ 
+ static void shmem_put_super(struct super_block *sb)
+ {
++	struct shmem_sb_info *sbinfo = SHMEM_SB(sb);
 +
-+				extra = cnt + tokens - token_jar->init_cache_sz;
-+
-+				token_jar->pool += extra;
-+			} else
-+				token_jar->pool += tokens;
-+			spin_unlock_irqrestore(&token_jar->lock, flags);
-+		}
-+	} else {
-+		spin_lock_irqsave(&token_jar->lock, flags);
-+		token_jar->pool += tokens;
-+		spin_unlock_irqrestore(&token_jar->lock, flags);
-+	}
-+	put_cpu();
-+}
-+EXPORT_SYMBOL(qtoken_return);
-+
-+/**
-+ * qtoken_reap cache: Move tokens from cache into common pool in token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ * The tokens in each cpu's cache are reaped and and placed in
-+ * common pool.  The cache of each cpu is disabled (set to -1).
-+ */
-+static void qtoken_reap_cache(struct qtoken *token_jar)
-+{
-+	long cnt;
-+	int i;
-+
-+	for_each_possible_cpu(i) {
-+		atomic_long_t	*cache;
-+
-+		cache = per_cpu_ptr(token_jar->cache, i);
-+		cnt = atomic_long_xchg(cache, -1);
-+		if (cnt > 0)
-+			token_jar->pool += cnt;
-+	}
-+}
-+
-+/**
-+ * qtoken_from pool: Get tokens from common pool in token jar
-+ *
-+ * @token_jar: pointer to struct qtoken
-+ * @tokens: the number of tokens to acquire from token jar
-+ * @reserve: number of tokens to reserve in token jar after getting tokens
-+ *
-+ * Get @tokens from the token jar's common pool but keep @reserve tokens.
-+ * We will fail the operation if we cannot keep @reserve tokens in token jar.
-+ *
-+ * Return 0 if operations succeeds and -ENOSPC if operation fails.
-+ */
-+static int qtoken_from_pool(struct qtoken *token_jar, unsigned long tokens,
-+				unsigned long reserve)
-+{
-+	int	allocated = -ENOSPC;
-+
-+	/* We should have acquired lock of token pool before coming here */
-+	if (token_jar->pool < (reserve + tokens))
-+		qtoken_reap_cache(token_jar);
-+	if (token_jar->pool >= (reserve + tokens)) {
-+		token_jar->pool -= tokens;
-+		allocated = 0;
-+	}
-+	return allocated;
-+}
-+
-+/**
-+ * qtoken_get: Get tokens from token jar
-+ *
-+ * @token_jar: pointer to struct qtoken
-+ * @tokens: the number of tokens to acquire from token jar
-+ * @reserve: number of tokens to reserve in token jar after getting tokens
-+ *
-+ * Get @tokens from the token jar but leave @reserve tokens in jar.
-+ * Some application may come back quickly to get the reserved tokens
-+ * and they do not want the get operation to succeed if it cannot succeed
-+ * later.  We fail the operation if we cannot keep @reserve tokens in token jar.
-+ *
-+ * Return 0 if operation succeeds, non zero error code if operation fails
-+ */
-+int qtoken_get(struct qtoken *token_jar, unsigned long token, unsigned long reserve)
-+{
-+	int	allocated = -ENOSPC;
-+	int	from_cache = 0;
-+	int	cpu;
-+	long	cnt;
-+	unsigned long flags;
-+	atomic_long_t *cache;
-+
-+	cpu = get_cpu();
-+	cache = per_cpu_ptr(token_jar->cache, cpu);
-+	cnt = atomic_long_read(cache);
-+	if ((cnt > 0) && (cnt > token)) {
-+		/* check cache's reserve first to avoid reading pool var */
-+		if (cnt >= (token + reserve))
-+			from_cache = 1;
-+		else if ((cnt + token_jar->pool) >= (token + reserve))
-+			from_cache = 1;
-+	}
-+	if (from_cache) {
-+		if (atomic_long_add_unless(cache, -(long)token, -1))
-+			allocated = 0;
-+		else {
-+			/* cache disabled, get token from pool */
-+			spin_lock_irqsave(&token_jar->lock, flags);
-+			allocated = qtoken_from_pool(token_jar, token, reserve);
-+			spin_unlock_irqrestore(&token_jar->lock, flags);
-+		}
-+	} else {
-+		unsigned long pool_high_mark;
-+
-+		spin_lock_irqsave(&token_jar->lock, flags);
-+		pool_high_mark = QTOKEN_POOL_HIGH * token_jar->init_cache_sz
-+							* num_online_cpus();
-+		if (token_jar->pool > pool_high_mark + token) {
-+			/* plenty of tokens, replenish cache */
-+			token_jar->pool -= token + token_jar->init_cache_sz;
-+			allocated = 0;
-+			cnt = atomic_long_read(cache);
-+			if (cnt < 0)
-+				cnt = token_jar->init_cache_sz;
-+			else
-+				cnt += token_jar->init_cache_sz;
-+			atomic_long_set(cache, cnt);
-+		} else
-+			allocated = qtoken_from_pool(token_jar, token, reserve);
-+		spin_unlock_irqrestore(&token_jar->lock, flags);
-+	}
-+	put_cpu();
-+	return allocated;
-+}
-+EXPORT_SYMBOL(qtoken_get);
-+
-+/**
-+ * qtoken_init: Init token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @total_tokens: the total number of tokens that the token jar holds
-+ * @cache_size: the initial size of per cpu cache of tokens
-+ *
-+ * Initialize the token jar structure, and allocate per cpu cache of
-+ * tokens in the token jar.
-+ *
-+ * Returns 0 if initialization successful and non-zero error code otherwise.
-+ */
-+int qtoken_init(struct qtoken *token_jar, unsigned long total_tokens, unsigned long cache_size)
-+{
-+	int	i;
-+
-+	token_jar->cache = alloc_percpu(atomic_long_t);
-+	if (!token_jar->cache)
-+		return -ENOMEM;
-+	spin_lock_init(&token_jar->lock);
-+	for_each_possible_cpu(i) {
-+		atomic_long_t	*cache;
-+
-+		cache = per_cpu_ptr(token_jar->cache, i);
-+		atomic_long_set(cache, -1);
-+	}
-+	token_jar->init_cache_sz = cache_size;
-+	token_jar->total = token_jar->pool = total_tokens;
-+	return 0;
-+}
-+EXPORT_SYMBOL(qtoken_init);
-+
-+/**
-+ * qtoken_free: Free token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ * Free memory for per cpu cache used in token jar and
-+ * clear the token counts.
-+ */
-+void qtoken_free(struct qtoken *token_jar)
-+{
-+	if (token_jar->cache)
-+		free_percpu(token_jar->cache);
-+	token_jar->pool = 0;
-+	token_jar->total = 0;
-+}
-+EXPORT_SYMBOL(qtoken_free);
-+
-+/**
-+ * qtoken_avail: Calculates token available in token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ * Get a count of all free tokens in the token jar.
-+ */
-+unsigned long qtoken_avail(struct qtoken *token_jar)
-+{
-+	int	i;
-+	long	cnt;
-+	unsigned long cnt_total;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&token_jar->lock, flags);
-+	cnt_total = token_jar->pool;
-+	for_each_possible_cpu(i) {
-+		atomic_long_t	*cache;
-+
-+		cache = per_cpu_ptr(token_jar->cache, i);
-+		cnt = atomic_long_read(cache);
-+		if (cnt > 0)
-+			cnt_total += cnt;
-+	}
-+	spin_unlock_irqrestore(&token_jar->lock, flags);
-+	return cnt_total;
-+}
-+EXPORT_SYMBOL(qtoken_avail);
-+
-+/**
-+ * qtoken_resize: Resize the total number of tokens in token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @new_size: new total number of tokens in token jar
-+ * Returns 0 if token jar resize successful, non zero error code otherwise
-+ *
-+ * We will resize the token jar and return 0 if the new total number of tokens
-+ * is greater than the existing tokens in use.  Otherwise, we will fail the
-+ * operation and return an error code.
-+ */
-+int qtoken_resize(struct qtoken *token_jar, unsigned long new_size)
-+{
-+	unsigned long in_use;
-+	unsigned long flags;
-+
-+	spin_lock_irqsave(&token_jar->lock, flags);
-+	qtoken_reap_cache(token_jar);
-+	in_use = token_jar->total - token_jar->pool;
-+	if (in_use > new_size)
-+		return -EBUSY;
-+	token_jar->pool = new_size - in_use;
-+	token_jar->total = new_size;
-+	spin_unlock_irqrestore(&token_jar->lock, flags);
-+	return 0;
-+}
-+EXPORT_SYMBOL(qtoken_resize);
-+
-+#else /* !CONFIG_SMP */
-+
-+/**
-+ * qtoken_return - return tokens to token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @tokens: the number of tokens to return to token jar
-+ */
-+void qtoken_return(struct qtoken *token_jar, unsigned long tokens)
-+{
-+	token_jar->pool += tokens;
-+}
-+EXPORT_SYMBOL(qtoken_return);
-+
-+/**
-+ * qtoken_get: Get tokens from token jar
-+ *
-+ * @token_jar: pointer to struct qtoken
-+ * @tokens: the number of tokens to acquire from token jar
-+ * @reserve: number of tokens to reserve in token jar after getting tokens
-+ *
-+ * Get @tokens from the token jar's but leave @reserve tokens in jar.
-+ * Some application may come back quickly to get the reserved tokens
-+ * and they do not want the get operation to succeed if it cannot succeed
-+ * later.  We fail the operation if we cannot keep @reserve tokens in token jar.
-+ *
-+ * Return 0 if operation succeeds, non zero error code if operation fails
-+ */
-+int qtoken_get(struct qtoken *token_jar, unsigned long token, unsigned long reserve)
-+{
-+	int	allocated = -ENOSPC;
-+
-+	if (token_jar->pool >= (reserve + token)) {
-+		token_jar->pool -= token;
-+		allocated = 0;
-+	}
-+
-+	return allocated;
-+}
-+EXPORT_SYMBOL(qtoken_get);
-+
-+/**
-+ * qtoken_init: Init token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @total_tokens: the total number of tokens that the token jar holds
-+ * @cache_size: the initial size of per cpu cache of tokens
-+ *
-+ * Initialize the token jar structure, and allocate per cpu cache of
-+ * tokens for the token jar.
-+ *
-+ * Returns 0 if initialization is successful and non-zero error code otherwise.
-+ */
-+int qtoken_init(struct qtoken *token_jar, unsigned long total_tokens, unsigned long cache_size)
-+{
-+	token_jar->total = token_jar->pool = total_tokens;
-+	return 0;
-+}
-+EXPORT_SYMBOL(qtoken_init);
-+
-+/**
-+ * qtoken_free: Free token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ * Clear the token counts.
-+ */
-+void qtoken_free(struct qtoken *token_jar)
-+{
-+	token_jar->pool = 0;
-+	token_jar->total = 0;
-+}
-+EXPORT_SYMBOL(qtoken_free);
-+
-+/**
-+ * qtoken_avail: Calculate the tokens available in token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ */
-+unsigned long qtoken_avail(struct qtoken *token_jar)
-+{
-+	return token_jar->pool;
-+}
-+EXPORT_SYMBOL(qtoken_avail);
-+
-+/**
-+ * qtoken_resize: Resize the total number of tokens in token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ * @new_size: new total number of tokens in token jar
-+ * Returns 0 if token jar resize successful, non zero error code otherwise
-+ *
-+ * We will resize the token jar if the new total number of tokens is greater
-+ * than the existing tokens in use.  Otherwise, we will fail the operation.
-+ */
-+int qtoken_resize(struct qtoken *token_jar, unsigned long new_size)
-+{
-+	unsigned long in_use;
-+
-+	in_use = token_jar->total - token_jar->pool;
-+	if (in_use > new_size)
-+		return -EBUSY;
-+	token_jar->pool = new_size - in_use;
-+	token_jar->total = new_size;
-+	return 0;
-+}
-+EXPORT_SYMBOL(qtoken_resize);
-+
-+#endif /* CONFIG_SMP */
-+
-+/**
-+ * qtoken_total: Return the total number of tokens configured for token jar
-+ *
-+ * @token_jar: pointer to token jar
-+ *
-+ * Returns total number of tokens configured for token jar
-+ */
-+unsigned long qtoken_total(struct qtoken *token_jar)
-+{
-+	return token_jar->total;
-+}
-+EXPORT_SYMBOL(qtoken_total);
++	if (sbinfo)
++		qtoken_free(&sbinfo->token_jar);
+ 	kfree(sb->s_fs_info);
+ 	sb->s_fs_info = NULL;
+ }
+@@ -2352,8 +2356,10 @@ int shmem_fill_super(struct super_block *sb, void *data, int silent)
+ #endif
+ 
+ 	spin_lock_init(&sbinfo->stat_lock);
+-	sbinfo->free_blocks = sbinfo->max_blocks;
+ 	sbinfo->free_inodes = sbinfo->max_inodes;
++	if (qtoken_init(&sbinfo->token_jar, sbinfo->max_blocks,
++				SHMEM_FREE_BLK_CACHE_SZ))
++		goto failed;
+ 
+ 	sb->s_maxbytes = SHMEM_MAX_BYTES;
+ 	sb->s_blocksize = PAGE_CACHE_SIZE;
 
 
