@@ -1,481 +1,1153 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757297Ab0EZMM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:12:26 -0400
-Received: from eu1sys200aog108.obsmtp.com ([207.126.144.125]:40197 "EHLO
-	eu1sys200aog108.obsmtp.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753290Ab0EZMMY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:12:24 -0400
-Date: Wed, 26 May 2010 17:41:51 +0530
-From: Rabin VINCENT <rabin.vincent@stericsson.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Alessandro Zummo <a.zummo@towertech.it>,
-       "rtc-linux@googlegroups.com" <rtc-linux@googlegroups.com>,
-       Samuel Ortiz <sameo@linux.intel.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       STEricsson_nomadik_linux <STEricsson_nomadik_linux@list.st.com>,
-       Virupax SADASHIVPETIMATH 
-	<virupax.sadashivpetimath@stericsson.com>,
-       Linus WALLEIJ <linus.walleij@stericsson.com>,
-       Srinidhi KASAGAR <srinidhi.kasagar@stericsson.com>
-Subject: Re: [PATCH] rtc: AB8500 RTC driver
-Message-ID: <20100526121150.GA17197@bnru02.bnr.st.com>
-References: <1274453796-9141-1-git-send-email-rabin.vincent@stericsson.com>
- <20100525135159.166d91c6.akpm@linux-foundation.org>
+	id S1752479Ab0EZMWG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:22:06 -0400
+Received: from borg.medozas.de ([188.40.89.202]:52375 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751704Ab0EZMWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:22:02 -0400
+Date: Wed, 26 May 2010 14:21:59 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: Takashi Iwai <tiwai@suse.de>
+cc: alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       perex@perex.cz
+Subject: Re: No mixers on ATI RS780 Azalia
+In-Reply-To: <s5hmxvmzwwd.wl%tiwai@suse.de>
+Message-ID: <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr> <s5hmxvmzwwd.wl%tiwai@suse.de>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-Content-Type: text/plain; charset="us-ascii"
-Content-Disposition: inline
-In-Reply-To: <20100525135159.166d91c6.akpm@linux-foundation.org>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 22:51:59 +0200, Andrew Morton wrote:
-> On Fri, 21 May 2010 20:26:36 +0530
-> Rabin Vincent <rabin.vincent@stericsson.com> wrote:
-> > +static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
-> > +{
-> > +	struct rtc_device *rtc = platform_get_drvdata(pdev);
-> > +	int irq = platform_get_irq_byname(pdev, "ALARM");
-> 
-> Seems a bit fragile.  I guess that platform_get_irq_byname("ALARM")
-> will always return the same value, but still.  Would it be better to
-> store the irq number in private storage?  Unsure..
 
-Several other drivers do a platform_get_irq() in their remove().  We'd
-have probably stored it locally anyway, but this driver actually gets by
-without allocating any private storage, so it didn't seem necessary to
-add some just for this.
+On Wednesday 2010-05-26 14:10, Takashi Iwai wrote:
+>> /proc/asound/cards:
+>>  0 [SB  ]: HDA-Intel - HDA ATI SB
+>>            HDA ATI SB at 0xf0500000 irq 16
+>>  1 [HDMI]: HDA-Intel - HDA ATI HDMI
+>>            HDA ATI HDMI at 0xf0110000 irq 19
+>> 
+>> The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
+>> one.
+>
+>Hmm?  HDMI output as the "internal" speaker is abnormal.
+>
+>> Under Windows XP, I see the following mixer elements for it:
+>> 
+>>  * Master Volume
+>>  * Wave
+>>  * SW Synth
+>>  * CD Player
+>> 
+>> Subsequently, there is sound (once I bump the volumes on these).
+>
+>There are definitely for the onboard sound, not for HDMI.
 
-We've removed the unnecessary "if (irq >= 0)" condition before
-free_irq() to make it clear to the reader that the
-platform_get_irq_byname() call won't fail.
+The "SB" card has many more mixers (counting  10) and Windows XP also
+shows about that many for SB. But neither in Linux nor Windows does
+the SB card have any effect; I do have to turn the bars of the "HDMI"
+one.
 
-All your other comments should be addressed in the updated patch below.
-Thanks.
+Abnormal, well. It's (semi-)embedded, what did you expect.
 
-Rabin
+>Judging from your description, the problem is likely that the onboard
+>sound device isn't set up properly but only HDMI one.  Please give
+>alsa-info.sh output running on your system (run with --no-upload
+>option) for further analysis.
 
->From ea22b7052c86a2f22b8f615291dd7bfda5634f46 Mon Sep 17 00:00:00 2001
-From: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Date: Fri, 30 Apr 2010 09:17:07 +0530
-Subject: [PATCHv2] rtc: AB8500 RTC driver
+upload=true&script=true&cardinfo=
+!!################################
+!!ALSA Information Script v 0.4.59
+!!################################
 
-Add a driver for the RTC on the AB8500 power management chip.  This is a
-client of the AB8500 MFD driver.
+!!Script ran on: Wed May 26 17:20:22 UTC 2010
 
-Acked-by: Linus Walleij <linus.walleij@stericsson.com>
-Acked-by: Srinidhi Kasagar <srinidhi.kasagar@stericsson.com>
-Signed-off-by: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-Signed-off-by: Rabin Vincent <rabin.vincent@stericsson.com>
----
- drivers/rtc/Kconfig      |    7 +
- drivers/rtc/Makefile     |    1 +
- drivers/rtc/rtc-ab8500.c |  363 ++++++++++++++++++++++++++++++++++++++++++++++
- 3 files changed, 371 insertions(+), 0 deletions(-)
- create mode 100644 drivers/rtc/rtc-ab8500.c
 
-diff --git a/drivers/rtc/Kconfig b/drivers/rtc/Kconfig
-index 50ac047..e3ae61c 100644
---- a/drivers/rtc/Kconfig
-+++ b/drivers/rtc/Kconfig
-@@ -611,6 +611,13 @@ config RTC_DRV_AB3100
- 	  Select this to enable the ST-Ericsson AB3100 Mixed Signal IC RTC
- 	  support. This chip contains a battery- and capacitor-backed RTC.
- 
-+config RTC_DRV_AB8500
-+	tristate "ST-Ericsson AB8500 RTC"
-+	depends on AB8500_CORE
-+	help
-+	  Select this to enable the ST-Ericsson AB8500 power management IC RTC
-+	  support. This chip contains a battery- and capacitor-backed RTC.
-+
- config RTC_DRV_NUC900
- 	tristate "NUC910/NUC920 RTC driver"
- 	depends on RTC_CLASS && ARCH_W90X900
-diff --git a/drivers/rtc/Makefile b/drivers/rtc/Makefile
-index 245311a..5adbba7 100644
---- a/drivers/rtc/Makefile
-+++ b/drivers/rtc/Makefile
-@@ -18,6 +18,7 @@ rtc-core-$(CONFIG_RTC_INTF_SYSFS) += rtc-sysfs.o
- # Keep the list ordered.
- 
- obj-$(CONFIG_RTC_DRV_AB3100)	+= rtc-ab3100.o
-+obj-$(CONFIG_RTC_DRV_AB8500)	+= rtc-ab8500.o
- obj-$(CONFIG_RTC_DRV_AT32AP700X)+= rtc-at32ap700x.o
- obj-$(CONFIG_RTC_DRV_AT91RM9200)+= rtc-at91rm9200.o
- obj-$(CONFIG_RTC_DRV_AT91SAM9)	+= rtc-at91sam9.o
-diff --git a/drivers/rtc/rtc-ab8500.c b/drivers/rtc/rtc-ab8500.c
-new file mode 100644
-index 0000000..2fda031
---- /dev/null
-+++ b/drivers/rtc/rtc-ab8500.c
-@@ -0,0 +1,363 @@
-+/*
-+ * Copyright (C) ST-Ericsson SA 2010
-+ *
-+ * License terms: GNU General Public License (GPL) version 2
-+ * Author: Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>
-+ *
-+ * RTC clock driver for the RTC part of the AB8500 Power management chip.
-+ * Based on RTC clock driver for the AB3100 Analog Baseband Chip by
-+ * Linus Walleij <linus.walleij@stericsson.com>
-+ */
-+
-+#include <linux/module.h>
-+#include <linux/kernel.h>
-+#include <linux/init.h>
-+#include <linux/platform_device.h>
-+#include <linux/rtc.h>
-+#include <linux/mfd/ab8500.h>
-+#include <linux/delay.h>
-+
-+#define AB8500_RTC_SOFF_STAT_REG	0x0F00
-+#define AB8500_RTC_CC_CONF_REG		0x0F01
-+#define AB8500_RTC_READ_REQ_REG		0x0F02
-+#define AB8500_RTC_WATCH_TSECMID_REG	0x0F03
-+#define AB8500_RTC_WATCH_TSECHI_REG	0x0F04
-+#define AB8500_RTC_WATCH_TMIN_LOW_REG	0x0F05
-+#define AB8500_RTC_WATCH_TMIN_MID_REG	0x0F06
-+#define AB8500_RTC_WATCH_TMIN_HI_REG	0x0F07
-+#define AB8500_RTC_ALRM_MIN_LOW_REG	0x0F08
-+#define AB8500_RTC_ALRM_MIN_MID_REG	0x0F09
-+#define AB8500_RTC_ALRM_MIN_HI_REG	0x0F0A
-+#define AB8500_RTC_STAT_REG		0x0F0B
-+#define AB8500_RTC_BKUP_CHG_REG		0x0F0C
-+#define AB8500_RTC_FORCE_BKUP_REG	0x0F0D
-+#define AB8500_RTC_CALIB_REG		0x0F0E
-+#define AB8500_RTC_SWITCH_STAT_REG	0x0F0F
-+#define AB8500_REV_REG			0x1080
-+
-+/* RtcReadRequest bits */
-+#define RTC_READ_REQUEST		0x01
-+#define RTC_WRITE_REQUEST		0x02
-+
-+/* RtcCtrl bits */
-+#define RTC_ALARM_ENA			0x04
-+#define RTC_STATUS_DATA			0x01
-+
-+#define COUNTS_PER_SEC			(0xF000 / 60)
-+#define AB8500_RTC_EPOCH		2000
-+
-+static const unsigned long ab8500_rtc_time_regs[] = {
-+	AB8500_RTC_WATCH_TMIN_HI_REG, AB8500_RTC_WATCH_TMIN_MID_REG,
-+	AB8500_RTC_WATCH_TMIN_LOW_REG, AB8500_RTC_WATCH_TSECHI_REG,
-+	AB8500_RTC_WATCH_TSECMID_REG
-+};
-+
-+static const unsigned long ab8500_rtc_alarm_regs[] = {
-+	AB8500_RTC_ALRM_MIN_HI_REG, AB8500_RTC_ALRM_MIN_MID_REG,
-+	AB8500_RTC_ALRM_MIN_LOW_REG
-+};
-+
-+/* Calculate the seconds from 1970 to 01-01-2000 00:00:00 */
-+static unsigned long get_elapsed_seconds(int year)
-+{
-+	unsigned long secs;
-+	struct rtc_time tm = {
-+		.tm_year = year - 1900,
-+		.tm_mday = 1,
-+	};
-+
-+	/*
-+	 * This function calculates secs from 1970 and not from
-+	 * 1900, even if we supply the offset from year 1900.
-+	 */
-+	rtc_tm_to_time(&tm, &secs);
-+	return secs;
-+}
-+
-+static int ab8500_rtc_read_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
-+	unsigned long timeout = jiffies + HZ;
-+	int retval, i;
-+	unsigned long mins, secs;
-+	unsigned char buf[ARRAY_SIZE(ab8500_rtc_time_regs)];
-+
-+	/* Request a data read */
-+	retval = ab8500_write(ab8500, AB8500_RTC_READ_REQ_REG,
-+			      RTC_READ_REQUEST);
-+	if (retval < 0)
-+		return retval;
-+
-+	/* Early AB8500 chips will not clear the rtc read request bit */
-+	if (ab8500->revision == 0) {
-+		msleep(1);
-+	} else {
-+		/* Wait for some cycles after enabling the rtc read in ab8500 */
-+		while (time_before(jiffies, timeout)) {
-+			retval = ab8500_read(ab8500, AB8500_RTC_READ_REQ_REG);
-+			if (retval < 0)
-+				return retval;
-+
-+			if (!(retval & RTC_READ_REQUEST))
-+				break;
-+
-+			msleep(1);
-+		}
-+	}
-+
-+	/* Read the Watchtime registers */
-+	for (i = 0; i < ARRAY_SIZE(ab8500_rtc_time_regs); i++) {
-+		retval = ab8500_read(ab8500, ab8500_rtc_time_regs[i]);
-+		if (retval < 0)
-+			return retval;
-+		buf[i] = retval;
-+	}
-+
-+	mins = (buf[0] << 16) | (buf[1] << 8) | buf[2];
-+
-+	secs =	(buf[3] << 8) | buf[4];
-+	secs =	secs / COUNTS_PER_SEC;
-+	secs =	secs + (mins * 60);
-+
-+	/* Add back the initially subtracted number of seconds */
-+	secs += get_elapsed_seconds(AB8500_RTC_EPOCH);
-+
-+	rtc_time_to_tm(secs, tm);
-+	return rtc_valid_tm(tm);
-+}
-+
-+static int ab8500_rtc_set_time(struct device *dev, struct rtc_time *tm)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
-+	int retval, i;
-+	unsigned char buf[ARRAY_SIZE(ab8500_rtc_time_regs)];
-+	unsigned long no_secs, no_mins, secs = 0;
-+
-+	if (tm->tm_year < (AB8500_RTC_EPOCH - 1900)) {
-+		dev_dbg(dev, "year should be equal to or greater than %d\n",
-+				AB8500_RTC_EPOCH);
-+		return -EINVAL;
-+	}
-+
-+	/* Get the number of seconds since 1970 */
-+	rtc_tm_to_time(tm, &secs);
-+
-+	/*
-+	 * Convert it to the number of seconds since 01-01-2000 00:00:00, since
-+	 * we only have a small counter in the RTC.
-+	 */
-+	secs -= get_elapsed_seconds(AB8500_RTC_EPOCH);
-+
-+	no_mins = secs / 60;
-+
-+	no_secs = secs % 60;
-+	/* Make the seconds count as per the RTC resolution */
-+	no_secs = no_secs * COUNTS_PER_SEC;
-+
-+	buf[4] = no_secs & 0xFF;
-+	buf[3] = (no_secs >> 8) & 0xFF;
-+
-+	buf[2] = no_mins & 0xFF;
-+	buf[1] = (no_mins >> 8) & 0xFF;
-+	buf[0] = (no_mins >> 16) & 0xFF;
-+
-+	for (i = 0; i < ARRAY_SIZE(ab8500_rtc_time_regs); i++) {
-+		retval = ab8500_write(ab8500, ab8500_rtc_time_regs[i], buf[i]);
-+		if (retval < 0)
-+			return retval;
-+	}
-+
-+	/* Request a data write */
-+	return ab8500_write(ab8500, AB8500_RTC_READ_REQ_REG, RTC_WRITE_REQUEST);
-+}
-+
-+static int ab8500_rtc_read_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
-+	int retval, i;
-+	int rtc_ctrl;
-+	unsigned char buf[ARRAY_SIZE(ab8500_rtc_alarm_regs)];
-+	unsigned long secs, mins;
-+
-+	/* Check if the alarm is enabled or not */
-+	rtc_ctrl = ab8500_read(ab8500, AB8500_RTC_STAT_REG);
-+	if (rtc_ctrl < 0)
-+		return rtc_ctrl;
-+
-+	if (rtc_ctrl & RTC_ALARM_ENA)
-+		alarm->enabled = 1;
-+	else
-+		alarm->enabled = 0;
-+
-+	alarm->pending = 0;
-+
-+	for (i = 0; i < ARRAY_SIZE(ab8500_rtc_alarm_regs); i++) {
-+		retval = ab8500_read(ab8500, ab8500_rtc_alarm_regs[i]);
-+		if (retval < 0)
-+			return retval;
-+		buf[i] = retval;
-+	}
-+
-+	mins = (buf[0] << 16) | (buf[1] << 8) | (buf[2]);
-+	secs = mins * 60;
-+
-+	/* Add back the initially subtracted number of seconds */
-+	secs += get_elapsed_seconds(AB8500_RTC_EPOCH);
-+
-+	rtc_time_to_tm(secs, &alarm->time);
-+
-+	return rtc_valid_tm(&alarm->time);
-+}
-+
-+static int ab8500_rtc_irq_enable(struct device *dev, unsigned int enabled)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
-+
-+	return ab8500_set_bits(ab8500, AB8500_RTC_STAT_REG, RTC_ALARM_ENA,
-+			       enabled ? RTC_ALARM_ENA : 0);
-+}
-+
-+static int ab8500_rtc_set_alarm(struct device *dev, struct rtc_wkalrm *alarm)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(dev->parent);
-+	int retval, i;
-+	unsigned char buf[ARRAY_SIZE(ab8500_rtc_alarm_regs)];
-+	unsigned long mins, secs = 0;
-+
-+	if (alarm->time.tm_year < (AB8500_RTC_EPOCH - 1900)) {
-+		dev_dbg(dev, "year should be equal to or greater than %d\n",
-+				AB8500_RTC_EPOCH);
-+		return -EINVAL;
-+	}
-+
-+	/* Get the number of seconds since 1970 */
-+	rtc_tm_to_time(&alarm->time, &secs);
-+
-+	/*
-+	 * Convert it to the number of seconds since 01-01-2000 00:00:00, since
-+	 * we only have a small counter in the RTC.
-+	 */
-+	secs -= get_elapsed_seconds(AB8500_RTC_EPOCH);
-+
-+	mins = secs / 60;
-+
-+	buf[2] = mins & 0xFF;
-+	buf[1] = (mins >> 8) & 0xFF;
-+	buf[0] = (mins >> 16) & 0xFF;
-+
-+	/* Set the alarm time */
-+	for (i = 0; i < ARRAY_SIZE(ab8500_rtc_alarm_regs); i++) {
-+		retval = ab8500_write(ab8500, ab8500_rtc_alarm_regs[i], buf[i]);
-+		if (retval < 0)
-+			return retval;
-+	}
-+
-+	return ab8500_rtc_irq_enable(dev, alarm->enabled);
-+}
-+
-+static irqreturn_t rtc_alarm_handler(int irq, void *data)
-+{
-+	struct rtc_device *rtc = data;
-+	unsigned long events = RTC_IRQF | RTC_AF;
-+
-+	dev_dbg(&rtc->dev, "%s\n", __func__);
-+	rtc_update_irq(rtc, 1, events);
-+
-+	return IRQ_HANDLED;
-+}
-+
-+static const struct rtc_class_ops ab8500_rtc_ops = {
-+	.read_time		= ab8500_rtc_read_time,
-+	.set_time		= ab8500_rtc_set_time,
-+	.read_alarm		= ab8500_rtc_read_alarm,
-+	.set_alarm		= ab8500_rtc_set_alarm,
-+	.alarm_irq_enable	= ab8500_rtc_irq_enable,
-+};
-+
-+static int __devinit ab8500_rtc_probe(struct platform_device *pdev)
-+{
-+	struct ab8500 *ab8500 = dev_get_drvdata(pdev->dev.parent);
-+	int err;
-+	struct rtc_device *rtc;
-+	int rtc_ctrl;
-+	int irq;
-+
-+	irq = platform_get_irq_byname(pdev, "ALARM");
-+	if (irq < 0)
-+		return irq;
-+
-+	/* For RTC supply test */
-+	err = ab8500_set_bits(ab8500, AB8500_RTC_STAT_REG, RTC_STATUS_DATA,
-+			RTC_STATUS_DATA);
-+	if (err < 0)
-+		return err;
-+
-+	/* Wait for reset by the PorRtc */
-+	msleep(1);
-+
-+	rtc_ctrl = ab8500_read(ab8500, AB8500_RTC_STAT_REG);
-+	if (rtc_ctrl < 0)
-+		return rtc_ctrl;
-+
-+	/* Check if the RTC Supply fails */
-+	if (!(rtc_ctrl & RTC_STATUS_DATA)) {
-+		dev_err(&pdev->dev, "RTC supply failure\n");
-+		return -ENODEV;
-+	}
-+
-+	rtc = rtc_device_register("ab8500-rtc", &pdev->dev, &ab8500_rtc_ops,
-+			THIS_MODULE);
-+	if (IS_ERR(rtc)) {
-+		dev_err(&pdev->dev, "Registration failed\n");
-+		err = PTR_ERR(rtc);
-+		return err;
-+	}
-+
-+	err = request_threaded_irq(irq, NULL, rtc_alarm_handler, 0,
-+				   "ab8500-rtc", rtc);
-+	if (err < 0) {
-+		rtc_device_unregister(rtc);
-+		return err;
-+	}
-+
-+	platform_set_drvdata(pdev, rtc);
-+
-+	return 0;
-+}
-+
-+static int __devexit ab8500_rtc_remove(struct platform_device *pdev)
-+{
-+	struct rtc_device *rtc = platform_get_drvdata(pdev);
-+	int irq = platform_get_irq_byname(pdev, "ALARM");
-+
-+	free_irq(irq, rtc);
-+	rtc_device_unregister(rtc);
-+	platform_set_drvdata(pdev, NULL);
-+
-+	return 0;
-+}
-+
-+static struct platform_driver ab8500_rtc_driver = {
-+	.driver = {
-+		.name = "ab8500-rtc",
-+		.owner = THIS_MODULE,
-+	},
-+	.probe	= ab8500_rtc_probe,
-+	.remove = __devexit_p(ab8500_rtc_remove),
-+};
-+
-+static int __init ab8500_rtc_init(void)
-+{
-+	return platform_driver_register(&ab8500_rtc_driver);
-+}
-+
-+static void __exit ab8500_rtc_exit(void)
-+{
-+	platform_driver_unregister(&ab8500_rtc_driver);
-+}
-+
-+module_init(ab8500_rtc_init);
-+module_exit(ab8500_rtc_exit);
-+MODULE_AUTHOR("Virupax Sadashivpetimath <virupax.sadashivpetimath@stericsson.com>");
-+MODULE_DESCRIPTION("AB8500 RTC Driver");
-+MODULE_LICENSE("GPL v2");
--- 
-1.6.3.3
+!!Linux Distribution
+!!------------------
+
+Welcome to openSUSE 11.2 "Emerald" - Kernel \r (\l). openSUSE 11.2 (i586)
+
+
+!!DMI Information
+!!---------------
+
+Manufacturer:      Samsung
+Product Name:      Network Monitor
+
+
+!!Kernel Information
+!!------------------
+
+Kernel release:    2.6.33.2-jen97-default
+Operating System:  GNU/Linux
+Architecture:      i686
+Processor:         athlon
+SMP Enabled:       Yes
+
+
+!!ALSA Version
+!!------------
+
+Driver version:     1.0.21
+Library version:    
+Utilities version:  1.0.21
+
+
+!!Loaded ALSA modules
+!!-------------------
+
+snd_hda_intel
+snd_hda_intel
+
+
+!!Sound Servers on this system
+!!----------------------------
+
+No sound servers found.
+
+
+!!Soundcards recognised by ALSA
+!!-----------------------------
+
+ 0 [SB             ]: HDA-Intel - HDA ATI SB
+                      HDA ATI SB at 0xf0500000 irq 16
+ 1 [HDMI           ]: HDA-Intel - HDA ATI HDMI
+                      HDA ATI HDMI at 0xf0110000 irq 26
+
+
+!!PCI Soundcards installed in the system
+!!--------------------------------------
+
+00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA)
+01:05.1 Audio device: ATI Technologies Inc RS780 Azalia controller
+
+
+!!Advanced information - PCI Vendor/Device/Susbsystem ID's
+!!--------------------------------------------------------
+
+	Prefetchable memory behind bridge: 0000000040000000-00000000401fffff
+	Secondary status: 66MHz- FastB2B- ParErr- DEVSEL=fast >TAbort- <TAbort- <MAbort- <SERR- <PERR-
+--
+00:14.2 0403: 1002:4383
+	Subsystem: 1002:4383
+--
+01:05.1 0403: 1002:960f
+	Subsystem: 1002:9610
+
+
+!!Loaded sound module options
+!!--------------------------
+
+!!Module: snd_hda_intel
+	bdl_pos_adj : 32,32,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	beep_mode : 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+	enable : Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y
+	enable_msi : -1
+	id : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	index : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	model : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	patch : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	position_fix : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	power_save : 0
+	power_save_controller : Y
+	probe_mask : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	probe_only : N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N
+	single_cmd : N
+
+!!Module: snd_hda_intel
+	bdl_pos_adj : 32,32,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	beep_mode : 2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2,2
+	enable : Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y,Y
+	enable_msi : -1
+	id : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	index : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	model : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	patch : (null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null),(null)
+	position_fix : 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+	power_save : 0
+	power_save_controller : Y
+	probe_mask : -1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1,-1
+	probe_only : N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N,N
+	single_cmd : N
+
+
+!!HDA-Intel Codec information
+!!---------------------------
+--startcollapse--
+
+Codec: Realtek ALC262
+Address: 0
+Function Id: 0x1
+Vendor Id: 0x10ec0262
+Subsystem Id: 0x10ec0262
+Revision Id: 0x100202
+No Modem Function Group found
+Default PCM:
+    rates [0x560]: 44100 48000 96000 192000
+    bits [0xe]: 16 20 24
+    formats [0x1]: PCM
+Default Amp-In caps: N/A
+Default Amp-Out caps: N/A
+GPIO: io=4, o=0, i=0, unsolicited=1, wake=0
+  IO[0]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[1]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[2]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+  IO[3]: enable=0, dir=0, wake=0, sticky=0, data=0, unsol=0
+Node 0x02 [Audio Output] wcaps 0x11: Stereo
+  Device: name="ALC262 Analog", type="Audio", device=0
+  Converter: stream=0, channel=0
+  PCM:
+    rates [0x560]: 44100 48000 96000 192000
+    bits [0xe]: 16 20 24
+    formats [0x1]: PCM
+Node 0x03 [Audio Output] wcaps 0x11: Stereo
+  Converter: stream=0, channel=0
+  PCM:
+    rates [0x560]: 44100 48000 96000 192000
+    bits [0xe]: 16 20 24
+    formats [0x1]: PCM
+Node 0x04 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x05 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x06 [Audio Output] wcaps 0x211: Stereo Digital
+  Control: name="IEC958 Playback Con Mask", index=0, device=0
+  Control: name="IEC958 Playback Pro Mask", index=0, device=0
+  Control: name="IEC958 Playback Default", index=0, device=0
+  Control: name="IEC958 Playback Switch", index=0, device=0
+  Control: name="IEC958 Default PCM Playback Switch", index=0, device=0
+  Device: name="ALC262 Digital", type="SPDIF", device=1
+  Converter: stream=0, channel=0
+  Digital:
+  Digital category: 0x0
+  PCM:
+    rates [0x560]: 44100 48000 96000 192000
+    bits [0x1e]: 16 20 24 32
+    formats [0x1]: PCM
+Node 0x07 [Audio Input] wcaps 0x10011b: Stereo Amp-In
+  Device: name="ALC262 Analog", type="Audio", device=0
+  Amp-In caps: ofs=0x08, nsteps=0x1f, stepsize=0x05, mute=1
+  Amp-In vals:  [0x00 0x00]
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  PCM:
+    rates [0x160]: 44100 48000 96000
+    bits [0x6]: 16 20
+    formats [0x1]: PCM
+  Connection: 1
+     0x24
+Node 0x08 [Audio Input] wcaps 0x10011b: Stereo Amp-In
+  Amp-In caps: ofs=0x08, nsteps=0x1f, stepsize=0x05, mute=1
+  Amp-In vals:  [0x00 0x00]
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  PCM:
+    rates [0x160]: 44100 48000 96000
+    bits [0x6]: 16 20
+    formats [0x1]: PCM
+  Connection: 1
+     0x23
+Node 0x09 [Audio Input] wcaps 0x10011b: Stereo Amp-In
+  Amp-In caps: ofs=0x08, nsteps=0x1f, stepsize=0x05, mute=1
+  Amp-In vals:  [0x00 0x00]
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  PCM:
+    rates [0x160]: 44100 48000 96000
+    bits [0x6]: 16 20
+    formats [0x1]: PCM
+  Connection: 1
+     0x22
+Node 0x0a [Audio Input] wcaps 0x100391: Stereo Digital
+  Control: name="IEC958 Capture Switch", index=0, device=0
+  Control: name="IEC958 Capture Default", index=0, device=0
+  Device: name="ALC262 Digital", type="SPDIF", device=1
+  Converter: stream=0, channel=0
+  SDI-Select: 0
+  Digital:
+  Digital category: 0x0
+  PCM:
+    rates [0x560]: 44100 48000 96000 192000
+    bits [0x1e]: 16 20 24 32
+    formats [0x1]: PCM
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x1f
+Node 0x0b [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
+  Control: name="Mic Playback Volume", index=0, device=0
+  Control: name="Mic Playback Switch", index=0, device=0
+  Control: name="Front Mic Playback Volume", index=0, device=0
+  Control: name="Front Mic Playback Switch", index=0, device=0
+  Control: name="Line Playback Volume", index=0, device=0
+  Control: name="Line Playback Switch", index=0, device=0
+  Control: name="CD Playback Volume", index=0, device=0
+  Control: name="CD Playback Switch", index=0, device=0
+  Control: name="Beep Playback Volume", index=0, device=0
+  Control: name="Beep Playback Switch", index=0, device=0
+  Amp-In caps: ofs=0x17, nsteps=0x1f, stepsize=0x05, mute=1
+  Amp-In vals:  [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x81 0x81] [0x81 0x81] [0x81 0x81]
+  Connection: 8
+     0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x14 0x15
+Node 0x0c [Audio Mixer] wcaps 0x20010f: Stereo Amp-In Amp-Out
+  Control: name="Master Playback Volume", index=0, device=0
+  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-In vals:  [0x00 0x00] [0x00 0x00]
+  Amp-Out caps: ofs=0x1f, nsteps=0x1f, stepsize=0x05, mute=0
+  Amp-Out vals:  [0x00 0x00]
+  Connection: 2
+     0x02 0x0b
+Node 0x0d [Audio Mixer] wcaps 0x20010f: Stereo Amp-In Amp-Out
+  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-In vals:  [0x00 0x00] [0x00 0x00]
+  Amp-Out caps: ofs=0x1f, nsteps=0x1f, stepsize=0x05, mute=0
+  Amp-Out vals:  [0x00 0x00]
+  Connection: 2
+     0x03 0x0b
+Node 0x0e [Audio Mixer] wcaps 0x20010e: Mono Amp-In Amp-Out
+  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-In vals:  [0x00] [0x00]
+  Amp-Out caps: ofs=0x1f, nsteps=0x1f, stepsize=0x05, mute=0
+  Amp-Out vals:  [0x00]
+  Connection: 2
+     0x02 0x0b
+Node 0x0f [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x10 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x11 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x12 [Pin Complex] wcaps 0x400001: Stereo
+  Pincap 0x00000020: IN
+  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
+    Conn = 1/8, Color = Black
+    DefAssociation = 0xf, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x00:
+Node 0x13 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x14 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Control: name="Master Playback Switch", index=0, device=0
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x00 0x00]
+  Pincap 0x0000003e: IN OUT HP Detect Trigger
+  Pin Default 0x01014010: [Jack] Line Out at Ext Rear
+    Conn = 1/8, Color = Green
+    DefAssociation = 0x1, Sequence = 0x0
+  Pin-ctls: 0x40: OUT
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c* 0x0d
+Node 0x15 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Pincap 0x0000003e: IN OUT HP Detect Trigger
+  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
+    Conn = 1/8, Color = Black
+    DefAssociation = 0xf, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c 0x0d*
+Node 0x16 [Pin Complex] wcaps 0x40010c: Mono Amp-Out
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80]
+  Pincap 0x00000010: OUT
+  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
+    Conn = 1/8, Color = Black
+    DefAssociation = 0xf, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x40: OUT
+  Connection: 1
+     0x0e
+Node 0x17 [Vendor Defined Widget] wcaps 0xf00000: Mono
+Node 0x18 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Control: name="Mic Boost", index=0, device=0
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Pincap 0x0000173e: IN OUT HP Detect Trigger
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x01a19840: [Jack] Mic at Ext Rear
+    Conn = 1/8, Color = Pink
+    DefAssociation = 0x4, Sequence = 0x0
+  Pin-ctls: 0x24: IN VREF_80
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c* 0x0d
+Node 0x19 [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Control: name="Front Mic Boost", index=0, device=0
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Pincap 0x0000173e: IN OUT HP Detect Trigger
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x02a19c50: [Jack] Mic at Ext Front
+    Conn = 1/8, Color = Pink
+    DefAssociation = 0x5, Sequence = 0x0
+  Pin-ctls: 0x24: IN VREF_80
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c* 0x0d
+Node 0x1a [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Pincap 0x0000173e: IN OUT HP Detect Trigger
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x01813041: [Jack] Line In at Ext Rear
+    Conn = 1/8, Color = Blue
+    DefAssociation = 0x4, Sequence = 0x1
+  Pin-ctls: 0x20: IN VREF_HIZ
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c* 0x0d
+Node 0x1b [Pin Complex] wcaps 0x40018f: Stereo Amp-In Amp-Out
+  Amp-In caps: ofs=0x00, nsteps=0x03, stepsize=0x27, mute=0
+  Amp-In vals:  [0x00 0x00]
+  Amp-Out caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-Out vals:  [0x80 0x80]
+  Pincap 0x0000173e: IN OUT HP Detect Trigger
+    Vref caps: HIZ 50 GRD 80
+  Pin Default 0x02014c20: [Jack] Line Out at Ext Front
+    Conn = 1/8, Color = Green
+    DefAssociation = 0x2, Sequence = 0x0
+  Pin-ctls: 0x20: IN VREF_HIZ
+  Unsolicited: tag=00, enabled=0
+  Connection: 2
+     0x0c* 0x0d
+Node 0x1c [Pin Complex] wcaps 0x400001: Stereo
+  Pincap 0x00000020: IN
+  Pin Default 0x9933014f: [Fixed] CD at Int ATAPI
+    Conn = ATAPI, Color = Unknown
+    DefAssociation = 0x4, Sequence = 0xf
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+Node 0x1d [Pin Complex] wcaps 0x400000: Mono
+  Pincap 0x00000020: IN
+  Pin Default 0x411111f0: [N/A] Speaker at Ext Rear
+    Conn = 1/8, Color = Black
+    DefAssociation = 0xf, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+Node 0x1e [Pin Complex] wcaps 0x400380: Mono Digital
+  Pincap 0x00000010: OUT
+  Pin Default 0x01441130: [Jack] SPDIF Out at Ext Rear
+    Conn = RCA, Color = Black
+    DefAssociation = 0x3, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x40: OUT
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x06
+Node 0x1f [Pin Complex] wcaps 0x400280: Mono Digital
+  Pincap 0x00000020: IN
+  Pin Default 0x01c46160: [Jack] SPDIF In at Ext Rear
+    Conn = RCA, Color = Orange
+    DefAssociation = 0x6, Sequence = 0x0
+    Misc = NO_PRESENCE
+  Pin-ctls: 0x20: IN
+  Unsolicited: tag=00, enabled=0
+Node 0x20 [Vendor Defined Widget] wcaps 0xf00040: Mono
+  Processing caps: benign=0, ncoeff=17
+  Processing Coefficient: 0x6020
+  Coefficient Index: 0x09
+Node 0x21 [Volume Knob Widget] wcaps 0x600080: Mono
+  Volume-Knob: delta=0, steps=32, direct=0, val=64
+  Unsolicited: tag=00, enabled=0
+  Connection: 0
+Node 0x22 [Audio Selector] wcaps 0x300101: Stereo
+  Connection: 10
+     0x18* 0x19 0x1a 0x1b 0x1c 0x1d 0x14 0x15 0x0b 0x12
+Node 0x23 [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
+  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-In vals:  [0x00 0x00] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80]
+  Connection: 9
+     0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x14 0x15 0x0b
+Node 0x24 [Audio Mixer] wcaps 0x20010b: Stereo Amp-In
+  Amp-In caps: ofs=0x00, nsteps=0x00, stepsize=0x00, mute=1
+  Amp-In vals:  [0x00 0x00] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80] [0x80 0x80]
+  Connection: 9
+     0x18 0x19 0x1a 0x1b 0x1c 0x1d 0x14 0x15 0x0b
+Codec: ATI RS690/780 HDMI
+Address: 0
+Function Id: 0x1
+Vendor Id: 0x1002791a
+Subsystem Id: 0x00791a00
+Revision Id: 0x100000
+No Modem Function Group found
+Default PCM:
+    rates [0x40]: 48000
+    bits [0x2]: 16
+    formats [0x1]: PCM
+Default Amp-In caps: N/A
+Default Amp-Out caps: N/A
+GPIO: io=0, o=0, i=0, unsolicited=0, wake=0
+Node 0x02 [Audio Output] wcaps 0x201: Stereo Digital
+  Control: name="IEC958 Playback Con Mask", index=0, device=0
+  Control: name="IEC958 Playback Pro Mask", index=0, device=0
+  Control: name="IEC958 Playback Default", index=0, device=0
+  Control: name="IEC958 Playback Switch", index=0, device=0
+  Device: name="ATI HDMI", type="HDMI", device=3
+  Converter: stream=0, channel=0
+  Digital:
+  Digital category: 0x0
+Node 0x03 [Pin Complex] wcaps 0x400381: Stereo Digital
+  Pincap 0x00000094: OUT Detect HDMI
+  Pin Default 0x18560010: [Jack] Digital Out at Int HDMI
+    Conn = Digital, Color = Unknown
+    DefAssociation = 0x1, Sequence = 0x0
+  Pin-ctls: 0x40: OUT
+  Unsolicited: tag=00, enabled=0
+  Connection: 1
+     0x02
+--endcollapse--
+
+
+!!ALSA Device nodes
+!!-----------------
+
+crw-rw---- 1 root root 116,  8 May 26 19:18 /dev/snd/controlC0
+crw-rw---- 1 root root 116, 11 May 26 19:18 /dev/snd/controlC1
+crw-rw---- 1 root root 116,  7 May 26 19:18 /dev/snd/hwC0D0
+crw-rw---- 1 root root 116, 10 May 26 19:18 /dev/snd/hwC1D0
+crw-rw---- 1 root root 116,  6 May 26 19:18 /dev/snd/pcmC0D0c
+crw-rw---- 1 root root 116,  5 May 26 19:18 /dev/snd/pcmC0D0p
+crw-rw---- 1 root root 116,  4 May 26 19:18 /dev/snd/pcmC0D1c
+crw-rw---- 1 root root 116,  3 May 26 19:18 /dev/snd/pcmC0D1p
+crw-rw---- 1 root root 116,  9 May 26 19:18 /dev/snd/pcmC1D3p
+crw-rw---- 1 root root 116,  2 May 26 19:18 /dev/snd/timer
+
+/dev/snd/by-path:
+total 0
+drwxr-xr-x 2 root root  80 May 26 19:18 .
+drwxr-xr-x 3 root root 260 May 26 19:18 ..
+lrwxrwxrwx 1 root root  12 May 26 19:18 pci-0000:00:14.2 -> ../controlC0
+lrwxrwxrwx 1 root root  12 May 26 19:18 pci-0000:01:05.1 -> ../controlC1
+
+
+!!Aplay/Arecord output
+!!------------
+
+APLAY
+
+**** List of PLAYBACK Hardware Devices ****
+card 0: SB [HDA ATI SB], device 0: ALC262 Analog [ALC262 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: SB [HDA ATI SB], device 1: ALC262 Digital [ALC262 Digital]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 1: HDMI [HDA ATI HDMI], device 3: ATI HDMI [ATI HDMI]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+ARECORD
+
+**** List of CAPTURE Hardware Devices ****
+card 0: SB [HDA ATI SB], device 0: ALC262 Analog [ALC262 Analog]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+card 0: SB [HDA ATI SB], device 1: ALC262 Digital [ALC262 Digital]
+  Subdevices: 1/1
+  Subdevice #0: subdevice #0
+
+!!Amixer output
+!!-------------
+
+!!-------Mixer controls for card 0 [SB]
+
+Card hw:0 'SB'/'HDA ATI SB at 0xf0500000 irq 16'
+  Mixer name	: 'Realtek ALC262'
+  Components	: 'HDA:10ec0262,10ec0262,00100202'
+  Controls      : 30
+  Simple ctrls  : 16
+Simple mixer control 'Master',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-46.50dB] [on]
+  Front Right: Playback 0 [0%] [-46.50dB] [on]
+Simple mixer control 'Front Mic',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-34.50dB] [off]
+  Front Right: Playback 0 [0%] [-34.50dB] [off]
+Simple mixer control 'Front Mic Boost',0
+  Capabilities: volume
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Limits: 0 - 3
+  Front Left: 0 [0%]
+  Front Right: 0 [0%]
+Simple mixer control 'Line',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-34.50dB] [off]
+  Front Right: Playback 0 [0%] [-34.50dB] [off]
+Simple mixer control 'CD',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-34.50dB] [off]
+  Front Right: Playback 0 [0%] [-34.50dB] [off]
+Simple mixer control 'Mic',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 0 [0%] [-34.50dB] [off]
+  Front Right: Playback 0 [0%] [-34.50dB] [off]
+Simple mixer control 'Mic Boost',0
+  Capabilities: volume
+  Playback channels: Front Left - Front Right
+  Capture channels: Front Left - Front Right
+  Limits: 0 - 3
+  Front Left: 0 [0%]
+  Front Right: 0 [0%]
+Simple mixer control 'IEC958',0
+  Capabilities: pswitch pswitch-joined cswitch cswitch-joined
+  Playback channels: Mono
+  Capture channels: Mono
+  Mono: Playback [off] Capture [off]
+Simple mixer control 'IEC958 Default PCM',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [on]
+Simple mixer control 'Beep',0
+  Capabilities: pvolume pswitch
+  Playback channels: Front Left - Front Right
+  Limits: Playback 0 - 31
+  Mono:
+  Front Left: Playback 1 [3%] [-33.00dB] [off]
+  Front Right: Playback 1 [3%] [-33.00dB] [off]
+Simple mixer control 'Capture',0
+  Capabilities: cvolume cswitch
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 31
+  Front Left: Capture 0 [0%] [-12.00dB] [on]
+  Front Right: Capture 0 [0%] [-12.00dB] [on]
+Simple mixer control 'Capture',1
+  Capabilities: cvolume cswitch
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 31
+  Front Left: Capture 0 [0%] [-12.00dB] [on]
+  Front Right: Capture 0 [0%] [-12.00dB] [on]
+Simple mixer control 'Capture',2
+  Capabilities: cvolume cswitch
+  Capture channels: Front Left - Front Right
+  Limits: Capture 0 - 31
+  Front Left: Capture 0 [0%] [-12.00dB] [on]
+  Front Right: Capture 0 [0%] [-12.00dB] [on]
+Simple mixer control 'Input Source',0
+  Capabilities: cenum
+  Items: 'Mic' 'Front Mic' 'Line' 'CD'
+  Item0: 'Mic'
+Simple mixer control 'Input Source',1
+  Capabilities: cenum
+  Items: 'Mic' 'Front Mic' 'Line' 'CD'
+  Item0: 'Mic'
+Simple mixer control 'Input Source',2
+  Capabilities: cenum
+  Items: 'Mic' 'Front Mic' 'Line' 'CD'
+  Item0: 'Mic'
+
+!!-------Mixer controls for card 1 [HDMI]
+
+Card hw:1 'HDMI'/'HDA ATI HDMI at 0xf0110000 irq 26'
+  Mixer name	: 'ATI RS690/780 HDMI'
+  Components	: 'HDA:1002791a,00791a00,00100000'
+  Controls      : 4
+  Simple ctrls  : 1
+Simple mixer control 'IEC958',0
+  Capabilities: pswitch pswitch-joined
+  Playback channels: Mono
+  Mono: Playback [off]
+
+
+!!Alsactl output
+!!-------------
+
+--startcollapse--
+state.SB {
+	control.1 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Master Playback Switch'
+		value.0 true
+		value.1 true
+	}
+	control.2 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -4650
+		comment.dbmax 0
+		iface MIXER
+		name 'Master Playback Volume'
+		value.0 0
+		value.1 0
+	}
+	control.3 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -3450
+		comment.dbmax 1200
+		iface MIXER
+		name 'Mic Playback Volume'
+		value.0 0
+		value.1 0
+	}
+	control.4 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Mic Playback Switch'
+		value.0 false
+		value.1 false
+	}
+	control.5 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -3450
+		comment.dbmax 1200
+		iface MIXER
+		name 'Front Mic Playback Volume'
+		value.0 0
+		value.1 0
+	}
+	control.6 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Front Mic Playback Switch'
+		value.0 false
+		value.1 false
+	}
+	control.7 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -3450
+		comment.dbmax 1200
+		iface MIXER
+		name 'Line Playback Volume'
+		value.0 0
+		value.1 0
+	}
+	control.8 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Line Playback Switch'
+		value.0 false
+		value.1 false
+	}
+	control.9 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -3450
+		comment.dbmax 1200
+		iface MIXER
+		name 'CD Playback Volume'
+		value.0 0
+		value.1 0
+	}
+	control.10 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'CD Playback Switch'
+		value.0 false
+		value.1 false
+	}
+	control.11 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 3'
+		comment.dbmin 0
+		comment.dbmax 3000
+		iface MIXER
+		name 'Mic Boost'
+		value.0 0
+		value.1 0
+	}
+	control.12 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 3'
+		comment.dbmin 0
+		comment.dbmax 3000
+		iface MIXER
+		name 'Front Mic Boost'
+		value.0 0
+		value.1 0
+	}
+	control.13 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Capture Switch'
+		value.0 true
+		value.1 true
+	}
+	control.14 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Capture Switch'
+		index 1
+		value.0 true
+		value.1 true
+	}
+	control.15 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Capture Switch'
+		index 2
+		value.0 true
+		value.1 true
+	}
+	control.16 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -1200
+		comment.dbmax 3450
+		iface MIXER
+		name 'Capture Volume'
+		value.0 0
+		value.1 0
+	}
+	control.17 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -1200
+		comment.dbmax 3450
+		iface MIXER
+		name 'Capture Volume'
+		index 1
+		value.0 0
+		value.1 0
+	}
+	control.18 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -1200
+		comment.dbmax 3450
+		iface MIXER
+		name 'Capture Volume'
+		index 2
+		value.0 0
+		value.1 0
+	}
+	control.19 {
+		comment.access 'read write'
+		comment.type ENUMERATED
+		comment.count 1
+		comment.item.0 Mic
+		comment.item.1 'Front Mic'
+		comment.item.2 Line
+		comment.item.3 CD
+		iface MIXER
+		name 'Input Source'
+		value Mic
+	}
+	control.20 {
+		comment.access 'read write'
+		comment.type ENUMERATED
+		comment.count 1
+		comment.item.0 Mic
+		comment.item.1 'Front Mic'
+		comment.item.2 Line
+		comment.item.3 CD
+		iface MIXER
+		name 'Input Source'
+		index 1
+		value Mic
+	}
+	control.21 {
+		comment.access 'read write'
+		comment.type ENUMERATED
+		comment.count 1
+		comment.item.0 Mic
+		comment.item.1 'Front Mic'
+		comment.item.2 Line
+		comment.item.3 CD
+		iface MIXER
+		name 'Input Source'
+		index 2
+		value Mic
+	}
+	control.22 {
+		comment.access read
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Con Mask'
+		value '0fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.23 {
+		comment.access read
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Pro Mask'
+		value '0f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.24 {
+		comment.access 'read write'
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Default'
+		value '0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.25 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Switch'
+		value false
+	}
+	control.26 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Default PCM Playback Switch'
+		value true
+	}
+	control.27 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Capture Switch'
+		value false
+	}
+	control.28 {
+		comment.access read
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Capture Default'
+		value '0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.29 {
+		comment.access 'read write'
+		comment.type INTEGER
+		comment.count 2
+		comment.range '0 - 31'
+		comment.dbmin -3450
+		comment.dbmax 1200
+		iface MIXER
+		name 'Beep Playback Volume'
+		value.0 1
+		value.1 1
+	}
+	control.30 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 2
+		iface MIXER
+		name 'Beep Playback Switch'
+		value.0 false
+		value.1 false
+	}
+}
+state.HDMI {
+	control.1 {
+		comment.access read
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Con Mask'
+		value '0fff000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.2 {
+		comment.access read
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Pro Mask'
+		value '0f00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.3 {
+		comment.access 'read write'
+		comment.type IEC958
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Default'
+		value '0400000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000'
+	}
+	control.4 {
+		comment.access 'read write'
+		comment.type BOOLEAN
+		comment.count 1
+		iface MIXER
+		name 'IEC958 Playback Switch'
+		value false
+	}
+}
+--endcollapse--
+
+
+!!All Loaded Modules
+!!------------------
+
+Module
+cpufreq_conservative
+cpufreq_userspace
+cpufreq_powersave
+powernow_k8
+loop
+dm_mod
+mousedev
+snd_hda_codec_atihdmi
+snd_hda_codec_realtek
+snd_hda_intel
+snd_hda_codec
+snd_hwdep
+snd_pcm
+container
+sg
+psmouse
+snd_timer
+evdev
+snd
+serio_raw
+pcspkr
+i2c_piix4
+thermal
+soundcore
+k10temp
+processor
+i2c_core
+snd_page_alloc
+button
+thermal_sys
+shpchp
+hwmon
+pci_hotplug
+aufs
+nfs
+lockd
+fscache
+nfs_acl
+auth_rpcgss
+sunrpc
+usbhid
+hid
+af_packet
+ohci_hcd
+ehci_hcd
+sky2
+r8169
+via_velocity
+crc_ccitt
+via_rhine
+mii
+xfs
+exportfs
+edd
+usb_storage
+usbcore
+nls_base
+
+
+!!Sysfs Files
+!!-----------
+
+/sys/class/sound/hwC0D0/init_pin_configs:
+0x12 0x411111f0
+0x14 0x01014010
+0x15 0x411111f0
+0x16 0x411111f0
+0x18 0x01a19840
+0x19 0x02a19c50
+0x1a 0x01813041
+0x1b 0x02014c20
+0x1c 0x9933014f
+0x1d 0x411111f0
+0x1e 0x01441130
+0x1f 0x01c46160
+
+/sys/class/sound/hwC0D0/driver_pin_configs:
+
+/sys/class/sound/hwC0D0/user_pin_configs:
+
+/sys/class/sound/hwC0D0/init_verbs:
+
+/sys/class/sound/hwC1D0/init_pin_configs:
+0x03 0x18560010
+
+/sys/class/sound/hwC1D0/driver_pin_configs:
+
+/sys/class/sound/hwC1D0/user_pin_configs:
+
+/sys/class/sound/hwC1D0/init_verbs:
+
+
+!!ALSA/HDA dmesg
+!!------------------
+
+[   15.867208] sd 0:0:0:0: Attached scsi generic sg0 type 0
+[   15.935131] HDA Intel 0000:00:14.2: PCI INT A -> GSI 16 (level, low) -> IRQ 16
+[   16.023778] hda_codec: ALC262: BIOS auto-probing.
+[   16.023829] ALSA hda_codec.c:4284: autoconfig: line_outs=1 (0x14/0x0/0x0/0x0/0x0)
+[   16.023833] ALSA hda_codec.c:4288:    speaker_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[   16.023835] ALSA hda_codec.c:4292:    hp_outs=0 (0x0/0x0/0x0/0x0/0x0)
+[   16.023838] ALSA hda_codec.c:4293:    mono: mono_out=0x0
+[   16.023840] ALSA hda_codec.c:4296:    dig-out=0x1e/0x0
+[   16.023841] ALSA hda_codec.c:4304:    inputs: mic=0x18, fmic=0x19, line=0x1a, fline=0x0, cd=0x1c, aux=0x0
+[   16.023844] ALSA hda_codec.c:4306:    dig-in=0x1f
+[   16.025232] ALSA patch_realtek.c:1297: realtek: No valid SSID, checking pincfg 0x411111f0 for NID 0x1d
+[   16.025234] ALSA patch_realtek.c:1377: realtek: Enable default setup for auto mode as fallback
+[   16.028142] HDA Intel 0000:01:05.1: PCI INT B -> GSI 19 (level, low) -> IRQ 19
+[   16.028204]   alloc irq_desc for 26 on node -1
+[   16.028206]   alloc kstat_irqs on node -1
+[   16.028212] HDA Intel 0000:01:05.1: irq 26 for MSI/MSI-X
+[   16.028227] HDA Intel 0000:01:05.1: setting latency timer to 64
+[   19.053007] ALSA hda_intel.c:709: azx_get_response timeout, switching to polling mode: last cmd=0x000f0001
+[   19.343809] mice: PS/2 mouse device common for all mice
+
 
