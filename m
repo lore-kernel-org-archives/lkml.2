@@ -1,119 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934783Ab0EZWzY (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:55:24 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:45005 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934280Ab0EZWzW (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:55:22 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Rusty Russell <rusty@rustcorp.com.au>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-Date: Thu, 27 May 2010 00:56:25 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: Linus Torvalds <torvalds@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-References: <201005252300.07739.rjw@sisk.pl> <201005261730.59058.rusty@rustcorp.com.au> <201005262127.26235.rusty@rustcorp.com.au>
-In-Reply-To: <201005262127.26235.rusty@rustcorp.com.au>
+	id S934803Ab0EZW4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:56:10 -0400
+Received: from earth.cora.nwra.com ([65.44.101.180]:40098 "EHLO
+	earth.cora.nwra.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934280Ab0EZW4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 18:56:08 -0400
+Message-ID: <4BFDA6F4.1080101@cora.nwra.com>
+Date: Wed, 26 May 2010 16:55:48 -0600
+From: Orion Poplawski <orion@cora.nwra.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+To: Alexander Graf <agraf@suse.de>
+CC: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Subject: Re: Clock jumps
+References: <loom.20100524T171038-56@post.gmane.org> <20100525062100.GP22163@redhat.com> <4BFD5616.6070302@cora.nwra.com> <4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de>
+In-Reply-To: <4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005270056.25748.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 May 2010, Rusty Russell wrote:
-> On Wed, 26 May 2010 05:30:58 pm Rusty Russell wrote:
-> > On Wed, 26 May 2010 09:17:32 am Linus Torvalds wrote:
-> > > 
-> > > On Wed, 26 May 2010, Rafael J. Wysocki wrote:
-> > > >
-> > > > I'm not able to reproduce the issue with the following commit reverted:
-> > > > 
-> > > > commit 480b02df3aa9f07d1c7df0cd8be7a5ca73893455
-> > > > Author: Rusty Russell <rusty@rustcorp.com.au>
-> > > > Date:   Wed May 19 17:33:39 2010 -0600
-> > > > 
-> > > >     module: drop the lock while waiting for module to complete initialization.
-> > > 
-> > > Hmm. That does seem to be buggy. We can't just drop and re-take the lock: 
-> > > that may make sense _internally_ as far as resolve_symbol() itself is 
-> > > concerned, but the caller will its own local variables, and some of those 
-> > > will no longer be valid if the lock was dropped. 
-> > 
-> > Well, yes, obviously I missed something :(  I'll look at it tonight after
-> > Arabella is asleep.
-> 
-> See if you can spot it (I acked the patch, so I can't point fingers):
-> 
->  free_core:
-> 	module_free(mod, mod->module_core);
-> 	/* mod will be freed with core. Don't access it beyond this line! */
->  free_percpu:
-> 	percpu_modfree(mod);
-> 
-> Only a year after Masami fixed that and added the comment, too :(
-> 
-> I suspect that the increased parallelism enabled by this patch uncovered this
-> bug.  Does this fix it?
+On 05/26/2010 11:31 AM, Alexander Graf wrote:
+>
+> On 26.05.2010, at 19:10, Orion Poplawski wrote:
+>
+>> On 05/25/2010 12:21 AM, Gleb Natapov wrote:
+>>> Adding kvm to CC.
+>>>
+>>> On Mon, May 24, 2010 at 04:06:32PM +0000, Orion Poplawski wrote:
+>>>> I have a KVM virtual machine running 2.6.33.4-95.fc13.x86_64 on a CentOS 5.5
+>>>> host whose clock jumps about 8-12 hours a couple times a day.  I have no idea
+>>>> what is causing it.  Fedora 12 and Centos 5.5 KVM machines run fine on the same
+>>>> host.  Is there any debugging I can enable to see what is jumping the clock?
+>>>>
+>>>> kvm-clock: cpu 0, msr 0:1ba4741, boot clock
+>>>> kvm-clock: cpu 0, msr 0:1e15741, primary cpu clock
+>>>> Switching to clocksource kvm-clock
+>>>> rtc_cmos 00:01: setting system clock to 2010-05-20 16:59:48 UTC (1274374788)
+>>
+>>
+>> Thanks, though I don't think it made it there.  I'm also not sure it's completely limited to KVM, though that is the only running system I am currently seeing the problem on.  I also see clock jumps during anaconda installs on physical hardware and apparently they have been present since at least F11.  Might be unrelated though.
+>>
+>> I'm really at a loss of how to debug this though.
+>
+> Do you have ntpd running inside the guest? I have a bug report lying around about 2.6.33 with kvm-clock jumping in time when ntpd is used: https://bugzilla.novell.com/show_bug.cgi?id=582260
+>
+> Alex
+>
 
-Since the commit has been reverted, do you still want me to test this patch?
-Quite frankly I'd prefer to test a complete replacement for that commit on top
-of current -git.
+That bug looks just like what I'm seeing.  I even see the soft lockup messages 
+sometimes as well.  May actually be seeing it with a Fedora 12 guest as well - 
+but it results in a hard hang.
 
-Rafael
-
-
-> (Side note: the locking should be simplified.  No code before simplify_symbols
-> actually needs the lock, so we should grab it just for that, then again at the
-> end.  We use kobjects to protect us from multiple loads as a side-effect, but
-> we should move that registration to the end).
-> 
-> Subject: module: fix reference to mod->percpu after freeing module.
-> 
-> The comment about the mod being freed is self-explanatory, but neither
-> Tejun nor I read it.  This bug was introduced in 259354deaa, after it
-> had previously been fixed in 6e2b75740b.  How embarrassing.
-> 
-> Signed-off-by: Rusty Russell <rusty@rustcorp.com.au>
-> Cc: Tejun Heo <tj@kernel.org>
-> Cc: Masami Hiramatsu <mhiramat@redhat.com>
-> 
-> diff --git a/kernel/module.c b/kernel/module.c
-> --- a/kernel/module.c
-> +++ b/kernel/module.c
-> @@ -2031,6 +2031,7 @@ static noinline struct module *load_modu
->  	long err = 0;
->  	void *ptr = NULL; /* Stops spurious gcc warning */
->  	unsigned long symoffs, stroffs, *strmap;
-> +	void __percpu *percpu;
->  
->  	mm_segment_t old_fs;
->  
-> @@ -2175,6 +2176,8 @@ static noinline struct module *load_modu
->  			goto free_mod;
->  		sechdrs[pcpuindex].sh_flags &= ~(unsigned long)SHF_ALLOC;
->  	}
-> +	/* Keep this around for failure path. */
-> +	percpu = mod_percpu(mod);
->  
->  	/* Determine total sizes, and put offsets in sh_entsize.  For now
->  	   this is done generically; there doesn't appear to be any
-> @@ -2480,7 +2483,7 @@ static noinline struct module *load_modu
->  	module_free(mod, mod->module_core);
->  	/* mod will be freed with core. Don't access it beyond this line! */
->   free_percpu:
-> -	percpu_modfree(mod);
-> +	free_percpu(percpu);
->   free_mod:
->  	kfree(args);
->  	kfree(strmap);
-> 
-> 
-
+-- 
+Orion Poplawski
+Technical Manager                     303-415-9701 x222
+NWRA/CoRA Division                    FAX: 303-415-9702
+3380 Mitchell Lane                  orion@cora.nwra.com
+Boulder, CO 80301              http://www.cora.nwra.com
