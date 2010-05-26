@@ -1,69 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755386Ab0EZPEt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:04:49 -0400
-Received: from monge.univ-mlv.fr ([193.55.63.80]:54505 "EHLO monge.univ-mlv.fr"
+	id S1755454Ab0EZPFb (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:05:31 -0400
+Received: from e6.ny.us.ibm.com ([32.97.182.146]:37907 "EHLO e6.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754180Ab0EZPEr (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:04:47 -0400
-X-Greylist: delayed 1178 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 11:04:47 EDT
-Message-ID: <4BFD33F0.1060908@univ-mlv.fr>
-Date: Wed, 26 May 2010 16:45:04 +0200
-From: =?UTF-8?B?U8OpYmFzdGllbiBQYXVtaWVy?= 
-	<sebastien.paumier@univ-mlv.fr>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100411)
-MIME-Version: 1.0
-To: linux-kernel@vger.kernel.org
-Subject: PROBLEM: getpid() returning same value as getppid()
-Content-Type: multipart/mixed;
- boundary="------------090906030804020905090502"
+	id S1755127Ab0EZPFa (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:05:30 -0400
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: Brian Bloniarz <bmb@athenacr.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BFC8C77.7020802@athenacr.com>
+References: <4BF58B59.7080901@athenacr.com>
+	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
+	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
+	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>
+	 <1274834888.4678.66.camel@localhost.localdomain>
+	 <4BFC8C77.7020802@athenacr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 08:04:59 -0700
+Message-ID: <1274886299.1759.8.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This is a multi-part message in MIME format.
---------------090906030804020905090502
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 8bit
+On Tue, 2010-05-25 at 22:50 -0400, Brian Bloniarz wrote:
+> john stultz wrote:
+> > On Tue, 2010-05-25 at 20:16 -0400, Brian Bloniarz wrote:
+> >> On 05/24/2010 09:33 PM, Brian Bloniarz wrote:
+> >>> So what's wrong with just adding a
+> >>> /sys/devices/system/clocksource/clocksource0/tsc_khz?
+> >> As an RFC:
+> >>
+> >> Add clocksource.sys_register & sys_unregister so the
+> >> current clocksource can add supplemental information to
+> >> /sys/devices/system/clocksource/clocksource0/
+> >>
+> >> Export tsc_khz when current_clocksource==tsc so that
+> >> daemons like NTP can account for the variability of
+> >> calibration results.
+> > 
+> > I think this is a bad idea, as it creates an ABI that is arch AND
+> > machine specific, which will cause portability problems in applications
+> > that expect the interface to be there.
+> 
+> It's an arch-independent ABI that returns ENOENT on
+> unsupported platforms ;)
 
-Hi,
-here is a bug that occurs on my kernel 2.6.31-21, maybe with older ones. 
-  If a C program contains a function with the constructor attribute that 
-calls getpid(), then, a call to syscall(SYS_fork) produces a son that 
-obtains the same value calling getpid() or getppid().
+Right but having applications add "Linux on x86 where the TSC is being
+used" logic is pretty poor solution. Its an issue that should be
+addressed from the kernel side.
 
-Best regards,
-Sébastien Paumier
+And really, if apps really wanted this info, they can fish it out
+of /proc/cpuinfo.
 
---------------090906030804020905090502
-Content-Type: text/x-csrc;
- name="test.c"
-Content-Transfer-Encoding: 7bit
-Content-Disposition: inline;
- filename="test.c"
+> Could you please explain what you envision as an
+> arch-independent solution to this problem?
+> I guess the tsc_long_calibration=1 alternative is
+> one.
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <sys/syscall.h>
-#include <sys/types.h>
-
-void foo(void) __attribute__ ((constructor));
-
-void foo(void) {
-	/* Removing this call to getpid() removes the bug */
-	getpid();
-}
+...and the tsc_khz= patch I posted earlier.
 
 
-int main(void){
-	int i=syscall(SYS_fork);
-	if (0==i) 
-		/* Big problem: the son prints the same value for getpid() and getppid() */
-		printf("__son : %d   father : %d__\n", getpid(), getppid());
-	else
-		printf("<<father : %d   son : %d>>\n", getpid(), i);
-	return 0;
-}
+thanks
+-john
 
---------------090906030804020905090502--
+
