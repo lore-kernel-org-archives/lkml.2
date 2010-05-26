@@ -1,110 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757332Ab0EZKWF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:22:05 -0400
-Received: from smtp-03.mandic.com.br ([200.225.81.143]:53809 "EHLO
-	smtp-03.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752265Ab0EZKWD (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:22:03 -0400
-Message-ID: <4BFCF645.2050400@cesarb.net>
-Date: Wed, 26 May 2010 07:21:57 -0300
-From: Cesar Eduardo Barros <cesarb@cesarb.net>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+	id S1757356Ab0EZKWi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:22:38 -0400
+Received: from gw1.transmode.se ([213.115.205.20]:34133 "EHLO gw1.transmode.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752265Ab0EZKWg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 06:22:36 -0400
+In-Reply-To: <20100526171424.447fac18.sfr@canb.auug.org.au>
+References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>	<20100525182040.f1882d0a.akpm@linux-foundation.org>
+	<20100526140900.5b091c16.sfr@canb.auug.org.au>	<OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
+	<20100525234116.71889c71.akpm@linux-foundation.org> <20100526171424.447fac18.sfr@canb.auug.org.au>
+Subject: Re: linux-next: build warning in Linus'tree
+X-KeepSent: E5212A1C:B62E8E51-C125772F:00371EE7;
+ type=4; name=$KeepSent
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org, Linus <torvalds@linux-foundation.org>
+X-Mailer: Lotus Notes Release 8.5.1 September 28, 2009
+Message-ID: <OFE5212A1C.B62E8E51-ONC125772F.00371EE7-C125772F.0038EEC8@transmode.se>
+From: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+Date: Wed, 26 May 2010 12:21:51 +0200
+X-MIMETrack: Serialize by Router on sesr04/Transmode(Release 8.5.1|September 28, 2009) at
+ 2010-05-26 12:22:35
 MIME-Version: 1.0
-To: Minchan Kim <minchan.kim@gmail.com>
-CC: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 0/3] mm: Swap checksum
-References: <4BF81D87.6010506@cesarb.net>	<20100523140348.GA10843@barrios-desktop>	<4BF974D5.30207@cesarb.net>	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>	<4BF9CF00.2030704@cesarb.net>	<AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>	<4BFA59F7.2020606@cesarb.net> <AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>
-In-Reply-To: <AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>
-Content-Type: text/plain; charset=UTF-8; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-type: text/plain; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Em 25-05-2010 20:52, Minchan Kim escreveu:
-> On Mon, May 24, 2010 at 7:50 PM, Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
->> And, in fact, there is a CRC code in the block layer; it is
->> CONFIG_BLK_DEV_INTEGRITY. However, it is not a generic solution; it needs
->> some extra prerequisites (like a disk low-level formatted with sectors with
->>> 512 bytes).
+Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2010/05/26 09:14:24:
 >
-> You mean BLK_DEV_INTEGRITY has a dependency with block device driver?
-> If you want to support checksum into suspend, At last, should we put
-> the checksum on disk?
+> Hi Andrew, Joakim,
 >
-> I mean could we extend BLK_DEV_INTEGRITY by more generic solution?
-> As you said, in case of swap, we don't need to put checksum on disk.
-
-CONFIG_BLK_DEV_INTEGRITY writes the checksum to the same sector as the 
-data. However, for that to be possible, the sector size is increased on 
-the disk itself, from 512 bytes to 520 bytes (and not all disks can do 
-that). It is not a generic solution. It also, as far as I can see, does 
-nothing against the disk simply failing to write and later returning 
-stale data, since the stale checksum would match the stale data.
-
-See the LWN article [1] and the presentations [2] for more detail.
-
-For suspend, the swap checksum pages would be saved together with the 
-rest of the memory (they are in the memory, after all), and the suspend 
-snapshot would have its own separate checksum (written directly to the 
-disk after the image).
-
-> If swap case, let it put the one on memory. If non-swap case, let it
-> put checksum on disk,
-> I am not sure it's possible.
+> On Tue, 25 May 2010 23:41:16 -0700 Andrew Morton <akpm@linux-foundation.org> wrote:
+> >
+> > On Wed, 26 May 2010 08:29:45 +0200 Joakim Tjernlund
+> <joakim.tjernlund@transmode.se> wrote:
+> >
+> > > Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2010/05/26 06:09:00:
+> > > >
+> > > > On Tue, 25 May 2010 18:20:40 -0700 Andrew Morton <akpm@linux-
+> foundation.org> wrote:
+> > > > >
+> > > > > hmpf.  Does this fix?
+> > > >
+> > > > No.
+> > > >
+> > > > The problem is that __LITTLE_ENDIAN is only defined in
+> > > > linux/byteorder/little_endian.h which is only included by little endian
+> > > > architectures ...
+> > >
+> > > Ah, not sure how to fix this ATM. Perhaps best to revert
+> > >    crc32: use __BYTE_ORDER macro for endian detection
+> > > for now.
+> >
+> > yup.
 >
-> When we have a unreliable disk, your point is that let's solve it with
-> (btrfs + swap) which both supports checksum. And my point is that
-> let's solve it with (any file system + swap) which is put on block
-> layer which supports checksum.
+> We also need to revert b3b77c8caef1750ebeea1054e39e358550ea9f55 ("endian:
+> #define __BYTE_ORDER") in order to get rid of the other warning I pointed out:
+>
+> In file included from fs/jfs/jfs_types.h:33,
+>                  from fs/jfs/jfs_incore.h:26,
+>                  from fs/jfs/file.c:22:
+> fs/jfs/endian24.h:36:101: warning: "__LITTLE_ENDIAN" is not defined
+>
+> I get this warning on powerpc builds for most of the files in fs/jfs ...
 
-A generic "checksumming block device" would be less efficient.
+endian24.h has:
+#if (defined(__KERNEL__) && defined(__LITTLE_ENDIAN)) || (defined(__BYTE_ORDER) && (__BYTE_ORDER == __LITTLE_ENDIAN))
+That won't work for BE CPU's. Perhaps something like this will?
+#if defined(__BIG_ENDIAN) && defined(__LITTLE_ENDIAN) && (__BYTE_ORDER == __LITTLE_ENDIAN) || defined(__LITTLE_ENDIAN)
 
-For the swap case, it cannot exploit the fact that its state tracking is 
-within the swapfile code. Avi Kivity's idea of storing the checksum in 
-otherwise wasted bits of the pte is an example of how this could be 
-exploited in the future. In fact, the reason I did it on the swap layer 
-(instead of interposing something in the block layer) was precisely to 
-make it easier to enhance the state tracking in the future (and also 
-because it felt the most natural layer to do it).
+The kernel borrows __LITTLE_ENDIAN/__BIG_ENDIAN from user space but does not impl. the
+full semantics that user space has. Adding full user space semantics isn't easy as it clashes with
+current use of __LITTLE_ENDIAN/__BIG_ENDIAN.
 
-It would also complicate adding checksums to the software suspend 
-snapshot. While normally you do not want to write the swap checksums to 
-the disk, you do want to write them when saving the memory snapshot - 
-which is written to the same block device. However, the checksums for 
-the rest of the swap pages are already being saved as part of the memory 
-snapshot (since the checksums were in the memory).
+If my suggestion above works, then one could start transforming current uses of __BYTE_ORDER,
+into similar constructs and once all are done, #define both __LITTLE_ENDIAN/__BIG_ENDIAN and
+move back to #if __BYTE_ORDER == __LITTLE_ENDIAN
 
-For the generic ("any file system") case, it is worse, since you 
-actually have to write the checksum to the disk, and unlike in the 
-software suspend case you cannot simply write them all in one pass at 
-the end. In the worst case, you would have to write twice for each 
-sector/page - once for the data, and once for the checksums 
-(CONFIG_BLK_DEV_INTEGRITY completely avoids this issue since with it the 
-checksum is together with the data in the same sector). Not to mention 
-fun things like write amplification.
+ Jocke
 
-A filesystem with data checksums can write the checksum as part of its 
-normal metadata updates (which it already has to do anyway).
-
-A generic "checksumming block device" could be a way of "updating" a 
-filesystem without checksums (or with only metadata checksums) to have 
-them. However, I believe it would be more productive to add them 
-directly to the filesystem itself. Even more since the only way I can 
-see of doing it efficiently in a generic block layer is by using lots of 
-filesystem-style tricks (things like a log-structured list of CRC 
-values, dividing the device in "block groups" to keep the checksum close 
-to the data, and so on).
-
-
-[1] Block layer: integrity checking and lots of partitions
-     http://lwn.net/Articles/290141/
-[2] http://oss.oracle.com/projects/data-integrity/documentation/
-
--- 
-Cesar Eduardo Barros
-cesarb@cesarb.net
-cesar.barros@gmail.com
