@@ -1,67 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758953Ab0EZKf5 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:35:57 -0400
-Received: from fg-out-1718.google.com ([72.14.220.152]:21830 "EHLO
-	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753269Ab0EZKfz convert rfc822-to-8bit (ORCPT
+	id S934054Ab0EZKkJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:40:09 -0400
+Received: from smtp-out.google.com ([74.125.121.35]:18170 "EHLO
+	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750727Ab0EZKkG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:35:55 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:sender:in-reply-to:references:date
-         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
-         :content-transfer-encoding;
-        b=AgJad1Sf3bXE+bnPv3QH/Xb23WpAQ8R8r2vlBsZJtDZz4rgHyHJogykyOP+dWpc+CM
-         HrDFEbXwKIEeYH56sm+QfpqlwgB7/Pc9CIODC/0vn2rS9suGzqaR49DPRzaXUuCba4kb
-         elU5KuVcj7CXChtnBUe6A8HAAS9kDqKdV/CYQ=
+	Wed, 26 May 2010 06:40:06 -0400
+DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
+	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
+	cc:content-type:content-transfer-encoding:x-system-of-record;
+	b=iGeIU0L0J9L2rMfktiMI/4lkkrEbN0t8tEU3GHZGJP5AllpsfwssCW5WHBcbujbgi
+	qE9fXMWixchNmmsIYh9cw==
 MIME-Version: 1.0
-In-Reply-To: <AANLkTilp1zWqvmUzGjEX3x9OBsdXdvNEG-znTjVvoM-b@mail.gmail.com>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
-	<201005252344.37639.rjw@sisk.pl>
-	<AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
-	<1274863342.5882.4850.camel@twins>
-	<20100526112303.3fef15a4@schatten.dmk.lab>
-	<1274866402.5882.5051.camel@twins>
-	<AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	<1274868384.5882.5169.camel@twins>
-	<AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	<1274869262.5882.5222.camel@twins>
-	<AANLkTilp1zWqvmUzGjEX3x9OBsdXdvNEG-znTjVvoM-b@mail.gmail.com>
-Date: Wed, 26 May 2010 13:35:53 +0300
-X-Google-Sender-Auth: 3FOuSfXkDoShHG4rodZwAokBaTI
-Message-ID: <AANLkTimeU75ZOEZhX3vxQkjcNo93toJCphY3bSU6b0lf@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: Pekka Enberg <penberg@cs.helsinki.fi>
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Florian Mickler <florian@mickler.org>,
+In-Reply-To: <1274869966.5882.5262.camel@twins>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005242049.18920.rjw@sisk.pl>
+	<87wrusvrqe.fsf@deeprootsystems.com>
+	<201005250138.16293.rjw@sisk.pl>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
+	<1274868593.5882.5185.camel@twins>
+	<AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
+	<1274869966.5882.5262.camel@twins>
+Date: Wed, 26 May 2010 03:40:01 -0700
+Message-ID: <AANLkTimQ_wahC5gnlip3APFzzfuCKab7y6OdlRyh2MWx@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 8)
+From: Brian Swetland <swetland@google.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: =?UTF-8?B?QXJ2ZSBIasO4bm5ldsOlZw==?= <arve@android.com>,
        "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
+       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
+X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/26 Arve Hjønnevåg <arve@android.com>:
->> So provide a C interface to it as well?
+On Wed, May 26, 2010 at 3:32 AM, Peter Zijlstra <peterz@infradead.org> wrote:
+> On Wed, 2010-05-26 at 03:25 -0700, Arve HjÃ¸nnevÃ¥g wrote:
 >
-> We could, but the result would be that any program that needs to block
-> suspend has to be android specific.
+>> and on systems where the
+>> same power state can be used from idle and suspend, we use suspend so
+>> we can stay in the low power state for minutes to hours instead of
+>> milliseconds to seconds.
+>
+> So don't you think working on making it possible for systems to be idle
+> _that_ long would improve things for everybody? as opposed to this
+> auto-suspend which only improves matters for those that (can) use it?
 
-Why? You could put the userspace daemon to tools/suspend-manager, for example?
+As we've stated a number of times in the several weeks of discussion
+(this time around) of this patchset, we are all in favor of improving
+runtime pm, finding and resolving issues that prevent idle, and
+heading toward ever lower power states in idle -- after all, this
+benefits our battery life in the cases when the system is not
+suspended as well as moving us closer to a future where the power
+savings between actively entering suspend and not doing so approach
+zero.  Aggressively entering the lowest possible power state at all
+times is our goal here.
+
+At the moment, the power savings from opportunistic suspend do
+directly lead to improved battery life, and there are some advantages
+to this model in the face of a non-optimal userspace (as we encounter
+in a world where there are not restrictions on what applications users
+may install and run).
+
+Brian
