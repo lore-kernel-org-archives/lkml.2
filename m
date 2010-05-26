@@ -1,17 +1,18 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756704Ab0EZP4B (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:56:01 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:45758 "EHLO mgw1.diku.dk"
+	id S1755221Ab0EZP4Y (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:56:24 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40726 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755439Ab0EZPzS (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:55:18 -0400
-Date: Wed, 26 May 2010 17:55:10 +0200 (CEST)
+	id S1755054Ab0EZP4U (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:56:20 -0400
+Date: Wed, 26 May 2010 17:56:14 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Karsten Keil <isdn@linux-pingi.de>, netdev@vger.kernel.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: [PATCH 4/17] drivers/isdn/hardware/mISDN: Add missing spin_unlock
-Message-ID: <Pine.LNX.4.64.1005261754560.23743@ask.diku.dk>
+To: Russell King <linux@arm.linux.org.uk>,
+       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [PATCH 7/17] arch/arm/common: Add missing spin_unlock_irqrestore
+Message-ID: <Pine.LNX.4.64.1005261756000.23743@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -20,9 +21,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Add a spin_unlock missing on the error path.  The return value of write_reg
-seems to be completely ignored, so it seems that the lock should be
-released in every case.
+Add a spin_unlock_irqrestore missing on the error path.  Although the lock
+is destroyed with the rest of the sachip structure in the function
+__sa1111_remove, it still seems useful to restore the interrupt state.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -32,35 +33,33 @@ The semantic match that finds this problem is as follows:
 expression E1;
 @@
 
-* spin_lock(E1,...);
+* spin_lock_irqsave(E1,...);
   <+... when != E1
   if (...) {
     ... when != E1
 *   return ...;
   }
   ...+>
-* spin_unlock(E1,...);
+* spin_unlock_irqrestore(E1,...);
 // </smpl>
 
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- drivers/isdn/hardware/mISDN/hfcsusb.c |    4 +++-
- 1 file changed, 3 insertions(+), 1 deletion(-)
+Perhaps the unlock is now too early?
 
-diff --git a/drivers/isdn/hardware/mISDN/hfcsusb.c b/drivers/isdn/hardware/mISDN/hfcsusb.c
-index b3b7e28..8700474 100644
---- a/drivers/isdn/hardware/mISDN/hfcsusb.c
-+++ b/drivers/isdn/hardware/mISDN/hfcsusb.c
-@@ -97,8 +97,10 @@ static int write_reg(struct hfcsusb *hw, __u8 reg, __u8 val)
- 			hw->name, __func__, reg, val);
- 
- 	spin_lock(&hw->ctrl_lock);
--	if (hw->ctrl_cnt >= HFC_CTRL_BUFSIZE)
-+	if (hw->ctrl_cnt >= HFC_CTRL_BUFSIZE) {
-+		spin_unlock(&hw->ctrl_lock);
- 		return 1;
-+	}
- 	buf = &hw->ctrl_buff[hw->ctrl_in_idx];
- 	buf->hfcs_reg = reg;
- 	buf->reg_val = val;
+ arch/arm/common/sa1111.c |    1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm/common/sa1111.c b/arch/arm/common/sa1111.c
+index a52a27c..59e38ff 100644
+--- a/arch/arm/common/sa1111.c
++++ b/arch/arm/common/sa1111.c
+@@ -959,6 +959,7 @@ static int sa1111_resume(struct platform_device *dev)
+ 	 */
+ 	id = sa1111_readl(sachip->base + SA1111_SKID);
+ 	if ((id & SKID_ID_MASK) != SKID_SA1111_ID) {
++		spin_unlock_irqrestore(&sachip->lock, flags);
+ 		__sa1111_remove(sachip);
+ 		platform_set_drvdata(dev, NULL);
+ 		kfree(save);
