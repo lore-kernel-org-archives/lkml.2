@@ -1,70 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757264Ab0EZMEa (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:04:30 -0400
-Received: from borg.medozas.de ([188.40.89.202]:59671 "EHLO borg.medozas.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752126Ab0EZME3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:04:29 -0400
-Date: Wed, 26 May 2010 14:04:27 +0200 (CEST)
-From: Jan Engelhardt <jengelh@medozas.de>
-To: alsa-devel@alsa-project.org
-cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, perex@perex.cz,
-       tiwai@suse.de
-Subject: No mixers on ATI RS780 Azalia
-Message-ID: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>
-User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	id S1757184Ab0EZMG6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:06:58 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:60538 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753474Ab0EZMG5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:06:57 -0400
+Subject: Re: [PATCH 1/2] mc13783: add LED support
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Philippe =?ISO-8859-1?Q?R=E9tornaz?= <philippe.retornaz@epfl.ch>
+Cc: Daniel Mack <daniel@caiaq.de>,
+       Uwe =?ISO-8859-1?Q?Kleine-K=F6nig?= 
+	<u.kleine-koenig@pengutronix.de>,
+       "linux-arm-kernel@lists.infradead.org" 
+	<linux-arm-kernel@lists.infradead.org>,
+       "maramaopercheseimorto@gmail.com" <maramaopercheseimorto@gmail.com>,
+       "sameo@linux.intel.com" <sameo@linux.intel.com>,
+       "s.hauer@pengutronix.de" <s.hauer@pengutronix.de>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       Longchamp Valentin <valentin.longchamp@epfl.ch>
+In-Reply-To: <201005251706.54665.philippe.retornaz@epfl.ch>
+References: <1274114423-30020-1-git-send-email-philippe.retornaz@epfl.ch>
+	 <201005181327.29529.philippe.retornaz@epfl.ch>
+	 <20100525145759.GJ30801@buzzloop.caiaq.de>
+	 <201005251706.54665.philippe.retornaz@epfl.ch>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 13:03:20 +0100
+Message-ID: <1274875400.24079.2.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi,
+On Tue, 2010-05-25 at 17:06 +0200, Philippe Rétornaz wrote:
+> Le mardi, 25 mai 2010 16.57:59, Daniel Mack a écrit :
+> > On Tue, May 18, 2010 at 01:27:29PM +0200, Philippe Rétornaz wrote:
+> > > Thank you for the review, I will post a v2 patch with the appropriates
+> > > fixes soon.
+> > 
+> > Just curious - is there a v2 of this patches coming?
+> > 
+> 
+> It has been posted the 19 May 2010. I'm sorry, I forgot to put you in CC.
+> http://lists.infradead.org/pipermail/linux-arm-kernel/2010-May/015777.html
+> 
+> BTW, what is the merge status of thoses patches ?
 
+The patch looks reasonable to me so I've queued them both in the leds
+tree since its more an LED change than any of the other subsystems.
 
-I have here a Samsung 320MXn2 monitor/mainboard (typical x86_64 
-environment) where I cannot get sound output to the internal speakers 
-working.
+Cheers,
 
-To start, there seem to be two sound cards:
+Richard
 
-lspci/lspci -n:
-00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA)
-01:05.1 Audio device: ATI Technologies Inc RS780 Azalia controller
-00:14.2 0403: 1002:4383
-01:05.1 0403: 1002:960f
-
-/proc/asound/cards:
- 0 [SB  ]: HDA-Intel - HDA ATI SB
-           HDA ATI SB at 0xf0500000 irq 16
- 1 [HDMI]: HDA-Intel - HDA ATI HDMI
-           HDA ATI HDMI at 0xf0110000 irq 19
-
-The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
-one.
-
-Under Windows XP, I see the following mixer elements for it:
-
- * Master Volume
- * Wave
- * SW Synth
- * CD Player
-
-Subsequently, there is sound (once I bump the volumes on these).
-
-However, in Linux up to including 2.6.34, I only see a single mixer 
-element:
-
- * IEC958/S/PDIF
-
-mplayer etc. all successfully write to the device, but since there are 
-not any further mixer controls, I can't unmute the essential channels.
-
-alsa-utils is version 1.0.21, from openSUSE 11.2 x86_64.
-
-
-Any help is appreciated.
-
-Thanks,
-Jan
