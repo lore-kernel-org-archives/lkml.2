@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757648Ab0EZU1q (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:27:46 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:41092 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752954Ab0EZU1p (ORCPT
+	id S1757158Ab0EZU3T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:29:19 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:35316 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751095Ab0EZU3R (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:27:45 -0400
+	Wed, 26 May 2010 16:29:17 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=message-id:date:from:user-agent:mime-version:to:cc:subject
-         :references:in-reply-to:content-type:content-transfer-encoding;
-        b=WL6zn4xOMtsCUpGQ3vt9BTcVg+RIb04GFCmImOuVW5W0Am7T71zR46x0xP7DjEnM6f
-         GZrSHWDuvrFSqRPpwPkMNN+Vmqn3ZqjcJLsYxxjYfLm1lYRMBtdbZtS+wTh2rh+ZYp1O
-         IxooEBlw2wnpUrluteEb8NNNvJ/0KyxeQRBKY=
-Message-ID: <4BFD8452.6060506@gmail.com>
-Date: Wed, 26 May 2010 13:28:02 -0700
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.4pre) Gecko/20091114 Lightning/1.0pre Thunderbird/3.0b4
+        h=date:from:to:cc:subject:message-id:mail-followup-to:references
+         :mime-version:content-type:content-disposition:in-reply-to
+         :user-agent;
+        b=l6alvIxX/Im+z9f3mADTT1nePQ5MNS+5S5V3ReOWGUpYOVIoM8kGjsDiuCG6ctUATP
+         wl0Q+sDyqJh6mjeP7r8u9ebIM3OFeSUXjRmRfBfnmSCF7TQDOWYcRgQPyY/GN/7QONEq
+         Lw6XAmk64RWhUKIFVPOv0JV9baGv72tWP1NuE=
+Date: Wed, 26 May 2010 22:28:43 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Denis Kirjanov <kirjanov@gmail.com>
+Cc: Bashlykov Arthur <madness@xakep.ru>, gregkh@suse.de,
+       devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: Re: [PATCH] Staging: rtl8192su: ieee80211: fix brace coding style
+	issue and other issues in ieee80211_softmac_wx.c
+Message-ID: <20100526202842.GO22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Denis Kirjanov <kirjanov@gmail.com>,
+	Bashlykov Arthur <madness@xakep.ru>, gregkh@suse.de,
+	devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
+References: <1274891337-7783-1-git-send-email-madness@xakep.ru> <20100526184808.GA6031@coldcone>
 MIME-Version: 1.0
-To: Jeffrey Merkey <jeffmerkey@gmail.com>
-CC: linux-kernel@vger.kernel.org
-Subject: Re: [ANNOUNCE] ndiswrapper-2.6.34
-References: <AANLkTilqascTmKEr_aFu2QxqabXaz7z2UXAQNV7HA6sT@mail.gmail.com>	<AANLkTikBJ31DBSqGmLDxpYFHY_DTKKrZnFbPVVlD_6YV@mail.gmail.com>	<4BFCB9ED.9090806@gmail.com> <AANLkTilNP1ymRBUpLJLfGpm2k46zMm4_XqcpAs1xsSqf@mail.gmail.com>
-In-Reply-To: <AANLkTilNP1ymRBUpLJLfGpm2k46zMm4_XqcpAs1xsSqf@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526184808.GA6031@coldcone>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 11:29 AM, Jeffrey Merkey wrote:
-> I am on it.  Thanks.  The 1.56 version seems OK except with older
-> laptops.  I'll work on this one this evening.
->
-> Jeff
->
->    
-no worries over here!!
+On Wed, May 26, 2010 at 10:48:08PM +0400, Denis Kirjanov wrote:
+> On Wed, May 26, 2010 at 20:28 +0400, Bashlykov Arthur wrote:
 
-Justin P. Mattock
+> > -	if (!ieee->proto_started){
+> > +	if (!ieee->proto_started) {
+> >  		ieee->iw_mode = wrqu->mode;
+> 
+> I guess we can drop braces with single else statement
+
+How Bashlykov has this is proper kernel style because the else statement
+has more than one line.
+
+> > -	}else{
+> > +	} else {
+> >  		ieee80211_stop_protocol(ieee);
+> >  		ieee->iw_mode = wrqu->mode;
+> >  		ieee80211_start_protocol(ieee);
+
+The rest of your comments were correct of course.  Thanks for reviewing
+this patch.
+
+regards,
+dan carpenter
