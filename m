@@ -1,76 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755357Ab0EZV4J (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 17:56:09 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44651 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752952Ab0EZV4E convert rfc822-to-8bit (ORCPT
+	id S1755063Ab0EZWCn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:02:43 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37115 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752996Ab0EZWCk (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 17:56:04 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Peter Zijlstra <peterz@infradead.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
-Date: Wed, 26 May 2010 23:57:28 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: Arve =?utf-8?q?Hj=C3=B8nnev=C3=A5g?= <arve@android.com>,
-       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>,
-       "Greg Kroah-Hartman" <gregkh@suse.de>, Avi Kivity <avi@redhat.com>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Magnus Damm <damm@igel.co.jp>, Nigel Cunningham <nigel@tuxonice.net>,
-       linux-doc@vger.kernel.org
-References: <1274482015-30899-1-git-send-email-arve@android.com> <1274482015-30899-3-git-send-email-arve@android.com> <1274863428.5882.4860.camel@twins>
-In-Reply-To: <1274863428.5882.4860.camel@twins>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005262357.28933.rjw@sisk.pl>
+	Wed, 26 May 2010 18:02:40 -0400
+Date: Wed, 26 May 2010 23:09:43 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Mickler <florian@mickler.org>
+Cc: Thomas Gleixner <tglx@linutronix.de>, Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526230943.6f5e5b37@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100526215409.33296d94@schatten.dmk.lab>
+References: <20100526171106.0e44a736@schatten.dmk.lab>
+	<alpine.LFD.2.00.1005261829540.2995@localhost.localdomain>
+	<20100526215409.33296d94@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 May 2010, Peter Zijlstra wrote:
-> On Fri, 2010-05-21 at 15:46 -0700, Arve Hjønnevåg wrote:
-> > +To create a suspend blocker from user space, open the suspend_blocker
-> > special
-> > +device file:
-> > +
-> > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
-> > +
-> > +then optionally call:
-> > +
-> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_SET_NAME(strlen(name)), name);
-> > +
-> > +To activate the suspend blocker call:
-> > +
-> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
-> > +
-> > +To deactivate it call:
-> > +
-> > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
-> > +
-> > +To destroy the suspend blocker, close the device:
-> > +
-> > +    close(fd);
+> > suspend blockers are completely backwards as they basically disable
+> > the kernels ability to do resource management.
 > 
-> Urgh, please let the open() be BLOCK, the close() be UNBLOCK, and keep
-> the SET_NAME thing if you really care.
+> I don't think this is a defect in the approach but the point of it. 
 
-SET_NAME wouldn't serve any purpose in that case.
+I think it's both. It's the point of it, and that itself is a defect. Its
+designed wrongly.
 
-This whole thing is related to the statistics part, which Arve says is
-essential to him.  He wants to collect statistics for each suspend blocker
-activated and deactivated so that he can tell who's causing problems by
-blocking suspend too often.  The name also is a part of this.
+> drivers code is needed anyway. What looses the kernel by implementing
+> suspend blockers, and later a more finegrained approach and mapping the
+> userspace part of suspend blockers on that finegrained approach later
+> on?
 
-In fact, without the statistics part the whole thing might be implemented
-as a single reference counter such that suspend would happen when it went down
-to zero.
+The Linux approach is to do the job right. That means getting the
+interface right and so it works across all the interested parties (or as
+close as we can get).
 
-Thanks,
-Rafael
+> >   - how much delay of wakeups is tolerated (missing interface)
+> 
+> Doesn't solve the segregation problem and is probably overkill for most
+> applications. I see this as an orthogonal thing (i.e. not
+> affecting this merge). 
+
+The key question that matters for suspend management is 'what wakeup
+delay is tolerated'. So it's absolutely fundamental.
+
+> True. But I wouldnt say, that it is the linux kernel who should force
+> this politics onto its users.
+
+This is the Linux way of doing things. It's like the GPL and being
+shouted at by Linus. They are things you accept when you choose to take
+part. Google chose to use Linux, if they want a feature upstream then the
+way you get it there is to figure out how to solve the real problem and
+make *everyone* (within reason) happy.
+
+We now have suggestions how to do the job properly so the right thing is
+probably to go and explore those suggestions not merge crap.
+
+Merging crap won't help anyway. The rest of the kernel community can
+still simply stonewall those interfaces, and a volunteer community has
+ways of dealing with abuse of process, notably by simply not getting
+around to, or implementing things directly contrary to the crap bits.
+
+So it's not even in the interest of people to play political games. Even
+if you get away with in the short term the people who rely on the junk
+will end up out on a limb and holding the baby when the crap hits the fan
+(see reiserfs)
+
+Alan
