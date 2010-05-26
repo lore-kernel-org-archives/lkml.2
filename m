@@ -1,49 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934368Ab0EZUua (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:50:30 -0400
-Received: from gabe.freedesktop.org ([131.252.210.177]:54732 "EHLO
-	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934128Ab0EZUu1 (ORCPT
+	id S1758953Ab0EZUvt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:51:49 -0400
+Received: from fg-out-1718.google.com ([72.14.220.155]:59413 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757184Ab0EZUvs convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:50:27 -0400
-From: Eric Anholt <eric@anholt.net>
-To: Daniel J Blueman <daniel.blueman@gmail.com>, dri-devel@lists.sf.net,
-       linux-kernel@vger.kernel.org, intel-gfx@lists.freedesktop.org
-Cc: Dave Airlie <airlied@linux.ie>
-Subject: Re: [2.6.34, patch] i915: fix lock imbalance on error path...
-In-Reply-To: <AANLkTimb489PFFsC96b00jeuqv0OOEk8NbwpTHu9K3Cl@mail.gmail.com>
-References: <AANLkTimb489PFFsC96b00jeuqv0OOEk8NbwpTHu9K3Cl@mail.gmail.com>
-User-Agent: Notmuch/0.3.1-16-g417274d (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
-Date: Wed, 26 May 2010 13:50:24 -0700
-Message-ID: <87iq6a1j73.fsf@pollan.anholt.net>
+	Wed, 26 May 2010 16:51:48 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=FCcBoumKknpqwfZpNMCxQqjFHQJ2kn1kN+ko7nEUx9REZN6Vwm1NvLg2Dr6Jfmkvs0
+         jUFHLeXscbgmWXJvUrPT+zb/J13xgoTqBoUS1UX0TjR+x4JJCiH7d0w+PJC8aYcMW4ET
+         ESi/yR3XEIK5E7vJedQn6Ah+p37KaV98hilVM=
 MIME-Version: 1.0
-Content-Type: multipart/signed; boundary="=-=-=";
-	micalg=pgp-sha1; protocol="application/pgp-signature"
+In-Reply-To: <1274869262.5882.5222.camel@twins>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+	 <201005252344.37639.rjw@sisk.pl>
+	 <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
+	 <1274863342.5882.4850.camel@twins>
+	 <20100526112303.3fef15a4@schatten.dmk.lab>
+	 <1274866402.5882.5051.camel@twins>
+	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
+	 <1274868384.5882.5169.camel@twins>
+	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+	 <1274869262.5882.5222.camel@twins>
+Date: Wed, 26 May 2010 22:51:45 +0200
+Message-ID: <AANLkTil-pPLUZBOpXp0naOyM8IFzQAEN7bUnZz21EFW5@mail.gmail.com>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: Linus Walleij <linus.ml.walleij@gmail.com>
+To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Florian Mickler <florian@mickler.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---=-=-=
-Content-Transfer-Encoding: quoted-printable
+2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2010-05-26 at 03:17 -0700, Arve Hjønnevåg wrote:
+>> > With a single suspend manager process that manages the suspend state you
+>> > can achieve the same goal.
+>> >
+>>
+>> Yes we don't need the /dev interface, but it is useful. Without it any
+>> program that needs to block suspend has to make a blocking ipc call
+>> into the suspend manager process. Android already does this for java
+>> code, but system processes written in C block suspend directly with
+>> the kernel since they cannot use the java APIs.
+>
+> So provide a C interface to it as well?
+>
+> Surely you can have the java thing have a unix socket or something a C
+> app can talk to. That shouldn't be hard at all.
+>
+> Or make the suspend manager a C proglet and provide a JNI interface, or
+> whatever.
 
-On Mon, 17 May 2010 14:23:52 +0100, Daniel J Blueman <daniel.blueman@gmail.=
-com> wrote:
-> While investigating Intel i5 Arrandale GPU lockups with -rc4, I
-> noticed a lock imbalance.
->=20
-> Signed-off-by: Daniel J Blueman <daniel.blueman@gmail.com>
+Android already has D-Bus:
+http://android.git.kernel.org/?p=platform/external/dbus.git;a=summary
 
-Applied.  Thanks!
+Which has Java bindings:
+http://dbus.freedesktop.org/doc/dbus-java/
 
---=-=-=
-Content-Type: application/pgp-signature
+D-Bus can be from C to send messages to the Java daemon.
+So why not use that if this seems to be a problem. It even brings
+serialized typing and all that funny stuff.
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv9iZEACgkQHUdvYGzw6vck/QCfbbsgRyHIZLN7V8WTjHsfNWEg
-jVYAn2IQ3RZur5NneJPCn+IQmC3LTTsV
-=dTVg
------END PGP SIGNATURE-----
---=-=-=--
+Yours,
+Linus Walleij
