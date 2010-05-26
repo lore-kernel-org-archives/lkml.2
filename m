@@ -1,54 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933391Ab0EZHiG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 03:38:06 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:35746 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751820Ab0EZHiE (ORCPT
+	id S1757610Ab0EZHir (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 03:38:47 -0400
+Received: from mailrelay007.isp.belgacom.be ([195.238.6.173]:62645 "EHLO
+	mailrelay007.isp.belgacom.be" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750951Ab0EZHiq (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 03:38:04 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:from:date:message-id:subject:to:cc:content-type;
-        b=lYlG2jxFEYWbSeu/D2JFepAw9VhskppjXd4fLCRmISLvj0wKTSosKLl52YYhHz8nF/
-         nDyR4W0NSfnsQyt47cdqTv8AakoRTBTd5alWzK6LVmo9TEdOUay/mpGTb2QQFp0hS1Hb
-         ktab+xmVCFQWeGoFVlDd2uR43UQ4//1kY9qOQ=
+	Wed, 26 May 2010 03:38:46 -0400
+X-Belgacom-Dynamic: yes
+X-IronPort-Anti-Spam-Filtered: true
+X-IronPort-Anti-Spam-Result: AvsEALds/EtbstI2/2dsb2JhbACeGnK/YA6FBQQ
+Date: Wed, 26 May 2010 09:38:43 +0200
+From: Wim Van Sebroeck <wim@iguana.be>
+To: Giel van Schijndel <me@mortis.eu>
+Cc: Hans de Goede <hdegoede@redhat.com>, Jean Delvare <khali@linux-fr.org>,
+       Jonathan Cameron <jic23@cam.ac.uk>,
+       Laurens Leemans <laurens@signips.com>, lm-sensors@lm-sensors.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH 3/3] [RFC] watchdog: f71808e_wdt: new watchdog driver
+	for Fintek F71808E
+Message-ID: <20100526073843.GJ3972@infomag.iguana.be>
+References: <20100325125005.6d58cfaf@lxorguk.ukuu.org.uk> <1269523063-30346-1-git-send-email-me@mortis.eu> <1269523063-30346-2-git-send-email-me@mortis.eu> <1269523063-30346-3-git-send-email-me@mortis.eu> <20100330090639.GA8822@salidar.me.mortis.eu> <20100520075229.GO4008@infomag.iguana.be> <20100525210824.GA7815@salidar.me.mortis.eu>
 MIME-Version: 1.0
-From: Frank Pan <frankpzh@gmail.com>
-Date: Wed, 26 May 2010 15:37:43 +0800
-Message-ID: <AANLkTil5HfBzgN-3ttSOUfQXxssR06nyIl1UoC9-zCiA@mail.gmail.com>
-Subject: [PATCH] A little bug in scrup, vt.c
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>,
-       Catalin Marinas <catalin.marinas@arm.com>,
-       Alan Cox <alan@linux.intel.com>, Daniel Mack <daniel@caiaq.de>
-Cc: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100525210824.GA7815@salidar.me.mortis.eu>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Greetings
+Hi Giel,
 
-The code uses vc->vc_cols instead of vc->vc_size_row by mistake, it
-will cause half of the region which is going to clear remain
-uncleared.
-The issue happens in background consoles, so it's hard to observe.
+> > Driver looks OK to me. Can't apply it before the I/O resource sharing
+> > is in place.  How do you want to proceed?
+> 
+> I would think applying it to watchdog-next to apply it for the next
+> kernel release (similar to Jean Delvare's linux-next).
 
-Frank Pan
+Will add it after 2.6.35-rc1 is out then.
 
-Signed-off-by: Frank Pan <frankpzh@gmail.com>
----
-diff --git a/drivers/char/vt.c b/drivers/char/vt.c
-index 2c5ebd4..f523383 100644
---- a/drivers/char/vt.c
-+++ b/drivers/char/vt.c
-@@ -304,7 +304,7 @@ static void scrup(struct vc_data *vc, unsigned int
-t, unsigned int b, int nr)
- 	d = (u32 *)(vc->vc_origin + vc->vc_size_row * t);
- 	s = (u32 *)(vc->vc_origin + vc->vc_size_row * (t + nr));
- 	scr_memmovew(d, s, (b - t - nr) * vc->vc_size_row);
--	scr_memsetw(d + (b - t - nr) * vc->vc_cols, vc->vc_video_erase_char,
-+	scr_memsetw(d + (b - t - nr) * vc->vc_size_row, vc->vc_video_erase_char,
- 		    vc->vc_size_row * nr);
- }
+Kind regards,
+Wim.
+
