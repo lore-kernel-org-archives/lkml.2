@@ -1,220 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757796Ab0EZUdK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:33:10 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53536 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755083Ab0EZUdG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:33:06 -0400
-Subject: Re: [PATCH 4/5] always lock the root (oldest) anon_vma
-From: Larry Woodman <lwoodman@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-In-Reply-To: <20100526154044.2769e707@annuminas.surriel.com>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
-	 <20100526154044.2769e707@annuminas.surriel.com>
-Content-Type: text/plain
-Date: Wed, 26 May 2010 16:36:53 -0400
-Message-Id: <1274906213.20515.111.camel@dhcp-100-19-198.bos.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S933989Ab0EZUdh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:33:37 -0400
+Received: from casper.infradead.org ([85.118.1.10]:40301 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755093Ab0EZUdg (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 16:33:36 -0400
+Date: Wed, 26 May 2010 17:33:16 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: LKML <linux-kernel@vger.kernel.org>,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
+       Tom Zanussi <tzanussi@gmail.com>, Mike Galbraith <efault@gmx.de>,
+       Paul Mackerras <paulus@samba.org>,
+       "David S. Miller" <davem@davemloft.net>
+Subject: Re: [GIT PULL 0/2] perf annotate fix and report improvoment
+Message-ID: <20100526203315.GD9874@ghostprotocols.net>
+References: <1274664671-27385-1-git-send-email-acme@infradead.org>
+ <AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
+ <20100526005531.GA9874@ghostprotocols.net>
+ <AANLkTim-xv9mNEwGCueV47AoKh6AXbrdbTdCEwZHaEHJ@mail.gmail.com>
+ <20100526182351.GB9874@ghostprotocols.net>
+ <AANLkTimOEUKYXzdMOiWE6gRxR7vJX36VscdLjRroqGLq@mail.gmail.com>
+ <20100526193255.GC9874@ghostprotocols.net>
+ <AANLkTinxVsp1qtfqjlwl-ngrcD9IBDg6GoBnAk07ABuo@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTinxVsp1qtfqjlwl-ngrcD9IBDg6GoBnAk07ABuo@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by casper.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 15:40 -0400, Rik van Riel wrote:
-> Subject: always lock the root (oldest) anon_vma
-> 
-> Always (and only) lock the root (oldest) anon_vma whenever we do something in an
-> anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
-> scanning only the VMAs that need to be scanned.  Many common operations still
-> took the anon_vma lock on the root anon_vma, so always taking that lock is not
-> expected to introduce any scalability issues.
-> 
-> However, always taking the same lock does mean we only need to take one lock,
-> which means rmap_walk on pages from any anon_vma in the vma is excluded from
-> occurring during an munmap, expand_stack or other operation that needs to
-> exclude rmap_walk and similar functions.
-> 
-> Also add the proper locking to vma_adjust.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+Em Wed, May 26, 2010 at 10:11:14PM +0200, Stephane Eranian escreveu:
+> On Wed, May 26, 2010 at 9:32 PM, Arnaldo Carvalho de Melo
+> <acme@infradead.org> wrote:
+> > Em Wed, May 26, 2010 at 09:07:05PM +0200, Stephane Eranian escreveu:
+> >> But in this example, I only really care about the symbols in the
+> >> noploop program (/tmp/noploop).
+> >>
+> >> Missing symbol support for the kernel should not cause perf to avoid
+> >> trying to resolve the symbols in other modules such as my user program
+> >> here.
+> >
+> > Right, my bad, I thought that the problem was about the kernel symbols.
+> >
+> > Then can you try replacing:
+> >
+> > perf annotate -i ~/perf.data noploop
+> >
+> > with:
+> >
+> > perf annotate -i ~/perf.data -d noploop
+> >
+> > And see if that helps?
+> >
+> Ok that works. But if I turned on TUI, then I cannot obtain
+> the same result. I am guessing it does not use the -d option.
 
-Tested and Acked-by: Larry Woodman <lwoodman@redhat.com>
+Humm, it should be working, i.e. -d processing is about adding a filter,
+lemme see...
 
-> ---
-> v3:
->  - fix locking inversion in vma_adjust, spotted by Andrea
->  - mm_take_all locks needs to use the bitflag in the root anon_vma,
->    since that is the one that gets locked (Andrea Arcangeli)
-> v2:
->  - conditionally take the anon_vma lock in vma_adjust, like introduced
->    in 252c5f94d944487e9f50ece7942b0fbf659c5c31  (with a proper comment)
-> 
->  include/linux/rmap.h |    8 ++++----
->  mm/ksm.c             |    2 +-
->  mm/migrate.c         |    2 +-
->  mm/mmap.c            |   30 ++++++++++++++++++++++--------
->  4 files changed, 28 insertions(+), 14 deletions(-)
-> 
-> Index: linux-2.6.34/include/linux/rmap.h
-> ===================================================================
-> --- linux-2.6.34.orig/include/linux/rmap.h
-> +++ linux-2.6.34/include/linux/rmap.h
-> @@ -104,24 +104,24 @@ static inline void vma_lock_anon_vma(str
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_lock(&anon_vma->lock);
-> +		spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
->  {
->  	struct anon_vma *anon_vma = vma->anon_vma;
->  	if (anon_vma)
-> -		spin_unlock(&anon_vma->lock);
-> +		spin_unlock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_lock(struct anon_vma *anon_vma)
->  {
-> -	spin_lock(&anon_vma->lock);
-> +	spin_lock(&anon_vma->root->lock);
->  }
->  
->  static inline void anon_vma_unlock(struct anon_vma *anon_vma)
->  {
-> -	spin_unlock(&anon_vma->lock);
-> +	spin_unlock(&anon_vma->root->lock);
->  }
->  
->  /*
-> Index: linux-2.6.34/mm/ksm.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/ksm.c
-> +++ linux-2.6.34/mm/ksm.c
-> @@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_it
->  {
->  	struct anon_vma *anon_vma = rmap_item->anon_vma;
->  
-> -	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-> +	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
-> Index: linux-2.6.34/mm/mmap.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/mmap.c
-> +++ linux-2.6.34/mm/mmap.c
-> @@ -506,6 +506,7 @@ int vma_adjust(struct vm_area_struct *vm
->  	struct vm_area_struct *importer = NULL;
->  	struct address_space *mapping = NULL;
->  	struct prio_tree_root *root = NULL;
-> +	struct anon_vma *anon_vma = NULL;
->  	struct file *file = vma->vm_file;
->  	long adjust_next = 0;
->  	int remove_next = 0;
-> @@ -578,6 +579,17 @@ again:			remove_next = 1 + (end > next->
->  		}
->  	}
->  
-> +	/*
-> +	 * When changing only vma->vm_end, we don't really need anon_vma
-> +	 * lock. This is a fairly rare case by itself, but the anon_vma
-> +	 * lock may be shared between many sibling processes.  Skipping
-> +	 * the lock for brk adjustments makes a difference sometimes.
-> +	 */
-> +	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
-> +		anon_vma = vma->anon_vma;
-> +		anon_vma_lock(anon_vma);
-> +	}
-> +
->  	if (root) {
->  		flush_dcache_mmap_lock(mapping);
->  		vma_prio_tree_remove(vma, root);
-> @@ -617,6 +629,8 @@ again:			remove_next = 1 + (end > next->
->  		__insert_vm_struct(mm, insert);
->  	}
->  
-> +	if (anon_vma)
-> +		anon_vma_unlock(anon_vma);
->  	if (mapping)
->  		spin_unlock(&mapping->i_mmap_lock);
->  
-> @@ -2466,23 +2480,23 @@ static DEFINE_MUTEX(mm_all_locks_mutex);
->  
->  static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
->  {
-> -	if (!test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-> +	if (!test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
->  		/*
->  		 * The LSB of head.next can't change from under us
->  		 * because we hold the mm_all_locks_mutex.
->  		 */
-> -		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
-> +		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
->  		/*
->  		 * We can safely modify head.next after taking the
-> -		 * anon_vma->lock. If some other vma in this mm shares
-> +		 * anon_vma->root->lock. If some other vma in this mm shares
->  		 * the same anon_vma we won't take it again.
->  		 *
->  		 * No need of atomic instructions here, head.next
->  		 * can't change from under us thanks to the
-> -		 * anon_vma->lock.
-> +		 * anon_vma->root->lock.
->  		 */
->  		if (__test_and_set_bit(0, (unsigned long *)
-> -				       &anon_vma->head.next))
-> +				       &anon_vma->root->head.next))
->  			BUG();
->  	}
->  }
-> @@ -2573,7 +2587,7 @@ out_unlock:
->  
->  static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
->  {
-> -	if (test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-> +	if (test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
->  		/*
->  		 * The LSB of head.next can't change to 0 from under
->  		 * us because we hold the mm_all_locks_mutex.
-> @@ -2584,10 +2598,10 @@ static void vm_unlock_anon_vma(struct an
->  		 *
->  		 * No need of atomic instructions here, head.next
->  		 * can't change from under us until we release the
-> -		 * anon_vma->lock.
-> +		 * anon_vma->root->lock.
->  		 */
->  		if (!__test_and_clear_bit(0, (unsigned long *)
-> -					  &anon_vma->head.next))
-> +					  &anon_vma->root->head.next))
->  			BUG();
->  		anon_vma_unlock(anon_vma);
->  	}
-> Index: linux-2.6.34/mm/migrate.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/migrate.c
-> +++ linux-2.6.34/mm/migrate.c
-> @@ -682,7 +682,7 @@ skip_unmap:
->  rcu_unlock:
->  
->  	/* Drop an anon_vma reference if we took one */
-> -	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-> +	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
->  		int empty = list_empty(&anon_vma->head);
->  		anon_vma_unlock(anon_vma);
->  		if (empty)
-> 
-> --
-> To unsubscribe, send a message with 'unsubscribe linux-mm' in
-> the body to majordomo@kvack.org.  For more info on Linux MM,
-> see: http://www.linux-mm.org/ .
-> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
+Yeah, in builtin-annotate.c
 
+        OPT_STRING('d', "dsos", &symbol_conf.dso_list_str, "dso[,dso...]",
+                   "only consider symbols in these dsos"),
+
+It sets the dso_list_str and that is used when processing events in:
+
+	perf_session__process_events
+		process_sample_event (in builtin-annotate.c)
+			event__preprocess_sample
+
+In event__preprocess_sample:
+
+     if (symbol_conf.dso_list &&
+         (!al->map || !al->map->dso ||
+          !(strlist__has_entry(symbol_conf.dso_list,
+                               al->map->dso->short_name) ||
+            (al->map->dso->short_name != al->map->dso->long_name &&
+             strlist__has_entry(symbol_conf.dso_list,
+                                al->map->dso->long_name)))))
+             goto out_filtered;
+
+Yeah, this is all done no matter what frontend is used :-\
+
+I just tried it here with:
+
+[root@emilia linux-2.6-tip]# perf report -d libc-2.12.so
+[root@emilia linux-2.6-tip]# perf annotate -d libc-2.12.so
+
+with
+
+[root@emilia linux-2.6-tip]# cat ~/.perfconfig 
+[tui]
+
+	report = on
+	annotate = on
+[root@emilia linux-2.6-tip]#
+
+And it works as expected.
+
+- Arnaldo
