@@ -1,55 +1,65 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757287Ab0EZL57 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:57:59 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:60437 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752851Ab0EZL55 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:57:57 -0400
-Subject: Re: [PATCH 3/3] gta02: Use pcf50633 backlight driver instead of
- platform backlight driver.
-From: Richard Purdie <rpurdie@rpsys.net>
-To: Samuel Ortiz <sameo@linux.intel.com>
-Cc: Ben Dooks <ben-linux@fluff.org>, Lars-Peter Clausen <lars@metafoo.de>,
+	id S1757282Ab0EZMAJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:00:09 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:34579 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752884Ab0EZMAG convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:00:06 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=vGE7iHcOuopdeoh80Bgpo3OMQw/GY95tWaw4fj/Y3q8/Iq3isDt58si39awXbnywgn
+         oowN0+pieG5EwUOysLSOirxSOtVdsZY4a2m4BasZlFz3y1uSYIAXjgv2P7R5NkZacn8L
+         91SNBP4nImq4/IkUUnFQC5Ew1YU0tU/lmoPow=
+MIME-Version: 1.0
+In-Reply-To: <E1OHEA9-0000Mv-8r@pomaz-ex.szeredi.hu>
+References: <1274867803-3050-1-git-send-email-xiaosuo@gmail.com> 
+	<E1OHEA9-0000Mv-8r@pomaz-ex.szeredi.hu>
+From: Changli Gao <xiaosuo@gmail.com>
+Date: Wed, 26 May 2010 19:59:45 +0800
+Message-ID: <AANLkTimyIyPbPd2yCuVNR6OImnFnIIxizE1ncY3ISMNH@mail.gmail.com>
+Subject: Re: [PATCH 3/3] sendfile: fix sendfile
+To: Miklos Szeredi <miklos@szeredi.hu>
+Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org
-In-Reply-To: <20100516220010.GA3236@sortiz.org>
-References: <1273625074-15312-1-git-send-email-lars@metafoo.de>
-	 <1273625074-15312-4-git-send-email-lars@metafoo.de>
-	 <20100512010211.GL2589@trinity.fluff.org> <1273760705.12731.12.camel@rex>
-	 <20100516220010.GA3236@sortiz.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 12:57:35 +0100
-Message-ID: <1274875055.24079.0.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-17 at 00:00 +0200, Samuel Ortiz wrote:
-> On Thu, May 13, 2010 at 10:25:05PM +0800, Richard Purdie wrote:
-> > On Wed, 2010-05-12 at 02:02 +0100, Ben Dooks wrote:
-> > > On Wed, May 12, 2010 at 02:44:34AM +0200, Lars-Peter Clausen wrote:
-> > > > Use the pcf50633 backlight driver instead of the platform backlight driver.
-> > > > 
-> > > > Signed-off-by: Lars-Peter Clausen <lars@metafoo.de>
-> > > > Cc: Ben Dooks <ben-linux@fluff.org>
-> > > 
-> > > ok, does anyone else have a comment on this?
-> > 
-> > Looks like a sensible idea to me but I'm travelling and don't have time
-> > to properly review the patches right now.
-> > 
-> > The main question is who takes which patches. I can take the main new
-> > backlight one, the other two I need opinions from the mfd (Samuel) and
-> > gta02 (?) maintainers...
-> The MFD patch looks good to me, you can add my:
-> Acked-by: Samuel Ortiz <sameo@linux.intel.com>
+On Wed, May 26, 2010 at 6:48 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
+>
+>>
+>> If output file is in non-block mode, in file should be seekable to avoid data
+>> losing.
+>
+> Like the previous patch, I don't agree.
 
-Thanks, I've queued these in the backlight tree.
+I don't think it isn't an API change, as the current manual page says:
 
-Cheers,
+" Presently  (Linux  2.6.9):  in_fd, must correspond to a file which sup-
+       ports mmap(2)-like operations (i.e., it cannot be a socket); "
 
-Richard
+and if file supports mmap-like operations, it should support pread too.
 
+>
+>>
+>> do_splice_from() shouldn't use sd->pos, as sd->pos is for file reading,
+>> file->f_pos should be used instead.
+>
+> This sounds sane.
+>
+> These changes look like three cadidates for separate patches.  Could
+> you please split this patch up, and submit the first and last change
+> as a separate patch?
+>
+
+OK. I'll do that later after all the issues are concluded.
+
+-- 
+Regards，
+Changli Gao(xiaosuo@gmail.com)
