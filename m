@@ -1,61 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754948Ab0EZN4e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:56:34 -0400
-Received: from mail.skyhub.de ([78.46.96.112]:52458 "EHLO mail.skyhub.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753830Ab0EZN4c (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:56:32 -0400
-Date: Wed, 26 May 2010 15:56:28 +0200
-From: Borislav Petkov <bp@alien8.de>
-To: Jacek J <69rydzyk69@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: CPU #1 not responding Problem
-Message-ID: <20100526135628.GA9127@a1.tnic>
-Mail-Followup-To: Borislav Petkov <bp@alien8.de>,
-	Jacek J <69rydzyk69@gmail.com>, linux-kernel@vger.kernel.org
-References: <AANLkTinHkcWaHs8Hf6zvRjftC5hPkpHbC2LTaz-h4TJ3@mail.gmail.com>
- <20100524065909.GA21310@liondog.tnic>
- <AANLkTinVaesYF60kbSHnASQUuO2g_LdN58EBpouYUqXT@mail.gmail.com>
+	id S1755257Ab0EZN67 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:58:59 -0400
+Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45409 "EHLO
+	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754752Ab0EZN6z (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 09:58:55 -0400
+X-Sasl-enc: 9n8yuEtK9fNYHAhPeeOMBueqC5c2kJ1tdsqy388Cz9Hy 1274882306
+Message-ID: <4BFD2901.20800@ladisch.de>
+Date: Wed, 26 May 2010 15:58:25 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
-In-Reply-To: <AANLkTinVaesYF60kbSHnASQUuO2g_LdN58EBpouYUqXT@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Jan Engelhardt <jengelh@medozas.de>
+CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
+References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>	<s5hmxvmzwwd.wl%tiwai@suse.de> <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
+In-Reply-To: <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jacek J <69rydzyk69@gmail.com>
-Date: Tue, May 25, 2010 at 07:55:52PM +0200
+Jan Engelhardt wrote:
+> On Wednesday 2010-05-26 14:10, Takashi Iwai wrote:
+>>> /proc/asound/cards:
+>>>  0 [SB  ]: HDA-Intel - HDA ATI SB
+>>>            HDA ATI SB at 0xf0500000 irq 16
+>>>  1 [HDMI]: HDA-Intel - HDA ATI HDMI
+>>>            HDA ATI HDMI at 0xf0110000 irq 19
+>>> 
+>>> The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
+>>> one.
+>>
+>>Hmm?  HDMI output as the "internal" speaker is abnormal.
+>>
+>>> Under Windows XP, I see the following mixer elements for it:
+>>> 
+>>>  * Master Volume
+>>>  * Wave
+>>>  * SW Synth
+>>>  * CD Player
+>>> 
+>>> Subsequently, there is sound (once I bump the volumes on these).
+>>
+>>There are definitely for the onboard sound, not for HDMI.
+> 
+> The "SB" card has many more mixers (counting  10) and Windows XP also
+> shows about that many for SB. But neither in Linux nor Windows does
+> the SB card have any effect; I do have to turn the bars of the "HDMI"
+> one.
+> 
+> Abnormal, well. It's (semi-)embedded, what did you expect.
 
-> thanks for your response. Dmesg is in attachment. Error is almost
-> unreproducable, seems random. I use 2.6.33 kernel from Arch
-> distribution.
+It is extremely unlike that your embedded device has separate chips to
+decode the HDMI sound signal and then convert it to analog, when the
+same is already available with the normal HDA device.
 
-So what looks suspicious to me is this
+Your alsa-info output shows that there is an ALC262 codec connected
+to the "SB" device; this chip wouldn't have been put there if it didn't
+have a function.
 
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC (acpi_id[0x00] lapic_id[0x00] enabled)
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC (acpi_id[0x01] lapic_id[0x01] enabled)
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC (acpi_id[0x02] lapic_id[0x02] enabled)
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC (acpi_id[0x03] lapic_id[0x03] enabled)
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC_NMI (acpi_id[0x00] dfl dfl lint[0x1])
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC_NMI (acpi_id[0x01] dfl dfl lint[0x1])
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC_NMI (acpi_id[0x02] dfl dfl lint[0x1])
-May 23 22:44:54 connexion1 kernel: ACPI: LAPIC_NMI (acpi_id[0x03] dfl dfl lint[0x1])
-May 23 22:44:54 connexion1 kernel: ACPI: IOAPIC (id[0x02] address[0xfec00000] gsi_base[0])
-May 23 22:44:54 connexion1 kernel: IOAPIC[0]: apic_id 2, version 33, address 0xfec00000, GSI 0-23
+Try unmuting and raising both the Master and Beep controls.
 
-and more specifically, the ioapic's id is 2 and it overlaps with the
-lapic id 2 of core 2. This could explain why in the broken case you
-get only 1 core up. The solution to that is to update your BIOS and
-hope that Gigabyte (your board maker) have fixed it already. We've
-seen similar initialization problems with b0rked Gigabyte boards, see
-https://bugzilla.kernel.org/show_bug.cgi?id=15289 and there the apic
-id's were also overlapping.
+The Windows mixer elements are software-emulated and shown for all
+devices.  (I don't know why the only working device is labeled "HDMI",
+maybe someone just mixed up the HDA devices.)
 
-HTH.
 
--- 
-Regards/Gruss,
-Boris.
+Regards,
+Clemens
