@@ -1,152 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755252Ab0EZOpI (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 10:45:08 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:44776 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab0EZOpG (ORCPT
+	id S1755351Ab0EZOpe (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:45:34 -0400
+Received: from mail-pw0-f46.google.com ([209.85.160.46]:35551 "EHLO
+	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752721Ab0EZOpc (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 10:45:06 -0400
+	Wed, 26 May 2010 10:45:32 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=ctt2bPA6cPnYbO9gc4GZYQLE9nvJ2Skv5OoyazIhmMZdMUFUjXiPrM4PGz2Kn+3047
-         GUSqhKlFF+ktTO+JUH4bVnZ+CnXZ+I5uOzokVxrm9x17DvbHbkQwCkXLk3tmj9gkOASF
-         mrsFqDTYKcrXITUP46J9fLMQcR1zKO4XK3BWI=
+        b=JI1W9NzMNlI9rabyfYCWvdRlbl2ZkA7t7ixtvkoxZxST5JibeiGA3BSGSwI5042Vd9
+         5N7hYV+UVXJ0ic+3bR0GMiWUmxl5ge5R25+zs4vDBJHh4pePikY+9V/A7SFs4oH8yw90
+         7OYCwea1fVsH70FLNeQDYov/YrZmHB5O9Cq2I=
 From: Changli Gao <xiaosuo@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, Matthew Wilcox <matthew@wil.cx>,
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
        Miklos Szeredi <mszeredi@suse.cz>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH v2 3/4]: sendfile: remove flags paramter of do_splice_direct()
-Date: Wed, 26 May 2010 22:44:14 +0800
-Message-Id: <1274885054-15698-1-git-send-email-xiaosuo@gmail.com>
+Subject: [PATCH v2 4/4] splice: fix updating sd->pos wrongly
+Date: Wed, 26 May 2010 22:44:43 +0800
+Message-Id: <1274885083-15735-1-git-send-email-xiaosuo@gmail.com>
 X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-remove flags paramter of do_splice_direct().
+fix updating sd->pos wrongly.
 
-the flags parameter of do_splice_direct() doesn't mean non-block read of
-in file, but non-block read/write of pipe. As the reader and writer of process
-internal pipe is the process itself, we don't need this flags.
+In error path, we don't need to updating sd->pos, if the file isn't seekable.
 
 Signed-off-by: Changli Gao <xiaosuo@gmail.com>
 ----
- fs/read_write.c    |   15 ++-------------
- fs/splice.c        |   19 +++----------------
- include/linux/fs.h |    2 +-
- 3 files changed, 6 insertions(+), 30 deletions(-)
-diff --git a/fs/read_write.c b/fs/read_write.c
-index 113386d..0688e05 100644
---- a/fs/read_write.c
-+++ b/fs/read_write.c
-@@ -796,7 +796,7 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
- 	struct inode * in_inode, * out_inode;
- 	loff_t pos;
- 	ssize_t retval;
--	int fput_needed_in, fput_needed_out, fl;
-+	int fput_needed_in, fput_needed_out;
- 
- 	/*
- 	 * Get input file, and verify that it is ok..
-@@ -846,18 +846,7 @@ static ssize_t do_sendfile(int out_fd, int in_fd, loff_t *ppos,
- 		count = max - pos;
- 	}
- 
--	fl = 0;
--#if 0
--	/*
--	 * We need to debate whether we can enable this or not. The
--	 * man page documents EAGAIN return for the output at least,
--	 * and the application is arguably buggy if it doesn't expect
--	 * EAGAIN on a non-blocking file descriptor.
--	 */
--	if (in_file->f_flags & O_NONBLOCK)
--		fl = SPLICE_F_NONBLOCK;
--#endif
--	retval = do_splice_direct(in_file, ppos, out_file, count, fl);
-+	retval = do_splice_direct(in_file, ppos, out_file, count);
- 
- 	if (retval > 0) {
- 		add_rchar(current, retval);
+ fs/splice.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 diff --git a/fs/splice.c b/fs/splice.c
-index eb602cb..57172ca 100644
+index 57172ca..c69b241 100644
 --- a/fs/splice.c
 +++ b/fs/splice.c
-@@ -1125,7 +1125,7 @@ ssize_t splice_direct_to_actor(struct file *in, struct splice_desc *sd,
- 	long ret, bytes;
- 	umode_t i_mode;
- 	size_t len;
--	int i, flags;
-+	int i;
+@@ -1185,7 +1185,8 @@ ssize_t splice_direct_to_actor(struct file *in, struct splice_desc *sd,
+ 		sd->pos = pos;
  
- 	/*
- 	 * We require the input being a regular file, as we don't want to
-@@ -1162,29 +1162,18 @@ ssize_t splice_direct_to_actor(struct file *in, struct splice_desc *sd,
- 	ret = 0;
- 	bytes = 0;
- 	len = sd->total_len;
--	flags = sd->flags;
--
--	/*
--	 * Don't block on output, we have to drain the direct pipe.
--	 */
--	sd->flags &= ~SPLICE_F_NONBLOCK;
- 
- 	while (len) {
- 		size_t read_len;
- 		loff_t pos = sd->pos, prev_pos = pos;
- 
--		ret = do_splice_to(in, &pos, pipe, len, flags);
-+		ret = do_splice_to(in, &pos, pipe, len, 0);
- 		if (unlikely(ret <= 0))
+ 		if (ret < read_len) {
+-			sd->pos = prev_pos + ret;
++			if (sd->pos)
++				sd->pos = prev_pos + ret;
  			goto out_release;
- 
- 		read_len = ret;
- 		sd->total_len = read_len;
- 
--		/*
--		 * NOTE: nonblocking mode only applies to the input. We
--		 * must not do the output in nonblocking mode as then we
--		 * could get stuck data in the internal pipe:
--		 */
- 		ret = actor(pipe, sd);
- 		if (unlikely(ret <= 0)) {
- 			sd->pos = prev_pos;
-@@ -1242,7 +1231,6 @@ static int direct_splice_actor(struct pipe_inode_info *pipe,
-  * @ppos:	input file offset
-  * @out:	file to splice to
-  * @len:	number of bytes to splice
-- * @flags:	splice modifier flags
-  *
-  * Description:
-  *    For use by do_sendfile(). splice can easily emulate sendfile, but
-@@ -1252,12 +1240,11 @@ static int direct_splice_actor(struct pipe_inode_info *pipe,
-  *
-  */
- long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
--		      size_t len, unsigned int flags)
-+		      size_t len)
- {
- 	struct splice_desc sd = {
- 		.len		= len,
- 		.total_len	= len,
--		.flags		= flags,
- 		.pos		= *ppos,
- 		.u.file		= out,
- 	};
-diff --git a/include/linux/fs.h b/include/linux/fs.h
-index 4079ef9..eb86433 100644
---- a/include/linux/fs.h
-+++ b/include/linux/fs.h
-@@ -2224,7 +2224,7 @@ extern ssize_t generic_file_splice_write(struct pipe_inode_info *,
- extern ssize_t generic_splice_sendpage(struct pipe_inode_info *pipe,
- 		struct file *out, loff_t *, size_t len, unsigned int flags);
- extern long do_splice_direct(struct file *in, loff_t *ppos, struct file *out,
--		size_t len, unsigned int flags);
-+		size_t len);
- 
- extern void
- file_ra_state_init(struct file_ra_state *ra, struct address_space *mapping);
+ 		}
+ 	}
