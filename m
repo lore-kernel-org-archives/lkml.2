@@ -1,85 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0EZRel (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:34:41 -0400
-Received: from gateway06.websitewelcome.com ([64.5.38.4]:52389 "HELO
-	gateway06.websitewelcome.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with SMTP id S1757184Ab0EZRek (ORCPT
+	id S1757350Ab0EZRfW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:35:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:37836 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757184Ab0EZRfU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:34:40 -0400
-X-Greylist: delayed 397 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 13:34:40 EDT
-DomainKey-Signature: a=rsa-sha1; q=dns; c=nofws; s=default; d=paralogos.com;
-	h=Received:Message-ID:Date:From:User-Agent:MIME-Version:To:CC:Subject:References:In-Reply-To:Content-Type:Content-Transfer-Encoding;
-	b=Vm0t1378OMWxsPQM1fuQfCp+AL44gv1lXjVGrdS0TYtUix2oOCQHP+UYTqmyf48ErG+bz4DbY/GFDscn4iEUMBV2livrpfpjIHbT/aRJtqjMOLQxbV2KduxYTnZwRjGK;
-Message-ID: <4BFD5A19.5030602@paralogos.com>
-Date: Wed, 26 May 2010 10:27:53 -0700
-From: "Kevin D. Kissell" <kevink@paralogos.com>
-User-Agent: Thunderbird 2.0.0.24 (X11/20100317)
+	Wed, 26 May 2010 13:35:20 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=BZz44+U082ZLJIUZ1JEp5uep19BmbMaLBGnqz2D1R7bd35CpPKFqeaczMUiZlgNX1o
+         kO4Cr2AQZ1XKVXCn/dc77UjSfW49T8in25g+U+9b5CMvhv89iUDZN5M+/gBXOB0QDdDA
+         7jjSwqHpJIVhGRAx4JFsiq/fnXBO7W8pNLJVw=
+Date: Wed, 26 May 2010 19:35:16 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: "K.Prasad" <prasad@linux.vnet.ibm.com>
+Cc: Michael Neuling <mikey@neuling.org>,
+       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Millton Miller <miltonm@bga.com>, David Gibson <dwg@au1.ibm.com>,
+       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Paul Mackerras <paulus@samba.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Roland McGrath <roland@redhat.com>
+Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
+	unregistration
+Message-ID: <20100526173515.GE5299@nowhere>
+References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net> <4250.1274867681@redhat.com> <20100526171742.GA5563@in.ibm.com> <20100526172314.GD5299@nowhere> <20100526173124.GA8283@in.ibm.com>
 MIME-Version: 1.0
-To: Ralf Baechle <ralf@linux-mips.org>
-CC: Julia Lawall <julia@diku.dk>, linux-mips@linux-mips.org,
-       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
-Subject: Affinity Automation (was Re: [PATCH 3/17] arch/mips/kernel: Add missing
- read_unlock)
-References: <Pine.LNX.4.64.1005261754390.23743@ask.diku.dk> <20100526163227.GA17043@linux-mips.org>
-In-Reply-To: <20100526163227.GA17043@linux-mips.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
-X-AntiAbuse: This header was added to track abuse, please include it with any abuse report
-X-AntiAbuse: Primary Hostname - gator750.hostgator.com
-X-AntiAbuse: Original Domain - vger.kernel.org
-X-AntiAbuse: Originator/Caller UID/GID - [47 12] / [47 12]
-X-AntiAbuse: Sender Address Domain - paralogos.com
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526173124.GA8283@in.ibm.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Ralf Baechle wrote:
-> Your patch appears correct - and mipsmt_sys_sched_setaffinity() even
-> more broken than you thought.  It duplicates some code from kernel/sched.c
-> and has gotten out of sync.
-Yeah, that was inevitable.  Since the distribution of the previous 
-message seems to cover concerned developers outside the MIPS community, 
-let me make one final(?) plea to actually do this right.
+On Wed, May 26, 2010 at 11:01:24PM +0530, K.Prasad wrote:
+> On Wed, May 26, 2010 at 07:23:15PM +0200, Frederic Weisbecker wrote:
+> > On Wed, May 26, 2010 at 10:47:42PM +0530, K.Prasad wrote:
+> > > On Wed, May 26, 2010 at 10:54:41AM +0100, David Howells wrote:
+> > > > K.Prasad <prasad@linux.vnet.ibm.com> wrote:
+> > > > 
+> > > > > > My understanding is weak function definitions must appear in a different C
+> > > > > > file than their call sites to work on some toolchains.
+> > > > > > 
+> > > > > 
+> > > > > Atleast, there are quite a few precedents inside the Linux kernel for
+> > > > > __weak functions being invoked from the file in which they are defined
+> > > > > (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
+> > > > > name a few).
+> > > > > Moreover the online GCC docs haven't any such constraints mentioned.
+> > > > 
+> > > > I've seen problems in this area.  gcc sometimes inlines a weak function that's
+> > > > in the same file as the call point.
+> > > > 
+> > > 
+> > > We've seen such behaviour even otherwise....even with noinline attribute
+> > > in place. I'm not sure if this gcc fix
+> > > (http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16922) helped correct the
+> > > behaviour, but the lesson has been to not trust a function to be
+> > > inlined/remain non-inline consistently.
+> > 
+> > 
+> > If we can't put the call to the function in the same file of its weak
+> > definition, then perf is totally screwed.
+> > 
+> > And in fact it makes __weak basically useless and unusable. I guess
+> > that happened in old gcc versions that have been fixed now.
+> > 
+> > Anyway, I'm personally fine with this patch (you can put my hack
+> > if you want).
+> >
+> 
+> I guess you meant "Acked-by:" :-)
 
-The MIPS SMTC support for managing a single FPU context on a processor 
-with multiple integer TC contexts involves having the system make 
-automous, real time, decisions about scheduling affinity.  It may be a 
-first, but it can't possibly be the only case, especially as we've 
-started seeing more and more mainstream multi-core, multi-thread 
-designs.  System and chip resources are going to be "closer" to one 
-processor or another.  The current Linux paradigm is that it's the 
-responsibility of programs, or users, to know what the optimal placement 
-of processes should be for a given system platform, and while it's 
-absolutely appropriate to provide that level of control for the cases 
-where the user really does know best, it's mildly insane to make that 
-the only way that thread placement can be optimized.  It's really the 
-OS's job to match demand to resources.
 
-My contention years ago was, and remains, that it would be a bad idea to 
-burden the main scheduler loop with checks for two different levels of 
-affinity, system-automatic and user-specified.  It would add 
-non-trivially to the cache footprint and execution overhead of thread 
-dispatch, and there's no logical need for it.  So the model I proposed, 
-and implemented in the cloned affinity system calls for SMTC, was that a 
-*single* affinity mask continue to be used by the scheduler, but that 
-the per-thread data structures carry two:  The one requested explicitly 
-by the user, and the one actually used by the scheduler.  The idea is 
-that normally those two are the same, but that the system - in the MIPS 
-SMTC case, the FPU emulator - can overlay its constraints with the 
-user's constraints to come up with an intersection-of-sets constraint 
-that satisfies both (there was a clause which prevents system affinity 
-heuristics from restricting the affinity mask to a null set of CPUs, 
-though of course the user can do that if he really wants to).
 
-There's nothing particularly MIPS-specific about the problem or the 
-solution.  Most of the mechanisms should really be in 
-platform-independent code, so we don't get the drift of cloned components.
+Oops, right :)
 
-I don't recall who owned the scheduler at the time, but whoever it was 
-was too busy dealing with mainstream processor problems to even engage 
-in a dialogue about this.  Is it time to raise the question again?
-
-          Regards,
-
-          Kevin K.
