@@ -1,76 +1,74 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759183Ab0EZKaV (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:30:21 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:65171 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1759154Ab0EZKaS convert rfc822-to-8bit (ORCPT
+	id S933953Ab0EZKbT (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:31:19 -0400
+Received: from smtprelay02.ispgateway.de ([80.67.31.40]:56809 "EHLO
+	smtprelay02.ispgateway.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0EZKbS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:30:18 -0400
+	Wed, 26 May 2010 06:31:18 -0400
+Message-ID: <4BFCF616.6060608@ladisch.de>
+Date: Wed, 26 May 2010 12:21:10 +0200
+From: Clemens Ladisch <clemens@ladisch.de>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-In-Reply-To: <1274869262.5882.5222.camel@twins>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
-	 <201005252344.37639.rjw@sisk.pl>
-	 <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
-	 <1274863342.5882.4850.camel@twins>
-	 <20100526112303.3fef15a4@schatten.dmk.lab>
-	 <1274866402.5882.5051.camel@twins>
-	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	 <1274868384.5882.5169.camel@twins>
-	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	 <1274869262.5882.5222.camel@twins>
-Date: Wed, 26 May 2010 03:30:17 -0700
-Message-ID: <AANLkTilp1zWqvmUzGjEX3x9OBsdXdvNEG-znTjVvoM-b@mail.gmail.com>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: Florian Mickler <florian@mickler.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Jesse Barnes <jbarnes@virtuousgeek.org>
+CC: linux-pci@vger.kernel.org, linux-kernel@vger.kernel.org
+Subject: [PATCH] PCI quirk: AMD 780: work around wrong vendor ID on APC bridge
+Content-Type: text/plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
+X-Df-Sender: linux-kernel@cl.domainfactory-kunde.de
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/26 Peter Zijlstra <peterz@infradead.org>:
-> On Wed, 2010-05-26 at 03:17 -0700, Arve Hjønnevåg wrote:
->> > With a single suspend manager process that manages the suspend state you
->> > can achieve the same goal.
->> >
->>
->> Yes we don't need the /dev interface, but it is useful. Without it any
->> program that needs to block suspend has to make a blocking ipc call
->> into the suspend manager process. Android already does this for java
->> code, but system processes written in C block suspend directly with
->> the kernel since they cannot use the java APIs.
->
-> So provide a C interface to it as well?
->
+In all AMD 780 family northbridges, the vendor ID of the internal
+graphics PCI/PCI bridge reads not as AMD but as that of the mainboard
+vendor, because the hardware actually returns the value of the subsystem
+vendor ID (erratum 18).
 
-We could, but the result would be that any program that needs to block
-suspend has to be android specific.
+We currently have additional quirk entries for Asus and Acer, but it is
+likely that we will encounter more systems with other vendor IDs.
 
-> Surely you can have the java thing have a unix socket or something a C
-> app can talk to. That shouldn't be hard at all.
->
-> Or make the suspend manager a C proglet and provide a JNI interface, or
-> whatever.
->
+Since we do not know in advance all possible vendor IDs, a better way to
+find the device is to declare the quirk on the host bridge, whose ID is
+always correct, and use that device as a stepping stone to find the PCI/
+PCI bridge, if present.
 
+Signed-off-by: Clemens Ladisch <clemens@ladisch.de>
 
--- 
-Arve Hjønnevåg
+--- a/drivers/pci/quirks.c
++++ b/drivers/pci/quirks.c
+@@ -2123,12 +2123,29 @@ static void __devinit quirk_disable_msi(
+ 	}
+ }
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, PCI_DEVICE_ID_AMD_8131_BRIDGE, quirk_disable_msi);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9602, quirk_disable_msi);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ASUSTEK, 0x9602, quirk_disable_msi);
+-DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AI, 0x9602, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_VIA, 0xa238, quirk_disable_msi);
+ DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_ATI, 0x5a3f, quirk_disable_msi);
+ 
++/*
++ * The APC bridge device in AMD 780 family northbridges has some random
++ * OEM subsystem ID in its vendor ID register (erratum 18), so instead
++ * we use the possible vendor/device IDs of the host bridge for the
++ * declared quirk, and search for the APC bridge by slot number.
++ */
++static void __devinit quirk_amd_780_apc_msi(struct pci_dev *host_bridge)
++{
++	struct pci_dev *apc_bridge;
++
++	apc_bridge = pci_get_slot(host_bridge->bus, PCI_DEVFN(1, 0));
++	if (apc_bridge) {
++		if (apc_bridge->device == 0x9602)
++			quirk_disable_msi(apc_bridge);
++		pci_dev_put(apc_bridge);
++	}
++}
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9600, quirk_amd_780_apc_msi);
++DECLARE_PCI_FIXUP_FINAL(PCI_VENDOR_ID_AMD, 0x9601, quirk_amd_780_apc_msi);
++
+ /* Go through the list of Hypertransport capabilities and
+  * return 1 if a HT MSI capability is found and enabled */
+ static int __devinit msi_ht_cap_enabled(struct pci_dev *dev)
