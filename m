@@ -1,53 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757533Ab0EZR46 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:56:58 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.123]:55127 "EHLO
-	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754950Ab0EZR44 (ORCPT
+	id S1757581Ab0EZR5H (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:57:07 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:17189 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754964Ab0EZR5C (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:56:56 -0400
-X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=JS33r_M2QPwA:10 a=hO-oPbc3tlwA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=JsYIXgcXxp9bVlUgKHsA:9 a=7JLBLTUMl3jVDX5rHISKgp85lvgA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
-X-Cloudmark-Score: 0
-X-Originating-IP: 74.67.89.75
-Subject: Re: [PATCH 0/8] tracing: further shrinking trace events
-From: Steven Rostedt <rostedt@goodmis.org>
-Reply-To: rostedt@goodmis.org
-To: Li Zefan <lizf@cn.fujitsu.com>
-Cc: Frederic Weisbecker <fweisbec@gmail.com>, Ingo Molnar <mingo@elte.hu>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <4BFA3728.3000701@cn.fujitsu.com>
-References: <4BFA3728.3000701@cn.fujitsu.com>
-Content-Type: text/plain; charset="ISO-8859-15"
-Organization: Kihon Technologies Inc.
-Date: Wed, 26 May 2010 13:56:54 -0400
-Message-ID: <1274896614.22648.247.camel@gandalf.stny.rr.com>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 26 May 2010 13:57:02 -0400
+Message-ID: <4BFD6076.9000005@oracle.com>
+Date: Wed, 26 May 2010 10:55:02 -0700
+From: Andy Grover <andy.grover@oracle.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Lightning/1.0b1 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Julia Lawall <julia@diku.dk>
+CC: "David S. Miller" <davem@davemloft.net>, rds-devel@oss.oracle.com,
+       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org, Zach Brown <zach.brown@oracle.com>
+Subject: Re: [PATCH 1/17] net/rds: Add missing mutex_unlock
+References: <Pine.LNX.4.64.1005261754030.23743@ask.diku.dk>
+In-Reply-To: <Pine.LNX.4.64.1005261754030.23743@ask.diku.dk>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: rcsinet13.oracle.com [148.87.113.125]
+X-CT-RefId: str=0001.0A090208.4BFD60E9.013E:SCFMA4539811,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 2010-05-24 at 16:22 +0800, Li Zefan wrote:
-> patch 1-2: reduce per trace event foot print
-> patch 3-5: convert some trace events to DEFINE_EVENT
-> patch 6-8: do some cleanups and thus shrink text size a bit
-> 
-> Save ~5.7K in text and ~2.9K in data:
-> 
->    text    data     bss     dec     hex filename
-> 7018612 2034376 7251132 16304120         f8c7f8 vmlinux.o.orig
-> 7012847 2031440 7251132 16295419         f8a5fb vmlinux.o
-> 
-> And save considerable memory allocated by trace_define_event().
-> 
-> -
+Reviewed-by: Zach Brown <zach.brown@oracle.com>
+Acked-by: Andy Grover <andy.grover@oracle.com>
 
-Thanks Li!
+-- Andy
 
-I just pulled all but patch 5 in. Ted Tso said he'd take that one.
-
--- Steve
-
+On 05/26/2010 08:54 AM, Julia Lawall wrote:
+> From: Julia Lawall<julia@diku.dk>
+>
+> Add a mutex_unlock missing on the error path.  In each case, whenever the
+> label out is reached from elsewhere in the function, mutex is not locked.
+>
+> The semantic match that finds this problem is as follows:
+> (http://coccinelle.lip6.fr/)
+>
+> //<smpl>
+> @@
+> expression E1;
+> @@
+>
+> * mutex_lock(E1);
+>    <+... when != E1
+>    if (...) {
+>      ... when != E1
+> *   return ...;
+>    }
+>    ...+>
+> * mutex_unlock(E1);
+> //</smpl>
+>
+> Signed-off-by: Julia Lawall<julia@diku.dk>
+>
+> ---
+>   net/rds/ib_cm.c |    1 +
+>   net/rds/iw_cm.c |    1 +
+>   2 files changed, 2 insertions(+)
+>
+> diff --git a/net/rds/ib_cm.c b/net/rds/ib_cm.c
+> index 10ed0d5..f688327 100644
+> --- a/net/rds/ib_cm.c
+> +++ b/net/rds/ib_cm.c
+> @@ -475,6 +475,7 @@ int rds_ib_cm_handle_connect(struct rdma_cm_id *cm_id,
+>   	err = rds_ib_setup_qp(conn);
+>   	if (err) {
+>   		rds_ib_conn_error(conn, "rds_ib_setup_qp failed (%d)\n", err);
+> +		mutex_unlock(&conn->c_cm_lock);
+>   		goto out;
+>   	}
+>
+> diff --git a/net/rds/iw_cm.c b/net/rds/iw_cm.c
+> index a9d951b..b5dd6ac 100644
+> --- a/net/rds/iw_cm.c
+> +++ b/net/rds/iw_cm.c
+> @@ -452,6 +452,7 @@ int rds_iw_cm_handle_connect(struct rdma_cm_id *cm_id,
+>   	err = rds_iw_setup_qp(conn);
+>   	if (err) {
+>   		rds_iw_conn_error(conn, "rds_iw_setup_qp failed (%d)\n", err);
+> +		mutex_unlock(&conn->c_cm_lock);
+>   		goto out;
+>   	}
+>
 
