@@ -1,52 +1,169 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934799Ab0EZXMJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:12:09 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:36196 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S934489Ab0EZXMG (ORCPT
+	id S1758189Ab0EZXMt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:12:49 -0400
+Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:54314 "EHLO
+	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1753367Ab0EZXMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:12:06 -0400
-Date: Wed, 26 May 2010 16:07:54 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>,
-       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
-       Masami Hiramatsu <mhiramat@redhat.com>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-In-Reply-To: <201005270056.25748.rjw@sisk.pl>
-Message-ID: <alpine.LFD.2.00.1005261559020.3689@i5.linux-foundation.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005261730.59058.rusty@rustcorp.com.au> <201005262127.26235.rusty@rustcorp.com.au> <201005270056.25748.rjw@sisk.pl>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+	Wed, 26 May 2010 19:12:47 -0400
+Date: Thu, 27 May 2010 09:12:14 +1000
+From: Dave Chinner <david@fromorbit.com>
+To: Nick Piggin <npiggin@suse.de>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100526231214.GB1395@dastard>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+ <20100526164116.GD22536@laptop>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <20100526164116.GD22536@laptop>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-
-
-On Thu, 27 May 2010, Rafael J. Wysocki wrote:
+On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
+> On Tue, May 25, 2010 at 06:53:06PM +1000, Dave Chinner wrote:
+> > @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
+> >   * which flags are set. This means we don't need to maintain multiple
+> >   * similar copies of this loop.
+> >   */
+> > -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
+> > +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+> >  {
+> >  	LIST_HEAD(referenced);
+> >  	LIST_HEAD(tmp);
+> >  	struct dentry *dentry;
+> > -	int cnt = 0;
+> >  
+> >  	BUG_ON(!sb);
+> > -	BUG_ON((flags & DCACHE_REFERENCED) && count == NULL);
+> > +	BUG_ON((flags & DCACHE_REFERENCED) && count == -1);
+> >  	spin_lock(&dcache_lock);
+> > -	if (count != NULL)
+> > -		/* called from prune_dcache() and shrink_dcache_parent() */
+> > -		cnt = *count;
+> > -restart:
+> > -	if (count == NULL)
+> > +	if (count == -1)
+> >  		list_splice_init(&sb->s_dentry_lru, &tmp);
+> >  	else {
+> >  		while (!list_empty(&sb->s_dentry_lru)) {
+> > @@ -492,13 +487,13 @@ restart:
+> >  			} else {
+> >  				list_move_tail(&dentry->d_lru, &tmp);
+> >  				spin_unlock(&dentry->d_lock);
+> > -				cnt--;
+> > -				if (!cnt)
+> > +				if (--count == 0)
+> >  					break;
+> >  			}
+> >  			cond_resched_lock(&dcache_lock);
+> >  		}
+> >  	}
+> > +prune_more:
+> >  	while (!list_empty(&tmp)) {
+> >  		dentry = list_entry(tmp.prev, struct dentry, d_lru);
+> >  		dentry_lru_del_init(dentry);
+> > @@ -516,88 +511,29 @@ restart:
+> >  		/* dentry->d_lock was dropped in prune_one_dentry() */
+> >  		cond_resched_lock(&dcache_lock);
+> >  	}
+> > -	if (count == NULL && !list_empty(&sb->s_dentry_lru))
+> > -		goto restart;
+> > -	if (count != NULL)
+> > -		*count = cnt;
+> > +	if (count == -1 && !list_empty(&sb->s_dentry_lru)) {
+> > +		list_splice_init(&sb->s_dentry_lru, &tmp);
+> > +		goto prune_more;
+> > +	}
 > 
-> Since the commit has been reverted, do you still want me to test this patch?
-> Quite frankly I'd prefer to test a complete replacement for that commit on top
-> of current -git.
+> Nitpick but I prefer just the restart label wher it is previously. This
+> is moving setup for the next iteration into the "error" case.
 
-I'm not re-applying it with the pointless semantic changes that are 
-visible to modules. It doesn't matter if they were informed, if it means 
-that they'll then just have some odd version dependency and add crazy 
-"#if LINUX_VERSION" tests that aren't even exact.
+Ok, will fix.
 
-I also wonder exactly what that module_mutex() actually ends up 
-protecting. 99% of load_module() seems to be stuff that is purely about 
-local issues. Maybe we could tighten the actual lock section to just the
-parts that actually expose the vmalloc'ed area to others?
+> > +static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+> > +{
+> > +	struct super_block *sb;
+> > +	int count;
+> > +
+> > +	sb = container_of(shrink, struct super_block, s_shrink);
+> > +
+> > +	/*
+> > +	 * Deadlock avoidance.  We may hold various FS locks, and we don't want
+> > +	 * to recurse into the FS that called us in clear_inode() and friends..
+> > +	 */
+> > +	if (!(gfp_mask & __GFP_FS))
+> > +		return -1;
+> > +
+> > +	/*
+> > +	 * if we can't get the umount lock, then there's no point having the
+> > +	 * shrinker try again because the sb is being torn down.
+> > +	 */
+> > +	if (!down_read_trylock(&sb->s_umount))
+> > +		return -1;
+> 
+> Would you just elaborate on the lock order problem somewhere? (the
+> comment makes it look like we *could* take the mutex if we wanted
+> to).
 
-It's generally pointless releasing a lock in the middle - that just makes 
-the lock even less valid. If it's valid to just release the lock (without 
-some retry logic starting everything from the beginning), it likely the 
-lock shouldn't have been held there in the first place.
+The shrinker is unregistered in deactivate_locked_super() which is
+just before ->kill_sb is called. The sb->s_umount lock is held at
+this point. hence is the shrinker is operating, we will deadlock if
+we try to lock it like this:
 
-		Linus
+	unmount:			shrinker:
+					down_read(&shrinker_lock);
+	down_write(&sb->s_umount)
+	unregister_shrinker()
+	down_write(&shrinker_lock)
+					prune_super()
+					  down_read(&sb->s_umount);
+					  (deadlock)
+
+hence if we can't get the sb->s_umount lock in prune_super(), then
+the superblock must be being unmounted and the shrinker should abort
+as the ->kill_sb method will clean up everything after the shrinker
+is unregistered. Hence the down_read_trylock().
+
+
+> > +	if (!sb->s_root) {
+> > +		up_read(&sb->s_umount);
+> > +		return -1;
+> > +	}
+> > +
+> > +	if (nr_to_scan) {
+> > +		/* proportion the scan between the two cacheѕ */
+> > +		int total;
+> > +
+> > +		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
+> > +		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
+> > +
+> > +		/* prune dcache first as icache is pinned by it */
+> > +		prune_dcache_sb(sb, count);
+> > +		prune_icache_sb(sb, nr_to_scan - count);
+> > +	}
+> > +
+> > +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+> > +						* sysctl_vfs_cache_pressure;
+> 
+> Do you think truncating in the divisions is at all a problem? It
+> probably doesn't matter much I suppose.
+
+Same code as currently exists. IIRC, the reasoning is that if we've
+got less that 100 objects to reclaim, then we're unlikely to be able
+to free up any memory from the caches, anyway.
+
+Cheers,
+
+Dave.
+-- 
+Dave Chinner
+david@fromorbit.com
