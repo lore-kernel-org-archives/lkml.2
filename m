@@ -1,99 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755349Ab0EZO1e (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 10:27:34 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:20996 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754673Ab0EZO1d convert rfc822-to-8bit (ORCPT
+	id S1755373Ab0EZOaS (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:30:18 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:39490 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755184Ab0EZOaO (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 10:27:33 -0400
+	Wed, 26 May 2010 10:30:14 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=j12jYD+C2+EhuUz4R1bzQa/a2N+Mbxr+AcEojHNddtH4xaf1RX5Y7uK1qSq7SXJodb
+         HlI9/PDjBRVwR2SA4GQMT5qZGAiONAjoEBAw3sCqFCyiX6N8yhZn/NuM29Iw71Rl1VbX
+         YR2saHlCnXI9l5OGogjWBG+4QBRxQEYBJ2h4I=
 MIME-Version: 1.0
-Message-ID: <cab5e5a7-e204-42c1-a70b-1e2960f999f3@default>
-Date: Wed, 26 May 2010 07:26:35 -0700 (PDT)
-From: Dan Magenheimer <dan.magenheimer@oracle.com>
-To: Thomas Gleixner <tglx@linutronix.de>, Brian Bloniarz <bmb@athenacr.com>
-Cc: john stultz <johnstul@us.ibm.com>, "H. Peter Anvin" <hpa@zytor.com>,
-       Ingo Molnar <mingo@elte.hu>, Peter Zijlstra <peterz@infradead.org>,
-       Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-Subject: RE: [PATCH] x86: Export tsc related information in sysfs
-References: <4BF58B59.7080901@athenacr.com>
- <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
- <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
- <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com>
- <1274733566.2954.73.camel@localhost.localdomain>
- <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
- <4BFB2902.50308@athenacr.com> <4BFC687A.9040304@athenacr.com>
- <1274834888.4678.66.camel@localhost.localdomain>
- <4BFC8C77.7020802@athenacr.com
- alpine.LFD.2.00.1005261432060.2995@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005261432060.2995@localhost.localdomain>
-X-Priority: 3
-X-Mailer: Oracle Beehive Extensions for Outlook 1.5.1.5.2  (401224) [OL
- 12.0.6514.5000]
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 8BIT
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090208.4BFD2FAD.0190:SCFMA922111,ss=1,fgs=0
+In-Reply-To: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
+References: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
+From: Eric Miao <eric.y.miao@gmail.com>
+Date: Wed, 26 May 2010 22:29:53 +0800
+Message-ID: <AANLkTimYG1kQBSmp2CPgLoPt-S4mNsJY2QV-cPJgV5lT@mail.gmail.com>
+Subject: Re: [PATCH] matrix_keypad: add support for clustered irq
+To: Luotao Fu <l.fu@pengutronix.de>
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Marek Vasut <marek.vasut@gmail.com>, linux-kernel@vger.kernel.org,
+       linux-input@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
+Content-Transfer-Encoding: 8bit
+X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4QEWdim006080
 
-> From: Thomas Gleixner [mailto:tglx@linutronix.de]
-> 
-> On Tue, 25 May 2010, Brian Bloniarz wrote:
-> 
-> > john stultz wrote:
-> > > On Tue, 2010-05-25 at 20:16 -0400, Brian Bloniarz wrote:
-> > >> On 05/24/2010 09:33 PM, Brian Bloniarz wrote:
-> > >>> So what's wrong with just adding a
-> > >>> /sys/devices/system/clocksource/clocksource0/tsc_khz?
-> > >> As an RFC:
-> > >>
-> > >> Add clocksource.sys_register & sys_unregister so the
-> > >> current clocksource can add supplemental information to
-> > >> /sys/devices/system/clocksource/clocksource0/
-> > >>
-> > >> Export tsc_khz when current_clocksource==tsc so that
-> > >> daemons like NTP can account for the variability of
-> > >> calibration results.
-> > >
-> > > I think this is a bad idea, as it creates an ABI that is arch AND
-> > > machine specific, which will cause portability problems in
-> applications
-> > > that expect the interface to be there.
-> >
-> > It's an arch-independent ABI that returns ENOENT on
-> > unsupported platforms ;)
-> >
-> > Could you please explain what you envision as an
-> > arch-independent solution to this problem?
-> > I guess the tsc_long_calibration=1 alternative is
-> > one.
-> 
-> Arch independent solution is to provide information about the current
-> clock source in general. This is _NOT_ a TSC specific problem, you
-> have the same trouble with any other clocksource which gets calibrated
-> and does not take it's frequency as a constant value from boot loader,
-> configuration or some CPU/chipset register. The only missing piece is
-> a frequency member in struct clocksource which needs to be filled in
-> by the arch/machine specific code.
-
-Actually there is already a frequency in struct clocksource except
-it's represented by the two components: mult and shift.  Maybe
-it would be best to expose these instead of khz (for all clocksources)
-so as to limit abuse by naive users.
-
-So, Thomas and John, if Brian's patch is modified to provide:
-
-/sys/devices/system/clocksource/clocksource0/current_mult
-/sys/devices/system/clocksource/clocksource0/current_shift
-and/or
-/sys/devices/system/clocksource/clocksource0/current_khz
-
-is that an acceptable arch-independent patch? (And which do
-you prefer?)
-
+On Wed, May 26, 2010 at 9:57 PM, Luotao Fu <l.fu@pengutronix.de> wrote:> This one adds support of a combined irq source for the whole matrix keypad.> This can be useful all rows and columns of the keypad is e.g. connected to> a GPIO expander, which only has one interrupt line for all events on every> single GPIO.>> Signed-off-by: Luotao Fu <l.fu@pengutronix.de>> --->  drivers/input/keyboard/matrix_keypad.c |   80 ++++++++++++++++++++++++++------>  include/linux/input/matrix_keypad.h    |    5 ++>  2 files changed, 70 insertions(+), 15 deletions(-)>> diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c> index b443e08..260dcb0 100644> --- a/drivers/input/keyboard/matrix_keypad.c> +++ b/drivers/input/keyboard/matrix_keypad.c> @@ -87,8 +87,12 @@ static void enable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               enable_irq(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  static void disable_row_irqs(struct matrix_keypad *keypad)> @@ -96,8 +100,12 @@ static void disable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               disable_irq_nosync(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  /*> @@ -226,6 +234,17 @@ static int matrix_keypad_suspend(struct device *dev)>        matrix_keypad_stop(keypad->input_dev);>>        if (device_may_wakeup(&pdev->dev)) {> +               if (pdata->clustered_irq > 0) {> +                       unsigned int cirq = pdata->clustered_irq;> +> +                       if (enable_irq_wake(cirq) == 0) {> +                               for (i = 0; i < pdata->num_row_gpios; i++)> +                                       __set_bit(i, keypad->disabled_gpios);> +                       }> +> +                       goto out;> +               }> +
+This might deserve a separate function, and what is the usage of disabled_gpios,I seem to find nowhere (except in the resume routine).
+>                for (i = 0; i < pdata->num_row_gpios; i++) {>                        if (!test_bit(i, keypad->disabled_gpios)) {>                                unsigned int gpio = pdata->row_gpios[i];> @@ -235,7 +254,7 @@ static int matrix_keypad_suspend(struct device *dev)>                        }>                }>        }> -> +out:>        return 0;>  }>> @@ -247,6 +266,17 @@ static int matrix_keypad_resume(struct device *dev)>        int i;>>        if (device_may_wakeup(&pdev->dev)) {> +               if (pdata->clustered_irq > 0) {> +                       unsigned int cirq = pdata->clustered_irq;> +> +                       if (disable_irq_wake(cirq) == 0) {> +                               for (i = 0; i < pdata->num_row_gpios; i++)> +                                       clear_bit(i, keypad->disabled_gpios);> +                       }> +> +                       goto out;> +               }> +
+Better a separate routine.
+>                for (i = 0; i < pdata->num_row_gpios; i++) {>                        if (test_and_clear_bit(i, keypad->disabled_gpios)) {>                                unsigned int gpio = pdata->row_gpios[i];> @@ -256,6 +286,7 @@ static int matrix_keypad_resume(struct device *dev)>                }>        }>> +out:>        matrix_keypad_start(keypad->input_dev);>>        return 0;> @@ -296,17 +327,31 @@ static int __devinit init_matrix_gpio(struct platform_device *pdev,>                gpio_direction_input(pdata->row_gpios[i]);>        }>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +       if (pdata->clustered_irq > 0) {> +               err = request_irq(pdata->clustered_irq,>                                matrix_keypad_interrupt,> -                               IRQF_DISABLED |> -                               IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,> +                               pdata->clustered_irq_flags,>                                "matrix-keypad", keypad);>                if (err) {>                        dev_err(&pdev->dev,> -                               "Unable to acquire interrupt for GPIO line %i\n",> -                               pdata->row_gpios[i]);> -                       goto err_free_irqs;> +                               "Unable to acquire clustered interrupt\n");> +                       goto err_free_rows;> +               }> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++) {> +                       err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +                                       matrix_keypad_interrupt,> +                                       IRQF_DISABLED |> +                                       IRQF_TRIGGER_RISING |> +                                       IRQF_TRIGGER_FALLING,> +                                       "matrix-keypad", keypad);> +                       if (err) {> +                               dev_err(&pdev->dev,> +                                       "Unable to acquire interrupt "> +                                       "for GPIO line %i\n",> +                                       pdata->row_gpios[i]);> +                               goto err_free_irqs;> +                       }
+Ditto.
+>                }>        }>> @@ -418,11 +463,16 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)>>        device_init_wakeup(&pdev->dev, 0);>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);> -               gpio_free(pdata->row_gpios[i]);> +       if (pdata->clustered_irq > 0) {> +               free_irq(pdata->clustered_irq, keypad);> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);>        }>> +       for (i = 0; i < pdata->num_row_gpios; i++)> +               gpio_free(pdata->row_gpios[i]);> +>        for (i = 0; i < pdata->num_col_gpios; i++)>                gpio_free(pdata->col_gpios[i]);>> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h> index c964cd7..8e8dc2e 100644> --- a/include/linux/input/matrix_keypad.h> +++ b/include/linux/input/matrix_keypad.h> @@ -63,6 +63,11 @@ struct matrix_keypad_platform_data {>        /* key debounce interval in milli-second */>        unsigned int    debounce_ms;>> +       /* used if interrupts of all row/column GPIOs are bundled to one single> +        * irq */> +       unsigned int    clustered_irq;> +       unsigned int    clustered_irq_flags;> +>        bool            active_low;>        bool            wakeup;>        bool            no_autorepeat;> --> 1.7.0>>
+Otherwise looks OK to me.���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
