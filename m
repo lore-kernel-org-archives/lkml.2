@@ -1,55 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757283Ab0EZRb6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:31:58 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:44015 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754725Ab0EZRbz (ORCPT
+	id S1757292Ab0EZRdG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:33:06 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:57703 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1757184Ab0EZRdC (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:31:55 -0400
-Date: Wed, 26 May 2010 10:30:02 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
-Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
-       evan_ko@phison.com
-Subject: [PATCH -next] staging/phison: depends on ATA_BMDMA
-Message-Id: <20100526103002.ac2c6703.randy.dunlap@oracle.com>
-In-Reply-To: <20100526153443.f18a4d2b.sfr@canb.auug.org.au>
-References: <20100526153443.f18a4d2b.sfr@canb.auug.org.au>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090209.4BFD5B02.00C4:SCFMA922111,ss=1,fgs=0
+	Wed, 26 May 2010 13:33:02 -0400
+Date: Wed, 26 May 2010 19:32:52 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: Arve Hj?nnev?g <arve@android.com>
+Cc: Matthew Garrett <mjg@redhat.com>,
+       Kevin Hilman <khilman@deeprootsystems.com>,
+       linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>, Tejun Heo <tj@kernel.org>,
+       Oleg Nesterov <oleg@redhat.com>, Paul Walmsley <paul@pwsan.com>,
+       magnus.damm@gmail.com, mark gross <mgross@linux.intel.com>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Geoff Smith <geoffx.smith@intel.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 6)
+Message-ID: <20100526173252.GC9069@elf.ucw.cz>
+References: <1272667021-21312-1-git-send-email-arve@android.com>
+ <87wrvl5479.fsf@deeprootsystems.com>
+ <20100503215028.GB18910@srcf.ucam.org>
+ <20100524185754.GD1292@ucw.cz>
+ <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTilR3CgkLRfxMN_A79kuC_KOgsfW4oNUDPZFlZFW@mail.gmail.com>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Randy Dunlap <randy.dunlap@oracle.com>
+On Mon 2010-05-24 18:16:15, Arve Hj?nnev?g wrote:
+> On Mon, May 24, 2010 at 11:57 AM, Pavel Machek <pavel@ucw.cz> wrote:
+> > Hi!
+> >
+> >> I agree that the runtime scenario is a far more appealing one from an
+> >> aesthetic standpoint, but so far we don't have a very compelling
+> >> argument for dealing with the starting and stopping of userspace. The
+> >> use-cases that Google have provided are valid and they have an
+> >> implementation that addresses them, and while we're unable to provide an
+> >> alternative that provides the same level of functionality I think we're
+> >> in a poor position to prevent this from going in.
+> >
+> > Uhuh?
+> >
+> > "We have this ugly code here, but it works and we don't have better
+> > one, so lets merge it"?
+> >
+> > I don't really like this line of reasoning. I would not want to judge
+> > wakelocks here, but... "it works, merge it" should not be used as
+> > argument.
+> >
+> > And btw I do have wakelock-less implementation of autosleep, that only
+> > sleeped the machine when nothing was ready to run. It was called
+> > "sleepy linux". Should I dig it out?
+> >
+> > Major difference was that it only sleeped the machine when it was
+> > absolutely certain machine is idle and no timers are close to firing
+> > -- needing elimination or at least markup of all short timers. It
+> > erred on side of not sleeping the machine when it would break
+> > something.
+> >
+> 
+> How did you handle external events that occur right after you decided to sleep?
 
-phison uses interfaces and data that are built only when
-ATA_BMDMA is enabled, so it should depend on that symbol.
+I decided to go to sleep with interrupts disabled... it was prototype
+on x86, so it was rather tricky.
 
-drivers/staging/phison/phison.c:43: error: implicit declaration of function 'ATA_BMDMA_SHT'
-drivers/staging/phison/phison.c:43: error: initializer element is not constant
-drivers/staging/phison/phison.c:43: error: (near initialization for 'phison_sht.module')
-drivers/staging/phison/phison.c:47: error: 'ata_bmdma_port_ops' undeclared here (not in a function)
-
-Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: evan_ko@phison.com
----
- drivers/staging/phison/Kconfig |    2 +-
- 1 file changed, 1 insertion(+), 1 deletion(-)
-
---- linux-next-20100526.orig/drivers/staging/phison/Kconfig
-+++ linux-next-20100526/drivers/staging/phison/Kconfig
-@@ -1,5 +1,5 @@
- config IDE_PHISON
- 	tristate "PCIE ATA PS5000 IDE support"
--	depends on PCI && ATA && ATA_SFF
-+	depends on PCI && ATA && ATA_SFF && ATA_BMDMA
- 	---help---
- 	  This is an experimental driver for PS5000 IDE driver.
+I'd expect external events after sleep decision to just wakeup machine
+immediately, similar to entering deep CPU sleep mode...
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
