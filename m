@@ -1,103 +1,58 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755180Ab0EZNoU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:44:20 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:65184 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1755037Ab0EZNoS (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:44:18 -0400
-Date: Wed, 26 May 2010 15:44:15 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Thomas Gleixner <tglx@linutronix.de>, Ralf Baechle <ralf@linux-mips.org>,
-       Linus Walleij <linus.walleij@stericsson.com>,
-       Jon Hunter <jon-hunter@ti.com>, linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] transitional config CONFIG_GENERIC_CLOCKEVENTS
-Message-ID: <20100526134415.GD7508@faui49.informatik.uni-erlangen.de>
+	id S1755231Ab0EZNph (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:45:37 -0400
+Received: from king.tilera.com ([72.1.168.226]:10445 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754963Ab0EZNpe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 09:45:34 -0400
+Message-ID: <4BFD25DE.7030705@tilera.com>
+Date: Wed, 26 May 2010 09:45:02 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+To: Ulrich Drepper <drepper@gmail.com>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+CC: liqin.chen@sunplusct.com, Arnd Bergmann <arnd@arndb.de>,
+       linux-arch@vger.kernel.org,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <OF1161BF2B.C681A3D5-ON4825772F.000A9BAB-4825772F.000F0B04@sunplusct.com>
+In-Reply-To: <OF1161BF2B.C681A3D5-ON4825772F.000A9BAB-4825772F.000F0B04@sunplusct.com>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=GB2312
+Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2010 13:45:32.0616 (UTC) FILETIME=[B6112480:01CAFCD9]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On 5/25/2010 10:44 PM, liqin.chen@sunplusct.com wrote:
+> Arnd Bergmann <arnd@arndb.de>  at 2010-05-25 23:03:11
+>>> - You renamed __NR__llseek to __NR_llseek, which of course seems pretty
+>>>       
+>>> reasonable, but libc expects to see the former (both glibc and uclibc). 
+>>>       
+>>> Is it worth requiring non-standard libc code?  I may just add
+>>> __NR__llseek as an alias in my unistd.h for now.
+>>>       
+>> That was probably just a mistake on my side. The only other
+>> architecture using the generic version so far is score, so
+>> maybe Chen Liqin can comment on how he dealt with this and
+>> if he depends on the definition now.
+>>     
+> When we port glibc to score arch, we fixed the llseek.c file,
+> remove the underscore before llseek. maybe it has compatible problems, 
+> but it work ok with score application.
+>   
 
-	As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+This sounds like the right solution for the generic code too, but
+presumably it would need some kind of "#if !defined(__NR_llseek) &&
+defined(__NR__llseek)" hackery in the llseek.c common code in glibc.
+Ulrich, does that seem like the right direction for you?
 
-	This was an aid for a transition finished 2007 so not
-necessary for some time now, ready for removal.
-
-	Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
-
-Regards
-
-	Christoph Egger
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-
-----
->From c8092c26246db170d509dd3424e65e87e67c5a8a Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Fri, 21 May 2010 17:24:01 +0200
-Subject: [PATCH 1/2] Remove transitional, dead GENERIC_CLOCKEVENTS_MIGR
-
-GENERIC_CLOCKEVENTS_MIGR was introduced to facilate transition to the
-new codebase which was finished 2007 with
-b8ce33590687888ebb900d09557b8807c4539022. However the config Item and
-a tiny bit of code wasn't removed back then which is adressed by this
-patch.
-
-One might consider getting rid of GENERIC_CLOCKEVENTS_BUILD
-alltogether however this patch is limited to changes to affecting the
-actual build process in any way.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- include/linux/clockchips.h |    4 ----
- kernel/time/Kconfig        |    2 +-
- 2 files changed, 1 insertions(+), 5 deletions(-)
-
-diff --git a/include/linux/clockchips.h b/include/linux/clockchips.h
-index fc53492..3ad8331 100644
---- a/include/linux/clockchips.h
-+++ b/include/linux/clockchips.h
-@@ -139,11 +139,7 @@ clockevents_calc_mult_shift(struct clock_event_device *ce, u32 freq, u32 minsec)
- 				      freq, minsec);
- }
- 
--#ifdef CONFIG_GENERIC_CLOCKEVENTS
- extern void clockevents_notify(unsigned long reason, void *arg);
--#else
--# define clockevents_notify(reason, arg) do { } while (0)
--#endif
- 
- #else /* CONFIG_GENERIC_CLOCKEVENTS_BUILD */
- 
-diff --git a/kernel/time/Kconfig b/kernel/time/Kconfig
-index 95ed429..18ed376 100644
---- a/kernel/time/Kconfig
-+++ b/kernel/time/Kconfig
-@@ -25,5 +25,5 @@ config HIGH_RES_TIMERS
- config GENERIC_CLOCKEVENTS_BUILD
- 	bool
- 	default y
--	depends on GENERIC_CLOCKEVENTS || GENERIC_CLOCKEVENTS_MIGR
-+	depends on GENERIC_CLOCKEVENTS
- 
 -- 
-1.6.3.3
-
-
-
-
-
-
-
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
 
 
