@@ -1,50 +1,89 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934310Ab0EZKLd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:11:33 -0400
-Received: from casper.infradead.org ([85.118.1.10]:50186 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S932719Ab0EZKLc convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:11:32 -0400
-Subject: Re: [PATCH 0/4] convert perf to local64_t
-From: Peter Zijlstra <peterz@infradead.org>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Ingo Molnar <mingo@elte.hu>, Paul Mackerras <paulus@samba.org>,
-       Arnaldo Carvalho de Melo <acme@infradead.org>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       David Miller <davem@davemloft.net>, Paul Mundt <lethal@linux-sh.org>,
-       Will Deacon <will.deacon@arm.com>,
-       Deng-Cheng Zhu <dengcheng.zhu@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>
-In-Reply-To: <20100526100844.GB5311@nowhere>
-References: <20100521134205.781916350@chello.nl>
-	 <20100526100844.GB5311@nowhere>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 May 2010 12:11:10 +0200
-Message-ID: <1274868670.5882.5189.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1756888Ab0EZKNd (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:13:33 -0400
+Received: from hera.amn.nl ([213.189.22.5]:1689 "EHLO AMN.nl"
+	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
+	id S1753285Ab0EZKNc (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 06:13:32 -0400
+X-Greylist: delayed 591 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 06:13:31 EDT
+Message-ID: <4BFCF1EB.20709@cs.vu.nl>
+Date: Wed, 26 May 2010 12:03:23 +0200
+From: Erik van der Kouwe <vdkouwe@cs.vu.nl>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+MIME-Version: 1.0
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+CC: Fam Zheng <famcool@gmail.com>
+Subject: [PATCH] fs/minix: bugfix, number of indirect block ptrs per block
+ depends on block size
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
+AMN-SPF: NONE
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 12:08 +0200, Frederic Weisbecker wrote:
-> On Fri, May 21, 2010 at 03:42:05PM +0200, Peter Zijlstra wrote:
-> > These patches introduce local64_t.
-> > 
-> > Since perf_event:count is only modified cross-cpu when child-counters
-> > feed back their changes on exit, and we can use a secondary variable
-> > for that, we can convert perf to use local64_t instead of atomic64_t
-> > and use instructions without buslock semantics.
-> > 
-> > The local64_t implementation uses local_t for 64 bits, since local_t is
-> > of type long, for 32 bit it falls back to atomic64_t. Architectures can
-> > provide their own implementation as usual.
-> 
-> 
-> It seems nobody disagrees with it. Can we give it a try?
+From: Erik van der Kouwe <vdkouwe@cs.vu.nl>
 
-I'll push it to mingo around -rc2 or so, to let the dust settle from the
-current merge.
+The MINIX filesystem driver used a constant number of indirect block 
+pointers in an indirect block. This worked only for filesystems with 1kb 
+block, while the MINIX default block size is now 4kb. As a consequence, 
+large files were read incorrectly on such filesystems and writing a 
+large file would cause the filesystem to become corrupted. This patch 
+computes the number of indirect block pointers based on the block size, 
+making the driver work for each block size. 
+
+I would like to thank Feiran Zheng ('Fam') for pointing out the cause 
+of the corruption.
+
+Signed-off-by: Erik van der Kouwe <vdkouwe@cs.vu.nl>
+---
+
+--- fs/minix/itree_v2.c.orig	2010-05-26 14:10:15.000000000 +0200
++++ fs/minix/itree_v2.c	2010-05-26 13:44:53.000000000 +0200
+@@ -20,6 +20,9 @@ static inline block_t *i_data(struct ino
+ 	return (block_t *)minix_i(inode)->u.i2_data;
+ }
+ 
++#define DIRCOUNT 7
++#define INDIRCOUNT(sb) ((sb)->s_blocksize / 4)
++
+ static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
+ {
+ 	int n = 0;
+@@ -34,21 +37,21 @@ static int block_to_path(struct inode * 
+ 			printk("MINIX-fs: block_to_path: "
+ 			       "block %ld too big on dev %s\n",
+ 				block, bdevname(sb->s_bdev, b));
+-	} else if (block < 7) {
++	} else if (block < DIRCOUNT) {
+ 		offsets[n++] = block;
+-	} else if ((block -= 7) < 256) {
+-		offsets[n++] = 7;
++	} else if ((block -= DIRCOUNT) < INDIRCOUNT(sb)) {
++		offsets[n++] = DIRCOUNT;
+ 		offsets[n++] = block;
+-	} else if ((block -= 256) < 256*256) {
+-		offsets[n++] = 8;
+-		offsets[n++] = block>>8;
+-		offsets[n++] = block & 255;
++	} else if ((block -= INDIRCOUNT(sb)) < INDIRCOUNT(sb) * INDIRCOUNT(sb)) {
++		offsets[n++] = DIRCOUNT + 1;
++		offsets[n++] = block / INDIRCOUNT(sb);
++		offsets[n++] = block % INDIRCOUNT(sb);
+ 	} else {
+-		block -= 256*256;
+-		offsets[n++] = 9;
+-		offsets[n++] = block>>16;
+-		offsets[n++] = (block>>8) & 255;
+-		offsets[n++] = block & 255;
++		block -= INDIRCOUNT(sb) * INDIRCOUNT(sb);
++		offsets[n++] = DIRCOUNT + 2;
++		offsets[n++] = (block / INDIRCOUNT(sb)) / INDIRCOUNT(sb);
++		offsets[n++] = (block / INDIRCOUNT(sb)) % INDIRCOUNT(sb);
++		offsets[n++] = block % INDIRCOUNT(sb);
+ 	}
+ 	return n;
+ }
+
