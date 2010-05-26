@@ -1,50 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756873Ab0EZURs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:17:48 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:19871 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751547Ab0EZURr (ORCPT
+	id S1757274Ab0EZUTQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:19:16 -0400
+Received: from comal.ext.ti.com ([198.47.26.152]:33180 "EHLO comal.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1756300Ab0EZUTO convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:17:47 -0400
-Date: Wed, 26 May 2010 13:17:25 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Ben Dooks <ben-linux@fluff.org>
-Cc: linux-kbuild@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: kbuild: menuconfig with O=<dir> creates empty include/config in
- base
-Message-Id: <20100526131725.49bd41cd.randy.dunlap@oracle.com>
-In-Reply-To: <20100526065611.GD4720@trinity.fluff.org>
-References: <20100526065611.GD4720@trinity.fluff.org>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: rcsinet15.oracle.com [148.87.113.117]
-X-CT-RefId: str=0001.0A090205.4BFD81DF.015C:SCFMA4539811,ss=1,fgs=0
+	Wed, 26 May 2010 16:19:14 -0400
+From: "Arce, Abraham" <x0066660@ti.com>
+To: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "tony@atomide.com" <tony@atomide.com>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
+       "Ha, Tristram" <Tristram.Ha@micrel.com>
+Date: Wed, 26 May 2010 15:19:07 -0500
+Subject: RE: NULL Pointer Deference: NFS & Telnet
+Thread-Topic: NULL Pointer Deference: NFS & Telnet
+Thread-Index: Acr8lF/cPinIP0UTTv+z/WKkPBr2OQAeDyCQ
+Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E3EE6A3@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+	 <20100525.185236.193707791.davem@davemloft.net>
+	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
+ <1274851741.25136.16.camel@edumazet-laptop>
+In-Reply-To: <1274851741.25136.16.camel@edumazet-laptop>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 07:56:11 +0100 Ben Dooks wrote:
+Thanks Eric, David,
 
-> When doing "make O=test menuconfig" the base kernel directory picks up
-> a new empty directory include/config which stops further "make O=temp"
-> builds as the make system thinks the base directory is not clean.
+[..]
+
+> > > > -		if (skb_shinfo(skb)->nr_frags) {
+> > > > +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
+> > > >  			int i;
+> > > >  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> > > >  				put_page(skb_shinfo(skb)->frags[i].page);
+> > >
+> > > skb_shinfo(skb)->nr_frags counts the number of entries contained
+> > > in the skb_shinfo(skb)->frags[] array.
+> > >
+> > > This has nothing to do with the frag list pointer,
+> > > skb_shinfo(skb)->frag_list, which is what skb_has_frags()
+> > > tests.
+> > >
+> > > You've got some kind of memory corruption going on and it
+> > > appears to have nothing to do with the code paths you're
+> > > playing with here.
+> >
+> > Do you have any recommendation on debugging technique/tool for this memory
+> corruption issue?
+
+[..]
+
+> It seems quite strange. You have a skb->nr_frags > 0 value, but a
+> frags[i].page = 0 value
 > 
-> I've had a look, but it is not easy to see where this is hapening.
+> You might add following function :
 > 
-> So far only menuconfig seems to have triggered it, xconfig seems to work.
+> shinfo_check(struct sk_buff *skb)
+> {
+> 	struct skb_shared_info *shinfo = skb_shinfo(skb);
+> 	int i;
+> 
+> 	WARN_ON(shinfo->nr_frags >= MAX_SKB_FRAGS);
+> 	for (i = 0; i < shinfo->nr_frags; i++)
+> 		WARN_ON(!shinfo->frags[i].page);
+> }
+> 
+> And call it from various points, to check who corrupts your skb.
 
+By increasing the allocation length of our rx skbuff the corruption issue is fixed... I have increased it by 2... Were we writing outside our boundaries of skb data?
 
-I cannot reproduce this problem.  Can you provide more complete steps
-to make it happen?
+Please let me know about this approach...
 
-I've had similar problems occasionally but I haven't been able to track
-them down...
+diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
+index b4fb07a..6da81e1 100644
+--- a/drivers/net/ks8851.c
++++ b/drivers/net/ks8851.c
+@@ -504,7 +504,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
+                               ks->rc_rxqcr | RXQCR_SDA | RXQCR_ADRFE);
 
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+                if (rxlen > 0) {
+-                       skb = netdev_alloc_skb(ks->netdev, rxlen + 2 + 8);
++                       skb = netdev_alloc_skb(ks->netdev, rxlen + 4 + 8);
+                        if (!skb) {
+
+Best Regards
+Abraham
+
