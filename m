@@ -1,172 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757040Ab0EZQlZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:41:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:46777 "EHLO mx2.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757007Ab0EZQlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:41:23 -0400
-Date: Thu, 27 May 2010 02:41:16 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20100526164116.GD22536@laptop>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-4-git-send-email-david@fromorbit.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Disposition: inline
+	id S932119Ab0EZQmn (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:42:43 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:65442 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755885Ab0EZQml (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 12:42:41 -0400
+Subject: [GIT PULL] Backlight updates for 2.6.35
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Linus Torvalds <torvalds@linux-foundation.org>
+Cc: Andrew Morton <akpm@linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 17:42:20 +0100
+Message-ID: <1274892140.24079.47.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 8bit
-In-Reply-To: <1274777588-21494-4-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 06:53:06PM +1000, Dave Chinner wrote:
-> @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
->   * which flags are set. This means we don't need to maintain multiple
->   * similar copies of this loop.
->   */
-> -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
-> +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
->  {
->  	LIST_HEAD(referenced);
->  	LIST_HEAD(tmp);
->  	struct dentry *dentry;
-> -	int cnt = 0;
->  
->  	BUG_ON(!sb);
-> -	BUG_ON((flags & DCACHE_REFERENCED) && count == NULL);
-> +	BUG_ON((flags & DCACHE_REFERENCED) && count == -1);
->  	spin_lock(&dcache_lock);
-> -	if (count != NULL)
-> -		/* called from prune_dcache() and shrink_dcache_parent() */
-> -		cnt = *count;
-> -restart:
-> -	if (count == NULL)
-> +	if (count == -1)
->  		list_splice_init(&sb->s_dentry_lru, &tmp);
->  	else {
->  		while (!list_empty(&sb->s_dentry_lru)) {
-> @@ -492,13 +487,13 @@ restart:
->  			} else {
->  				list_move_tail(&dentry->d_lru, &tmp);
->  				spin_unlock(&dentry->d_lock);
-> -				cnt--;
-> -				if (!cnt)
-> +				if (--count == 0)
->  					break;
->  			}
->  			cond_resched_lock(&dcache_lock);
->  		}
->  	}
-> +prune_more:
->  	while (!list_empty(&tmp)) {
->  		dentry = list_entry(tmp.prev, struct dentry, d_lru);
->  		dentry_lru_del_init(dentry);
-> @@ -516,88 +511,29 @@ restart:
->  		/* dentry->d_lock was dropped in prune_one_dentry() */
->  		cond_resched_lock(&dcache_lock);
->  	}
-> -	if (count == NULL && !list_empty(&sb->s_dentry_lru))
-> -		goto restart;
-> -	if (count != NULL)
-> -		*count = cnt;
-> +	if (count == -1 && !list_empty(&sb->s_dentry_lru)) {
-> +		list_splice_init(&sb->s_dentry_lru, &tmp);
-> +		goto prune_more;
-> +	}
+Linus,
 
-Nitpick but I prefer just the restart label wher it is previously. This
-is moving setup for the next iteration into the "error" case.
+Could you please pull from:
+
+git://git.o-hand.com/linux-rpurdie-backlight for-linus
+
+for the backlight tree updates for 2.6.35. This includes several new
+drivers and various bugfixes/tweaks most of which have been in
+linux-next/-mm for a while.
+
+Thanks, Richard
+
+ arch/arm/mach-mx3/mach-mx31moboard.c |   45 +++
+ arch/arm/mach-orion5x/dns323-setup.c |   22 +
+ drivers/leds/Kconfig                 |   17 +
+ drivers/leds/Makefile                |    2 
+ drivers/leds/led-class.c             |    2 
+ drivers/leds/leds-88pm860x.c         |   11 
+ drivers/leds/leds-gpio.c             |   31 ++
+ drivers/leds/leds-lp3944.c           |    9 
+ drivers/leds/leds-mc13783.c          |  403 +++++++++++++++++++++++++++++++++++
+ drivers/leds/leds-net5501.c          |   94 ++++++++
+ drivers/leds/leds-ss4200.c           |    2 
+ drivers/mfd/mc13783-core.c           |    4 
+ include/linux/leds.h                 |   12 -
+ include/linux/mfd/mc13783.h          |   66 +++++
+ 14 files changed, 691 insertions(+), 29 deletions(-)
+
+ arch/arm/mach-s3c2440/mach-gta02.c           |   76 --
+ drivers/mfd/pcf50633-core.c                  |    3 
+ drivers/video/backlight/88pm860x_bl.c        |    2 
+ drivers/video/backlight/Kconfig              |  116 ++-
+ drivers/video/backlight/Makefile             |    4 
+ drivers/video/backlight/adp8860_bl.c         |  838 ++++++++++++++++++++++++
+ drivers/video/backlight/adx_bl.c             |    4 
+ drivers/video/backlight/ep93xx_bl.c          |  160 ++++
+ drivers/video/backlight/l4f00242t03.c        |   11 
+ drivers/video/backlight/max8925_bl.c         |    1 
+ drivers/video/backlight/mbp_nvidia_bl.c      |   47 +
+ drivers/video/backlight/pcf50633-backlight.c |  190 +++++
+ drivers/video/backlight/s6e63m0.c            |  920 +++++++++++++++++++++++++++
+ drivers/video/backlight/s6e63m0_gamma.h      |  266 +++++++
+ include/linux/i2c/adp8860.h                  |  154 ++++
+ include/linux/lcd.h                          |   23 
+ include/linux/mfd/pcf50633/backlight.h       |   51 +
+ include/linux/mfd/pcf50633/core.h            |    4 
+ 18 files changed, 2750 insertions(+), 120 deletions(-)
+
+Alberto Panizzo (1):
+      backlight: l4f00242t03: Fix regulators handling code in remove function
+
+Axel Lin (3):
+      backlight: l4f00242t03: fix error handling in l4f00242t03_probe
+      backlight: max8925_bl: Fix error handling path
+      backlight: 88pm860x_bl: fix error handling in pm860x_backlight_probe
+
+Dan Carpenter (2):
+      backlight: backlight_device_register() return ERR_PTR()
+      backlight: 88pm860x_bl - potential memory leak
+
+H Hartley Sweeten (2):
+      backlight: Kconfig cleanup
+      backlight: Add Cirrus EP93xx backlight driver
+
+InKi Dae (1):
+      backlight: add S6E63M0 AMOLED LCD Panel driver
+
+Lars-Peter Clausen (3):
+      backlight: Add pcf50633 backlight driver
+      backlight: pcf50633: Register a pcf50633-backlight device in pcf50633 core driver.
+      gta02: Use pcf50633 backlight driver instead of platform backlight driver.
+
+Mario Schwalbe (1):
+      backlight: mbp_nvidia_bl - add support for older MacBookPro and MacBook 6,1.
+
+Michael Hennerich (2):
+      backlight: new driver for the ADP8860 backlight parts
+      backlight: adp8860: add support for ADP8861 & ADP8863
+
+Randy Dunlap (1):
+      backlight: fix adp8860_bl build errors
+
+Steffen Röcker (1):
+      backlight: mbp_nvidia_bl - Fix DMI_SYS_VENDOR for MacBook1,1
+
+-- 
+Richard Purdie
+Intel Open Source Technology Centre
 
 
-> +static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
-> +{
-> +	struct super_block *sb;
-> +	int count;
-> +
-> +	sb = container_of(shrink, struct super_block, s_shrink);
-> +
-> +	/*
-> +	 * Deadlock avoidance.  We may hold various FS locks, and we don't want
-> +	 * to recurse into the FS that called us in clear_inode() and friends..
-> +	 */
-> +	if (!(gfp_mask & __GFP_FS))
-> +		return -1;
-> +
-> +	/*
-> +	 * if we can't get the umount lock, then there's no point having the
-> +	 * shrinker try again because the sb is being torn down.
-> +	 */
-> +	if (!down_read_trylock(&sb->s_umount))
-> +		return -1;
-
-Would you just elaborate on the lock order problem somewhere? (the
-comment makes it look like we *could* take the mutex if we wanted
-to).
-
-
-> +
-> +	if (!sb->s_root) {
-> +		up_read(&sb->s_umount);
-> +		return -1;
-> +	}
-> +
-> +	if (nr_to_scan) {
-> +		/* proportion the scan between the two cacheѕ */
-> +		int total;
-> +
-> +		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
-> +		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
-> +
-> +		/* prune dcache first as icache is pinned by it */
-> +		prune_dcache_sb(sb, count);
-> +		prune_icache_sb(sb, nr_to_scan - count);
-> +	}
-> +
-> +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
-> +						* sysctl_vfs_cache_pressure;
-
-Do you think truncating in the divisions is at all a problem? It
-probably doesn't matter much I suppose.
-
-> @@ -162,6 +213,7 @@ void deactivate_locked_super(struct super_block *s)
->  	struct file_system_type *fs = s->s_type;
->  	if (atomic_dec_and_test(&s->s_active)) {
->  		vfs_dq_off(s, 0);
-> +		unregister_shrinker(&s->s_shrink);
->  		fs->kill_sb(s);
->  		put_filesystem(fs);
->  		put_super(s);
-> @@ -335,6 +387,7 @@ retry:
->  	list_add_tail(&s->s_list, &super_blocks);
->  	list_add(&s->s_instances, &type->fs_supers);
->  	spin_unlock(&sb_lock);
-> +	register_shrinker(&s->s_shrink);
->  	get_filesystem(type);
->  	return s;
->  }
-> diff --git a/include/linux/fs.h b/include/linux/fs.h
-> index 7b90c43..5bff2dc 100644
-> --- a/include/linux/fs.h
-> +++ b/include/linux/fs.h
-> @@ -382,6 +382,7 @@ struct inodes_stat_t {
->  #include <linux/capability.h>
->  #include <linux/semaphore.h>
->  #include <linux/fiemap.h>
-> +#include <linux/mm.h>
->  
->  #include <asm/atomic.h>
->  #include <asm/byteorder.h>
-> @@ -1385,8 +1386,14 @@ struct super_block {
->  	 * generic_show_options()
->  	 */
->  	char *s_options;
-> +
-> +	struct shrinker s_shrink;	/* per-sb shrinker handle */
->  };
