@@ -1,109 +1,53 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934170Ab0EZUtE (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:49:04 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:58839 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753981Ab0EZUtA (ORCPT
+	id S934312Ab0EZUte (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:49:34 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:54715 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934131Ab0EZUtd (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:49:00 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=subject:from:to:cc:in-reply-to:references:content-type:date
-         :message-id:mime-version:x-mailer:content-transfer-encoding;
-        b=nEwEEP2MrhYkEG277hh+mTxtSdhDO7JEL95UpD8n9u5JP6ziiu8qD/4qhJUxcl/zdC
-         DmeMEmDO4Ue1agXseCVLCljcs9aSfGAQWkjJupuyEd+GJdBQuwbyrtsVSF5n7OFhGcbS
-         vWzHnUGVcjjlWtZOqlP7qZILzwY04orRh7/k4=
-Subject: RE: NULL Pointer Deference: NFS & Telnet
-From: Eric Dumazet <eric.dumazet@gmail.com>
-To: "Arce, Abraham" <x0066660@ti.com>
-Cc: David Miller <davem@davemloft.net>,
-       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "tony@atomide.com" <tony@atomide.com>,
-       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-       "Ha, Tristram" <Tristram.Ha@micrel.com>
-In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043E3EE6A3@dlee03.ent.ti.com>
-References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
-	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
-	 <20100525.185236.193707791.davem@davemloft.net>
-	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
-	 <1274851741.25136.16.camel@edumazet-laptop>
-	 <27F9C60D11D683428E133F85D2BB4A53043E3EE6A3@dlee03.ent.ti.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 22:48:53 +0200
-Message-ID: <1274906933.2542.17.camel@edumazet-laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 8bit
+	Wed, 26 May 2010 16:49:33 -0400
+From: Eric Anholt <eric@anholt.net>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: airlied@linux.ie, chris@chris-wilson.co.uk,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.sourceforge.net
+Subject: Re: [PATCH] drm/i915: Convert more trace events to DEFINE_EVENT
+In-Reply-To: <4BFA3808.5080203@cn.fujitsu.com>
+References: <4BFA3808.5080203@cn.fujitsu.com>
+User-Agent: Notmuch/0.3.1-16-g417274d (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
+Date: Wed, 26 May 2010 13:49:29 -0700
+Message-ID: <87ljb61j8m.fsf@pollan.anholt.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Le mercredi 26 mai 2010 à 15:19 -0500, Arce, Abraham a écrit :
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-> By increasing the allocation length of our rx skbuff the corruption issue is fixed... I have increased it by 2... Were we writing outside our boundaries of skb data?
-> 
-> Please let me know about this approach...
-> 
-> diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
-> index b4fb07a..6da81e1 100644
-> --- a/drivers/net/ks8851.c
-> +++ b/drivers/net/ks8851.c
-> @@ -504,7 +504,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
->                                ks->rc_rxqcr | RXQCR_SDA | RXQCR_ADRFE);
-> 
->                 if (rxlen > 0) {
-> -                       skb = netdev_alloc_skb(ks->netdev, rxlen + 2 + 8);
-> +                       skb = netdev_alloc_skb(ks->netdev, rxlen + 4 + 8);
->                         if (!skb) {
-> 
-> Best Regards
-> Abraham
-> 
+On Mon, 24 May 2010 16:25:44 +0800, Li Zefan <lizf@cn.fujitsu.com> wrote:
+> Convert i915_gem_object_clflush to DEFINE_EVENT, and save ~0.5K:
+>=20
+>    text    data     bss     dec     hex filename
+>   13204    2732      12   15948    3e4c i915_trace_points.o.orig
+>   12668    2732      12   15412    3c34 i915_trace_points.o
+>=20
+> No change in functionality.
 
-Yes that makes sense, nr_frag is right after the packet (padded to L1
-cache size)
+Applied.  Thanks!
 
-But please do the correct allocation ?
+--=-=-=
+Content-Type: application/pgp-signature
 
-Also, we dont need FCS ?
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
 
-diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
-index b4fb07a..05bd312 100644
---- a/drivers/net/ks8851.c
-+++ b/drivers/net/ks8851.c
-@@ -503,8 +503,9 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
- 		ks8851_wrreg16(ks, KS_RXQCR,
- 			       ks->rc_rxqcr | RXQCR_SDA | RXQCR_ADRFE);
- 
--		if (rxlen > 0) {
--			skb = netdev_alloc_skb(ks->netdev, rxlen + 2 + 8);
-+		if (rxlen > 4) {
-+			rxlen -= 4;
-+			skb = netdev_alloc_skb(ks->netdev, 2 + 8 + ALIGN(rxlen, 4));
- 			if (!skb) {
- 				/* todo - dump frame and move on */
- 			}
-@@ -513,7 +514,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
- 			 * for the status header and 4 bytes of garbage */
- 			skb_reserve(skb, 2 + 4 + 4);
- 
--			rxpkt = skb_put(skb, rxlen - 4) - 8;
-+			rxpkt = skb_put(skb, rxlen) - 8;
- 
- 			/* align the packet length to 4 bytes, and add 4 bytes
- 			 * as we're getting the rx status header as well */
-@@ -526,7 +527,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
- 			netif_rx(skb);
- 
- 			ks->netdev->stats.rx_packets++;
--			ks->netdev->stats.rx_bytes += rxlen - 4;
-+			ks->netdev->stats.rx_bytes += rxlen;
- 		}
- 
- 		ks8851_wrreg16(ks, KS_RXQCR, ks->rc_rxqcr);
-
-
+iEYEARECAAYFAkv9iVkACgkQHUdvYGzw6veu/wCglMzdQGrH+mDr3794IbvGtPco
+/Q0Anjiy+tFmyG61bGFG/Fa50DGowZ2s
+=WDSm
+-----END PGP SIGNATURE-----
+--=-=-=--
