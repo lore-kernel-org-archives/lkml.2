@@ -1,14 +1,14 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934394Ab0EZHKM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 03:10:12 -0400
-Received: from crca.org.au ([74.207.252.120]:57629 "EHLO crca.org.au"
+	id S934418Ab0EZHKO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 03:10:14 -0400
+Received: from crca.org.au ([74.207.252.120]:54273 "EHLO crca.org.au"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S934362Ab0EZHKI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 03:10:08 -0400
+	id S934331Ab0EZHKE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 03:10:04 -0400
 X-Bogosity: Ham, spamicity=0.000000
-Message-ID: <4BFCC94C.2050706@crca.org.au>
-Date: Wed, 26 May 2010 17:10:04 +1000
+Message-ID: <4BFCC948.8010603@crca.org.au>
+Date: Wed, 26 May 2010 17:10:00 +1000
 From: Nigel Cunningham <ncunningham@crca.org.au>
 User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100423 Thunderbird/3.0.4
 MIME-Version: 1.0
@@ -16,45 +16,42 @@ To: "Rafael J. Wysocki" <rjw@sisk.pl>,
        pm list <linux-pm@lists.linux-foundation.org>,
        LKML <linux-kernel@vger.kernel.org>,
        TuxOnIce-devel <tuxonice-devel@tuxonice.net>
-Subject: [PATCH 3/5] Hibernation: Add mass swap allocation routine.
+Subject: [PATCH 2/5]  Move root swap declaration.
 Content-Type: text/plain; charset=ISO-8859-1; format=flowed
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Add a routine to allocate swap from a device en masse. This is only
-for use by the in-kernel implementation, not uswsusp.
+Move the declaration of root_swap in preparation for the
+next patch.
 
 Signed-off-by: Nigel Cunningham <nigel@tuxonice.net>
 ---
-  kernel/power/swap.c |   13 +++++++++++++
-  1 files changed, 13 insertions(+), 0 deletions(-)
+  kernel/power/swap.c |    3 ++-
+  1 files changed, 2 insertions(+), 1 deletions(-)
 
 diff --git a/kernel/power/swap.c b/kernel/power/swap.c
-index e555b6c..550c1ed 100644
+index 829f7b4..e555b6c 100644
 --- a/kernel/power/swap.c
 +++ b/kernel/power/swap.c
-@@ -187,6 +187,19 @@ sector_t alloc_swapdev_block(int swap)
-  	return 0;
-  }
+@@ -63,6 +63,8 @@ struct swap_map_handle {
+  	unsigned int k;
+  };
 
-+int alloc_swapdev_blocks(int needed)
-+{
-+	int i;
++static unsigned short root_swap = 0xffff;
 +
-+	for (i = 0; i < needed; i++) {
-+		sector_t res = alloc_swapdev_block(root_swap);
-+		if (!res)
-+			break;
-+	}
-+
-+	return i;
-+}
-+
-  /**
-   *	free_all_swap_pages - free swap pages allocated for saving image data.
-   *	It also frees the extents used to register which swap entres had been
+  struct swsusp_header {
+  	char reserved[PAGE_SIZE - 20 - sizeof(sector_t) - sizeof(int)];
+  	sector_t image;
+@@ -217,7 +219,6 @@ int swsusp_swap_in_use(void)
+   * General things
+   */
+
+-static unsigned short root_swap = 0xffff;
+  struct block_device *hib_resume_bdev;
+
+  /*
 -- 
 1.7.0.4
 
