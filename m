@@ -1,19 +1,17 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755415Ab0EZPyc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:54:32 -0400
-Received: from mgw1.diku.dk ([130.225.96.91]:45670 "EHLO mgw1.diku.dk"
+	id S1755527Ab0EZPyr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:54:47 -0400
+Received: from mgw2.diku.dk ([130.225.96.92]:40688 "EHLO mgw2.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752249Ab0EZPy3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:54:29 -0400
-Date: Wed, 26 May 2010 17:54:21 +0200 (CEST)
+	id S1755252Ab0EZPyo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:54:44 -0400
+Date: Wed, 26 May 2010 17:54:39 +0200 (CEST)
 From: Julia Lawall <julia@diku.dk>
-To: Andy Grover <andy.grover@oracle.com>,
-       "David S. Miller" <davem@davemloft.net>, rds-devel@oss.oracle.com,
-       netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kernel-janitors@vger.kernel.org
-Subject: [PATCH 1/17] net/rds: Add missing mutex_unlock
-Message-ID: <Pine.LNX.4.64.1005261754030.23743@ask.diku.dk>
+To: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 2/17] fs: Add missing mutex_unlock
+Message-ID: <Pine.LNX.4.64.1005261754220.23743@ask.diku.dk>
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
@@ -22,8 +20,9 @@ X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Julia Lawall <julia@diku.dk>
 
-Add a mutex_unlock missing on the error path.  In each case, whenever the
-label out is reached from elsewhere in the function, mutex is not locked.
+Add a mutex_unlock missing on the error path.  At other exists from the
+function that return an error flag, the mutex is unlocked, so do the same
+here.
 
 The semantic match that finds this problem is as follows:
 (http://coccinelle.lip6.fr/)
@@ -33,44 +32,54 @@ The semantic match that finds this problem is as follows:
 expression E1;
 @@
 
-* mutex_lock(E1);
+* mutex_lock(E1,...);
   <+... when != E1
   if (...) {
     ... when != E1
 *   return ...;
   }
   ...+>
-* mutex_unlock(E1);
+* mutex_unlock(E1,...);
 // </smpl>
 
 Signed-off-by: Julia Lawall <julia@diku.dk>
 
 ---
- net/rds/ib_cm.c |    1 +
- net/rds/iw_cm.c |    1 +
- 2 files changed, 2 insertions(+)
+ fs/pipe.c |   13 +++++++++----
+ 1 file changed, 9 insertions(+), 4 deletions(-)
 
-diff --git a/net/rds/ib_cm.c b/net/rds/ib_cm.c
-index 10ed0d5..f688327 100644
---- a/net/rds/ib_cm.c
-+++ b/net/rds/ib_cm.c
-@@ -475,6 +475,7 @@ int rds_ib_cm_handle_connect(struct rdma_cm_id *cm_id,
- 	err = rds_ib_setup_qp(conn);
- 	if (err) {
- 		rds_ib_conn_error(conn, "rds_ib_setup_qp failed (%d)\n", err);
-+		mutex_unlock(&conn->c_cm_lock);
- 		goto out;
+diff --git a/fs/pipe.c b/fs/pipe.c
+index d79872e..60da077 100644
+--- a/fs/pipe.c
++++ b/fs/pipe.c
+@@ -1169,14 +1169,18 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
+ 
+ 	switch (cmd) {
+ 	case F_SETPIPE_SZ:
+-		if (!capable(CAP_SYS_ADMIN) && arg > pipe_max_pages)
+-			return -EINVAL;
++		if (!capable(CAP_SYS_ADMIN) && arg > pipe_max_pages) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		/*
+ 		 * The pipe needs to be at least 2 pages large to
+ 		 * guarantee POSIX behaviour.
+ 		 */
+-		if (arg < 2)
+-			return -EINVAL;
++		if (arg < 2) {
++			ret = -EINVAL;
++			goto out;
++		}
+ 		ret = pipe_set_size(pipe, arg);
+ 		break;
+ 	case F_GETPIPE_SZ:
+@@ -1187,6 +1191,7 @@ long pipe_fcntl(struct file *file, unsigned int cmd, unsigned long arg)
+ 		break;
  	}
  
-diff --git a/net/rds/iw_cm.c b/net/rds/iw_cm.c
-index a9d951b..b5dd6ac 100644
---- a/net/rds/iw_cm.c
-+++ b/net/rds/iw_cm.c
-@@ -452,6 +452,7 @@ int rds_iw_cm_handle_connect(struct rdma_cm_id *cm_id,
- 	err = rds_iw_setup_qp(conn);
- 	if (err) {
- 		rds_iw_conn_error(conn, "rds_iw_setup_qp failed (%d)\n", err);
-+		mutex_unlock(&conn->c_cm_lock);
- 		goto out;
- 	}
- 
++out:
+ 	mutex_unlock(&pipe->inode->i_mutex);
+ 	return ret;
+ }
