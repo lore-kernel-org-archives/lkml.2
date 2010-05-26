@@ -1,124 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757329Ab0EZKUG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:20:06 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:41295 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757159Ab0EZKUB (ORCPT
+	id S1757337Ab0EZKVP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:21:15 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:60379 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757159Ab0EZKVN convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:20:01 -0400
-Date: Wed, 26 May 2010 12:19:59 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Andrew Morton <akpm@linux-foundation.org>,
-       Doug Thompson <dougthompson@xmission.com>,
-       Peter Tyser <ptyser@xes-inc.com>, Dave Jiang <djiang@mvista.com>,
-       Yang Shi <yang.shi@windriver.com>, linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] MPC85xx -> FSL_SOC_BOOKE
-Message-ID: <20100526101959.GA6744@faui49.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	Wed, 26 May 2010 06:21:13 -0400
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: Florian Mickler <florian@mickler.org>, "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
+In-Reply-To: <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+	 <201005252344.37639.rjw@sisk.pl>
+	 <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
+	 <1274863342.5882.4850.camel@twins>
+	 <20100526112303.3fef15a4@schatten.dmk.lab>
+	 <1274866402.5882.5051.camel@twins>
+	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
+	 <1274868384.5882.5169.camel@twins>
+	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 May 2010 12:21:02 +0200
+Message-ID: <1274869262.5882.5222.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
+On Wed, 2010-05-26 at 03:17 -0700, Arve Hjønnevåg wrote:
+> > With a single suspend manager process that manages the suspend state you
+> > can achieve the same goal.
+> >
+> 
+> Yes we don't need the /dev interface, but it is useful. Without it any
+> program that needs to block suspend has to make a blocking ipc call
+> into the suspend manager process. Android already does this for java
+> code, but system processes written in C block suspend directly with
+> the kernel since they cannot use the java APIs. 
 
-	As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
+So provide a C interface to it as well?
 
-	There was a restructuring of Kconfig in October leafing some
-dangling ifdefs behind that aren't referenced any more. I've created a
-patch following the pattern used in the restructuring.
+Surely you can have the java thing have a unix socket or something a C
+app can talk to. That shouldn't be hard at all.
 
-	Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
-
-Regards
-
-	Christoph Egger
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-
-----
->From ac003845a68e37e2fbb1ac5849fb46b8b3100a07 Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 26 May 2010 12:13:36 +0200
-Subject: Missing pieces from MPC85xx -> FSL_SOC_BOOKE
-
-In 5753c082f66eca5be81f6bda85c1718c5eea6ada menuconfig MPC85xx was
-replaced by FSL_SOC_BOOKE but some references insider the code were
-not adjusted accordingly. This patch adresses these missing pieces.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- drivers/edac/mpc85xx_edac.c |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
-
-diff --git a/drivers/edac/mpc85xx_edac.c b/drivers/edac/mpc85xx_edac.c
-index 6c1886b..25e7ea0 100644
---- a/drivers/edac/mpc85xx_edac.c
-+++ b/drivers/edac/mpc85xx_edac.c
-@@ -43,7 +43,7 @@ static u32 orig_pci_err_en;
- #endif
- 
- static u32 orig_l2_err_disable;
--#ifdef CONFIG_MPC85xx
-+#ifdef CONFIG_FSL_SOC_BOOKE
- static u32 orig_hid1[2];
- #endif
- 
-@@ -1136,7 +1136,7 @@ static struct of_platform_driver mpc85xx_mc_err_driver = {
- 	},
- };
- 
--#ifdef CONFIG_MPC85xx
-+#ifdef CONFIG_FSL_SOC_BOOKE
- static void __init mpc85xx_mc_clear_rfxe(void *data)
- {
- 	orig_hid1[smp_processor_id()] = mfspr(SPRN_HID1);
-@@ -1175,7 +1175,7 @@ static int __init mpc85xx_mc_init(void)
- 		printk(KERN_WARNING EDAC_MOD_STR "PCI fails to register\n");
- #endif
- 
--#ifdef CONFIG_MPC85xx
-+#ifdef CONFIG_FSL_SOC_BOOKE
- 	/*
- 	 * need to clear HID1[RFXE] to disable machine check int
- 	 * so we can catch it
-@@ -1189,7 +1189,7 @@ static int __init mpc85xx_mc_init(void)
- 
- module_init(mpc85xx_mc_init);
- 
--#ifdef CONFIG_MPC85xx
-+#ifdef CONFIG_FSL_SOC_BOOKE
- static void __exit mpc85xx_mc_restore_hid1(void *data)
- {
- 	mtspr(SPRN_HID1, orig_hid1[smp_processor_id()]);
-@@ -1198,7 +1198,7 @@ static void __exit mpc85xx_mc_restore_hid1(void *data)
- 
- static void __exit mpc85xx_mc_exit(void)
- {
--#ifdef CONFIG_MPC85xx
-+#ifdef CONFIG_FSL_SOC_BOOKE
- 	on_each_cpu(mpc85xx_mc_restore_hid1, NULL, 0);
- #endif
- #ifdef CONFIG_PCI
--- 
-1.6.3.3
-
-
-
-
-
-
-
-
-
-
-
-
-
+Or make the suspend manager a C proglet and provide a JNI interface, or
+whatever.
