@@ -1,77 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934106Ab0EZRbe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:31:34 -0400
-Received: from e28smtp09.in.ibm.com ([122.248.162.9]:55947 "EHLO
-	e28smtp09.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934099Ab0EZRbc (ORCPT
+	id S1757283Ab0EZRb6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:31:58 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:44015 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754725Ab0EZRbz (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:31:32 -0400
-Date: Wed, 26 May 2010 23:01:24 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Frederic Weisbecker <fweisbec@gmail.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Millton Miller <miltonm@bga.com>, David Gibson <dwg@au1.ibm.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Paul Mackerras <paulus@samba.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
-	unregistration
-Message-ID: <20100526173124.GA8283@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net> <4250.1274867681@redhat.com> <20100526171742.GA5563@in.ibm.com> <20100526172314.GD5299@nowhere>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526172314.GD5299@nowhere>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 26 May 2010 13:31:55 -0400
+Date: Wed, 26 May 2010 10:30:02 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Stephen Rothwell <sfr@canb.auug.org.au>, gregkh@suse.de
+Cc: linux-next@vger.kernel.org, LKML <linux-kernel@vger.kernel.org>,
+       evan_ko@phison.com
+Subject: [PATCH -next] staging/phison: depends on ATA_BMDMA
+Message-Id: <20100526103002.ac2c6703.randy.dunlap@oracle.com>
+In-Reply-To: <20100526153443.f18a4d2b.sfr@canb.auug.org.au>
+References: <20100526153443.f18a4d2b.sfr@canb.auug.org.au>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090209.4BFD5B02.00C4:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 07:23:15PM +0200, Frederic Weisbecker wrote:
-> On Wed, May 26, 2010 at 10:47:42PM +0530, K.Prasad wrote:
-> > On Wed, May 26, 2010 at 10:54:41AM +0100, David Howells wrote:
-> > > K.Prasad <prasad@linux.vnet.ibm.com> wrote:
-> > > 
-> > > > > My understanding is weak function definitions must appear in a different C
-> > > > > file than their call sites to work on some toolchains.
-> > > > > 
-> > > > 
-> > > > Atleast, there are quite a few precedents inside the Linux kernel for
-> > > > __weak functions being invoked from the file in which they are defined
-> > > > (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
-> > > > name a few).
-> > > > Moreover the online GCC docs haven't any such constraints mentioned.
-> > > 
-> > > I've seen problems in this area.  gcc sometimes inlines a weak function that's
-> > > in the same file as the call point.
-> > > 
-> > 
-> > We've seen such behaviour even otherwise....even with noinline attribute
-> > in place. I'm not sure if this gcc fix
-> > (http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16922) helped correct the
-> > behaviour, but the lesson has been to not trust a function to be
-> > inlined/remain non-inline consistently.
-> 
-> 
-> If we can't put the call to the function in the same file of its weak
-> definition, then perf is totally screwed.
-> 
-> And in fact it makes __weak basically useless and unusable. I guess
-> that happened in old gcc versions that have been fixed now.
-> 
-> Anyway, I'm personally fine with this patch (you can put my hack
-> if you want).
->
+From: Randy Dunlap <randy.dunlap@oracle.com>
 
-I guess you meant "Acked-by:" :-)
+phison uses interfaces and data that are built only when
+ATA_BMDMA is enabled, so it should depend on that symbol.
 
-Thanks, I'll add the same.
+drivers/staging/phison/phison.c:43: error: implicit declaration of function 'ATA_BMDMA_SHT'
+drivers/staging/phison/phison.c:43: error: initializer element is not constant
+drivers/staging/phison/phison.c:43: error: (near initialization for 'phison_sht.module')
+drivers/staging/phison/phison.c:47: error: 'ata_bmdma_port_ops' undeclared here (not in a function)
 
---K.Prasad
- 
+Signed-off-by: Randy Dunlap <randy.dunlap@oracle.com>
+Cc: evan_ko@phison.com
+---
+ drivers/staging/phison/Kconfig |    2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+--- linux-next-20100526.orig/drivers/staging/phison/Kconfig
++++ linux-next-20100526/drivers/staging/phison/Kconfig
+@@ -1,5 +1,5 @@
+ config IDE_PHISON
+ 	tristate "PCIE ATA PS5000 IDE support"
+-	depends on PCI && ATA && ATA_SFF
++	depends on PCI && ATA && ATA_SFF && ATA_BMDMA
+ 	---help---
+ 	  This is an experimental driver for PS5000 IDE driver.
