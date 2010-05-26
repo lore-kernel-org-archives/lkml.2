@@ -1,53 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758970Ab0EZMBw (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:01:52 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:36895 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753474Ab0EZMBu (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:01:50 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=wfqDogbFbo8CwHbHgvmhtmJZtLKr59WNBeQBvrvTJmZ48ZTTrvsjzznX77YBZI0w91
-         xNVHiCUYELb9RhfXvjFTewAYxhFazid4bDWm56AE1+xRpjtmQ79IzvbgeZ2j9t7wfmd5
-         Obos3yXsbeJ8/4qTMvFSx1DmT/uc2LsbT7gqA=
+	id S1757264Ab0EZMEa (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:04:30 -0400
+Received: from borg.medozas.de ([188.40.89.202]:59671 "EHLO borg.medozas.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752126Ab0EZME3 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:04:29 -0400
+Date: Wed, 26 May 2010 14:04:27 +0200 (CEST)
+From: Jan Engelhardt <jengelh@medozas.de>
+To: alsa-devel@alsa-project.org
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>, perex@perex.cz,
+       tiwai@suse.de
+Subject: No mixers on ATI RS780 Azalia
+Message-ID: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>
+User-Agent: Alpine 2.01 (LSU 1266 2009-07-14)
 MIME-Version: 1.0
-In-Reply-To: <20100526133721.602633b2@schatten.dmk.lab>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<201005242049.18920.rjw@sisk.pl>
-	<87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-Date: Wed, 26 May 2010 14:01:49 +0200
-Message-ID: <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 1:37 PM, Florian Mickler <florian@mickler.org> wrote:
+Hi,
 
-> This is not "protection". This is functioning properly in a real world
-> scenario. Why would the user change the kernel, if the device would be
-> buggy after that? (Except maybe he is a geek)
 
-Hmm... Why would the user continue to use the program if it slows down
-his device and sucks the battery as a vampire (Except maybe he's a
-moron)? ;)
+I have here a Samsung 320MXn2 monitor/mainboard (typical x86_64 
+environment) where I cannot get sound output to the internal speakers 
+working.
 
-~Vitaly
+To start, there seem to be two sound cards:
+
+lspci/lspci -n:
+00:14.2 Audio device: ATI Technologies Inc SBx00 Azalia (Intel HDA)
+01:05.1 Audio device: ATI Technologies Inc RS780 Azalia controller
+00:14.2 0403: 1002:4383
+01:05.1 0403: 1002:960f
+
+/proc/asound/cards:
+ 0 [SB  ]: HDA-Intel - HDA ATI SB
+           HDA ATI SB at 0xf0500000 irq 16
+ 1 [HDMI]: HDA-Intel - HDA ATI HDMI
+           HDA ATI HDMI at 0xf0110000 irq 19
+
+The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
+one.
+
+Under Windows XP, I see the following mixer elements for it:
+
+ * Master Volume
+ * Wave
+ * SW Synth
+ * CD Player
+
+Subsequently, there is sound (once I bump the volumes on these).
+
+However, in Linux up to including 2.6.34, I only see a single mixer 
+element:
+
+ * IEC958/S/PDIF
+
+mplayer etc. all successfully write to the device, but since there are 
+not any further mixer controls, I can't unmute the essential channels.
+
+alsa-utils is version 1.0.21, from openSUSE 11.2 x86_64.
+
+
+Any help is appreciated.
+
+Thanks,
+Jan
