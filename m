@@ -1,161 +1,71 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754843Ab0EZNg0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:36:26 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64132 "EHLO
-	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753611Ab0EZNgY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:36:24 -0400
-Date: Wed, 26 May 2010 15:36:21 +0200
-From: Christoph Egger <siccegge@cs.fau.de>
-To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
-       Greg Kroah-Hartman <gregkh@suse.de>, Greg Ungerer <gerg@uclinux.org>,
-       Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org
-Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] config SPRUCE
-Message-ID: <20100526133621.GB7508@faui49.informatik.uni-erlangen.de>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+	id S1755083Ab0EZNjy (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:39:54 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:34500 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753888Ab0EZNjx (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 09:39:53 -0400
+Date: Wed, 26 May 2010 15:39:48 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Alan Cox <alan@lxorguk.ukuu.org.uk>
+Cc: felipe.balbi@nokia.com, Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526153948.49fc03d1@schatten.dmk.lab>
+In-Reply-To: <20100526141942.2a6b94ff@lxorguk.ukuu.org.uk>
+References: <1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526122932.GB1990@nokia.com>
+	<20100526143323.7c6f8705@schatten.dmk.lab>
+	<20100526123532.GA2629@nokia.com>
+	<20100526145452.685337db@schatten.dmk.lab>
+	<20100526141942.2a6b94ff@lxorguk.ukuu.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi all!
-
-	As part of the VAMOS[0] research project at the University of
-Erlangen we are looking at multiple integrity errors in linux'
-configuration system.
-
-	CONFIG_SPRUCE is obsolete since kernel 2.6.26 so this last bit
-should be killed as well I guess.
-
-	Please keep me informed of this patch getting confirmed /
-merged so we can keep track of it.
-
-Regards
-
-	Christoph Egger
-
-[0] http://vamos1.informatik.uni-erlangen.de/
-
-----
->From 2f75bae3a66c39b85d83024fa86113cc5ea2c10b Mon Sep 17 00:00:00 2001
-From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 26 May 2010 12:47:42 +0200
-Subject: [PATCH] Remaining of CONFIG_SPRUCE removal (2.6.26)
-
-CONFIG_SPRUCE was removed from kernel around 2.6.26. Last piece of
-relevant code that is still in linux' source tree will be removed by
-this patch.
-
-Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
----
- drivers/input/serio/i8042-ppcio.h |   75 -------------------------------------
- 1 files changed, 0 insertions(+), 75 deletions(-)
-
-diff --git a/drivers/input/serio/i8042-ppcio.h b/drivers/input/serio/i8042-ppcio.h
-index 2906e1b..f708c75 100644
---- a/drivers/input/serio/i8042-ppcio.h
-+++ b/drivers/input/serio/i8042-ppcio.h
-@@ -52,81 +52,6 @@ static inline void i8042_platform_exit(void)
- {
- }
- 
--#elif defined(CONFIG_SPRUCE)
--
--#define I8042_KBD_IRQ 22
--#define I8042_AUX_IRQ 21
--
--#define I8042_KBD_PHYS_DESC "spruceps2/serio0"
--#define I8042_AUX_PHYS_DESC "spruceps2/serio1"
--#define I8042_MUX_PHYS_DESC "spruceps2/serio%d"
--
--#define I8042_COMMAND_REG 0xff810000
--#define I8042_DATA_REG 0xff810001
--
--static inline int i8042_read_data(void)
--{
--	unsigned long kbd_data;
--
--	__raw_writel(0x00000088, 0xff500008);
--	eieio();
--
--	__raw_writel(0x03000000, 0xff50000c);
--	eieio();
--
--	asm volatile("lis     7,0xff88        \n\
--		      lswi    6,7,0x8         \n\
--		      mr      %0,6"
--	              : "=r" (kbd_data) :: "6", "7");
--
--	__raw_writel(0x00000000, 0xff50000c);
--	eieio();
--
--	return (unsigned char)(kbd_data >> 24);
--}
--
--static inline int i8042_read_status(void)
--{
--	unsigned long kbd_status;
--
--	__raw_writel(0x00000088, 0xff500008);
--	eieio();
--
--	__raw_writel(0x03000000, 0xff50000c);
--	eieio();
--
--	asm volatile("lis     7,0xff88        \n\
--		      ori     7,7,0x8         \n\
--		      lswi    6,7,0x8         \n\
--		      mr      %0,6"
--		      : "=r" (kbd_status) :: "6", "7");
--
--	__raw_writel(0x00000000, 0xff50000c);
--	eieio();
--
--	return (unsigned char)(kbd_status >> 24);
--}
--
--static inline void i8042_write_data(int val)
--{
--	*((unsigned char *)0xff810000) = (char)val;
--}
--
--static inline void i8042_write_command(int val)
--{
--	*((unsigned char *)0xff810001) = (char)val;
--}
--
--static inline int i8042_platform_init(void)
--{
--	i8042_reset = 1;
--	return 0;
--}
--
--static inline void i8042_platform_exit(void)
--{
--}
--
- #else
- 
- #include "i8042-io.h"
--- 
-1.6.3.3
+On Wed, 26 May 2010 14:19:42 +0100
+Alan Cox <alan@lxorguk.ukuu.org.uk> wrote:
 
 
+> > This is a _big_ plus for attracting 3rd party programs. (And of course
+> > the thing you don't like). 
+> 
+> You would do better to concentrate on technical issues that the
+> assignment of malicious intent to other parties.
+> 
+> Alan
 
+This was nothing the kind of! He explicitly said this:
 
+On Wed, 26 May 2010 15:29:32 +0300
+Felipe Balbi <felipe.balbi@nokia.com> wrote:
 
+> What I find ridiculous is the assumption that kernel should provide good 
+> power management even for badly written applications. They should work, 
+> of course, but there's no assumption that the kernel should cope with 
+> those applications and provide good battery usage on those cases.
 
+And I responded that if the kernel would do this, then that would
+be a "_big_ plus for attracting 3d party programs". 
 
+I had no intent in attacking anyone or putting word's in someones mouth.
+Sorry if this was unclearly written.
 
-
-
-
-
-
-
-
+Cheers,
+Flo
