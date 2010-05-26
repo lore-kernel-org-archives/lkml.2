@@ -1,151 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757364Ab0EZSLq (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 14:11:46 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2593 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757078Ab0EZSLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 14:11:44 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH] Add Documentation/kvm/msr.txt
-Date: Wed, 26 May 2010 14:04:48 -0400
-Message-Id: <1274897088-8587-1-git-send-email-glommer@redhat.com>
+	id S1757482Ab0EZSNf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 14:13:35 -0400
+Received: from fg-out-1718.google.com ([72.14.220.156]:34078 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757318Ab0EZSNd convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 14:13:33 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
+         :cc:content-type:content-transfer-encoding;
+        b=vMtlR4tw5gXQNErcQybsPyr3ZT6IiLw30P/HDPXhYK8poQ7D8401BxatYX8qFhyrW4
+         xhlWrpOunfnFEoHBloUaHyaROzVaXyXWZI69lCBfvJemQ8PxzyRH88SRtjCR2cJwUcDA
+         hQTWKPyhNM0wYV3oQDXdwmCoaf2w/wpMU5KJo=
+MIME-Version: 1.0
+In-Reply-To: <Pine.LNX.4.64.1005261756150.23743@ask.diku.dk>
+References: <Pine.LNX.4.64.1005261756150.23743@ask.diku.dk>
+Date: Wed, 26 May 2010 20:13:32 +0200
+Message-ID: <AANLkTilnCabvmeF11Rx7XlEHxwqrnBk2JLznOBLrCHuC@mail.gmail.com>
+Subject: Re: [PATCH 8/17] net/caif: Add missing spin_unlock
+From: =?UTF-8?Q?Sjur_Br=C3=A6ndeland?= <sjurbren@gmail.com>
+To: Julia Lawall <julia@diku.dk>
+Cc: "David S. Miller" <davem@davemloft.net>, netdev@vger.kernel.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a file that documents the usage of KVM-specific
-MSRs.
+Julia Lawall <julia@diku.dk> wrote:
+> From: Julia Lawall <julia@diku.dk>
+>
+> Add a spin_unlock missing on the error path.  The spin lock is used in a
+> balanced way elsewhere in the file.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
----
- Documentation/kvm/msr.txt |  115 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 115 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/kvm/msr.txt
+This bug is already fixed an part of net-2.6 in
+"[PATCH net-2.6 5/6] caif: Bugfix - missing spin_unlock".
 
-diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
-new file mode 100644
-index 0000000..c5110a2
---- /dev/null
-+++ b/Documentation/kvm/msr.txt
-@@ -0,0 +1,115 @@
-+KVM-specific MSRs.
-+Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
-+=====================================================
-+
-+KVM makes use of some custom MSRs to service some requests.
-+At present, this facility is only used by kvmclock.
-+
-+Custom MSRs have a range reserved for them, that goes from
-+0x4b564d00 to 0x4b564dff. There are MSRs outside this area,
-+but they are deprecated and their use is discouraged.
-+
-+Custom MSR list
-+--------
-+
-+The current supported Custom MSR list is:
-+
-+MSR_KVM_WALL_CLOCK:  0x11
-+
-+	data: physical address of a memory area. This memory is expected to
-+	hold a copy of the following structure:
-+
-+	struct pvclock_wall_clock {
-+		u32   version;
-+		u32   sec;
-+		u32   nsec;
-+	} __attribute__((__packed__));
-+
-+	whose data will be filled in by the hypervisor. The hypervisor will only
-+	touch this data once, at the moment of MSR write. Users that want to
-+	query this information more than once, have to write more than once to
-+	this MSR. Fields has the following meaning:
-+
-+		version: guest has to check version before and after grabbing
-+		time information, and check that they are both equal, and even.
-+		An odd version indicates an in-progress update.
-+
-+		sec: number of seconds for wallclock.
-+
-+		nsec: number of nanoseconds for wallclock.
-+
-+	Note that, although MSRs are per-CPU entities, the effect of this
-+	particular MSR is global.
-+
-+	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+	This MSR falls outside the reserved KVM range, and may be removed in the
-+	future. Its usage is deprecated.
-+
-+MSR_KVM_SYSTEM_TIME: 0x12
-+
-+	data: physical address of a memory area. This memory is expected to
-+	hold a copy of the following structure:
-+
-+	struct pvclock_vcpu_time_info {
-+		u32   version;
-+		u32   pad0;
-+		u64   tsc_timestamp;
-+		u64   system_time;
-+		u32   tsc_to_system_mul;
-+		s8    tsc_shift;
-+		u8    flags;
-+		u8    pad[2];
-+	} __attribute__((__packed__)); /* 32 bytes */
-+
-+	whose data will be filled in by the hypervisor periodically. Only one
-+	write, or registration, is needed for each VCPU. The interval between
-+	updates of this structure is arbitrary, and implementation-dependent.
-+
-+		version: guest has to check version before and after grabbing
-+		time information, and check that they are both equal and even.
-+		An odd version indicates an in-progress update.
-+
-+		tsc_timestamp: the tsc value at the current VCPU, at the time
-+		of the update of this structure. Guests can subtract this value
-+		from current tsc to derive a notion of elapsed time since the
-+		structure update.
-+
-+		system_time: the current system time at the time this structure
-+		was last updated. Unit is nanoseconds.
-+
-+		tsc_to_system_mul: a function of the tsc frequency. One has
-+		to multiply any tsc-related quantity by this value to get
-+		a value in nanoseconds, besides dividing by 2^tsc_shift
-+
-+		tsc_shift: cycle to nanosecond divider, as a power of two, to
-+		allow for shift rights. One has to shift right any tsc-related
-+		quantity by this value to get a value in nanoseconds, besides
-+		multiplying by tsc_to_system_mul.
-+
-+		flags: bits in this field indicate extended capabilities
-+		coordinated between the guest and the hypervisor. Availability
-+		of specific flags has to be checked in 0x40000001 cpuid leaf.
-+		Refer to cpuid.txt for details.
-+
-+	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+	This MSR falls outside the reserved KVM range, and may be removed in the
-+	future. Its usage is deprecated.
-+
-+MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
-+
-+	data and functioning: same as MSR_KVM_WALL_CLOCK. Use this instead.
-+
-+	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+MSR_KVM_SYSTEM_TIME_NEW:  0x4b564d01
-+
-+	data and functioning: same as MSR_KVM_SYSTEM_TIME. Use this instead.
-+
-+	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
--- 
-1.6.2.2
-
+Regards
+Sjur
