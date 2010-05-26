@@ -1,74 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758626Ab0EZXJh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:09:37 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:56707 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755110Ab0EZXJf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:09:35 -0400
-Date: Thu, 27 May 2010 09:09:23 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Randy Dunlap <randy.dunlap@oracle.com>
-Cc: Michal Marek <mmarek@suse.cz>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, matt mooney <mfm@muteddisk.com>,
-       Kirill Smelkov <kirr@mns.spb.ru>
-Subject: Re: linux-next: manual merge of the kbuild tree with the kernel-doc
- tree
-Message-Id: <20100527090923.c17a7ed4.sfr@canb.auug.org.au>
-In-Reply-To: <20100526095606.beed820e.randy.dunlap@oracle.com>
-References: <20100526115346.da5a02aa.sfr@canb.auug.org.au>
-	<4BFD42A6.6060206@oracle.com>
-	<20100527025020.da0c1bb7.sfr@canb.auug.org.au>
-	<20100526095606.beed820e.randy.dunlap@oracle.com>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Thu__27_May_2010_09_09_23_+1000_Z6PHGUsjHydyKpI4"
+	id S934799Ab0EZXMJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:12:09 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:36196 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S934489Ab0EZXMG (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 19:12:06 -0400
+Date: Wed, 26 May 2010 16:07:54 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: "Rafael J. Wysocki" <rjw@sisk.pl>
+cc: Rusty Russell <rusty@rustcorp.com.au>, LKML <linux-kernel@vger.kernel.org>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Brandon Philips <brandon@ifup.org>,
+       Jon Masters <jonathan@jonmasters.org>, Tejun Heo <htejun@gmail.com>,
+       Masami Hiramatsu <mhiramat@redhat.com>
+Subject: Re: [Regression] Crash in load_module() while freeing args
+In-Reply-To: <201005270056.25748.rjw@sisk.pl>
+Message-ID: <alpine.LFD.2.00.1005261559020.3689@i5.linux-foundation.org>
+References: <201005252300.07739.rjw@sisk.pl> <201005261730.59058.rusty@rustcorp.com.au> <201005262127.26235.rusty@rustcorp.com.au> <201005270056.25748.rjw@sisk.pl>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Thu__27_May_2010_09_09_23_+1000_Z6PHGUsjHydyKpI4
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
 
-Hi Randy,
 
-On Wed, 26 May 2010 09:56:06 -0700 Randy Dunlap <randy.dunlap@oracle.com> w=
-rote:
->
-> > The kernel-doc tree is a quilt series :-(
->=20
-> Yes.  and it's viewable without pulling/cloning.  ;)
+On Thu, 27 May 2010, Rafael J. Wysocki wrote:
+> 
+> Since the commit has been reverted, do you still want me to test this patch?
+> Quite frankly I'd prefer to test a complete replacement for that commit on top
+> of current -git.
 
-Ah, I shouldn't reply to emails so late at night :-(
+I'm not re-applying it with the pointless semantic changes that are 
+visible to modules. It doesn't matter if they were informed, if it means 
+that they'll then just have some odd version dependency and add crazy 
+"#if LINUX_VERSION" tests that aren't even exact.
 
-> > You can, of course, see the above commit in the linux-next tree via
-> > gitweb on kernel.org.
->=20
-> Thanks.  Michal, I droppped these 3 patches.  Please keep them in the
-> kbuild tree.
+I also wonder exactly what that module_mutex() actually ends up 
+protecting. 99% of load_module() seems to be stuff that is purely about 
+local issues. Maybe we could tighten the actual lock section to just the
+parts that actually expose the vmalloc'ed area to others?
 
-If anything, the kernel-doc patches should be kept as they are much more
-extensive.  And the conflict was trivial.  The kbuild patch was just
-fixing a typo (tey -> they).
+It's generally pointless releasing a lock in the middle - that just makes 
+the lock even less valid. If it's valid to just release the lock (without 
+some retry logic starting everything from the beginning), it likely the 
+lock shouldn't have been held there in the first place.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Thu__27_May_2010_09_09_23_+1000_Z6PHGUsjHydyKpI4
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv9qiMACgkQjjKRsyhoI8xDYQCfZnfaTbSOr8MyFyC5X5VxMFXM
-5IQAn3DKfvppbR5msBLPs1m1oj9IRQTX
-=W/bP
------END PGP SIGNATURE-----
-
---Signature=_Thu__27_May_2010_09_09_23_+1000_Z6PHGUsjHydyKpI4--
+		Linus
