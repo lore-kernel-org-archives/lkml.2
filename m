@@ -1,169 +1,35 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758189Ab0EZXMt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:12:49 -0400
-Received: from bld-mail19.adl2.internode.on.net ([150.101.137.104]:54314 "EHLO
-	mail.internode.on.net" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1753367Ab0EZXMr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:12:47 -0400
-Date: Thu, 27 May 2010 09:12:14 +1000
-From: Dave Chinner <david@fromorbit.com>
-To: Nick Piggin <npiggin@suse.de>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
- infrastructure
-Message-ID: <20100526231214.GB1395@dastard>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
- <1274777588-21494-4-git-send-email-david@fromorbit.com>
- <20100526164116.GD22536@laptop>
+	id S934815Ab0EZXNQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:13:16 -0400
+Received: from foo.birdnet.se ([213.88.146.6]:58023 "HELO foo.birdnet.se"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with SMTP
+	id S1758010Ab0EZXNP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 19:13:15 -0400
+X-Greylist: delayed 400 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 19:13:14 EDT
+Message-ID: <20100526230632.2808.qmail@stuge.se>
+Date: Thu, 27 May 2010 01:06:32 +0200
+From: Peter Stuge <peter@stuge.se>
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: ath9k-devel@venema.h4ckr.net, linux-kernel@vger.kernel.org,
+       mcgrog@gmail.com
+Subject: Re: [ath9k-devel] [PATCH]wireless:ath9k Fix ath_print in xmit.c
+Mail-Followup-To: "Justin P. Mattock" <justinmattock@gmail.com>,
+	ath9k-devel@lists.ath9k.org, linux-kernel@vger.kernel.org,
+	mcgrog@gmail.com
+References: <1274892555-10422-1-git-send-email-justinmattock@gmail.com>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100526164116.GD22536@laptop>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <1274892555-10422-1-git-send-email-justinmattock@gmail.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thu, May 27, 2010 at 02:41:16AM +1000, Nick Piggin wrote:
-> On Tue, May 25, 2010 at 06:53:06PM +1000, Dave Chinner wrote:
-> > @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
-> >   * which flags are set. This means we don't need to maintain multiple
-> >   * similar copies of this loop.
-> >   */
-> > -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
-> > +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
-> >  {
-> >  	LIST_HEAD(referenced);
-> >  	LIST_HEAD(tmp);
-> >  	struct dentry *dentry;
-> > -	int cnt = 0;
-> >  
-> >  	BUG_ON(!sb);
-> > -	BUG_ON((flags & DCACHE_REFERENCED) && count == NULL);
-> > +	BUG_ON((flags & DCACHE_REFERENCED) && count == -1);
-> >  	spin_lock(&dcache_lock);
-> > -	if (count != NULL)
-> > -		/* called from prune_dcache() and shrink_dcache_parent() */
-> > -		cnt = *count;
-> > -restart:
-> > -	if (count == NULL)
-> > +	if (count == -1)
-> >  		list_splice_init(&sb->s_dentry_lru, &tmp);
-> >  	else {
-> >  		while (!list_empty(&sb->s_dentry_lru)) {
-> > @@ -492,13 +487,13 @@ restart:
-> >  			} else {
-> >  				list_move_tail(&dentry->d_lru, &tmp);
-> >  				spin_unlock(&dentry->d_lock);
-> > -				cnt--;
-> > -				if (!cnt)
-> > +				if (--count == 0)
-> >  					break;
-> >  			}
-> >  			cond_resched_lock(&dcache_lock);
-> >  		}
-> >  	}
-> > +prune_more:
-> >  	while (!list_empty(&tmp)) {
-> >  		dentry = list_entry(tmp.prev, struct dentry, d_lru);
-> >  		dentry_lru_del_init(dentry);
-> > @@ -516,88 +511,29 @@ restart:
-> >  		/* dentry->d_lock was dropped in prune_one_dentry() */
-> >  		cond_resched_lock(&dcache_lock);
-> >  	}
-> > -	if (count == NULL && !list_empty(&sb->s_dentry_lru))
-> > -		goto restart;
-> > -	if (count != NULL)
-> > -		*count = cnt;
-> > +	if (count == -1 && !list_empty(&sb->s_dentry_lru)) {
-> > +		list_splice_init(&sb->s_dentry_lru, &tmp);
-> > +		goto prune_more;
-> > +	}
-> 
-> Nitpick but I prefer just the restart label wher it is previously. This
-> is moving setup for the next iteration into the "error" case.
+Justin P. Mattock wrote:
+> ath_print in xmit.c should say "Reseting hardware"
 
-Ok, will fix.
-
-> > +static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
-> > +{
-> > +	struct super_block *sb;
-> > +	int count;
-> > +
-> > +	sb = container_of(shrink, struct super_block, s_shrink);
-> > +
-> > +	/*
-> > +	 * Deadlock avoidance.  We may hold various FS locks, and we don't want
-> > +	 * to recurse into the FS that called us in clear_inode() and friends..
-> > +	 */
-> > +	if (!(gfp_mask & __GFP_FS))
-> > +		return -1;
-> > +
-> > +	/*
-> > +	 * if we can't get the umount lock, then there's no point having the
-> > +	 * shrinker try again because the sb is being torn down.
-> > +	 */
-> > +	if (!down_read_trylock(&sb->s_umount))
-> > +		return -1;
-> 
-> Would you just elaborate on the lock order problem somewhere? (the
-> comment makes it look like we *could* take the mutex if we wanted
-> to).
-
-The shrinker is unregistered in deactivate_locked_super() which is
-just before ->kill_sb is called. The sb->s_umount lock is held at
-this point. hence is the shrinker is operating, we will deadlock if
-we try to lock it like this:
-
-	unmount:			shrinker:
-					down_read(&shrinker_lock);
-	down_write(&sb->s_umount)
-	unregister_shrinker()
-	down_write(&shrinker_lock)
-					prune_super()
-					  down_read(&sb->s_umount);
-					  (deadlock)
-
-hence if we can't get the sb->s_umount lock in prune_super(), then
-the superblock must be being unmounted and the shrinker should abort
-as the ->kill_sb method will clean up everything after the shrinker
-is unregistered. Hence the down_read_trylock().
+I think that should be "Resetting hardware" with two t:s.
 
 
-> > +	if (!sb->s_root) {
-> > +		up_read(&sb->s_umount);
-> > +		return -1;
-> > +	}
-> > +
-> > +	if (nr_to_scan) {
-> > +		/* proportion the scan between the two cacheѕ */
-> > +		int total;
-> > +
-> > +		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
-> > +		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
-> > +
-> > +		/* prune dcache first as icache is pinned by it */
-> > +		prune_dcache_sb(sb, count);
-> > +		prune_icache_sb(sb, nr_to_scan - count);
-> > +	}
-> > +
-> > +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
-> > +						* sysctl_vfs_cache_pressure;
-> 
-> Do you think truncating in the divisions is at all a problem? It
-> probably doesn't matter much I suppose.
-
-Same code as currently exists. IIRC, the reasoning is that if we've
-got less that 100 objects to reclaim, then we're unlikely to be able
-to free up any memory from the caches, anyway.
-
-Cheers,
-
-Dave.
--- 
-Dave Chinner
-david@fromorbit.com
+//Peter
