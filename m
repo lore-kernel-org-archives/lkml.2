@@ -1,64 +1,383 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1758814Ab0EZJdg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 05:33:36 -0400
-Received: from bombadil.infradead.org ([18.85.46.34]:53368 "EHLO
-	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754129Ab0EZJde convert rfc822-to-8bit (ORCPT
+	id S933901Ab0EZJhU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 05:37:20 -0400
+Received: from ppsw-32.csi.cam.ac.uk ([131.111.8.132]:44422 "EHLO
+	ppsw-32.csi.cam.ac.uk" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751823Ab0EZJhS (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 05:33:34 -0400
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: Peter Zijlstra <peterz@infradead.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
-In-Reply-To: <20100526112303.3fef15a4@schatten.dmk.lab>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
-	 <201005252344.37639.rjw@sisk.pl>
-	 <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
-	 <1274863342.5882.4850.camel@twins>
-	 <20100526112303.3fef15a4@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 May 2010 11:33:22 +0200
-Message-ID: <1274866402.5882.5051.camel@twins>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 26 May 2010 05:37:18 -0400
+X-Cam-AntiVirus: no malware found
+X-Cam-SpamDetails: not scanned
+X-Cam-ScannerInfo: http://www.cam.ac.uk/cs/email/scanner/
+Message-ID: <4BFCEC43.3080205@jic23.retrosnub.co.uk>
+Date: Wed, 26 May 2010 10:39:15 +0100
+From: Jonathan Cameron <kernel@jic23.retrosnub.co.uk>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100426 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Hemanth V <hemanthv@ti.com>
+CC: linux-kernel@vger.kernel.org, linux-omap@vger.kernel.org
+Subject: Re: [PATCH V2] misc : ROHM BH1780GLI Ambient light sensor Driver
+References: <39216.10.24.255.17.1274699066.squirrel@dbdmail.itg.ti.com> <4428.10.24.255.17.1274862635.squirrel@dbdmail.itg.ti.com>
+In-Reply-To: <4428.10.24.255.17.1274862635.squirrel@dbdmail.itg.ti.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 11:23 +0200, Florian Mickler wrote:
+On 05/26/10 09:30, Hemanth V wrote:
+>> From: Hemanth V <hemanthv@ti.com>
+>> Date: Fri, 21 May 2010 15:52:03 +0530
+>> Subject: [PATCH] misc: ROHM BH1780GLI Ambient light sensor Driver
+>>
+>> This patch adds support for ROHM BH1780GLI Ambient light sensor.
+>>
+>> BH1780 supports I2C interface. Driver supports read/update of power state and
+>> read of lux value (through SYSFS). Writing value 3 to power_state enables the
+>> sensor and current lux value could be read.
+>>
+> Jonathan, Daniel
+> 
+> If there are no more comments, do you know howto push this to linus tree.
+It's in misc, so send a copy (with reference back to review thread)
+to Andrew Morton <akpm@linux-foundation.org>
 
-> There is polling, because the suspend manager in userspace doesn't have
-> the whole picture. i.e. it doesn't know if a suspend will be
-> successfull. 
-> So for aggressive suspending as a powersave-feature you need to poll
-> (i.e. retry upon failure). because you don't want to stay unsuspended. 
+Andrew tends to pick things up eventually for lkml, but he'll notice
+it quicker if you cc him in on relevant emails!
 
-Clearly if it fails, there something to be done, right? So whoever does
-the thing will communicate with the suspend manager that it's going to
-do and has finished doing its thing, at which point it will try again.
+Jonathan
+> 
+> Thanks
+> Hemanth
+> 
+>> Signed-off-by: Hemanth V <hemanthv@ti.com>
+>> Reviewed-by: Daniel Mack <daniel@caiaq.de>
+>> Acked-by: Jonathan Cameron <jic23@cam.ac.uk>
+>> ---
+>>  drivers/misc/Kconfig     |   10 ++
+>>  drivers/misc/Makefile    |    1 +
+>>  drivers/misc/bh1780gli.c |  273 ++++++++++++++++++++++++++++++++++++++++++++++
+>>  3 files changed, 284 insertions(+), 0 deletions(-)
+>>  create mode 100644 drivers/misc/bh1780gli.c
+>>
+>> diff --git a/drivers/misc/Kconfig b/drivers/misc/Kconfig
+>> index 0d0d625..3f5bf0f 100644
+>> --- a/drivers/misc/Kconfig
+>> +++ b/drivers/misc/Kconfig
+>> @@ -278,6 +278,16 @@ config SENSORS_TSL2550
+>>  	  This driver can also be built as a module.  If so, the module
+>>  	  will be called tsl2550.
+>>
+>> +config SENSORS_BH1780
+>> +	tristate "ROHM BH1780GLI ambient light sensor"
+>> +	depends on I2C && SYSFS
+>> +	help
+>> +	  If you say yes here you get support for the ROHM BH1780GLI
+>> +	  ambient light sensor.
+>> +
+>> +	  This driver can also be built as a module.  If so, the module
+>> +	  will be called bh1780gli.
+>> +
+>>  config EP93XX_PWM
+>>  	tristate "EP93xx PWM support"
+>>  	depends on ARCH_EP93XX
+>> diff --git a/drivers/misc/Makefile b/drivers/misc/Makefile
+>> index 7b6f7ee..c479d91 100644
+>> --- a/drivers/misc/Makefile
+>> +++ b/drivers/misc/Makefile
+>> @@ -30,3 +30,4 @@ obj-$(CONFIG_IWMC3200TOP)      += iwmc3200top/
+>>  obj-y				+= eeprom/
+>>  obj-y				+= cb710/
+>>  obj-$(CONFIG_VMWARE_BALLOON)	+= vmware_balloon.o
+>> +obj-$(CONFIG_SENSORS_BH1780)	+= bh1780gli.o
+>> diff --git a/drivers/misc/bh1780gli.c b/drivers/misc/bh1780gli.c
+>> new file mode 100644
+>> index 0000000..774531d
+>> --- /dev/null
+>> +++ b/drivers/misc/bh1780gli.c
+>> @@ -0,0 +1,273 @@
+>> +/*
+>> + * bh1780gli.c
+>> + * ROHM Ambient Light Sensor Driver
+>> + *
+>> + * Copyright (C) 2010 Texas Instruments
+>> + * Author: Hemanth V <hemanthv@ti.com>
+>> + *
+>> + * This program is free software; you can redistribute it and/or modify it
+>> + * under the terms of the GNU General Public License version 2 as published by
+>> + * the Free Software Foundation.
+>> + *
+>> + * This program is distributed in the hope that it will be useful, but WITHOUT
+>> + * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+>> + * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+>> + * more details.
+>> + *
+>> + * You should have received a copy of the GNU General Public License along with
+>> + * this program.  If not, see <http://www.gnu.org/licenses/>.
+>> + */
+>> +#include <linux/i2c.h>
+>> +#include <linux/slab.h>
+>> +#include <linux/mutex.h>
+>> +#include <linux/platform_device.h>
+>> +#include <linux/delay.h>
+>> +
+>> +#define BH1780_REG_CONTROL	0x80
+>> +#define BH1780_REG_PARTID	0x8A
+>> +#define BH1780_REG_MANFID	0x8B
+>> +#define BH1780_REG_DLOW	0x8C
+>> +#define BH1780_REG_DHIGH	0x8D
+>> +
+>> +#define BH1780_REVMASK		(0xf)
+>> +#define BH1780_POWMASK		(0x3)
+>> +#define BH1780_POFF		(0x0)
+>> +#define BH1780_PON		(0x3)
+>> +
+>> +/* power on settling time in ms */
+>> +#define BH1780_PON_DELAY	2
+>> +
+>> +struct bh1780_data {
+>> +	struct i2c_client *client;
+>> +	int power_state;
+>> +	/* lock for sysfs operations */
+>> +	struct mutex lock;
+>> +};
+>> +
+>> +static int bh1780_write(struct bh1780_data *ddata, u8 reg, u8 val, char *msg)
+>> +{
+>> +	int ret = i2c_smbus_write_byte_data(ddata->client, reg, val);
+>> +	if (ret < 0)
+>> +		dev_err(&ddata->client->dev,
+>> +			"i2c_smbus_write_byte_data failed error %d\
+>> +			Register (%s)\n", ret, msg);
+>> +	return ret;
+>> +}
+>> +
+>> +static int bh1780_read(struct bh1780_data *ddata, u8 reg, char *msg)
+>> +{
+>> +	int ret = i2c_smbus_read_byte_data(ddata->client, reg);
+>> +	if (ret < 0)
+>> +		dev_err(&ddata->client->dev,
+>> +			"i2c_smbus_read_byte_data failed error %d\
+>> +			 Register (%s)\n", ret, msg);
+>> +	return ret;
+>> +}
+>> +
+>> +static ssize_t bh1780_show_lux(struct device *dev,
+>> +				struct device_attribute *attr, char *buf)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
+>> +	int lsb, msb;
+>> +
+>> +	lsb = bh1780_read(ddata, BH1780_REG_DLOW, "DLOW");
+>> +	if (lsb < 0)
+>> +		return lsb;
+>> +
+>> +	msb = bh1780_read(ddata, BH1780_REG_DHIGH, "DHIGH");
+>> +	if (msb < 0)
+>> +		return msb;
+>> +
+>> +	return sprintf(buf, "%d\n", (msb << 8) | lsb);
+>> +}
+>> +
+>> +static ssize_t bh1780_show_power_state(struct device *dev,
+>> +					struct device_attribute *attr,
+>> +					char *buf)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
+>> +	int state;
+>> +
+>> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
+>> +	if (state < 0)
+>> +		return state;
+>> +
+>> +	return sprintf(buf, "%d\n", state & BH1780_POWMASK);
+>> +}
+>> +
+>> +static ssize_t bh1780_store_power_state(struct device *dev,
+>> +					struct device_attribute *attr,
+>> +					const char *buf, size_t count)
+>> +{
+>> +	struct platform_device *pdev = to_platform_device(dev);
+>> +	struct bh1780_data *ddata = platform_get_drvdata(pdev);
+>> +	unsigned long val;
+>> +	int error;
+>> +
+>> +	error = strict_strtoul(buf, 0, &val);
+>> +	if (error)
+>> +		return error;
+>> +
+>> +	if (val < BH1780_POFF || val > BH1780_PON)
+>> +		return -EINVAL;
+>> +
+>> +	mutex_lock(&ddata->lock);
+>> +
+>> +	error = bh1780_write(ddata, BH1780_REG_CONTROL, val, "CONTROL");
+>> +	if (error < 0) {
+>> +		mutex_unlock(&ddata->lock);
+>> +		return error;
+>> +	}
+>> +
+>> +	msleep(BH1780_PON_DELAY);
+>> +	ddata->power_state = val;
+>> +	mutex_unlock(&ddata->lock);
+>> +
+>> +	return count;
+>> +}
+>> +
+>> +static DEVICE_ATTR(lux, S_IRUGO, bh1780_show_lux, NULL);
+>> +
+>> +static DEVICE_ATTR(power_state, S_IWUSR | S_IRUGO,
+>> +		bh1780_show_power_state, bh1780_store_power_state);
+>> +
+>> +static struct attribute *bh1780_attributes[] = {
+>> +	&dev_attr_power_state.attr,
+>> +	&dev_attr_lux.attr,
+>> +	NULL
+>> +};
+>> +
+>> +static const struct attribute_group bh1780_attr_group = {
+>> +	.attrs = bh1780_attributes,
+>> +};
+>> +
+>> +static int __devinit bh1780_probe(struct i2c_client *client,
+>> +						const struct i2c_device_id *id)
+>> +{
+>> +	int ret;
+>> +	struct bh1780_data *ddata = NULL;
+>> +	struct i2c_adapter *adapter = to_i2c_adapter(client->dev.parent);
+>> +
+>> +	if (!i2c_check_functionality(adapter, I2C_FUNC_SMBUS_BYTE)) {
+>> +		ret = -EIO;
+>> +		goto err_op_failed;
+>> +	}
+>> +
+>> +	ddata = kzalloc(sizeof(struct bh1780_data), GFP_KERNEL);
+>> +	if (ddata == NULL) {
+>> +		ret = -ENOMEM;
+>> +		goto err_op_failed;
+>> +	}
+>> +
+>> +	ddata->client = client;
+>> +	i2c_set_clientdata(client, ddata);
+>> +
+>> +	ret = bh1780_read(ddata, BH1780_REG_PARTID, "PART ID");
+>> +	if (ret < 0)
+>> +		goto err_op_failed;
+>> +
+>> +	dev_info(&client->dev, "Ambient Light Sensor, Rev : %d\n",
+>> +			(ret & BH1780_REVMASK));
+>> +
+>> +	mutex_init(&ddata->lock);
+>> +
+>> +	ret = sysfs_create_group(&client->dev.kobj, &bh1780_attr_group);
+>> +	if (ret)
+>> +		goto err_op_failed;
+>> +
+>> +	return 0;
+>> +
+>> +err_op_failed:
+>> +	kfree(ddata);
+>> +	return ret;
+>> +}
+>> +
+>> +static int __devexit bh1780_remove(struct i2c_client *client)
+>> +{
+>> +	struct bh1780_data *ddata;
+>> +
+>> +	ddata = i2c_get_clientdata(client);
+>> +	sysfs_remove_group(&client->dev.kobj, &bh1780_attr_group);
+>> +	i2c_set_clientdata(client, NULL);
+>> +	kfree(ddata);
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +#ifdef CONFIG_PM
+>> +static int bh1780_suspend(struct i2c_client *client, pm_message_t mesg)
+>> +{
+>> +	struct bh1780_data *ddata;
+>> +	int state, ret;
+>> +
+>> +	ddata = i2c_get_clientdata(client);
+>> +	state = bh1780_read(ddata, BH1780_REG_CONTROL, "CONTROL");
+>> +	if (state < 0)
+>> +		return state;
+>> +
+>> +	ddata->power_state = state & BH1780_POWMASK;
+>> +
+>> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, BH1780_POFF,
+>> +				"CONTROL");
+>> +
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	return 0;
+>> +}
+>> +
+>> +static int bh1780_resume(struct i2c_client *client)
+>> +{
+>> +	struct bh1780_data *ddata;
+>> +	int state, ret;
+>> +
+>> +	ddata = i2c_get_clientdata(client);
+>> +	state = ddata->power_state;
+>> +
+>> +	ret = bh1780_write(ddata, BH1780_REG_CONTROL, state,
+>> +				"CONTROL");
+>> +
+>> +	if (ret < 0)
+>> +		return ret;
+>> +
+>> +	return 0;
+>> +}
+>> +#else
+>> +#define bh1780_suspend NULL
+>> +#define bh1780_resume NULL
+>> +#endif /* CONFIG_PM */
+>> +
+>> +static const struct i2c_device_id bh1780_id[] = {
+>> +	{ "bh1780", 0 },
+>> +	{ },
+>> +};
+>> +
+>> +static struct i2c_driver bh1780_driver = {
+>> +	.probe		= bh1780_probe,
+>> +	.remove		= bh1780_remove,
+>> +	.id_table	= bh1780_id,
+>> +	.suspend	= bh1780_suspend,
+>> +	.resume		= bh1780_resume,
+>> +	.driver = {
+>> +		.name = "bh1780"
+>> +	},
+>> +};
+>> +
+>> +static int __init bh1780_init(void)
+>> +{
+>> +	return i2c_add_driver(&bh1780_driver);
+>> +}
+>> +
+>> +static void __exit bh1780_exit(void)
+>> +{
+>> +	i2c_del_driver(&bh1780_driver);
+>> +}
+>> +
+>> +module_init(bh1780_init)
+>> +module_exit(bh1780_exit)
+>> +
+>> +MODULE_DESCRIPTION("BH1780GLI Ambient Light Sensor Driver");
+>> +MODULE_LICENSE("GPL");
+>> +MODULE_AUTHOR("Hemanth V <hemanthv@ti.com>");
+>> --
+>> 1.5.6.3
+>>
+> 
+> 
+> --
+> To unsubscribe from this list: send the line "unsubscribe linux-kernel" in
+> the body of a message to majordomo@vger.kernel.org
+> More majordomo info at  http://vger.kernel.org/majordomo-info.html
+> Please read the FAQ at  http://www.tux.org/lkml/
 
-That's event driven, not polled.
-
-Also, if you want you can keep the kernel-side auto-suspend side, and
-have the suspend manager clear on !0 and re-establish the auto-suspend
-state on 0.
-
-But you really don't need this device thingy.
