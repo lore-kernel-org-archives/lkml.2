@@ -1,58 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754936Ab0EZTCT (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:02:19 -0400
-Received: from metis.ext.pengutronix.de ([92.198.50.35]:52323 "EHLO
-	metis.ext.pengutronix.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752721Ab0EZTCS (ORCPT
+	id S1754405Ab0EZTCt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:02:49 -0400
+Received: from rcsinet10.oracle.com ([148.87.113.121]:33511 "EHLO
+	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab0EZTCr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:02:18 -0400
-Date: Wed, 26 May 2010 21:02:15 +0200
-From: Uwe =?iso-8859-1?Q?Kleine-K=F6nig?= 
-	<u.kleine-koenig@pengutronix.de>
-To: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-Cc: linux-fbdev@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Baruch Siach <baruch@tkos.co.il>, Sascha Hauer <s.hauer@pengutronix.de>
-Subject: Re: [PATCH] fbdev: fix frame buffer devices menu
-Message-ID: <20100526190215.GA11764@pengutronix.de>
-References: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
-X-SA-Exim-Connect-IP: 2001:6f8:1178:2:215:17ff:fe12:23b0
-X-SA-Exim-Mail-From: ukl@pengutronix.de
-X-SA-Exim-Scanned: No (on metis.ext.pengutronix.de); SAEximRunCond expanded to false
-X-PTX-Original-Recipient: linux-kernel@vger.kernel.org
+	Wed, 26 May 2010 15:02:47 -0400
+Date: Wed, 26 May 2010 12:02:36 -0700
+From: Randy Dunlap <randy.dunlap@oracle.com>
+To: Udo van den Heuvel <udovdh@xs4all.nl>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: hpet timers gone?
+Message-Id: <20100526120236.4a849b5b.randy.dunlap@oracle.com>
+In-Reply-To: <4BFA52C3.4080006@xs4all.nl>
+References: <4BFA52C3.4080006@xs4all.nl>
+Organization: Oracle Linux Eng.
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
+X-Auth-Type: Internal IP
+X-Source-IP: acsinet15.oracle.com [141.146.126.227]
+X-CT-RefId: str=0001.0A090206.4BFD7057.006C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hello,
+On Mon, 24 May 2010 12:19:47 +0200 Udo van den Heuvel wrote:
 
-On Wed, May 26, 2010 at 02:54:37PM -0300, Thadeu Lima de Souza Cascardo wrote:
-> Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
-> HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
-> breaks the menu, presenting most of the drivers outside of it, when
-> using menuconfig.
+> Hello,
 > 
-> Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
-> fixes the problem without breaking it for iMX25 configurations (tested
-> with ARCH=arm, no build).
+> What has happened between 2.6.30.9 and 2.6.32.8 with regard to hpet timers?
 > 
-> Cc: Baruch Siach <baruch@tkos.co.il>
-> Cc: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
-> Cc: Sascha Hauer <s.hauer@pengutronix.de>
-> Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-You're right,
+> dmesg output from 2.6.30.9 does show activity but 2.6.32.8 and beyond don't.
+> Also /proc/timer_list doesn't show hpet anymore. Also on 2.6.34 no hpet
+> in timer_list.
+> 
+> relevant .config:
+> CONFIG_HPET_TIMER=y
+> CONFIG_HPET_EMULATE_RTC=y
+> CONFIG_HPET=y
+> CONFIG_HPET_MMAP=y
 
-Acked-by: Uwe Kleine-König <u.kleine-koenig@pengutronix.de>
+Same here.
 
-thanks
-Uwe
+> And I have hpet=force on the kernel commandline for this VIA Epia
+> LT10000 board.
+> 
+> Any ideas?
 
--- 
-Pengutronix e.K.                           | Uwe Kleine-König            |
-Industrial Linux Solutions                 | http://www.pengutronix.de/  |
+On x86 peecee:
+
+$ uname -a
+Linux chimera.site 2.6.34 #2 SMP Tue May 18 10:52:27 PDT 2010 x86_64 x86_64 x86_64 GNU/Linux
+$ grep hpet /proc/timer_list
+Clock Event Device: hpet
+ set_next_event: hpet_legacy_next_event
+ set_mode:       hpet_legacy_set_mode
+
+
+
+$ dmesg | grep -i hpet
+[    0.000000] ACPI: HPET 00000000cf6f3000 00038 (v01 GATEWA SYSTEM   0000017E MSFT 01000013)
+[    0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
+[    0.000000] hpet clockevent registered
+[    0.000000] TSC: PIT calibration matches HPET. 1 loops
+[    0.771604] HPET: 3 timers in total, 0 timers will be used for per-cpu timer
+[    0.771604] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
+[    0.771604] hpet0: 3 comparators, 64-bit 14.318180 MHz counter
+
+
+What does dmesg show on your machine?
+
+---
+~Randy
+*** Remember to use Documentation/SubmitChecklist when testing your code ***
