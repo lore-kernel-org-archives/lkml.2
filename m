@@ -1,116 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754280Ab0EZH0H (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 03:26:07 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:43165 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0EZH0F (ORCPT
+	id S1756662Ab0EZH0N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 03:26:13 -0400
+Received: from smtp.nokia.com ([192.100.122.233]:55024 "EHLO
+	mgw-mx06.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754403Ab0EZH0J (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 03:26:05 -0400
-Message-ID: <4BFCCCC4.3030202@monstr.eu>
-Date: Wed, 26 May 2010 09:24:52 +0200
-From: Michal Simek <monstr@monstr.eu>
-Reply-To: monstr@monstr.eu
-User-Agent: Thunderbird 2.0.0.22 (X11/20090625)
-MIME-Version: 1.0
-To: Mike Frysinger <vapier@gentoo.org>
-CC: uclinux-dev@uclinux.org, David Howells <dhowells@redhat.com>,
-       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
-       Paul Mundt <lethal@linux-sh.org>,
-       uclinux-dist-devel@blackfin.uclinux.org,
-       microblaze-uclinux@itee.uq.edu.au, linux-m32r@ml.linux-m32r.org,
-       Hirokazu Takata <takata@linux-m32r.org>, linux-kernel@vger.kernel.org,
-       Yoshinori Sato <ysato@users.sourceforge.jp>,
-       Jie Zhang <jie.zhang@analog.com>
-Subject: Re: [PATCH] FLAT: allow arches to declare a larger alignment than
- the slab
-References: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
-In-Reply-To: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+	Wed, 26 May 2010 03:26:09 -0400
+Subject: Re: [RFC PATCHv2 2/7] OMAP SSI: Introducing OMAP SSI driver
+From: Carlos Chinea <carlos.chinea@nokia.com>
+To: ext Sebastien Jan <s-jan@ti.com>
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>
+In-Reply-To: <201005181605.55809.s-jan@ti.com>
+References: <1273245517-30712-1-git-send-email-carlos.chinea@nokia.com>
+	 <201005141641.59244.s-jan@ti.com> <1274173640.7755.22703.camel@localhost>
+	 <201005181605.55809.s-jan@ti.com>
+Content-Type: text/plain
+Date: Wed, 26 May 2010 10:27:13 +0300
+Message-Id: <1274858833.8099.14.camel@localhost>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.24.3 
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2010 07:24:26.0195 (UTC) FILETIME=[789E3230:01CAFCA4]
+X-Nokia-AV: Clean
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Mike Frysinger wrote:
-> From: Jie Zhang <jie.zhang@analog.com>
+On Tue, 2010-05-18 at 16:05 +0200, ext Sebastien Jan wrote:
+> On Tuesday 18 May 2010 11:07:20 Carlos Chinea wrote:
+> [cut]
+> > > > +       val |= __raw_readl(omap_ssi->sys +
+> > > > SSI_MPU_ENABLE_REG(port->num, 0)); +       __raw_writel(val,
+> > > > omap_ssi->sys +
+> > > >  SSI_MPU_ENABLE_REG(port->num, 0)); +
+> > > > +       msg->status = HSI_STATUS_COMPLETED;
+> > > > +       msg->actual_len = sg_dma_len(msg->sgt.sgl);
+> > > > +       spin_unlock(&omap_ssi->lock);
+> > > > +}
+> > >
+> > > Don't you need to check the queue related to this transfer at this point,
+> > > to start the potentially next queued transfer on the same channel?
+> > > (calling ssi_start_transfer(), like in ssi_pio_complete()?)
+> > 
+> > No this is done in ssi_pio_complete(). Notice that we do not call the
+> > complete callback at any point here. We just arm the pio interrupt for
+> > that channel and transfer direction. AFAIK, this is the SW logic
+> > expected by the OMAP SSI HW.
 > 
-> The recent commit 1f0ce8b3dd667dca7 which moved the ARCH_SLAB_MINALIGN
-> default into the global header inadvertently broke FLAT for a bunch of
-> systems.  Blackfin systems now fail on any FLAT exec with:
-> Unable to read code+data+bss, errno 14
-> When your /init is a FLAT binary, obviously this can be annoying ;).
-> 
-> This stems from the alignment usage in the FLAT loader.  The behavior
-> before was that FLAT would default to ARCH_SLAB_MINALIGN only if it was
-> defined, and this was only defined by arches when they wanted a larger
-> alignment value.  Otherwise it'd default to pointer alignment.  Arguably,
-> this is kind of hokey that the FLAT is semi-abusing defines it shouldn't.
-> 
-> But let's ignore that and let arches declare a larger FLAT alignment
-> specifically anyways as some arches are OK with the default slab alignment
-> but need stricter FLAT alignments for shared FLAT libraries.
-> 
-> The nommu arches might want to check to see if they need to declare this
-> in their headers as well ...
+> Ok, though I would not expect the interrupt to fire in an Rx scenario as the 
+> fifo would have already been emptied by the DMA for this transfer (unless you 
+> rely on the next transfer initiated by the peer to make the Rx interrupt fire 
+> on this channel?)?
 
-Microblaze noMMU contains this fault too. I registered it yesterday.
-I will use the same fix as you when you find out the correct solution. :-)
+No I do not rely on the next RX transfer. I rely on the fact that the
+GDD(DMA) controller does not reset the RX status bit for that channel
+when RX transfer is finished.
 
-Michal
-
-
-
-> 
-> Signed-off-by: Jie Zhang <jie.zhang@analog.com>
-> Signed-off-by: Mike Frysinger <vapier@gentoo.org>
-> ---
->  arch/blackfin/include/asm/flat.h |    2 ++
->  fs/binfmt_flat.c                 |   11 ++++++++---
->  2 files changed, 10 insertions(+), 3 deletions(-)
-> 
-> diff --git a/arch/blackfin/include/asm/flat.h b/arch/blackfin/include/asm/flat.h
-> index c1314c5..cf2a73e 100644
-> --- a/arch/blackfin/include/asm/flat.h
-> +++ b/arch/blackfin/include/asm/flat.h
-> @@ -11,6 +11,8 @@
->  
->  #include <asm/unaligned.h>
->  
-> +#define ARCH_FLAT_DATA_ALIGN			0x20
-> +
->  #define	flat_argvp_envp_on_stack()		0
->  #define	flat_old_ram_flag(flags)		(flags)
->  
-> diff --git a/fs/binfmt_flat.c b/fs/binfmt_flat.c
-> index 49566c1..6906170 100644
-> --- a/fs/binfmt_flat.c
-> +++ b/fs/binfmt_flat.c
-> @@ -56,12 +56,17 @@
->  #endif
->  
->  /*
-> - * User data (stack, data section and bss) needs to be aligned
-> - * for the same reasons as SLAB memory is, and to the same amount.
-> + * User data (stack, data section and bss) needs to be aligned.
-> + * If ARCH_FLAT_DATA_ALIGN is defined, use it.
-> + */
-> +#ifdef ARCH_FLAT_DATA_ALIGN
-> +#define FLAT_DATA_ALIGN	(ARCH_FLAT_DATA_ALIGN)
-> +/* Otherwise user data nees to be aligned for the same reasons
-> + * as SLAB memory is aligned, and to the same amount.
->   * Avoid duplicating architecture specific code by using the same
->   * macro as with SLAB allocation:
->   */
-> -#ifdef ARCH_SLAB_MINALIGN
-> +#elif defined(ARCH_SLAB_MINALIGN)
->  #define FLAT_DATA_ALIGN	(ARCH_SLAB_MINALIGN)
->  #else
->  #define FLAT_DATA_ALIGN	(sizeof(void *))
-
-
+Br,
 -- 
-Michal Simek, Ing. (M.Eng)
-w: www.monstr.eu p: +42-0-721842854
-Maintainer of Linux kernel 2.6 Microblaze Linux - http://www.monstr.eu/fdt/
-Microblaze U-BOOT custodian
+Carlos Chinea <carlos.chinea@nokia.com>
+
