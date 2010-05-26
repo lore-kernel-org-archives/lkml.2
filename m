@@ -1,63 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934657Ab0EZWyZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:54:25 -0400
-Received: from mail3.microsoft.com ([131.107.115.214]:4301 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934280Ab0EZWyY convert rfc822-to-8bit (ORCPT
+	id S934742Ab0EZWyq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:54:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:48576 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934280Ab0EZWyo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:54:24 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization (modified)
-Thread-Topic: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization (modified)
-Thread-Index: AQHK/PQk4Q0BKOsjtUu1BYK6E0Db25JkpeQA//+OILCAAIHWAP//kGFAgAB7aID//4zPMA==
-Date: Wed, 26 May 2010 22:52:36 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7266B8C7C4@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100526205134.GC7343@suse.de>
- <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100526214842.GA27908@suse.de>
- <1FB5E1D5CA062146B38059374562DF7266B8C775@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100526223053.GA23521@suse.de>
-In-Reply-To: <20100526223053.GA23521@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
+	Wed, 26 May 2010 18:54:44 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:content-transfer-encoding
+         :user-agent;
+        b=UxX1j1nzusoD8fSG81bji4/AuNfjcy/4Tx30m2xgI2KKahjLTAlc6VbncNHdWShB4h
+         35zx1zugD2zGSi1ZJfrZS8I83QmW+1le5t6JKwoZuS8uyvVlM1wXTaXAtGOq6DvItxMC
+         A8D3cxnMqLiSAlOmuXvkGmKG0Z1lw4cG+/0JU=
+Date: Thu, 27 May 2010 00:54:09 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: Samuel Ortiz <sameo@linux.intel.com>
+Cc: Haojian Zhuang <haojian.zhuang@marvell.com>,
+       Mark Brown <broonie@opensource.wolfsonmicro.com>,
+       Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+       kernel-janitors@vger.kernel.org
+Subject: [patch] mfd/88pm860x: fix uninitialized variable and clean up
+Message-ID: <20100526225409.GQ22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	Samuel Ortiz <sameo@linux.intel.com>,
+	Haojian Zhuang <haojian.zhuang@marvell.com>,
+	Mark Brown <broonie@opensource.wolfsonmicro.com>,
+	Liam Girdwood <lrg@slimlogic.co.uk>, linux-kernel@vger.kernel.org,
+	kernel-janitors@vger.kernel.org
 MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@suse.de]
-> How about a lock!
-> 
-> What's so scary about a pretty little semaphore?  They are all cute and
-> cuddley and don't bite anyone.  You should not be afraid to use them,
-> they are here to do your bidding.
+The original code had a compile warning:
+drivers/mfd/88pm860x-core.c:431: warning: ‘ret’ may be used
+	uninitialized in this function
+It seems like the warning is valid if either pdata or pdata->touch is
+NULL.
 
-No problem, we will add a lock here.
+This patch checks pdata and pdata->touch at the beginning of the 
+function.  That means everything can be pulled in one indent level.
+Now all the statements fit within the 80 character limit.
 
-> > The VmbusChannelProcessOffer() is called from interrupt context, and
-> > initialize the channels, wake up vmbus_init when all channels are
-> > ready. If using local variable only, how to pass the channel ready
-> > info to vmbus_init() which is in a different context?
-> 
-> No, I mean move the logic you added here, into the vmbus_init() call.
+Also at that point the "use_gpadc" variable isn't needed and removing
+it simplifies the logic.
 
-Do you mean:
-Move the event creat/wait/free, which is currently in vmbus_init(), into vmbus_bus_init() function.  hv_channle_ready will still be a global variable. And, the wakeup call -- osd_WaitEventSet() --remains in VmbusChannelProcessOffer() ?
+Signed-off-by: Dan Carpenter <error27@gmail.com>
 
-Thanks,
-
-- Haiyang
-
+diff --git a/drivers/mfd/88pm860x-core.c b/drivers/mfd/88pm860x-core.c
+index 405d2d5..f9ada69 100644
+--- a/drivers/mfd/88pm860x-core.c
++++ b/drivers/mfd/88pm860x-core.c
+@@ -428,52 +428,44 @@ static int __devinit device_gpadc_init(struct pm860x_chip *chip,
+ {
+ 	struct i2c_client *i2c = (chip->id == CHIP_PM8607) ? chip->client \
+ 				: chip->companion;
+-	int use_gpadc = 0, data, ret;
++	int data;
++	int ret;
+ 
+ 	/* initialize GPADC without activating it */
+ 
+-	if (pdata && pdata->touch) {
+-		/* set GPADC MISC1 register */
+-		data = 0;
+-		data |= (pdata->touch->gpadc_prebias << 1)
+-			& PM8607_GPADC_PREBIAS_MASK;
+-		data |= (pdata->touch->slot_cycle << 3)
+-			& PM8607_GPADC_SLOT_CYCLE_MASK;
+-		data |= (pdata->touch->off_scale << 5)
+-			& PM8607_GPADC_OFF_SCALE_MASK;
+-		data |= (pdata->touch->sw_cal << 7)
+-			& PM8607_GPADC_SW_CAL_MASK;
+-		if (data) {
+-			ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
+-			if (ret < 0)
+-				goto out;
+-		}
+-		/* set tsi prebias time */
+-		if (pdata->touch->tsi_prebias) {
+-			data = pdata->touch->tsi_prebias;
+-			ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
+-			if (ret < 0)
+-				goto out;
+-		}
+-		/* set prebias & prechg time of pen detect */
+-		data = 0;
+-		data |= pdata->touch->pen_prebias & PM8607_PD_PREBIAS_MASK;
+-		data |= (pdata->touch->pen_prechg << 5)
+-			& PM8607_PD_PRECHG_MASK;
+-		if (data) {
+-			ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
+-			if (ret < 0)
+-				goto out;
+-		}
++	if (!pdata || !pdata->touch)
++		return -EINVAL;
+ 
+-		use_gpadc = 1;
++	/* set GPADC MISC1 register */
++	data = 0;
++	data |= (pdata->touch->gpadc_prebias << 1) & PM8607_GPADC_PREBIAS_MASK;
++	data |= (pdata->touch->slot_cycle << 3) & PM8607_GPADC_SLOT_CYCLE_MASK;
++	data |= (pdata->touch->off_scale << 5) & PM8607_GPADC_OFF_SCALE_MASK;
++	data |= (pdata->touch->sw_cal << 7) & PM8607_GPADC_SW_CAL_MASK;
++	if (data) {
++		ret = pm860x_reg_write(i2c, PM8607_GPADC_MISC1, data);
++		if (ret < 0)
++			goto out;
+ 	}
+-
+-	/* turn on GPADC */
+-	if (use_gpadc) {
+-		ret = pm860x_set_bits(i2c, PM8607_GPADC_MISC1,
+-				      PM8607_GPADC_EN, PM8607_GPADC_EN);
++	/* set tsi prebias time */
++	if (pdata->touch->tsi_prebias) {
++		data = pdata->touch->tsi_prebias;
++		ret = pm860x_reg_write(i2c, PM8607_TSI_PREBIAS, data);
++		if (ret < 0)
++			goto out;
+ 	}
++	/* set prebias & prechg time of pen detect */
++	data = 0;
++	data |= pdata->touch->pen_prebias & PM8607_PD_PREBIAS_MASK;
++	data |= (pdata->touch->pen_prechg << 5) & PM8607_PD_PRECHG_MASK;
++	if (data) {
++		ret = pm860x_reg_write(i2c, PM8607_PD_PREBIAS, data);
++		if (ret < 0)
++			goto out;
++	}
++
++	ret = pm860x_set_bits(i2c, PM8607_GPADC_MISC1,
++			      PM8607_GPADC_EN, PM8607_GPADC_EN);
+ out:
+ 	return ret;
+ }
