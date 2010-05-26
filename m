@@ -1,63 +1,50 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751465Ab0EZEMh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 00:12:37 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:41561 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750850Ab0EZEMf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 00:12:35 -0400
-Message-ID: <4BFC9FA5.3040201@redhat.com>
-Date: Wed, 26 May 2010 01:12:21 -0300
-From: Mauro Carvalho Chehab <mchehab@redhat.com>
-User-Agent: Thunderbird 2.0.0.22 (X11/20090609)
-MIME-Version: 1.0
-To: Stefan Richter <stefanr@s5r6.in-berlin.de>
-CC: linux-media@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: Re: post 2.6.34 bug: new code enabled by default
-References: <tkrat.872472794cabd92e@s5r6.in-berlin.de>
-In-Reply-To: <tkrat.872472794cabd92e@s5r6.in-berlin.de>
-Content-Type: text/plain; charset=ISO-8859-1
+	id S1751213Ab0EZEQt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 00:16:49 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:49015 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1750706Ab0EZEQr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 00:16:47 -0400
+Date: Tue, 25 May 2010 21:15:20 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Rik van Riel <riel@redhat.com>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>, james toy <toyj@union.edu>,
+       james toy <mail@wfys.org>, James Toy <0xbaadface@gmail.com>
+Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
+Message-Id: <20100525211520.16e3a034.akpm@linux-foundation.org>
+In-Reply-To: <4BFC9CCF.6000809@redhat.com>
+References: <20100512133815.0d048a86@annuminas.surriel.com>
+	<20100512134029.36c286c4@annuminas.surriel.com>
+	<20100512210216.GP24989@csn.ul.ie>
+	<4BEB18BB.5010803@redhat.com>
+	<20100513095439.GA27949@csn.ul.ie>
+	<20100513103356.25665186@annuminas.surriel.com>
+	<20100513140919.0a037845.akpm@linux-foundation.org>
+	<4BFC9CCF.6000809@redhat.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Stefan Richter wrote:
-> $ make oldconfig
-> ...
->   * Multimedia drivers
->   *
->   Compile Remote Controller keymap modules (RC_MAP) [M/n/?] (NEW) n
->   Enable IR raw decoder for the NEC protocol (IR_NEC_DECODER) [M/n/?] (NEW) n
->   Enable IR raw decoder for the RC-5 protocol (IR_RC5_DECODER) [M/n/?] (NEW) n
->   Enable IR raw decoder for the RC6 protocol (IR_RC6_DECODER) [M/n/?] (NEW) n
->   Enable IR raw decoder for the JVC protocol (IR_JVC_DECODER) [M/n/?] (NEW) n
->   Enable IR raw decoder for the Sony protocol (IR_SONY_DECODER) [M/n/?] (NEW) n
+On Wed, 26 May 2010 00:00:15 -0400 Rik van Riel <riel@redhat.com> wrote:
+
+> On 05/13/2010 05:09 PM, Andrew Morton wrote:
 > 
-> Please leave the default of new options at N.
+> > I'm not very confident in merging all these onto the current MM pile.
 > 
-> (Unless this were a special case of new options that replaced older
-> options and need to be migrated to 'on' per default in make oldconfig.
-> I think this is not the case here.)
+> Blah.  I thought I just did that (and wondered why it was
+> so easy), and then I saw that the MMOTM git tree is old
+> and does not have the COMPACTION code :(
+> 
 
-This is the case here. Before the RC subsystem, the decoding for NEC and RC-5
-were done inside ir-core (at ir-functions). Also, all the keymap entries (RC_MAP)
-were compiled in-kernel.
-
-The intention is to move the RC_MAP keytables to userspace, by default, but there
-are still some work to be done at the userspace application before we can do it.
-
-So, without RC_MAP, IR_NEC_DECODER and IR_RC5_DECODER, the input driver will be 
-compiled, but the IR support may not actually work, if the board needs IR raw
-support.
-
-That's said, the support for RC-6, JVC and Sony protocols (IR_RC6_DECODER, 
-IR_JVC_DECODER and IR_SONY_DECODER) are new. Yet, even on this case, it may make
-sense to keep the default to Y, or to add a logic to auto-select the IR decoder 
-protocols that are needed in order to support the bundled IR found at the compiled
-drivers.
-
--- 
-
-Cheers,
-Mauro
+Oh.  James's mmotm->git bot might have broken.
