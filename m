@@ -1,115 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757301Ab0EZLJc (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:09:32 -0400
-Received: from verein.lst.de ([213.95.11.210]:52608 "EHLO verein.lst.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753771Ab0EZLJb (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:09:31 -0400
-Date: Wed, 26 May 2010 13:09:23 +0200
-From: Christoph Hellwig <hch@lst.de>
-To: x86@kernel.org, linux-kernel@vger.kernel.org
-Subject: [PATCH] x86-32: always use irq stacks
-Message-ID: <20100526110923.GA28414@lst.de>
-Mime-Version: 1.0
+	id S1757318Ab0EZLKW (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 07:10:22 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:49385 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753285Ab0EZLKV (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 07:10:21 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=TWfl81xaW9dMVv+9NiG/Al1cmgct7Lxaw6A8RDMW1uW0QTouyKVJ+oiuDk0hgTt1QD
+         yWId3DzHjTz0mHfymLR81oU1YKuvmNJ8hFNoBSjKGT1c13fyejavtj5KD+gDouij35LU
+         YTnLKvD/Rs3MbasA+6bPWFiaRFs/WlmXWheTA=
+Date: Wed, 26 May 2010 13:10:18 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Christoph Hellwig <hch@infradead.org>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] tracing: Remove kmemtrace ftrace plugin
+Message-ID: <20100526111017.GG5311@nowhere>
+References: <4BFCE849.7090804@cn.fujitsu.com> <20100526101617.GA14286@infradead.org> <20100526101837.GC5311@nowhere> <20100526102446.GA757@infradead.org> <20100526103222.GD5311@nowhere> <20100526110320.GA27011@infradead.org>
+MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-User-Agent: Mutt/1.3.28i
-X-Spam-Score: 0 () 
+In-Reply-To: <20100526110320.GA27011@infradead.org>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+On Wed, May 26, 2010 at 07:03:20AM -0400, Christoph Hellwig wrote:
+> On Wed, May 26, 2010 at 12:32:23PM +0200, Frederic Weisbecker wrote:
+> > But which debugfs code? Nothing related to $(DEBUGFS)/tracing right?
+> 
+> Exactly.  Blktrace creates it's own files under $(DEBUGFS)/block when
+> enabled through the old ioctls.
 
-IRQ stacks provide much better safety against unexpected stack use from
-interrupts, at the minimal downside of slightly higher memory usage.
-Enable irq stacks also for the default 8k stack to minimize the problem
-of stack overflows through interrupt activity.
 
-This is what x86-64 and various other architectures already do.
+I see. So it has never been updated to support the ftrace plugin.
+Fine then, lets remove it.
 
-Signed-off-by: Christoph Hellwig <hch@lst.de>
-
-Index: linux-2.6/arch/x86/Kconfig.debug
-===================================================================
---- linux-2.6.orig/arch/x86/Kconfig.debug	2010-05-25 18:45:43.048276085 +0200
-+++ linux-2.6/arch/x86/Kconfig.debug	2010-05-25 18:45:53.603003841 +0200
-@@ -128,8 +128,7 @@ config 4KSTACKS
- 	  If you say Y here the kernel will use a 4Kb stacksize for the
- 	  kernel stack attached to each process/thread. This facilitates
- 	  running more threads on a system and also reduces the pressure
--	  on the VM subsystem for higher order allocations. This option
--	  will also use IRQ stacks to compensate for the reduced stackspace.
-+	  on the VM subsystem for higher order allocations.
- 
- config DOUBLEFAULT
- 	default y
-Index: linux-2.6/arch/x86/include/asm/irq.h
-===================================================================
---- linux-2.6.orig/arch/x86/include/asm/irq.h	2010-05-25 18:45:43.040025143 +0200
-+++ linux-2.6/arch/x86/include/asm/irq.h	2010-05-25 18:45:53.604003981 +0200
-@@ -19,18 +19,16 @@ static inline int irq_canonicalize(int i
- # define ARCH_HAS_NMI_WATCHDOG
- #endif
- 
--#ifdef CONFIG_4KSTACKS
--  extern void irq_ctx_init(int cpu);
--  extern void irq_ctx_exit(int cpu);
--# define __ARCH_HAS_DO_SOFTIRQ
-+#ifdef CONFIG_X86_32
-+extern void irq_ctx_init(int cpu);
-+extern void irq_ctx_exit(int cpu);
- #else
- # define irq_ctx_init(cpu) do { } while (0)
- # define irq_ctx_exit(cpu) do { } while (0)
--# ifdef CONFIG_X86_64
--#  define __ARCH_HAS_DO_SOFTIRQ
--# endif
- #endif
- 
-+#define __ARCH_HAS_DO_SOFTIRQ
-+
- #ifdef CONFIG_HOTPLUG_CPU
- #include <linux/cpumask.h>
- extern void fixup_irqs(void);
-Index: linux-2.6/arch/x86/kernel/irq_32.c
-===================================================================
---- linux-2.6.orig/arch/x86/kernel/irq_32.c	2010-05-25 18:45:42.981006006 +0200
-+++ linux-2.6/arch/x86/kernel/irq_32.c	2010-05-25 18:45:53.606003632 +0200
-@@ -49,7 +49,6 @@ static inline int check_stack_overflow(v
- static inline void print_stack_overflow(void) { }
- #endif
- 
--#ifdef CONFIG_4KSTACKS
- /*
-  * per-CPU IRQ handling contexts (thread information and stack)
-  */
-@@ -187,11 +186,6 @@ asmlinkage void do_softirq(void)
- 	local_irq_restore(flags);
- }
- 
--#else
--static inline int
--execute_on_irq_stack(int overflow, struct irq_desc *desc, int irq) { return 0; }
--#endif
--
- bool handle_irq(unsigned irq, struct pt_regs *regs)
- {
- 	struct irq_desc *desc;
-Index: linux-2.6/Documentation/x86/x86_64/kernel-stacks
-===================================================================
---- linux-2.6.orig/Documentation/x86/x86_64/kernel-stacks	2010-05-25 18:45:55.631004120 +0200
-+++ linux-2.6/Documentation/x86/x86_64/kernel-stacks	2010-05-25 18:46:21.785256528 +0200
-@@ -18,9 +18,9 @@ specialized stacks contain no useful dat
-   Used for external hardware interrupts.  If this is the first external
-   hardware interrupt (i.e. not a nested hardware interrupt) then the
-   kernel switches from the current task to the interrupt stack.  Like
--  the split thread and interrupt stacks on i386 (with CONFIG_4KSTACKS),
--  this gives more room for kernel interrupt processing without having
--  to increase the size of every per thread stack.
-+  the split thread and interrupt stacks on i386, this gives more room
-+  for kernel interrupt processing without having to increase the size
-+  of every per thread stack.
- 
-   The interrupt stack is also used when processing a softirq.
- 
