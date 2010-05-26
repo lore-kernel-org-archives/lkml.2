@@ -1,39 +1,44 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933944Ab0EZByI (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:54:08 -0400
-Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:39520
-	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S933928Ab0EZByE (ORCPT
+	id S933937Ab0EZByt (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:54:49 -0400
+Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:37469 "EHLO
+	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756667Ab0EZByr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:54:04 -0400
-Date: Tue, 25 May 2010 18:54:14 -0700 (PDT)
-Message-Id: <20100525.185414.226791146.davem@davemloft.net>
-To: herbert@gondor.hengli.com.au
-Cc: sfr@canb.auug.org.au, netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, torvalds@linux-foundation.org
-Subject: Re: linux-next: build warning in Linus' tree
-From: David Miller <davem@davemloft.net>
-In-Reply-To: <20100526015110.GA21587@gondor.apana.org.au>
-References: <20100526114306.5fa6fa0e.sfr@canb.auug.org.au>
-	<20100526015110.GA21587@gondor.apana.org.au>
-X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
-Mime-Version: 1.0
-Content-Type: Text/Plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 21:54:47 -0400
+Date: Wed, 26 May 2010 10:54:36 +0900
+From: Paul Mundt <lethal@linux-sh.org>
+To: Stephen Rothwell <sfr@canb.auug.org.au>
+Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Magnus Damm <damm@opensource.se>
+Subject: Re: linux-next: manual merge of the genesis tree with the sh tree
+Message-ID: <20100526015436.GB8920@linux-sh.org>
+References: <20100526112331.cbd37c4b.sfr@canb.auug.org.au>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526112331.cbd37c4b.sfr@canb.auug.org.au>
+User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Herbert Xu <herbert@gondor.apana.org.au>
-Date: Wed, 26 May 2010 11:51:10 +1000
-
-> cls_cgroup: Initialise classid when module is absent
+On Wed, May 26, 2010 at 11:23:31AM +1000, Stephen Rothwell wrote:
+> Hi Paul,
 > 
-> When the cls_cgroup module is not loaded, task_cls_classid will
-> return an uninitialised classid instead of zero.
+> Today's linux-next merge of the genesis tree got a conflict in
+> include/linux/serial_sci.h between commit
+> 14baf9d7f275f0bbf42c1216ff1eef1109ca42ba ("serial: sh-sci: fix up serial
+> DMA build") from the sh tree and commit
+> 927a7c9c1793def3a55d60c926d3945528e6bf1b ("dmaengine: shdma: Enable on
+> SH-Mobile ARM") from the genesis tree.
 > 
-> Reported-by: Stephen Rothwell <sfr@canb.auug.org.au>
-> Signed-off-by: Herbert Xu <herbert@gondor.apana.org.au>
+Sorry about that, I needed the fix in the sh tree since the genesis tree
+hadn't been merged yet, so the interdependencies have created a bit of a
+mess.
 
-Applied, thanks Herbert.
+> I used the version from the sh tree (i.e. no "#ifdef
+> CONFIG_SERIAL_SH_SCI_DMA" around the include of linux/sh_dma.h).
+
+Sounds good, thanks!
