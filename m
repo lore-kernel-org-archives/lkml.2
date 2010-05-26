@@ -1,104 +1,155 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754645Ab0EZMet (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:34:49 -0400
-Received: from mtagate4.uk.ibm.com ([194.196.100.164]:47269 "EHLO
-	mtagate4.uk.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753771Ab0EZMer (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:34:47 -0400
-Date: Wed, 26 May 2010 13:34:44 +0100
-From: Stefan Hajnoczi <stefanha@linux.vnet.ibm.com>
-To: linux-perf-users@vger.kernel.org, linux-kernel@vger.kernel.org,
-       kvm@vger.kernel.org
-Cc: Frederic Weisbecker <fweisbec@gmail.com>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Marcelo Tosatti <mtosatti@redhat.com>, Avi Kivity <avi@redhat.com>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>
-Subject: Perf trace event parse errors for KVM events
-Message-ID: <20100526123443.GB8905@stefan-thinkpad.transitives.com>
+	id S1753830Ab0EZMfD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:35:03 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:21736 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754709Ab0EZMe7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:34:59 -0400
+Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
+	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
+	Kingdom.
+	Registered in England and Wales under Company Registration No. 3798903
+From: David Howells <dhowells@redhat.com>
+Subject: [PATCH] NFS: Add a missing unlock into nfs_access_cache_shrinker()
+To: Trond.Myklebust@netapp.com, steved@redhat.com
+Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org,
+       David Howells <dhowells@redhat.com>
+Date: Wed, 26 May 2010 13:34:54 +0100
+Message-ID: <20100526123453.6837.42901.stgit@warthog.procyon.org.uk>
+User-Agent: StGIT/0.14.3
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: text/plain; charset="utf-8"
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-The "perf trace" command produces the following messages:
+nfs_access_cache_shrinker() needs to unlock the inode it's processing before
+finishing each iteration of the scanning loop.  Not doing so leads to lockdep
+reporting a recursive lock and the CPU doing the shrink locking up:
 
-For kvm:kvm_apic:
-$ perf trace
-  Warning: Error: expected type 4 but read 7
-  Warning: Error: expected type 5 but read 0
-  Warning: failed to read event print fmt for kvm_apic
 
-For kvm:kvm_inj_exception:
-$ perf trace
-  Warning: Error: expected type 4 but read 7
-  Warning: Error: expected type 5 but read 0
-  Warning: failed to read event print fmt for kvm_inj_exception
+=============================================
+[ INFO: possible recursive locking detected ]
+2.6.34-cachefs #100
+---------------------------------------------
+kswapd0/328 is trying to acquire lock:
+ (&sb->s_type->i_lock_key#13){+.+.-.}, at: [<ffffffffa0092717>] nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
 
-For kvm:kvm_emulate_insn:
-$ perf trace
-  Fatal: bad op token {
+but task is already holding lock:
+ (&sb->s_type->i_lock_key#13){+.+.-.}, at: [<ffffffffa0092717>] nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
 
-The other KVM trace events work fine.
+other info that might help us debug this:
+3 locks held by kswapd0/328:
+ #0:  (shrinker_rwsem){++++..}, at: [<ffffffff81092b48>] shrink_slab+0x38/0x157
+ #1:  (nfs_access_lru_lock){+.+.-.}, at: [<ffffffffa00926ef>] nfs_access_cache_shrinker+0x46/0x1c3 [nfs]
+ #2:  (&sb->s_type->i_lock_key#13){+.+.-.}, at: [<ffffffffa0092717>] nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
 
-To reproduce this issue (you don't need any actual KVM activity while running):
-$ perf record -a -f -e 'kvm:kvm_apic' sleep 1
-$ perf trace
+stack backtrace:
+Pid: 328, comm: kswapd0 Not tainted 2.6.34-cachefs #100
+Call Trace:
+ [<ffffffff81054e80>] validate_chain+0x584/0xd23
+ [<ffffffff8108c95b>] ? free_pages+0x32/0x34
+ [<ffffffff81055ea8>] __lock_acquire+0x889/0x8fa
+ [<ffffffff81055ea8>] ? __lock_acquire+0x889/0x8fa
+ [<ffffffff81055f70>] lock_acquire+0x57/0x6d
+ [<ffffffffa0092717>] ? nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
+ [<ffffffff813e2350>] _raw_spin_lock+0x2c/0x3b
+ [<ffffffffa0092717>] ? nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
+ [<ffffffffa0092717>] nfs_access_cache_shrinker+0x6e/0x1c3 [nfs]
+ [<ffffffff81092be3>] shrink_slab+0xd3/0x157
+ [<ffffffff81092fd2>] balance_pgdat+0x36b/0x5d1
+ [<ffffffff810933ed>] kswapd+0x1b5/0x1cb
+ [<ffffffff81045fcd>] ? autoremove_wake_function+0x0/0x34
+ [<ffffffff81093238>] ? kswapd+0x0/0x1cb
+ [<ffffffff81045be7>] kthread+0x7a/0x82
+ [<ffffffff81002cd4>] kernel_thread_helper+0x4/0x10
+ [<ffffffff813e2c3c>] ? restore_args+0x0/0x30
+ [<ffffffff81045b6d>] ? kthread+0x0/0x82
+ [<ffffffff81002cd0>] ? kernel_thread_helper+0x0/0x10
+BUG: soft lockup - CPU#1 stuck for 61s! [exe:6253]
+Modules linked in: cachefiles nfs fscache auth_rpcgss nfs_acl lockd sunrpc
+irq event stamp: 300
+hardirqs last  enabled at (299): [<ffffffff813e295e>] _raw_spin_unlock_irqrestore+0x3a/0x41
+hardirqs last disabled at (300): [<ffffffff813e23c0>] _raw_spin_lock_irq+0x12/0x41
+softirqs last  enabled at (296): [<ffffffffa0007ab3>] __rpc_execute+0xb4/0x236 [sunrpc]
+softirqs last disabled at (294): [<ffffffff813e2517>] _raw_spin_lock_bh+0x11/0x40
+CPU 1
+Modules linked in: cachefiles nfs fscache auth_rpcgss nfs_acl lockd sunrpc
 
-Both linux-2.6.git 7e125f7b9cbfce4101191b8076d606c517a73066 and Avi's kvm.git
-show this problem.
+Pid: 6253, comm: exe Not tainted 2.6.34-cachefs #100 DG965RY/
+RIP: 0010:[<ffffffff811f566a>]  [<ffffffff811f566a>] delay_tsc+0x14/0x5a
+RSP: 0018:ffff880000dbfab0  EFLAGS: 00000202
+RAX: 00000000bc560d39 RBX: ffff880000dbfab0 RCX: 0000000000009b00
+RDX: 00000000000001c0 RSI: 0000000000000001 RDI: 0000000000000001
+RBP: ffffffff8100288e R08: 0000000000000002 R09: 0000000000000000
+R10: ffffffffa00926ef R11: 0000000000000000 R12: 0000000000000000
+R13: 00000000000001c0 R14: ffff880000dbe000 R15: ffffffff8162a4d0
+FS:  00007f8ac983c700(0000) GS:ffff880002100000(0000) knlGS:0000000000000000
+CS:  0010 DS: 0000 ES: 0000 CR0: 000000008005003b
+CR2: 00007f8ac9358b30 CR3: 000000002d4c7000 CR4: 00000000000006e0
+DR0: 0000000000000000 DR1: 0000000000000000 DR2: 0000000000000000
+DR3: 0000000000000000 DR6: 00000000ffff0ff0 DR7: 0000000000000400
+Process exe (pid: 6253, threadinfo ffff880000dbe000, task ffff88001c2ef050)
+Stack:
+ ffff880000dbfac0 ffffffff811f55a5 ffff880000dbfb10 ffffffff811f9a7a
+<0> ffff880000dbfb10 0000000000000001 0000000000000000 ffffffffa00bfe90
+<0> 0000000000000000 0000000000000000 0000000000000000 ffff880000dbfb50
+Call Trace:
+ [<ffffffff811f55a5>] ? __delay+0xa/0xc
+ [<ffffffff811f9a7a>] ? do_raw_spin_lock+0xd2/0x13c
+ [<ffffffff813e2358>] ? _raw_spin_lock+0x34/0x3b
+ [<ffffffffa00926ef>] ? nfs_access_cache_shrinker+0x46/0x1c3 [nfs]
+ [<ffffffffa00926ef>] ? nfs_access_cache_shrinker+0x46/0x1c3 [nfs]
+ [<ffffffff81092b76>] ? shrink_slab+0x66/0x157
+ [<ffffffff81093611>] ? do_try_to_free_pages+0x20e/0x337
+ [<ffffffff81093847>] ? try_to_free_pages+0x62/0x64
+ [<ffffffff8108d4f2>] ? __alloc_pages_nodemask+0x415/0x63f
+ [<ffffffff8108d72e>] ? __get_free_pages+0x12/0x4f
+ [<ffffffff8102f169>] ? copy_process+0xd4/0x1125
+ [<ffffffff810492c4>] ? up_read+0x1e/0x36
+ [<ffffffff8103031f>] ? do_fork+0x165/0x303
+ [<ffffffff813e21ee>] ? lockdep_sys_exit_thunk+0x35/0x67
+ [<ffffffff810098a5>] ? sys_clone+0x23/0x25
+ [<ffffffff81002213>] ? stub_clone+0x13/0x20
+ [<ffffffff81001eab>] ? system_call_fastpath+0x16/0x1b
+Code: 81 48 6b 94 0a 98 00 00 00 3e f7 e2 48 8d 7a 01 e8 47 ff ff ff c9 c3 55 48 89 e5 65 8b 34 25 68 d3 00 00 0f 1f 00 0f ae e8 0f 31 <89> c1 0f 1f 00 0f ae e8 0f 31 89 c0 48 89 c2 48 29 ca 48 39 fa
+Call Trace:
+ [<ffffffff811f55a5>] ? __delay+0xa/0xc
+ [<ffffffff811f9a7a>] ? do_raw_spin_lock+0xd2/0x13c
+ [<ffffffff813e2358>] ? _raw_spin_lock+0x34/0x3b
+ [<ffffffffa00926ef>] ? nfs_access_cache_shrinker+0x46/0x1c3 [nfs]
+ [<ffffffffa00926ef>] ? nfs_access_cache_shrinker+0x46/0x1c3 [nfs]
+ [<ffffffff81092b76>] ? shrink_slab+0x66/0x157
+ [<ffffffff81093611>] ? do_try_to_free_pages+0x20e/0x337
+ [<ffffffff81093847>] ? try_to_free_pages+0x62/0x64
+ [<ffffffff8108d4f2>] ? __alloc_pages_nodemask+0x415/0x63f
+ [<ffffffff8108d72e>] ? __get_free_pages+0x12/0x4f
+ [<ffffffff8102f169>] ? copy_process+0xd4/0x1125
+ [<ffffffff810492c4>] ? up_read+0x1e/0x36
+ [<ffffffff8103031f>] ? do_fork+0x165/0x303
+ [<ffffffff813e21ee>] ? lockdep_sys_exit_thunk+0x35/0x67
+ [<ffffffff810098a5>] ? sys_clone+0x23/0x25
+ [<ffffffff81002213>] ? stub_clone+0x13/0x20
+ [<ffffffff81001eab>] ? system_call_fastpath+0x16/0x1b
 
-It appears that the perf.data written by "perf record" cannot be parsed by
-"perf trace" run using the same perf binary.  The perf binary was built from
-the same kernel tree that I am running (there should be no mismatch between the
-kernel and the perf binary).
+Signed-off-by: David Howells <dhowells@redhat.com>
+---
 
-At the end of this email is a gdb session that shows where the
-kvm:kvm_apic "expected type 4 but read 7" error occurs.
+ fs/nfs/dir.c |    1 +
+ 1 files changed, 1 insertions(+), 0 deletions(-)
 
-Any ideas?
+diff --git a/fs/nfs/dir.c b/fs/nfs/dir.c
+index ee9a179..db64854 100644
+--- a/fs/nfs/dir.c
++++ b/fs/nfs/dir.c
+@@ -1741,6 +1741,7 @@ remove_lru_entry:
+ 			clear_bit(NFS_INO_ACL_LRU_SET, &nfsi->flags);
+ 			smp_mb__after_clear_bit();
+ 		}
++		spin_unlock(&inode->i_lock);
+ 	}
+ 	spin_unlock(&nfs_access_lru_lock);
+ 	nfs_access_free_list(&head);
 
-Thanks,
-Stefan
-
-$ sudo gdb --args ./perf trace
-[...]
-(gdb) b warning
-Breakpoint 1 at 0x42d000: file util/usage.c, line 74.
-(gdb) r
-Starting program: /home/stefanha/linux-2.6/tools/perf/perf trace
-[Thread debugging using libthread_db enabled]
-
-Breakpoint 1, warning (warn=0x463390 "Error: expected type %d but read %d") at util/usage.c:74
-74      {
-(gdb) bt
-#0  warning (warn=0x463390 "Error: expected type %d but read %d") at util/usage.c:74
-#1  0x0000000000443123 in __test_type_token (event=0x9d0d40, list=<value optimized out>, tok=<value optimized out>) at util/trace-event-parse.c:639
-#2  test_type_token (event=0x9d0d40, list=<value optimized out>, tok=<value optimized out>) at util/trace-event-parse.c:656
-#3  process_fields (event=0x9d0d40, list=<value optimized out>, tok=<value optimized out>) at util/trace-event-parse.c:1499
-#4  0x0000000000442598 in process_symbols (event=0x9d0d40, arg=0x9d2110, tok=0x7fffffff9fa8, type=<value optimized out>) at util/trace-event-parse.c:1588
-#5  process_arg_token (event=0x9d0d40, arg=0x9d2110, tok=0x7fffffff9fa8, type=<value optimized out>) at util/trace-event-parse.c:1703
-#6  0x0000000000443cee in process_arg (event=0x9d0d40) at util/trace-event-parse.c:1034
-#7  event_read_print_args (event=0x9d0d40) at util/trace-event-parse.c:1774
-#8  event_read_print (event=0x9d0d40) at util/trace-event-parse.c:1853
-#9  0x0000000000444c0e in parse_event_file (buf=<value optimized out>, size=<value optimized out>, sys=0x9ccf90 "kvm") at util/trace-event-parse.c:3192
-#10 0x0000000000445e3d in read_event_file (fd=<value optimized out>, __repipe=<value optimized out>) at util/trace-event-read.c:236
-#11 read_event_files (fd=<value optimized out>, __repipe=<value optimized out>) at util/trace-event-read.c:270
-#12 trace_report (fd=<value optimized out>, __repipe=<value optimized out>) at util/trace-event-read.c:514
-#13 0x0000000000434c52 in perf_file_section__process (self=0x9cc540, ph=0x9cc9a0, feat=1, fd=5) at util/header.c:777
-#14 0x0000000000435ad9 in perf_header__process_sections (self=0x9cc9a0, fd=5, process=0x434b80 <perf_file_section__process>) at util/header.c:618
-#15 0x0000000000436c31 in perf_header__read (session=0x9cc9a0, fd=5) at util/header.c:893
-#16 0x000000000043d566 in perf_session__open (filename=<value optimized out>, mode=0, force=<value optimized out>, repipe=false) at util/session.c:51
-#17 perf_session__new (filename=<value optimized out>, mode=0, force=<value optimized out>, repipe=false) at util/session.c:103
-#18 0x00000000004169b7 in cmd_trace (argc=0, argv=0x7fffffffe6e0, prefix=<value optimized out>) at builtin-trace.c:666
-#19 0x0000000000404dd7 in run_builtin (p=0x66ee58, argc=1, argv=0x7fffffffe6e0) at perf.c:265
-#20 0x0000000000405876 in handle_internal_command (argc=1, argv=0x7fffffffe6e0) at perf.c:336
-#21 run_argv (argc=1, argv=0x7fffffffe6e0) at perf.c:380
-#22 main (argc=1, argv=0x7fffffffe6e0) at perf.c:464
-(gdb) p *(struct event*)0x9d0d40
-$1 = {next = 0x0, name = 0x9d0d90 "kvm_apic", id = 762, flags = 0, format = {nr_common = 5, nr_fields = 3, common_fields = 0x9d0df0, fields = 0x9d1d20},
-  print_fmt = {format = 0x9d1ef0 "apic_%s %s = 0x%x", args = 0x9d1f30}, system = 0x0}
