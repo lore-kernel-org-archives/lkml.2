@@ -1,72 +1,172 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756957Ab0EZQlJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:41:09 -0400
-Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:65436 "EHLO
-	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751749Ab0EZQlG (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:41:06 -0400
-Subject: [GIT PULL] LED updates for 2.6.35
-From: Richard Purdie <rpurdie@rpsys.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Andrew Morton <akpm@linux-foundation.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 17:40:41 +0100
-Message-ID: <1274892041.24079.43.camel@rex>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	id S1757040Ab0EZQlZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:41:25 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:46777 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757007Ab0EZQlX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 12:41:23 -0400
+Date: Thu, 27 May 2010 02:41:16 +1000
+From: Nick Piggin <npiggin@suse.de>
+To: Dave Chinner <david@fromorbit.com>
+Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
+       linux-mm@kvack.org, xfs@oss.sgi.com
+Subject: Re: [PATCH 3/5] superblock: introduce per-sb cache shrinker
+ infrastructure
+Message-ID: <20100526164116.GD22536@laptop>
+References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+ <1274777588-21494-4-git-send-email-david@fromorbit.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=utf-8
+Content-Disposition: inline
 Content-Transfer-Encoding: 8bit
+In-Reply-To: <1274777588-21494-4-git-send-email-david@fromorbit.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Linus,
+On Tue, May 25, 2010 at 06:53:06PM +1000, Dave Chinner wrote:
+> @@ -456,21 +456,16 @@ static void prune_one_dentry(struct dentry * dentry)
+>   * which flags are set. This means we don't need to maintain multiple
+>   * similar copies of this loop.
+>   */
+> -static void __shrink_dcache_sb(struct super_block *sb, int *count, int flags)
+> +static void __shrink_dcache_sb(struct super_block *sb, int count, int flags)
+>  {
+>  	LIST_HEAD(referenced);
+>  	LIST_HEAD(tmp);
+>  	struct dentry *dentry;
+> -	int cnt = 0;
+>  
+>  	BUG_ON(!sb);
+> -	BUG_ON((flags & DCACHE_REFERENCED) && count == NULL);
+> +	BUG_ON((flags & DCACHE_REFERENCED) && count == -1);
+>  	spin_lock(&dcache_lock);
+> -	if (count != NULL)
+> -		/* called from prune_dcache() and shrink_dcache_parent() */
+> -		cnt = *count;
+> -restart:
+> -	if (count == NULL)
+> +	if (count == -1)
+>  		list_splice_init(&sb->s_dentry_lru, &tmp);
+>  	else {
+>  		while (!list_empty(&sb->s_dentry_lru)) {
+> @@ -492,13 +487,13 @@ restart:
+>  			} else {
+>  				list_move_tail(&dentry->d_lru, &tmp);
+>  				spin_unlock(&dentry->d_lock);
+> -				cnt--;
+> -				if (!cnt)
+> +				if (--count == 0)
+>  					break;
+>  			}
+>  			cond_resched_lock(&dcache_lock);
+>  		}
+>  	}
+> +prune_more:
+>  	while (!list_empty(&tmp)) {
+>  		dentry = list_entry(tmp.prev, struct dentry, d_lru);
+>  		dentry_lru_del_init(dentry);
+> @@ -516,88 +511,29 @@ restart:
+>  		/* dentry->d_lock was dropped in prune_one_dentry() */
+>  		cond_resched_lock(&dcache_lock);
+>  	}
+> -	if (count == NULL && !list_empty(&sb->s_dentry_lru))
+> -		goto restart;
+> -	if (count != NULL)
+> -		*count = cnt;
+> +	if (count == -1 && !list_empty(&sb->s_dentry_lru)) {
+> +		list_splice_init(&sb->s_dentry_lru, &tmp);
+> +		goto prune_more;
+> +	}
 
-Could you please pull from:
+Nitpick but I prefer just the restart label wher it is previously. This
+is moving setup for the next iteration into the "error" case.
 
-git://git.o-hand.com/linux-rpurdie-leds for-linus
 
-for the LEDs tree updates for 2.6.35. This includes a couple of new
-drivers and various bugfixes/tweaks.
+> +static int prune_super(struct shrinker *shrink, int nr_to_scan, gfp_t gfp_mask)
+> +{
+> +	struct super_block *sb;
+> +	int count;
+> +
+> +	sb = container_of(shrink, struct super_block, s_shrink);
+> +
+> +	/*
+> +	 * Deadlock avoidance.  We may hold various FS locks, and we don't want
+> +	 * to recurse into the FS that called us in clear_inode() and friends..
+> +	 */
+> +	if (!(gfp_mask & __GFP_FS))
+> +		return -1;
+> +
+> +	/*
+> +	 * if we can't get the umount lock, then there's no point having the
+> +	 * shrinker try again because the sb is being torn down.
+> +	 */
+> +	if (!down_read_trylock(&sb->s_umount))
+> +		return -1;
 
-Thanks, Richard
+Would you just elaborate on the lock order problem somewhere? (the
+comment makes it look like we *could* take the mutex if we wanted
+to).
 
- arch/arm/mach-mx3/mach-mx31moboard.c |   45 +++
- arch/arm/mach-orion5x/dns323-setup.c |   22 +
- drivers/leds/Kconfig                 |   17 +
- drivers/leds/Makefile                |    2 
- drivers/leds/led-class.c             |    2 
- drivers/leds/leds-88pm860x.c         |   11 
- drivers/leds/leds-gpio.c             |   31 ++
- drivers/leds/leds-lp3944.c           |    9 
- drivers/leds/leds-mc13783.c          |  403 +++++++++++++++++++++++++++++++++++
- drivers/leds/leds-net5501.c          |   94 ++++++++
- drivers/leds/leds-ss4200.c           |    2 
- drivers/mfd/mc13783-core.c           |    4 
- include/linux/leds.h                 |   12 -
- include/linux/mfd/mc13783.h          |   66 +++++
- 14 files changed, 691 insertions(+), 29 deletions(-)
 
-Axel Lin (3):
-      leds: led-class: set permissions on max_brightness file to 0444
-      leds: leds-lp3944: properly handle lp3944_configure fail in lp3944_probe
-      leds: leds-ss4200: fix led_classdev_unregister twice in error handling
+> +
+> +	if (!sb->s_root) {
+> +		up_read(&sb->s_umount);
+> +		return -1;
+> +	}
+> +
+> +	if (nr_to_scan) {
+> +		/* proportion the scan between the two cacheѕ */
+> +		int total;
+> +
+> +		total = sb->s_nr_dentry_unused + sb->s_nr_inodes_unused + 1;
+> +		count = (nr_to_scan * sb->s_nr_dentry_unused) / total;
+> +
+> +		/* prune dcache first as icache is pinned by it */
+> +		prune_dcache_sb(sb, count);
+> +		prune_icache_sb(sb, nr_to_scan - count);
+> +	}
+> +
+> +	count = ((sb->s_nr_dentry_unused + sb->s_nr_inodes_unused) / 100)
+> +						* sysctl_vfs_cache_pressure;
 
-Benjamin Herrenschmidt (1):
-      leds: leds-gpio: Change blink_set callback to be able to turn off blinking
+Do you think truncating in the divisions is at all a problem? It
+probably doesn't matter much I suppose.
 
-Bjarke Istrup Pedersen (1):
-      leds: Add LED driver for the Soekris net5501 board
-
-Christoph Fritz (1):
-      leds: 88pm860x - fix checking in probe function
-
-Philippe Rétornaz (2):
-      leds: Add mc13783 LED support
-      leds: Add mx31moboard MC13783 led support
-
--- 
-Richard Purdie
-Intel Open Source Technology Centre
-
+> @@ -162,6 +213,7 @@ void deactivate_locked_super(struct super_block *s)
+>  	struct file_system_type *fs = s->s_type;
+>  	if (atomic_dec_and_test(&s->s_active)) {
+>  		vfs_dq_off(s, 0);
+> +		unregister_shrinker(&s->s_shrink);
+>  		fs->kill_sb(s);
+>  		put_filesystem(fs);
+>  		put_super(s);
+> @@ -335,6 +387,7 @@ retry:
+>  	list_add_tail(&s->s_list, &super_blocks);
+>  	list_add(&s->s_instances, &type->fs_supers);
+>  	spin_unlock(&sb_lock);
+> +	register_shrinker(&s->s_shrink);
+>  	get_filesystem(type);
+>  	return s;
+>  }
+> diff --git a/include/linux/fs.h b/include/linux/fs.h
+> index 7b90c43..5bff2dc 100644
+> --- a/include/linux/fs.h
+> +++ b/include/linux/fs.h
+> @@ -382,6 +382,7 @@ struct inodes_stat_t {
+>  #include <linux/capability.h>
+>  #include <linux/semaphore.h>
+>  #include <linux/fiemap.h>
+> +#include <linux/mm.h>
+>  
+>  #include <asm/atomic.h>
+>  #include <asm/byteorder.h>
+> @@ -1385,8 +1386,14 @@ struct super_block {
+>  	 * generic_show_options()
+>  	 */
+>  	char *s_options;
+> +
+> +	struct shrinker s_shrink;	/* per-sb shrinker handle */
+>  };
