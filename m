@@ -1,70 +1,78 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933970Ab0EZCEO (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 22:04:14 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:52255 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933894Ab0EZCEM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 22:04:12 -0400
-Date: Wed, 26 May 2010 12:04:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: David Miller <davem@davemloft.net>
-Cc: netdev@vger.kernel.org, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org, NeilJay@gmail.com
-Subject: Re: linux-next: build warning in Linus' tree
-Message-Id: <20100526120406.1906cecc.sfr@canb.auug.org.au>
-In-Reply-To: <20100525.162446.183058933.davem@davemloft.net>
-References: <20100525114614.fd61d822.sfr@canb.auug.org.au>
-	<20100524.215822.13254177.davem@davemloft.net>
-	<20100525.161929.112591425.davem@davemloft.net>
-	<20100525.162446.183058933.davem@davemloft.net>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi"
+	id S933975Ab0EZCGK (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 22:06:10 -0400
+Received: from 27.mail-out.ovh.net ([91.121.30.210]:37093 "HELO
+	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S933765Ab0EZCGI (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 22:06:08 -0400
+Message-ID: <4BFC820B.3060206@example.com>
+Date: Wed, 26 May 2010 04:06:03 +0200
+From: Piotr Hosowicz <piotr@hosowicz.com>
+Reply-To: piotr@hosowicz.com
+Organization: hosowicz.com
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
+MIME-Version: 1.0
+To: piotr@hosowicz.com
+CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
+       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
+       Divyesh Shah <dpshah@google.com>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
+ icedove-bin/5449
+References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com>	 <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com>	 <4BFBA6A2.4070405@example.com> <4BFBDAF3.3020504@example.com>	 <4BFBE004.5060101@example.com> <1274798197.5882.1491.camel@twins>	 <4BFBE357.2040602@example.com> <1274804101.5882.1805.camel@twins> <4BFBFF34.1030907@example.com>
+In-Reply-To: <4BFBFF34.1030907@example.com>
+Content-Type: text/plain; charset=ISO-8859-2; format=flowed
+Content-Transfer-Encoding: 8bit
+X-Ovh-Tracer-Id: 9389160799740391794
+X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
+X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
+X-Spam-Check: DONE|U 0.5/N
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
-
-Hi Dave,
-
-On Tue, 25 May 2010 16:24:46 -0700 (PDT) David Miller <davem@davemloft.net>=
- wrote:
+On 25.05.2010 18:47, Piotr Hosowicz wrote:
+> On 25.05.2010 18:15, Peter Zijlstra wrote:
+>> On Tue, 2010-05-25 at 16:48 +0200, Piotr Hosowicz wrote:
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523288] BUG: using
+>>> smp_processor_id() in preemptible [00000000] code: shutdown/16256
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523296] caller is
+>>> dqstats_inc+0x19/0x2c
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523299] Pid: 16256, comm:
+>>> shutdown Tainted: P W 2.6.34-20100524-1752-patched #1
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523301] Call Trace:
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523308] [<ffffffff811a537b>]
+>>> debug_smp_processor_id+0xc7/0xe0
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523311] [<ffffffff8112c0ad>]
+>>> dqstats_inc+0x19/0x2c
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523314] [<ffffffff8112ee66>]
+>>> vfs_quota_sync+0x1b1/0x293
+>>> May 25 15:04:35 aapi205 kernel: [ 9694.523319] [<ffffffff8103bf21>] ?
+>>> wake_up_process+0x10/0x12
+>>
+>> That's a different issue, see:
+>>
+>> http://lkml.org/lkml/2010/5/22/164
 >
-> From: David Miller <davem@davemloft.net>
-> Date: Tue, 25 May 2010 16:19:29 -0700 (PDT)
->=20
-> > Here is how I fixed this:
-> >=20
-> > --------------------
-> > drivers/net/usb/asix.c: Fix pointer cast.
->=20
-> Sorry, that only took care of one of the two warnings :-)
->=20
-> This patch is better.
+> I do not understand fully - does that mean I have to revert commit
+> a7cf4145b? And how to do it? Let's assume I git-pulled the source. What
+> should be next steps.
 
-Thanks, looks good.
+Ok, my fault, now I know how to revert. But I still do not know if this 
+is the right solution you meant. In the meantime I build the kernel 
+after revert.
 
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+Regards and sorry for the noise.
 
---Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi
-Content-Type: application/pgp-signature
+Piotr Hosowicz
 
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv8gZYACgkQjjKRsyhoI8yAywCdHfuAtKNUWMgCzKaqpCJDJHdb
-sPQAoIMtGvnWnswfj4fBJvfkmw/MzifC
-=kiYx
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_May_2010_12_04_06_+1000_PwQ2G/=KdwW1ODXi--
+-- 
+ > Jeden z powodów, dla których KRK nie by³ sk³onny do
+ > oddawania Biblii w rêce pospólstwa. Po rozmowie z
+ > Jehowitami czêsto mo¿na zrozumieæ, dlaczego.
+Tak. Ja na przyk³ad zrozumia³em ¿e Jan Chrzciciel by³
+kolejarzem - bo: "z kolei uda³ siê nad Jordan".
+NP: Patrick O'Hearn - Magnificent River
+NB: 2.6.34-20100525-1754-patched
