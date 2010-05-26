@@ -1,49 +1,52 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757224Ab0EZR3L (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:29:11 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:45596 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757102Ab0EZR3J (ORCPT
+	id S934071Ab0EZRbU (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:31:20 -0400
+Received: from cantor.suse.de ([195.135.220.2]:51300 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1757126Ab0EZRbT convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:29:09 -0400
-Date: Wed, 26 May 2010 10:25:14 -0700 (PDT)
-From: Linus Torvalds <torvalds@linux-foundation.org>
-To: Rik van Riel <riel@redhat.com>
-cc: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
-In-Reply-To: <20100526112505.1bddf24d@annuminas.surriel.com>
-Message-ID: <alpine.LFD.2.00.1005261021560.3689@i5.linux-foundation.org>
-References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> <20100513103356.25665186@annuminas.surriel.com>
- <20100513140919.0a037845.akpm@linux-foundation.org> <4BFC9CCF.6000809@redhat.com> <20100526112403.635be0ed@annuminas.surriel.com> <20100526112505.1bddf24d@annuminas.surriel.com>
-User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
-MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+	Wed, 26 May 2010 13:31:19 -0400
+Subject: Re: Clock jumps
+Mime-Version: 1.0 (Apple Message framework v1078)
+Content-Type: text/plain; charset=us-ascii
+From: Alexander Graf <agraf@suse.de>
+In-Reply-To: <4BFD5616.6070302@cora.nwra.com>
+Date: Wed, 26 May 2010 19:31:15 +0200
+Cc: Gleb Natapov <gleb@redhat.com>, linux-kernel@vger.kernel.org,
+       kvm@vger.kernel.org
+Content-Transfer-Encoding: 8BIT
+Message-Id: <4D7E210A-4694-4B6E-B721-6024CE96ABC0@suse.de>
+References: <loom.20100524T171038-56@post.gmane.org> <20100525062100.GP22163@redhat.com> <4BFD5616.6070302@cora.nwra.com>
+To: Orion Poplawski <orion@cora.nwra.com>
+X-Mailer: Apple Mail (2.1078)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 
+On 26.05.2010, at 19:10, Orion Poplawski wrote:
 
-On Wed, 26 May 2010, Rik van Riel wrote:
->
-> Subject: rename anon_vma_lock to vma_lock_anon_vma
+> On 05/25/2010 12:21 AM, Gleb Natapov wrote:
+>> Adding kvm to CC.
+>> 
+>> On Mon, May 24, 2010 at 04:06:32PM +0000, Orion Poplawski wrote:
+>>> I have a KVM virtual machine running 2.6.33.4-95.fc13.x86_64 on a CentOS 5.5
+>>> host whose clock jumps about 8-12 hours a couple times a day.  I have no idea
+>>> what is causing it.  Fedora 12 and Centos 5.5 KVM machines run fine on the same
+>>> host.  Is there any debugging I can enable to see what is jumping the clock?
+>>> 
+>>> kvm-clock: cpu 0, msr 0:1ba4741, boot clock
+>>> kvm-clock: cpu 0, msr 0:1e15741, primary cpu clock
+>>> Switching to clocksource kvm-clock
+>>> rtc_cmos 00:01: setting system clock to 2010-05-20 16:59:48 UTC (1274374788)
 > 
-> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
-> naming style used in page_lock_anon_vma and will come in really
-> handy further down in this patch series.
 > 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Thanks, though I don't think it made it there.  I'm also not sure it's completely limited to KVM, though that is the only running system I am currently seeing the problem on.  I also see clock jumps during anaconda installs on physical hardware and apparently they have been present since at least F11.  Might be unrelated though.
+> 
+> I'm really at a loss of how to debug this though.
 
-This v2 series seems to be missing all the ack's etc from the previous 
-series. At least Mel and Hiroyuki-san had acked several of the patches.
+Do you have ntpd running inside the guest? I have a bug report lying around about 2.6.33 with kvm-clock jumping in time when ntpd is used: https://bugzilla.novell.com/show_bug.cgi?id=582260
 
-What's the point of making a v2 if it doesn't actually take the input from 
-v1 into account?
+Alex
 
-		Linus
