@@ -1,101 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754419Ab0EZVtD (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 17:49:03 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:54757 "EHLO mx2.suse.de"
+	id S1755081Ab0EZVu6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 17:50:58 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44632 "EHLO ogre.sisk.pl"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1753378Ab0EZVtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 17:49:00 -0400
-Date: Wed, 26 May 2010 14:48:42 -0700
-From: Greg KH <gregkh@suse.de>
-To: Haiyang Zhang <haiyangz@microsoft.com>
-Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       Hank Janssen <hjanssen@microsoft.com>
-Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization (modified)
-Message-ID: <20100526214842.GA27908@suse.de>
-References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100526205134.GC7343@suse.de>
- <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
+	id S1754678Ab0EZVu4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 17:50:56 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Alan Stern <stern@rowland.harvard.edu>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Date: Wed, 26 May 2010 23:51:59 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
+Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org
+References: <Pine.LNX.4.44L0.1005260946430.1961-100000@iolanthe.rowland.org>
+In-Reply-To: <Pine.LNX.4.44L0.1005260946430.1961-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005262351.59626.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 09:25:31PM +0000, Haiyang Zhang wrote:
-> > From: Greg KH [mailto:gregkh@suse.de]
-> > > +	static atomic_t ic_channel_initcnt = ATOMIC_INIT(0);
-> > Why is this an atomic_t?
+On Wednesday 26 May 2010, Alan Stern wrote:
+> On Tue, 25 May 2010, Dmitry Torokhov wrote:
 > 
-> As discussed previously, I used atomic_t to handle more general case 
-> if vmbus interrupts happen on every cpu.
-
-Ok, but then you should use a lock to protect the variable, not an atomic_t.
-
-> 
-> > > +			    VmbusChannelOpen(newChannel, 2 * PAGE_SIZE,
-> > > +					     2 * PAGE_SIZE, NULL, 0,
-> > > +					     hv_cb_utils[cnt].callback,
-> > > +					     newChannel) == 0) {
-> > > +				hv_cb_utils[cnt].channel = newChannel;
-> > > +				mb();
+> > > How is that not polling? If the user is holding down a key, the keypad
+> > > driver has to block suspend, and user space will try to suspend again
+> > > and again and again...
+> > > 
 > > 
-> > What is the mb() call for?  Why is it necessary?  (hint, if you need it,
-> > something else is really wrong...)
-> 
-> It ensures the channel assignment happens before the wakeup call: 
-> osd_WaitEventSet(ic_channel_ready), if the compiler optimization re-arrange 
-> the execution order. 
-
-If you care about this, because some other thread is looking at it, then
-you really need to protect it with a lock.  Don't rely on a mb() to get
-it all correct for you (hint, I doubt it will...)
-
-> > Something wierd happened with your indentation here, it doesn't line up
-> > properly.  That call to VmbusChannelOpen() needs to go in a full tab,
-> > not 4 spaces.
+> > If your userpsace is that stupid - sure. However, you can:
 > > 
-> > Please always run your patch through the checkpatch.pl script before
-> > sending it to me.
-> 
-> Sure, I will replace it with TAB. I already ran checkpatch.pl on 
-> this patch -- no error:
-> staging-next-2.6> scripts/checkpatch.pl 0525-Fix-race-condition-on-IC-channel-initialization.patch
-> total: 0 errors, 0 warnings, 71 lines checked
-> 
-> 0525-Fix-race-condition-on-IC-channel-initialization.patch has no obvious style problems and is ready for submission.
-
-Looks like a bug in checkpatch.pl, go poke Andy about that please.
-
-> > > +struct osd_waitevent *ic_channel_ready;
+> > 1. Notify the suspend manager process that he rest of your userspace is
+> > busy handling keystrokes so that it does not try to suspend while there
+> > are events pending.
 > > 
-> > What's with the "ic_" naming scheme here?  It should be "hv_" right?
+> > 2. Wait a tiny bit after last application notified you that it finished
+> > processing events.
 > 
-> IC stands for "integration components", such as Shutdown, Timesync, 
-> Heartbeat, etc.
+> This is more complicated than necessary.  Arve is wrong; my suggested 
+> design does not require polling.
+> 
+> The reason is simple: When a user process initiates an opportunistic 
+> suspend, you make it wait in an interruptible sleep until all the 
+> kernel suspend blockers are released.  No polling.  If another user 
+> thread decides in the meantime that it needs to block the suspend, it 
+> sends a signal to the power manager process.
+> 
+> In fact, other threads should signal the power manager process whenever 
+> they want to block or unblock suspends.  That way the power manager 
+> process can spend all its time sleeping, without doing any polling.
 
-Yes, I know what it stands for, but the rest of the world doesn't :)
+I still see an issue here.  Namely, if the power manager is in user space and
+it's signaled to suspend, it has to ask the kernel to do that, presumably by
+writing something to a sysfs file.  Then, if the kernel blocks the suspend, the
+power manager waits until the block is released.  Now, it should go back and
+check if user space still doesn't block suspend and if so, wait until the block
+is released and start over.  With all suspend blockers in the kernel this
+looping behavior is avoidable.
 
-> > As you are using this "ic_channel_ready variable only within the
-> > vmbus_bus_init() call, why not just make it local to there?  Then
-> > there's no need to do the create/init/wait/free sequence outside the
-> > init call.
+> > So basically the difference is that with in-kernel suspend blockers,
+> > there is a tiny window where we haven't started the suspend yet but are
+> > about to the driver has a chance to prevent entire system from starting
+> > sleep.
 > > 
-> > The init call should just do all of this for us, right?
+> > Without the blocker we may start suspending and will stop midcycle. We
+> > may be even better off in the end since we could leave some devices
+> > still powered down after aborting system-wide suspend.
 > 
-> The ic_channel_ready variable is called by VmbusChannelProcessOffer /
-> osd_WaitEventSet(ic_channel_ready) to wake up vmbus_init(). So it's
-> not a local variable.
+> That's not so easy.  The design of the PM core requires that when the 
+> system wakes up from suspend (or from an aborted suspend attempt), all 
+> devices should go to full-power-on.  This is explained in section 6 of
+> Documentation/power/runtime_pm.txt.
+> 
+> The decision over whether to use kernel-space suspend blockers vs. 
+> aborting suspends when queues are non-empty comes down to a tradeoff:
+> 
+> 	Suspend blockers involve a little more code (to create,
+> 	destroy, enable, and disable them) plus a little extra
+> 	runtime overhead each time an event occurs.  (Some people
+> 	may object to this extra overhead, although so far nobody
+> 	in this discussion has done so.)
+> 
+> 	Suspend blockers eliminate the extra overhead involved in
+> 	starting suspends that are just going to be aborted.
+> 
+> 	Suspend blockers offer extra debugging and accountability
+> 	(the user can find out which subsystems are responsible for
+> 	keeping the system awake).
+> 
+> Which way you think the tradeoff should go is a subjective decision.  I 
+> think that kernel suspend blockers are acceptable.
 
-But again, this logic should be within the init call, as it's part of
-the proper init sequence.  So just put it in that call please.
+I agree.
 
-thanks,
-
-greg k-h
+Rafael
