@@ -1,78 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754405Ab0EZTCt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:02:49 -0400
-Received: from rcsinet10.oracle.com ([148.87.113.121]:33511 "EHLO
-	rcsinet10.oracle.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab0EZTCr (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:02:47 -0400
-Date: Wed, 26 May 2010 12:02:36 -0700
-From: Randy Dunlap <randy.dunlap@oracle.com>
-To: Udo van den Heuvel <udovdh@xs4all.nl>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: hpet timers gone?
-Message-Id: <20100526120236.4a849b5b.randy.dunlap@oracle.com>
-In-Reply-To: <4BFA52C3.4080006@xs4all.nl>
-References: <4BFA52C3.4080006@xs4all.nl>
-Organization: Oracle Linux Eng.
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.16.6; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1754877Ab0EZTDB (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:03:01 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:37068 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752049Ab0EZTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:02:59 -0400
+Message-ID: <4BFD7003.9040006@redhat.com>
+Date: Wed, 26 May 2010 15:01:23 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Linus Torvalds <torvalds@linux-foundation.org>
+CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
+References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> <20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org> <4BFC9CCF.6000809@redhat.com> <20100526112403.635be0ed@annuminas.surriel.com> <20100526112505.1bddf24d@annuminas.surriel.com> <alpine.LFD.2.00.1005261021560.3689@i5.linux-foundation.org>
+In-Reply-To: <alpine.LFD.2.00.1005261021560.3689@i5.linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
 Content-Transfer-Encoding: 7bit
-X-Auth-Type: Internal IP
-X-Source-IP: acsinet15.oracle.com [141.146.126.227]
-X-CT-RefId: str=0001.0A090206.4BFD7057.006C:SCFMA922111,ss=1,fgs=0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Mon, 24 May 2010 12:19:47 +0200 Udo van den Heuvel wrote:
+On 05/26/2010 01:25 PM, Linus Torvalds wrote:
+>
+>
+> On Wed, 26 May 2010, Rik van Riel wrote:
+>>
+>> Subject: rename anon_vma_lock to vma_lock_anon_vma
+>>
+>> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
+>> naming style used in page_lock_anon_vma and will come in really
+>> handy further down in this patch series.
+>>
+>> Signed-off-by: Rik van Riel<riel@redhat.com>
+>
+> This v2 series seems to be missing all the ack's etc from the previous
+> series. At least Mel and Hiroyuki-san had acked several of the patches.
+>
+> What's the point of making a v2 if it doesn't actually take the input from
+> v1 into account?
 
-> Hello,
-> 
-> What has happened between 2.6.30.9 and 2.6.32.8 with regard to hpet timers?
-> 
-> dmesg output from 2.6.30.9 does show activity but 2.6.32.8 and beyond don't.
-> Also /proc/timer_list doesn't show hpet anymore. Also on 2.6.34 no hpet
-> in timer_list.
-> 
-> relevant .config:
-> CONFIG_HPET_TIMER=y
-> CONFIG_HPET_EMULATE_RTC=y
-> CONFIG_HPET=y
-> CONFIG_HPET_MMAP=y
+It did take all the input into account (I made all the
+suggested improvements, enhanced comments where people
+had questions, etc).
 
-Same here.
+I just forgot to add all the Acked-by's :(
 
-> And I have hpet=force on the kernel commandline for this VIA Epia
-> LT10000 board.
-> 
-> Any ideas?
+If you want I can send you and Andrew a duplicate of
+what I sent this morning, with the only difference
+being added Acked-by's.
 
-On x86 peecee:
-
-$ uname -a
-Linux chimera.site 2.6.34 #2 SMP Tue May 18 10:52:27 PDT 2010 x86_64 x86_64 x86_64 GNU/Linux
-$ grep hpet /proc/timer_list
-Clock Event Device: hpet
- set_next_event: hpet_legacy_next_event
- set_mode:       hpet_legacy_set_mode
-
-
-
-$ dmesg | grep -i hpet
-[    0.000000] ACPI: HPET 00000000cf6f3000 00038 (v01 GATEWA SYSTEM   0000017E MSFT 01000013)
-[    0.000000] ACPI: HPET id: 0x8086a201 base: 0xfed00000
-[    0.000000] hpet clockevent registered
-[    0.000000] TSC: PIT calibration matches HPET. 1 loops
-[    0.771604] HPET: 3 timers in total, 0 timers will be used for per-cpu timer
-[    0.771604] hpet0: at MMIO 0xfed00000, IRQs 2, 8, 0
-[    0.771604] hpet0: 3 comparators, 64-bit 14.318180 MHz counter
-
-
-What does dmesg show on your machine?
-
----
-~Randy
-*** Remember to use Documentation/SubmitChecklist when testing your code ***
+-- 
+All rights reversed
