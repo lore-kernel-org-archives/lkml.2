@@ -1,59 +1,56 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756413Ab0EZAsR (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 20:48:17 -0400
-Received: from e9.ny.us.ibm.com ([32.97.182.139]:59947 "EHLO e9.ny.us.ibm.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1750800Ab0EZAsP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 20:48:15 -0400
-Subject: Re: [PATCH] x86: Export tsc related information in sysfs
-From: john stultz <johnstul@us.ibm.com>
-To: Brian Bloniarz <bmb@athenacr.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>,
-       Dan Magenheimer <dan.magenheimer@oracle.com>,
-       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
-       Arjan van de Ven <arjan@infradead.org>,
-       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
-       linux-kernel@vger.kernel.org
-In-Reply-To: <4BFC687A.9040304@athenacr.com>
-References: <4BF58B59.7080901@athenacr.com>
-	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
-	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
-	 <1274727116.2954.5.camel@localhost.localdomain>
-	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
-	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
-	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>
-Content-Type: text/plain; charset="UTF-8"
-Date: Tue, 25 May 2010 17:48:08 -0700
-Message-ID: <1274834888.4678.66.camel@localhost.localdomain>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
-Content-Transfer-Encoding: 7bit
+	id S1758448Ab0EZAzs (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 20:55:48 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:34187 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750800Ab0EZAzr (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 20:55:47 -0400
+Date: Tue, 25 May 2010 21:55:31 -0300
+From: Arnaldo Carvalho de Melo <acme@infradead.org>
+To: Stephane Eranian <eranian@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, linux-kernel@vger.kernel.org,
+       =?iso-8859-1?Q?Fr=E9d=E9ric?= Weisbecker <fweisbec@gmail.com>,
+       Mike Galbraith <efault@gmx.de>, Paul Mackerras <paulus@samba.org>,
+       Peter Zijlstra <a.p.zijlstra@chello.nl>,
+       Tom Zanussi <tzanussi@gmail.com>
+Subject: Re: [GIT PULL 0/2] perf annotate fix and report improvoment
+Message-ID: <20100526005531.GA9874@ghostprotocols.net>
+References: <1274664671-27385-1-git-send-email-acme@infradead.org>
+ <AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=iso-8859-1
+Content-Disposition: inline
+Content-Transfer-Encoding: 8bit
+In-Reply-To: <AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
+X-Url: http://acmel.wordpress.com
+User-Agent: Mutt/1.5.20 (2009-08-17)
+X-SRS-Rewrite: SMTP reverse-path rewritten from <acme@infradead.org> by bombadil.infradead.org
+	See http://www.infradead.org/rpr.html
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 2010-05-25 at 20:16 -0400, Brian Bloniarz wrote:
-> On 05/24/2010 09:33 PM, Brian Bloniarz wrote:
-> > So what's wrong with just adding a
-> > /sys/devices/system/clocksource/clocksource0/tsc_khz?
-> 
-> As an RFC:
-> 
-> Add clocksource.sys_register & sys_unregister so the
-> current clocksource can add supplemental information to
-> /sys/devices/system/clocksource/clocksource0/
-> 
-> Export tsc_khz when current_clocksource==tsc so that
-> daemons like NTP can account for the variability of
-> calibration results.
+Em Tue, May 25, 2010 at 11:08:29PM +0200, Stephane Eranian escreveu:
+> On Mon, May 24, 2010 at 3:31 AM, Arnaldo Carvalho de Melo <acme@infradead.org> wrote:
+> > Arnaldo Carvalho de Melo (2):
+> >  perf report: Support multiple events on the TUI
+> >  perf annotate: Fix up usage of the build id cache
 
-I think this is a bad idea, as it creates an ABI that is arch AND
-machine specific, which will cause portability problems in applications
-that expect the interface to be there.
+> With these patches, can I analyze a binary on a remote
+> machine? If I copy perf.data + .debug subdir, then can
+> I run perf annotate on a different machine, where I don't
+> have the sampled binaries installed?
 
-thanks
--john
+It should, either directly thru 'perf annotate foo_symbol' or via the
+TUI 'perf report' browser.
+ 
+> I have tried that today using -tip, and perf annotate still
+> looked for the binary using its original pathname in perf.data.
+> perf report worked fine.
 
+Can you please try it with -vvvv and make the output available
+somewhere?
 
+- Arnaldo
