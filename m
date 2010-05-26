@@ -1,60 +1,57 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933821Ab0EZBoN (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:44:13 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:47710 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933290Ab0EZBoL (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:44:11 -0400
-Date: Wed, 26 May 2010 11:44:06 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org
-Subject: linux-next: build failure after merge of the fuse tree
-Message-Id: <20100526114406.d3a68d1f.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
+	id S933765Ab0EZBq2 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:46:28 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:34866 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759143Ab0EZBq1 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 21:46:27 -0400
+Date: Tue, 25 May 2010 18:46:21 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Harald Dunkel <harald.dunkel@aixigo.de>
+Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Greg KH <greg@kroah.com>
+Subject: Re: 2.6.34 on Samsung P460: reset after
+ "Waiting for /dev to be fully populated"
+Message-Id: <20100525184621.89487735.akpm@linux-foundation.org>
+In-Reply-To: <4BFB947E.9080509@aixigo.de>
+References: <4BFB947E.9080509@aixigo.de>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
 Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__26_May_2010_11_44_06_+1000_.B6LGE6o1NC4+zdp"
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_May_2010_11_44_06_+1000_.B6LGE6o1NC4+zdp
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On Tue, 25 May 2010 11:12:30 +0200 Harald Dunkel <harald.dunkel@aixigo.de> wrote:
 
-Hi Miklos,
+> Hi folks,
+> 
+> Problem: At boot time I see a final message
+> 
+> 	Waiting for /dev to be fully populated
+> 
+> then my laptop (Samsung P460) does a reset. The next
+> boot doesn't work, so I have to power-cycle the laptop.
+> 
+> If I boot with "acpi=off", then 2.6.34 gets stuck instead.
+> The last 2 lines are
+> 
+> 	TCP reno registered
+> 	Net: Registered protocol family 1
+> 
+> Any helpful comment would be highly appreciated.
+> 
 
-After merging the fuse tree, today's linux-next build (powerpc
-ppc64_defconfig) failed like this:
+ow, hard.
 
-ERROR: "generic_pipe_buf_map" [fs/fuse/fuse.ko] undefined!
-ERROR: "generic_pipe_buf_confirm" [fs/fuse/fuse.ko] undefined!
-ERROR: "generic_pipe_buf_get" [fs/fuse/fuse.ko] undefined!
-ERROR: "generic_pipe_buf_unmap" [fs/fuse/fuse.ko] undefined!
-ERROR: "generic_pipe_buf_release" [fs/fuse/fuse.ko] undefined!
+I assume that the "Waiting for /dev to be fully populated" comes from
+udev?  Greg, do you know what might trigger that?
 
-Caused by commit c3021629a0d820247ee12b6c5192a1d5380e21c6 ("fuse: support
-splice() reading from fuse device").
+Harald, I think the best (only?) way to fix this is for you to do a
+bisection search.  http://landley.net/writing/git-quick.html has some
+instructions.
 
-I have used the version of the fuse tree from next-20100525 for today.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
-
---Signature=_Wed__26_May_2010_11_44_06_+1000_.B6LGE6o1NC4+zdp
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv8fOYACgkQjjKRsyhoI8xjdACeIslj5BnT2ox2XDesV4zY4DjV
-mD4An2uEcV8k+N0mzqGp8LqwkjZh4UmS
-=pcCH
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_May_2010_11_44_06_+1000_.B6LGE6o1NC4+zdp--
+It's a bit of a pain to do, sorry.
