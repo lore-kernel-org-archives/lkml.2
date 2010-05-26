@@ -1,98 +1,103 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0EZN7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:59:12 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:59484 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755281Ab0EZN7D (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:59:03 -0400
-Date: Wed, 26 May 2010 09:59:01 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
-cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-In-Reply-To: <20100525225544.GA5331@core.coreip.homeip.net>
-Message-ID: <Pine.LNX.4.44L0.1005260946430.1961-100000@iolanthe.rowland.org>
+	id S1754902Ab0EZOGY (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:06:24 -0400
+Received: from www.tglx.de ([62.245.132.106]:44924 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753830Ab0EZOGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 10:06:23 -0400
+Date: Wed, 26 May 2010 16:05:55 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Chris Metcalf <cmetcalf@tilera.com>
+cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>
+Subject: Re: arch/tile
+Message-ID: <alpine.LFD.2.00.1005261601530.2995@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010, Dmitry Torokhov wrote:
+Chris,
 
-> > How is that not polling? If the user is holding down a key, the keypad
-> > driver has to block suspend, and user space will try to suspend again
-> > and again and again...
-> > 
+On Tue, 25 May 2010, Chris Metcalf wrote:
+
+> Thomas, thanks for your feedback.  If I don't comment on something you
+> said it's because you were obviously right and I applied a suitable fix. :-)
 > 
-> If your userpsace is that stupid - sure. However, you can:
+> On 5/25/2010 4:12 PM, Thomas Gleixner wrote:
+> > +/**
+> > + * tile_request_irq() - Allocate an interrupt handling instance.
+> > [...]
+> >
+> >   Why are you implementing your private interrupt handling
+> >   infrastructure ? What's wrong with the generic interrupt handling
+> >   code ? Why is each device driver forced to call tile_request_irq()
+> >   which makes it incompatible to the rest of the kernel and therefor
+> >   unshareable ?
+> >   
 > 
-> 1. Notify the suspend manager process that he rest of your userspace is
-> busy handling keystrokes so that it does not try to suspend while there
-> are events pending.
+> Our interrupt management code has evolved as we have developed this
+> code, so I won't present arguments as to why it's perfect the way it is,
+> but just why it IS the way it is.  :-)
 > 
-> 2. Wait a tiny bit after last application notified you that it finished
-> processing events.
+> The tile irq.c does not replace the generic Linux IRQ management code,
+> but instead provides a very limited set of virtual interrupts that are
+> only used by our para-virtualized device drivers, and delivered to Linux
+> via a single hypervisor downcall that atomically sets "virtual
+> interrupt" bits in a bitmask.  The PCI root complex driver reserves four
+> of these bits (i.e. irqs) to map real PCI interrupts; they are then fed
+> forward into the regular Linux IRQ system to manage all "standard"
+> devices.  The other tile-specific para-virtualized drivers that use this
+> interface are the PCI endpoint code, xgbe network driver, ATA-over-GPIO
+> driver, and the IPI layer.  None of these para-virtualized drivers are
+> actually shareable with other Linux architectures in any case.
 
-This is more complicated than necessary.  Arve is wrong; my suggested 
-design does not require polling.
+  Ok, still ...
+ 
+> We have an outstanding enhancement request in our bug tracking system to
+> switch to using the Linux generic IRQs directly, and plan to implement
+> it prior to our next major release.  But we haven't done it yet, and
+> this code, though somewhat crufty, is reasonably stable.  I'm also not
+> the primary maintainer of this particular piece of code, so I'd rather
+> wait until that person frees up and have him do it, instead of trying to
+> hack it myself.
 
-The reason is simple: When a user process initiates an opportunistic 
-suspend, you make it wait in an interruptible sleep until all the 
-kernel suspend blockers are released.  No polling.  If another user 
-thread decides in the meantime that it needs to block the suspend, it 
-sends a signal to the power manager process.
-
-In fact, other threads should signal the power manager process whenever 
-they want to block or unblock suspends.  That way the power manager 
-process can spend all its time sleeping, without doing any polling.
-
-> So basically the difference is that with in-kernel suspend blockers,
-> there is a tiny window where we haven't started the suspend yet but are
-> about to the driver has a chance to prevent entire system from starting
-> sleep.
+  It should be rather straight forward and can be efficiently done
+  with the handle_simple_irq() handler AFAICS. So I'd prefer to see
+  that fixed befor the code gets merged.
+ 
+> >   You check desc->handler, but you happily call the handler while
+> >   dev_id might be still NULL. See above.
+> >   
 > 
-> Without the blocker we may start suspending and will stop midcycle. We
-> may be even better off in the end since we could leave some devices
-> still powered down after aborting system-wide suspend.
+> Assuming we spinlock the irq request/free routines, I think this is
+> safe, since the unlock memory fence will guarantee visibility of the
+> fields prior to any attempt to use them.  We always allocate the
+> interrupt, then tell the hypervisor to start delivering them; on device
+> unload we tell the hypervisor to stop delivering interrupts, then free
+> it.  The "tell the hypervisor" steps use on_each_cpu() and wait, so are
+> fully synchronous.
 
-That's not so easy.  The design of the PM core requires that when the 
-system wakes up from suspend (or from an aborted suspend attempt), all 
-devices should go to full-power-on.  This is explained in section 6 of
-Documentation/power/runtime_pm.txt.
+  Going to generic irq will solve all of that :)
+ 
+> > +int show_interrupts(struct seq_file *p, void *v)
+> > +[...]
+> >
+> >   So that prints which interrupts ? Now you refer to the generic code,
+> >   while above you require that tile specific one. -ENOSENSE.
+> >   
+> 
+> Yes, this is confusing.  This routine is required by procfs, and it
+> shows just the PCI interrupts, not the tile irqs.  I'll add a comment,
+> and try to segregate the file into "generic irqs" and "tile irqs" more
+> obviously, for now.  The routine itself will be more sensible once we
+> integrate our tile_irqs into the generic system.
 
-The decision over whether to use kernel-space suspend blockers vs. 
-aborting suspends when queues are non-empty comes down to a tradeoff:
+  Ditto.
+ 
+Thanks,
 
-	Suspend blockers involve a little more code (to create,
-	destroy, enable, and disable them) plus a little extra
-	runtime overhead each time an event occurs.  (Some people
-	may object to this extra overhead, although so far nobody
-	in this discussion has done so.)
-
-	Suspend blockers eliminate the extra overhead involved in
-	starting suspends that are just going to be aborted.
-
-	Suspend blockers offer extra debugging and accountability
-	(the user can find out which subsystems are responsible for
-	keeping the system awake).
-
-Which way you think the tradeoff should go is a subjective decision.  I 
-think that kernel suspend blockers are acceptable.
-
-Alan Stern
-
+	tglx
