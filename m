@@ -1,46 +1,47 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752872Ab0EZFxJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 01:53:09 -0400
-Received: from mga06.intel.com ([134.134.136.21]:5094 "EHLO
-	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752426Ab0EZFxH (ORCPT
+	id S934145Ab0EZGTk (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 02:19:40 -0400
+Received: from fg-out-1718.google.com ([72.14.220.153]:1983 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934116Ab0EZGTj (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 01:53:07 -0400
-X-ExtLoop1: 1
-X-IronPort-AV: E=Sophos;i="4.53,302,1272870000"; 
-   d="scan'208";a="521305744"
-Date: Wed, 26 May 2010 09:23:57 -0400
-From: Youquan Song <youquan.song@linux.intel.com>
-To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Greg KH <greg@kroah.com>,
-       "stable@kernel.org" <stable@kernel.org>,
-       "hpa@zytor.com" <hpa@zytor.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "Song, Youquan" <youquan.song@intel.com>
-Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere EP)
-Message-ID: <20100526132357.GA26728@youquan-linux.bj.intel.com>
-References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU> <20100525155307.GA7453@kroah.com> <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU> <20100525205123.GA14993@kroah.com> <1274833451.2892.574.camel@sbs-t61.sc.intel.com> <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
-Mime-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
-User-Agent: Mutt/1.5.9i
+	Wed, 26 May 2010 02:19:39 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type;
+        b=Nt5ATYomAxR0MMtrDPahUyw37+1guZ0hJ7qmBvo5Iu5a/YCcijmYc13/jJU42fm98a
+         jSeBddmGwL9wp/0HhPkXlGezP+c8rPi5WQcpPZqxHS5JsglJmjyUzTWcYdN+/1he74W8
+         DccJU+J+KuR8sPHg/ULECB0RHvMXwaxPMFkjE=
+MIME-Version: 1.0
+In-Reply-To: <20100525201259.GA5370@nowhere>
+References: <1274815906.9757.83.camel@cndougla-ubuntu>
+	<20100525201259.GA5370@nowhere>
+Date: Wed, 26 May 2010 09:19:37 +0300
+X-Google-Sender-Auth: INjb6f9xK8srjRzfroNGsU4a7jk
+Message-ID: <AANLkTinuHB9gPLBZs_QsHqOm6Y5nR91P_gFlVBXa-ilJ@mail.gmail.com>
+Subject: Re: Tracing configuration review
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Chase Douglas <chase.douglas@canonical.com>,
+       Prasad <prasad@linux.vnet.ibm.com>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       Soeren Sandmann <sandmann@daimi.au.dk>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > I can't think of any known issues in 2.6.27 that can lead to this kind
-> > of boot failure on WSM-EP. Caglar, It will be nice if you can do git
-> > bisect between working and non-working kernels.
-> 
-> Sure, I'll try to boot those with plain 2.6.27 to see but please note that it's going to be little time consuming. For each one I have to create a custom boot image for them to download and test (a.k.a. don't expect to hear from me soon :))
+On Tue, May 25, 2010 at 11:13 PM, Frederic Weisbecker
+<fweisbec@gmail.com> wrote:
+>> # CONFIG_KMEMTRACE is not set (Kconfig says N if unsure)
+>
+> Deprecated. We have the kmem trace event that are a full replacement now.
+> Pekka, Gabriel, can we remove it now?
 
-Hi Caglar,
-
-What's the microcode version? Get by "dmesg | grep microcode" if you
-success boot other version of kernel.
-Can you try to disable C-state(C6) in BIOS before your boot 2.6.27?
-
-Thanks
--Youquan
+I don't think ftrace supports boot-time tracing which kmemtrace did.
+That said, I was probably the only one actually using the feature so
+maybe we can just nuke kmemtrace at this point...
