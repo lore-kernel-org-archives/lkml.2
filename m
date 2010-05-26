@@ -1,80 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755063Ab0EZWCn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:02:43 -0400
-Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:37115 "EHLO
-	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
-	with ESMTP id S1752996Ab0EZWCk (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:02:40 -0400
-Date: Wed, 26 May 2010 23:09:43 +0100
-From: Alan Cox <alan@lxorguk.ukuu.org.uk>
-To: Florian Mickler <florian@mickler.org>
-Cc: Thomas Gleixner <tglx@linutronix.de>, Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100526230943.6f5e5b37@lxorguk.ukuu.org.uk>
-In-Reply-To: <20100526215409.33296d94@schatten.dmk.lab>
-References: <20100526171106.0e44a736@schatten.dmk.lab>
-	<alpine.LFD.2.00.1005261829540.2995@localhost.localdomain>
-	<20100526215409.33296d94@schatten.dmk.lab>
-X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1756100Ab0EZWDP (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:03:15 -0400
+Received: from ogre.sisk.pl ([217.79.144.158]:44714 "EHLO ogre.sisk.pl"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752831Ab0EZWDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 18:03:13 -0400
+From: "Rafael J. Wysocki" <rjw@sisk.pl>
+To: Matthew Garrett <mjg59@srcf.ucam.org>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Date: Thu, 27 May 2010 00:03:58 +0200
+User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Greg KH <gregkh@suse.de>, tytso@mit.edu,
+       James Bottomley <James.Bottomley@suse.de>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org> <1274878665.27810.354.camel@twins> <20100526132051.GA1834@srcf.ucam.org>
+In-Reply-To: <20100526132051.GA1834@srcf.ucam.org>
+MIME-Version: 1.0
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
 Content-Transfer-Encoding: 7bit
+Message-Id: <201005270003.58277.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> > suspend blockers are completely backwards as they basically disable
-> > the kernels ability to do resource management.
+On Wednesday 26 May 2010, Matthew Garrett wrote:
+> On Wed, May 26, 2010 at 02:57:45PM +0200, Peter Zijlstra wrote:
 > 
-> I don't think this is a defect in the approach but the point of it. 
-
-I think it's both. It's the point of it, and that itself is a defect. Its
-designed wrongly.
-
-> drivers code is needed anyway. What looses the kernel by implementing
-> suspend blockers, and later a more finegrained approach and mapping the
-> userspace part of suspend blockers on that finegrained approach later
-> on?
-
-The Linux approach is to do the job right. That means getting the
-interface right and so it works across all the interested parties (or as
-close as we can get).
-
-> >   - how much delay of wakeups is tolerated (missing interface)
+> > I fail to see why. In both cases the woken userspace will contact a
+> > central governing task, either the kernel or the userspace suspend
+> > manager, and inform it there is work to be done, and please don't
+> > suspend now.
 > 
-> Doesn't solve the segregation problem and is probably overkill for most
-> applications. I see this as an orthogonal thing (i.e. not
-> affecting this merge). 
+> Thinking about this, you're right - we don't have to wait, but that does 
+> result in another problem. Imagine we get two wakeup events 
+> approximately simultaneously. In the kernel-level universe the kernel 
+> knows when both have been handled. In the user-level universe, we may 
+> have one task schedule, bump the count, handle the event, drop the count 
+> and then we attempt a suspend again because the second event handler 
+> hasn't had an opportunity to run yet. We'll then attempt a suspend and 
+> immediately bounce back up. That's kind of wasteful, although it'd be 
+> somewhat mitigated by checking that right at the top of suspend entry 
+> and returning -EAGAIN or similar.
 
-The key question that matters for suspend management is 'what wakeup
-delay is tolerated'. So it's absolutely fundamental.
+I still think it would cause a loop-alike behavior between the user space
+power manager and the kernel PM core to happen, because the power manager
+will always have to check the user space counter after a failing suspend
+attempt.
 
-> True. But I wouldnt say, that it is the linux kernel who should force
-> this politics onto its users.
-
-This is the Linux way of doing things. It's like the GPL and being
-shouted at by Linus. They are things you accept when you choose to take
-part. Google chose to use Linux, if they want a feature upstream then the
-way you get it there is to figure out how to solve the real problem and
-make *everyone* (within reason) happy.
-
-We now have suggestions how to do the job properly so the right thing is
-probably to go and explore those suggestions not merge crap.
-
-Merging crap won't help anyway. The rest of the kernel community can
-still simply stonewall those interfaces, and a volunteer community has
-ways of dealing with abuse of process, notably by simply not getting
-around to, or implementing things directly contrary to the crap bits.
-
-So it's not even in the interest of people to play political games. Even
-if you get away with in the short term the people who rely on the junk
-will end up out on a limb and holding the baby when the crap hits the fan
-(see reiserfs)
-
-Alan
+Rafael
