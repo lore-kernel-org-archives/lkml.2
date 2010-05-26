@@ -1,155 +1,59 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755322Ab0EZTAn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:00:43 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:61893 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752471Ab0EZTAm (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:00:42 -0400
-From: Glauber Costa <glommer@redhat.com>
-To: kvm@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
-Subject: [PATCH v2] Add Documentation/kvm/msr.txt
-Date: Wed, 26 May 2010 14:53:36 -0400
-Message-Id: <1274900016-8629-1-git-send-email-glommer@redhat.com>
+	id S1756540Ab0EZTBA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:01:00 -0400
+Received: from gabe.freedesktop.org ([131.252.210.177]:47964 "EHLO
+	gabe.freedesktop.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752471Ab0EZTA6 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:00:58 -0400
+From: Eric Anholt <eric@anholt.net>
+To: rostedt@goodmis.org, Li Zefan <lizf@cn.fujitsu.com>
+Cc: airlied@linux.ie, chris@chris-wilson.co.uk,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       LKML <linux-kernel@vger.kernel.org>, dri-devel@lists.sourceforge.net
+Subject: Re: [PATCH] drm/i915: Convert more trace events to DEFINE_EVENT
+In-Reply-To: <1274818126.22648.221.camel@gandalf.stny.rr.com>
+References: <4BFA3808.5080203@cn.fujitsu.com> <1274818126.22648.221.camel@gandalf.stny.rr.com>
+User-Agent: Notmuch/0.3.1-16-g417274d (http://notmuchmail.org) Emacs/23.2.1 (i486-pc-linux-gnu)
+Date: Wed, 26 May 2010 12:00:55 -0700
+Message-ID: <87bpc2lc7s.fsf@pollan.anholt.net>
+MIME-Version: 1.0
+Content-Type: multipart/signed; boundary="=-=-=";
+	micalg=pgp-sha1; protocol="application/pgp-signature"
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-This patch adds a file that documents the usage of KVM-specific
-MSRs.
+--=-=-=
+Content-Transfer-Encoding: quoted-printable
 
-[ v2: added comments from Randy ]
+On Tue, 25 May 2010 16:08:46 -0400, Steven Rostedt <rostedt@goodmis.org> wr=
+ote:
+> On Mon, 2010-05-24 at 16:25 +0800, Li Zefan wrote:
+> > Convert i915_gem_object_clflush to DEFINE_EVENT, and save ~0.5K:
+> >=20
+> >    text    data     bss     dec     hex filename
+> >   13204    2732      12   15948    3e4c i915_trace_points.o.orig
+> >   12668    2732      12   15412    3c34 i915_trace_points.o
+> >=20
+> > No change in functionality.
+> >=20
+>=20
+> Acked-by: Steven Rostedt <rostedt@goodmis.org>
+>=20
+> I'm expecting that this will be going through the DRM/i915 path.
 
-Signed-off-by: Glauber Costa <glommer@redhat.com>
----
- Documentation/kvm/msr.txt |  117 +++++++++++++++++++++++++++++++++++++++++++++
- 1 files changed, 117 insertions(+), 0 deletions(-)
- create mode 100644 Documentation/kvm/msr.txt
+Yeah.
 
-diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
-new file mode 100644
-index 0000000..daae6f8
---- /dev/null
-+++ b/Documentation/kvm/msr.txt
-@@ -0,0 +1,117 @@
-+KVM-specific MSRs.
-+Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
-+=====================================================
-+
-+KVM makes use of some custom MSRs to service some requests.
-+At present, this facility is only used by kvmclock.
-+
-+Custom MSRs have a range reserved for them, that goes from
-+0x4b564d00 to 0x4b564dff. There are MSRs outside this area,
-+but they are deprecated and their use is discouraged.
-+
-+Custom MSR list
-+--------
-+
-+The current supported Custom MSR list is:
-+
-+MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
-+
-+	data: physical address of a memory area. This memory is expected to
-+	hold a copy of the following structure:
-+
-+	struct pvclock_wall_clock {
-+		u32   version;
-+		u32   sec;
-+		u32   nsec;
-+	} __attribute__((__packed__));
-+
-+	whose data will be filled in by the hypervisor. The hypervisor is only 
-+	guaranteed to update this data at the moment of MSR write.
-+	Users that want to reliably query this information more than once have
-+	to write more than once to this MSR. Fields have the following meanings:
-+
-+		version: guest has to check version before and after grabbing
-+		time information and check that they are both equal and even.
-+		An odd version indicates an in-progress update.
-+
-+		sec: number of seconds for wallclock.
-+
-+		nsec: number of nanoseconds for wallclock.
-+
-+	Note that although MSRs are per-CPU entities, the effect of this
-+	particular MSR is global.
-+
-+	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+MSR_KVM_SYSTEM_TIME_NEW:  0x4b564d01
-+
-+	data: physical address of a memory area. This memory is expected to
-+	hold a copy of the following structure:
-+
-+	struct pvclock_vcpu_time_info {
-+		u32   version;
-+		u32   pad0;
-+		u64   tsc_timestamp;
-+		u64   system_time;
-+		u32   tsc_to_system_mul;
-+		s8    tsc_shift;
-+		u8    flags;
-+		u8    pad[2];
-+	} __attribute__((__packed__)); /* 32 bytes */
-+
-+	whose data will be filled in by the hypervisor periodically. Only one
-+	write, or registration, is needed for each VCPU. The interval between
-+	updates of this structure is arbitrary and implementation-dependent.
-+	Fields have the following meanings:
-+
-+		version: guest has to check version before and after grabbing
-+		time information and check that they are both equal and even.
-+		An odd version indicates an in-progress update.
-+
-+		tsc_timestamp: the tsc value at the current VCPU at the time
-+		of the update of this structure. Guests can subtract this value
-+		from current tsc to derive a notion of elapsed time since the
-+		structure update.
-+
-+		system_time: the current system time at the time this structure
-+		was last updated. Unit is nanoseconds.
-+
-+		tsc_to_system_mul: a function of the tsc frequency. One has
-+		to multiply any tsc-related quantity by this value to get
-+		a value in nanoseconds, besides dividing by 2^tsc_shift
-+
-+		tsc_shift: cycle to nanosecond divider, as a power of two, to
-+		allow for shift rights. One has to shift right any tsc-related
-+		quantity by this value to get a value in nanoseconds, besides
-+		multiplying by tsc_to_system_mul.
-+
-+		flags: bits in this field indicate extended capabilities
-+		coordinated between the guest and the hypervisor. Availability
-+		of specific flags has to be checked in 0x40000001 cpuid leaf.
-+		Refer to cpuid.txt for details.
-+
-+	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+
-+MSR_KVM_WALL_CLOCK:  0x11
-+
-+	data and functioning: same as MSR_KVM_WALL_CLOCK_NEW. Use that instead.
-+
-+	This MSR falls outside the reserved KVM range and may be removed in the
-+	future. Its usage is deprecated.
-+
-+	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
-+MSR_KVM_SYSTEM_TIME: 0x12
-+
-+	data and functioning: same as MSR_KVM_SYSTEM_TIME_NEW. Use that instead.
-+
-+	This MSR falls outside the reserved KVM range and may be removed in the
-+	future. Its usage is deprecated.
-+
-+	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
-+	leaf prior to usage. 
-+
--- 
-1.6.2.2
+--=-=-=
+Content-Type: application/pgp-signature
 
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+
+iEYEARECAAYFAkv9b+cACgkQHUdvYGzw6vdxbACdF6chPVnuc2k0q8CJmG1hT3Vv
+JZQAnit0uPphvLnHaDkNXWJMuMK4Nw/J
+=ZeFY
+-----END PGP SIGNATURE-----
+--=-=-=--
