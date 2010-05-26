@@ -1,57 +1,77 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754160Ab0EZPtZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:49:25 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:55490 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752146Ab0EZPtY (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:49:24 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:content-transfer-encoding
-         :in-reply-to:user-agent;
-        b=d9D4HlP8v/TfyalhIlRoJoOwQUU7FWwuVp5FhigUgsRRvIB8J++nyY7DX2RoEuVVFh
-         9O0JHZ55f2JdLnRZL1KbwRrjy/lNG6KQ+FKwK6uhKt4i6N+cHg/OkO/jpGuVKlXihnzA
-         o6msr8hSn2/18nXicOcyAItsfO6uySDjLliFA=
-Date: Wed, 26 May 2010 17:49:20 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: =?iso-8859-1?Q?Am=E9rico?= Wang <xiyou.wangcong@gmail.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Ingo Molnar <mingo@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [Patch] tracing: remove boot tracer
-Message-ID: <20100526154918.GA5299@nowhere>
-References: <1274815906.9757.83.camel@cndougla-ubuntu> <1274816768.22648.220.camel@gandalf.stny.rr.com> <20100525201736.GB5370@nowhere> <20100526105753.GA5677@cr0.nay.redhat.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-1
-Content-Disposition: inline
-Content-Transfer-Encoding: 8bit
-In-Reply-To: <20100526105753.GA5677@cr0.nay.redhat.com>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	id S1754880Ab0EZPtr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:49:47 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:39085 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754457Ab0EZPtp (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:49:45 -0400
+Date: Wed, 26 May 2010 17:49:40 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Florian Mickler <florian@mickler.org>
+Newsgroups: gmane.linux.kernel,gmane.linux.ports.arm.omap
+Cc: Peter Zijlstra <peterz@infradead.org>, Alan Cox <alan@lxorguk.ukuu.org.uk>,
+       Vitaly Wool <vitalywool@gmail.com>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526174940.1140370d@schatten.dmk.lab>
+In-Reply-To: <20100526174735.2613c1d2@schatten.dmk.lab>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005242049.18920.rjw@sisk.pl>
+	<87wrusvrqe.fsf@deeprootsystems.com>
+	<201005250138.16293.rjw@sisk.pl>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
+	<20100526171106.0e44a736@schatten.dmk.lab>
+	<1274886947.1674.1757.camel@laptop>
+	<20100526174049.5f803b4a@schatten.dmk.lab>
+	<1274888700.1674.1760.camel@laptop>
+	<20100526174735.2613c1d2@schatten.dmk.lab>
+X-Newsreader: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 06:57:53PM +0800, Américo Wang wrote:
-> On Tue, May 25, 2010 at 10:17:43PM +0200, Frederic Weisbecker wrote:
-> >On Tue, May 25, 2010 at 03:46:08PM -0400, Steven Rostedt wrote:
-> >> > CONFIG_BOOT_TRACER=y (no performance impact by default)
-> >> 
-> >> But this tracer is pretty useless. It gives no more information than
-> >> debug_initcalls.
-> >
-> >
-> >
-> >Yeah it's pretty useless. And these informations can also be displayed
-> >through printk on boot so...
-> 
-> 
-> Then just remove it.
-> 
-> Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
+On Wed, 26 May 2010 17:47:35 +0200
+Florian Mickler <florian@mickler.org> wrote:
 
+> On Wed, 26 May 2010 17:45:00 +0200
+> Peter Zijlstra <peterz@infradead.org> wrote:
+> 
+> > On Wed, 2010-05-26 at 17:40 +0200, Florian Mickler wrote:
+> > > On Wed, 26 May 2010 17:15:47 +0200
+> > > Peter Zijlstra <peterz@infradead.org> wrote:
+> > > 
+> > > > On Wed, 2010-05-26 at 17:11 +0200, Florian Mickler wrote:
+> > > > > I'm not saying that your argument is not valid. But why don't you look
+> > > > > at suspend blockers as a contract between userspace and kernelspace? An
+> > > > > Opt-In to the current guarantees the kernel provides in the non-suspend
+> > > > > case.
+> > > > 
+> > > > That's backwards.
+> > > 
+> > > I think that's the point of it. 
+> > 
+> > Apparently, and you're not accepting that we're telling you we think its
+> > a singularly bad idea. Alan seems to have the skill to clearly explain
+> > why, I suggest you re-read his emails again.
+> 
+> I'm sorry if I offend you. I indeed read Alan's emails. It's just they
+> have more content than yours. So it takes longer. 
+> 
+> Cheers,
+> Flo
 
-Queued, thanks!
-
+p.s.: also they encourage me to think more before answering. 
