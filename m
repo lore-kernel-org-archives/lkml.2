@@ -1,70 +1,61 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759174Ab0EZCnL (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 22:43:11 -0400
-Received: from TYO201.gate.nec.co.jp ([202.32.8.193]:37745 "EHLO
-	tyo201.gate.nec.co.jp" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1758814Ab0EZCnJ (ORCPT
+	id S1759197Ab0EZCrw (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 22:47:52 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:52271 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1759071Ab0EZCrv convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 22:43:09 -0400
-Message-ID: <4BFC896A.6050306@ct.jp.nec.com>
-Date: Wed, 26 May 2010 11:37:30 +0900
-From: Kiyoshi Ueda <k-ueda@ct.jp.nec.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090825)
+	Tue, 25 May 2010 22:47:51 -0400
+Message-ID: <4BFC8B0D.2060106@cn.fujitsu.com>
+Date: Wed, 26 May 2010 10:44:29 +0800
+From: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
 MIME-Version: 1.0
-To: Mike Snitzer <snitzer@redhat.com>
-CC: Jens Axboe <jens.axboe@oracle.com>, dm-devel@redhat.com,
-       Alasdair Kergon <agk@redhat.com>, linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] block: avoid unconditionally freeing previously allocated
- request_queue
-References: <1274744795-9825-1-git-send-email-snitzer@redhat.com> <1274744795-9825-3-git-send-email-snitzer@redhat.com> <4BFBB21A.3030105@ct.jp.nec.com> <20100525124912.GA7447@redhat.com> <20100525163455.GA10155@redhat.com>
-In-Reply-To: <20100525163455.GA10155@redhat.com>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
+To: Avi Kivity <avi@redhat.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, Joerg Roedel <joerg.roedel@amd.com>,
+       LKML <linux-kernel@vger.kernel.org>, KVM list <kvm@vger.kernel.org>
+Subject: [PATCH 1/2] KVM: SVM: fix compiling warning
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Mike,
+fix:
 
-On 05/26/2010 01:34 AM +0900, Mike Snitzer wrote:
-> Mike Snitzer <snitzer@redhat.com> wrote:
->> Kiyoshi Ueda <k-ueda@ct.jp.nec.com> wrote:
->>>> +/*
->>>> + * Fully initialize a request-based queue (->elevator, ->request_fn, etc).
->>>> + */
->>>> +static int dm_init_request_based_queue(struct mapped_device *md)
->>>> +{
->>>> +	struct request_queue *q = NULL;
->>>> +
->>>> +	/* Avoid re-initializing the queue if already fully initialized */
->>>> +	if (!md->queue->elevator) {
->>>> +		/* Fully initialize the queue */
->>>> +		q = blk_init_allocated_queue(md->queue, dm_request_fn, NULL);
->>>> +		if (!q)
->>>> +			return 0;
->>>
->>> When blk_init_allocated_queue() fails, the block-layer seems not to
->>> guarantee that the queue is still available.
->>
->> Ouch, yes this portion of blk_init_allocated_queue_node() is certainly
->> problematic:
->>
->>         if (blk_init_free_list(q)) {
->>                 kmem_cache_free(blk_requestq_cachep, q);
->>                 return NULL;
->>         }
+arch/x86/kvm/svm.c: In function ‘is_erratum_383’:
+arch/x86/kvm/svm.c:1459: warning: integer constant is too large for ‘long’ type
+arch/x86/kvm/svm.c: In function ‘svm_handle_mce’:
+arch/x86/kvm/svm.c:1490: warning: unused variable ‘kvm_run’
 
-Not only that.  The blk_put_queue() in blk_init_allocated_queue_node()
-will also free the queue:
+Signed-off-by: Xiao Guangrong <xiaoguangrong@cn.fujitsu.com>
+---
+ arch/x86/kvm/svm.c |    4 +---
+ 1 files changed, 1 insertions(+), 3 deletions(-)
 
-	if (!elevator_init(q, NULL)) {
-		blk_queue_congestion_threshold(q);
-		return q;
-	}
+diff --git a/arch/x86/kvm/svm.c b/arch/x86/kvm/svm.c
+index 65324a0..02ea5cf 100644
+--- a/arch/x86/kvm/svm.c
++++ b/arch/x86/kvm/svm.c
+@@ -1456,7 +1456,7 @@ static bool is_erratum_383(void)
+ 	/* Bit 62 may or may not be set for this mce */
+ 	value &= ~(1ULL << 62);
+ 
+-	if (value != 0xb600000000010015)
++	if (value != 0xb600000000010015ULL)
+ 		return false;
+ 
+ 	/* Clear MCi_STATUS registers */
+@@ -1487,8 +1487,6 @@ static void svm_handle_mce(struct vcpu_svm *svm)
+ 		 * Erratum 383 triggered. Guest state is corrupt so kill the
+ 		 * guest.
+ 		 */
+-		struct kvm_run *kvm_run = svm->vcpu.run;
+-
+ 		pr_err("KVM: Guest triggered AMD Erratum 383\n");
+ 
+ 		set_bit(KVM_REQ_TRIPLE_FAULT, &svm->vcpu.requests);
+-- 
+1.6.1.2
 
-	blk_put_queue(q);
-	return NULL;
-
-Thanks,
-Kiyoshi Ueda
