@@ -1,85 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934863Ab0EZXNd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:13:33 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:35598 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757433Ab0EZXNa convert rfc822-to-8bit (ORCPT
+	id S934885Ab0EZXNs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:13:48 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:33869 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934489Ab0EZXNq convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:13:30 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=LRxH2iOmp2oivaQb5XbWWiBeP+slFVhY/85DfFlo6G/5KdwnN+59m9lkVdk2tteBu
-	VhBXN9P9L/3I/GcpKy57Q==
+	Wed, 26 May 2010 19:13:46 -0400
 MIME-Version: 1.0
-In-Reply-To: <20100526205002.GE9874@ghostprotocols.net>
-References: <1274664671-27385-1-git-send-email-acme@infradead.org>
-	<AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
-	<20100526005531.GA9874@ghostprotocols.net>
-	<AANLkTim-xv9mNEwGCueV47AoKh6AXbrdbTdCEwZHaEHJ@mail.gmail.com>
-	<20100526182351.GB9874@ghostprotocols.net>
-	<AANLkTimOEUKYXzdMOiWE6gRxR7vJX36VscdLjRroqGLq@mail.gmail.com>
-	<20100526193255.GC9874@ghostprotocols.net>
-	<AANLkTinxVsp1qtfqjlwl-ngrcD9IBDg6GoBnAk07ABuo@mail.gmail.com>
-	<20100526203315.GD9874@ghostprotocols.net>
-	<AANLkTimBC83Z8lSD8Drfpefl1D8Fpx-hYuQaZx4RyvSG@mail.gmail.com>
-	<20100526205002.GE9874@ghostprotocols.net>
-Date: Thu, 27 May 2010 01:13:24 +0200
-Message-ID: <AANLkTilDGRUQXZZhFKugOjXvWrb-mHyVTSBPSiWaJ0XH@mail.gmail.com>
-Subject: Re: [GIT PULL 0/2] perf annotate fix and report improvoment
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
+In-Reply-To: <1274871005.5882.5315.camel@twins>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<1274482015-30899-2-git-send-email-arve@android.com>
+	<1274482015-30899-3-git-send-email-arve@android.com>
+	<1274863428.5882.4860.camel@twins>
+	<AANLkTimTnzK1ByG2bE2gGjINxD_Pbvez7PFHo7Kzo9yk@mail.gmail.com>
+	<1274871005.5882.5315.camel@twins>
+Date: Wed, 26 May 2010 16:13:45 -0700
+Message-ID: <AANLkTilNUEhuPvCqh3lItwX3qBLyCghWRlep-aENwsiw@mail.gmail.com>
+Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
+	blockers from user-space
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
+       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 10:50 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Wed, May 26, 2010 at 10:40:24PM +0200, Stephane Eranian escreveu:
->> On Wed, May 26, 2010 at 10:33 PM, Arnaldo Carvalho de Melo
->> > I just tried it here with:
+2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2010-05-26 at 03:47 -0700, Arve Hjønnevåg wrote:
+>> 2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+>> > On Fri, 2010-05-21 at 15:46 -0700, Arve Hjønnevåg wrote:
+>> >> +To create a suspend blocker from user space, open the suspend_blocker
+>> >> special
+>> >> +device file:
+>> >> +
+>> >> +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
+>> >> +
+>> >> +then optionally call:
+>> >> +
+>> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_SET_NAME(strlen(name)), name);
+>> >> +
+>> >> +To activate the suspend blocker call:
+>> >> +
+>> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
+>> >> +
+>> >> +To deactivate it call:
+>> >> +
+>> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
+>> >> +
+>> >> +To destroy the suspend blocker, close the device:
+>> >> +
+>> >> +    close(fd);
 >> >
->> > [root@emilia linux-2.6-tip]# perf report -d libc-2.12.so
->> > [root@emilia linux-2.6-tip]# perf annotate -d libc-2.12.so
+>> > Urgh, please let the open() be BLOCK, the close() be UNBLOCK, and keep
+>> > the SET_NAME thing if you really care.
 >> >
->> > with
->> >
->> > [root@emilia linux-2.6-tip]# cat ~/.perfconfig
->> > [tui]
->> >
->> > Â  Â  Â  Â report = on
->> > Â  Â  Â  Â annotate = on
->> > [root@emilia linux-2.6-tip]#
->> >
->> > And it works as expected.
->
->> I did not explain my testcase enough ;-<
 >>
->> With TUI, I started from perf report -i perf.data, then chose to zoom into
->> the noploop symbol.
+>> That would be very inefficient.
 >
-> You can zoom into DSOs and threads, additionally you can Annotate
-> symbols, so you mean that annotating the 'noploop' in the 'noploop' DSO
-> didn't work?
+> How so? Anyway, since you admitted this thing isn't needed at all, I say
+> we remove it altogether.
 >
-Yes, it does not show me the assembly.
 
-> Lets try this offline thing ourselves, can you please put the
-> perf.data.tar.bz2 and the perf.data files somewhere I can grab? So that
-> I can try to do these operations here and figure out the problem :-)
->
-> I guess there is nothing sensitive in those files, lemme know if making
-> them available is not an option and I'll try other ways to get this
-> fixed.
->
-I will send you the files in a private email.
+I also said it was useful. I don't think we should drop it just
+because we can work around its absence.
+
+-- 
+Arve Hjønnevåg
