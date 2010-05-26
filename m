@@ -1,51 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756099Ab0EZQWj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:22:39 -0400
-Received: from king.tilera.com ([72.1.168.226]:14545 "EHLO king.tilera.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755054Ab0EZQWh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:22:37 -0400
-Message-ID: <4BFD4AC9.6080602@tilera.com>
-Date: Wed, 26 May 2010 12:22:33 -0400
-From: Chris Metcalf <cmetcalf@tilera.com>
-User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
-MIME-Version: 1.0
-To: Thomas Gleixner <tglx@linutronix.de>
-CC: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <alpine.LFD.2.00.1005252129441.2948@localhost.localdomain>
-In-Reply-To: <alpine.LFD.2.00.1005252129441.2948@localhost.localdomain>
-X-Enigmail-Version: 1.0.1
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 7bit
-X-OriginalArrivalTime: 26 May 2010 16:22:35.0664 (UTC) FILETIME=[A6A42900:01CAFCEF]
+	id S1756647Ab0EZQWo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:22:44 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:64924 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755054Ab0EZQWk (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 12:22:40 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=erqPALuzBIuIjeEdlnPnuXPDNqqUVDV1ShKh9roStmPqr2hjd3/CtyDZ5viZAxvaxF
+         WT2P3dK3AUZZUZHL5s0gKsjt26lCdC5fsua2PG3W7RuoluWZX4lAVJ+chF9ReCatd1OD
+         Xc+O8CUakE/iEKYxRjA4ubzlPVkiYzNfNfDd4=
+From: "Justin P. Mattock" <justinmattock@gmail.com>
+To: trivial@kernel.org
+Cc: linux-kernel@vger.kernel.org,
+       "Justin P. Mattock" <justinmattock@gmail.com>
+Subject: [PATCH] Typo in netdevice.h
+Date: Wed, 26 May 2010 09:22:40 -0700
+Message-Id: <1274890960-7416-1-git-send-email-justinmattock@gmail.com>
+X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 5/25/2010 4:12 PM, Thomas Gleixner wrote:
-> +unsigned long long sched_clock(void)
-> +{
-> +	u64 cycles;
-> +	u32 cyc_hi, cyc_lo;
-> +
-> +	if (unlikely(cyc2ns_mult == 0))
-> +		setup_clock();
->
->   Please initialize stuff _before_ it is called the first time and not
->   at some arbitrary point conditionally in a hotpath.
->   
+Fix missing "of" in comment.
 
-Looking more closely at this, the reason for this lazy initialization
-was that sched_clock() can be called from lockdep_init(), which runs way
-before any tasteful architecture-specific initialization can happen. 
-Perhaps the correct model is that during the early stages of boot, we
-are happy to shift by zero, multiply by zero, and claim the time is zero :-)
+ Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
 
+---
+ include/linux/netdevice.h |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
+
+diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
+index a1bff65..c761c90 100644
+--- a/include/linux/netdevice.h
++++ b/include/linux/netdevice.h
+@@ -775,7 +775,7 @@ struct net_device {
+ 	/*
+ 	 * This is the first field of the "visible" part of this structure
+ 	 * (i.e. as seen by users in the "Space.c" file).  It is the name
+-	 * the interface.
++	 * of the interface.
+ 	 */
+ 	char			name[IFNAMSIZ];
+ 
 -- 
-Chris Metcalf, Tilera Corp.
-http://www.tilera.com
-
+1.7.1.rc1.21.gf3bd6
 
