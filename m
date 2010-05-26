@@ -1,118 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757439Ab0EZUM2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:12:28 -0400
-Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:53289 "EHLO
+	id S1757538Ab0EZUMj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:12:39 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.122]:36876 "EHLO
 	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756880Ab0EZULo (ORCPT
+	with ESMTP id S1756862Ab0EZULo (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
 	Wed, 26 May 2010 16:11:44 -0400
-X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=EtJ5tPMKL4sA:10 a=yQWWgrYGNuUA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=eRV4yW0wae2RUGSZnZQA:9 a=Q2iANXbTAsMEt_15N9el5wg61UwA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Authority-Analysis: v=1.1 cv=EbJB9AiBqsyZPMVATYsj78CfMiBiOs+4P7kRKNQkfg0= c=1 sm=0 a=27zEix0Cy8oA:10 a=hO-oPbc3tlwA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=ZwnnlKpAyDbT_5MkDpEA:9 a=2F8-xdeJ_McpgAyFOiWsAvKUabMA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
 X-Cloudmark-Score: 0
 X-Originating-IP: 74.67.89.75
-Message-Id: <20100526201141.945159652@goodmis.org>
+Message-Id: <20100526201142.571159649@goodmis.org>
 User-Agent: quilt/0.48-1
-Date: Wed, 26 May 2010 16:10:41 -0400
+Date: Wed, 26 May 2010 16:10:42 -0400
 From: Steven Rostedt <rostedt@goodmis.org>
 To: linux-kernel@vger.kernel.org
 Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
        Frederic Weisbecker <fweisbec@gmail.com>,
        Li Zefan <lizf@cn.fujitsu.com>
-Subject: [PATCH 5/7] tracing: Remove test of NULL define_fields callback
+Subject: [PATCH 6/7] tracing: Remove redundant raw_init callbacks
 References: <20100526201036.951395509@goodmis.org>
-Content-Disposition: inline; filename=0005-tracing-Remove-test-of-NULL-define_fields-callback.patch
+Content-Disposition: inline; filename=0006-tracing-Remove-redundant-raw_init-callbacks.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 From: Li Zefan <lizf@cn.fujitsu.com>
 
-Every event (or event class) has it's define_fields callback,
-so the test is redundant.
+raw_init callback is optional.
 
 Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <4BFA37BC.8080707@cn.fujitsu.com>
+LKML-Reference: <4BFA37D4.7070500@cn.fujitsu.com>
 Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
 ---
- kernel/trace/trace_events.c        |   28 +++++++++++++---------------
- kernel/trace/trace_events_filter.c |    9 ---------
- 2 files changed, 13 insertions(+), 24 deletions(-)
+ kernel/trace/trace_export.c |    8 +-------
+ kernel/trace/trace_kprobe.c |   10 +---------
+ 2 files changed, 2 insertions(+), 16 deletions(-)
 
-diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
-index efe1ffd..b5d5b73 100644
---- a/kernel/trace/trace_events.c
-+++ b/kernel/trace/trace_events.c
-@@ -987,23 +987,21 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
- 		 		  id);
- #endif
+diff --git a/kernel/trace/trace_export.c b/kernel/trace/trace_export.c
+index 8536e2a..4ba44de 100644
+--- a/kernel/trace/trace_export.c
++++ b/kernel/trace/trace_export.c
+@@ -125,12 +125,6 @@ ftrace_define_fields_##name(struct ftrace_event_call *event_call)	\
  
--	if (call->class->define_fields) {
--		/*
--		 * Other events may have the same class. Only update
--		 * the fields if they are not already defined.
--		 */
--		head = trace_get_fields(call);
--		if (list_empty(head)) {
--			ret = call->class->define_fields(call);
--			if (ret < 0) {
--				pr_warning("Could not initialize trace point"
--					   " events/%s\n", call->name);
--				return ret;
--			}
-+	/*
-+	 * Other events may have the same class. Only update
-+	 * the fields if they are not already defined.
-+	 */
-+	head = trace_get_fields(call);
-+	if (list_empty(head)) {
-+		ret = call->class->define_fields(call);
-+		if (ret < 0) {
-+			pr_warning("Could not initialize trace point"
-+				   " events/%s\n", call->name);
-+			return ret;
- 		}
--		trace_create_file("filter", 0644, call->dir, call,
--				  filter);
+ #include "trace_entries.h"
+ 
+-static int ftrace_raw_init_event(struct ftrace_event_call *call)
+-{
+-	INIT_LIST_HEAD(&call->class->fields);
+-	return 0;
+-}
+-
+ #undef __entry
+ #define __entry REC
+ 
+@@ -158,7 +152,7 @@ static int ftrace_raw_init_event(struct ftrace_event_call *call)
+ struct ftrace_event_class event_class_ftrace_##call = {			\
+ 	.system			= __stringify(TRACE_SYSTEM),		\
+ 	.define_fields		= ftrace_define_fields_##call,		\
+-	.raw_init		= ftrace_raw_init_event,		\
++	.fields			= LIST_HEAD_INIT(event_class_ftrace_##call.fields),\
+ };									\
+ 									\
+ struct ftrace_event_call __used						\
+diff --git a/kernel/trace/trace_kprobe.c b/kernel/trace/trace_kprobe.c
+index faf7cef..fed5919 100644
+--- a/kernel/trace/trace_kprobe.c
++++ b/kernel/trace/trace_kprobe.c
+@@ -1214,11 +1214,6 @@ static void probe_event_disable(struct ftrace_event_call *call)
  	}
-+	trace_create_file("filter", 0644, call->dir, call,
-+			  filter);
+ }
  
- 	trace_create_file("format", 0444, call->dir, call,
- 			  format);
-diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
-index 330fefd..36d4010 100644
---- a/kernel/trace/trace_events_filter.c
-+++ b/kernel/trace/trace_events_filter.c
-@@ -639,9 +639,6 @@ static int init_subsystem_preds(struct event_subsystem *system)
- 	int err;
- 
- 	list_for_each_entry(call, &ftrace_events, list) {
--		if (!call->class || !call->class->define_fields)
--			continue;
+-static int probe_event_raw_init(struct ftrace_event_call *event_call)
+-{
+-	return 0;
+-}
 -
- 		if (strcmp(call->class->system, system->name) != 0)
- 			continue;
+ #undef DEFINE_FIELD
+ #define DEFINE_FIELD(type, item, name, is_signed)			\
+ 	do {								\
+@@ -1486,15 +1481,12 @@ static int register_probe_event(struct trace_probe *tp)
+ 	int ret;
  
-@@ -658,9 +655,6 @@ static void filter_free_subsystem_preds(struct event_subsystem *system)
- 	struct ftrace_event_call *call;
- 
- 	list_for_each_entry(call, &ftrace_events, list) {
--		if (!call->class || !call->class->define_fields)
--			continue;
--
- 		if (strcmp(call->class->system, system->name) != 0)
- 			continue;
- 
-@@ -1263,9 +1257,6 @@ static int replace_system_preds(struct event_subsystem *system,
- 	list_for_each_entry(call, &ftrace_events, list) {
- 		struct event_filter *filter = call->filter;
- 
--		if (!call->class || !call->class->define_fields)
--			continue;
--
- 		if (strcmp(call->class->system, system->name) != 0)
- 			continue;
- 
+ 	/* Initialize ftrace_event_call */
++	INIT_LIST_HEAD(&call->class->fields);
+ 	if (probe_is_return(tp)) {
+-		INIT_LIST_HEAD(&call->class->fields);
+ 		call->event.funcs = &kretprobe_funcs;
+-		call->class->raw_init = probe_event_raw_init;
+ 		call->class->define_fields = kretprobe_event_define_fields;
+ 	} else {
+-		INIT_LIST_HEAD(&call->class->fields);
+ 		call->event.funcs = &kprobe_funcs;
+-		call->class->raw_init = probe_event_raw_init;
+ 		call->class->define_fields = kprobe_event_define_fields;
+ 	}
+ 	if (set_print_fmt(tp) < 0)
 -- 
 1.7.0
 
