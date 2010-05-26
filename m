@@ -1,73 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756707Ab0EZSDr (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 14:03:47 -0400
-Received: from liberdade2.minaslivre.org ([74.50.53.203]:55427 "EHLO
-	liberdade.minaslivre.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754980Ab0EZSDq (ORCPT
+	id S1756915Ab0EZSHM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 14:07:12 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:56732 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751749Ab0EZSHI convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 14:03:46 -0400
-X-Greylist: delayed 539 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 14:03:46 EDT
-From: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
-To: linux-fbdev@vger.kernel.org
-Cc: linux-kernel@vger.kernel.org,
-       Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>,
-       Baruch Siach <baruch@tkos.co.il>,
-       =?UTF-8?q?Uwe=20Kleine-K=C3=B6nig?= 
-	<u.kleine-koenig@pengutronix.de>,
-       Sascha Hauer <s.hauer@pengutronix.de>
-Subject: [PATCH] fbdev: fix frame buffer devices menu
-Date: Wed, 26 May 2010 14:54:37 -0300
-Message-Id: <1274896477-6832-1-git-send-email-cascardo@holoscopio.com>
-X-Mailer: git-send-email 1.7.1
+	Wed, 26 May 2010 14:07:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=Hrm02xY+I3r83KYj2CaJvbgz7ONCBRcLiN8xMEuuX9zPc5UGTQzrRVTvY9AiYE7PRr
+         skquDPujSAJWJcoqpJFNa+wVW2AQNDaJWdaCpjR/qqsBl3hxVEaiPU1V93qprffF20yN
+         gjYyu0p0w/A83TbgaAIyyBnala5sot9WWEnEc=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8bit
+In-Reply-To: <1274895611.4467.805.camel@mulgrave.site>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+	<201005252344.37639.rjw@sisk.pl>
+	<AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
+	<1274863342.5882.4850.camel@twins>
+	<20100526112303.3fef15a4@schatten.dmk.lab>
+	<1274866402.5882.5051.camel@twins>
+	<AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
+	<1274868384.5882.5169.camel@twins>
+	<AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+	<1274869262.5882.5222.camel@twins>
+	<AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
+	<1274890736.4467.574.camel@mulgrave.site>
+	<AANLkTinv5C-TO48ZMP0ZV-ne7VbCAhXlARhYOJmhYoRa@mail.gmail.com>
+	<1274895611.4467.805.camel@mulgrave.site>
+Date: Wed, 26 May 2010 21:07:05 +0300
+X-Google-Sender-Auth: tkCqysCG7lRsK4b-ejbvqJzGkCU
+Message-ID: <AANLkTilKfYLBdlhdvhFY_nQFvCsIX6wpc7VOGOOROBrw@mail.gmail.com>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: Pekka Enberg <penberg@cs.helsinki.fi>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit f601441916d1e19291d0b4f044b4a7551e2924d0 has inserted the symbol
-HAVE_FB_IMX, which does not depend on FB after the menuconfig FB. This
-breaks the menu, presenting most of the drivers outside of it, when
-using menuconfig.
+On Wed, May 26, 2010 at 8:40 PM, James Bottomley
+<James.Bottomley@suse.de> wrote:
+>> On Wed, 2010-05-26 at 13:29 +0300, Pekka Enberg wrote:
+>> >> Yup, I don't quite get Arve's argument either. C code can interact
+>> >> with Java code (and vice versa) just fine in userspace.
+>>
+>> On Wed, May 26, 2010 at 7:18 PM, James Bottomley
+>> <James.Bottomley@suse.de> wrote:
+>> > This is an incorrect statement.  It's possible for java to call C via
+>> > the JNI, even though there are quite a few gotchas that mean not just
+>> > *any* C code can do it (been there, tripped over some of them, although
+>> > they were all ultimately ironed out).  It's very difficult for C to call
+>> > directly into Java without being specially coded because it involves
+>> > creating and managing a JVM (so in general, arbitrary C code can't do
+>> > this).  The usual way we do C -> Java is process to process via some
+>> > intermediary like RPC or Corba or SOAP (or even JSON) ... which gets
+>> > very messy for a mobile device.
+>>
+>> Incorrect statement how exactly? A JVM can do mmap(), for example,
+>> just fine through FileChannel.map() so there's no need for
+>> heavy-weight RPC.
+>
+> Incorrect in that an arbitrary C application can't link to a java API.
 
-Moving the symbol to the start of the file, just like HAVE_FB_ATMEL,
-fixes the problem without breaking it for iMX25 configurations (tested
-with ARCH=arm, no build).
+Dunno what you mean by "arbitrary" C application but yes, I do agree
+that using JNI is somewhat cumbersome. Not sure if that's relevant,
+though, as it can all be hidden in the framework APIs.
 
-Cc: Baruch Siach <baruch@tkos.co.il>
-Cc: Uwe Kleine-KÃ¶nig <u.kleine-koenig@pengutronix.de>
-Cc: Sascha Hauer <s.hauer@pengutronix.de>
-Signed-off-by: Thadeu Lima de Souza Cascardo <cascardo@holoscopio.com>
----
- drivers/video/Kconfig |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+> mmap and some other messaging (like signals) is just another form of
+> IPC ... the list I gave wasn't exhaustive.
 
-diff --git a/drivers/video/Kconfig b/drivers/video/Kconfig
-index 1e6fec4..3d94a14 100644
---- a/drivers/video/Kconfig
-+++ b/drivers/video/Kconfig
-@@ -8,6 +8,9 @@ menu "Graphics support"
- config HAVE_FB_ATMEL
- 	bool
- 
-+config HAVE_FB_IMX
-+	bool
-+
- source "drivers/char/agp/Kconfig"
- 
- source "drivers/gpu/vga/Kconfig"
-@@ -400,9 +403,6 @@ config FB_SA1100
- 	  If you plan to use the LCD display with your SA-1100 system, say
- 	  Y here.
- 
--config HAVE_FB_IMX
--	bool
--
- config FB_IMX
- 	tristate "Motorola i.MX LCD support"
- 	depends on FB && (HAVE_FB_IMX || ARCH_MX1 || ARCH_MX2)
--- 
-1.7.1
+The protocols you mentioned are meant for RPC (as in remote) and
+messaging, not for IPC which I'm assume is needed for the suspend
+manager process Peter is talking about.
 
+>>  Furthermore, the whole discussion is moot anyway as
+>> Android runs Dalvik which can be hacked to support whatever
+>> communication mechanism is the best choice here.
+>>
+>> So can we drop the whole "we need to do it in kernel because Java is
+>> hard" nonsense and concentrate on real issues?
+>
+> I've lost you.  This argument seems to hinge on whether or not you
+> believe that suspend in any form is a solution to the rogue app
+> problem ... whether it's implemented in Java or C is an ancillary issue.
+
+I'm responding to the original argument from Arve that C programs
+can't use the existing suspend manager because it's written in Java.
