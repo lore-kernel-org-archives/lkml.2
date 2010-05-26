@@ -1,51 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932162Ab0EZQol (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:44:41 -0400
-Received: from cantor.suse.de ([195.135.220.2]:49855 "EHLO mx1.suse.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755885Ab0EZQok (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:44:40 -0400
-Date: Thu, 27 May 2010 02:44:37 +1000
-From: Nick Piggin <npiggin@suse.de>
-To: Dave Chinner <david@fromorbit.com>
-Cc: linux-kernel@vger.kernel.org, linux-fsdevel@vger.kernel.org,
-       linux-mm@kvack.org, xfs@oss.sgi.com
-Subject: Re: [PATCH 0/5] Per superblock shrinkers V2
-Message-ID: <20100526164437.GE22536@laptop>
-References: <1274777588-21494-1-git-send-email-david@fromorbit.com>
+	id S1757079Ab0EZQs0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:48:26 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:39974 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754948Ab0EZQsZ convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 12:48:25 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=QWc2aPjkKaFHKGl6r86/ZLPRXNzIenvp95Y35oakFqRjWUVfE1FPRWtmUtW+mSSJbu
+         t8ZluVNTS4ORuohvxTmltQuw4z1wsGjdWZgSYwra8KzxD//4gccOb77Ko1E05f0eviiy
+         zklDMW7SChMqpMr9i/pq+wUGrG+MQu0xhXisE=
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274777588-21494-1-git-send-email-david@fromorbit.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <4BFD4DEC.3050101@gmail.com>
+References: <4BFCC813.50806@gmail.com> <AANLkTinLK5S9NcRE0fxwAqEKXndHrPj13MR-UWarKzPL@mail.gmail.com> 
+	<4BFD4DEC.3050101@gmail.com>
+From: "Luis R. Rodriguez" <mcgrof@gmail.com>
+Date: Wed, 26 May 2010 09:40:23 -0700
+Message-ID: <AANLkTikfr_HG0cL0CaZEQdaM1UVgbLIRsk20cvd1Jb26@mail.gmail.com>
+Subject: Re: [ath9k-devel] ath: Failed to stop TX DMA in 100 msec after 
+	killing last frame
+To: "Justin P. Mattock" <justinmattock@gmail.com>
+Cc: ath9k-devel@venema.h4ckr.net,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 06:53:03PM +1000, Dave Chinner wrote:
-> 
-> This series reworks the filesystem shrinkers. We currently have a
-> set of issues with the current filesystem shrinkers:
-> 
->         1. There is an dependency between dentry and inode cache
->            shrinking that is only implicitly defined by the order of
->            shrinker registration.
->         2. The shrinkers need to walk the superblock list and pin
->            the superblock to avoid unmount races with the sb going
->            away.
->         3. The dentry cache uses per-superblock LRUs and proportions
->            reclaim between all the superblocks which means we are
->            doing breadth based reclaim. This means we touch every
->            superblock for every shrinker call, and may only reclaim
->            a single dentry at a time from a given superblock.
->         4. The inode cache has a global LRU, so it has different
->            reclaim patterns to the dentry cache, despite the fact
->            that the dentry cache is generally the only thing that
->            pins inodes in memory.
->         5. Filesystems need to register their own shrinkers for
->            caches and can't co-ordinate them with the dentry and
->            inode cache shrinkers.
+On Wed, May 26, 2010 at 9:35 AM, Justin P. Mattock
+<justinmattock@gmail.com> wrote:
+> On 05/26/2010 09:33 AM, Luis R. Rodriguez wrote:
+>>
+>> On Wed, May 26, 2010 at 12:04 AM, Justin P. Mattock
+>> <justinmattock@gmail.com>  wrote:
+>>
+>>>
+>>> This is new:
+>>> [ 8660.899624] ath: Failed to stop TX DMA in 100 msec after killing last
+>>> frame
+>>> [ 8660.899676] ath: Unable to stop TxDMA. Reset HAL!
+>>>
+>>> I don't have hal installed!! should I be concerned?
+>>>
+>>
+>> No, the print can be changed to say "reseting hardware", patch welcomed.
+>>
+>>   Luis
+>>
+>>
+>
+> sure!! let me fix that up, and also send you something
+> else I had kicking around..
 
-Seems like a fairly good approach overall. Thanks.
+Sure, BTW, no need to use lkml unless you need further review, use
+instead just linux-wireless for patches/raves/rants for 802.11. In
+fact you can drop ath9k-devel when using linux-wireless.
 
+  Luis
