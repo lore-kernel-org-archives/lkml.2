@@ -1,79 +1,84 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933773Ab0EZCvz (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 22:51:55 -0400
-Received: from 27.mail-out.ovh.net ([91.121.30.210]:40059 "HELO
-	27.mail-out.ovh.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S932105Ab0EZCvy (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 22:51:54 -0400
-Message-ID: <4BFC8CC5.2000906@example.com>
-Date: Wed, 26 May 2010 04:51:49 +0200
-From: Piotr Hosowicz <piotr@hosowicz.com>
-Reply-To: piotr@hosowicz.com
-Organization: hosowicz.com
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100515 Icedove/3.0.4
-MIME-Version: 1.0
-To: piotr@hosowicz.com
-CC: Peter Zijlstra <peterz@infradead.org>, Ingo Molnar <mingo@elte.hu>,
-       linux-kernel@vger.kernel.org, Jens Axboe <jens.axboe@oracle.com>,
-       Divyesh Shah <dpshah@google.com>,
-       Andrew Morton <akpm@linux-foundation.org>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-References: <4BF9EC69.5030709@example.com> <1274777422.5882.591.camel@twins>	 <20100525094347.GA7881@elte.hu>  <4BFB9F0A.9040803@example.com>	 <1274781655.5882.765.camel@twins> <4BFBA0F8.9090908@example.com>	 <4BFBA6A2.4070405@example.com> <4BFBDAF3.3020504@example.com>	 <4BFBE004.5060101@example.com> <1274798197.5882.1491.camel@twins>	 <4BFBE357.2040602@example.com> <1274804101.5882.1805.camel@twins> <4BFBFF34.1030907@example.com> <4BFC820B.3060206@example.com>
-In-Reply-To: <4BFC820B.3060206@example.com>
-Content-Type: text/plain; charset=ISO-8859-2; format=flowed
-Content-Transfer-Encoding: 8bit
-X-Ovh-Tracer-Id: 10162091084378435954
-X-Ovh-Remote: 83.6.191.44 (abbb44.neoplus.adsl.tpnet.pl)
-X-Ovh-Local: 213.186.33.20 (ns0.ovh.net)
-X-Spam-Check: DONE|U 0.5/N
+	id S933931Ab0EZCwk (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 22:52:40 -0400
+Received: from cantor.suse.de ([195.135.220.2]:52725 "EHLO mx1.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S932105Ab0EZCwj (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 22:52:39 -0400
+Date: Wed, 26 May 2010 12:52:27 +1000
+From: Neil Brown <neilb@suse.de>
+To: Al Viro <viro@ZenIV.linux.org.uk>
+Cc: Trond Myklebust <trond.myklebust@fys.uio.no>,
+       Chuck Lever <chuck.lever@oracle.com>, linux-nfs@vger.kernel.org,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH] VFS: fix recent breakage of FS_REVAL_DOT
+Message-ID: <20100526125227.51b34f4f@notabene.brown>
+In-Reply-To: <20100525015822.GV31073@ZenIV.linux.org.uk>
+References: <20100524165756.2cfa54c4@notabene.brown>
+	<20100524115903.GP31073@ZenIV.linux.org.uk>
+	<20100525111405.04eaf924@notabene.brown>
+	<20100525015822.GV31073@ZenIV.linux.org.uk>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.20.1; x86_64-pc-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 26.05.2010 04:06, Piotr Hosowicz wrote:
-> On 25.05.2010 18:47, Piotr Hosowicz wrote:
->> On 25.05.2010 18:15, Peter Zijlstra wrote:
->>> On Tue, 2010-05-25 at 16:48 +0200, Piotr Hosowicz wrote:
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523288] BUG: using
->>>> smp_processor_id() in preemptible [00000000] code: shutdown/16256
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523296] caller is
->>>> dqstats_inc+0x19/0x2c
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523299] Pid: 16256, comm:
->>>> shutdown Tainted: P W 2.6.34-20100524-1752-patched #1
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523301] Call Trace:
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523308] [<ffffffff811a537b>]
->>>> debug_smp_processor_id+0xc7/0xe0
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523311] [<ffffffff8112c0ad>]
->>>> dqstats_inc+0x19/0x2c
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523314] [<ffffffff8112ee66>]
->>>> vfs_quota_sync+0x1b1/0x293
->>>> May 25 15:04:35 aapi205 kernel: [ 9694.523319] [<ffffffff8103bf21>] ?
->>>> wake_up_process+0x10/0x12
->>>
->>> That's a different issue, see:
->>>
->>> http://lkml.org/lkml/2010/5/22/164
->>
->> I do not understand fully - does that mean I have to revert commit
->> a7cf4145b? And how to do it? Let's assume I git-pulled the source. What
->> should be next steps.
->
-> Ok, my fault, now I know how to revert. But I still do not know if this
-> is the right solution you meant. In the meantime I build the kernel
-> after revert.
+On Tue, 25 May 2010 02:58:22 +0100
+Al Viro <viro@ZenIV.linux.org.uk> wrote:
 
-Ok, I reverted the commit, built the kernel and rebooted - the problem 
-is still the same during shutdown.
+> On Tue, May 25, 2010 at 11:14:05AM +1000, Neil Brown wrote:
+> 
+> > I must confess though that I don't feel I understand VFS name lookup properly
+> > any more.  Since intents were added it seems to have become much more obscure
+> > and complex.  I cannot help thinking that there must be a better way:
+> > distinguish between the various cases at a higher level so we don't need as
+> > many flags being passed around and interpreted by widely separate pieces of
+> > code.  I don't have a concrete proposal but I would certainly be interested
+> > to work on one if there were any hope of real change.
+> > Thoughts?
+> 
+> Intents are vile crap that has been introduced by the nfs folks to start
+> with...  I've been trying to localize the mess and it's got a _lot_ better
+> than it used to be a year ago, but they are still not gone.  And yes, I
+> plan to kill that crap.  Basically, most of the do_last() guts will become
+> a method that would get struct file *explicitly* and ask the fs to do
+> (possibly atomic) open.  With normal filesystems defaulting to what's there
+> right now.
 
-Regards,
+That sounds like the sort of direction I was imagining.  
+I note however that vfat uses intents in a way that would not be addressed by
+a '->do_last' method.  It wants to invalidate negative dentries in
+d_revalidate if they are the target of a rename (or another create), and
+presumably rename wouldn't use ->do_last?  Or maybe it would, but with a NULL
+file ??
 
-Piotr Hosowicz
+> 
+> The main obstacle at the moment is in ->d_revalidate() abuses.  NFS, CIFS
+> *and* autofs, the last one in a way that isn't really compatible with what
+> NFS et.al. are trying to do.  Overloading of ->d_revalidate() and ->lookup()
+> to do the work of open() doesn't help, and the horrors nfs4 piles on top
+> of that are even scarier.
+> 
+> _Another_ fine piece of something is ->follow_link() abuses, including
+> referrals' treatment.  Also tied to the previous messes.
+> 
+> We definitely will need to get VFS-to-fs APIs in that area changed; most of
+> the mess has been created by the deeply misguided efforts to keep the API
+> changes minimal.
+> 
+> As for the flags, quite a few will be gone once we split "opening the final
+> component" from the normal cases.  Google for lookup_instantiate_filp+shit
+> for details of these plans...
 
--- 
-- No wiesz, pijany i o trzeciej nad ranem wracasz do domu!?
-- A kto powiedzia³, ¿e wracam? Po gitarê tylko przyszed³em.
-NP: Slash - Ghost (Feat. Ian Astbury)
-NB: 2.6.34-20100526-0324-pchd-and-revtd
+I tried cloning
+   git://git.kernel.org/pub/scm/linux/kernel/git/viro/vfs-2.6.git
+and couldn't find anything in the 'untested' branch.  Did I look in the wrong
+place? Is there some work-in-progress I can explore?
+
+Thanks,
+NeilBrown
+
