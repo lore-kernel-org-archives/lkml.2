@@ -1,92 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932533Ab0EZVZg (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 17:25:36 -0400
-Received: from smtp.microsoft.com ([131.107.115.212]:20332 "EHLO
-	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1757099Ab0EZVZf convert rfc822-to-8bit (ORCPT
+	id S1757872Ab0EZV3J (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 17:29:09 -0400
+Received: from lennier.cc.vt.edu ([198.82.162.213]:57067 "EHLO
+	lennier.cc.vt.edu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755298Ab0EZV3H (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 17:25:35 -0400
-From: Haiyang Zhang <haiyangz@microsoft.com>
-To: Greg KH <gregkh@suse.de>
-CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
-       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
-       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
-       "Hank Janssen" <hjanssen@microsoft.com>
-Subject: RE: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization (modified)
-Thread-Topic: [PATCH 1/1] staging: hv: Fix race condition on IC channel
- initialization (modified)
-Thread-Index: AQHK/PQk4Q0BKOsjtUu1BYK6E0Db25JkpeQA//+OILA=
-Date: Wed, 26 May 2010 21:25:31 +0000
-Message-ID: <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
-References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
- <20100526205134.GC7343@suse.de>
-In-Reply-To: <20100526205134.GC7343@suse.de>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 26 May 2010 17:29:07 -0400
+X-Mailer: exmh version 2.7.2 01/07/2005 with nmh-1.2
+To: Minchan Kim <minchan.kim@gmail.com>
+Cc: Cesar Eduardo Barros <cesarb@cesarb.net>, linux-mm@kvack.org,
+       linux-kernel@vger.kernel.org, Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/3] mm: Swap checksum
+In-Reply-To: Your message of "Thu, 27 May 2010 00:31:44 +0900."
+             <20100526153144.GA3650@barrios-desktop>
+From: Valdis.Kletnieks@vt.edu
+References: <4BF81D87.6010506@cesarb.net> <20100523140348.GA10843@barrios-desktop> <4BF974D5.30207@cesarb.net> <AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com> <4BF9CF00.2030704@cesarb.net> <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com> <4BFA59F7.2020606@cesarb.net> <AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com> <4BFCF645.2050400@cesarb.net>
+            <20100526153144.GA3650@barrios-desktop>
+Mime-Version: 1.0
+Content-Type: multipart/signed; boundary="==_Exmh_1274909335_4200P";
+	 micalg=pgp-sha1; protocol="application/pgp-signature"
+Content-Transfer-Encoding: 7bit
+Date: Wed, 26 May 2010 17:28:55 -0400
+Message-ID: <22942.1274909335@localhost>
+X-Mirapoint-Received-SPF: 128.173.14.107 localhost Valdis.Kletnieks@vt.edu 2 pass
+X-Mirapoint-IP-Reputation: reputation=neutral-1,
+	source=Fixed,
+	refid=n/a,
+	actions=MAILHURDLE SPF TAG
+X-Junkmail-Info: (45) HELO_LOCALHOST
+X-Junkmail-Status: score=45/50, host=vivi.cc.vt.edu
+X-Junkmail-SD-Raw: score=unknown,
+	refid=str=0001.0A020204.4BFD9298.003A,ss=1,fgs=0,
+	ip=0.0.0.0,
+	so=2009-09-22 00:05:22,
+	dmn=2009-09-10 00:05:08,
+	mode=multiengine
+X-Junkmail-IWF: false
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-> From: Greg KH [mailto:gregkh@suse.de]
-> > +	static atomic_t ic_channel_initcnt = ATOMIC_INIT(0);
-> Why is this an atomic_t?
+--==_Exmh_1274909335_4200P
+Content-Type: text/plain; charset=us-ascii
 
-As discussed previously, I used atomic_t to handle more general case 
-if vmbus interrupts happen on every cpu.
-
-> > +			    VmbusChannelOpen(newChannel, 2 * PAGE_SIZE,
-> > +					     2 * PAGE_SIZE, NULL, 0,
-> > +					     hv_cb_utils[cnt].callback,
-> > +					     newChannel) == 0) {
-> > +				hv_cb_utils[cnt].channel = newChannel;
-> > +				mb();
+On Thu, 27 May 2010 00:31:44 +0900, Minchan Kim said:
+> On Wed, May 26, 2010 at 07:21:57AM -0300, Cesar Eduardo Barros wrote:
+> > far as I can see, does nothing against the disk simply failing to
+> > write and later returning stale data, since the stale checksum would
+> > match the stale data.
 > 
-> What is the mb() call for?  Why is it necessary?  (hint, if you need it,
-> something else is really wrong...)
+> Sorry. I can't understand your point. 
+> Who makes stale data? If any layer makes data as stale, integrity is up to 
+> the layer. Maybe I am missing your point. 
+> Could you explain more detail?
 
-It ensures the channel assignment happens before the wakeup call: 
-osd_WaitEventSet(ic_channel_ready), if the compiler optimization re-arrange 
-the execution order. 
+I'm pretty sure that what Cesar meant was that the following could happen:
 
-> Something wierd happened with your indentation here, it doesn't line up
-> properly.  That call to VmbusChannelOpen() needs to go in a full tab,
-> not 4 spaces.
-> 
-> Please always run your patch through the checkpatch.pl script before
-> sending it to me.
+1) Write block 11983 on the disk, checksum 34FE9B72.
+(... time passes.. maybe weeks)
+2) Attempt to write block 11983 on disk with checksum AE9F3581. The write fails
+due to a power failure or something.
+(... more time passes...)
+3) Read block 11983, get back data with checksum 34FE9B72. Checksum matches,
+and there's no indication that the write in (2) ever failed. The program
+proceeds thinking it's just read back the most recently written data, when in
+fact it's just read an older version of that block. Problems can ensue if the
+data just read is now out of sync with *other* blocks of data - instant data
+corruption.
 
-Sure, I will replace it with TAB. I already ran checkpatch.pl on 
-this patch -- no error:
-staging-next-2.6> scripts/checkpatch.pl 0525-Fix-race-condition-on-IC-channel-initialization.patch
-total: 0 errors, 0 warnings, 71 lines checked
+To be fair, we currently have the "read a stale block" problem after crashes
+already.  The issue is that BLK_DEV_INTEGRITY can't provide a solution here,
+but most users will form a mental image that it *is* in fact giving them
+that guarantee.  The resulting mismatch between reality and expectations
+cannot end well.
 
-0525-Fix-race-condition-on-IC-channel-initialization.patch has no obvious style problems and is ready for submission.
 
-> > +struct osd_waitevent *ic_channel_ready;
-> 
-> What's with the "ic_" naming scheme here?  It should be "hv_" right?
 
-IC stands for "integration components", such as Shutdown, Timesync, 
-Heartbeat, etc.
 
-> As you are using this "ic_channel_ready variable only within the
-> vmbus_bus_init() call, why not just make it local to there?  Then
-> there's no need to do the create/init/wait/free sequence outside the
-> init call.
-> 
-> The init call should just do all of this for us, right?
+--==_Exmh_1274909335_4200P
+Content-Type: application/pgp-signature
 
-The ic_channel_ready variable is called by VmbusChannelProcessOffer /  osd_WaitEventSet(ic_channel_ready) to wake up vmbus_init(). So it's 
-not a local variable.
+-----BEGIN PGP SIGNATURE-----
+Version: GnuPG v1.4.10 (GNU/Linux)
+Comment: Exmh version 2.5 07/13/2001
 
-Thanks,
+iD8DBQFL/ZKXcC3lWbTT17ARArvwAKDjdDRSG9nZPYMxp17U2yny93bRzACfeypD
+iMS08wX2QITrbRCgAw3QBIk=
+=H4Sf
+-----END PGP SIGNATURE-----
 
-- Haiyang
+--==_Exmh_1274909335_4200P--
 
