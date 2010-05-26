@@ -1,103 +1,76 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757274Ab0EZUTQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:19:16 -0400
-Received: from comal.ext.ti.com ([198.47.26.152]:33180 "EHLO comal.ext.ti.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756300Ab0EZUTO convert rfc822-to-8bit (ORCPT
+	id S1757477Ab0EZUUG (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:20:06 -0400
+Received: from e31.co.us.ibm.com ([32.97.110.149]:46575 "EHLO
+	e31.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1756831Ab0EZUUE (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:19:14 -0400
-From: "Arce, Abraham" <x0066660@ti.com>
-To: Eric Dumazet <eric.dumazet@gmail.com>, David Miller <davem@davemloft.net>
-CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
-       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
-       "tony@atomide.com" <tony@atomide.com>,
-       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>,
-       "Ha, Tristram" <Tristram.Ha@micrel.com>
-Date: Wed, 26 May 2010 15:19:07 -0500
-Subject: RE: NULL Pointer Deference: NFS & Telnet
-Thread-Topic: NULL Pointer Deference: NFS & Telnet
-Thread-Index: Acr8lF/cPinIP0UTTv+z/WKkPBr2OQAeDyCQ
-Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E3EE6A3@dlee03.ent.ti.com>
-References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
-	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
-	 <20100525.185236.193707791.davem@davemloft.net>
-	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
- <1274851741.25136.16.camel@edumazet-laptop>
-In-Reply-To: <1274851741.25136.16.camel@edumazet-laptop>
-Accept-Language: en-US
-Content-Language: en-US
-X-MS-Has-Attach: 
-X-MS-TNEF-Correlator: 
-acceptlanguage: en-US
-Content-Type: text/plain; charset="us-ascii"
-Content-Transfer-Encoding: 8BIT
-MIME-Version: 1.0
+	Wed, 26 May 2010 16:20:04 -0400
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Brian Bloniarz <bmb@athenacr.com>,
+       Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BFD6DAD.1000302@zytor.com>
+References: <4BF58B59.7080901@athenacr.com>
+	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
+	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
+	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>
+	 <1274834888.4678.66.camel@localhost.localdomain>
+	 <4BFC8C77.7020802@athenacr.com> <1274886299.1759.8.camel@work-vm>
+	 <4BFD4629.6040602@athenacr.com> <1274891109.1759.27.camel@work-vm>
+	 <4BFD6C2B.4070403@athenacr.com>  <4BFD6DAD.1000302@zytor.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 13:19:37 -0700
+Message-ID: <1274905177.3383.47.camel@localhost.localdomain>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Thanks Eric, David,
-
-[..]
-
-> > > > -		if (skb_shinfo(skb)->nr_frags) {
-> > > > +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
-> > > >  			int i;
-> > > >  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
-> > > >  				put_page(skb_shinfo(skb)->frags[i].page);
-> > >
-> > > skb_shinfo(skb)->nr_frags counts the number of entries contained
-> > > in the skb_shinfo(skb)->frags[] array.
-> > >
-> > > This has nothing to do with the frag list pointer,
-> > > skb_shinfo(skb)->frag_list, which is what skb_has_frags()
-> > > tests.
-> > >
-> > > You've got some kind of memory corruption going on and it
-> > > appears to have nothing to do with the code paths you're
-> > > playing with here.
-> >
-> > Do you have any recommendation on debugging technique/tool for this memory
-> corruption issue?
-
-[..]
-
-> It seems quite strange. You have a skb->nr_frags > 0 value, but a
-> frags[i].page = 0 value
+On Wed, 2010-05-26 at 11:51 -0700, H. Peter Anvin wrote:
+> On 05/26/2010 11:44 AM, Brian Bloniarz wrote:
+> > On 05/26/2010 12:25 PM, john stultz wrote:
+> >> Brian: is this something the NTPd folks actually want? Has anyone
+> >> checked with them before we hand down the solution from high upon on
+> >> lkml mountain?
+> > 
+> > I haven't checked, it's been a while since I dealt with
+> > this problem. The NTP maintainers definitely complain about the
+> > quick TSC calibration code like it's a bug:
+> > (e.g. http://www.mail-archive.com/questions@lists.ntp.org/msg02079.html).
+> > Anyway I'll reach out before I spend any time investing in
+> > a solution that they don't want (and you don't like :).
+> > 
 > 
-> You might add following function :
-> 
-> shinfo_check(struct sk_buff *skb)
-> {
-> 	struct skb_shared_info *shinfo = skb_shinfo(skb);
-> 	int i;
-> 
-> 	WARN_ON(shinfo->nr_frags >= MAX_SKB_FRAGS);
-> 	for (i = 0; i < shinfo->nr_frags; i++)
-> 		WARN_ON(!shinfo->frags[i].page);
-> }
-> 
-> And call it from various points, to check who corrupts your skb.
+> Yes, Prof. Mills in particular (for those who don't know, he's "Mr.
+> NTP") really gets upset about the way Linux does timekeeping.
+> Unfortunately it's not clear to me that he's willing to work with us as
+> opposed to wanting things to work exactly like BSD, and swive the
+> non-NTP users.
 
-By increasing the allocation length of our rx skbuff the corruption issue is fixed... I have increased it by 2... Were we writing outside our boundaries of skb data?
+Although I suspect his dislike for Linux is historical, as Roman
+reworked the ntp code to follow the NTPv4 reference implementation back
+in the 2.6.19 timeframe.
 
-Please let me know about this approach...
+However I'd be more then happy to try to address any specific
+deficiencies with Linux's NTP implementation if someone can better
+express Prof Mills' critiques are.
 
-diff --git a/drivers/net/ks8851.c b/drivers/net/ks8851.c
-index b4fb07a..6da81e1 100644
---- a/drivers/net/ks8851.c
-+++ b/drivers/net/ks8851.c
-@@ -504,7 +504,7 @@ static void ks8851_rx_pkts(struct ks8851_net *ks)
-                               ks->rc_rxqcr | RXQCR_SDA | RXQCR_ADRFE);
+thanks
+-john
 
-                if (rxlen > 0) {
--                       skb = netdev_alloc_skb(ks->netdev, rxlen + 2 + 8);
-+                       skb = netdev_alloc_skb(ks->netdev, rxlen + 4 + 8);
-                        if (!skb) {
 
-Best Regards
-Abraham
+
 
