@@ -1,66 +1,66 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756100Ab0EZWDP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:03:15 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44714 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752831Ab0EZWDN (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:03:13 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Matthew Garrett <mjg59@srcf.ucam.org>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-Date: Thu, 27 May 2010 00:03:58 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       "Linux-pm mailing list" <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Greg KH <gregkh@suse.de>, tytso@mit.edu,
-       James Bottomley <James.Bottomley@suse.de>
-References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org> <1274878665.27810.354.camel@twins> <20100526132051.GA1834@srcf.ucam.org>
-In-Reply-To: <20100526132051.GA1834@srcf.ucam.org>
+	id S1756605Ab0EZWDZ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:03:25 -0400
+Received: from mailb.microsoft.com ([131.107.115.215]:19643 "EHLO
+	smtp.microsoft.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752952Ab0EZWDW convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 18:03:22 -0400
+From: Hank Janssen <hjanssen@microsoft.com>
+To: Greg KH <gregkh@suse.de>, Haiyang Zhang <haiyangz@microsoft.com>
+CC: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>
+Subject: RE: [PATCH 1/1] staging: hv: Fix race condition on IC channel
+ initialization (modified)
+Thread-Topic: [PATCH 1/1] staging: hv: Fix race condition on IC channel
+ initialization (modified)
+Thread-Index: AQHK/PQk4Q0BKOsjtUu1BYK6E0Db25JkpeQA//+OILCAAIHWAP//jgAA
+Date: Wed, 26 May 2010 22:03:20 +0000
+Message-ID: <8AFC7968D54FB448A30D8F38F259C5621B02619C@TK5EX14MBXC116.redmond.corp.microsoft.com>
+References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526205134.GC7343@suse.de>
+ <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526214842.GA27908@suse.de>
+In-Reply-To: <20100526214842.GA27908@suse.de>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005270003.58277.rjw@sisk.pl>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 May 2010, Matthew Garrett wrote:
-> On Wed, May 26, 2010 at 02:57:45PM +0200, Peter Zijlstra wrote:
-> 
-> > I fail to see why. In both cases the woken userspace will contact a
-> > central governing task, either the kernel or the userspace suspend
-> > manager, and inform it there is work to be done, and please don't
-> > suspend now.
-> 
-> Thinking about this, you're right - we don't have to wait, but that does 
-> result in another problem. Imagine we get two wakeup events 
-> approximately simultaneously. In the kernel-level universe the kernel 
-> knows when both have been handled. In the user-level universe, we may 
-> have one task schedule, bump the count, handle the event, drop the count 
-> and then we attempt a suspend again because the second event handler 
-> hasn't had an opportunity to run yet. We'll then attempt a suspend and 
-> immediately bounce back up. That's kind of wasteful, although it'd be 
-> somewhat mitigated by checking that right at the top of suspend entry 
-> and returning -EAGAIN or similar.
 
-I still think it would cause a loop-alike behavior between the user space
-power manager and the kernel PM core to happen, because the power manager
-will always have to check the user space counter after a failing suspend
-attempt.
 
-Rafael
+> -----Original Message-----
+> From: Greg KH [mailto:gregkh@suse.de]
+> Sent: Wednesday, May 26, 2010 2:49 PM
+> To: Haiyang Zhang
+> Cc: 'linux-kernel@vger.kernel.org'; 'devel@driverdev.osuosl.org'; 
+> 'virtualization@lists.osdl.org'; Hank Janssen
+> Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel 
+> initialization (modified)
+> On Wed, May 26, 2010 at 09:25:31PM +0000, Haiyang Zhang wrote:
+>>> From: Greg KH [mailto:gregkh@suse.de]
+>>> What's with the "ic_" naming scheme here?  It should be "hv_"
+> right?
+>> 
+>> IC stands for "integration components", such as Shutdown, Timesync,
+>> Heartbeat, etc.
+> 
+> Yes, I know what it stands for, but the rest of the world doesn't :)
+
+Marketing in the their infinite wisdom decided that going forward they 
+should be called Linux Integration Service so IS. 
+
+Sigh..............
+
+We will change it to hv_  :)
+
+Hank.
+
