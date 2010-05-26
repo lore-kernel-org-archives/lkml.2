@@ -1,66 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756695Ab0EZP7M (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:59:12 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:36068 "EHLO mx1.redhat.com"
+	id S1756912Ab0EZP7T (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:59:19 -0400
+Received: from mgw1.diku.dk ([130.225.96.91]:46369 "EHLO mgw1.diku.dk"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755399Ab0EZP7I (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:59:08 -0400
-Subject: Re: [PATCH] do_generic_file_read: clear page errors when issuing a
-	fresh read of the page
-From: Larry Woodman <lwoodman@redhat.com>
-To: Rik van Riel <riel@redhat.com>
-Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
-       linux-mm@kvack.org, jmoyer@redhat.com, torvalds@linux-foundation.org
-In-Reply-To: <20100526114940.49f51028@annuminas.surriel.com>
-References: <20100526114940.49f51028@annuminas.surriel.com>
-Content-Type: text/plain
-Date: Wed, 26 May 2010 12:02:52 -0400
-Message-Id: <1274889772.20515.103.camel@dhcp-100-19-198.bos.redhat.com>
-Mime-Version: 1.0
-Content-Transfer-Encoding: 7bit
+	id S1755399Ab0EZP7Q (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:59:16 -0400
+Date: Wed, 26 May 2010 17:59:11 +0200 (CEST)
+From: Julia Lawall <julia@diku.dk>
+To: Greg Kroah-Hartman <gregkh@suse.de>, devel@driverdev.osuosl.org,
+       linux-kernel@vger.kernel.org, kernel-janitors@vger.kernel.org
+Subject: [PATCH 16/17] drivers/staging/vme/bridges: Add missing unlocks
+Message-ID: <Pine.LNX.4.64.1005261758540.23743@ask.diku.dk>
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 11:49 -0400, Rik van Riel wrote:
-> From: Jeff Moyer <jmoyer@redhat.com>
-> 
-> I/O errors can happen due to temporary failures, like multipath
-> errors or losing network contact with the iSCSI server. Because
-> of that, the VM will retry readpage on the page.
-> 
-> However, do_generic_file_read does not clear PG_error.  This
-> causes the system to be unable to actually use the data in the
-> page cache page, even if the subsequent readpage completes
-> successfully!
-> 
-> The function filemap_fault has had a ClearPageError before
-> readpage forever.  This patch simply adds the same to
-> do_generic_file_read.
-> 
-> Signed-off-by: Rik van Riel <riel@redhat.com>
-> Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
-> ---
->  mm/filemap.c |    6 ++++++
->  1 file changed, 6 insertions(+)
-> 
-> Index: linux-2.6.34/mm/filemap.c
-> ===================================================================
-> --- linux-2.6.34.orig/mm/filemap.c
-> +++ linux-2.6.34/mm/filemap.c
-> @@ -1106,6 +1106,12 @@ page_not_up_to_date_locked:
->  		}
->  
->  readpage:
-> +		/*
-> +		 * A previous I/O error may have been due to temporary
-> +		 * failures, eg. multipath errors.
-> +		 * PG_error will be set again if readpage fails.
-> +		 */
-> +		ClearPageError(page);
->  		/* Start the actual read. The read will unlock the page. */
->  		error = mapping->a_ops->readpage(filp, page);
->  
-Acked-by: Larry Woodman <lwoodman@redhat.com>
+From: Julia Lawall <julia@diku.dk>
 
+Add a spin_unlock and mutex_unlock missing on the error path.
+
+The semantic match that finds this problem is as follows:
+(http://coccinelle.lip6.fr/)
+
+// <smpl>
+@@
+expression E1;
+@@
+
+* spin_lock(E1,...);
+  <+... when != E1
+  if (...) {
+    ... when != E1
+*   return ...;
+  }
+  ...+>
+* spin_unlock(E1,...);
+// </smpl>
+
+Signed-off-by: Julia Lawall <julia@diku.dk>
+
+---
+ drivers/staging/vme/bridges/vme_ca91cx42.c |    8 ++++++--
+ 1 file changed, 6 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/staging/vme/bridges/vme_ca91cx42.c b/drivers/staging/vme/bridges/vme_ca91cx42.c
+index 0c82eb4..f38f7b7 100644
+--- a/drivers/staging/vme/bridges/vme_ca91cx42.c
++++ b/drivers/staging/vme/bridges/vme_ca91cx42.c
+@@ -900,7 +900,8 @@ unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+ 	/* Address must be 4-byte aligned */
+ 	if (pci_addr & 0x3) {
+ 		dev_err(dev, "RMW Address not 4-byte aligned\n");
+-		return -EINVAL;
++		result = -EINVAL;
++		goto out;
+ 	}
+ 
+ 	/* Ensure RMW Disabled whilst configuring */
+@@ -921,6 +922,7 @@ unsigned int ca91cx42_master_rmw(struct vme_master_resource *image,
+ 	/* Disable RMW */
+ 	iowrite32(0, bridge->base + SCYC_CTL);
+ 
++out:
+ 	spin_unlock(&(image->lock));
+ 
+ 	mutex_unlock(&(bridge->vme_rmw));
