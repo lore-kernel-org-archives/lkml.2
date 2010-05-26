@@ -1,79 +1,110 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757550Ab0EZXDM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:03:12 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:51482 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1753367Ab0EZXDK (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:03:10 -0400
-Date: Wed, 26 May 2010 16:02:52 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: piotr@hosowicz.com, linux-kernel@vger.kernel.org,
-       Jens Axboe <jens.axboe@oracle.com>, Divyesh Shah <dpshah@google.com>
-Subject: Re: BUG: using smp_processor_id() in preemptible [00000000] code:
- icedove-bin/5449
-Message-Id: <20100526160252.325f8357.akpm@linux-foundation.org>
-In-Reply-To: <1274777422.5882.591.camel@twins>
-References: <4BF9EC69.5030709@example.com>
-	<1274777422.5882.591.camel@twins>
-X-Mailer: Sylpheed 2.4.8 (GTK+ 2.12.9; x86_64-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	id S1758150Ab0EZXGC (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:06:02 -0400
+Received: from king.tilera.com ([72.1.168.226]:24252 "EHLO king.tilera.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755110Ab0EZXGA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 19:06:00 -0400
+Message-ID: <4BFDA954.7070701@tilera.com>
+Date: Wed, 26 May 2010 19:05:56 -0400
+From: Chris Metcalf <cmetcalf@tilera.com>
+User-Agent: Mozilla/5.0 (Windows; U; Windows NT 5.1; en-US; rv:1.9.1.9) Gecko/20100317 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Arnd Bergmann <arnd@arndb.de>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
+       linux-arch@vger.kernel.org
+Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
+References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <4BFBD68C.9060405@tilera.com> <4BFBE005.2070500@tilera.com> <201005251721.23782.arnd@arndb.de>
+In-Reply-To: <201005251721.23782.arnd@arndb.de>
+X-Enigmail-Version: 1.0.1
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-OriginalArrivalTime: 26 May 2010 23:05:59.0453 (UTC) FILETIME=[013944D0:01CAFD28]
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 10:50:22 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
-
-> On Mon, 2010-05-24 at 05:03 +0200, Piotr Hosowicz wrote:
-> > [  720.313607] BUG: using smp_processor_id() in preemptible [00000000] code: icedove-bin/5449
-> > [  720.313612] caller is native_sched_clock+0x3c/0x68
-> > [  720.313616] Pid: 5449, comm: icedove-bin Tainted: P            2.6.34-20100524-0407 #1
-> > [  720.313618] Call Trace:
-> > [  720.313624]  [<ffffffff811a533b>] debug_smp_processor_id+0xc7/0xe0
-> > [  720.313629]  [<ffffffff81009b87>] native_sched_clock+0x3c/0x68
-> > [  720.313634]  [<ffffffff81009a4d>] sched_clock+0x9/0xd
-> > [  720.313637]  [<ffffffff811823ec>] blk_rq_init+0x92/0x9d
-> > [  720.313641]  [<ffffffff81184227>] get_request+0x1bf/0x2c7
-> > [  720.313646]  [<ffffffff8118435c>] get_request_wait+0x2d/0x19d 
-> 
-> This comes from wreckage in the blk tree..
-> 
+ On 5/25/2010 11:21 AM, Arnd Bergmann wrote (in private email):
+> I just realized that the the sys_call_table is not yet
+> being generated automatically. The code is only present
+> in arch/score/kernel/sys_call_table.c.
 >
->
->
-> +unsigned long long local_clock(void)
-> +{
-> +	unsigned long long clock;
-> +	unsigned long flags;
-> +
-> +	local_irq_save(flags);
-> +	clock = sched_clock_cpu(smp_processor_id());
-> +	local_irq_restore(flags);
-> +
-> +	return clock;
-> +}
-> +
+> To do this correctly, you should take that file and
+> put it into kernel/sys_call_table.c, configured with
+> CONFIG_GENERIC_SYSCALLTABLE, which you then enable
+> in your arch/tile/Kconfig.
+> The unistd.h is also missing the compat syscall table
+> entries. It would be good to extend the macros to cover
+> that as well, similar to how it's done in
+> arch/powerpc/include/asm/systbl.h.
+>   
 
-NAK NAK NAK NAK!  QAK!  HAK!  Crap code!  Stop adding undocumented
-interfaces.  Just stop it.  Now.  Geeze.
+The hard part to applying this approach turned out to be the COMPAT code
+for our 64-bit platform.  The approach I am using now is to extend
+<linux/compat.h> with all the compat syscalls that are not currently
+prototyped, and then to include a a set of #defines that allow all the
+compat syscalls to be invoked as "compat_sys_foo()", e.g.
 
-How is anyone supposed to use this?  What are the semantics of this
-thing?  What are the units of its return value?  What is the base value
-of its return value?  Does it return different times on different CPUs?
-I assume so, otherwise why does sched_clock_cpu() exist?  <looks at
-the sched_clock_cpu() documentation, collapses in giggles>
-
-Because if it does return different times on different CPUs then any
-and all of the sites which use it are going to need to cope with
-time-going-backwards and I'm not at all confident that they get this
-right.
++/* Standard Linux functions that don't have "compat" versions. */
++#define compat_sys_accept sys_accept
++#define compat_sys_accept4 sys_accept4
++#define compat_sys_access sys_access
++#define compat_sys_acct sys_acct
+[...]
++#define compat_sys_uselib sys_uselib
++#define compat_sys_vfork sys_vfork
++#define compat_sys_vhangup sys_vhangup
++#define compat_sys_write sys_write
 
 
-Also, all these interfaces use a random mixture of `u64' and `unsigned
-long long', but that's a far less serious problem.
+With that in place, you can then use the "arch/score" mechanism to
+generate not just the main syscall table, but the compat table as well,
+by doing something like this:
+
++#undef __SYSCALL
++#define __SYSCALL(nr, call) [nr] = (compat_##call),
++
++void *compat_sys_call_table[__NR_syscalls] = {
++       [0 ... __NR_syscalls-1] = sys_ni_syscall,
++#include <asm/unistd.h>
++};
+
+
+To make this really work out, I also had to add a __SYSCALL_COMPAT
+notion to <asm-generic/unistd.h>; when this is set, the __NR_xxx values
+and the __SYSCALL stuff are set up as if for a 32-bit platform, even if
+the real platform is 64-bit, so that the header can be used to create
+the compat_sys_call_table[] properly.
+
+I fixed a few other minor glitches too, like the fact that we need
+sys_fadvise64_64 to be the "primary" syscall even in the 64-bit case
+(not sys_fadvise64), and adding an __ARCH_WANT_SYNC_FILE_RANGE2 flag to
+the generic ABI so platforms can request the use of that flavor of the
+ABI instead.  (It makes a difference on our platform.)  And I took
+Arnd's suggestion and added 16 architecture-specific syscalls from 244
+to 259.
+
+Note that it turns out not to be quite right to make the
+sys_call_table.c a generic file, at least in our case, since you really
+want to allow tweaking the actual syscall functions as part of
+generating the sys_call_table[] array.  For example, on our 32-bit
+platforms some of the 64-bit syscalls need wrappers since otherwise
+there is a mismatch between the generic code in libc that splits 64-bit
+values into 32-bit registers, and the actual registers pairs used by our
+ABI for native 64-bit values.  In any case it's only half a dozen lines
+of common code.  And in compat mode there are additional overrides you
+want, such as using sys_newstat() for compat_sys_stat64(), if your
+architecture will tolerate it, etc.
+
+I'll send a complete patch later once I've finished digesting all the
+various suggestions folks have sent, but this was a big enough piece
+that I thought I'd at least summarize the design back to LKML in case
+people would care to comment.
+
+-- 
+Chris Metcalf, Tilera Corp.
+http://www.tilera.com
+
 
