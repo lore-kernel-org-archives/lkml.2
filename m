@@ -1,46 +1,49 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757351Ab0EZKc2 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 06:32:28 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:63020 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751377Ab0EZKc0 (ORCPT
+	id S933929Ab0EZKcu (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 06:32:50 -0400
+Received: from casper.infradead.org ([85.118.1.10]:59180 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757375Ab0EZKct convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 06:32:26 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=pA80xg1aQlOIwiBu7/Q6Ts8f1AaZmkzauD2Y4YzD3wkxli6ZrN6G8g+lKIYmZHdfsO
-         094cki5CoB0ajxl9MTRhUafDrgaufX0pOyKvw7nB2kPh8l+1cd2Aq22M7lUa8hs64CDh
-         n0761cLXyNiDaM6yTHoBNIzuRK/UNuhhXioEU=
-Date: Wed, 26 May 2010 12:32:23 +0200
-From: Frederic Weisbecker <fweisbec@gmail.com>
-To: Christoph Hellwig <hch@infradead.org>
-Cc: Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
-       Steven Rostedt <rostedt@goodmis.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
-       LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
-Subject: Re: [PATCH] tracing: Remove kmemtrace ftrace plugin
-Message-ID: <20100526103222.GD5311@nowhere>
-References: <4BFCE849.7090804@cn.fujitsu.com> <20100526101617.GA14286@infradead.org> <20100526101837.GC5311@nowhere> <20100526102446.GA757@infradead.org>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526102446.GA757@infradead.org>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+	Wed, 26 May 2010 06:32:49 -0400
+Subject: Re: [PATCH 0/8] Suspend block api (version 8)
+From: Peter Zijlstra <peterz@infradead.org>
+To: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+In-Reply-To: <AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	 <201005242049.18920.rjw@sisk.pl> <87wrusvrqe.fsf@deeprootsystems.com>
+	 <201005250138.16293.rjw@sisk.pl> <1274863655.5882.4875.camel@twins>
+	 <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	 <1274867106.5882.5090.camel@twins>
+	 <AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
+	 <1274868593.5882.5185.camel@twins>
+	 <AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 May 2010 12:32:46 +0200
+Message-ID: <1274869966.5882.5262.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 06:24:46AM -0400, Christoph Hellwig wrote:
-> On Wed, May 26, 2010 at 12:18:38PM +0200, Frederic Weisbecker wrote:
-> > But does the userspace tool support them?
-> 
-> The blktrace userspace tool only uses the ioctl/debugfs code.
-> 
+On Wed, 2010-05-26 at 03:25 -0700, Arve Hjønnevåg wrote:
 
+> and on systems where the
+> same power state can be used from idle and suspend, we use suspend so
+> we can stay in the low power state for minutes to hours instead of
+> milliseconds to seconds.
 
-But which debugfs code? Nothing related to $(DEBUGFS)/tracing right?
+So don't you think working on making it possible for systems to be idle
+_that_ long would improve things for everybody? as opposed to this
+auto-suspend which only improves matters for those that (can) use it?
+
 
