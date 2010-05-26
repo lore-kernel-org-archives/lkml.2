@@ -1,80 +1,96 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755031Ab0EZMx1 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:53:27 -0400
-Received: from casper.infradead.org ([85.118.1.10]:34711 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753611Ab0EZMxZ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:53:25 -0400
-Subject: Re: [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
-       Linux PM <linux-pm@lists.linux-foundation.org>,
+	id S1752795Ab0EZMy6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:54:58 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:34278 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1754805Ab0EZMy4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:54:56 -0400
+Date: Wed, 26 May 2010 14:54:52 +0200
+From: Florian Mickler <florian@mickler.org>
+To: felipe.balbi@nokia.com
+Cc: Vitaly Wool <vitalywool@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
        LKML <linux-kernel@vger.kernel.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
        Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
-In-Reply-To: <20100526133510.6e9de670@lxorguk.ukuu.org.uk>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	 <1274863655.5882.4875.camel@twins>
-	 <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	 <1274867106.5882.5090.camel@twins>
-	 <AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
-	 <1274868593.5882.5185.camel@twins>
-	 <AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
-	 <1274869966.5882.5262.camel@twins>
-	 <AANLkTikRMBkoFxgaKsxMJ2lOMomTXpiHJDk3rVt0EtwM@mail.gmail.com>
-	 <1274870970.5882.5311.camel@twins>
-	 <AANLkTinlxsokwralwRAL9_YRQ7-SZUSvrGHTlRISA9bC@mail.gmail.com>
-	 <1274872357.27810.16.camel@twins>
-	 <20100526133510.6e9de670@lxorguk.ukuu.org.uk>
-Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Date: Wed, 26 May 2010 14:53:16 +0200
-Message-ID: <1274878396.27810.334.camel@twins>
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526145452.685337db@schatten.dmk.lab>
+In-Reply-To: <20100526123532.GA2629@nokia.com>
+References: <1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526122932.GB1990@nokia.com>
+	<20100526143323.7c6f8705@schatten.dmk.lab>
+	<20100526123532.GA2629@nokia.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
 Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 13:35 +0100, Alan Cox wrote:
+On Wed, 26 May 2010 15:35:32 +0300
+Felipe Balbi <felipe.balbi@nokia.com> wrote:
 
-> This is an area where machines are improving and where the ability to
-> do stuff like autosuspend, the technology like the OLPC screen and so on
-> create an incentive for the BIOS and platform people to improve their
-> bits of it.
-
-But do you think its a sensible thing to do? Explicitly not running
-runnable tasks just sounds wrong. Also, at the extreme end, super fast
-suspend is basically an efficient idle mode.
-
-Why would the code holding suspend blockers be any more or less
-important than any other piece of runnable code.
-
-In fact, having runnable but non suspend blocking tasks around will
-delay the completion of the suspend blocker, so will we start removing
-those?
-
-This whole thing introduces an artificial segregation of code. My 'cool'
-code is more important than your 'uncool' code. Without a clear
-definition of what makes code cool or not.
-
-> > So yes, I do think merging this will delay the effort in fixing
-> > userspace, simply because all the mobile/embedded folks don't care about
-> > it anymore.
+> Hi,
 > 
-> The mobile space probably doesn't care too much about many of the large
-> bloated desktop apps anyway and traditional embedded generally has a very
-> small fixed application set where the optimise both halves of the system
-> together.
+> On Wed, May 26, 2010 at 02:33:23PM +0200, ext Florian Mickler wrote:
+> >But then someone at the user side has to know what he is doing.
+> >
+> >I fear, if you target mass market without central distribution
+> >channels, you can not assume that much.
+> 
+> and that's enough to push hacks into the kernel ? I don't think so. Do 
+> it like apple and prevent multi-tasking for any non-apple applications 
+> :-p
+> 
+:) 
 
-Sure, but at least we share the kernel. It was said that the kernel
-generates too many wakeups (and iwlagn certainly is the top most waker
-on my laptop). Improvements to the kernel will benefit all, regardless
-of whatever userspace we run.
+It really comes down to a policy decision by the distribution maker.
+And I don't think kernel upstream should be the one to force one way or
+the other. So merging this patch set will allow android to continue
+their work _on mainline_ while everybody else can continue as before.
+
+All points about the impact on the kernel have already been raised. So
+you should be happy there. 
+
+Nonetheless, I really think the kernel needs to allow for the android
+way of power saving. It misses out on a big feature and a big user-base
+if not.
+
+Also I expect there to be synergies between android development and
+mainline kernel development _only_ if android development can use
+mainline kernel.
+
+And as for the quality of the "hack": I think you find this ugly, just
+because you don't like the concept of degrading user space guaranties on
+timers and stuff. 
+
+But look at it this way: Suspend blockers are a way for the kernel
+to make user space programs accountable for using the resource "power".
+If a user space program needs the "traditional" guaranties for
+functioning properly, it needs to take a suspend blocker. But _THEN_ it
+better be well behaved. This is a kind of contract between userspace
+and kernelspace.
+
+On the other hand, if I don't need these traditional guaranties on
+timers and stuff, I don't have to know device specific things about
+power consumption. I can just use whatever facilities the programming
+language provides without needing to worry about low level details.
+
+This is a _big_ plus for attracting 3rd party programs. (And of course
+the thing you don't like). 
+
+Cheers,
+Flo
+
+
 
 
