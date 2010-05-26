@@ -1,75 +1,98 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755257Ab0EZN67 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:58:59 -0400
-Received: from out3.smtp.messagingengine.com ([66.111.4.27]:45409 "EHLO
-	out3.smtp.messagingengine.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754752Ab0EZN6z (ORCPT
+	id S1755017Ab0EZN7M (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:59:12 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59484 "HELO
+	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with SMTP id S1755281Ab0EZN7D (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:58:55 -0400
-X-Sasl-enc: 9n8yuEtK9fNYHAhPeeOMBueqC5c2kJ1tdsqy388Cz9Hy 1274882306
-Message-ID: <4BFD2901.20800@ladisch.de>
-Date: Wed, 26 May 2010 15:58:25 +0200
-From: Clemens Ladisch <clemens@ladisch.de>
-User-Agent: Thunderbird 2.0.0.24 (Windows/20100228)
+	Wed, 26 May 2010 09:59:03 -0400
+Date: Wed, 26 May 2010 09:59:01 -0400 (EDT)
+From: Alan Stern <stern@rowland.harvard.edu>
+X-X-Sender: stern@iolanthe.rowland.org
+To: Dmitry Torokhov <dmitry.torokhov@gmail.com>
+cc: Arve =?iso-8859-1?B?SGr4bm5lduVn?= <arve@android.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>, Len Brown <len.brown@intel.com>,
+       Pavel Machek <pavel@ucw.cz>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+In-Reply-To: <20100525225544.GA5331@core.coreip.homeip.net>
+Message-ID: <Pine.LNX.4.44L0.1005260946430.1961-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-To: Jan Engelhardt <jengelh@medozas.de>
-CC: Takashi Iwai <tiwai@suse.de>, alsa-devel@alsa-project.org,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>
-Subject: Re: [alsa-devel] No mixers on ATI RS780 Azalia
-References: <alpine.LSU.2.01.1005261303170.19406@obet.zrqbmnf.qr>	<s5hmxvmzwwd.wl%tiwai@suse.de> <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
-In-Reply-To: <alpine.LSU.2.01.1005261413040.23865@obet.zrqbmnf.qr>
-Content-Type: text/plain; charset=us-ascii
-Content-Transfer-Encoding: 7bit
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Jan Engelhardt wrote:
-> On Wednesday 2010-05-26 14:10, Takashi Iwai wrote:
->>> /proc/asound/cards:
->>>  0 [SB  ]: HDA-Intel - HDA ATI SB
->>>            HDA ATI SB at 0xf0500000 irq 16
->>>  1 [HDMI]: HDA-Intel - HDA ATI HDMI
->>>            HDA ATI HDMI at 0xf0110000 irq 19
->>> 
->>> The soundcard responsible for the internal speaker is the 01:05.1/"HDMI" 
->>> one.
->>
->>Hmm?  HDMI output as the "internal" speaker is abnormal.
->>
->>> Under Windows XP, I see the following mixer elements for it:
->>> 
->>>  * Master Volume
->>>  * Wave
->>>  * SW Synth
->>>  * CD Player
->>> 
->>> Subsequently, there is sound (once I bump the volumes on these).
->>
->>There are definitely for the onboard sound, not for HDMI.
+On Tue, 25 May 2010, Dmitry Torokhov wrote:
+
+> > How is that not polling? If the user is holding down a key, the keypad
+> > driver has to block suspend, and user space will try to suspend again
+> > and again and again...
+> > 
 > 
-> The "SB" card has many more mixers (counting  10) and Windows XP also
-> shows about that many for SB. But neither in Linux nor Windows does
-> the SB card have any effect; I do have to turn the bars of the "HDMI"
-> one.
+> If your userpsace is that stupid - sure. However, you can:
 > 
-> Abnormal, well. It's (semi-)embedded, what did you expect.
+> 1. Notify the suspend manager process that he rest of your userspace is
+> busy handling keystrokes so that it does not try to suspend while there
+> are events pending.
+> 
+> 2. Wait a tiny bit after last application notified you that it finished
+> processing events.
 
-It is extremely unlike that your embedded device has separate chips to
-decode the HDMI sound signal and then convert it to analog, when the
-same is already available with the normal HDA device.
+This is more complicated than necessary.  Arve is wrong; my suggested 
+design does not require polling.
 
-Your alsa-info output shows that there is an ALC262 codec connected
-to the "SB" device; this chip wouldn't have been put there if it didn't
-have a function.
+The reason is simple: When a user process initiates an opportunistic 
+suspend, you make it wait in an interruptible sleep until all the 
+kernel suspend blockers are released.  No polling.  If another user 
+thread decides in the meantime that it needs to block the suspend, it 
+sends a signal to the power manager process.
 
-Try unmuting and raising both the Master and Beep controls.
+In fact, other threads should signal the power manager process whenever 
+they want to block or unblock suspends.  That way the power manager 
+process can spend all its time sleeping, without doing any polling.
 
-The Windows mixer elements are software-emulated and shown for all
-devices.  (I don't know why the only working device is labeled "HDMI",
-maybe someone just mixed up the HDA devices.)
+> So basically the difference is that with in-kernel suspend blockers,
+> there is a tiny window where we haven't started the suspend yet but are
+> about to the driver has a chance to prevent entire system from starting
+> sleep.
+> 
+> Without the blocker we may start suspending and will stop midcycle. We
+> may be even better off in the end since we could leave some devices
+> still powered down after aborting system-wide suspend.
 
+That's not so easy.  The design of the PM core requires that when the 
+system wakes up from suspend (or from an aborted suspend attempt), all 
+devices should go to full-power-on.  This is explained in section 6 of
+Documentation/power/runtime_pm.txt.
 
-Regards,
-Clemens
+The decision over whether to use kernel-space suspend blockers vs. 
+aborting suspends when queues are non-empty comes down to a tradeoff:
+
+	Suspend blockers involve a little more code (to create,
+	destroy, enable, and disable them) plus a little extra
+	runtime overhead each time an event occurs.  (Some people
+	may object to this extra overhead, although so far nobody
+	in this discussion has done so.)
+
+	Suspend blockers eliminate the extra overhead involved in
+	starting suspends that are just going to be aborted.
+
+	Suspend blockers offer extra debugging and accountability
+	(the user can find out which subsystems are responsible for
+	keeping the system awake).
+
+Which way you think the tradeoff should go is a subjective decision.  I 
+think that kernel suspend blockers are acceptable.
+
+Alan Stern
+
