@@ -1,92 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757221Ab0EZSKF (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 14:10:05 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:49209 "EHLO mx2.suse.de"
+	id S1757364Ab0EZSLq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 14:11:46 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:2593 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754081Ab0EZSKB (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 14:10:01 -0400
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Pavel Machek <pavel@ucw.cz>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Arve Hj?nnev?g <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu
-In-Reply-To: <20100526174258.GF9069@elf.ucw.cz>
-References: <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	 <1274869262.5882.5222.camel@twins>
-	 <AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
-	 <1274890736.4467.574.camel@mulgrave.site>
-	 <1274891308.1674.1766.camel@laptop>
-	 <1274892847.4467.674.camel@mulgrave.site>
-	 <1274893228.1674.1772.camel@laptop>
-	 <1274894042.4467.727.camel@mulgrave.site>
-	 <1274894602.1674.1780.camel@laptop>
-	 <1274895188.4467.783.camel@mulgrave.site>
-	 <20100526174258.GF9069@elf.ucw.cz>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 13:09:48 -0500
-Message-ID: <1274897388.4467.888.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
-Content-Transfer-Encoding: 7bit
+	id S1757078Ab0EZSLo (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 14:11:44 -0400
+From: Glauber Costa <glommer@redhat.com>
+To: kvm@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org, avi@redhat.com, zamsden@redhat.com
+Subject: [PATCH] Add Documentation/kvm/msr.txt
+Date: Wed, 26 May 2010 14:04:48 -0400
+Message-Id: <1274897088-8587-1-git-send-email-glommer@redhat.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 19:42 +0200, Pavel Machek wrote:
-> Hi!
-> 
-> > > > > The main and most important one being that suspend is a global property
-> > > > > and can/will hurt sensible tasks. It puts the whole task model upside
-> > > > > down.
-> > > > 
-> > > > OK, so I believe you have an android phone ... it already implements
-> > > > this model ... specifically what are the problems on that platform this
-> > > > causes?
-> > > 
-> > > I do not have one, nor have I ever written an application for it (nor
-> > > will I likely ever do that, since I detest Java), but I would expect an
-> > > application to run when its runnable.
-> > 
-> > OK, so I've got one ... tell me what I should see and I'll try to
-> > reproduce.
-> 
-> Umm... try to boot ordinary distro and see how it copes with
-> opportunistic suspend?
+This patch adds a file that documents the usage of KVM-specific
+MSRs.
 
-That's not really going to help, is it?  The issue I was curious are
-what are the bad things that result from interfering with the regular
-scheduling of processes ... because undeniably suspend (whether
-opportunistic or ordinary) does produce this interference.
+Signed-off-by: Glauber Costa <glommer@redhat.com>
+---
+ Documentation/kvm/msr.txt |  115 +++++++++++++++++++++++++++++++++++++++++++++
+ 1 files changed, 115 insertions(+), 0 deletions(-)
+ create mode 100644 Documentation/kvm/msr.txt
 
-I could boot debian on an android and have it suspend ... that's still
-not going to answer my question.
-
-> I do have android here, and of course it work well with custom
-> userland. Question is: can common distro be reasonably modified to
-> work with suspend blockers, in a way that's backward compatible?
-
-You mean how an app could run if it was compiled with suspend blockers
-but the platform doesn't support it?  That's a simple runtime switch in
-the library surely?
-
-James
-
+diff --git a/Documentation/kvm/msr.txt b/Documentation/kvm/msr.txt
+new file mode 100644
+index 0000000..c5110a2
+--- /dev/null
++++ b/Documentation/kvm/msr.txt
+@@ -0,0 +1,115 @@
++KVM-specific MSRs.
++Glauber Costa <glommer@redhat.com>, Red Hat Inc, 2010
++=====================================================
++
++KVM makes use of some custom MSRs to service some requests.
++At present, this facility is only used by kvmclock.
++
++Custom MSRs have a range reserved for them, that goes from
++0x4b564d00 to 0x4b564dff. There are MSRs outside this area,
++but they are deprecated and their use is discouraged.
++
++Custom MSR list
++--------
++
++The current supported Custom MSR list is:
++
++MSR_KVM_WALL_CLOCK:  0x11
++
++	data: physical address of a memory area. This memory is expected to
++	hold a copy of the following structure:
++
++	struct pvclock_wall_clock {
++		u32   version;
++		u32   sec;
++		u32   nsec;
++	} __attribute__((__packed__));
++
++	whose data will be filled in by the hypervisor. The hypervisor will only
++	touch this data once, at the moment of MSR write. Users that want to
++	query this information more than once, have to write more than once to
++	this MSR. Fields has the following meaning:
++
++		version: guest has to check version before and after grabbing
++		time information, and check that they are both equal, and even.
++		An odd version indicates an in-progress update.
++
++		sec: number of seconds for wallclock.
++
++		nsec: number of nanoseconds for wallclock.
++
++	Note that, although MSRs are per-CPU entities, the effect of this
++	particular MSR is global.
++
++	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++	This MSR falls outside the reserved KVM range, and may be removed in the
++	future. Its usage is deprecated.
++
++MSR_KVM_SYSTEM_TIME: 0x12
++
++	data: physical address of a memory area. This memory is expected to
++	hold a copy of the following structure:
++
++	struct pvclock_vcpu_time_info {
++		u32   version;
++		u32   pad0;
++		u64   tsc_timestamp;
++		u64   system_time;
++		u32   tsc_to_system_mul;
++		s8    tsc_shift;
++		u8    flags;
++		u8    pad[2];
++	} __attribute__((__packed__)); /* 32 bytes */
++
++	whose data will be filled in by the hypervisor periodically. Only one
++	write, or registration, is needed for each VCPU. The interval between
++	updates of this structure is arbitrary, and implementation-dependent.
++
++		version: guest has to check version before and after grabbing
++		time information, and check that they are both equal and even.
++		An odd version indicates an in-progress update.
++
++		tsc_timestamp: the tsc value at the current VCPU, at the time
++		of the update of this structure. Guests can subtract this value
++		from current tsc to derive a notion of elapsed time since the
++		structure update.
++
++		system_time: the current system time at the time this structure
++		was last updated. Unit is nanoseconds.
++
++		tsc_to_system_mul: a function of the tsc frequency. One has
++		to multiply any tsc-related quantity by this value to get
++		a value in nanoseconds, besides dividing by 2^tsc_shift
++
++		tsc_shift: cycle to nanosecond divider, as a power of two, to
++		allow for shift rights. One has to shift right any tsc-related
++		quantity by this value to get a value in nanoseconds, besides
++		multiplying by tsc_to_system_mul.
++
++		flags: bits in this field indicate extended capabilities
++		coordinated between the guest and the hypervisor. Availability
++		of specific flags has to be checked in 0x40000001 cpuid leaf.
++		Refer to cpuid.txt for details.
++
++	Availability of this MSR must be checked via bit 0 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++	This MSR falls outside the reserved KVM range, and may be removed in the
++	future. Its usage is deprecated.
++
++MSR_KVM_WALL_CLOCK_NEW:   0x4b564d00
++
++	data and functioning: same as MSR_KVM_WALL_CLOCK. Use this instead.
++
++	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
++	leaf prior to usage. 
++
++MSR_KVM_SYSTEM_TIME_NEW:  0x4b564d01
++
++	data and functioning: same as MSR_KVM_SYSTEM_TIME. Use this instead.
++
++	Availability of this MSR must be checked via bit 3 in 0x4000001 cpuid
++	leaf prior to usage. 
++
+-- 
+1.6.2.2
 
