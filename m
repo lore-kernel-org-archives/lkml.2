@@ -1,60 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754876Ab0EZNbA (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:31:00 -0400
-Received: from ist.d-labs.de ([213.239.218.44]:40916 "EHLO mx01.d-labs.de"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752691Ab0EZNa5 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:30:57 -0400
-Date: Wed, 26 May 2010 15:30:52 +0200
-From: Florian Mickler <florian@mickler.org>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: felipe.balbi@nokia.com, Vitaly Wool <vitalywool@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-Message-ID: <20100526153052.3b95621d@schatten.dmk.lab>
-In-Reply-To: <1274879247.27810.390.camel@twins>
-References: <87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526122932.GB1990@nokia.com>
-	<20100526143323.7c6f8705@schatten.dmk.lab>
-	<1274877689.27810.287.camel@twins>
-	<20100526150348.54ea29c7@schatten.dmk.lab>
-	<1274879247.27810.390.camel@twins>
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754932Ab0EZNdt (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:33:49 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:63750 "EHLO
+	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1754247Ab0EZNdq (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 09:33:46 -0400
+Date: Wed, 26 May 2010 15:33:43 +0200
+From: Christoph Egger <siccegge@cs.fau.de>
+To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
+       Greg Kroah-Hartman <gregkh@suse.de>, Greg Ungerer <gerg@uclinux.org>,
+       Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org
+Cc: vamos@i4.informatik.uni-erlangen.de
+Subject: [PATCH] config CONSOLE
+Message-ID: <20100526133343.GA7508@faui49.informatik.uni-erlangen.de>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 15:07:27 +0200
-Peter Zijlstra <peterz@infradead.org> wrote:
+Hi all!
 
-> On Wed, 2010-05-26 at 15:03 +0200, Florian Mickler wrote:
-> > The kernel can not win if it does not try to integrate any use of it.
-> 
-> If we'd integrate every patch that came to lkml, you'd run away
-> screaming.
-> 
-> We most certainly do not want to integrate _any_ use.
+	As part of the VAMOS[0] research project at the University of
+Erlangen we are looking at multiple integrity errors in linux'
+configuration system.
 
-We most certainly do want to integrate any use that is not harmful to
-others.
+	CONSOLE is such a generic term that maybe someone just
+expected this option exists. Or maybe it existed ages ago but I can't
+find any trace of it. Anyway that code has been dead for quite some
+time withoutanybody noticing so it's probably just unneeded.
 
-I don't buy the argument that this is harmful. 
+	Please keep me informed of this patch getting confirmed /
+merged so we can keep track of it.
 
-Cheers,
-Flo
+Regards
+
+	Christoph Egger
+
+[0] http://vamos1.informatik.uni-erlangen.de/
+
+----
+>From 4a3b6fda1bb3a229c7ea8ca8992ed2573f07e5ba Mon Sep 17 00:00:00 2001
+From: Christoph Egger <siccegge@cs.fau.de>
+Date: Wed, 26 May 2010 15:18:26 +0200
+Subject: [PATCH] There's no config CONSOLE
+
+as there's no config CONSOLE (never has been as far as I can tell) and
+noone has ever missed that piece of code, it should be safe to remove
+it making the kernel a tiny bit less complex.
+
+Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
+---
+ drivers/serial/68328serial.c |    7 -------
+ 1 files changed, 0 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
+index 3046386..193a242 100644
+--- a/drivers/serial/68328serial.c
++++ b/drivers/serial/68328serial.c
+@@ -78,10 +78,6 @@ struct m68k_serial *m68k_consinfo = 0;
+ 
+ #define M68K_CLOCK (16667000) /* FIXME: 16MHz is likely wrong */
+ 
+-#ifdef CONFIG_CONSOLE
+-extern wait_queue_head_t keypress_wait; 
+-#endif
+-
+ struct tty_driver *serial_driver;
+ 
+ /* number of characters left in xmit buffer before we ask for more */
+@@ -301,9 +297,5 @@ static void receive_chars(struct m68k_serial *info, unsigned short rx)
+ #endif /* CONFIG_MAGIC_SYSRQ */
+ 			}
+- 			/* It is a 'keyboard interrupt' ;-) */
+-#ifdef CONFIG_CONSOLE
+-			wake_up(&keypress_wait);
+-#endif			
+ 		}
+ 
+ 		if(!tty)
+-- 
+1.6.3.3
+
+
+
+
+
+
+
+
+
+
+
+
+
+
