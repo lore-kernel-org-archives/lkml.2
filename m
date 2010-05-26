@@ -1,83 +1,83 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934336Ab0EZG6T (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 02:58:19 -0400
-Received: from smtp-out.google.com ([216.239.44.51]:58692 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934225Ab0EZG6S convert rfc822-to-8bit (ORCPT
+	id S934346Ab0EZG73 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 02:59:29 -0400
+Received: from mail-wy0-f174.google.com ([74.125.82.174]:53126 "EHLO
+	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934264Ab0EZG72 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 02:58:18 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:content-transfer-encoding:x-system-of-record;
-	b=xgpUyXcEVN58xmaUYdsaNznfiR4/tiJizAVMN4j1aFoCUtNL+NOjKZBzmD/YzU3Cq
-	eGTZ+3YALkHMBHXyksa4w==
+	Wed, 26 May 2010 02:59:28 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:sender:in-reply-to:references:date
+         :x-google-sender-auth:message-id:subject:from:to:cc:content-type
+         :content-transfer-encoding;
+        b=wlSnCHfU+xQiH5ca6ZhnepufMqWAw7c/3zKuM7INrExlDJuuNZXAq/97/hhoLatdXc
+         fumbbmypPCe/ZiX/tun8X2BqDAGUAejgx6r1tUEKgzFAziYTZYqkuMGTQMHN1fmANt8y
+         XERfPpj37kdJVL1WlkbgoiosD1uNvrWwKqBCU=
 MIME-Version: 1.0
-In-Reply-To: <1274855658.3429.24.camel@minggr.sh.intel.com>
-References: <4bfbceef.e495e30a.5dae.61b6@mx.google.com>
-	<1274794518.5882.1280.camel@twins>
-	<AANLkTilEnIrY2HDdxDMdDIfkz8j1ueTbOf0CmD1y14ra@mail.gmail.com>
-	<1274796225.5882.1389.camel@twins>
-	<AANLkTinTfqLdRbgqRfn4Avl6bedB6xyLbRybwencYRiF@mail.gmail.com>
-	<AANLkTimWx4fnqA5hviwv8gOTH1eydC0SMllcmsQp8jSB@mail.gmail.com>
-	<1274801531.5882.1670.camel@twins>
-	<1274855658.3429.24.camel@minggr.sh.intel.com>
-Date: Wed, 26 May 2010 08:58:14 +0200
-Message-ID: <AANLkTikZFOVLVIr51D_R8hB2glXp9M70QvQLx0-zKaWO@mail.gmail.com>
-Subject: Re: [PATCH] perf_events: fix event scheduling issues introduced by 
-	transactional API (take 2)
-From: Stephane Eranian <eranian@google.com>
-To: Lin Ming <ming.m.lin@intel.com>
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       "eranian@gmail.com" <eranian@gmail.com>,
-       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
-       "mingo@elte.hu" <mingo@elte.hu>, "paulus@samba.org" <paulus@samba.org>,
-       "davem@davemloft.net" <davem@davemloft.net>,
-       "fweisbec@gmail.com" <fweisbec@gmail.com>,
-       "acme@infradead.org" <acme@infradead.org>,
-       "perfmon2-devel@lists.sf.net" <perfmon2-devel@lists.sf.net>
+In-Reply-To: <4BFC8617.9010501@codesourcery.com>
+References: <1274815467-14584-1-git-send-email-vapier@gentoo.org>
+	 <20100525210755.GA8920@linux-sh.org>
+	 <AANLkTinTbJ3yu9ElO32rnavnGwCrsItdDCl58KoeEW3j@mail.gmail.com>
+	 <4BFC8617.9010501@codesourcery.com>
+Date: Wed, 26 May 2010 08:59:26 +0200
+X-Google-Sender-Auth: xzJBaHeoVhSOzkuBBvEOu-ZDbPg
+Message-ID: <AANLkTilU133SjYfKGvUiQQ8v-CiecRYmKtH2tzAxL-3u@mail.gmail.com>
+Subject: Re: [PATCH] FLAT: allow arches to declare a larger alignment than the 
+	slab
+From: Geert Uytterhoeven <geert@linux-m68k.org>
+To: Jie Zhang <jie@codesourcery.com>
+Cc: Mike Frysinger <vapier.adi@gmail.com>, Paul Mundt <lethal@linux-sh.org>,
+       Mike Frysinger <vapier@gentoo.org>, uclinux-dev@uclinux.org,
+       David Howells <dhowells@redhat.com>,
+       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       microblaze-uclinux@itee.uq.edu.au, Michal Simek <monstr@monstr.eu>,
+       linux-m32r@ml.linux-m32r.org, Hirokazu Takata <takata@linux-m32r.org>,
+       linux-kernel@vger.kernel.org,
+       Yoshinori Sato <ysato@users.sourceforge.jp>
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: 8BIT
-X-System-Of-Record: true
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 8:34 AM, Lin Ming <ming.m.lin@intel.com> wrote:
-> On Tue, 2010-05-25 at 23:32 +0800, Peter Zijlstra wrote:
->> On Tue, 2010-05-25 at 17:02 +0200, Stephane Eranian wrote:
->> > Ok, the patch look good expect it needs:
->> >
->> > static int x86_pmu_commit_txn(const struct pmu *pmu)
->> > {
->> >         ......
->> >         /*
->> >          * copy new assignment, now we know it is possible
->> >          * will be used by hw_perf_enable()
->> >          */
->> >         memcpy(cpuc->assign, assign, n*sizeof(int));
->> >
->> >         cpuc->n_txn = 0;
->> >
->> >         return 0;
->> > }
->> >
->> > Because you always call cancel_txn() even when commit()
->> > succeeds. I don't really understand why. I think it could be
->> > avoided by clearing the group_flag in commit_txn() if it
->> > succeeds. It would also make the logical flow more natural. Why
->> > cancel something that has succeeded. You cancel when you fail/abort.
+On Wed, May 26, 2010 at 04:23, Jie Zhang <jie@codesourcery.com> wrote:
+> On 05/26/2010 07:17 AM, Mike Frysinger wrote:
 >>
->> Gah, I forgot about that. I think I suggested to Lin to do that and then
->> promptly forgot.
->
-> cancel_txn() clears the transaction flag, so it is needed after both
-> success and fail transaction, although the function name is a bit
-> misleading.
->
-> Peter's patch adds the clear of transaction flag into each
-> implementation of ->commit_txn.
->
-> So cancel_txn() is only called after fail transaction now.
->
-Yes and I think it is less prone to confusion now.
+>> i do not believe that is the reason for this, but unfortunately Jie is
+>> about the only one atm who knows the inner details as for why shared
+>> FLAT libraries requires 0x20 rather than just 0x4 alignment.  i do
+>> know that there are some gcc fortran tests that fail otherwise.
+>> hopefully he can remember details ;).
+>>
+> I encountered this issue when investigating some GCC test failures when
+> using FLAT. I don't remember if they were in GCC Fortran testsuite. Some
+> variables in those test cases were required to be aligned at a large
+> boundary, for example 16-byte. I found 0x20 was a reasonably large alignment
+> to fix all such failures in GCC testsuite.
+
+I'm no FLAT expert (except for the AmigaOS HUNK loader :-), but isn't
+the core of the
+issue that alignment requirements in the object file are no longer
+fulfilled after loading,
+as a FLAT segment in memory is just allocated using kmalloc(), which may now
+return 4-byte aligned blocks?
+
+>From looking at <linux/flat.h>, it looks like the FLAT binary format
+doesn't contain any
+alignment information? So if I put __attribute__((aligned(4096))) in a
+file, there's still
+no guarantee it will actually be in memory at a 4Ki-aligned address?
+
+Gr{oetje,eeting}s,
+
+						Geert
+
+--
+Geert Uytterhoeven -- There's lots of Linux beyond ia32 -- geert@linux-m68k.org
+
+In personal conversations with technical people, I call myself a hacker. But
+when I'm talking to journalists I just say "programmer" or something like that.
+							    -- Linus Torvalds
