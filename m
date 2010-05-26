@@ -1,133 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759188Ab0EZBvi (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:51:38 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:33402 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759151Ab0EZBvh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:51:37 -0400
-From: Xiaotian Feng <dfeng@redhat.com>
-To: x86@kernel.org
-Cc: linux-kernel@vger.kernel.org, Xiaotian Feng <dfeng@redhat.com>,
-       Thomas Gleixner <tglx@linutronix.de>, Ingo Molnar <mingo@redhat.com>,
-       "H. Peter Anvin" <hpa@zytor.com>,
-       Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>,
-       Jack Steiner <steiner@sgi.com>,
-       Suresh Siddha <suresh.b.siddha@intel.com>
-Subject: [PATCH V2] x86/pat: fix memory leak in free_memtype
-Date: Wed, 26 May 2010 09:51:10 +0800
-Message-Id: <1274838670-8731-1-git-send-email-dfeng@redhat.com>
-In-Reply-To: <1274832742.2892.549.camel@sbs-t61.sc.intel.com>
-References: <1274832742.2892.549.camel@sbs-t61.sc.intel.com>
+	id S933914Ab0EZBw3 (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:52:29 -0400
+Received: from 74-93-104-97-Washington.hfc.comcastbusiness.net ([74.93.104.97]:52485
+	"EHLO sunset.davemloft.net" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1759151Ab0EZBw0 (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Tue, 25 May 2010 21:52:26 -0400
+Date: Tue, 25 May 2010 18:52:36 -0700 (PDT)
+Message-Id: <20100525.185236.193707791.davem@davemloft.net>
+To: x0066660@ti.com
+Cc: netdev@vger.kernel.org, linux-kernel@vger.kernel.org,
+       linux-nfs@vger.kernel.org, linux-omap@vger.kernel.org, tony@atomide.com,
+       santosh.shilimkar@ti.com
+Subject: Re: NULL Pointer Deference: NFS & Telnet
+From: David Miller <davem@davemloft.net>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+	<27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+X-Mailer: Mew version 6.3 on Emacs 23.1 / Mule 6.0 (HANACHIRUSATO)
+Mime-Version: 1.0
+Content-Type: Text/Plain; charset=us-ascii
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-reserve_memtype will allocate memory for new memtype, but
-in free_memtype, after the memtype erased from rbtree, the
-memory is not freed.
+From: "Arce, Abraham" <x0066660@ti.com>
+Date: Tue, 25 May 2010 20:48:02 -0500
 
-Changes since V1:
-	make rbt_memtype_erase return erased memtype so that 
-	it can be freed in free_memtype.
+> diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> index f8abf68..eb81f76 100644
+> --- a/net/core/skbuff.c
+> +++ b/net/core/skbuff.c
+> @@ -334,7 +334,7 @@ static void skb_release_data(struct sk_buff *skb)
+>  	if (!skb->cloned ||
+>  	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
+>  			       &skb_shinfo(skb)->dataref)) {
+> -		if (skb_shinfo(skb)->nr_frags) {
+> +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
+>  			int i;
+>  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+>  				put_page(skb_shinfo(skb)->frags[i].page);
 
-Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
-Cc: Thomas Gleixner <tglx@linutronix.de>
-Cc: Ingo Molnar <mingo@redhat.com>
-Cc: "H. Peter Anvin" <hpa@zytor.com>
-Cc: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
-Cc: Jack Steiner <steiner@sgi.com>
-Cc: Suresh Siddha <suresh.b.siddha@intel.com>
----
- arch/x86/mm/pat.c          |   10 +++++++---
- arch/x86/mm/pat_internal.h |    6 +++---
- arch/x86/mm/pat_rbtree.c   |    7 ++++---
- 3 files changed, 14 insertions(+), 9 deletions(-)
+skb_shinfo(skb)->nr_frags counts the number of entries contained
+in the skb_shinfo(skb)->frags[] array.
 
-diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
-index bbe5502..bf2b5fa 100644
---- a/arch/x86/mm/pat.c
-+++ b/arch/x86/mm/pat.c
-@@ -336,6 +336,7 @@ int free_memtype(u64 start, u64 end)
- {
- 	int err = -EINVAL;
- 	int is_range_ram;
-+	struct memtype *entry;
- 
- 	if (!pat_enabled)
- 		return 0;
-@@ -355,17 +356,20 @@ int free_memtype(u64 start, u64 end)
- 	}
- 
- 	spin_lock(&memtype_lock);
--	err = rbt_memtype_erase(start, end);
-+	entry = rbt_memtype_erase(start, end);
- 	spin_unlock(&memtype_lock);
- 
--	if (err) {
-+	if (!entry) {
- 		printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
- 			current->comm, current->pid, start, end);
-+		return -EINVAL;
- 	}
-+	
-+	kfree(entry);
- 
- 	dprintk("free_memtype request 0x%Lx-0x%Lx\n", start, end);
- 
--	return err;
-+	return 0;
- }
- 
- 
-diff --git a/arch/x86/mm/pat_internal.h b/arch/x86/mm/pat_internal.h
-index 4f39eef..77e5ba1 100644
---- a/arch/x86/mm/pat_internal.h
-+++ b/arch/x86/mm/pat_internal.h
-@@ -28,15 +28,15 @@ static inline char *cattr_name(unsigned long flags)
- #ifdef CONFIG_X86_PAT
- extern int rbt_memtype_check_insert(struct memtype *new,
- 					unsigned long *new_type);
--extern int rbt_memtype_erase(u64 start, u64 end);
-+extern struct memtype *rbt_memtype_erase(u64 start, u64 end);
- extern struct memtype *rbt_memtype_lookup(u64 addr);
- extern int rbt_memtype_copy_nth_element(struct memtype *out, loff_t pos);
- #else
- static inline int rbt_memtype_check_insert(struct memtype *new,
- 					unsigned long *new_type)
- { return 0; }
--static inline int rbt_memtype_erase(u64 start, u64 end)
--{ return 0; }
-+static inline struct memtype *rbt_memtype_erase(u64 start, u64 end)
-+{ return NULL; }
- static inline struct memtype *rbt_memtype_lookup(u64 addr)
- { return NULL; }
- static inline int rbt_memtype_copy_nth_element(struct memtype *out, loff_t pos)
-diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
-index 07de4cb..f537087 100644
---- a/arch/x86/mm/pat_rbtree.c
-+++ b/arch/x86/mm/pat_rbtree.c
-@@ -231,16 +231,17 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
- 	return err;
- }
- 
--int rbt_memtype_erase(u64 start, u64 end)
-+struct memtype *rbt_memtype_erase(u64 start, u64 end)
- {
- 	struct memtype *data;
- 
- 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
- 	if (!data)
--		return -EINVAL;
-+		goto out;
- 
- 	rb_erase(&data->rb, &memtype_rbroot);
--	return 0;
-+out:
-+	return data;
- }
- 
- struct memtype *rbt_memtype_lookup(u64 addr)
--- 
-1.6.6.1
+This has nothing to do with the frag list pointer,
+skb_shinfo(skb)->frag_list, which is what skb_has_frags()
+tests.
 
+You've got some kind of memory corruption going on and it
+appears to have nothing to do with the code paths you're
+playing with here.
