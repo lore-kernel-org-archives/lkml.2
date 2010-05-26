@@ -1,57 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759236Ab0EZLXR (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:23:17 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:47792 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753285Ab0EZLXQ convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:23:16 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type:content-transfer-encoding;
-        b=nUw6ZwaUAQ/EMVpmMtcmGD/d1+XJawObvTg4BpZqO7LkfhGsYR1Jk2b4D1132v+CR4
-         9bfuVqMv+GBqQkftNCzdvQ6aOTPepc5akz4cfdc+TdCAEVcFEgYPnAPqVBuvfhf75knl
-         1gKr6iQog8mWGeyYPSNSXhslWDKU0ghSQbJW8=
+	id S1759259Ab0EZLXi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 07:23:38 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:11384 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759243Ab0EZLXh (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 07:23:37 -0400
+Message-ID: <4BFD04B4.6050409@redhat.com>
+Date: Wed, 26 May 2010 14:23:32 +0300
+From: Avi Kivity <avi@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <AANLkTinlxsokwralwRAL9_YRQ7-SZUSvrGHTlRISA9bC@mail.gmail.com>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
-	<1274868593.5882.5185.camel@twins>
-	<AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
-	<1274869966.5882.5262.camel@twins>
-	<AANLkTikRMBkoFxgaKsxMJ2lOMomTXpiHJDk3rVt0EtwM@mail.gmail.com>
-	<1274870970.5882.5311.camel@twins>
-	<AANLkTinlxsokwralwRAL9_YRQ7-SZUSvrGHTlRISA9bC@mail.gmail.com>
-Date: Wed, 26 May 2010 13:23:14 +0200
-Message-ID: <AANLkTinNY1vtXpjzPpdBYiI5fbz9Dp50YOpZSfHdoN_D@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Vitaly Wool <vitalywool@gmail.com>
-To: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Lai Jiangshan <laijs@cn.fujitsu.com>
+CC: Marcelo Tosatti <mtosatti@redhat.com>, LKML <linux-kernel@vger.kernel.org>,
+       kvm@vger.kernel.org
+Subject: Re: [RESEND PATCH 1/3] kvm: calculate correct gfn for small host
+ pages which emulates large guest pages
+References: <4BD97AC1.8070704@cn.fujitsu.com> <4BFCE053.6040505@cn.fujitsu.com>
+In-Reply-To: <4BFCE053.6040505@cn.fujitsu.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/26 Arve Hjønnevåg <arve@android.com>:
+On 05/26/2010 11:48 AM, Lai Jiangshan wrote:
+> In Document/kvm/mmu.txt:
+>    gfn:
+>      Either the guest page table containing the translations shadowed by this
+>      page, or the base page frame for linear translations. See role.direct.
+>
+> But in function FNAME(fetch)(), sp->gfn is incorrect when one of following
+> situations occurred:
+>   1) guest is 32bit paging and the guest PDE maps a 4-MByte page
+>      (backed by 4k host pages), FNAME(fetch)() miss handling the quadrant.
+>
+>      And if guest use pse-36, "table_gfn = gpte_to_gfn(gw->ptes[level - delta]);"
+>      is incorrect.
+>   2) guest is long mode paging and the guest PDPTE maps a 1-GByte page
+>      (backed by 4k or 2M host pages).
+>
+> So we fix it to suit to the document and suit to the code which
+> requires sp->gfn correct when sp->role.direct=1.
+>
+> We use the goal mapping gfn(gw->gfn) to calculate the base page frame
+> for linear translations, it is simple and easy to be understood.
+>    
 
-> Fixing the actually issue means fixing all user-space code, and
-> replacing most x86 hardware. I don't think keeping this feature out of
-> the kernel will significantly accelerate this.
+Applied, thanks.
 
-But if this feature gets merged, I bet you'll find another 100 reasons
-to not fix the actual issue. I wouldn't say so if you haven't provided
-the irrelevant points already, like "replacing x86 hardware". You're
-trying to merge the approach which makes the bad way of handing things
-the easiest way. This shouldn't get in as it is IMO.
+-- 
+error compiling committee.c: too many arguments to function
 
-~Vitaly
