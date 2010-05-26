@@ -1,63 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933673Ab0EZRRv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:17:51 -0400
-Received: from e28smtp08.in.ibm.com ([122.248.162.8]:54461 "EHLO
-	e28smtp08.in.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756849Ab0EZRRu (ORCPT
+	id S933970Ab0EZRV0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:21:26 -0400
+Received: from earth.cora.nwra.com ([65.44.101.180]:43622 "EHLO
+	earth.cora.nwra.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751428Ab0EZRVY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:17:50 -0400
-Date: Wed, 26 May 2010 22:47:42 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: David Howells <dhowells@redhat.com>
-Cc: Millton Miller <miltonm@bga.com>, Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Gibson <dwg@au1.ibm.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Paul Mackerras <paulus@samba.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
-	unregistration
-Message-ID: <20100526171742.GA5563@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net> <4250.1274867681@redhat.com>
+	Wed, 26 May 2010 13:21:24 -0400
+X-Greylist: delayed 620 seconds by postgrey-1.27 at vger.kernel.org; Wed, 26 May 2010 13:21:24 EDT
+Message-ID: <4BFD5616.6070302@cora.nwra.com>
+Date: Wed, 26 May 2010 11:10:46 -0600
+From: Orion Poplawski <orion@cora.nwra.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-3.fc13 Lightning/1.0b2pre Thunderbird/3.0.4
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4250.1274867681@redhat.com>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+To: Gleb Natapov <gleb@redhat.com>
+CC: linux-kernel@vger.kernel.org, kvm@vger.kernel.org
+Subject: Re: Clock jumps
+References: <loom.20100524T171038-56@post.gmane.org> <20100525062100.GP22163@redhat.com>
+In-Reply-To: <20100525062100.GP22163@redhat.com>
+Content-Type: text/plain; charset=ISO-8859-1; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 10:54:41AM +0100, David Howells wrote:
-> K.Prasad <prasad@linux.vnet.ibm.com> wrote:
-> 
-> > > My understanding is weak function definitions must appear in a different C
-> > > file than their call sites to work on some toolchains.
-> > > 
-> > 
-> > Atleast, there are quite a few precedents inside the Linux kernel for
-> > __weak functions being invoked from the file in which they are defined
-> > (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
-> > name a few).
-> > Moreover the online GCC docs haven't any such constraints mentioned.
-> 
-> I've seen problems in this area.  gcc sometimes inlines a weak function that's
-> in the same file as the call point.
-> 
+On 05/25/2010 12:21 AM, Gleb Natapov wrote:
+> Adding kvm to CC.
+>
+> On Mon, May 24, 2010 at 04:06:32PM +0000, Orion Poplawski wrote:
+>> I have a KVM virtual machine running 2.6.33.4-95.fc13.x86_64 on a CentOS 5.5
+>> host whose clock jumps about 8-12 hours a couple times a day.  I have no idea
+>> what is causing it.  Fedora 12 and Centos 5.5 KVM machines run fine on the same
+>> host.  Is there any debugging I can enable to see what is jumping the clock?
+>>
+>> kvm-clock: cpu 0, msr 0:1ba4741, boot clock
+>> kvm-clock: cpu 0, msr 0:1e15741, primary cpu clock
+>> Switching to clocksource kvm-clock
+>> rtc_cmos 00:01: setting system clock to 2010-05-20 16:59:48 UTC (1274374788)
 
-We've seen such behaviour even otherwise....even with noinline attribute
-in place. I'm not sure if this gcc fix
-(http://gcc.gnu.org/bugzilla/show_bug.cgi?id=16922) helped correct the
-behaviour, but the lesson has been to not trust a function to be
-inlined/remain non-inline consistently.
 
-> David
+Thanks, though I don't think it made it there.  I'm also not sure it's 
+completely limited to KVM, though that is the only running system I am 
+currently seeing the problem on.  I also see clock jumps during anaconda 
+installs on physical hardware and apparently they have been present since at 
+least F11.  Might be unrelated though.
 
-Thanks,
-K.Prasad
+I'm really at a loss of how to debug this though.
+
+-- 
+Orion Poplawski
+Technical Manager                     303-415-9701 x222
+NWRA/CoRA Division                    FAX: 303-415-9702
+3380 Mitchell Lane                  orion@cora.nwra.com
+Boulder, CO 80301              http://www.cora.nwra.com
