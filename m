@@ -1,103 +1,294 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756731Ab0EZULU (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:11:20 -0400
-Received: from smtp-out.google.com ([74.125.121.35]:17700 "EHLO
-	smtp-out.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752795Ab0EZULT (ORCPT
+	id S1757179Ab0EZULs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:11:48 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:56938 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752795Ab0EZULn (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:11:19 -0400
-DomainKey-Signature: a=rsa-sha1; s=beta; d=google.com; c=nofws; q=dns;
-	h=mime-version:in-reply-to:references:date:message-id:subject:from:to:
-	cc:content-type:x-system-of-record;
-	b=Ey6Sh6LszFskzkzAj1P/+3zNaYDX6xo+jS5+6oHUp32G+2JWi+OZKrT6EibYvxTEC
-	xjy1BAwxMw8jR9CiW30wg==
-MIME-Version: 1.0
-In-Reply-To: <20100526193255.GC9874@ghostprotocols.net>
-References: <1274664671-27385-1-git-send-email-acme@infradead.org>
-	<AANLkTil5WtBnMQt1odjEgmWHOuuKxb4AIyuBLAqOiUSg@mail.gmail.com>
-	<20100526005531.GA9874@ghostprotocols.net>
-	<AANLkTim-xv9mNEwGCueV47AoKh6AXbrdbTdCEwZHaEHJ@mail.gmail.com>
-	<20100526182351.GB9874@ghostprotocols.net>
-	<AANLkTimOEUKYXzdMOiWE6gRxR7vJX36VscdLjRroqGLq@mail.gmail.com>
-	<20100526193255.GC9874@ghostprotocols.net>
-Date: Wed, 26 May 2010 22:11:14 +0200
-Message-ID: <AANLkTinxVsp1qtfqjlwl-ngrcD9IBDg6GoBnAk07ABuo@mail.gmail.com>
-Subject: Re: [GIT PULL 0/2] perf annotate fix and report improvoment
-From: Stephane Eranian <eranian@google.com>
-To: Arnaldo Carvalho de Melo <acme@infradead.org>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       =?UTF-8?B?RnLDqWTDqXJpYyBXZWlzYmVja2Vy?= <fweisbec@gmail.com>,
-       mingo@elte.hu, Peter Zijlstra <peterz@infradead.org>,
-       Tom Zanussi <tzanussi@gmail.com>, Mike Galbraith <efault@gmx.de>,
-       Paul Mackerras <paulus@samba.org>,
-       "David S. Miller" <davem@davemloft.net>
-Content-Type: text/plain; charset=UTF-8
-X-System-Of-Record: true
+	Wed, 26 May 2010 16:11:43 -0400
+X-Authority-Analysis: v=1.1 cv=muTmBHIsIIrvj5np50lvqqEF3x9MmSj/zDSU9q1ni6E= c=1 sm=0 a=DCbEiKiKWNoA:10 a=1CvaPgNKC-EA:10 a=GzHTLUccyWwA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=omOdbC7AAAAA:8 a=meVymXHHAAAA:8 a=RJRfROfsBm-YRHWv2s4A:9 a=wgxL-MbnI8c7QK60T6oA:7 a=Zquu_Kzzt_1T7wxLR7vT53n8I9QA:4 a=jeBq3FmKZ4MA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Message-Id: <20100526201141.021346784@goodmis.org>
+User-Agent: quilt/0.48-1
+Date: Wed, 26 May 2010 16:10:38 -0400
+From: Steven Rostedt <rostedt@goodmis.org>
+To: linux-kernel@vger.kernel.org
+Cc: Ingo Molnar <mingo@elte.hu>, Andrew Morton <akpm@linux-foundation.org>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Li Zefan <lizf@cn.fujitsu.com>
+Subject: [PATCH 2/7] tracing: Dont allocate common fields for every trace events
+References: <20100526201036.951395509@goodmis.org>
+Content-Disposition: inline; filename=0002-tracing-Don-t-allocate-common-fields-for-every-trace.patch
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 9:32 PM, Arnaldo Carvalho de Melo
-<acme@infradead.org> wrote:
-> Em Wed, May 26, 2010 at 09:07:05PM +0200, Stephane Eranian escreveu:
->> Hi,
->>
->> +lkml et al.
->>
->> On Wed, May 26, 2010 at 8:23 PM, Arnaldo Carvalho de Melo
->> <acme@infradead.org> wrote:
->> > Em Wed, May 26, 2010 at 06:45:18PM +0200, Stephane Eranian escreveu:
->> >> Attached is the trace for
->> >> perf annotate -i ~/perf.data noploop
->> >>
->> >> I get no output at all (TUI is off). Copied over .debug tarball + perf.data.
->> >
->> > Looks like the bug I'm investigating now:
->> >
->> > build id event received for [kernel.kallsyms]: 54b1e7cc3cf52e0db255aab44ce7538eb62655b8
->> > build id event received for /tmp/noploop: 875ae61623e89f408b425ca0486a9ec99e3ac73e
->> > Looking at the vmlinux_path (5 entries long)
->> > No build_id in vmlinux, ignoring it
->> > No build_id in /boot/vmlinux, ignoring it
->> > No build_id in /boot/vmlinux-2.6.34-tip-default+, ignoring it
->> > build_id in /lib/modules/2.6.34-tip-default+/build/vmlinux is
->> > 3635a0e8dfc9a1afbd5627c2ba789e41d77d3cd1 while expected is
->> > 54b1e7cc3cf52e0db255aab44ce7538eb62655b8, ignoring it
->> > No build_id in /usr/lib/debug/lib/modules/2.6.34-tip-default+/vmlinux, ignoring it
->> >
->> > In my case it is not finding the vmlinux because I'm using RHEL6 Beta
->> > kernel without the respective kernel-debuginfo{-common} packages so it
->> > doesn't find the vmlinux, uses just /proc/kallsyms and that is not
->> > enough for annotation.
->> >
->> > In your case the problem is that we only cache the kallsyms file in the
->> > build-id cache ($HOME/.debug) and that is not enough for annotation, so
->> > I have to fix two things:
->> >
->> I can understand the issue with the kernel symbols.
->
-> That has to be fixed and I've got some patches already for that, testing
-> them now.
->
->> But in this example, I only really care about the symbols in the
->> noploop program (/tmp/noploop).
->>
->> Missing symbol support for the kernel should not cause perf to avoid
->> trying to resolve the symbols in other modules such as my user program
->> here.
->
-> Right, my bad, I thought that the problem was about the kernel symbols.
->
-> Then can you try replacing:
->
-> perf annotate -i ~/perf.data noploop
->
-> with:
->
-> perf annotate -i ~/perf.data -d noploop
->
-> And see if that helps?
->
-Ok that works. But if I turned on TUI, then I cannot obtain
-the same result. I am guessing it does not use the -d option.
+From: Li Zefan <lizf@cn.fujitsu.com>
+
+Every event has the same common fields, so it's a big waste of
+memory to have a copy of those fields for every event.
+
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+LKML-Reference: <4BFA3759.30105@cn.fujitsu.com>
+Signed-off-by: Steven Rostedt <rostedt@goodmis.org>
+---
+ kernel/trace/trace.h               |    2 +
+ kernel/trace/trace_events.c        |  113 ++++++++++++++++++++----------------
+ kernel/trace/trace_events_filter.c |   18 +++++-
+ 3 files changed, 81 insertions(+), 52 deletions(-)
+
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 2cd9639..0a91ab0 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -766,6 +766,8 @@ struct filter_pred {
+ 	int 			pop_n;
+ };
+ 
++extern struct list_head ftrace_common_fields;
++
+ extern enum regex_type
+ filter_parse_regex(char *buff, int len, char **search, int *not);
+ extern void print_event_filter(struct ftrace_event_call *call,
+diff --git a/kernel/trace/trace_events.c b/kernel/trace/trace_events.c
+index 53cffc0..efe1ffd 100644
+--- a/kernel/trace/trace_events.c
++++ b/kernel/trace/trace_events.c
+@@ -28,6 +28,7 @@
+ DEFINE_MUTEX(event_mutex);
+ 
+ LIST_HEAD(ftrace_events);
++LIST_HEAD(ftrace_common_fields);
+ 
+ struct list_head *
+ trace_get_fields(struct ftrace_event_call *event_call)
+@@ -37,15 +38,11 @@ trace_get_fields(struct ftrace_event_call *event_call)
+ 	return event_call->class->get_fields(event_call);
+ }
+ 
+-int trace_define_field(struct ftrace_event_call *call, const char *type,
+-		       const char *name, int offset, int size, int is_signed,
+-		       int filter_type)
++static int __trace_define_field(struct list_head *head, const char *type,
++				const char *name, int offset, int size,
++				int is_signed, int filter_type)
+ {
+ 	struct ftrace_event_field *field;
+-	struct list_head *head;
+-
+-	if (WARN_ON(!call->class))
+-		return 0;
+ 
+ 	field = kzalloc(sizeof(*field), GFP_KERNEL);
+ 	if (!field)
+@@ -68,7 +65,6 @@ int trace_define_field(struct ftrace_event_call *call, const char *type,
+ 	field->size = size;
+ 	field->is_signed = is_signed;
+ 
+-	head = trace_get_fields(call);
+ 	list_add(&field->link, head);
+ 
+ 	return 0;
+@@ -80,17 +76,32 @@ err:
+ 
+ 	return -ENOMEM;
+ }
++
++int trace_define_field(struct ftrace_event_call *call, const char *type,
++		       const char *name, int offset, int size, int is_signed,
++		       int filter_type)
++{
++	struct list_head *head;
++
++	if (WARN_ON(!call->class))
++		return 0;
++
++	head = trace_get_fields(call);
++	return __trace_define_field(head, type, name, offset, size,
++				    is_signed, filter_type);
++}
+ EXPORT_SYMBOL_GPL(trace_define_field);
+ 
+ #define __common_field(type, item)					\
+-	ret = trace_define_field(call, #type, "common_" #item,		\
+-				 offsetof(typeof(ent), item),		\
+-				 sizeof(ent.item),			\
+-				 is_signed_type(type), FILTER_OTHER);	\
++	ret = __trace_define_field(&ftrace_common_fields, #type,	\
++				   "common_" #item,			\
++				   offsetof(typeof(ent), item),		\
++				   sizeof(ent.item),			\
++				   is_signed_type(type), FILTER_OTHER);	\
+ 	if (ret)							\
+ 		return ret;
+ 
+-static int trace_define_common_fields(struct ftrace_event_call *call)
++static int trace_define_common_fields(void)
+ {
+ 	int ret;
+ 	struct trace_entry ent;
+@@ -544,32 +555,10 @@ out:
+ 	return ret;
+ }
+ 
+-static ssize_t
+-event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+-		  loff_t *ppos)
++static void print_event_fields(struct trace_seq *s, struct list_head *head)
+ {
+-	struct ftrace_event_call *call = filp->private_data;
+ 	struct ftrace_event_field *field;
+-	struct list_head *head;
+-	struct trace_seq *s;
+-	int common_field_count = 5;
+-	char *buf;
+-	int r = 0;
+-
+-	if (*ppos)
+-		return 0;
+-
+-	s = kmalloc(sizeof(*s), GFP_KERNEL);
+-	if (!s)
+-		return -ENOMEM;
+-
+-	trace_seq_init(s);
+ 
+-	trace_seq_printf(s, "name: %s\n", call->name);
+-	trace_seq_printf(s, "ID: %d\n", call->event.type);
+-	trace_seq_printf(s, "format:\n");
+-
+-	head = trace_get_fields(call);
+ 	list_for_each_entry_reverse(field, head, link) {
+ 		/*
+ 		 * Smartly shows the array type(except dynamic array).
+@@ -584,29 +573,54 @@ event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
+ 			array_descriptor = NULL;
+ 
+ 		if (!array_descriptor) {
+-			r = trace_seq_printf(s, "\tfield:%s %s;\toffset:%u;"
++			trace_seq_printf(s, "\tfield:%s %s;\toffset:%u;"
+ 					"\tsize:%u;\tsigned:%d;\n",
+ 					field->type, field->name, field->offset,
+ 					field->size, !!field->is_signed);
+ 		} else {
+-			r = trace_seq_printf(s, "\tfield:%.*s %s%s;\toffset:%u;"
++			trace_seq_printf(s, "\tfield:%.*s %s%s;\toffset:%u;"
+ 					"\tsize:%u;\tsigned:%d;\n",
+ 					(int)(array_descriptor - field->type),
+ 					field->type, field->name,
+ 					array_descriptor, field->offset,
+ 					field->size, !!field->is_signed);
+ 		}
++	}
++}
+ 
+-		if (--common_field_count == 0)
+-			r = trace_seq_printf(s, "\n");
++static ssize_t
++event_format_read(struct file *filp, char __user *ubuf, size_t cnt,
++		  loff_t *ppos)
++{
++	struct ftrace_event_call *call = filp->private_data;
++	struct list_head *head;
++	struct trace_seq *s;
++	char *buf;
++	int r;
+ 
+-		if (!r)
+-			break;
+-	}
++	if (*ppos)
++		return 0;
+ 
+-	if (r)
+-		r = trace_seq_printf(s, "\nprint fmt: %s\n",
+-				call->print_fmt);
++	s = kmalloc(sizeof(*s), GFP_KERNEL);
++	if (!s)
++		return -ENOMEM;
++
++	trace_seq_init(s);
++
++	trace_seq_printf(s, "name: %s\n", call->name);
++	trace_seq_printf(s, "ID: %d\n", call->event.type);
++	trace_seq_printf(s, "format:\n");
++
++	/* print common fields */
++	print_event_fields(s, &ftrace_common_fields);
++
++	trace_seq_putc(s, '\n');
++
++	/* print event specific fields */
++	head = trace_get_fields(call);
++	print_event_fields(s, head);
++
++	r = trace_seq_printf(s, "\nprint fmt: %s\n", call->print_fmt);
+ 
+ 	if (!r) {
+ 		/*
+@@ -980,9 +994,7 @@ event_create_dir(struct ftrace_event_call *call, struct dentry *d_events,
+ 		 */
+ 		head = trace_get_fields(call);
+ 		if (list_empty(head)) {
+-			ret = trace_define_common_fields(call);
+-			if (!ret)
+-				ret = call->class->define_fields(call);
++			ret = call->class->define_fields(call);
+ 			if (ret < 0) {
+ 				pr_warning("Could not initialize trace point"
+ 					   " events/%s\n", call->name);
+@@ -1319,6 +1331,9 @@ static __init int event_trace_init(void)
+ 	trace_create_file("enable", 0644, d_events,
+ 			  NULL, &ftrace_system_enable_fops);
+ 
++	if (trace_define_common_fields())
++		pr_warning("tracing: Failed to allocate common fields");
++
+ 	for_each_event(call, __start_ftrace_events, __stop_ftrace_events) {
+ 		/* The linker may leave blanks */
+ 		if (!call->name)
+diff --git a/kernel/trace/trace_events_filter.c b/kernel/trace/trace_events_filter.c
+index 57bb1bb..330fefd 100644
+--- a/kernel/trace/trace_events_filter.c
++++ b/kernel/trace/trace_events_filter.c
+@@ -497,12 +497,10 @@ void print_subsystem_event_filter(struct event_subsystem *system,
+ }
+ 
+ static struct ftrace_event_field *
+-find_event_field(struct ftrace_event_call *call, char *name)
++__find_event_field(struct list_head *head, char *name)
+ {
+ 	struct ftrace_event_field *field;
+-	struct list_head *head;
+ 
+-	head = trace_get_fields(call);
+ 	list_for_each_entry(field, head, link) {
+ 		if (!strcmp(field->name, name))
+ 			return field;
+@@ -511,6 +509,20 @@ find_event_field(struct ftrace_event_call *call, char *name)
+ 	return NULL;
+ }
+ 
++static struct ftrace_event_field *
++find_event_field(struct ftrace_event_call *call, char *name)
++{
++	struct ftrace_event_field *field;
++	struct list_head *head;
++
++	field = __find_event_field(&ftrace_common_fields, name);
++	if (field)
++		return field;
++
++	head = trace_get_fields(call);
++	return __find_event_field(head, name);
++}
++
+ static void filter_free_pred(struct filter_pred *pred)
+ {
+ 	if (!pred)
+-- 
+1.7.0
+
+
