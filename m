@@ -1,56 +1,112 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755508Ab0EZP1m (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:27:42 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:37242 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754286Ab0EZP1l (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:27:41 -0400
-To: Alan Cox <alan@lxorguk.ukuu.org.uk>
-Cc: Florian Mickler <florian@mickler.org>, Vitaly Wool <vitalywool@gmail.com>,
-       Peter Zijlstra <peterz@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<201005242049.18920.rjw@sisk.pl> <87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl> <1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	<20100526133721.602633b2@schatten.dmk.lab>
-	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	<20100526142430.327ccbc4@schatten.dmk.lab>
-	<20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-From: Kevin Hilman <khilman@deeprootsystems.com>
-Organization: Deep Root Systems, LLC
-Date: Wed, 26 May 2010 08:19:21 -0700
-In-Reply-To: <20100526141612.3e2e0443@lxorguk.ukuu.org.uk> (Alan Cox's message of "Wed\, 26 May 2010 14\:16\:12 +0100")
-Message-ID: <87hblupu6e.fsf@deeprootsystems.com>
-User-Agent: Gnus/5.11 (Gnus v5.11) Emacs/22.2 (gnu/linux)
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
+	id S1755257Ab0EZP31 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:29:27 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:3316 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752851Ab0EZP3Z (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:29:25 -0400
+Date: Wed, 26 May 2010 11:26:29 -0400
+From: Rik van Riel <riel@redhat.com>
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: [PATCH 3/5] track the root (oldest) anon_vma
+Message-ID: <20100526112629.11bbe7b5@annuminas.surriel.com>
+In-Reply-To: <20100526112403.635be0ed@annuminas.surriel.com>
+References: <20100512133815.0d048a86@annuminas.surriel.com>
+	<20100512134029.36c286c4@annuminas.surriel.com>
+	<20100512210216.GP24989@csn.ul.ie>
+	<4BEB18BB.5010803@redhat.com>
+	<20100513095439.GA27949@csn.ul.ie>
+	<20100513103356.25665186@annuminas.surriel.com>
+	<20100513140919.0a037845.akpm@linux-foundation.org>
+	<4BFC9CCF.6000809@redhat.com>
+	<20100526112403.635be0ed@annuminas.surriel.com>
+Organization: Red Hat, Inc.
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Alan Cox <alan@lxorguk.ukuu.org.uk> writes:
+Subject: track the root (oldest) anon_vma
 
-> [1] Note I disagree with Kevin here on static/dynamic power management.
-> There are IMHO two types of PM but they are 'user invoked' and
-> 'automatic'. "Static" simply means it's not been made fast enough yet but
-> its just a policy divide dependant on the users 'acceptable' resume time
-> (which for hard RT may just as well rule out some more usual power states)
+Track the root (oldest) anon_vma in each anon_vma tree.   Because we only
+take the lock on the root anon_vma, we cannot use the lock on higher-up
+anon_vmas to lock anything.  This makes it impossible to do an indirect
+lookup of the root anon_vma, since the data structures could go away from
+under us.
 
-Completely agree with this.
+However, a direct pointer is safe because the root anon_vma is always the
+last one that gets freed on munmap or exit, by virtue of the same_vma list
+order and unlink_anon_vmas walking the list forward.
 
-I used the static/dynamic names out of habit, but since on most
-embedded devices, there is really no difference in hardware power
-state, I agree that the difference is only a matter of wakeup latency.
+Signed-off-by: Rik van Riel <riel@redhat.com>
+---
+ include/linux/rmap.h |    1 +
+ mm/rmap.c            |   18 ++++++++++++++++--
+ 2 files changed, 17 insertions(+), 2 deletions(-)
 
-Kevin
-
+Index: linux-2.6.34/include/linux/rmap.h
+===================================================================
+--- linux-2.6.34.orig/include/linux/rmap.h
++++ linux-2.6.34/include/linux/rmap.h
+@@ -26,6 +26,7 @@
+  */
+ struct anon_vma {
+ 	spinlock_t lock;	/* Serialize access to vma list */
++	struct anon_vma *root;	/* Root of this anon_vma tree */
+ #if defined(CONFIG_KSM) || defined(CONFIG_MIGRATION)
+ 
+ 	/*
+Index: linux-2.6.34/mm/rmap.c
+===================================================================
+--- linux-2.6.34.orig/mm/rmap.c
++++ linux-2.6.34/mm/rmap.c
+@@ -132,6 +132,11 @@ int anon_vma_prepare(struct vm_area_stru
+ 			if (unlikely(!anon_vma))
+ 				goto out_enomem_free_avc;
+ 			allocated = anon_vma;
++			/*
++			 * This VMA had no anon_vma yet.  This anon_vma is
++			 * the root of any anon_vma tree that might form.
++			 */
++			anon_vma->root = anon_vma;
+ 		}
+ 
+ 		anon_vma_lock(anon_vma);
+@@ -224,9 +229,15 @@ int anon_vma_fork(struct vm_area_struct 
+ 	avc = anon_vma_chain_alloc();
+ 	if (!avc)
+ 		goto out_error_free_anon_vma;
+-	anon_vma_chain_link(vma, avc, anon_vma);
++
++	/*
++	 * The root anon_vm's spinlock is the lock actually used when we
++	 * lock any of the anon_vmas in this anon_vma tree.
++	 */
++	anon_vma->root = pvma->anon_vma->root;
+ 	/* Mark this anon_vma as the one where our new (COWed) pages go. */
+ 	vma->anon_vma = anon_vma;
++	anon_vma_chain_link(vma, avc, anon_vma);
+ 
+ 	return 0;
+ 
+@@ -261,7 +272,10 @@ void unlink_anon_vmas(struct vm_area_str
+ {
+ 	struct anon_vma_chain *avc, *next;
+ 
+-	/* Unlink each anon_vma chained to the VMA. */
++	/*
++	 * Unlink each anon_vma chained to the VMA.  This list is ordered
++	 * from newest to oldest, ensuring the root anon_vma gets freed last.
++	 */
+ 	list_for_each_entry_safe(avc, next, &vma->anon_vma_chain, same_vma) {
+ 		anon_vma_unlink(avc);
+ 		list_del(&avc->same_vma);
