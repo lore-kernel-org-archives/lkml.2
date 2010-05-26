@@ -1,91 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933783Ab0EZHOf (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 03:14:35 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:49217 "EHLO smtps.tip.net.au"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933376Ab0EZHOd (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 03:14:33 -0400
-Date: Wed, 26 May 2010 17:14:24 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Joakim Tjernlund <joakim.tjernlund@transmode.se>,
-       linux-kernel@vger.kernel.org, linux-next@vger.kernel.org,
-       Linus <torvalds@linux-foundation.org>
-Subject: Re: linux-next: build warning in Linus'tree
-Message-Id: <20100526171424.447fac18.sfr@canb.auug.org.au>
-In-Reply-To: <20100525234116.71889c71.akpm@linux-foundation.org>
-References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>
-	<20100525182040.f1882d0a.akpm@linux-foundation.org>
-	<20100526140900.5b091c16.sfr@canb.auug.org.au>
-	<OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
-	<20100525234116.71889c71.akpm@linux-foundation.org>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE"
+	id S1752037Ab0EZHRz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 03:17:55 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:59444 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1750951Ab0EZHRy (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 03:17:54 -0400
+Message-ID: <4BFCCBB0.6040101@cn.fujitsu.com>
+Date: Wed, 26 May 2010 15:20:16 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
+MIME-Version: 1.0
+To: Pekka Enberg <penberg@cs.helsinki.fi>
+CC: Frederic Weisbecker <fweisbec@gmail.com>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       Prasad <prasad@linux.vnet.ibm.com>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       Soeren Sandmann <sandmann@daimi.au.dk>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Tracing configuration review
+References: <1274815906.9757.83.camel@cndougla-ubuntu>	<20100525201259.GA5370@nowhere> <AANLkTinuHB9gPLBZs_QsHqOm6Y5nR91P_gFlVBXa-ilJ@mail.gmail.com>
+In-Reply-To: <AANLkTinuHB9gPLBZs_QsHqOm6Y5nR91P_gFlVBXa-ilJ@mail.gmail.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+Pekka Enberg wrote:
+> On Tue, May 25, 2010 at 11:13 PM, Frederic Weisbecker
+> <fweisbec@gmail.com> wrote:
+>>> # CONFIG_KMEMTRACE is not set (Kconfig says N if unsure)
+>> Deprecated. We have the kmem trace event that are a full replacement now.
+>> Pekka, Gabriel, can we remove it now?
+> 
+> I don't think ftrace supports boot-time tracing which kmemtrace did.
 
-Hi Andrew, Joakim,
+We can do boot-time tracing by passing "trace_event=" kernel parameter.
 
-On Tue, 25 May 2010 23:41:16 -0700 Andrew Morton <akpm@linux-foundation.org=
-> wrote:
->
-> On Wed, 26 May 2010 08:29:45 +0200 Joakim Tjernlund <joakim.tjernlund@tra=
-nsmode.se> wrote:
->=20
-> > Stephen Rothwell <sfr@canb.auug.org.au> wrote on 2010/05/26 06:09:00:
-> > >
-> > > On Tue, 25 May 2010 18:20:40 -0700 Andrew Morton <akpm@linux-foundati=
-on.org> wrote:
-> > > >
-> > > > hmpf.  Does this fix?
-> > >
-> > > No.
-> > >
-> > > The problem is that __LITTLE_ENDIAN is only defined in
-> > > linux/byteorder/little_endian.h which is only included by little endi=
-an
-> > > architectures ...
-> >=20
-> > Ah, not sure how to fix this ATM. Perhaps best to revert
-> >    crc32: use __BYTE_ORDER macro for endian detection
-> > for now.
->=20
-> yup.
+By passing "ftrace=kmemtrace", kmemtrace can be started when
+calling tracer_alloc_buffer(), which is an early_initcall.
+While trace events are inititialized as a fs_initcall,  it can
+be modified to an early_initcall.
 
-We also need to revert b3b77c8caef1750ebeea1054e39e358550ea9f55 ("endian:
-#define __BYTE_ORDER") in order to get rid of the other warning I pointed o=
-ut:
+Furthermore, I noticed the discussion on perf persistent events, which
+seems to enable perf trace at boot time, so I think perf-kmem can take
+advantage of this and will be a full-replacement of kmemtrace soon ?
 
-In file included from fs/jfs/jfs_types.h:33,
-                 from fs/jfs/jfs_incore.h:26,
-                 from fs/jfs/file.c:22:
-fs/jfs/endian24.h:36:101: warning: "__LITTLE_ENDIAN" is not defined
+> That said, I was probably the only one actually using the feature so
+> maybe we can just nuke kmemtrace at this point...
 
-I get this warning on powerpc builds for most of the files in fs/jfs ...
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+If you agree on removing kmemtrace now, I'll re-send the patch.
 
---Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv8ylAACgkQjjKRsyhoI8y59ACgpTECm6WZS8UakYPQyGVnnC/y
-LVUAnRnaZPSNHlxKvaBDe8xR3O1b7qhY
-=uAxp
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_May_2010_17_14_24_+1000_u5nwQ6BQuoC2bvOE--
