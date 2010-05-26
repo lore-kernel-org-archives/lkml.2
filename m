@@ -1,51 +1,91 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756647Ab0EZQWo (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:22:44 -0400
-Received: from mail-px0-f174.google.com ([209.85.212.174]:64924 "EHLO
-	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755054Ab0EZQWk (ORCPT
+	id S1756300Ab0EZQZV (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:25:21 -0400
+Received: from e35.co.us.ibm.com ([32.97.110.153]:43734 "EHLO
+	e35.co.us.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab0EZQZT (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:22:40 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:cc:subject:date:message-id:x-mailer;
-        b=erqPALuzBIuIjeEdlnPnuXPDNqqUVDV1ShKh9roStmPqr2hjd3/CtyDZ5viZAxvaxF
-         WT2P3dK3AUZZUZHL5s0gKsjt26lCdC5fsua2PG3W7RuoluWZX4lAVJ+chF9ReCatd1OD
-         Xc+O8CUakE/iEKYxRjA4ubzlPVkiYzNfNfDd4=
-From: "Justin P. Mattock" <justinmattock@gmail.com>
-To: trivial@kernel.org
-Cc: linux-kernel@vger.kernel.org,
-       "Justin P. Mattock" <justinmattock@gmail.com>
-Subject: [PATCH] Typo in netdevice.h
-Date: Wed, 26 May 2010 09:22:40 -0700
-Message-Id: <1274890960-7416-1-git-send-email-justinmattock@gmail.com>
-X-Mailer: git-send-email 1.7.1.rc1.21.gf3bd6
+	Wed, 26 May 2010 12:25:19 -0400
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: Brian Bloniarz <bmb@athenacr.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BFD4629.6040602@athenacr.com>
+References: <4BF58B59.7080901@athenacr.com>
+	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
+	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
+	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>
+	 <1274834888.4678.66.camel@localhost.localdomain>
+	 <4BFC8C77.7020802@athenacr.com> <1274886299.1759.8.camel@work-vm>
+	 <4BFD4629.6040602@athenacr.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 09:25:09 -0700
+Message-ID: <1274891109.1759.27.camel@work-vm>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Fix missing "of" in comment.
+On Wed, 2010-05-26 at 12:02 -0400, Brian Bloniarz wrote:
+> On 05/26/2010 11:04 AM, john stultz wrote:
+> > Right but having applications add "Linux on x86 where the TSC is being
+> > used" logic is pretty poor solution. Its an issue that should be
+> > addressed from the kernel side.
+> 
+> Yeah, sure.
+> 
+> > And really, if apps really wanted this info, they can fish it out
+> > of /proc/cpuinfo.
+> Really? I was under the impression that tsc_khz can differ
+> from cpu_mhz (invariant tsc?), and cpu_mhz can differ from what
+> shows up in /proc/cpuinfo cpuMHz due to cpufreq scaling. I was
+> also under the impression that knowing or controlling tsc_khz
+> is what NTP needs to ensure stability (assuming the TSC is
+> otherwise stable, i.e. no halts-in-idle, NMI etc etc weirdness).
 
- Signed-off-by: Justin P. Mattock <justinmattock@gmail.com>
+Bah. You're right. I shouldn't be emailing this early :)
 
----
- include/linux/netdevice.h |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+Even so, I'm still not a fan of the "expose raw details so userland apps
+can hack around the kernel's inadequacies" approach.
 
-diff --git a/include/linux/netdevice.h b/include/linux/netdevice.h
-index a1bff65..c761c90 100644
---- a/include/linux/netdevice.h
-+++ b/include/linux/netdevice.h
-@@ -775,7 +775,7 @@ struct net_device {
- 	/*
- 	 * This is the first field of the "visible" part of this structure
- 	 * (i.e. as seen by users in the "Space.c" file).  It is the name
--	 * the interface.
-+	 * of the interface.
- 	 */
- 	char			name[IFNAMSIZ];
- 
--- 
-1.7.1.rc1.21.gf3bd6
+> Dan Magenheimer wrote:
+> > /sys/devices/system/clocksource/clocksource0/current_khz
+> >
+> > is that an acceptable arch-independent patch? (And which do
+> > you prefer?)
+> 
+> Thomas Gleixner:
+> > I'd rather see a generic solution which provides the information of
+> > the current (and possibly those of the available) clock source(s). 
+
+While I'm not a huge fan of it, Thomas' way would be a bit more
+palatable. 
+
+NTP can check the initial freq the clocksource was registered and if its
+different from the last boot decide if it can recalculate that into a
+new correction factor, or just throw out the drift file value.
+
+Brian: is this something the NTPd folks actually want? Has anyone
+checked with them before we hand down the solution from high upon on
+lkml mountain?
+
+Personally I think NTPd should be a little more savvy about how far it
+trusts the drift file when it starts up. Since I believe its
+fast-startup mode can quickly estimate the drift well within 100ppm,
+which is about the maximum variance I've seen from the calibration code.
+
+thanks
+-john
 
