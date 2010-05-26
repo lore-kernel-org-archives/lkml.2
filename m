@@ -1,98 +1,73 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S932637Ab0EZToj (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:44:39 -0400
-Received: from mx2.netapp.com ([216.240.18.37]:36860 "EHLO mx2.netapp.com"
+	id S1756892Ab0EZTvQ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:51:16 -0400
+Received: from e9.ny.us.ibm.com ([32.97.182.139]:59557 "EHLO e9.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756755Ab0EZTog convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:44:36 -0400
-X-IronPort-AV: E=Sophos;i="4.53,305,1272870000"; 
-   d="scan'208";a="368117570"
-Subject: [GIT PULL] Please pull NFS client bugfixes...
-From: Trond Myklebust <Trond.Myklebust@netapp.com>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: linux-nfs@vger.kernel.org, linux-kernel@vger.kernel.org
+	id S1756585Ab0EZTvO (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:51:14 -0400
+Subject: Re: [PATCH] x86: Export tsc related information in sysfs
+From: john stultz <johnstul@us.ibm.com>
+To: Brian Bloniarz <bmb@athenacr.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>,
+       Dan Magenheimer <dan.magenheimer@oracle.com>,
+       Ingo Molnar <mingo@elte.hu>, Thomas Gleixner <tglx@linutronix.de>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+In-Reply-To: <4BFD6C2B.4070403@athenacr.com>
+References: <4BF58B59.7080901@athenacr.com>
+	 <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com>
+	 <ce764b91-11b0-44a5-9cf9-96977652bbd5@default>
+	 <1274727116.2954.5.camel@localhost.localdomain>
+	 <4BFADF9D.9050209@zytor.com 1274733566.2954.73.camel@localhost.localdomain>
+	 <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com>
+	 <4BFB2902.50308@athenacr.com>  <4BFC687A.9040304@athenacr.com>
+	 <1274834888.4678.66.camel@localhost.localdomain>
+	 <4BFC8C77.7020802@athenacr.com> <1274886299.1759.8.camel@work-vm>
+	 <4BFD4629.6040602@athenacr.com> <1274891109.1759.27.camel@work-vm>
+	 <4BFD6C2B.4070403@athenacr.com>
 Content-Type: text/plain; charset="UTF-8"
-Content-Transfer-Encoding: 8BIT
-Organization: NetApp
-Date: Wed, 26 May 2010 15:42:21 -0400
-Message-ID: <1274902941.5270.36.camel@heimdal.trondhjem.org>
+Date: Wed, 26 May 2010 12:49:50 -0700
+Message-ID: <1274903390.3383.17.camel@localhost.localdomain>
 Mime-Version: 1.0
-X-Mailer: Evolution 2.30.1.2 (2.30.1.2-2.fc13) 
-X-OriginalArrivalTime: 26 May 2010 19:44:35.0909 (UTC) FILETIME=[DEDEC750:01CAFD0B]
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi Linus,
+On Wed, 2010-05-26 at 14:44 -0400, Brian Bloniarz wrote:
+> On 05/26/2010 12:25 PM, john stultz wrote:
+> > Brian: is this something the NTPd folks actually want? Has anyone
+> > checked with them before we hand down the solution from high upon on
+> > lkml mountain?
+> 
+> I haven't checked, it's been a while since I dealt with
+> this problem. The NTP maintainers definitely complain about the
+> quick TSC calibration code like it's a bug:
+> (e.g. http://www.mail-archive.com/questions@lists.ntp.org/msg02079.html).
+> Anyway I'll reach out before I spend any time investing in
+> a solution that they don't want (and you don't like :).
+> 
+> > Personally I think NTPd should be a little more savvy about how far it
+> > trusts the drift file when it starts up. Since I believe its
+> > fast-startup mode can quickly estimate the drift well within 100ppm,
+> > which is about the maximum variance I've seen from the calibration code.
+> 
+> The workaround we went with was to remove the drift file on 
+> every reboot. But in our experience, even with iburst, converging takes
+> a long time. I don't have hard numbers since it's been a long time since
+> I investigated the problem, but we defined failure as >1ms offset syncing
+> to a server in our LAN, and a cold NTP boot takes 10-20 hours to get
+> there.
 
-Please pull from the "bugfixes" branch of the repository at
+Ok. If its been awhile, you may find recent kernels (2.6.31+) are much
+faster to converge due to adjustments made to the SHIFT_PLL constant.
+This was done explicitly to address issues similar to what you describe
+above.
 
-   git pull git://git.linux-nfs.org/projects/trondmy/nfs-2.6.git bugfixes
-
-This will update the following files through the appended changesets.
-
-  Cheers,
-    Trond
-
-----
- fs/nfs/dir.c          |    1 +
- fs/nfs/write.c        |   20 ++++++++++++++++----
- net/sunrpc/xprtsock.c |   29 ++++++++++++++++++-----------
- 3 files changed, 35 insertions(+), 15 deletions(-)
-
-commit 0522f6adedd2736cbca3c0e16ca51df668993eee
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed May 26 08:42:24 2010 -0400
-
-    NFS: Fix another nfs_wb_page() deadlock
-    
-    J.R. Okajima reports that the call to sync_inode() in nfs_wb_page() can
-    deadlock with other writeback flush calls. It boils down to the fact
-    that we cannot ever call writeback_single_inode() while holding a page
-    lock (even if we do set nr_to_write to zero) since another process may
-    already be waiting in the call to do_writepages(), and so will deny us
-    the I_SYNC lock.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit c5efa5fc91f1f6d1d47e65f39e7ec6d1157c777d
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed May 26 08:42:11 2010 -0400
-
-    NFS: Ensure that we mark the inode as dirty if we exit early from commit
-    
-    If we exit from nfs_commit_inode() without ensuring that the COMMIT rpc
-    call has been completed, we must re-mark the inode as dirty. Otherwise,
-    future calls to sync_inode() with the WB_SYNC_ALL flag set will fail to
-    ensure that the data is on the disk.
-    
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 59844a9bd73e084b0ffefc0e13226098e28c71ad
-Author: Trond Myklebust <Trond.Myklebust@netapp.com>
-Date:   Wed May 26 08:42:24 2010 -0400
-
-    NFS: Fix a lock imbalance typo in nfs_access_cache_shrinker
-    
-    Commit 9c7e7e23371e629dbb3b341610a418cdf1c19d91 (NFS: Don't call iput() in
-    nfs_access_cache_shrinker) unintentionally removed the spin unlock for the
-    inode->i_lock.
-    
-    Reported-by: David Howells <dhowells@redhat.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
-commit 0a68b0bed08eeb7ec62e0125f17856b1ccb1ea4b
-Author: J. Bruce Fields <bfields@citi.umich.edu>
-Date:   Wed May 26 08:42:24 2010 -0400
-
-    sunrpc: fix leak on error on socket xprt setup
-    
-    Also collect exit code together while we're at it.
-    
-    Signed-off-by: J. Bruce Fields <bfields@citi.umich.edu>
-    Cc: Trond Myklebust <Trond.Myklebust@netapp.com>
-    Signed-off-by: Trond Myklebust <Trond.Myklebust@netapp.com>
-
+thanks
+-john
 
