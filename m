@@ -1,101 +1,75 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753474Ab0EZJEQ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 05:04:16 -0400
-Received: from gir.skynet.ie ([193.1.99.77]:39196 "EHLO gir.skynet.ie"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751095Ab0EZJEP (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 05:04:15 -0400
-Date: Wed, 26 May 2010 10:03:55 +0100
-From: Mel Gorman <mel@csn.ul.ie>
-To: Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Andi Kleen <andi@firstfloor.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Larry Woodman <lwoodman@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
-Message-ID: <20100526090355.GI29038@csn.ul.ie>
-References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1273737326-21211-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100513152737.GE27949@csn.ul.ie> <20100514074641.GD10000@spritzerA.linux.bs1.fc.nec.co.jp> <20100514095449.GB21481@csn.ul.ie> <20100524071516.GC11008@spritzerA.linux.bs1.fc.nec.co.jp> <20100525105957.GD29038@csn.ul.ie> <20100526065156.GC7128@spritzerA.linux.bs1.fc.nec.co.jp>
+	id S1756228Ab0EZJJ5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 05:09:57 -0400
+Received: from cn.fujitsu.com ([222.73.24.84]:61280 "EHLO song.cn.fujitsu.com"
+	rhost-flags-OK-FAIL-OK-OK) by vger.kernel.org with ESMTP
+	id S1752517Ab0EZJJ4 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 05:09:56 -0400
+Message-ID: <4BFCE5F2.4070906@cn.fujitsu.com>
+Date: Wed, 26 May 2010 17:12:18 +0800
+From: Li Zefan <lizf@cn.fujitsu.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux i686; en-US; rv:1.9.1b3pre) Gecko/20090513 Fedora/3.0-2.3.beta2.fc11 Thunderbird/3.0b2
 MIME-Version: 1.0
-Content-Type: text/plain; charset=iso-8859-15
-Content-Disposition: inline
-In-Reply-To: <20100526065156.GC7128@spritzerA.linux.bs1.fc.nec.co.jp>
-User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
+To: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
+CC: Pekka Enberg <penberg@cs.helsinki.fi>,
+       Frederic Weisbecker <fweisbec@gmail.com>,
+       Chase Douglas <chase.douglas@canonical.com>,
+       Prasad <prasad@linux.vnet.ibm.com>,
+       Soeren Sandmann <sandmann@daimi.au.dk>,
+       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@redhat.com>,
+       linux-kernel@vger.kernel.org
+Subject: Re: Tracing configuration review
+References: <1274815906.9757.83.camel@cndougla-ubuntu> <20100525201259.GA5370@nowhere> <AANLkTinuHB9gPLBZs_QsHqOm6Y5nR91P_gFlVBXa-ilJ@mail.gmail.com> <4BFCCBB0.6040101@cn.fujitsu.com> <20100526084201.GA22438@localhost>
+In-Reply-To: <20100526084201.GA22438@localhost>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 03:51:56PM +0900, Naoya Horiguchi wrote:
-> Hi, Mel.
+Eduard - Gabriel Munteanu wrote:
+> On Wed, May 26, 2010 at 03:20:16PM +0800, Li Zefan wrote:
+>> Pekka Enberg wrote:
+>>> On Tue, May 25, 2010 at 11:13 PM, Frederic Weisbecker
+>>> <fweisbec@gmail.com> wrote:
+>>>>> # CONFIG_KMEMTRACE is not set (Kconfig says N if unsure)
+>>>> Deprecated. We have the kmem trace event that are a full replacement now.
+>>>> Pekka, Gabriel, can we remove it now?
+>>> I don't think ftrace supports boot-time tracing which kmemtrace did.
+>> We can do boot-time tracing by passing "trace_event=" kernel parameter.
+>>
+>> By passing "ftrace=kmemtrace", kmemtrace can be started when
+>> calling tracer_alloc_buffer(), which is an early_initcall.
+>> While trace events are inititialized as a fs_initcall,  it can
+>> be modified to an early_initcall.
+>>
+>> Furthermore, I noticed the discussion on perf persistent events, which
+>> seems to enable perf trace at boot time, so I think perf-kmem can take
+>> advantage of this and will be a full-replacement of kmemtrace soon ?
+>>
+>>> That said, I was probably the only one actually using the feature so
+>>> maybe we can just nuke kmemtrace at this point...
+>> If you agree on removing kmemtrace now, I'll re-send the patch.
 > 
-> Thank you for the review.
+> I don't understand... wasn't the old kmemtrace (the relayfs based stuff)
+> removed a long time ago? Right now it's just the hooks and code that
+> sets up tracing and printers.
 > 
-> On Tue, May 25, 2010 at 11:59:57AM +0100, Mel Gorman wrote:
-> > ...
-> > I'd have preferred to see the whole series but still...
-> 
-> OK.
-> 
-> > > diff --git a/include/linux/hugetlb.h b/include/linux/hugetlb.h
-> > > index 78b4bc6..a574d09 100644
-> > > --- a/include/linux/hugetlb.h
-> > > +++ b/include/linux/hugetlb.h
-> > > @@ -14,11 +14,6 @@ struct user_struct;
-> > >  
-> > >  int PageHuge(struct page *page);
-> > >  
-> > > -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> > > -{
-> > > -	return vma->vm_flags & VM_HUGETLB;
-> > > -}
-> > > -
-> > >  void reset_vma_resv_huge_pages(struct vm_area_struct *vma);
-> > >  int hugetlb_sysctl_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-> > >  int hugetlb_overcommit_handler(struct ctl_table *, int, void __user *, size_t *, loff_t *);
-> > > @@ -77,11 +72,6 @@ static inline int PageHuge(struct page *page)
-> > >  	return 0;
-> > >  }
-> > >  
-> > > -static inline int is_vm_hugetlb_page(struct vm_area_struct *vma)
-> > > -{
-> > > -	return 0;
-> > > -}
-> > > -
-> > 
-> > You collapse two functions into one here and move them to another
-> > header. Is there a reason why pagemap.h could not include hugetlb.h?
-> 
-> Yes, hugetlb.h includes pagemap.h through mempolicy.h.
-> I didn't make pagemap.h depend on hugetlb.h because it makes cyclic dependency
-> among pagemap.h, mempolicy.h and hugetlb.h.
+> Or does it happen that that code isn't necessary for 'perf kmem' to do
+> its job?
 > 
 
-Ok, that's a good reason.
+Yes, actually the code has nothing to do with perf-kmem.
 
-> > It adds another header dependency which is bad but moving hugetlb stuff
-> > into mm.h seems bad too.
+> And yeah, I'm all for the perf stuff, kmemtrace-user (the out-of-tree
+> userspace tools) has been obsolete since the shift to ftrace.
 > 
-> I have another choice to move the definition of is_vm_hugetlb_page() into
-> mm/hugetlb.c and introduce declaration of this function to pagemap.h,
-> but this needed a bit ugly #ifdefs and I didn't like it.
-> If putting hugetlb code in mm.h is worse, I'll take the second choice
-> in the next post.
+> As for early tracing, that was possible with the relayfs variant, it
+> required only the SLAB layer to be up IIRC. But that stopped working
+> once it got converted to ftrace (kmemtrace_init() is a nop).
 > 
 
-That would add an additional function call overhead to page table teardown
-which would be very unfortunate. I still am not very keen on moving hugetlb
-code to mm.h though.
+Ah, thanks for making this clear, so there's no such early tracing
+feature that acts as a barrier in removing kmemtrace.
 
-How about moving the definition of shared_policy under a CONFIG_NUMA
-block in mm_types.h and removing the dependency between hugetlb.h and
-mempolicy.h?
-
-Does anyone else see a problem with this from a "clean" perspective?
-
--- 
-Mel Gorman
-Part-time Phd Student                          Linux Technology Center
-University of Limerick                         IBM Dublin Software Lab
