@@ -1,49 +1,39 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756922Ab0EZQDL (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 12:03:11 -0400
-Received: from tex.lwn.net ([70.33.254.29]:35411 "EHLO vena.lwn.net"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752691Ab0EZQDJ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 12:03:09 -0400
-Date: Wed, 26 May 2010 10:03:07 -0600
-From: Jonathan Corbet <corbet@lwn.net>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Cc: Mauro Carvalho Chehab <mchehab@infradead.org>,
-       LKML <linux-kernel@vger.kernel.org>
-Subject: [PULL] viafb video capture engine driver
-Message-ID: <20100526100307.5114ea83@bike.lwn.net>
-Organization: LWN.net
-X-Mailer: Claws Mail 3.7.6 (GTK+ 2.21.0; x86_64-redhat-linux-gnu)
+	id S1754894Ab0EZQHH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 12:07:07 -0400
+Received: from casper.infradead.org ([85.118.1.10]:57311 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754174Ab0EZQHE (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 12:07:04 -0400
+Subject: Re: [PATCH] tracing: Remove kmemtrace ftrace plugin
+From: Peter Zijlstra <peterz@infradead.org>
+To: Frederic Weisbecker <fweisbec@gmail.com>
+Cc: Li Zefan <lizf@cn.fujitsu.com>, Ingo Molnar <mingo@elte.hu>,
+       Steven Rostedt <rostedt@goodmis.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+In-Reply-To: <20100526160028.GC5299@nowhere>
+References: <4BFCE849.7090804@cn.fujitsu.com>
+	 <20100526095934.GA5311@nowhere> <1274880514.27810.454.camel@twins>
+	 <20100526160028.GC5299@nowhere>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 18:06:59 +0200
+Message-ID: <1274890019.1674.1761.camel@laptop>
 Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 8bit
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Hi, Linus,
+On Wed, 2010-05-26 at 18:00 +0200, Frederic Weisbecker wrote:
 
-Mauro has now given me an ack for the via-camera driver - used on OLPC
-XO 1.5 systems - so it's now ready for a pull:
+> > You can also axe kernel/tracing/trace_sysprof.c and related bits.
 
-  git://git.lwn.net/linux-2.6.git viafb-next
+> I'll do that too, but I 'll need Soeren's opinion before actually pushing it.
 
-Thanks,
+ISTR that the latest sysprof code uses the perf syscall.
 
-jon
-
-Jonathan Corbet (1):
-      Add the viafb video capture driver
-
- drivers/media/video/Kconfig      |   10 +
- drivers/media/video/Makefile     |    2 +
- drivers/media/video/via-camera.c | 1369 ++++++++++++++++++++++++++++++++++++++
- drivers/media/video/via-camera.h |   93 +++
- drivers/video/via/accel.c        |    2 +-
- drivers/video/via/via-core.c     |   16 +-
- include/linux/via-core.h         |    4 +-
- include/media/v4l2-chip-ident.h  |    4 +
- 8 files changed, 1496 insertions(+), 4 deletions(-)
- create mode 100644 drivers/media/video/via-camera.c
- create mode 100644 drivers/media/video/via-camera.h
