@@ -1,209 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757316Ab0EZTnd (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:43:33 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:2232 "EHLO mx1.redhat.com"
+	id S1756821Ab0EZToM (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:44:12 -0400
+Received: from e3.ny.us.ibm.com ([32.97.182.143]:40715 "EHLO e3.ny.us.ibm.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1757159Ab0EZTna (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:43:30 -0400
-Date: Wed, 26 May 2010 15:40:44 -0400
-From: Rik van Riel <riel@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: [PATCH 4/5] always lock the root (oldest) anon_vma
-Message-ID: <20100526154044.2769e707@annuminas.surriel.com>
-In-Reply-To: <20100526153819.6e5cec0d@annuminas.surriel.com>
-References: <20100526153819.6e5cec0d@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1757167Ab0EZToI (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:44:08 -0400
+Date: Wed, 26 May 2010 12:44:02 -0700
+From: "Paul E. McKenney" <paulmck@linux.vnet.ibm.com>
+To: Heiko Carstens <heiko.carstens@de.ibm.com>
+Cc: linux-kernel@vger.kernel.org, Dagmar Volkmann <dagmar.volkmann@de.ibm.com>
+Subject: Re: rcu: inet_timewait_sock.h:227 invoked rcu_dereference_check()
+ without protection
+Message-ID: <20100526194402.GD2934@linux.vnet.ibm.com>
+Reply-To: paulmck@linux.vnet.ibm.com
+References: <20100526154507.GC2232@osiris.boeblingen.de.ibm.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <20100526154507.GC2232@osiris.boeblingen.de.ibm.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Subject: always lock the root (oldest) anon_vma
+On Wed, May 26, 2010 at 05:45:07PM +0200, Heiko Carstens wrote:
+> Hi Paul,
+> 
+> we got the following RCU trace here while doing some tests with 2.6.34
+> vanilla with some extra patches on top, but which do not touch RCU nor
+> inet code.
+> Would be nice if you could have a look at it.
 
-Always (and only) lock the root (oldest) anon_vma whenever we do something in an
-anon_vma.  The recently introduced anon_vma scalability is due to the rmap code
-scanning only the VMAs that need to be scanned.  Many common operations still
-took the anon_vma lock on the root anon_vma, so always taking that lock is not
-expected to introduce any scalability issues.
+Hello, Heiko,
 
-However, always taking the same lock does mean we only need to take one lock,
-which means rmap_walk on pages from any anon_vma in the vma is excluded from
-occurring during an munmap, expand_stack or other operation that needs to
-exclude rmap_walk and similar functions.
+This is fixed by commit 7ec75c582e639d956ce3afd499f67febe6f902a4 in
+Linus's tree.
 
-Also add the proper locking to vma_adjust.
+							Thanx, Paul
 
-Signed-off-by: Rik van Riel <riel@redhat.com>
----
-v3:
- - fix locking inversion in vma_adjust, spotted by Andrea
- - mm_take_all locks needs to use the bitflag in the root anon_vma,
-   since that is the one that gets locked (Andrea Arcangeli)
-v2:
- - conditionally take the anon_vma lock in vma_adjust, like introduced
-   in 252c5f94d944487e9f50ece7942b0fbf659c5c31  (with a proper comment)
-
- include/linux/rmap.h |    8 ++++----
- mm/ksm.c             |    2 +-
- mm/migrate.c         |    2 +-
- mm/mmap.c            |   30 ++++++++++++++++++++++--------
- 4 files changed, 28 insertions(+), 14 deletions(-)
-
-Index: linux-2.6.34/include/linux/rmap.h
-===================================================================
---- linux-2.6.34.orig/include/linux/rmap.h
-+++ linux-2.6.34/include/linux/rmap.h
-@@ -104,24 +104,24 @@ static inline void vma_lock_anon_vma(str
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		spin_lock(&anon_vma->lock);
-+		spin_lock(&anon_vma->root->lock);
- }
- 
- static inline void vma_unlock_anon_vma(struct vm_area_struct *vma)
- {
- 	struct anon_vma *anon_vma = vma->anon_vma;
- 	if (anon_vma)
--		spin_unlock(&anon_vma->lock);
-+		spin_unlock(&anon_vma->root->lock);
- }
- 
- static inline void anon_vma_lock(struct anon_vma *anon_vma)
- {
--	spin_lock(&anon_vma->lock);
-+	spin_lock(&anon_vma->root->lock);
- }
- 
- static inline void anon_vma_unlock(struct anon_vma *anon_vma)
- {
--	spin_unlock(&anon_vma->lock);
-+	spin_unlock(&anon_vma->root->lock);
- }
- 
- /*
-Index: linux-2.6.34/mm/ksm.c
-===================================================================
---- linux-2.6.34.orig/mm/ksm.c
-+++ linux-2.6.34/mm/ksm.c
-@@ -325,7 +325,7 @@ static void drop_anon_vma(struct rmap_it
- {
- 	struct anon_vma *anon_vma = rmap_item->anon_vma;
- 
--	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-+	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		anon_vma_unlock(anon_vma);
- 		if (empty)
-Index: linux-2.6.34/mm/mmap.c
-===================================================================
---- linux-2.6.34.orig/mm/mmap.c
-+++ linux-2.6.34/mm/mmap.c
-@@ -506,6 +506,7 @@ int vma_adjust(struct vm_area_struct *vm
- 	struct vm_area_struct *importer = NULL;
- 	struct address_space *mapping = NULL;
- 	struct prio_tree_root *root = NULL;
-+	struct anon_vma *anon_vma = NULL;
- 	struct file *file = vma->vm_file;
- 	long adjust_next = 0;
- 	int remove_next = 0;
-@@ -578,6 +579,17 @@ again:			remove_next = 1 + (end > next->
- 		}
- 	}
- 
-+	/*
-+	 * When changing only vma->vm_end, we don't really need anon_vma
-+	 * lock. This is a fairly rare case by itself, but the anon_vma
-+	 * lock may be shared between many sibling processes.  Skipping
-+	 * the lock for brk adjustments makes a difference sometimes.
-+	 */
-+	if (vma->anon_vma && (insert || importer || start != vma->vm_start)) {
-+		anon_vma = vma->anon_vma;
-+		anon_vma_lock(anon_vma);
-+	}
-+
- 	if (root) {
- 		flush_dcache_mmap_lock(mapping);
- 		vma_prio_tree_remove(vma, root);
-@@ -617,6 +629,8 @@ again:			remove_next = 1 + (end > next->
- 		__insert_vm_struct(mm, insert);
- 	}
- 
-+	if (anon_vma)
-+		anon_vma_unlock(anon_vma);
- 	if (mapping)
- 		spin_unlock(&mapping->i_mmap_lock);
- 
-@@ -2466,23 +2480,23 @@ static DEFINE_MUTEX(mm_all_locks_mutex);
- 
- static void vm_lock_anon_vma(struct mm_struct *mm, struct anon_vma *anon_vma)
- {
--	if (!test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-+	if (!test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
- 		/*
- 		 * The LSB of head.next can't change from under us
- 		 * because we hold the mm_all_locks_mutex.
- 		 */
--		spin_lock_nest_lock(&anon_vma->lock, &mm->mmap_sem);
-+		spin_lock_nest_lock(&anon_vma->root->lock, &mm->mmap_sem);
- 		/*
- 		 * We can safely modify head.next after taking the
--		 * anon_vma->lock. If some other vma in this mm shares
-+		 * anon_vma->root->lock. If some other vma in this mm shares
- 		 * the same anon_vma we won't take it again.
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us thanks to the
--		 * anon_vma->lock.
-+		 * anon_vma->root->lock.
- 		 */
- 		if (__test_and_set_bit(0, (unsigned long *)
--				       &anon_vma->head.next))
-+				       &anon_vma->root->head.next))
- 			BUG();
- 	}
- }
-@@ -2573,7 +2587,7 @@ out_unlock:
- 
- static void vm_unlock_anon_vma(struct anon_vma *anon_vma)
- {
--	if (test_bit(0, (unsigned long *) &anon_vma->head.next)) {
-+	if (test_bit(0, (unsigned long *) &anon_vma->root->head.next)) {
- 		/*
- 		 * The LSB of head.next can't change to 0 from under
- 		 * us because we hold the mm_all_locks_mutex.
-@@ -2584,10 +2598,10 @@ static void vm_unlock_anon_vma(struct an
- 		 *
- 		 * No need of atomic instructions here, head.next
- 		 * can't change from under us until we release the
--		 * anon_vma->lock.
-+		 * anon_vma->root->lock.
- 		 */
- 		if (!__test_and_clear_bit(0, (unsigned long *)
--					  &anon_vma->head.next))
-+					  &anon_vma->root->head.next))
- 			BUG();
- 		anon_vma_unlock(anon_vma);
- 	}
-Index: linux-2.6.34/mm/migrate.c
-===================================================================
---- linux-2.6.34.orig/mm/migrate.c
-+++ linux-2.6.34/mm/migrate.c
-@@ -682,7 +682,7 @@ skip_unmap:
- rcu_unlock:
- 
- 	/* Drop an anon_vma reference if we took one */
--	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
-+	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->root->lock)) {
- 		int empty = list_empty(&anon_vma->head);
- 		anon_vma_unlock(anon_vma);
- 		if (empty)
-
+> May 21 09:05:16 h0515017 kernel: ===================================================
+> May 21 09:05:16 h0515017 kernel: [ INFO: suspicious rcu_dereference_check() usage. ]
+> May 21 09:05:16 h0515017 kernel: ---------------------------------------------------
+> May 21 09:05:16 h0515017 kernel: /home/autobuild/BUILD/linux-2.6.34-20100520/include/net/inet_timewait_sock.h:227 invoked rcu_dereference_check() without protection!
+> May 21 09:05:16 h0515017 kernel:
+> May 21 09:05:16 h0515017 kernel: other info that might help us debug this:
+> May 21 09:05:16 h0515017 kernel:
+> May 21 09:05:16 h0515017 kernel:
+> May 21 09:05:16 h0515017 kernel: rcu_scheduler_active = 1, debug_locks = 0
+> May 21 09:05:16 h0515017 kernel: 1 lock held by swapper/0:
+> May 21 09:05:16 h0515017 kernel: #0:  (/home/autobuild/BUILD/linux-2.6.34-20100520/net/ipv4/tcp_minisocks.c:41){+.-...}, at: [<0000000000158398>] run_timer_softirq+0x1b4/0x354
+> May 21 09:05:16 h0515017 kernel:
+> May 21 09:05:16 h0515017 kernel: stack backtrace:
+> May 21 09:05:16 h0515017 kernel: CPU: 0 Not tainted 2.6.34-42.x.20100520-s390xdefault #1
+> May 21 09:05:16 h0515017 kernel: Process swapper (pid: 0, task: 0000000000812a18, ksp: 0000000000807e00)
+> May 21 09:05:16 h0515017 kernel: 0000000000000000 000000003ffa7bc8 0000000000000002 0000000000000000
+> May 21 09:05:16 h0515017 kernel:       000000003ffa7c68 000000003ffa7be0 000000003ffa7be0 000000000056ba7c
+> May 21 09:05:16 h0515017 kernel:       0000000000000000 0000000000000002 00000000000002d8 0000000000000000
+> May 21 09:05:16 h0515017 kernel:       000000000000000d 0000000000000000 000000003ffa7c38 000000000000000e
+> May 21 09:05:16 h0515017 kernel:       00000000005c48a8 0000000000105a20 000000003ffa7bc8 000000003ffa7c10
+> May 21 09:05:16 h0515017 kernel: Call Trace:
+> May 21 09:05:16 h0515017 kernel: ([<000000000010596e>] show_trace+0x142/0x148)
+> May 21 09:05:16 h0515017 kernel: [<00000000004a5068>] __inet_twsk_kill+0x140/0x14c
+> May 21 09:05:16 h0515017 kernel: [<00000000004a566c>] inet_twdr_do_twkill_work+0x90/0x130
+> May 21 09:05:16 h0515017 kernel: [<00000000004a585a>] inet_twdr_hangman+0x5e/0xec
+> May 21 09:05:16 h0515017 kernel: [<000000000015842a>] run_timer_softirq+0x246/0x354
+> May 21 09:05:16 h0515017 kernel: [<00000000001514ae>] __do_softirq+0xfa/0x1b8
+> May 21 09:05:16 h0515017 kernel: [<0000000000112608>] do_softirq+0xe4/0xe8
+> May 21 09:05:16 h0515017 kernel: [<0000000000150f3c>] irq_exit+0xc0/0xe0
+> May 21 09:05:16 h0515017 kernel: [<000000000010f9ce>] do_extint+0x126/0x17c
+> May 21 09:05:16 h0515017 kernel: [<0000000000119e5c>] ext_no_vtime+0x28/0x2c
+> May 21 09:05:16 h0515017 kernel: [<0000000000116c10>] vtime_stop_cpu+0xac/0x100
+> May 21 09:05:16 h0515017 kernel: ([<0000000000116bb6>] vtime_stop_cpu+0x52/0x100)
+> May 21 09:05:16 h0515017 kernel: [<000000000010c1a8>] cpu_idle+0xf8/0x190
+> May 21 09:05:16 h0515017 kernel: [<0000000000859cf0>] start_kernel+0x3b4/0x418
+> May 21 09:05:16 h0515017 kernel: [<0000000000100020>] _stext+0x20/0x80
+> May 21 09:05:16 h0515017 kernel: INFO: lockdep is turned off.
+> 
+> Thanks,
+> Heiko
