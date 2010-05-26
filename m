@@ -1,155 +1,276 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757801Ab0EZUaJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:30:09 -0400
-Received: from wolverine02.qualcomm.com ([199.106.114.251]:4278 "EHLO
-	wolverine02.qualcomm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753696Ab0EZUaF (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:30:05 -0400
-X-IronPort-AV: E=McAfee;i="5400,1158,5994"; a="42508730"
-From: adharmap@codeaurora.org
-To: tglx@linutronix.de
-Cc: Abhijeet Dharmapurikar <adharmap@codeaurora.org>,
-       Mark Brown <broonie@opensource.wolfsonmicro.com>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Trilok Soni <soni.trilok@gmail.com>, Pavel Machek <pavel@ucw.cz>,
-       Brian Swetland <swetland@google.com>,
-       Joonyoung Shim <jy0922.shim@samsung.com>, m.szyprowski@samsung.com,
-       t.fujak@samsung.com, kyungmin.park@samsung.com,
-       David Brownell <david-b@pacbell.net>, Daniel Ribeiro <drwyrm@gmail.com>,
-       arve@android.com, Barry Song <21cnbao@gmail.com>,
-       Russell King <linux@arm.linux.org.uk>,
-       Bryan Huntsman <bryanh@quicinc.com>,
-       Iliyan Malchev <malchev@google.com>, Michael Buesch <mb@bu3sch.de>,
-       Bruno Premont <bonbons@linux-vserver.org>,
-       linux-arm-kernel@lists.infradead.org, linux-kernel@vger.kernel.org
-Subject: [RFC PATCH] irq: handle private interrupt registration
-Date: Wed, 26 May 2010 13:29:54 -0700
-Message-Id: <1274905794-7848-1-git-send-email-adharmap@codeaurora.org>
-X-Mailer: git-send-email 1.5.6.3
+	id S1757817Ab0EZUap (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:30:45 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:60566 "EHLO mx1.redhat.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1755896Ab0EZUao (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 16:30:44 -0400
+Subject: Re: [PATCH 2/5] change direct call of spin_lock(anon_vma->lock) to
+	inline function
+From: Larry Woodman <lwoodman@redhat.com>
+To: Rik van Riel <riel@redhat.com>
+Cc: akpm@linux-foundation.org, linux-kernel@vger.kernel.org,
+       linux-mm@kvack.org, Mel Gorman <mel@csn.ul.ie>,
+       Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+In-Reply-To: <20100526153926.1272945b@annuminas.surriel.com>
+References: <20100526153819.6e5cec0d@annuminas.surriel.com>
+	 <20100526153926.1272945b@annuminas.surriel.com>
+Content-Type: text/plain
+Date: Wed, 26 May 2010 16:33:58 -0400
+Message-Id: <1274906038.20515.107.camel@dhcp-100-19-198.bos.redhat.com>
+Mime-Version: 1.0
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
+On Wed, 2010-05-26 at 15:39 -0400, Rik van Riel wrote:
+> Subject: change direct call of spin_lock(anon_vma->lock) to inline function
+> 
+> Subsitute a direct call of spin_lock(anon_vma->lock) with
+> an inline function doing exactly the same.
+> 
+> This makes it easier to do the substitution to the root
+> anon_vma lock in a following patch.
+> 
+> We will deal with the handful of special locks (nested,
+> dec_and_lock, etc) separately.
+> 
+> Signed-off-by: Rik van Riel <riel@redhat.com>
+> Acked-by: Mel Gorman <mel@csn.ul.ie>
+> Acked-by: KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>
 
-The current code fails to register a handler for the same irq
-without taking in to account that it could be a per cpu interrupt.
-If the IRQF_PERCPU flag is set, enable the interrupt on that cpu
-and return success.
+Tested and Acked-by: Larry Woodman <lwoodman@redhat.com>
 
-Change-Id: I748b3aa08d794342ad74cbd0bb900cc599f883a6
-Signed-off-by: Abhijeet Dharmapurikar <adharmap@codeaurora.org>
----
-
-On systems with an interrupt controller that supports
-private interrupts per core, it is not possible to call 
-request_irq/setup_irq from multiple cores for the same irq. This is because
-the second+ invocation of __setup_irq checks if the previous
-hndler had a IRQ_SHARED flag set and errors out if not. 
-
-The current irq handling code doesnt take in to account what cpu it 
-is executing on.  Usually the local interrupt controller registers are banked 
-per cpu a.k.a. a cpu can enable its local interrupt by writing to its banked 
-registers.
-
-One way to get around this problem is to call the setup_irq on a single cpu 
-while other cpus simply enable their private interrupts by writing to their 
-banked registers
-
-For eg. code in arch/arm/time/smp_twd.c
-	/* Make sure our local interrupt controller has this enabled */
-	local_irq_save(flags);
-	get_irq_chip(clk->irq)->unmask(clk->irq);
-	local_irq_restore(flags);
-
-This looks like a hacky way to get local interrupts working on 
-multiple cores.
-
-The patch adds a check for PERCPU flag in __setup_irq - if an handler is 
-present it simply enables that interrupt for that core and returns 0.
-
- arch/arm/Kconfig    |    5 +++++
- kernel/irq/manage.c |   38 +++++++++++++++++++++++++++++++-------
- 2 files changed, 36 insertions(+), 7 deletions(-)
-
-diff --git a/arch/arm/Kconfig b/arch/arm/Kconfig
-index fcb79c9..ceefffd 100644
---- a/arch/arm/Kconfig
-+++ b/arch/arm/Kconfig
-@@ -979,6 +979,11 @@ config SMP
- 
- 	  If you don't know what to do here, say N.
- 
-+config IRQ_PER_CPU
-+	bool
-+	depends on SMP
-+	default y
-+
- config HAVE_ARM_SCU
- 	bool
- 	depends on SMP
-diff --git a/kernel/irq/manage.c b/kernel/irq/manage.c
-index bde4c66..9592a2d 100644
---- a/kernel/irq/manage.c
-+++ b/kernel/irq/manage.c
-@@ -683,6 +683,37 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 	old_ptr = &desc->action;
- 	old = *old_ptr;
- 	if (old) {
-+#if defined(CONFIG_IRQ_PER_CPU)
-+		/* All handlers must agree on per-cpuness */
-+		if ((old->flags & IRQF_PERCPU) !=
-+			(new->flags & IRQF_PERCPU))
-+			goto mismatch;
-+
-+		if (old->flags & IRQF_PERCPU) {
-+			/* the chip must have been set for this interrupt*/
-+			if (!(desc->status & IRQ_NOAUTOEN)) {
-+				desc->depth = 0;
-+				desc->status &= ~IRQ_DISABLED;
-+				desc->chip->startup(irq);
-+			} else
-+				/* Undo nested disables: */
-+				desc->depth = 1;
-+
-+			spin_unlock_irqrestore(&desc->lock, flags);
-+			if (new->thread)
-+				wake_up_process(new->thread);
-+			return 0;
-+		}
-+#endif
-+
-+		/* they are the same types and same handler
-+		 * perhaps it is a private cpu interrupt
-+		 */
-+		if (old->flags == new->flags
-+			&& old->handler == new->handler)
-+			setup_affinity(irq, desc);
-+			return 0;
-+
- 		/*
- 		 * Can't share interrupts unless both agree to and are
- 		 * the same type (level, edge, polarity). So both flag
-@@ -695,13 +726,6 @@ __setup_irq(unsigned int irq, struct irq_desc *desc, struct irqaction *new)
- 			goto mismatch;
- 		}
- 
--#if defined(CONFIG_IRQ_PER_CPU)
--		/* All handlers must agree on per-cpuness */
--		if ((old->flags & IRQF_PERCPU) !=
--		    (new->flags & IRQF_PERCPU))
--			goto mismatch;
--#endif
--
- 		/* add new interrupt at end of irq queue */
- 		do {
- 			old_ptr = &old->next;
--- 
-1.5.6.3
---
-Sent by an employee of the Qualcomm Innovation Center, Inc.
-The Qualcomm Innovation Center, Inc. is a member of the Code Aurora Forum
-
+> ---
+>  include/linux/rmap.h |   10 ++++++++++
+>  mm/ksm.c             |   18 +++++++++---------
+>  mm/migrate.c         |    2 +-
+>  mm/mmap.c            |    2 +-
+>  mm/rmap.c            |   22 +++++++++++-----------
+>  5 files changed, 32 insertions(+), 22 deletions(-)
+> 
+> Index: linux-2.6.34/include/linux/rmap.h
+> ===================================================================
+> --- linux-2.6.34.orig/include/linux/rmap.h
+> +++ linux-2.6.34/include/linux/rmap.h
+> @@ -113,6 +113,16 @@ static inline void vma_unlock_anon_vma(s
+>  		spin_unlock(&anon_vma->lock);
+>  }
+>  
+> +static inline void anon_vma_lock(struct anon_vma *anon_vma)
+> +{
+> +	spin_lock(&anon_vma->lock);
+> +}
+> +
+> +static inline void anon_vma_unlock(struct anon_vma *anon_vma)
+> +{
+> +	spin_unlock(&anon_vma->lock);
+> +}
+> +
+>  /*
+>   * anon_vma helper functions.
+>   */
+> Index: linux-2.6.34/mm/ksm.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/ksm.c
+> +++ linux-2.6.34/mm/ksm.c
+> @@ -327,7 +327,7 @@ static void drop_anon_vma(struct rmap_it
+>  
+>  	if (atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
+>  		int empty = list_empty(&anon_vma->head);
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  		if (empty)
+>  			anon_vma_free(anon_vma);
+>  	}
+> @@ -1566,7 +1566,7 @@ again:
+>  		struct anon_vma_chain *vmac;
+>  		struct vm_area_struct *vma;
+>  
+> -		spin_lock(&anon_vma->lock);
+> +		anon_vma_lock(anon_vma);
+>  		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+>  			vma = vmac->vma;
+>  			if (rmap_item->address < vma->vm_start ||
+> @@ -1589,7 +1589,7 @@ again:
+>  			if (!search_new_forks || !mapcount)
+>  				break;
+>  		}
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  		if (!mapcount)
+>  			goto out;
+>  	}
+> @@ -1619,7 +1619,7 @@ again:
+>  		struct anon_vma_chain *vmac;
+>  		struct vm_area_struct *vma;
+>  
+> -		spin_lock(&anon_vma->lock);
+> +		anon_vma_lock(anon_vma);
+>  		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+>  			vma = vmac->vma;
+>  			if (rmap_item->address < vma->vm_start ||
+> @@ -1637,11 +1637,11 @@ again:
+>  			ret = try_to_unmap_one(page, vma,
+>  					rmap_item->address, flags);
+>  			if (ret != SWAP_AGAIN || !page_mapped(page)) {
+> -				spin_unlock(&anon_vma->lock);
+> +				anon_vma_unlock(anon_vma);
+>  				goto out;
+>  			}
+>  		}
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  	}
+>  	if (!search_new_forks++)
+>  		goto again;
+> @@ -1671,7 +1671,7 @@ again:
+>  		struct anon_vma_chain *vmac;
+>  		struct vm_area_struct *vma;
+>  
+> -		spin_lock(&anon_vma->lock);
+> +		anon_vma_lock(anon_vma);
+>  		list_for_each_entry(vmac, &anon_vma->head, same_anon_vma) {
+>  			vma = vmac->vma;
+>  			if (rmap_item->address < vma->vm_start ||
+> @@ -1688,11 +1688,11 @@ again:
+>  
+>  			ret = rmap_one(page, vma, rmap_item->address, arg);
+>  			if (ret != SWAP_AGAIN) {
+> -				spin_unlock(&anon_vma->lock);
+> +				anon_vma_unlock(anon_vma);
+>  				goto out;
+>  			}
+>  		}
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  	}
+>  	if (!search_new_forks++)
+>  		goto again;
+> Index: linux-2.6.34/mm/mmap.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/mmap.c
+> +++ linux-2.6.34/mm/mmap.c
+> @@ -2589,7 +2589,7 @@ static void vm_unlock_anon_vma(struct an
+>  		if (!__test_and_clear_bit(0, (unsigned long *)
+>  					  &anon_vma->head.next))
+>  			BUG();
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  	}
+>  }
+>  
+> Index: linux-2.6.34/mm/rmap.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/rmap.c
+> +++ linux-2.6.34/mm/rmap.c
+> @@ -134,7 +134,7 @@ int anon_vma_prepare(struct vm_area_stru
+>  			allocated = anon_vma;
+>  		}
+>  
+> -		spin_lock(&anon_vma->lock);
+> +		anon_vma_lock(anon_vma);
+>  		/* page_table_lock to protect against threads */
+>  		spin_lock(&mm->page_table_lock);
+>  		if (likely(!vma->anon_vma)) {
+> @@ -147,7 +147,7 @@ int anon_vma_prepare(struct vm_area_stru
+>  			avc = NULL;
+>  		}
+>  		spin_unlock(&mm->page_table_lock);
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  
+>  		if (unlikely(allocated))
+>  			anon_vma_free(allocated);
+> @@ -170,9 +170,9 @@ static void anon_vma_chain_link(struct v
+>  	avc->anon_vma = anon_vma;
+>  	list_add(&avc->same_vma, &vma->anon_vma_chain);
+>  
+> -	spin_lock(&anon_vma->lock);
+> +	anon_vma_lock(anon_vma);
+>  	list_add_tail(&avc->same_anon_vma, &anon_vma->head);
+> -	spin_unlock(&anon_vma->lock);
+> +	anon_vma_unlock(anon_vma);
+>  }
+>  
+>  /*
+> @@ -246,12 +246,12 @@ static void anon_vma_unlink(struct anon_
+>  	if (!anon_vma)
+>  		return;
+>  
+> -	spin_lock(&anon_vma->lock);
+> +	anon_vma_lock(anon_vma);
+>  	list_del(&anon_vma_chain->same_anon_vma);
+>  
+>  	/* We must garbage collect the anon_vma if it's empty */
+>  	empty = list_empty(&anon_vma->head) && !anonvma_external_refcount(anon_vma);
+> -	spin_unlock(&anon_vma->lock);
+> +	anon_vma_unlock(anon_vma);
+>  
+>  	if (empty)
+>  		anon_vma_free(anon_vma);
+> @@ -303,10 +303,10 @@ again:
+>  		goto out;
+>  
+>  	anon_vma = (struct anon_vma *) (anon_mapping - PAGE_MAPPING_ANON);
+> -	spin_lock(&anon_vma->lock);
+> +	anon_vma_lock(anon_vma);
+>  
+>  	if (page_rmapping(page) != anon_vma) {
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  		goto again;
+>  	}
+>  
+> @@ -318,7 +318,7 @@ out:
+>  
+>  void page_unlock_anon_vma(struct anon_vma *anon_vma)
+>  {
+> -	spin_unlock(&anon_vma->lock);
+> +	anon_vma_unlock(anon_vma);
+>  	rcu_read_unlock();
+>  }
+>  
+> @@ -1396,7 +1396,7 @@ static int rmap_walk_anon(struct page *p
+>  	anon_vma = page_anon_vma(page);
+>  	if (!anon_vma)
+>  		return ret;
+> -	spin_lock(&anon_vma->lock);
+> +	anon_vma_lock(anon_vma);
+>  	list_for_each_entry(avc, &anon_vma->head, same_anon_vma) {
+>  		struct vm_area_struct *vma = avc->vma;
+>  		unsigned long address = vma_address(page, vma);
+> @@ -1406,7 +1406,7 @@ static int rmap_walk_anon(struct page *p
+>  		if (ret != SWAP_AGAIN)
+>  			break;
+>  	}
+> -	spin_unlock(&anon_vma->lock);
+> +	anon_vma_unlock(anon_vma);
+>  	return ret;
+>  }
+>  
+> Index: linux-2.6.34/mm/migrate.c
+> ===================================================================
+> --- linux-2.6.34.orig/mm/migrate.c
+> +++ linux-2.6.34/mm/migrate.c
+> @@ -684,7 +684,7 @@ rcu_unlock:
+>  	/* Drop an anon_vma reference if we took one */
+>  	if (anon_vma && atomic_dec_and_lock(&anon_vma->external_refcount, &anon_vma->lock)) {
+>  		int empty = list_empty(&anon_vma->head);
+> -		spin_unlock(&anon_vma->lock);
+> +		anon_vma_unlock(anon_vma);
+>  		if (empty)
+>  			anon_vma_free(anon_vma);
+>  	}
+> 
+> --
+> To unsubscribe, send a message with 'unsubscribe linux-mm' in
+> the body to majordomo@kvack.org.  For more info on Linux MM,
+> see: http://www.linux-mm.org/ .
+> Don't email: <a href=mailto:"dont@kvack.org"> email@kvack.org </a>
 
