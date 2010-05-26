@@ -1,114 +1,127 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753287Ab0EZGvn (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 02:51:43 -0400
-Received: from e23smtp03.au.ibm.com ([202.81.31.145]:48099 "EHLO
-	e23smtp03.au.ibm.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752766Ab0EZGvm (ORCPT
+	id S934236Ab0EZGy5 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 02:54:57 -0400
+Received: from casper.infradead.org ([85.118.1.10]:51410 "EHLO
+	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752574Ab0EZGyz convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 02:51:42 -0400
-Date: Wed, 26 May 2010 12:21:29 +0530
-From: "K.Prasad" <prasad@linux.vnet.ibm.com>
-To: Millton Miller <miltonm@bga.com>
-Cc: Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Gibson <dwg@au1.ibm.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Paul Mackerras <paulus@samba.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint
-	unregistration
-Message-ID: <20100526065129.GA3746@in.ibm.com>
-Reply-To: prasad@linux.vnet.ibm.com
-References: <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <1274787559_8162@mail4.comsite.net>
-User-Agent: Mutt/1.5.19 (2009-01-05)
+	Wed, 26 May 2010 02:54:55 -0400
+Subject: Re: [RFC PATCH 2/4] x86: Add IRQ_TIME_ACCOUNTING, finer accounting
+ of  irq time to task
+From: Peter Zijlstra <peterz@infradead.org>
+To: Venkatesh Pallipadi <venki@google.com>
+Cc: Ingo Molnar <mingo@elte.hu>, "H. Peter Anvin" <hpa@zytor.com>,
+       Thomas Gleixner <tglx@linutronix.de>,
+       Balbir Singh <balbir@linux.vnet.ibm.com>,
+       Paul Menage <menage@google.com>, linux-kernel@vger.kernel.org,
+       Paul Turner <pjt@google.com>,
+       Martin Schwidefsky <schwidefsky@de.ibm.com>,
+       Heiko Carstens <heiko.carstens@de.ibm.com>,
+       Paul Mackerras <paulus@samba.org>
+In-Reply-To: <AANLkTinPtwSUjMtBRkb96DU4lym8ZNrYwPe_q6rstT4D@mail.gmail.com>
+References: <1274746282-21533-1-git-send-email-venki@google.com>
+	 <1274746282-21533-2-git-send-email-venki@google.com>
+	 <1274746282-21533-3-git-send-email-venki@google.com>
+	 <1274769311.5882.96.camel@twins>
+	 <AANLkTinPtwSUjMtBRkb96DU4lym8ZNrYwPe_q6rstT4D@mail.gmail.com>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 May 2010 08:54:41 +0200
+Message-ID: <1274856881.5882.4467.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 06:39:19AM -0500, Millton Miller wrote:
-> On Tue, 25 May 2010 at 14:43:56 +0530, K.Prasad wrote:
-> > Certain architectures (such as PowerPC Book III S) have a need to cleanup
-> > data-structures before the breakpoint is unregistered. This patch introduces
-> > an arch-specific hook in release_bp_slot() along with a weak definition in
-> > the form of a stub funciton.
-> > 
-> > Signed-off-by: K.Prasad <prasad@linux.vnet.ibm.com>
-> > ---
-> >  kernel/hw_breakpoint.c |   12 ++++++++++++
-> >  1 file changed, 12 insertions(+)
+On Tue, 2010-05-25 at 14:40 -0700, Venkatesh Pallipadi wrote:
+> On Mon, May 24, 2010 at 11:35 PM, Peter Zijlstra <peterz@infradead.org> wrote:
+> > On Mon, 2010-05-24 at 17:11 -0700, Venkatesh Pallipadi wrote:
+> >> +void account_system_vtime(struct task_struct *tsk)
+> >> +{
+> >> +       unsigned long flags;
+> >> +       int cpu;
+> >> +       u64 now;
+> >> +
+> >> +       local_irq_save(flags);
+> >> +       cpu = task_cpu(tsk);
+> >> +       now = sched_clock_cpu(cpu);
+> >> +       if (hardirq_count())
+> >> +               tsk->hi_time += now - per_cpu(irq_start_time, cpu);
+> >> +       else if (softirq_count())
+> >> +               tsk->si_time += now - per_cpu(irq_start_time, cpu);
+> >> +
+> >> +       per_cpu(irq_start_time, cpu) = now;
+> >> +       local_irq_restore(flags);
+> >> +}
+> >
+> > Right, so this gets called from irq_enter/exit() and __do_softirq().
+> >
+> > The reason I never pressed onwards with this (I had patches to add IRQ
+> > time accounting) is that it sucks terribly for anything falling back to
+> > jiffies -- maybe find some smart way to disable the whole call when
+> > there's no TSC available, preferably without adding conditionals, using
+> > alternatives maybe?
+> >
+> > I guess you mostly side-stepped that by adding a IRQ_TIME_ACCOUNTING
+> > config (but forgot to make it depend on X86_TSC).
 > 
-> 
-> My understanding is weak function definitions must appear in a different C
-> file than their call sites to work on some toolchains.
-> 
+> Yes. The TSC dependency is unfortunately not CONFIG time. Even with X86_TSC,
+> there is support for tsc_disabled. So, this should be a run time
+> conditional or an alternative.
 
-Atleast, there are quite a few precedents inside the Linux kernel for
-__weak functions being invoked from the file in which they are defined
-(arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
-name a few).
-Moreover the online GCC docs haven't any such constraints mentioned.
+Right.
 
-> Andrew, can you confirm the above statement?
+> > Another thing I dislike about this account_system_vtime() is that its
+> > the same call for both IRQ and SoftIRQ, leaving us to add conditionals
+> > inside the call to figure out what context we got called from.
+> >
+> > [ Adedd the s390 and ppc guys who already use this stuff ]
 > 
-> > Index: linux-2.6.ppc64_test/kernel/hw_breakpoint.c
-> > ===================================================================
-> > --- linux-2.6.ppc64_test.orig/kernel/hw_breakpoint.c
-> > +++ linux-2.6.ppc64_test/kernel/hw_breakpoint.c
-> > @@ -242,6 +242,17 @@  toggle_bp_slot(struct perf_event *bp, bo
-> >  }
-> >  
-> >  /*
-> > + * Function to perform processor-specific cleanup during unregistration
-> > + */
-> > +__weak void arch_unregister_hw_breakpoint(struct perf_event *bp)
-> > +{
-> > +	/*
-> > +	 * A weak stub function here for those archs that don't define
-> > +	 * it inside arch/.../kernel/hw_breakpoint.c
-> > +	 */
-> > +}
-> > +
-> > +/*
-> >   * Contraints to check before allowing this new breakpoint counter:
-> >   *
-> >   *  == Non-pinned counter == (Considered as pinned for now)
-> > @@ -339,6 +350,7 @@  void release_bp_slot(struct perf_event *
-> >  {
-> >  	mutex_lock(&nr_bp_mutex);
-> >  
-> > +	arch_unregister_hw_breakpoint(bp);
-> >  	__release_bp_slot(bp);
-> >  
-> >  	mutex_unlock(&nr_bp_mutex);
-> > 
+> We can probably add a parameter on from where it is being called. Even
+> with that we still need some conditionals to handle hardirq overlapping a
+> softirq. That part kind of happens naturally with the current code.
+
+Ah, indeed. Yes that nesting stuff will give some conditionals.
+
+> > Anyway, once we have this, please also add it to sched_rt_avg_update()
+> > (which should really be called sched_!fair_avg_update()).
 > 
+> You mean take out the hi and si time from rt_delta?
+
+No add it in. The thing we do with rt_delta is compute how much time is
+not available to sched_fair, so that we can normalize the runqueue
+weights across cpus to ensure tasks still get an equal amount of
+service.
+
+Currently it only accounts for the time spend running RT tasks, but
+ideally it should be everything not running sched_fair which of course
+includes all the IRQ overhead.
+
+> > Also, did you measure the overhead of doing this? sched_clock_cpu() adds
+> > a cmpxchg64 on all systems that don't have a rock solid TSC (ie. most of
+> > todays machines).
+> >
+> > Another thing that would be real nice is if you could find a way to not
+> > make all of this x86 specific.
 > 
-> Since the weak version is empty, should it just be delcared (in
-> a header, put the comment there) and not defined?
->
+> Yes. Thats one of the reason I made this based of sched_clock. May be
+> we can have a has_fast_sched_clock feature that archs and opt in to that
+> enables this with an alternative?
 
-The initial thinking behind defining it in the .c file was, for one,
-the function need not be moved (from .h to .c) when other architectures
-have a need to populate them. Secondly, given that powerpc (which has a
-'strong' definition for arch_unregister_hw_breakpoint()) includes the
-header file (in which this can be moved to) I wasn't sure about
-possible conflicts.
+Right, we can already use CONFIG_HACE_UNSTABLE_SCHED_CLOCK and
+sched_clock_stable, but we need more.
 
-> milton
-> _______________________________________________
-> Linuxppc-dev mailing list
-> Linuxppc-dev@lists.ozlabs.org
-> https://lists.ozlabs.org/listinfo/linuxppc-dev
+Also, what will the stats show when we do fallback to jiffies? Simply
+not account them and show 0?
 
-Thanks,
-K.Prasad
+> overhead: My initial testing was on reliable TSC system, where sched_clock_cpu()
+> takes <50 cycles. So, no noticable overhead there. I still have to run
+> this on other platforms, will post the data once I do that.
+
+Right, I guess the Nehalem class desktops with single chips, hopefully
+even the laptop chips will have usable TSC, but pretty much all the
+Core2 chips out there are iffy.
+
 
