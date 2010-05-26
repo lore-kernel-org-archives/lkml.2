@@ -1,60 +1,82 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754877Ab0EZTDB (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 15:03:01 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:37068 "EHLO mx1.redhat.com"
+	id S1754825Ab0EZTFO (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 15:05:14 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:39041 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1752049Ab0EZTC7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 15:02:59 -0400
-Message-ID: <4BFD7003.9040006@redhat.com>
-Date: Wed, 26 May 2010 15:01:23 -0400
-From: Rik van Riel <riel@redhat.com>
-User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+	id S1752795Ab0EZTFM (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 15:05:12 -0400
+Message-ID: <4BFD70CC.3050806@zytor.com>
+Date: Wed, 26 May 2010 12:04:44 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-To: Linus Torvalds <torvalds@linux-foundation.org>
-CC: Andrew Morton <akpm@linux-foundation.org>, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 1/5] rename anon_vma_lock to vma_lock_anon_vma
-References: <20100512133815.0d048a86@annuminas.surriel.com> <20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> <4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> <20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org> <4BFC9CCF.6000809@redhat.com> <20100526112403.635be0ed@annuminas.surriel.com> <20100526112505.1bddf24d@annuminas.surriel.com> <alpine.LFD.2.00.1005261021560.3689@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005261021560.3689@i5.linux-foundation.org>
-Content-Type: text/plain; charset=UTF-8; format=flowed
+To: Mike Travis <travis@sgi.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if 	add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEB0D5F.8070806@oracle.com>	 <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com>	 <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com>	 <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>	 <4BFC5217.6060804@zytor.com> <4BFC5330.5080907@sgi.com> <AANLkTilNXcS_KQTQ4ZwDt8RQqSrlWUH2R5W87g0vI4xG@mail.gmail.com> <4BFD5D98.6090408@sgi.com> <4BFD66D9.4070302@zytor.com> <4BFD6CD7.10806@sgi.com>
+In-Reply-To: <4BFD6CD7.10806@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On 05/26/2010 01:25 PM, Linus Torvalds wrote:
->
->
-> On Wed, 26 May 2010, Rik van Riel wrote:
->>
->> Subject: rename anon_vma_lock to vma_lock_anon_vma
->>
->> Rename anon_vma_lock to vma_lock_anon_vma.  This matches the
->> naming style used in page_lock_anon_vma and will come in really
->> handy further down in this patch series.
->>
->> Signed-off-by: Rik van Riel<riel@redhat.com>
->
-> This v2 series seems to be missing all the ack's etc from the previous
-> series. At least Mel and Hiroyuki-san had acked several of the patches.
->
-> What's the point of making a v2 if it doesn't actually take the input from
-> v1 into account?
+On 05/26/2010 11:47 AM, Mike Travis wrote:
+> 
+> I didn't know bootloader had a problem two years ago  And as I mentioned,
+> I'm open to suggestions but what I've heard is "fix the bootloader". What
+> I don't know is how to do that.
+> 
+> I see that BIOS sets up an e820 compatible memory map and extra memmap
+> entries "somewhere".  EFI seems to pick this up via ELILO and somehow
+> the kernel finds these extra memmap entries.
+> 
+> So my question is what is broken?  Should the bootloader not use the
+> standard e820 memmap at all, and invent another way of passing the
+> memmap entries?  And what about EFI grub, shouldn't that also change?
+> And how does this affect compatibility?
+> 
+> I'm in the dark here as to how the bootloader manages to pass these
+> entries from BIOS to the kernel, and how far I can go modifying these
+> things when I don't completely understand them.  The last problem I
+> worked on in ELILO I couldn't even print messages as that invalidated
+> the "magic key" and it would loop endlessly between ELILO and BIOS.
+> 
+> The other thing is priorities.  If something is working and not
+> causing undue problems, it does not get higher priority than issues
+> that cause complete system failure.  I've suggested a workable
+> (maybe short term solution), that gets us past the boot, and on to
+> the other potentially far more important problems.
+> 
+> And p.s. it's been way longer than two years... ;-)  [the other thing
+> to consider is we haven't had real hardware that long, and many, many,
+> many problems have surfaced since then.  The memmap problem only
+> showed up when we ran over 128 entries.  When has that happened before?
+> And how was it handled then?] 
+> 
 
-It did take all the input into account (I made all the
-suggested improvements, enhanced comments where people
-had questions, etc).
+The 128-entry limit (caused by the fixed array in struct setup_info) was
+brought to our attention in 2007.  At that time, a number of
+alternatives were discussed; Linus in particular was adamant that this
+should be handled in the bootloader, and not by the kernel.
 
-I just forgot to add all the Acked-by's :(
+The result was that we added a facility to the kernel to supply
+arbitrary information via a linked list.  That has been in there since
+at least early 2008.  However, noone who cares about this issue has
+bothered stepping up and put the support into the bootloaders --
+instead, we got suckered into accepting a "temporary hack" which only
+has had the effect of giving you guys yet another excuse not to do what
+you signed off to do in the first place.
 
-If you want I can send you and Andrew a duplicate of
-what I sent this morning, with the only difference
-being added Acked-by's.
+Accordingly, the right answer for me to do is to veto this and any
+further patches which enable you to skirt your responsibility, and I'm
+getting damned close to doing so.
 
--- 
-All rights reversed
+	-hpa
