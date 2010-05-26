@@ -1,540 +1,1070 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934532Ab0EZWap (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:30:45 -0400
-Received: from mail-ww0-f46.google.com ([74.125.82.46]:46932 "EHLO
+	id S934604Ab0EZWay (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:30:54 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:45178 "EHLO
 	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934162Ab0EZWam (ORCPT
+	with ESMTP id S932423Ab0EZWao (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:30:42 -0400
+	Wed, 26 May 2010 18:30:44 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer:x-mailer-version
-         :in-reply-to:references:mime-version:content-type
-         :content-transfer-encoding;
-        b=qBFnUUjm4MNZVDmfLbdZ6G1rB8lGwFo0D0GHGELvA07+F3uO59lLY8WWZXEaB4qN5J
-         m8W4MWa7EB9odsGfzjPsAtH7F1iTDwTJ61JotDSK3bQwbDy9PjDkpoS4UdQMcC2+oxpo
-         Xs8U0wqXWue6Fyp3DeYKIcdNQTVvWbQu+eAj0=
+         :in-reply-to:references;
+        b=SVWiJoJHW89otRpC69cbD1O5Hg6DNjpaztoWeZ0kCoJPh3BngTHd/QesqG85f0zV8S
+         S1iQM6mCEQ1fGmYwvFsssZjZ25h8AIi4PUZPQ/BdZcrg8XxUxszp6AwG/ZiQfKEUPwMs
+         cz1ueEbVC/ahAy0xpXF/9U37+Cs4acEpRKUZY=
 From: Frederic Weisbecker <fweisbec@gmail.com>
 To: Ingo Molnar <mingo@elte.hu>
-Cc: LKML <linux-kernel@vger.kernel.org>,
-       =?utf-8?q?Am=C3=A9rico=20Wang?= <xiyou.wangcong@gmail.com>,
-       Chase Douglas <chase.douglas@canonical.com>,
-       Steven Rostedt <rostedt@goodmis.org>, Ingo Molnar <mingo@elte.hu>,
-       Peter Zijlstra <a.p.zijlstra@chello.nl>, Li Zefan <lizf@cn.fujitsu.com>,
+Cc: LKML <linux-kernel@vger.kernel.org>, Li Zefan <lizf@cn.fujitsu.com>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
        Frederic Weisbecker <fweisbec@gmail.com>
-Subject: [PATCH 1/2] tracing: Remove boot tracer
-Date: Thu, 27 May 2010 00:30:36 +0200
-Message-Id: <1274913037-1126-2-git-send-regression-fweisbec@gmail.com>
+Subject: [PATCH 2/2] tracing: Remove kmemtrace ftrace plugin
+Date: Thu, 27 May 2010 00:30:37 +0200
+Message-Id: <1274913037-1126-3-git-send-regression-fweisbec@gmail.com>
 X-Mailer: git-send-regression
 X-Mailer-version: 0.1, "The maintainer couldn't reproduce after one week full time debugging" special version.
 In-Reply-To: <1274913037-1126-1-git-send-regression-fweisbec@gmail.com>
 References: <1274913037-1126-1-git-send-regression-fweisbec@gmail.com>
-MIME-Version: 1.0
-Content-Type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Américo Wang <xiyou.wangcong@gmail.com>
+From: Li Zefan <lizf@cn.fujitsu.com>
 
-The boot tracer is useless. It simply logs the initcalls
-but in fact these initcalls are also logged through printk
-while using the initcall_debug kernel parameter.
+We have been resisting new ftrace plugins and removing existing
+ones, and kmemtrace has been superseded by kmem trace events
+and perf-kmem, so we remove it.
 
-Nobody seem to be using it so far. Then just remove it.
-
-Signed-off-by: WANG Cong <xiyou.wangcong@gmail.com>
-Cc: Chase Douglas <chase.douglas@canonical.com>
-Cc: Steven Rostedt <rostedt@goodmis.org>
+Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+Acked-by: Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
 Cc: Ingo Molnar <mingo@elte.hu>
-Cc: Peter Zijlstra <a.p.zijlstra@chello.nl>
-Cc: Li Zefan <lizf@cn.fujitsu.com>
-LKML-Reference: <20100526105753.GA5677@cr0.nay.redhat.com>
-[ remove the hooks in main.c, and the headers ]
+Cc: Steven Rostedt <rostedt@goodmis.org>
+[ remove kmemtrace from the makefile ]
 Signed-off-by: Frederic Weisbecker <fweisbec@gmail.com>
 ---
- include/trace/boot.h         |   60 --------------
- init/main.c                  |   27 +++----
- kernel/trace/Kconfig         |   17 ----
- kernel/trace/Makefile        |    1 -
- kernel/trace/trace.c         |    3 -
- kernel/trace/trace.h         |    8 --
- kernel/trace/trace_boot.c    |  185 ------------------------------------------
- kernel/trace/trace_entries.h |   27 ------
- 8 files changed, 10 insertions(+), 318 deletions(-)
- delete mode 100644 include/trace/boot.h
- delete mode 100644 kernel/trace/trace_boot.c
+ Documentation/ABI/testing/debugfs-kmemtrace |   71 ----
+ Documentation/trace/kmemtrace.txt           |  126 -------
+ MAINTAINERS                                 |    7 -
+ include/linux/kmemtrace.h                   |   25 --
+ include/linux/slab_def.h                    |    3 +-
+ include/linux/slub_def.h                    |    3 +-
+ init/main.c                                 |    2 -
+ kernel/trace/Kconfig                        |   20 -
+ kernel/trace/Makefile                       |    1 -
+ kernel/trace/kmemtrace.c                    |  529 ---------------------------
+ kernel/trace/trace.h                        |   12 -
+ kernel/trace/trace_entries.h                |   35 --
+ mm/slab.c                                   |    1 -
+ mm/slub.c                                   |    1 -
+ 14 files changed, 4 insertions(+), 832 deletions(-)
+ delete mode 100644 Documentation/ABI/testing/debugfs-kmemtrace
+ delete mode 100644 Documentation/trace/kmemtrace.txt
+ delete mode 100644 include/linux/kmemtrace.h
+ delete mode 100644 kernel/trace/kmemtrace.c
 
-diff --git a/include/trace/boot.h b/include/trace/boot.h
+diff --git a/Documentation/ABI/testing/debugfs-kmemtrace b/Documentation/ABI/testing/debugfs-kmemtrace
 deleted file mode 100644
-index 088ea08..0000000
---- a/include/trace/boot.h
+index 5e6a92a..0000000
+--- a/Documentation/ABI/testing/debugfs-kmemtrace
 +++ /dev/null
-@@ -1,60 +0,0 @@
--#ifndef _LINUX_TRACE_BOOT_H
--#define _LINUX_TRACE_BOOT_H
+@@ -1,71 +0,0 @@
+-What:		/sys/kernel/debug/kmemtrace/
+-Date:		July 2008
+-Contact:	Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
+-Description:
 -
--#include <linux/module.h>
--#include <linux/kallsyms.h>
--#include <linux/init.h>
+-In kmemtrace-enabled kernels, the following files are created:
 -
+-/sys/kernel/debug/kmemtrace/
+-	cpu<n>		(0400)	Per-CPU tracing data, see below. (binary)
+-	total_overruns	(0400)	Total number of bytes which were dropped from
+-				cpu<n> files because of full buffer condition,
+-				non-binary. (text)
+-	abi_version	(0400)	Kernel's kmemtrace ABI version. (text)
+-
+-Each per-CPU file should be read according to the relay interface. That is,
+-the reader should set affinity to that specific CPU and, as currently done by
+-the userspace application (though there are other methods), use poll() with
+-an infinite timeout before every read(). Otherwise, erroneous data may be
+-read. The binary data has the following _core_ format:
+-
+-	Event ID	(1 byte)	Unsigned integer, one of:
+-		0 - represents an allocation (KMEMTRACE_EVENT_ALLOC)
+-		1 - represents a freeing of previously allocated memory
+-		    (KMEMTRACE_EVENT_FREE)
+-	Type ID		(1 byte)	Unsigned integer, one of:
+-		0 - this is a kmalloc() / kfree()
+-		1 - this is a kmem_cache_alloc() / kmem_cache_free()
+-		2 - this is a __get_free_pages() et al.
+-	Event size	(2 bytes)	Unsigned integer representing the
+-					size of this event. Used to extend
+-					kmemtrace. Discard the bytes you
+-					don't know about.
+-	Sequence number	(4 bytes)	Signed integer used to reorder data
+-					logged on SMP machines. Wraparound
+-					must be taken into account, although
+-					it is unlikely.
+-	Caller address	(8 bytes)	Return address to the caller.
+-	Pointer to mem	(8 bytes)	Pointer to target memory area. Can be
+-					NULL, but not all such calls might be
+-					recorded.
+-
+-In case of KMEMTRACE_EVENT_ALLOC events, the next fields follow:
+-
+-	Requested bytes	(8 bytes)	Total number of requested bytes,
+-					unsigned, must not be zero.
+-	Allocated bytes (8 bytes)	Total number of actually allocated
+-					bytes, unsigned, must not be lower
+-					than requested bytes.
+-	Requested flags	(4 bytes)	GFP flags supplied by the caller.
+-	Target CPU	(4 bytes)	Signed integer, valid for event id 1.
+-					If equal to -1, target CPU is the same
+-					as origin CPU, but the reverse might
+-					not be true.
+-
+-The data is made available in the same endianness the machine has.
+-
+-Other event ids and type ids may be defined and added. Other fields may be
+-added by increasing event size, but see below for details.
+-Every modification to the ABI, including new id definitions, are followed
+-by bumping the ABI version by one.
+-
+-Adding new data to the packet (features) is done at the end of the mandatory
+-data:
+-	Feature size	(2 byte)
+-	Feature ID	(1 byte)
+-	Feature data	(Feature size - 3 bytes)
+-
+-
+-Users:
+-	kmemtrace-user - git://repo.or.cz/kmemtrace-user.git
+-
+diff --git a/Documentation/trace/kmemtrace.txt b/Documentation/trace/kmemtrace.txt
+deleted file mode 100644
+index 6308735..0000000
+--- a/Documentation/trace/kmemtrace.txt
++++ /dev/null
+@@ -1,126 +0,0 @@
+-			kmemtrace - Kernel Memory Tracer
+-
+-			  by Eduard - Gabriel Munteanu
+-			     <eduard.munteanu@linux360.ro>
+-
+-I. Introduction
+-===============
+-
+-kmemtrace helps kernel developers figure out two things:
+-1) how different allocators (SLAB, SLUB etc.) perform
+-2) how kernel code allocates memory and how much
+-
+-To do this, we trace every allocation and export information to the userspace
+-through the relay interface. We export things such as the number of requested
+-bytes, the number of bytes actually allocated (i.e. including internal
+-fragmentation), whether this is a slab allocation or a plain kmalloc() and so
+-on.
+-
+-The actual analysis is performed by a userspace tool (see section III for
+-details on where to get it from). It logs the data exported by the kernel,
+-processes it and (as of writing this) can provide the following information:
+-- the total amount of memory allocated and fragmentation per call-site
+-- the amount of memory allocated and fragmentation per allocation
+-- total memory allocated and fragmentation in the collected dataset
+-- number of cross-CPU allocation and frees (makes sense in NUMA environments)
+-
+-Moreover, it can potentially find inconsistent and erroneous behavior in
+-kernel code, such as using slab free functions on kmalloc'ed memory or
+-allocating less memory than requested (but not truly failed allocations).
+-
+-kmemtrace also makes provisions for tracing on some arch and analysing the
+-data on another.
+-
+-II. Design and goals
+-====================
+-
+-kmemtrace was designed to handle rather large amounts of data. Thus, it uses
+-the relay interface to export whatever is logged to userspace, which then
+-stores it. Analysis and reporting is done asynchronously, that is, after the
+-data is collected and stored. By design, it allows one to log and analyse
+-on different machines and different arches.
+-
+-As of writing this, the ABI is not considered stable, though it might not
+-change much. However, no guarantees are made about compatibility yet. When
+-deemed stable, the ABI should still allow easy extension while maintaining
+-backward compatibility. This is described further in Documentation/ABI.
+-
+-Summary of design goals:
+-	- allow logging and analysis to be done across different machines
+-	- be fast and anticipate usage in high-load environments (*)
+-	- be reasonably extensible
+-	- make it possible for GNU/Linux distributions to have kmemtrace
+-	included in their repositories
+-
+-(*) - one of the reasons Pekka Enberg's original userspace data analysis
+-    tool's code was rewritten from Perl to C (although this is more than a
+-    simple conversion)
+-
+-
+-III. Quick usage guide
+-======================
+-
+-1) Get a kernel that supports kmemtrace and build it accordingly (i.e. enable
+-CONFIG_KMEMTRACE).
+-
+-2) Get the userspace tool and build it:
+-$ git clone git://repo.or.cz/kmemtrace-user.git		# current repository
+-$ cd kmemtrace-user/
+-$ ./autogen.sh
+-$ ./configure
+-$ make
+-
+-3) Boot the kmemtrace-enabled kernel if you haven't, preferably in the
+-'single' runlevel (so that relay buffers don't fill up easily), and run
+-kmemtrace:
+-# '$' does not mean user, but root here.
+-$ mount -t debugfs none /sys/kernel/debug
+-$ mount -t proc none /proc
+-$ cd path/to/kmemtrace-user/
+-$ ./kmemtraced
+-Wait a bit, then stop it with CTRL+C.
+-$ cat /sys/kernel/debug/kmemtrace/total_overruns	# Check if we didn't
+-							# overrun, should
+-							# be zero.
+-$ (Optionally) [Run kmemtrace_check separately on each cpu[0-9]*.out file to
+-		check its correctness]
+-$ ./kmemtrace-report
+-
+-Now you should have a nice and short summary of how the allocator performs.
+-
+-IV. FAQ and known issues
+-========================
+-
+-Q: 'cat /sys/kernel/debug/kmemtrace/total_overruns' is non-zero, how do I fix
+-this? Should I worry?
+-A: If it's non-zero, this affects kmemtrace's accuracy, depending on how
+-large the number is. You can fix it by supplying a higher
+-'kmemtrace.subbufs=N' kernel parameter.
+----
+-
+-Q: kmemtrace_check reports errors, how do I fix this? Should I worry?
+-A: This is a bug and should be reported. It can occur for a variety of
+-reasons:
+-	- possible bugs in relay code
+-	- possible misuse of relay by kmemtrace
+-	- timestamps being collected unorderly
+-Or you may fix it yourself and send us a patch.
+----
+-
+-Q: kmemtrace_report shows many errors, how do I fix this? Should I worry?
+-A: This is a known issue and I'm working on it. These might be true errors
+-in kernel code, which may have inconsistent behavior (e.g. allocating memory
+-with kmem_cache_alloc() and freeing it with kfree()). Pekka Enberg pointed
+-out this behavior may work with SLAB, but may fail with other allocators.
+-
+-It may also be due to lack of tracing in some unusual allocator functions.
+-
+-We don't want bug reports regarding this issue yet.
+----
+-
+-V. See also
+-===========
+-
+-Documentation/kernel-parameters.txt
+-Documentation/ABI/testing/debugfs-kmemtrace
+-
+diff --git a/MAINTAINERS b/MAINTAINERS
+index 3d2651b..ba29597 100644
+--- a/MAINTAINERS
++++ b/MAINTAINERS
+@@ -3323,13 +3323,6 @@ F:	include/linux/kmemleak.h
+ F:	mm/kmemleak.c
+ F:	mm/kmemleak-test.c
+ 
+-KMEMTRACE
+-M:	Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>
+-S:	Maintained
+-F:	Documentation/trace/kmemtrace.txt
+-F:	include/linux/kmemtrace.h
+-F:	kernel/trace/kmemtrace.c
+-
+ KPROBES
+ M:	Ananth N Mavinakayanahalli <ananth@in.ibm.com>
+ M:	Anil S Keshavamurthy <anil.s.keshavamurthy@intel.com>
+diff --git a/include/linux/kmemtrace.h b/include/linux/kmemtrace.h
+deleted file mode 100644
+index b616d39..0000000
+--- a/include/linux/kmemtrace.h
++++ /dev/null
+@@ -1,25 +0,0 @@
 -/*
-- * Structure which defines the trace of an initcall
-- * while it is called.
-- * You don't have to fill the func field since it is
-- * only used internally by the tracer.
+- * Copyright (C) 2008 Eduard - Gabriel Munteanu
+- *
+- * This file is released under GPL version 2.
 - */
--struct boot_trace_call {
--	pid_t			caller;
--	char			func[KSYM_SYMBOL_LEN];
--};
 -
--/*
-- * Structure which defines the trace of an initcall
-- * while it returns.
-- */
--struct boot_trace_ret {
--	char			func[KSYM_SYMBOL_LEN];
--	int				result;
--	unsigned long long	duration;		/* nsecs */
--};
+-#ifndef _LINUX_KMEMTRACE_H
+-#define _LINUX_KMEMTRACE_H
 -
--#ifdef CONFIG_BOOT_TRACER
--/* Append the traces on the ring-buffer */
--extern void trace_boot_call(struct boot_trace_call *bt, initcall_t fn);
--extern void trace_boot_ret(struct boot_trace_ret *bt, initcall_t fn);
+-#ifdef __KERNEL__
 -
--/* Tells the tracer that smp_pre_initcall is finished.
-- * So we can start the tracing
-- */
--extern void start_boot_trace(void);
+-#include <trace/events/kmem.h>
 -
--/* Resume the tracing of other necessary events
-- * such as sched switches
-- */
--extern void enable_boot_trace(void);
--
--/* Suspend this tracing. Actually, only sched_switches tracing have
-- * to be suspended. Initcalls doesn't need it.)
-- */
--extern void disable_boot_trace(void);
+-#ifdef CONFIG_KMEMTRACE
+-extern void kmemtrace_init(void);
 -#else
--static inline
--void trace_boot_call(struct boot_trace_call *bt, initcall_t fn) { }
+-static inline void kmemtrace_init(void)
+-{
+-}
+-#endif
 -
--static inline
--void trace_boot_ret(struct boot_trace_ret *bt, initcall_t fn) { }
+-#endif /* __KERNEL__ */
 -
--static inline void start_boot_trace(void) { }
--static inline void enable_boot_trace(void) { }
--static inline void disable_boot_trace(void) { }
--#endif /* CONFIG_BOOT_TRACER */
+-#endif /* _LINUX_KMEMTRACE_H */
 -
--#endif /* __LINUX_TRACE_BOOT_H */
+diff --git a/include/linux/slab_def.h b/include/linux/slab_def.h
+index ca6b2b3..8d313a3 100644
+--- a/include/linux/slab_def.h
++++ b/include/linux/slab_def.h
+@@ -14,7 +14,8 @@
+ #include <asm/page.h>		/* kmalloc_sizes.h needs PAGE_SIZE */
+ #include <asm/cache.h>		/* kmalloc_sizes.h needs L1_CACHE_BYTES */
+ #include <linux/compiler.h>
+-#include <linux/kmemtrace.h>
++
++#include <trace/events/kmem.h>
+ 
+ /*
+  * struct kmem_cache
+diff --git a/include/linux/slub_def.h b/include/linux/slub_def.h
+index 0249d41..bc97907 100644
+--- a/include/linux/slub_def.h
++++ b/include/linux/slub_def.h
+@@ -10,9 +10,10 @@
+ #include <linux/gfp.h>
+ #include <linux/workqueue.h>
+ #include <linux/kobject.h>
+-#include <linux/kmemtrace.h>
+ #include <linux/kmemleak.h>
+ 
++#include <trace/events/kmem.h>
++
+ enum stat_item {
+ 	ALLOC_FASTPATH,		/* Allocation from cpu slab */
+ 	ALLOC_SLOWPATH,		/* Allocation by getting a new cpu slab */
 diff --git a/init/main.c b/init/main.c
-index 5c85402..22d5f73 100644
+index 22d5f73..fa6142d 100644
 --- a/init/main.c
 +++ b/init/main.c
-@@ -69,7 +69,6 @@
+@@ -65,7 +65,6 @@
+ #include <linux/ftrace.h>
+ #include <linux/async.h>
+ #include <linux/kmemcheck.h>
+-#include <linux/kmemtrace.h>
  #include <linux/sfi.h>
  #include <linux/shmem_fs.h>
  #include <linux/slab.h>
--#include <trace/boot.h>
- 
- #include <asm/io.h>
- #include <asm/bugs.h>
-@@ -713,38 +712,33 @@ int initcall_debug;
- core_param(initcall_debug, initcall_debug, bool, 0644);
- 
- static char msgbuf[64];
--static struct boot_trace_call call;
--static struct boot_trace_ret ret;
- 
- int do_one_initcall(initcall_t fn)
- {
- 	int count = preempt_count();
- 	ktime_t calltime, delta, rettime;
-+	unsigned long long duration;
-+	int ret;
- 
- 	if (initcall_debug) {
--		call.caller = task_pid_nr(current);
--		printk("calling  %pF @ %i\n", fn, call.caller);
-+		printk("calling  %pF @ %i\n", fn, task_pid_nr(current));
- 		calltime = ktime_get();
--		trace_boot_call(&call, fn);
--		enable_boot_trace();
- 	}
- 
--	ret.result = fn();
-+	ret = fn();
- 
- 	if (initcall_debug) {
--		disable_boot_trace();
- 		rettime = ktime_get();
- 		delta = ktime_sub(rettime, calltime);
--		ret.duration = (unsigned long long) ktime_to_ns(delta) >> 10;
--		trace_boot_ret(&ret, fn);
--		printk("initcall %pF returned %d after %Ld usecs\n", fn,
--			ret.result, ret.duration);
-+		duration = (unsigned long long) ktime_to_ns(delta) >> 10;
-+		printk("initcall %pF returned %d after %lld usecs\n", fn,
-+			ret, duration);
- 	}
- 
- 	msgbuf[0] = 0;
- 
--	if (ret.result && ret.result != -ENODEV && initcall_debug)
--		sprintf(msgbuf, "error code %d ", ret.result);
-+	if (ret && ret != -ENODEV && initcall_debug)
-+		sprintf(msgbuf, "error code %d ", ret);
- 
- 	if (preempt_count() != count) {
- 		strlcat(msgbuf, "preemption imbalance ", sizeof(msgbuf));
-@@ -758,7 +752,7 @@ int do_one_initcall(initcall_t fn)
- 		printk("initcall %pF returned with %s\n", fn, msgbuf);
- 	}
- 
--	return ret.result;
-+	return ret;
- }
- 
- 
-@@ -878,7 +872,6 @@ static int __init kernel_init(void * unused)
- 	smp_prepare_cpus(setup_max_cpus);
- 
- 	do_pre_smp_initcalls();
--	start_boot_trace();
- 
- 	smp_init();
- 	sched_init_smp();
+@@ -651,7 +650,6 @@ asmlinkage void __init start_kernel(void)
+ #endif
+ 	page_cgroup_init();
+ 	enable_debug_pagealloc();
+-	kmemtrace_init();
+ 	kmemleak_init();
+ 	debug_objects_mem_init();
+ 	idr_init_cache();
 diff --git a/kernel/trace/Kconfig b/kernel/trace/Kconfig
-index 8b1797c..572992a 100644
+index 572992a..f669092 100644
 --- a/kernel/trace/Kconfig
 +++ b/kernel/trace/Kconfig
-@@ -229,23 +229,6 @@ config FTRACE_SYSCALLS
- 	help
- 	  Basic tracer to catch the syscall entry and exit events.
+@@ -354,26 +354,6 @@ config STACK_TRACER
  
--config BOOT_TRACER
--	bool "Trace boot initcalls"
+ 	  Say N if unsure.
+ 
+-config KMEMTRACE
+-	bool "Trace SLAB allocations"
 -	select GENERIC_TRACER
--	select CONTEXT_SWITCH_TRACER
 -	help
--	  This tracer helps developers to optimize boot times: it records
--	  the timings of the initcalls and traces key events and the identity
--	  of tasks that can cause boot delays, such as context-switches.
+-	  kmemtrace provides tracing for slab allocator functions, such as
+-	  kmalloc, kfree, kmem_cache_alloc, kmem_cache_free, etc. Collected
+-	  data is then fed to the userspace application in order to analyse
+-	  allocation hotspots, internal fragmentation and so on, making it
+-	  possible to see how well an allocator performs, as well as debug
+-	  and profile kernel code.
 -
--	  Its aim is to be parsed by the scripts/bootgraph.pl tool to
--	  produce pretty graphics about boot inefficiencies, giving a visual
--	  representation of the delays during initcalls - but the raw
--	  /debug/tracing/trace text output is readable too.
+-	  This requires an userspace application to use. See
+-	  Documentation/trace/kmemtrace.txt for more information.
 -
--	  You must pass in initcall_debug and ftrace=initcall to the kernel
--	  command line to enable this on bootup.
+-	  Saying Y will make the kernel somewhat larger and slower. However,
+-	  if you disable kmemtrace at run-time or boot-time, the performance
+-	  impact is minimal (depending on the arch the kernel is built for).
 -
- config TRACE_BRANCH_PROFILING
- 	bool
+-	  If unsure, say N.
+-
+ config WORKQUEUE_TRACER
+ 	bool "Trace workqueues"
  	select GENERIC_TRACER
 diff --git a/kernel/trace/Makefile b/kernel/trace/Makefile
-index ffb1a5b..c3aaeba 100644
+index c3aaeba..469a1c7 100644
 --- a/kernel/trace/Makefile
 +++ b/kernel/trace/Makefile
-@@ -38,7 +38,6 @@ obj-$(CONFIG_SCHED_TRACER) += trace_sched_wakeup.o
- obj-$(CONFIG_NOP_TRACER) += trace_nop.o
- obj-$(CONFIG_STACK_TRACER) += trace_stack.o
+@@ -40,7 +40,6 @@ obj-$(CONFIG_STACK_TRACER) += trace_stack.o
  obj-$(CONFIG_MMIOTRACE) += trace_mmiotrace.o
--obj-$(CONFIG_BOOT_TRACER) += trace_boot.o
  obj-$(CONFIG_FUNCTION_GRAPH_TRACER) += trace_functions_graph.o
  obj-$(CONFIG_TRACE_BRANCH_PROFILING) += trace_branch.o
- obj-$(CONFIG_KMEMTRACE) += kmemtrace.o
-diff --git a/kernel/trace/trace.c b/kernel/trace/trace.c
-index ba0ec81..302ec46 100644
---- a/kernel/trace/trace.c
-+++ b/kernel/trace/trace.c
-@@ -4591,9 +4591,6 @@ __init static int tracer_alloc_buffers(void)
- 
- 	register_tracer(&nop_trace);
- 	current_trace = &nop_trace;
--#ifdef CONFIG_BOOT_TRACER
--	register_tracer(&boot_tracer);
--#endif
- 	/* All seems OK, enable tracing */
- 	tracing_disabled = 0;
- 
-diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
-index 2cd9639..75a5e80 100644
---- a/kernel/trace/trace.h
-+++ b/kernel/trace/trace.h
-@@ -9,10 +9,8 @@
- #include <linux/mmiotrace.h>
- #include <linux/tracepoint.h>
- #include <linux/ftrace.h>
--#include <trace/boot.h>
- #include <linux/kmemtrace.h>
- #include <linux/hw_breakpoint.h>
--
- #include <linux/trace_seq.h>
- #include <linux/ftrace_event.h>
- 
-@@ -29,8 +27,6 @@ enum trace_type {
- 	TRACE_MMIO_RW,
- 	TRACE_MMIO_MAP,
- 	TRACE_BRANCH,
--	TRACE_BOOT_CALL,
--	TRACE_BOOT_RET,
- 	TRACE_GRAPH_RET,
- 	TRACE_GRAPH_ENT,
- 	TRACE_USER_STACK,
-@@ -48,8 +44,6 @@ enum kmemtrace_type_id {
- 	KMEMTRACE_TYPE_PAGES,		/* __get_free_pages() and friends. */
- };
- 
--extern struct tracer boot_tracer;
--
- #undef __field
- #define __field(type, item)		type	item;
- 
-@@ -209,8 +203,6 @@ extern void __ftrace_bad_type(void);
- 			  TRACE_MMIO_RW);				\
- 		IF_ASSIGN(var, ent, struct trace_mmiotrace_map,		\
- 			  TRACE_MMIO_MAP);				\
--		IF_ASSIGN(var, ent, struct trace_boot_call, TRACE_BOOT_CALL);\
--		IF_ASSIGN(var, ent, struct trace_boot_ret, TRACE_BOOT_RET);\
- 		IF_ASSIGN(var, ent, struct trace_branch, TRACE_BRANCH); \
- 		IF_ASSIGN(var, ent, struct ftrace_graph_ent_entry,	\
- 			  TRACE_GRAPH_ENT);		\
-diff --git a/kernel/trace/trace_boot.c b/kernel/trace/trace_boot.c
+-obj-$(CONFIG_KMEMTRACE) += kmemtrace.o
+ obj-$(CONFIG_WORKQUEUE_TRACER) += trace_workqueue.o
+ obj-$(CONFIG_BLK_DEV_IO_TRACE) += blktrace.o
+ ifeq ($(CONFIG_BLOCK),y)
+diff --git a/kernel/trace/kmemtrace.c b/kernel/trace/kmemtrace.c
 deleted file mode 100644
-index c21d5f3..0000000
---- a/kernel/trace/trace_boot.c
+index bbfc1bb..0000000
+--- a/kernel/trace/kmemtrace.c
 +++ /dev/null
-@@ -1,185 +0,0 @@
+@@ -1,529 +0,0 @@
 -/*
-- * ring buffer based initcalls tracer
+- * Memory allocator tracing
 - *
+- * Copyright (C) 2008 Eduard - Gabriel Munteanu
+- * Copyright (C) 2008 Pekka Enberg <penberg@cs.helsinki.fi>
 - * Copyright (C) 2008 Frederic Weisbecker <fweisbec@gmail.com>
-- *
 - */
 -
--#include <linux/init.h>
+-#include <linux/tracepoint.h>
+-#include <linux/seq_file.h>
 -#include <linux/debugfs.h>
--#include <linux/ftrace.h>
--#include <linux/kallsyms.h>
--#include <linux/time.h>
+-#include <linux/dcache.h>
+-#include <linux/fs.h>
 -
--#include "trace.h"
+-#include <linux/kmemtrace.h>
+-
 -#include "trace_output.h"
+-#include "trace.h"
 -
--static struct trace_array *boot_trace;
--static bool pre_initcalls_finished;
+-/* Select an alternative, minimalistic output than the original one */
+-#define TRACE_KMEM_OPT_MINIMAL	0x1
 -
--/* Tells the boot tracer that the pre_smp_initcalls are finished.
-- * So we are ready .
-- * It doesn't enable sched events tracing however.
-- * You have to call enable_boot_trace to do so.
-- */
--void start_boot_trace(void)
+-static struct tracer_opt kmem_opts[] = {
+-	/* Default disable the minimalistic output */
+-	{ TRACER_OPT(kmem_minimalistic, TRACE_KMEM_OPT_MINIMAL) },
+-	{ }
+-};
+-
+-static struct tracer_flags kmem_tracer_flags = {
+-	.val			= 0,
+-	.opts			= kmem_opts
+-};
+-
+-static struct trace_array *kmemtrace_array;
+-
+-/* Trace allocations */
+-static inline void kmemtrace_alloc(enum kmemtrace_type_id type_id,
+-				   unsigned long call_site,
+-				   const void *ptr,
+-				   size_t bytes_req,
+-				   size_t bytes_alloc,
+-				   gfp_t gfp_flags,
+-				   int node)
 -{
--	pre_initcalls_finished = true;
+-	struct ftrace_event_call *call = &event_kmem_alloc;
+-	struct trace_array *tr = kmemtrace_array;
+-	struct kmemtrace_alloc_entry *entry;
+-	struct ring_buffer_event *event;
+-
+-	event = ring_buffer_lock_reserve(tr->buffer, sizeof(*entry));
+-	if (!event)
+-		return;
+-
+-	entry = ring_buffer_event_data(event);
+-	tracing_generic_entry_update(&entry->ent, 0, 0);
+-
+-	entry->ent.type		= TRACE_KMEM_ALLOC;
+-	entry->type_id		= type_id;
+-	entry->call_site	= call_site;
+-	entry->ptr		= ptr;
+-	entry->bytes_req	= bytes_req;
+-	entry->bytes_alloc	= bytes_alloc;
+-	entry->gfp_flags	= gfp_flags;
+-	entry->node		= node;
+-
+-	if (!filter_check_discard(call, entry, tr->buffer, event))
+-		ring_buffer_unlock_commit(tr->buffer, event);
+-
+-	trace_wake_up();
 -}
 -
--void enable_boot_trace(void)
+-static inline void kmemtrace_free(enum kmemtrace_type_id type_id,
+-				  unsigned long call_site,
+-				  const void *ptr)
 -{
--	if (boot_trace && pre_initcalls_finished)
--		tracing_start_sched_switch_record();
+-	struct ftrace_event_call *call = &event_kmem_free;
+-	struct trace_array *tr = kmemtrace_array;
+-	struct kmemtrace_free_entry *entry;
+-	struct ring_buffer_event *event;
+-
+-	event = ring_buffer_lock_reserve(tr->buffer, sizeof(*entry));
+-	if (!event)
+-		return;
+-	entry	= ring_buffer_event_data(event);
+-	tracing_generic_entry_update(&entry->ent, 0, 0);
+-
+-	entry->ent.type		= TRACE_KMEM_FREE;
+-	entry->type_id		= type_id;
+-	entry->call_site	= call_site;
+-	entry->ptr		= ptr;
+-
+-	if (!filter_check_discard(call, entry, tr->buffer, event))
+-		ring_buffer_unlock_commit(tr->buffer, event);
+-
+-	trace_wake_up();
 -}
 -
--void disable_boot_trace(void)
+-static void kmemtrace_kmalloc(void *ignore,
+-			      unsigned long call_site,
+-			      const void *ptr,
+-			      size_t bytes_req,
+-			      size_t bytes_alloc,
+-			      gfp_t gfp_flags)
 -{
--	if (boot_trace && pre_initcalls_finished)
--		tracing_stop_sched_switch_record();
+-	kmemtrace_alloc(KMEMTRACE_TYPE_KMALLOC, call_site, ptr,
+-			bytes_req, bytes_alloc, gfp_flags, -1);
 -}
 -
--static int boot_trace_init(struct trace_array *tr)
+-static void kmemtrace_kmem_cache_alloc(void *ignore,
+-				       unsigned long call_site,
+-				       const void *ptr,
+-				       size_t bytes_req,
+-				       size_t bytes_alloc,
+-				       gfp_t gfp_flags)
 -{
--	boot_trace = tr;
+-	kmemtrace_alloc(KMEMTRACE_TYPE_CACHE, call_site, ptr,
+-			bytes_req, bytes_alloc, gfp_flags, -1);
+-}
 -
--	if (!tr)
--		return 0;
+-static void kmemtrace_kmalloc_node(void *ignore,
+-				   unsigned long call_site,
+-				   const void *ptr,
+-				   size_t bytes_req,
+-				   size_t bytes_alloc,
+-				   gfp_t gfp_flags,
+-				   int node)
+-{
+-	kmemtrace_alloc(KMEMTRACE_TYPE_KMALLOC, call_site, ptr,
+-			bytes_req, bytes_alloc, gfp_flags, node);
+-}
+-
+-static void kmemtrace_kmem_cache_alloc_node(void *ignore,
+-					    unsigned long call_site,
+-					    const void *ptr,
+-					    size_t bytes_req,
+-					    size_t bytes_alloc,
+-					    gfp_t gfp_flags,
+-					    int node)
+-{
+-	kmemtrace_alloc(KMEMTRACE_TYPE_CACHE, call_site, ptr,
+-			bytes_req, bytes_alloc, gfp_flags, node);
+-}
+-
+-static void
+-kmemtrace_kfree(void *ignore, unsigned long call_site, const void *ptr)
+-{
+-	kmemtrace_free(KMEMTRACE_TYPE_KMALLOC, call_site, ptr);
+-}
+-
+-static void kmemtrace_kmem_cache_free(void *ignore,
+-				      unsigned long call_site, const void *ptr)
+-{
+-	kmemtrace_free(KMEMTRACE_TYPE_CACHE, call_site, ptr);
+-}
+-
+-static int kmemtrace_start_probes(void)
+-{
+-	int err;
+-
+-	err = register_trace_kmalloc(kmemtrace_kmalloc, NULL);
+-	if (err)
+-		return err;
+-	err = register_trace_kmem_cache_alloc(kmemtrace_kmem_cache_alloc, NULL);
+-	if (err)
+-		return err;
+-	err = register_trace_kmalloc_node(kmemtrace_kmalloc_node, NULL);
+-	if (err)
+-		return err;
+-	err = register_trace_kmem_cache_alloc_node(kmemtrace_kmem_cache_alloc_node, NULL);
+-	if (err)
+-		return err;
+-	err = register_trace_kfree(kmemtrace_kfree, NULL);
+-	if (err)
+-		return err;
+-	err = register_trace_kmem_cache_free(kmemtrace_kmem_cache_free, NULL);
+-
+-	return err;
+-}
+-
+-static void kmemtrace_stop_probes(void)
+-{
+-	unregister_trace_kmalloc(kmemtrace_kmalloc, NULL);
+-	unregister_trace_kmem_cache_alloc(kmemtrace_kmem_cache_alloc, NULL);
+-	unregister_trace_kmalloc_node(kmemtrace_kmalloc_node, NULL);
+-	unregister_trace_kmem_cache_alloc_node(kmemtrace_kmem_cache_alloc_node, NULL);
+-	unregister_trace_kfree(kmemtrace_kfree, NULL);
+-	unregister_trace_kmem_cache_free(kmemtrace_kmem_cache_free, NULL);
+-}
+-
+-static int kmem_trace_init(struct trace_array *tr)
+-{
+-	kmemtrace_array = tr;
 -
 -	tracing_reset_online_cpus(tr);
 -
--	tracing_sched_switch_assign_trace(tr);
+-	kmemtrace_start_probes();
+-
 -	return 0;
 -}
 -
--static enum print_line_t
--initcall_call_print_line(struct trace_iterator *iter)
+-static void kmem_trace_reset(struct trace_array *tr)
 -{
--	struct trace_entry *entry = iter->ent;
+-	kmemtrace_stop_probes();
+-}
+-
+-static void kmemtrace_headers(struct seq_file *s)
+-{
+-	/* Don't need headers for the original kmemtrace output */
+-	if (!(kmem_tracer_flags.val & TRACE_KMEM_OPT_MINIMAL))
+-		return;
+-
+-	seq_printf(s, "#\n");
+-	seq_printf(s, "# ALLOC  TYPE  REQ   GIVEN  FLAGS     "
+-			"      POINTER         NODE    CALLER\n");
+-	seq_printf(s, "# FREE   |      |     |       |       "
+-			"       |   |            |        |\n");
+-	seq_printf(s, "# |\n\n");
+-}
+-
+-/*
+- * The following functions give the original output from kmemtrace,
+- * plus the origin CPU, since reordering occurs in-kernel now.
+- */
+-
+-#define KMEMTRACE_USER_ALLOC	0
+-#define KMEMTRACE_USER_FREE	1
+-
+-struct kmemtrace_user_event {
+-	u8			event_id;
+-	u8			type_id;
+-	u16			event_size;
+-	u32			cpu;
+-	u64			timestamp;
+-	unsigned long		call_site;
+-	unsigned long		ptr;
+-};
+-
+-struct kmemtrace_user_event_alloc {
+-	size_t			bytes_req;
+-	size_t			bytes_alloc;
+-	unsigned		gfp_flags;
+-	int			node;
+-};
+-
+-static enum print_line_t
+-kmemtrace_print_alloc(struct trace_iterator *iter, int flags,
+-		      struct trace_event *event)
+-{
 -	struct trace_seq *s = &iter->seq;
--	struct trace_boot_call *field;
--	struct boot_trace_call *call;
--	u64 ts;
--	unsigned long nsec_rem;
+-	struct kmemtrace_alloc_entry *entry;
 -	int ret;
 -
--	trace_assign_type(field, entry);
--	call = &field->boot_call;
--	ts = iter->ts;
--	nsec_rem = do_div(ts, NSEC_PER_SEC);
+-	trace_assign_type(entry, iter->ent);
 -
--	ret = trace_seq_printf(s, "[%5ld.%09ld] calling  %s @ %i\n",
--			(unsigned long)ts, nsec_rem, call->func, call->caller);
+-	ret = trace_seq_printf(s, "type_id %d call_site %pF ptr %lu "
+-	    "bytes_req %lu bytes_alloc %lu gfp_flags %lu node %d\n",
+-	    entry->type_id, (void *)entry->call_site, (unsigned long)entry->ptr,
+-	    (unsigned long)entry->bytes_req, (unsigned long)entry->bytes_alloc,
+-	    (unsigned long)entry->gfp_flags, entry->node);
 -
 -	if (!ret)
 -		return TRACE_TYPE_PARTIAL_LINE;
--	else
--		return TRACE_TYPE_HANDLED;
+-	return TRACE_TYPE_HANDLED;
 -}
 -
 -static enum print_line_t
--initcall_ret_print_line(struct trace_iterator *iter)
+-kmemtrace_print_free(struct trace_iterator *iter, int flags,
+-		     struct trace_event *event)
 -{
--	struct trace_entry *entry = iter->ent;
 -	struct trace_seq *s = &iter->seq;
--	struct trace_boot_ret *field;
--	struct boot_trace_ret *init_ret;
--	u64 ts;
--	unsigned long nsec_rem;
+-	struct kmemtrace_free_entry *entry;
 -	int ret;
 -
--	trace_assign_type(field, entry);
--	init_ret = &field->boot_ret;
--	ts = iter->ts;
--	nsec_rem = do_div(ts, NSEC_PER_SEC);
+-	trace_assign_type(entry, iter->ent);
 -
--	ret = trace_seq_printf(s, "[%5ld.%09ld] initcall %s "
--			"returned %d after %llu msecs\n",
--			(unsigned long) ts,
--			nsec_rem,
--			init_ret->func, init_ret->result, init_ret->duration);
+-	ret = trace_seq_printf(s, "type_id %d call_site %pF ptr %lu\n",
+-			       entry->type_id, (void *)entry->call_site,
+-			       (unsigned long)entry->ptr);
 -
 -	if (!ret)
 -		return TRACE_TYPE_PARTIAL_LINE;
--	else
--		return TRACE_TYPE_HANDLED;
+-	return TRACE_TYPE_HANDLED;
 -}
 -
--static enum print_line_t initcall_print_line(struct trace_iterator *iter)
+-static enum print_line_t
+-kmemtrace_print_alloc_user(struct trace_iterator *iter, int flags,
+-			   struct trace_event *event)
+-{
+-	struct trace_seq *s = &iter->seq;
+-	struct kmemtrace_alloc_entry *entry;
+-	struct kmemtrace_user_event *ev;
+-	struct kmemtrace_user_event_alloc *ev_alloc;
+-
+-	trace_assign_type(entry, iter->ent);
+-
+-	ev = trace_seq_reserve(s, sizeof(*ev));
+-	if (!ev)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ev->event_id		= KMEMTRACE_USER_ALLOC;
+-	ev->type_id		= entry->type_id;
+-	ev->event_size		= sizeof(*ev) + sizeof(*ev_alloc);
+-	ev->cpu			= iter->cpu;
+-	ev->timestamp		= iter->ts;
+-	ev->call_site		= entry->call_site;
+-	ev->ptr			= (unsigned long)entry->ptr;
+-
+-	ev_alloc = trace_seq_reserve(s, sizeof(*ev_alloc));
+-	if (!ev_alloc)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ev_alloc->bytes_req	= entry->bytes_req;
+-	ev_alloc->bytes_alloc	= entry->bytes_alloc;
+-	ev_alloc->gfp_flags	= entry->gfp_flags;
+-	ev_alloc->node		= entry->node;
+-
+-	return TRACE_TYPE_HANDLED;
+-}
+-
+-static enum print_line_t
+-kmemtrace_print_free_user(struct trace_iterator *iter, int flags,
+-			  struct trace_event *event)
+-{
+-	struct trace_seq *s = &iter->seq;
+-	struct kmemtrace_free_entry *entry;
+-	struct kmemtrace_user_event *ev;
+-
+-	trace_assign_type(entry, iter->ent);
+-
+-	ev = trace_seq_reserve(s, sizeof(*ev));
+-	if (!ev)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	ev->event_id		= KMEMTRACE_USER_FREE;
+-	ev->type_id		= entry->type_id;
+-	ev->event_size		= sizeof(*ev);
+-	ev->cpu			= iter->cpu;
+-	ev->timestamp		= iter->ts;
+-	ev->call_site		= entry->call_site;
+-	ev->ptr			= (unsigned long)entry->ptr;
+-
+-	return TRACE_TYPE_HANDLED;
+-}
+-
+-/* The two other following provide a more minimalistic output */
+-static enum print_line_t
+-kmemtrace_print_alloc_compress(struct trace_iterator *iter)
+-{
+-	struct kmemtrace_alloc_entry *entry;
+-	struct trace_seq *s = &iter->seq;
+-	int ret;
+-
+-	trace_assign_type(entry, iter->ent);
+-
+-	/* Alloc entry */
+-	ret = trace_seq_printf(s, "  +      ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Type */
+-	switch (entry->type_id) {
+-	case KMEMTRACE_TYPE_KMALLOC:
+-		ret = trace_seq_printf(s, "K   ");
+-		break;
+-	case KMEMTRACE_TYPE_CACHE:
+-		ret = trace_seq_printf(s, "C   ");
+-		break;
+-	case KMEMTRACE_TYPE_PAGES:
+-		ret = trace_seq_printf(s, "P   ");
+-		break;
+-	default:
+-		ret = trace_seq_printf(s, "?   ");
+-	}
+-
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Requested */
+-	ret = trace_seq_printf(s, "%4zu   ", entry->bytes_req);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Allocated */
+-	ret = trace_seq_printf(s, "%4zu   ", entry->bytes_alloc);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Flags
+-	 * TODO: would be better to see the name of the GFP flag names
+-	 */
+-	ret = trace_seq_printf(s, "%08x   ", entry->gfp_flags);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Pointer to allocated */
+-	ret = trace_seq_printf(s, "0x%tx   ", (ptrdiff_t)entry->ptr);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Node and call site*/
+-	ret = trace_seq_printf(s, "%4d   %pf\n", entry->node,
+-						 (void *)entry->call_site);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
+-}
+-
+-static enum print_line_t
+-kmemtrace_print_free_compress(struct trace_iterator *iter)
+-{
+-	struct kmemtrace_free_entry *entry;
+-	struct trace_seq *s = &iter->seq;
+-	int ret;
+-
+-	trace_assign_type(entry, iter->ent);
+-
+-	/* Free entry */
+-	ret = trace_seq_printf(s, "  -      ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Type */
+-	switch (entry->type_id) {
+-	case KMEMTRACE_TYPE_KMALLOC:
+-		ret = trace_seq_printf(s, "K     ");
+-		break;
+-	case KMEMTRACE_TYPE_CACHE:
+-		ret = trace_seq_printf(s, "C     ");
+-		break;
+-	case KMEMTRACE_TYPE_PAGES:
+-		ret = trace_seq_printf(s, "P     ");
+-		break;
+-	default:
+-		ret = trace_seq_printf(s, "?     ");
+-	}
+-
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Skip requested/allocated/flags */
+-	ret = trace_seq_printf(s, "                       ");
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Pointer to allocated */
+-	ret = trace_seq_printf(s, "0x%tx   ", (ptrdiff_t)entry->ptr);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	/* Skip node and print call site*/
+-	ret = trace_seq_printf(s, "       %pf\n", (void *)entry->call_site);
+-	if (!ret)
+-		return TRACE_TYPE_PARTIAL_LINE;
+-
+-	return TRACE_TYPE_HANDLED;
+-}
+-
+-static enum print_line_t kmemtrace_print_line(struct trace_iterator *iter)
 -{
 -	struct trace_entry *entry = iter->ent;
+-
+-	if (!(kmem_tracer_flags.val & TRACE_KMEM_OPT_MINIMAL))
+-		return TRACE_TYPE_UNHANDLED;
 -
 -	switch (entry->type) {
--	case TRACE_BOOT_CALL:
--		return initcall_call_print_line(iter);
--	case TRACE_BOOT_RET:
--		return initcall_ret_print_line(iter);
+-	case TRACE_KMEM_ALLOC:
+-		return kmemtrace_print_alloc_compress(iter);
+-	case TRACE_KMEM_FREE:
+-		return kmemtrace_print_free_compress(iter);
 -	default:
 -		return TRACE_TYPE_UNHANDLED;
 -	}
 -}
 -
--struct tracer boot_tracer __read_mostly =
--{
--	.name		= "initcall",
--	.init		= boot_trace_init,
--	.reset		= tracing_reset_online_cpus,
--	.print_line	= initcall_print_line,
+-static struct trace_event_functions kmem_trace_alloc_funcs = {
+-	.trace			= kmemtrace_print_alloc,
+-	.binary			= kmemtrace_print_alloc_user,
 -};
 -
--void trace_boot_call(struct boot_trace_call *bt, initcall_t fn)
+-static struct trace_event kmem_trace_alloc = {
+-	.type			= TRACE_KMEM_ALLOC,
+-	.funcs			= &kmem_trace_alloc_funcs,
+-};
+-
+-static struct trace_event_functions kmem_trace_free_funcs = {
+-	.trace			= kmemtrace_print_free,
+-	.binary			= kmemtrace_print_free_user,
+-};
+-
+-static struct trace_event kmem_trace_free = {
+-	.type			= TRACE_KMEM_FREE,
+-	.funcs			= &kmem_trace_free_funcs,
+-};
+-
+-static struct tracer kmem_tracer __read_mostly = {
+-	.name			= "kmemtrace",
+-	.init			= kmem_trace_init,
+-	.reset			= kmem_trace_reset,
+-	.print_line		= kmemtrace_print_line,
+-	.print_header		= kmemtrace_headers,
+-	.flags			= &kmem_tracer_flags
+-};
+-
+-void kmemtrace_init(void)
 -{
--	struct ftrace_event_call *call = &event_boot_call;
--	struct ring_buffer_event *event;
--	struct ring_buffer *buffer;
--	struct trace_boot_call *entry;
--	struct trace_array *tr = boot_trace;
--
--	if (!tr || !pre_initcalls_finished)
--		return;
--
--	/* Get its name now since this function could
--	 * disappear because it is in the .init section.
--	 */
--	sprint_symbol(bt->func, (unsigned long)fn);
--	preempt_disable();
--
--	buffer = tr->buffer;
--	event = trace_buffer_lock_reserve(buffer, TRACE_BOOT_CALL,
--					  sizeof(*entry), 0, 0);
--	if (!event)
--		goto out;
--	entry	= ring_buffer_event_data(event);
--	entry->boot_call = *bt;
--	if (!filter_check_discard(call, entry, buffer, event))
--		trace_buffer_unlock_commit(buffer, event, 0, 0);
-- out:
--	preempt_enable();
+-	/* earliest opportunity to start kmem tracing */
 -}
 -
--void trace_boot_ret(struct boot_trace_ret *bt, initcall_t fn)
+-static int __init init_kmem_tracer(void)
 -{
--	struct ftrace_event_call *call = &event_boot_ret;
--	struct ring_buffer_event *event;
--	struct ring_buffer *buffer;
--	struct trace_boot_ret *entry;
--	struct trace_array *tr = boot_trace;
+-	if (!register_ftrace_event(&kmem_trace_alloc)) {
+-		pr_warning("Warning: could not register kmem events\n");
+-		return 1;
+-	}
 -
--	if (!tr || !pre_initcalls_finished)
--		return;
+-	if (!register_ftrace_event(&kmem_trace_free)) {
+-		pr_warning("Warning: could not register kmem events\n");
+-		return 1;
+-	}
 -
--	sprint_symbol(bt->func, (unsigned long)fn);
--	preempt_disable();
+-	if (register_tracer(&kmem_tracer) != 0) {
+-		pr_warning("Warning: could not register the kmem tracer\n");
+-		return 1;
+-	}
 -
--	buffer = tr->buffer;
--	event = trace_buffer_lock_reserve(buffer, TRACE_BOOT_RET,
--					  sizeof(*entry), 0, 0);
--	if (!event)
--		goto out;
--	entry	= ring_buffer_event_data(event);
--	entry->boot_ret = *bt;
--	if (!filter_check_discard(call, entry, buffer, event))
--		trace_buffer_unlock_commit(buffer, event, 0, 0);
-- out:
--	preempt_enable();
+-	return 0;
 -}
+-device_initcall(init_kmem_tracer);
+diff --git a/kernel/trace/trace.h b/kernel/trace/trace.h
+index 75a5e80..075cd2e 100644
+--- a/kernel/trace/trace.h
++++ b/kernel/trace/trace.h
+@@ -9,7 +9,6 @@
+ #include <linux/mmiotrace.h>
+ #include <linux/tracepoint.h>
+ #include <linux/ftrace.h>
+-#include <linux/kmemtrace.h>
+ #include <linux/hw_breakpoint.h>
+ #include <linux/trace_seq.h>
+ #include <linux/ftrace_event.h>
+@@ -30,19 +29,12 @@ enum trace_type {
+ 	TRACE_GRAPH_RET,
+ 	TRACE_GRAPH_ENT,
+ 	TRACE_USER_STACK,
+-	TRACE_KMEM_ALLOC,
+-	TRACE_KMEM_FREE,
+ 	TRACE_BLK,
+ 	TRACE_KSYM,
+ 
+ 	__TRACE_LAST_TYPE,
+ };
+ 
+-enum kmemtrace_type_id {
+-	KMEMTRACE_TYPE_KMALLOC = 0,	/* kmalloc() or kfree(). */
+-	KMEMTRACE_TYPE_CACHE,		/* kmem_cache_*(). */
+-	KMEMTRACE_TYPE_PAGES,		/* __get_free_pages() and friends. */
+-};
+ 
+ #undef __field
+ #define __field(type, item)		type	item;
+@@ -208,10 +200,6 @@ extern void __ftrace_bad_type(void);
+ 			  TRACE_GRAPH_ENT);		\
+ 		IF_ASSIGN(var, ent, struct ftrace_graph_ret_entry,	\
+ 			  TRACE_GRAPH_RET);		\
+-		IF_ASSIGN(var, ent, struct kmemtrace_alloc_entry,	\
+-			  TRACE_KMEM_ALLOC);	\
+-		IF_ASSIGN(var, ent, struct kmemtrace_free_entry,	\
+-			  TRACE_KMEM_FREE);	\
+ 		IF_ASSIGN(var, ent, struct ksym_trace_entry, TRACE_KSYM);\
+ 		__ftrace_bad_type();					\
+ 	} while (0)
 diff --git a/kernel/trace/trace_entries.h b/kernel/trace/trace_entries.h
-index dc008c1..c293364 100644
+index c293364..13abc15 100644
 --- a/kernel/trace/trace_entries.h
 +++ b/kernel/trace/trace_entries.h
-@@ -271,33 +271,6 @@ FTRACE_ENTRY(mmiotrace_map, trace_mmiotrace_map,
- 		 __entry->map_id, __entry->opcode)
+@@ -291,41 +291,6 @@ FTRACE_ENTRY(branch, trace_branch,
+ 		 __entry->func, __entry->file, __entry->correct)
  );
  
--FTRACE_ENTRY(boot_call, trace_boot_call,
+-FTRACE_ENTRY(kmem_alloc, kmemtrace_alloc_entry,
 -
--	TRACE_BOOT_CALL,
--
--	F_STRUCT(
--		__field_struct(	struct boot_trace_call,	boot_call	)
--		__field_desc(	pid_t,	boot_call,	caller		)
--		__array_desc(	char,	boot_call,	func,	KSYM_SYMBOL_LEN)
--	),
--
--	F_printk("%d  %s", __entry->caller, __entry->func)
--);
--
--FTRACE_ENTRY(boot_ret, trace_boot_ret,
--
--	TRACE_BOOT_RET,
+-	TRACE_KMEM_ALLOC,
 -
 -	F_STRUCT(
--		__field_struct(	struct boot_trace_ret,	boot_ret	)
--		__array_desc(	char,	boot_ret,	func,	KSYM_SYMBOL_LEN)
--		__field_desc(	int,	boot_ret,	result		)
--		__field_desc(	unsigned long, boot_ret, duration	)
+-		__field(	enum kmemtrace_type_id,	type_id		)
+-		__field(	unsigned long,		call_site	)
+-		__field(	const void *,		ptr		)
+-		__field(	size_t,			bytes_req	)
+-		__field(	size_t,			bytes_alloc	)
+-		__field(	gfp_t,			gfp_flags	)
+-		__field(	int,			node		)
 -	),
 -
--	F_printk("%s %d %lx",
--		 __entry->func, __entry->result, __entry->duration)
+-	F_printk("type:%u call_site:%lx ptr:%p req:%zi alloc:%zi"
+-		 " flags:%x node:%d",
+-		 __entry->type_id, __entry->call_site, __entry->ptr,
+-		 __entry->bytes_req, __entry->bytes_alloc,
+-		 __entry->gfp_flags, __entry->node)
 -);
+-
+-FTRACE_ENTRY(kmem_free, kmemtrace_free_entry,
+-
+-	TRACE_KMEM_FREE,
+-
+-	F_STRUCT(
+-		__field(	enum kmemtrace_type_id,	type_id		)
+-		__field(	unsigned long,		call_site	)
+-		__field(	const void *,		ptr		)
+-	),
+-
+-	F_printk("type:%u call_site:%lx ptr:%p",
+-		 __entry->type_id, __entry->call_site, __entry->ptr)
+-);
+-
+ FTRACE_ENTRY(ksym_trace, ksym_trace_entry,
  
- #define TRACE_FUNC_SIZE 30
- #define TRACE_FILE_SIZE 20
+ 	TRACE_KSYM,
+diff --git a/mm/slab.c b/mm/slab.c
+index bac0f4f..5cba9d2 100644
+--- a/mm/slab.c
++++ b/mm/slab.c
+@@ -102,7 +102,6 @@
+ #include	<linux/cpu.h>
+ #include	<linux/sysctl.h>
+ #include	<linux/module.h>
+-#include	<linux/kmemtrace.h>
+ #include	<linux/rcupdate.h>
+ #include	<linux/string.h>
+ #include	<linux/uaccess.h>
+diff --git a/mm/slub.c b/mm/slub.c
+index d2a54fe..4f87b5f 100644
+--- a/mm/slub.c
++++ b/mm/slub.c
+@@ -17,7 +17,6 @@
+ #include <linux/slab.h>
+ #include <linux/proc_fs.h>
+ #include <linux/seq_file.h>
+-#include <linux/kmemtrace.h>
+ #include <linux/kmemcheck.h>
+ #include <linux/cpu.h>
+ #include <linux/cpuset.h>
 -- 
 1.6.2.3
 
