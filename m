@@ -1,63 +1,43 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934119Ab0EZSgN (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 14:36:13 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:63720 "EHLO mx1.redhat.com"
+	id S1757589Ab0EZSjR (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 14:39:17 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:37395 "EHLO arroyo.ext.ti.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932536Ab0EZSgK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 14:36:10 -0400
-Date: Wed, 26 May 2010 14:35:59 -0400
-From: Jason Baron <jbaron@redhat.com>
-To: Roman Fietze <roman.fietze@telemotive.de>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: [PATCH] dynamic_debug: allow to set dynamic debug flags right
-	at module load time
-Message-ID: <20100526183559.GA5094@redhat.com>
-References: <201005261425.39058.roman.fietze@telemotive.de>
+	id S1751936Ab0EZSjQ (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 14:39:16 -0400
+From: Sebastien Jan <s-jan@ti.com>
+Organization: Texas Instruments
+To: Alexey Dobriyan <adobriyan@gmail.com>
+Subject: Re: [PATCH] Add missing extern to heap_free declaration
+Date: Wed, 26 May 2010 20:39:09 +0200
+User-Agent: KMail/1.12.2 (Linux/2.6.31-20-generic; KDE/4.3.2; i686; ; )
+Cc: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "torvalds@linux-foundation.org" <torvalds@linux-foundation.org>
+References: <1274898499-32497-1-git-send-email-s-jan@ti.com> <20100526183501.GA14969@x200.telecom.by>
+In-Reply-To: <20100526183501.GA14969@x200.telecom.by>
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <201005261425.39058.roman.fietze@telemotive.de>
-User-Agent: Mutt/1.5.18 (2008-05-17)
+Content-Type: Text/Plain;
+  charset="iso-8859-1"
+Content-Transfer-Encoding: 7bit
+Message-Id: <201005262039.10077.s-jan@ti.com>
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 02:25:38PM +0200, Roman Fietze wrote:
-> Hello Jason, hello list,
+On Wednesday 26 May 2010 20:35:01 Alexey Dobriyan wrote:
+> On Wed, May 26, 2010 at 08:28:19PM +0200, Sebastien JAN wrote:
+> > heap_free() function is defined in lib/prio_heap.c
+> >
+> > --- a/include/linux/prio_heap.h
+> > +++ b/include/linux/prio_heap.h
+> > -void heap_free(struct ptr_heap *heap);
+> > +extern void heap_free(struct ptr_heap *heap);
 > 
-> If I'm not wrong one could only enable any dynamic debugging flag
-> after a module had been completely loaded, using debugfs. This makes
-> it impossible to use dev_dbg or pr_debug e.g. inside the module init
-> function or any function called by it.
+> This is totally unneeded.
 > 
-
-yes, that's correct.
-
-> My patch works by replacing _DPRINTK_FLAGS_DEFAULT after including all
-> kernel headers in my module source file and some small patch inside
-> dynamic_debug.c setting up the internal variables already when loading
-> a module with flags unequal to zero. This patch can of course be
-> optimized somewhat by reusing existing variables.
-> 
-> Subject: [PATCH] dynamic_debug: allow to set dynamic debug flags right at module load time
-> 
-> This allows to use e.g. pr_debug right from the beginning, e.g. in the
-> module init function.
-> 
-> - the module must redefine _DPRINTK_FLAGS_DEFAULT, e.g.
-> 
->   #undef _DPRINTK_FLAGS_DEFAULT
->   #define _DPRINTK_FLAGS_DEFAULT _DPRINTK_FLAGS_PRINT
-> 
-> - when a module is loaded and the flags are not zero, the enabled
->   count and hash masks are enabled right away
+> In fact, externless prototypes are better.
 > 
 
-it's a good idea, but i think we want this to be runtime configurable.
-That is, we probably want this implemented as a module parameter, not as
-a compile time thing. something like: modprobe module verbose=1
-
-thanks,
-
--Jason
+The attempt was to have a unified way of declaring the functions in this
+file since the other functions have the 'export'.
