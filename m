@@ -1,57 +1,145 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933765Ab0EZBq2 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:46:28 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:34866 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759143Ab0EZBq1 (ORCPT
+	id S933914Ab0EZBsJ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:48:09 -0400
+Received: from arroyo.ext.ti.com ([192.94.94.40]:51858 "EHLO arroyo.ext.ti.com"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S933412Ab0EZBsG convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:46:27 -0400
-Date: Tue, 25 May 2010 18:46:21 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Harald Dunkel <harald.dunkel@aixigo.de>
-Cc: Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Greg KH <greg@kroah.com>
-Subject: Re: 2.6.34 on Samsung P460: reset after
- "Waiting for /dev to be fully populated"
-Message-Id: <20100525184621.89487735.akpm@linux-foundation.org>
-In-Reply-To: <4BFB947E.9080509@aixigo.de>
-References: <4BFB947E.9080509@aixigo.de>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	Tue, 25 May 2010 21:48:06 -0400
+From: "Arce, Abraham" <x0066660@ti.com>
+To: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       David Miller <davem@davemloft.net>
+CC: "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 25 May 2010 20:48:02 -0500
+Subject: RE: NULL Pointer Deference: NFS & Telnet
+Thread-Topic: NULL Pointer Deference: NFS & Telnet
+Thread-Index: Acr7sMEhWAICO9I8TUCo7EaT0RzjBwAwoBPg
+Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
+MIME-Version: 1.0
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, 25 May 2010 11:12:30 +0200 Harald Dunkel <harald.dunkel@aixigo.de> wrote:
+Hi,
 
-> Hi folks,
+I am able to avoid the NULL pointer dereference but not sure if the handling
+is the correct one... find the patch below...
+
+> I have 2 scenarios in which I am getting a NULL pointer dereference:
 > 
-> Problem: At boot time I see a final message
+> 1) root filesystem over nfs
+> 2) telnet connection
 > 
-> 	Waiting for /dev to be fully populated
+> The issue appeared on this commit
 > 
-> then my laptop (Samsung P460) does a reset. The next
-> boot doesn't work, so I have to power-cycle the laptop.
+> http://git.kernel.org/?p=linux/kernel/git/torvalds/linux-
+> 2.6.git;a=commit;h=f8965467f366fd18f01feafb5db10512d7b4422c
 > 
-> If I boot with "acpi=off", then 2.6.34 gets stuck instead.
-> The last 2 lines are
+> The driver I am working with is drivers/net/ks8851.c
+> Any help will be highly appreciated...
+>
+> ---
 > 
-> 	TCP reno registered
-> 	Net: Registered protocol family 1
+> Scenario 1 | root filesystem over nfs
 > 
-> Any helpful comment would be highly appreciated.
+> Looking up port of RPC 100005/1 on 10.87.231.229
+> VFS: Mounted root (nfs filesystem) on device 0:10.
+> Freeing init memory: 128K
+> Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> [..]
+> PC is at put_page+0xc/0x120
+> LR is at skb_release_data+0x74/0xb8
+> [..]
+> Backtrace:
+> [<c0086dd0>] (put_page+0x0/0x120)
+> [<c01d0a48>] (skb_release_data+0x0/0xb8)
+> [<c01d1044>] (skb_release_all+0x0/0x20)
+> [<c01d075c>] (__kfree_skb+0x0/0xbc)
+> [<c01d0818>] (consume_skb+0x0/0x58)
+> [<c01d39cc>] (skb_free_datagram+0x0/0x40)
+> [<c023ff74>] (xs_udp_data_ready+0x0/0x1e8)
+> [<c01ce034>] (sock_queue_rcv_skb+0x0/0x1c0)
+> [<c01fbba8>] (ip_queue_rcv_skb+0x0/0x58)
+> [<c02176c0>] (__udp_queue_rcv_skb+0x0/0x18c)
+> [<c0218e28>] (udp_queue_rcv_skb+0x0/0x348)
+> [<c02195a4>] (__udp4_lib_rcv+0x0/0x564)
+> [<c0219b08>] (udp_rcv+0x0/0x20)
+> [<c01f5f34>] (ip_local_deliver+0x0/0x264)
+> [<c01f586c>] (ip_rcv+0x0/0x6c8)
+> [<c01d7ec0>] (__netif_receive_skb+0x0/0x2d0)
+> [<c01d8190>] (process_backlog+0x0/0x16c)
+> [<c01d8e14>] (net_rx_action+0x0/0x18c)
+> [<c00521a0>] (__do_softirq+0x0/0x12c)
+> [<c00522cc>] (irq_exit+0x0/0x70)
+> [<c0028000>] (asm_do_IRQ+0x0/0xc8)
+> 
+> Complete log at http://pastebin.mozilla.org/728027
+> 
+> ---
+> 
+> Scenario 2
+> 
+>  1. Root filesystem booted in ram
+>  2. eth0 brought up
+>  3. telnetd daemon started
+>  4. tried to connect through telnet
+> 
+> # Unable to handle kernel NULL pointer dereference at virtual address 00000000
+> pgd = d98e8000
+> [..]
+> PC is at put_page+0xc/0x120
+> LR is at skb_release_data+0x74/0xb8
+> [..]
+> Backtrace:
+> [<c0086dd0>] (put_page+0x0/0x120)
+> [<c01d0a48>] (skb_release_data+0x0/0xb8)
+> [<c01d1044>] (skb_release_all+0x0/0x20)
+> [<c01d075c>] (__kfree_skb+0x0/0xbc)
+> [<c0202444>] (tcp_recvmsg+0x0/0x93c)
+> [<c02201e8>] (inet_recvmsg+0x0/0xec)
+> [<c01c7fd0>] (sock_aio_read+0x0/0xf8)
+> [<c00ab3ac>] (do_sync_read+0x0/0xec)
+> [<c00abfbc>] (vfs_read+0x0/0x164)
+> [<c00ac1a0>] (sys_read+0x0/0x70)
+> [<c0029100>] (ret_fast_syscall+0x0/0x30)
+> 
+> Complete log at http://pastebin.mozilla.org/728028
 > 
 
-ow, hard.
+Check for NULL data in sk_buff before sending to put_page
 
-I assume that the "Waiting for /dev to be fully populated" comes from
-udev?  Greg, do you know what might trigger that?
+Signed-off-by: Abraham Arce <x0066660@ti.com>
+---
+ net/core/skbuff.c |    2 +-
+ 1 files changed, 1 insertions(+), 1 deletions(-)
 
-Harald, I think the best (only?) way to fix this is for you to do a
-bisection search.  http://landley.net/writing/git-quick.html has some
-instructions.
+diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+index f8abf68..eb81f76 100644
+--- a/net/core/skbuff.c
++++ b/net/core/skbuff.c
+@@ -334,7 +334,7 @@ static void skb_release_data(struct sk_buff *skb)
+ 	if (!skb->cloned ||
+ 	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
+ 			       &skb_shinfo(skb)->dataref)) {
+-		if (skb_shinfo(skb)->nr_frags) {
++		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
+ 			int i;
+ 			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+ 				put_page(skb_shinfo(skb)->frags[i].page);
+-- 
+1.5.4.3
 
-It's a bit of a pain to do, sorry.
