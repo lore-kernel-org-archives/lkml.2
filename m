@@ -1,50 +1,70 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755520Ab0EZPMv (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:12:51 -0400
-Received: from casper.infradead.org ([85.118.1.10]:56800 "EHLO
-	casper.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755491Ab0EZPMt (ORCPT
+	id S1755507Ab0EZPNo (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:13:44 -0400
+Received: from fg-out-1718.google.com ([72.14.220.152]:12522 "EHLO
+	fg-out-1718.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754731Ab0EZPNm (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:12:49 -0400
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Peter Zijlstra <peterz@infradead.org>
-To: Florian Mickler <florian@mickler.org>
-Cc: Alan Cox <alan@lxorguk.ukuu.org.uk>, Vitaly Wool <vitalywool@gmail.com>,
-       LKML <linux-kernel@vger.kernel.org>, Paul@smtp1.linux-foundation.org,
-       felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-In-Reply-To: <20100526171106.0e44a736@schatten.dmk.lab>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	 <201005242049.18920.rjw@sisk.pl> <87wrusvrqe.fsf@deeprootsystems.com>
-	 <201005250138.16293.rjw@sisk.pl> <1274863655.5882.4875.camel@twins>
-	 <AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	 <1274867106.5882.5090.camel@twins>
-	 <20100526120242.5c9b73ad@schatten.dmk.lab>
-	 <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-	 <20100526133721.602633b2@schatten.dmk.lab>
-	 <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
-	 <20100526142430.327ccbc4@schatten.dmk.lab>
-	 <20100526141612.3e2e0443@lxorguk.ukuu.org.uk>
-	 <20100526171106.0e44a736@schatten.dmk.lab>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 17:12:44 +0200
-Message-ID: <1274886764.1674.1756.camel@laptop>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.3 
+	Wed, 26 May 2010 11:13:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=message-id:date:from:user-agent:mime-version:to:cc:subject
+         :references:in-reply-to:x-enigmail-version:content-type
+         :content-transfer-encoding;
+        b=U+h8Vj8hLtZkVmtRtSjwi9jtUBmRRzH+4tJbyJTHkyE+yZwYtPM/ZaGtIqO2+uiNa2
+         w+JY+mHPCtxa7+jkXqLB/hPdDYbABobFKyr4g6vN5rK1JZwlPs7h+x2MoOmb0f3BJKqN
+         b+Yr2JEmEdLLRpGHHXWlpykPEI3OL50W6/C08=
+Message-ID: <4BFD3AA2.1090904@gmail.com>
+Date: Wed, 26 May 2010 17:13:38 +0200
+From: Jiri Slaby <jirislaby@gmail.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; cs-CZ; rv:1.9.2.4) Gecko/20100522 SUSE/3.1rc1-2.1 Thunderbird/3.1
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 10/11] rlimits: implement prlimit64 syscall
+References: <1273514451-28894-1-git-send-email-jslaby@suse.cz>	<1273514451-28894-10-git-send-email-jslaby@suse.cz>	<20100513155630.9ca5ab16.akpm@linux-foundation.org>	<4BFD1ADD.7020004@gmail.com> <20100526073045.ea26740f.akpm@linux-foundation.org>
+In-Reply-To: <20100526073045.ea26740f.akpm@linux-foundation.org>
+X-Enigmail-Version: 1.0
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 17:11 +0200, Florian Mickler wrote:
-> > Implementation-wise it probably ties into setpidle, its simply that a task
-> > has a pair of idle values, a dynamic one and a base one, the dynamic one
-> > being the base one but updatable temporarily by drivers.
+On 05/26/2010 04:30 PM, Andrew Morton wrote:
+> main()
+> {
+> 	if (clone(...)) {
+> 		while (wait_for_message(&m))
+> 			setrlimit(m);
+> 	}
+> 
+> 	...
+> }
+> 		
+> ?
 
-> How does this address the loss of wakeup events while using suspend? 
-> (For example the 2 issues formulated by Alan Stern in [1])
+Hmm. Probably I'm still missing something obvious, but how does this
+help for existing services like databases and/or closed-source products?
 
-By not suspending obviously.
+Or do you mean to provide this as a library
+(s@main@__attribute__((constructor)) my_main@ then) and link (or even
+preload) to the programs people want to change limits on-the-fly in?
+(And clone with THREAD flag to share task_struct->signal.)
 
+But this approach can only help for the parent of all the forked-later
+processes. Especially if a process forks and exits (i.e. creates a
+daemon), the child running in the background doesn't have the
+wait_for_message thread. So if it forks again (e.g. to service a new
+request) the limits cannot be changed in any of them.
+
+This can be solved by adding such a cloned-thread loop into every forked
+child, but I'm not sure this is something we want.
+
+In addition, people don't know which process will need to change limits
+in advance. Every single binary would have to contain such code.
+
+-- 
+js
