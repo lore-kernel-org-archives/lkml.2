@@ -1,19 +1,19 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S935018Ab0EZXld (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:41:33 -0400
-Received: from mail-wy0-f174.google.com ([74.125.82.174]:43136 "EHLO
-	mail-wy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934981Ab0EZXlO (ORCPT
+	id S934984Ab0EZXlz (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:41:55 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:44452 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S934987Ab0EZXlU (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:41:14 -0400
+	Wed, 26 May 2010 19:41:20 -0400
 From: Mike Sheldon <mike@mikeasoft.com>
 To: greg@kroah.com, pavel@ucw.cz
 Cc: devel@driverdev.osuosl.org, linux-kernel@vger.kernel.org,
        Mike Sheldon <mike@mikeasoft.com>
-Subject: [PATCH 11/15] Staging: winbond: Fix spacing around brackets and pointers.
-Date: Thu, 27 May 2010 00:39:48 +0100
-Message-Id: <1274917192-16962-11-git-send-email-mike@mikeasoft.com>
+Subject: [PATCH 15/15] Staging: winbond: Replace printk usage with pr_info
+Date: Thu, 27 May 2010 00:39:52 +0100
+Message-Id: <1274917192-16962-15-git-send-email-mike@mikeasoft.com>
 X-Mailer: git-send-email 1.7.0.4
 In-Reply-To: <1274917192-16962-1-git-send-email-mike@mikeasoft.com>
 References: <1274917192-16962-1-git-send-email-mike@mikeasoft.com>
@@ -21,42 +21,100 @@ Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Patches wb35rx_s.h to correct the spacing around brackets and pointers as reported by checkpatch.pl
+Patches wbusb.c to replace printk usage (missing KERN_ levels) with pr_info.
 
 Signed-off-by: Mike Sheldon <mike@mikeasoft.com>
 ---
- drivers/staging/winbond/wb35rx_s.h |   10 +++++-----
- 1 files changed, 5 insertions(+), 5 deletions(-)
+ drivers/staging/winbond/wbusb.c |   20 ++++++++++----------
+ 1 files changed, 10 insertions(+), 10 deletions(-)
 
-diff --git a/drivers/staging/winbond/wb35rx_s.h b/drivers/staging/winbond/wb35rx_s.h
-index 4b03274..7230a44 100644
---- a/drivers/staging/winbond/wb35rx_s.h
-+++ b/drivers/staging/winbond/wb35rx_s.h
-@@ -19,9 +19,9 @@ struct wb35_rx {
- 	u32			ByteReceived;// For calculating throughput of BulkIn
- 	atomic_t		RxFireCounter;// Does Wb35Rx module fire?
+diff --git a/drivers/staging/winbond/wbusb.c b/drivers/staging/winbond/wbusb.c
+index 681419d..1bad709 100644
+--- a/drivers/staging/winbond/wbusb.c
++++ b/drivers/staging/winbond/wbusb.c
+@@ -77,18 +77,18 @@ static int wbsoft_add_interface(struct ieee80211_hw *dev,
+ static void wbsoft_remove_interface(struct ieee80211_hw *dev,
+ 				    struct ieee80211_vif *vif)
+ {
+-	printk("wbsoft_remove interface called\n");
++	pr_info("wbsoft_remove interface called\n");
+ }
  
--	u8	RxBuffer[ MAX_USB_RX_BUFFER_NUMBER ][ ((MAX_USB_RX_BUFFER+3) & ~0x03 ) ];
--	u16	RxBufferSize[ ((MAX_USB_RX_BUFFER_NUMBER+1) & ~0x01) ];
--	u8	RxOwner[ ((MAX_USB_RX_BUFFER_NUMBER+3) & ~0x03 ) ];//Ownership of buffer  0: SW 1:HW
-+	u8	RxBuffer[MAX_USB_RX_BUFFER_NUMBER][((MAX_USB_RX_BUFFER+3) & ~0x03)];
-+	u16	RxBufferSize[((MAX_USB_RX_BUFFER_NUMBER+1) & ~0x01)];
-+	u8	RxOwner[((MAX_USB_RX_BUFFER_NUMBER+3) & ~0x03)];//Ownership of buffer  0: SW 1:HW
+ static void wbsoft_stop(struct ieee80211_hw *hw)
+ {
+-	printk(KERN_INFO "%s called\n", __func__);
++	pr_info("%s called\n", __func__);
+ }
  
- 	u32	RxProcessIndex;//The next index to process
- 	u32	RxBufferId;
-@@ -36,9 +36,9 @@ struct wb35_rx {
- 	u32	Rx3UrbCancel;
+ static int wbsoft_get_stats(struct ieee80211_hw *hw,
+ 			    struct ieee80211_low_level_stats *stats)
+ {
+-	printk(KERN_INFO "%s called\n", __func__);
++	pr_info("%s called\n", __func__);
+ 	return 0;
+ }
  
- 	u32	LastR1; // For RSSI reporting
--	struct urb *				RxUrb;
-+	struct urb	*RxUrb;
- 	u32		Ep3ErrorCount2; // 20060625.1 Usbd for Rx DMA error count
+@@ -159,13 +159,13 @@ static void hal_set_current_channel_ex(struct hw_data *pHwData, struct chan_info
+ 	if (pHwData->SurpriseRemove)
+ 		return;
  
- 	int		EP3VM_status;
--	u8 *	pDRx;
-+	u8	*pDRx;
- };
+-	printk("Going to channel: %d/%d\n", channel.band, channel.ChanNo);
++	pr_info("Going to channel: %d/%d\n", channel.band, channel.ChanNo);
+ 
+ 	RFSynthesizer_SwitchingChannel(pHwData, channel); /* Switch channel */
+ 	pHwData->Channel = channel.ChanNo;
+ 	pHwData->band = channel.band;
+ #ifdef _PE_STATE_DUMP_
+-	printk("Set channel is %d, band =%d\n", pHwData->Channel,
++	pr_info("Set channel is %d, band =%d\n", pHwData->Channel,
+ 	       pHwData->band);
+ #endif
+ 	reg->M28_MacControl &= ~0xff;	/* Clean channel information field */
+@@ -247,7 +247,7 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
+ 	struct wbsoft_priv *priv = dev->priv;
+ 	struct chan_info ch;
+ 
+-	printk("wbsoft_config called\n");
++	pr_info("wbsoft_config called\n");
+ 
+ 	/* Should use channel_num, or something, as that is already pre-translated */
+ 	ch.band = 1;
+@@ -265,7 +265,7 @@ static int wbsoft_config(struct ieee80211_hw *dev, u32 changed)
+ 
+ static u64 wbsoft_get_tsf(struct ieee80211_hw *dev)
+ {
+-	printk("wbsoft_get_tsf called\n");
++	pr_info("wbsoft_get_tsf called\n");
+ 	return 0;
+ }
+ 
+@@ -718,7 +718,7 @@ static int wb35_hw_init(struct ieee80211_hw *hw)
+ 
+ 	priv->sLocalPara.bAntennaNo = hal_get_antenna_number(pHwData);
+ #ifdef _PE_STATE_DUMP_
+-	printk("Driver init, antenna no = %d\n", psLOCAL->bAntennaNo);
++	pr_info("Driver init, antenna no = %d\n", psLOCAL->bAntennaNo);
+ #endif
+ 	hal_get_hw_radio_off(pHwData);
+ 
+@@ -792,7 +792,7 @@ static int wb35_probe(struct usb_interface *intf,
+ 	endpoint = &interface->endpoint[0].desc;
+ 
+ 	if (endpoint[2].wMaxPacketSize == 512) {
+-		printk("[w35und] Working on USB 2.0\n");
++		pr_info("[w35und] Working on USB 2.0\n");
+ 		pWbUsb->IsUsb20 = 1;
+ 	}
+ 
+@@ -850,7 +850,7 @@ static void wb35_hw_halt(struct wbsoft_priv *adapter)
+ 	/* Turn off Rx and Tx hardware ability */
+ 	hal_stop(&adapter->sHwData);
+ #ifdef _PE_USB_INI_DUMP_
+-	printk("[w35und] Hal_stop O.K.\n");
++	pr_info("[w35und] Hal_stop O.K.\n");
+ #endif
+ 	/* Waiting Irp completed */
+ 	msleep(100);
 -- 
 1.7.0.4
 
