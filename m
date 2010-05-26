@@ -1,62 +1,45 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755007Ab0EZPtz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:49:55 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:53030 "EHLO mx1.redhat.com"
+	id S1755251Ab0EZPus (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:50:48 -0400
+Received: from www.tglx.de ([62.245.132.106]:45811 "EHLO www.tglx.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1754900Ab0EZPtw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:49:52 -0400
-Date: Wed, 26 May 2010 11:49:40 -0400
-From: Rik van Riel <riel@redhat.com>
-To: akpm@linux-foundation.org
-Cc: linux-kernel@vger.kernel.org, linux-mm@kvack.org, lwoodman@redhat.com,
-       jmoyer@redhat.com, torvalds@linux-foundation.org
-Subject: [PATCH] do_generic_file_read: clear page errors when issuing a
- fresh read of the page
-Message-ID: <20100526114940.49f51028@annuminas.surriel.com>
-Organization: Red Hat, Inc.
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
-Content-Transfer-Encoding: 7bit
+	id S1754870Ab0EZPuq (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 11:50:46 -0400
+Date: Wed, 26 May 2010 17:50:34 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Christoph Egger <siccegge@cs.fau.de>
+cc: Ralf Baechle <ralf@linux-mips.org>,
+       Linus Walleij <linus.walleij@stericsson.com>,
+       Jon Hunter <jon-hunter@ti.com>, linux-kernel@vger.kernel.org,
+       vamos@i4.informatik.uni-erlangen.de
+Subject: Re: [PATCH] transitional config CONFIG_GENERIC_CLOCKEVENTS
+In-Reply-To: <alpine.LFD.2.00.1005261708420.2995@localhost.localdomain>
+Message-ID: <alpine.LFD.2.00.1005261750110.2995@localhost.localdomain>
+References: <20100526134415.GD7508@faui49.informatik.uni-erlangen.de> <alpine.LFD.2.00.1005261554280.2995@localhost.localdomain> <20100526145700.GA5475@faui48a.informatik.uni-erlangen.de> <alpine.LFD.2.00.1005261708420.2995@localhost.localdomain>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
+MIME-Version: 1.0
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Jeff Moyer <jmoyer@redhat.com>
+On Wed, 26 May 2010, Thomas Gleixner wrote:
+> > 	Are you referring to some out-of-tree architectures? I've
+> > verified the string GENERIC_CLOCKEVENTS_MIGR is only appearing at this
+> > single spot in kconfig and nowhere else in code/Kconfig in my
+> > up-to-date linux tree.
+> 
+> No. I'm referring to in tree archs which do not use the clock events
+> at all yet. The MIGR symbol allows them to do a step by step
+> conversion which builds the generic clock events stuff first before
+> switching over to use them. That's why it was created in the first
+> place and it has been proven useful when doing such work. So I'd
+> rather see it stay until all archs actually use the generic framework.
+> 
+> But yes, we can apply your patch and just let them select
+> GENERIC_CLOCKEVENTS_BUILD instead.
 
-I/O errors can happen due to temporary failures, like multipath
-errors or losing network contact with the iSCSI server. Because
-of that, the VM will retry readpage on the page.
+Gah, we can't.
 
-However, do_generic_file_read does not clear PG_error.  This
-causes the system to be unable to actually use the data in the
-page cache page, even if the subsequent readpage completes
-successfully!
-
-The function filemap_fault has had a ClearPageError before
-readpage forever.  This patch simply adds the same to
-do_generic_file_read.
-
-Signed-off-by: Rik van Riel <riel@redhat.com>
-Signed-off-by: Jeff Moyer <jmoyer@redhat.com>
----
- mm/filemap.c |    6 ++++++
- 1 file changed, 6 insertions(+)
-
-Index: linux-2.6.34/mm/filemap.c
-===================================================================
---- linux-2.6.34.orig/mm/filemap.c
-+++ linux-2.6.34/mm/filemap.c
-@@ -1106,6 +1106,12 @@ page_not_up_to_date_locked:
- 		}
- 
- readpage:
-+		/*
-+		 * A previous I/O error may have been due to temporary
-+		 * failures, eg. multipath errors.
-+		 * PG_error will be set again if readpage fails.
-+		 */
-+		ClearPageError(page);
- 		/* Start the actual read. The read will unlock the page. */
- 		error = mapping->a_ops->readpage(filp, page);
- 
+     tglx
