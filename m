@@ -1,79 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934885Ab0EZXNs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 19:13:48 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:33869 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S934489Ab0EZXNq convert rfc822-to-8bit (ORCPT
+	id S1758331Ab0EZXT0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 19:19:26 -0400
+Received: from smtp-04.mandic.com.br ([200.225.81.151]:58083 "EHLO
+	smtp-04.mandic.com.br" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1757409Ab0EZXTZ (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 19:13:46 -0400
+	Wed, 26 May 2010 19:19:25 -0400
+Message-ID: <4BFDAC75.5070906@cesarb.net>
+Date: Wed, 26 May 2010 20:19:17 -0300
+From: Cesar Eduardo Barros <cesarb@cesarb.net>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
 MIME-Version: 1.0
-In-Reply-To: <1274871005.5882.5315.camel@twins>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<1274482015-30899-2-git-send-email-arve@android.com>
-	<1274482015-30899-3-git-send-email-arve@android.com>
-	<1274863428.5882.4860.camel@twins>
-	<AANLkTimTnzK1ByG2bE2gGjINxD_Pbvez7PFHo7Kzo9yk@mail.gmail.com>
-	<1274871005.5882.5315.camel@twins>
-Date: Wed, 26 May 2010 16:13:45 -0700
-Message-ID: <AANLkTilNUEhuPvCqh3lItwX3qBLyCghWRlep-aENwsiw@mail.gmail.com>
-Subject: Re: [PATCH 2/8] PM: suspend_block: Add driver to access suspend 
-	blockers from user-space
-From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
-To: Peter Zijlstra <peterz@infradead.org>
-Cc: linux-pm@lists.linux-foundation.org, linux-kernel@vger.kernel.org,
-       "Rafael J. Wysocki" <rjw@sisk.pl>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Jim Collar <jim.collar@eqware.net>, Greg Kroah-Hartman <gregkh@suse.de>,
-       Avi Kivity <avi@redhat.com>, Len Brown <len.brown@intel.com>,
-       Pavel Machek <pavel@ucw.cz>, Magnus Damm <damm@igel.co.jp>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Nigel Cunningham <nigel@tuxonice.net>, linux-doc@vger.kernel.org
-Content-Type: text/plain; charset=ISO-8859-1
-Content-Transfer-Encoding: 8BIT
+To: Minchan Kim <minchan.kim@gmail.com>
+CC: Valdis.Kletnieks@vt.edu, linux-mm@kvack.org, linux-kernel@vger.kernel.org,
+       Hugh Dickins <hughd@google.com>
+Subject: Re: [PATCH 0/3] mm: Swap checksum
+References: <4BF81D87.6010506@cesarb.net>	<20100523140348.GA10843@barrios-desktop>	<4BF974D5.30207@cesarb.net>	<AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>	<4BF9CF00.2030704@cesarb.net>	<AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>	<4BFA59F7.2020606@cesarb.net>	<AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>	<4BFCF645.2050400@cesarb.net>	<20100526153144.GA3650@barrios-desktop>	<22942.1274909335@localhost> <AANLkTikwxCvxHI0-d1hGctEmfGRuDUlZ7wAbEXbrS1WA@mail.gmail.com>
+In-Reply-To: <AANLkTikwxCvxHI0-d1hGctEmfGRuDUlZ7wAbEXbrS1WA@mail.gmail.com>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-2010/5/26 Peter Zijlstra <peterz@infradead.org>:
-> On Wed, 2010-05-26 at 03:47 -0700, Arve Hjønnevåg wrote:
->> 2010/5/26 Peter Zijlstra <peterz@infradead.org>:
->> > On Fri, 2010-05-21 at 15:46 -0700, Arve Hjønnevåg wrote:
->> >> +To create a suspend blocker from user space, open the suspend_blocker
->> >> special
->> >> +device file:
->> >> +
->> >> +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
->> >> +
->> >> +then optionally call:
->> >> +
->> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_SET_NAME(strlen(name)), name);
->> >> +
->> >> +To activate the suspend blocker call:
->> >> +
->> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
->> >> +
->> >> +To deactivate it call:
->> >> +
->> >> +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
->> >> +
->> >> +To destroy the suspend blocker, close the device:
->> >> +
->> >> +    close(fd);
->> >
->> > Urgh, please let the open() be BLOCK, the close() be UNBLOCK, and keep
->> > the SET_NAME thing if you really care.
->> >
+Em 26-05-2010 19:45, Minchan Kim escreveu:
+> On Thu, May 27, 2010 at 6:28 AM,<Valdis.Kletnieks@vt.edu>  wrote:
+>> On Thu, 27 May 2010 00:31:44 +0900, Minchan Kim said:
+>>> On Wed, May 26, 2010 at 07:21:57AM -0300, Cesar Eduardo Barros wrote:
+>>>> far as I can see, does nothing against the disk simply failing to
+>>>> write and later returning stale data, since the stale checksum would
+>>>> match the stale data.
+>>>
+>>> Sorry. I can't understand your point.
+>>> Who makes stale data? If any layer makes data as stale, integrity is up to
+>>> the layer. Maybe I am missing your point.
+>>> Could you explain more detail?
 >>
->> That would be very inefficient.
+>> I'm pretty sure that what Cesar meant was that the following could happen:
+>>
+>> 1) Write block 11983 on the disk, checksum 34FE9B72.
+>> (... time passes.. maybe weeks)
+>> 2) Attempt to write block 11983 on disk with checksum AE9F3581. The write fails
+>> due to a power failure or something.
+>> (... more time passes...)
+>> 3) Read block 11983, get back data with checksum 34FE9B72. Checksum matches,
+>> and there's no indication that the write in (2) ever failed. The program
+>> proceeds thinking it's just read back the most recently written data, when in
+>> fact it's just read an older version of that block. Problems can ensue if the
+>> data just read is now out of sync with *other* blocks of data - instant data
+>> corruption.
 >
-> How so? Anyway, since you admitted this thing isn't needed at all, I say
-> we remove it altogether.
->
+> Oh, doesn't normal disk support atomicity of sector write?
+> I have been thought disk must support atomicity of sector write at least.
 
-I also said it was useful. I don't think we should drop it just
-because we can work around its absence.
+It is called a "high fly write" (a write where the disk head was flying 
+too high and the data did not get written at all). There are other 
+causes than high fly writes for this, of course, but the symptom is the 
+same: whatever you were trying to write was not written at all, and the 
+old contents are still there.
+
+The write is still atomic: it either did happen completely or did not 
+happen at all (in this case, it did not happen at all). You *can* have a 
+partial write (with a well-timed power loss, for instance), but the 
+disk's own ECC will detect this as a corrupted sector and return an 
+error on read.
 
 -- 
-Arve Hjønnevåg
+Cesar Eduardo Barros
+cesarb@cesarb.net
+cesar.barros@gmail.com
