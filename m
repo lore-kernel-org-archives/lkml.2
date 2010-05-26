@@ -1,59 +1,48 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759219Ab0EZLSy (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 07:18:54 -0400
-Received: from mail-gy0-f174.google.com ([209.85.160.174]:49248 "EHLO
-	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754892Ab0EZLSx (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 07:18:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:date:message-id:subject:from:to
-         :cc:content-type;
-        b=t977FUkoaZ7GJ6lc2JYS4icBCKkVerx1ARd4Cql0zopHblF5FmhiBSiySDEoNldTbl
-         OKz+e9oajpaMvdFRWgT1dvOjsG+Eopy7o3k1k07pKX8UXkTavDl4XZpxd1T3sy0Wywta
-         e0dusp1pqsGl1fI7VSlqRRI2nfalnR3woTFUI=
+	id S1759238Ab0EZLWF (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 07:22:05 -0400
+Received: from gir.skynet.ie ([193.1.99.77]:38992 "EHLO gir.skynet.ie"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1759179Ab0EZLWC (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 07:22:02 -0400
+Date: Wed, 26 May 2010 12:21:43 +0100
+From: Mel Gorman <mel@csn.ul.ie>
+To: Johannes Weiner <hannes@cmpxchg.org>
+Cc: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>, linux-mm@kvack.org,
+       linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Chris Mason <chris.mason@oracle.com>,
+       Dave Chinner <david@fromorbit.com>, Andi Kleen <andi@firstfloor.org>
+Subject: Re: [PATCH 07/10] vmscan: Remove unnecessary temporary variables
+	in shrink_zone()
+Message-ID: <20100526112143.GM29038@csn.ul.ie>
+References: <1271352103-2280-1-git-send-email-mel@csn.ul.ie> <1271352103-2280-8-git-send-email-mel@csn.ul.ie> <20100416115053.27A1.A69D9226@jp.fujitsu.com> <20100416230332.GH20640@cmpxchg.org>
 MIME-Version: 1.0
-In-Reply-To: <20100526120242.5c9b73ad@schatten.dmk.lab>
-References: <1274482015-30899-1-git-send-email-arve@android.com>
-	<201005242049.18920.rjw@sisk.pl>
-	<87wrusvrqe.fsf@deeprootsystems.com>
-	<201005250138.16293.rjw@sisk.pl>
-	<1274863655.5882.4875.camel@twins>
-	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
-	<1274867106.5882.5090.camel@twins>
-	<20100526120242.5c9b73ad@schatten.dmk.lab>
-Date: Wed, 26 May 2010 13:18:51 +0200
-Message-ID: <AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-From: Vitaly Wool <vitalywool@gmail.com>
-To: Florian Mickler <florian@mickler.org>
-Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
-       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Content-Type: text/plain; charset=ISO-8859-1
+Content-Type: text/plain; charset=iso-8859-15
+Content-Disposition: inline
+In-Reply-To: <20100416230332.GH20640@cmpxchg.org>
+User-Agent: Mutt/1.5.17+20080114 (2008-01-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 12:02 PM, Florian Mickler <florian@mickler.org> wrote:
+On Sat, Apr 17, 2010 at 01:03:32AM +0200, Johannes Weiner wrote:
+> On Fri, Apr 16, 2010 at 11:51:26AM +0900, KOSAKI Motohiro wrote:
+> > > Two variables are declared that are unnecessary in shrink_zone() as they
+> > > already exist int the scan_control. Remove them
+> > > 
+> > > Signed-off-by: Mel Gorman <mel@csn.ul.ie>
+> > 
+> > ok.
+> > 	Reviewed-by: KOSAKI Motohiro <kosaki.motohiro@jp.fujitsu.com>
+> 
+> You confuse me, you added the local variables yourself in 01dbe5c9
+> for performance reasons.  Doesn't that still hold?
+> 
 
->> So why again was this such a great scheme? Go fix your userspace to not
->> not run when not needed.
->
-> Hi Peter!
->
-> This was already mentioned in one of these threads.
->
-> The summary is: The device this kernel is running on dosn't want to
-> (or can) rely on userspace to save power. This is because it is an open
-> system, without an app-store or the like. Everyone can run what he
-> wants.
+To avoid a potential regression, I've dropped the patch.
 
-I don't see this as a valid point. Everyone can run a different kernel
-where nothing will just work. Are you aiming protection against that
-as well?
-
-~Vitaly
+-- 
+Mel Gorman
+Part-time Phd Student                          Linux Technology Center
+University of Limerick                         IBM Dublin Software Lab
