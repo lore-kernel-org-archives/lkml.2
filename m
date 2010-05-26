@@ -1,61 +1,51 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755054Ab0EZOoK (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 10:44:10 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:56402 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753290Ab0EZOoI (ORCPT
+	id S1755152Ab0EZOoj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:44:39 -0400
+Received: from mail-px0-f174.google.com ([209.85.212.174]:44776 "EHLO
+	mail-px0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753921Ab0EZOoi (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 10:44:08 -0400
+	Wed, 26 May 2010 10:44:38 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
         h=from:to:cc:subject:date:message-id:x-mailer;
-        b=gNv4J+B39b6mmknn2SARqia2uDAi5aDufZo8fvR5FkMqqBQDHibd5pyzJ+HNtu5cyB
-         Cwf3U1F3AXIdpCM3MpLnyiK13C15WhURs+VLs8EGMBJ08FMFdJl9SOgdE0e7iqIEgR4a
-         f7BOy69f2nUC/JYPazFJosqoAiTR15SRyBDUA=
+        b=Vc8dcjKVQy3XGIMhd/QNiMF6oEfStf/flKeuXS8bbbIwfXusCxyYND15UNuhWUPqGX
+         0vjymm486w3U4EdaBz+p2oWLTu6dPzoiDNw7sbA5dS75WKpShry/D9wsDRYwLPMXK6G/
+         lBb/h6ZPBI+DqGAgvzfoAPh8BYSSFr0LjIvMY=
 From: Changli Gao <xiaosuo@gmail.com>
 To: Jens Axboe <axboe@kernel.dk>
-Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>,
+       Miklos Szeredi <mszeredi@suse.cz>, linux-fsdevel@vger.kernel.org,
        linux-kernel@vger.kernel.org, Changli Gao <xiaosuo@gmail.com>
-Subject: [PATCH v2 resend 1/4] splice: check f_mode for seekable file
-Date: Wed, 26 May 2010 22:43:13 +0800
-Message-Id: <1274884993-15624-1-git-send-email-xiaosuo@gmail.com>
+Subject: [PATCH v2 2/4] splice: direct_splice_actor() should not use pos in sd
+Date: Wed, 26 May 2010 22:43:50 +0800
+Message-Id: <1274885030-15661-1-git-send-email-xiaosuo@gmail.com>
 X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-check f_mode for seekable file
+direct_splice_actor() should not use pos in sd
 
-As a seekable file is allowed without a llseek function, so the old way isn't
-work any more.
+direct_splice_actor() shouldn't use sd->pos, as sd->pos is for file reading,
+file->f_pos should be used instead.
 
 Signed-off-by: Changli Gao <xiaosuo@gmail.com>
-Acked-by: Miklos Szeredi <mszeredi@suse.cz>
 ----
- fs/splice.c |    6 ++----
- 1 file changed, 2 insertions(+), 4 deletions(-)
+ fs/splice.c |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
 diff --git a/fs/splice.c b/fs/splice.c
-index 9313b61..9e52de5 100644
+index 9e52de5..eb602cb 100644
 --- a/fs/splice.c
 +++ b/fs/splice.c
-@@ -1321,8 +1321,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
- 		if (off_in)
- 			return -ESPIPE;
- 		if (off_out) {
--			if (!out->f_op || !out->f_op->llseek ||
--			    out->f_op->llseek == no_llseek)
-+			if (!(out->f_mode & FMODE_PWRITE))
- 				return -EINVAL;
- 			if (copy_from_user(&offset, off_out, sizeof(loff_t)))
- 				return -EFAULT;
-@@ -1342,8 +1341,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
- 		if (off_out)
- 			return -ESPIPE;
- 		if (off_in) {
--			if (!in->f_op || !in->f_op->llseek ||
--			    in->f_op->llseek == no_llseek)
-+			if (!(in->f_mode & FMODE_PREAD))
- 				return -EINVAL;
- 			if (copy_from_user(&offset, off_in, sizeof(loff_t)))
- 				return -EFAULT;
+@@ -1232,7 +1232,8 @@ static int direct_splice_actor(struct pipe_inode_info *pipe,
+ {
+ 	struct file *file = sd->u.file;
+ 
+-	return do_splice_from(pipe, file, &sd->pos, sd->total_len, sd->flags);
++	return do_splice_from(pipe, file, &file->f_pos, sd->total_len,
++			      sd->flags);
+ }
+ 
+ /**
