@@ -1,44 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S933937Ab0EZByt (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:54:49 -0400
-Received: from 124x34x33x190.ap124.ftth.ucom.ne.jp ([124.34.33.190]:37469 "EHLO
-	master.linux-sh.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1756667Ab0EZByr (ORCPT
+	id S933929Ab0EZCDA (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 22:03:00 -0400
+Received: from devils.ext.ti.com ([198.47.26.153]:36255 "EHLO
+	devils.ext.ti.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933008Ab0EZCC5 convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:54:47 -0400
-Date: Wed, 26 May 2010 10:54:36 +0900
-From: Paul Mundt <lethal@linux-sh.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Magnus Damm <damm@opensource.se>
-Subject: Re: linux-next: manual merge of the genesis tree with the sh tree
-Message-ID: <20100526015436.GB8920@linux-sh.org>
-References: <20100526112331.cbd37c4b.sfr@canb.auug.org.au>
+	Tue, 25 May 2010 22:02:57 -0400
+From: "Arce, Abraham" <x0066660@ti.com>
+To: David Miller <davem@davemloft.net>
+CC: "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "tony@atomide.com" <tony@atomide.com>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+Date: Tue, 25 May 2010 21:02:51 -0500
+Subject: RE: NULL Pointer Deference: NFS & Telnet
+Thread-Topic: NULL Pointer Deference: NFS & Telnet
+Thread-Index: Acr8dhlHZ+Mcdbt/TXmIcNerqOSfPQAAElaA
+Message-ID: <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+	<27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+ <20100525.185236.193707791.davem@davemloft.net>
+In-Reply-To: <20100525.185236.193707791.davem@davemloft.net>
+Accept-Language: en-US
+Content-Language: en-US
+X-MS-Has-Attach: 
+X-MS-TNEF-Correlator: 
+acceptlanguage: en-US
+Content-Type: text/plain; charset="us-ascii"
+Content-Transfer-Encoding: 8BIT
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <20100526112331.cbd37c4b.sfr@canb.auug.org.au>
-User-Agent: Mutt/1.5.13 (2006-08-11)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 11:23:31AM +1000, Stephen Rothwell wrote:
-> Hi Paul,
-> 
-> Today's linux-next merge of the genesis tree got a conflict in
-> include/linux/serial_sci.h between commit
-> 14baf9d7f275f0bbf42c1216ff1eef1109ca42ba ("serial: sh-sci: fix up serial
-> DMA build") from the sh tree and commit
-> 927a7c9c1793def3a55d60c926d3945528e6bf1b ("dmaengine: shdma: Enable on
-> SH-Mobile ARM") from the genesis tree.
-> 
-Sorry about that, I needed the fix in the sh tree since the genesis tree
-hadn't been merged yet, so the interdependencies have created a bit of a
-mess.
+Thanks David,
 
-> I used the version from the sh tree (i.e. no "#ifdef
-> CONFIG_SERIAL_SH_SCI_DMA" around the include of linux/sh_dma.h).
+> > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> > index f8abf68..eb81f76 100644
+> > --- a/net/core/skbuff.c
+> > +++ b/net/core/skbuff.c
+> > @@ -334,7 +334,7 @@ static void skb_release_data(struct sk_buff *skb)
+> >  	if (!skb->cloned ||
+> >  	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
+> >  			       &skb_shinfo(skb)->dataref)) {
+> > -		if (skb_shinfo(skb)->nr_frags) {
+> > +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
+> >  			int i;
+> >  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> >  				put_page(skb_shinfo(skb)->frags[i].page);
+> 
+> skb_shinfo(skb)->nr_frags counts the number of entries contained
+> in the skb_shinfo(skb)->frags[] array.
+> 
+> This has nothing to do with the frag list pointer,
+> skb_shinfo(skb)->frag_list, which is what skb_has_frags()
+> tests.
+> 
+> You've got some kind of memory corruption going on and it
+> appears to have nothing to do with the code paths you're
+> playing with here.
 
-Sounds good, thanks!
+Do you have any recommendation on debugging technique/tool for this memory corruption issue?
+
+Best Regards
+Abraham
