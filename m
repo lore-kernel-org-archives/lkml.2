@@ -1,60 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759176Ab0EZBU7 (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 21:20:59 -0400
-Received: from smtp1.linux-foundation.org ([140.211.169.13]:39089 "EHLO
-	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1759158Ab0EZBU6 (ORCPT
+	id S933384Ab0EZBVQ (ORCPT <rfc822;w@1wt.eu>);
+	Tue, 25 May 2010 21:21:16 -0400
+Received: from bosmailout11.eigbox.net ([66.96.190.11]:41131 "EHLO
+	bosmailout11.eigbox.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933008Ab0EZBVI (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 21:20:58 -0400
-Date: Tue, 25 May 2010 18:20:40 -0700
-From: Andrew Morton <akpm@linux-foundation.org>
-To: Stephen Rothwell <sfr@canb.auug.org.au>
-Cc: Linus <torvalds@linux-foundation.org>, linux-next@vger.kernel.org,
-       linux-kernel@vger.kernel.org,
-       Joakim Tjernlund <Joakim.Tjernlund@transmode.se>
-Subject: Re: linux-next: build warning in Linus'tree
-Message-Id: <20100525182040.f1882d0a.akpm@linux-foundation.org>
-In-Reply-To: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>
-References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
-Mime-Version: 1.0
-Content-Type: text/plain; charset=US-ASCII
+	Tue, 25 May 2010 21:21:08 -0400
+X-Greylist: delayed 1870 seconds by postgrey-1.27 at vger.kernel.org; Tue, 25 May 2010 21:21:08 EDT
+X-EN-OrigOutIP: 10.20.18.1
+X-EN-IMPSID: N0pt1e00201P9Sa010ptm3
+Message-ID: <4BFC700C.3050008@jaysonking.com>
+Date: Tue, 25 May 2010 19:49:16 -0500
+From: "Jayson R. King" <dev@jaysonking.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.8) Gecko/20100301 Thunderbird/3.0.3
+MIME-Version: 1.0
+To: Greg KH <gregkh@suse.de>
+CC: "Jayson R. King" <dev@jaysonking.com>,
+       Christoph Hellwig <hch@infradead.org>, linux-kernel@vger.kernel.org,
+       stable@kernel.org, stable-review@kernel.org,
+       torvalds@linux-foundation.org, akpm@linux-foundation.org,
+       alan@lxorguk.ukuu.org.uk, linux-fsdevel@vger.kernel.org,
+       Ext4 Developers List <linux-ext4@vger.kernel.org>,
+       Theodore Tso <tytso@mit.edu>,
+       "Aneesh Kumar K.V" <aneesh.kumar@linux.vnet.ibm.com>
+Subject: Re: [10/24] vfs: Add no_nrwrite_index_update writeback control flag
+References: <20100524223544.GA13721@kroah.com> <20100524223016.208581966@clark.site> <20100525111208.GA8779@infradead.org> <20100525165230.GA9154@suse.de> <4BFC024A.9090600@jaysonking.com> <20100525171222.GA3533@suse.de>
+In-Reply-To: <20100525171222.GA3533@suse.de>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
+X-EN-UserInfo: 06af1bc540adb20c3d2d7097199478a6:08dd1976e651f6e3791fbe97eaa5f898
+X-EN-AuthUser: jaysonking@jaysonking.com
+X-EN-OrigIP: 68.93.139.172
+X-EN-OrigHost: unknown
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 11:05:06 +1000 Stephen Rothwell <sfr@canb.auug.org.au> wrote:
+On 05/25/2010 12:12 PM, Greg KH wrote:
+> I've now dropped those next two ext4 patches.  If someone wants to get
+> this bug fixed for the .27 tree, please feel free to send me the
+> patches.
 
-> Hi Linus,
-> 
-> Today's linux-next build (powerpc ppc64_defconfig) produced this warning:
-> 
-> lib/crc32.c:53:22: warning: "__LITTLE_ENDIAN" is not defined
-> lib/crc32.c:53:22: warning: "__LITTLE_ENDIAN" is not defined
-> In file included from fs/jfs/jfs_types.h:33,
->                  from fs/jfs/jfs_incore.h:26,
->                  from fs/jfs/file.c:22:
-> fs/jfs/endian24.h:36:101: warning: "__LITTLE_ENDIAN" is not defined
-> 
-> and more of the same ...
-> 
-> Introduced by commit 4762bbc1a3a1f22095278b74dd1b8cee04858641 ("crc32:
-> use __BYTE_ORDER macro for endian detection") and (probably) commit b3b77c8caef1750ebeea1054e39e358550ea9f55 ("endian: #define __BYTE_ORDER").
-> 
+I'll nominate Ted's "ext4: Use our own write_cache_pages()" patch for
+.27-stable when it hits mainline. If it is included in -stable, then
+those last two ext4 patches can be re-applied.
 
-hmpf.  Does this fix?
+> Personally, I doubt many people care about ext4 on the .27 kernel
+> release...
 
---- a/lib/crc32.c~a
-+++ a/lib/crc32.c
-@@ -26,6 +26,7 @@
- #include <linux/compiler.h>
- #include <linux/types.h>
- #include <linux/init.h>
-+#include <asm/byteorder.h>
- #include <asm/atomic.h>
- #include "crc32defs.h"
- #if CRC_LE_BITS == 8
-_
+In any case, 2.6.27 is a good kernel, and ext4 is a good FS, IMO.
+
+Jayson
 
