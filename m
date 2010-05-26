@@ -1,123 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756680Ab0EZJ3y (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 05:29:54 -0400
-Received: from smtp.nokia.com ([192.100.105.134]:60094 "EHLO
-	mgw-mx09.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752851Ab0EZJ3x (ORCPT
+	id S1758814Ab0EZJdg (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 05:33:36 -0400
+Received: from bombadil.infradead.org ([18.85.46.34]:53368 "EHLO
+	bombadil.infradead.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1754129Ab0EZJde convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 05:29:53 -0400
-From: Alexander Shishkin <virtuoso@slind.org>
-To: Herbert Xu <herbert@gondor.hengli.com.au>
-Cc: Alexander Shishkin <virtuoso@slind.org>,
-       Herbert Xu <herbert@gondor.hengli.com.au>, linux-kernel@vger.kernel.org,
-       linux-crypto@vger.kernel.org
-Subject: [PATCH] crypto: add an option to disable cryptoalgos' self-tests
-Date: Wed, 26 May 2010 12:28:34 +0300
-Message-Id: <1274866114-15817-1-git-send-email-virtuoso@slind.org>
-X-Mailer: git-send-email 1.7.1.1.g15764
-In-Reply-To: <20100526004357.GE20073@gondor.apana.org.au>
-References: <20100526004357.GE20073@gondor.apana.org.au>
-X-OriginalArrivalTime: 26 May 2010 09:29:06.0002 (UTC) FILETIME=[E2EE2B20:01CAFCB5]
-X-Nokia-AV: Clean
+	Wed, 26 May 2010 05:33:34 -0400
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+From: Peter Zijlstra <peterz@infradead.org>
+To: Florian Mickler <florian@mickler.org>
+Cc: Arve =?ISO-8859-1?Q?Hj=F8nnev=E5g?= <arve@android.com>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
+       Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu, James Bottomley <James.Bottomley@suse.de>
+In-Reply-To: <20100526112303.3fef15a4@schatten.dmk.lab>
+References: <Pine.LNX.4.44L0.1005251647530.1634-100000@iolanthe.rowland.org>
+	 <201005252344.37639.rjw@sisk.pl>
+	 <AANLkTimL5rU5lALezEZVCwdcZL85tVahhsTibdpq9s-Y@mail.gmail.com>
+	 <1274863342.5882.4850.camel@twins>
+	 <20100526112303.3fef15a4@schatten.dmk.lab>
+Content-Type: text/plain; charset="UTF-8"
+Content-Transfer-Encoding: 8BIT
+Date: Wed, 26 May 2010 11:33:22 +0200
+Message-ID: <1274866402.5882.5051.camel@twins>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-By default, CONFIG_CRYPTO_MANAGER_TESTS will be enabled and thus
-self-tests will still run, but it is now possible to disable them
-to gain some time during bootup.
+On Wed, 2010-05-26 at 11:23 +0200, Florian Mickler wrote:
 
-Signed-off-by: Alexander Shishkin <virtuoso@slind.org>
-CC: Herbert Xu <herbert@gondor.apana.org.au>
-CC: linux-kernel@vger.kernel.org
-CC: linux-crypto@vger.kernel.org
----
- crypto/Kconfig   |    8 ++++++++
- crypto/algboss.c |    4 ++++
- crypto/testmgr.c |   14 ++++++++++++++
- 3 files changed, 26 insertions(+), 0 deletions(-)
+> There is polling, because the suspend manager in userspace doesn't have
+> the whole picture. i.e. it doesn't know if a suspend will be
+> successfull. 
+> So for aggressive suspending as a powersave-feature you need to poll
+> (i.e. retry upon failure). because you don't want to stay unsuspended. 
 
-diff --git a/crypto/Kconfig b/crypto/Kconfig
-index 9d9434f..df332c1 100644
---- a/crypto/Kconfig
-+++ b/crypto/Kconfig
-@@ -96,6 +96,14 @@ config CRYPTO_MANAGER2
- 	select CRYPTO_BLKCIPHER2
- 	select CRYPTO_PCOMP
- 
-+config CRYPTO_MANAGER_TESTS
-+	bool "Run algolithms' self-tests"
-+	default y
-+	depends on CRYPTO_MANAGER2
-+	help
-+	  Run cryptomanager's tests for the new crypto algorithms being
-+	  registered.
-+
- config CRYPTO_GF128MUL
- 	tristate "GF(2^128) multiplication functions (EXPERIMENTAL)"
- 	depends on EXPERIMENTAL
-diff --git a/crypto/algboss.c b/crypto/algboss.c
-index c3c196b..40bd391 100644
---- a/crypto/algboss.c
-+++ b/crypto/algboss.c
-@@ -206,6 +206,7 @@ err:
- 	return NOTIFY_OK;
- }
- 
-+#ifdef CONFIG_CRYPTO_MANAGER_TESTS
- static int cryptomgr_test(void *data)
- {
- 	struct crypto_test_param *param = data;
-@@ -266,6 +267,7 @@ err_put_module:
- err:
- 	return NOTIFY_OK;
- }
-+#endif /* CONFIG_CRYPTO_MANAGER_TESTS */
- 
- static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
- 			    void *data)
-@@ -273,8 +275,10 @@ static int cryptomgr_notify(struct notifier_block *this, unsigned long msg,
- 	switch (msg) {
- 	case CRYPTO_MSG_ALG_REQUEST:
- 		return cryptomgr_schedule_probe(data);
-+#ifdef CONFIG_CRYPTO_MANAGER_TESTS
- 	case CRYPTO_MSG_ALG_REGISTER:
- 		return cryptomgr_schedule_test(data);
-+#endif
- 	}
- 
- 	return NOTIFY_DONE;
-diff --git a/crypto/testmgr.c b/crypto/testmgr.c
-index 5c8aaa0..abd980c 100644
---- a/crypto/testmgr.c
-+++ b/crypto/testmgr.c
-@@ -22,6 +22,17 @@
- #include <crypto/rng.h>
- 
- #include "internal.h"
-+
-+#ifndef CONFIG_CRYPTO_MANAGER_TESTS
-+
-+/* a perfect nop */
-+int alg_test(const char *driver, const char *alg, u32 type, u32 mask)
-+{
-+	return 0;
-+}
-+
-+#else
-+
- #include "testmgr.h"
- 
- /*
-@@ -2530,4 +2541,7 @@ notest:
- non_fips_alg:
- 	return -EINVAL;
- }
-+
-+#endif /* CONFIG_CRYPTO_MANAGER_TESTS */
-+
- EXPORT_SYMBOL_GPL(alg_test);
--- 
-1.5.6.5
+Clearly if it fails, there something to be done, right? So whoever does
+the thing will communicate with the suspend manager that it's going to
+do and has finished doing its thing, at which point it will try again.
 
+That's event driven, not polled.
+
+Also, if you want you can keep the kernel-side auto-suspend side, and
+have the suspend manager clear on !0 and re-establish the auto-suspend
+state on 0.
+
+But you really don't need this device thingy.
