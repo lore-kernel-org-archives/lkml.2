@@ -1,20 +1,20 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1754932Ab0EZNdt (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:33:49 -0400
-Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:63750 "EHLO
+	id S1754843Ab0EZNg0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:36:26 -0400
+Received: from faui40.informatik.uni-erlangen.de ([131.188.34.40]:64132 "EHLO
 	faui40.informatik.uni-erlangen.de" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1754247Ab0EZNdq (ORCPT
+	by vger.kernel.org with ESMTP id S1753611Ab0EZNgY (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:33:46 -0400
-Date: Wed, 26 May 2010 15:33:43 +0200
+	Wed, 26 May 2010 09:36:24 -0400
+Date: Wed, 26 May 2010 15:36:21 +0200
 From: Christoph Egger <siccegge@cs.fau.de>
 To: Andrew Morton <akpm@linux-foundation.org>, Tejun Heo <tj@kernel.org>,
        Greg Kroah-Hartman <gregkh@suse.de>, Greg Ungerer <gerg@uclinux.org>,
        Thiago Farina <tfransosi@gmail.com>, linux-kernel@vger.kernel.org
 Cc: vamos@i4.informatik.uni-erlangen.de
-Subject: [PATCH] config CONSOLE
-Message-ID: <20100526133343.GA7508@faui49.informatik.uni-erlangen.de>
+Subject: [PATCH] config SPRUCE
+Message-ID: <20100526133621.GB7508@faui49.informatik.uni-erlangen.de>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
@@ -29,10 +29,8 @@ Hi all!
 Erlangen we are looking at multiple integrity errors in linux'
 configuration system.
 
-	CONSOLE is such a generic term that maybe someone just
-expected this option exists. Or maybe it existed ages ago but I can't
-find any trace of it. Anyway that code has been dead for quite some
-time withoutanybody noticing so it's probably just unneeded.
+	CONFIG_SPRUCE is obsolete since kernel 2.6.26 so this last bit
+should be killed as well I guess.
 
 	Please keep me informed of this patch getting confirmed /
 merged so we can keep track of it.
@@ -44,47 +42,109 @@ Regards
 [0] http://vamos1.informatik.uni-erlangen.de/
 
 ----
->From 4a3b6fda1bb3a229c7ea8ca8992ed2573f07e5ba Mon Sep 17 00:00:00 2001
+>From 2f75bae3a66c39b85d83024fa86113cc5ea2c10b Mon Sep 17 00:00:00 2001
 From: Christoph Egger <siccegge@cs.fau.de>
-Date: Wed, 26 May 2010 15:18:26 +0200
-Subject: [PATCH] There's no config CONSOLE
+Date: Wed, 26 May 2010 12:47:42 +0200
+Subject: [PATCH] Remaining of CONFIG_SPRUCE removal (2.6.26)
 
-as there's no config CONSOLE (never has been as far as I can tell) and
-noone has ever missed that piece of code, it should be safe to remove
-it making the kernel a tiny bit less complex.
+CONFIG_SPRUCE was removed from kernel around 2.6.26. Last piece of
+relevant code that is still in linux' source tree will be removed by
+this patch.
 
 Signed-off-by: Christoph Egger <siccegge@cs.fau.de>
 ---
- drivers/serial/68328serial.c |    7 -------
- 1 files changed, 0 insertions(+), 7 deletions(-)
+ drivers/input/serio/i8042-ppcio.h |   75 -------------------------------------
+ 1 files changed, 0 insertions(+), 75 deletions(-)
 
-diff --git a/drivers/serial/68328serial.c b/drivers/serial/68328serial.c
-index 3046386..193a242 100644
---- a/drivers/serial/68328serial.c
-+++ b/drivers/serial/68328serial.c
-@@ -78,10 +78,6 @@ struct m68k_serial *m68k_consinfo = 0;
+diff --git a/drivers/input/serio/i8042-ppcio.h b/drivers/input/serio/i8042-ppcio.h
+index 2906e1b..f708c75 100644
+--- a/drivers/input/serio/i8042-ppcio.h
++++ b/drivers/input/serio/i8042-ppcio.h
+@@ -52,81 +52,6 @@ static inline void i8042_platform_exit(void)
+ {
+ }
  
- #define M68K_CLOCK (16667000) /* FIXME: 16MHz is likely wrong */
- 
--#ifdef CONFIG_CONSOLE
--extern wait_queue_head_t keypress_wait; 
--#endif
+-#elif defined(CONFIG_SPRUCE)
 -
- struct tty_driver *serial_driver;
+-#define I8042_KBD_IRQ 22
+-#define I8042_AUX_IRQ 21
+-
+-#define I8042_KBD_PHYS_DESC "spruceps2/serio0"
+-#define I8042_AUX_PHYS_DESC "spruceps2/serio1"
+-#define I8042_MUX_PHYS_DESC "spruceps2/serio%d"
+-
+-#define I8042_COMMAND_REG 0xff810000
+-#define I8042_DATA_REG 0xff810001
+-
+-static inline int i8042_read_data(void)
+-{
+-	unsigned long kbd_data;
+-
+-	__raw_writel(0x00000088, 0xff500008);
+-	eieio();
+-
+-	__raw_writel(0x03000000, 0xff50000c);
+-	eieio();
+-
+-	asm volatile("lis     7,0xff88        \n\
+-		      lswi    6,7,0x8         \n\
+-		      mr      %0,6"
+-	              : "=r" (kbd_data) :: "6", "7");
+-
+-	__raw_writel(0x00000000, 0xff50000c);
+-	eieio();
+-
+-	return (unsigned char)(kbd_data >> 24);
+-}
+-
+-static inline int i8042_read_status(void)
+-{
+-	unsigned long kbd_status;
+-
+-	__raw_writel(0x00000088, 0xff500008);
+-	eieio();
+-
+-	__raw_writel(0x03000000, 0xff50000c);
+-	eieio();
+-
+-	asm volatile("lis     7,0xff88        \n\
+-		      ori     7,7,0x8         \n\
+-		      lswi    6,7,0x8         \n\
+-		      mr      %0,6"
+-		      : "=r" (kbd_status) :: "6", "7");
+-
+-	__raw_writel(0x00000000, 0xff50000c);
+-	eieio();
+-
+-	return (unsigned char)(kbd_status >> 24);
+-}
+-
+-static inline void i8042_write_data(int val)
+-{
+-	*((unsigned char *)0xff810000) = (char)val;
+-}
+-
+-static inline void i8042_write_command(int val)
+-{
+-	*((unsigned char *)0xff810001) = (char)val;
+-}
+-
+-static inline int i8042_platform_init(void)
+-{
+-	i8042_reset = 1;
+-	return 0;
+-}
+-
+-static inline void i8042_platform_exit(void)
+-{
+-}
+-
+ #else
  
- /* number of characters left in xmit buffer before we ask for more */
-@@ -301,9 +297,5 @@ static void receive_chars(struct m68k_serial *info, unsigned short rx)
- #endif /* CONFIG_MAGIC_SYSRQ */
- 			}
-- 			/* It is a 'keyboard interrupt' ;-) */
--#ifdef CONFIG_CONSOLE
--			wake_up(&keypress_wait);
--#endif			
- 		}
- 
- 		if(!tty)
+ #include "i8042-io.h"
 -- 
 1.6.3.3
+
 
 
 
