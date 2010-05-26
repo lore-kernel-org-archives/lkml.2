@@ -1,170 +1,38 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755479Ab0EZPbz (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 11:31:55 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:36356 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753836Ab0EZPbx (ORCPT
+	id S1756080Ab0EZPcr (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 11:32:47 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:44989 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1752795Ab0EZPcp (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 11:31:53 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=cPAyo3m2BsmHChNWQnJUOk1Kxy9St/hIlGAZysZFX16pJ5drFJT+LJIa9F/TL9x3AQ
-         HLbsCsy1PmexTBhT61D/oYojNS1oiCcQI6Fbs6MYYbAyHY2afbCJjxaI67qU3EyHRh0E
-         8eUazc7ZyFPCWKnbKjTEo9t+AJlDuc8b3twrk=
-Date: Thu, 27 May 2010 00:31:44 +0900
-From: Minchan Kim <minchan.kim@gmail.com>
-To: Cesar Eduardo Barros <cesarb@cesarb.net>
-Cc: linux-mm@kvack.org, linux-kernel@vger.kernel.org,
-       Hugh Dickins <hughd@google.com>
-Subject: Re: [PATCH 0/3] mm: Swap checksum
-Message-ID: <20100526153144.GA3650@barrios-desktop>
-References: <4BF81D87.6010506@cesarb.net>
- <20100523140348.GA10843@barrios-desktop>
- <4BF974D5.30207@cesarb.net>
- <AANLkTil1kwOHAcBpsZ_MdtjLmCAFByvF4xvm8JJ7r7dH@mail.gmail.com>
- <4BF9CF00.2030704@cesarb.net>
- <AANLkTin_BV6nWlmX6aXTaHvzH-DnsFIVxP5hz4aZYlqH@mail.gmail.com>
- <4BFA59F7.2020606@cesarb.net>
- <AANLkTikMTwzXt7-vQf9AG2VhwFIGs1jX-1uFoYAKSco7@mail.gmail.com>
- <4BFCF645.2050400@cesarb.net>
+	Wed, 26 May 2010 11:32:45 -0400
+Date: Wed, 26 May 2010 08:29:02 -0700 (PDT)
+From: Linus Torvalds <torvalds@linux-foundation.org>
+To: Joakim Tjernlund <joakim.tjernlund@transmode.se>
+cc: Stephen Rothwell <sfr@canb.auug.org.au>,
+       Andrew Morton <akpm@linux-foundation.org>, linux-kernel@vger.kernel.org,
+       linux-next@vger.kernel.org
+Subject: Re: linux-next: build warning in Linus'tree
+In-Reply-To: <OFE5212A1C.B62E8E51-ONC125772F.00371EE7-C125772F.0038EEC8@transmode.se>
+Message-ID: <alpine.LFD.2.00.1005260828320.3689@i5.linux-foundation.org>
+References: <20100526110506.f2f4f22c.sfr@canb.auug.org.au> <20100525182040.f1882d0a.akpm@linux-foundation.org> <20100526140900.5b091c16.sfr@canb.auug.org.au> <OFC00BDFAC.5596A841-ONC125772F.0022984D-C125772F.0023AF14@transmode.se>
+ <20100525234116.71889c71.akpm@linux-foundation.org> <20100526171424.447fac18.sfr@canb.auug.org.au> <OFE5212A1C.B62E8E51-ONC125772F.00371EE7-C125772F.0038EEC8@transmode.se>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-In-Reply-To: <4BFCF645.2050400@cesarb.net>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 07:21:57AM -0300, Cesar Eduardo Barros wrote:
-> Em 25-05-2010 20:52, Minchan Kim escreveu:
-> >On Mon, May 24, 2010 at 7:50 PM, Cesar Eduardo Barros<cesarb@cesarb.net>  wrote:
-> >>And, in fact, there is a CRC code in the block layer; it is
-> >>CONFIG_BLK_DEV_INTEGRITY. However, it is not a generic solution; it needs
-> >>some extra prerequisites (like a disk low-level formatted with sectors with
-> >>>512 bytes).
-> >
-> >You mean BLK_DEV_INTEGRITY has a dependency with block device driver?
-> >If you want to support checksum into suspend, At last, should we put
-> >the checksum on disk?
-> >
-> >I mean could we extend BLK_DEV_INTEGRITY by more generic solution?
-> >As you said, in case of swap, we don't need to put checksum on disk.
+
+
+On Wed, 26 May 2010, Joakim Tjernlund wrote:
 > 
-> CONFIG_BLK_DEV_INTEGRITY writes the checksum to the same sector as
-> the data. However, for that to be possible, the sector size is
-> increased on the disk itself, from 512 bytes to 520 bytes (and not
-> all disks can do that). It is not a generic solution. It also, as
+> If my suggestion above works, then one could start transforming current uses of __BYTE_ORDER,
+> into similar constructs and once all are done, #define both __LITTLE_ENDIAN/__BIG_ENDIAN and
+> move back to #if __BYTE_ORDER == __LITTLE_ENDIAN
 
-It means if disk don't support 520 byte sector, CONFIG_BLK_DEV_INTEGRITY
-can't work? That means CONFIG_BLK_DEV_INTEGRITY depends on block device?
+No. Don't do it. Why the hell would we want to use the inferior model?
 
-> far as I can see, does nothing against the disk simply failing to
-> write and later returning stale data, since the stale checksum would
-> match the stale data.
-
-Sorry. I can't understand your point. 
-Who makes stale data? If any layer makes data as stale, integrity is up to 
-the layer. Maybe I am missing your point. 
-Could you explain more detail?
-
-> 
-> See the LWN article [1] and the presentations [2] for more detail.
-
-Thanks for good information. 
-
-> 
-> For suspend, the swap checksum pages would be saved together with
-> the rest of the memory (they are in the memory, after all), and the
-> suspend snapshot would have its own separate checksum (written
-> directly to the disk after the image).
-> 
-> >If swap case, let it put the one on memory. If non-swap case, let it
-> >put checksum on disk,
-> >I am not sure it's possible.
-> >
-> >When we have a unreliable disk, your point is that let's solve it with
-> >(btrfs + swap) which both supports checksum. And my point is that
-> >let's solve it with (any file system + swap) which is put on block
-> >layer which supports checksum.
-> 
-> A generic "checksumming block device" would be less efficient.
-> 
-> For the swap case, it cannot exploit the fact that its state
-> tracking is within the swapfile code. Avi Kivity's idea of storing
-> the checksum in otherwise wasted bits of the pte is an example of
-> how this could be exploited in the future. In fact, the reason I did
-> it on the swap layer (instead of interposing something in the block
-> layer) was precisely to make it easier to enhance the state tracking
-> in the future (and also because it felt the most natural layer to do
-> it).
-
-Hmm. I don't know what is the state you mentioned in future. 
-But As view of design, I tend to agree. 
-
-> 
-> It would also complicate adding checksums to the software suspend
-> snapshot. While normally you do not want to write the swap checksums
-> to the disk, you do want to write them when saving the memory
-> snapshot - which is written to the same block device. However, the
-> checksums for the rest of the swap pages are already being saved as
-> part of the memory snapshot (since the checksums were in the
-> memory).
-> 
-> For the generic ("any file system") case, it is worse, since you
-> actually have to write the checksum to the disk, and unlike in the
-> software suspend case you cannot simply write them all in one pass
-> at the end. In the worst case, you would have to write twice for
-> each sector/page - once for the data, and once for the checksums
-> (CONFIG_BLK_DEV_INTEGRITY completely avoids this issue since with it
-> the checksum is together with the data in the same sector). Not to
-> mention fun things like write amplification.
-> 
-> A filesystem with data checksums can write the checksum as part of
-> its normal metadata updates (which it already has to do anyway).
-> 
-> A generic "checksumming block device" could be a way of "updating" a
-> filesystem without checksums (or with only metadata checksums) to
-> have them. However, I believe it would be more productive to add
-> them directly to the filesystem itself. Even more since the only way
-> I can see of doing it efficiently in a generic block layer is by
-> using lots of filesystem-style tricks (things like a log-structured
-> list of CRC values, dividing the device in "block groups" to keep
-> the checksum close to the data, and so on).
-> 
-> 
-> [1] Block layer: integrity checking and lots of partitions
->     http://lwn.net/Articles/290141/
-> [2] http://oss.oracle.com/projects/data-integrity/documentation/
-
-Thanks for good explanation. 
-
-I agree we don't have any method to detect disk error about swap pages.
-I am not sure we _really_ need it and who want it in practice(now even 
-many of file systems don't support checksum) but it's optional feature. 
-so if there is anyone want it, he just use it by enable. 
-
-Yes. I am not against this patch any more. 
-I hope when you send this patch, please, write down things discussed with
-me in description. 
-
-1. Why do we need it?(ie, who can use it useful?)
-2. Why is CONFIG_BLK_DEV_INTEGRITY's extension bad design?
-
-And
-
-3. Please, Cc Jens Axboe <jens.axboe@oracle.com>, Hugh Dickins <hughd@google.com>
-
-Thanks for good reply on my long bore question. 
-
-> 
-> -- 
-> Cesar Eduardo Barros
-> cesarb@cesarb.net
-> cesar.barros@gmail.com
--- 
-Kind regards,
-Minchan Kim
+		Linus
