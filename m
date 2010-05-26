@@ -1,65 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757282Ab0EZMAJ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:00:09 -0400
-Received: from mail-pw0-f46.google.com ([209.85.160.46]:34579 "EHLO
-	mail-pw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1752884Ab0EZMAG convert rfc822-to-8bit (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:00:06 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=vGE7iHcOuopdeoh80Bgpo3OMQw/GY95tWaw4fj/Y3q8/Iq3isDt58si39awXbnywgn
-         oowN0+pieG5EwUOysLSOirxSOtVdsZY4a2m4BasZlFz3y1uSYIAXjgv2P7R5NkZacn8L
-         91SNBP4nImq4/IkUUnFQC5Ew1YU0tU/lmoPow=
-MIME-Version: 1.0
-In-Reply-To: <E1OHEA9-0000Mv-8r@pomaz-ex.szeredi.hu>
-References: <1274867803-3050-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHEA9-0000Mv-8r@pomaz-ex.szeredi.hu>
-From: Changli Gao <xiaosuo@gmail.com>
-Date: Wed, 26 May 2010 19:59:45 +0800
-Message-ID: <AANLkTimyIyPbPd2yCuVNR6OImnFnIIxizE1ncY3ISMNH@mail.gmail.com>
-Subject: Re: [PATCH 3/3] sendfile: fix sendfile
-To: Miklos Szeredi <miklos@szeredi.hu>
-Cc: viro@zeniv.linux.org.uk, matthew@wil.cx, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: 8BIT
+	id S1757331Ab0EZMBh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:01:37 -0400
+Received: from 93-97-173-237.zone5.bethere.co.uk ([93.97.173.237]:60469 "EHLO
+	tim.rpsys.net" rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1751681Ab0EZMBg (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:01:36 -0400
+Subject: Re: [PATCH 1/2] mc13783: add LED support
+From: Richard Purdie <rpurdie@rpsys.net>
+To: Mark Brown <broonie@opensource.wolfsonmicro.com>
+Cc: Uwe Kleine-K?nig <u.kleine-koenig@pengutronix.de>,
+       Philippe R?tornaz <philippe.retornaz@epfl.ch>,
+       linux-arm-kernel@lists.infradead.org, maramaopercheseimorto@gmail.com,
+       sameo@linux.intel.com, s.hauer@pengutronix.de,
+       linux-kernel@vger.kernel.org, valentin.longchamp@epfl.ch
+In-Reply-To: <20100517200017.GA25262@sirena.org.uk>
+References: <1274114423-30020-1-git-send-email-philippe.retornaz@epfl.ch>
+	 <1274114423-30020-2-git-send-email-philippe.retornaz@epfl.ch>
+	 <20100517190242.GA17604@pengutronix.de>
+	 <20100517200017.GA25262@sirena.org.uk>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 13:01:08 +0100
+Message-ID: <1274875268.24079.1.camel@rex>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 6:48 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
->
->>
->> If output file is in non-block mode, in file should be seekable to avoid data
->> losing.
->
-> Like the previous patch, I don't agree.
+On Mon, 2010-05-17 at 21:00 +0100, Mark Brown wrote:
+> On Mon, May 17, 2010 at 09:02:42PM +0200, Uwe Kleine-K?nig wrote:
+> > On Mon, May 17, 2010 at 06:40:22PM +0200, Philippe R?tornaz wrote:
+> 
+> > > +static void mc13783_led_set(struct led_classdev *led_cdev,
+> > > +			   enum led_brightness value)
+> > > +{
+> > > +	struct mc13783_led *led;
+> > > +
+> > > +	led = container_of(led_cdev, struct mc13783_led, cdev);
+> > > +	led->new_brightness = value;
+> > > +	schedule_work(&led->work);
+> > > +}
+> 
+> > I wonder why you don't set the registers directly here, but use a work
+> > struct instead.
+> 
+> The LED API allows clients to configure the LEDs from interrupt context
+> so for devices on blocking buses (like this) the driver needs to defer
+> the actual implementation of the change.
+> 
+> It'd be nice to add helpers for this to the LED core, there's quite a
+> few drivers implementing this idiom now - a flag that does the deferring
+> of the set() for example.
 
-I don't think it isn't an API change, as the current manual page says:
+Agreed, or a wrapper around the core which deferred implementations
+could just use. I'm open to patches :)
 
-" Presently  (Linux  2.6.9):  in_fd, must correspond to a file which sup-
-       ports mmap(2)-like operations (i.e., it cannot be a socket); "
+Cheers,
 
-and if file supports mmap-like operations, it should support pread too.
+Richard
 
->
->>
->> do_splice_from() shouldn't use sd->pos, as sd->pos is for file reading,
->> file->f_pos should be used instead.
->
-> This sounds sane.
->
-> These changes look like three cadidates for separate patches.  Could
-> you please split this patch up, and submit the first and last change
-> as a separate patch?
->
 
-OK. I'll do that later after all the issues are concluded.
-
--- 
-Regards，
-Changli Gao(xiaosuo@gmail.com)
