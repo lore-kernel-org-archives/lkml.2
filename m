@@ -1,48 +1,68 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759111Ab0EZJ6K (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 05:58:10 -0400
-Received: from one.firstfloor.org ([213.235.205.2]:60710 "EHLO
-	one.firstfloor.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753625Ab0EZJ6I (ORCPT
+	id S934190Ab0EZJ7o (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 05:59:44 -0400
+Received: from mail-fx0-f46.google.com ([209.85.161.46]:33959 "EHLO
+	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1753231Ab0EZJ7m (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 05:58:08 -0400
-Date: Wed, 26 May 2010 11:58:05 +0200
-From: Andi Kleen <andi@firstfloor.org>
-To: Mel Gorman <mel@csn.ul.ie>
-Cc: Andi Kleen <andi@firstfloor.org>,
-       Naoya Horiguchi <n-horiguchi@ah.jp.nec.com>,
-       linux-kernel@vger.kernel.org, linux-mm@kvack.org,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Larry Woodman <lwoodman@redhat.com>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
-Subject: Re: [PATCH 1/7] hugetlb, rmap: add reverse mapping for hugepage
-Message-ID: <20100526095805.GB24615@basil.fritz.box>
-References: <1273737326-21211-1-git-send-email-n-horiguchi@ah.jp.nec.com> <1273737326-21211-2-git-send-email-n-horiguchi@ah.jp.nec.com> <20100513152737.GE27949@csn.ul.ie> <20100514074641.GD10000@spritzerA.linux.bs1.fc.nec.co.jp> <20100514095449.GB21481@csn.ul.ie> <20100524071516.GC11008@spritzerA.linux.bs1.fc.nec.co.jp> <20100525105957.GD29038@csn.ul.ie> <20100526065156.GC7128@spritzerA.linux.bs1.fc.nec.co.jp> <20100526091958.GA24615@basil.fritz.box> <20100526094442.GK29038@csn.ul.ie>
+	Wed, 26 May 2010 05:59:42 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=B2wm4RyhiYcc9HzIICT5tmxKhElWyeR6Lq85iz3FI5NIonDwN0SHZxcC6giUCocCYK
+         jQYARsCrGZrJjlsptb0UIGiTQIN3BFXRrLSK9L7cz2hr2wIWMtmk4OeSg/6WZdNZHS4f
+         QQSiiVkvwgKstYiZcuF5pdZwo85FVcE2Mjx0A=
+Date: Wed, 26 May 2010 11:59:40 +0200
+From: Frederic Weisbecker <fweisbec@gmail.com>
+To: Li Zefan <lizf@cn.fujitsu.com>
+Cc: Ingo Molnar <mingo@elte.hu>, Steven Rostedt <rostedt@goodmis.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Eduard - Gabriel Munteanu <eduard.munteanu@linux360.ro>,
+       LKML <linux-kernel@vger.kernel.org>, linux-mm@kvack.org
+Subject: Re: [PATCH] tracing: Remove kmemtrace ftrace plugin
+Message-ID: <20100526095934.GA5311@nowhere>
+References: <4BFCE849.7090804@cn.fujitsu.com>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <20100526094442.GK29038@csn.ul.ie>
-User-Agent: Mutt/1.5.17 (2007-11-01)
+In-Reply-To: <4BFCE849.7090804@cn.fujitsu.com>
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, May 26, 2010 at 10:44:43AM +0100, Mel Gorman wrote:
-> On Wed, May 26, 2010 at 11:19:58AM +0200, Andi Kleen wrote:
-> > 
-> > Mel, other than this nit are you happy with these changes now?
-> > 
+On Wed, May 26, 2010 at 05:22:17PM +0800, Li Zefan wrote:
+> We have been resisting new ftrace plugins and removing existing
+> ones, and kmemtrace has been superseded by kmem trace events
+> and perf-kmem, so we remove it.
 > 
-> Pretty much but I also want to test the series myself to be sure I haven't
-> missed something in review.
+> Signed-off-by: Li Zefan <lizf@cn.fujitsu.com>
+> Acked-by: Pekka Enberg <penberg@cs.helsinki.fi>
+> ---
+>  Documentation/ABI/testing/debugfs-kmemtrace |   71 ----
+>  Documentation/trace/kmemtrace.txt           |  126 -------
+>  MAINTAINERS                                 |    7 -
+>  include/linux/kmemtrace.h                   |   25 --
+>  include/linux/slab_def.h                    |    3 +-
+>  include/linux/slub_def.h                    |    3 +-
+>  init/main.c                                 |    2 -
+>  kernel/trace/Kconfig                        |   20 -
+>  kernel/trace/kmemtrace.c                    |  529 ---------------------------
+>  kernel/trace/trace.h                        |   13 -
+>  kernel/trace/trace_entries.h                |   35 --
+>  mm/slab.c                                   |    1 -
+>  mm/slub.c                                   |    1 -
+>  13 files changed, 4 insertions(+), 832 deletions(-)
+>  delete mode 100644 Documentation/ABI/testing/debugfs-kmemtrace
+>  delete mode 100644 Documentation/trace/kmemtrace.txt
+>  delete mode 100644 include/linux/kmemtrace.h
+>  delete mode 100644 kernel/trace/kmemtrace.c
 
-Thanks. I'll wait a bit more and if there is no negative reviews
-I'll start queueing it in the hwpoison tree.
 
-I should add this is probably only the first step, "early kill" support
-and soft offline might need some more mm changes.
 
--Andi
+Thanks!
+
+Just one thing: you forgot to update the kernel/trace/Makefile
+
