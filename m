@@ -1,79 +1,42 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755017Ab0EZUGZ (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:06:25 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:52168 "EHLO mx2.suse.de"
+	id S1755728Ab0EZUKf (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:10:35 -0400
+Received: from terminus.zytor.com ([198.137.202.10]:45166 "EHLO mail.zytor.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751547Ab0EZUGX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:06:23 -0400
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-From: James Bottomley <James.Bottomley@suse.de>
-To: Valdis.Kletnieks@vt.edu
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Peter Zijlstra <peterz@infradead.org>, Pavel Machek <pavel@ucw.cz>,
-       Pekka Enberg <penberg@cs.helsinki.fi>,
-       Arve Hj?nnev?g <arve@android.com>,
-       Florian Mickler <florian@mickler.org>,
-       "Rafael J. Wysocki" <rjw@sisk.pl>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
-       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
-       tytso@mit.edu
-In-Reply-To: <15650.1274899857@localhost>
-References: <1274863342.5882.4850.camel@twins>
-	 <20100526112303.3fef15a4@schatten.dmk.lab>
-	 <1274866402.5882.5051.camel@twins>
-	 <AANLkTil9ZtMFxTfE6ITiFNOl4S1k3Lvdp5BPgGX7LJhw@mail.gmail.com>
-	 <1274868384.5882.5169.camel@twins>
-	 <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
-	 <1274869262.5882.5222.camel@twins>
-	 <AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
-	 <1274890736.4467.574.camel@mulgrave.site>
-	 <1274891308.1674.1766.camel@laptop> <20100526165919.GB2089@elf.ucw.cz>
-	 <1274893309.1674.1773.camel@laptop>
-	 <1274894685.4467.758.camel@mulgrave.site>
-	 <alpine.LFD.2.00.1005261948290.2995@localhost.localdomain>
-	 <1274898180.4467.925.camel@mulgrave.site>  <15650.1274899857@localhost>
-Content-Type: text/plain; charset="UTF-8"
-Date: Wed, 26 May 2010 15:06:11 -0500
-Message-ID: <1274904371.4467.1145.camel@mulgrave.site>
-Mime-Version: 1.0
-X-Mailer: Evolution 2.28.2 
+	id S1751547Ab0EZUKe (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 16:10:34 -0400
+Message-ID: <4BFD8020.6070005@zytor.com>
+Date: Wed, 26 May 2010 13:10:08 -0700
+From: "H. Peter Anvin" <hpa@zytor.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100430 Fedora/3.0.4-2.fc12 Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Mike Travis <travis@sgi.com>
+CC: Yinghai Lu <yinghai@kernel.org>, Ingo Molnar <mingo@elte.hu>,
+       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
+       Suresh Siddha <suresh.b.siddha@intel.com>,
+       Rusty Russell <rusty@rustcorp.com.au>,
+       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
+       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
+Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if 	add_efi_memmap
+ specified.
+References: <4BEAEF10.9040809@sgi.com> <4BEB0D5F.8070806@oracle.com>	 <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com>	 <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com>	 <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>	 <4BFC5217.6060804@zytor.com> <4BFC5330.5080907@sgi.com> <AANLkTilNXcS_KQTQ4ZwDt8RQqSrlWUH2R5W87g0vI4xG@mail.gmail.com> <4BFD5D98.6090408@sgi.com> <4BFD66D9.4070302@zytor.com> <4BFD6CD7.10806@sgi.com> <4BFD70CC.3050806@zytor.com> <4BFD7206.9070203@sgi.com>
+In-Reply-To: <4BFD7206.9070203@sgi.com>
+Content-Type: text/plain; charset=ISO-8859-1
 Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 2010-05-26 at 14:50 -0400, Valdis.Kletnieks@vt.edu wrote:
-> On Wed, 26 May 2010 13:23:00 CDT, James Bottomley said:
-> > On Wed, 2010-05-26 at 19:51 +0200, Thomas Gleixner wrote:
-> > > Darn, _we_ have to deal with that forever as it sets a crappy user
-> > > space ABI in stone.
-> > 
-> > I really don't see how it is ... the ABI comes with a switch that allows
-> > it to be disabled, so only platforms wishing to use it have to support
-> > it.  Even on those platforms that do support it, we can translate most
-> > of it into pm QoS stuff and if one day someone solves the rogue app
-> > problem, we can migrate over.
+On 05/26/2010 12:09 PM, Mike Travis wrote:
 > 
-> And yet, the OSS drivers are *still* in-tree, even though similar arguments
-> apply to an OSS->ALSA migration.  And there's a bunch of other stuff in
-> Documentation/feature-removal-schedule.txt in a similar situation.
+> Ahh, so you aren't referring to me personally, but someone else?  I'll
+> do some digging into finding that mail thread to at least come up to
+> speed.  Had it been tossed to me in 2007 I would have dealt with it,
+> but it's on my todo list now.
+> 
 
-On the other hand APM, which is what all laptops used to use to suspend
-is gone from the x86 kernel today ... replaced by ACPI or other platform
-mechanisms, so it is at least possible.
+I'm referring to the collective you as in "the community of
+large-machine producers".
 
-James
-
-
+	-hpa
