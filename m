@@ -1,86 +1,79 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753625Ab0EZIBM (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 04:01:12 -0400
-Received: from ozlabs.org ([203.10.76.45]:36191 "EHLO ozlabs.org"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1751014Ab0EZIBK (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 04:01:10 -0400
-From: Rusty Russell <rusty@rustcorp.com.au>
-To: Linus Torvalds <torvalds@linux-foundation.org>
-Subject: Re: [Regression] Crash in load_module() while freeing args
-Date: Wed, 26 May 2010 17:30:58 +0930
-User-Agent: KMail/1.13.2 (Linux/2.6.32-21-generic; KDE/4.4.2; i686; ; )
-Cc: "Rafael J. Wysocki" <rjw@sisk.pl>, LKML <linux-kernel@vger.kernel.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Brandon Philips <brandon@ifup.org>,
-       Jon Masters <jonathan@jonmasters.org>
-References: <201005252300.07739.rjw@sisk.pl> <201005260054.52122.rjw@sisk.pl> <alpine.LFD.2.00.1005251639420.3689@i5.linux-foundation.org>
-In-Reply-To: <alpine.LFD.2.00.1005251639420.3689@i5.linux-foundation.org>
+	id S1756681Ab0EZIBq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 04:01:46 -0400
+Received: from mail-gy0-f174.google.com ([209.85.160.174]:50407 "EHLO
+	mail-gy0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1752528Ab0EZIBp convert rfc822-to-8bit (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 04:01:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
+         :cc:content-type:content-transfer-encoding;
+        b=n4nVKh8mjFknO+aVILcMQVK7G84YJnM5p9kkkPAj5fbFTKXcTWubwggLU7lo5QXS5i
+         tyu0p0mDbSbDe7jYlzR61rWETp4eg6Z1P3zmE/IBsKnRovQCWWnxp38TSNKA+FQ3mR/m
+         1R1OGwB3WjyacHaVZn99FT5yJ/cDCCnaR/1PI=
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 7bit
-Message-Id: <201005261730.59058.rusty@rustcorp.com.au>
+In-Reply-To: <20100526074855.GE26696@linux-sh.org>
+References: <1274815467-14584-1-git-send-email-vapier@gentoo.org> 
+	<20100525210755.GA8920@linux-sh.org> <AANLkTinTbJ3yu9ElO32rnavnGwCrsItdDCl58KoeEW3j@mail.gmail.com> 
+	<20100526074855.GE26696@linux-sh.org>
+From: Mike Frysinger <vapier.adi@gmail.com>
+Date: Wed, 26 May 2010 04:01:24 -0400
+Message-ID: <AANLkTikPvwpmIOWin-WH2UGqF-otT6OL4JhVo3UKKQZY@mail.gmail.com>
+Subject: Re: [PATCH] FLAT: allow arches to declare a larger alignment than the 
+	slab
+To: Paul Mundt <lethal@linux-sh.org>
+Cc: Jie Zhang <jie@codesourcery.com>, uclinux-dev@uclinux.org,
+       David Howells <dhowells@redhat.com>,
+       David McCullough <davidm@snapgear.com>, Greg Ungerer <gerg@uclinux.org>,
+       uclinux-dist-devel@blackfin.uclinux.org,
+       microblaze-uclinux@itee.uq.edu.au, Michal Simek <monstr@monstr.eu>,
+       linux-m32r@ml.linux-m32r.org, Hirokazu Takata <takata@linux-m32r.org>,
+       linux-kernel@vger.kernel.org,
+       Yoshinori Sato <ysato@users.sourceforge.jp>
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010 09:17:32 am Linus Torvalds wrote:
-> 
-> On Wed, 26 May 2010, Rafael J. Wysocki wrote:
-> >
-> > I'm not able to reproduce the issue with the following commit reverted:
-> > 
-> > commit 480b02df3aa9f07d1c7df0cd8be7a5ca73893455
-> > Author: Rusty Russell <rusty@rustcorp.com.au>
-> > Date:   Wed May 19 17:33:39 2010 -0600
-> > 
-> >     module: drop the lock while waiting for module to complete initialization.
-> 
-> Hmm. That does seem to be buggy. We can't just drop and re-take the lock: 
-> that may make sense _internally_ as far as resolve_symbol() itself is 
-> concerned, but the caller will its own local variables, and some of those 
-> will no longer be valid if the lock was dropped. 
+On Wed, May 26, 2010 at 03:48, Paul Mundt wrote:
+> On Tue, May 25, 2010 at 07:17:16PM -0400, Mike Frysinger wrote:
+>> to be sure, we dont need 0x20 alignment in general.  i just figured
+>> kill two birds with one patch here.  and Blackfin is already setting
+>> ARCH_KMALLOC_MINALIGN to cacheline size, but that wouldnt make any
+>> difference in these issues.
+>
+> I have no objections to adding a new alignment value for binfmt_flat, but
+> given the confusion that exists around things like ARCH_SLAB_MINALIGN and
+> ARCH_KMALLOC_MINALIGN already today it should be quite obvious what
+> exactly the new value is for and what case it is specifically addressing.
+> My guess is that the issues you are seeing with the gcc testsuite will
+> also pop up on other nommu platforms, so it may be something we want to
+> just deal with generically. At least I suspect you guys are running the
+> gcc testsuite a lot more frequently than the rest of us!
 
-Well, yes, obviously I missed something :(  I'll look at it tonight after
-Arabella is asleep.
+looking at the linker scripts elf2flt uses, i'm wondering if perhaps
+we shouldnt use 0x20 for the FLAT data chunk all the time.  it uses
+ALIGN(0x20) when packing in the rodata/data/etc... sections, and
+obviously this would only work if the starting alignment were 0x20+ to
+begin with.
 
-> That commit also changes the return value semantics of "use_module()", 
-> which is an exported interface where the only users seem to be 
-> out-of-kernel (the only in-kernel use is in kernel/module.c itself). That 
-> seems like a really really bad idea too.
+elf2flt.ld.in:
+...
+    . = ALIGN(0x20) ;
+    *(.rodata)
+    *(.rodata1)
+    *(.rodata.*)
+    *(.gnu.linkonce.r*)
+    *(.data)
+    *(.data1)
+    *(.data.*)
+    *(.gnu.linkonce.d*)
+...
 
-The kprobes guys: they were cc'd about the change.
-
-> So I think reverting it is definitely the right thing to do. The commit 
-> seems fundamentally broken.
-
-> And having modules do request_module() in 
-> their init functions has always been invalid anyway, so that excuse 
-> doesn't really seem to be a reason to do anything crazy like this either.
-
-I'd have to look back through the pre-git history, but we've dropped the
-lock around the initfn for a long time now because people wanted to do odd
-things (ISTR it sucked when modules oopsed on load, too).
-
-So then we have the problem that crc32 is finished its init and needs the
-lock back, and bnx2x which needs crc32 is waiting for it.  We could just
-fail bnx2x; and in fact, we did prior to this patch (we timeout) and it breaks
-network on booting on some box according to Brandon:
-
-http://www.mail-archive.com/linux-crypto@vger.kernel.org/msg04331.html
-
-This *used* not to be a problem, because userspace placed locks on
-modules and so it would never try to load bnx2x until crc32 was loaded.
-ISTR a mention that Jon removed that...
-
-> Rewriting the logic to
->  - not drop the lock
->  - not change the return semantics of an exported interface
->  - just make 'resolve_symbol()' fail if the module isn't fully loaded
-> would seem to be a more reasonable approach, no?
-
-Sure, then userspace needs to change :(
-
-Rusty.
+that would address our gcc test issues, but not the current initial
+loading crash
+-mike
