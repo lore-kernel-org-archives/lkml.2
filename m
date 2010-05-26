@@ -1,55 +1,55 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757036Ab0EZRJs (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:09:48 -0400
-Received: from moutng.kundenserver.de ([212.227.126.186]:63909 "EHLO
-	moutng.kundenserver.de" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755540Ab0EZRJq (ORCPT
+	id S1756949Ab0EZRL6 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:11:58 -0400
+Received: from hrndva-omtalb.mail.rr.com ([71.74.56.125]:52864 "EHLO
+	hrndva-omtalb.mail.rr.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1755396Ab0EZRL4 (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:09:46 -0400
-From: Arnd Bergmann <arnd@arndb.de>
-To: Chris Metcalf <cmetcalf@tilera.com>
-Subject: Re: [PATCH] arch/tile: new multi-core architecture for Linux
-Date: Wed, 26 May 2010 19:09:02 +0200
-User-Agent: KMail/1.13.2 (Linux/2.6.34-rc6-00202-gac5d593; KDE/4.4.2; x86_64; ; )
-Cc: Thomas Gleixner <tglx@linutronix.de>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>
-References: <201005200543.o4K5hFRF006079@farm-0002.internal.tilera.com> <alpine.LFD.2.00.1005252129441.2948@localhost.localdomain> <4BFD4AC9.6080602@tilera.com>
-In-Reply-To: <4BFD4AC9.6080602@tilera.com>
-MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
+	Wed, 26 May 2010 13:11:56 -0400
+X-Authority-Analysis: v=1.1 cv=WC2cwRI/KXdLNEmE8ivg2cmI8vFt6dWmaZdvaJ93QHU= c=1 sm=0 a=Fogt7QVrsnkA:10 a=yQWWgrYGNuUA:10 a=7U3hwN5JcxgA:10 a=Q9fys5e9bTEA:10 a=gMqfjgEr1zLu/65IO0LwxA==:17 a=ZW4iH3G3atxXlYsZSAYA:9 a=MaCzacFuu3luLZcbTHDRWFWKtjYA:4 a=PUjeQqilurYA:10 a=gMqfjgEr1zLu/65IO0LwxA==:117
+X-Cloudmark-Score: 0
+X-Originating-IP: 74.67.89.75
+Subject: Re: [PATCH] asm-generic: Use raw_local_irq_save/restore instead
+ local_irq_save/restore
+From: Steven Rostedt <rostedt@goodmis.org>
+Reply-To: rostedt@goodmis.org
+To: Andrew Morton <akpm@linux-foundation.org>
+Cc: monstr@monstr.eu, linux-kernel@vger.kernel.org, michal.simek@petalogix.com,
+       arnd@arndb.de, john.williams@petalogix.com, tglx@linutronix.de,
+       peter.fritzsche@gmx.de, anton@samba.org, mingo@elte.hu
+In-Reply-To: <20100526100805.171b3c48.akpm@linux-foundation.org>
+References: <1274863724-14906-1-git-send-email-monstr@monstr.eu>
+	 <1274863724-14906-2-git-send-email-monstr@monstr.eu>
+	 <1274884963.22648.245.camel@gandalf.stny.rr.com>
+	 <20100526100805.171b3c48.akpm@linux-foundation.org>
+Content-Type: text/plain; charset="ISO-8859-15"
+Organization: Kihon Technologies Inc.
+Date: Wed, 26 May 2010 13:11:51 -0400
+Message-ID: <1274893911.22648.246.camel@gandalf.stny.rr.com>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
 Content-Transfer-Encoding: 7bit
-Message-Id: <201005261909.03315.arnd@arndb.de>
-X-Provags-ID: V01U2FsdGVkX1+VxQBVJN+Y1sdacriQXTbFdP+hvEclBgXNeHm
- XytuvIIH7YRV+9Dkg75vaaFVC4mtqCz9wVsW/ncuR3hJmVQYrk
- VBmlC6j0PSY2O154WTqVw==
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 May 2010 18:22:33 Chris Metcalf wrote:
-> On 5/25/2010 4:12 PM, Thomas Gleixner wrote:
-> > +unsigned long long sched_clock(void)
-> > +{
-> > +     u64 cycles;
-> > +     u32 cyc_hi, cyc_lo;
-> > +
-> > +     if (unlikely(cyc2ns_mult == 0))
-> > +             setup_clock();
-> >
-> >   Please initialize stuff before it is called the first time and not
-> >   at some arbitrary point conditionally in a hotpath.
-> >   
+On Wed, 2010-05-26 at 10:08 -0700, Andrew Morton wrote:
+
 > 
-> Looking more closely at this, the reason for this lazy initialization
-> was that sched_clock() can be called from lockdep_init(), which runs way
-> before any tasteful architecture-specific initialization can happen. 
-> Perhaps the correct model is that during the early stages of boot, we
-> are happy to shift by zero, multiply by zero, and claim the time is zero :-)
+> If a developer looks at atomic_add_return() and asks himself "why did
+> this use raw_local_irq_save()", the only way of answering that question
+> is to go groveling through the git logs, which is a right PITA if
+> you're trying to get some coding work done.
+> 
+> Guys, any time you add code which is non-obvious at the raw C level, it
+> *needs* a comment!
 
-Yes, that is what other architectures do. The time remains zero during
-early boot. setup_arch is probably a good place to start the clock.
+Totally agree!  I've gotten pretty good at adding comments to changes
+like this that I do. I need to get better at telling others to comment
+their work ;-)
 
-	Arnd
+-- Steve
+
+
+
