@@ -1,68 +1,81 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1756948Ab0EZWM0 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:12:26 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:49801 "HELO
+	id S1756354Ab0EZWSi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:18:38 -0400
+Received: from iolanthe.rowland.org ([192.131.102.54]:59304 "HELO
 	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1752710Ab0EZWMX (ORCPT
+	with SMTP id S1754736Ab0EZWSg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:12:23 -0400
-Date: Wed, 26 May 2010 18:12:22 -0400 (EDT)
+	Wed, 26 May 2010 18:18:36 -0400
+Date: Wed, 26 May 2010 18:18:36 -0400 (EDT)
 From: Alan Stern <stern@rowland.harvard.edu>
 X-X-Sender: stern@iolanthe.rowland.org
 To: "Rafael J. Wysocki" <rjw@sisk.pl>
-cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Arve =?iso-8859-1?q?Hj=F8nnev=E5g?= <arve@android.com>,
-       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
-       Kernel development list <linux-kernel@vger.kernel.org>,
-       Len Brown <len.brown@intel.com>, Pavel Machek <pavel@ucw.cz>,
-       Randy Dunlap <rdunlap@xenotime.net>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Andi Kleen <ak@linux.intel.com>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
-       Jesse Barnes <jbarnes@virtuousgeek.org>,
-       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
-       Wu Fengguang <fengguang.wu@intel.com>,
-       Maxim Levitsky <maximlevitsky@gmail.com>, <linux-doc@vger.kernel.org>
-Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
-In-Reply-To: <201005262351.59626.rjw@sisk.pl>
-Message-ID: <Pine.LNX.4.44L0.1005261759100.1328-100000@iolanthe.rowland.org>
+cc: Peter Zijlstra <peterz@infradead.org>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>,
+       Len Brown <len.brown@intel.com>, Jim Collar <jim.collar@eqware.net>,
+       <linux-doc@vger.kernel.org>, Greg Kroah-Hartman <gregkh@suse.de>,
+       <linux-kernel@vger.kernel.org>, Avi Kivity <avi@redhat.com>,
+       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
+       Magnus Damm <damm@igel.co.jp>, <linux-pm@lists.linux-foundation.org>,
+       Andrew Morton <akpm@linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 2/8] PM: suspend_block: Add driver to access
+ suspend blockers from user-space
+In-Reply-To: <201005262357.28933.rjw@sisk.pl>
+Message-ID: <Pine.LNX.4.44L0.1005261815480.1328-100000@iolanthe.rowland.org>
 MIME-Version: 1.0
-Content-Type: TEXT/PLAIN; charset=US-ASCII
+Content-Type: TEXT/PLAIN; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
 On Wed, 26 May 2010, Rafael J. Wysocki wrote:
 
-> > The reason is simple: When a user process initiates an opportunistic 
-> > suspend, you make it wait in an interruptible sleep until all the 
-> > kernel suspend blockers are released.  No polling.  If another user 
-> > thread decides in the meantime that it needs to block the suspend, it 
-> > sends a signal to the power manager process.
+> On Wednesday 26 May 2010, Peter Zijlstra wrote:
+> > On Fri, 2010-05-21 at 15:46 -0700, Arve Hjønnevåg wrote:
+> > > +To create a suspend blocker from user space, open the suspend_blocker
+> > > special
+> > > +device file:
+> > > +
+> > > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
+> > > +
+> > > +then optionally call:
+> > > +
+> > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_SET_NAME(strlen(name)), name);
+> > > +
+> > > +To activate the suspend blocker call:
+> > > +
+> > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
+> > > +
+> > > +To deactivate it call:
+> > > +
+> > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
+> > > +
+> > > +To destroy the suspend blocker, close the device:
+> > > +
+> > > +    close(fd);
 > > 
-> > In fact, other threads should signal the power manager process whenever 
-> > they want to block or unblock suspends.  That way the power manager 
-> > process can spend all its time sleeping, without doing any polling.
+> > Urgh, please let the open() be BLOCK, the close() be UNBLOCK, and keep
+> > the SET_NAME thing if you really care.
 > 
-> I still see an issue here.  Namely, if the power manager is in user space and
-> it's signaled to suspend, it has to ask the kernel to do that, presumably by
-> writing something to a sysfs file.  Then, if the kernel blocks the suspend, the
-> power manager waits until the block is released.  Now, it should go back and
-> check if user space still doesn't block suspend and if so, wait until the block
-> is released and start over.  With all suspend blockers in the kernel this
-> looping behavior is avoidable.
+> SET_NAME wouldn't serve any purpose in that case.
+> 
+> This whole thing is related to the statistics part, which Arve says is
+> essential to him.  He wants to collect statistics for each suspend blocker
+> activated and deactivated so that he can tell who's causing problems by
+> blocking suspend too often.  The name also is a part of this.
+> 
+> In fact, without the statistics part the whole thing might be implemented
+> as a single reference counter such that suspend would happen when it went down
+> to zero.
 
-I must be missing something.  In Arve's patch 1/8, if the system is in
-opportunistic suspend, and a wakeup event occurs but no suspend
-blockers get enabled by the handler, what causes the system to go back
-into suspend after the event is handled?  Isn't that a loop of some
-sort?
+There's also Arve's other main point: These suspend blockers tend to
+get used quite a lot.  Opening and closing a file each time has much
+higher overhead than a simple ioctl.
 
-And even if it isn't, so what?  What's wrong with looping behavior?  
-Especially a loop that's as short as this one and spends almost all of
-its time sleeping.  Think how much harder it would be to write programs
-if you weren't allowed to use any loops.  :-)
+All these topics have been covered earlier in this discussion.  Peter 
+should go back and read the emails in the linux-pm archive.
 
 Alan Stern
 
