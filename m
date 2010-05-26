@@ -1,55 +1,72 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755407Ab0EZOi4 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 10:38:56 -0400
-Received: from iolanthe.rowland.org ([192.131.102.54]:45856 "HELO
-	iolanthe.rowland.org" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with SMTP id S1755274Ab0EZOix (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 10:38:53 -0400
-Date: Wed, 26 May 2010 10:38:50 -0400 (EDT)
-From: Alan Stern <stern@rowland.harvard.edu>
-X-X-Sender: stern@iolanthe.rowland.org
-To: Florian Mickler <florian@mickler.org>
-cc: Vitaly Wool <vitalywool@gmail.com>, Peter Zijlstra <peterz@infradead.org>,
-       <Paul@smtp1.linux-foundation.org>, LKML <linux-kernel@vger.kernel.org>,
-       <felipe.balbi@nokia.com>,
-       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
-       Linux PM <linux-pm@lists.linux-foundation.org>
-Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
-In-Reply-To: <20100526151945.1b3813ac@schatten.dmk.lab>
-Message-ID: <Pine.LNX.4.44L0.1005261033440.1961-100000@iolanthe.rowland.org>
+	id S1754332Ab0EZOlx (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:41:53 -0400
+Received: from www.tglx.de ([62.245.132.106]:49468 "EHLO www.tglx.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752721Ab0EZOlv (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 10:41:51 -0400
+Date: Wed, 26 May 2010 16:41:06 +0200 (CEST)
+From: Thomas Gleixner <tglx@linutronix.de>
+To: Dan Magenheimer <dan.magenheimer@oracle.com>
+cc: Brian Bloniarz <bmb@athenacr.com>, john stultz <johnstul@us.ibm.com>,
+       "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
+       Peter Zijlstra <peterz@infradead.org>, Andi Kleen <andi@firstfloor.org>,
+       Arjan van de Ven <arjan@infradead.org>,
+       Venkatesh Pallipadi <venki@google.com>, chris.mason@oracle.com,
+       linux-kernel@vger.kernel.org
+Subject: RE: [PATCH] x86: Export tsc related information in sysfs
+In-Reply-To: <cab5e5a7-e204-42c1-a70b-1e2960f999f3@default>
+Message-ID: <alpine.LFD.2.00.1005261631550.2995@localhost.localdomain>
+References: <4BF58B59.7080901@athenacr.com> <AANLkTinJ36UBMsVvTEoPnmAVS6np9Ja6heEtKA93r7tp@mail.gmail.com> <ce764b91-11b0-44a5-9cf9-96977652bbd5@default> <1274727116.2954.5.camel@localhost.localdomain> <4BFADF9D.9050209@zytor.com> <1274733566.2954.73.camel@localhost.localdomain>
+ <3ec7f284-1507-47fb-b5a2-eea29f68c627@default> <4BFAFE17.8060105@zytor.com> <4BFB2902.50308@athenacr.com> <4BFC687A.9040304@athenacr.com> <1274834888.4678.66.camel@localhost.localdomain> <4BFC8C77.7020802@athenacr.com alpine.LFD.2.00.1005261432060.2995@localhost.localdomain>
+ <cab5e5a7-e204-42c1-a70b-1e2960f999f3@default>
+User-Agent: Alpine 2.00 (LFD 1167 2008-08-23)
 MIME-Version: 1.0
 Content-Type: TEXT/PLAIN; charset=US-ASCII
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010, Florian Mickler wrote:
-
-> I don't think that the in-kernel suspend block is a bad idea. 
+On Wed, 26 May 2010, Dan Magenheimer wrote:
+> > From: Thomas Gleixner [mailto:tglx@linutronix.de]
+> >
+> > Arch independent solution is to provide information about the current
+> > clock source in general. This is _NOT_ a TSC specific problem, you
+> > have the same trouble with any other clocksource which gets calibrated
+> > and does not take it's frequency as a constant value from boot loader,
+> > configuration or some CPU/chipset register. The only missing piece is
+> > a frequency member in struct clocksource which needs to be filled in
+> > by the arch/machine specific code.
 > 
-> You could probably use the suspend-blockers unconditionally in the
-> suspend framework to indicate if a suspend is possible or not.
+> Actually there is already a frequency in struct clocksource except
+> it's represented by the two components: mult and shift.  Maybe
+> it would be best to expose these instead of khz (for all clocksources)
+> so as to limit abuse by naive users.
 
-That's not how it works.  Drivers aren't supposed to abort
-unconditional suspend -- not without a really good reason (for example,
-the device received a wakeup event before it was fully suspended).  In
-short, suspends should be considered to be _always_ possible.
+You mean the TSC user space ones ?
 
-> Regardless of opportunistic suspend or not. This way, you don't have to
-> try-and-fail on a suspend request and thus making suspending
-> potentially more robust or allowing for a "suspend as soon as
-> possible" semantic (which is probably a good idea, if you have to grab
-> your laptop in a hurry to get away).
+> So, Thomas and John, if Brian's patch is modified to provide:
+> 
+> /sys/devices/system/clocksource/clocksource0/current_mult
+> /sys/devices/system/clocksource/clocksource0/current_shift
+> and/or
+> /sys/devices/system/clocksource/clocksource0/current_khz
+> 
+> is that an acceptable arch-independent patch? (And which do
+> you prefer?)
 
-That's different.  Suspend blockers could block (not abort!) regular 
-suspends, just as they do opportunistic suspends.
+I'd rather prefer the frequency interface for a simple reason. It
+allows to add a commandline option which provides the NTP folks with a
+sensible solution to their calibration problem as I don't see that a
+longer calibration time will reliably fix it.
 
-But why should they?  I mean, if userspace wants to initiate a suspend
-that is capable of being blocked by a kernel suspend blocker, then all
-it has to do is initiate an opportunistic suspend instead of a normal
-suspend.
+So we'd get a "clocksource_freq=XXX" option which would be applied to
+the clocksource which is selected on the command line with
+"clocksource=NNN".
 
-Alan Stern
+John ?
 
+Thanks,
+
+	tglx
