@@ -1,84 +1,151 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757593Ab0EZUWG (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 16:22:06 -0400
-Received: from hera.kernel.org ([140.211.167.34]:56682 "EHLO hera.kernel.org"
+	id S1757694Ab0EZUW0 (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 16:22:26 -0400
+Received: from hera.kernel.org ([140.211.167.34]:56695 "EHLO hera.kernel.org"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1755300Ab0EZUWE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 16:22:04 -0400
-Date: Wed, 26 May 2010 20:21:44 GMT
-From: tip-bot for Borislav Petkov <borislav.petkov@amd.com>
+	id S1755369Ab0EZUWY (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 16:22:24 -0400
+Date: Wed, 26 May 2010 20:22:04 GMT
+From: tip-bot for Xiaotian Feng <dfeng@redhat.com>
 Cc: linux-kernel@vger.kernel.org, hpa@zytor.com, mingo@redhat.com,
-       stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-       borislav.petkov@amd.com
+       venkatesh.pallipadi@intel.com, steiner@sgi.com,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, dfeng@redhat.com,
+       hpa@linux.intel.com
 Reply-To: mingo@redhat.com, hpa@zytor.com, linux-kernel@vger.kernel.org,
-       stable@kernel.org, tglx@linutronix.de, hpa@linux.intel.com,
-       borislav.petkov@amd.com
-In-Reply-To: <20100525152858.GA24836@aftab>
-References: <20100525152858.GA24836@aftab>
+       venkatesh.pallipadi@intel.com, steiner@sgi.com,
+       suresh.b.siddha@intel.com, tglx@linutronix.de, dfeng@redhat.com,
+       hpa@linux.intel.com
+In-Reply-To: <1274838670-8731-1-git-send-email-dfeng@redhat.com>
+References: <1274838670-8731-1-git-send-email-dfeng@redhat.com>
 To: linux-tip-commits@vger.kernel.org
-Subject: [tip:x86/urgent] x86, k8: Fix section mismatch for powernowk8_exit()
-Message-ID: <tip-fe501f1e89cd460793152f500bf25d81d463515b@git.kernel.org>
-Git-Commit-ID: fe501f1e89cd460793152f500bf25d81d463515b
+Subject: [tip:x86/urgent] x86, pat: Fix memory leak in free_memtype
+Message-ID: <tip-20413f27163fb1b8b806c0c219dc95eae67c633a@git.kernel.org>
+Git-Commit-ID: 20413f27163fb1b8b806c0c219dc95eae67c633a
 X-Mailer: tip-git-log-daemon
 MIME-Version: 1.0
 Content-Type: text/plain; charset=UTF-8
 Content-Disposition: inline
-X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 May 2010 20:21:45 +0000 (UTC)
+X-Greylist: Sender IP whitelisted, not delayed by milter-greylist-4.2.3 (hera.kernel.org [127.0.0.1]); Wed, 26 May 2010 20:22:04 +0000 (UTC)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Commit-ID:  fe501f1e89cd460793152f500bf25d81d463515b
-Gitweb:     http://git.kernel.org/tip/fe501f1e89cd460793152f500bf25d81d463515b
-Author:     Borislav Petkov <borislav.petkov@amd.com>
-AuthorDate: Tue, 25 May 2010 15:28:58 +0000
+Commit-ID:  20413f27163fb1b8b806c0c219dc95eae67c633a
+Gitweb:     http://git.kernel.org/tip/20413f27163fb1b8b806c0c219dc95eae67c633a
+Author:     Xiaotian Feng <dfeng@redhat.com>
+AuthorDate: Wed, 26 May 2010 09:51:10 +0800
 Committer:  H. Peter Anvin <hpa@linux.intel.com>
-CommitDate: Tue, 25 May 2010 15:42:21 -0700
+CommitDate: Wed, 26 May 2010 11:26:04 -0700
 
-x86, k8: Fix section mismatch for powernowk8_exit()
+x86, pat: Fix memory leak in free_memtype
 
-Fix the following warning:
+Reserve_memtype will allocate memory for new memtype, but
+in free_memtype, after the memtype erased from rbtree, the
+memory is not freed.
 
-"WARNING: arch/x86/kernel/built-in.o(.exit.text+0x72):
-Section mismatch in reference from the function powernowk8_exit() to the variable .cpuinit.data:cpb_nb
+Changes since V1:
+	make rbt_memtype_erase return erased memtype so that
+	it can be freed in free_memtype.
 
-The function __exit powernowk8_exit() references a variable
-__cpuinitdata cpb_nb. This is often seen when error handling in the exit
-function uses functionality in the init path. The fix is often to remove
-the __cpuinitdata annotation of cpb_nb so it may be used outside an init
-section."
+[ hpa: not for -stable: 2.6.34 and earlier not affected ]
 
-Cc: <stable@kernel.org>
-Reported-by: H. Peter Anvin <hpa@zytor.com>
-Signed-off-by: Borislav Petkov <borislav.petkov@amd.com>
-LKML-Reference: <20100525152858.GA24836@aftab>
+Signed-off-by: Xiaotian Feng <dfeng@redhat.com>
+LKML-Reference: <1274838670-8731-1-git-send-email-dfeng@redhat.com>
+Cc: Thomas Gleixner <tglx@linutronix.de>
+Cc: Ingo Molnar <mingo@redhat.com>
+Cc: "H. Peter Anvin" <hpa@zytor.com>
+Cc: Venkatesh Pallipadi <venkatesh.pallipadi@intel.com>
+Cc: Jack Steiner <steiner@sgi.com>
+Acked-by: Suresh Siddha <suresh.b.siddha@intel.com>
 Signed-off-by: H. Peter Anvin <hpa@linux.intel.com>
 ---
- arch/x86/kernel/cpu/cpufreq/powernow-k8.c |    6 +++---
- 1 files changed, 3 insertions(+), 3 deletions(-)
+ arch/x86/mm/pat.c          |   10 +++++++---
+ arch/x86/mm/pat_internal.h |    6 +++---
+ arch/x86/mm/pat_rbtree.c   |    7 ++++---
+ 3 files changed, 14 insertions(+), 9 deletions(-)
 
-diff --git a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-index 6f3dc8f..7ec2123 100644
---- a/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-+++ b/arch/x86/kernel/cpu/cpufreq/powernow-k8.c
-@@ -1497,8 +1497,8 @@ static struct cpufreq_driver cpufreq_amd64_driver = {
-  * simply keep the boost-disable flag in sync with the current global
-  * state.
-  */
--static int __cpuinit cpb_notify(struct notifier_block *nb, unsigned long action,
--				void *hcpu)
-+static int cpb_notify(struct notifier_block *nb, unsigned long action,
-+		      void *hcpu)
+diff --git a/arch/x86/mm/pat.c b/arch/x86/mm/pat.c
+index bbe5502..acc15b2 100644
+--- a/arch/x86/mm/pat.c
++++ b/arch/x86/mm/pat.c
+@@ -336,6 +336,7 @@ int free_memtype(u64 start, u64 end)
  {
- 	unsigned cpu = (long)hcpu;
- 	u32 lo, hi;
-@@ -1528,7 +1528,7 @@ static int __cpuinit cpb_notify(struct notifier_block *nb, unsigned long action,
- 	return NOTIFY_OK;
+ 	int err = -EINVAL;
+ 	int is_range_ram;
++	struct memtype *entry;
+ 
+ 	if (!pat_enabled)
+ 		return 0;
+@@ -355,17 +356,20 @@ int free_memtype(u64 start, u64 end)
+ 	}
+ 
+ 	spin_lock(&memtype_lock);
+-	err = rbt_memtype_erase(start, end);
++	entry = rbt_memtype_erase(start, end);
+ 	spin_unlock(&memtype_lock);
+ 
+-	if (err) {
++	if (!entry) {
+ 		printk(KERN_INFO "%s:%d freeing invalid memtype %Lx-%Lx\n",
+ 			current->comm, current->pid, start, end);
++		return -EINVAL;
+ 	}
+ 
++	kfree(entry);
++
+ 	dprintk("free_memtype request 0x%Lx-0x%Lx\n", start, end);
+ 
+-	return err;
++	return 0;
  }
  
--static struct notifier_block __cpuinitdata cpb_nb = {
-+static struct notifier_block cpb_nb = {
- 	.notifier_call		= cpb_notify,
- };
  
+diff --git a/arch/x86/mm/pat_internal.h b/arch/x86/mm/pat_internal.h
+index 4f39eef..77e5ba1 100644
+--- a/arch/x86/mm/pat_internal.h
++++ b/arch/x86/mm/pat_internal.h
+@@ -28,15 +28,15 @@ static inline char *cattr_name(unsigned long flags)
+ #ifdef CONFIG_X86_PAT
+ extern int rbt_memtype_check_insert(struct memtype *new,
+ 					unsigned long *new_type);
+-extern int rbt_memtype_erase(u64 start, u64 end);
++extern struct memtype *rbt_memtype_erase(u64 start, u64 end);
+ extern struct memtype *rbt_memtype_lookup(u64 addr);
+ extern int rbt_memtype_copy_nth_element(struct memtype *out, loff_t pos);
+ #else
+ static inline int rbt_memtype_check_insert(struct memtype *new,
+ 					unsigned long *new_type)
+ { return 0; }
+-static inline int rbt_memtype_erase(u64 start, u64 end)
+-{ return 0; }
++static inline struct memtype *rbt_memtype_erase(u64 start, u64 end)
++{ return NULL; }
+ static inline struct memtype *rbt_memtype_lookup(u64 addr)
+ { return NULL; }
+ static inline int rbt_memtype_copy_nth_element(struct memtype *out, loff_t pos)
+diff --git a/arch/x86/mm/pat_rbtree.c b/arch/x86/mm/pat_rbtree.c
+index 07de4cb..f537087 100644
+--- a/arch/x86/mm/pat_rbtree.c
++++ b/arch/x86/mm/pat_rbtree.c
+@@ -231,16 +231,17 @@ int rbt_memtype_check_insert(struct memtype *new, unsigned long *ret_type)
+ 	return err;
+ }
+ 
+-int rbt_memtype_erase(u64 start, u64 end)
++struct memtype *rbt_memtype_erase(u64 start, u64 end)
+ {
+ 	struct memtype *data;
+ 
+ 	data = memtype_rb_exact_match(&memtype_rbroot, start, end);
+ 	if (!data)
+-		return -EINVAL;
++		goto out;
+ 
+ 	rb_erase(&data->rb, &memtype_rbroot);
+-	return 0;
++out:
++	return data;
+ }
+ 
+ struct memtype *rbt_memtype_lookup(u64 addr)
