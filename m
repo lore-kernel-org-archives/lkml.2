@@ -1,48 +1,54 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755166Ab0EZNKP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 09:10:15 -0400
-Received: from smtp.nokia.com ([192.100.122.230]:18007 "EHLO
-	mgw-mx03.nokia.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1754541Ab0EZNKM (ORCPT
+	id S1755211Ab0EZNMs (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 09:12:48 -0400
+Received: from earthlight.etchedpixels.co.uk ([81.2.110.250]:48507 "EHLO
+	www.etchedpixels.co.uk" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1754853Ab0EZNMr (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 09:10:12 -0400
-From: Artem Bityutskiy <dedekind1@gmail.com>
-To: Jens Axboe <jens.axboe@oracle.com>
-Cc: LKML <linux-kernel@vger.kernel.org>, linux-fsdevel@vger.kernel.org
-Subject: [PATCH] writeback: fix non-integrity write-back
-Date: Wed, 26 May 2010 16:08:40 +0300
-Message-Id: <1274879320-11367-1-git-send-email-dedekind1@gmail.com>
-X-Mailer: git-send-email 1.6.6.1
-X-OriginalArrivalTime: 26 May 2010 13:10:04.0718 (UTC) FILETIME=[C1BDACE0:01CAFCD4]
-X-Nokia-AV: Clean
+	Wed, 26 May 2010 09:12:47 -0400
+Date: Wed, 26 May 2010 14:19:42 +0100
+From: Alan Cox <alan@lxorguk.ukuu.org.uk>
+To: Florian Mickler <florian@mickler.org>
+Cc: felipe.balbi@nokia.com, Vitaly Wool <vitalywool@gmail.com>,
+       Peter Zijlstra <peterz@infradead.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       "Paul@smtp1.linux-foundation.org" <Paul@smtp1.linux-foundation.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526141942.2a6b94ff@lxorguk.ukuu.org.uk>
+In-Reply-To: <20100526145452.685337db@schatten.dmk.lab>
+References: <1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+	<20100526142430.327ccbc4@schatten.dmk.lab>
+	<20100526122932.GB1990@nokia.com>
+	<20100526143323.7c6f8705@schatten.dmk.lab>
+	<20100526123532.GA2629@nokia.com>
+	<20100526145452.685337db@schatten.dmk.lab>
+X-Mailer: Claws Mail 3.7.5 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+> Nonetheless, I really think the kernel needs to allow for the android
+> way of power saving. It misses out on a big feature and a big user-base
+> if not.
 
-This is a fix for commit 7c8a3554. Note, I only compile-tested
-this.
+That seems to me to be conflating models of behaviour and implementations.
 
-Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
----
- fs/fs-writeback.c |    2 +-
- 1 files changed, 1 insertions(+), 1 deletions(-)
+> This is a _big_ plus for attracting 3rd party programs. (And of course
+> the thing you don't like). 
 
-diff --git a/fs/fs-writeback.c b/fs/fs-writeback.c
-index ea8592b..0242855 100644
---- a/fs/fs-writeback.c
-+++ b/fs/fs-writeback.c
-@@ -920,7 +920,7 @@ long wb_do_writeback(struct bdi_writeback *wb, int force_wait)
- 		if (force_wait)
- 			work->args.sync_mode = args.sync_mode = WB_SYNC_ALL;
- 
--		post_clear = WB_SYNC_ALL || args.sb_pinned;
-+		post_clear = args.sync_mode == WB_SYNC_ALL || args.sb_pinned;
- 
- 		/*
- 		 * If this isn't a data integrity operation, just notify
--- 
-1.6.6.1
+You would do better to concentrate on technical issues that the
+assignment of malicious intent to other parties.
 
+Alan
