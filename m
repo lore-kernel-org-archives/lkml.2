@@ -1,54 +1,69 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753656Ab0EZMX6 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 08:23:58 -0400
-Received: from fxip-0047f.externet.hu ([88.209.222.127]:60503 "EHLO
-	pomaz-ex.szeredi.hu" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751704Ab0EZMX5 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 08:23:57 -0400
-To: Changli Gao <xiaosuo@gmail.com>
-CC: miklos@szeredi.hu, viro@zeniv.linux.org.uk, linux-fsdevel@vger.kernel.org,
-       linux-kernel@vger.kernel.org
-In-reply-to: <AANLkTildR17ccf4TAT0GavB6BoethCqg8BrqBPFu8s0N@mail.gmail.com>
-	(message from Changli Gao on Wed, 26 May 2010 19:53:53 +0800)
-Subject: Re: [PATCH 2/3] splice: allow non-block splice only when in file is 
-	seekable
-References: <1274867768-3011-1-git-send-email-xiaosuo@gmail.com> 
-	<E1OHDru-0000Ge-Lr@pomaz-ex.szeredi.hu> <AANLkTildR17ccf4TAT0GavB6BoethCqg8BrqBPFu8s0N@mail.gmail.com>
-MIME-version: 1.0
-Content-type: text/plain; charset=utf-8
-Content-Transfer-Encoding: 8bit
-Message-Id: <E1OHFe5-00019D-DO@pomaz-ex.szeredi.hu>
-From: Miklos Szeredi <miklos@szeredi.hu>
-Date: Wed, 26 May 2010 14:23:37 +0200
+	id S1754140Ab0EZMYj (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 08:24:39 -0400
+Received: from ist.d-labs.de ([213.239.218.44]:37766 "EHLO mx01.d-labs.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1752146Ab0EZMYf (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 08:24:35 -0400
+Date: Wed, 26 May 2010 14:24:30 +0200
+From: Florian Mickler <florian@mickler.org>
+To: Vitaly Wool <vitalywool@gmail.com>
+Cc: Peter Zijlstra <peterz@infradead.org>, LKML <linux-kernel@vger.kernel.org>,
+       Paul@smtp1.linux-foundation.org, felipe.balbi@nokia.com,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Linux PM <linux-pm@lists.linux-foundation.org>
+Subject: Re: [linux-pm] [PATCH 0/8] Suspend block api (version 8)
+Message-ID: <20100526142430.327ccbc4@schatten.dmk.lab>
+In-Reply-To: <AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<201005242049.18920.rjw@sisk.pl>
+	<87wrusvrqe.fsf@deeprootsystems.com>
+	<201005250138.16293.rjw@sisk.pl>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<20100526120242.5c9b73ad@schatten.dmk.lab>
+	<AANLkTim4021cTnhVZrQpefq1MG-eEPOFLDRO-XDepHb4@mail.gmail.com>
+	<20100526133721.602633b2@schatten.dmk.lab>
+	<AANLkTikzgaOFdQKess4E-D86OLPOzxP3dWiDkU_UR0ri@mail.gmail.com>
+X-Mailer: Claws Mail 3.7.6 (GTK+ 2.18.9; x86_64-unknown-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wed, 26 May 2010, Changli Gao wrote:
-> On Wed, May 26, 2010 at 6:29 PM, Miklos Szeredi <miklos@szeredi.hu> wrote:
-> > On Wed, 26 May 2010, Changli Gao wrote:
-> >> allow non-block splice only when in file is seekable.
-> >>
-> >> do_splice_to() is split to two parts: read data from in file to spd, and move
-> >> data from spd to pipe. If there isn't much space in pipe for the data in spd,
-> >> and the splice is called with non-block flag, the data dropped due to non
-> >> enough space in pipe will be lost forever when in file isn't seekable.
-> >
-> > This is a gratuitous ABI change.  I don't think we should hold the
-> > hand of application writers,
+On Wed, 26 May 2010 14:01:49 +0200
+Vitaly Wool <vitalywool@gmail.com> wrote:
+
+> On Wed, May 26, 2010 at 1:37 PM, Florian Mickler <florian@mickler.org> wrote:
 > 
-> Yea, it is an ABI change. But without that, we'll fail user silently
-> currently. Some fundamental change is needed to fix this issue fully,
-> if you think it is a bug.
+> > This is not "protection". This is functioning properly in a real world
+> > scenario. Why would the user change the kernel, if the device would be
+> > buggy after that? (Except maybe he is a geek)
+> 
+> Hmm... Why would the user continue to use the program if it slows down
+> his device and sucks the battery as a vampire (Except maybe he's a
+> moron)? ;)
+> 
+> ~Vitaly
 
-I don't think it's a bug.  The same thing will happen without
-SPLICE_F_NONBLOCK if splice_to_pipe() is interrupted by a signal while
-it blocks.
+Because he is using a robust kernel that provides suspend blockers and
+is preventing the vampire from sucking power? 
 
-To prevent data loss the application needs to be aware of the fact
-that doing a splice from a non-seekable fd needs to be done carefully,
-making sure that it doesn't block on the pipe.
+Most users don't even grasp the simple concept of different "programs".
+They just have a device and click here and there and are happy. 
 
-Miklos
+Really, what are you getting at? Do you deny that there are programs,
+that prevent a device from sleeping? (Just think of the bouncing
+cows app)
+
+And if you have two kernels, one with which your device is dead after 1
+hour and one with which your device is dead after 10 hours. Which would
+you prefer? I mean really... this is ridiculous. 
+
+Cheers,
+Flo
+
