@@ -1,56 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752790Ab0EZFqP (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 01:46:15 -0400
-Received: from mail-gw0-f46.google.com ([74.125.83.46]:44650 "EHLO
-	mail-gw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab0EZFqO (ORCPT
+	id S1752574Ab0EZFvh (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 01:51:37 -0400
+Received: from mail-pv0-f174.google.com ([74.125.83.174]:38441 "EHLO
+	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751042Ab0EZFvg (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 01:46:14 -0400
-References: <20100512133815.0d048a86@annuminas.surriel.com> 
-	<20100512134029.36c286c4@annuminas.surriel.com> <20100512210216.GP24989@csn.ul.ie> 
-	<4BEB18BB.5010803@redhat.com> <20100513095439.GA27949@csn.ul.ie> 
-	<20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org> 
-	<4BFC9CCF.6000809@redhat.com> <20100525211520.16e3a034.akpm@linux-foundation.org>
-From: james toy <nil@0xabadba.be>
-In-Reply-To: <20100525211520.16e3a034.akpm@linux-foundation.org>
-Mime-Version: 1.0 (iPhone Mail 7E18)
-Date: Wed, 26 May 2010 01:46:03 -0400
-Message-ID: <2073679454094428814@unknownmsgid>
-Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: Rik van Riel <riel@redhat.com>, Mel Gorman <mel@csn.ul.ie>,
-       Andrea Arcangeli <aarcange@redhat.com>,
-       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
-       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
-       LKML <linux-kernel@vger.kernel.org>,
-       Linus Torvalds <torvalds@linux-foundation.org>,
-       Lee Schermerhorn <Lee.Schermerhorn@hp.com>, james toy <toyj@union.edu>,
-       james toy <mail@wfys.org>, James Toy <0xbaadface@gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1
+	Wed, 26 May 2010 01:51:36 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:references:mime-version
+         :content-type:content-disposition:in-reply-to:user-agent;
+        b=GSJ5HdMuI44YLqsm2o8t6qbjuqoLEJH44k7qIoWfvWxZUcQ4HqkvOXuONkRqwih08f
+         fjpav23iJsxf+CKzYyaIrhLiSlG9tbnsM6na1u+WPtC4CUQsiW4wu2BmlDI2CNVkfll/
+         FbeFWCBTzWFvkxoH/Kt/8l0BSNPYa9RNS2g38=
+Date: Wed, 26 May 2010 13:55:27 +0800
+From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
+To: ranjith kumar <ranjithproxy@gmail.com>
+Cc: linux-kernel@vger.kernel.org
+Subject: Re: building linux kernel
+Message-ID: <20100526055222.GG5147@cr0.nay.redhat.com>
+References: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
+MIME-Version: 1.0
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-I'll get after this asap; sorry.  I'm finishing my last trimester of
-my B.S.  I'll send a message when it's back up with the offending patch.
-
-=jt
-
-On May 26, 2010, at 0:15, Andrew Morton <akpm@linux-foundation.org>
-wrote:
-
-> On Wed, 26 May 2010 00:00:15 -0400 Rik van Riel <riel@redhat.com>
-> wrote:
+On Tue, May 25, 2010 at 04:50:31PM +0530, ranjith kumar wrote:
+>Hi,
 >
->> On 05/13/2010 05:09 PM, Andrew Morton wrote:
->>
->>> I'm not very confident in merging all these onto the current MM
->>> pile.
->>
->> Blah.  I thought I just did that (and wondered why it was
->> so easy), and then I saw that the MMOTM git tree is old
->> and does not have the COMPACTION code :(
->>
+>I am using fedora11 on my PC. I downloaded the linux kernel souce code.
+>I copied config file from /boot directory and tried to compile. I am
+>getting some compilation errors.
+
+Which version of kernel did you download?
+
+
+>So  I configured the kernel, with 'make defconfig', and it is
+>compiling successfully.
+
+
+This may be dangerous, because default config may not contain
+the drivers needed by your machine.
+
+You should copy the fedora config and then do 'make oldconfig',
+or you can use 'make localmodconfig' if you are compiling
+a recent kernel.
+
 >
-> Oh.  James's mmotm->git bot might have broken.
+>Also, some time back when I was using fedora10, I configured linux
+>kernel with /boot/ config file. I successfully compiled and run new
+>linux kernel.
+
+This is what supposed to be.
+
