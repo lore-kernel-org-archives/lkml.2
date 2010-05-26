@@ -1,42 +1,64 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1755373Ab0EZOaS (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 10:30:18 -0400
-Received: from mail-vw0-f46.google.com ([209.85.212.46]:39490 "EHLO
-	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1755184Ab0EZOaO (ORCPT
+	id S1755340Ab0EZObi (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 10:31:38 -0400
+Received: from smtp1.linux-foundation.org ([140.211.169.13]:41493 "EHLO
+	smtp1.linux-foundation.org" rhost-flags-OK-OK-OK-OK)
+	by vger.kernel.org with ESMTP id S1753290Ab0EZObh (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 10:30:14 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=mime-version:in-reply-to:references:from:date:message-id:subject:to
-         :cc:content-type:content-transfer-encoding;
-        b=j12jYD+C2+EhuUz4R1bzQa/a2N+Mbxr+AcEojHNddtH4xaf1RX5Y7uK1qSq7SXJodb
-         HlI9/PDjBRVwR2SA4GQMT5qZGAiONAjoEBAw3sCqFCyiX6N8yhZn/NuM29Iw71Rl1VbX
-         YR2saHlCnXI9l5OGogjWBG+4QBRxQEYBJ2h4I=
-MIME-Version: 1.0
-In-Reply-To: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
-References: <1274882226-19778-1-git-send-email-l.fu@pengutronix.de>
-From: Eric Miao <eric.y.miao@gmail.com>
-Date: Wed, 26 May 2010 22:29:53 +0800
-Message-ID: <AANLkTimYG1kQBSmp2CPgLoPt-S4mNsJY2QV-cPJgV5lT@mail.gmail.com>
-Subject: Re: [PATCH] matrix_keypad: add support for clustered irq
-To: Luotao Fu <l.fu@pengutronix.de>
-Cc: Dmitry Torokhov <dmitry.torokhov@gmail.com>,
-       Marek Vasut <marek.vasut@gmail.com>, linux-kernel@vger.kernel.org,
-       linux-input@vger.kernel.org
-Content-Type: text/plain; charset=UTF-8
+	Wed, 26 May 2010 10:31:37 -0400
+Date: Wed, 26 May 2010 07:30:45 -0700
+From: Andrew Morton <akpm@linux-foundation.org>
+To: Jiri Slaby <jirislaby@gmail.com>
+Cc: adobriyan@gmail.com, nhorman@tuxdriver.com, oleg@redhat.com,
+       linux-kernel@vger.kernel.org
+Subject: Re: [PATCH v3 10/11] rlimits: implement prlimit64 syscall
+Message-Id: <20100526073045.ea26740f.akpm@linux-foundation.org>
+In-Reply-To: <4BFD1ADD.7020004@gmail.com>
+References: <1273514451-28894-1-git-send-email-jslaby@suse.cz>
+	<1273514451-28894-10-git-send-email-jslaby@suse.cz>
+	<20100513155630.9ca5ab16.akpm@linux-foundation.org>
+	<4BFD1ADD.7020004@gmail.com>
+X-Mailer: Sylpheed 2.7.1 (GTK+ 2.18.9; x86_64-redhat-linux-gnu)
+Mime-Version: 1.0
+Content-Type: text/plain; charset=US-ASCII
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
-Content-Transfer-Encoding: 8bit
-X-MIME-Autoconverted: from base64 to 8bit by alpha.home.local id o4QEWdim006080
 
-On Wed, May 26, 2010 at 9:57 PM, Luotao Fu <l.fu@pengutronix.de> wrote:> This one adds support of a combined irq source for the whole matrix keypad.> This can be useful all rows and columns of the keypad is e.g. connected to> a GPIO expander, which only has one interrupt line for all events on every> single GPIO.>> Signed-off-by: Luotao Fu <l.fu@pengutronix.de>> --->  drivers/input/keyboard/matrix_keypad.c |   80 ++++++++++++++++++++++++++------>  include/linux/input/matrix_keypad.h    |    5 ++>  2 files changed, 70 insertions(+), 15 deletions(-)>> diff --git a/drivers/input/keyboard/matrix_keypad.c b/drivers/input/keyboard/matrix_keypad.c> index b443e08..260dcb0 100644> --- a/drivers/input/keyboard/matrix_keypad.c> +++ b/drivers/input/keyboard/matrix_keypad.c> @@ -87,8 +87,12 @@ static void enable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               enable_irq(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       enable_irq(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  static void disable_row_irqs(struct matrix_keypad *keypad)> @@ -96,8 +100,12 @@ static void disable_row_irqs(struct matrix_keypad *keypad)>        const struct matrix_keypad_platform_data *pdata = keypad->pdata;>        int i;>> -       for (i = 0; i < pdata->num_row_gpios; i++)> -               disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       if (pdata->clustered_irq > 0)> +               disable_irq_nosync(pdata->clustered_irq);> +       else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       disable_irq_nosync(gpio_to_irq(pdata->row_gpios[i]));> +       }>  }>>  /*> @@ -226,6 +234,17 @@ static int matrix_keypad_suspend(struct device *dev)>        matrix_keypad_stop(keypad->input_dev);>>        if (device_may_wakeup(&pdev->dev)) {> +               if (pdata->clustered_irq > 0) {> +                       unsigned int cirq = pdata->clustered_irq;> +> +                       if (enable_irq_wake(cirq) == 0) {> +                               for (i = 0; i < pdata->num_row_gpios; i++)> +                                       __set_bit(i, keypad->disabled_gpios);> +                       }> +> +                       goto out;> +               }> +
-This might deserve a separate function, and what is the usage of disabled_gpios,I seem to find nowhere (except in the resume routine).
->                for (i = 0; i < pdata->num_row_gpios; i++) {>                        if (!test_bit(i, keypad->disabled_gpios)) {>                                unsigned int gpio = pdata->row_gpios[i];> @@ -235,7 +254,7 @@ static int matrix_keypad_suspend(struct device *dev)>                        }>                }>        }> -> +out:>        return 0;>  }>> @@ -247,6 +266,17 @@ static int matrix_keypad_resume(struct device *dev)>        int i;>>        if (device_may_wakeup(&pdev->dev)) {> +               if (pdata->clustered_irq > 0) {> +                       unsigned int cirq = pdata->clustered_irq;> +> +                       if (disable_irq_wake(cirq) == 0) {> +                               for (i = 0; i < pdata->num_row_gpios; i++)> +                                       clear_bit(i, keypad->disabled_gpios);> +                       }> +> +                       goto out;> +               }> +
-Better a separate routine.
->                for (i = 0; i < pdata->num_row_gpios; i++) {>                        if (test_and_clear_bit(i, keypad->disabled_gpios)) {>                                unsigned int gpio = pdata->row_gpios[i];> @@ -256,6 +286,7 @@ static int matrix_keypad_resume(struct device *dev)>                }>        }>> +out:>        matrix_keypad_start(keypad->input_dev);>>        return 0;> @@ -296,17 +327,31 @@ static int __devinit init_matrix_gpio(struct platform_device *pdev,>                gpio_direction_input(pdata->row_gpios[i]);>        }>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +       if (pdata->clustered_irq > 0) {> +               err = request_irq(pdata->clustered_irq,>                                matrix_keypad_interrupt,> -                               IRQF_DISABLED |> -                               IRQF_TRIGGER_RISING | IRQF_TRIGGER_FALLING,> +                               pdata->clustered_irq_flags,>                                "matrix-keypad", keypad);>                if (err) {>                        dev_err(&pdev->dev,> -                               "Unable to acquire interrupt for GPIO line %i\n",> -                               pdata->row_gpios[i]);> -                       goto err_free_irqs;> +                               "Unable to acquire clustered interrupt\n");> +                       goto err_free_rows;> +               }> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++) {> +                       err = request_irq(gpio_to_irq(pdata->row_gpios[i]),> +                                       matrix_keypad_interrupt,> +                                       IRQF_DISABLED |> +                                       IRQF_TRIGGER_RISING |> +                                       IRQF_TRIGGER_FALLING,> +                                       "matrix-keypad", keypad);> +                       if (err) {> +                               dev_err(&pdev->dev,> +                                       "Unable to acquire interrupt "> +                                       "for GPIO line %i\n",> +                                       pdata->row_gpios[i]);> +                               goto err_free_irqs;> +                       }
-Ditto.
->                }>        }>> @@ -418,11 +463,16 @@ static int __devexit matrix_keypad_remove(struct platform_device *pdev)>>        device_init_wakeup(&pdev->dev, 0);>> -       for (i = 0; i < pdata->num_row_gpios; i++) {> -               free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);> -               gpio_free(pdata->row_gpios[i]);> +       if (pdata->clustered_irq > 0) {> +               free_irq(pdata->clustered_irq, keypad);> +       } else {> +               for (i = 0; i < pdata->num_row_gpios; i++)> +                       free_irq(gpio_to_irq(pdata->row_gpios[i]), keypad);>        }>> +       for (i = 0; i < pdata->num_row_gpios; i++)> +               gpio_free(pdata->row_gpios[i]);> +>        for (i = 0; i < pdata->num_col_gpios; i++)>                gpio_free(pdata->col_gpios[i]);>> diff --git a/include/linux/input/matrix_keypad.h b/include/linux/input/matrix_keypad.h> index c964cd7..8e8dc2e 100644> --- a/include/linux/input/matrix_keypad.h> +++ b/include/linux/input/matrix_keypad.h> @@ -63,6 +63,11 @@ struct matrix_keypad_platform_data {>        /* key debounce interval in milli-second */>        unsigned int    debounce_ms;>> +       /* used if interrupts of all row/column GPIOs are bundled to one single> +        * irq */> +       unsigned int    clustered_irq;> +       unsigned int    clustered_irq_flags;> +>        bool            active_low;>        bool            wakeup;>        bool            no_autorepeat;> --> 1.7.0>>
-Otherwise looks OK to me.���{.n�+�������+%�����ݶ��w��{.n�+����{��G�����{ay�ʇڙ�,j��f���h��������z_�(�階�ݢj"���m������G������?����&���~��iO��z��v�^�m����������?�I�
+On Wed, 26 May 2010 14:58:05 +0200 Jiri Slaby <jirislaby@gmail.com> wrote:
+
+> > This could all be done in userspace, couldn't it?  Write a little library
+> > which clones a thread then waits for someone to send it a
+> > change-your-rlimits message.  Write a little tool to send those
+> > messages and voila.
+> 
+> Sorry, I'm not sure I understand this. Could you shed some light on what
+> will run in the new thread?
+> 
+> A code such as:
+> main()
+> {
+>   if (!clone())
+>     exec("something");
+> 
+>   while (wait_for_message(&m)) {
+>      setrlimit(m);
+>      sleep();
+>   }
+> }
+> won't obviously work. Could you change it so it reflects your idea or
+> explain what I'm missing?
+
+main()
+{
+	if (clone(...)) {
+		while (wait_for_message(&m))
+			setrlimit(m);
+	}
+
+	...
+}
+		
+?
