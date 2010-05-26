@@ -1,50 +1,60 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934320Ab0EZJzH (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 05:55:07 -0400
-Received: from mx1.redhat.com ([209.132.183.28]:17485 "EHLO mx1.redhat.com"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S932728Ab0EZJzE (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 05:55:04 -0400
-Organization: Red Hat UK Ltd. Registered Address: Red Hat UK Ltd, Amberley
-	Place, 107-111 Peascod Street, Windsor, Berkshire, SI4 1TE, United
-	Kingdom.
-	Registered in England and Wales under Company Registration No. 3798903
-From: David Howells <dhowells@redhat.com>
-In-Reply-To: <20100526065129.GA3746@in.ibm.com>
-References: <20100526065129.GA3746@in.ibm.com> <20100525083055.342788418@linux.vnet.ibm.com> <20100525091356.GB29003@in.ibm.com> <1274787559_8162@mail4.comsite.net>
-To: prasad@linux.vnet.ibm.com
-Cc: dhowells@redhat.com, Millton Miller <miltonm@bga.com>,
-       Michael Neuling <mikey@neuling.org>,
-       Benjamin Herrenschmidt <benh@au1.ibm.com>, shaggy@linux.vnet.ibm.com,
-       Frederic Weisbecker <fweisbec@gmail.com>,
-       Linux Kernel Mailing List <linux-kernel@vger.kernel.org>,
-       David Gibson <dwg@au1.ibm.com>,
-       "linuxppc-dev@ozlabs.org" <linuxppc-dev@ozlabs.org>,
-       Alan Stern <stern@rowland.harvard.edu>,
-       Paul Mackerras <paulus@samba.org>,
-       Andrew Morton <akpm@linux-foundation.org>,
-       Roland McGrath <roland@redhat.com>
-Subject: Re: [Patch 1/4] Allow arch-specific cleanup before breakpoint unregistration
-Date: Wed, 26 May 2010 10:54:41 +0100
-Message-ID: <4250.1274867681@redhat.com>
+	id S1758888Ab0EZJ4K (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 05:56:10 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:45954 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751377Ab0EZJ4I (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 05:56:08 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=from:to:cc:subject:date:message-id:x-mailer;
+        b=bTUY1IfL2JPMKx2hAiDwdy1uKwgUxQzNQvInna5kvhK2/GLp1pQ73f9F6HPh7rDxOn
+         9CLJTglUsehmWyV2qfPse1ZRN7Lm90TDN2Rfh/+IP9z8J8IuOAHoQ43dGE0erqzIi7Pa
+         oQrhZfBsBqPntEA6CCpZGNRQYiuj85sPQGuDM=
+From: Changli Gao <xiaosuo@gmail.com>
+To: Alexander Viro <viro@zeniv.linux.org.uk>
+Cc: linux-fsdevel@vger.kernel.org, linux-kernel@vger.kernel.org,
+       Changli Gao <xiaosuo@gmail.com>
+Subject: [PATCH 1/3] splice: check f_mode for seekable file
+Date: Wed, 26 May 2010 17:55:15 +0800
+Message-Id: <1274867715-2936-1-git-send-email-xiaosuo@gmail.com>
+X-Mailer: git-send-email 1.6.4.4
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-K.Prasad <prasad@linux.vnet.ibm.com> wrote:
+check f_mode for seekable file
 
-> > My understanding is weak function definitions must appear in a different C
-> > file than their call sites to work on some toolchains.
-> > 
-> 
-> Atleast, there are quite a few precedents inside the Linux kernel for
-> __weak functions being invoked from the file in which they are defined
-> (arch_hwblk_init, arch_enable_nonboot_cpus_begin and hw_perf_disable to
-> name a few).
-> Moreover the online GCC docs haven't any such constraints mentioned.
+As a seekable file is allowed without a llseek function, so the old way isn't
+work any more.
 
-I've seen problems in this area.  gcc sometimes inlines a weak function that's
-in the same file as the call point.
-
-David
+Signed-off-by: Changli Gao <xiaosuo@gmail.com>
+----
+ fs/splice.c |    6 ++----
+ 1 file changed, 2 insertions(+), 4 deletions(-)
+diff --git a/fs/splice.c b/fs/splice.c
+index 9313b61..9e52de5 100644
+--- a/fs/splice.c
++++ b/fs/splice.c
+@@ -1321,8 +1321,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
+ 		if (off_in)
+ 			return -ESPIPE;
+ 		if (off_out) {
+-			if (!out->f_op || !out->f_op->llseek ||
+-			    out->f_op->llseek == no_llseek)
++			if (!(out->f_mode & FMODE_PWRITE))
+ 				return -EINVAL;
+ 			if (copy_from_user(&offset, off_out, sizeof(loff_t)))
+ 				return -EFAULT;
+@@ -1342,8 +1341,7 @@ static long do_splice(struct file *in, loff_t __user *off_in,
+ 		if (off_out)
+ 			return -ESPIPE;
+ 		if (off_in) {
+-			if (!in->f_op || !in->f_op->llseek ||
+-			    in->f_op->llseek == no_llseek)
++			if (!(in->f_mode & FMODE_PREAD))
+ 				return -EINVAL;
+ 			if (copy_from_user(&offset, off_in, sizeof(loff_t)))
+ 				return -EFAULT;
