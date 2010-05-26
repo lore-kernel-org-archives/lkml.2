@@ -1,117 +1,111 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757390Ab0EZWvO (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:51:14 -0400
-Received: from smtp-outbound-1.vmware.com ([65.115.85.69]:42291 "EHLO
-	smtp-outbound-1.vmware.com" rhost-flags-OK-OK-OK-OK)
-	by vger.kernel.org with ESMTP id S1757314Ab0EZWvM (ORCPT
+	id S1757630Ab0EZWwH (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:52:07 -0400
+Received: from mail-pz0-f176.google.com ([209.85.222.176]:53557 "EHLO
+	mail-pz0-f176.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1750980Ab0EZWwF convert rfc822-to-8bit (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:51:12 -0400
-Date: Wed, 26 May 2010 15:51:12 -0700
-From: Dmitry Torokhov <dtor@vmware.com>
-To: Andrew Morton <akpm@linux-foundation.org>
-Cc: linux-kernel@vger.kernel.org, pv-drivers@vmware.com
-Subject: [PATCH] VMware Balloon: clamp number of collected non-balloonable
- pages
-Message-ID: <20100526225033.GA20733@dtor-ws.eng.vmware.com>
+	Wed, 26 May 2010 18:52:05 -0400
 MIME-Version: 1.0
-Content-Type: text/plain; charset=us-ascii
-Content-Disposition: inline
-User-Agent: Mutt/1.5.20 (2009-08-17)
+In-Reply-To: <1274872357.27810.16.camel@twins>
+References: <1274482015-30899-1-git-send-email-arve@android.com>
+	<1274863655.5882.4875.camel@twins>
+	<AANLkTinN6MKvCEhPkbYQRD2gu-mGXdNW9asRsTuKN3_Y@mail.gmail.com>
+	<1274867106.5882.5090.camel@twins>
+	<AANLkTiksR3YozbBH0Iv5kNsQkEGKCH1APCvn_s6LkjV9@mail.gmail.com>
+	<1274868593.5882.5185.camel@twins>
+	<AANLkTinuxCbeBmxIR7b_1OtrqQYJCamiDZJbnNTih1Fb@mail.gmail.com>
+	<1274869966.5882.5262.camel@twins>
+	<AANLkTikRMBkoFxgaKsxMJ2lOMomTXpiHJDk3rVt0EtwM@mail.gmail.com>
+	<1274870970.5882.5311.camel@twins>
+	<AANLkTinlxsokwralwRAL9_YRQ7-SZUSvrGHTlRISA9bC@mail.gmail.com>
+	<1274872357.27810.16.camel@twins>
+Date: Wed, 26 May 2010 15:52:03 -0700
+Message-ID: <AANLkTik-V0vQS5v0wLDDnu6ZXqrs0g5WUjzI1Gliqflx@mail.gmail.com>
+Subject: Re: [PATCH 0/8] Suspend block api (version 8)
+From: =?ISO-8859-1?Q?Arve_Hj=F8nnev=E5g?= <arve@android.com>
+To: Peter Zijlstra <peterz@infradead.org>
+Cc: "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Kevin Hilman <khilman@deeprootsystems.com>, felipe.balbi@nokia.com,
+       Linux PM <linux-pm@lists.linux-foundation.org>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linux OMAP Mailing List <linux-omap@vger.kernel.org>,
+       Tony Lindgren <tony@atomide.com>, Paul Walmsley <paul@pwsan.com>
+Content-Type: text/plain; charset=ISO-8859-1
+Content-Transfer-Encoding: 8BIT
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+> On Wed, 2010-05-26 at 03:53 -0700, Arve Hjønnevåg wrote:
+>> 2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+>> > On Wed, 2010-05-26 at 03:40 -0700, Arve Hjønnevåg wrote:
+>> >> 2010/5/26 Peter Zijlstra <peterz@infradead.org>:
+>> >> > On Wed, 2010-05-26 at 03:25 -0700, Arve Hjønnevåg wrote:
+>> >> >
+>> >> >> and on systems where the
+>> >> >> same power state can be used from idle and suspend, we use suspend so
+>> >> >> we can stay in the low power state for minutes to hours instead of
+>> >> >> milliseconds to seconds.
+>> >> >
+>> >> > So don't you think working on making it possible for systems to be idle
+>> >> > _that_ long would improve things for everybody? as opposed to this
+>> >> > auto-suspend which only improves matters for those that (can) use it?
+>> >>
+>> >> I'm not preventing anyone from working on improving this. Currently
+>> >> both the kernel and our user-space code polls way too much. I don't
+>> >> think it is reasonable to demand that no one should run any user-space
+>> >> code with periodic timers when we have not even fixed the kernel to
+>> >> not do this.
+>> >
+>> > All I'm saying is that merging a stop-gap measure will decrease the
+>> > urgency and thus the time spend fixing the actual issues while adding
+>> > the burden of maintaining this stop-gap measure.
+>> >
+>>
+>> Fixing the actually issue means fixing all user-space code, and
+>> replacing most x86 hardware. I don't think keeping this feature out of
+>> the kernel will significantly accelerate this.
+>
+> I don't think x86 is relevant anyway, it doesn't suspend/resume anywhere
+> near fast enough for this to be usable.
 
->From e672fc1756a1315b617638bfeb15734bd45208b2 Mon Sep 17 00:00:00 2001
-From: Dmitry Torokhov <dtor@vmware.com>
-Date: Tue, 18 May 2010 10:28:04 -0700
-Subject: [PATCH] VMware Balloon: clamp number of collected non-balloonable pages
+x86 systems already auto-suspend.
 
-Limit number of accumulated non-balloonable pages during inflation
-cycle, otherwise there is a chance we will be spinning and growing the
-list forever.  This happens during torture tests when balloon target
-changes while we are in the middle of inflation cycle and monitor starts
-refusing to lock pages (since they are not needed anymore).
+>
+> My laptop still takes several seconds to suspend (Lenovo T500), and
+> resume (aside from some userspace bustage) takes the same amount of
+> time. That is quick enough for manual suspend, but I'd hate it to try
+> and auto-suspend.
+>
 
-Cc: stable@kernel.org
-Acked-by: Bhavesh Davda <bhavesh@vmware.com>
-Signed-off-by: Dmitry Torokhov <dtor@vmware.com>
----
+Why? If your suspend is currently set to sleep after 30 minutes of
+inactivity, you can still have the same setting with opportunistic
+suspend. With opportunistic suspend you can have an alarm set to run a
+task at a specific time without risking that this task does not run at
+that time just because your inactivity timer expired at the same time
+as the alarm went off.
 
-Andrew,
+> Getting longer idle periods however is something that everybody benefits
+> from. On x86 we're nowhere close to hitting the max idle time of the
+> platform, you get _tons_ of wakeups on current 'desktop' software.
+>
+> But x86 being a PITA shouldn't stop people from working on this, there's
+> plenty other architectures out there, I remember fixing a NO_HZ bug with
+> davem on sparc64 because his niagra had cores idling for very long times
+> indeed.
+>
+> So yes, I do think merging this will delay the effort in fixing
+> userspace, simply because all the mobile/embedded folks don't care about
+> it anymore.
+>
 
-Please consider forwarding this to Linus in your next batch of patches
-for 2.6.35.
+To me this is not a good argument for not merging the code. If people
+stop caring about the problem if this feature is merged that means it
+solved a problem for them. You want to prevent merging a feature
+_because_ it solves a problem.
 
-Thanks!
-
- drivers/misc/vmware_balloon.c |   18 +++++++++++++++---
- 1 files changed, 15 insertions(+), 3 deletions(-)
-
-diff --git a/drivers/misc/vmware_balloon.c b/drivers/misc/vmware_balloon.c
-index e7161c4..ad8fb09 100644
---- a/drivers/misc/vmware_balloon.c
-+++ b/drivers/misc/vmware_balloon.c
-@@ -45,7 +45,7 @@
- 
- MODULE_AUTHOR("VMware, Inc.");
- MODULE_DESCRIPTION("VMware Memory Control (Balloon) Driver");
--MODULE_VERSION("1.2.1.0-K");
-+MODULE_VERSION("1.2.1.1-k");
- MODULE_ALIAS("dmi:*:svnVMware*:*");
- MODULE_ALIAS("vmware_vmmemctl");
- MODULE_LICENSE("GPL");
-@@ -101,6 +101,8 @@ MODULE_LICENSE("GPL");
- /* Maximum number of page allocations without yielding processor */
- #define VMW_BALLOON_YIELD_THRESHOLD	1024
- 
-+/* Maximum number of refused pages we accumulate during inflation cycle */
-+#define VMW_BALLOON_MAX_REFUSED		16
- 
- /*
-  * Hypervisor communication port definitions.
-@@ -183,6 +185,7 @@ struct vmballoon {
- 
- 	/* transient list of non-balloonable pages */
- 	struct list_head refused_pages;
-+	unsigned int n_refused_pages;
- 
- 	/* balloon size in pages */
- 	unsigned int size;
-@@ -428,14 +431,21 @@ static int vmballoon_reserve_page(struct vmballoon *b, bool can_sleep)
- 		/* inform monitor */
- 		locked = vmballoon_send_lock_page(b, page_to_pfn(page));
- 		if (!locked) {
-+			STATS_INC(b->stats.refused_alloc);
-+
- 			if (b->reset_required) {
- 				__free_page(page);
- 				return -EIO;
- 			}
- 
--			/* place on list of non-balloonable pages, retry allocation */
-+			/*
-+			 * Place page on the list of non-balloonable pages
-+			 * and retry allocation, unless we already accumulated
-+			 * too many of them, in which case take a breather.
-+			 */
- 			list_add(&page->lru, &b->refused_pages);
--			STATS_INC(b->stats.refused_alloc);
-+			if (++b->n_refused_pages >= VMW_BALLOON_MAX_REFUSED)
-+				return -EIO;
- 		}
- 	} while (!locked);
- 
-@@ -483,6 +493,8 @@ static void vmballoon_release_refused_pages(struct vmballoon *b)
- 		__free_page(page);
- 		STATS_INC(b->stats.refused_free);
- 	}
-+
-+	b->n_refused_pages = 0;
- }
- 
- /*
 -- 
-1.6.6.1
-
+Arve Hjønnevåg
