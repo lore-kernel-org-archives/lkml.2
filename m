@@ -1,124 +1,94 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1751681Ab0EZFXe (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 01:23:34 -0400
-Received: from mail-qy0-f183.google.com ([209.85.221.183]:35323 "EHLO
-	mail-qy0-f183.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1750850Ab0EZFXc convert rfc822-to-8bit (ORCPT
+	id S1752500Ab0EZF3N (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 01:29:13 -0400
+Received: from mail-ww0-f46.google.com ([74.125.82.46]:41332 "EHLO
+	mail-ww0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S1751008Ab0EZF3K (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 01:23:32 -0400
+	Wed, 26 May 2010 01:29:10 -0400
 DomainKey-Signature: a=rsa-sha1; c=nofws;
         d=gmail.com; s=gamma;
-        h=mime-version:date:message-id:subject:from:to:content-type
-         :content-transfer-encoding;
-        b=Tu+ijc2KRtwYLW0tKCX4k1kDqMyUVM6xC2XXuNfM59q2g4vZNWdL6utn2U5h62fpyY
-         ZC7B92Mojo9rpAH4Ou60AGDXK1yK/J+IdcWQIvHgRH1N2R6KIFwE3YfU++BOuu2VUiiP
-         QCha+ORpYx6PL3skt9QxgFG34PjgiN2KtRFrc=
-MIME-Version: 1.0
-Date: Tue, 25 May 2010 23:23:30 -0600
-Message-ID: <AANLkTilqascTmKEr_aFu2QxqabXaz7z2UXAQNV7HA6sT@mail.gmail.com>
-Subject: [ANNOUNCE] ndiswrapper-2.6.34
-From: Jeffrey Merkey <jeffmerkey@gmail.com>
-To: linux-kernel@vger.kernel.org
-Content-Type: text/plain; charset=windows-1252
-Content-Transfer-Encoding: 8BIT
+        h=subject:from:to:cc:in-reply-to:references:content-type:date
+         :message-id:mime-version:x-mailer:content-transfer-encoding;
+        b=qHqroS8DEHPuDbdh0mCN9cW4FMBGLcR94XC+WfNksoS0pB0Yz3i39mQw4aIZrpGnwV
+         DfuN3F4hbIaGv6vuVzIS6vVUzxmy2FwCEul5t/ow5OOyCSFzRvjsnqMqDn7rTtpbWTmx
+         0JHLCm0SfnND70dHxyWxczimvolzk/o6Iw5UU=
+Subject: RE: NULL Pointer Deference: NFS & Telnet
+From: Eric Dumazet <eric.dumazet@gmail.com>
+To: "Arce, Abraham" <x0066660@ti.com>
+Cc: David Miller <davem@davemloft.net>,
+       "netdev@vger.kernel.org" <netdev@vger.kernel.org>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "linux-nfs@vger.kernel.org" <linux-nfs@vger.kernel.org>,
+       "linux-omap@vger.kernel.org" <linux-omap@vger.kernel.org>,
+       "tony@atomide.com" <tony@atomide.com>,
+       "Shilimkar, Santosh" <santosh.shilimkar@ti.com>
+In-Reply-To: <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
+References: <27F9C60D11D683428E133F85D2BB4A53043E33A997@dlee03.ent.ti.com>
+	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFE6@dlee03.ent.ti.com>
+	 <20100525.185236.193707791.davem@davemloft.net>
+	 <27F9C60D11D683428E133F85D2BB4A53043E3EDFF1@dlee03.ent.ti.com>
+Content-Type: text/plain; charset="UTF-8"
+Date: Wed, 26 May 2010 07:29:01 +0200
+Message-ID: <1274851741.25136.16.camel@edumazet-laptop>
+Mime-Version: 1.0
+X-Mailer: Evolution 2.28.3 
+Content-Transfer-Encoding: 8bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-Always here to support the hated projects of Evil Emperor Linus.
-Needed this fucking thing to work on my laptop so fixed the busted
-shit.  There you go whoever needs it.
+Le mardi 25 mai 2010 Ã  21:02 -0500, Arce, Abraham a Ã©crit :
+> Thanks David,
+> 
+> > > diff --git a/net/core/skbuff.c b/net/core/skbuff.c
+> > > index f8abf68..eb81f76 100644
+> > > --- a/net/core/skbuff.c
+> > > +++ b/net/core/skbuff.c
+> > > @@ -334,7 +334,7 @@ static void skb_release_data(struct sk_buff *skb)
+> > >  	if (!skb->cloned ||
+> > >  	    !atomic_sub_return(skb->nohdr ? (1 << SKB_DATAREF_SHIFT) + 1 : 1,
+> > >  			       &skb_shinfo(skb)->dataref)) {
+> > > -		if (skb_shinfo(skb)->nr_frags) {
+> > > +		if (skb_shinfo(skb)->nr_frags && skb_has_frags(skb)) {
+> > >  			int i;
+> > >  			for (i = 0; i < skb_shinfo(skb)->nr_frags; i++)
+> > >  				put_page(skb_shinfo(skb)->frags[i].page);
+> > 
+> > skb_shinfo(skb)->nr_frags counts the number of entries contained
+> > in the skb_shinfo(skb)->frags[] array.
+> > 
+> > This has nothing to do with the frag list pointer,
+> > skb_shinfo(skb)->frag_list, which is what skb_has_frags()
+> > tests.
+> > 
+> > You've got some kind of memory corruption going on and it
+> > appears to have nothing to do with the code paths you're
+> > playing with here.
+> 
+> Do you have any recommendation on debugging technique/tool for this memory corruption issue?
+> 
+> Best Regards
+> Abraham
+> --
 
-http://merkeydebugger.googlecode.com/files/ndiswrapper-2.6.34.tar.gz
+It seems quite strange. You have a skb->nr_frags > 0 value, but a
+frags[i].page = 0 value
 
-Also, Peter Anvins busted SYSLINUX loader doesn't boot Fedora Core 12
-on Windows Laptops for overinstall.   Locks up on a Compaq.  Guess I
-have to rebuild FC12
-and use a loader that actually works "cannot find linux kernel to
-load"  Geeeeezzzzzzzzzzz....
+You might add following function :
 
-FIXES - Fixed all this busted shit.  The netdev_ops structure is a
-good idea since making these tables const prevents dirty hooking.  Too
-bad the netdev_ops pointer still allows it though.  Whoever mucked
-with the request_irq handlers needs to finish what they broke.  Having
-an intermediary handler var seems fucking braindead not to mention it
-s little late to be screwing arounf with IRQ handlers -- this shit
-should have been dealt with in 1997 guys.
+shinfo_check(struct sk_buff *skb)
+{
+	struct skb_shared_info *shinfo = skb_shinfo(skb);
+	int i;
 
-make -C /lib/modules/2.6.34/build M=/archive/ndis/ndiswrapper-1.54-2.6.34/driver
-make[2]: Entering directory `/kernel/linux-2.6.34'
-  LD      /archive/ndis/ndiswrapper-1.54-2.6.34/driver/built-in.o
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/crt_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/hal_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel_io_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/rtl_exports.h
-  MKEXPORT /archive/ndis/ndiswrapper-1.54-2.6.34/driver/usb_exports.h
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/crt.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/hal.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/iw_ndis.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/loader.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis.o
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis.c: In function
-‘NdisMAllocateMapRegisters’:
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis.c:948: warning:
-‘DMA_nnBIT_MASK’ is deprecated
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis.c:950: warning:
-‘DMA_nnBIT_MASK’ is deprecated
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ndis.c:954: warning:
-‘DMA_nnBIT_MASK’ is deprecated
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel.o
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel.c: In function
-‘MmAllocateContiguousMemorySpecifyCache’:
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel.c:1706:
-warning: ‘DMA_nnBIT_MASK’ is deprecated
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel.c:1708:
-warning: ‘DMA_nnBIT_MASK’ is deprecated
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel_io.o
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel_io.c: In
-function ‘IoConnectInterrupt’:
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/ntoskernel_io.c:566:
-warning: passing argument 2 of ‘request_irq’ from incompatible pointer
-type
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/pe_linker.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/pnp.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/proc.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/rtl.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapmem.o
-  CC [M]  /archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.o
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c: In function
-‘notifier_event’:
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1693: error:
-‘struct net_device’ has no member named ‘open’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c: In function
-‘ndis_start_device’:
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1749: error:
-‘struct net_device’ has no member named ‘open’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1750: error:
-‘struct net_device’ has no member named ‘hard_start_xmit’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1751: error:
-‘struct net_device’ has no member named ‘stop’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1752: error:
-‘struct net_device’ has no member named ‘get_stats’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1753: error:
-‘struct net_device’ has no member named ‘change_mtu’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1754: error:
-‘struct net_device’ has no member named ‘do_ioctl’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1758: error:
-‘struct net_device’ has no member named ‘set_multicast_list’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1759: error:
-‘struct net_device’ has no member named ‘set_mac_address’
-/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.c:1774: error:
-‘struct net_device’ has no member named ‘poll_controller’
-make[3]: *** [/archive/ndis/ndiswrapper-1.54-2.6.34/driver/wrapndis.o] Error 1
-make[2]: *** [_module_/archive/ndis/ndiswrapper-1.54-2.6.34/driver] Error 2
-make[2]: Leaving directory `/kernel/linux-2.6.34'
-make[1]: *** [modules] Error 2
-make[1]: Leaving directory `/archive/ndis/ndiswrapper-1.54-2.6.34/driver'
-make: *** [all] Error 2
+	WARN_ON(shinfo->nr_frags >= MAX_SKB_FRAGS);
+	for (i = 0; i < shinfo->nr_frags; i++)
+		WARN_ON(!shinfo->frags[i].page);
+}
 
-All this shit is fixed.
+And call it from various points, to check who corrupts your skb.
 
-Jeff Merkey
+
+
