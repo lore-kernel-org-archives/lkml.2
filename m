@@ -1,83 +1,80 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757339Ab0EZRmx (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 13:42:53 -0400
-Received: from relay2.sgi.com ([192.48.179.30]:56257 "EHLO relay.sgi.com"
-	rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org with ESMTP
-	id S1755120Ab0EZRmw (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 13:42:52 -0400
-Message-ID: <4BFD5D98.6090408@sgi.com>
-Date: Wed, 26 May 2010 10:42:48 -0700
-From: Mike Travis <travis@sgi.com>
-User-Agent: Thunderbird 2.0.0.23 (X11/20090817)
+	id S1757409Ab0EZRnK (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 13:43:10 -0400
+Received: from ksp.mff.cuni.cz ([195.113.26.206]:40473 "EHLO
+	atrey.karlin.mff.cuni.cz" rhost-flags-OK-OK-OK-FAIL)
+	by vger.kernel.org with ESMTP id S1755152Ab0EZRnH (ORCPT
+	<rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 13:43:07 -0400
+Date: Wed, 26 May 2010 19:42:58 +0200
+From: Pavel Machek <pavel@ucw.cz>
+To: James Bottomley <James.Bottomley@suse.de>
+Cc: Peter Zijlstra <peterz@infradead.org>,
+       Pekka Enberg <penberg@cs.helsinki.fi>,
+       Arve Hj?nnev?g <arve@android.com>,
+       Florian Mickler <florian@mickler.org>,
+       "Rafael J. Wysocki" <rjw@sisk.pl>,
+       Alan Stern <stern@rowland.harvard.edu>,
+       Dmitry Torokhov <dmitry.torokhov@gmail.com>,
+       Linux-pm mailing list <linux-pm@lists.linux-foundation.org>,
+       Kernel development list <linux-kernel@vger.kernel.org>,
+       Len Brown <len.brown@intel.com>, Randy Dunlap <rdunlap@xenotime.net>,
+       Andrew Morton <akpm@linux-foundation.org>,
+       Andi Kleen <ak@linux.intel.com>,
+       Cornelia Huck <cornelia.huck@de.ibm.com>, Tejun Heo <tj@kernel.org>,
+       Jesse Barnes <jbarnes@virtuousgeek.org>,
+       Nigel Cunningham <nigel@tuxonice.net>, Ming Lei <tom.leiming@gmail.com>,
+       Wu Fengguang <fengguang.wu@intel.com>,
+       Maxim Levitsky <maximlevitsky@gmail.com>, linux-doc@vger.kernel.org,
+       Matthew Garrett <mjg59@srcf.ucam.org>, Greg KH <gregkh@suse.de>,
+       tytso@mit.edu
+Subject: Re: [PATCH 1/8] PM: Opportunistic suspend support.
+Message-ID: <20100526174258.GF9069@elf.ucw.cz>
+References: <AANLkTimHGpRAZklIwXu6wEbA3coKXJvCVLxj2twerkCw@mail.gmail.com>
+ <1274869262.5882.5222.camel@twins>
+ <AANLkTik9LINPmabJfVi0jfVs5sjVS_1l00WpnVTFEuLV@mail.gmail.com>
+ <1274890736.4467.574.camel@mulgrave.site>
+ <1274891308.1674.1766.camel@laptop>
+ <1274892847.4467.674.camel@mulgrave.site>
+ <1274893228.1674.1772.camel@laptop>
+ <1274894042.4467.727.camel@mulgrave.site>
+ <1274894602.1674.1780.camel@laptop>
+ <1274895188.4467.783.camel@mulgrave.site>
 MIME-Version: 1.0
-To: Yinghai Lu <yinghai@kernel.org>
-CC: "H. Peter Anvin" <hpa@zytor.com>, Ingo Molnar <mingo@elte.hu>,
-       Thomas Gleixner <tglx@linutronix.de>, x86@kernel.org,
-       Suresh Siddha <suresh.b.siddha@intel.com>,
-       Rusty Russell <rusty@rustcorp.com.au>,
-       Jens Axboe <jens.axboe@oracle.com>, Jack Steiner <steiner@sgi.com>,
-       LKML <linux-kernel@vger.kernel.org>, jkosina@novell.com
-Subject: Re: [Patch 1/1] x86 efi: Fill all reserved memmap entries if 	add_efi_memmap
- specified.
-References: <4BEAEF10.9040809@sgi.com> <4BEB0D5F.8070806@oracle.com>	 <4BEB1781.1080907@sgi.com> <4BEC6C94.2020100@sgi.com>	 <4BEC73B2.2020909@oracle.com> <4BEC7544.1080506@sgi.com>	 <4BEC8161.6050206@zytor.com> <4BFC5080.6030103@sgi.com>	 <4BFC5217.6060804@zytor.com> <4BFC5330.5080907@sgi.com> <AANLkTilNXcS_KQTQ4ZwDt8RQqSrlWUH2R5W87g0vI4xG@mail.gmail.com>
-In-Reply-To: <AANLkTilNXcS_KQTQ4ZwDt8RQqSrlWUH2R5W87g0vI4xG@mail.gmail.com>
-Content-Type: text/plain; charset=ISO-8859-1; format=flowed
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+In-Reply-To: <1274895188.4467.783.camel@mulgrave.site>
+X-Warning: Reading this can be dangerous to your mental health.
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
+Hi!
 
-
-Yinghai Lu wrote:
-> On Tue, May 25, 2010 at 3:46 PM, Mike Travis <travis@sgi.com> wrote:
->>
->> H. Peter Anvin wrote:
->>> On 05/25/2010 03:34 PM, Mike Travis wrote:
->>>> H. Peter Anvin wrote:
->>>>> On 05/13/2010 02:55 PM, Mike Travis wrote:
->>>>>> I saw that too, and wondered why e820_saved did not
->>>>>> have the extra entries.   The comment indicates it
->>>>>> should.
->>>>>>
->>>>>> I'm on the system tonight and will investigate this
->>>>>> further.
->>>>>>
->>>>> e820_saved lacks the extra entries because they aren't being passed in
->>>>> from the bootloader, as they should, and instead you're using
->>>>> add_efi_memmap which is, as far as the kernel is concerned, a post-boot
->>>>> modification.
->>>>>
->>>>> That being said, add_efi_memmap does come from the firmware, and as such
->>>>> it would be legitimate for it to add them to e820_saved.
->>>>>
->>>>>        -hpa
->>>> Did this last patch meet expectations?
->>>>
->>>> http://marc.info/?l=linux-kernel&m=127474230623061&w=4
->>>>
->>> I'm concerned about calling sanitize_e820_map() on e820_saved; it is
->>> supposed to reflect the raw data as reported by the source, and
->>> sanitizing it would corrupt that.
->>>
->>>        -hpa
->> I wondered about that. Sanitize seems to remove adjacent
->> entries, etc. making the map smaller, but I couldn't detect
->> any real differences (though admittedly I didn't do a byte
->> by byte comparison.)
->>
->> But I'll submit another with that call removed.
+> > > > The main and most important one being that suspend is a global property
+> > > > and can/will hurt sensible tasks. It puts the whole task model upside
+> > > > down.
+> > > 
+> > > OK, so I believe you have an android phone ... it already implements
+> > > this model ... specifically what are the problems on that platform this
+> > > causes?
+> > 
+> > I do not have one, nor have I ever written an application for it (nor
+> > will I likely ever do that, since I detest Java), but I would expect an
+> > application to run when its runnable.
 > 
-> can you use updated boot loader instead?
-> 
-> Also we should drop add_efi_memmap if possible.
-> 
-> YH
+> OK, so I've got one ... tell me what I should see and I'll try to
+> reproduce.
 
-I'm open for suggestions on how to improve this, but we are shipping
-systems very soon and I don't think we'll get any other change into
-the system until the next update.
+Umm... try to boot ordinary distro and see how it copes with
+opportunistic suspend?
 
-Thanks,
-Mike
+I do have android here, and of course it work well with custom
+userland. Question is: can common distro be reasonably modified to
+work with suspend blockers, in a way that's backward compatible?
+									Pavel
+-- 
+(english) http://www.livejournal.com/~pavelmachek
+(cesky, pictures) http://atrey.karlin.mff.cuni.cz/~pavel/picture/horses/blog.html
