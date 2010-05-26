@@ -1,62 +1,41 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1759215Ab0EZDiY (ORCPT <rfc822;w@1wt.eu>);
-	Tue, 25 May 2010 23:38:24 -0400
-Received: from chilli.pcug.org.au ([203.10.76.44]:33080 "EHLO smtps.tip.net.au"
+	id S1750875Ab0EZECA (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 00:02:00 -0400
+Received: from mx1.redhat.com ([209.132.183.28]:62279 "EHLO mx1.redhat.com"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1759184Ab0EZDiX (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
-	Tue, 25 May 2010 23:38:23 -0400
-Date: Wed, 26 May 2010 13:38:15 +1000
-From: Stephen Rothwell <sfr@canb.auug.org.au>
-To: Wim Van Sebroeck <wim@iguana.be>
-Cc: linux-next@vger.kernel.org, linux-kernel@vger.kernel.org,
-       Wolfram Sang <w.sang@pengutronix.de>,
-       Linus <torvalds@linux-foundation.org>
-Subject: linux-next: manual merge of the watchdog tree with Linus' tree
-Message-Id: <20100526133815.e62bacb8.sfr@canb.auug.org.au>
-X-Mailer: Sylpheed 3.0.2 (GTK+ 2.20.1; i486-pc-linux-gnu)
-Mime-Version: 1.0
-Content-Type: multipart/signed; protocol="application/pgp-signature";
- micalg="PGP-SHA1";
- boundary="Signature=_Wed__26_May_2010_13_38_15_+1000_qzyJtmga.LeHPtsq"
+	id S1750706Ab0EZEB7 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 00:01:59 -0400
+Message-ID: <4BFC9CCF.6000809@redhat.com>
+Date: Wed, 26 May 2010 00:00:15 -0400
+From: Rik van Riel <riel@redhat.com>
+User-Agent: Mozilla/5.0 (X11; U; Linux x86_64; en-US; rv:1.9.1.9) Gecko/20100330 Fedora/3.0.4-1.fc12 Lightning/1.0b2pre Thunderbird/3.0.4
+MIME-Version: 1.0
+To: Andrew Morton <akpm@linux-foundation.org>
+CC: Mel Gorman <mel@csn.ul.ie>, Andrea Arcangeli <aarcange@redhat.com>,
+       Minchan Kim <minchan.kim@gmail.com>, Linux-MM <linux-mm@kvack.org>,
+       KAMEZAWA Hiroyuki <kamezawa.hiroyu@jp.fujitsu.com>,
+       LKML <linux-kernel@vger.kernel.org>,
+       Linus Torvalds <torvalds@linux-foundation.org>,
+       Lee Schermerhorn <Lee.Schermerhorn@hp.com>
+Subject: Re: [PATCH -v2 4/5] always lock the root (oldest) anon_vma
+References: <20100512133815.0d048a86@annuminas.surriel.com>	<20100512134029.36c286c4@annuminas.surriel.com>	<20100512210216.GP24989@csn.ul.ie>	<4BEB18BB.5010803@redhat.com>	<20100513095439.GA27949@csn.ul.ie>	<20100513103356.25665186@annuminas.surriel.com> <20100513140919.0a037845.akpm@linux-foundation.org>
+In-Reply-To: <20100513140919.0a037845.akpm@linux-foundation.org>
+Content-Type: text/plain; charset=UTF-8; format=flowed
+Content-Transfer-Encoding: 7bit
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
---Signature=_Wed__26_May_2010_13_38_15_+1000_qzyJtmga.LeHPtsq
-Content-Type: text/plain; charset=US-ASCII
-Content-Disposition: inline
-Content-Transfer-Encoding: quoted-printable
+On 05/13/2010 05:09 PM, Andrew Morton wrote:
 
-Hi Wim,
+> I'm not very confident in merging all these onto the current MM pile.
 
-Today's linux-next merge of the watchdog tree got a conflict in
-drivers/watchdog/imx2_wdt.c between commit
-bb2fd8a844d3a9209599b5fb694b30ac46a56ef0 ("watchdog: Driver for the
-watchdog timer on Freescale IMX2 (and later) processors") from Linus'
-tree and commit 1216b28847276929d920296e34b4e8226eaf4e79 ("watchdog:
-Driver for the watchdog timer on Freescale IMX2 (and later) processors")
-from the watchdog tree.
+Blah.  I thought I just did that (and wondered why it was
+so easy), and then I saw that the MMOTM git tree is old
+and does not have the COMPACTION code :(
 
-These are two versions of the same patch.  I used the version from Linus'
-tree - but I do need to ask what is the point of having a patch in
-linux-next for two days and then submitting a different version of the
-patch to Linus?  The changes are not insignificant. Both patches have the
-same Author date and SOB etc lines.
---=20
-Cheers,
-Stephen Rothwell                    sfr@canb.auug.org.au
-http://www.canb.auug.org.au/~sfr/
+On to doing this thing again :/
 
---Signature=_Wed__26_May_2010_13_38_15_+1000_qzyJtmga.LeHPtsq
-Content-Type: application/pgp-signature
-
------BEGIN PGP SIGNATURE-----
-Version: GnuPG v1.4.10 (GNU/Linux)
-
-iEYEARECAAYFAkv8l6cACgkQjjKRsyhoI8xDAQCeOJ0rmCYvD19j4Rfvaxy0w3Z9
-/BoAoJnxvap5bNEt7/jjLPugcRAFIB++
-=Iq4a
------END PGP SIGNATURE-----
-
---Signature=_Wed__26_May_2010_13_38_15_+1000_qzyJtmga.LeHPtsq--
+-- 
+All rights reversed
