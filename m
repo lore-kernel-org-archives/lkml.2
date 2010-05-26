@@ -1,60 +1,46 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1752574Ab0EZFvh (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 01:51:37 -0400
-Received: from mail-pv0-f174.google.com ([74.125.83.174]:38441 "EHLO
-	mail-pv0-f174.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1751042Ab0EZFvg (ORCPT
+	id S1752872Ab0EZFxJ (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 01:53:09 -0400
+Received: from mga06.intel.com ([134.134.136.21]:5094 "EHLO
+	orsmga101.jf.intel.com" rhost-flags-OK-OK-OK-FAIL) by vger.kernel.org
+	with ESMTP id S1752426Ab0EZFxH (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 01:51:36 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=date:from:to:cc:subject:message-id:references:mime-version
-         :content-type:content-disposition:in-reply-to:user-agent;
-        b=GSJ5HdMuI44YLqsm2o8t6qbjuqoLEJH44k7qIoWfvWxZUcQ4HqkvOXuONkRqwih08f
-         fjpav23iJsxf+CKzYyaIrhLiSlG9tbnsM6na1u+WPtC4CUQsiW4wu2BmlDI2CNVkfll/
-         FbeFWCBTzWFvkxoH/Kt/8l0BSNPYa9RNS2g38=
-Date: Wed, 26 May 2010 13:55:27 +0800
-From: =?utf-8?Q?Am=C3=A9rico?= Wang <xiyou.wangcong@gmail.com>
-To: ranjith kumar <ranjithproxy@gmail.com>
-Cc: linux-kernel@vger.kernel.org
-Subject: Re: building linux kernel
-Message-ID: <20100526055222.GG5147@cr0.nay.redhat.com>
-References: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
-MIME-Version: 1.0
+	Wed, 26 May 2010 01:53:07 -0400
+X-ExtLoop1: 1
+X-IronPort-AV: E=Sophos;i="4.53,302,1272870000"; 
+   d="scan'208";a="521305744"
+Date: Wed, 26 May 2010 09:23:57 -0400
+From: Youquan Song <youquan.song@linux.intel.com>
+To: =?utf-8?B?Uy7Dh2HEn2xhcg==?= Onur <caglar@CS.Princeton.EDU>
+Cc: Suresh Siddha <suresh.b.siddha@intel.com>, Greg KH <greg@kroah.com>,
+       "stable@kernel.org" <stable@kernel.org>,
+       "hpa@zytor.com" <hpa@zytor.com>,
+       "linux-kernel@vger.kernel.org" <linux-kernel@vger.kernel.org>,
+       "Song, Youquan" <youquan.song@intel.com>
+Subject: Re: [stable] Boot failure with 2.6.27.46 on Xeon E5620 (Westmere EP)
+Message-ID: <20100526132357.GA26728@youquan-linux.bj.intel.com>
+References: <000954C6-B4AC-4FD8-BA3B-C3B199C7607F@CS.Princeton.EDU> <20100525155307.GA7453@kroah.com> <620C3556-2708-4704-90F3-37DDEF1A404E@CS.Princeton.EDU> <20100525205123.GA14993@kroah.com> <1274833451.2892.574.camel@sbs-t61.sc.intel.com> <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
+Mime-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <AANLkTim7d3LpSp23LMOqwPz-Rnp0Idflf5JWUTDyplMU@mail.gmail.com>
-User-Agent: Mutt/1.5.20 (2009-06-14)
+In-Reply-To: <DD6ACA75-527D-406D-971B-64F042E0ED26@CS.Princeton.EDU>
+User-Agent: Mutt/1.5.9i
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue, May 25, 2010 at 04:50:31PM +0530, ranjith kumar wrote:
->Hi,
->
->I am using fedora11 on my PC. I downloaded the linux kernel souce code.
->I copied config file from /boot directory and tried to compile. I am
->getting some compilation errors.
+> > I can't think of any known issues in 2.6.27 that can lead to this kind
+> > of boot failure on WSM-EP. Caglar, It will be nice if you can do git
+> > bisect between working and non-working kernels.
+> 
+> Sure, I'll try to boot those with plain 2.6.27 to see but please note that it's going to be little time consuming. For each one I have to create a custom boot image for them to download and test (a.k.a. don't expect to hear from me soon :))
 
-Which version of kernel did you download?
+Hi Caglar,
 
+What's the microcode version? Get by "dmesg | grep microcode" if you
+success boot other version of kernel.
+Can you try to disable C-state(C6) in BIOS before your boot 2.6.27?
 
->So  I configured the kernel, with 'make defconfig', and it is
->compiling successfully.
-
-
-This may be dangerous, because default config may not contain
-the drivers needed by your machine.
-
-You should copy the fedora config and then do 'make oldconfig',
-or you can use 'make localmodconfig' if you are compiling
-a recent kernel.
-
->
->Also, some time back when I was using fedora10, I configured linux
->kernel with /boot/ config file. I successfully compiled and run new
->linux kernel.
-
-This is what supposed to be.
-
+Thanks
+-Youquan
