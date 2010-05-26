@@ -1,86 +1,63 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S934515Ab0EZWdW (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 18:33:22 -0400
-Received: from ogre.sisk.pl ([217.79.144.158]:44909 "EHLO ogre.sisk.pl"
-	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S933673Ab0EZWdU convert rfc822-to-8bit (ORCPT
+	id S934522Ab0EZWeq (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 18:34:46 -0400
+Received: from mail-vw0-f46.google.com ([209.85.212.46]:33344 "EHLO
+	mail-vw0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
+	with ESMTP id S933673Ab0EZWep (ORCPT
 	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 18:33:20 -0400
-From: "Rafael J. Wysocki" <rjw@sisk.pl>
-To: Alan Stern <stern@rowland.harvard.edu>
-Subject: Re: [linux-pm] [PATCH 2/8] PM: suspend_block: Add driver to access suspend blockers from user-space
-Date: Thu, 27 May 2010 00:34:44 +0200
-User-Agent: KMail/1.12.4 (Linux/2.6.34-tst; KDE/4.3.5; x86_64; ; )
-Cc: Peter Zijlstra <peterz@infradead.org>,
-       Cornelia Huck <cornelia.huck@de.ibm.com>,
-       Len Brown <len.brown@intel.com>, Jim Collar <jim.collar@eqware.net>,
-       linux-doc@vger.kernel.org, "Greg Kroah-Hartman" <gregkh@suse.de>,
-       linux-kernel@vger.kernel.org, Avi Kivity <avi@redhat.com>,
-       Ryusuke Konishi <konishi.ryusuke@lab.ntt.co.jp>,
-       Magnus Damm <damm@igel.co.jp>, linux-pm@lists.linux-foundation.org,
-       Andrew Morton <akpm@linux-foundation.org>
-References: <Pine.LNX.4.44L0.1005261815480.1328-100000@iolanthe.rowland.org>
-In-Reply-To: <Pine.LNX.4.44L0.1005261815480.1328-100000@iolanthe.rowland.org>
+	Wed, 26 May 2010 18:34:45 -0400
+DomainKey-Signature: a=rsa-sha1; c=nofws;
+        d=gmail.com; s=gamma;
+        h=date:from:to:cc:subject:message-id:mail-followup-to:mime-version
+         :content-type:content-disposition:user-agent;
+        b=CSs5YZoQNGGCpYbkbs6ZlAEuabrZ9bkbhWX06Tanhc+aKTRmhPOfxhAnGDXHZ3APQe
+         V1dwS6JXyQMLfziQgXh7hUMrAgs7IUTCVlNlxV+sRLHuXnjq2tzoWCgGMRzCh8TQdzjX
+         njdRTDHukFLM9Q0VK83M+JxtTJ0WSjG6aQnKE=
+Date: Thu, 27 May 2010 00:34:17 +0200
+From: Dan Carpenter <error27@gmail.com>
+To: kernel-janitors@vger.kernel.org
+Cc: linux-kernel@vger.kernel.org
+Subject: smatch 1.55 released
+Message-ID: <20100526223417.GP22515@bicker>
+Mail-Followup-To: Dan Carpenter <error27@gmail.com>,
+	kernel-janitors@vger.kernel.org, linux-kernel@vger.kernel.org
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="iso-8859-1"
-Content-Transfer-Encoding: 8BIT
-Message-Id: <201005270034.44492.rjw@sisk.pl>
+Content-Type: text/plain; charset=us-ascii
+Content-Disposition: inline
+User-Agent: Mutt/1.5.18 (2008-05-17)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Thursday 27 May 2010, Alan Stern wrote:
-> On Wed, 26 May 2010, Rafael J. Wysocki wrote:
-> 
-> > On Wednesday 26 May 2010, Peter Zijlstra wrote:
-> > > On Fri, 2010-05-21 at 15:46 -0700, Arve Hjønnevåg wrote:
-> > > > +To create a suspend blocker from user space, open the suspend_blocker
-> > > > special
-> > > > +device file:
-> > > > +
-> > > > +    fd = open("/dev/suspend_blocker", O_RDWR | O_CLOEXEC);
-> > > > +
-> > > > +then optionally call:
-> > > > +
-> > > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_SET_NAME(strlen(name)), name);
-> > > > +
-> > > > +To activate the suspend blocker call:
-> > > > +
-> > > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_BLOCK);
-> > > > +
-> > > > +To deactivate it call:
-> > > > +
-> > > > +    ioctl(fd, SUSPEND_BLOCKER_IOCTL_UNBLOCK);
-> > > > +
-> > > > +To destroy the suspend blocker, close the device:
-> > > > +
-> > > > +    close(fd);
-> > > 
-> > > Urgh, please let the open() be BLOCK, the close() be UNBLOCK, and keep
-> > > the SET_NAME thing if you really care.
-> > 
-> > SET_NAME wouldn't serve any purpose in that case.
-> > 
-> > This whole thing is related to the statistics part, which Arve says is
-> > essential to him.  He wants to collect statistics for each suspend blocker
-> > activated and deactivated so that he can tell who's causing problems by
-> > blocking suspend too often.  The name also is a part of this.
-> > 
-> > In fact, without the statistics part the whole thing might be implemented
-> > as a single reference counter such that suspend would happen when it went down
-> > to zero.
-> 
-> There's also Arve's other main point: These suspend blockers tend to
-> get used quite a lot.  Opening and closing a file each time has much
-> higher overhead than a simple ioctl.
-> 
-> All these topics have been covered earlier in this discussion.  Peter 
-> should go back and read the emails in the linux-pm archive.
+Smatch is a static checker for C.  The core parts basically do flow
+analysis and then there are project specific checks as well.  The
+website is:  http://smatch.sf.net
 
-Yeah.
+To use it do:
+	git clone git://repo.or.cz/smatch.git
+	cd smatch ; make ; cd /usr/src/kernel
+	make CHECK="~/path/to/smatch/smatch -p=kernel" C=1 \
+                   bzImage modules | tee warns.txt
 
-Although with a reference counter the special device file won't be necessary.
+Things that have changed since 1.54:
+* The array overflow check is now useful.
+* There is a new check for precedence bugs caused by macro expansion.
+* The checks for null pointer dereferences were rewritten and now have
+    fewer false positives.
+* Some kernel specific tests were added for kunmap(),
+    release_resource(), resource_size(), and mod_timer().
 
-Rafael
+Major Bugs:
+* Smatch doesn't handle loops correctly.
+* It doesn't do cross function analysis.
+* It doesn't understand code like this:
+	foo->bar = NULL;
+	foo = not_null();
+	foo->bar->baz;  // <- Smatch complains about a null dereference.
+* Too many false positives generally.
+
+Anyway, please test it out.  :)
+
+regards,
+dan carpenter
