@@ -1,93 +1,113 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1757706Ab0E0Pxb (ORCPT <rfc822;w@1wt.eu>);
-	Thu, 27 May 2010 11:53:31 -0400
-Received: from cantor2.suse.de ([195.135.220.15]:56773 "EHLO mx2.suse.de"
+	id S932268Ab0E0Pxw (ORCPT <rfc822;w@1wt.eu>);
+	Thu, 27 May 2010 11:53:52 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:56781 "EHLO mx2.suse.de"
 	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
-	id S1756166Ab0E0Px2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	id S1757934Ab0E0Px2 (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
 	Thu, 27 May 2010 11:53:28 -0400
-Date: Tue, 25 May 2010 16:06:46 +0200
+Date: Wed, 26 May 2010 23:54:43 +0200
 From: Jan Kara <jack@suse.cz>
-To: Artem Bityutskiy <dedekind1@gmail.com>
-Cc: Al Viro <viro@ZenIV.linux.org.uk>, LKML <linux-kernel@vger.kernel.org>,
-       Jens Axboe <jens.axboe@oracle.com>, linux-fsdevel@vger.kernel.org,
-       Jan Kara <jack@suse.cz>
-Subject: Re: [PATCHv4 14/17] UDF: do not manipulate s_dirt directly
-Message-ID: <20100525140646.GC3783@quack.suse.cz>
-References: <1274795352-3551-1-git-send-email-dedekind1@gmail.com>
- <1274795352-3551-15-git-send-email-dedekind1@gmail.com>
+To: Erik van der Kouwe <vdkouwe@cs.vu.nl>
+Cc: Alexander Viro <viro@zeniv.linux.org.uk>, linux-fsdevel@vger.kernel.org,
+       linux-kernel@vger.kernel.org, Fam Zheng <famcool@gmail.com>
+Subject: Re: [PATCH] fs/minix: bugfix, number of indirect block ptrs per
+ block depends on block size
+Message-ID: <20100526215442.GB3316@quack.suse.cz>
+References: <4BFCF1EB.20709@cs.vu.nl>
 MIME-Version: 1.0
 Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-In-Reply-To: <1274795352-3551-15-git-send-email-dedekind1@gmail.com>
+In-Reply-To: <4BFCF1EB.20709@cs.vu.nl>
 User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Tue 25-05-10 16:49:09, Artem Bityutskiy wrote:
-> From: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
+On Wed 26-05-10 12:03:23, Erik van der Kouwe wrote:
+> From: Erik van der Kouwe <vdkouwe@cs.vu.nl>
 > 
-> ... use new VFS helpers instead.
-  Looks. OK. You can add
-Acked-by: Jan Kara <jack@suse.cz>
+> The MINIX filesystem driver used a constant number of indirect block
+> pointers in an indirect block. This worked only for filesystems with
+> 1kb block, while the MINIX default block size is now 4kb. As a
+> consequence, large files were read incorrectly on such filesystems
+> and writing a large file would cause the filesystem to become
+> corrupted. This patch computes the number of indirect block pointers
+> based on the block size, making the driver work for each block size.
+  Out of curiosity: Are you really using MINIX? The code is dead for a
+long time...
 
-							Honza
-
-> Signed-off-by: Artem Bityutskiy <Artem.Bityutskiy@nokia.com>
-> Cc: Jan Kara <jack@suse.cz>
+> I would like to thank Feiran Zheng ('Fam') for pointing out the
+> cause of the corruption.
+> 
+> Signed-off-by: Erik van der Kouwe <vdkouwe@cs.vu.nl>
 > ---
->  fs/udf/super.c   |    6 +++---
->  fs/udf/udfdecl.h |    2 +-
->  2 files changed, 4 insertions(+), 4 deletions(-)
 > 
-> diff --git a/fs/udf/super.c b/fs/udf/super.c
-> index 1e4543c..998c911 100644
-> --- a/fs/udf/super.c
-> +++ b/fs/udf/super.c
-> @@ -1940,7 +1940,7 @@ static int udf_fill_super(struct super_block *sb, void *options, int silent)
->  	sb->s_op = &udf_sb_ops;
->  	sb->s_export_op = &udf_export_ops;
->  	sb->dq_op = NULL;
-> -	sb->s_dirt = 0;
-> +	mark_sb_clean(sb);
->  	sb->s_magic = UDF_SUPER_MAGIC;
->  	sb->s_time_gran = 1000;
->  
-> @@ -2067,7 +2067,7 @@ static void udf_error(struct super_block *sb, const char *function,
->  
->  	if (!(sb->s_flags & MS_RDONLY)) {
->  		/* mark sb error */
-> -		sb->s_dirt = 1;
-> +		mark_sb_dirty(sb);
->  	}
->  	va_start(args, fmt);
->  	vsnprintf(error_buf, sizeof(error_buf), fmt, args);
-> @@ -2127,7 +2127,7 @@ static int udf_sync_fs(struct super_block *sb, int wait)
->  		 * the buffer for IO
->  		 */
->  		mark_buffer_dirty(sbi->s_lvid_bh);
-> -		sb->s_dirt = 0;
-> +		mark_sb_clean(sb);
->  		sbi->s_lvid_dirty = 0;
->  	}
->  	mutex_unlock(&sbi->s_alloc_mutex);
-> diff --git a/fs/udf/udfdecl.h b/fs/udf/udfdecl.h
-> index 9079ff7..9337e3f 100644
-> --- a/fs/udf/udfdecl.h
-> +++ b/fs/udf/udfdecl.h
-> @@ -120,7 +120,7 @@ static inline void udf_updated_lvid(struct super_block *sb)
->  	WARN_ON_ONCE(((struct logicalVolIntegrityDesc *)
->  		     bh->b_data)->integrityType !=
->  		     cpu_to_le32(LVID_INTEGRITY_TYPE_OPEN));
-> -	sb->s_dirt = 1;
-> +	mark_sb_dirty(sb);
->  	UDF_SB(sb)->s_lvid_dirty = 1;
->  }
->  
-> -- 
-> 1.6.6.1
+> --- fs/minix/itree_v2.c.orig	2010-05-26 14:10:15.000000000 +0200
+> +++ fs/minix/itree_v2.c	2010-05-26 13:44:53.000000000 +0200
+> @@ -20,6 +20,9 @@ static inline block_t *i_data(struct ino
+> 	return (block_t *)minix_i(inode)->u.i2_data;
+> }
 > 
+> +#define DIRCOUNT 7
+> +#define INDIRCOUNT(sb) ((sb)->s_blocksize / 4)
+> +
+> static int block_to_path(struct inode * inode, long block, int offsets[DEPTH])
+> {
+> 	int n = 0;
+> @@ -34,21 +37,21 @@ static int block_to_path(struct inode *
+> 			printk("MINIX-fs: block_to_path: "
+> 			       "block %ld too big on dev %s\n",
+> 				block, bdevname(sb->s_bdev, b));
+> -	} else if (block < 7) {
+> +	} else if (block < DIRCOUNT) {
+> 		offsets[n++] = block;
+> -	} else if ((block -= 7) < 256) {
+> -		offsets[n++] = 7;
+> +	} else if ((block -= DIRCOUNT) < INDIRCOUNT(sb)) {
+  This modification of 'block' in the if condition is a blatant violation
+of the kernel coding style. If you feel like it, you could fix it when changing
+the conditions anyway. Something like:
+
+  if (block < DIRCOUNT) {
+	offsets[n++] = block;
+	return n;
+  }
+  block -= DIRCOUNT;
+  if (block < INDIRCOUNT(sb)) {
+  ...
+
+> +		offsets[n++] = DIRCOUNT;
+> 		offsets[n++] = block;
+> -	} else if ((block -= 256) < 256*256) {
+> -		offsets[n++] = 8;
+> -		offsets[n++] = block>>8;
+> -		offsets[n++] = block & 255;
+> +	} else if ((block -= INDIRCOUNT(sb)) < INDIRCOUNT(sb) * INDIRCOUNT(sb)) {
+> +		offsets[n++] = DIRCOUNT + 1;
+> +		offsets[n++] = block / INDIRCOUNT(sb);
+> +		offsets[n++] = block % INDIRCOUNT(sb);
+  This division and modulo aren't really necessary. You can define
+INDIRCOUNT_BITS(sb) as (sb->s_blocksize_bits - 2) and use it instead
+of the division and use & (INDIRCOUNT(sb)-1) instead of the modulo. Not
+that it would seriously matter but it's an improvement.
+
+> 	} else {
+> -		block -= 256*256;
+> -		offsets[n++] = 9;
+> -		offsets[n++] = block>>16;
+> -		offsets[n++] = (block>>8) & 255;
+> -		offsets[n++] = block & 255;
+> +		block -= INDIRCOUNT(sb) * INDIRCOUNT(sb);
+> +		offsets[n++] = DIRCOUNT + 2;
+> +		offsets[n++] = (block / INDIRCOUNT(sb)) / INDIRCOUNT(sb);
+> +		offsets[n++] = (block / INDIRCOUNT(sb)) % INDIRCOUNT(sb);
+> +		offsets[n++] = block % INDIRCOUNT(sb);
+> 	}
+> 	return n;
+> }
+
+								Honza
 -- 
 Jan Kara <jack@suse.cz>
 SUSE Labs, CR
