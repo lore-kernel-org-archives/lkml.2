@@ -1,139 +1,101 @@
 Return-Path: <linux-kernel-owner@vger.kernel.org>
 Received: (majordomo@vger.kernel.org) by vger.kernel.org via listexpand
-	id S1753705Ab0EZVk3 (ORCPT <rfc822;w@1wt.eu>);
-	Wed, 26 May 2010 17:40:29 -0400
-Received: from mail-fx0-f46.google.com ([209.85.161.46]:50457 "EHLO
-	mail-fx0-f46.google.com" rhost-flags-OK-OK-OK-OK) by vger.kernel.org
-	with ESMTP id S1753076Ab0EZVk1 (ORCPT
-	<rfc822;linux-kernel@vger.kernel.org>);
-	Wed, 26 May 2010 17:40:27 -0400
-DomainKey-Signature: a=rsa-sha1; c=nofws;
-        d=gmail.com; s=gamma;
-        h=from:to:subject:date:user-agent:cc:references:in-reply-to
-         :mime-version:content-type:content-transfer-encoding
-         :content-disposition:message-id;
-        b=nboFadlGAnV4TSreO+20mBg7HtBYiCoV0TfG2nBtHuncNsJRm6AHo+in1OQAMQvoJ+
-         ryUGe+sb3vioH39///s1/ptBrZO/pxxd3DbpWycXuosv/89RJUAVLp9Ns4vlvC3hmZ65
-         OU7DVZPtuWzrKheqdBD5MyFhVLSPSUF0Mma50=
-From: "Sergey V." <sftp.mtuci@gmail.com>
-To: Bashlykov Arthur <madness@xakep.ru>
-Subject: Re: [PATCH] Staging: rtl8192su: ieee80211: fix brace coding style issue and other issues in ieee80211_softmac_wx.c Signed-off-by: Bashlykov Arthur <madness@xakep.ru>
-Date: Thu, 27 May 2010 01:40:15 +0400
-User-Agent: KMail/1.11.4 (Linux/2.6.32.12; KDE/4.2.4; x86_64; ; )
-Cc: gregkh@suse.de, wfp5p@virginia.edu, devel@driverdev.osuosl.org,
-       linux-kernel@vger.kernel.org
-References: <1274891337-7783-1-git-send-email-madness@xakep.ru>
-In-Reply-To: <1274891337-7783-1-git-send-email-madness@xakep.ru>
+	id S1754419Ab0EZVtD (ORCPT <rfc822;w@1wt.eu>);
+	Wed, 26 May 2010 17:49:03 -0400
+Received: from cantor2.suse.de ([195.135.220.15]:54757 "EHLO mx2.suse.de"
+	rhost-flags-OK-OK-OK-OK) by vger.kernel.org with ESMTP
+	id S1753378Ab0EZVtA (ORCPT <rfc822;linux-kernel@vger.kernel.org>);
+	Wed, 26 May 2010 17:49:00 -0400
+Date: Wed, 26 May 2010 14:48:42 -0700
+From: Greg KH <gregkh@suse.de>
+To: Haiyang Zhang <haiyangz@microsoft.com>
+Cc: "'linux-kernel@vger.kernel.org'" <linux-kernel@vger.kernel.org>,
+       "'devel@driverdev.osuosl.org'" <devel@driverdev.osuosl.org>,
+       "'virtualization@lists.osdl.org'" <virtualization@lists.osdl.org>,
+       Hank Janssen <hjanssen@microsoft.com>
+Subject: Re: [PATCH 1/1] staging: hv: Fix race condition on IC channel
+ initialization (modified)
+Message-ID: <20100526214842.GA27908@suse.de>
+References: <1FB5E1D5CA062146B38059374562DF7266B8C4AC@TK5EX14MBXC128.redmond.corp.microsoft.com>
+ <20100526205134.GC7343@suse.de>
+ <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
 MIME-Version: 1.0
-Content-Type: Text/Plain;
-  charset="utf-8"
-Content-Transfer-Encoding: 7bit
+Content-Type: text/plain; charset=us-ascii
 Content-Disposition: inline
-Message-Id: <201005270140.16354.sftp.mtuci@gmail.com>
+In-Reply-To: <1FB5E1D5CA062146B38059374562DF7266B8C72B@TK5EX14MBXC128.redmond.corp.microsoft.com>
+User-Agent: Mutt/1.5.20 (2009-06-14)
 Sender: linux-kernel-owner@vger.kernel.org
 List-ID: <linux-kernel.vger.kernel.org>
 X-Mailing-List: linux-kernel@vger.kernel.org
 
-On Wednesday 26 May 2010 20:28:57  Bashlykov Arthur wrote:
+On Wed, May 26, 2010 at 09:25:31PM +0000, Haiyang Zhang wrote:
+> > From: Greg KH [mailto:gregkh@suse.de]
+> > > +	static atomic_t ic_channel_initcnt = ATOMIC_INIT(0);
+> > Why is this an atomic_t?
+> 
+> As discussed previously, I used atomic_t to handle more general case 
+> if vmbus interrupts happen on every cpu.
 
-Hi Arthur
+Ok, but then you should use a lock to protect the variable, not an atomic_t.
 
-> @@ -87,15 +87,15 @@ int ieee80211_wx_get_freq(struct ieee80211_device *ieee,
->                            struct iw_request_info *a,
->                            union iwreq_data *wrqu, char *b)
->  {
-> -     struct iw_freq *fwrq = & wrqu->freq;
-> +     struct iw_freq *fwrq = &wrqu->freq;
->  
->       if (ieee->current_network.channel == 0)
->               return -1;
-> -     //NM 0.7.0 will not accept channel any more.
-> +     /* NM 0.7.0 will not accept channel any more. */
->       fwrq->m = ieee80211_wlan_frequencies[ieee->current_network.channel-1] * 100000;
->       fwrq->e = 1;
-> -//   fwrq->m = ieee->current_network.channel;
-> -//   fwrq->e = 0;
-> +     /* fwrq->m = ieee->current_network.channel; */
-> +     /* fwrq->e = 0; */
-May be just remove dead code?
+> 
+> > > +			    VmbusChannelOpen(newChannel, 2 * PAGE_SIZE,
+> > > +					     2 * PAGE_SIZE, NULL, 0,
+> > > +					     hv_cb_utils[cnt].callback,
+> > > +					     newChannel) == 0) {
+> > > +				hv_cb_utils[cnt].channel = newChannel;
+> > > +				mb();
+> > 
+> > What is the mb() call for?  Why is it necessary?  (hint, if you need it,
+> > something else is really wrong...)
+> 
+> It ensures the channel assignment happens before the wakeup call: 
+> osd_WaitEventSet(ic_channel_ready), if the compiler optimization re-arrange 
+> the execution order. 
 
-  
-> @@ -230,13 +230,12 @@ int ieee80211_wx_get_rate(struct ieee80211_device *ieee,
->                            union iwreq_data *wrqu, char *extra)
->  {
->       u32 tmp_rate = 0;
-> -     //printk("===>mode:%d, halfNmode:%d\n", ieee->mode, ieee->bHalfWirelessN24GMode);
-> +     /* printk("===>mode:%d, halfNmode:%d\n", ieee->mode, ieee->bHalfWirelessN24GMode); */
-Same
+If you care about this, because some other thread is looking at it, then
+you really need to protect it with a lock.  Don't rely on a mb() to get
+it all correct for you (hint, I doubt it will...)
 
+> > Something wierd happened with your indentation here, it doesn't line up
+> > properly.  That call to VmbusChannelOpen() needs to go in a full tab,
+> > not 4 spaces.
+> > 
+> > Please always run your patch through the checkpatch.pl script before
+> > sending it to me.
+> 
+> Sure, I will replace it with TAB. I already ran checkpatch.pl on 
+> this patch -- no error:
+> staging-next-2.6> scripts/checkpatch.pl 0525-Fix-race-condition-on-IC-channel-initialization.patch
+> total: 0 errors, 0 warnings, 71 lines checked
+> 
+> 0525-Fix-race-condition-on-IC-channel-initialization.patch has no obvious style problems and is ready for submission.
 
-> @@ -529,33 +520,33 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
->  {
->       int ret = 0;
->  #if 1
-> -     if(
-> +     if {
->               (!ieee->sta_wake_up) ||
-> -     //      (!ieee->ps_request_tx_ack) ||
-> +     /*      (!ieee->ps_request_tx_ack) || */
-Same
->               (!ieee->enter_sleep_state) ||
-> -             (!ieee->ps_is_queue_empty)){
-> +             (!ieee->ps_is_queue_empty)) {
->  
-> -     //      printk("ERROR. PS mode is tryied to be use but driver missed a callback\n\n");
-> +     /* printk("ERROR. PS mode is tryied to be use but driver missed a callback\n\n"); */
-Same
->  
->               return -1;
->       }
->  #endif
->       down(&ieee->wx_sem);
->  
-> -     if (wrqu->power.disabled){
-> +     if (wrqu->power.disabled) {
->               ieee->ps = IEEE80211_PS_DISABLED;
->               goto exit;
->       }
->       if (wrqu->power.flags & IW_POWER_TIMEOUT) {
-> -             //ieee->ps_period = wrqu->power.value / 1000;
-> +             /*ieee->ps_period = wrqu->power.value / 1000; */
-Same
->               ieee->ps_timeout = wrqu->power.value / 1000;
->       }
->  
->       if (wrqu->power.flags & IW_POWER_PERIOD) {
->  
-> -             //ieee->ps_timeout = wrqu->power.value / 1000;
-> +             /* ieee->ps_timeout = wrqu->power.value / 1000; */
-Same
->               ieee->ps_period = wrqu->power.value / 1000;
-> -             //wrq->value / 1024;
-> +             /* wrq->value / 1024; */
-Same
->  
->       }
->       switch (wrqu->power.flags & IW_POWER_MODE) {
-> @@ -570,7 +561,7 @@ int ieee80211_wx_set_power(struct ieee80211_device *ieee,
->               break;
->  
->       case IW_POWER_ON:
-> -     //      ieee->ps = IEEE80211_PS_DISABLED;
-> +      /* ieee->ps = IEEE80211_PS_DISABLED; */
-Same
+Looks like a bug in checkpatch.pl, go poke Andy about that please.
 
+> > > +struct osd_waitevent *ic_channel_ready;
+> > 
+> > What's with the "ic_" naming scheme here?  It should be "hv_" right?
+> 
+> IC stands for "integration components", such as Shutdown, Timesync, 
+> Heartbeat, etc.
 
-> @@ -604,15 +595,15 @@ int ieee80211_wx_get_power(struct ieee80211_device *ieee,
->               wrqu->power.flags = IW_POWER_TIMEOUT;
->               wrqu->power.value = ieee->ps_timeout * 1000;
->       } else {
-> -//           ret = -EOPNOTSUPP;
-> -//           goto exit;
-> +             /* ret = -EOPNOTSUPP; */
-> +             /* goto exit; */
-Same
->               wrqu->power.flags = IW_POWER_PERIOD;
->               wrqu->power.value = ieee->ps_period * 1000;
-> -//ieee->current_network.dtim_period * ieee->current_network.beacon_interval * 1024;
-> +/*ieee->current_network.dtim_period * ieee->current_network.beacon_interval * 1024; */
-Same
+Yes, I know what it stands for, but the rest of the world doesn't :)
+
+> > As you are using this "ic_channel_ready variable only within the
+> > vmbus_bus_init() call, why not just make it local to there?  Then
+> > there's no need to do the create/init/wait/free sequence outside the
+> > init call.
+> > 
+> > The init call should just do all of this for us, right?
+> 
+> The ic_channel_ready variable is called by VmbusChannelProcessOffer /
+> osd_WaitEventSet(ic_channel_ready) to wake up vmbus_init(). So it's
+> not a local variable.
+
+But again, this logic should be within the init call, as it's part of
+the proper init sequence.  So just put it in that call please.
+
+thanks,
+
+greg k-h
